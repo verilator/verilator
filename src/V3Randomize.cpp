@@ -631,6 +631,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
             handleRandomizeArgument(argp->exprp(), fromVarp, false);
         }
+        // Re-mark members after the class became inline-randomized above.
+        if (classp && classp->user1() == IS_RANDOMIZED_INLINE) markMembers(classp);
     }
     void visit(AstConstraintUnique* nodep) override {
         VL_RESTORER(m_stmtp);
@@ -900,13 +902,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(getConstFormat(nodep));
         return true;
     }
-    void editSMT(AstNodeExpr* nodep, AstNodeExpr* lhsp = nullptr, AstNodeExpr* rhsp = nullptr,
-                 AstNodeExpr* thsp = nullptr) {
+    AstSFormatF* editSMT(AstNodeExpr* nodep, AstNodeExpr* lhsp = nullptr,
+                         AstNodeExpr* rhsp = nullptr, AstNodeExpr* thsp = nullptr) {
         // Replace incomputable (result-dependent) expression with SMT expression
         std::string smtExpr = nodep->emitSMT();  // Might need child width (AstExtend)
         if (smtExpr == "") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported expression inside constraint");
-            return;
+            return nullptr;
         }
 
         if (lhsp)
@@ -957,6 +959,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return newp;
     }
 
     AstNodeExpr* editSingle(FileLine* fl, AstNode* itemsp) {
@@ -1897,13 +1900,15 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        // Adaptive formatting and type handling for associative array keys
+        // Keep a pre-edit clone for the rand_mode hoist below.
+        AstNodeExpr* const origp = nodep->cloneTree(false);
+        AstSFormatF* newp = nullptr;
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
             AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
                                                       nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
-            editSMT(nodep, nodep->fromp(), idxp);
+            newp = editSMT(nodep, nodep->fromp(), idxp);
         } else if (VN_IS(nodep->bitp(), CvtPackString)
                    && VN_IS(nodep->bitp()->dtypep(), BasicDType)) {
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
@@ -1918,7 +1923,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
                                                       stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
-            editSMT(nodep, nodep->fromp(), idxp);
+            newp = editSMT(nodep, nodep->fromp(), idxp);
         } else {
             if (VN_IS(nodep->bitp()->dtypep(), BasicDType)
                 || (VN_IS(nodep->bitp()->dtypep(), StructDType)
@@ -1940,12 +1945,15 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeExpr* const idxp
                     = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
                 handle.relink(idxp);
-                editSMT(nodep, nodep->fromp(), idxp);
+                newp = editSMT(nodep, nodep->fromp(), idxp);
             } else {
                 nodep->bitp()->v3error(
                     "Illegal non-integral expression or subexpression in random constraint."
                     " (IEEE 1800-2023 18.3)");
             }
+        }
+        if (!newp || !hoistRandModeOverSelect(newp, origp)) {
+            VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
     void visit(AstArraySel* nodep) override {
@@ -1971,12 +1979,64 @@ class ConstraintExprVisitor final : public VNVisitor {
             handle.relink(indexp);
             editSMT(nodep, nodep->fromp(), indexp);
         } else {
-            // Index is constant or non-rand -- format as hex literal
+            // Index is constant or non-rand -- format as hex literal.
+            // Keep a pre-edit clone for the rand_mode hoist below.
+            AstNodeExpr* const origp = nodep->cloneTree(false);
             AstNodeExpr* const indexp
                 = new AstSFormatF{fl, "#x%8x", false, nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(indexp);
-            editSMT(nodep, nodep->fromp(), indexp);
+            AstSFormatF* const newp = editSMT(nodep, nodep->fromp(), indexp);
+            if (!newp || !hoistRandModeOverSelect(newp, origp)) {
+                VL_DO_DANGLING(origp->deleteTree(), origp);
+            }
         }
+    }
+    // True iff exprp is an ARRAY_AT read of a class's own instance mode array.
+    static bool isRandModeGate(const AstNodeExpr* exprp) {
+        const AstCMethodHard* const atp = VN_CAST(exprp, CMethodHard);
+        if (!atp || atp->method() != VCMethod::ARRAY_AT) return false;
+        const AstVar* varp = nullptr;
+        if (const AstVarRef* const refp = VN_CAST(atp->fromp(), VarRef)) {
+            varp = refp->varp();
+        } else if (const AstMemberSel* const mselp = VN_CAST(atp->fromp(), MemberSel)) {
+            varp = mselp->varp();
+        }
+        if (!varp) return false;
+        const AstClass* const classp = VN_CAST(varp->user2p(), Class);
+        return classp && classp->user2p() == varp;
+    }
+    // Lift a rand_mode Cond above the (select ...) chain of a frozen array element.
+    bool hoistRandModeOverSelect(AstSFormatF* newp, AstNodeExpr* origp) {
+        // Only for selects yielding a non-array element (full chains)
+        if (VN_IS(origp->dtypep()->skipRefp(), UnpackArrayDType)) return false;
+        // Walk nested "(select %s %s)" frames down to a mode-gating AstCond
+        std::vector<AstSFormatF*> frames;
+        AstCond* modeCondp = nullptr;
+        for (AstSFormatF* curp = newp; curp && curp->name() == "(select %s %s)";) {
+            AstNodeExpr* const firstp = curp->exprsp();
+            frames.push_back(curp);
+            if (AstCond* const condp = VN_CAST(firstp, Cond)) {
+                if (isRandModeGate(condp->condp())) modeCondp = condp;
+                break;
+            }
+            curp = VN_CAST(firstp, SFormatF);
+        }
+        if (!modeCondp) return false;
+        FileLine* const fl = newp->fileline();
+        AstNodeExpr* const modep = modeCondp->condp()->unlinkFrBack();
+        AstNodeExpr* activep = modeCondp->thenp()->unlinkFrBack();
+        // Rebuild the select chain text around the SMT name, innermost first
+        for (auto it = frames.rbegin(); it != frames.rend(); ++it) {
+            AstNodeExpr* const idxFmtp = VN_AS((*it)->exprsp()->nextp(), NodeExpr);
+            idxFmtp->unlinkFrBack();
+            activep
+                = new AstSFormatF{fl, "(select %s %s)", false, AstNode::addNext(activep, idxFmtp)};
+        }
+        AstCond* const hoistp = new AstCond{fl, modep, activep, getConstFormat(origp)};
+        hoistp->user1(true);  // Mark as formatted
+        newp->replaceWith(hoistp);
+        VL_DO_DANGLING(pushDeletep(newp), newp);
+        return true;
     }
     void visit(AstMemberSel* nodep) override {
         // Check if rootVar is globalConstrained
@@ -2367,6 +2427,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
 
         if (nodep->method() == VCMethod::ARRAY_AT && nodep->fromp()->user1()) {
+            // Queue/dynamic element: pre-edit clone for the rand_mode hoist, non-rand index only.
+            bool indexIsRand = false;
+            if (nodep->pinsp()) {
+                nodep->pinsp()->foreach([&](const AstNodeVarRef* vrefp) {
+                    if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
+                });
+            }
+            AstNodeExpr* const origp = indexIsRand ? nullptr : nodep->cloneTree(false);
             iterateChildren(nodep);
             AstNodeExpr* pinp = nodep->pinsp()->unlinkFrBack();
             if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%x");
@@ -2378,6 +2446,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 newp = new AstSFormatF{fl, "(select %s %s)", false, argsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            if (origp && !hoistRandModeOverSelect(newp, origp)) {
+                VL_DO_DANGLING(origp->deleteTree(), origp);
+            }
             return;
         }
 
