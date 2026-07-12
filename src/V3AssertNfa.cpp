@@ -1718,7 +1718,7 @@ class SvaNfaLowering final {
                 AstNodeExpr* srcSigp = c.vtx[fromIdx]->datap()->stateSigp->cloneTreePure(false);
                 srcSigp = andCond(c.flp, srcSigp, te.m_condp);
 
-                if (c.disableExprp && !c.snapshotVarp) {
+                if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
                     srcSigp = new AstLogAnd{c.flp, srcSigp, notDisp};
@@ -1770,7 +1770,7 @@ class SvaNfaLowering final {
                             "Delay-ring incoming source missing stateSig");
                 AstNodeExpr* contribp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
                 contribp = andCond(c.flp, contribp, tep->m_condp);
-                if (c.disableExprp && !c.snapshotVarp) {
+                if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
                     contribp = new AstLogAnd{c.flp, contribp, notDisp};
@@ -1805,7 +1805,7 @@ class SvaNfaLowering final {
             if (vtxp->m_delayRingClearCondp) {
                 clearCondp = sampled(vtxp->m_delayRingClearCondp->cloneTreePure(false));
             }
-            if (c.disableExprp && !c.snapshotVarp) {
+            if (c.disableExprp) {
                 clearCondp = orExprs(c.flp, clearCondp, c.disableExprp->cloneTreePure(false));
             }
             AstNodeExpr* guardp = nullptr;

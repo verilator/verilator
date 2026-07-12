@@ -104,14 +104,14 @@ module t (
       // engine-wide behavior, not within-specific.
       `checkd(count_p1, 23);  // Other sims: 23, or 16
       `checkd(count_p2, 44);  // Other sims: 44, or 21
-      `checkd(count_p3, 25);  // Other sims: 20
+      `checkd(count_p3, 24);  // Other sims: 20
       `checkd(count_p4, 23);  // Other sims: 22
       `checkd(count_p5, 26);
       `checkd(count_p6, 21);  // Other sims: 16
       `checkd(count_p7, 15);  // Other sims: 9
       `checkd(count_p8, 15);  // Other sims: 4
       `checkd(count_p9, 15);  // Other sims: 10
-      `checkd(count_p10, 23);  // Other sims: 15
+      `checkd(count_p10, 21);  // Other sims: 15
       $write("*-* All Finished *-*\n");
       $finish;
     end
