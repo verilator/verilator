@@ -749,15 +749,21 @@ class TimingControlVisitor final : public VNVisitor {
         addDebugInfo(donep);
         beginp->addStmtsp(donep->makeStmt());
     }
-    static bool hasDisableQueuePushSelfPrefix(const AstBegin* const beginp) {
+    static bool hasDisableQueuePushSelfPrefix(AstBegin* const beginp) {
         // LinkJump prepends disable-by-name registration as:
         //   __VprocessQueue_*.push_back(std::process::self())
-        const AstStmtExpr* const stmtExprp = VN_CAST(beginp->stmtsp(), StmtExpr);
-        if (!stmtExprp) return false;
-        const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
-        if (!methodp || methodp->name() != "push_back") return false;
-        const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
-        return queueRefp && queueRefp->varp()->processQueue();
+        // V3LiftExpr lifts std::process::self() into an assignment to a temporary, then V3Task
+        // lowers that assignment's function call into a leading comment and AstStmtExpr. Thus the
+        // push_back is no longer necessarily the first statement. Scan across this generated
+        // prefix for it, stopping at the fork-start sentinel or the branch body. Registrations for
+        // nested forks live in sub-blocks and so are not in this statement list.
+        for (AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (VN_IS(stmtp, Comment)) continue;
+            AstStmtExpr* const stmtExprp = VN_CAST(stmtp, StmtExpr);
+            if (!stmtExprp) break;
+            if (stmtExprp->isDisableQueuePushSelfStmt()) return true;
+        }
+        return false;
     }
     // Register a callback so killing a process-backed fork branch decrements the join counter
     void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {

@@ -108,6 +108,21 @@ int AstNodeSel::bitConst() const {
     return (constp ? constp->toSInt() : 0);
 }
 
+bool AstNode::isDisableQueuePushSelfStmt() {
+    // Detect LinkJump-generated registration:
+    // __VprocessQueue_*.push_back(std::process::self())
+    AstStmtExpr* const stmtExprp = VN_CAST(this, StmtExpr);
+    if (!stmtExprp) return false;
+    AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
+    if (!methodp || methodp->name() != "push_back") return false;
+    AstNode* const basep = AstArraySel::baseFromp(methodp->fromp(), false);
+    if (AstVarRef* const refp = VN_CAST(basep, VarRef)) return refp->varp()->processQueue();
+    if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
+        return selp->varp() && selp->varp()->processQueue();
+    }
+    return false;
+}
+
 void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeStmt::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
@@ -3795,7 +3810,7 @@ void AstDelay::dumpJson(std::ostream& str) const {
 }
 
 const char* AstDisable::broken() const {
-    BROKEN_RTN((m_targetp && targetRefp()) || ((!m_targetp && !targetRefp())));
+    BROKEN_RTN(!m_targetp && !targetRefp());
     return nullptr;
 }
 void AstDisable::dump(std::ostream& str) const {
