@@ -4135,14 +4135,25 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
-void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
-                                         void* basep) VL_MT_UNSAFE {
+void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                                         VerilatedVarLazyDatap* lazyBasep,
+                                         void (*const* lazyReconFnsp)(void*)) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
     for (size_t i = 0; i < n; ++i) {
         const VlVarTableEntry& e = entp[i];
-        void* const datap = base + e.byteOffset;
+        void* datap;
+        if (e.lazyIdx >= 0) {
+            // Reconstructed (lazy) signal: point datap at this instance's descriptor slot.
+            VerilatedVarLazyDatap& desc = lazyBasep[e.lazyIdx];
+            desc.refreshp = lazyReconFnsp[e.lazyIdx];
+            desc.storagep = base + e.byteOffset;
+            desc.selfp = base;
+            datap = &desc;
+        } else {
+            datap = base + e.byteOffset;
+        }
         const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
         VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
         for (int d = 0; d < e.udims; ++d) {

@@ -1442,6 +1442,24 @@ public:
     AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
     void varp(AstVar* varp) { m_varp = varp; }
 };
+// Pure-alias signal (--vpi-lazy-public-rw): its VPI entry retargets to the
+// canonical variable's storage instead of being reconstructed. Captured by
+// V3VpiLazy::prepare() before the optimizer deletes the alias (hence keyed
+// by name, not AstVar*), and stored on AstNetlist to survive to V3EmitCSyms.
+struct VpiLazyAliasRetarget final {
+    std::string m_scopeName;  // AstScope::name(); same scope as the canonical var
+    std::string m_aliasVarName;
+    std::string m_canonicalVarName;
+    // Only total bit width is guaranteed equal (alias guard); sign, 2-state-ness,
+    // net-vs-var and declared bounds can differ, so snapshot from the alias here
+    // (the alias var is dropped, so no pointer can be held).
+    bool m_aliasSigned = false;
+    bool m_aliasBitvar = false;
+    bool m_aliasNet = false;
+    std::vector<std::pair<int, int>> m_aliasUnpackedLR;  // (left,right), outer-first
+    std::vector<std::pair<int, int>> m_aliasPackedLR;  // (left,right), inner then leaf
+};
+
 class AstNetlist final : public AstNode {
     // All modules are under this single top node.
     // Parents:   none
@@ -1474,6 +1492,8 @@ class AstNetlist final : public AstNode {
     // AstConst itself, as AstConst is a very common node and only a small fraction carry this
     // name.
     std::unordered_map<const AstConst*, string> m_constOrigParamNames;
+    // See VpiLazyAliasRetarget.
+    std::vector<VpiLazyAliasRetarget> m_vpiLazyAliasRetargets;
 
 public:
     AstNetlist();
@@ -1482,6 +1502,10 @@ public:
     void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.insert(varp); }
     const std::set<AstVar*>& deferredParamVarps() const { return m_deferredParamVarps; }
     void clearDeferredParamVarps() { m_deferredParamVarps.clear(); }
+    std::vector<VpiLazyAliasRetarget>& vpiLazyAliasRetargets() { return m_vpiLazyAliasRetargets; }
+    const std::vector<VpiLazyAliasRetarget>& vpiLazyAliasRetargets() const {
+        return m_vpiLazyAliasRetargets;
+    }
     void deleteContents();
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     string name() const override VL_MT_STABLE { return "$root"; }
@@ -2146,6 +2170,8 @@ class AstVar final : public AstNode {
     bool m_sigModPublic : 1;  // User C code accesses this signal and module
     bool m_sigUserRdPublic : 1;  // User C code accesses this signal, read only
     bool m_sigUserRWPublic : 1;  // User C code accesses this signal, read-write
+    bool m_sigVpiLazyRWPublic : 1;  // User VPI code accesses this signal, read-write
+    bool m_lazyReconstructShadow : 1;  // Shadow var holding a reconstructed VPI signal's value
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_funcLocal : 1;  // Local variable for a function
@@ -2212,6 +2238,8 @@ class AstVar final : public AstNode {
         m_sigModPublic = false;
         m_sigUserRdPublic = false;
         m_sigUserRWPublic = false;
+        m_sigVpiLazyRWPublic = false;
+        m_lazyReconstructShadow = false;
         m_funcLocal = false;
         m_funcLocalSticky = false;
         m_funcReturn = false;
@@ -2388,6 +2416,8 @@ public:
         m_sigUserRWPublic = flag;
         if (flag) sigUserRdPublic(true);
     }
+    void sigVpiLazyRWPublic(bool flag) { m_sigVpiLazyRWPublic = flag; }
+    void lazyReconstructShadow(bool flag) { m_lazyReconstructShadow = flag; }
     void sc(bool flag) { m_sc = flag; }
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
@@ -2520,6 +2550,9 @@ public:
     bool isSigModPublic() const { return m_sigModPublic && !isIfaceRef(); }
     bool isSigUserRdPublic() const { return m_sigUserRdPublic && !isIfaceRef(); }
     bool isSigUserRWPublic() const { return m_sigUserRWPublic && !isIfaceRef(); }
+    bool isSigVpiLazyRWPublic() const { return m_sigVpiLazyRWPublic && !isIfaceRef(); }
+    bool isSigExternallyRWPublic() const { return isSigUserRWPublic() || isSigVpiLazyRWPublic(); }
+    bool isLazyReconstructShadow() const { return m_lazyReconstructShadow; }
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_rand.isRand(); }
     bool isRandC() const { return m_rand.isRandC(); }

@@ -609,6 +609,8 @@ detailed descriptions of these arguments.
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Show program version and exits
     --vpi                       Enable VPI compiles
+    --vpi-lazy-fold-budget <value>  Node budget for lazy VPI always_comb folding
+    --vpi-lazy-public-rw        Lazy VPI visibility without retaining public storage
     --waiver-multiline          Create multiline --match for waivers
     --waiver-output <filename>  Create a waiver file based on linter warnings
      -Wall                      Enable all style warnings

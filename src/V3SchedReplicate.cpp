@@ -150,7 +150,7 @@ public:
         : SchedReplicateVertex{graphp}
         , m_vscp{vscp} {
         // Top level inputs are
-        if (varp()->isPrimaryInish() || varp()->isSigUserRWPublic() || varp()->sampled()
+        if (varp()->isPrimaryInish() || varp()->isSigExternallyRWPublic() || varp()->sampled()
             || varp()->isWrittenByDpi() || varp()->sensIfacep() || varp()->isVirtIface()) {
             addDrivingRegions(INPUT);
         }
