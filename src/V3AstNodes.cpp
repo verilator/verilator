@@ -3066,6 +3066,16 @@ void AstSystemCSection::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "sectionType", sectionType().ascii());
     dumpJsonGen(str);
 }
+void AstTaskLocalVar::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " -> ";
+    if (templateVscp()) {
+        templateVscp()->dump(str);
+    } else {
+        str << "%E:UNLINKED";
+    }
+}
+void AstTaskLocalVar::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstTypeTable::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     for (int i = 0; i < static_cast<int>(VBasicDTypeKwd::_ENUM_MAX); ++i) {

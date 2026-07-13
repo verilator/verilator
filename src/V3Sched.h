@@ -37,6 +37,8 @@ namespace V3Sched {
 namespace util {
 using VarScopeSet = std::unordered_set<const AstVarScope*>;
 
+AstNode* cloneLogic(AstNode* logicp);
+
 inline bool isVlForceVec(const AstVarScope* vscp) {
     const AstCDType* const dtypep = VN_CAST(vscp->dtypep()->skipRefp(), CDType);
     return dtypep && dtypep->name() == "VlForceVec";
@@ -92,13 +94,7 @@ struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>>
     };
 
     // Create copy, with the AstActives cloned
-    LogicByScope clone() const {
-        LogicByScope result;
-        for (const auto& pair : *this) {
-            result.emplace_back(pair.first, pair.second->cloneTree(false));
-        }
-        return result;
-    }
+    LogicByScope clone() const;
 
     // Delete actives (they should all be empty)
     void deleteActives() {

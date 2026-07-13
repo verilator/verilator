@@ -522,9 +522,8 @@ public:
             m_addAfter[color] = placeholderp;
             m_newBlocksp->push_back(alwaysp);
         }
-        // Scan the body of the always. We'll handle if/else
-        // specially, everything else is a leaf node that we can
-        // just clone into one of the split always blocks.
+        // Scan the body of the always. We'll handle if/else specially; every other leaf belongs to
+        // one color and can move into the corresponding split always block.
         iterateAndNextNull(m_origAlwaysp->stmtsp());
     }
 
@@ -547,12 +546,13 @@ protected:
         // Each leaf must have a user3p
         UASSERT_OBJ(nodep->user3p(), nodep, "null user3p in V3Split leaf");
 
-        // Clone the leaf into its new always block
+        // A leaf belongs to exactly one color, so move it into its new always block. Moving also
+        // preserves lexical declarations whose AstVarScopes are owned outside the leaf subtree.
         const SplitLogicVertex* const vxp = reinterpret_cast<SplitLogicVertex*>(nodep->user3p());
         const uint32_t color = vxp->color();
-        AstNode* const clonedp = nodep->cloneTree(false);
-        m_addAfter[color]->addNextHere(clonedp);
-        m_addAfter[color] = clonedp;
+        nodep->unlinkFrBack();
+        m_addAfter[color]->addNextHere(nodep);
+        m_addAfter[color] = nodep;
     }
 
     void visit(AstNodeIf* nodep) override {

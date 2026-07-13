@@ -34,6 +34,7 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
+#include <set>
 #include <tuple>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -483,6 +484,45 @@ class TaskVisitor final : public VNVisitor {
             return newvscp;
         }
     }
+    AstVarScope* createTaskLocalVarScope(AstVar* invarp, const string& name,
+                                         AstTaskLocalVar*& localDeclpr) {
+        AstVarScope* const templateVscp = createVarScope(invarp, name);
+        AstVar* const localVarp
+            = new AstVar{invarp->fileline(), VVarType::BLOCKTEMP, name, invarp};
+        localVarp->funcLocal(true);
+        localVarp->propagateAttrFrom(invarp);
+        localVarp->isInternal(true);
+        localDeclpr = new AstTaskLocalVar{localVarp->fileline(), localVarp, templateVscp};
+        return templateVscp;
+    }
+    AstVarScope* createPortVarScope(AstVar* invarp, const string& name, bool activationLocalPorts,
+                                    AstTaskLocalVar*& localDeclpr) {
+        localDeclpr = nullptr;
+        if (activationLocalPorts) return createTaskLocalVarScope(invarp, name, localDeclpr);
+        return createVarScope(invarp, name);
+    }
+
+    void addToFront(AstNode* const beginp, AstNode* const newp) const {
+        if (!newp) return;
+        if (AstNode* const afterp = beginp->nextp()) {
+            afterp->unlinkFrBackWithNext();
+            AstNode::addNext<AstNode, AstNode>(newp, afterp);
+        }
+        beginp->addNext(newp);
+    }
+
+    static bool isTaskActivationLocal(AstVar* const varp, const bool activationLocalPorts) {
+        return activationLocalPorts && !varp->direction().isAny() && varp->lifetime().isAutomatic()
+               && (varp->isFuncLocal()
+                   || (varp->varType() == VVarType::BLOCKTEMP
+                       && VN_IS(varp->dtypep()->skipRefp(), ClassRefDType)));
+    }
+    static bool bodyNeedsActivationLocals(const AstNode* const bodyp) {
+        return bodyp && bodyp->existsAndNext([](const AstNode* const nodep) {
+            // A join_none child can outlive the task without itself containing a timing control.
+            return nodep->isTimingControl() || VN_IS(nodep, Fork);
+        });
+    }
 
     // Replace varrefs with new var pointer
     void relink(AstNode* nodep) {
@@ -552,8 +592,9 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
-                     bool inlineTask) {
+    bool connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
+                     bool inlineTask, bool activationLocalPorts) {
+        bool needsCLocalScope = false;
         AstNodeExpr* pinp = argp->exprp();
         if (inlineTask) {
             portp->unlinkFrBack();
@@ -619,8 +660,10 @@ class TaskVisitor final : public VNVisitor {
             } else if (portp->isInout()) {
                 // UINFOTREE(9, pinp, "", "pinrsize-");
 
+                AstTaskLocalVar* localDeclp = nullptr;
                 AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                    = createPortVarScope(portp, namePrefix + "__" + portp->shortName(),
+                                         activationLocalPorts, localDeclp);
                 portp->user2p(newvscp);
                 if (!inlineTask) {
                     pinp->replaceWith(
@@ -629,42 +672,47 @@ class TaskVisitor final : public VNVisitor {
                 }
                 // Put input assignment in FRONT of all other statements
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, true);
-                if (AstNode* const afterp = beginp->nextp()) {
-                    afterp->unlinkFrBackWithNext();
-                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
-                }
-                beginp->addNext(preassp);
+                AstNode* const frontp
+                    = AstNode::addNextNull<AstNode, AstNode>(localDeclp, preassp);
+                addToFront(beginp, frontp);
 
                 AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, true);
                 beginp->addNext(postassp);
+                needsCLocalScope = localDeclp != nullptr;
                 // if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-pinrsize-out- ");
             } else if (portp->isWritable()) {
                 // Even if it's referencing a varref, we still make a temporary
                 // Else task(x,x,x) might produce incorrect results
+                AstTaskLocalVar* localDeclp = nullptr;
                 AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                    = createPortVarScope(portp, namePrefix + "__" + portp->shortName(),
+                                         activationLocalPorts, localDeclp);
                 portp->user2p(newvscp);
                 if (!inlineTask) {
                     pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE});
                     pushDeletep(pinp);  // Cloned by connectPortMakeOutAssign
                 }
+                addToFront(beginp, localDeclp);
                 AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, false);
                 // Put assignment BEHIND of all other statements
                 beginp->addNext(postassp);
+                needsCLocalScope = localDeclp != nullptr;
             } else if (inlineTask && portp->isNonOutput()) {
                 // Make input variable
+                AstTaskLocalVar* localDeclp = nullptr;
                 AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                    = createPortVarScope(portp, namePrefix + "__" + portp->shortName(),
+                                         activationLocalPorts, localDeclp);
                 portp->user2p(newvscp);
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, false);
                 // Put assignment in FRONT of all other statements
-                if (AstNode* const afterp = beginp->nextp()) {
-                    afterp->unlinkFrBackWithNext();
-                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
-                }
-                beginp->addNext(preassp);
+                AstNode* const frontp
+                    = AstNode::addNextNull<AstNode, AstNode>(localDeclp, preassp);
+                addToFront(beginp, frontp);
+                needsCLocalScope = localDeclp != nullptr;
             }
         }
+        return needsCLocalScope;
     }
 
     bool hasRefArgument(AstNodeFTask* nodep) {
@@ -688,13 +736,20 @@ class TaskVisitor final : public VNVisitor {
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
         // Create input variables
+        // Task bodies that can suspend or fork need activation-local input temporaries. Inlined
+        // functions cannot suspend; keeping those temporaries as normal scoped temps avoids
+        // exposing AstCLocalScope to pre-timing constant/table simulation.
+        const bool activationLocalPorts
+            = !refp->taskp()->verilogFunction() && bodyNeedsActivationLocals(newbodysp);
+        bool needsCLocalScope = false;
         AstNode::user2ClearTree();
         {
             const V3TaskConnects tconnects = V3Task::taskConnects(refp, beginp);
             for (const auto& itr : tconnects) {
                 AstVar* const portp = itr.first;
                 AstArg* const argp = itr.second;
-                connectPort(portp, argp, namePrefix, beginp, true);
+                needsCLocalScope
+                    |= connectPort(portp, argp, namePrefix, beginp, true, activationLocalPorts);
             }
         }
         UASSERT_OBJ(!refp->argsp(), refp, "Arg wasn't removed by above loop");
@@ -705,6 +760,29 @@ class TaskVisitor final : public VNVisitor {
                 if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                     // Any I/O variables that fell out of above loop were already linked
                     if (!portp->user2p()) {
+                        // Preserve automatic locals introduced by earlier passes inside the
+                        // inlined task body so each activation keeps its own state.
+                        if (isTaskActivationLocal(portp, activationLocalPorts)) {
+                            const string localName = namePrefix + "__" + portp->shortName();
+                            portp->name(localName);
+                            portp->funcLocal(true);
+                            AstVarScope* const templateVscp = createVarScope(portp, localName);
+                            portp->user2p(templateVscp);
+                            AstTaskLocalVar* const localDeclp
+                                = new AstTaskLocalVar{portp->fileline(), nullptr, templateVscp};
+                            portp->replaceWith(localDeclp);
+                            localDeclp->varp(portp);
+                            if (portp->needsCReset() && !portp->valuep()) {
+                                // Reset automatic var to its default on each invocation of task.
+                                AstNode* const crstp = new AstAssign{
+                                    portp->fileline(),
+                                    new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
+                                    new AstCReset{portp->fileline(), portp, false}};
+                                localDeclp->addNextHere(crstp);
+                            }
+                            needsCLocalScope = true;
+                            continue;
+                        }
                         // Move it to a new localized variable
                         AstVarScope* const localVscp
                             = createVarScope(portp, namePrefix + "__" + portp->shortName());
@@ -734,7 +812,7 @@ class TaskVisitor final : public VNVisitor {
         relink(beginp);
         //
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  iotask: ");
-        return beginp;
+        return needsCLocalScope ? new AstCLocalScope{refp->fileline(), beginp} : beginp;
     }
 
     AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
@@ -769,13 +847,20 @@ class TaskVisitor final : public VNVisitor {
             ccallp->superReference(taskRefp->superReference());
         }
 
-        // Convert complicated outputs to temp signals
+        // Convert complicated outputs to temp signals. Task calls that can suspend or fork need
+        // staging temps in the caller activation. Non-inlined functions cannot suspend; keep their
+        // temps as normal scoped temps to avoid exposing AstCLocalScope to earlier function/table
+        // simulation.
+        bool needsCLocalScope = false;
+        const bool activationLocalPorts
+            = !refp->taskp()->verilogFunction() && bodyNeedsActivationLocals(cfuncp->stmtsp());
         {
             const V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
             for (const auto& itr : tconnects) {
                 AstVar* const portp = itr.first;
                 AstArg* const argp = itr.second;
-                connectPort(portp, argp, namePrefix, beginp, false);
+                needsCLocalScope
+                    |= connectPort(portp, argp, namePrefix, beginp, false, activationLocalPorts);
             }
         }
         // First argument is symbol table, then output if a function
@@ -805,7 +890,7 @@ class TaskVisitor final : public VNVisitor {
         if (outvscp) ccallp->addArgsp(new AstVarRef{refp->fileline(), outvscp, VAccess::WRITE});
 
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  nitask: ");
-        return beginp;
+        return needsCLocalScope ? new AstCLocalScope{refp->fileline(), beginp} : beginp;
     }
 
     string dpiSignature(AstNodeFTask* nodep, AstVar* rtnvarp) const {
@@ -1880,6 +1965,99 @@ public:
 };
 
 //######################################################################
+// Materialize task activation-local variables after loop unrolling
+
+using TaskLocalVarScopeMap = std::map<AstVarScope*, AstVarScope*>;
+
+class TaskLocalDeclVisitor final : public VNVisitor {
+    std::vector<AstTaskLocalVar*> m_declps;
+
+    void visit(AstCLocalScope*) override {
+        // A nested C-local scope is a separate task activation.
+    }
+    void visit(AstTaskLocalVar* nodep) override { m_declps.push_back(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit TaskLocalDeclVisitor(AstNode* nodep) { iterateAndNextNull(nodep); }
+    const std::vector<AstTaskLocalVar*>& declps() const { return m_declps; }
+};
+
+class TaskLocalRefVisitor final : public VNVisitor {
+    const TaskLocalVarScopeMap& m_replacements;
+
+    void visit(AstCLocalScope* nodep) override {
+        // A nested activation can capture variables from this outer activation. Its own locals
+        // have different template scopes, so only references to this replacement map are changed.
+        iterateChildren(nodep);
+    }
+    void visit(AstVarRef* nodep) override {
+        const auto it = m_replacements.find(nodep->varScopep());
+        if (it == m_replacements.end()) return;
+        nodep->varScopep(it->second);
+        nodep->varp(it->second->varp());
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    TaskLocalRefVisitor(AstNode* nodep, const TaskLocalVarScopeMap& replacements)
+        : m_replacements{replacements} {
+        iterateAndNextNull(nodep);
+    }
+};
+
+class TaskLocalizeVisitor final : public VNVisitor {
+    std::set<AstVarScope*> m_templateVscps;
+    AstCLocalScope* m_localScopep = nullptr;
+
+    void visit(AstNetlist* nodep) override {
+        iterateChildren(nodep);
+
+        std::set<AstVar*> templateVarps;
+        for (AstVarScope* const vscp : m_templateVscps) {
+            templateVarps.insert(vscp->varp());
+            VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
+        }
+        for (AstVar* const varp : templateVarps) {
+            VL_DO_DANGLING(pushDeletep(varp->unlinkFrBack()), varp);
+        }
+    }
+    void visit(AstCLocalScope* nodep) override {
+        VL_RESTORER(m_localScopep);
+        m_localScopep = nodep;
+
+        // Process nested task activations before replacing declarations in this one.
+        iterateChildren(nodep);
+
+        const TaskLocalDeclVisitor declVisitor{nodep->stmtsp()};
+        TaskLocalVarScopeMap replacements;
+        for (AstTaskLocalVar* const declp : declVisitor.declps()) {
+            AstVarScope* const templateVscp = declp->templateVscp();
+            UASSERT_OBJ(templateVscp, declp, "Task-local declaration has no template scope");
+            AstVar* const localVarp = declp->varp();
+            localVarp->unlinkFrBack();
+            UASSERT_OBJ(localVarp->isFuncLocal(), localVarp, "Task-local variable is not local");
+            AstVarScope* const localVscp
+                = new AstVarScope{localVarp->fileline(), templateVscp->scopep(), localVarp};
+            templateVscp->scopep()->addVarsp(localVscp);
+            UASSERT_OBJ(replacements.emplace(templateVscp, localVscp).second, declp,
+                        "Duplicate task-local template in one activation");
+            m_templateVscps.insert(templateVscp);
+            declp->replaceWith(localVarp);
+            VL_DO_DANGLING(pushDeletep(declp), declp);
+        }
+        if (!replacements.empty()) TaskLocalRefVisitor{nodep->stmtsp(), replacements};
+    }
+    void visit(AstTaskLocalVar* nodep) override {
+        UASSERT_OBJ(m_localScopep, nodep, "Task-local declaration is outside a C-local scope");
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit TaskLocalizeVisitor(AstNetlist* nodep) { iterate(nodep); }
+};
+
+//######################################################################
 // Task class functions
 
 const char* const V3Task::s_dpiTemporaryVarSuffix = "__Vcvt";
@@ -2299,4 +2477,10 @@ void V3Task::taskAll(AstNetlist* nodep) {
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("task", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3Task::taskLocalizeAll(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    { const TaskLocalizeVisitor visitor{nodep}; }
+    V3Global::dumpCheckGlobalTree("tasklocal", 0, dumpTreeEitherLevel() >= 3);
 }

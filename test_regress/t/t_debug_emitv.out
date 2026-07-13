@@ -114,7 +114,8 @@ module Vt_debug_emitv_t;
         logic [11:10]  nn3;
     } [5:4] nibblearray[3:2];
     task t;
-        $display("stmt");
+        input int signed value;
+        $display("stmt %d", value);
     endtask
     function f;
         input int signed v;
@@ -137,7 +138,7 @@ module Vt_debug_emitv_t;
                             other = f(i);
                             $display("stmt %d %d", 
                                      i, other);
-                            t();
+                            t(i);
                         end
                         i = (i + 'h1);
                     end
