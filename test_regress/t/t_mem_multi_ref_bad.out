@@ -3,17 +3,21 @@
    15 |     dimn[1:0] = 0;   
       |         ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:15:9: Extracting 2 bits from only 1 bit number
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:15:9: Assigning 2 bits to only 1 bit number
                                                : ... note: In instance 't'
    15 |     dimn[1:0] = 0;   
       |         ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:15:9: Selection 1:0 performed on an object without declared range
+                                               : ... note: In instance 't'
+   15 |     dimn[1:0] = 0;   
+      |         ^
 %Error: t/t_mem_multi_ref_bad.v:16:12: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                      : ... note: In instance 't'
    16 |     dim0[1][1] = 0;   
       |            ^
-%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:16:12: Selection index out of range: 1:1 outside 0:0
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:16:12: Selection 1:1 performed on an object without declared range
                                                 : ... note: In instance 't'
    16 |     dim0[1][1] = 0;   
       |            ^
@@ -21,7 +25,7 @@
                                      : ... note: In instance 't'
    17 |     dim1[1][1][1] = 0;   
       |               ^
-%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:17:15: Selection index out of range: 1:1 outside 0:0
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:17:15: Selection 1:1 performed on an object without declared range
                                                 : ... note: In instance 't'
    17 |     dim1[1][1][1] = 0;   
       |               ^
@@ -33,7 +37,7 @@
                                      : ... note: In instance 't'
    23 |     dim0nv[1][1] = 0;   
       |              ^
-%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:23:14: Selection index out of range: 1:1 outside 0:0
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:23:14: Selection 1:1 performed on an object without declared range
                                                 : ... note: In instance 't'
    23 |     dim0nv[1][1] = 0;   
       |              ^

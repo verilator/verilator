@@ -1106,6 +1106,8 @@ class WidthVisitor final : public VNVisitor {
             }
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
 
+            AstNodeVarRef* lrefp = AstNodeVarRef::varRefLValueRecurse(nodep);
+            const bool isWriteSelect = lrefp && lrefp->access().isWriteOrRW();
             // Suppress SELRANGE in parameterized template modules where
             // parameter-dependent widths haven't been resolved yet.
             const bool inParameterizedTemplate
@@ -1124,13 +1126,21 @@ class WidthVisitor final : public VNVisitor {
             }
             // We're extracting, so just make sure the expression is at least wide enough.
             if (nodep->fromp()->width() < width && !inParameterizedTemplate) {
-                nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
-                                                      << nodep->fromp()->width() << " bit number");
-                // Extend it.
-                AstNodeDType* const subDTypep
-                    = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
-                widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
-                                false /*noerror*/);
+                // If it is not a lvalue, extend it
+                if (!isWriteSelect) {
+                    nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
+                                                          << nodep->fromp()->width()
+                                                          << " bit number");
+                    AstNodeDType* const subDTypep
+                        = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
+                    widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
+                                    false /*noerror*/);
+                } else {
+                    // Partial assignment
+                    nodep->v3warn(SELRANGE, "Assigning " << width << " bits to only "
+                                                         << nodep->fromp()->width()
+                                                         << " bit number");
+                }
             }
             // Check bit indexes.
             // What is the MSB?  We want the true MSB, not one starting at
@@ -1175,26 +1185,26 @@ class WidthVisitor final : public VNVisitor {
                 // evaluating type sizes for a generate block condition. We
                 // should only trigger the error if the out-of-range access is
                 // actually generated.
-                AstNodeVarRef* lrefp = AstNodeVarRef::varRefLValueRecurse(nodep);
                 if (m_doGenerate) {
                     UINFO(5, "Selection index out of range inside generate");
                 } else if (!inParameterizedTemplate) {
-                    nodep->v3warn(SELRANGE, "Selection index out of range: "
-                                                << nodep->msbConst() << ":" << nodep->lsbConst()
-                                                << " outside " << frommsb << ":" << fromlsb);
+                    if (nodep->declRange().ranged()) {
+                        nodep->v3warn(SELRANGE, "Selection index out of range: "
+                                                    << nodep->msbConst() << ":"
+                                                    << nodep->lsbConst() << " outside " << frommsb
+                                                    << ":" << fromlsb);
+                    } else {
+                        nodep->v3warn(SELRANGE,
+                                      "Selection "
+                                          << nodep->msbConst() << ":" << nodep->lsbConst()
+                                          << " performed on an object without declared range");
+                    }
                     UINFO(1, "    Related node: " << nodep);
                 }
                 if (lrefp) UINFO(9, "    Select extend lrefp " << lrefp);
-                if (lrefp && lrefp->access().isWriteOrRW()) {
-                    // lvarref[X] = ..., the expression assigned is too wide
-                    // WTF to do
-                    // Don't change the width of this lhsp, instead propagate up
-                    // to upper assign/expression the correct width
-                    AstNodeDType* const subDTypep
-                        = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
-                    widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
-                                    false /*noerror*/);
-                } else {
+                // Extend unless it's a lvalue,
+                // because extending lvalue would lose write access.
+                if (!isWriteSelect) {
                     // Extend it
                     const int extendTo = nodep->msbConst() + 1;
                     AstNodeDType* const subDTypep = nodep->findLogicDType(
