@@ -692,9 +692,6 @@ public:
 
 // Light wrapper for RNG used by std::randomize() to support scope-level randomization.
 class VlStdRandomizer final : public VlRandomizer {
-    // MEMBERS
-    VlRNG m_rng;  // Random number generator
-
 public:
     // CONSTRUCTORS
     VlStdRandomizer() = default;
@@ -705,7 +702,7 @@ private:
     template <typename T>
     typename std::enable_if<VlIsVlWide<T>::value, bool>::type
     basicStdRandomizationImpl(T& value, size_t width) {
-        VL_RANDOM_RNG_W(m_rng, width, value);
+        VL_RANDOM_RNG_W(VlProcess::currentRng(), width, value);
         // Mask off garbage bits in last word
         const int words = VL_WORDS_I(width);
         const int bitsInLastWord = width & VL_SIZEBITS_I;
@@ -718,9 +715,9 @@ private:
     typename std::enable_if<!VlIsVlWide<T>::value, bool>::type
     basicStdRandomizationImpl(T& value, size_t width) {
         if (width <= 32) {
-            value = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
+            value = VL_MASK_I(width) & VL_RANDOM_RNG_I(VlProcess::currentRng());
         } else {
-            value = VL_MASK_Q(width) & VL_RANDOM_RNG_Q(m_rng);
+            value = VL_MASK_Q(width) & VL_RANDOM_RNG_Q(VlProcess::currentRng());
         }
         return true;
     }
@@ -755,7 +752,7 @@ public:
         }
         return true;
     }
-    bool next() { return VlRandomizer::next(m_rng); }
+    bool next() { return VlRandomizer::next(VlProcess::currentRng()); }
 };
 
 #endif  // Guard
