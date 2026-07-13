@@ -34,6 +34,8 @@ CFG_CXX_VERSION = "@CFG_CXX_VERSION@"
 CFG_CXXFLAGS_PROFILE = @CFG_CXXFLAGS_PROFILE@
 # Select language required to compile (often empty)
 CFG_CXXFLAGS_STD = @CFG_CXXFLAGS_STD@
+# Select the minimum supported language standard
+CFG_CXXFLAGS_STD_MINIMUM = @CFG_CXXFLAGS_STD_MINIMUM@
 # Select newest language (unused by this Makefile, for some test's Makefiles)
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero

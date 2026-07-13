@@ -686,7 +686,7 @@ public:
         of.putSet("VM_MODPREFIX", v3Global.opt.modPrefix());
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
-        of.puts("VM_USER_CFLAGS = \\\n");
+        of.puts("VM_USER_CFLAGS_BASE = \\\n");
         const std::string solver = V3Options::getenvVERILATOR_SOLVER();
         if (v3Global.useRandomizeMethods() && solver != "")
             of.puts("\t-DVM_SOLVER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(solver)
@@ -695,6 +695,11 @@ public:
         const VStringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("  " + i + " \\\n");
         of.puts("\n");
+        if (!cFlags.empty()) {
+            of.puts("VM_USER_CFLAGS = $(VM_USER_CFLAGS_BASE) $(VM_CXXFLAGS_STD_FLOOR)\n\n");
+        } else {
+            of.puts("VM_USER_CFLAGS = $(VM_USER_CFLAGS_BASE)\n\n");
+        }
 
         of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
         of.puts("VM_USER_LDLIBS = \\\n");
@@ -730,6 +735,25 @@ public:
         }
         of.puts("# Include global rules\n");
         of.puts("include $(VERILATOR_ROOT)/include/verilated.mk\n");
+        if (!cFlags.empty()) {
+            of.puts("\n# Keep expanded user CFLAGS at or above the runtime C++ minimum\n");
+            of.puts("VM_CXXFLAGS_STD_FLOOR = $(shell \\\n");
+            of.puts("  for flag in $(VM_USER_CFLAGS_BASE); do "
+                    "printf '%s\\n' \"$$flag\"; done \\\n");
+            of.puts("  | grep -e '^-ansi$$' -e '^-std=' -e '^--std=' \\\n");
+            of.puts("  | tail -n 1 \\\n");
+            of.puts("  | grep -F -x \\\n");
+            of.puts("      -e '-ansi' \\\n");
+            of.puts("      -e '-std=c++98' -e '--std=c++98' \\\n");
+            of.puts("      -e '-std=gnu++98' -e '--std=gnu++98' \\\n");
+            of.puts("      -e '-std=c++03' -e '--std=c++03' \\\n");
+            of.puts("      -e '-std=gnu++03' -e '--std=gnu++03' \\\n");
+            of.puts("      -e '-std=c++0x' -e '--std=c++0x' \\\n");
+            of.puts("      -e '-std=gnu++0x' -e '--std=gnu++0x' \\\n");
+            of.puts("      -e '-std=c++11' -e '--std=c++11' \\\n");
+            of.puts("      -e '-std=gnu++11' -e '--std=gnu++11' >/dev/null \\\n");
+            of.puts("  && printf '%s' '$(CFG_CXXFLAGS_STD_MINIMUM)')\n");
+        }
 
         if (v3Global.opt.exe()) {
             of.puts("\n### Executable rules... (from --exe)\n");

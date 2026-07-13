@@ -476,18 +476,22 @@ AC_SUBST(HAVE_DEV_GCOV)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PROFILE,-pg)
 AC_SUBST(CFG_CXXFLAGS_PROFILE)
 
-# Flag to select newest language standard supported
+# Flags to select minimum and newest language standards supported
 # Macros work such that first option that passes is the one we take
 # Currently enable c++17/c++14 due to packaged SystemC dependency
 # c++17 is the newest that Verilator is regularly tested to support
 # c++14 is the oldest that Verilator supports
 # gnu is required for Cygwin to compile verilated.h successfully
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_MINIMUM,-std=gnu++14)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_MINIMUM,-std=c++14)
+AC_SUBST(CFG_CXXFLAGS_STD_MINIMUM)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++14)
+if test "$CFG_CXXFLAGS_STD_NEWEST" = "" ; then
+   CFG_CXXFLAGS_STD_NEWEST=$CFG_CXXFLAGS_STD_MINIMUM
+fi
 AC_SUBST(CFG_CXXFLAGS_STD_NEWEST)
 
 # Flags for compiling Verilator internals including parser, and Verilated files
