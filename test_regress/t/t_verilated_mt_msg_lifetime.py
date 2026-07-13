@@ -20,10 +20,27 @@ exe = test.obj_dir + "/t_verilated_mt_msg_lifetime"
 probe_cpp = test.obj_dir + "/asan_probe.cpp"
 probe_exe = test.obj_dir + "/asan_probe"
 run_log = test.obj_dir + "/run.log"
+thread_ldlibs_make = test.obj_dir + "/thread_ldlibs.mk"
 
 cxx_cmd = shlex.split(os.environ["CXX"])
+test.write_wholefile(
+    thread_ldlibs_make, "include " + os.environ["VERILATOR_ROOT"] +
+    "/include/verilated.mk\n\n.PHONY: print-thread-ldlibs\n"
+    "print-thread-ldlibs:\n\t@printf '%s\\n' '$(CFG_LDLIBS_THREADS)'\n")
+thread_ldlibs_result = subprocess.run([
+    *shlex.split(os.environ.get("MAKE", "make")), "-s", "-f", thread_ldlibs_make,
+    "print-thread-ldlibs"
+],
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE,
+                                      text=True,
+                                      check=False)
+if thread_ldlibs_result.returncode:
+    test.error("Unable to read configured thread linker flags: " + thread_ldlibs_result.stderr)
+thread_ldlibs = shlex.split(thread_ldlibs_result.stdout)
+
 test.write_wholefile(probe_cpp, "int main() { return 0; }\n")
-probe_cmd = cxx_cmd + ["-fsanitize=address", "-pthread", probe_cpp, "-o", probe_exe]
+probe_cmd = cxx_cmd + ["-fsanitize=address", probe_cpp, "-o", probe_exe, *thread_ldlibs]
 if sys.platform == "darwin":
     probe_cmd.append("-Wl,-U,__Z18vlFlushSolverStatsv")
 probe = subprocess.run(probe_cmd,
@@ -49,9 +66,9 @@ cmd = [
     "t/t_verilated_mt_msg_lifetime.cpp",
     os.environ["VERILATOR_ROOT"] + "/include/verilated.cpp",
     os.environ["VERILATOR_ROOT"] + "/include/verilated_threads.cpp",
-    "-pthread",
     "-o",
     exe,
+    *thread_ldlibs,
 ]
 if sys.platform == "darwin":
     cmd.append("-Wl,-U,__Z18vlFlushSolverStatsv")
