@@ -4488,10 +4488,8 @@ class RandomizeVisitor final : public VNVisitor {
                             new AstSub{fl,
                                        new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64},
                                        new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64}}};
-                        rangeSizep->dtypeSetUInt64();
                     }
                     weightExprp = new AstMul{fl, weightExprp, rangeSizep};
-                    weightExprp->dtypeSetUInt64();
                 }
             }
             buckets.push_back({ditemp->rangep(), weightExprp});
@@ -4534,8 +4532,9 @@ class RandomizeVisitor final : public VNVisitor {
 
     // Membership test for one bucket: a range comparison or an equality.
     static AstNodeExpr* newDistMembershipTerm(AstDist* distp, AstNodeExpr* rangep) {
-        if (const AstInsideRange* const irp = VN_CAST(rangep, InsideRange))
+        if (const AstInsideRange* const irp = VN_CAST(rangep, InsideRange)) {
             return newDistRangeMembership(distp, irp);
+        }
         FileLine* const fl = distp->fileline();
         AstNodeExpr* const eqExprp = distp->exprp()->cloneTreePure(false);
         eqExprp->user1(true);
@@ -4589,14 +4588,15 @@ class RandomizeVisitor final : public VNVisitor {
         // Each direct, static, or sub-object member reference carries a mode bit.
         distp->exprp()->foreach([&](const AstNode* nodep) {
             const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef);
-            const AstMemberSel* const mselp = refp ? nullptr : VN_CAST(nodep, MemberSel);
+            const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel);
             if (!refp && !mselp) return;
             AstVar* const varp = refp ? refp->varp() : mselp->varp();
             const RandomizeMode rmode = {.asInt = varp->user1()};
             if (!rmode.usesMode || !gatedVars.insert(varp).second) return;
             if (varp->lifetime().isStatic()) {
-                if (AstNodeExpr* const readp = staticModeRead(varp))
+                if (AstNodeExpr* const readp = staticModeRead(varp)) {
                     addModeGate(readp, rmode.index);
+                }
             } else if (mselp) {
                 AstVar* const memberModep
                     = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
@@ -4617,8 +4617,8 @@ class RandomizeVisitor final : public VNVisitor {
         for (auto& bucket : buckets) {
             AstNodeExpr* termp = newDistMembershipTerm(distp, bucket.rangep);
             // A weight that is zero only at runtime excludes the bucket's values too.
-            bool runtimeWeight = false;
-            bucket.weightExprp->foreach([&](const AstNodeVarRef*) { runtimeWeight = true; });
+            const bool runtimeWeight
+                = bucket.weightExprp->exists([](const AstNodeVarRef*) { return true; });
             if (runtimeWeight) {
                 AstNeq* const nzp = new AstNeq{fl, bucket.weightExprp->cloneTreePure(false),
                                                new AstConst{fl, AstConst::Unsized64{}, 0}};
@@ -4654,13 +4654,11 @@ class RandomizeVisitor final : public VNVisitor {
                                  new AstExtendS{fl, irp->lhsp()->cloneTreePure(false), 64})
                            : static_cast<AstNodeExpr*>(
                                  new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64});
-            lo64p->dtypeSetUInt64();
             AstNodeExpr* const hi64p
                 = isSigned ? static_cast<AstNodeExpr*>(
                                  new AstExtendS{fl, irp->rhsp()->cloneTreePure(false), 64})
                            : static_cast<AstNodeExpr*>(
                                  new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64});
-            hi64p->dtypeSetUInt64();
             rangeSzp = new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1ULL},
                                   new AstSub{fl, hi64p, lo64p}};
         }
@@ -4669,7 +4667,6 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeExpr* const offsetp
             = new AstCCast{fl, new AstModDiv{fl, rand64p, rangeSzp}, distWidth};
         AstNodeExpr* const valuep = new AstAdd{fl, irp->lhsp()->cloneTreePure(false), offsetp};
-        valuep->dtypeFrom(distp->exprp());
         AstNodeExpr* const eqp = new AstEq{fl, distExprCopyp, valuep};
         eqp->user1(true);
         return eqp;
@@ -4735,10 +4732,12 @@ class RandomizeVisitor final : public VNVisitor {
 
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
-                if (cifp->thensp())
+                if (cifp->thensp()) {
                     lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp);
-                if (cifp->elsesp())
+                }
+                if (cifp->elsesp()) {
                     lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp);
+                }
                 continue;
             }
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
@@ -4940,8 +4939,9 @@ class RandomizeVisitor final : public VNVisitor {
                 }
 
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
-                if (constrp->itemsp())
+                if (constrp->itemsp()) {
                     lowerDistConstraints(taskp, constrp->itemsp(), randModeVarp);
+                }
                 std::set<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
                 ConstraintExprVisitor{classp,        m_memberMap, constrp->itemsp(),
                                       nullptr,       genp,        randModeVarp,

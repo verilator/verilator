@@ -15,43 +15,75 @@ typedef int unsigned uint;
 class Base;
   rand uint delay;
   rand uint x;
-  constraint delay_c {delay inside {[1:100]};}
+  constraint delay_c {delay inside {[1 : 100]};}
   function int rd();
     return this.randomize(delay);
   endfunction
 endclass
 
 class SingleVals extends Base;
-  constraint c {x dist {5 := 99, 1000000 := 1};}
+  constraint c {
+    x dist {
+      5 := 99,
+      1000000 := 1
+    };
+  }
 endclass
 
 class RangeVals extends Base;
-  constraint c {x dist {[1:10] := 1, [1000:2000] := 9};}
+  constraint c {
+    x dist {
+      [1 : 10] := 1,
+      [1000 : 2000] := 9
+    };
+  }
 endclass
 
 class MixVals extends Base;
-  constraint c {x dist {0 := 1, [100:200] := 5, 9999 := 3};}
+  constraint c {
+    x dist {
+      0 := 1,
+      [100 : 200] := 5,
+      9999 := 3
+    };
+  }
 endclass
 
 class DistInIf extends Base;
   rand uint sel;
   constraint c {
     sel inside {0, 1};
-    if (sel == 1) x dist {5 := 9, 70 := 1};
-    else x == 4242;
+    if (sel == 1)
+    x dist {
+      5 := 9,
+      70 := 1
+    };
+    else
+    x == 4242;
   }
 endclass
 
 class DistInForeach;
   rand uint arr[4];
-  constraint c {foreach (arr[i]) arr[i] dist {10 := 9, 20 := 1};}
+  constraint c {
+    foreach (arr[i])
+    arr[i] dist {
+      10 := 9,
+      20 := 1
+    };
+  }
 endclass
 
 class StaticVar;
   rand uint delay;
   static rand uint sx;
-  constraint delay_c {delay inside {[1:100]};}
-  constraint c {sx dist {5 := 9, 70 := 1};}
+  constraint delay_c {delay inside {[1 : 100]};}
+  constraint c {
+    sx dist {
+      5 := 9,
+      70 := 1
+    };
+  }
   function int rd();
     return this.randomize(delay);
   endfunction
@@ -60,7 +92,7 @@ endclass
 class StaticPlain;  // non-dist constraint on a frozen static var
   rand uint d;
   static rand uint sy;
-  constraint c {sy inside {[10:20]};}
+  constraint c {sy inside {[10 : 20]};}
 endclass
 
 class Sub;
@@ -70,8 +102,13 @@ endclass
 class Holder;
   rand Sub s;
   rand uint delay;
-  constraint delay_c {delay inside {[1:100]};}
-  constraint c {s.x dist {5 := 9, 70 := 1};}
+  constraint delay_c {delay inside {[1 : 100]};}
+  constraint c {
+    s.x dist {
+      5 := 9,
+      70 := 1
+    };
+  }
   function new();
     s = new;
   endfunction
@@ -79,17 +116,32 @@ endclass
 
 class MultiVar;
   rand uint x, y;
-  constraint c {(x + y) dist {10 := 9, 1000 := 1};}
+  constraint c {
+    (x + y) dist {
+      10 := 9,
+      1000 := 1
+    };
+  }
 endclass
 
 class DupVar;
   rand uint x;
-  constraint c {(x + x) dist {10 := 9, 20 := 1};}
+  constraint c {
+    (x + x) dist {
+      10 := 9,
+      20 := 1
+    };
+  }
 endclass
 
 class DupMember;
   rand Sub s;
-  constraint c {(s.x + s.x) dist {10 := 9, 20 := 1};}
+  constraint c {
+    (s.x + s.x) dist {
+      10 := 9,
+      20 := 1
+    };
+  }
   function new();
     s = new;
   endfunction
@@ -98,7 +150,12 @@ endclass
 class RtWeight;
   rand uint x;
   uint w;
-  constraint c {x dist {5 := 9, 70 := w};}
+  constraint c {
+    x dist {
+      5 := 9,
+      70 := w
+    };
+  }
 endclass
 
 module t;
@@ -124,6 +181,7 @@ module t;
       ok = sv.rd();
       `checkd(ok, 1);
       `checkd(sv.x, 1000000);
+      if (sv.delay < 1 || sv.delay > 100) `checkd(sv.delay, 0);
     end
 
     // Frozen in the high-weight bucket -> succeeds.
@@ -246,6 +304,25 @@ module t;
       `checkd(h.s.x, 7);
     end
 
+    // Both the handle and the member frozen.
+    h = new;
+    ok = h.randomize();
+    `checkd(ok, 1);
+    h.s.rand_mode(0);
+    h.s.x.rand_mode(0);
+    h.s.x = 5;
+    for (int i = 0; i < 8; ++i) begin
+      ok = h.randomize();
+      `checkd(ok, 1);
+      `checkd(h.s.x, 5);
+    end
+    h.s.x = 7;
+    for (int i = 0; i < 8; ++i) begin
+      ok = h.randomize();
+      `checkd(ok, 0);
+      `checkd(h.s.x, 7);
+    end
+
     // Multi-var dist expression, one var frozen: the active var must still
     // satisfy membership (sum wraps mod 2**32, so both values stay reachable).
     m = new;
@@ -350,7 +427,8 @@ module t;
       `checkd(ok, 1);
       if (di.sel == 1) begin
         if (di.x != 5 && di.x != 70) `checkd(0, 1);
-      end else begin
+      end
+      else begin
         `checkd(di.x, 4242);
       end
     end
@@ -360,8 +438,7 @@ module t;
     for (int i = 0; i < 16; ++i) begin
       ok = df.randomize();
       `checkd(ok, 1);
-      foreach (df.arr[j])
-        if (df.arr[j] != 10 && df.arr[j] != 20) `checkd(0, 1);
+      foreach (df.arr[j]) if (df.arr[j] != 10 && df.arr[j] != 20) `checkd(0, 1);
     end
 
     $write("*-* All Finished *-*\n");
