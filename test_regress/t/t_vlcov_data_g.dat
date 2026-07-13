@@ -1,0 +1,10 @@
+# SystemC::Coverage-3
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_arcpagev_fsm_arc/$rootot.state::ANY->S_IDLE[reset_include]Fvt.stateFfANYFtS_IDLEFgreset_includehtop.TOP' 1
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_arcpagev_fsm_arc/$rootot.state::S_DONE->S_DONEFvt.stateFfS_DONEFtS_DONEhtop.TOP' 4
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_arcpagev_fsm_arc/$rootot.state::S_IDLE->S_IDLEFvt.stateFfS_IDLEFtS_IDLEhtop.TOP' 3
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_arcpagev_fsm_arc/$rootot.state::S_IDLE->S_RUNFvt.stateFfS_IDLEFtS_RUNhtop.TOP' 1
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_arcpagev_fsm_arc/$rootot.state::S_RUN->S_DONEFvt.stateFfS_RUNFtS_DONEhtop.TOP' 1
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_statepagev_fsm_state/$rootot.state::S_DONEFvt.stateFtS_DONEhtop.TOP' 1
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_statepagev_fsm_state/$rootot.state::S_ERRFvt.stateFtS_ERRhtop.TOP' 0
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_statepagev_fsm_state/$rootot.state::S_IDLEFvt.stateFtS_IDLEhtop.TOP' 0
+C 'ft/t_cover_fsm_basic.vl45n7tfsm_statepagev_fsm_state/$rootot.state::S_RUNFvt.stateFtS_RUNhtop.TOP' 1
