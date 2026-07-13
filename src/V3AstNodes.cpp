@@ -804,10 +804,12 @@ void AstBegin::dump(std::ostream& str) const {
     Super::dump(str);
     if (implied()) str << " [IMPLIED]";
     if (needProcess()) str << " [NPRC]";
+    if (disableWrapper()) str << " [DISABLEWRAP]";
 }
 void AstBegin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, implied);
     dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, disableWrapper);
     dumpJsonGen(str);
 }
 const char* AstCAwait::broken() const {

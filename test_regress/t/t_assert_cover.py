@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--assert --cc --coverage-user'],
+test.compile(verilator_flags2=['--assert --timing --cc --coverage-user'],
              nc_flags2=["+nccovoverwrite +nccoverage+all +nccovtest+" + test.name])
 
 test.execute()
