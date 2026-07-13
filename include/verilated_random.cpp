@@ -496,7 +496,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
             std::string distinctExpr = "(__Vbv (distinct";
             for (uint32_t i = 0; i < size; ++i) {
                 char hexIdx[12];
-                sprintf(hexIdx, "#x%08x", i);
+                (void)VL_SNPRINTF(hexIdx, sizeof(hexIdx), "#x%08x", i);
                 distinctExpr += " (select " + it->first + " " + hexIdx + ")";
             }
             distinctExpr += "))";
