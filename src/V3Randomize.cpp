@@ -4624,7 +4624,10 @@ class RandomizeVisitor final : public VNVisitor {
                             rmode.index);
             }
         });
-        if (alwaysActive || !gatep) return chainp;
+        if (alwaysActive || !gatep) {
+            if (gatep) VL_DO_DANGLING(pushDeletep(gatep), gatep);
+            return chainp;
+        }
 
         AstNodeExpr* unionExprp = nullptr;
         for (auto& bucket : buckets) {
