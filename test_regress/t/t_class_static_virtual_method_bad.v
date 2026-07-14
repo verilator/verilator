@@ -5,5 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo;
-  static virtual task foo(); endtask
+  static virtual task foo();
+  endtask
 endclass

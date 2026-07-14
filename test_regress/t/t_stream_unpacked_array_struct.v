@@ -13,11 +13,9 @@
 // source but then re-wrapped the now-packed expression in AstCvtArrayToPacked,
 // which EmitC dereferenced as an array.
 
-module t(  /*AUTOARG*/
-    // Inputs
-    clk
+module t(
+    input clk
 );
-  input clk;
 
   `define checkh(gotv, expv) \
     do if ((gotv) !== (expv)) begin \

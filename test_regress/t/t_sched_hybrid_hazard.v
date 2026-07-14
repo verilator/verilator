@@ -17,16 +17,16 @@ module t;
   // verilator lint_on UNOPTFLAT
 
   // verilator lint_off ALWCOMBORDER
-  always_comb xxx = cyc[0] ? ~yyy : xxx; // xxx will become hybrid sensitivity
-  always_comb yyy = cyc[0] ? ~xxx : yyy; // yyy will become hybrid sensitivity
+  always_comb xxx = cyc[0] ? ~yyy : xxx;  // xxx will become hybrid sensitivity
+  always_comb yyy = cyc[0] ? ~xxx : yyy;  // yyy will become hybrid sensitivity
   // verilator lint_on ALWCOMBORDER
 
   always @(posedge clk) begin
-     cyc <= cyc + 1;
-     if (cyc == 10) begin
-        $display("xxx^yyy=%x", xxx ^ yyy);
-        $write("*-* All Finished *-*\n");
-        $finish;
-     end
+    cyc <= cyc + 1;
+    if (cyc == 10) begin
+      $display("xxx^yyy=%x", xxx ^ yyy);
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
   end
 endmodule

@@ -47,7 +47,8 @@ module t (
     if (phase == PERIOD - 1) begin
       phase <= 0;
       idx <= idx + 1;
-    end else begin
+    end
+    else begin
       phase <= phase + 1;
     end
     if (phase == 0) begin
