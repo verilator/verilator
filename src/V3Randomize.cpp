@@ -1947,16 +1947,25 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeModule* const classp = getLeftmostVarModulep(memberselp, varp);
             AstNodeFTask* const initTaskp
                 = getInitTaskp(varp, memberselp || structSelOrCMeth, classp);
+            bool intKeys = true;
+            if (const AstAssocArrayDType* const assocDtp
+                = VN_CAST(varp->dtypep()->skipRefp(), AssocArrayDType)) {
+                const AstBasicDType* const keyBasicp = assocDtp->keyDTypep()->skipRefp()->basicp();
+                intKeys = keyBasicp && keyBasicp->keyword().isIntNumeric();
+            }
             if (m_nestedAccess) {
                 m_nestedAccess->write_var(initTaskp, varp, m_genp);
                 if (isGlobalConstrained && memberselp && randMode.usesMode) {
                     setRandMode(varp, memberselp, smtName, randMode, initTaskp);
                 }
                 // If randc, also emit markRandc() for cyclic tracking
-                if (varp->isRandC()) markRandc(varp, smtName, initTaskp);
-            } else if (isClassRefArray && !memberselp) {
+                if (varp->isRandC()) { markRandc(varp, smtName, initTaskp); }
+            } else if (isClassRefArray && !memberselp && intKeys) {
                 createSolverArrayHandle(varp, elemClassRefDtp, classOrPackagep,
                                         isUnpackedClassRefArray, smtName);
+            } else if (isClassRefArray && !memberselp) {
+                // Assoc array of class objects with non-integer keys:
+                // handles are not solver state
             } else {
                 createSolverVarHandle(varp, structSelOrCMeth, isGlobalConstrained, randMode,
                                       memberselp, smtName, classOrPackagep, classp, initTaskp);
@@ -2442,16 +2451,44 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         // Keep a pre-edit clone for the rand_mode hoist below.
         AstNodeExpr* const origp = nodep->cloneTree(false);
+        AstNodeExpr* const bitp = nodep->bitp();
+        const bool keyIsString = VN_IS(bitp, VarRef) && VN_AS(bitp, VarRef)->isString();
+        const bool keyIsPackedString
+            = VN_IS(bitp, CvtPackString) && VN_IS(bitp->dtypep(), BasicDType);
+        const bool keyIsIntegral = VN_IS(bitp->dtypep(), BasicDType)
+                                   || (VN_IS(bitp->dtypep(), StructDType)
+                                       && VN_AS(bitp->dtypep(), StructDType)->packed())
+                                   || VN_IS(bitp->dtypep(), EnumDType)
+                                   || VN_IS(bitp->dtypep(), PackArrayDType);
+        const bool elemMemberSel = VN_IS(nodep->backp(), MemberSel);
+        if (AstAssocArrayDType* const assocDtp
+            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), AssocArrayDType)) {
+            if (VN_IS(assocDtp->subDTypep()->skipRefp(), ClassRefDType)
+                && (keyIsString || keyIsPackedString || keyIsIntegral) && !elemMemberSel) {
+                AstNodeExpr* const arrayp = nodep->fromp()->unlinkFrBack();
+                AstNodeExpr* const keyp = nodep->bitp()->unlinkFrBack();
+                AstCMethodHard* const atp
+                    = new AstCMethodHard{fl, arrayp, VCMethod::ARRAY_AT, keyp};
+                atp->dtypep(assocDtp->subDTypep()->skipRefp());
+                AstCExpr* const handlep = new AstCExpr{fl, ""};
+                handlep->add(atp);
+                handlep->add(".operator->()");
+                handlep->dtypep(nodep->findUInt64DType());
+                nodep->replaceWith(getConstFormat(new AstCCast{fl, handlep, 64}));
+                VL_DO_DANGLING(origp->deleteTree(), origp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+        }
         AstSFormatF* newp = nullptr;
-        if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
+        if (keyIsString) {
             addStringNamePart(nodep);
             VNRelinker handle;
             AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
                                                       nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             newp = editSMT(nodep, nodep->fromp(), idxp);
-        } else if (VN_IS(nodep->bitp(), CvtPackString)
-                   && VN_IS(nodep->bitp()->dtypep(), BasicDType)) {
+        } else if (keyIsPackedString) {
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
             if (stringSize > 128) {
@@ -2467,11 +2504,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             handle.relink(idxp);
             newp = editSMT(nodep, nodep->fromp(), idxp);
         } else {
-            if (VN_IS(nodep->bitp()->dtypep(), BasicDType)
-                || (VN_IS(nodep->bitp()->dtypep(), StructDType)
-                    && VN_AS(nodep->bitp()->dtypep(), StructDType)->packed())
-                || VN_IS(nodep->bitp()->dtypep(), EnumDType)
-                || VN_IS(nodep->bitp()->dtypep(), PackArrayDType)) {
+            if (keyIsIntegral) {
                 const int actual_width = nodep->bitp()->width();
                 std::string fmt;
                 // Normalize to standard bit width
