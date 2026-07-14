@@ -120,6 +120,7 @@
 #include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3Stats.h"
+#include "V3Virtual.h"
 
 #include <deque>
 
@@ -250,6 +251,7 @@ class DelayedVisitor final : public VNVisitor {
     //  AstVar::user1()         -> bool.  Set true if already issued MULTIDRIVEN warning
     //  AstVarRef::user1()      -> bool.  Set true if target of NBA
     //  AstAssignDly::user1()   -> bool.  Set true if already visited
+    //  AstCFunc::user1()       -> AstUser1Allocator.  See `m_cfuncsCache` below
     //  AstAssignDly::user2p()  -> AstVarScope*: Scope this AstAssignDelay is under
     //  AstNodeModule::user1p() -> std::unorded_map<std::string, AstVar*> temp map via m_varMap
     //  AstScope::user1()       -> int: Temporary counter for this scope
@@ -259,12 +261,34 @@ class DelayedVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
+
+    struct CFuncCache final {
+        VInsertionSet<AstSenTree*> m_timingDomains;  // What shall be added to m_timingDomains
+        std::set<AstCFunc*>
+            m_includes;  // CFuncs whose CFuncCache shall be included into this - this is used to
+                         // break cycles: A->B->A (instead of visiting A while it is still begin
+                         // visited B just marks that it includes A)
+        enum State : uint8_t {
+            UNINITIALIZED = 0,  // Not initialized members are empty
+            VISITING,  // Visiting - needed for breaking recursion
+            INITIALIZED,  // Members contains correct values
+        } m_state  // Current state of Cache
+        = UNINITIALIZED;
+    };
+
+    // Caches what should be added to m_timingDomains because of calls to the AstCFunc (with
+    // recursive check of other AstCFuncs called from inside)
+    AstUser1Allocator<AstCFunc, CFuncCache> m_cfuncsCache;
     AstUser1Allocator<AstNodeModule, std::unordered_map<std::string, AstVar*>> m_varMap;
     AstUser1Allocator<AstVarScope, VarScopeInfo> m_vscpInfo;
     AstUser3Allocator<AstVarScope, std::vector<WriteReference>> m_writeRefs;
 
     // STATE - across all visitors
     VInsertionSet<AstSenTree*> m_timingDomains;  // Timing resume domains
+
+    const std::unique_ptr<V3ClassesGraphWrapper>
+        m_classGraphp;  // class graph to get possibly called functions from a virtual call
+    std::vector<const AstCFunc*> m_callStack;  // Current callstack of AstCFuncs
 
     // STATE - for current visit position (use VL_RESTORER)
     AstActive* m_activep = nullptr;  // Current activate
@@ -293,6 +317,7 @@ class DelayedVisitor final : public VNVisitor {
     VDouble0 m_nSchemeValueQueuesPartial;  //  Number of variables using Scheme::ValueQueuePartial
     VDouble0 m_nSharedSetFlags;  // "Set" flags actually shared by Scheme::FlagShared variables
     VDouble0 m_nInitialNBA;  // Number of procedural blocks with initial NBA
+    VDouble0 m_nonInlinedCAwaitsWithSenTree;  // Count uses of not inlined co_awaits
 
     // METHODS
 
@@ -561,6 +586,17 @@ class DelayedVisitor final : public VNVisitor {
             ss << scopep->user1Inc() << "_hierarchical";
         }
         return ss.str();
+    }
+
+    void addCFuncCachedValues(const AstCFunc* const cfuncp,
+                              std::unordered_set<const AstCFunc*>& visited) {
+        if (!visited.insert(cfuncp).second) return;
+        CFuncCache& value = m_cfuncsCache(cfuncp);
+        m_timingDomains.insert(value.m_timingDomains.begin(), value.m_timingDomains.end());
+        m_nonInlinedCAwaitsWithSenTree += value.m_timingDomains.size();
+        for (const AstCFunc* const includedp : value.m_includes) {
+            addCFuncCachedValues(includedp, visited);
+        }
     }
 
     // Create a temporary variable in the given 'scopep', with the given 'name', and with 'dtypep'
@@ -1103,11 +1139,6 @@ class DelayedVisitor final : public VNVisitor {
         m_scopep = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstCFunc* nodep) override {
-        VL_RESTORER(m_cfuncp);
-        m_cfuncp = nodep;
-        iterateChildren(nodep);
-    }
     void visit(AstActive* nodep) override {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
         VL_RESTORER(m_activep);
@@ -1182,6 +1213,7 @@ class DelayedVisitor final : public VNVisitor {
     }
     void visit(AstCAwait* nodep) override {
         if (nodep->sentreep()) m_timingDomains.insert(nodep->sentreep());
+        iterateChildren(nodep);
     }
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
@@ -1337,6 +1369,60 @@ class DelayedVisitor final : public VNVisitor {
         m_inLoop = true;
         iterateChildren(nodep);
     }
+    void visit(AstNodeCCall* const nodep) override {
+        iterateChildren(nodep);
+        // We need to visit bodies of non-inlined functions
+        const auto& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
+        if (cfuncps.empty()) {
+            visitCalledCFunc(nodep->funcp());
+        } else {
+            for (AstCFunc* const cfuncp : cfuncps) visitCalledCFunc(cfuncp);
+        }
+    }
+    void visit(AstCFunc* const nodep) override {
+        const auto& value = m_cfuncsCache(nodep);
+        // Check whether it was already visited by visitCalledCFunc()
+        if (value.m_state != CFuncCache::UNINITIALIZED) return;
+        VL_RESTORER(m_cfuncp);
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
+    }
+    // Visit AstCFunc from a AstNodeCCall - this is made into a separate quasi-visitor because
+    // AstCFunc that is not called from the code (e.g.: DPI exports) does not need to be visited
+    // this way. Also, not visiting such AstCFuncs allows to avoid caching results for them which
+    // this function does - which could lead to excessive memory usage
+    void visitCalledCFunc(AstCFunc* const nodep) {
+        CFuncCache& value = m_cfuncsCache(nodep);
+        switch (value.m_state) {
+        case CFuncCache::UNINITIALIZED: {
+            // Save current state
+            VL_RESTORER_CLEAR(m_timingDomains);
+
+            // Visit
+            value.m_state = CFuncCache::VISITING;
+            m_callStack.push_back(nodep);
+            {
+                VL_RESTORER(m_cfuncp);
+                m_cfuncp = nodep;
+                iterateChildren(nodep);
+            }
+            m_callStack.pop_back();
+            value.m_state = CFuncCache::INITIALIZED;
+
+            // Save a cache
+            std::swap(m_timingDomains, value.m_timingDomains);
+        } break;
+        case CFuncCache::VISITING: {
+            for (size_t i = m_callStack.size() - 1; m_callStack.at(i) != nodep; --i) {
+                m_cfuncsCache(m_callStack[i]).m_includes.insert(nodep);
+            }
+            return;  // Break recursion
+        }
+        case CFuncCache::INITIALIZED: break;
+        }
+        std::unordered_set<const AstCFunc*> visited;
+        addCFuncCachedValues(nodep, visited);
+    }
 
     // Pre/Post logic are created here and their content need no further changes, so ignore.
     void visit(AstAlwaysPre*) override {}
@@ -1347,7 +1433,10 @@ class DelayedVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit DelayedVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit DelayedVisitor(AstNetlist* nodep)
+        : m_classGraphp{V3Virtual::buildClassGraph(nodep)} {
+        iterate(nodep);
+    }
     ~DelayedVisitor() override {
         V3Stats::addStat("NBA, variables using ShadowVar scheme", m_nSchemeShadowVar);
         V3Stats::addStat("NBA, variables using ShadowVarMasked scheme", m_nSchemeShadowVarMasked);
@@ -1358,6 +1447,8 @@ public:
                          m_nSchemeValueQueuesPartial);
         V3Stats::addStat("Optimizations, NBA flags shared", m_nSharedSetFlags);
         V3Stats::addStat("Procedures needing initial NBA trigger", m_nInitialNBA);
+        V3Stats::addStat("Count of non-inlined co_awaits with SenTree",
+                         m_nonInlinedCAwaitsWithSenTree);
     }
 };
 
