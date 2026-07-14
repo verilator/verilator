@@ -3453,7 +3453,8 @@ class WidthVisitor final : public VNVisitor {
             }
             const AstNodeDType* const arrayp = nodep->dtypep()->skipRefp();
             if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {
-                userIterateChildren(nodep, WidthVP{arrayp->subDTypep(), BOTH}.p());
+                userIterateChildren(nodep,
+                                    WidthVP{arrayp->subDTypep(), BOTH, STREAM_USE_ASSIGN}.p());
             } else {
                 UINFO(1, "on " << nodep);
                 UINFO(1, "dtype object " << arrayp);
