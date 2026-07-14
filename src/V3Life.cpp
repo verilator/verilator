@@ -132,6 +132,7 @@ class LifeBlock final {
     std::unordered_map<AstVarScope*, LifeVarEntry> m_map;
     LifeBlock* const m_aboveLifep;  // Upper life, or nullptr
     LifeState* const m_statep;  // Current global state
+    bool m_noopt = false;  // Opaque operation seen; invalidates the block above at exit
     bool m_replacedVref = false;  // Replaced a variable reference since last clearing
     VNDeleter m_deleter;  // Used to delay deletion of nodes
 
@@ -219,6 +220,7 @@ public:
     void lifeToAbove() {
         // Any varrefs under a if/else branch affect statements outside and after the if/else
         UASSERT(m_aboveLifep, "Pushing life when already at the top level");
+        if (m_noopt) m_aboveLifep->noopt();
         for (auto& itr : m_map) {
             AstVarScope* const nodep = itr.first;
             m_aboveLifep->complexAssignFind(nodep);
@@ -252,7 +254,11 @@ public:
         }
         // this->lifeDump();
     }
-    void clear() { m_map.clear(); }
+    void noopt() {
+        // The block above is invalidated at exit, see lifeToAbove()
+        m_map.clear();
+        m_noopt = true;
+    }
     // DEBUG
     void lifeDump() {
         UINFO(5, "  LifeMap:");
@@ -283,7 +289,7 @@ class LifeVisitor final : public VNVisitor {
         (void)reasonp;
         // UINFO(9, "setNoopt " << reasonp);
         m_noopt = true;
-        m_lifep->clear();
+        m_lifep->noopt();
     }
 
     void processAssignment(AstNodeStmt* nodep, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
@@ -384,7 +390,9 @@ class LifeVisitor final : public VNVisitor {
             VL_RESTORER(m_noopt);
             VL_RESTORER(m_lifep);
             m_lifep = new LifeBlock{m_lifep, m_statep};
-            setNoopt("loop");
+            // Disable optimization in the body, but don't flag the block:
+            // a pure body must not invalidate tracking above
+            m_noopt = true;
             iterateAndNextNull(nodep->stmtsp());
             UINFO(4, "   joinloop");
             // For the next assignments, clear any variables that were read or written in the block
@@ -402,7 +410,8 @@ class LifeVisitor final : public VNVisitor {
             VL_RESTORER(m_noopt);
             VL_RESTORER(m_lifep);
             m_lifep = new LifeBlock{m_lifep, m_statep};
-            setNoopt("jumpblock");
+            // Structural only, as for AstLoop above
+            m_noopt = true;
             iterateAndNextNull(nodep->stmtsp());
             UINFO(4, "   joinjump");
             // For the next assignments, clear any variables that were read or written in the block
