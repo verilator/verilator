@@ -67,7 +67,7 @@ class NameVisitor final : public VNVisitorConst {
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
             } else if (v3Global.opt.emitAccessors() && VN_IS(nodep, Var)
-                       && VN_AS(nodep, Var)->isSigPublic()) {
+                       && VN_AS(nodep, Var)->isOrMaySigPublic()) {
                 const string newname = "__Vm_sig_" + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
@@ -89,7 +89,7 @@ class NameVisitor final : public VNVisitorConst {
     void visit(AstVar* nodep) override {
         // Don't iterate... Don't need temps for RANGES under the Var.
         rename(nodep,
-               ((!m_modp || !m_modp->isTop()) && !nodep->isSigPublic()
+               ((!m_modp || !m_modp->isTop()) && !nodep->isOrMaySigPublic()
                 && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
                 && !nodep->isTemp()  // Don't bother to rename internal signals
                 // Special case, hardcoded m_process references in verilated_std.h and elsewhere

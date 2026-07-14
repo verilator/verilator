@@ -22,7 +22,6 @@
 #include "V3InstrCount.h"
 #include "V3String.h"
 
-#include <cerrno>
 #include <cstdlib>
 #include <limits>
 #include <map>
@@ -809,14 +808,14 @@ struct V3ControlHierSegment final {
     V3ControlHierKind m_kind = V3ControlHierKind::UNKNOWN;
 };
 struct V3ControlHierVarEntry final {
-    FileLine* m_fl;
+    FileLine* m_fileline;
     std::string m_path;  // Full path
     VAttrType m_attr;
     std::string m_topName;  // First segment: top module name
     std::vector<V3ControlHierSegment> m_middle;  // Intermediate cells/blocks
     std::string m_leafName;  // Final segment: variable name
     V3ControlHierVarEntry(FileLine* fl, const std::string& path, VAttrType attr)
-        : m_fl{fl}
+        : m_fileline{fl}
         , m_path{path}
         , m_attr{attr} {}
 };
@@ -1160,12 +1159,11 @@ static bool parseIndexDigits(const std::string& indexText, V3ControlHierSegment&
     for (size_t i = firstDigit; i < indexText.size(); ++i) {
         if (indexText[i] < '0' || indexText[i] > '9') return false;
     }
-    errno = 0;
     char* endp = nullptr;
-    const long value = std::strtol(indexText.c_str(), &endp, 10);
-    if (errno != 0 || *endp != '\0') return false;  // Overflow of long, or trailing junk
+    const long long value = std::strtoll(indexText.c_str(), &endp, 10);
+    if (*endp != '\0') return false;  // Trailing junk (shouldn't happen given digit check)
     if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max())
-        return false;  // Overflow of int
+        return false;  // Out of int range
     seg.m_indices.push_back(static_cast<int>(value));
     return true;
 }
@@ -1468,10 +1466,10 @@ void V3Control::applyHierVarAttrs(AstNetlist* netlistp) {
     for (V3ControlHierVarEntry& entry : entries) {
         bool splitErr = false;
         const std::vector<V3ControlHierSegment> segs
-            = splitHierPath(entry.m_fl, entry.m_path, splitErr);
+            = splitHierPath(entry.m_fileline, entry.m_path, splitErr);
         if (splitErr) continue;
         if (segs.size() < 2) {
-            entry.m_fl->v3error("-path '" << entry.m_path
+            entry.m_fileline->v3error("-path '" << entry.m_path
                                           << "': must name at least a scope and a variable");
             continue;
         }
@@ -1493,7 +1491,7 @@ void V3Control::applyHierVarAttrs(AstNetlist* netlistp) {
             }
         }
         if (!topModp) {
-            entry.m_fl->v3error("-path '" << entry.m_path << "': cannot find top scope '"
+            entry.m_fileline->v3error("-path '" << entry.m_path << "': cannot find top scope '"
                                           << topName << "'");
             continue;
         }
@@ -1509,11 +1507,11 @@ void V3Control::applyHierVarAttrs(AstNetlist* netlistp) {
         AstNode* const failScopep = result.deepestScopep;
         const std::string failName = segmentPrettyText(segs[failIdx]);
         if (failIdx == segs.size() - 1) {
-            entry.m_fl->v3error("-path '" << entry.m_path << "': cannot find variable '"
+            entry.m_fileline->v3error("-path '" << entry.m_path << "': cannot find variable '"
                                           << failName << "' in scope '" << scopeName(failScopep)
                                           << "'");
         } else {
-            entry.m_fl->v3error("-path '" << entry.m_path << "': cannot find scope '" << failName
+            entry.m_fileline->v3error("-path '" << entry.m_path << "': cannot find scope '" << failName
                                           << "' in scope '" << scopeName(failScopep) << "'");
         }
     }

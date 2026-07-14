@@ -1,0 +1,12 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// orphan is undriven, this suppresses the lint warning but sub_a
+// but also does the same for sub_b since undriven detection happens
+// before sub is paramed.
+public_flat -path "top.sub_a.orphan"

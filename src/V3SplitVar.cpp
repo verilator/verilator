@@ -171,8 +171,7 @@ struct SplitVarImpl VL_NOT_FINAL {
         if (const char* const reason = cannotSplitVarDirectionReason(varp->direction())) {
             return reason;
         }
-        if (varp->isSigPublic()) return "it is public";
-        if (varp->mayBecomePublic()) return "it may become public from .vlt";
+        if (varp->isOrMaySigPublic()) return "it is or may become public";
         if (varp->isUsedLoopIdx()) return "it is used as a loop variable";
         if (varp->isForceable()) return "it is forceable";
         return nullptr;
@@ -796,7 +795,7 @@ public:
     static const char* cannotSplitReason(const AstVar* nodep) {
         const std::pair<uint32_t, uint32_t> dim = nodep->dtypep()->dimensions(false);
         UINFO(7, nodep->prettyNameQ()
-                     << " pub:" << nodep->isSigPublic() << " pri:" << nodep->isPrimaryIO()
+                     << " pub:" << nodep->isOrMaySigPublic() << " pri:" << nodep->isPrimaryIO()
                      << " io:" << nodep->isInout() << " typ:" << nodep->varType());
         const char* reason = nullptr;
         // Public variable cannot be split.

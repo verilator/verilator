@@ -1962,6 +1962,7 @@ class ParamProcessor final {
         // Must be a separate loop, as constant conversion may have changed some pointers.
         string longname = srcModp->name() + "_";
         // Clone for .vlt -path'ed variants
+        // Without this, -path on one instance would have to infect all instances
         if (VN_IS(nodep, Cell)) {
             const int pubVariant = V3Control::cellPathPublicVariant(srcModp->someInstanceName());
             if (pubVariant >= 0) {
