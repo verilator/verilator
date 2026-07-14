@@ -1627,9 +1627,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                       AstClassRefDType* elemClassRefDtp) const {
         FileLine* const fl = varp->fileline();
         AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-        // 32-bit index hex chars for SMT name formatting
-        constexpr int idxWidth = 32;
-        const int fmtWidth = VL_WORDS_I(idxWidth) * 8;
+        const std::string idxFmt
+            = isUnpackedClassRefArray ? "%0x" : keyHexFormat(iterVarp->dtypep()->skipRefp());
 
         for (const AstClass* cp = elemClassp; cp;
              cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
@@ -1639,19 +1638,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeDType* const memberDtp = memberVarp->dtypep()->skipRefp();
                 if (VN_IS(memberDtp, ClassRefDType) || memberDtp->isNonPackedArray()) continue;
                 const int memberWidth = memberDtp->width();
-
-                AstCStmt* const fmtp = new AstCStmt{fl};
-                if (isUnpackedClassRefArray) {
-                    fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%x."
-                              + memberVarp->name() + "\", (unsigned)");
-                } else {
-                    fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%0"
-                              + std::to_string(fmtWidth) + "x." + memberVarp->name()
-                              + "\", (unsigned)");
-                }
-                fmtp->add(new AstVarRef{fl, iterVarp, VAccess::READ});
-                fmtp->add(");\n");
-                ifNonNullp->addThensp(fmtp);
 
                 AstVarRef* const arrayWrRefp = new AstVarRef{fl, varClassp, varp, VAccess::WRITE};
                 arrayWrRefp->classOrPackagep(classOrPackagep);
@@ -1675,9 +1661,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 writeVarp->addPinsp(memberSelp);
                 writeVarp->addPinsp(
                     new AstConst{fl, AstConst::Unsized64{}, static_cast<uint64_t>(memberWidth)});
-                AstCExpr* const nameRefp = new AstCExpr{fl, AstCExpr::Pure{}, "__Vn", 0};
-                nameRefp->dtypep(varp->dtypep());
-                writeVarp->addPinsp(nameRefp);
+                writeVarp->addPinsp(
+                    new AstSFormatF{fl, smtName + "." + idxFmt + "." + memberVarp->name(), false,
+                                    new AstVarRef{fl, iterVarp, VAccess::READ}});
                 writeVarp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 0ULL});
                 ifNonNullp->addThensp(writeVarp->makeStmt());
             }
@@ -1696,6 +1682,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                                             varp->findUInt32DType()};
         iterVarp->funcLocal(true);
         iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        // Associative array elements are reached by key, walked with first()/next()
+        AstAssocArrayDType* const assocDtp = VN_CAST(varp->dtypep()->skipRefp(), AssocArrayDType);
+        AstVar* const idxVarp = assocDtp
+                                    ? new AstVar{fl, VVarType::BLOCKTEMP,
+                                                 m_uniqueNames.get("__Vk"), assocDtp->keyDTypep()}
+                                    : iterVarp;
 
         AstNode* const stmtsp
             = new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}};
@@ -1724,20 +1716,17 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* atReadp;
         if (isUnpackedClassRefArray) {
             atReadp
-                = new AstArraySel{fl, arrayReadRefp, new AstVarRef{fl, iterVarp, VAccess::READ}};
+                = new AstArraySel{fl, arrayReadRefp, new AstVarRef{fl, idxVarp, VAccess::READ}};
         } else {
             atReadp = new AstCMethodHard{fl, arrayReadRefp, VCMethod::ARRAY_AT,
-                                         new AstVarRef{fl, iterVarp, VAccess::READ}};
+                                         new AstVarRef{fl, idxVarp, VAccess::READ}};
         }
         atReadp->dtypep(elemClassRefDtp);
         AstIf* const ifNonNullp
             = new AstIf{fl, new AstNeq{fl, atReadp, new AstConst{fl, AstConst::Null{}}}, nullptr};
         loopp->addStmtsp(ifNonNullp);
 
-        AstCStmt* const bufDeclp = new AstCStmt{fl, "char __Vn[256];\n"};
-        ifNonNullp->addThensp(bufDeclp);
-
-        createWriteVarForClassFields(elemClassp, smtName, iterVarp, isUnpackedClassRefArray,
+        createWriteVarForClassFields(elemClassp, smtName, idxVarp, isUnpackedClassRefArray,
                                      classOrPackagep, varp, ifNonNullp, elemClassRefDtp);
 
         loopp->addStmtsp(new AstAssign{
@@ -1752,6 +1741,18 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         // At the beginning, so declared before referenced
         initTaskp->prependStmtsp(iterVarp);
+        if (assocDtp) {
+            idxVarp->funcLocal(true);
+            initTaskp->prependStmtsp(idxVarp);
+            AstCMethodHard* const firstp
+                = new AstCMethodHard{fl, arrayReadRefp->cloneTree(false), VCMethod::ASSOC_FIRST,
+                                     new AstVarRef{fl, idxVarp, VAccess::READWRITE}};
+            firstp->dtypeSetInt();
+            AstCMethodHard* const nextp = firstp->cloneTree(false);
+            nextp->method(VCMethod::ASSOC_NEXT);
+            initTaskp->addStmtsp(firstp->makeStmt());
+            loopp->addStmtsp(nextp->makeStmt());
+        }
         initTaskp->addStmtsp(stmtsp);
     }
 
@@ -2487,6 +2488,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(origp), origp);
         }
     }
+    // Format of an array index or key in SMT names, normalized to standard bit widths
+    static std::string keyHexFormat(const AstNodeDType* const keyDtp) {
+        if (!keyDtp->isIntegralOrPacked()) return "%32x";  // String key
+        const int width = keyDtp->width();
+        if (width <= 8) return "%2x";
+        if (width <= 16) return "%4x";
+        return "%" + std::to_string(VL_WORDS_I(width) * 8) + "x";
+    }
     void addStringNamePart(AstNodeExpr* const indexp, const std::string& fmt = "%32x") {
         if (m_nestedAccess) {
             AstNodeExpr* const bitp = indexp->cloneTreePure(false);
@@ -2501,16 +2510,38 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         // Keep a pre-edit clone for the rand_mode hoist below.
         AstNodeExpr* const origp = nodep->cloneTree(false);
+        AstNodeExpr* const bitp = nodep->bitp();
+        const AstNodeDType* const keyDtp = bitp->dtypep()->skipRefp();
+        const bool keyIsPackedString = VN_IS(bitp, CvtPackString);
+        const bool keyIsString = !keyIsPackedString && keyDtp->isString();
+        const bool keyIsIntegral = keyDtp->isIntegralOrPacked();
+        const bool elemMemberSel = VN_IS(nodep->backp(), MemberSel);
+        AstAssocArrayDType* const assocDtp
+            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), AssocArrayDType);
+        if (VN_IS(assocDtp->subDTypep()->skipRefp(), ClassRefDType)
+            && (keyIsString || keyIsPackedString || keyIsIntegral) && !elemMemberSel) {
+            AstNodeExpr* const arrayp = nodep->fromp()->unlinkFrBack();
+            AstNodeExpr* const keyp = nodep->bitp()->unlinkFrBack();
+            AstCMethodHard* const atp = new AstCMethodHard{fl, arrayp, VCMethod::ARRAY_AT, keyp};
+            atp->dtypep(assocDtp->subDTypep()->skipRefp());
+            AstCExpr* const handlep = new AstCExpr{fl, ""};
+            handlep->add(atp);
+            handlep->add(".operator->()");
+            handlep->dtypep(nodep->findUInt64DType());
+            nodep->replaceWith(getConstFormat(new AstCCast{fl, handlep, 64}));
+            VL_DO_DANGLING(origp->deleteTree(), origp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         AstSFormatF* newp = nullptr;
-        if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
-            addStringNamePart(nodep->bitp());
+        if (keyIsString) {
+            addStringNamePart(bitp);
             VNRelinker handle;
             AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
                                                       nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             newp = editSMT(nodep, nodep->fromp(), idxp);
-        } else if (VN_IS(nodep->bitp(), CvtPackString)
-                   && VN_IS(nodep->bitp()->dtypep(), BasicDType)) {
+        } else if (keyIsPackedString) {
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
             if (stringSize > 128) {
@@ -2526,22 +2557,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             handle.relink(idxp);
             newp = editSMT(nodep, nodep->fromp(), idxp);
         } else {
-            if (VN_IS(nodep->bitp()->dtypep(), BasicDType)
-                || (VN_IS(nodep->bitp()->dtypep(), StructDType)
-                    && VN_AS(nodep->bitp()->dtypep(), StructDType)->packed())
-                || VN_IS(nodep->bitp()->dtypep(), EnumDType)
-                || VN_IS(nodep->bitp()->dtypep(), PackArrayDType)) {
-                const int actual_width = nodep->bitp()->width();
-                std::string fmt;
-                // Normalize to standard bit width
-                if (actual_width <= 8) {
-                    fmt = m_structSel ? "%2x" : "#x%2x";
-                } else if (actual_width <= 16) {
-                    fmt = m_structSel ? "%4x" : "#x%4x";
-                } else {
-                    fmt = (m_structSel ? "%" : "#x%")
-                          + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
-                }
+            if (keyIsIntegral) {
+                const std::string fmt = (m_structSel ? "" : "#x") + keyHexFormat(keyDtp);
                 if (m_nestedAccess) addStringNamePart(nodep->bitp(), fmt);
                 VNRelinker handle;
                 AstNodeExpr* const idxp
