@@ -368,6 +368,7 @@ extern "C" void __gcov_dump();
 #define __STDC_FORMAT_MACROS
 
 // Now that C++ requires these standard types the vl types are deprecated
+#include <cstddef>  // offsetof (used by generated VlVarTableEntry tables)
 #include <cstdint>
 #include <cinttypes>
 #include <cmath>
