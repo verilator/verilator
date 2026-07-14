@@ -338,27 +338,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return stmt;
     }
 
-    // True if addUOrStructMemberVars()/addUnpackedArrayUOrStructMemberVars()
-    // would expand this var (residual path only).
-    static bool varTriggersStructExpansion(const AstVar* const varp) {
-        const AstNodeDType* const dtypep = varp->dtypeSkipRefp();
-        if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
-            return !sdtypep->packed();
-        }
-        if (VN_IS(dtypep, UnpackArrayDType)) {
-            const AstNodeDType* elemp = dtypep;
-            while (const AstUnpackArrayDType* const adtypep
-                   = VN_CAST(elemp->skipRefp(), UnpackArrayDType)) {
-                elemp = adtypep->subDTypep();
-            }
-            if (const AstNodeUOrStructDType* const sdtypep
-                = VN_CAST(elemp->skipRefp(), NodeUOrStructDType)) {
-                return !sdtypep->packed();
-            }
-        }
-        return false;
-    }
-
     // Computed once here so the forceable-eligibility check can't be
     // re-derived (and desynced) by the caller.
     enum class TableEntryKind : uint8_t { kTableRow, kForceableResidual, kPlainResidual };
@@ -379,8 +358,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string vlEnumType = varp->vlEnumType();
         if (needsEmittedEntSize(vlEnumType))
             return TableEntryKind::kPlainResidual;  // struct/union whole
-        if (varTriggersStructExpansion(varp))
-            return TableEntryKind::kPlainResidual;  // member expansion
         // Params are often 'static constexpr' (offsetof is invalid on those);
         // string params also need a runtime .c_str().
         if (varp->isParam()) return TableEntryKind::kPlainResidual;
