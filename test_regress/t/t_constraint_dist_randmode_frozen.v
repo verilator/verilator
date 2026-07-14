@@ -158,6 +158,18 @@ class RtWeight;
   }
 endclass
 
+class IdxSel;
+  rand uint a[4];
+  rand uint idx;
+  constraint ci {idx inside {[0 : 3]};}
+  constraint c {
+    a[idx] dist {
+      10 := 9,
+      20 := 1
+    };
+  }
+endclass
+
 module t;
   int ok;
   initial begin
@@ -170,6 +182,7 @@ module t;
     RtWeight r;
     DistInIf di;
     DistInForeach df;
+    IdxSel ix;
 
     // Frozen in the low-weight bucket -> succeeds, value untouched.
     sv = new;
@@ -439,6 +452,19 @@ module t;
       ok = df.randomize();
       `checkd(ok, 1);
       foreach (df.arr[j]) if (df.arr[j] != 10 && df.arr[j] != 20) `checkd(0, 1);
+    end
+
+    // Frozen index into an active array: a[idx] is still freshly drawn.
+    ix = new;
+    ok = ix.randomize();
+    `checkd(ok, 1);
+    ix.idx.rand_mode(0);
+    ix.idx = 2;
+    for (int i = 0; i < 16; ++i) begin
+      ok = ix.randomize();
+      `checkd(ok, 1);
+      `checkd(ix.idx, 2);
+      if (ix.a[2] != 10 && ix.a[2] != 20) `checkd(ix.a[2], 10);
     end
 
     $write("*-* All Finished *-*\n");
