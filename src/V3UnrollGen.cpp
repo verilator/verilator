@@ -224,11 +224,7 @@ class UnrollGenVisitor final : public VNVisitor {
                     const string nname = m_beginName + "__BRA__" + index + "__KET__";
                     oneloopp = new AstGenBlock{oneloopp->fileline(), nname, oneloopp, false};
                     VL_DO_DANGLING(pushDeletep(varValuep), varValuep);
-                    if (newbodysp) {
-                        newbodysp->addNext(oneloopp);
-                    } else {
-                        newbodysp = oneloopp;
-                    }
+                    newbodysp = AstNode::addNextNull(newbodysp, oneloopp);
 
                     // loopValue += valInc
                     const AstAssign* const incpass = VN_AS(incp, Assign);
