@@ -1350,12 +1350,10 @@ static void collectScopeMatches(AstNode* firstp, const std::string& name,
     }
 }
 
-using ScopeChildrenCache
-    = std::map<std::pair<const AstNode*, std::string>, std::vector<AstNode*>>;
+using ScopeChildrenCache = std::map<std::pair<const AstNode*, std::string>, std::vector<AstNode*>>;
 
-static const std::vector<AstNode*>& findScopeChildren(AstNode* scopep,
-                                                      const V3ControlHierSegment& seg,
-                                                      ScopeChildrenCache& cache) {
+static const std::vector<AstNode*>&
+findScopeChildren(AstNode* scopep, const V3ControlHierSegment& seg, ScopeChildrenCache& cache) {
     const std::string name = segmentPrettyText(seg);
     const auto key = std::make_pair(static_cast<const AstNode*>(scopep), name);
     const auto pair = cache.emplace(key, std::vector<AstNode*>{});
@@ -1470,7 +1468,7 @@ void V3Control::applyHierVarAttrs(AstNetlist* netlistp) {
         if (splitErr) continue;
         if (segs.size() < 2) {
             entry.m_fileline->v3error("-path '" << entry.m_path
-                                          << "': must name at least a scope and a variable");
+                                                << "': must name at least a scope and a variable");
             continue;
         }
         const std::string topName = segmentPrettyText(segs[0]);
@@ -1492,7 +1490,7 @@ void V3Control::applyHierVarAttrs(AstNetlist* netlistp) {
         }
         if (!topModp) {
             entry.m_fileline->v3error("-path '" << entry.m_path << "': cannot find top scope '"
-                                          << topName << "'");
+                                                << topName << "'");
             continue;
         }
         // Walk cells / begins / genblocks to var
@@ -1508,11 +1506,12 @@ void V3Control::applyHierVarAttrs(AstNetlist* netlistp) {
         const std::string failName = segmentPrettyText(segs[failIdx]);
         if (failIdx == segs.size() - 1) {
             entry.m_fileline->v3error("-path '" << entry.m_path << "': cannot find variable '"
-                                          << failName << "' in scope '" << scopeName(failScopep)
-                                          << "'");
+                                                << failName << "' in scope '"
+                                                << scopeName(failScopep) << "'");
         } else {
-            entry.m_fileline->v3error("-path '" << entry.m_path << "': cannot find scope '" << failName
-                                          << "' in scope '" << scopeName(failScopep) << "'");
+            entry.m_fileline->v3error("-path '" << entry.m_path << "': cannot find scope '"
+                                                << failName << "' in scope '"
+                                                << scopeName(failScopep) << "'");
         }
     }
     // Note: entries are NOT cleared

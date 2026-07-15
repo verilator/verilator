@@ -267,12 +267,15 @@ The grammar of control commands is as follows:
 .. option:: public [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
 .. option:: public_flat -path "<hier.path.signame>"
+
 .. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"]
 
 .. option:: public_flat_rd -path "<hier.path.signame>"
+
 .. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"]
 
 .. option:: public_flat_rw -path "<hier.path.signame>"
+
 .. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"] ["@(edge)"]
 
    Sets the specified signal to be public. Same as

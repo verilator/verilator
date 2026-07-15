@@ -12,20 +12,16 @@ import vltest_bootstrap
 test.scenarios("vlt")
 
 # -Wall to check UNDRIVEN suppression
-test.compile(
-    verilator_flags2=[
-        "--binary",
-        "--vpi",
-        "-Wall",
-        "-Wno-DECLFILENAME",
-        test.name + ".vlt",
-    ]
-)
+test.compile(verilator_flags2=[
+    "--binary",
+    "--vpi",
+    "-Wall",
+    "-Wno-DECLFILENAME",
+    test.name + ".vlt",
+])
 
 test.execute()
 
-test.files_identical(
-    test.run_log_filename, test.golden_filename, is_logfile=True, strip_hex=True
-)
+test.files_identical(test.run_log_filename, test.golden_filename, is_logfile=True, strip_hex=True)
 
 test.passes()
