@@ -9,13 +9,23 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_vlt_public_spec.v"
+test.scenarios("vlt")
 
-test.compile(verilator_flags2=["--binary", "--vpi", test.name + ".vlt"])
+# -Wall to check UNDRIVEN suppression
+test.compile(
+    verilator_flags2=[
+        "--binary",
+        "--vpi",
+        "-Wall",
+        "-Wno-DECLFILENAME",
+        test.name + ".vlt",
+    ]
+)
 
 test.execute()
 
-test.files_identical(test.run_log_filename, test.golden_filename, is_logfile=True, strip_hex=True)
+test.files_identical(
+    test.run_log_filename, test.golden_filename, is_logfile=True, strip_hex=True
+)
 
 test.passes()

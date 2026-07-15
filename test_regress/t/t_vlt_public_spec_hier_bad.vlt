@@ -6,52 +6,28 @@
 
 `verilator_config
 
-// Each of the following lines exercises an error case for hierarchical -path.
-
-// Unknown top module name
+// Scope / variable lookup failures
 public_flat -path "no_such_top.no_such_var"
-
-// Unknown cell name in the middle of the hierarchical path
-public_flat -path "top.i_mid_bogus.mid_tmp_b"
-
-// Unknown variable name at the leaf of the path
+public_flat -path "top.i_bogus.mid_tmp"
 public_flat -path "top.i_mid_0.no_such_var"
+public_flat -path "top.no_such_gen.x"
+public_flat -path "top.gen_loop[0].no_such_var"
+public_flat -path "top.gen_if.no_such_var"
+public_flat -path "top.gen_loop[0].no_such_cell.leaf"
 
-// Empty escaped identifier: '\' immediately followed by whitespace
-public_flat -path "top.\\ .mid_tmp_b"
-
-// Empty identifier in path: two consecutive dots
-public_flat -path "top..mid_tmp_b"
-
-// Trailing '.' with no identifier
+// Path-string parse errors
+public_flat -path "top.\\ .mid_tmp"
+public_flat -path "top..mid_tmp"
 public_flat -path "top.i_mid_0."
-
-// Missing '.' separator between escaped identifier and next segment
-public_flat -path "top.\\i_mid_0 mid_tmp_b"
-
-// Unterminated '[' in array index after escaped identifier
-public_flat -path "top.\\foo] [2.mid_tmp_b"
-
-// Single segment: must name at least a scope and a variable
+public_flat -path "top.\\i_mid_0 mid_tmp"
+public_flat -path "top.\\foo] [2.mid_tmp"
 public_flat -path "top"
 
-// Non-numeric array index on a plain (non-escaped) segment
-public_flat -path "top.i_mid_0[abc].mid_tmp_b"
-
-// Array index that overflows int
-public_flat -path "top.i_mid_0[99999999999].mid_tmp_b"
-
-// Non-numeric folded array index after an escaped identifier
-public_flat -path "top.\\foo] [abc].mid_tmp_b"
-
-// Trailing ']' with no matching '[' in a non-escaped segment
-public_flat -path "top.i_mid_0].mid_tmp_b"
-
-// Stray '[' at position 0 of a non-escaped segment
-public_flat -path "top.[0].mid_tmp_b"
-
-// Multidimensional index with a non-numeric dimension
-public_flat -path "top.i_mid_0[1][abc].mid_tmp_b"
-
-// Text between two index groups in a multidim segment
-public_flat -path "top.i_mid_0[1]x[0].mid_tmp_b"
+// Array-index malformation
+public_flat -path "top.i_arr1[abc].leaf"
+public_flat -path "top.i_arr1[99999999999].leaf"
+public_flat -path "top.\\foo] [abc].leaf"
+public_flat -path "top.i_arr1].leaf"
+public_flat -path "top.[0].leaf"
+public_flat -path "top.i_arr2[1][abc].leaf"
+public_flat -path "top.i_arr1[1]x[0].leaf"

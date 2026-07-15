@@ -7,8 +7,8 @@
 `verilator_config
 
 // Hierarchical -path is only supported with public-family attributes.
-sc_bv -path "top.i_mid_0.mid_tmp_b"
-sc_biguint -path "top.i_mid_0.mid_tmp_b"
-sformat -path "top.i_mid_0.mid_tmp_b"
-split_var -path "top.i_mid_0.mid_tmp_b"
-forceable -path "top.i_mid_0.mid_tmp_b"
+sc_bv -path "top.i_mid_0.mid_tmp"
+sc_biguint -path "top.i_mid_0.mid_tmp"
+sformat -path "top.i_mid_0.mid_tmp"
+split_var -path "top.i_mid_0.mid_tmp"
+forceable -path "top.i_mid_0.mid_tmp"
