@@ -4561,71 +4561,91 @@ class RandomizeVisitor final : public VNVisitor {
         return new AstConstraintExpr{fl, unionExprp};
     }
 
-    // Weighted chain while any value-source variable is active, membership once
-    // all are frozen.
-    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
-                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
-        FileLine* const fl = distp->fileline();
+    // OR of per-term change bits; ungated = some term can always be re-drawn.
+    struct DistGate final {
         AstNodeExpr* gatep = nullptr;
-        std::unordered_set<const AstVar*> gatedVars;
-        // Handles are never re-pointed by randomize(), only read through.
-        std::unordered_set<const AstVar*> handleVars;
-        distp->exprp()->foreach([&](const AstMemberSel* mselp) {
-            mselp->fromp()->foreach(
-                [&](const AstNodeVarRef* hrefp) { handleVars.insert(hrefp->varp()); });
-        });
-        const auto addModeGate = [&](AstNodeExpr* modeArrayp, uint32_t index) {
-            AstCMethodHard* const atp
-                = new AstCMethodHard{fl, modeArrayp, VCMethod::ARRAY_AT, new AstConst{fl, index}};
-            atp->dtypeSetUInt32();
-            if (gatep) {
-                gatep = new AstLogOr{fl, gatep, atp};
-                gatep->dtypeSetBit();
-            } else {
-                gatep = atp;
-            }
-        };
-        const auto staticModeRead = [&](AstVar* varp) -> AstNodeExpr* {
+        bool ungated = false;
+    };
+
+    // The rand_mode bit of varp: static class var, owner object's array via the
+    // member select, or this object's array.
+    AstNodeExpr* newModeBitRead(AstVar* varp, const AstMemberSel* mselp, AstVar* randModeVarp,
+                                FileLine* fl) {
+        AstNodeExpr* arrayp = nullptr;
+        if (varp->lifetime().isStatic()) {
             AstClass* const ownerp = VN_CAST(varp->user2p(), Class);
             AstVar* const smodep = ownerp ? getStaticRandModeVar(ownerp) : nullptr;
             if (!smodep) return nullptr;
-            return new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep, VAccess::READ};
-        };
-        // Each direct, static, or sub-object member reference carries a mode bit.
-        // A rand variable without a mode bit can never freeze, so no gate is needed.
-        bool alwaysActive = false;
-        distp->exprp()->foreach([&](const AstNode* nodep) {
-            const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef);
-            const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel);
-            if (!refp && !mselp) return;
-            AstVar* const varp = refp ? refp->varp() : mselp->varp();
-            if (refp && handleVars.count(varp)) return;
-            if (!varp->rand().isRandomizable()) return;
-            const RandomizeMode rmode = {.asInt = varp->user1()};
-            if (!rmode.usesMode) {
-                alwaysActive = true;
+            arrayp = new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep, VAccess::READ};
+        } else if (mselp) {
+            AstVar* const memberModep = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
+            if (!memberModep) return nullptr;
+            arrayp = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
+        } else {
+            UASSERT_OBJ(randModeVarp, varp, "rand_mode variable without a class mode array");
+            arrayp = new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
+                                   VAccess::READ};
+        }
+        const RandomizeMode rmode = {.asInt = varp->user1()};
+        AstCMethodHard* const atp
+            = new AstCMethodHard{fl, arrayp, VCMethod::ARRAY_AT, new AstConst{fl, rmode.index}};
+        atp->dtypeSetUInt32();
+        return atp;
+    }
+
+    // Change bit of one var or member-select chain: AND of the levels' mode bits.
+    void addDistGateTerm(const AstNode* nodep, DistGate& gate, AstVar* randModeVarp,
+                         FileLine* fl) {
+        AstNodeExpr* termp = nullptr;
+        for (const AstNode* np = nodep; np;) {
+            const AstMemberSel* const mselp = VN_CAST(np, MemberSel);
+            const AstNodeVarRef* const refp = mselp ? nullptr : VN_CAST(np, NodeVarRef);
+            AstVar* const varp = mselp ? mselp->varp() : refp ? refp->varp() : nullptr;
+            if (!varp) break;
+            if (!varp->rand().isRandomizable()) {
+                if (termp) VL_DO_DANGLING(pushDeletep(termp), termp);
                 return;
             }
-            if (!gatedVars.insert(varp).second) return;
-            if (varp->lifetime().isStatic()) {
-                if (AstNodeExpr* const readp = staticModeRead(varp)) {
-                    addModeGate(readp, rmode.index);
+            const RandomizeMode rmode = {.asInt = varp->user1()};
+            if (rmode.usesMode) {
+                if (AstNodeExpr* const bitp = newModeBitRead(varp, mselp, randModeVarp, fl)) {
+                    termp = termp ? new AstLogAnd{fl, termp, bitp} : bitp;
                 }
-            } else if (mselp) {
-                AstVar* const memberModep
-                    = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
-                if (!memberModep) return;
-                AstMemberSel* const modeSelp
-                    = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
-                addModeGate(modeSelp, rmode.index);
-            } else if (randModeVarp) {
-                addModeGate(new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule),
-                                          randModeVarp, VAccess::READ},
-                            rmode.index);
             }
-        });
-        if (alwaysActive || !gatep) {
-            if (gatep) VL_DO_DANGLING(pushDeletep(gatep), gatep);
+            np = mselp ? mselp->fromp() : nullptr;
+        }
+        if (!termp) {
+            gate.ungated = true;
+            return;
+        }
+        gate.gatep = gate.gatep ? new AstLogOr{fl, gate.gatep, termp} : termp;
+    }
+
+    // Recurse the dist expression; each var or member-select chain is one term.
+    void gatherDistGates(const AstNode* nodep, DistGate& gate, AstVar* randModeVarp,
+                         FileLine* fl) {
+        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, NodeVarRef)) {
+            addDistGateTerm(nodep, gate, randModeVarp, fl);
+            return;
+        }
+        for (const AstNode* childp :
+             {nodep->op1p(), nodep->op2p(), nodep->op3p(), nodep->op4p()}) {
+            for (const AstNode* np = childp; np; np = np->nextp()) {
+                gatherDistGates(np, gate, randModeVarp, fl);
+            }
+        }
+    }
+
+    // Weighted chain while the dist value can still be freshly drawn, membership
+    // once every term is frozen.
+    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
+                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
+        FileLine* const fl = distp->fileline();
+        DistGate gate;
+        gatherDistGates(distp->exprp(), gate, randModeVarp, fl);
+        AstNodeExpr* const gatep = gate.gatep;
+        if (gate.ungated || !gatep) {
+            if (gatep) VL_DO_DANGLING(pushDeletep(gate.gatep), gate.gatep);
             return chainp;
         }
 
