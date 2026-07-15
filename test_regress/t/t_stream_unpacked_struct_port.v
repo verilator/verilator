@@ -9,23 +9,18 @@
 // Ref. to IEEE 1800-2023 11.4.14
 //
 // A streaming concatenation used as the lvalue of a module output-port
-// connection, targeting an unpacked struct.  This form is lowered by
-// V3Inst::pinReconnectSimple (after V3Width), which must apply the same
-// fixed-aggregate stream lowering as a normal streaming assignment.  Without
-// that lowering the port assign const-folds to a zero-width, driverless
-// assign and the target reads as a constant 0 (and generates invalid C++).
+// connection, targeting an unpacked struct.
+
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t(  /*AUTOARG*/
     // Inputs
     clk
 );
   input clk;
-
-  `define checkh(gotv, expv) \
-    do if ((gotv) !== (expv)) begin \
-      $write("%%Error: %s:%0d: got='h%x exp='h%x\n", `__FILE__, `__LINE__, (gotv), (expv)); \
-      $stop; \
-    end while (0);
 
   typedef struct packed {
     logic [7:0] a;
