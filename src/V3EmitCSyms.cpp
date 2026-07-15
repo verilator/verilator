@@ -88,6 +88,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     using ScopeModPair = std::pair<const AstScope*, AstNodeModule*>;
     using ModVarPair = std::pair<const AstNodeModule*, const AstVar*>;
 
+    // Vars with more dims take the residual per-statement path.
+    static constexpr int VPI_TABLE_MAX_DIMS = 3;
+
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current function
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -198,8 +201,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             return flat;
         }
     };
-    // Vars with more dims take the residual per-statement path.
-    static constexpr int VPI_TABLE_MAX_DIMS = 3;
     static VarDims getVarDims(const AstNodeDType* const rootDtypep) {
         VarDims d;
         // Range is always first, it's not in "C" order
@@ -338,9 +339,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return stmt;
     }
 
-    // Computed once here so the forceable-eligibility check can't be
-    // re-derived (and desynced) by the caller.
-    enum class TableEntryKind : uint8_t { kTableRow, kForceableResidual, kPlainResidual };
+    // tryBuildTableEntry() classifies each public var once, so the caller does
+    // not re-derive (and risk desyncing) the forceable-eligibility test.
+    enum class TableEntryKind : uint8_t {
+        TABLE_ROW,  // Registered via a VlVarTableEntry[] table row
+        FORCEABLE_RESIDUAL,  // Residual, via insertForceableVarStatement()
+        PLAIN_RESIDUAL,  // Residual, via insertVarStatement() (+ struct/array expansion)
+    };
 
     // Builds one VlVarTableEntry row for 'varp', or reports which residual
     // path it must take instead.
@@ -351,16 +356,16 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const int pdim = dims.pdim;
         const int udim = dims.udim;
         if (varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
-            return TableEntryKind::kForceableResidual;
+            return TableEntryKind::FORCEABLE_RESIDUAL;
         }
-        if (udim + pdim > VPI_TABLE_MAX_DIMS) return TableEntryKind::kPlainResidual;
+        if (udim + pdim > VPI_TABLE_MAX_DIMS) return TableEntryKind::PLAIN_RESIDUAL;
 
         const std::string vlEnumType = varp->vlEnumType();
         if (needsEmittedEntSize(vlEnumType))
-            return TableEntryKind::kPlainResidual;  // struct/union whole
+            return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
         // Params are often 'static constexpr' (offsetof is invalid on those);
         // string params also need a runtime .c_str().
-        if (varp->isParam()) return TableEntryKind::kPlainResidual;
+        if (varp->isParam()) return TableEntryKind::PLAIN_RESIDUAL;
 
         const std::string name = V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty));
         // nameProtect() (not protect(name())) so the offsetof member matches the
@@ -386,7 +391,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
         row += "}}";
         rowOut = row;
-        return TableEntryKind::kTableRow;
+        return TableEntryKind::TABLE_ROW;
     }
 
     static std::string insertDTypeVarStatement(const ScopeVarData& svd,
@@ -1318,15 +1323,15 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                 const TableEntryKind kind
                     = tryBuildTableEntry(svd, varp, scopep, modClassName, dims, row);
                 switch (kind) {
-                case TableEntryKind::kTableRow: rows.emplace_back(row); break;
-                case TableEntryKind::kForceableResidual: {
+                case TableEntryKind::TABLE_ROW: rows.emplace_back(row); break;
+                case TableEntryKind::FORCEABLE_RESIDUAL: {
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(insertForceableVarStatement(svd, scopep, varp, dims.udim,
                                                                       dims.pdim, bounds)
                                           + ";");
                     break;
                 }
-                case TableEntryKind::kPlainResidual: {
+                case TableEntryKind::PLAIN_RESIDUAL: {
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(
                         insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, bounds) + ";");
@@ -1343,6 +1348,7 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                     }
                     break;
                 }
+                default: v3fatalSrc("Bad case");
                 }
             }
 
