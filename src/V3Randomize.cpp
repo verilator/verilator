@@ -764,7 +764,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
     bool m_structSel = false;  // Marks when inside structSel
-                               // (used to format "%s.%s" for struct arrays)
+                               // (used to format "%s.%s" for struct arrays and nested structs)
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
@@ -797,17 +797,59 @@ class ConstraintExprVisitor final : public VNVisitor {
         return "";
     }
 
-    // Extract SMT variable name from a solve-before expression.
-    // Returns empty string if the expression is not a simple variable reference.
-    std::string extractSolveBeforeVarName(AstNodeExpr* exprp) {
-        if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-            return buildMemberPath(memberSelp);
-        } else if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-            return varrefp->name();
-        }
+    static AstNodeExpr* getFromp(const AstNodeExpr* const nodep) {
+        if (const AstCMethodHard* cmethp = VN_CAST(nodep, CMethodHard)) return cmethp->fromp();
+        return getSelFromp(nodep);
+    }
+
+    static std::string extractSolveBeforeBaseName(const AstNodeExpr* exprp) {
+        while (const AstNodeExpr* const fromp = getFromp(exprp)) exprp = fromp;
+        if (const AstVarRef* const vrefp = VN_CAST(exprp, VarRef)) return vrefp->name();
         return "";
     }
 
+    static void buildNamePrefix(AstCExpr* exprp, const AstNodeExpr* const nodep) {
+        if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+            exprp->add("(\""s + refp->name());
+            return;
+        }
+
+        const AstNodeExpr* const fromp = getFromp(nodep);
+        if (fromp) buildNamePrefix(exprp, fromp);
+
+        if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+            exprp->add("." + selp->name());
+        } else if (VN_IS(nodep, MemberSel)) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Nested array element access in global constraint");
+            return;
+        } else if (const AstCMethodHard* const cmethp = VN_CAST(nodep, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {
+                AstNodeExpr* const argp = cmethp->pinsp();
+                exprp->add(".\" + vlToSolverHex(");
+                exprp->add(argp->cloneTreePure(false));
+                exprp->add(") + \"");
+            } else {
+                cmethp->v3fatalSrc("Unexpected CMethodHard: " << cmethp->prettyTypeName());
+                return;
+            }
+        }
+    }
+
+    // Build a C++ expression (as AstNodeExpr) that evaluates to a const char*
+    // containing the SMT variable name for a solve-before variable reference.
+    // Handles simple vars, struct selects, and array element selects (for foreach).
+    static AstCExpr* buildPathExpr(FileLine* const fl, const AstNodeExpr* nodep,
+                                   const std::string selName) {
+        AstCExpr* const exprp = new AstCExpr{fl, ""};
+        buildNamePrefix(exprp, nodep);
+        if (selName != "") {
+            exprp->add(".");
+            exprp->add(selName);
+        }
+        exprp->add("\")");
+        return exprp;
+    }
     // Build a C++ expression (as AstNodeExpr) that evaluates to a const char*
     // containing the SMT variable name for a solve-before variable reference.
     // Handles simple vars, member selects, and array element selects (for foreach).
@@ -816,9 +858,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstCExpr* buildArraySelNameExpr(FileLine* fl, const std::string& baseName,
                                     const AstArraySel* selp) {
         AstCExpr* const p = new AstCExpr{fl, ""};
-        p->add("(\""s + baseName + "[\" + std::to_string(");
+        p->add("(\""s + baseName + ".\" + vlToSolverHex(");
         p->add(selp->bitp()->cloneTreePure(false));
-        p->add(") + \"]\")");
+        p->add("))");
         p->dtypeSetString();
         return p;
     }
@@ -849,9 +891,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
                 if (baseName.empty()) return nullptr;
                 AstCExpr* const p = new AstCExpr{fl, ""};
-                p->add("(\""s + baseName + "[\" + std::to_string(");
+                p->add("(\""s + baseName + ".\" + vlToSolverHex(");
                 p->add(arrSelp->bitp()->cloneTreePure(false));
-                p->add(") + \"]." + selName + "\")");
+                p->add("))");
                 p->dtypeSetString();
                 return p;
             }
@@ -862,14 +904,18 @@ class ConstraintExprVisitor final : public VNVisitor {
                 p->dtypeSetString();
                 return p;
             }
-            if (VN_IS(selFromp, MemberSel)) {
-                const std::string path
-                    = buildMemberPath(VN_AS(selFromp, MemberSel)) + "." + selName;
-                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\"s"};
+            if (VN_IS(selFromp, MemberSel) || VN_IS(selFromp, StructSel)
+                || VN_IS(selFromp, CMethodHard)) {
+                AstCExpr* const p = buildPathExpr(fl, selFromp, selName);
                 p->dtypeSetString();
                 return p;
             }
             return nullptr;
+        }
+        if (VN_IS(exprp, CMethodHard)) {
+            AstCExpr* const p = buildPathExpr(fl, exprp, "");
+            p->dtypeSetString();
+            return p;
         }
         if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
             // arr[i] -> dynamic name
@@ -1094,6 +1140,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         const bool isGlobalConstrained = nodep->varp()->globalConstrained();
 
         AstMemberSel* memberselp = nullptr;
+        bool structSelOrCMeth = false;
         std::string smtName;
         if (VN_IS(nodep->backp(), MemberSel)) {
             // Build complete path from topmost MemberSel
@@ -1103,8 +1150,25 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             memberselp = VN_AS(topMemberSel, MemberSel)->cloneTree(false);
             smtName = buildMemberPath(memberselp);
+        } else if (VN_IS(nodep->backp(), StructSel) || VN_IS(nodep->backp(), CMethodHard)) {
+            // Build complete path for topmost StructSel or CMethodHard::ARRAY_AT
+            AstNode* topNodep = nodep->backp();
+            while (VN_IS(topNodep->backp(), StructSel) || VN_IS(topNodep->backp(), CMethodHard)) {
+                topNodep = topNodep->backp();
+            }
+
+            if (VN_IS(topNodep, StructSel) || VN_IS(topNodep, CMethodHard)) {
+                structSelOrCMeth = true;
+            }
+
+            memberselp = VN_CAST(topNodep, MemberSel);
+            if (memberselp) smtName = buildMemberPath(memberselp);
+
+            // Above functions returned empty string, unrecognized node type,
+            // Using nodep->name();
+            if (smtName == "") smtName = nodep->name();
         } else {
-            // No MemberSel: just variable name
+            // No MemberSel, StructSel or CMethodHard:at : just variable name
             smtName = nodep->name();
         }
 
@@ -1387,7 +1451,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeFTask* initTaskp = m_inlineInitTaskp;
                 if (!initTaskp) {
                     varp->user3(true);
-                    if (memberselp) {
+                    if (memberselp || structSelOrCMeth) {
                         initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
                         // Inherited rand members may belong to a base class
                         // that has no randomize(); use the caller's function
