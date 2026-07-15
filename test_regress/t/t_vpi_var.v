@@ -89,6 +89,14 @@ extern "C" int mon_check();
   input wire unpacked_struct_t wire_struct_array_port [1:0] /*verilator public_flat_rw*/;
   unpacked_struct_t struct_array_signal [1:0] /*verilator public_flat_rw*/;
 
+  // Unpacked array of a packed (not unpacked) struct element
+  typedef struct packed {
+    logic [6:0] packed_member_a;
+    logic packed_member_b;
+  } packed_leaf_struct_t;
+
+  packed_leaf_struct_t packed_struct_array_signal [1:0] /*verilator public_flat_rw*/;
+
   typedef struct {
     logic [6:0] unsigned_member;
     logic signed [6:0] signed_member;
