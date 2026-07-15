@@ -824,9 +824,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     // Helper: get fromp from MemberSel or StructSel
-    static AstNodeExpr* getSelFromp(AstNodeExpr* exprp) {
-        if (AstMemberSel* const mp = VN_CAST(exprp, MemberSel)) return mp->fromp();
-        if (AstStructSel* const sp = VN_CAST(exprp, StructSel)) return sp->fromp();
+    static AstNodeExpr* getSelFromp(const AstNodeExpr* exprp) {
+        if (const AstMemberSel* const mp = VN_CAST(exprp, MemberSel)) return mp->fromp();
+        if (const AstStructSel* const sp = VN_CAST(exprp, StructSel)) return sp->fromp();
         return nullptr;
     }
 
@@ -1093,7 +1093,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Check if this variable is marked as globally constrained
         const bool isGlobalConstrained = nodep->varp()->globalConstrained();
 
-        AstMemberSel* membersel = nullptr;
+        AstMemberSel* memberselp = nullptr;
         std::string smtName;
         if (VN_IS(nodep->backp(), MemberSel)) {
             // Build complete path from topmost MemberSel
@@ -1101,14 +1101,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             while (VN_IS(topMemberSel->backp(), MemberSel)) {
                 topMemberSel = topMemberSel->backp();
             }
-            membersel = VN_AS(topMemberSel, MemberSel)->cloneTree(false);
-            smtName = buildMemberPath(membersel);
+            memberselp = VN_AS(topMemberSel, MemberSel)->cloneTree(false);
+            smtName = buildMemberPath(memberselp);
         } else {
             // No MemberSel: just variable name
             smtName = nodep->name();
         }
 
-        if (membersel) varp = membersel->varp();
+        if (memberselp) varp = memberselp->varp();
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
         const RandomizeMode randMode = {.asInt = varp->user1()};
         if (!randMode.usesMode && editFormat(nodep)) return;
@@ -1121,9 +1121,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             // from reformatting the SMT variable name into a hex literal
             exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
 
-            // Get const format, using membersel if available for correct width/value
-            AstNodeExpr* constFormatp
-                = membersel ? getConstFormat(membersel->cloneTree(false)) : getConstFormat(nodep);
+            // Get const format, using memberselp if available for correct width/value
+            AstNodeExpr* constFormatp = memberselp ? getConstFormat(memberselp->cloneTree(false))
+                                                   : getConstFormat(nodep);
 
             // Static rand vars route through the var's owning class's static array
             // (may differ from m_classp when the rand var lives in a sub-object).
@@ -1137,12 +1137,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 randModeAccess = new AstVarRef{
                     varp->fileline(), VN_AS(ownerStaticRandModeVarp->user2p(), NodeModule),
                     ownerStaticRandModeVarp, VAccess::READ};
-            } else if (membersel) {
+            } else if (memberselp) {
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
                 AstVar* const effectiveRandModeVarp = getRandModeVarFromClass(varClassp);
                 if (effectiveRandModeVarp) {
                     // Member's class has randmode, use it
-                    AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
+                    AstNodeExpr* parentAccess = memberselp->fromp()->cloneTree(false);
                     AstMemberSel* randModeSel
                         = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
                     randModeSel->dtypep(effectiveRandModeVarp->dtypep());
@@ -1179,12 +1179,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         // variable keys on user3().
         const bool alreadyWritten = isGlobalConstrained ? m_writtenVars.count(smtName) > 0
                                     : m_inlineInitTaskp ? m_inlineWrittenVars.count(smtName) > 0
-                                    : membersel         ? m_writtenVars.count(smtName) > 0
+                                    : memberselp        ? m_writtenVars.count(smtName) > 0
                                                         : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
-            if (isGlobalConstrained || (membersel && !m_inlineInitTaskp))
+            if (isGlobalConstrained || (memberselp && !m_inlineInitTaskp))
                 m_writtenVars.insert(smtName);
             if (m_inlineInitTaskp) m_inlineWrittenVars.insert(smtName);
             // For global constraints, delete nodep after processing
@@ -1205,7 +1205,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
             }
 
-            if (isClassRefArray && !membersel) {
+            if (isClassRefArray && !memberselp) {
                 FileLine* const fl = varp->fileline();
                 AstClass* const elemClassp = elemClassRefDtp->classp();
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
@@ -1350,18 +1350,18 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
                 methodp->dtypeSetVoid();
                 AstNodeModule* classp;
-                if (membersel) {
-                    // For membersel, find the root varref to get the class
-                    AstNode* rootNode = membersel->fromp();
+                if (memberselp) {
+                    // For memberselp, find the root varref to get the class
+                    AstNode* rootNode = memberselp->fromp();
                     while (AstMemberSel* nestedMemberSel = VN_CAST(rootNode, MemberSel)) {
                         rootNode = nestedMemberSel->fromp();
                     }
                     if (AstNodeVarRef* rootVarRef = VN_CAST(rootNode, NodeVarRef)) {
                         classp = VN_AS(rootVarRef->varp()->user2p(), NodeModule);
                     } else {
-                        classp = VN_AS(membersel->user2p(), NodeModule);
+                        classp = VN_AS(memberselp->user2p(), NodeModule);
                     }
-                    methodp->addPinsp(membersel);
+                    methodp->addPinsp(memberselp);
                 } else {
                     classp = VN_AS(varp->user2p(), NodeModule);
                     AstVarRef* const varRefp
@@ -1380,14 +1380,14 @@ class ConstraintExprVisitor final : public VNVisitor {
                 methodp->addPinsp(varnamep);
                 methodp->addPinsp(
                     new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
-                if (randMode.usesMode && !(isGlobalConstrained && membersel)) {
+                if (randMode.usesMode && !(isGlobalConstrained && memberselp)) {
                     methodp->addPinsp(
                         new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
                 }
                 AstNodeFTask* initTaskp = m_inlineInitTaskp;
                 if (!initTaskp) {
                     varp->user3(true);
-                    if (membersel) {
+                    if (memberselp) {
                         initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
                         // Inherited rand members may belong to a base class
                         // that has no randomize(); use the caller's function
@@ -1416,11 +1416,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                     markp->dtypeSetVoid();
                     initTaskp->addStmtsp(markp->makeStmt());
                 }
-                if (isGlobalConstrained && membersel && randMode.usesMode) {
+                if (isGlobalConstrained && memberselp && randMode.usesMode) {
                     AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
                     AstVar* const subRandModeVarp = getRandModeVarFromClass(varClassp);
                     if (subRandModeVarp) {
-                        AstNodeExpr* const parentAccess = membersel->fromp()->cloneTree(false);
+                        AstNodeExpr* const parentAccess = memberselp->fromp()->cloneTree(false);
                         AstMemberSel* const randModeSel
                             = new AstMemberSel{varp->fileline(), parentAccess, subRandModeVarp};
                         randModeSel->dtypep(subRandModeVarp->dtypep());
@@ -1473,8 +1473,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
             }
         } else {
-            // Variable already written, clean up cloned membersel if any
-            if (membersel) VL_DO_DANGLING(membersel->deleteTree(), membersel);
+            // Variable already written, clean up cloned memberselp if any
+            if (memberselp) VL_DO_DANGLING(memberselp->deleteTree(), memberselp);
             // Delete nodep if it's a global constraint (not deleted yet)
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
@@ -1849,6 +1849,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstStructSel* nodep) override {
         if (editFormat(nodep)) return;
+        VL_RESTORER(m_structSel);
         m_structSel = true;
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
             AstNodeExpr* const fromp = nodep->fromp();
@@ -1893,7 +1894,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
         }
-        m_structSel = false;
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
