@@ -9,6 +9,9 @@
   <map from="PS9tBB" to="__024root"/>
   <map from="PSm6SZ" to="__PVT__secret_cyc"/>
   <map from="PSfqIT" to="__PVT__secret_cyc_r"/>
+  <map from="PSEEkA" to="__PVT__secret_field"/>
+  <map from="PSd0sJ" to="__PVT__secret_field_r"/>
+  <map from="PS2k3p" to="__PVT__secret_pair"/>
   <map from="PStVCQ" to="__PVT__secret_r"/>
   <map from="PSfqS0" to="__PVT__t__DOT__secret_inst"/>
   <map from="PSF5NB" to="__VactIterCount"/>
@@ -19,6 +22,7 @@
   <map from="PS4o5S" to="__Vdpiexp_dpix_a_func_TOP__t__DOT__secret_inst"/>
   <map from="PStVA8" to="__Vdpiexp_dpix_a_task_TOP__t__DOT__secret_inst"/>
   <map from="PSxbIE" to="__Vdpiimwrap_dpii_a_func_TOP__t__DOT__secret_inst"/>
+  <map from="PStIzA" to="__VfinishEpoch__2"/>
   <map from="PS76My" to="__Vfunc_dpii_a_func__0__Vfuncout"/>
   <map from="PSywKw" to="__Vinline_0__eval_nba___Vinline_0__nba_sequent__TOP__0___Vdly__t__DOT__secret_inst2__DOT__secret_cyc"/>
   <map from="PSo9XV" to="__VnbaExecute"/>
@@ -47,6 +51,7 @@
   <map from="PSMlYB" to="n"/>
   <map from="PSmk5h" to="out"/>
   <map from="PSnRoO" to="secret_inst"/>
+  <map from="PSfEcl" to="secret_st__struct__0"/>
   <map from="PSS3Gk" to="secret_sub"/>
   <map from="PSxvlA" to="t"/>
   <map from="PSBSVV" to="t/t_protect_ids.v"/>

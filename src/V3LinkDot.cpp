@@ -3445,10 +3445,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 UINFO(8, indent() << "  SymFunc " << baseSubp);
                 const string impOrExtends
                     = baseClassp->isInterfaceClass() ? " implements " : " extends ";
-                if (VN_IS(baseSubp, NodeFTask)) {
+                if (AstNodeFTask* const baseFuncp = VN_CAST(baseSubp, NodeFTask)) {
                     const VSymEnt* const foundp = m_curSymp->findIdFlat(baseSubp->name());
-                    const AstNodeFTask* const baseFuncp = VN_CAST(baseSubp, NodeFTask);
-                    if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
+                    AstNodeFTask* const derivedFuncp = foundp && !foundp->imported()
+                                                           ? VN_CAST(foundp->nodep(), NodeFTask)
+                                                           : nullptr;
+                    // Earlier phases still contain extern prototypes and parameter templates
+                    // that later passes delete. Build transient families from the final AST.
+                    if (m_statep->forScopeCreation() && derivedFuncp && derivedFuncp != baseFuncp
+                        && (derivedFuncp->isVirtual() || baseFuncp->isVirtual())) {
+                        derivedFuncp->joinVirtualFamily(baseFuncp);
+                    }
+                    if (!baseFuncp->pureVirtual()) continue;
                     const bool existsInDerived = foundp && !foundp->imported();
                     if (m_statep->forPrimary() && !existsInDerived
                         && !derivedClassp->isInterfaceClass() && !derivedClassp->isVirtual()) {

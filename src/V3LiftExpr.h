@@ -27,6 +27,7 @@ class AstNetlist;
 class V3LiftExpr final {
 public:
     static void liftExprAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void normalizeFinishSensitive(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

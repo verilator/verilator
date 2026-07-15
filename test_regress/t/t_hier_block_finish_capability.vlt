@@ -1,0 +1,12 @@
+// DESCRIPTION: Verilator: Hierarchical finish-capability control
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+verilator_lib -module "AliasedCanonicalWrapper"
+verilator_lib -module "AliasedNearMissWrapper"
+no_finish -hier-dpi "aliased_canonical_c"
+// The SV alias must not be accepted in place of the canonical C symbol.
+no_finish -hier-dpi "aliased_near_miss_sv"

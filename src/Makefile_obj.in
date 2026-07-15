@@ -279,6 +279,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3EmitMkJson.o \
   V3ExecGraph.o \
   V3Expand.o \
+  V3Finish.o \
   V3Force.o \
   V3FsmDetect.o \
   V3Fork.o \

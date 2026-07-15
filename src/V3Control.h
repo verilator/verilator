@@ -57,6 +57,7 @@ public:
                                const string& match);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addModulePragma(const string& module, VPragmaType pragma);
+    static void addNoFinishHierDpi(const string& hierDpi);
     static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
     static void addProfileData(FileLine* fl, const string& model, const string& key,
                                uint64_t cost);
@@ -76,6 +77,7 @@ public:
 
     static int getHierWorkers(const string& model);
     static FileLine* getHierWorkersFileLine(const string& model);
+    static bool getNoFinishHierDpi(const string& hierDpi);
     static const FsmRegisterWrapper* getFsmRegisterWrapper(const string& module);
     static uint64_t getProfileData(const string& hierDpi);
     static uint64_t getProfileData(const string& model, const string& key);

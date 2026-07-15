@@ -104,6 +104,19 @@ class ProtectVisitor final : public VNVisitor {
 
         txtp->add("verilator_lib -module \"" + m_libName + "\"\n");
 
+        txtp->add("no_finish -hier-dpi \"" + m_libName + "_protectlib_check_hash\"\n");
+        txtp->add("no_finish -hier-dpi \"" + m_libName + "_protectlib_combo_ignore\"\n");
+        if (!v3Global.currentHierBlockEvalMayFinish()) {
+            txtp->add("no_finish -hier-dpi \"" + m_libName + "_protectlib_combo_update\"\n");
+        }
+        txtp->add("no_finish -hier-dpi \"" + m_libName + "_protectlib_create\"\n");
+        if (!v3Global.currentHierBlockFinalMayFinish()) {
+            txtp->add("no_finish -hier-dpi \"" + m_libName + "_protectlib_final\"\n");
+        }
+        if (!v3Global.currentHierBlockEvalMayFinish()) {
+            txtp->add("no_finish -hier-dpi \"" + m_libName + "_protectlib_seq_update\"\n");
+        }
+
         txtp->add("profile_data -hier-dpi \"" + m_libName + "_protectlib_combo_update\" -cost 64'd"
                   + std::to_string(v3Global.currentHierBlockCost()) + "\n");
         txtp->add("profile_data -hier-dpi \"" + m_libName + "_protectlib_seq_update\" -cost 64'd"

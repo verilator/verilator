@@ -13,7 +13,8 @@ test.scenarios('vlt_all')
 
 test.compile(verilator_flags2=["--binary", "--stats", test.top_filename.replace(".v", ".cpp")])
 
-test.file_grep(test.stats, r'Optimizations, MergeCond merges\s+(\d+)', 4)
+# Opaque context DPI calls are finish-capable fences; only the non-DPI pairs merge.
+test.file_grep(test.stats, r'Optimizations, MergeCond merges\s+(\d+)', 2)
 
 test.execute(expect_filename=test.golden_filename)
 

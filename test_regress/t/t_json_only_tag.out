@@ -20,7 +20,7 @@
         {"type":"VARREF","name":"dotted","addr":"(Y)","loc":"d,33:15,33:21","dtypep":"(S)","access":"WR","varp":"(R)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],"timingControlp": [],"strengthSpecp": []}
     ]},
-    {"type":"TASK","name":"f","addr":"(Z)","loc":"d,35:17,35:18","cname":"f","fvarp": [],"classOrPackagep": [],
+    {"type":"TASK","name":"f","addr":"(Z)","loc":"d,35:17,35:18","cname":"f","virtualFamilyp":"UNLINKED","fvarp": [],"classOrPackagep": [],
      "stmtsp": [
       {"type":"VAR","name":"m","addr":"(AB)","loc":"d,35:32,35:33","dtypep":"(BB)","origName":"m","verilogName":"m","direction":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"DISPLAY","name":"","addr":"(CB)","loc":"d,36:5,36:13",

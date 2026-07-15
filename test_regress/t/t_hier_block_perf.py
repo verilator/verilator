@@ -30,14 +30,25 @@ test.compile(v_flags2=[
              threads=(THREADS if test.vltmt else 1),
              context_threads=(HIER_THREADS if test.vltmt else 1))
 
-test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-               r'Optimizations, Hierarchical DPI wrappers with costs\s+(\d+)', 6)
+parent_stats = test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt"
+
+test.file_grep(parent_stats, r'Finish, Guards\s+(\d+)', 8)
+test.file_grep(parent_stats, r'Finish, Source scopes\s+(\d+)', 16)
+test.file_grep(parent_stats, r'Optimizations, Hierarchical DPI wrappers with costs\s+(\d+)', 6)
+
+test_wrapper = test.obj_dir + "/VTest/Test.sv"
+for wrapper in ("check_hash", "combo_ignore", "combo_update", "create", "final", "seq_update"):
+    test.file_grep(test_wrapper, r'no_finish -hier-dpi "Test_protectlib_' + wrapper + r'"')
+
+check_wrapper = test.obj_dir + "/VCheck/Check.sv"
+for wrapper in ("check_hash", "combo_ignore", "create", "final"):
+    test.file_grep(check_wrapper, r'no_finish -hier-dpi "Check_protectlib_' + wrapper + r'"')
+for wrapper in ("combo_update", "seq_update"):
+    test.file_grep_not(check_wrapper, r'no_finish -hier-dpi "Check_protectlib_' + wrapper + r'"')
 
 if test.vltmt:
-    test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule count\s+(\d+)', 2)
-    test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 3)
+    test.file_grep(parent_stats, r'Optimizations, Thread schedule count\s+(\d+)', 2)
+    test.file_grep(parent_stats, r'Optimizations, Thread schedule total tasks\s+(\d+)', 3)
 
 test.execute(all_run_flags=[
     "+verilator+prof+exec+start+2",

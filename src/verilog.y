@@ -249,6 +249,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_LINT_OFF               "lint_off"
 %token<fl>              yVLT_LINT_ON                "lint_on"
 %token<fl>              yVLT_NO_CLOCKER             "no_clocker"
+%token<fl>              yVLT_NO_FINISH              "no_finish"
 %token<fl>              yVLT_NO_INLINE              "no_inline"
 %token<fl>              yVLT_PARALLEL_CASE          "parallel_case"
 %token<fl>              yVLT_PROFILE_DATA           "profile_data"
@@ -8475,6 +8476,8 @@ vltItem:
                         { V3Control::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
         |       yVLT_HIER_WORKERS vltDHierDpi vltDWorkers
                         { V3Control::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
+        |       yVLT_NO_FINISH vltDHierDpi
+                        { V3Control::addNoFinishHierDpi(*$2); }
         |       yVLT_PARALLEL_CASE vltDFile
                         { V3Control::addCaseParallel(*$2, 0); }
         |       yVLT_PARALLEL_CASE vltDFile yVLT_D_LINES yaINTNUM

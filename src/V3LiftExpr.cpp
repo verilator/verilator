@@ -67,6 +67,11 @@
 // return references, and are marked as impure. For this reason only we still
 // need to special case their handling via AstNodeExpr::isLValue().
 //
+// A second entry point applies the same evaluation-order-preserving machinery
+// only to subtrees containing finish-capable calls.  This is mandatory
+// correctness lowering and therefore remains active when general expression
+// lifting is disabled.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -80,6 +85,7 @@
 #include "V3FileLine.h"
 #include "V3Inst.h"
 #include "V3Stats.h"
+#include "V3Task.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -90,17 +96,22 @@ class LiftExprVisitor final : public VNVisitor {
     // AstNodeStmt::user1()  -> bool. Statement already processed
     // AstVar::user1()       -> bool. Variable is a lifted temporary
     // AstNodeExpr::user1p() -> AstVar*. Existing temporary variable usable for this expression
+    // AstNode::user2()      -> bool. Subtree contains a finish-capable call
     const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
 
     // STATE
+    const bool m_finishSensitiveOnly;
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstScope* m_scopep = nullptr;  // Current post-scope instance
     bool m_lift = false;  // Lift encountered expressions
     // Statements lifted out of current node. TODO: Make this an AstNodeStmt* after #6280
     AstNode* m_newStmtps = nullptr;
     // Expressions in some special locations need not, or should not be lifted
     AstNodeExpr* m_doNotLiftp = nullptr;
     size_t m_nTmps = 0;  // Sequence numbers for temporary variables
+    std::unordered_map<AstVar*, AstVarScope*> m_varScopes;  // Post-scope temporaries
     // Statistics
     VDouble0 m_statLiftedExprs;
     VDouble0 m_statLiftedCalls;
@@ -109,6 +120,7 @@ class LiftExprVisitor final : public VNVisitor {
     VDouble0 m_statLiftedLogAnds;
     VDouble0 m_statLiftedLogOrs;
     VDouble0 m_statLiftedExprStmts;
+    VDouble0 m_statFinishAnalysisVisits;
     VDouble0 m_statTemporariesCreated;
     VDouble0 m_statTemporariesReused;
 
@@ -124,6 +136,7 @@ class LiftExprVisitor final : public VNVisitor {
         // Need a separate name in functions vs modules, as module inlining
         // can otherwise cause spurious VARHIDDEN warnings
         std::string name = m_ftaskp ? "__Vlef" : "__Vlem";
+        if (m_finishSensitiveOnly) name += "Finish";
         name += baseName;
         name += "_" + std::to_string(m_nTmps++);
         if (!suffix.empty()) name += "__" + suffix;
@@ -146,7 +159,21 @@ class LiftExprVisitor final : public VNVisitor {
             varp->lifetime(VN_IS(m_modp, Class) ? VLifetime::STATIC_EXPLICIT
                                                 : VLifetime::AUTOMATIC_EXPLICIT);
         }
+        if (m_scopep) {
+            AstVarScope* const vscp = new AstVarScope{exprp->fileline(), m_scopep, varp};
+            m_scopep->addVarsp(vscp);
+            m_varScopes.emplace(varp, vscp);
+        } else {
+            UASSERT_OBJ(!m_finishSensitiveOnly, exprp,
+                        "Finish-sensitive temporary is not under a scope");
+        }
         return varp;
+    }
+
+    AstVarRef* newVarRef(FileLine* flp, AstVar* varp, VAccess access) {
+        const auto it = m_varScopes.find(varp);
+        if (it != m_varScopes.end()) return new AstVarRef{flp, it->second, access};
+        return new AstVarRef{flp, varp, access};
     }
 
     // If the expression is a reference to an existing temporary, return it, otherwise nullptr
@@ -163,7 +190,7 @@ class LiftExprVisitor final : public VNVisitor {
         if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
             if (refp->varp() == varp) return nullptr;
         }
-        return new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep->unlinkFrBack()};
+        return new AstAssign{flp, newVarRef(flp, varp, VAccess::WRITE), nodep->unlinkFrBack()};
     }
 
     void addStmtps(AstNode* stmtp) {
@@ -171,6 +198,84 @@ class LiftExprVisitor final : public VNVisitor {
         // No need to process again, so mark
         for (AstNode* nodep = stmtp; nodep; nodep = nodep->nextp()) nodep->user1(1);
         m_newStmtps = AstNode::addNext(m_newStmtps, stmtp);
+    }
+
+    class FinishSensitiveAnalysisVisitor final : public VNVisitor {
+        VDouble0& m_statVisits;
+        bool m_containsFinish = false;
+
+        void analyze(AstNode* nodep, bool selfMayFinish) {
+            ++m_statVisits;
+            bool containsFinish = selfMayFinish;
+            {
+                VL_RESTORER(m_containsFinish);
+                m_containsFinish = false;
+                iterateChildren(nodep);
+                containsFinish |= m_containsFinish;
+            }
+            if (containsFinish) { nodep->user2(true); }
+            m_containsFinish |= containsFinish;
+        }
+
+        void visit(AstNodeFTaskRef* nodep) override { analyze(nodep, nodep->mayFinish()); }
+        void visit(AstNode* nodep) override { analyze(nodep, false); }
+
+    public:
+        FinishSensitiveAnalysisVisitor(AstNetlist* nodep, VDouble0& statVisits)
+            : m_statVisits{statVisits} {
+            iterate(nodep);
+        }
+    };
+
+    bool containsFinishCall(const AstNode* nodep) const {
+        return nodep && static_cast<bool>(nodep->user2());
+    }
+
+    bool containsFinishCallAndNext(const AstNode* nodep) const {
+        for (const AstNode* cursorp = nodep; cursorp; cursorp = cursorp->nextp()) {
+            if (containsFinishCall(cursorp)) return true;
+        }
+        return false;
+    }
+
+    static bool isReferenceResult(const AstNodeExpr* nodep) {
+        // A const-ref actual remains read-only in the AST, so isLValue() alone
+        // cannot identify the addressable forms accepted later by V3Task.
+        if (nodep->isLValue() || VN_IS(nodep, VarRef) || VN_IS(nodep, MemberSel)
+            || VN_IS(nodep, StructSel) || VN_IS(nodep, ArraySel)) {
+            return true;
+        }
+        const AstCMethodHard* const methodp = VN_CAST(nodep, CMethodHard);
+        if (!methodp) return false;
+        return methodp->method() == VCMethod::ARRAY_AT
+               || methodp->method() == VCMethod::ARRAY_AT_WRITE
+               || methodp->method() == VCMethod::DYN_AT_WRITE_APPEND
+               || methodp->method() == VCMethod::DYN_AT_WRITE_APPEND_BACK;
+    }
+
+    bool shouldLift(AstNodeStmt* nodep) {
+        return !m_finishSensitiveOnly || containsFinishCall(nodep);
+    }
+
+    void extractExpr(AstNodeExpr* nodep, bool force) {
+        if (!m_lift) return;
+
+        // Do not lift if already in normal form
+        if (!force && m_doNotLiftp == nodep) return;
+        // No need to lift void expressions, these should be under StmtExpr, but just in case ...
+        if (VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) return;
+        // Finish-sensitive helper calls need a separate result even if the
+        // helper node itself is marked pure; its callback can still finish.
+        if (!force && nodep->isPure()) return;
+        // Do not lift if LValue
+        if (nodep->isLValue()) return;
+
+        // Extract expression into a temporary variable
+        ++m_statLiftedExprs;
+        FileLine* const flp = nodep->fileline();
+        AstVar* const varp = newVar("Expr", nodep);
+        nodep->replaceWith(newVarRef(flp, varp, VAccess::READ));
+        addStmtps(new AstAssign{flp, newVarRef(flp, varp, VAccess::WRITE), nodep});
     }
 
     // Lift expressions from expression, return lifted statements
@@ -207,6 +312,11 @@ class LiftExprVisitor final : public VNVisitor {
         m_modp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
         VL_RESTORER(m_nTmps);
@@ -228,15 +338,98 @@ class LiftExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void factorBoundsTimingControl(AstIf* const nodep) {
+        if (!m_finishSensitiveOnly || !nodep->isBoundsLvalue()
+            || !containsFinishCall(nodep->condp())) {
+            return;
+        }
+
+        AstAssign* const thenp = VN_CAST(nodep->thensp(), Assign);
+        AstAssign* const elsep = VN_CAST(nodep->elsesp(), Assign);
+        if (!thenp || thenp->nextp() || !elsep || elsep->nextp()) return;
+
+        AstNode* const thenControlp = thenp->timingControlp();
+        AstNode* const elseControlp = elsep->timingControlp();
+        if (!thenControlp || !elseControlp || !thenControlp->sameTree(elseControlp)
+            || !thenp->rhsp()->sameTree(elsep->rhsp())) {
+            return;
+        }
+        if (!VN_IS(thenControlp, Delay) && !VN_IS(thenControlp, SenTree)
+            && !VN_IS(thenControlp, Begin)) {
+            return;
+        }
+
+        // V3Unknown places an impure selected-LHS bounds check before both cloned assignments.
+        // For a blocking intra-assignment control, factor the shared control back out so the
+        // bounds check and LHS evaluation remain after it.
+        VL_RESTORER(m_doNotLiftp);
+        m_doNotLiftp = nullptr;
+        AstNode* beforep = lift(thenp->rhsp());
+        FileLine* const flp = thenp->rhsp()->fileline();
+        AstVar* const valueVarp = newVar("IntraValue", thenp->rhsp());
+        AstAssign* const capturep = new AstAssign{flp, newVarRef(flp, valueVarp, VAccess::WRITE),
+                                                  thenp->rhsp()->unlinkFrBack()};
+        capturep->user1(1);
+        beforep = AstNode::addNextNull(beforep, capturep);
+        thenp->rhsp(newVarRef(flp, valueVarp, VAccess::READ));
+
+        AstNodeExpr* const elseRhsp = elsep->rhsp()->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(elseRhsp), elseRhsp);
+        elsep->rhsp(newVarRef(flp, valueVarp, VAccess::READ));
+
+        AstNode* const controlp = thenControlp->unlinkFrBack();
+        AstNode* const duplicateControlp = elseControlp->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(duplicateControlp), duplicateControlp);
+        if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
+            if (AstNode* const timingStmtsp = liftChildren(delayp)) {
+                beforep = AstNode::addNext(beforep, timingStmtsp);
+            }
+        } else {
+            iterate(controlp);
+        }
+        if (beforep) nodep->addHereThisAsNext(beforep);
+
+        if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
+            nodep->replaceWith(delayp);
+            delayp->addStmtsp(nodep);
+        } else if (AstSenTree* const sentreep = VN_CAST(controlp, SenTree)) {
+            AstEventControl* const eventp
+                = new AstEventControl{sentreep->fileline(), sentreep, nullptr};
+            nodep->replaceWith(eventp);
+            eventp->addStmtsp(nodep);
+        } else if (AstBegin* const beginp = VN_CAST(controlp, Begin)) {
+            nodep->replaceWith(beginp);
+            beginp->addStmtsp(nodep);
+        } else {
+            UASSERT_OBJ(false, controlp, "Unexpected bounds-check timing control");
+        }
+    }
+
     // VISITORS - statements
+    void visit(AstIf* nodep) override {
+        factorBoundsTimingControl(nodep);
+        visit(static_cast<AstNodeStmt*>(nodep));
+    }
     void visit(AstNodeStmt* nodep) override {
         if (nodep->user1SetOnce()) return;
+        if (!shouldLift(nodep)) {
+            VL_RESTORER(m_lift);
+            m_lift = false;
+            iterateChildren(nodep);
+            return;
+        }
         VL_RESTORER(m_doNotLiftp);
         m_doNotLiftp = nullptr;
         if (AstNode* const newStmtps = liftChildren(nodep)) nodep->addHereThisAsNext(newStmtps);
     }
     void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;
+        if (!shouldLift(nodep)) {
+            VL_RESTORER(m_lift);
+            m_lift = false;
+            iterateChildren(nodep);
+            return;
+        }
         VL_RESTORER(m_doNotLiftp);
         // Do not lift the RHS if this is already a simple assignment to a variable
         m_doNotLiftp = VN_IS(nodep->lhsp(), NodeVarRef) ? nodep->rhsp() : nullptr;
@@ -244,16 +437,84 @@ class LiftExprVisitor final : public VNVisitor {
             nodep->addHereThisAsNext(newStmtps);
         }
 
-        if (nodep->timingControlp()) return;
+        AstNode* const controlp = nodep->timingControlp();
+        if (controlp && !m_finishSensitiveOnly) return;
 
-        if (AstNode* const newStmtps = lift(nodep->lhsp())) {
+        // The RHS and delay value are evaluated before an intra-assignment suspension.
+        if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
+            if (AstNode* const newStmtps = liftChildren(delayp)) {
+                nodep->addHereThisAsNext(newStmtps);
+            }
+        } else if (AstSenTree* const sentreep = VN_CAST(controlp, SenTree)) {
+            // Keep sensitivity expressions under AstSenTree for scheduler reevaluation. V3Task
+            // rejects impure function calls in sensitivity lists, including finish-capable calls.
+            iterate(sentreep);
+        } else if (controlp) {
+            iterate(controlp);
+        }
+
+        AstNode* const newStmtps = lift(nodep->lhsp());
+        if (!newStmtps) return;
+        // NBAs capture their LHS before suspension. Blocking assignments evaluate it after.
+        if (!controlp || VN_IS(nodep, AssignDly)) {
             nodep->addHereThisAsNext(newStmtps);
+        } else if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
+            delayp->addStmtsp(newStmtps);
+        } else if (AstSenTree* const sentreep = VN_CAST(controlp, SenTree)) {
+            FileLine* const flp = sentreep->fileline();
+            sentreep->unlinkFrBack();
+            AstEventControl* const eventp = new AstEventControl{flp, sentreep, newStmtps};
+            nodep->timingControlp(new AstBegin{flp, "", eventp, true});
+        } else if (AstBegin* const beginp = VN_CAST(controlp, Begin)) {
+            beginp->addStmtsp(newStmtps);
+        } else {
+            UASSERT_OBJ(false, controlp, "Unexpected intra-assignment timing control");
         }
     }
     void visit(AstStmtExpr* nodep) override {
         if (nodep->user1SetOnce()) return;
-        // Ignore super class constructor calls - can't insert statements before them
-        if (VN_IS(nodep->exprp(), New)) return;
+        // A super constructor call is emitted before the ordinary constructor body, so
+        // finish-sensitive argument work must stay inside the argument expression itself.
+        if (AstNew* const newp = VN_CAST(nodep->exprp(), New)) {
+            if (!m_finishSensitiveOnly) return;
+            const V3TaskConnects tconnects
+                = V3Task::taskConnects(newp, newp->taskp()->stmtsp(), nullptr, false);
+            for (const V3TaskConnect& tconnect : tconnects) {
+                AstVar* const portp = tconnect.first;
+                AstArg* const argp = tconnect.second;
+                const bool reference = portp->isRef() || portp->isConstRef();
+                if (!argp || (portp->isWritable() && !reference)) continue;
+                AstNodeExpr* const exprp = argp->exprp();
+                if (!containsFinishCall(exprp)) continue;
+                FileLine* const flp = exprp->fileline();
+
+                VL_RESTORER(m_doNotLiftp);
+                m_doNotLiftp = nullptr;
+                AstNode* const stmtsp = lift(exprp);
+                UASSERT_OBJ(stmtsp, argp, "Finish-sensitive constructor argument was not lifted");
+                AstNodeExpr* const resultp = argp->exprp()->unlinkFrBack();
+                AstExprStmt* const exprStmtp = new AstExprStmt{flp, stmtsp, resultp};
+                if (reference) {
+                    UASSERT_OBJ(isReferenceResult(resultp), resultp,
+                                "Constructor reference argument did not retain its lvalue");
+                    exprStmtp->refResult(portp->isConstRef());
+                } else {
+                    exprStmtp->hasResult(false);
+                }
+                exprStmtp->finishGuarded(true);
+                exprStmtp->addStmtsp(
+                    new AstCReturn{resultp->fileline(), resultp->cloneTree(false)});
+                argp->exprp(exprStmtp);
+                ++m_statLiftedExprStmts;
+            }
+            return;
+        }
+        if (!shouldLift(nodep)) {
+            VL_RESTORER(m_lift);
+            m_lift = false;
+            iterateChildren(nodep);
+            return;
+        }
         VL_RESTORER(m_doNotLiftp);
         // Do not lift if the expression itself. This AstStmtExpr is required to
         // throw away the return value if any, and V3Task can inline without using
@@ -270,22 +531,7 @@ class LiftExprVisitor final : public VNVisitor {
         if (!m_lift) return;
 
         iterateChildren(nodep);
-
-        // Do not lift if already in normal form
-        if (m_doNotLiftp == nodep) return;
-        // No need to lift void expressions, these should be under StmtExpr, but just in case ...
-        if (VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) return;
-        // Do not lift if pure
-        if (nodep->isPure()) return;
-        // Do not lift if LValue
-        if (nodep->isLValue()) return;
-
-        // Extract expression into a temporary variable
-        ++m_statLiftedExprs;
-        FileLine* const flp = nodep->fileline();
-        AstVar* const varp = newVar("Expr", nodep);
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
-        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep});
+        extractExpr(nodep, false);
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (!m_lift) return;
@@ -303,8 +549,8 @@ class LiftExprVisitor final : public VNVisitor {
         ++m_statLiftedCalls;
         FileLine* const flp = nodep->fileline();
         AstVar* const varp = newVar("Call", nodep, nodep->taskp()->name());
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
-        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep});
+        nodep->replaceWith(newVarRef(flp, varp, VAccess::READ));
+        addStmtps(new AstAssign{flp, newVarRef(flp, varp, VAccess::WRITE), nodep});
     }
     void visit(AstMemberSel* nodep) override {
         if (!m_lift) return;
@@ -326,10 +572,10 @@ class LiftExprVisitor final : public VNVisitor {
         ++m_statLiftedLvalCalls;
         FileLine* const flp = nodep->fileline();
         AstVar* const varp = newVar("LvalCall", nodep->fromp());
-        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE},
+        addStmtps(new AstAssign{flp, newVarRef(flp, varp, VAccess::WRITE),
                                 nodep->fromp()->unlinkFrBack()});
         // This one is a WRITE or READWRITE, same as the MemberSel
-        nodep->fromp(new AstVarRef{flp, varp, nodep->access()});
+        nodep->fromp(newVarRef(flp, varp, nodep->access()));
     }
 
     // VISITORS - RValue expressions
@@ -371,7 +617,7 @@ class LiftExprVisitor final : public VNVisitor {
         ifp->addElsesp(elseStmtps);
         ifp->addElsesp(assignIfDifferent(flp, varp, nodep->elsep()));
         // Replace the expression with a reference to the temporary variable
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        nodep->replaceWith(newVarRef(flp, varp, VAccess::READ));
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstLogAnd* nodep) override {
@@ -395,11 +641,11 @@ class LiftExprVisitor final : public VNVisitor {
         if (!varp) varp = getExistingVar(nodep->rhsp());
         if (!varp) varp = newVar("LogAnd", nodep);
         addStmtps(assignIfDifferent(flp, varp, nodep->lhsp()));
-        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, varp, VAccess::READ}};
+        AstIf* const ifp = new AstIf{flp, newVarRef(flp, varp, VAccess::READ)};
         addStmtps(ifp);
         ifp->addThensp(rhsStmtps);
         ifp->addThensp(assignIfDifferent(flp, varp, nodep->rhsp()));
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        nodep->replaceWith(newVarRef(flp, varp, VAccess::READ));
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstLogOr* nodep) override {
@@ -423,11 +669,11 @@ class LiftExprVisitor final : public VNVisitor {
         if (!varp) varp = getExistingVar(nodep->rhsp());
         if (!varp) varp = newVar("LogOr", nodep);
         addStmtps(assignIfDifferent(flp, varp, nodep->lhsp()));
-        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, varp, VAccess::READ}};
+        AstIf* const ifp = new AstIf{flp, newVarRef(flp, varp, VAccess::READ)};
         addStmtps(ifp);
         ifp->addElsesp(rhsStmtps);
         ifp->addElsesp(assignIfDifferent(flp, varp, nodep->rhsp()));
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        nodep->replaceWith(newVarRef(flp, varp, VAccess::READ));
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstLogIf* nodep) override {
@@ -445,6 +691,22 @@ class LiftExprVisitor final : public VNVisitor {
         nodep->replaceWith(nodep->resultp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+    void visit(AstWith* nodep) override {
+        if (!m_finishSensitiveOnly || !containsFinishCallAndNext(nodep->exprp())) {
+            VL_RESTORER(m_lift);
+            m_lift = false;
+            iterateChildren(nodep);
+            return;
+        }
+
+        AstNode* const lastp = nodep->exprp()->lastp();
+        AstNodeExpr* const resultp = VN_CAST(lastp, NodeExpr);
+        UASSERT_OBJ(resultp, nodep, "Finish-capable callback has no result expression");
+
+        if (AstNode* const newStmtps = lift(resultp)) {
+            nodep->exprp()->lastp()->addHereThisAsNext(newStmtps);
+        }
+    }
 
     // VISITORS - Accelerate pure leaf expressions
     void visit(AstConst*) override {}
@@ -454,16 +716,30 @@ class LiftExprVisitor final : public VNVisitor {
     // VISITORS - Expression special cases
     // These return C++ references rather than values, cannot be lifted
     void visit(AstAssocSel* nodep) override { iterateChildren(nodep); }
-    void visit(AstCMethodHard* nodep) override { iterateChildren(nodep); }
+    void visit(AstCMethodHard* nodep) override {
+        const bool callbackMayFinish = m_finishSensitiveOnly && nodep->withp()
+                                       && containsFinishCallAndNext(nodep->withp()->exprp());
+        iterateChildren(nodep);
+        if (callbackMayFinish) {
+            // A callback result must not become visible to the source until its
+            // finish barrier has run. Void mutating methods are handled by their
+            // transactional runtime overload instead.
+            extractExpr(nodep, true);
+        }
+    }
     // Don't know whether these may return non-values, assume so
     void visit(AstCExpr* nodep) override { iterateChildren(nodep); }
     void visit(AstCExprUser* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit LiftExprVisitor(AstNetlist* nodep) {
+    LiftExprVisitor(AstNetlist* nodep, bool finishSensitiveOnly)
+        : m_finishSensitiveOnly{finishSensitiveOnly} {
         // Extracting expressions can effect purity
         VIsCached::clearCacheTree();
+        if (m_finishSensitiveOnly) {
+            { FinishSensitiveAnalysisVisitor{nodep, m_statFinishAnalysisVisits}; }
+        }
         iterate(nodep);
         VIsCached::clearCacheTree();
         if (m_newStmtps) m_newStmtps->dumpTreeAndNext(std::cout, "Leftover:");
@@ -477,6 +753,7 @@ public:
         V3Stats::addStat("LiftExpr, lifted LogAnd", m_statLiftedLogAnds);
         V3Stats::addStat("LiftExpr, lifted LogOr", m_statLiftedLogOrs);
         V3Stats::addStat("LiftExpr, lifted ExprStmt", m_statLiftedExprStmts);
+        V3Stats::addStat("LiftExpr, finish analysis visits", m_statFinishAnalysisVisits);
         V3Stats::addStat("LiftExpr, temporaries created", m_statTemporariesCreated);
         V3Stats::addStat("LiftExpr, temporaries reused", m_statTemporariesReused);
     }
@@ -487,6 +764,12 @@ public:
 
 void V3LiftExpr::liftExprAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { LiftExprVisitor{nodep}; }
+    { LiftExprVisitor{nodep, false}; }
     V3Global::dumpCheckGlobalTree("lift_expr", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3LiftExpr::normalizeFinishSensitive(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    { LiftExprVisitor{nodep, true}; }
+    V3Global::dumpCheckGlobalTree("lift_finish", 0, dumpTreeEitherLevel() >= 3);
 }

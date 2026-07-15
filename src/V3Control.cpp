@@ -287,6 +287,7 @@ public:
             // Catch hier param modules to mark their attributes before they are
             // flagged dead in LinkDot.
             if (itr == VPragmaType::HIER_PARAMS) modp->hierParams(true);
+            if (itr == VPragmaType::VERILATOR_LIB) modp->verilatorLib(true);
             AstNode* const nodep = new AstPragma{modp->fileline(), itr};
             modp->addStmtsp(nodep);
         }
@@ -798,6 +799,7 @@ class V3ControlResolver final {
     V3ControlScopeTraceResolver m_scopeTraces;  // Regexp to trace enables
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
+    std::unordered_set<string> m_noFinishHierDpis;  // Certified finish-free hierarchical DPIs
     uint8_t m_mode = NONE;
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
     FileLine* m_profileFileLine = nullptr;
@@ -813,6 +815,11 @@ public:
     V3ControlModuleResolver& modules() { return m_modules; }
     V3ControlFileResolver& files() { return m_files; }
     V3ControlScopeTraceResolver& scopeTraces() { return m_scopeTraces; }
+
+    void addNoFinishHierDpi(const string& hierDpi) { m_noFinishHierDpis.emplace(hierDpi); }
+    bool getNoFinishHierDpi(const string& hierDpi) const {
+        return m_noFinishHierDpis.find(hierDpi) != m_noFinishHierDpis.cend();
+    }
 
     void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
         // Empty key for hierarchical DPI wrapper costs.
@@ -937,6 +944,10 @@ void V3Control::addModulePragma(const string& module, VPragmaType pragma) {
     V3ControlResolver::s().modules().at(module).addModulePragma(pragma);
 }
 
+void V3Control::addNoFinishHierDpi(const string& hierDpi) {
+    V3ControlResolver::s().addNoFinishHierDpi(hierDpi);
+}
+
 void V3Control::addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
     V3ControlResolver::s().addProfileData(fl, hierDpi, cost);
 }
@@ -1051,6 +1062,10 @@ void V3Control::applyModule(AstNodeModule* modulep) {
 }
 
 void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
+    if (modulep->verilatorLib() && ftaskp->dpiImport()
+        && getNoFinishHierDpi(AstNode::prettyName(ftaskp->cname()))) {
+        ftaskp->hierDpiNoFinish(true);
+    }
     const string& modname = modulep->prettyDehashOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (!modp) return;
@@ -1089,6 +1104,9 @@ int V3Control::getHierWorkers(const string& model) {
 }
 FileLine* V3Control::getHierWorkersFileLine(const string& model) {
     return V3ControlResolver::s().getHierWorkersFileLine(model);
+}
+bool V3Control::getNoFinishHierDpi(const string& hierDpi) {
+    return V3ControlResolver::s().getNoFinishHierDpi(hierDpi);
 }
 const V3Control::FsmRegisterWrapper* V3Control::getFsmRegisterWrapper(const string& module) {
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(module);

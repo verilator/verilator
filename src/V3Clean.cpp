@@ -307,7 +307,7 @@ class CleanVisitor final : public VNVisitor {
     }
     void visit(AstCReturn* nodep) override {
         iterateChildren(nodep);
-        ensureClean(nodep->lhsp());
+        if (nodep->lhsp()) ensureClean(nodep->lhsp());
         setClean(nodep, true);
     }
     void visit(AstIntfRef* nodep) override {

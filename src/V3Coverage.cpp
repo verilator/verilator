@@ -29,6 +29,7 @@
 #include "V3Coverage.h"
 
 #include "V3EmitV.h"
+#include "V3Finish.h"
 #include "V3UniqueNames.h"
 
 #include <list>
@@ -36,8 +37,60 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+class CoverageFinishBoundaryVisitor final : public VNVisitorConst {
+    const V3FinishEffects& m_effects;
+    std::unordered_set<const AstNode*> m_boundaries;
+    bool m_containsBoundary = false;
+    bool m_timingBoundaries = false;
+
+    void analyze(AstNode* nodep, bool selfBoundary) {
+        bool containsBoundary = selfBoundary;
+        {
+            VL_RESTORER(m_containsBoundary);
+            m_containsBoundary = false;
+            iterateChildrenConst(nodep);
+            containsBoundary |= m_containsBoundary;
+        }
+        if (containsBoundary) m_boundaries.emplace(nodep);
+        m_containsBoundary |= containsBoundary;
+    }
+
+    void analyzeSourceUnit(AstNode* nodep) {
+        VL_RESTORER(m_timingBoundaries);
+        m_timingBoundaries = m_effects.mayFinish(nodep);
+        analyze(nodep, false);
+    }
+
+    void visit(AstNodeFTask* nodep) override { analyzeSourceUnit(nodep); }
+    void visit(AstNodeProcedure* nodep) override { analyzeSourceUnit(nodep); }
+    void visit(AstInitialAutomatic* nodep) override { analyzeSourceUnit(nodep); }
+    void visit(AstBegin* nodep) override {
+        if (m_effects.isSourceUnit(nodep)) {
+            analyzeSourceUnit(nodep);
+        } else {
+            analyze(nodep, false);
+        }
+    }
+    void visit(AstNodeFTaskRef* nodep) override { analyze(nodep, m_effects.mayFinish(nodep)); }
+    void visit(AstFinish* nodep) override { analyze(nodep, true); }
+    void visit(AstFinishFork* nodep) override { analyze(nodep, true); }
+    void visit(AstNode* nodep) override {
+        analyze(nodep, m_timingBoundaries && nodep->isTimingControl());
+    }
+
+public:
+    CoverageFinishBoundaryVisitor(AstNetlist* rootp, const V3FinishEffects& effects)
+        : m_effects{effects} {
+        iterateChildrenConst(rootp);
+    }
+    ~CoverageFinishBoundaryVisitor() override = default;
+
+    bool contains(const AstNode* nodep) const { return m_boundaries.count(nodep); }
+};
+
 class ExprCoverageEligibleVisitor final : public VNVisitorConst {
     // STATE
+    const V3FinishEffects& m_finishEffects;
     bool m_eligible = true;
 
     static bool elemDTypeEligible(const AstNodeDType* dtypep) {
@@ -65,6 +118,14 @@ class ExprCoverageEligibleVisitor final : public VNVisitorConst {
         }
     }
 
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (m_finishEffects.mayFinish(nodep)) {
+            m_eligible = false;
+        } else {
+            iterateChildrenConst(nodep);
+        }
+    }
+
     void visit(AstNode* nodep) override {
         if (!nodep->isExprCoverageEligible()) {
             m_eligible = false;
@@ -75,7 +136,10 @@ class ExprCoverageEligibleVisitor final : public VNVisitorConst {
 
 public:
     // CONSTRUCTORS
-    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateConst(nodep); }
+    ExprCoverageEligibleVisitor(AstNode* nodep, const V3FinishEffects& finishEffects)
+        : m_finishEffects{finishEffects} {
+        iterateConst(nodep);
+    }
     ~ExprCoverageEligibleVisitor() override = default;
 
     bool eligible() const { return m_eligible; }
@@ -131,6 +195,22 @@ class CoverageVisitor final : public VNVisitor {
         }
     };
 
+    struct LineSegment final {
+        const CheckState m_state;
+        AstNode* const m_beforep;  // Insert before this boundary, or append if nullptr
+        const AstNode* const m_anchorp;  // Source location for non-primary segments
+        LineSegment(const CheckState& state, AstNode* beforep, const AstNode* anchorp)
+            : m_state{state}
+            , m_beforep{beforep}
+            , m_anchorp{anchorp} {}
+    };
+    using LineSegments = std::vector<LineSegment>;
+
+    struct ExprCoveragePlacement final {
+        AstNode* m_beforep = nullptr;  // Insert before a later finish boundary
+        bool m_transactional = false;  // Cover at the original expression evaluation
+    };
+
     enum Objective : uint8_t { NONE, SEEKING, ABORTED };
 
     // NODE STATE
@@ -139,9 +219,13 @@ class CoverageVisitor final : public VNVisitor {
     //  AstIf/AstLoopTest::user2()      -> bool.  True indicates coverage-generated
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+    const V3FinishEffects& m_finishEffects;
+    CoverageFinishBoundaryVisitor m_finishBoundaries;
     V3UniqueNames m_exprTempNames;  // For generating unique temporary variable names used by
                                     // expression coverage
     std::unordered_map<AstNodeExpr*, AstVar*> m_funcTemps;
+    std::unordered_set<AstNodeExpr*> m_transactionCoveredExprs;
+    std::vector<AstStmtPragma*> m_deferredDeletePragmas;
 
     // STATE - across all visitors
     int m_nextHandle = 0;
@@ -159,6 +243,10 @@ class CoverageVisitor final : public VNVisitor {
     bool m_ifCond = false;  // Visiting if condition
     bool m_inToggleOff = false;  // In function/task etc
     string m_beginHier;  // AstBegin hier name for user coverage points
+    LineSegments* m_lineSegmentsp = nullptr;  // Segments in the current coverage region
+    AstNode* m_lineOwnerp = nullptr;  // Procedure/branch/loop/case owning current segments
+    const AstNode* m_lineSegmentStartp = nullptr;  // First source node in current segment
+    bool m_lineTrackOwner = false;  // Attribute the owner line to the first segment
 
     // STATE - cleared each module
     std::unordered_map<std::string, uint32_t> m_varnames;  // Uniquify inserted variable names
@@ -229,6 +317,13 @@ class CoverageVisitor final : public VNVisitor {
         m_state.m_nodep = nodep;
         UINFO(9, "line create h" << m_state.m_handle << " " << nodep);
     }
+    void createContinuationHandle(const AstNode* nodep) {
+        const bool on = m_state.m_on;
+        const bool inModOff = m_state.m_inModOff;
+        createHandle(nodep);
+        m_state.m_on = on;
+        m_state.m_inModOff = inModOff;
+    }
     void lineTrack(const AstNode* nodep) {
         if (m_state.lineCoverageOn(nodep) && !m_ifCond
             && m_state.m_nodep->fileline()->filenameno() == nodep->fileline()->filenameno()) {
@@ -239,6 +334,10 @@ class CoverageVisitor final : public VNVisitor {
                 m_handleLines[m_state.m_handle].insert(lineno);
             }
         }
+    }
+    bool lineTracked(const CheckState& state) const {
+        const auto it = m_handleLines.find(state.m_handle);
+        return it != m_handleLines.end() && !it->second.empty();
     }
     static string linesFirstLast(const int first, const int last) {
         if (first && first == last) {
@@ -272,6 +371,103 @@ class CoverageVisitor final : public VNVisitor {
         }
         UINFO(9, "lines out " << out << " for h" << state.m_handle << " " << nodep);
         return out;
+    }
+    void recordLineBoundary(AstNode* beforep, AstNode* nextp, const AstNode* contextp) {
+        UASSERT_OBJ(m_lineSegmentsp && m_lineOwnerp, contextp,
+                    "Coverage boundary is outside a line region");
+        if (m_lineSegmentsp->empty() && m_lineTrackOwner) lineTrack(m_lineOwnerp);
+        m_lineSegmentsp->emplace_back(m_state, beforep, m_lineSegmentStartp);
+        const AstNode* const startp = nextp ? nextp : m_lineOwnerp;
+        createContinuationHandle(startp);
+        m_lineSegmentStartp = startp;
+    }
+    void recordLineBoundary(AstNode* boundaryp, AstNode* nextp) {
+        recordLineBoundary(boundaryp, nextp, boundaryp);
+    }
+    bool lineRegionIsFinishSegmented() const {
+        return m_lineSegmentsp && m_finishBoundaries.contains(m_lineOwnerp);
+    }
+    void iterateStatementList(AstNode* stmtsp) {
+        for (AstNode *stmtp = stmtsp, *nextp; stmtp; stmtp = nextp) {
+            nextp = stmtp->nextp();
+            if (m_lineSegmentsp && !m_lineSegmentsp->empty()
+                && m_lineSegmentStartp == m_lineOwnerp) {
+                m_lineSegmentStartp = stmtp;
+            }
+            const size_t priorSegments = m_lineSegmentsp ? m_lineSegmentsp->size() : 0;
+            iterate(stmtp);
+            if (m_lineSegmentsp && m_finishBoundaries.contains(stmtp)
+                && priorSegments == m_lineSegmentsp->size()) {
+                recordLineBoundary(stmtp, nextp);
+            }
+        }
+    }
+    void iterateLineRegion(AstNode* ownerp, AstNode* stmtsp, bool trackOwner,
+                           LineSegments& segments) {
+        VL_RESTORER(m_lineSegmentsp);
+        VL_RESTORER(m_lineOwnerp);
+        VL_RESTORER(m_lineSegmentStartp);
+        VL_RESTORER(m_lineTrackOwner);
+        m_lineSegmentsp = &segments;
+        m_lineOwnerp = ownerp;
+        m_lineSegmentStartp = ownerp;
+        m_lineTrackOwner = trackOwner;
+        iterateStatementList(stmtsp);
+        if (segments.empty() && trackOwner) lineTrack(ownerp);
+        segments.emplace_back(m_state, nullptr, m_lineSegmentStartp);
+    }
+    void iterateChildrenWithoutList(AstNode* ownerp, AstNode* stmtsp) {
+        if (!stmtsp) {
+            iterateChildren(ownerp);
+            return;
+        }
+        VNRelinker relinker;
+        stmtsp->unlinkFrBackWithNext(&relinker);
+        iterateChildren(ownerp);
+        relinker.relink(stmtsp);
+    }
+    template <typename T_Node>
+    void iterateTimingControl(T_Node* nodep) {
+        AstNode* const stmtsp = nodep->stmtsp();
+        if (!stmtsp || !lineRegionIsFinishSegmented() || !m_finishBoundaries.contains(nodep)) {
+            iterateChildren(nodep);
+            lineTrack(nodep);
+            return;
+        }
+        iterateChildrenWithoutList(nodep, stmtsp);
+        lineTrack(nodep);
+        recordLineBoundary(nodep, stmtsp);
+        iterateStatementList(stmtsp);
+    }
+    void emitLineSegments(AstNode* ownerp, const LineSegments& segments, const string& page,
+                          const string& comment, int offset, bool allowEmptyPrimary) {
+        bool primary = true;
+        int point = 0;
+        for (const LineSegment& segment : segments) {
+            if (!segment.m_state.lineCoverageOn(ownerp)) continue;
+            if (!lineTracked(segment.m_state) && !(primary && allowEmptyPrimary)) continue;
+            const AstNode* const anchorp = primary ? ownerp : segment.m_anchorp;
+            const string segmentPage = primary ? page : "v_line/" + m_modp->prettyName();
+            const string segmentComment = primary ? comment : "block";
+            AstCoverOtherDecl* const declp
+                = new AstCoverOtherDecl{anchorp->fileline(), segmentPage, segmentComment,
+                                        linesCov(segment.m_state, ownerp), offset + point};
+            m_modp->addStmtsp(declp);
+            AstNode* const newp = newCoverInc(anchorp->fileline(), declp,
+                                              traceNameForLine(anchorp, segmentComment));
+            if (segment.m_beforep) {
+                segment.m_beforep->addHereThisAsNext(newp);
+            } else {
+                insertProcStatement(ownerp, newp);
+            }
+            primary = false;
+            ++point;
+        }
+    }
+    static bool lineCoverageOn(const AstNode* ownerp, const LineSegments& segments) {
+        return std::any_of(segments.begin(), segments.end(), [ownerp](const LineSegment& segment) {
+            return segment.m_state.lineCoverageOn(ownerp);
+        });
     }
 
     // VISITORS - BOTH
@@ -327,15 +523,10 @@ class CoverageVisitor final : public VNVisitor {
         m_exprStmtsp = nodep;
         m_inToggleOff = true;
         createHandle(nodep);
-        iterateAndNextNull(nodep->stmtsp());
-        if (m_state.lineCoverageOn(nodep)) {
-            AstCoverOtherDecl* const declp
-                = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
-                                        "block", linesCov(m_state, nodep), 0};
-            m_modp->addStmtsp(declp);
-            AstNode* const newp
-                = newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "block"));
-            insertProcStatement(nodep, newp);
+        LineSegments segments;
+        iterateLineRegion(nodep, nodep->stmtsp(), false, segments);
+        if (lineCoverageOn(nodep, segments)) {
+            emitLineSegments(nodep, segments, "v_line/" + m_modp->prettyName(), "block", 0, false);
         }
     }
     void visit(AstLoopTest* nodep) override {
@@ -377,9 +568,55 @@ class CoverageVisitor final : public VNVisitor {
             }
         } else if (AstBegin* const itemp = VN_CAST(nodep, Begin)) {
             itemp->addStmtsp(stmtp);
+        } else if (AstCaseItem* const itemp = VN_CAST(nodep, CaseItem)) {
+            itemp->addStmtsp(stmtp);
         } else {
             nodep->v3fatalSrc("Bad node type");
         }
+    }
+    AstNode* procStatementsp(AstNode* nodep) const {
+        if (AstNodeProcedure* const itemp = VN_CAST(nodep, NodeProcedure)) {
+            return itemp->stmtsp();
+        } else if (AstNodeFTask* const itemp = VN_CAST(nodep, NodeFTask)) {
+            return itemp->stmtsp();
+        } else if (AstLoop* const itemp = VN_CAST(nodep, Loop)) {
+            return itemp->stmtsp();
+        } else if (AstIf* const itemp = VN_CAST(nodep, If)) {
+            return m_then ? itemp->thensp() : itemp->elsesp();
+        } else if (AstBegin* const itemp = VN_CAST(nodep, Begin)) {
+            return itemp->stmtsp();
+        } else if (AstCaseItem* const itemp = VN_CAST(nodep, CaseItem)) {
+            return itemp->stmtsp();
+        }
+        return nullptr;
+    }
+    ExprCoveragePlacement exprCoveragePlacement(AstNodeExpr* nodep) const {
+        if (m_finishBoundaries.contains(nodep)) return {nullptr, true};
+        if (!m_exprStmtsp || !m_finishBoundaries.contains(m_exprStmtsp)) return {};
+
+        AstNode* const stmtsp = procStatementsp(m_exprStmtsp);
+        AstNode* containingp = nullptr;
+        for (AstNode* ancestorp = nodep; ancestorp && ancestorp != m_exprStmtsp;
+             ancestorp = ancestorp->backp()) {
+            for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+                if (ancestorp == stmtp) {
+                    containingp = stmtp;
+                    break;
+                }
+            }
+            if (containingp) break;
+        }
+
+        bool afterExpression = !containingp;
+        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+            if (stmtp == containingp) {
+                if (m_finishBoundaries.contains(stmtp)) return {nullptr, true};
+                afterExpression = true;
+            } else if (afterExpression && m_finishBoundaries.contains(stmtp)) {
+                return {stmtp, false};
+            }
+        }
+        return {};
     }
     void iterateProcedure(AstNode* nodep) {
         VL_RESTORER(m_state);
@@ -388,16 +625,13 @@ class CoverageVisitor final : public VNVisitor {
         m_exprStmtsp = nodep;
         m_inToggleOff = true;
         createHandle(nodep);
-        iterateChildren(nodep);
-        if (m_state.lineCoverageOn(nodep)) {
-            lineTrack(nodep);
-            AstCoverOtherDecl* const declp
-                = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
-                                        "block", linesCov(m_state, nodep), 0};
-            m_modp->addStmtsp(declp);
-            AstNode* const newp
-                = newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "block"));
-            insertProcStatement(nodep, newp);
+        AstNode* const stmtsp = VN_IS(nodep, NodeProcedure) ? VN_AS(nodep, NodeProcedure)->stmtsp()
+                                                            : VN_AS(nodep, NodeFTask)->stmtsp();
+        iterateChildrenWithoutList(nodep, stmtsp);
+        LineSegments segments;
+        iterateLineRegion(nodep, stmtsp, true, segments);
+        if (lineCoverageOn(nodep, segments)) {
+            emitLineSegments(nodep, segments, "v_line/" + m_modp->prettyName(), "block", 0, false);
         }
     }
 
@@ -601,6 +835,7 @@ class CoverageVisitor final : public VNVisitor {
     // Note not AstNodeIf; other types don't get covered
     void visit(AstIf* nodep) override {
         if (nodep->user2()) return;
+        VL_RESTORER(m_then);
 
         UINFO(4, " IF: " << nodep);
         if (m_state.m_on) {
@@ -617,17 +852,15 @@ class CoverageVisitor final : public VNVisitor {
             // above. Otherwise show it based on what is inside.
             // But: Seemed too complicated, and fragile.
             const CheckState lastState = m_state;
-            CheckState ifState;
-            CheckState elseState;
+            LineSegments ifSegments;
+            LineSegments elseSegments;
             {
                 VL_RESTORER(m_exprStmtsp);
                 VL_RESTORER(m_then);
                 m_exprStmtsp = nodep;
                 m_then = true;
                 createHandle(nodep);
-                iterateAndNextNull(nodep->thensp());
-                lineTrack(nodep);
-                ifState = m_state;
+                iterateLineRegion(nodep, nodep->thensp(), true, ifSegments);
             }
             m_state = lastState;
             {
@@ -636,67 +869,49 @@ class CoverageVisitor final : public VNVisitor {
                 m_exprStmtsp = nodep;
                 m_then = false;
                 createHandle(nodep);
-                iterateAndNextNull(nodep->elsesp());
-                elseState = m_state;
+                iterateLineRegion(nodep, nodep->elsesp(), false, elseSegments);
             }
             m_state = lastState;
             //
             // If both if and else are "on", and we're not in an if/else, then
             // we do branch coverage
-            if (!(first_elsif || cont_elsif || final_elsif) && ifState.lineCoverageOn(nodep)
-                && elseState.lineCoverageOn(nodep)) {
+            if (!(first_elsif || cont_elsif || final_elsif) && lineCoverageOn(nodep, ifSegments)
+                && lineCoverageOn(nodep, elseSegments)) {
                 // Normal if. Linecov shows what's inside the if (not condition that is
                 // always executed)
                 UINFO(4, "   COVER-branch: " << nodep);
-                AstCoverOtherDecl* const ifDeclp
-                    = new AstCoverOtherDecl{nodep->fileline(), "v_branch/" + m_modp->prettyName(),
-                                            "if", linesCov(ifState, nodep), 0};
-                m_modp->addStmtsp(ifDeclp);
-                nodep->addThensp(
-                    newCoverInc(nodep->fileline(), ifDeclp, traceNameForLine(nodep, "if")));
+                m_then = true;
+                emitLineSegments(nodep, ifSegments, "v_branch/" + m_modp->prettyName(), "if", 0,
+                                 true);
                 // The else has a column offset of 1 to uniquify it relative to the if
                 // As "if" and "else" are more than one character wide, this won't overlap
                 // another token
-                AstCoverOtherDecl* const elseDeclp
-                    = new AstCoverOtherDecl{nodep->fileline(), "v_branch/" + m_modp->prettyName(),
-                                            "else", linesCov(elseState, nodep), 1};
-                m_modp->addStmtsp(elseDeclp);
-                nodep->addElsesp(
-                    newCoverInc(nodep->fileline(), elseDeclp, traceNameForLine(nodep, "else")));
+                m_then = false;
+                emitLineSegments(nodep, elseSegments, "v_branch/" + m_modp->prettyName(), "else",
+                                 1, true);
             }
             // If/else attributes to each block as non-branch coverage
             else if (first_elsif || cont_elsif) {
                 UINFO(4, "   COVER-elsif: " << nodep);
-                if (ifState.lineCoverageOn(nodep)) {
-                    AstCoverOtherDecl* const elsifDeclp = new AstCoverOtherDecl{
-                        nodep->fileline(), "v_line/" + m_modp->prettyName(), "elsif",
-                        linesCov(ifState, nodep), 0};
-                    m_modp->addStmtsp(elsifDeclp);
-
-                    nodep->addThensp(newCoverInc(nodep->fileline(), elsifDeclp,
-                                                 traceNameForLine(nodep, "elsif")));
+                if (lineCoverageOn(nodep, ifSegments)) {
+                    m_then = true;
+                    emitLineSegments(nodep, ifSegments, "v_line/" + m_modp->prettyName(), "elsif",
+                                     0, true);
                 }
                 // and we don't insert the else as the child if-else will do so
             } else {
                 // Cover as separate blocks (not a branch as is not two-legged)
-                if (ifState.lineCoverageOn(nodep)) {
+                if (lineCoverageOn(nodep, ifSegments)) {
                     UINFO(4, "   COVER-half-if: " << nodep);
-                    AstCoverOtherDecl* const ifDeclp = new AstCoverOtherDecl{
-                        nodep->fileline(), "v_line/" + m_modp->prettyName(), "if",
-                        linesCov(ifState, nodep), 0};
-                    m_modp->addStmtsp(ifDeclp);
-                    nodep->addThensp(
-                        newCoverInc(nodep->fileline(), ifDeclp, traceNameForLine(nodep, "if")));
+                    m_then = true;
+                    emitLineSegments(nodep, ifSegments, "v_line/" + m_modp->prettyName(), "if", 0,
+                                     true);
                 }
-                if (elseState.lineCoverageOn(nodep)) {
+                if (lineCoverageOn(nodep, elseSegments)) {
                     UINFO(4, "   COVER-half-el: " << nodep);
-                    AstCoverOtherDecl* const elseDeclp = new AstCoverOtherDecl{
-                        nodep->fileline(), "v_line/" + m_modp->prettyName(), "else",
-                        linesCov(elseState, nodep), 1};
-                    m_modp->addStmtsp(elseDeclp);
-
-                    nodep->addElsesp(newCoverInc(nodep->fileline(), elseDeclp,
-                                                 traceNameForLine(nodep, "else")));
+                    m_then = false;
+                    emitLineSegments(nodep, elseSegments, "v_line/" + m_modp->prettyName(), "else",
+                                     1, true);
                 }
             }
             m_state = lastState;
@@ -713,16 +928,12 @@ class CoverageVisitor final : public VNVisitor {
         if (m_state.lineCoverageOn(nodep)) {
             VL_RESTORER(m_state);
             createHandle(nodep);
-            iterateAndNextNull(nodep->stmtsp());
-            if (m_state.lineCoverageOn(nodep)) {  // if the case body didn't disable it
-                lineTrack(nodep);
+            LineSegments segments;
+            iterateLineRegion(nodep, nodep->stmtsp(), true, segments);
+            if (lineCoverageOn(nodep, segments)) {
                 UINFO(4, "   COVER: " << nodep);
-                AstCoverOtherDecl* const declp
-                    = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
-                                            "case", linesCov(m_state, nodep), 0};
-                m_modp->addStmtsp(declp);
-                nodep->addStmtsp(
-                    newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "case")));
+                emitLineSegments(nodep, segments, "v_line/" + m_modp->prettyName(), "case", 0,
+                                 false);
             }
         }
     }
@@ -751,14 +962,20 @@ class CoverageVisitor final : public VNVisitor {
     }
     void visit(AstStop* nodep) override {
         UINFO(4, "  STOP: " << nodep);
+        if (lineRegionIsFinishSegmented()) recordLineBoundary(nodep, nodep->nextp());
         m_state.m_on = false;
     }
     void visit(AstStmtPragma* nodep) override {
         if (nodep->pragp()->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
             // Skip all NEXT nodes under this block, and skip this if/case branch
             UINFO(4, "  OFF: h" << m_state.m_handle << " " << nodep);
+            if (lineRegionIsFinishSegmented()) {
+                recordLineBoundary(nodep, nodep->nextp());
+                m_deferredDeletePragmas.push_back(nodep);
+            } else {
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            }
             m_state.m_on = false;
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else {
             if (m_state.m_on) iterateChildren(nodep);
             lineTrack(nodep);
@@ -774,6 +991,10 @@ class CoverageVisitor final : public VNVisitor {
         lineTrack(nodep);
     }
 
+    void visit(AstDelay* nodep) override { iterateTimingControl(nodep); }
+    void visit(AstEventControl* nodep) override { iterateTimingControl(nodep); }
+    void visit(AstWait* nodep) override { iterateTimingControl(nodep); }
+
     void visit(AstBegin* nodep) override {
         // Record the hierarchy of any named begins, so we can apply to user
         // coverage points.  This is because there may be cov points inside
@@ -788,8 +1009,12 @@ class CoverageVisitor final : public VNVisitor {
         if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
         }
-        iterateChildren(nodep);
-        lineTrack(nodep);
+        AstNode* const stmtsp = nodep->stmtsp();
+        iterateChildrenWithoutList(nodep, stmtsp);
+        const bool segmented = m_lineSegmentsp && m_finishBoundaries.contains(nodep);
+        if (segmented) lineTrack(nodep);
+        iterateStatementList(stmtsp);
+        if (!segmented) lineTrack(nodep);
     }
 
     void abortExprCoverage() {
@@ -808,7 +1033,40 @@ class CoverageVisitor final : public VNVisitor {
         return true;
     }
 
-    void addExprCoverInc(AstNodeExpr* nodep, int start = 0) {
+    AstVar* newExprResultTemp(AstNodeExpr* nodep) {
+        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
+                                        m_exprTempNames.get(nodep), nodep->dtypep()->skipRefp()};
+        varp->isInternal(true);
+        varp->noReset(true);
+        varp->lifetime(m_ftaskp || !VN_IS(m_modp, Class) ? VLifetime::AUTOMATIC_EXPLICIT
+                                                         : VLifetime::STATIC_EXPLICIT);
+        if (m_ftaskp) {
+            varp->funcLocal(true);
+            if (m_ftaskp->stmtsp()) {
+                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            } else {
+                m_ftaskp->addStmtsp(varp);
+            }
+        } else if (m_modp->stmtsp()) {
+            m_modp->stmtsp()->addHereThisAsNext(varp);
+        } else {
+            m_modp->addStmtsp(varp);
+        }
+        return varp;
+    }
+    void wrapExprCoverage(AstNodeExpr* nodep, AstNode* coverageStmtsp) {
+        FileLine* const flp = nodep->fileline();
+        AstVar* const resultVarp = newExprResultTemp(nodep);
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        AstAssign* const assignp
+            = new AstAssign{flp, new AstVarRef{flp, resultVarp, VAccess::WRITE}, nodep};
+        AstNode::addNext<AstNode, AstNode>(assignp, coverageStmtsp);
+        relinker.relink(
+            new AstExprStmt{flp, assignp, new AstVarRef{flp, resultVarp, VAccess::READ}});
+    }
+    void addExprCoverInc(AstNodeExpr* nodep, AstNode*& transactionStmtsp,
+                         const ExprCoveragePlacement& placement, int start = 0) {
         FileLine* const fl = nodep->fileline();
         int count = start;
         for (CoverExpr& expr : m_exprs) {
@@ -864,12 +1122,19 @@ class CoverageVisitor final : public VNVisitor {
             UASSERT_OBJ(condp, nodep, "No terms in expression coverage branch");
             AstIf* const ifp = new AstIf{fl, condp, newp, nullptr};
             ifp->user2(true);
-            insertProcStatement(m_exprStmtsp, ifp);
+            if (placement.m_transactional) {
+                transactionStmtsp = AstNode::addNext(transactionStmtsp, ifp);
+            } else if (placement.m_beforep) {
+                placement.m_beforep->addHereThisAsNext(ifp);
+            } else {
+                insertProcStatement(m_exprStmtsp, ifp);
+            }
             ++count;
         }
     }
 
     void coverExprs(AstNodeExpr* nodep) {
+        if (m_transactionCoveredExprs.count(nodep)) return;
         if (!m_state.exprCoverageOn(nodep) || nodep->dtypep()->width() != 1 || !m_exprStmtsp) {
             return;
         }
@@ -881,6 +1146,8 @@ class CoverageVisitor final : public VNVisitor {
         VL_RESTORER_CLEAR(m_exprs);  // Already asserted above it's empty.
 
         m_seeking = SEEKING;
+        AstNode* transactionStmtsp = nullptr;
+        const ExprCoveragePlacement placement = exprCoveragePlacement(nodep);
         m_objective = false;
         iterate(nodep);
         CoverExprs falseExprs;
@@ -891,11 +1158,15 @@ class CoverageVisitor final : public VNVisitor {
         if (checkMaxExprs(falseExprs.size())) return;
         if (m_seeking == ABORTED) return;
 
-        addExprCoverInc(nodep);
+        addExprCoverInc(nodep, transactionStmtsp, placement);
         const int start = m_exprs.size();
         m_objective = false;
         m_exprs.swap(falseExprs);
-        addExprCoverInc(nodep, start);
+        addExprCoverInc(nodep, transactionStmtsp, placement, start);
+        if (transactionStmtsp) {
+            m_transactionCoveredExprs.emplace(nodep);
+            wrapExprCoverage(nodep, transactionStmtsp);
+        }
     }
 
     void exprEither(AstNodeBiop* nodep, bool overrideObjective = false, bool lObjective = false,
@@ -1039,6 +1310,11 @@ class CoverageVisitor final : public VNVisitor {
 
     template <typename T_Oper>
     void exprReduce(AstNodeUniop* nodep) {
+        if (m_finishBoundaries.contains(nodep) && m_seeking == NONE) {
+            coverExprs(nodep);
+            lineTrack(nodep);
+            return;
+        }
         if (m_seeking != ABORTED) {
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* const lhsp = nodep->lhsp();
@@ -1097,7 +1373,7 @@ class CoverageVisitor final : public VNVisitor {
         if (m_seeking != SEEKING) {
             iterateChildren(nodep);
         } else {
-            ExprCoverageEligibleVisitor elgibleVisitor(nodep);
+            ExprCoverageEligibleVisitor elgibleVisitor(nodep, m_finishEffects);
             if (elgibleVisitor.eligible()) {
                 std::stringstream emitV;
                 V3EmitV::verilogForTree(nodep, emitV);
@@ -1132,9 +1408,14 @@ class CoverageVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit CoverageVisitor(AstNetlist* rootp)
-        : m_exprTempNames{"__VExpr"} {
+    CoverageVisitor(AstNetlist* rootp, const V3FinishEffects& finishEffects)
+        : m_finishEffects{finishEffects}
+        , m_finishBoundaries{rootp, finishEffects}
+        , m_exprTempNames{"__VExpr"} {
         iterateChildren(rootp);
+        for (AstStmtPragma* nodep : m_deferredDeletePragmas) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
     }
     ~CoverageVisitor() override = default;
 };
@@ -1142,8 +1423,8 @@ public:
 //######################################################################
 // Coverage class functions
 
-void V3Coverage::coverage(AstNetlist* rootp) {
+void V3Coverage::coverage(AstNetlist* rootp, const V3FinishEffects& finishEffects) {
     UINFO(2, __FUNCTION__ << ":");
-    { CoverageVisitor{rootp}; }  // Destruct before checking
+    { CoverageVisitor{rootp, finishEffects}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coverage", 0, dumpTreeEitherLevel() >= 3);
 }

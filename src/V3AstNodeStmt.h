@@ -152,6 +152,7 @@ class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op3 := elsesp : List[AstNode]
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
     bool m_isBoundsCheck;  // True if this if node is for assertion/bounds checking
+    bool m_isBoundsLvalue;  // True if V3Unknown created this for a selected LHS
 protected:
     AstNodeIf(VNType t, FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
         : AstNodeStmt{t, fl} {
@@ -159,6 +160,7 @@ protected:
         addThensp(thensp);
         addElsesp(elsesp);
         isBoundsCheck(false);
+        isBoundsLvalue(false);
     }
 
 public:
@@ -166,11 +168,17 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isGateDedupable() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return isBoundsLvalue() == VN_DBG_AS(samep, NodeIf)->isBoundsLvalue();
+    }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void branchPred(VBranchPred flag) { m_branchPred = flag; }
     VBranchPred branchPred() const { return m_branchPred; }
     void isBoundsCheck(bool flag) { m_isBoundsCheck = flag; }
     bool isBoundsCheck() const { return m_isBoundsCheck; }
+    void isBoundsLvalue(bool flag) { m_isBoundsLvalue = flag; }
+    bool isBoundsLvalue() const { return m_isBoundsLvalue; }
 };
 class AstNodeReadWriteMem VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := filenamep : AstNodeExpr
@@ -299,15 +307,32 @@ public:
 };
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
-    // @astgen op1 := lhsp : AstNodeExpr
+    // @astgen op1 := lhsp : Optional[AstNodeExpr]
+    const VCReturnType m_returnType;
+
 public:
     AstCReturn(FileLine* fl, AstNodeExpr* lhsp)
-        : ASTGEN_SUPER_CReturn(fl) {
+        : ASTGEN_SUPER_CReturn(fl)
+        , m_returnType{VCReturnType::VALUE} {
+        UASSERT_OBJ(lhsp, this, "Value return requires an expression.");
         this->lhsp(lhsp);
     }
+    AstCReturn(FileLine* fl, VCReturnType returnType)
+        : ASTGEN_SUPER_CReturn(fl)
+        , m_returnType{returnType} {
+        UASSERT_OBJ(returnType != VCReturnType::VALUE, this,
+                    "Value return requires the expression constructor.");
+    }
     ASTGEN_MEMBERS_AstCReturn;
+    const char* broken() const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isBrancher() const override { return true; }
+    VCReturnType returnType() const { return m_returnType; }
+    bool sameNode(const AstNode* samep) const override {
+        return returnType() == VN_DBG_AS(samep, CReturn)->returnType();
+    }
 };
 class AstCStmt final : public AstNodeStmt {
     // C statement emitted into output, with some arbitrary nodes interspersed
@@ -773,6 +798,61 @@ public:
     bool isUnlikely() const override { return true; }
     int instrCount() const override { return 0; }  // Rarely executes
     bool sameNode(const AstNode* samep) const override { return fileline() == samep->fileline(); }
+};
+class AstFinishGuard final : public AstNodeStmt {
+    // Intermediate epoch guard, lowered by V3Finish before scheduling.
+    // @astgen op1 := baselinep : AstVarRef
+    // @astgen op2 := fallbackp : Optional[AstNodeExpr]
+    // @astgen ptr := m_blockp : Optional[AstJumpBlock]
+    const VFinishGuardType m_guardType;
+
+public:
+    AstFinishGuard(FileLine* fl, AstVarRef* baselinep, AstJumpBlock* blockp,
+                   VFinishGuardType guardType, AstNodeExpr* fallbackp = nullptr)
+        : ASTGEN_SUPER_FinishGuard(fl)
+        , m_guardType{guardType}
+        , m_blockp{blockp} {
+        this->baselinep(baselinep);
+        this->fallbackp(fallbackp);
+    }
+    ASTGEN_MEMBERS_AstFinishGuard;
+    const char* broken() const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    AstJumpBlock* blockp() const { return m_blockp; }
+    VFinishGuardType guardType() const { return m_guardType; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstFinishGuard* const asamep = VN_DBG_AS(samep, FinishGuard);
+        return blockp() == asamep->blockp() && guardType() == asamep->guardType();
+    }
+};
+class AstFinishScope final : public AstNodeStmt {
+    // Intermediate epoch baseline, lowered by V3Finish before scheduling.
+    // @astgen op1 := baselinep : AstVarRef
+    // @astgen ptr := m_blockp : AstJumpBlock
+
+public:
+    AstFinishScope(FileLine* fl, AstVarRef* baselinep, AstJumpBlock* blockp)
+        : ASTGEN_SUPER_FinishScope(fl)
+        , m_blockp{blockp} {
+        this->baselinep(baselinep);
+    }
+    ASTGEN_MEMBERS_AstFinishScope;
+    const char* broken() const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    AstJumpBlock* blockp() const { return m_blockp; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return blockp() == VN_DBG_AS(samep, FinishScope)->blockp();
+    }
 };
 class AstFireEvent final : public AstNodeStmt {
     // '-> _' and '->> _' event trigger statements
@@ -1542,11 +1622,13 @@ public:
 class AstBegin final : public AstNodeBlock {
     // A 'begin'/'end' named block.
     bool m_needProcess : 1;  // Uses VlProcess
+    bool m_mayFinish : 1;  // Fork branch may execute $finish
     const bool m_implied : 1;  // Not inserted by user
 public:
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
         : ASTGEN_SUPER_Begin(fl, name)
         , m_needProcess{false}
+        , m_mayFinish{false}
         , m_implied{implied} {
         addStmtsp(stmtsp);
     }
@@ -1555,6 +1637,8 @@ public:
     void dumpJson(std::ostream& str) const override;
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
+    bool mayFinish() const { return m_mayFinish; }
+    void mayFinish(bool flag) { m_mayFinish = flag; }
     bool implied() const { return m_implied; }
 };
 class AstFork final : public AstNodeBlock {

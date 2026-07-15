@@ -101,6 +101,7 @@ set(HEADERS
     V3Expand.h
     V3File.h
     V3FileLine.h
+    V3Finish.h
     V3Force.h
     V3FsmDetect.h
     V3Fork.h
@@ -277,6 +278,7 @@ set(COMMON_SOURCES
     V3Expand.cpp
     V3File.cpp
     V3FileLine.cpp
+    V3Finish.cpp
     V3Force.cpp
     V3FsmDetect.cpp
     V3Fork.cpp

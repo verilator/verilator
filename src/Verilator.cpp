@@ -55,6 +55,7 @@
 #include "V3ExecGraph.h"
 #include "V3Expand.h"
 #include "V3File.h"
+#include "V3Finish.h"
 #include "V3Force.h"
 #include "V3Fork.h"
 #include "V3FsmDetect.h"
@@ -238,7 +239,10 @@ static void process() {
         // inlining, or those opportunities may be optimized away. FSM
         // coverage is handled later in V3FsmDetect, after scoping has created
         // the AST context needed to recover and lower FSMs reliably.
-        if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
+        if (v3Global.opt.coverageNonFsm()) {
+            const V3FinishEffects finishEffects = V3Finish::analyzeForCoverage(v3Global.rootp());
+            V3Coverage::coverage(v3Global.rootp(), finishEffects);
+        }
 
         // Functional coverage code generation
         //    Generate code for covergroups/coverpoints
@@ -382,6 +386,17 @@ static void process() {
             // Convert case statements to if() blocks.  Must be after V3Unknown
             // Must be before V3Task so don't need to deal with task in case value compares
             V3Case::caseAll(v3Global.rootp());
+
+            // Identify source units and calls that may execute $finish before task lowering.
+            V3Finish::analyze(v3Global.rootp());
+
+            // Correctness lowering for finish-capable expressions is independent of
+            // optional general expression lifting.
+            V3LiftExpr::normalizeFinishSensitive(v3Global.rootp());
+
+            // Record containment on the normalized tree so later task lowering does not
+            // consume annotations invalidated by expression extraction.
+            V3Finish::analyzeContainment(v3Global.rootp());
         }
 
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
@@ -465,6 +480,9 @@ static void process() {
                 // suspendable processes
                 V3Timing::timingAll(v3Global.rootp());
             }
+
+            // Expose finish propagation branches before delayed and scheduling transformations.
+            V3Finish::lower(v3Global.rootp());
 
             // Create delayed assignments
             // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step.

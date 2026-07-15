@@ -21,13 +21,14 @@
 #include "verilatedos.h"
 
 class AstNetlist;
+class V3FinishEffects;
 
 //============================================================================
 
 class V3Coverage final {
 public:
     // CONSTRUCTORS
-    static void coverage(AstNetlist* rootp) VL_MT_DISABLED;
+    static void coverage(AstNetlist* rootp, const V3FinishEffects& finishEffects) VL_MT_DISABLED;
 };
 
 #endif  // Guard

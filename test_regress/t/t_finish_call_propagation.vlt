@@ -1,0 +1,9 @@
+// DESCRIPTION: Verilator: $finish propagation through source calls control
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+// User control data must not certify an ordinary DPI import as finish-free.
+no_finish -hier-dpi "dpi_reenter_finish"

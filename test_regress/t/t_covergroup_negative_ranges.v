@@ -45,6 +45,7 @@ module t (
       end
     endcase
 
+    // The finish case exits before this sample, so only stimulus cycles are counted.
     cg_inst.sample();
 
     // Coverage progression (NBA assignments committed before sample() within always block)

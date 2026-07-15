@@ -1898,11 +1898,13 @@ void AstNodeProcedure::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isSuspendable()) str << " [SUSP]";
     if (needProcess()) str << " [NPRC]";
+    if (mayFinish()) str << " [MFIN]";
 }
 
 void AstNodeProcedure::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isSuspendable);
     dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, mayFinish);
     dumpJsonGen(str);
 }
 
@@ -2121,6 +2123,8 @@ void AstCExpr::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "pure", m_pure);
     dumpJsonGen(str);
 }
+void AstFinishEpoch::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
+void AstFinishEpoch::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
     return VN_IS(nodep, Var) || VN_IS(nodep, Typedef)
            || (VN_IS(nodep, Constraint) && !VN_AS(nodep, Constraint)->isExternProto())
@@ -2350,6 +2354,20 @@ const char* AstEnumDType::broken() const {
 
 void AstEnumItemRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
+void AstExprStmt::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (!hasResult()) str << " [EXPLICIT-RESULT]";
+    if (finishGuarded()) str << " [FINISH-GUARDED]";
+    if (refResult()) str << (constRefResult() ? " [CONST-REF-RESULT]" : " [REF-RESULT]");
+}
+void AstExprStmt::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, hasResult);
+    dumpJsonBoolFuncIf(str, finishGuarded);
+    dumpJsonBoolFuncIf(str, refResult);
+    dumpJsonBoolFuncIf(str, constRefResult);
+    dumpJsonGen(str);
+}
+
 void AstGenBlock::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (implied()) str << " [IMPLIED]";
@@ -2468,6 +2486,40 @@ void AstJumpGo::dump(std::ostream& str) const {
 }
 void AstJumpGo::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 const char* AstJumpGo::broken() const {
+    BROKEN_RTN(!blockp()->brokeExistsAbove());
+    return nullptr;
+}
+
+void AstFinishGuard::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    str << " [" << guardType() << "]";
+    if (blockp()) str << " -> " << nodeAddr(blockp());
+}
+void AstFinishGuard::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "guardType", guardType().ascii());
+    dumpJsonGen(str);
+}
+const char* AstFinishGuard::broken() const {
+    BROKEN_RTN(!baselinep());
+    BROKEN_RTN(!baselinep()->access().isReadOnly());
+    const bool source = guardType() == VFinishGuardType::SOURCE;
+    const bool ref = guardType() == VFinishGuardType::LAMBDA_REF;
+    BROKEN_RTN(source != static_cast<bool>(blockp()));
+    BROKEN_RTN(ref != static_cast<bool>(fallbackp()));
+    BROKEN_RTN(fallbackp() && !fallbackp()->isLValue());
+    BROKEN_RTN(blockp() && !blockp()->brokeExistsAbove());
+    return nullptr;
+}
+
+void AstFinishScope::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    str << " -> " << nodeAddr(blockp());
+}
+void AstFinishScope::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+const char* AstFinishScope::broken() const {
+    BROKEN_RTN(!baselinep());
+    BROKEN_RTN(!baselinep()->access().isWriteOnly());
+    BROKEN_RTN(!blockp());
     BROKEN_RTN(!blockp()->brokeExistsAbove());
     return nullptr;
 }
@@ -2853,6 +2905,14 @@ void AstNodeArrayDType::dumpJson(std::ostream& str) const {
 void AstNodeAssign::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (timingControlp()) str << " [TIMING=" << nodeAddr(timingControlp()) << "]";
+}
+void AstNodeIf::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (isBoundsLvalue()) str << " [BLVAL]";
+}
+void AstNodeIf::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isBoundsLvalue);
+    dumpJsonGen(str);
 }
 string AstPackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
@@ -3454,6 +3514,8 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     if (containsGenBlock()) str << " [GENBLK]";
+    if (mayFinish()) str << " [MFIN]";
+    if (argsMayFinish()) str << " [AFIN]";
     str << " -> ";
     if (dotted() != "") str << ".=" << dotted() << " ";
     if (taskp()) {
@@ -3465,6 +3527,8 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
 void AstNodeFTaskRef::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, dotted);
     dumpJsonBoolFuncIf(str, containsGenBlock);
+    dumpJsonBoolFuncIf(str, mayFinish);
+    dumpJsonBoolFuncIf(str, argsMayFinish);
     dumpJsonGen(str);
 }
 void AstNodeFTask::dump(std::ostream& str) const {
@@ -3472,6 +3536,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (classMethod()) str << " [METHOD]";
     if (dpiExport()) str << " [DPIX]";
     if (dpiImport()) str << " [DPII]";
+    if (hierDpiNoFinish()) str << " [HDNFIN]";
     if (dpiOpenChild()) str << " [DPIOPENCHILD]";
     if (dpiOpenParent()) str << " [DPIOPENPARENT]";
     if (isExternDef()) str << " [EXTDEF]";
@@ -3485,7 +3550,35 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (verilogTask()) str << " [VTASK]";
     if (verilogFunction()) str << " [VFUNC]";
     if (needProcess()) str << " [NPRC]";
+    if (mayFinish()) str << " [MFIN]";
+    if (virtualFamilyp()) str << " [VFAM]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
+}
+AstNodeFTask* AstNodeFTask::virtualFamilyRootp() {
+    if (!virtualFamilyp()) return nullptr;
+
+    AstNodeFTask* rootp = this;
+    while (rootp->virtualFamilyp() != rootp) {
+        UASSERT_OBJ(rootp->virtualFamilyp(), rootp, "Virtual method family has no root");
+        rootp = rootp->virtualFamilyp();
+    }
+
+    AstNodeFTask* memberp = this;
+    while (memberp->virtualFamilyp() != memberp) {
+        AstNodeFTask* const parentp = memberp->virtualFamilyp();
+        memberp->virtualFamilyp(rootp);
+        memberp = parentp;
+    }
+    return rootp;
+}
+void AstNodeFTask::joinVirtualFamily(AstNodeFTask* basep) {
+    UASSERT_OBJ(basep, this, "Cannot join a null virtual method family");
+    if (!virtualFamilyp()) virtualFamilyp(this);
+    if (!basep->virtualFamilyp()) basep->virtualFamilyp(basep);
+
+    AstNodeFTask* const rootp = virtualFamilyRootp();
+    AstNodeFTask* const baseRootp = basep->virtualFamilyRootp();
+    if (rootp != baseRootp) rootp->virtualFamilyp(baseRootp);
 }
 bool AstNodeFTask::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
@@ -3520,12 +3613,14 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "method", classMethod());
     dumpJsonBoolFuncIf(str, dpiExport);
     dumpJsonBoolFuncIf(str, dpiImport);
+    dumpJsonBoolFuncIf(str, hierDpiNoFinish);
     dumpJsonBoolFuncIf(str, dpiOpenChild);
     dumpJsonBoolFuncIf(str, dpiOpenParent);
     dumpJsonBoolFuncIf(str, isExternDef);
     dumpJsonBoolFuncIf(str, isExternProto);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, mayFinish);
     dumpJsonBoolFuncIf(str, prototype);
     dumpJsonBoolFuncIf(str, recursive);
     dumpJsonBoolFuncIf(str, taskPublic);
@@ -3545,10 +3640,12 @@ void AstBegin::dump(std::ostream& str) const {
     this->AstNodeBlock::dump(str);
     if (implied()) str << " [IMPLIED]";
     if (needProcess()) str << " [NPRC]";
+    if (mayFinish()) str << " [MFIN]";
 }
 void AstBegin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, implied);
     dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, mayFinish);
     dumpJsonGen(str);
 }
 void AstNodeCoverDecl::dump(std::ostream& str) const {
@@ -3751,6 +3848,18 @@ void AstCMethodHard::setPurity() {
     }
 }
 
+void AstCReturn::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    str << " [" << returnType() << "]";
+}
+void AstCReturn::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "returnType", returnType().ascii());
+    dumpJsonGen(str);
+}
+const char* AstCReturn::broken() const {
+    BROKEN_RTN((returnType() == VCReturnType::VALUE) != static_cast<bool>(lhsp()));
+    return nullptr;
+}
 void AstCStmt::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (!stmtType().isNone()) str << " [" << stmtType().ascii() << "]";
@@ -3839,6 +3948,7 @@ const char* AstNot::widthMismatch() const VL_MT_STABLE {
 }
 void AstWith::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (mayFinish()) str << " [MFIN]";
     if (m_restricted) {
         str << " [RESTRICTED={";
         bool first = true;
@@ -3851,6 +3961,7 @@ void AstWith::dump(std::ostream& str) const {
     }
 }
 void AstWith::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, mayFinish);
     dumpJsonBoolIf(str, "restricted", m_restricted);
     if (m_restricted) {
         std::string joined;

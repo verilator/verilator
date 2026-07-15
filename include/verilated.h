@@ -421,6 +421,7 @@ protected:
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
         bool m_gotError = false;  // A $finish statement executed
         bool m_gotFinish = false;  // A $finish or $stop statement executed
+        std::atomic<uint64_t> m_finishEpoch{0};  // Number of source $finish executions
         bool m_quiet = false;  // Quiet, no summary report
         // Slow path
         int8_t m_timeunit;  // Time unit as 0..15
@@ -572,6 +573,12 @@ public:
     bool fatalOnVpiError() const VL_MT_SAFE { return m_s.m_fatalOnVpiError; }
     /// Set to throw fatal error on VPI errors
     void fatalOnVpiError(bool flag) VL_MT_SAFE;
+    /// Return the number of source $finish executions in this context
+    uint64_t finishEpoch() const VL_MT_SAFE {
+        return m_s.m_finishEpoch.load(std::memory_order_relaxed);
+    }
+    /// Record a source $finish execution before dispatching its callback
+    void finishEpochInc() VL_MT_SAFE { m_s.m_finishEpoch.fetch_add(1, std::memory_order_relaxed); }
     /// Return if got a $stop or non-fatal error
     bool gotError() const VL_MT_SAFE { return m_s.m_gotError; }
     /// Set if got a $stop or non-fatal error

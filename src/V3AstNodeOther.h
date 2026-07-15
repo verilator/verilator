@@ -92,6 +92,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // @astgen op3 := stmtsp : List[AstNode]
     // Scope name
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
+    // @astgen ptr := m_virtualFamilyp : Optional[AstNodeFTask]  // Transient union-find parent
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
     string m_dpiCDecl;  // Custom DPI-C function declaration
@@ -103,6 +104,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_prototype : 1;  // Just a prototype
     bool m_dpiExport : 1;  // DPI exported
     bool m_dpiImport : 1;  // DPI imported
+    bool m_hierDpiNoFinish : 1;  // Generated hierarchical DPI cannot execute $finish
     bool m_dpiContext : 1;  // DPI import context
     bool m_dpiOpenChild : 1;  // DPI import open array child wrapper
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
@@ -120,6 +122,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_verilogTask : 1;  // Declared by user as task (versus internal-made)
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
+    bool m_mayFinish : 1;  // May transitively execute $finish
     bool m_isCovergroupSample : 1;  // Covergroup sample() method
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     VLifetime m_lifetime;  // Default lifetime of local vars
@@ -135,6 +138,7 @@ protected:
         , m_prototype{false}
         , m_dpiExport{false}
         , m_dpiImport{false}
+        , m_hierDpiNoFinish{false}
         , m_dpiContext{false}
         , m_dpiOpenChild{false}
         , m_dpiTask{false}
@@ -152,6 +156,7 @@ protected:
         , m_verilogTask{false}
         , m_virtual{false}
         , m_needProcess{false}
+        , m_mayFinish{false}
         , m_isCovergroupSample{false} {
         addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
@@ -194,6 +199,8 @@ public:
     void dpiExport(bool flag) { m_dpiExport = flag; }
     bool dpiImport() const { return m_dpiImport; }
     void dpiImport(bool flag) { m_dpiImport = flag; }
+    bool hierDpiNoFinish() const { return m_hierDpiNoFinish; }
+    void hierDpiNoFinish(bool flag) { m_hierDpiNoFinish = flag; }
     bool dpiContext() const { return m_dpiContext; }
     void dpiContext(bool flag) { m_dpiContext = flag; }
     bool dpiOpenChild() const { return m_dpiOpenChild; }
@@ -225,8 +232,14 @@ public:
     void verilogTask(bool flag) { m_verilogTask = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
+    AstNodeFTask* virtualFamilyp() const { return m_virtualFamilyp; }
+    void virtualFamilyp(AstNodeFTask* nodep) { m_virtualFamilyp = nodep; }
+    AstNodeFTask* virtualFamilyRootp();
+    void joinVirtualFamily(AstNodeFTask* basep);
     bool needProcess() const { return m_needProcess; }
     void setNeedProcess() { m_needProcess = true; }
+    bool mayFinish() const { return m_mayFinish; }
+    void mayFinish(bool flag) { m_mayFinish = flag; }
     bool isCovergroupSample() const { return m_isCovergroupSample; }
     void isCovergroupSample(bool flag) { m_isCovergroupSample = flag; }
     void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
@@ -242,6 +255,8 @@ public:
         isHideProtected(fromp->isHideProtected());
         isVirtual(fromp->isVirtual());
         isStatic(fromp->isStatic());
+        hierDpiNoFinish(fromp->hierDpiNoFinish());
+        mayFinish(fromp->mayFinish());
         lifetime(fromp->lifetime());
         underGenerate(fromp->underGenerate());
     }
@@ -400,10 +415,12 @@ class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
     bool m_needProcess : 1;  // Uses VlProcess
+    bool m_mayFinish : 1;  // May transitively execute $finish
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
         m_needProcess = false;
+        m_mayFinish = false;
         m_suspendable = false;
         addStmtsp(stmtsp);
     }
@@ -418,6 +435,8 @@ public:
     void setSuspendable() { m_suspendable = true; }
     bool needProcess() const { return m_needProcess; }
     void setNeedProcess() { m_needProcess = true; }
+    bool mayFinish() const { return m_mayFinish; }
+    void mayFinish(bool flag) { m_mayFinish = flag; }
 };
 class AstNodeRange VL_NOT_FINAL : public AstNode {
     // A range, sized or unsized
@@ -508,6 +527,7 @@ class AstCFunc final : public AstNode {
     // @astgen op1 := argsp : List[AstVar]  // Argument (and return value) variables
     // @astgen op2 := varsp : List[AstVar]  // Local variables
     // @astgen op3 := stmtsp : List[AstNode]
+    // @astgen op4 := prologsp : List[AstNode]  // Runs before a constructor's base init
     //
     // @astgen ptr := m_scopep : Optional[AstScope]  // Scope that function is under
     string m_name;
@@ -658,7 +678,7 @@ public:
     void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
-        return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp() && !isVirtual()
+        return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp() && !prologsp() && !isVirtual()
                && !dpiImportPrototype();
     }
 };

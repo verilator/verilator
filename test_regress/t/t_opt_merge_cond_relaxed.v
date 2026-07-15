@@ -57,14 +57,14 @@ module t;
     ++cnt;
     if (cyc > 100000) $error("cyc > 100000 once");
 
-    // DPI call, but no public state involved.
+    // Context DPI call, so an exported SV callback may execute $finish.
     dpiWr = 13;
     if (cyc[1:0] == 2'd2) setViaDpi(cyc + 16);
     ++cnt;
     if (cyc[1:0] == 2'd2) setViaDpi(cyc + 32);
     `checkd(dpiWr, cyc % 4 == 2 ? cyc + 32 : 13);
 
-    // DPI call, but no public state involved.
+    // Context DPI call, so an exported SV callback may execute $finish.
     dpiRd = 24;
     tmp = 10;
     if (cyc[1:0] == 2'd1) begin

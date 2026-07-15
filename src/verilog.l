@@ -146,6 +146,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "lint_off"            { FL; return yVLT_LINT_OFF; }
   "lint_on"             { FL; return yVLT_LINT_ON; }
   "no_clocker"          { FL; return yVLT_NO_CLOCKER; }
+  "no_finish"           { FL; return yVLT_NO_FINISH; }
   "no_inline"           { FL; return yVLT_NO_INLINE; }
   "parallel_case"       { FL; return yVLT_PARALLEL_CASE; }
   "profile_data"        { FL; return yVLT_PROFILE_DATA; }

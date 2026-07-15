@@ -243,6 +243,15 @@ The grammar of control commands is as follows:
    Before version 4.026, ``-rule`` was named ``-msg``, and
    ``-msg`` remained a deprecated alias until Version 5.000.
 
+.. option:: no_finish -hier-dpi "<function_name>"
+
+   For internal use only. Hierarchical Verilation generates this exact-name
+   certificate when a generated DPI wrapper cannot execute ``$finish``.
+   Verilator applies the certificate only to imports in generated
+   ``verilator_lib`` wrapper modules; ordinary DPI imports remain
+   conservatively finish-capable. Missing certificates also retain the
+   conservative behavior. See :ref:`Hierarchical Verilation`.
+
 .. option:: parallel_case -file "<filename>" -lines <lineno>
 
    Same as ``//synthesis parallel_case``. When these synthesis

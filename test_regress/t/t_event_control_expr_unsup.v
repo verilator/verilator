@@ -12,6 +12,12 @@ module t;
     return bit'(x % 2);
   endfunction
 
+  function bit finish_foo;
+    $finish;
+    return 1'b0;
+  endfunction
+
   always @(posedge foo());
+  always @(posedge finish_foo());
 
 endmodule

@@ -1,6 +1,7 @@
 module Vt_debug_emitv_t;
     input logic clk;
     input logic in;
+    Vt_debug_emitv_FinishDumpDerived finish_dumpVt_debug_emitv_FinishDumpDerived;
     typedef enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
@@ -41,6 +42,7 @@ module Vt_debug_emitv_t;
     Iface the_ifaces[3:0] ();
     initial begin
         begin
+            finish_dump = new();
             if ($test$plusargs("HELLO")) begin
                 $display("Hello argument found.");
             end
@@ -77,6 +79,7 @@ module Vt_debug_emitv_t;
             end
             #1;
             $write("After #1 delay");
+            (array[ident(i1)[1:0]]) = i1;
             wait((clk == 'sh1)) $write("After wait(clk == 1)");
         end
     end
@@ -1279,14 +1282,51 @@ package Vt_debug_emitv___024unit;
         function randomize;
         endfunction
     endclass
+    class Vt_debug_emitv_FinishDumpBase;
+        function new;
+            ref int signed target;
+            const ref int signed snapshot;
+            input int signed value;
+            target = (target + (snapshot + value));
+        endfunction
+        task virtual_finish;
+            input bit finish_now;
+        endtask
+    endclass
+    class Vt_debug_emitv_FinishDumpDerived;
+        int signed target;
+        int signed snapshot;
+        function may_finish;
+            input int signed value;
+            begin : label8
+                may_finish = /*CRESET*/;
+                if ((value != 'sh0)) begin
+                    $finish;
+                end
+                may_finish = value;
+                disable label8;
+            end
+        endfunction
+        task virtual_finish;
+            input bit finish_now;
+            if (finish_now) begin
+                $finish;
+            end
+        endtask
+        function new;
+            new(targetsnapshotmay_finish('sh0));
+        endfunction
+
+        ???? // CLASSEXTENDS
+        Vt_debug_emitv_FinishDumpBaseendclass
     function rand_restricted;
         input Vt_debug_emitv_Cls objVt_debug_emitv_Cls;
         input int signed member;
-        begin : label8
+        begin : label9
             rand_restricted = randomize() with (
                 ???? // CONSTRAINTEXPR
                 (item.rmember1 < member)) ;
-            disable label8;
+            disable label9;
         end
     endfunction
 endpackage
@@ -1307,13 +1347,13 @@ module Vt_debug_emitv_sub;
     endtask
     function f;
         input int signed v;
-        begin : label9
+        begin : label10
             if ((v == 'sh0)) begin
                 f = 'sh21;
-                disable label9;
+                disable label10;
             end
             f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
-            disable label9;
+            disable label10;
         end
     endfunction
     real r;

@@ -132,6 +132,7 @@ class UnknownVisitor final : public VNVisitor {
             replaceHandle.relink(newp);
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
+            newp->isBoundsLvalue(true);
             prep->user2p(newp);  // Save so we may LogAnd it next time
         }
     }

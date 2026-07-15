@@ -239,6 +239,8 @@ private:
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
     bool m_containsGenBlock = false;  // Contains gen block reference
+    bool m_mayFinish = false;  // Call may transitively execute $finish
+    bool m_argsMayFinish = false;  // An argument may transitively execute $finish
     VIsCached m_purity;  // Pure state
 
 protected:
@@ -267,6 +269,10 @@ public:
     void pli(bool flag) { m_pli = flag; }
     bool containsGenBlock() const { return m_containsGenBlock; }
     void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
+    bool mayFinish() const { return m_mayFinish; }
+    void mayFinish(bool flag) { m_mayFinish = flag; }
+    bool argsMayFinish() const { return m_argsMayFinish; }
+    void argsMayFinish(bool flag) { m_argsMayFinish = flag; }
     bool isPure() override;
     bool sameNode(const AstNode* samep) const override {
         const AstNodeFTaskRef* const asamep = VN_DBG_AS(samep, NodeFTaskRef);
@@ -276,6 +282,8 @@ public:
                && dotted() == asamep->dotted()  //
                && inlinedDots() == asamep->inlinedDots()  //
                && pli() == asamep->pli()  //
+               && mayFinish() == asamep->mayFinish()  //
+               && argsMayFinish() == asamep->argsMayFinish()  //
                && containsGenBlock() == asamep->containsGenBlock();
     }
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
@@ -553,6 +561,7 @@ private:
     // 'with (identifier_list) {...}' restricted form (IEEE 1800-2023 18.7).
     bool m_restricted = false;
     bool m_validated = false;  // identifier_list typo / unused checks already run
+    bool m_mayFinish = false;  // Callback expression may transitively execute $finish
     std::set<std::string> m_restrictedNames;
 
 public:
@@ -565,7 +574,10 @@ public:
     }
     ASTGEN_MEMBERS_AstWith;
     bool hasDType() const override { return true; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstWith* const asamep = VN_DBG_AS(samep, With);
+        return mayFinish() == asamep->mayFinish();
+    }
     const char* broken() const override {
         BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
         BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
@@ -577,6 +589,8 @@ public:
     bool restricted() const { return m_restricted; }
     bool validated() const { return m_validated; }
     void validated(bool flag) { m_validated = flag; }
+    bool mayFinish() const { return m_mayFinish; }
+    void mayFinish(bool flag) { m_mayFinish = flag; }
     void addRestrictedName(const std::string& name) { m_restrictedNames.insert(name); }
     const std::set<std::string>& restrictedNames() const { return m_restrictedNames; }
     // True if 'name' binds into the randomize() target class.
@@ -1441,6 +1455,9 @@ class AstExprStmt final : public AstNodeExpr {
     // @astgen op2 := resultp : AstNodeExpr
 private:
     bool m_hasResult = true;
+    bool m_finishGuarded = false;  // Constructor argument needs an epoch entry guard
+    bool m_refResult = false;  // Immediate lambda returns an lvalue reference
+    bool m_constRefResult = false;  // Immediate lambda returns a const lvalue reference
 
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
@@ -1451,6 +1468,8 @@ public:
     }
     ASTGEN_MEMBERS_AstExprStmt;
     // METHODS
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1458,9 +1477,22 @@ public:
         if (AstNode::afterCommentp(stmtsp())) return false;
         return resultp()->isPure();
     }
-    bool sameNode(const AstNode*) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstExprStmt* const sp = VN_AS(samep, ExprStmt);
+        return m_hasResult == sp->m_hasResult && m_finishGuarded == sp->m_finishGuarded
+               && m_refResult == sp->m_refResult && m_constRefResult == sp->m_constRefResult;
+    }
     bool hasResult() const { return m_hasResult; }
     void hasResult(bool flag) { m_hasResult = flag; }
+    bool finishGuarded() const { return m_finishGuarded; }
+    void finishGuarded(bool flag) { m_finishGuarded = flag; }
+    bool refResult() const { return m_refResult; }
+    bool constRefResult() const { return m_constRefResult; }
+    void refResult(bool isConst) {
+        m_hasResult = false;
+        m_refResult = true;
+        m_constRefResult = isConst;
+    }
 };
 class AstFError final : public AstNodeExpr {
     // @astgen op1 := filep : AstNodeExpr
@@ -1674,6 +1706,26 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+};
+class AstFinishEpoch final : public AstNodeExpr {
+    // Current number of source $finish executions in the simulation context.
+public:
+    explicit AstFinishEpoch(FileLine* fl)
+        : ASTGEN_SUPER_FinishEpoch(fl) {
+        dtypeSetUInt64();
+    }
+    ASTGEN_MEMBERS_AstFinishEpoch;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return true; }
+    bool isSystemFunc() const override { return true; }
+    int instrCount() const override { return INSTR_COUNT_LD; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstFuture final : public AstNodeExpr {
     // Verilog $future_gclk

@@ -55,6 +55,9 @@
 //     - if it's not a fork..join_none:
 //         - create a join sync variable
 //         - create statements that sync the main process with its children
+// - after each generated coroutine await in a finish-capable source unit:
+//     - compare the finish epoch with the source unit's entry epoch
+//     - leave the source unit before executing post-resume statements if it changed
 //
 // See the internals documentation docs/internals.rst for more details.
 //
@@ -478,6 +481,7 @@ class TimingControlVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
+    AstFinishScope* m_finishScopep = nullptr;  // Current source finish scope
     bool m_hasProcess = false;  // True if current scope has a VlProcess handle available
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
@@ -513,6 +517,7 @@ class TimingControlVisitor final : public VNVisitor {
     // Stats
     size_t m_statZeroDelays = 0;  // Number of statically known #0 delays
     size_t m_statConstDelays = 0;  // Number of statically known #const (non-zero) delays
+    size_t m_statFinishGuards = 0;  // Number of guards added after timing boundaries
     size_t m_statVariableDelays = 0;  // Number of delays with value unknown at compile time
 
     // METHODS
@@ -707,6 +712,30 @@ class TimingControlVisitor final : public VNVisitor {
             = new AstCExpr{flp, (m_procp && m_hasProcess) ? "vlProcess" : "nullptr"};
         methodp->addPinsp(ap);
     }
+    AstFinishGuard* newTimingFinishGuard(FileLine* const flp) {
+        if (!m_finishScopep) return nullptr;
+        AstVarRef* const baselinep = m_finishScopep->baselinep()->cloneTree(false);
+        baselinep->access(VAccess::READ);
+        ++m_statFinishGuards;
+        return new AstFinishGuard{flp, baselinep, m_finishScopep->blockp(),
+                                  VFinishGuardType::SOURCE};
+    }
+    void addTimingFinishGuard(AstNodeStmt* const boundaryp) {
+        if (!m_finishScopep) return;
+
+        if (AstFinishGuard* const guardp = VN_CAST(boundaryp->nextp(), FinishGuard)) {
+            if (guardp->guardType() == VFinishGuardType::SOURCE) {
+                UASSERT_OBJ(guardp->blockp() == m_finishScopep->blockp(), guardp,
+                            "Adjacent finish guard has a different source scope");
+                return;
+            }
+        }
+        // A constructor or lambda guard owns a different baseline and target. Keep it after the
+        // source guard instead of retagging it and changing only half of that ownership pair.
+        if (AstFinishGuard* const guardp = newTimingFinishGuard(boundaryp->fileline())) {
+            boundaryp->addNextHere(guardp);
+        }
+    }
     // Creates the fork handle type and returns it
     AstBasicDType* getCreateForkSyncDTypep() {
         if (m_forkDtp) return m_forkDtp;
@@ -803,7 +832,9 @@ class TimingControlVisitor final : public VNVisitor {
         joinp->dtypeSetVoid();
         addProcessInfo(joinp);
         addDebugInfo(joinp);
-        forkp->addNextHere(new AstCAwait{flp, joinp});
+        AstCAwait* const awaitp = new AstCAwait{flp, joinp};
+        addTimingFinishGuard(awaitp);
+        forkp->addNextHere(awaitp);
     }
 
     // `procp` shall be a NodeProcedure/CFunc/Begin and within it vars from `varsp` will be placed.
@@ -890,8 +921,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
+        VL_RESTORER(m_finishScopep);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
+        m_finishScopep = nullptr;
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
         iterateChildren(nodep);
@@ -906,6 +939,13 @@ class TimingControlVisitor final : public VNVisitor {
         }
     }
     void visit(AstJumpBlock* nodep) override {
+        AstFinishScope* finishScopep = nullptr;
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if ((finishScopep = VN_CAST(stmtp, FinishScope))) break;
+        }
+
+        VL_RESTORER(m_finishScopep);
+        if (finishScopep) m_finishScopep = finishScopep;
         VL_RESTORER(m_underJumpBlock);
         m_underJumpBlock = true;
         visit(static_cast<AstNodeStmt*>(nodep));
@@ -914,8 +954,10 @@ class TimingControlVisitor final : public VNVisitor {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
+        VL_RESTORER(m_finishScopep);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
+        m_finishScopep = nullptr;
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
         // Workaround for killing `always` processes (doing that is pretty much UB)
@@ -948,8 +990,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
+        VL_RESTORER(m_finishScopep);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
+        m_finishScopep = nullptr;
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;
@@ -987,7 +1031,9 @@ class TimingControlVisitor final : public VNVisitor {
         if (hasFlags(funcp, T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
             // Calls to suspendables are always void return type, hence parent must be StmtExpr
             AstStmtExpr* const stmtp = VN_AS(nodep->backp(), StmtExpr);
-            stmtp->replaceWith(new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()});
+            AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()};
+            stmtp->replaceWith(awaitp);
+            addTimingFinishGuard(awaitp);
             VL_DO_DANGLING(pushDeletep(stmtp), stmtp);
         }
         iterateChildren(nodep);
@@ -1056,11 +1102,12 @@ class TimingControlVisitor final : public VNVisitor {
         addProcessInfo(delayMethodp);
         addDebugInfo(delayMethodp);
         // Create the co_await
-        AstNode* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
+        AstCAwait* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
         // Relink child statements after the co_await
         if (AstNode* const stmtsp = nodep->stmtsp()) {
-            awaitp->addNext(stmtsp->unlinkFrBackWithNext());
+            AstNode::addNext<AstNode, AstNode>(awaitp, stmtsp->unlinkFrBackWithNext());
         }
+        addTimingFinishGuard(awaitp);
         nodep->replaceWith(awaitp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -1095,6 +1142,7 @@ class TimingControlVisitor final : public VNVisitor {
             // Create the co_await
             AstCAwait* const awaitEvalp
                 = new AstCAwait{flp, evalMethodp, getCreateDynamicTriggerSenTree()};
+            addTimingFinishGuard(awaitEvalp);
             // Construct the sen expression for this sentree
             UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
             auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
@@ -1129,6 +1177,7 @@ class TimingControlVisitor final : public VNVisitor {
             if (hasDestructivePostUpdates) {
                 AstCAwait* const awaitPostUpdatep = awaitEvalp->cloneTree(false);
                 VN_AS(awaitPostUpdatep->exprp(), CMethodHard)->method(VCMethod::SCHED_POST_UPDATE);
+                addTimingFinishGuard(awaitPostUpdatep);
                 loopp->addStmtsp(awaitPostUpdatep);
             }
             // Put the post updates at the end of the loop
@@ -1136,6 +1185,7 @@ class TimingControlVisitor final : public VNVisitor {
             // Finally, await the resumption step in 'act'
             AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->method(VCMethod::SCHED_RESUMPTION);
+            addTimingFinishGuard(awaitResumep);
             AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep);
             // Replace the event control with one explicit stmt chain:
             //   init -> [inits] -> [optional destructive pre-clears] -> loop -> awaitResumption
@@ -1167,6 +1217,7 @@ class TimingControlVisitor final : public VNVisitor {
             addEventDebugInfo(triggerMethodp, sentreep);
             // Create the co_await
             AstCAwait* const awaitp = new AstCAwait{flp, triggerMethodp, sentreep};
+            addTimingFinishGuard(awaitp);
             nodep->replaceWith(awaitp);
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1360,6 +1411,9 @@ class TimingControlVisitor final : public VNVisitor {
             FileLine* const flp = nodep->fileline();
             AstCExpr* const exprp = new AstCExpr{flp, "vlProcess->completedFork()", 1};
             AstWait* const waitp = new AstWait{flp, exprp, nullptr};
+            if (AstFinishGuard* const guardp = newTimingFinishGuard(flp)) {
+                waitp->addNextHere(guardp);
+            }
             nodep->replaceWith(waitp);
         } else {
             // never reached by any process; remove to avoid compilation error
@@ -1381,6 +1435,7 @@ class TimingControlVisitor final : public VNVisitor {
                 // callstack
                 AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}"};
                 AstCAwait* const awaitp = new AstCAwait{flp, foreverp};
+                addTimingFinishGuard(awaitp);
                 nodep->replaceWith(awaitp);
                 if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
                 VL_DO_DANGLING(condp->deleteTree(), condp);
@@ -1440,7 +1495,11 @@ class TimingControlVisitor final : public VNVisitor {
         size_t idx = 0;  // Index for naming begins
         for (AstBegin *itemp = nodep->forksp(), *nextp; itemp; itemp = nextp) {
             nextp = VN_AS(itemp->nextp(), Begin);
-            iterate(itemp);
+            {
+                VL_RESTORER(m_finishScopep);
+                m_finishScopep = nullptr;
+                iterate(itemp);
+            }
             // Note: Even if we do not find any awaits, we cannot simply inline
             // the process here, as new awaits could be added later.
 
@@ -1477,6 +1536,7 @@ public:
         }
     }
     ~TimingControlVisitor() override {
+        V3Stats::addStat("Timing, Finish guards", m_statFinishGuards);
         V3Stats::addStat("Timing, known #0 delays", m_statZeroDelays);
         V3Stats::addStat("Timing, known #const delays", m_statConstDelays);
         V3Stats::addStat("Timing, unknown #variable delays", m_statVariableDelays);

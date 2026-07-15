@@ -1056,6 +1056,34 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 // ######################################################################
 
+class VCReturnType final {
+public:
+    enum en : uint8_t { DEFAULT, VALUE, VOID };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"default", "value", "void"};
+        return names[m_e];
+    }
+    VCReturnType()
+        : m_e{VALUE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCReturnType(en _e)
+        : m_e{_e} {}
+    explicit VCReturnType(int _e)
+        : m_e{static_cast<en>(_e)} {}
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VCReturnType& lhs, const VCReturnType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCReturnType& lhs, VCReturnType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCReturnType::en lhs, const VCReturnType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCReturnType& rhs) {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 class VCStmtType final {
 public:
     enum en : uint8_t {
@@ -1506,6 +1534,38 @@ constexpr bool operator==(const VEdgeType& lhs, const VEdgeType& rhs) {
 }
 constexpr bool operator==(const VEdgeType& lhs, VEdgeType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs == rhs.m_e; }
+
+// ######################################################################
+
+class VFinishGuardType final {
+public:
+    enum en : uint8_t { LAMBDA_REF, LAMBDA_VALUE, LAMBDA_VOID, SOURCE };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"lambda-ref", "lambda-value", "lambda-void", "source"};
+        return names[m_e];
+    }
+    VFinishGuardType()
+        : m_e{SOURCE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VFinishGuardType(en _e)
+        : m_e{_e} {}
+    explicit VFinishGuardType(int _e)
+        : m_e{static_cast<en>(_e)} {}
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VFinishGuardType& lhs, const VFinishGuardType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VFinishGuardType& lhs, VFinishGuardType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VFinishGuardType::en lhs, const VFinishGuardType& rhs) {
+    return lhs == rhs.m_e;
+}
+inline std::ostream& operator<<(std::ostream& os, const VFinishGuardType& rhs) {
+    return os << rhs.ascii();
+}
 
 // ######################################################################
 

@@ -3855,6 +3855,7 @@ class ConstVisitor final : public VNVisitor {
                 AstNode* const elsesp = nodep->elsesp()->unlinkFrBackWithNext();
                 AstIf* const ifp = new AstIf{nodep->fileline(), condp, elsesp, thensp};
                 ifp->isBoundsCheck(nodep->isBoundsCheck());  // Copy bounds check info
+                ifp->isBoundsLvalue(nodep->isBoundsLvalue());
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4205,6 +4206,11 @@ class ConstVisitor final : public VNVisitor {
     //-----
     // Jump elimination
 
+    void visit(AstFinishScope* nodep) override {
+        iterateChildren(nodep);
+        // The scope is lowered to a conditional JumpGo after timing analysis.
+        m_usedJumpBlocks.emplace(nodep->blockp());
+    }
     void visit(AstJumpGo* nodep) override {
         // Any statements following the JumpGo (at this statement level) never execute, delete
         if (nodep->nextp()) pushDeletep(nodep->nextp()->unlinkFrBackWithNext());

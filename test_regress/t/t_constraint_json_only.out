@@ -27,7 +27,7 @@
       {"type":"VAR","name":"if_state_ok","addr":"(W)","loc":"d,13:12,13:23","dtypep":"(U)","origName":"if_state_ok","verilogName":"if_state_ok","direction":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"bit","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"VAR","name":"array","addr":"(X)","loc":"d,15:12,15:17","dtypep":"(Y)","origName":"array","verilogName":"array","direction":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"VAR","name":"state","addr":"(Z)","loc":"d,17:10,17:15","dtypep":"(M)","origName":"state","verilogName":"state","direction":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-      {"type":"FUNC","name":"strings_equal","addr":"(AB)","loc":"d,61:16,61:29","dtypep":"(U)","method":true,"cname":"strings_equal",
+      {"type":"FUNC","name":"strings_equal","addr":"(AB)","loc":"d,61:16,61:29","dtypep":"(U)","method":true,"cname":"strings_equal","virtualFamilyp":"UNLINKED",
        "fvarp": [
         {"type":"VAR","name":"strings_equal","addr":"(BB)","loc":"d,61:16,61:29","dtypep":"(U)","origName":"strings_equal","verilogName":"strings_equal","direction":"OUTPUT","noCReset":true,"icoMaybeWritten":true,"isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []}
       ],"classOrPackagep": [],
@@ -55,7 +55,7 @@
           {"type":"VARREF","name":"strings_equal","addr":"(LB)","loc":"d,62:5,62:11","dtypep":"(U)","access":"WR","varp":"(BB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
         ],"timingControlp": []}
       ],"scopeNamep": []},
-      {"type":"FUNC","name":"new","addr":"(MB)","loc":"d,7:1,7:6","dtypep":"(NB)","method":true,"cname":"new","fvarp": [],"classOrPackagep": [],"stmtsp": [],"scopeNamep": []},
+      {"type":"FUNC","name":"new","addr":"(MB)","loc":"d,7:1,7:6","dtypep":"(NB)","method":true,"cname":"new","virtualFamilyp":"UNLINKED","fvarp": [],"classOrPackagep": [],"stmtsp": [],"scopeNamep": []},
       {"type":"VAR","name":"constraint","addr":"(OB)","loc":"d,7:1,7:6","dtypep":"(PB)","origName":"constraint","verilogName":"constraint","direction":"NONE","lifetime":"NONE","varType":"MEMBER","dtypeName":"VlRandomizer","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []}
     ],"extendsp": []}
   ]}

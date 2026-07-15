@@ -200,6 +200,8 @@ class V3Global final {
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
     bool m_hasPrintedObjects = false;  // Design has format args printed with to_string()
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
+    bool m_currentHierBlockEvalMayFinish = true;  // Hier block eval entry may execute $finish
+    bool m_currentHierBlockFinalMayFinish = true;  // Hier block final entry may execute $finish
 
     // Memory address to short string mapping (for debug)
     std::unordered_map<const void*, std::string>
@@ -299,6 +301,10 @@ public:
     static std::vector<std::string> verilatedCppFiles();
     uint64_t currentHierBlockCost() const { return m_currentHierBlockCost; }
     void currentHierBlockCost(uint64_t cost) { m_currentHierBlockCost = cost; }
+    bool currentHierBlockEvalMayFinish() const { return m_currentHierBlockEvalMayFinish; }
+    void currentHierBlockEvalMayFinish(bool flag) { m_currentHierBlockEvalMayFinish = flag; }
+    bool currentHierBlockFinalMayFinish() const { return m_currentHierBlockFinalMayFinish; }
+    void currentHierBlockFinalMayFinish(bool flag) { m_currentHierBlockFinalMayFinish = flag; }
 };
 
 extern V3Global v3Global;

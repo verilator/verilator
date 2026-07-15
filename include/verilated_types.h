@@ -32,11 +32,13 @@
 #include <array>
 #include <atomic>
 #include <deque>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 class VlProcess;
 template <typename T_Value, std::size_t N_Depth>
@@ -549,6 +551,61 @@ public:
 template <typename T_Class>
 class VlClassRef;
 
+namespace vlstd {
+
+inline bool finishEpochMatches_(uint64_t finishEpoch) {
+    return Verilated::threadContextp()->finishEpoch() == finishEpoch;
+}
+
+template <typename T_Iterator, typename T_Func>
+bool finishEpochMergeSort_(
+    T_Iterator begin, std::vector<typename std::iterator_traits<T_Iterator>::value_type>& scratch,
+    std::size_t left, std::size_t right, uint64_t finishEpoch, T_Func& with_func,
+    bool descending) {
+    if (right - left < 2) return true;
+
+    const std::size_t middle = left + (right - left) / 2;
+    if (!finishEpochMergeSort_(begin, scratch, left, middle, finishEpoch, with_func, descending)) {
+        return false;
+    }
+    if (!finishEpochMergeSort_(begin, scratch, middle, right, finishEpoch, with_func,
+                               descending)) {
+        return false;
+    }
+
+    std::copy(begin + left, begin + right, scratch.begin() + left);
+    std::size_t lhs = left;
+    std::size_t rhs = middle;
+    std::size_t out = left;
+    while (lhs < middle && rhs < right) {
+        if (VL_UNLIKELY(!finishEpochMatches_(finishEpoch))) return false;
+        auto&& rhsKey = with_func(0, scratch[rhs]);
+        if (VL_UNLIKELY(!finishEpochMatches_(finishEpoch))) return false;
+        auto&& lhsKey = with_func(0, scratch[lhs]);
+        if (VL_UNLIKELY(!finishEpochMatches_(finishEpoch))) return false;
+
+        const bool rhsFirst = descending ? lhsKey < rhsKey : rhsKey < lhsKey;
+        if (VL_UNLIKELY(!finishEpochMatches_(finishEpoch))) return false;
+        begin[out++] = std::move(rhsFirst ? scratch[rhs++] : scratch[lhs++]);
+    }
+    while (lhs < middle) begin[out++] = std::move(scratch[lhs++]);
+    while (rhs < right) begin[out++] = std::move(scratch[rhs++]);
+    return true;
+}
+
+template <typename T_Iterator, typename T_Func>
+bool finishEpochSort_(T_Iterator begin, T_Iterator end, uint64_t finishEpoch, T_Func& with_func,
+                      bool descending) {
+    if (VL_UNLIKELY(!finishEpochMatches_(finishEpoch))) return false;
+    using T_Value = typename std::iterator_traits<T_Iterator>::value_type;
+    std::vector<T_Value> scratch(begin, end);
+    const std::size_t size = static_cast<std::size_t>(end - begin);
+    return finishEpochMergeSort_(begin, scratch, 0, size, finishEpoch, with_func, descending)
+           && finishEpochMatches_(finishEpoch);
+}
+
+}  // namespace vlstd
+
 //===================================================================
 // Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
@@ -786,6 +843,15 @@ public:
             return with_func(0, a) < with_func(0, b);
         });
     }
+    /// Sort a copy and commit only if no callback executed $finish.
+    template <typename T_Func>
+    void sort(uint64_t finishEpoch, T_Func with_func) {
+        if (VL_UNLIKELY(!vlstd::finishEpochMatches_(finishEpoch))) return;
+        Deque sorted = m_deque;
+        if (vlstd::finishEpochSort_(sorted.begin(), sorted.end(), finishEpoch, with_func, false)) {
+            m_deque.swap(sorted);
+        }
+    }
     void rsort() { std::sort(m_deque.rbegin(), m_deque.rend()); }
     template <typename T_Func>
     void rsort(T_Func with_func) {
@@ -794,6 +860,15 @@ public:
             // index number is meaningless with sort, as it changes
             return with_func(0, a) < with_func(0, b);
         });
+    }
+    /// Reverse-sort a copy and commit only if no callback executed $finish.
+    template <typename T_Func>
+    void rsort(uint64_t finishEpoch, T_Func with_func) {
+        if (VL_UNLIKELY(!vlstd::finishEpochMatches_(finishEpoch))) return;
+        Deque sorted = m_deque;
+        if (vlstd::finishEpochSort_(sorted.begin(), sorted.end(), finishEpoch, with_func, true)) {
+            m_deque.swap(sorted);
+        }
     }
     void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
     void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG{}); }
@@ -1526,6 +1601,16 @@ public:
                       return with_func(0, a) < with_func(0, b);
                   });
     }
+    /// Sort a copy and commit only if no callback executed $finish.
+    template <typename T_Func>
+    void sort(uint64_t finishEpoch, T_Func with_func) {
+        if (VL_UNLIKELY(!vlstd::finishEpochMatches_(finishEpoch))) return;
+        VlUnpacked sorted = *this;
+        if (vlstd::finishEpochSort_(std::begin(sorted.m_storage), std::end(sorted.m_storage),
+                                    finishEpoch, with_func, false)) {
+            *this = std::move(sorted);
+        }
+    }
     // std::rbegin/std::rend not available until C++14
     void rsort() {
         std::sort(std::begin(m_storage), std::end(m_storage), std::greater<T_Value>());
@@ -1539,6 +1624,16 @@ public:
                       // index number is meaningless with sort, as it changes
                       return with_func(0, a) > with_func(0, b);
                   });
+    }
+    /// Reverse-sort a copy and commit only if no callback executed $finish.
+    template <typename T_Func>
+    void rsort(uint64_t finishEpoch, T_Func with_func) {
+        if (VL_UNLIKELY(!vlstd::finishEpochMatches_(finishEpoch))) return;
+        VlUnpacked sorted = *this;
+        if (vlstd::finishEpochSort_(std::begin(sorted.m_storage), std::end(sorted.m_storage),
+                                    finishEpoch, with_func, true)) {
+            *this = std::move(sorted);
+        }
     }
     void reverse() { std::reverse(std::begin(m_storage), std::end(m_storage)); }
     void shuffle() { std::shuffle(std::begin(m_storage), std::end(m_storage), VlURNG{}); }

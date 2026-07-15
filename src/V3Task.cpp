@@ -35,6 +35,8 @@
 #include "V3UniqueNames.h"
 
 #include <tuple>
+#include <unordered_map>
+#include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -61,6 +63,7 @@ class TaskFTaskVertex final : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* const m_nodep;
     AstCFunc* m_cFuncp = nullptr;
+    bool m_needsFinishEpoch = false;  // Constructor needs caller epoch at entry
     bool m_needsNonInlineCFunc = false;  // Needs CFunc for selected non-inlined call sites
 
 public:
@@ -73,6 +76,8 @@ public:
     string dotColor() const override { return pure() ? "black" : "red"; }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
+    bool needsFinishEpoch() const { return m_needsFinishEpoch; }
+    void needsFinishEpoch(bool flag) { m_needsFinishEpoch = flag; }
     bool needsNonInlineCFunc() const { return m_needsNonInlineCFunc; }
     void needsNonInlineCFunc(bool flag) { m_needsNonInlineCFunc = flag; }
 };
@@ -95,6 +100,160 @@ public:
         : V3GraphEdge{graphp, fromp, top, 1, false} {}
     ~TaskEdge() override = default;
     string dotLabel() const override { return "w" + cvtToStr(weight()); }
+};
+
+//######################################################################
+// Materialize one finish epoch scope per finish-capable source unit
+
+namespace {
+
+AstFinishGuard* newFinishGuard(FileLine* flp, AstFinishScope* scopep, VFinishGuardType guardType) {
+    AstVarRef* const baselinep = scopep->baselinep()->cloneTree(false);
+    baselinep->access(VAccess::READ);
+    AstJumpBlock* const blockp
+        = guardType == VFinishGuardType::SOURCE ? scopep->blockp() : nullptr;
+    return new AstFinishGuard{flp, baselinep, blockp, guardType};
+}
+
+AstFinishGuard* newFinishGuard(FileLine* flp, AstVarScope* baselineVscp,
+                               VFinishGuardType guardType) {
+    return new AstFinishGuard{flp, new AstVarRef{flp, baselineVscp, VAccess::READ}, nullptr,
+                              guardType};
+}
+
+AstFinishScope* findSourceFinishScope(AstNode* stmtsp) {
+    for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        AstJumpBlock* const blockp = VN_CAST(stmtp, JumpBlock);
+        if (!blockp) continue;
+        for (AstNode* blockStmtp = blockp->stmtsp(); blockStmtp;
+             blockStmtp = blockStmtp->nextp()) {
+            if (AstFinishScope* const scopep = VN_CAST(blockStmtp, FinishScope)) return scopep;
+        }
+    }
+    return nullptr;
+}
+
+}  // namespace
+
+class FinishScopeVisitor final : public VNVisitor {
+    AstScope* m_scopep = nullptr;  // Current instance scope
+    AstFinishScope* m_finishScopep = nullptr;  // Current source finish scope
+    AstFinishScope* m_classCtorFinishScopep = nullptr;  // Scope owning property initializers
+    V3UniqueNames m_finishEpochNames;  // Names remain unique when procedures share a C++ function
+    std::unordered_map<AstNodeFTask*, AstFinishScope*> m_preparedScopes;
+
+    template <typename T_Node>
+    AstFinishScope* makeFinishScope(T_Node* ownerp, AstNode* bodyp, bool declarationOutside) {
+        UASSERT_OBJ(m_scopep, ownerp, "Finish-capable source unit is not under a scope");
+
+        AstJumpBlock* const blockp = new AstJumpBlock{ownerp->fileline(), nullptr};
+        AstVar* const varp
+            = new AstVar{ownerp->fileline(), VVarType::BLOCKTEMP,
+                         m_finishEpochNames.get("__VfinishEpoch"), ownerp->findUInt64DType()};
+        varp->isInternal(true);
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        varp->noReset(true);
+        if (declarationOutside) {
+            // V3Task requires task ports and locals to remain direct children.
+            ownerp->addStmtsp(varp);
+        } else {
+            // Scheduling can clone a procedure into multiple C++ functions. Register the
+            // temporary with the module so V3Localize can either make it function-local or
+            // leave a real member when those functions must share it.
+            m_scopep->modp()->addStmtsp(varp);
+        }
+
+        AstVarScope* const vscp = new AstVarScope{ownerp->fileline(), m_scopep, varp};
+        m_scopep->addVarsp(vscp);
+        AstFinishScope* const scopep = new AstFinishScope{
+            ownerp->fileline(), new AstVarRef{ownerp->fileline(), vscp, VAccess::WRITE}, blockp};
+        blockp->addStmtsp(scopep);
+        if (bodyp) blockp->addStmtsp(bodyp);
+        return scopep;
+    }
+
+    template <typename T_Node>
+    AstFinishScope* prepareSourceUnit(T_Node* nodep, bool declarationOutside,
+                                      bool allowEmptyBody = false) {
+        if (!nodep->mayFinish() || (!nodep->stmtsp() && !allowEmptyBody)) return nullptr;
+
+        // V3Task requires every port and local declaration to remain a direct child.
+        // Generated return initialization can precede ports, so partition declarations
+        // from executable nodes instead of assuming all declarations form a prefix.
+        AstNode* bodyp = nullptr;
+        for (AstNode *stmtp = nodep->stmtsp(), *nextp; stmtp; stmtp = nextp) {
+            nextp = stmtp->nextp();
+            if (VN_IS(stmtp, Var)) continue;
+            bodyp = AstNode::addNext(bodyp, stmtp->unlinkFrBack());
+        }
+        // Opaque imports can finish their caller but have no SystemVerilog body to scope.
+        if (!bodyp && !allowEmptyBody) return nullptr;
+        AstFinishScope* const scopep = makeFinishScope(nodep, bodyp, declarationOutside);
+        nodep->addStmtsp(scopep->blockp());
+        return scopep;
+    }
+
+    template <typename T_Node>
+    void visitSourceUnit(T_Node* nodep, bool declarationOutside,
+                         AstFinishScope* scopep = nullptr) {
+        if (!scopep) scopep = prepareSourceUnit(nodep, declarationOutside);
+        if (!scopep) return;
+
+        VL_RESTORER(m_finishScopep);
+        m_finishScopep = scopep;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
+        VL_RESTORER(m_classCtorFinishScopep);
+        m_scopep = nodep;
+        m_classCtorFinishScopep = nullptr;
+        if (VN_IS(nodep->modp(), Class)) {
+            for (AstNode* stmtp = nodep->blocksp(); stmtp; stmtp = stmtp->nextp()) {
+                AstNodeFTask* const ftaskp = VN_CAST(stmtp, NodeFTask);
+                if (!ftaskp || !ftaskp->isConstructor()) continue;
+                AstFinishScope* const scopep = prepareSourceUnit(ftaskp, true, true);
+                if (scopep) {
+                    const bool inserted = m_preparedScopes.emplace(ftaskp, scopep).second;
+                    UASSERT_OBJ(inserted, ftaskp, "Constructor finish scope prepared twice");
+                    m_classCtorFinishScopep = scopep;
+                }
+                break;
+            }
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        // Pure virtual declarations have no executable source body. A synthetic return
+        // initializer may precede their ports, so wrapping it would move the ports too.
+        if (nodep->pureVirtual()) return;
+        AstFinishScope* scopep = nullptr;
+        const auto it = m_preparedScopes.find(nodep);
+        if (it != m_preparedScopes.end()) scopep = it->second;
+        visitSourceUnit(nodep, true, scopep);
+    }
+    void visit(AstNodeProcedure* nodep) override { visitSourceUnit(nodep, false); }
+    void visit(AstInitialAutomatic* nodep) override {
+        if (!m_classCtorFinishScopep) {
+            visitSourceUnit(nodep, false);
+            return;
+        }
+        VL_RESTORER(m_finishScopep);
+        m_finishScopep = m_classCtorFinishScopep;
+        iterateChildren(nodep);
+    }
+    void visit(AstBegin* nodep) override { visitSourceUnit(nodep, false); }
+    void visit(AstFinish* nodep) override {
+        UASSERT_OBJ(m_finishScopep, nodep, "$finish is not inside a finish-capable source scope");
+        nodep->addNextHere(new AstJumpGo{nodep->fileline(), m_finishScopep->blockp()});
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit FinishScopeVisitor(AstNetlist* nodep) { iterate(nodep); }
+    ~FinishScopeVisitor() override = default;
 };
 
 //######################################################################
@@ -156,6 +315,9 @@ public:
     bool ftaskNoInline(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->noInline(); }
     bool ftaskNeedsNonInlineCFunc(AstNodeFTask* nodep) {
         return getFTaskVertex(nodep)->needsNonInlineCFunc();
+    }
+    bool ftaskNeedsFinishEpoch(AstNodeFTask* nodep) {
+        return getFTaskVertex(nodep)->needsFinishEpoch();
     }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->cFuncp(); }
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
@@ -248,6 +410,7 @@ private:
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep->taskp());
         new TaskEdge{&m_callGraph, m_curVxp, taskVtxp};
+        if (VN_IS(nodep, New) && nodep->argsMayFinish()) { taskVtxp->needsFinishEpoch(true); }
         // Virtual-interface method calls dispatch through a runtime handle and
         // must not be inlined.
         if (isVirtualIfaceMethodCall(nodep)) taskVtxp->needsNonInlineCFunc(true);
@@ -269,12 +432,19 @@ private:
     void visit(AstNodeFTask* nodep) override {
         UINFO(9, "  TASK " << nodep);
         VL_RESTORER(m_curVxp);
-        m_curVxp = getFTaskVertex(nodep);
+        TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep);
+        m_curVxp = taskVtxp;
         if (nodep->dpiImport()) m_curVxp->noInline(true);
         if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
         if (nodep->recursive()) m_curVxp->noInline(true);
         if (nodep->isConstructor()) {
             m_curVxp->noInline(true);
+            if (nodep->exists([](AstNew* const newp) {
+                    return VN_IS(newp->dtypep()->skipRefp(), VoidDType)
+                           && (newp->mayFinish() || newp->argsMayFinish());
+                })) {
+                taskVtxp->needsFinishEpoch(true);
+            }
             m_ctorp = nodep;
             UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
             m_funcToClassMap[nodep] = m_classp;
@@ -326,7 +496,10 @@ private:
         }
         m_initialps.clear();
         if (insertp) {
-            if (!m_ctorp->stmtsp()) {
+            AstFinishScope* const ctorFinishScopep = findSourceFinishScope(m_ctorp->stmtsp());
+            if (ctorFinishScopep) {
+                ctorFinishScopep->addNextHere(insertp);
+            } else if (!m_ctorp->stmtsp()) {
                 m_ctorp->addStmtsp(insertp);
             } else {
                 m_ctorp->stmtsp()->addHereThisAsNext(insertp);
@@ -423,15 +596,26 @@ class TaskVisitor final : public VNVisitor {
 
     // TYPES
     using DpiCFuncs = std::map<const string, std::tuple<AstNodeFTask*, std::string, AstCFunc*>>;
+    using CFuncSet = std::unordered_set<const AstCFunc*>;
+    using CFuncToVarScopeMap = std::unordered_map<const AstCFunc*, AstVarScope*>;
 
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
+    V3UniqueNames m_finishArgTmpNames;  // Constructor-argument transaction temporaries
     V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for
                                         // arguments being AstInitArray
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
+    AstCFunc* m_cfuncp = nullptr;  // Current generated function
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
+    AstNodeAssign* m_directAssignp = nullptr;  // Assignment whose direct RHS is being visited
+    AstNodeExpr* m_directStmtExprp = nullptr;  // Expression directly in statement position
+    AstFinishScope* m_finishScopep = nullptr;  // Current source finish scope
+    AstVarScope* m_ctorFinishEpochVscp = nullptr;  // Current constructor entry epoch
+    bool m_inLocalLambda = false;  // Currently emitted inside an immediate lambda
+    VFinishGuardType m_localGuardType{VFinishGuardType::SOURCE};  // Innermost lambda return
+    AstVarScope* m_localGuardFallbackVscp = nullptr;  // Reference-lambda fallback storage
     bool m_inSensesp = false;  // Are we under a senitem?
     bool m_inNew = false;  // Are we under a constructor?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
@@ -440,8 +624,12 @@ class TaskVisitor final : public VNVisitor {
     // STATE - across all visitors
     V3UniqueNames m_forceTmpNames;  // For generating unique force-RHS helper names
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
+    CFuncToVarScopeMap m_ctorFinishEpochVscps;  // Constructor CFunc -> entry epoch
+    CFuncSet m_finishExprStmtCFuncps;  // CFuncs containing guarded immediate lambdas
+    std::unordered_map<const AstExprStmt*, AstVarScope*> m_finishRefFallbackVscps;
     VDouble0 m_statInlines;  // Statistic tracking
     VDouble0 m_statHierDpisWithCosts;  // Statistic tracking
+    VDouble0 m_statFinishGuardClassifications;  // Immediate lambdas classified
 
     // METHODS
 
@@ -482,6 +670,233 @@ class TaskVisitor final : public VNVisitor {
             m_scopep->addVarsp(newvscp);
             return newvscp;
         }
+    }
+    AstVarScope* createTempVarScope(FileLine* flp, const string& name, AstNodeDType* dtypep) {
+        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+        varp->isInternal(true);
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        varp->noReset(true);
+        m_modp->addStmtsp(varp);
+        AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
+        m_scopep->addVarsp(vscp);
+        return vscp;
+    }
+    AstVarRef* newStableFinishBaseline(FileLine* flp, AstNode* nodep) const {
+        if (m_ctorFinishEpochVscp) {
+            return new AstVarRef{flp, m_ctorFinishEpochVscp, VAccess::READ};
+        }
+        UASSERT_OBJ(m_finishScopep, nodep, "Finish-capable call has no stable epoch");
+        AstVarRef* const baselinep = m_finishScopep->baselinep()->cloneTree(false);
+        baselinep->access(VAccess::READ);
+        return baselinep;
+    }
+    AstFinishGuard* newContextFinishGuard(FileLine* flp) const {
+        if (m_inLocalLambda) {
+            AstNodeExpr* fallbackp = nullptr;
+            if (m_localGuardType == VFinishGuardType::LAMBDA_REF) {
+                UASSERT_OBJ(m_localGuardFallbackVscp, m_insStmtp,
+                            "Reference finish guard has no fallback storage");
+                fallbackp = new AstVarRef{flp, m_localGuardFallbackVscp, VAccess::READWRITE};
+            }
+            return new AstFinishGuard{flp, newStableFinishBaseline(flp, m_insStmtp), nullptr,
+                                      m_localGuardType, fallbackp};
+        }
+        UASSERT_OBJ(m_finishScopep, m_insStmtp, "Finish guard has no source scope");
+        return newFinishGuard(flp, m_finishScopep, VFinishGuardType::SOURCE);
+    }
+    AstNodeExpr* newConstructorFinishEpochArg(FileLine* flp, AstNode* nodep) const {
+        if (m_ctorFinishEpochVscp || m_finishScopep) {
+            return newStableFinishBaseline(flp, nodep);
+        }
+        return new AstFinishEpoch{flp};
+    }
+    bool isDirectAssignment(const AstNodeExpr* nodep) const {
+        return m_directAssignp && m_directAssignp->rhsp() == nodep;
+    }
+    bool isDirectStmtExpr(const AstNodeExpr* nodep) const { return m_directStmtExprp == nodep; }
+    AstFinishGuard* newCallFinishGuard(AstNodeFTaskRef* refp) const {
+        const bool createsExprLambda
+            = !VN_IS(refp, New) && !isDirectAssignment(refp) && !isDirectStmtExpr(refp);
+        if (!createsExprLambda) return newContextFinishGuard(refp->fileline());
+
+        // Calls in constructor arguments are intentionally left for V3Task and
+        // become value-returning AstExprStmt lambdas. All other finish-capable
+        // expression calls must have been normalized before this pass.
+        UASSERT_OBJ(m_inNew, refp, "Finish-capable expression call was not normalized");
+        return new AstFinishGuard{refp->fileline(),
+                                  newStableFinishBaseline(refp->fileline(), refp), nullptr,
+                                  VFinishGuardType::LAMBDA_VALUE};
+    }
+
+    struct ExprStmtVarUse final {
+        AstExprStmt* ownerp = nullptr;
+        AstExprStmt* declarationOwnerp = nullptr;
+        bool usedOutside = false;
+        bool multipleOwners = false;
+    };
+
+    class ExprStmtVarUseVisitor final : public VNVisitor {
+        std::unordered_map<AstVar*, ExprStmtVarUse>& m_uses;
+        std::vector<AstVar*>& m_order;
+        AstExprStmt* m_ownerp = nullptr;
+
+        ExprStmtVarUse& use(AstVar* varp) {
+            const auto pair = m_uses.emplace(varp, ExprStmtVarUse{});
+            if (pair.second) m_order.push_back(varp);
+            return pair.first->second;
+        }
+
+        void visit(AstExprStmt* nodep) override {
+            VL_RESTORER(m_ownerp);
+            if (nodep->finishGuarded()) m_ownerp = nodep;
+            iterateChildren(nodep);
+        }
+        void visit(AstVar* nodep) override {
+            if (nodep->isInternal() && nodep->isTemp() && !nodep->isIO()) {
+                use(nodep).declarationOwnerp = m_ownerp;
+            }
+            iterateChildren(nodep);
+        }
+        void visit(AstVarRef* nodep) override {
+            AstVar* const varp = nodep->varp();
+            if (!varp->isInternal() || !varp->isTemp() || varp->isIO()) return;
+
+            ExprStmtVarUse& use = this->use(varp);
+            if (!m_ownerp) {
+                use.usedOutside = true;
+            } else if (!use.ownerp) {
+                use.ownerp = m_ownerp;
+            } else if (use.ownerp != m_ownerp) {
+                use.multipleOwners = true;
+            }
+        }
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    public:
+        ExprStmtVarUseVisitor(AstCFunc* nodep, std::unordered_map<AstVar*, ExprStmtVarUse>& uses,
+                              std::vector<AstVar*>& order)
+            : m_uses{uses}
+            , m_order{order} {
+            iterate(nodep);
+        }
+    };
+
+    void localizeFinishExprStmtVars(AstCFunc* cfuncp) {
+        std::unordered_map<AstVar*, ExprStmtVarUse> uses;
+        std::vector<AstVar*> order;
+        { ExprStmtVarUseVisitor{cfuncp, uses, order}; }
+
+        struct LocalVars final {
+            AstExprStmt* ownerp;
+            AstNode* varsp = nullptr;
+        };
+        std::vector<LocalVars> locals;
+        std::unordered_map<AstExprStmt*, size_t> ownerToLocalIndex;
+        for (AstVar* const varp : order) {
+            const ExprStmtVarUse& use = uses.at(varp);
+            if (!use.ownerp || use.usedOutside || use.multipleOwners
+                || use.declarationOwnerp == use.ownerp) {
+                continue;
+            }
+
+            const auto pair = ownerToLocalIndex.emplace(use.ownerp, locals.size());
+            if (pair.second) { locals.push_back(LocalVars{use.ownerp}); }
+            LocalVars& local = locals[pair.first->second];
+            varp->unlinkFrBack();
+            varp->funcLocal(true);
+            local.varsp = AstNode::addNext(local.varsp, varp);
+        }
+        for (const LocalVars& item : locals) {
+            if (item.ownerp->stmtsp()) {
+                item.ownerp->stmtsp()->addHereThisAsNext(item.varsp);
+            } else {
+                item.ownerp->addStmtsp(item.varsp);
+            }
+        }
+    }
+
+    void wrapFinishConstructorArgs(AstCNew* nodep) {
+        UASSERT_OBJ(m_scopep, nodep, "Constructor arguments are not under a scope");
+
+        AstNode* formalp = nodep->funcp()->argsp();
+        for (AstNodeExpr* argp = nodep->argsp(); argp;) {
+            AstVar* const portp = VN_CAST(formalp, Var);
+            UASSERT_OBJ(portp, nodep, "Constructor argument has no matching formal");
+            formalp = formalp->nextp();
+            AstNodeExpr* const nextp = VN_CAST(argp->nextp(), NodeExpr);
+            if (portp->isRef() || portp->isConstRef()) {
+                UASSERT_OBJ(m_cfuncp, nodep,
+                            "Constructor reference transaction is not under a C function");
+                FileLine* const flp = argp->fileline();
+                const string tempName = m_finishArgTmpNames.get(argp);
+                AstVar* const fallbackVarp = new AstVar{
+                    flp, VVarType::VAR, tempName + "__refFallback", argp->dtypep()->skipRefp()};
+                fallbackVarp->funcLocal(true);
+                fallbackVarp->isInternal(true);
+                fallbackVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                fallbackVarp->noReset(true);
+                m_cfuncp->addVarsp(fallbackVarp);
+                AstVarScope* const fallbackVscp = new AstVarScope{flp, m_scopep, fallbackVarp};
+                m_scopep->addVarsp(fallbackVscp);
+
+                AstExprStmt* exprStmtp = VN_CAST(argp, ExprStmt);
+                if (!exprStmtp || !exprStmtp->refResult()) {
+                    exprStmtp = new AstExprStmt{
+                        flp, nullptr, new AstVarRef{flp, fallbackVscp, VAccess::READWRITE}};
+                    exprStmtp->refResult(portp->isConstRef());
+                    exprStmtp->finishGuarded(true);
+                    argp->replaceWith(exprStmtp);
+                    exprStmtp->addStmtsp(new AstCReturn{flp, argp});
+                } else {
+                    UASSERT_OBJ(exprStmtp->constRefResult() == portp->isConstRef(), exprStmtp,
+                                "Constructor reference transaction type mismatch");
+                    exprStmtp->finishGuarded(true);
+                }
+                const bool inserted
+                    = m_finishRefFallbackVscps.emplace(exprStmtp, fallbackVscp).second;
+                UASSERT_OBJ(inserted, exprStmtp,
+                            "Duplicate constructor reference fallback storage");
+                argp = nextp;
+                continue;
+            }
+            if (portp->isWritable()) {
+                if (portp->isInout()) {
+                    AstExprStmt* const exprStmtp = VN_CAST(argp, ExprStmt);
+                    UASSERT_OBJ(exprStmtp, argp,
+                                "Constructor inout argument has no copy-in transaction");
+                    exprStmtp->finishGuarded(true);
+                }
+                argp = nextp;
+                continue;
+            }
+            if (const AstExprStmt* const exprStmtp = VN_CAST(argp, ExprStmt)) {
+                if (exprStmtp->finishGuarded()) {
+                    argp = nextp;
+                    continue;
+                }
+            }
+
+            FileLine* const flp = argp->fileline();
+            const string tempName = m_finishArgTmpNames.get(argp);
+            AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, tempName, argp->dtypep()};
+            varp->funcLocal(true);
+            varp->isInternal(true);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            varp->noReset(true);
+            AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
+            m_scopep->addVarsp(vscp);
+
+            AstExprStmt* const exprStmtp
+                = new AstExprStmt{flp, varp, new AstVarRef{flp, vscp, VAccess::READ}};
+            exprStmtp->hasResult(false);
+            exprStmtp->finishGuarded(true);
+            argp->replaceWith(exprStmtp);
+            exprStmtp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, argp});
+            exprStmtp->addStmtsp(new AstCReturn{flp, new AstVarRef{flp, vscp, VAccess::READ}});
+            argp = nextp;
+        }
+        UASSERT_OBJ(!formalp, nodep, "Constructor formal has no matching argument");
     }
 
     // Replace varrefs with new var pointer
@@ -553,7 +968,7 @@ class TaskVisitor final : public VNVisitor {
     }
 
     void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
-                     bool inlineTask) {
+                     bool inlineTask, bool superConstructor = false) {
         AstNodeExpr* pinp = argp->exprp();
         if (inlineTask) {
             portp->unlinkFrBack();
@@ -590,6 +1005,9 @@ class TaskVisitor final : public VNVisitor {
                 if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
                     || VN_IS(pinp, ArraySel)) {
                     refArgOk = true;
+                } else if (const AstExprStmt* const exprStmtp = VN_CAST(pinp, ExprStmt)) {
+                    refArgOk = exprStmtp->refResult()
+                               && exprStmtp->constRefResult() == portp->isConstRef();
                 } else if (AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
                     if (VN_IS(cMethodp->fromp()->dtypep()->skipRefp(), QueueDType)) {
                         refArgOk = cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND
@@ -622,20 +1040,33 @@ class TaskVisitor final : public VNVisitor {
                 AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
                 portp->user2p(newvscp);
-                if (!inlineTask) {
-                    pinp->replaceWith(
-                        new AstVarRef{newvscp->fileline(), newvscp, VAccess::READWRITE});
-                    pushDeletep(pinp);  // Cloned by connectPortMakeInAssign
-                }
-                // Put input assignment in FRONT of all other statements
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, true);
-                if (AstNode* const afterp = beginp->nextp()) {
-                    afterp->unlinkFrBackWithNext();
-                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
-                }
-                beginp->addNext(preassp);
-
                 AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, true);
+                if (!inlineTask) {
+                    if (superConstructor) {
+                        AstExprStmt* const exprStmtp = new AstExprStmt{
+                            pinp->fileline(), preassp,
+                            new AstVarRef{newvscp->fileline(), newvscp, VAccess::READWRITE}};
+                        pinp->replaceWith(exprStmtp);
+                    } else {
+                        pinp->replaceWith(
+                            new AstVarRef{newvscp->fileline(), newvscp, VAccess::READWRITE});
+                        // Put input assignment in FRONT of all other statements
+                        if (AstNode* const afterp = beginp->nextp()) {
+                            afterp->unlinkFrBackWithNext();
+                            AstNode::addNext<AstNode, AstNode>(preassp, afterp);
+                        }
+                        beginp->addNext(preassp);
+                    }
+                    pushDeletep(pinp);  // Cloned by the copy assignments
+                } else {
+                    // Put input assignment in FRONT of all other statements
+                    if (AstNode* const afterp = beginp->nextp()) {
+                        afterp->unlinkFrBackWithNext();
+                        AstNode::addNext<AstNode, AstNode>(preassp, afterp);
+                    }
+                    beginp->addNext(preassp);
+                }
                 beginp->addNext(postassp);
                 // if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-pinrsize-out- ");
             } else if (portp->isWritable()) {
@@ -676,6 +1107,18 @@ class TaskVisitor final : public VNVisitor {
         return false;
     }
 
+    bool hasCopyBackArgument(AstNodeFTask* nodep) {
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isIO() && !varp->isFuncReturn() && varp->isWritable()
+                    && !varp->isRef()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
                                 AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if nullptr, it's a task
@@ -685,6 +1128,7 @@ class TaskVisitor final : public VNVisitor {
         AstNode* const beginp
             = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
         if (newbodysp) beginp->addNext(newbodysp);
+        if (refp->mayFinish() && m_finishScopep) { beginp->addNext(newCallFinishGuard(refp)); }
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
         // Create input variables
@@ -738,7 +1182,8 @@ class TaskVisitor final : public VNVisitor {
     }
 
     AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
-                                   AstVarScope* outvscp, AstCNew*& cnewpr) {
+                                   AstVarScope* outvscp, AstVarScope* newResultVscp,
+                                   AstCNew*& directCNewpr) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstCFunc* const cfuncp = m_statep->ftaskCFuncp(refp->taskp());
@@ -751,8 +1196,15 @@ class TaskVisitor final : public VNVisitor {
             AstCNew* const cnewp = new AstCNew{refp->fileline(), cfuncp};
             cnewp->dtypep(refp->dtypep());
             ccallp = cnewp;
-            // Parent AstNew will replace with this CNew
-            cnewpr = cnewp;
+            if (VN_IS(refp->dtypep()->skipRefp(), VoidDType)) {
+                beginp->addNext(cnewp->makeStmt());
+            } else if (newResultVscp) {
+                beginp->addNext(new AstAssign{
+                    refp->fileline(),
+                    new AstVarRef{refp->fileline(), newResultVscp, VAccess::WRITE}, cnewp});
+            } else {
+                directCNewpr = cnewp;
+            }
         } else if (const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall)) {
             ccallp = new AstCMethodCall{refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp};
             ccallp->dtypeSetVoid();
@@ -762,6 +1214,7 @@ class TaskVisitor final : public VNVisitor {
             ccallp->dtypeSetVoid();
             beginp->addNext(ccallp->makeStmt());
         }
+        if (refp->mayFinish() && m_finishScopep) { beginp->addNext(newCallFinishGuard(refp)); }
 
         if (const AstFuncRef* const funcRefp = VN_CAST(refp, FuncRef)) {
             ccallp->superReference(funcRefp->superReference());
@@ -775,7 +1228,9 @@ class TaskVisitor final : public VNVisitor {
             for (const auto& itr : tconnects) {
                 AstVar* const portp = itr.first;
                 AstArg* const argp = itr.second;
-                connectPort(portp, argp, namePrefix, beginp, false);
+                const bool superConstructor
+                    = VN_IS(refp, New) && VN_IS(refp->dtypep()->skipRefp(), VoidDType);
+                connectPort(portp, argp, namePrefix, beginp, false, superConstructor);
             }
         }
         // First argument is symbol table, then output if a function
@@ -800,6 +1255,12 @@ class TaskVisitor final : public VNVisitor {
         for (AstArg *argp = refp->argsp(), *nextp; argp; argp = nextp) {
             nextp = VN_AS(argp->nextp(), Arg);
             ccallp->addArgsp(argp->exprp()->unlinkFrBack());
+        }
+        if (VN_IS(refp, New) && m_ctorFinishEpochVscps.count(cfuncp)) {
+            ccallp->addArgsp(newConstructorFinishEpochArg(refp->fileline(), refp));
+        }
+        if (AstCNew* const cnewp = VN_CAST(ccallp, CNew)) {
+            if (refp->argsMayFinish()) wrapFinishConstructorArgs(cnewp);
         }
 
         if (outvscp) ccallp->addArgsp(new AstVarRef{refp->fileline(), outvscp, VAccess::WRITE});
@@ -1254,11 +1715,13 @@ class TaskVisitor final : public VNVisitor {
         return dpiExportTriggerp;
     }
 
-    AstCFunc* makeUserFunc(AstNodeFTask* nodep, bool ftaskNoInline) {
+    AstCFunc* makeUserFunc(AstNodeFTask* nodep, bool ftaskNoInline, bool needsCtorFinishEpoch) {
         // Given a already cloned node, make a public C function, or a non-inline C function
         // Probably some of this work should be done later, but...
         // should the type of the function be bool/uint32/64 etc (based on lookup) or IData?
         AstNode::user2ClearTree();
+        UASSERT_OBJ(!needsCtorFinishEpoch || nodep->isConstructor(), nodep,
+                    "Non-constructor requires a constructor entry finish epoch");
         AstVar* rtnvarp = nullptr;
         if (nodep->isFunction()) {
             AstVar* const portp = VN_AS(nodep->fvarp(), Var);
@@ -1431,11 +1894,37 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
+        if (needsCtorFinishEpoch) {
+            // Reject an entry after argument evaluation changed the epoch, then check the same
+            // stable baseline again after the emitted base constructor returns.
+            AstVarScope* const baselineVscp
+                = createInputVar(cfuncp, "__VctorFinishEpoch", VBasicDTypeKwd::UINT64);
+            const bool inserted = m_ctorFinishEpochVscps.emplace(cfuncp, baselineVscp).second;
+            UASSERT_OBJ(inserted, nodep, "Duplicate constructor entry finish epoch");
+            AstFinishGuard* const entryGuardp
+                = newFinishGuard(nodep->fileline(), baselineVscp, VFinishGuardType::LAMBDA_VOID);
+            cfuncp->addPrologsp(entryGuardp);
+            AstFinishGuard* const baseGuardp
+                = newFinishGuard(nodep->fileline(), baselineVscp, VFinishGuardType::LAMBDA_VOID);
+            if (cfuncp->stmtsp()) {
+                cfuncp->stmtsp()->addHereThisAsNext(baseGuardp);
+            } else {
+                cfuncp->addStmtsp(baseGuardp);
+            }
+        }
+
         // Fake output variable if was a function.  It's more efficient to
         // have it last, rather than first, as the C compiler can sometimes
         // avoid copying variables when calling shells if argument 1
         // remains argument 1 (which it wouldn't if a return got added).
         if (rtnvarp) cfuncp->addArgsp(rtnvarp);
+
+        AstFinishScope* publicFinishScopep = nullptr;
+        if (rtnvscp && nodep->taskPublic() && nodep->mayFinish() && !nodep->dpiImport()) {
+            publicFinishScopep = findSourceFinishScope(nodep->stmtsp());
+            UASSERT_OBJ(publicFinishScopep, nodep,
+                        "Finish-capable public function has no source finish scope");
+        }
 
         // Move body
         AstNode* bodysp = nodep->stmtsp();
@@ -1459,6 +1948,10 @@ class TaskVisitor final : public VNVisitor {
 
         // Return statement
         if (rtnvscp && nodep->taskPublic()) {
+            if (publicFinishScopep) {
+                cfuncp->addStmtsp(newFinishGuard(nodep->fileline(), publicFinishScopep,
+                                                 VFinishGuardType::LAMBDA_VALUE));
+            }
             cfuncp->addStmtsp(new AstCReturn{
                 rtnvscp->fileline(), new AstVarRef{rtnvscp->fileline(), rtnvscp, VAccess::READ}});
         }
@@ -1524,9 +2017,21 @@ class TaskVisitor final : public VNVisitor {
         // scope then the caller, so we need to restore state.
         VL_RESTORER(m_scopep);
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_insStmtp);
+        VL_RESTORER(m_ctorFinishEpochVscp);
+        VL_RESTORER(m_inLocalLambda);
+        VL_RESTORER(m_localGuardType);
+        VL_RESTORER(m_localGuardFallbackVscp);
+        VL_RESTORER(m_inNew);
         m_scopep = m_statep->getScope(nodep);
         m_modp = m_scopep->modp();
+        m_cfuncp = nullptr;
+        m_ctorFinishEpochVscp = nullptr;
+        m_inLocalLambda = false;
+        m_localGuardType = VFinishGuardType::SOURCE;
+        m_localGuardFallbackVscp = nullptr;
+        m_inNew = false;
         iterate(nodep);
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
@@ -1582,8 +2087,20 @@ class TaskVisitor final : public VNVisitor {
             // Make sure that the return expression is converted only once
             return;
         }
-        AstNodeExpr* const withExprp = VN_AS(nodep->exprp()->unlinkFrBack(), NodeExpr);
+        const bool mayFinish = nodep->mayFinish();
+        VL_RESTORER(m_inLocalLambda);
+        VL_RESTORER(m_localGuardType);
+        m_inLocalLambda = true;
+        m_localGuardType = VFinishGuardType::LAMBDA_VALUE;
+        AstNode* const lastp = nodep->exprp()->lastp();
+        AstNodeExpr* const withExprp = VN_CAST(lastp, NodeExpr);
+        UASSERT_OBJ(withExprp, nodep, "Immediate callback has no result expression");
+        withExprp->unlinkFrBack();
         nodep->addExprp(new AstCReturn{withExprp->fileline(), withExprp});
+        if (mayFinish) {
+            UASSERT_OBJ(m_finishScopep, nodep, "Finish-capable callback has no source scope");
+            nodep->exprp()->addHereThisAsNext(newContextFinishGuard(nodep->fileline()));
+        }
         iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
@@ -1592,10 +2109,49 @@ class TaskVisitor final : public VNVisitor {
         iterateChildren(nodep);
         UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
     }
+    void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_ctorFinishEpochVscp);
+        m_cfuncp = nodep;
+        const auto it = m_ctorFinishEpochVscps.find(nodep);
+        m_ctorFinishEpochVscp = it == m_ctorFinishEpochVscps.end() ? nullptr : it->second;
+        iterateChildren(nodep);
+        if (m_finishExprStmtCFuncps.count(nodep)) localizeFinishExprStmtVars(nodep);
+    }
+    void visit(AstJumpBlock* nodep) override {
+        AstFinishScope* finishScopep = nullptr;
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if ((finishScopep = VN_CAST(stmtp, FinishScope))) break;
+        }
+
+        VL_RESTORER(m_insStmtp);
+        VL_RESTORER(m_finishScopep);
+        m_insStmtp = nodep;
+        if (finishScopep) m_finishScopep = finishScopep;
+        iterateChildren(nodep);
+    }
     void visit(AstCNew* nodep) override {
         VL_RESTORER(m_inNew);
         m_inNew = true;
         iterateChildren(nodep);
+    }
+    void visit(AstCMethodHard* nodep) override {
+        const bool mayFinish = nodep->withp() && nodep->withp()->mayFinish();
+        if (mayFinish
+            && (nodep->method() == VCMethod::ARRAY_SORT
+                || nodep->method() == VCMethod::ARRAY_RSORT)) {
+            nodep->addPinsp(newStableFinishBaseline(nodep->fileline(), nodep));
+        }
+
+        iterateChildren(nodep);
+        if (!mayFinish) return;
+
+        if (!VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
+            UASSERT_OBJ(isDirectAssignment(nodep), nodep,
+                        "Finish-capable method result was not normalized");
+        }
+        UASSERT_OBJ(m_insStmtp, nodep, "Finish-capable method is not under a statement");
+        m_insStmtp->addNextHere(newContextFinishGuard(nodep->fileline()));
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inSensesp && !nodep->isPure()) {
@@ -1621,14 +2177,16 @@ class TaskVisitor final : public VNVisitor {
             // the same type, and the function does not read the output variable itself.
             // This can be proven cheaply if the LHS is an automatic variable and the
             // function does not have any ref arguments. This arises a lot after V3LiftExpr.
-            if (AstAssign* const assignp = VN_CAST(nodep->backp(), Assign)) {
-                if (AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef)) {
-                    AstVarScope* const vscp = lhsp->varScopep();
-                    if (vscp->varp()->lifetime().isAutomatic()
-                        && vscp->varp()->dtypep()->skipRefp()->sameTree(
-                            fvarp->dtypep()->skipRefp())
-                        && !hasRefArgument(nodep->taskp())) {
-                        outvscp = vscp;
+            if (isDirectAssignment(nodep)) {
+                if (AstAssign* const assignp = VN_CAST(m_directAssignp, Assign)) {
+                    if (AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef)) {
+                        AstVarScope* const vscp = lhsp->varScopep();
+                        if (vscp->varp()->lifetime().isAutomatic()
+                            && vscp->varp()->dtypep()->skipRefp()->sameTree(
+                                fvarp->dtypep()->skipRefp())
+                            && !hasRefArgument(nodep->taskp()) && !nodep->mayFinish()) {
+                            outvscp = vscp;
+                        }
                     }
                 }
             }
@@ -1637,7 +2195,16 @@ class TaskVisitor final : public VNVisitor {
         }
         // Create cloned statements
         AstNode* beginp;
-        AstCNew* cnewp = nullptr;
+        const bool valueConstructor
+            = VN_IS(nodep, New) && !VN_IS(nodep->dtypep()->skipRefp(), VoidDType);
+        const bool stagedConstructor = valueConstructor
+                                       && (nodep->mayFinish() || nodep->argsMayFinish()
+                                           || hasCopyBackArgument(nodep->taskp()));
+        AstVarScope* const newResultVscp
+            = stagedConstructor
+                  ? createTempVarScope(nodep->fileline(), namePrefix + "__Vnew", nodep->dtypep())
+                  : nullptr;
+        AstCNew* directCNewp = nullptr;
         // getScope() is safe here: TaskStateVisitor stamped all FTask scopes before this pass.
         const bool virtualIfaceCall
             = TaskStateVisitor::isVirtualIfaceMethodCall(nodep)
@@ -1645,25 +2212,33 @@ class TaskVisitor final : public VNVisitor {
         if (m_statep->ftaskNoInline(nodep->taskp()) || virtualIfaceCall) {
             processArgs(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
-            beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
+            beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, newResultVscp, directCNewp);
         } else {
+            UASSERT_OBJ(!VN_IS(nodep, New), nodep,
+                        "Constructor unexpectedly selected for inlining");
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
             ++m_statInlines;
         }
 
         if (VN_IS(nodep, New)) {  // New not legal as while() condition
             insertBeforeStmt(nodep, beginp);
-            UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
-            nodep->replaceWith(cnewp);
+            if (newResultVscp) {
+                nodep->replaceWith(new AstVarRef{nodep->fileline(), newResultVscp, VAccess::READ});
+            } else if (directCNewp) {
+                nodep->replaceWith(directCNewp);
+            } else {
+                UASSERT_OBJ(!valueConstructor, nodep, "Constructor result is missing");
+                nodep->unlinkFrBack();
+            }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        } else if (VN_IS(nodep->backp(), NodeAssign)) {
+        } else if (isDirectAssignment(nodep)) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep,
                         "funcref-like assign to non-function");
             insertBeforeStmt(nodep, beginp);
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
             nodep->replaceWith(outrefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        } else if (!VN_IS(nodep->backp(), StmtExpr)) {
+        } else if (!isDirectStmtExpr(nodep)) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep,
                         "funcref-like expression to non-function");
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
@@ -1704,10 +2279,10 @@ class TaskVisitor final : public VNVisitor {
             nodep->replaceWith(lambdap);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             VIsCached::clearCacheTree();
-        } else {  // VN_IS(nodep->backp(), StmtExpr)
+        } else {  // Directly in statement position
             insertBeforeStmt(nodep, beginp);
             if (nodep->taskp()->isFunction()
-                && !nodep->backp()->fileline()->warnIsOff(V3ErrorCode::IGNOREDRETURN)) {
+                && !m_insStmtp->fileline()->warnIsOff(V3ErrorCode::IGNOREDRETURN)) {
                 nodep->v3warn(
                     IGNOREDRETURN,
                     "Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)");
@@ -1772,7 +2347,9 @@ class TaskVisitor final : public VNVisitor {
                 AstNodeFTask* const clonedFuncp = nodep->cloneTree(false);
                 if (nodep->isConstructor()) m_statep->remapFuncClassp(nodep, clonedFuncp);
                 const bool makeNonInlineFunc = noInline || needsNonInlineCFunc;
-                if (AstCFunc* const cfuncp = makeUserFunc(clonedFuncp, makeNonInlineFunc)) {
+                const bool needsCtorFinishEpoch = m_statep->ftaskNeedsFinishEpoch(nodep);
+                if (AstCFunc* const cfuncp
+                    = makeUserFunc(clonedFuncp, makeNonInlineFunc, needsCtorFinishEpoch)) {
                     nodep->addNextHere(cfuncp);
                     if (nodep->dpiImport() || makeNonInlineFunc) {
                         m_statep->ftaskCFuncp(nodep, cfuncp);
@@ -1849,14 +2426,66 @@ class TaskVisitor final : public VNVisitor {
         nodep->v3fatalSrc(
             "Foreach statements should have been converted to while statements in V3Begin.cpp");
     }
+    void visit(AstNodeAssign* nodep) override {
+        VL_RESTORER(m_insStmtp);
+        VL_RESTORER(m_directAssignp);
+        m_insStmtp = nodep;
+        m_directAssignp = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_insStmtp);
         m_insStmtp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstExprStmt* nodep) override {
+        ++m_statFinishGuardClassifications;
+        const bool finishGuarded = nodep->finishGuarded();
+        VFinishGuardType guardType = VFinishGuardType::LAMBDA_VOID;
+        if (nodep->refResult()) {
+            guardType = VFinishGuardType::LAMBDA_REF;
+        } else if (!nodep->hasResult()) {
+            // V3Task's value-call fallback puts an explicit CReturn in stmtsp.
+            guardType = VFinishGuardType::LAMBDA_VALUE;
+        }
+
+        {
+            VL_RESTORER(m_inLocalLambda);
+            VL_RESTORER(m_localGuardType);
+            VL_RESTORER(m_localGuardFallbackVscp);
+            m_inLocalLambda = true;
+            m_localGuardType = guardType;
+            if (nodep->refResult()) {
+                const auto it = m_finishRefFallbackVscps.find(nodep);
+                UASSERT_OBJ(it != m_finishRefFallbackVscps.end(), nodep,
+                            "Reference transaction has no fallback storage");
+                m_localGuardFallbackVscp = it->second;
+            } else {
+                m_localGuardFallbackVscp = nullptr;
+            }
+            if (finishGuarded) {
+                UASSERT_OBJ(!nodep->hasResult() || nodep->resultp()->isLValue(), nodep,
+                            "Constructor reference transaction result is not an lvalue");
+                UASSERT_OBJ(m_cfuncp, nodep,
+                            "Constructor argument transaction is not under a C function");
+                m_finishExprStmtCFuncps.insert(m_cfuncp);
+                AstFinishGuard* const guardp = newContextFinishGuard(nodep->fileline());
+                if (nodep->stmtsp()) {
+                    nodep->stmtsp()->addHereThisAsNext(guardp);
+                } else {
+                    nodep->addStmtsp(guardp);
+                }
+            }
+            iterateAndNextNull(nodep->stmtsp());
+        }
+        // The result is emitted after the immediate lambda via the comma operator.
+        iterate(nodep->resultp());
+    }
     void visit(AstStmtExpr* nodep) override {
         VL_RESTORER(m_insStmtp);
+        VL_RESTORER(m_directStmtExprp);
         m_insStmtp = nodep;
+        m_directStmtExprp = nodep->exprp();
         iterateChildren(nodep);
         if (!nodep->exprp()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -1873,6 +2502,7 @@ public:
     // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
         : m_statep{statep}
+        , m_finishArgTmpNames{"__VfinishArg"}
         , m_initArrayTmpNames{"__VInitArrayTemp"} {
         iterate(nodep);
     }
@@ -1880,6 +2510,7 @@ public:
         V3Stats::addStat("Optimizations, Functions inlined", m_statInlines);
         V3Stats::addStat("Optimizations, Hierarchical DPI wrappers with costs",
                          m_statHierDpisWithCosts);
+        V3Stats::addStat("Task, finish guard classifications", m_statFinishGuardClassifications);
     }
 };
 
@@ -2299,6 +2930,7 @@ std::string V3Task::assignDpiToInternal(const std::string& lhsName, AstVar* varp
 void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
+        FinishScopeVisitor finishScopeVisitor{nodep};
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking

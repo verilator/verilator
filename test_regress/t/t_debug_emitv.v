@@ -34,6 +34,29 @@ class Cls;
   endfunction
 endclass
 
+class FinishDumpBase;
+  function new(ref int target, const ref int snapshot, input int value);
+    target += snapshot + value;
+  endfunction
+  virtual function void virtual_finish(input bit finish_now);
+  endfunction
+endclass
+
+class FinishDumpDerived extends FinishDumpBase;
+  int target;
+  int snapshot;
+  function automatic int may_finish(input int value);
+    if (value != 0) $finish;
+    return value;
+  endfunction
+  virtual function void virtual_finish(input bit finish_now);
+    if (finish_now) $finish;
+  endfunction
+  function new;
+    super.new(target, snapshot, may_finish(0));
+  endfunction
+endclass
+
 function int rand_restricted(Cls obj, int member);
   return obj.randomize() with (rmember1, rmember2) { rmember1 < member; rmember2 < member; };
 endfunction
@@ -51,6 +74,8 @@ module t (/*AUTOARG*/
   );
   input clk;
   input in;
+
+  FinishDumpDerived finish_dump;
 
   // verilator lint_off UNPACKED
 
@@ -85,6 +110,7 @@ module t (/*AUTOARG*/
   Iface the_ifaces [3:0] (.*);
 
   initial begin
+    finish_dump = new;
     if ($test$plusargs("HELLO")) $display("Hello argument found.");
     if (Pkg::FOO == 0) $write("");
     if (ZERO == 0) $write("");
@@ -99,6 +125,7 @@ module t (/*AUTOARG*/
     if (|downto_32[60-:7]) $write("");
     if (the_ifaces[2].ifsig) $write("");
     #1 $write("After #1 delay");
+    array[ident(i1)] = #1 i1;
     wait(clk == 1) $write("After wait(clk == 1)");
   end
 

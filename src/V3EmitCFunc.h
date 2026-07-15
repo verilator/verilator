@@ -416,6 +416,17 @@ public:
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
         puts(" {\n");
+        const bool constructorLocals = nodep->isConstructor() && nodep->varsp();
+        if (constructorLocals) {
+            putsDecoration(nodep, "// Locals\n");
+            iterateAndNextConstNull(nodep->varsp());
+        }
+        if (nodep->prologsp()) {
+            UASSERT_OBJ(nodep->isConstructor(), nodep,
+                        "Only constructors may have a pre-base prologue");
+            putsDecoration(nodep, "// Constructor pre-base prologue\n");
+            iterateAndNextConstNull(nodep->prologsp());
+        }
         if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
             if (classp && classp->extendsp()) putConstructorSubinit(classp, nodep);
@@ -481,7 +492,7 @@ public:
             puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
-        if (nodep->varsp()) {
+        if (nodep->varsp() && !constructorLocals) {
             putsDecoration(nodep, "// Locals\n");
             iterateAndNextConstNull(nodep->varsp());
         }
@@ -965,9 +976,15 @@ public:
     }
     void visit(AstDisableFork* nodep) override { putns(nodep, "vlProcess->disableFork();\n"); }
     void visit(AstCReturn* nodep) override {
-        putns(nodep, "return (");
-        iterateAndNextConstNull(nodep->lhsp());
-        puts(");\n");
+        switch (nodep->returnType()) {
+        case VCReturnType::DEFAULT: putns(nodep, "return {};\n"); break;
+        case VCReturnType::VALUE:
+            putns(nodep, "return (");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(");\n");
+            break;
+        case VCReturnType::VOID: putns(nodep, "return;\n"); break;
+        }
     }
     void visit(AstDisplay* nodep) override {
         string text = nodep->fmtp()->text();
@@ -1343,12 +1360,17 @@ public:
         }
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
-        putnbs(nodep, "([&]() {\n");
         if (!nodep->hasResult()) {
+            putnbs(nodep, "([&]() -> ");
+            if (nodep->constRefResult()) puts("const ");
+            putnbs(nodep, nodep->dtypep()->cType("", false, false));
+            if (nodep->refResult()) puts("&");
+            puts(" {\n");
             iterateAndNextConstNull(nodep->stmtsp());
             puts("}())");
             return;
         }
+        putnbs(nodep, "([&]() {\n");
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}(), ");
         iterateAndNextConstNull(nodep->resultp());
@@ -1417,6 +1439,9 @@ public:
     }
     void visit(AstGetInitialRandomSeed* nodep) override {
         putns(nodep, "vlSymsp->_vm_contextp__->randSeed()");
+    }
+    void visit(AstFinishEpoch* nodep) override {
+        putns(nodep, "vlSymsp->_vm_contextp__->finishEpoch()");
     }
     void visit(AstTimeFormat* nodep) override {
         putns(nodep, "VL_TIMEFORMAT_IINI(");
