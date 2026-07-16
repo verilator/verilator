@@ -22,7 +22,7 @@ test.file_grep(test.stats, r'IfaceCapture, Entries total\s+(\d+)', 25)
 test.file_grep(test.stats, r'IfaceCapture, Entries template\s+(\d+)', 11)
 test.file_grep(test.stats, r'IfaceCapture, Entries cloned\s+(\d+)', 14)
 test.file_grep(test.stats, r'IfaceCapture, Ledger fixups in V3Param\s+(\d+)', 5)
-test.file_grep(test.stats, r'IfaceCapture, Wrong-clone refs fixed\s+(\d+)', 10)
+test.file_grep(test.stats, r'IfaceCapture, Captured refs resolved\s+(\d+)', 16)
 test.file_grep(test.stats, r'IfaceCapture, Dead refs fixed in modules\s+(\d+)', 0)
 
 test.execute()

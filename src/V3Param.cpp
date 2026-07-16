@@ -850,54 +850,6 @@ class ParamProcessor final {
         return resolvedp == expectModp;
     }
 
-    // Retarget entry.refp (and extraRefps) to the typedef/paramType found
-    // in targetModp.  Returns true if anything was retargeted.
-    static bool retargetRefToModule(const V3LinkDotIfaceCapture::CapturedEntry& entry,
-                                    AstNodeModule* targetModp) {
-        if (entry.refp->typedefp()) {
-            if (AstTypedef* const tdp = V3LinkDotIfaceCapture::findTypedefInModule(
-                    targetModp, entry.refp->typedefp()->name())) {
-                entry.refp->typedefp(tdp);
-                if (tdp->subDTypep()) {
-                    entry.refp->refDTypep(tdp->subDTypep());
-                    entry.refp->dtypep(tdp->subDTypep());
-                }
-                for (AstRefDType* const xrefp : entry.extraRefps) {
-                    xrefp->typedefp(tdp);
-                    if (tdp->subDTypep()) {
-                        xrefp->refDTypep(tdp->subDTypep());
-                        xrefp->dtypep(tdp->subDTypep());
-                    }
-                }
-                return true;
-            }
-        } else if (entry.paramTypep) {
-            if (AstParamTypeDType* const ptp = V3LinkDotIfaceCapture::findParamTypeInModule(
-                    targetModp, entry.paramTypep->name())) {
-                entry.refp->refDTypep(ptp);
-                entry.refp->dtypep(ptp);
-                for (AstRefDType* const xrefp : entry.extraRefps) {
-                    xrefp->refDTypep(ptp);
-                    xrefp->dtypep(ptp);
-                }
-                return true;
-            }
-        } else if (!entry.cloneCellPath.empty()) {
-            // Clone entry has no paramTypep stored; look up the type by name.
-            if (AstParamTypeDType* const ptp
-                = V3LinkDotIfaceCapture::findParamTypeInModule(targetModp, entry.refp->name())) {
-                entry.refp->refDTypep(ptp);
-                entry.refp->dtypep(ptp);
-                for (AstRefDType* const xrefp : entry.extraRefps) {
-                    xrefp->refDTypep(ptp);
-                    xrefp->dtypep(ptp);
-                }
-                return true;
-            }
-        }
-        return false;
-    }
-
     // Fix cross-module REFDTYPE pointers in newModp after cloneTree.
     // Phase A: path-based fixup using ledger entries with cellPath.
     // Phase B: reachable-set fallback for remaining REFDTYPEs.
@@ -915,7 +867,10 @@ class ParamProcessor final {
             V3LinkDotIfaceCapture::forEach([&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
                 if (!entry.refp) return;
                 if (entry.cloneCellPath != cloneCP) return;
-                if (!entry.ownerModp || entry.ownerModp->name() != srcName) return;
+                if (!entry.ownerModp
+                    || (entry.ownerModp != newModp && entry.ownerModp->name() != srcName)) {
+                    return;
+                }
                 if (entry.cellPath.empty()) return;
 
                 AstRefDType* const refp = entry.refp;
@@ -1048,17 +1003,24 @@ class ParamProcessor final {
                     if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
                         // Use newname (unique specialized module name) as cloneCellPath.
                         const string cloneCP = newname;
+                        AstNodeModule* const clonedOwnerp
+                            = entry.ownerModp == srcModp
+                                  ? newModp
+                                  : V3LinkDotIfaceCapture::findOwnerModule(clonedRefp);
+                        UASSERT_OBJ(clonedOwnerp, clonedRefp,
+                                    "Could not locate owner of captured RefDType clone");
                         const V3LinkDotIfaceCapture::TemplateKey tkey{
                             entry.ownerModp ? entry.ownerModp->name() : "", entry.refp->name(),
                             entry.cellPath};
-                        V3LinkDotIfaceCapture::propagateClone(tkey, clonedRefp, cloneCP);
+                        V3LinkDotIfaceCapture::propagateClone(tkey, clonedRefp, clonedOwnerp,
+                                                              cloneCP);
                     } else if (entry.ownerModp != srcModp) {
                         // REFDTYPE lives in a parent module; clonep() is null.
                         AstNodeModule* const actualOwnerp
                             = V3LinkDotIfaceCapture::findOwnerModule(entry.refp);
                         if (actualOwnerp && actualOwnerp->hasGParam()) return;
                         // Owner won't be cloned - directly retarget now.
-                        if (retargetRefToModule(entry, newModp)) {
+                        if (V3LinkDotIfaceCapture::retargetRefToModule(entry, newModp)) {
                             UINFO(9, "iface capture direct retarget: " << entry.refp << " -> "
                                                                        << newModp->prettyNameQ());
                         }
@@ -1078,7 +1040,7 @@ class ParamProcessor final {
                     && !cellPathMatchesClone(entry.cellPath, cloneCellp, actualOwnerp, m_modp)) {
                     return;
                 }
-                if (retargetRefToModule(entry, newModp)) {
+                if (V3LinkDotIfaceCapture::retargetRefToModule(entry, newModp)) {
                     UINFO(9, "iface capture clone-entry retarget: " << entry.refp << " -> "
                                                                     << newModp->prettyNameQ());
                 }
@@ -2185,7 +2147,7 @@ public:
                 && !(ownerp == nullptr && entry.cloneCellPath == parentModp->name())) {
                 return;
             }
-            if (retargetRefToModule(entry, correctModp)) {
+            if (V3LinkDotIfaceCapture::retargetRefToModule(entry, correctModp)) {
                 UINFO(9,
                       "retargetIfaceRefs: " << entry.refp << " -> " << correctModp->prettyNameQ());
             }

@@ -28,6 +28,7 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class VSymEnt;
@@ -35,6 +36,7 @@ class VSymEnt;
 class V3LinkDotIfaceCapture final {
 public:
     enum class CaptureType : uint8_t { IFACE, CLASS };
+    enum class TargetKind : uint8_t { TYPEDEF, PARAM_TYPE };
 
     // Path-based map key: no pointers, only stable strings.
     // {ownerModName, refName, cellPath, cloneCellPath} uniquely identifies
@@ -70,6 +72,8 @@ public:
 
     struct CapturedEntry final {
         CaptureType captureType = CaptureType::IFACE;
+        // Semantic target identity, retained when template pointers are cleared.
+        TargetKind targetKind = TargetKind::TYPEDEF;
         AstRefDType* refp = nullptr;
         string cellPath;  // Template path (e.g. "cca_io.tlb_io") - immutable key component
         string cloneCellPath;  // Instance-specific path (e.g. "cca_io1.tlb_io") - set by
@@ -136,14 +140,16 @@ private:
                                                 AstNodeModule* deadTargetModp, int depth = 0);
     static AstNodeModule* findLiveCloneOf(AstNodeModule* deadTargetModp,
                                           AstNodeModule** containerp = nullptr);
-    static int fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp, const char* location);
+    static int fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp, const char* location,
+                           const std::unordered_set<const AstNode*>& liveNodes);
     static void captureInnerParamTypeRefs(AstParamTypeDType* paramTypep, AstRefDType* refp,
                                           const string& cellPath, const string& ownerModName,
                                           const string& ptOwnerName);
-    static int fixDeadRefsInTypeTable();
-    static int fixDeadRefsInModules();
-    static int fixWrongCloneRefs();
-    static void verifyNoDeadRefs();
+    static void nullStaleLedgerRefs(const std::unordered_set<const AstNode*>& liveNodes);
+    static int fixDeadRefsInTypeTable(const std::unordered_set<const AstNode*>& liveNodes);
+    static int fixDeadRefsInModules(const std::unordered_set<const AstNode*>& liveNodes);
+    static int resolveCapturedRefs();
+    static void verifyNoDeadRefs(const std::unordered_set<const AstNode*>& liveNodes);
     template <typename T_FilterFn, typename T_Fn>
     static void forEachImpl(T_FilterFn&& filter, T_Fn&& fn);
 
@@ -156,6 +162,8 @@ public:
     static AstNodeDType* findDTypeInModule(AstNodeModule* modp, const string& name, VNType type);
     // Find a ParamTypeDType by name in a module's top-level statements
     static AstParamTypeDType* findParamTypeInModule(AstNodeModule* modp, const string& name);
+    // Retarget every live RefDType in an entry using only stable capture metadata.
+    static bool retargetRefToModule(const CapturedEntry& entry, AstNodeModule* targetModp);
     static void add(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
                     AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "",
                     AstVar* ifacePortVarp = nullptr);
@@ -182,7 +190,7 @@ public:
     // Ledger-only: no target lookup or AST mutation.  Target resolution
     // happens later in finalizeIfaceCapture where cell pointers are wired up.
     static void propagateClone(const TemplateKey& tkey, AstRefDType* newRefp,
-                               const string& cloneCellPath);
+                               AstNodeModule* newOwnerModp, const string& cloneCellPath);
 
     static void captureTypedefContext(AstRefDType* refp, const char* stageLabel, int dotPos,
                                       bool dotIsFinal, const std::string& dotText,
@@ -190,8 +198,8 @@ public:
                                       AstNode* nodep,
                                       const std::function<std::string()>& indentFn);
 
-    // Null out ledger refp entries that point to freed nodes (not in the live AST).
-    // Called once after V3Param completes, before any code touches the ledger.
+    // Null out ledger entries that point to freed nodes (not in the live AST).
+    // Called at pass boundaries before code dereferences ledger pointers.
     static void purgeStaleRefs();
 
     // Debug: dump all captured entries
