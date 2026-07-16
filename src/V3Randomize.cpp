@@ -4463,7 +4463,7 @@ class RandomizeVisitor final : public VNVisitor {
     };
 
     // Non-zero-weight buckets with each weight extended to 64 bits.
-    std::vector<DistBucket> collectDistBuckets(AstDist* distp) {
+    std::vector<DistBucket> collectDistBuckets(AstDist* const distp) {
         FileLine* const fl = distp->fileline();
         std::vector<DistBucket> buckets;
         for (AstDistItem* ditemp = distp->itemsp(); ditemp;
@@ -4561,11 +4561,28 @@ class RandomizeVisitor final : public VNVisitor {
         return new AstConstraintExpr{fl, unionExprp};
     }
 
-    // OR of per-term change bits; ungated = some term can always be re-drawn.
-    struct DistGate final {
-        AstNodeExpr* gatep = nullptr;
-        bool ungated = false;
-    };
+    // Gate junction with constants folded and identical terms merged.
+    AstNodeExpr* newGateJoin(FileLine* fl, AstNodeExpr* ap, AstNodeExpr* bp, bool isAnd) {
+        if (ap->sameTree(bp)) {
+            VL_DO_DANGLING(pushDeletep(bp), bp);
+            return ap;
+        }
+        if (VN_IS(bp, Const)) std::swap(ap, bp);
+        if (VN_IS(ap, Const)) {
+            const bool constWins = VN_AS(ap, Const)->isZero() == isAnd;
+            if (!constWins) std::swap(ap, bp);
+            VL_DO_DANGLING(pushDeletep(bp), bp);
+            return ap;
+        }
+        if (isAnd) return new AstLogAnd{fl, ap, bp};
+        return new AstLogOr{fl, ap, bp};
+    }
+    AstNodeExpr* newGateOr(FileLine* fl, AstNodeExpr* ap, AstNodeExpr* bp) {
+        return newGateJoin(fl, ap, bp, false);
+    }
+    AstNodeExpr* newGateAnd(FileLine* fl, AstNodeExpr* ap, AstNodeExpr* bp) {
+        return newGateJoin(fl, ap, bp, true);
+    }
 
     // The rand_mode bit of varp: static class var, owner object's array via the
     // member select, or this object's array.
@@ -4593,64 +4610,78 @@ class RandomizeVisitor final : public VNVisitor {
         return atp;
     }
 
-    // Change bit of one var or member-select chain: AND of the levels' mode bits.
-    void addDistGateTerm(const AstNode* nodep, DistGate& gate, AstVar* randModeVarp,
-                         FileLine* fl) {
-        AstNodeExpr* termp = nullptr;
-        for (const AstNode* np = nodep; np;) {
-            const AstMemberSel* const mselp = VN_CAST(np, MemberSel);
-            const AstNodeVarRef* const refp = mselp ? nullptr : VN_CAST(np, NodeVarRef);
-            AstVar* const varp = mselp ? mselp->varp() : refp ? refp->varp() : nullptr;
-            if (!varp) break;
-            if (!varp->rand().isRandomizable()) {
-                if (termp) VL_DO_DANGLING(pushDeletep(termp), termp);
-                return;
-            }
-            const RandomizeMode rmode = {.asInt = varp->user1()};
-            if (rmode.usesMode) {
-                if (AstNodeExpr* const bitp = newModeBitRead(varp, mselp, randModeVarp, fl)) {
-                    termp = termp ? new AstLogAnd{fl, termp, bitp} : bitp;
-                }
-            }
-            np = mselp ? mselp->fromp() : nullptr;
+    // The rand_mode bit of one variable access, or a constant when it has none.
+    // A non-rand value can never be re-drawn; a non-rand owner level is skipped.
+    AstNodeExpr* newVarGate(AstVar* varp, const AstMemberSel* mselp, bool ownerLevel,
+                            AstVar* randModeVarp, FileLine* fl) {
+        if (!varp->rand().isRandomizable()) {
+            return new AstConst{fl, AstConst::BitTrue{}, ownerLevel};
         }
-        if (!termp) {
-            gate.ungated = true;
-            return;
-        }
-        gate.gatep = gate.gatep ? new AstLogOr{fl, gate.gatep, termp} : termp;
+        const RandomizeMode rmode = {.asInt = varp->user1()};
+        if (!rmode.usesMode) return new AstConst{fl, AstConst::BitTrue{}};
+        AstNodeExpr* const bitp = newModeBitRead(varp, mselp, randModeVarp, fl);
+        return bitp ? bitp : new AstConst{fl, AstConst::BitTrue{}};
     }
 
-    // Recurse the dist expression; each var or member-select chain is one term.
-    void gatherDistGates(const AstNode* nodep, DistGate& gate, AstVar* randModeVarp,
-                         FileLine* fl) {
-        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, NodeVarRef)) {
-            addDistGateTerm(nodep, gate, randModeVarp, fl);
-            return;
+    // Change bit of one variable access, ANDed level by level down the
+    // member-select owner path. An owner level of another shape never gates.
+    AstNodeExpr* newAccessGate(const AstNode* nodep, bool ownerLevel, AstVar* randModeVarp,
+                               FileLine* fl) {
+        if (const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel)) {
+            return newGateAnd(fl, newVarGate(mselp->varp(), mselp, ownerLevel, randModeVarp, fl),
+                              newAccessGate(mselp->fromp(), true, randModeVarp, fl));
         }
-        for (const AstNode* childp :
-             {nodep->op1p(), nodep->op2p(), nodep->op3p(), nodep->op4p()}) {
-            for (const AstNode* np = childp; np; np = np->nextp()) {
-                gatherDistGates(np, gate, randModeVarp, fl);
-            }
+        if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+            return newVarGate(refp->varp(), nullptr, ownerLevel, randModeVarp, fl);
         }
+        const AstNodeSel* const selp = VN_CAST(nodep, NodeSel);
+        return selp ? newAccessGate(selp->fromp(), true, randModeVarp, fl)
+                    : new AstConst{fl, AstConst::BitTrue{}};
     }
 
-    // Weighted chain while the dist value can still be freshly drawn, membership
-    // once every term is frozen.
-    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
-                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
+    // Gate of one dist expression node: nonzero while its value can still be
+    // freshly drawn. Constant when no runtime rand_mode bit is involved.
+    AstNodeExpr* newDistGate(const AstNode* nodep, AstVar* randModeVarp, FileLine* fl) {
+        if (VN_IS(nodep, NodeVarRef) || VN_IS(nodep, MemberSel)) {
+            return newAccessGate(nodep, false, randModeVarp, fl);
+        }
+        // A selection is drawn through its base; the index never gates.
+        if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+            return newDistGate(selp->fromp(), randModeVarp, fl);
+        }
+        if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
+            return newDistGate(selp->fromp(), randModeVarp, fl);
+        }
+        // A conditional re-draws through an active selector or the selected arm.
+        if (const AstCond* const condp = VN_CAST(nodep, Cond)) {
+            AstNodeExpr* const thenGatep = newDistGate(condp->thenp(), randModeVarp, fl);
+            AstNodeExpr* elseGatep = newDistGate(condp->elsep(), randModeVarp, fl);
+            AstNodeExpr* armGatep = thenGatep;
+            if (thenGatep->sameTree(elseGatep)) {
+                VL_DO_DANGLING(pushDeletep(elseGatep), elseGatep);
+            } else {
+                armGatep
+                    = new AstCond{fl, condp->condp()->cloneTreePure(false), thenGatep, elseGatep};
+            }
+            return newGateOr(fl, newDistGate(condp->condp(), randModeVarp, fl), armGatep);
+        }
+        if (const AstNodeUniop* const uopp = VN_CAST(nodep, NodeUniop)) {
+            return newDistGate(uopp->lhsp(), randModeVarp, fl);
+        }
+        if (const AstNodeBiop* const bopp = VN_CAST(nodep, NodeBiop)) {
+            return newGateOr(fl, newDistGate(bopp->lhsp(), randModeVarp, fl),
+                             newDistGate(bopp->rhsp(), randModeVarp, fl));
+        }
+        // Constants and remaining forms re-draw only if a rand var is inside.
+        return new AstConst{fl, AstConst::BitTrue{}, distBoundRefsRandVar(nodep)};
+    }
+
+    // Membership union of the dist set, with runtime-zero weights excluded.
+    AstConstraintExpr* buildFrozenMembership(AstDist* distp,
+                                             const std::vector<DistBucket>& buckets) {
         FileLine* const fl = distp->fileline();
-        DistGate gate;
-        gatherDistGates(distp->exprp(), gate, randModeVarp, fl);
-        AstNodeExpr* const gatep = gate.gatep;
-        if (gate.ungated || !gatep) {
-            if (gatep) VL_DO_DANGLING(pushDeletep(gate.gatep), gate.gatep);
-            return chainp;
-        }
-
         AstNodeExpr* unionExprp = nullptr;
-        for (auto& bucket : buckets) {
+        for (const auto& bucket : buckets) {
             AstNodeExpr* termp = newDistMembershipTerm(distp, bucket.rangep);
             // A weight that is zero only at runtime excludes the bucket's values too.
             const bool runtimeWeight
@@ -4669,7 +4700,23 @@ class RandomizeVisitor final : public VNVisitor {
                 unionExprp = termp;
             }
         }
-        return new AstConstraintIf{fl, gatep, chainp, new AstConstraintExpr{fl, unionExprp}};
+        return new AstConstraintExpr{fl, unionExprp};
+    }
+
+    // Weighted chain while the dist value can still be freshly drawn, membership
+    // once it is frozen; membership only when it can never be re-drawn.
+    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
+                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
+        FileLine* const fl = distp->fileline();
+        AstNodeExpr* gatep = newDistGate(distp->exprp(), randModeVarp, fl);
+        if (VN_IS(gatep, Const)) {
+            const bool drawable = !VN_AS(gatep, Const)->isZero();
+            VL_DO_DANGLING(pushDeletep(gatep), gatep);
+            if (drawable) return chainp;
+            VL_DO_DANGLING(pushDeletep(chainp), chainp);
+            return buildFrozenMembership(distp, buckets);
+        }
+        return new AstConstraintIf{fl, gatep, chainp, buildFrozenMembership(distp, buckets)};
     }
 
     AstNodeExpr* newUniformRangePick(AstDist* distp, const AstInsideRange* irp) {
