@@ -58,6 +58,8 @@ public:
         return names[m_e];
     }
     bool isAccept() const { return m_e == ACCEPT_ON || m_e == SYNC_ACCEPT_ON; }
+    bool isSync() const { return m_e == SYNC_ACCEPT_ON || m_e == SYNC_REJECT_ON; }
+    bool isAsync() const { return !isSync(); }
 };
 
 //######################################################################

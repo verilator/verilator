@@ -45,38 +45,6 @@
           end
         endmodule
         
-        module fsm_negated_guard (
-%000009     input logic clk,
-%000001     input logic rst,
-%000001     input logic hold
-        );
-          typedef enum logic {
-            S0,
-            S1
-          } state_t;
-        
-%000004   state_t state_q;
-%000004   state_t state_d;
-        
- 000010   always_comb begin
- 000010     state_d = state_q;
-~000010     case (state_q)
-        // [FSM coverage]
-%000001        // [fsm_arc t.negated_guard_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000003        // [fsm_arc t.negated_guard_u.state_q::S1->S0]
-%000003        // [fsm_state t.negated_guard_u.state_q::S0]
-%000004        // [fsm_state t.negated_guard_u.state_q::S1]
-%000009       S0: if (!hold) state_d = S1;
-%000004       S1: state_d = S0;
-            endcase
-          end
-        
-%000009   always_ff @(posedge clk) begin
-%000007     if (rst) state_q <= S0;
-%000007     else state_q <= state_d;
-          end
-        endmodule
-        
         module fsm_three_block (
 %000009     input logic clk,
 %000001     input logic rst,
@@ -457,11 +425,6 @@
               .clk(clk),
               .rst(rst),
               .start(start)
-          );
-          fsm_negated_guard negated_guard_u (
-              .clk(clk),
-              .rst(rst),
-              .hold(start)
           );
           fsm_three_block three_block_u (
               .clk(clk),

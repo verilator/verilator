@@ -6715,7 +6715,8 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
                         { AstNodeExpr* const elseCondp = new AstLogNot{$1, $3->cloneTreePure(false)};
                           $$ = new AstSAnd{$1, new AstImplication{$1, $3, $5, true},
-                                           new AstImplication{$1, elseCondp, $7, true}}; }
+                                           new AstImplication{$1, elseCondp, $7, true},
+                                           /*propertyControl=*/true}; }
         ;
 
 property_case_itemList<caseItemp>:  // IEEE: {property_case_item}

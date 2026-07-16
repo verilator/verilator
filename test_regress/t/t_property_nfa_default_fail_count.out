@@ -1,0 +1,8 @@
+[50] %Error: t_property_nfa_default_fail_count.v:25: Assertion failed in top.t: 'assert' failed.
+-Info: t/t_property_nfa_default_fail_count.v:25: Verilog $stop, ignored due to +verilator+error+limit
+[50] %Error: t_property_nfa_default_fail_count.v:25: Assertion failed in top.t: 'assert' failed.
+[60] %Error: t_property_nfa_default_fail_count.v:28: Assertion failed in top.t: 'assert' failed.
+[60] %Error: t_property_nfa_default_fail_count.v:28: Assertion failed in top.t: 'assert' failed.
+[70] %Error: t_property_nfa_default_fail_count.v:30: Assertion failed in top.t: 'assert' failed.
+[70] %Error: t_property_nfa_default_fail_count.v:30: Assertion failed in top.t: 'assert' failed.
+*-* All Finished *-*

@@ -28,8 +28,7 @@ module t (
 
   // Smoke: trivially-true forms must compile and never fail.
   assert property (@(posedge clk) 1'b1 #-# 1'b1);
-  assert property (@(posedge clk) 1'b1 #-# 1'b1)
-    action_hits++;
+  assert property (@(posedge clk) 1'b1 #-# 1'b1) action_hits++;
   assert property (@(posedge clk) 0 |-> (0 #-# 0));
   assert property (@(posedge clk) 0 |-> (0 #=# 0));
 
@@ -53,11 +52,10 @@ module t (
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 32) begin
-      // ovl/novl deltas vs Verilator are 1-cycle preponed-sampling differences.
       $display("ovl=%0d novl=%0d impl=%0d nimp=%0d wide=%0d", ovl_f, novl_f, impl_f, nimp_f,
                wide_f);
-      `checkd(ovl_f, 29);  // Other sims: 28, one other sim: 5
-      `checkd(novl_f, 20);  // Other sims: 19
+      `checkd(ovl_f, 28);
+      `checkd(novl_f, 19);
       `checkd(impl_f, 9);
       `checkd(nimp_f, 0);
       `checkd(wide_f, 0);

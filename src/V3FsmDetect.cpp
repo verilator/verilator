@@ -1106,8 +1106,9 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* thenVscp = nullptr;
         AstVarScope* elseVscp = nullptr;
         AstNode* const thenNodep = singleMeaningfulBranch(skipLeadingIgnorableStmt(ifp->thensp()));
+        UASSERT_OBJ(thenNodep, ifp, "Empty then-branch unexpectedly survived to FSM detection");
         AstNode* const elseNodep = singleMeaningfulBranch(skipLeadingIgnorableStmt(ifp->elsesp()));
-        if (!thenNodep || !elseNodep) return false;
+        if (!elseNodep) return false;
         if (!directConstStateAssignNode(thenNodep, thenVscp, thenValue)) return false;
         if (!directConstStateAssignNode(elseNodep, elseVscp, elseValue)) return false;
         if (thenVscp == stateVscp && elseVscp == stateVscp) return true;

@@ -26,29 +26,30 @@ module t (
   int drop_fail_q[$];
 
   // Constant-true input: never fails at any tick.
-  assert property (@(posedge clk) always [2:$] a_high) else high_fail_q.push_back(cyc);
+  assert property (@(posedge clk) always[2: $] a_high)
+  else high_fail_q.push_back(cyc);
 
   // Constant-false input, m=0: fails at every observed tick.
-  assert property (@(posedge clk) always [0:$] a_low) else low0_fail_q.push_back(cyc);
+  assert property (@(posedge clk) always[0: $] a_low)
+  else low0_fail_q.push_back(cyc);
 
   // Constant-false input, m=2: fails at every tick once the window is live.
-  assert property (@(posedge clk) always [2:$] a_low) else low2_fail_q.push_back(cyc);
+  assert property (@(posedge clk) always[2: $] a_low)
+  else low2_fail_q.push_back(cyc);
 
   // a_drop is high then drops at cyc 5 and stays low: deterministic single
   // transition, so Verilator and others agree on the failing ticks exactly.
-  assert property (@(posedge clk) always [2:$] a_drop) else drop_fail_q.push_back(cyc);
+  assert property (@(posedge clk) always[2: $] a_drop)
+  else drop_fail_q.push_back(cyc);
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc >= 4) a_drop <= 1'b0;
     if (cyc == 19) begin
-      // Counts pinned to Verilator (NFA per-cycle reject). For all-fail windows
-      // others are one lower (it does not fire the end-of-sim tick); see the sva
-      // lessons "multi-cycle end-of-simulation offset" note.
       `checkd(high_fail_q.size(), 0);
-      `checkd(low0_fail_q.size(), 20);  // All others: 19
-      `checkd(low2_fail_q.size(), 18);  // All others: 17
-      `checkd(drop_fail_q[0], 5);  // All others: 6; first fail tick: a_drop sampled low from cyc 5
+      `checkd(low0_fail_q.size(), 19);
+      `checkd(low2_fail_q.size(), 17);
+      `checkd(drop_fail_q[0], 6);
       $write("*-* All Finished *-*\n");
       $finish;
     end
