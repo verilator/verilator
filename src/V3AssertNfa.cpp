@@ -16,6 +16,7 @@
 // V3AssertNfa's Transformations:
 //
 //  - Convert multi-cycle SVA sequences/properties into NFA graphs.
+//  - Attach inherited assertion clocks before moving sampled-value functions.
 //  - Emit module-level state registers driven by AstAlways blocks.
 //  - Replace converted assertions with combinational match/reject checks
 //    so V3AssertPre sees no multi-cycle SExpr (unsupported ones fall through).
@@ -2411,10 +2412,19 @@ class AssertNfaVisitor final : public VNVisitor {
     AstClocking* m_defaultClockingp = nullptr;  // Default clocking
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
+    AstSenTree* m_sampledValueClockp = nullptr;  // Inherited clock during scoped attachment
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
+
+    template <typename T_Node>
+    void visitSampledValue(T_Node* const nodep) {
+        if (m_sampledValueClockp && !nodep->sentreep()) {
+            nodep->sentreep(m_sampledValueClockp->cloneTree(true));
+        }
+        iterateChildren(nodep);
+    }
 
     // Wire match vertex and mid-window sources for a successful NFA build.
     static void wireMatchAndMidSources(SvaGraph& graph, const BuildResult& result, FileLine* flp) {
@@ -2972,6 +2982,15 @@ class AssertNfaVisitor final : public VNVisitor {
         AstNodeExpr* disableExprp = propSpecp->disablep();
         if (!senTreep) return;
 
+        // NFA lowering clones repeated operands and may hoist them into an
+        // always_comb block. Resolve implicit sampled-value clocks first, while
+        // the enclosing assertion clock is still available.
+        {
+            VL_RESTORER(m_sampledValueClockp);
+            m_sampledValueClockp = senTreep;
+            iterate(propSpecp->propp());
+        }
+
         FileLine* const flp = assertp->fileline();
 
         SvaGraph graph;
@@ -3107,6 +3126,10 @@ class AssertNfaVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstDefaultDisable* nodep) override {}
+    void visit(AstFell* nodep) override { visitSampledValue(nodep); }
+    void visit(AstPast* nodep) override { visitSampledValue(nodep); }
+    void visit(AstRose* nodep) override { visitSampledValue(nodep); }
+    void visit(AstStable* nodep) override { visitSampledValue(nodep); }
     void visit(AstAssert* nodep) override { processAssertion(nodep); }
     void visit(AstCover* nodep) override { processAssertion(nodep); }
     void visit(AstRestrict* nodep) override {
