@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_property_nfa_negated_abort_unsup.v:17:35: Unsupported: asynchronous abort operator in a multi-cycle property
+                                                                : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) accept_on (abort_cond) (a ##1 b));
+      |                                   ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_nfa_negated_abort_unsup.v:19:35: Unsupported: nested abort operator in a multi-cycle property
+                                                                : ... note: In instance 't'
+   19 |   assert property (@(posedge clk) not (sync_accept_on (abort_cond) (a ##1 b)));
+      |                                   ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_negated_abort_unsup.v:21:34: Unsupported: abort operator in a multi-cycle cover property
+                                                                : ... note: In instance 't'
+   21 |   cover property (@(posedge clk) sync_accept_on (abort_cond) (a ##1 b));
+      |                                  ^~~~~~~~~~~~~~
+%Error: Exiting due to
