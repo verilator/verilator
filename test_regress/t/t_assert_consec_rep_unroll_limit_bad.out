@@ -3,4 +3,8 @@
    14 |   assert property (@(posedge clk) a [* 25700000] |-> b);
       |                                     ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assert_consec_rep_unroll_limit_bad.v:17:37: Concurrent assertion repetition count 25700001 exceeds --assert-unroll-limit (1024); raise '--assert-unroll-limit' to compile
+                                                      : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) a [* 25700000:$] |-> b);
+      |                                     ^~
 %Error: Exiting due to
