@@ -45,6 +45,13 @@ extern void vl_finish(const char* filename, int linenum, const char* hier) VL_MT
 /// Verilator internal code must call VL_STOP_MT instead, which eventually calls this.
 extern void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE;
 
+/// Routine to call for $stop and error-limited assertion failures
+/// User code may wish to replace this function, to do so, define VL_USER_STOP_MAYBE.
+/// This code does not have to be thread safe.
+/// Verilator internal code must call VL_STOP_MT instead, which eventually calls this.
+extern void vl_stop_maybe(const char* filename, int linenum, const char* hier,
+                          bool maybe) VL_MT_UNSAFE;
+
 /// Routine to call for fatal messages
 /// User code may wish to replace this function, to do so, define VL_USER_FATAL.
 /// This code does not have to be thread safe.
