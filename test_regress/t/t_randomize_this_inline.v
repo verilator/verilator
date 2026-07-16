@@ -8,6 +8,7 @@
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
+`define check_inside(gotv,tablev) do if (!(gotv inside {tablev})) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (tablev)); `stop; end while(0);
 // verilog_format: on
 
 // Test: 'this' keyword inside inline randomize() with {} constraint blocks.
@@ -16,6 +17,7 @@
 class DataItem;
   rand bit [7:0] value;
   rand bit [7:0] limit;
+  rand integer int_val;
   constraint default_con {limit inside {[8'd50 : 8'd200]};}
 endclass
 
@@ -23,10 +25,33 @@ endclass
 // 'this' must bind to the randomized object, not the calling class.
 class Caller;
   rand bit [7:0] own_value;
+  rand integer values[];
+  function new();
+    values = new[5];
+    values[0] = 'hCAFEBABE;
+    values[1] = 'hDEADBEEF;
+    values[2] = 'hBAADF00D;
+    values[3] = 'hBEEFBABE;
+    values[4] = 'hFACEFEED;
+  endfunction
   function int do_rand(DataItem item);
     return item.randomize() with {
       this.value > 8'd30;
       this.value < 8'd40;
+    };
+  endfunction
+  function int randomize_int_gt(DataItem item);
+    return item.randomize() with {
+      if (values.size > 0) {
+        item.int_val inside {values};
+      }
+    };
+  endfunction
+  function int randomize_int_addition_gt(DataItem item);
+    return item.randomize() with {
+      if ((values.size + 3) - 4 > -1) {
+        item.int_val inside {values};
+      }
     };
   endfunction
 endclass
@@ -68,6 +93,18 @@ module t;
     rand_ok = caller.do_rand(item);
     `checkd(rand_ok, 1)
     `check_range(item.value, 31, 39)
+
+    // Test 5: 'this' binds to randomized object, if statement containing size
+    // with comparision inside constraint.
+    rand_ok = caller.randomize_int_gt(item);
+    `checkd(rand_ok, 1)
+    `check_inside(item.int_val, caller.values)
+
+    // Test 6: 'this' binds to randomized object, if statement containing size
+    // with comparition and addition inside constraint.
+    rand_ok = caller.randomize_int_addition_gt(item);
+    `checkd(rand_ok, 1)
+    `check_inside(item.int_val, caller.values)
 
     $write("*-* All Finished *-*\n");
     $finish;

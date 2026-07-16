@@ -3264,6 +3264,19 @@ class RandomizeVisitor final : public VNVisitor {
         m_prePostWrap;  // Per-handle-type pre/post virtual wrapper presence
 
     // METHODS
+    // Check if method is inside conditional of if statment.
+    static bool isInsideIfCond(AstNodeExpr* nodep) {
+        const AstNodeExpr* exprp = nodep;
+
+        while (exprp) {
+            if (const AstConstraintIf* const constIfp = VN_CAST(exprp->backp(), ConstraintIf)) {
+                if (constIfp->condp() == exprp) return true;
+            }
+            exprp = VN_CAST(exprp->backp(), NodeExpr);
+        }
+
+        return false;
+    }
     // Check if two nodes are semantically equivalent (not pointer equality):
     static bool isSimilarNode(const AstNodeExpr* withExpr, const AstNodeExpr* argExpr) {
         // VarRef: compare variable pointers
@@ -5688,7 +5701,11 @@ class RandomizeVisitor final : public VNVisitor {
             capturedTreep->foreachAndNext([&](AstCMethodHard* methodp) {
                 if (methodp->method() == VCMethod::DYN_SIZE
                     || methodp->method() == VCMethod::ASSOC_SIZE) {
-                    sizeMethodps.push_back(methodp);
+                    if (isInsideIfCond(methodp)) {
+                        methodp->user1(false);
+                    } else {
+                        sizeMethodps.push_back(methodp);
+                    }
                 }
             });
             for (AstCMethodHard* const methodp : sizeMethodps) {
