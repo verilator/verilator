@@ -91,6 +91,15 @@ module t (
   assert property (@(posedge clk) a [*] ##1 b)
   else count_fail11 <= count_fail11 + 1;
 
+  // Parenthesized sampled-value functions followed by consecutive repetition
+  assert property (@(posedge clk) ($stable(1'b0)) [+]);
+  assert property (@(posedge clk) ($stable(a)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($stable(a, clk)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($fell(a)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($past(a)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($rose(a)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($changed(a)) [+] |-> 1'b1);
+
   // Tests 12-13: explicit unbounded aliases
   assert property (@(posedge clk) a [*0:$] ##1 b)
   else count_fail12 <= count_fail12 + 1;
