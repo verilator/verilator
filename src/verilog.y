@@ -6874,9 +6874,16 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // [*N] exact count
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ']'
                         { $$ = new AstSConsRep{$<fl>2, $1, $3}; }
-        //                      // [*N:M] range
+        //                      // [*N:M] bounded range or [*N:$] unbounded range
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ':' constExpr ']'
-                        { $$ = new AstSConsRep{$<fl>2, $1, $3, $5, false}; }  // LCOV_EXCL_LINE
+                        {
+                            if (VN_IS($5, Unbounded)) {
+                                DEL($5);
+                                $$ = new AstSConsRep{$<fl>2, $1, $3, nullptr, true};
+                            } else {
+                                $$ = new AstSConsRep{$<fl>2, $1, $3, $5, false};
+                            }
+                        }
         //                      // [+] = [*1:$]
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAPLUSKET
                         { $$ = new AstSConsRep{$<fl>2, $1,

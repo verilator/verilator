@@ -1556,7 +1556,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSConsRep* nodep) override {
-        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N], [*N:M], [+], [*]
+        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N], [*N:M], [*N:$], [+], [*]
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
@@ -1565,6 +1565,9 @@ class WidthVisitor final : public VNVisitor {
             const AstConst* const minConstp = VN_CAST(nodep->countp(), Const);
             if (!minConstp) {
                 nodep->v3error("Consecutive repetition count must be constant expression"
+                               " (IEEE 1800-2023 16.9.2)");
+            } else if (minConstp->toSInt() < 0) {
+                nodep->v3error("Consecutive repetition count must be non-negative"
                                " (IEEE 1800-2023 16.9.2)");
             } else if (!nodep->unbounded() && !nodep->maxCountp() && minConstp->toSInt() < 1) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*0] consecutive repetition");
