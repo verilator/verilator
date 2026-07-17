@@ -284,6 +284,8 @@ class AstCAwait final : public AstNodeStmt {
     // @astgen op1 := exprp : AstNodeExpr
     //
     // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sentree related to this await
+    //
+    // @astgen ptr := m_readySenTreep : Optional[AstSenTree]  // Clock edge gating @(cb) ready()
 public:
     AstCAwait(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sentreep = nullptr)
         : ASTGEN_SUPER_CAwait(fl)
@@ -296,6 +298,9 @@ public:
     bool isTimingControl() const override { return true; }
     AstSenTree* sentreep() const { return m_sentreep; }
     void clearSentreep() { m_sentreep = nullptr; }
+    AstSenTree* readySenTreep() const { return m_readySenTreep; }
+    void readySenTreep(AstSenTree* nodep) { m_readySenTreep = nodep; }
+    void clearReadySenTreep() { m_readySenTreep = nullptr; }
 };
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
@@ -673,6 +678,9 @@ class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
     // @astgen op1 := sentreep : Optional[AstSenTree]
     // @astgen op2 := stmtsp : List[AstNode]
+    // True if a wait on a clocking event may resolve on the current cycle (procedural ##0)
+    bool m_syncCurrentCycle = false;
+
 public:
     AstEventControl(FileLine* fl, AstSenTree* sentreep, AstNode* stmtsp)
         : ASTGEN_SUPER_EventControl(fl) {
@@ -680,9 +688,16 @@ public:
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstEventControl;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string verilogKwd() const override { return "@(%l) %r"; }
     bool isTimingControl() const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return syncCurrentCycle() == VN_DBG_AS(samep, EventControl)->syncCurrentCycle();
+    }
     int instrCount() const override { return 0; }
+    bool syncCurrentCycle() const { return m_syncCurrentCycle; }
+    void syncCurrentCycle(bool flag) { m_syncCurrentCycle = flag; }
 };
 class AstExecGraph final : public AstNodeStmt {
     // For parallel execution, this node contains a dependency graph. Each

@@ -1335,6 +1335,28 @@ module Vt_debug_emitv_seq_event;
             @( sq())end
     end
 endmodule
+module Vt_debug_emitv_clocking_event;
+    input logic clk;
+    logic sig;
+
+    ???? // CLOCKING 'cb'
+    posedge clk
+    ???? // CLOCKINGITEM
+    32'h0siglogic sig;
+    event cb;
+
+    ???? // ALWAYSOBSERVED
+    @(posedge clk)
+    ???? // FIREEVENT
+    cbinitial begin
+        begin
+
+            ???? // EVENTCONTROL
+            @( cb)##0;
+            sig = 1;
+        end
+    end
+endmodule
 package Vt_debug_emitv_p;
     logic pkgvar;
 endpackage

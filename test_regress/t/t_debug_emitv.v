@@ -140,6 +140,7 @@ module t (/*AUTOARG*/
 
   sub sub(.*);
   seq_event seq_event(.*);
+  clocking_event clocking_event(.*);
 
   initial begin
     int other;
@@ -452,6 +453,17 @@ module seq_event(input logic clk);
   endsequence
   initial begin
     @sq;
+  end
+endmodule
+
+module clocking_event(input logic clk);
+  logic sig;
+  default clocking cb @(posedge clk);
+    output sig;
+  endclocking
+  initial begin
+    @(cb);
+    ##0 sig = 1;
   end
 endmodule
 

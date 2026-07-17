@@ -450,6 +450,7 @@ AstVar* AstClocking::ensureEventp(bool childDType) {
                          : new AstVar{fileline(), VVarType::MODULETEMP, m_name,
                                       findBasicDType(VBasicDTypeKwd::EVENT)};
         evp->lifetime(VLifetime::STATIC_EXPLICIT);
+        evp->setClockingEvent();
         eventp(evp);
         // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
         addNextHere(new AstAlwaysObserved{
@@ -3306,6 +3307,7 @@ void AstVar::dump(std::ostream& str) const {
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
+    if (isClockingEvent()) str << " [CLOCKINGEVT]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }
@@ -3336,6 +3338,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);
     dumpJsonBoolFuncIf(str, isStdRandomizeArg);
+    dumpJsonBoolFuncIf(str, isClockingEvent);
     dumpJsonStr(str, "lifetime", lifetime().ascii());
     dumpJsonStr(str, "varType", varType().ascii());
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
@@ -3724,8 +3727,23 @@ void AstCAwait::dump(std::ostream& str) const {
         str << " => ";
         sentreep()->dump(str);
     }
+    if (readySenTreep()) {
+        str << " ready=> ";
+        readySenTreep()->dump(str);
+    }
 }
-void AstCAwait::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstCAwait::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "readySenTree", readySenTreep());
+    dumpJsonGen(str);
+}
+void AstEventControl::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (syncCurrentCycle()) str << " [SYNCCURCYCLE]";
+}
+void AstEventControl::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, syncCurrentCycle);
+    dumpJsonGen(str);
+}
 int AstCMethodHard::instrCount() const {
     return 0;  // TODO
 }

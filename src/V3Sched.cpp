@@ -1063,6 +1063,7 @@ void schedule(AstNetlist* netlistp) {
     remapSensitivities(logicRegions.m_act, trigKit.mapVec());
     remapSensitivities(logicReplicas.m_act, trigKit.mapVec());
     remapSensitivities(timingKit.m_lbs, trigKit.mapVec());
+    timingKit.remapReadySenses(trigKit.mapVec());
     const std::map<const AstVarScope*, std::vector<AstSenTree*>> actTimingDomains
         = timingKit.remapDomains(trigKit.mapVec());
 
@@ -1172,7 +1173,10 @@ void schedule(AstNetlist* netlistp) {
     } else {
         // beforeTrigVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
         // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
-        netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
+        netlistp->foreach([](AstCAwait* const cAwaitp) {
+            cAwaitp->clearSentreep();
+            cAwaitp->clearReadySenTreep();
+        });
     }
     if (AstVarScope* const trigAccp = trigKit.vscAccp()) {
         // Copy trigger vector to accumulator at the end of static initialziation so,

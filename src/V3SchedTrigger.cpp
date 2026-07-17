@@ -992,6 +992,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
             }
         }
         nodep->clearSentreep();  // Clear as these sentrees will get deleted later
+        nodep->clearReadySenTreep();  // Ditto
         iterate(nodep);
     }
 
