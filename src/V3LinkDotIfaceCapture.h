@@ -135,7 +135,6 @@ private:
     static void clearModuleCache();
     static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
     static string extractIfacePortName(const string& dotText);
-    static AstNodeDType* findDTypeByPrettyName(AstNodeModule* modp, const string& prettyName);
     static AstNodeModule* findCloneViaHierarchy(AstNodeModule* containingModp,
                                                 AstNodeModule* deadTargetModp, int depth = 0);
     static AstNodeModule* findLiveCloneOf(AstNodeModule* deadTargetModp,

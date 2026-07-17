@@ -867,10 +867,10 @@ class ParamProcessor final {
             V3LinkDotIfaceCapture::forEach([&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
                 if (!entry.refp) return;
                 if (entry.cloneCellPath != cloneCP) return;
-                if (!entry.ownerModp
-                    || (entry.ownerModp != newModp && entry.ownerModp->name() != srcName)) {
-                    return;
-                }
+                UASSERT_OBJ(
+                    entry.ownerModp
+                        && (entry.ownerModp == newModp || entry.ownerModp->name() == srcName),
+                    entry.refp, "clone ledger entry for '" << cloneCP << "' has unexpected owner");
                 if (entry.cellPath.empty()) return;
 
                 AstRefDType* const refp = entry.refp;
@@ -1003,12 +1003,12 @@ class ParamProcessor final {
                     if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
                         // Use newname (unique specialized module name) as cloneCellPath.
                         const string cloneCP = newname;
-                        AstNodeModule* const clonedOwnerp
-                            = entry.ownerModp == srcModp
-                                  ? newModp
-                                  : V3LinkDotIfaceCapture::findOwnerModule(clonedRefp);
-                        UASSERT_OBJ(clonedOwnerp, clonedRefp,
-                                    "Could not locate owner of captured RefDType clone");
+                        // A cloned captured ref lives inside srcModp's tree, so its owner
+                        // is srcModp (SV has no nested module definitions).
+                        UASSERT_OBJ(
+                            entry.ownerModp == srcModp, clonedRefp,
+                            "cloned captured RefDType owner is not the specialized module");
+                        AstNodeModule* const clonedOwnerp = newModp;
                         const V3LinkDotIfaceCapture::TemplateKey tkey{
                             entry.ownerModp ? entry.ownerModp->name() : "", entry.refp->name(),
                             entry.cellPath};
