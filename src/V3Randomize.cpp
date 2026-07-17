@@ -4591,12 +4591,13 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeExpr* arrayp = nullptr;
         if (varp->lifetime().isStatic()) {
             AstClass* const ownerp = VN_CAST(varp->user2p(), Class);
-            AstVar* const smodep = ownerp ? getStaticRandModeVar(ownerp) : nullptr;
-            if (!smodep) return nullptr;
+            UASSERT_OBJ(ownerp, varp, "usesMode static var without an owning class");
+            AstVar* const smodep = getStaticRandModeVar(ownerp);
+            UASSERT_OBJ(smodep, varp, "usesMode static var without a static rand-mode array");
             arrayp = new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep, VAccess::READ};
         } else if (mselp) {
             AstVar* const memberModep = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
-            if (!memberModep) return nullptr;
+            UASSERT_OBJ(memberModep, varp, "usesMode member without a class rand-mode array");
             arrayp = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
         } else {
             UASSERT_OBJ(randModeVarp, varp, "rand_mode variable without a class mode array");
@@ -4619,8 +4620,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
         const RandomizeMode rmode = {.asInt = varp->user1()};
         if (!rmode.usesMode) return new AstConst{fl, AstConst::BitTrue{}};
-        AstNodeExpr* const bitp = newModeBitRead(varp, mselp, randModeVarp, fl);
-        return bitp ? bitp : new AstConst{fl, AstConst::BitTrue{}};
+        return newModeBitRead(varp, mselp, randModeVarp, fl);
     }
 
     // Change bit of one variable access, ANDed level by level down the
@@ -4815,16 +4815,16 @@ class RandomizeVisitor final : public VNVisitor {
 
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
-                if (cifp->thensp()) {
-                    lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp);
-                }
+                UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
+                lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp);
                 if (cifp->elsesp()) {
                     lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp);
                 }
                 continue;
             }
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
-                if (cfep->bodyp()) lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep);
+                UASSERT_OBJ(cfep->bodyp(), cfep, "constraint foreach without a body");
+                lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep);
                 continue;
             }
 

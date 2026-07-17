@@ -259,6 +259,8 @@ class ObjArr;
   endfunction
 endclass
 
+// Same SV shape as CondSel, but x2/y2 never use rand_mode anywhere in this
+// test: the arm gates fold to a constant at verilation instead of runtime bits.
 class CondSame;
   rand uint x2, y2;
   rand bit b2;
@@ -354,6 +356,14 @@ module t;
       `checkd(sv.x, 7);
     end
 
+    // Setting rand_mode back to 1 restores drawing.
+    sv.x.rand_mode(1);
+    for (int i = 0; i < 8; ++i) begin
+      ok = sv.randomize();
+      `checkd(ok, 1);
+      if (sv.x != 5 && sv.x != 1000000) $stop;
+    end
+
     // Frozen inside a range bucket -> succeeds.
     rv = new;
     ok = rv.randomize();
@@ -378,12 +388,18 @@ module t;
       `checkd(mv.x, 150);
     end
 
-    // Active dist var still solves (weighted, never fails on a valid set).
+    // Active dist var still solves weighted toward the heavy bucket.
     sv = new;
-    for (int i = 0; i < 8; ++i) begin
-      ok = sv.randomize();
-      `checkd(ok, 1);
-      if (sv.x != 5 && sv.x != 1000000) $stop;
+    begin
+      automatic int n5 = 0, nbig = 0;
+      for (int i = 0; i < 64; ++i) begin
+        ok = sv.randomize();
+        `checkd(ok, 1);
+        if (sv.x == 5)++n5;
+        else if (sv.x == 1000000)++nbig;
+        else $stop;
+      end
+      if (n5 <= nbig) $stop;
     end
 
     // Static rand var frozen in the low-weight bucket -> succeeds.
@@ -407,6 +423,14 @@ module t;
       ok = st.randomize();
       `checkd(ok, 0);
       `checkd(st.sx, 7);
+    end
+
+    // Unfreezing the static var restores drawing.
+    st.sx.rand_mode(1);
+    for (int i = 0; i < 8; ++i) begin
+      ok = st.randomize();
+      `checkd(ok, 1);
+      if (st.sx != 5 && st.sx != 70) $stop;
     end
 
     // Frozen static var under a plain constraint: current value decides.
@@ -448,6 +472,14 @@ module t;
       ok = h.randomize();
       `checkd(ok, 0);
       `checkd(h.s.x, 7);
+    end
+
+    // Unfreezing the sub-object member restores drawing.
+    h.s.x.rand_mode(1);
+    for (int i = 0; i < 8; ++i) begin
+      ok = h.randomize();
+      `checkd(ok, 1);
+      if (h.s.x != 5 && h.s.x != 70) $stop;
     end
 
     // Both the handle and the member frozen.
@@ -579,6 +611,29 @@ module t;
       end
     end
 
+    // Frozen x forces the solver to whichever branch its value satisfies.
+    di.x.rand_mode(0);
+    di.x = 70;
+    for (int i = 0; i < 8; ++i) begin
+      ok = di.randomize();
+      `checkd(ok, 1);
+      `checkd(di.sel, 1);
+      `checkd(di.x, 70);
+    end
+    di.x = 4242;
+    for (int i = 0; i < 8; ++i) begin
+      ok = di.randomize();
+      `checkd(ok, 1);
+      `checkd(di.sel, 0);
+      `checkd(di.x, 4242);
+    end
+    di.x = 7;
+    for (int i = 0; i < 8; ++i) begin
+      ok = di.randomize();
+      `checkd(ok, 0);
+      `checkd(di.x, 7);
+    end
+
     // dist inside a constraint foreach: every element honors the set.
     df = new;
     for (int i = 0; i < 16; ++i) begin
@@ -587,17 +642,25 @@ module t;
       foreach (df.arr[j]) if (df.arr[j] != 10 && df.arr[j] != 20) $stop;
     end
 
-    // Frozen index into an active array: a[idx] is still freshly drawn.
+    // Frozen index into an active array: a[idx] still draws BOTH values,
+    // biased toward the heavy bucket.
     ix = new;
     ok = ix.randomize();
     `checkd(ok, 1);
     ix.idx.rand_mode(0);
     ix.idx = 2;
-    for (int i = 0; i < 16; ++i) begin
-      ok = ix.randomize();
-      `checkd(ok, 1);
-      `checkd(ix.idx, 2);
-      if (ix.a[2] != 10 && ix.a[2] != 20) $stop;
+    begin
+      automatic int n10 = 0, n20 = 0;
+      for (int i = 0; i < 64; ++i) begin
+        ok = ix.randomize();
+        `checkd(ok, 1);
+        `checkd(ix.idx, 2);
+        if (ix.a[2] == 10)++n10;
+        else if (ix.a[2] == 20)++n20;
+        else $stop;
+      end
+      if (n10 == 0 || n20 == 0) $stop;
+      if (n10 <= n20) $stop;
     end
 
     // Constant operand: frozen (x + 1) follows membership of the sum.
@@ -663,11 +726,18 @@ module t;
       `checkd(ok, 1);
       mf.x.rand_mode(0);
       mf.x = 600;
-      for (int i = 0; i < 8; ++i) begin
-        ok = mf.randomize();
-        `checkd(ok, 1);
-        `checkd(mf.x, 600);
-        if (mf.x + mf.z != 10 && mf.x + mf.z != 1000) $stop;
+      begin
+        automatic int n10 = 0, n1000 = 0;
+        for (int i = 0; i < 64; ++i) begin
+          ok = mf.randomize();
+          `checkd(ok, 1);
+          `checkd(mf.x, 600);
+          if (mf.x + mf.z == 10)++n10;
+          else if (mf.x + mf.z == 1000)++n1000;
+          else $stop;
+        end
+        if (n10 == 0 || n1000 == 0) $stop;
+        if (n10 <= n1000) $stop;
       end
     end
 
@@ -748,11 +818,25 @@ module t;
       end
       cs.b.rand_mode(0);
       cs.b = 1'b1;
-      for (int i = 0; i < 8; ++i) begin
+      begin
+        automatic int n5 = 0, n70 = 0;
+        uint y0;
+        automatic bit yvar = 0;
         ok = cs.randomize();
         `checkd(ok, 1);
-        `checkd(cs.b, 1'b1);
-        if (cs.x != 5 && cs.x != 70) $stop;
+        y0 = cs.y;
+        for (int i = 0; i < 64; ++i) begin
+          ok = cs.randomize();
+          `checkd(ok, 1);
+          `checkd(cs.b, 1'b1);
+          if (cs.x == 5)++n5;
+          else if (cs.x == 70)++n70;
+          else $stop;
+          if (cs.y != y0) yvar = 1;
+        end
+        if (n5 == 0 || n70 == 0) $stop;
+        if (n5 <= n70) $stop;
+        if (!yvar) $stop;
       end
       cs.x.rand_mode(0);
       cs.x = 70;
