@@ -932,7 +932,7 @@ public:
     VlQueue min(T_Func with_func) const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::min_element(m_deque.cbegin(), m_deque.cend(),
-                                         [&with_func](const IData& a, const IData& b) {
+                                         [&with_func](const T_Value& a, const T_Value& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
         return VlQueue::consV(*it);
@@ -946,7 +946,7 @@ public:
     VlQueue max(T_Func with_func) const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::max_element(m_deque.cbegin(), m_deque.cend(),
-                                         [&with_func](const IData& a, const IData& b) {
+                                         [&with_func](const T_Value& a, const T_Value& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
         return VlQueue::consV(*it);
