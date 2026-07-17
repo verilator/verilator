@@ -4633,6 +4633,146 @@ class RandomizeVisitor final : public VNVisitor {
         return andp;
     }
 
+    struct DistBucket final {
+        AstNodeExpr* rangep;  // A single value or an InsideRange
+        AstNodeExpr* weightExprp;  // Effective 64-bit weight (range weight scaled by size)
+    };
+
+    // Non-zero-weight buckets with each weight extended to 64 bits.
+    std::vector<DistBucket> collectDistBuckets(AstDist* const distp) {
+        FileLine* const fl = distp->fileline();
+        std::vector<DistBucket> buckets;
+        for (AstDistItem* ditemp = distp->itemsp(); ditemp;
+             ditemp = VN_AS(ditemp->nextp(), DistItem)) {
+            if (const AstConst* const constp = VN_CAST(ditemp->weightp(), Const)) {
+                if (constp->toUQuad() == 0) continue;
+            }
+            AstNodeExpr* weightExprp
+                = new AstExtend{fl, ditemp->weightp()->cloneTreePure(false), 64};
+            // := on a range weights every element, so scale by the range size.
+            if (!ditemp->isWhole()) {
+                if (const AstInsideRange* const irp = VN_CAST(ditemp->rangep(), InsideRange)) {
+                    const AstConst* const lop = VN_CAST(irp->lhsp(), Const);
+                    const AstConst* const hip = VN_CAST(irp->rhsp(), Const);
+                    AstNodeExpr* rangeSizep;
+                    if (lop && hip) {
+                        const uint64_t rangeSize = hip->toUQuad() - lop->toUQuad() + 1;
+                        rangeSizep = new AstConst{fl, AstConst::Unsized64{}, rangeSize};
+                    } else {
+                        rangeSizep = new AstAdd{
+                            fl, new AstConst{fl, AstConst::Unsized64{}, 1},
+                            new AstSub{fl,
+                                       new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64},
+                                       new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64}}};
+                    }
+                    weightExprp = new AstMul{fl, weightExprp, rangeSizep};
+                }
+            }
+            buckets.push_back({ditemp->rangep(), weightExprp});
+        }
+        return buckets;
+    }
+
+    // Membership test for one bucket: a range comparison or an equality.
+    static AstNodeExpr* newDistMembershipTerm(AstDist* distp, AstNodeExpr* rangep) {
+        if (const AstInsideRange* const irp = VN_CAST(rangep, InsideRange)) {
+            return newDistRangeMembership(distp, irp);
+        }
+        FileLine* const fl = distp->fileline();
+        AstNodeExpr* const eqExprp = distp->exprp()->cloneTreePure(false);
+        eqExprp->user1(true);
+        AstNodeExpr* const eqp = new AstEq{fl, eqExprp, rangep->cloneTreePure(false)};
+        eqp->user1(true);
+        return eqp;
+    }
+
+    // Hard constraint that the dist value stays inside the union of its ranges
+    // (IEEE 1800-2023 18.5.3: values outside the set must never appear).
+    AstConstraintExpr* buildDistMembership(AstDist* distp,
+                                           const std::vector<DistBucket>& buckets) {
+        FileLine* const fl = distp->fileline();
+        AstNodeExpr* unionExprp = nullptr;
+        for (const auto& bucket : buckets) {
+            AstNodeExpr* const memberp = newDistMembershipTerm(distp, bucket.rangep);
+            if (!unionExprp) {
+                unionExprp = memberp;
+            } else {
+                unionExprp = new AstLogOr{fl, memberp, unionExprp};
+                unionExprp->user1(true);
+            }
+        }
+        return new AstConstraintExpr{fl, unionExprp};
+    }
+
+    AstNodeExpr* newUniformRangePick(AstDist* distp, const AstInsideRange* irp) {
+        FileLine* const fl = distp->fileline();
+        AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
+        distExprCopyp->user1(true);
+        const int distWidth = distp->exprp()->width();
+        const AstConst* const lopC = VN_CAST(irp->lhsp(), Const);
+        const AstConst* const hipC = VN_CAST(irp->rhsp(), Const);
+        AstNodeExpr* rangeSzp;
+        if (lopC && hipC) {
+            const uint64_t rsz = hipC->toUQuad() - lopC->toUQuad() + 1;
+            rangeSzp = new AstConst{fl, AstConst::Unsized64{}, rsz};
+        } else {
+            const bool isSigned = irp->lhsp()->isSigned();
+            AstNodeExpr* const lo64p
+                = isSigned ? static_cast<AstNodeExpr*>(
+                                 new AstExtendS{fl, irp->lhsp()->cloneTreePure(false), 64})
+                           : static_cast<AstNodeExpr*>(
+                                 new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64});
+            AstNodeExpr* const hi64p
+                = isSigned ? static_cast<AstNodeExpr*>(
+                                 new AstExtendS{fl, irp->rhsp()->cloneTreePure(false), 64})
+                           : static_cast<AstNodeExpr*>(
+                                 new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64});
+            rangeSzp = new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1ULL},
+                                  new AstSub{fl, hi64p, lo64p}};
+        }
+        AstNodeExpr* const rand64p = new AstRand{fl, nullptr, false};
+        rand64p->dtypeSetUInt64();
+        AstNodeExpr* const offsetp
+            = new AstCCast{fl, new AstModDiv{fl, rand64p, rangeSzp}, distWidth};
+        AstNodeExpr* const valuep = new AstAdd{fl, irp->lhsp()->cloneTreePure(false), offsetp};
+        AstNodeExpr* const eqp = new AstEq{fl, distExprCopyp, valuep};
+        eqp->user1(true);
+        return eqp;
+    }
+
+    // Soft weighted bucket chain: select a bucket by bucketVar against cumulative weights.
+    AstNode* buildWeightedBucketChain(AstDist* distp, const std::vector<DistBucket>& buckets,
+                                      AstVar* bucketVarp,
+                                      const std::vector<AstNodeExpr*>& cumSums) {
+        FileLine* const fl = distp->fileline();
+        AstNode* chainp = nullptr;
+        for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
+            AstNodeExpr* constraintExprp;
+            const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange);
+            if (irp && (distBoundRefsRandVar(irp->lhsp()) || distBoundRefsRandVar(irp->rhsp()))) {
+                constraintExprp = newDistRangeMembership(distp, irp);
+            } else if (irp) {
+                constraintExprp = newUniformRangePick(distp, irp);
+            } else {
+                AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
+                distExprCopyp->user1(true);
+                constraintExprp
+                    = new AstEq{fl, distExprCopyp, buckets[i].rangep->cloneTreePure(false)};
+                constraintExprp->user1(true);
+            }
+            AstConstraintExpr* const thenp = new AstConstraintExpr{fl, constraintExprp};
+            thenp->isSoft(true);
+            if (!chainp) {
+                chainp = thenp;
+            } else {
+                AstNodeExpr* const condp
+                    = new AstLte{fl, new AstVarRef{fl, bucketVarp, VAccess::READ}, cumSums[i]};
+                chainp = new AstConstraintIf{fl, condp, thenp, chainp};
+            }
+        }
+        return chainp;
+    }
+
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
     // Supports both constant and variable weight expressions.
     void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp,
@@ -4658,18 +4798,16 @@ class RandomizeVisitor final : public VNVisitor {
         for (AstNode *nextip, *itemp = constrItemsp; itemp; itemp = nextip) {
             nextip = itemp->nextp();
 
-            // Recursively handle ConstraintIf nodes (dist can be inside if/else)
+            // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
-                if (cifp->thensp())  // LCOV_EXCL_LINE
-                    lowerDistConstraints(taskp, cifp->thensp(), foreachp);  // LCOV_EXCL_LINE
-                if (cifp->elsesp()) lowerDistConstraints(taskp, cifp->elsesp(), foreachp);
+                UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
+                lowerDistConstraints(taskp, cifp->thensp(), foreachp);
+                if (cifp->elsesp()) { lowerDistConstraints(taskp, cifp->elsesp(), foreachp); }
                 continue;
             }
-
-            // Recursively handle ConstraintForeach nodes (dist can be inside foreach)
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
-                if (cfep->bodyp())  // LCOV_EXCL_LINE
-                    lowerDistConstraints(taskp, cfep->bodyp(), cfep);  // LCOV_EXCL_LINE
+                UASSERT_OBJ(cfep->bodyp(), cfep, "constraint foreach without a body");
+                lowerDistConstraints(taskp, cfep->bodyp(), cfep);
                 continue;
             }
 
@@ -4699,48 +4837,7 @@ class RandomizeVisitor final : public VNVisitor {
 
             FileLine* const fl = distp->fileline();
 
-            struct BucketInfo final {
-                AstNodeExpr* rangep;
-                AstNodeExpr* weightExprp;  // Effective weight as AST expression
-            };
-            std::vector<BucketInfo> buckets;
-
-            for (AstDistItem* ditemp = distp->itemsp(); ditemp;
-                 ditemp = VN_AS(ditemp->nextp(), DistItem)) {
-                // Skip compile-time zero weights
-                if (const AstConst* const constp = VN_CAST(ditemp->weightp(), Const)) {
-                    if (constp->toUQuad() == 0) continue;
-                }
-
-                // Clone and extend weight to 64-bit
-                AstNodeExpr* weightExprp
-                    = new AstExtend{fl, ditemp->weightp()->cloneTreePure(false), 64};
-
-                // := is per-value weight; for ranges multiply by range size
-                if (!ditemp->isWhole()) {
-                    if (const AstInsideRange* const irp = VN_CAST(ditemp->rangep(), InsideRange)) {
-                        const AstConst* const lop = VN_CAST(irp->lhsp(), Const);
-                        const AstConst* const hip = VN_CAST(irp->rhsp(), Const);
-                        AstNodeExpr* rangeSizep;
-                        if (lop && hip) {
-                            const uint64_t rangeSize = hip->toUQuad() - lop->toUQuad() + 1;
-                            rangeSizep = new AstConst{fl, AstConst::Unsized64{}, rangeSize};
-                        } else {
-                            // Variable range bounds: (hi - lo + 1) at runtime
-                            rangeSizep = new AstAdd{
-                                fl, new AstConst{fl, AstConst::Unsized64{}, 1},
-                                new AstSub{
-                                    fl, new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64},
-                                    new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64}}};
-                            rangeSizep->dtypeSetUInt64();
-                        }
-                        weightExprp = new AstMul{fl, weightExprp, rangeSizep};
-                        weightExprp->dtypeSetUInt64();
-                    }
-                }
-
-                buckets.push_back({ditemp->rangep(), weightExprp});
-            }
+            std::vector<DistBucket> buckets = collectDistBuckets(distp);
 
             if (buckets.empty()) {
                 // All weights are zero: dist is vacuously true (unconstrained)
@@ -4751,28 +4848,7 @@ class RandomizeVisitor final : public VNVisitor {
                 continue;
             }
 
-            // IEEE 1800-2023 18.5.3: values not in the distribution must never appear.
-            // Build the union of all non-zero-weight ranges as a single hard ConstraintExpr
-            AstNodeExpr* unionExprp = nullptr;
-            for (const auto& bucket : buckets) {
-                AstNodeExpr* memberp;
-                if (const AstInsideRange* const irp = VN_CAST(bucket.rangep, InsideRange)) {
-                    memberp = newDistRangeMembership(distp, irp);
-                } else {
-                    // distExpr == val
-                    AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
-                    distExprCopyp->user1(true);
-                    memberp = new AstEq{fl, distExprCopyp, bucket.rangep->cloneTreePure(false)};
-                }
-                memberp->user1(true);
-                if (!unionExprp) {
-                    unionExprp = memberp;
-                } else {
-                    unionExprp = new AstLogOr{fl, memberp, unionExprp};
-                    unionExprp->user1(true);
-                }
-            }
-            AstConstraintExpr* const membershipp = new AstConstraintExpr{fl, unionExprp};
+            AstConstraintExpr* const membershipp = buildDistMembership(distp, buckets);
 
             // Build totalWeight expression: w[0] + w[1] + ... + w[N-1]
             AstNodeExpr* totalWeightExprp = nullptr;
@@ -4831,86 +4907,11 @@ class RandomizeVisitor final : public VNVisitor {
                 cumSums.push_back(runningSump->cloneTreePure(true));
             }
 
-            // Build ConstraintIf chain backward (last bucket is unconditional default)
-            AstNode* chainp = nullptr;
-            for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
-                AstNodeExpr* constraintExprp;
-                const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange);
-                if (irp
-                    && (distBoundRefsRandVar(irp->lhsp()) || distBoundRefsRandVar(irp->rhsp()))) {
-                    // Bounds solved concurrently cannot pin a pre-solve value; softly
-                    // prefer the symbolic range so the hard membership stays satisfiable
-                    constraintExprp = newDistRangeMembership(distp, irp);
-                } else if (irp) {
-                    // Pick distExpr = lo + rand64() % (hi - lo + 1) for a uniform value in range
-                    AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
-                    distExprCopyp->user1(true);
-                    const int distWidth = distp->exprp()->width();
-                    // Compute range size in 64-bit to avoid overflow
-                    const AstConst* const lopC = VN_CAST(irp->lhsp(), Const);
-                    const AstConst* const hipC = VN_CAST(irp->rhsp(), Const);
-                    AstNodeExpr* rangeSzp;
-                    if (lopC && hipC) {
-                        const uint64_t rsz = hipC->toUQuad() - lopC->toUQuad() + 1;
-                        rangeSzp = new AstConst{fl, AstConst::Unsized64{}, rsz};
-                    } else {
-                        const bool isSigned = irp->lhsp()->isSigned();
-                        AstNodeExpr* const lo64p
-                            = isSigned
-                                  ? static_cast<AstNodeExpr*>(
-                                        new AstExtendS{fl, irp->lhsp()->cloneTreePure(false), 64})
-                                  : static_cast<AstNodeExpr*>(
-                                        new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64});
-                        lo64p->dtypeSetUInt64();
-                        AstNodeExpr* const hi64p
-                            = isSigned
-                                  ? static_cast<AstNodeExpr*>(
-                                        new AstExtendS{fl, irp->rhsp()->cloneTreePure(false), 64})
-                                  : static_cast<AstNodeExpr*>(
-                                        new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64});
-                        hi64p->dtypeSetUInt64();
-                        rangeSzp = new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1ULL},
-                                              new AstSub{fl, hi64p, lo64p}};
-                    }
-                    AstNodeExpr* const rand64p = new AstRand{fl, nullptr, false};
-                    rand64p->dtypeSetUInt64();
-                    // offset = rand64() % rangeSize (result in [0, rangeSize-1])
-                    AstNodeExpr* const offset64p = new AstModDiv{fl, rand64p, rangeSzp};
-                    // Truncate offset to dist expression width, then add lo
-                    AstNodeExpr* const offsetp = new AstCCast{fl, offset64p, distWidth};
-                    AstNodeExpr* const lop = irp->lhsp()->cloneTreePure(false);
-                    AstNodeExpr* const valuep = new AstAdd{fl, lop, offsetp};
-                    valuep->dtypeFrom(distp->exprp());
-                    constraintExprp = new AstEq{fl, distExprCopyp, valuep};
-                    constraintExprp->user1(true);
-                } else {
-                    AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
-                    distExprCopyp->user1(true);
-                    constraintExprp
-                        = new AstEq{fl, distExprCopyp, buckets[i].rangep->cloneTreePure(false)};
-                    constraintExprp->user1(true);
-                }
-
-                AstConstraintExpr* const thenp = new AstConstraintExpr{fl, constraintExprp};
-                // Per IEEE 18.5.3: weights are a preference, not a hard constraint.
-                // The solver may discard this when it conflicts with other constraints.
-                thenp->isSoft(true);
-
-                if (!chainp) {
-                    chainp = thenp;
-                } else {
-                    AstNodeExpr* const condp
-                        = new AstLte{fl, new AstVarRef{fl, bucketVarp, VAccess::READ}, cumSums[i]};
-                    chainp = new AstConstraintIf{fl, condp, thenp, chainp};
-                }
-            }
-
-            if (chainp) {
-                constrExprp->replaceWith(chainp);
-                VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
-                // Hard membership precedes the soft bucket chain in the constraint list.
-                chainp->addHereThisAsNext(membershipp);
-            }
+            AstNode* const chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
+            constrExprp->replaceWith(chainp);
+            VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
+            // Hard membership precedes the soft bucket chain in the constraint list.
+            chainp->addHereThisAsNext(membershipp);
 
             // Clean up nodes used only as clone templates (never inserted into tree)
             for (auto& bucket : buckets) {
