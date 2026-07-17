@@ -254,19 +254,10 @@ LiveNodes collectLiveNodes() {
     return liveNodes;
 }
 
-// A live snapshot, when supplied, stops the walk at the first stale back link;
-// callers without one fall back to the sentinel guard below.
+// Find the module that owns this node; a snapshot, if given, stops the walk at a stale link.
 AstNodeModule* findOwnerModuleImpl(AstNode* nodep, const LiveNodes* liveNodesp) {
     for (AstNode* curp = nodep; curp; curp = curp->backp()) {
-        if (liveNodesp) {
-            if (!liveNodesp->count(curp)) return nullptr;
-        } else if (reinterpret_cast<uintptr_t>(curp) < 0x1000) {
-            // Legacy callers lack a liveness snapshot; retain the existing guard
-            // against sentinel values encountered in corrupted backp() chains.
-            // It cannot prove an arbitrary freed pointer safe - invalidating
-            // ledger entries at deletion time would make it unnecessary.
-            return nullptr;
-        }
+        if (liveNodesp && !liveNodesp->count(curp)) return nullptr;
         if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
     }
     return nullptr;
