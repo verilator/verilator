@@ -47,6 +47,7 @@
 #include "V3Descope.h"
 #include "V3DfgOptimizer.h"
 #include "V3DiagSarif.h"
+#include "V3Elab.h"
 #include "V3EmitC.h"
 #include "V3EmitCMain.h"
 #include "V3EmitMk.h"
@@ -177,13 +178,18 @@ static void process() {
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
 
+        // Resolve dependent elaboration facts to convergence across specialization.
+        V3Elab elaborator;
+        elaborator.elab(v3Global.rootp());
+        elaborator.beginDeferredParams();
+
         // Remove parameters by cloning modules to de-parameterized versions
         //   This requires some width calculations and constant propagation
         // No more AstGenCase/AstGenFor/AstGenIf after this
-        V3Param::param(v3Global.rootp());
+        V3Param::param(v3Global.rootp(), elaborator);
 
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
-        V3Param::finalizeDeferredParams(v3Global.rootp());
+        elaborator.convergeDeferredParams(v3Global.rootp());
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
 
         // Link cleanup of 'with' as final link phase before V3Width

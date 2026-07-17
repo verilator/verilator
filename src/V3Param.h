@@ -21,13 +21,13 @@
 #include "verilatedos.h"
 
 class AstNetlist;
+class V3Elab;
 
 //============================================================================
 
 class V3Param final {
 public:
-    static void param(AstNetlist* rootp) VL_MT_DISABLED;
-    static void finalizeDeferredParams(AstNetlist* rootp) VL_MT_DISABLED;
+    static void param(AstNetlist* rootp, V3Elab& elaborator) VL_MT_DISABLED;
 };
 
 #endif  // Guard

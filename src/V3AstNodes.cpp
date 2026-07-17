@@ -575,12 +575,7 @@ AstNetlist::AstNetlist()
     addMiscsp(m_constPoolp);
 }
 
-const char* AstNetlist::broken() const {
-    for (const AstVar* const varp : m_deferredParamVarps) {
-        BROKEN_RTN(!varp || !varp->brokeExists());
-    }
-    return nullptr;
-}
+const char* AstNetlist::broken() const { return nullptr; }
 
 string AstNetlist::astConstOrigParamName(const AstConst* nodep) const {
     if (!nodep->num().hasOrigParamName()) return "";
@@ -2072,6 +2067,7 @@ void AstCvtArrayToArray::dumpJson(std::ostream& str) const {
 void AstCell::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (recursive()) str << " [RECURSIVE]";
+    if (virtIfaceScopeAnchor()) str << " [VIRT_IFACE_SCOPE_ANCHOR]";
     if (modp()) {
         str << " -> ";
         modp()->dump(str);
@@ -2083,6 +2079,7 @@ void AstCell::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, recursive);
+    dumpJsonBoolFuncIf(str, virtIfaceScopeAnchor);
     dumpJsonGen(str);
 }
 void AstCellInline::dump(std::ostream& str) const {
@@ -2595,12 +2592,16 @@ void AstPin::dump(std::ostream& str) const {
         str << " ->UNLINKED";
     }
     if (!paramPath().empty()) str << " paramPath=" << paramPath();
+    if (elabBinding()) str << " [ELABBINDING]";
+    if (elabDefault()) str << " [ELABDEFAULT]";
     if (svDotName()) str << " [.n]";
     if (svImplicit()) str << " [.SV]";
 }
 void AstPin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, svDotName);
     dumpJsonBoolFuncIf(str, svImplicit);
+    dumpJsonBoolFuncIf(str, elabBinding);
+    dumpJsonBoolFuncIf(str, elabDefault);
     if (!paramPath().empty()) dumpJsonStr(str, "paramPath", paramPath());
     dumpJsonGen(str);
 }

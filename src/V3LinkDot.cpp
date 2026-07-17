@@ -2286,6 +2286,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                                                         nullptr,
                                                         nullptr};
                 ifacecellp->modp(ifacep);
+                ifacecellp->virtIfaceScopeAnchor(true);
                 top->addStmtsp(ifacecellp);
 
                 iterate(ifacecellp);
@@ -3429,6 +3430,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
             return isParamedClassRefDType(classp);
         }
         return isParamedClassRefDType(nodep);
+    }
+    bool hasParamedClassScope(const AstNode* nodep) {
+        if (const AstDot* const dotp = VN_CAST(nodep, Dot)) {
+            if (!dotp->colon()) return false;
+            return hasParamedClassScope(dotp->lhsp()) || hasParamedClassScope(dotp->rhsp());
+        }
+        return isParamedClassRef(nodep);
     }
     VSymEnt* getThisClassSymp() {
         VSymEnt* classSymp = m_ds.m_dotSymp;
@@ -5961,6 +5969,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         if (AstNode* const cpackagep = nodep->classOrPackageOpp()) {
+            bool preserveClassOrPackageOp = false;
             if (AstClassOrPackageRef* const cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
                 iterate(cpackagerefp);
                 const AstClass* const clsp = VN_CAST(cpackagerefp->classOrPackageNodep(), Class);
@@ -5971,12 +5980,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(cpackagep);
                     return;
                 }
-                // Defer non-typedef references through typedef aliases of parameterized classes.
+                // References outside typedef declarations cannot be linked until the class is
+                // specialized.  A typedef declaration may need its template member immediately
+                // (for example as a later type(expr) actual), so link it now but retain the alias
+                // operand below as specialization provenance.
                 if (m_statep->forPrimary() && !VN_IS(nodep->backp(), Typedef)
                     && isParamedClassRef(cpackagerefp)) {
                     iterate(cpackagep);
                     return;
                 }
+                preserveClassOrPackageOp = m_statep->forPrimary() && VN_IS(nodep->backp(), Typedef)
+                                           && isParamedClassRef(cpackagerefp);
                 if (!cpackagerefp->classOrPackageSkipp()) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
                         m_ds.m_dotSymp, cpackagerefp, true, false, "class/package reference");
@@ -6003,7 +6017,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 cpackagep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Multiple '::' package/class reference");
             }
-            VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
+            if (!preserveClassOrPackageOp) {
+                VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
+            }
         }
 
         const V3LinkDotIfaceCapture::CapturedEntry* capEntryp = V3LinkDotIfaceCapture::find(nodep);
@@ -6057,19 +6073,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         checkDeclOrder(nodep, defp);
                     nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
-                    // class capture: capture typedef references inside parameterized classes
-                    // Only capture if we're referencing from OUTSIDE the class (not
-                    // self-references)
-                    if (V3LinkDotIfaceCapture::enabled() && m_statep->forPrimary()) {
-                        AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
-                        if (classp && classp->hasGParam() && classp != m_modp) {
-                            UINFO(9, indent() << "class capture add typedef name="
-                                              << nodep->prettyNameQ() << " class="
-                                              << classp->prettyNameQ() << " typedef=" << defp);
-                            V3LinkDotIfaceCapture::addClass(nodep, classp, m_modp, defp);
-                        }
-                    }
-
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
                     // A PARAMTYPEDTYPE's child REFDTYPE referencing itself is the normal
@@ -6123,6 +6126,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Handle type validation for localparam type assignments
         // Iterate child to resolve any ParseRef nodes
         iterateChildren(nodep);
+        // IEEE 1800-2023 8.25.1 permits a member type of an explicit class
+        // specialization as a type parameter default.  The primary link pass deliberately leaves
+        // that scope unresolved until its dependent parameters are elaborated; validate the
+        // resulting type after convergence rather than rejecting the intermediate AstDot.
+        if (m_statep->forPrimary() && VN_IS(nodep->lhsp(), Dot)
+            && hasParamedClassScope(nodep->lhsp())) {
+            return;
+        }
         // Only emit error if the child is not a type.
         // Do NOT unwrap valid types here - leave that to V3Width.
         // Unwrapping here breaks type parameter resolution during cloning.
