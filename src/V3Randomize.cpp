@@ -2358,65 +2358,91 @@ class ConstraintExprVisitor final : public VNVisitor {
         for (AstNode* itemp = nodep->rangesp(); itemp; itemp = itemp->nextp()) {
             if (AstVarRef* const varRefp = VN_CAST(itemp, VarRef)) {
                 AstVar* const varp = varRefp->varp();
-
                 AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
-                if (AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType)) {
-                    AstRange* const rangep = up->rangep();
-                    if (!rangep || !VN_IS(rangep->leftp(), Const)
-                        || !VN_IS(rangep->rightp(), Const)) {
-                        nodep->v3warn(
-                            CONSTRAINTIGN,
-                            "Unsupported: Unique constraint on other than static arrays");
-                        continue;
-                    }
+                AstConst* dtypeWidthp = nullptr;
 
-                    // Ensure it is ONLY 1-D by checking that the sub-type is NOT an array/queue
-                    // We skip refs (typedefs) to see the actual underlying type
-                    AstNodeDType* const subp = up->subDTypep()->skipRefp();
-                    if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType)
-                        || VN_IS(subp, DynArrayDType)) {
-                        nodep->v3warn(
-                            CONSTRAINTIGN,
-                            "Unsupported: Unique constraint on other than static arrays");
-                        continue;
-                    }
-                } else {
+                // Ensure it is ONLY 1-D by checking that the sub-type is NOT an array/queue
+                AstNodeDType* const subp = dtypep->subDTypep()->skipRefp();
+                if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType)
+                    || VN_IS(subp, DynArrayDType) || VN_IS(subp, AssocArrayDType)
+                    || VN_IS(subp, WildcardArrayDType)) {
                     nodep->v3warn(CONSTRAINTIGN,
-                                  "Unsupported: Unique constraint on other than static arrays");
+                                  "Unsupported: Unique constraint on multidimensional arrays");
                     continue;
                 }
 
-                AstCMethodHard* const wCallp
+                const static auto dynDTypeSupported
+                    = [](const AstNodeDType* const dtypep) -> bool {
+                    return VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)
+                           || VN_IS(dtypep, AssocArrayDType);
+                };
+
+                if (AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType)) {
+                    const AstRange* const rangep = up->rangep();
+                    UASSERT_OBJ(rangep && VN_IS(rangep->leftp(), Const)
+                                    && VN_IS(rangep->rightp(), Const),
+                                nodep, "Unpack array does not have a constant range");
+                    dtypeWidthp = new AstConst{fl, AstConst::Unsized64{},
+                                               static_cast<uint64_t>(varp->dtypep()->width())};
+                } else if (dynDTypeSupported(dtypep)) {
+                    dtypeWidthp
+                        = new AstConst{fl, AstConst::Unsized64{},
+                                       static_cast<uint64_t>(dtypep->subDTypep()->width())};
+                } else {
+                    nodep->v3warn(CONSTRAINTIGN, "Unsupported: Unique constraint on "
+                                                     << dtypep->prettyDTypeName(false));
+                    continue;
+                }
+
+                // convert to c string
+                AstNodeExpr* const varnamep = new AstCExpr{
+                    fl, AstCExpr::Pure{}, "\"" + varp->name() + "\"", varp->width()};
+
+                AstCMethodHard* const writeVarCallp
                     = new AstCMethodHard{fl, new AstVarRef{fl, modp, genVarp, VAccess::READ},
                                          VCMethod::RANDOMIZER_WRITE_VAR};
-                wCallp->addPinsp(new AstVarRef{fl, varp, VAccess::READ});
-                wCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
-                                              static_cast<uint64_t>(varp->dtypep()->width())});
-                wCallp->addPinsp(new AstConst{fl, AstConst::String{}, varp->name()});
-                wCallp->addPinsp(new AstConst{fl, 1});  // Dimension
+                writeVarCallp->addPinsp(new AstVarRef{fl, varp, VAccess::READ});
+                writeVarCallp->addPinsp(dtypeWidthp);
+                writeVarCallp->addPinsp(varnamep);
+                writeVarCallp->addPinsp(new AstConst{fl, 1});  // Dimension
 
-                wCallp->dtypeSetVoid();
-                initTaskp->addStmtsp(new AstStmtExpr{fl, wCallp});
+                writeVarCallp->dtypeSetVoid();
+                initTaskp->addStmtsp(new AstStmtExpr{fl, writeVarCallp});
 
-                uint32_t arraySize = 0;
+                AstNodeExpr* const randUniquePinsp
+                    = new AstConst{fl, AstConst::String{}, varp->name()};
+
                 if (AstUnpackArrayDType* const adtypep
                     = VN_CAST(varp->dtypep(), UnpackArrayDType)) {
-                    arraySize = adtypep->elementsConst();
-                }
-                if (arraySize > 100) {
-                    nodep->v3warn(CONSTRAINTIGN,
-                                  "Unsupported: Unique constraint on static arrays of size > 100");
+                    uint32_t arraySize = adtypep->elementsConst();
+                    if (arraySize > 100) {
+                        nodep->v3warn(
+                            CONSTRAINTIGN,
+                            "Unsupported: Unique constraint on static arrays of size > 100");
+                        VL_DO_DANGLING(randUniquePinsp->deleteTree(), randUniquePinsp);
+                        continue;
+                    }
+                    randUniquePinsp->addNext(new AstConst{fl, arraySize});
+                } else if (dynDTypeSupported(dtypep)) {  // LCOV_EXCL_BR_LINE
+                    const VCMethod sizeMethod = VN_IS(dtypep, AssocArrayDType)
+                                                    ? VCMethod::ASSOC_SIZE
+                                                    : VCMethod::DYN_SIZE;
+                    AstCMethodHard* const dynSizep = new AstCMethodHard{
+                        fl, new AstVarRef{fl, modp, varp, VAccess::READ}, sizeMethod};
+                    dynSizep->dtypeSetUInt32();
+                    // unable to check dynamic array size during verilation
+                    randUniquePinsp->addNext(dynSizep);
+                } else {
+                    varp->v3fatalSrc("Unexpected variable type "
+                                     << varp->dtypep()->prettyDTypeNameQ());
                     continue;
                 }
 
-                AstNodeExpr* const uPins = new AstConst{fl, AstConst::String{}, varp->name()};
-                uPins->addNext(new AstConst{fl, arraySize});
-
-                AstCMethodHard* const uCallp
+                AstCMethodHard* const randUniqueCallp
                     = new AstCMethodHard{fl, new AstVarRef{fl, modp, genVarp, VAccess::READ},
-                                         VCMethod::RANDOMIZER_UNIQUE, uPins};
-                uCallp->dtypep(nodep->findVoidDType());
-                initTaskp->addStmtsp(new AstStmtExpr{fl, uCallp});
+                                         VCMethod::RANDOMIZER_UNIQUE, randUniquePinsp};
+                randUniqueCallp->dtypep(nodep->findVoidDType());
+                initTaskp->addStmtsp(new AstStmtExpr{fl, randUniqueCallp});
             }
         }
         nodep->unlinkFrBack();
