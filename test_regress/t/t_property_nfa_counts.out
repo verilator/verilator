@@ -1,0 +1,8 @@
+small: imp_pass=10 imp_fail=1 chain_pass=2 chain_fail=11
+range: pass=1 fail=10 cover=1
+large: pass=1 fail=10 cover=1 imp_at_b=2
+negated: fail_at_b=1 large_fail_at_b=1 chain_pass=2 chain_fail=2
+negated2: chain_cover=1 imp_pass=2
+vacuous: plain=12 negated=12
+case: fail=2
+*-* All Finished *-*

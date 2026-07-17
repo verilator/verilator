@@ -1,0 +1,4 @@
+-Info: t/t_property_nfa_stop_error_limit.v:24: Verilog $stop, ignored due to +verilator+error+limit
+passes=9
+*-* All Finished *-*
+final_past_cyc=10
