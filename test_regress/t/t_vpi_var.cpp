@@ -671,6 +671,44 @@ int _mon_check_unpacked_struct_members() {
         CHECK_RESULT(tmpValue.value.integer, 0xace0);
     }
 
+    // unpacked array of a packed struct (element is a plain vector, not vpiStructVar)
+    {
+        TestVpiHandle vh210 = VPI_HANDLE("packed_struct_array_signal");
+        CHECK_RESULT_NZ(vh210);
+        CHECK_RESULT(vpi_get(vpiType, vh210), vpiRegArray);
+        CHECK_RESULT(vpi_get(vpiSize, vh210), 2);
+
+        TestVpiHandle vh211 = vpi_handle_by_index(vh210, 0);
+        CHECK_RESULT_NZ(vh211);
+        CHECK_RESULT(vpi_get(vpiType, vh211), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh211), 8);
+
+        s_vpi_value putValue;
+        putValue.format = vpiIntVal;
+        putValue.value.integer = 0x5a;
+        vpi_put_value(vh211, &putValue, NULL, vpiNoDelay);
+        vpi_get_value(vh211, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 0x5a);
+
+        TestVpiHandle vh212 = vpi_handle_by_index(vh210, 1);
+        CHECK_RESULT_NZ(vh212);
+        CHECK_RESULT(vpi_get(vpiType, vh212), vpiReg);
+        putValue.value.integer = 0x33;
+        vpi_put_value(vh212, &putValue, NULL, vpiNoDelay);
+        vpi_get_value(vh212, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 0x33);
+
+        vpi_get_value(vh211, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 0x5a);
+
+        TestVpiHandle vh213 = vpi_handle_by_name(
+            const_cast<PLI_BYTE8*>(TestSimulator::rooted("packed_struct_array_signal[1]")),
+            nullptr);
+        CHECK_RESULT_NZ(vh213);
+        vpi_get_value(vh213, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 0x33);
+    }
+
     // array of unpacked structs with unpacked-array members
     {
         TestVpiHandle vh170 = VPI_HANDLE("parent_struct_array");

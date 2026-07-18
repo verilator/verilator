@@ -104,13 +104,32 @@ public:
         count_cache[base_name] = count;
         return count;
     }
+    bool hasMatchingElements(const ArrayInfoMap& arr_vars, const std::string& base_name) const {
+        return arr_vars.find(base_name + "0") != arr_vars.end();
+    }
+};
+// SMT key width per associative-array level (string = 128, integral = 8 * sizeof).
+template <typename T>
+struct VlRandomAssocKeyWidths final {
+    static void push(std::vector<size_t>&) {}
+};
+template <typename T_Key, typename T_Value>
+struct VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>> final {
+    static void push(std::vector<size_t>& widths) {
+        widths.push_back(std::is_same<T_Key, std::string>::value ? 128 : sizeof(T_Key) * 8);
+        VlRandomAssocKeyWidths<T_Value>::push(widths);
+    }
 };
 template <typename T>
 class VlRandomArrayVarTemplate final : public VlRandomVar {
+    // Static key widths per level for the empty-array declaration fallback
+    const std::vector<size_t> m_fallbackIdxWidths;
+
 public:
     VlRandomArrayVarTemplate(const std::string& name, int width, void* datap, int dimension,
-                             std::uint32_t randModeIdx)
-        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
+                             std::uint32_t randModeIdx, const std::vector<size_t>& idxWidths = {})
+        : VlRandomVar{name, width, datap, dimension, randModeIdx}
+        , m_fallbackIdxWidths{idxWidths} {}
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
         const auto it = m_arrVarsRefp->find(indexed_name);
@@ -175,7 +194,13 @@ public:
             }
         } else {
             if (dimension() > 0) {
-                for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
+                // Empty array: declare from the static key widths, not a 32-bit default.
+                for (int i = 0; i < dimension(); ++i) {
+                    const size_t idxWidth = i < static_cast<int>(m_fallbackIdxWidths.size())
+                                                ? m_fallbackIdxWidths[i]
+                                                : 32;
+                    s << "(Array (_ BitVec " << idxWidth << ") ";
+                }
                 s << "(_ BitVec " << width() << ")";
                 for (int i = 0; i < dimension(); ++i) s << ")";
             } else {
@@ -435,9 +460,11 @@ public:
     write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) == m_vars.end()) {
+            std::vector<size_t> keyWidths;
+            VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>>::push(keyWidths);
             m_vars[name]
                 = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
-                    name, width, &var, dimension, randmodeIdx);
+                    name, width, &var, dimension, randmodeIdx, keyWidths);
         }
         if (dimension > 0) {
             m_index = 0;
@@ -732,5 +759,14 @@ public:
     }
     bool next() { return VlRandomizer::next(m_rng); }
 };
+
+//======================================================================
+//Helper method for dynamic array handling in SMT expressions
+
+inline std::string vlToSolverHex(const IData& value) {
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0') << std::setw(8) << value;
+    return oss.str();
+}
 
 #endif  // Guard

@@ -936,7 +936,7 @@ Summary:
    :file:`*.mk` files.
 
    Feature may be one of the following: COROUTINES, DEV_ASAN, DEV_GCOV,
-   SYSTEMC.
+   SYSTEMC, TSAN.
 
 .. option:: --getenv <variable>
 

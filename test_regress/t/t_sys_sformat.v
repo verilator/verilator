@@ -43,10 +43,17 @@ module t (
   int mem[2] = '{1, 2};
   string s;
 
+  typedef struct{
+    integer dummy;
+  } test_struct_t;
+
+  test_struct_t structs[1];
+
   initial begin
     n = 4'b1100;
     q = 64'h1234_5678_abcd_0123;
     wide = "hello-there12345";
+
     $sformat(str, "n=%b q=%d w=%s", n, q, wide);
     `checks(str, "n=1100 q= 1311768467750060323 w=hello-there12345");
 
@@ -134,6 +141,11 @@ module t (
     `checks(s, "constified");
 
     $display(mem);  // Implied %p
+
+    structs[0].dummy = 0;
+
+    s = $sformatf("%p", structs[0]);
+    `checks(s, "'{dummy:'h0}");
 
     $write("*-* All Finished *-*\n");
     $finish;

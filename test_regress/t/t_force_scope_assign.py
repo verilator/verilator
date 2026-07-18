@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage concat as unsupported operation test
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -9,8 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.lint(fails=True, expect_filename=test.golden_filename, verilator_flags2=['--coverage'])
+test.compile(verilator_flags2=["-Wno-IEEEMAYDEPRECATE"])
+
+test.execute()
 
 test.passes()

@@ -17,4 +17,18 @@
 %Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:59:16: Unsupported: Array element access in global constraint
    59 |     m_assoc[0].m_x == 500;
       |                ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:65:34: Unsupported: Nested array element access in global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   65 |       solve m_mid_arr[((i*2)/2)].m_obj.m_x before m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+      |                                  ^~~~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:65:76: Unsupported: Nested array element access in global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   65 |       solve m_mid_arr[((i*2)/2)].m_obj.m_x before m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+      |                                                                            ^~~~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:67:34: Unsupported: Nested array element access in global constraint
+   67 |       m_mid_arr[((i*2)/2)].m_obj.m_x != m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+      |                                  ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:67:72: Unsupported: Nested array element access in global constraint
+   67 |       m_mid_arr[((i*2)/2)].m_obj.m_x != m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+      |                                                                        ^~~
 %Error: Exiting due to

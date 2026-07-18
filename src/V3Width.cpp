@@ -284,9 +284,6 @@ class WidthVisitor final : public VNVisitor {
                 nodep->findLogicDType(unpackBits, unpackMinBits, VSigning::UNSIGNED)});
         }
     }
-    static bool lowerAsFixedAggregate(const AstNodeDType* const dtypep) {
-        return dtypep->isStreamableFixedAggregate() && dtypep->containsUnpackedStruct();
-    }
     // When fromp() is a DType (e.g. unlinked RefDType), resolve through
     // the ref chain; when it's an expression, dtypep() is already resolved.
     static AstNodeDType* fromDTypep(AstNode* fromp) {
@@ -1559,7 +1556,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSConsRep* nodep) override {
-        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N], [*N:M], [+], [*]
+        // IEEE 1800-2023 16.9.2 -- consecutive repetition [*N], [*N:M], [*N:$], [+], [*]
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
@@ -1568,6 +1565,9 @@ class WidthVisitor final : public VNVisitor {
             const AstConst* const minConstp = VN_CAST(nodep->countp(), Const);
             if (!minConstp) {
                 nodep->v3error("Consecutive repetition count must be constant expression"
+                               " (IEEE 1800-2023 16.9.2)");
+            } else if (minConstp->toSInt() < 0) {
+                nodep->v3error("Consecutive repetition count must be non-negative"
                                " (IEEE 1800-2023 16.9.2)");
             } else if (!nodep->unbounded() && !nodep->maxCountp() && minConstp->toSInt() < 1) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: [*0] consecutive repetition");
@@ -3453,7 +3453,8 @@ class WidthVisitor final : public VNVisitor {
             }
             const AstNodeDType* const arrayp = nodep->dtypep()->skipRefp();
             if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {
-                userIterateChildren(nodep, WidthVP{arrayp->subDTypep(), BOTH}.p());
+                userIterateChildren(nodep,
+                                    WidthVP{arrayp->subDTypep(), BOTH, STREAM_USE_ASSIGN}.p());
             } else {
                 UINFO(1, "on " << nodep);
                 UINFO(1, "dtype object " << arrayp);
@@ -6401,70 +6402,8 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->rhsp(), WidthVP{nodep->dtypep(), PRELIM}.p());
             //
             // UINFOTREE(1, nodep, "", "assign");
-            AstNodeDType* lhsDTypep
-                = nodep->lhsp()->dtypep();  // Note we use rhsp for context determined
-
-            // Check width of stream and wrap if needed
-            if (AstNodeStream* const streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
-                AstNodeDType* const lhsDTypeSkippedRefp = lhsDTypep->skipRefp();
-                const int lwidth = lhsDTypeSkippedRefp->widthStream();
-                const int rwidth = streamp->lhsp()->dtypep()->skipRefp()->widthStream();
-                if (lwidth != 0 && lwidth < rwidth) {
-                    nodep->v3widthWarn(lwidth, rwidth,
-                                       "Target fixed size variable ("
-                                           << lwidth << " bits) is narrower than the stream ("
-                                           << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
-                }
-                if (VN_IS(streamp->lhsp()->dtypep()->skipRefp(), QueueDType)
-                    && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
-                    const int queueElementSize = streamp->lhsp()->dtypep()->subDTypep()->width();
-                    UASSERT_OBJ(queueElementSize <= lwidth, nodep, "LHS < RHS");
-                }
-                if (VN_IS(lhsDTypeSkippedRefp, UnpackArrayDType)
-                    || lowerAsFixedAggregate(lhsDTypeSkippedRefp)) {
-                    streamp->unlinkFrBack();
-                    nodep->rhsp(new AstCvtPackedToArray{streamp->fileline(), streamp,
-                                                        lhsDTypeSkippedRefp});
-                }
-            }
-            if (AstNodeStream* const streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
-                const AstNodeDType* const rhsDTypep = nodep->rhsp()->dtypep()->skipRefp();
-                AstNodeDType* const lhsStreamDTypep = streamp->lhsp()->dtypep()->skipRefp();
-                const int lwidth = lhsStreamDTypep->widthStream();
-                const int rwidth = rhsDTypep->widthStream();
-                if (rwidth != 0 && rwidth < lwidth) {
-                    nodep->v3widthWarn(lwidth, rwidth,
-                                       "Stream target requires "
-                                           << lwidth
-                                           << " bits, but source expression only provides "
-                                           << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
-                }
-                if (lowerAsFixedAggregate(lhsStreamDTypep)) {
-                    AstNodeExpr* const streamExprp = nodep->lhsp()->unlinkFrBack();
-                    AstNodeExpr* const dstp = streamp->lhsp()->unlinkFrBack();
-                    AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
-                    if (VN_IS(streamp, StreamL)) {
-                        streamp->lhsp(srcp);
-                        streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(),
-                                                      VSigning::UNSIGNED);
-                        srcp = streamExprp;
-                    } else {
-                        if (srcp->width() > lwidth) {
-                            srcp = new AstSel{streamp->fileline(), srcp, srcp->width() - lwidth,
-                                              lwidth};
-                        }
-                        VL_DO_DANGLING(pushDeletep(streamExprp), streamExprp);
-                    }
-                    nodep->lhsp(dstp);
-                    nodep->rhsp(new AstCvtPackedToArray{srcp->fileline(), srcp, lhsStreamDTypep});
-                    nodep->dtypeFrom(dstp);
-                    lhsDTypep = nodep->lhsp()->dtypep();
-                } else if (VN_IS(rhsDTypep, UnpackArrayDType)) {
-                    AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-                    nodep->rhsp(
-                        new AstCvtArrayToPacked{rhsp->fileline(), rhsp, streamp->dtypep()});
-                }
-            }
+            streamAssignLower(nodep);
+            AstNodeDType* const lhsDTypep = nodep->lhsp()->dtypep();
 
             // IEEE 1800-2023 7.6: For unpacked arrays to be assignment compatible,
             // the element types shall be equivalent (IEEE 1800-2023 6.22.2).
@@ -6680,7 +6619,13 @@ class WidthVisitor final : public VNVisitor {
             } else if (dtypep->isString()) {
                 formatAttr = VFormatAttr::STRING;
             } else if (isFormatNonNumericArg(dtypep)) {
-                if (AstVarRef* const varRefp = VN_CAST(argp, VarRef)) {
+                const AstNodeExpr* formatTypeArgp = argp;
+                if (const AstCMethodHard* const cmethp = VN_CAST(formatTypeArgp, CMethodHard)) {
+                    if (cmethp->method() == VCMethod::ARRAY_AT) formatTypeArgp = cmethp->fromp();
+                } else if (const AstArraySel* const arselp = VN_CAST(formatTypeArgp, ArraySel)) {
+                    formatTypeArgp = arselp->fromp();
+                }
+                if (const AstVarRef* const varRefp = VN_CAST(formatTypeArgp, VarRef)) {
                     if (AstClassRefDType* const classRefp
                         = VN_CAST(varRefp->dtypep(), ClassRefDType)) {
                         if (classRefp->classp()) {
@@ -10276,6 +10221,70 @@ public:
     AstNode* mainAcceptEdit(AstNode* nodep) {
         return userIterateSubtreeReturnEdits(nodep, WidthVP{SELF, BOTH}.p());
     }
+    static bool lowerAsFixedAggregate(const AstNodeDType* const dtypep) {
+        return dtypep->isStreamableFixedAggregate() && dtypep->containsUnpackedStruct();
+    }
+    void streamAssignLower(AstNodeAssign* nodep) {
+        AstNodeDType* lhsDTypep = nodep->lhsp()->dtypep();
+        // Check width of stream and wrap if needed
+        if (AstNodeStream* const streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
+            AstNodeDType* const lhsDTypeSkippedRefp = lhsDTypep->skipRefp();
+            const int lwidth = lhsDTypeSkippedRefp->widthStream();
+            const int rwidth = streamp->lhsp()->dtypep()->skipRefp()->widthStream();
+            if (lwidth != 0 && lwidth < rwidth) {
+                nodep->v3widthWarn(lwidth, rwidth,
+                                   "Target fixed size variable ("
+                                       << lwidth << " bits) is narrower than the stream ("
+                                       << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
+            }
+            if (VN_IS(streamp->lhsp()->dtypep()->skipRefp(), QueueDType)
+                && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+                const int queueElementSize = streamp->lhsp()->dtypep()->subDTypep()->width();
+                UASSERT_OBJ(queueElementSize <= lwidth, nodep, "LHS < RHS");
+            }
+            if (VN_IS(lhsDTypeSkippedRefp, UnpackArrayDType)
+                || lowerAsFixedAggregate(lhsDTypeSkippedRefp)) {
+                streamp->unlinkFrBack();
+                nodep->rhsp(
+                    new AstCvtPackedToArray{streamp->fileline(), streamp, lhsDTypeSkippedRefp});
+            }
+        }
+        if (AstNodeStream* const streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
+            const AstNodeDType* const rhsDTypep = nodep->rhsp()->dtypep()->skipRefp();
+            AstNodeDType* const lhsStreamDTypep = streamp->lhsp()->dtypep()->skipRefp();
+            const int lwidth = lhsStreamDTypep->widthStream();
+            const int rwidth = rhsDTypep->widthStream();
+            if (rwidth != 0 && rwidth < lwidth) {
+                nodep->v3widthWarn(lwidth, rwidth,
+                                   "Stream target requires "
+                                       << lwidth << " bits, but source expression only provides "
+                                       << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
+            }
+            if (lowerAsFixedAggregate(lhsStreamDTypep)) {
+                AstNodeExpr* const streamExprp = nodep->lhsp()->unlinkFrBack();
+                AstNodeExpr* const dstp = streamp->lhsp()->unlinkFrBack();
+                AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
+                if (VN_IS(streamp, StreamL)) {
+                    streamp->lhsp(srcp);
+                    streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(),
+                                                  VSigning::UNSIGNED);
+                    srcp = streamExprp;
+                } else {
+                    if (srcp->width() > lwidth) {
+                        srcp = new AstSel{streamp->fileline(), srcp, srcp->width() - lwidth,
+                                          lwidth};
+                    }
+                    VL_DO_DANGLING(pushDeletep(streamExprp), streamExprp);
+                }
+                nodep->lhsp(dstp);
+                nodep->rhsp(new AstCvtPackedToArray{srcp->fileline(), srcp, lhsStreamDTypep});
+                nodep->dtypeFrom(dstp);
+            } else if (VN_IS(rhsDTypep, UnpackArrayDType)) {
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                nodep->rhsp(new AstCvtArrayToPacked{rhsp->fileline(), rhsp, streamp->dtypep()});
+            }
+        }
+    }
     ~WidthVisitor() override = default;
 };
 
@@ -10303,6 +10312,12 @@ AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     nodep = visitor.mainAcceptEdit(nodep);
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
+}
+
+void V3Width::streamAssignLowerEdit(AstNodeAssign* nodep) {
+    UINFO(4, __FUNCTION__ << ": " << nodep);
+    WidthVisitor visitor{false, false};
+    visitor.streamAssignLower(nodep);
 }
 
 //! Single node parameter propagation for generate blocks.

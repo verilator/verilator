@@ -1072,11 +1072,7 @@ class AssertVisitor final : public VNVisitor {
                         = new AstSenItem{fl, VEdgeType::ET_CHANGED,
                                          // Clone so get VarRef or VarXRef as needed
                                          varrefp->cloneTree(false)};
-                    if (!monSenItemsp) {
-                        monSenItemsp = senItemp;
-                    } else {
-                        monSenItemsp->addNext(senItemp);
-                    }
+                    monSenItemsp = AstNode::addNextNull(monSenItemsp, senItemp);
                 });
             }
 

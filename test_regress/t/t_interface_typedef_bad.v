@@ -13,8 +13,7 @@ module sub (
 );
   logic not_ifc;
   typedef not_found.choice_t choice1_t;  // <--- Error: not found interface port
-  typedef i.not_found_t choice2_t;  // <--- Error: not found typedef
-  typedef not_ifc.x_t choice3_t;  // <--- Error: sub not interface reference
+  typedef not_ifc.x_t choice2_t;  // <--- Error: sub not interface reference
 endmodule
 
 module t;

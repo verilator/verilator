@@ -593,22 +593,12 @@ class ForkVisitor final : public VNVisitor {
         const AstConst* const constp = VN_CAST(delayp->lhsp(), Const);
         return constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
     }
-    static bool isDisableQueuePushSelfStmt(const AstNode* const nodep) {
-        // Detect LinkJump-generated registration:
-        // __VprocessQueue_*.push_back(std::process::self())
-        const AstStmtExpr* const stmtExprp = VN_CAST(nodep, StmtExpr);
-        if (!stmtExprp) return false;
-        const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
-        if (!methodp || methodp->name() != "push_back") return false;
-        const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
-        return queueRefp && queueRefp->varp()->processQueue();
-    }
     static void moveForkSentinelAfterDisableQueuePushes(AstBegin* const beginp) {
         AstNode* const firstStmtp = beginp->stmtsp();
         if (!isForkJoinNoneSentinelDelay(firstStmtp)) return;
 
         AstNode* insertBeforep = firstStmtp->nextp();
-        while (insertBeforep && isDisableQueuePushSelfStmt(insertBeforep)) {
+        while (insertBeforep && insertBeforep->isDisableQueuePushSelfStmt()) {
             insertBeforep = insertBeforep->nextp();
         }
         if (insertBeforep == firstStmtp->nextp()) return;
