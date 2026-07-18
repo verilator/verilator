@@ -47,8 +47,7 @@ class Waiter;
 endclass
 
 module t;
-  logic slow_clk = 0;
-  logic fast_clk = 0;
+  logic slow_clk = 0, fast_clk = 0;
   always #50 slow_clk = ~slow_clk;  // 100 time-unit period
   always #7 fast_clk = ~fast_clk;  // 14 time-unit period
 
@@ -65,8 +64,7 @@ module t;
   endtask
 
   initial begin
-    virtual clkif vs;
-    virtual clkif vf;
+    virtual clkif vs, vf;
     int seen_id;
     realtime t0;
     Waiter w;
@@ -103,7 +101,7 @@ module t;
     vs.wait_intra(seen_id);
     check("intra_task", $realtime - t0, 40, 60, seen_id, 1);
 
-    // Call-site event control through the handle (worked before the fix too)
+    // Call-site event control through the handle
     t0 = $realtime;
     seen_id = -1;
     repeat (2) @vs.cb;
