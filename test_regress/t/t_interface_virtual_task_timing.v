@@ -4,6 +4,10 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+package t_pkg;
+  bit go = 0;
+endpackage
+
 interface clkif (
     input logic clk
 );
@@ -27,6 +31,14 @@ interface clkif (
   endtask
   task automatic wait_intra(output int seen_id);
     seen_id = @cb id;
+  endtask
+  task automatic wait_until_id(int target, output int seen_id);
+    wait (id == target);
+    seen_id = id;
+  endtask
+  task automatic wait_pkg_go(output int seen_id);
+    wait (t_pkg::go);
+    seen_id = id;
   endtask
 endinterface
 
@@ -54,6 +66,11 @@ module t;
   clkif main_s (.clk(slow_clk));  // id=1, the vif target
   clkif sib_f (.clk(fast_clk));  // id=2, sibling decoy
   wrapif wrap_f (.clk(fast_clk));  // id=3, nested decoy
+
+  int mod_cnt = 0;
+  task automatic wait_mod_cnt(int target);
+    wait (mod_cnt == target);
+  endtask
 
   task automatic check(string name, realtime dt, realtime lo, realtime hi, int seen_id, int exp_id);
     if (dt < lo || dt > hi || seen_id != exp_id) begin
@@ -130,6 +147,44 @@ module t;
     seen_id = -1;
     sib_f.wait_clks_cb(2, seen_id);
     check("hier_fast", $realtime - t0, 1, 56, seen_id, 2);
+
+    // Wait condition mixing the member with a task argument
+    fork
+      #30 main_s.id = 42;
+    join_none
+    t0 = $realtime;
+    seen_id = -1;
+    vs.wait_until_id(42, seen_id);
+    check("wait_arg", $realtime - t0, 25, 35, seen_id, 42);
+    main_s.id = 1;
+
+    // Wait condition on a package variable inside the interface task
+    fork
+      #20 t_pkg::go = 1'b1;
+    join_none
+    t0 = $realtime;
+    seen_id = -1;
+    vs.wait_pkg_go(seen_id);
+    check("wait_pkg", $realtime - t0, 15, 25, seen_id, 1);
+
+    // Module-task wait on a task argument stays on the module path
+    fork
+      #10 mod_cnt = 5;
+    join_none
+    t0 = $realtime;
+    wait_mod_cnt(5);
+    check("wait_mod", $realtime - t0, 5, 15, mod_cnt, 5);
+
+    // Wait on an automatic local in a procedure context
+    begin
+      automatic int tgt = 42;
+      fork
+        #10 mod_cnt = 42;
+      join_none
+      t0 = $realtime;
+      wait (mod_cnt == tgt);
+      check("wait_auto", $realtime - t0, 5, 15, mod_cnt, 42);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
