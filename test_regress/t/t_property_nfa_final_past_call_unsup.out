@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_property_nfa_final_past_call_unsup.v:31:13: Unsupported: $past in a function or task called from a final block
+                                                                  : ... note: In instance 't'
+   31 |     value = fpast_wrapper();
+      |             ^~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_nfa_final_past_call_unsup.v:32:5: Unsupported: $past in a function or task called from a final block
+                                                                 : ... note: In instance 't'
+   32 |     tpast(value);
+      |     ^~~~~
+%Error: Exiting due to

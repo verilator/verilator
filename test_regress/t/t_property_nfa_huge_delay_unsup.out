@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_property_nfa_huge_delay_unsup.v:15:37: Unsupported: cycle delay of 2147483647 exceeds the supported maximum of 1048576 cycles
+                                                             : ... note: In instance 't'
+   15 |   assert property (@(posedge clk) a ##2147483647 b);
+      |                                     ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_nfa_huge_delay_unsup.v:16:37: Unsupported: cycle delay of 2147483647 exceeds the supported maximum of 1048576 cycles
+                                                             : ... note: In instance 't'
+   16 |   assert property (@(posedge clk) a ##[0:2147483647] b);
+      |                                     ^~
+%Error-UNSUPPORTED: t/t_property_nfa_huge_delay_unsup.v:17:37: Unsupported: cycle delay of 1000000000 exceeds the supported maximum of 1048576 cycles
+                                                             : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) a ##[1000000000:$] b);
+      |                                     ^~
+%Error: Exiting due to

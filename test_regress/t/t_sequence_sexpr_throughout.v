@@ -14,16 +14,16 @@
 // CRC-driven random stimulus exercises throughout with varying cond/a/b signals.
 
 module t (
-  input clk
+    input clk
 );
   integer cyc = 0;
   reg [63:0] crc = '0;
 
   // Derive signals from non-adjacent CRC bits (gap > max delay to avoid LFSR correlation)
   wire cond = crc[0];
-  wire a    = crc[4];
-  wire b    = crc[8];
-  wire c    = crc[12];
+  wire a = crc[4];
+  wire b = crc[8];
+  wire c = crc[12];
 
   int count_fail1 = 0;
   int count_fail2 = 0;
@@ -34,36 +34,32 @@ module t (
 
   // Test 1: a |-> (cond throughout (1'b1 ##3 1'b1))
   // If a fires, cond must hold for 4 consecutive ticks (start + 3 delay ticks).
-  assert property (@(posedge clk) disable iff (cyc < 10)
-      a |-> (cond throughout (1'b1 ##3 1'b1)))
-    else count_fail1 <= count_fail1 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) a |-> (cond throughout (1'b1 ##3 1'b1)))
+  else count_fail1 <= count_fail1 + 1;
 
   // Test 2: a |-> (cond throughout (1'b1 ##1 b))
   // If a fires, cond must hold for 2 ticks and b must be true at tick +1.
-  assert property (@(posedge clk) disable iff (cyc < 10)
-      a |-> (cond throughout (1'b1 ##1 b)))
-    else count_fail2 <= count_fail2 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) a |-> (cond throughout (1'b1 ##1 b)))
+  else count_fail2 <= count_fail2 + 1;
 
   // Test 3: a |-> (cond throughout b)
   // No delay: degenerates to a |-> (cond && b).
-  assert property (@(posedge clk) disable iff (cyc < 10)
-      a |-> (cond throughout b))
-    else count_fail3 <= count_fail3 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) a |-> (cond throughout b))
+  else count_fail3 <= count_fail3 + 1;
 
   // Test 4: throughout with range delay on RHS (IEEE 16.9.9)
-  assert property (@(posedge clk) disable iff (cyc < 10)
-      a |-> (a throughout (b ##[1:2] c)))
-    else count_fail4 <= count_fail4 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) a |-> (a throughout (b ##[1:2] c)))
+  else count_fail4 <= count_fail4 + 1;
 
   // Test 5: throughout with temporal 'and' on RHS
   assert property (@(posedge clk) disable iff (cyc < 10)
       a |-> (a throughout ((b ##1 c) and (c ##1 b))))
-    else count_fail5 <= count_fail5 + 1;
+  else count_fail5 <= count_fail5 + 1;
 
   // Test 6: nested throughout
   assert property (@(posedge clk) disable iff (cyc < 10)
       a |-> (a throughout (b throughout (b ##1 c))))
-    else count_fail6 <= count_fail6 + 1;
+  else count_fail6 <= count_fail6 + 1;
 
   // Throughout with range-delay, pure-boolean RHS: the range-delay SExpr
   // generates midSource vertices that inherit the throughout guard.
@@ -76,23 +72,20 @@ module t (
 
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-    $write("[%0t] cyc==%0d crc=%x cond=%b a=%b b=%b c=%b\n",
-           $time, cyc, crc, cond, a, b, c);
+    $write("[%0t] cyc==%0d crc=%x cond=%b a=%b b=%b c=%b\n", $time, cyc, crc, cond, a, b, c);
 `endif
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 0) begin
       crc <= 64'h5aef0c8d_d70a4497;
-    end else if (cyc == 99) begin
+    end
+    else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkd(count_fail1, 28);
       `checkd(count_fail2, 33);
       `checkd(count_fail3, 31);
       `checkd(count_fail4, 35);
-      // count_fail5: NFA undercounts by 12; throughout+temporal-and first-step
-      // rejection is a known limitation of the SAnd combiner architecture
-      // (propagating isTopLevelStep causes double-counting; fix is future work).
-      `checkd(count_fail5, 25);  // All other sims: 36
+      `checkd(count_fail5, 36);
       `checkd(count_fail6, 33);
       $write("*-* All Finished *-*\n");
       $finish;

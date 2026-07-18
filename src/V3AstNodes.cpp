@@ -479,6 +479,14 @@ void AstSConsRep::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, unbounded);
     dumpJsonGen(str);
 }  // LCOV_EXCL_STOP
+void AstSAnd::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (propertyControl()) str << " [PROPERTY_CONTROL]";
+}
+void AstSAnd::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, propertyControl);
+    dumpJsonGen(str);
+}
 void AstPropAlways::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (isStrong()) str << " [strong]";
@@ -2242,12 +2250,14 @@ void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     str << " ["s + this->userType().ascii() + "]";
     if (immediate()) str << " [IMMEDIATE]";
     if (senFromAlways()) str << " [SENALW]";
+    if (nfaLowered()) str << " [NFA]";
 }
 void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "type", "["s + this->userType().ascii() + "]");
     dumpJsonGen(str);
     dumpJsonBoolFuncIf(str, immediate);
     dumpJsonBoolFuncIf(str, senFromAlways);
+    dumpJsonBoolFuncIf(str, nfaLowered);
 }
 void AstCover::dump(std::ostream& str) const {
     this->AstNodeCoverOrAssert::dump(str);

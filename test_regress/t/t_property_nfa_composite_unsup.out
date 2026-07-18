@@ -1,0 +1,32 @@
+%Error-UNSUPPORTED: t/t_property_nfa_composite_unsup.v:19:45: Unsupported: unequal/variable-end temporal 'or' cannot preserve overlapping assertion attempt identity
+   19 |   assert property (@(posedge clk) (a ##1 b) or (c ##2 d));
+      |                                             ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_nfa_composite_unsup.v:21:48: Unsupported: variable/unbounded temporal 'and' cannot preserve overlapping assertion attempt identity
+                                                            : ... note: In instance 't'
+   21 |   cover property (@(posedge clk) (a ##[1:$] b) and (c ##1 d));
+      |                                                ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_composite_unsup.v:24:49: Unsupported: temporal 'and' with a multiple-endpoint operand cannot preserve overlapping assertion attempt identity
+   24 |   assert property (@(posedge clk) (a ##[1:2] b) and (c ##2 d));
+      |                                                 ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_composite_unsup.v:26:56: Unsupported: temporal implication antecedent with a negated consequent and a pass or cover action cannot preserve attempt identity
+                                                            : ... note: In instance 't'
+   26 |   assert property (@(posedge clk) (a ##1 b) |-> not (c ##[1:2] d)) $display("pass");
+      |                                                        ^~
+%Error-UNSUPPORTED: t/t_property_nfa_composite_unsup.v:28:58: Unsupported: impure expression in a flattened consecutive repetition
+                                                            : ... note: In instance 't'
+   28 |   assert property (@(posedge clk) ((|($random | $random))[*2]) and (1'b1 ##1 1'b1));
+      |                                                          ^~
+%Error: t/t_property_nfa_composite_unsup.v:30:37: Concurrent assertion fixed-trace expansion exceeds --assert-unroll-limit (1024); raise '--assert-unroll-limit' to compile
+                                                : ... note: In instance 't'
+   30 |   assert property (@(posedge clk) (a[*2000]) and (1'b1 ##1 1'b1));
+      |                                     ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_property_nfa_composite_unsup.v:32:3: Unsupported: end-of-simulation attempt counting for multiple strong operators with an ambiguous temporal depth
+   32 |   assert property (@(posedge clk)
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_composite_unsup.v:35:46: Unsupported: 'until' inside a variable-length property window
+                                                            : ... note: In instance 't'
+   35 |   assert property (@(posedge clk) ##[1:$] (a until b));
+      |                                              ^~~~~
+%Error: Exiting due to

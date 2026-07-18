@@ -27,6 +27,10 @@ module t (
   sequence s_or;
     @(posedge clk) (a ##1 b) or (a ##2 b);
   endsequence
+
+  sequence s_and_range;
+    @(posedge clk) (a ##[1:2] b) and (a ##2 b);
+  endsequence
   // verilog_format: on
 
   // Legal: p is never asserted, so s_ref stays referenced outside any
@@ -38,5 +42,6 @@ module t (
   initial begin
     @s_nonedge;
     @s_or;
+    @s_and_range;
   end
 endmodule

@@ -6,6 +6,9 @@
 %Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:28:30: Unsupported: sequence used as an event control with a sequence operand of 'or'
    28 |     @(posedge clk) (a ##1 b) or (a ##2 b);
       |                              ^~
+%Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:32:34: Unsupported: sequence used as an event control with a variable/unbounded temporal 'and'
+   32 |     @(posedge clk) (a ##[1:2] b) and (a ##2 b);
+      |                                  ^~~
 %Error-UNSUPPORTED: t/t_assert_seq_event_unsup.v:21:12: Unsupported: sequence referenced outside assertion property
                                                       : ... note: In instance 't'
    21 |   sequence s_ref;

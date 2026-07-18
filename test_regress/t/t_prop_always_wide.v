@@ -25,9 +25,8 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 49) begin
-      // Constant-true [1:33]: K=0..16 succeed at cyc K+33 = 33..49.
-      `checkd(wide_pass_q.size(), 17);
-      `checkd(wide_pass_q[0], 33);
+      `checkd(wide_pass_q.size(), 16);
+      `checkd(wide_pass_q[0], 34);
       `checkd(wide_pass_q[$], 49);
       $write("*-* All Finished *-*\n");
       $finish;

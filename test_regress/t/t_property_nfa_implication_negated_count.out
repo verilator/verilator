@@ -1,0 +1,6 @@
+[40] %Error: t_property_nfa_implication_negated_count.v:27: Assertion failed in top.t: 'assert' failed.
+-Info: t/t_property_nfa_implication_negated_count.v:27: Verilog $stop, ignored due to +verilator+error+limit
+[40] %Error: t_property_nfa_implication_negated_count.v:27: Assertion failed in top.t: 'assert' failed.
+[40] %Error: t_property_nfa_implication_negated_count.v:26: Assertion failed in top.t: 'assert' failed.
+[40] %Error: t_property_nfa_implication_negated_count.v:26: Assertion failed in top.t: 'assert' failed.
+*-* All Finished *-*

@@ -420,7 +420,14 @@ protected:
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
         bool m_gotError = false;  // A $finish statement executed
-        bool m_gotFinish = false;  // A $finish or $stop statement executed
+        // A $finish or $stop statement executed; read by worker termination gates
+        std::atomic<bool> m_gotFinish{false};
+        // Posted $finish/$stop requests not yet executed via the thread queue
+        std::atomic<uint32_t> m_finishPending{0};
+        // Time of the first posted $finish/$stop request
+        std::atomic<uint64_t> m_finishPendingTime{0};
+        // True once a request stamped m_finishPendingTime; latched by termination
+        std::atomic<bool> m_finishPendingTimeValid{false};
         bool m_quiet = false;  // Quiet, no summary report
         // Slow path
         int8_t m_timeunit;  // Time unit as 0..15
@@ -560,6 +567,8 @@ public:
     void errorCount(int val) VL_MT_SAFE;
     /// Increment current number of errors/assertions
     void errorCountInc() VL_MT_SAFE;
+    /// Reserve one maybe-stop and return true if it reaches the termination limit
+    bool errorCountIncMaybeStop(bool maybe, bool& firstIgnored) VL_MT_SAFE;
     /// Return number of errors/assertions before stop
     int errorLimit() const VL_MT_SAFE { return m_s.m_errorLimit; }
     /// Set number of errors/assertions before stop
@@ -577,9 +586,34 @@ public:
     /// Set if got a $stop or non-fatal error
     void gotError(bool flag) VL_MT_SAFE;
     /// Return if got a $finish or $stop/error
-    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
+    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish.load(std::memory_order_relaxed); }
     /// Set if got a $finish or $stop/error
     void gotFinish(bool flag) VL_MT_SAFE;
+    /// Return if a $finish/$stop was requested, even if not yet executed
+    bool finishPending() const VL_MT_SAFE {
+        return m_s.m_finishPending.load(std::memory_order_relaxed)
+               || m_s.m_gotFinish.load(std::memory_order_relaxed);
+    }
+    /// Record a posted $finish/$stop request awaiting execution
+    void finishPendingInc() VL_MT_SAFE {
+        m_s.m_finishPending.fetch_add(1, std::memory_order_relaxed);
+        if (!m_s.m_finishPendingTimeValid.exchange(true, std::memory_order_relaxed)) {
+            m_s.m_finishPendingTime.store(time(), std::memory_order_relaxed);
+        }
+    }
+    /// Balance finishPendingInc once the posted request ran or was ignored
+    void finishPendingDec() VL_MT_SAFE {
+        if (m_s.m_finishPending.fetch_sub(1, std::memory_order_relaxed) == 1
+            && !m_s.m_gotFinish.load(std::memory_order_relaxed)) {
+            m_s.m_finishPendingTimeValid.store(false, std::memory_order_relaxed);
+        }
+    }
+    /// Return the time of the first termination request, else the current time
+    uint64_t finishPendingTime() const VL_MT_SAFE {
+        return m_s.m_finishPendingTimeValid.load(std::memory_order_relaxed)
+                   ? m_s.m_finishPendingTime.load(std::memory_order_relaxed)
+                   : time();
+    }
     /// Check if generated final() code is executing
     bool executingFinal() const VL_MT_SAFE;
     /// Set if generated final() code is executing

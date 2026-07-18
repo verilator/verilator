@@ -36,23 +36,19 @@ module t (
   int count_p10 = 0;
 
   // Boolean within boolean: equivalent to `a && b`.
-  assert property (@(posedge clk) disable iff (cyc < 10)
-      (a & b) |-> (a within b))
+  assert property (@(posedge clk) disable iff (cyc < 10) (a & b) |-> (a within b))
     count_p1 <= count_p1 + 1;
 
   // Boolean within constant true: always passes when a is high.
-  assert property (@(posedge clk) disable iff (cyc < 10)
-      a |-> (a within 1'b1))
+  assert property (@(posedge clk) disable iff (cyc < 10) a |-> (a within 1'b1))
     count_p2 <= count_p2 + 1;
 
   // `a` must hold at some offset within the c ##1 d window.
-  cover property (@(posedge clk) disable iff (cyc < 10)
-      a within (c ##1 d))
+  cover property (@(posedge clk) disable iff (cyc < 10) a within (c ##1 d))
     count_p3 <= count_p3 + 1;
 
   // `a` within a length-3 outer (four possible offsets).
-  cover property (@(posedge clk) disable iff (cyc < 10)
-      a within (c ##3 d))
+  cover property (@(posedge clk) disable iff (cyc < 10) a within (c ##3 d))
     count_p4 <= count_p4 + 1;
 
   // Equal-length inner/outer: single offset, reduces to intersect.
@@ -61,13 +57,11 @@ module t (
     count_p5 <= count_p5 + 1;
 
   // Inner length 1, outer length 3 -> three offsets (0, 1, 2).
-  cover property (@(posedge clk) disable iff (cyc < 10)
-      (a ##1 b) within (c ##3 d))
+  cover property (@(posedge clk) disable iff (cyc < 10) (a ##1 b) within (c ##3 d))
     count_p6 <= count_p6 + 1;
 
   // Inner length 2, outer length 3 -> two offsets (0, 1).
-  cover property (@(posedge clk) disable iff (cyc < 10)
-      (a ##2 b) within (c ##3 d))
+  cover property (@(posedge clk) disable iff (cyc < 10) (a ##2 b) within (c ##3 d))
     count_p7 <= count_p7 + 1;
 
   // within nested inside intersect: both must match equal length.
@@ -77,8 +71,7 @@ module t (
 
   // within combined with throughout on the outer: throughout's rhs
   // fixedLength still feeds into within.
-  cover property (@(posedge clk) disable iff (cyc < 10)
-      a within (a throughout (b ##1 c)))
+  cover property (@(posedge clk) disable iff (cyc < 10) a within (a throughout (b ##1 c)))
     count_p9 <= count_p9 + 1;
 
   // within on the RHS of intersect: forces the parser into the direct
@@ -104,14 +97,14 @@ module t (
       // engine-wide behavior, not within-specific.
       `checkd(count_p1, 23);  // Other sims: 23, or 16
       `checkd(count_p2, 44);  // Other sims: 44, or 21
-      `checkd(count_p3, 24);  // Other sims: 20
-      `checkd(count_p4, 23);  // Other sims: 22
+      `checkd(count_p3, 20);
+      `checkd(count_p4, 22);
       `checkd(count_p5, 26);
-      `checkd(count_p6, 21);  // Other sims: 16
-      `checkd(count_p7, 15);  // Other sims: 9
-      `checkd(count_p8, 15);  // Other sims: 4
-      `checkd(count_p9, 15);  // Other sims: 10
-      `checkd(count_p10, 21);  // Other sims: 15
+      `checkd(count_p6, 16);
+      `checkd(count_p7, 9);
+      `checkd(count_p8, 4);
+      `checkd(count_p9, 10);
+      `checkd(count_p10, 15);
       $write("*-* All Finished *-*\n");
       $finish;
     end

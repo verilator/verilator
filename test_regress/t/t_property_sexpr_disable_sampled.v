@@ -18,7 +18,12 @@ module t (
   int passes = 0;
   int fails = 0;
 
-  assert property (@(posedge clk) disable iff ($sampled(cyc) == 4) 1 ##1 cyc % 3 == 0) passes++;
+  assert property (@(posedge clk) disable iff ($sampled(
+      cyc
+  ) == 4 || $sampled(
+      cyc
+  ) == 100) 1 ##1 cyc % 3 == 0)
+    passes++;
   else fails++;
 
   always @(posedge clk) begin
