@@ -1,4 +1,0 @@
-drop: fixed_fail=1 range_fail=1 negated_pass=1 negated_cover=1
-disabled: fail=0
-kill: fail=0
-*-* All Finished *-*

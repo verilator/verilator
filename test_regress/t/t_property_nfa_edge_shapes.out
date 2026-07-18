@@ -1,5 +1,4 @@
-np1=19 nf1=2 nc2=1 nc3=5 nf4=0 nc5=1
 *-* All Finished *-*
-[215] %Error: t_property_nfa_edge_shapes.v:22: Assertion failed in top.t
-%Error: t/t_property_nfa_edge_shapes.v:22: Verilog $stop
+[215] %Error: t_property_nfa_edge_shapes.v:27: Assertion failed in top.t
+%Error: t/t_property_nfa_edge_shapes.v:27: Verilog $stop
 Aborting...

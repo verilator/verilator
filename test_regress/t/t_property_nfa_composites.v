@@ -4,7 +4,12 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Per-attempt counts for composite sequence operators, recorded by the golden.
+// Per-attempt counts for composite sequence operators.
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t (
     input clk
@@ -117,17 +122,25 @@ module t (
     throughout_start = 0;
     repeat (3) @(negedge clk);
 
-    $display("or: fail_pass=%0d fail_count=%0d both_pass=%0d both_fail=%0d", or_fail_pass,
-             or_fail_count, or_both_pass, or_both_fail);
-    $display("sand: cross_hits=%0d throughout_pass=%0d throughout_fail=%0d", cross_hits,
-             throughout_pass, throughout_fail);
-    $display("isect_pass: one=%0d both=%0d zero=%0d", isect_pass_one, isect_pass_both,
-             isect_pass_zero);
-    $display("isect_fail: left=%0d right=%0d zero=%0d", isect_fail_left, isect_fail_right,
-             isect_fail_zero);
-    $display("isect_unexp: one=%0d both=%0d zero_pass=%0d zero_fail=%0d left=%0d right=%0d",
-             isect_unexp_one, isect_unexp_both, isect_unexp_zero_pass, isect_unexp_zero_fail,
-             isect_unexp_left, isect_unexp_right);
+    `checkd(or_fail_pass, 0);
+    `checkd(or_fail_count, 0);
+    `checkd(or_both_pass, 1);
+    `checkd(or_both_fail, 0);
+    `checkd(cross_hits, 0);
+    `checkd(throughout_pass, 1);
+    `checkd(throughout_fail, 1);
+    `checkd(isect_pass_one, 17);
+    `checkd(isect_pass_both, 17);
+    `checkd(isect_pass_zero, 18);
+    `checkd(isect_fail_left, 0);
+    `checkd(isect_fail_right, 17);
+    `checkd(isect_fail_zero, 18);
+    `checkd(isect_unexp_one, 0);
+    `checkd(isect_unexp_both, 0);
+    `checkd(isect_unexp_zero_pass, 0);
+    `checkd(isect_unexp_zero_fail, 0);
+    `checkd(isect_unexp_left, 0);
+    `checkd(isect_unexp_right, 0);
     $write("*-* All Finished *-*\n");
     $finish;
   end

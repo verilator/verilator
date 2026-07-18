@@ -4,7 +4,12 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Default and counted fail actions under an error limit, recorded by the golden.
+// Default and counted fail actions under an error limit.
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t (
     input clk
@@ -70,9 +75,11 @@ module t (
 
   always @(negedge clk) begin
     if (cyc == 8) begin
-      $display("temporal: small_fail=%0d ring_fail=%0d boolean_ant_fail=%0d", temporal_small_fail,
-               temporal_ring_fail, boolean_ant_fail);
-      $display("impossible: pass=%0d fail=%0d", impossible_pass, impossible_fail);
+      `checkd(temporal_small_fail, 1);
+      `checkd(temporal_ring_fail, 1);
+      `checkd(boolean_ant_fail, 1);
+      `checkd(impossible_pass, 0);
+      `checkd(impossible_fail, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end

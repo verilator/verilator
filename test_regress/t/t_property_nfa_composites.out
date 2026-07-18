@@ -1,6 +1,0 @@
-or: fail_pass=0 fail_count=0 both_pass=1 both_fail=0
-sand: cross_hits=0 throughout_pass=1 throughout_fail=1
-isect_pass: one=17 both=17 zero=18
-isect_fail: left=0 right=17 zero=18
-isect_unexp: one=0 both=0 zero_pass=0 zero_fail=0 left=0 right=0
-*-* All Finished *-*

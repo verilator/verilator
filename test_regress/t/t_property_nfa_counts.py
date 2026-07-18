@@ -13,6 +13,6 @@ test.scenarios('vlt_all')
 
 test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing', '--coverage-user'])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()

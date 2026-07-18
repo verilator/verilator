@@ -4,7 +4,12 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Throughout guard-drop failure counts across live attempts, recorded by the golden.
+// Throughout guard-drop failure counts across live attempts.
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t (
     input clk
@@ -60,9 +65,11 @@ module t (
     end
     #1 disable_now = 0;
     @(negedge clk) begin
-      $display("drop: fixed_fail=%0d range_fail=%0d negated_pass=%0d negated_cover=%0d",
-               fixed_fail, range_fail, negated_pass, negated_cover);
-      $display("disabled: fail=%0d", disabled_fail);
+      `checkd(fixed_fail, 1);
+      `checkd(range_fail, 1);
+      `checkd(negated_pass, 1);
+      `checkd(negated_cover, 1);
+      `checkd(disabled_fail, 0);
       drop_tag = 0;
       kill_start = 1;
     end
@@ -75,7 +82,7 @@ module t (
       $asserton;
     end
     @(negedge clk) begin
-      $display("kill: fail=%0d", kill_fail);
+      `checkd(kill_fail, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end

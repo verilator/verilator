@@ -6,6 +6,11 @@
 
 // Corner shapes: negated liveness, single-cycle cover abort, strong cover or
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -36,7 +41,12 @@ module t (
   end
 
   final begin
-    $display("np1=%0d nf1=%0d nc2=%0d nc3=%0d nf4=%0d nc5=%0d", np1, nf1, nc2, nc3, nf4, nc5);
+    `checkd(np1, 19);
+    `checkd(nf1, 2);
+    `checkd(nc2, 1);
+    `checkd(nc3, 5);
+    `checkd(nf4, 0);
+    `checkd(nc5, 1);
     $write("*-* All Finished *-*\n");
   end
 endmodule

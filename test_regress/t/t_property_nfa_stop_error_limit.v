@@ -6,6 +6,11 @@
 
 // Ignored worker-queued $stop against same-slot assertion evaluation.
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -29,12 +34,12 @@ module t (
   end
 
   always @(negedge clk) begin
-    if (cyc == 10) $display("passes=%0d", passes);
+    if (cyc == 10) `checkd(passes, 9);
   end
 
   final begin
     $stop;
-    $display("final_past_cyc=%0d", $past(cyc));
+    `checkd($past(cyc), 10);
   end
 
 endmodule

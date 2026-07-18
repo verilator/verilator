@@ -4,7 +4,12 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Per-attempt assertion outcome counts, recorded by the output golden.
+// Per-attempt assertion outcome counts.
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t (
     input clk
@@ -147,16 +152,26 @@ module t (
 
   always @(negedge clk) begin
     if (cyc == 12) begin
-      $display("small: imp_pass=%0d imp_fail=%0d chain_pass=%0d chain_fail=%0d", imp_pass,
-               imp_fail, chain_pass, chain_fail);
-      $display("range: pass=%0d fail=%0d cover=%0d", range_pass, range_fail, range_cover);
-      $display("large: pass=%0d fail=%0d cover=%0d imp_at_b=%0d", large_pass, large_fail,
-               large_cover, large_imp_at_b);
-      $display("negated: fail_at_b=%0d large_fail_at_b=%0d chain_pass=%0d chain_fail=%0d",
-               neg_fail_at_b, neg_large_fail_at_b, neg_chain_pass, neg_chain_fail);
-      $display("negated2: chain_cover=%0d imp_pass=%0d", neg_chain_cover, neg_imp_pass);
-      $display("vacuous: plain=%0d negated=%0d", vacuous_pass, negated_vacuous_pass);
-      $display("case: fail=%0d", case_fail);
+      `checkd(imp_pass, 10);
+      `checkd(imp_fail, 1);
+      `checkd(chain_pass, 2);
+      `checkd(chain_fail, 11);
+      `checkd(range_pass, 1);
+      `checkd(range_fail, 10);
+      `checkd(range_cover, 1);
+      `checkd(large_pass, 1);
+      `checkd(large_fail, 10);
+      `checkd(large_cover, 1);
+      `checkd(large_imp_at_b, 2);
+      `checkd(neg_fail_at_b, 1);
+      `checkd(neg_large_fail_at_b, 1);
+      `checkd(neg_chain_pass, 2);
+      `checkd(neg_chain_fail, 2);
+      `checkd(neg_chain_cover, 1);
+      `checkd(neg_imp_pass, 2);
+      `checkd(vacuous_pass, 12);
+      `checkd(negated_vacuous_pass, 12);
+      `checkd(case_fail, 2);
       $write("*-* All Finished *-*\n");
       $finish;
     end
