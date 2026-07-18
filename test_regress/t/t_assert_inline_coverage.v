@@ -22,15 +22,18 @@ module t (
     if (!rst_n) begin
       q <= 1'b0;
       cnt <= '0;
-    end else if (en) begin
+    end
+    else if (en) begin
       q <= ~q;
       cnt <= cnt + 8'd1;
     end
   end
 
-  a : assert property (@(posedge clk) !rst_n |=> q == 1'b0);
+  a :
+  assert property (@(posedge clk) !rst_n |=> q == 1'b0);
 
-  c : cover property (@(posedge clk) disable iff (!rst_n) en && cnt == $past(cnt));
+  c :
+  cover property (@(posedge clk) disable iff (!rst_n) en && cnt == $past(cnt));
 
   always @(posedge clk) begin
     cyc <= cyc + 1;

@@ -28,4 +28,16 @@
                                                      : ... note: In instance 't'
    24 |   assert property (@(posedge clk) a [*0:0] |-> 1);
       |                                     ^~
+%Error: t/t_assert_consec_rep_bad.v:27:37: Consecutive repetition count must be non-negative (IEEE 1800-2023 16.9.2)
+                                         : ... note: In instance 't'
+   27 |   assert property (@(posedge clk) a [*-1:$] |-> 1);
+      |                                     ^~
+%Error: t/t_assert_consec_rep_bad.v:30:39: Expecting expression to be constant, but variable isn't const: 'n'
+                                         : ... note: In instance 't'
+   30 |   assert property (@(posedge clk) a [*n:$] |-> 1);
+      |                                       ^
+%Error: t/t_assert_consec_rep_bad.v:30:37: Consecutive repetition count must be constant expression (IEEE 1800-2023 16.9.2)
+                                         : ... note: In instance 't'
+   30 |   assert property (@(posedge clk) a [*n:$] |-> 1);
+      |                                     ^~
 %Error: Exiting due to

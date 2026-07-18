@@ -1740,6 +1740,10 @@ class TaskVisitor final : public VNVisitor {
                                << nodep->prettyNameQ());
             }
 
+            if (nodep->isStatic() && nodep->isVirtual()) {
+                nodep->v3error("Static methods cannot be virtual");
+            }
+
             const bool noInline = m_statep->ftaskNoInline(nodep);
             const bool needsNonInlineCFunc = m_statep->ftaskNeedsNonInlineCFunc(nodep);
             // Warn if not inlining an impure ftask (unless method, recursive,

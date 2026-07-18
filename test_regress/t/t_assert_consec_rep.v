@@ -14,6 +14,8 @@ module t (
     input clk
 );
 
+  localparam int MIN_N = 3;
+
   int cyc;
   reg [63:0] crc;
 
@@ -34,6 +36,16 @@ module t (
   int count_fail9 = 0;
   int count_fail10 = 0;
   int count_fail11 = 0;
+  int count_fail12 = 0;
+  int count_fail13 = 0;
+  int count_fail14 = 0;
+  int count_fail15 = 0;
+  int count_fail16 = 0;
+  int count_fail17 = 0;
+  int count_fail18 = 0;
+  int count_fail19 = 0;
+  int count_fail20 = 0;
+  int count_fail21 = 0;
 
   // Test 1: a[*3] |-> b
   assert property (@(posedge clk) a [* 3] |-> b)
@@ -79,6 +91,41 @@ module t (
   assert property (@(posedge clk) a [*] ##1 b)
   else count_fail11 <= count_fail11 + 1;
 
+  // Parenthesized sampled-value functions followed by consecutive repetition
+  assert property (@(posedge clk) ($stable(1'b0)) [+]);
+  assert property (@(posedge clk) ($stable(a)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($stable(a, clk)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($fell(a)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($past(a)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($rose(a)) [+] |-> 1'b1);
+  assert property (@(posedge clk) ($changed(a)) [+] |-> 1'b1);
+
+  // Tests 12-13: explicit unbounded aliases
+  assert property (@(posedge clk) a [*0:$] ##1 b)
+  else count_fail12 <= count_fail12 + 1;
+  assert property (@(posedge clk) a [*1:$] ##1 b)
+  else count_fail13 <= count_fail13 + 1;
+
+  // Tests 14-17: IEEE 1800-2023 F.3.4.2.1 expansion of arbitrary minima
+  assert property (@(posedge clk) a [*2:$] ##1 b)
+  else count_fail14 <= count_fail14 + 1;
+  assert property (@(posedge clk) a ##1 a [+] ##1 b)
+  else count_fail15 <= count_fail15 + 1;
+  assert property (@(posedge clk) a [*MIN_N:$] ##1 b)
+  else count_fail16 <= count_fail16 + 1;
+  assert property (@(posedge clk) a [*2] ##1 a [+] ##1 b)
+  else count_fail17 <= count_fail17 + 1;
+
+  // Tests 18-21: unbounded repetition in antecedent and consequent positions
+  assert property (@(posedge clk) a [*2:$] |-> b)
+  else count_fail18 <= count_fail18 + 1;
+  assert property (@(posedge clk) (a ##1 a [+]) |-> b)
+  else count_fail19 <= count_fail19 + 1;
+  assert property (@(posedge clk) c |-> a [*2:$])
+  else count_fail20 <= count_fail20 + 1;
+  assert property (@(posedge clk) c |-> (a ##1 a [+]))
+  else count_fail21 <= count_fail21 + 1;
+
   // Counter FSM with M>0: range > kChainLimit (256) forces counter vertex
   // creation; min>0 exercises the Gte/active gating path in resolveLinks and
   // emitNbaLogic. Cover-only so count_fail values above are undisturbed.
@@ -112,6 +159,12 @@ module t (
       // a[*] ##1 b: NFA treats unbounded [*] as liveness (no reject);
       // Should be definite antecedent
       `checkd(count_fail11, 0);  // All other sims: 29
+      `checkd(count_fail12, count_fail11);
+      `checkd(count_fail13, count_fail7);
+      `checkd(count_fail14, count_fail15);
+      `checkd(count_fail16, count_fail17);
+      `checkd(count_fail18, count_fail19);
+      `checkd(count_fail20, count_fail21);
       $write("*-* All Finished *-*\n");
       $finish;
     end

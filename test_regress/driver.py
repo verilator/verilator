@@ -146,6 +146,7 @@ class Capabilities:
     _cached_have_lldb = None
     _cached_have_sc = None
     _cached_have_solver = None
+    _cached_have_tsan = None
     _cached_make_version = None
 
     @staticproperty
@@ -227,6 +228,12 @@ class Capabilities:
         return Capabilities._cached_have_solver
 
     @staticproperty
+    def have_tsan() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_tsan is None:
+            Capabilities._cached_have_tsan = bool(Capabilities._verilator_get_supported('TSAN'))
+        return Capabilities._cached_have_tsan
+
+    @staticproperty
     @lru_cache(maxsize=1024)
     def make_version() -> str:  # pylint: disable=no-method-argument
         if Capabilities._cached_make_version is None:
@@ -248,6 +255,7 @@ class Capabilities:
         _ignore = Capabilities.have_lldb
         _ignore = Capabilities.have_sc
         _ignore = Capabilities.have_solver
+        _ignore = Capabilities.have_tsan
 
     # Internals
 
@@ -881,6 +889,7 @@ class VlTest:
         self.verilator_make_gmake = True
         self.verilator_make_cmake = False
         self.verilated_debug = Args.verilated_debug
+        self.tsan = Args.tsan
 
         self._status_filename = self.obj_dir + "/V" + self.name + ".status"
         self.coverage_filename = self.obj_dir + "/coverage.dat"
@@ -948,6 +957,14 @@ class VlTest:
             message = re.sub(r'\n.*', '\n', message)
             self._skips = message
             raise VtSkipException
+
+    def enable_tsan(self) -> None:
+        """Called from tests as: enable_tsan() to run this test with
+        ThreadSanitizer (as if --tsan was given), or skip the test if
+        ThreadSanitizer is not available."""
+        if not self.have_tsan:
+            self.skip("No ThreadSanitizer-capable C++ compiler available")
+        self.tsan = True
 
     def priority(self, level: int) -> None:
         """Called from tests as: priority(<constant_number>) to
@@ -1138,6 +1155,9 @@ class VlTest:
 
         if re.search(r'-runtime-debug', checkflags):
             self._uses_asan = True
+            if self.tsan:
+                # --runtime-debug adds -fsanitize=address, incompatible with thread
+                self.skip("ThreadSanitizer not compatible with AddressSanitizer\n")
 
         verilator_flags = [*param.get('verilator_flags', "")]
         if Args.gdb:
@@ -1150,6 +1170,8 @@ class VlTest:
             verilator_flags += ["--trace-vcd"]
         if Args.gdbsim or Args.rrsim:
             verilator_flags += ["-CFLAGS -ggdb -LDFLAGS -ggdb"]
+        if self.tsan:
+            verilator_flags += ["-CFLAGS -fsanitize=thread -CFLAGS -g -LDFLAGS -fsanitize=thread"]
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy
 
         if param['vltmt']:
@@ -1370,6 +1392,10 @@ class VlTest:
                     "Test requires CMake; ignore error since not available or version too old\n")
                 return
 
+            if param['verilator_make_cmake'] and self.tsan:
+                self.skip("ThreadSanitizer flags not supported with CMake build\n")
+                return
+
             if not param['fails'] and param['make_main']:
                 self._make_main(param['timing_loop'], param['main_top_name'])
 
@@ -1520,6 +1546,10 @@ class VlTest:
         run_env = param['run_env']
         if run_env:
             run_env = run_env + ' '
+        if self.tsan:
+            # Use default suppressions; environment TSAN_OPTIONS may override
+            run_env = ('TSAN_OPTIONS="suppressions=' + os.environ['TEST_REGRESS'] +
+                       '/tsan.supp $TSAN_OPTIONS" ' + run_env)
 
         if param['atsim']:
             cmd = [
@@ -1813,6 +1843,10 @@ class VlTest:
     def have_solver(self) -> bool:
         self._have_solver_called = True
         return Capabilities.have_solver
+
+    @property
+    def have_tsan(self) -> bool:
+        return Capabilities.have_tsan
 
     @property
     def make_version(self) -> str:
@@ -2998,6 +3032,9 @@ if __name__ == '__main__':
     parser.add_argument('--stop', action='store_true', help='stop on the first error')
     parser.add_argument("--top-filename", help="override the default Verilog file name")
     parser.add_argument('--trace', action='store_true', help='enable simulator waveform tracing')
+    parser.add_argument('--tsan',
+                        action='store_true',
+                        help='run Verilated executable with ThreadSanitizer')
     parser.add_argument('--verbose',
                         action='store_true',
                         help='compile and run test in verbose mode')

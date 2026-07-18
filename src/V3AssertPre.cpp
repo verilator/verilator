@@ -1203,11 +1203,7 @@ private:
                     AstNode* const nextp = stmtp->nextp();
                     if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
                         assignp->unlinkFrBack();
-                        if (!matchAssignsp) {
-                            matchAssignsp = assignp;
-                        } else {
-                            matchAssignsp->addNext(assignp);
-                        }
+                        matchAssignsp = AstNode::addNextNull(matchAssignsp, assignp);
                     }
                     stmtp = nextp;
                 }
@@ -1233,11 +1229,7 @@ private:
                         AstNodeExpr* const assignRhsp = assignp->rhsp()->unlinkFrBack();
                         AstAssignDly* const dlyp = new AstAssignDly{flp, assignLhsp, assignRhsp};
                         VL_DO_DANGLING(pushDeletep(assignp), assignp);
-                        if (!matchAssignsp) {
-                            matchAssignsp = dlyp;
-                        } else {
-                            matchAssignsp->addNext(dlyp);
-                        }
+                        matchAssignsp = AstNode::addNextNull(matchAssignsp, dlyp);
                     }
                     stmtp = nextp;
                 }

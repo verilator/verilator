@@ -23,6 +23,12 @@ if test.have_sc:
              expect_filename="t/t_flag_supported_1.out",
              verilator_run=True)
 
+if test.have_tsan:
+    test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator --get-supported TSAN"],
+             logfile=test.obj_dir + "/vlt_tsan.log",
+             expect_filename="t/t_flag_supported_1.out",
+             verilator_run=True)
+
 test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator --get-supported DOES_NOT_EXIST"],
          logfile=test.obj_dir + "/vlt_does_not_exist.log",
          expect_filename="t/t_flag_supported_empty.out",

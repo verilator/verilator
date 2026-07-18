@@ -108,6 +108,17 @@ int AstNodeSel::bitConst() const {
     return (constp ? constp->toSInt() : 0);
 }
 
+bool AstNode::isDisableQueuePushSelfStmt() const {
+    // Detect LinkJump-generated registration:
+    // __VprocessQueue_*.push_back(std::process::self())
+    const AstStmtExpr* const stmtExprp = VN_CAST(this, StmtExpr);
+    if (!stmtExprp) return false;
+    const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
+    if (!methodp || methodp->name() != "push_back") return false;
+    const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
+    return queueRefp && queueRefp->varp()->processQueue();
+}
+
 void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeStmt::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 

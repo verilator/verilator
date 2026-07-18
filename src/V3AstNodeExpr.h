@@ -2262,24 +2262,25 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
 };
 class AstSConsRep final : public AstNodeExpr {
-    // Consecutive repetition [*N], [*N:M], [+], [*] (IEEE 1800-2023 16.9.2)
+    // Consecutive repetition [*N], [*N:M], [*N:$], [+], [*] (IEEE 1800-2023 16.9.2)
     // op1 := exprp -- the repeated expression
-    // op2 := countp -- min repetition count (N); always a positive constant after V3Width
+    // op2 := countp -- min repetition count (N); always a non-negative constant after V3Width
     // op3 := maxCountp -- max repetition count (M); nullptr when exact or unbounded
     //
     // Encoding:
     //   [*N]:   countp=N, maxCountp=nullptr, unbounded=false
     //   [*N:M]: countp=N, maxCountp=M,       unbounded=false
+    //   [*N:$]: countp=N, maxCountp=nullptr,  unbounded=true
     //   [+]:    countp=1, maxCountp=nullptr,  unbounded=true  (= [*1:$])
     //   [*]:    countp=0, maxCountp=nullptr,  unbounded=true  (= [*0:$])
     //
     // Lowering:
     //   Exact [*N] standalone: V3AssertPre saturating counter
-    //   All other forms and all SExpr-contained forms: V3AssertProp PExpr loop
+    //   All other forms and all SExpr-contained forms: V3AssertNfa
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := countp : AstNodeExpr
     // @astgen op3 := maxCountp : Optional[AstNodeExpr]
-    const bool m_unbounded = false;  // True for [+] and [*] (upper bound is $)
+    const bool m_unbounded = false;  // True when the upper bound is $
 public:
     // Exact [*N]
     AstSConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp)
@@ -2287,7 +2288,7 @@ public:
         this->exprp(exprp);
         this->countp(countp);
     }
-    // Range [*N:M] or unbounded [+]/[*]
+    // Range [*N:M] or unbounded [*N:$]/[+]/[*]
     AstSConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp, AstNodeExpr* maxCountp,
                 bool unbounded)
         : ASTGEN_SUPER_SConsRep(fl)
