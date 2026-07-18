@@ -4135,6 +4135,50 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
+void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                                         void* basep) VL_MT_UNSAFE {
+    // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
+    uint8_t* const base = static_cast<uint8_t*>(basep);
+    for (size_t i = 0; i < n; ++i) {
+        const VlVarTableEntry& e = entp[i];
+        void* const datap = base + e.byteOffset;
+        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
+        VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
+        for (int d = 0; d < e.udims; ++d) {
+            var.m_unpacked[d].m_left = e.dims[2 * d];
+            var.m_unpacked[d].m_right = e.dims[2 * d + 1];
+        }
+        for (int d = 0; d < e.pdims; ++d) {
+            var.m_packed[d].m_left = e.dims[2 * (e.udims + d)];
+            var.m_packed[d].m_right = e.dims[2 * (e.udims + d) + 1];
+        }
+        // Recompute the flattened DPI packed range now dims are known (see
+        // VerilatedVarProps::initPacked)
+        if (e.pdims == 1) {
+            var.m_packedDpi = var.m_packed.front();
+        } else if (e.pdims > 1) {
+            int packedSize = 1;
+            for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
+            var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
+        }
+        m_varsp->emplace(e.namep, std::move(var));
+    }
+}
+
+void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
+                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+    // Table-driven equivalent of a run of 'new VerilatedScope{...}' statements; see
+    // VlScopeTableEntry. The generated Syms class derives VerilatedSyms as its sole primary
+    // base at offset 0, so symsp doubles as the base for the offsetof-baked member addresses.
+    uint8_t* const base = reinterpret_cast<uint8_t*>(symsp);
+    for (size_t i = 0; i < n; ++i) {
+        const VlScopeTableEntry& e = entp[i];
+        VerilatedScope** const slotp = reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
+        *slotp = new VerilatedScope{symsp, e.namep, e.identp, e.defnamep, e.timeunit, e.type};
+    }
+}
+
 VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, bool isParam,
                                              VerilatedVarType vltype, int vlflags, int udims,
                                              uint32_t entSize...) VL_MT_UNSAFE {

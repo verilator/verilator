@@ -34,12 +34,16 @@ class parent;
   rand my_blk my_blk;
 endclass
 
+class Cls;
+endclass
+
 module t;
   my_t my_t;  // also legal at module scope
 
   initial begin
     static C c = new;
     static parent p = new;
+    static Cls Cls = new;
     c.my_t = 8'hAB;
     p.my_blk = new;
     p.my_blk.x = 5;

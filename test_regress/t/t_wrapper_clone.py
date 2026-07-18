@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
+if test.tsan:
+    test.skip("ThreadSanitizer does not support fork from a multithreaded process")
+
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=["--exe", test.pli_filename, "-cc"],

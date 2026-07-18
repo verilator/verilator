@@ -3572,9 +3572,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         while (lookp) {
             VSymEnt* const foundp = lookp->findIdFlat(name);
             if (foundp && !VN_IS(foundp->nodep(), MemberDType)) {
-                // A variable is not a type candidate (IEEE 1800-2023 6.18); skip it so an
-                // enclosing type is found, but keep it to preserve the "found: VAR" error.
-                if (!VN_IS(foundp->nodep(), Var)) return foundp;
+                // Non-type entries are not type candidates
+                // (IEEE 1800-2023 6.18); skip them so an enclosing
+                // type is found, but keep one to preserve the "found: ..." error.
+                if (VN_IS(foundp->nodep(), Typedef) || VN_IS(foundp->nodep(), ParamTypeDType)
+                    || VN_IS(foundp->nodep(), Class)) {
+                    return foundp;
+                }
                 if (!shadowEntp) shadowEntp = foundp;
             }
             lookp = lookp->fallbackp();
@@ -6126,11 +6130,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Only emit error if the child is not a type.
         // Do NOT unwrap valid types here - leave that to V3Width.
         // Unwrapping here breaks type parameter resolution during cloning.
-        if (nodep->lhsp() && !VN_IS(nodep->lhsp(), NodeDType)) {
+        // Allow Dot through to defer the handling until the dot expression is resolved.
+        if (nodep->lhsp() && !VN_IS(nodep->lhsp(), NodeDType) && !VN_IS(nodep->lhsp(), Dot)) {
             // Not a type - emit error
-            if (AstConst* const constp = VN_CAST(nodep->lhsp(), Const)) {
-                nodep->lhsp()->v3error(
-                    "Expecting a data type, not a constant: " << constp->toSInt());
+            if (VN_IS(nodep->lhsp(), Const)) {
+                nodep->lhsp()->v3error("Expecting a data type, not a constant");
             } else {
                 nodep->lhsp()->v3error("Expecting a data type, not "
                                        << nodep->lhsp()->typeName() << ": '"

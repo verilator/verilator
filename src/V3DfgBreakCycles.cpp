@@ -1583,34 +1583,17 @@ public:
     }
 };
 
-std::pair<std::unique_ptr<DfgGraph>, bool>  //
-breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
+bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
     // Shorthand for dumping graph at given dump level
     const auto dump = [&](int level, const DfgGraph& dfg, const std::string& name) {
         if (dumpDfgLevel() >= level) dfg.dumpDotFilePrefixed("breakCycles-" + name);
     };
-
-    // Can't do much with trivial things ('a = a' or 'a[1] = a[0]'), so bail
-    if (dfg.size() <= 2) {
-        UINFO(7, "Graph is trivial");
-        dump(9, dfg, "trivial");
-        ++ctx.m_breakCyclesContext.m_nTrivial;
-        return {nullptr, false};
-    }
 
     // AstNetlist/AstNodeModule user2 used as sequence numbers for temporaries
     const VNUser2InUse user2InUse;
 
     // Show input for debugging
     dump(7, dfg, "input");
-
-    // We might fail to make any improvements, so first create a clone of the
-    // graph. This is what we will be working on, and return if successful.
-    // Do not touch the input graph.
-    std::unique_ptr<DfgGraph> resultp = dfg.clone();
-    // Just shorthand for code below
-    DfgGraph& res = *resultp;
-    dump(9, res, "clone");
 
     // How many improvements have we made
     size_t nImprovements = 0;
@@ -1619,16 +1602,16 @@ breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
     // Iterate while an improvement can be made and the graph is still cyclic
     do {
         // Compute SCCs
-        SccInfo sccInfo{res};
+        SccInfo sccInfo{dfg};
 
         // Fix up independent ranges in vertices
         UINFO(9, "New iteration after " << nImprovements << " improvements");
         prevNImprovements = nImprovements;
-        const size_t nFixed = FixUp::apply(res, sccInfo);
+        const size_t nFixed = FixUp::apply(dfg, sccInfo);
         if (nFixed) {
             nImprovements += nFixed;
-            ctx.m_breakCyclesContext.m_nImprovements += nFixed;
-            dump(9, res, "FixUp");
+            ctx.m_nImprovements += nFixed;
+            dump(9, dfg, "FixUp");
         }
 
         // Validate SccInfo if in debug mode
@@ -1637,42 +1620,38 @@ breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
         // Congrats if it has become acyclic
         if (!sccInfo.isCyclic()) {
             UINFO(7, "Graph became acyclic after " << nImprovements << " improvements");
-            dump(7, res, "result-acyclic");
-            ++ctx.m_breakCyclesContext.m_nFixed;
-            return {std::move(resultp), true};
+            dump(7, dfg, "result-acyclic");
+            ++ctx.m_nFixed;
+            return true;
         }
     } while (nImprovements != prevNImprovements);
 
+    // Debug dump
     if (dumpDfgLevel() >= 9) {
-        const SccInfo sccInfo{res};
-        res.dumpDotFilePrefixed("breakCycles-remaining", [&](const DfgVertex& vtx) {
+        const SccInfo sccInfo{dfg};
+        dfg.dumpDotFilePrefixed("breakCycles-remaining", [&](const DfgVertex& vtx) {
             return sccInfo.get(vtx);  //
         });
     }
 
-    // If an improvement was made, return the still cyclic improved graph
+    // Accounting
     if (nImprovements) {
         UINFO(7, "Graph was improved " << nImprovements << " times");
-        dump(7, res, "result-improved");
-        ++ctx.m_breakCyclesContext.m_nImproved;
-        return {std::move(resultp), false};
+        dump(7, dfg, "result-improved");
+        ++ctx.m_nImproved;
+    } else {
+        UINFO(7, "Graph NOT improved");
+        dump(7, dfg, "result-original");
+        ++ctx.m_nUnchanged;
     }
-
-    // No improvement was made
-    UINFO(7, "Graph NOT improved");
-    dump(7, res, "result-original");
-    ++ctx.m_breakCyclesContext.m_nUnchanged;
-    return {nullptr, false};
+    return false;
 }
 
 }  //namespace V3DfgBreakCycles
 
-std::pair<std::unique_ptr<DfgGraph>, bool>  //
-V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
-    auto pair = V3DfgBreakCycles::breakCycles(dfg, ctx);
-    if (pair.first) {
-        if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(*pair.first);
-        V3DfgPasses::removeUnused(*pair.first);
-    }
-    return pair;
+bool V3DfgPasses::breakCycles(DfgGraph& dfg, V3DfgContext& ctx) {
+    const bool res = V3DfgBreakCycles::breakCycles(dfg, ctx.m_breakCyclesContext);
+    if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
+    V3DfgPasses::removeUnused(dfg);
+    return res;
 }

@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cstring>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -87,6 +88,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     using ScopeModPair = std::pair<const AstScope*, AstNodeModule*>;
     using ModVarPair = std::pair<const AstNodeModule*, const AstVar*>;
 
+    // Vars with more dims take the residual per-statement path.
+    static constexpr int VPI_TABLE_MAX_DIMS = 3;
+
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current function
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -108,10 +112,16 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     const bool m_dpiHdrOnly;  // Only emit the DPI header
     std::vector<std::string> m_splitFuncNames;  // Split file names
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
+    // name -> initializer rows, built in getSymCtorStmts()
+    std::vector<std::pair<std::string, std::vector<std::string>>> m_varTables;
+    // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
+    std::string m_scopeTableName;
+    std::vector<std::string> m_scopeTableRows;
 
     // METHODS
     void emitSymHdr();
     void emitSymImpPreamble();
+    void emitVarTables();
     void emitScopeHier(std::vector<std::string>& stmts, bool destroy);
     void emitSymImp(const AstNetlist* netlistp);
     void emitDpiHdr();
@@ -176,42 +186,61 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return pos != std::string::npos ? scpname.substr(pos + 1) : scpname;
     }
 
-    static std::tuple<int, int, std::string> getDimensions(const AstNodeDType* const rootDtypep) {
-        int pdim = 0;
+    // Encounter order of one dtype-chain walk: unpacked (outer), then packed,
+    // then a ranged basic leaf.
+    struct VarDims final {
+        int pdim = 0;  // Packed array dims plus a ranged basic leaf
         int udim = 0;
-        std::string bounds;
+        std::vector<std::pair<int, int>> unpackedLR;  // (left,right), outer-first
+        std::vector<std::pair<int, int>> packedLR;  // (left,right), inner then leaf
+
+        // Shared order used by both boundsString() and the table-row dv[] fill.
+        std::vector<std::pair<int, int>> flatten() const {
+            std::vector<std::pair<int, int>> flat(unpackedLR);
+            flat.insert(flat.end(), packedLR.cbegin(), packedLR.cend());
+            return flat;
+        }
+    };
+    static VarDims getVarDims(const AstNodeDType* const rootDtypep) {
+        VarDims d;
         // Range is always first, it's not in "C" order
         for (const AstNodeDType* dtypep = rootDtypep; dtypep;) {
             // Skip AstRefDType/AstTypedef, or return same node
             dtypep = dtypep->skipRefp();
             if (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
-                bounds += " ,";
-                bounds += std::to_string(adtypep->left());
-                bounds += ",";
-                bounds += std::to_string(adtypep->right());
-                if (VN_IS(dtypep, PackArrayDType))
-                    pdim++;
-                else
-                    udim++;
+                if (VN_IS(dtypep, PackArrayDType)) {
+                    d.packedLR.emplace_back(adtypep->left(), adtypep->right());
+                    ++d.pdim;
+                } else {
+                    d.unpackedLR.emplace_back(adtypep->left(), adtypep->right());
+                    ++d.udim;
+                }
                 dtypep = adtypep->subDTypep();
             } else {
                 if (const AstBasicDType* const basicp = dtypep->basicp()) {
                     if (basicp->isRanged()) {
-                        bounds += " ,";
-                        bounds += std::to_string(basicp->left());
-                        bounds += ",";
-                        bounds += std::to_string(basicp->right());
-                        pdim++;
+                        d.packedLR.emplace_back(basicp->left(), basicp->right());
+                        ++d.pdim;
                     }
                 }
                 break;  // Non-array leaf
             }
         }
-        return {pdim, udim, bounds};
+        return d;
     }
 
-    static std::tuple<int, int, std::string> getDimensions(const AstVar* const varp) {
-        return getDimensions(varp->dtypep());
+    static VarDims dimsFor(const ScopeVarData& svd) { return getVarDims(svd.m_varp->dtypep()); }
+
+    // Only needed on the residual path; the table path uses dims.flatten() directly.
+    static std::string boundsString(const VarDims& d) {
+        std::string bounds;
+        for (const std::pair<int, int>& lr : d.flatten()) {
+            bounds += " ,";
+            bounds += std::to_string(lr.first);
+            bounds += ",";
+            bounds += std::to_string(lr.second);
+        }
+        return bounds;
     }
 
     static int getUnpackedElements(const AstNodeDType* rootDtypep) {
@@ -310,6 +339,61 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return stmt;
     }
 
+    // tryBuildTableEntry() classifies each public var once, so the caller does
+    // not re-derive (and risk desyncing) the forceable-eligibility test.
+    enum class TableEntryKind : uint8_t {
+        TABLE_ROW,  // Registered via a VlVarTableEntry[] table row
+        FORCEABLE_RESIDUAL,  // Residual, via insertForceableVarStatement()
+        PLAIN_RESIDUAL,  // Residual, via insertVarStatement() (+ struct/array expansion)
+    };
+
+    // Builds one VlVarTableEntry row for 'varp', or reports which residual
+    // path it must take instead.
+    TableEntryKind tryBuildTableEntry(const ScopeVarData& svd, const AstVar* const varp,
+                                      const AstScope* const scopep,
+                                      const std::string& modClassName, const VarDims& dims,
+                                      std::string& rowOut) const {
+        const int pdim = dims.pdim;
+        const int udim = dims.udim;
+        if (varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
+            return TableEntryKind::FORCEABLE_RESIDUAL;
+        }
+        if (udim + pdim > VPI_TABLE_MAX_DIMS) return TableEntryKind::PLAIN_RESIDUAL;
+
+        const std::string vlEnumType = varp->vlEnumType();
+        if (needsEmittedEntSize(vlEnumType))
+            return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
+        // Params are often 'static constexpr' (offsetof is invalid on those);
+        // string params also need a runtime .c_str().
+        if (varp->isParam()) return TableEntryKind::PLAIN_RESIDUAL;
+
+        const std::string name = V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty));
+        // nameProtect() (not protect(name())) so the offsetof member matches the
+        // emitted struct field: a primary I/O port keeps its unprotected name
+        // under --protect-ids, whereas protect() would always hash it.
+        const std::string member = varp->nameProtect();
+        const std::string dir = varp->vlEnumDir();
+        // Flat dim (left,right) ints in varInsert() order: unpacked then packed.
+        std::vector<int> dv;
+        for (const std::pair<int, int>& lr : dims.flatten()) {
+            dv.push_back(lr.first);
+            dv.push_back(lr.second);
+        }
+
+        std::string row = "{\"" + name + "\", ";
+        row += "offsetof(" + modClassName + ", " + member + "), ";
+        row += vlEnumType + ", ";
+        row += "(" + dir + "), ";
+        row += std::to_string(udim) + ", " + std::to_string(pdim) + ", {";
+        for (int i = 0; i < VPI_TABLE_MAX_DIMS * 2; ++i) {
+            if (i) row += ", ";
+            row += std::to_string(i < static_cast<int>(dv.size()) ? dv[i] : 0);
+        }
+        row += "}}";
+        rowOut = row;
+        return TableEntryKind::TABLE_ROW;
+    }
+
     static std::string insertDTypeVarStatement(const ScopeVarData& svd,
                                                const AstScope* const scopep,
                                                const std::string& prettyName,
@@ -348,12 +432,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const std::string prettyName
                 = prettyPrefix + "." + AstNode::vpiName(itemp->shortName());
             const std::string cName = cPrefix + "." + itemp->nameProtect();
-            const std::tuple<int, int, std::string> dimensions = getDimensions(itemDTypep);
-            const int pdim = std::get<0>(dimensions);
-            const int udim = std::get<1>(dimensions);
-            const std::string bounds = std::get<2>(dimensions);
+            const VarDims dims = getVarDims(itemDTypep);
             stmts.emplace_back(insertDTypeVarStatement(svd, scopep, prettyName, cName, itemDTypep,
-                                                       udim, pdim, bounds)
+                                                       dims.udim, dims.pdim, boundsString(dims))
                                + ";");
             if (const AstNodeUOrStructDType* const subp
                 = VN_CAST(itemDTypep->skipRefp(), NodeUOrStructDType)) {
@@ -425,11 +506,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const ScopeVarData& svd = itpair->second;
             const AstScope* const scopep = svd.m_scopep;
             const AstVar* const varp = svd.m_varp;
-            const std::tuple<int, int, std::string> dimensions = getDimensions(varp);
-            const int pdim = std::get<0>(dimensions);
-            const int udim = std::get<1>(dimensions);
-            const std::string bounds = std::get<2>(dimensions);
-            stmt += insertVarStatement(svd, scopep, varp, udim, pdim, bounds);
+            const VarDims dims = dimsFor(svd);
+            stmt
+                += insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, boundsString(dims));
         }
         stmt += ",";
         // Find __VforceVal
@@ -449,11 +528,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const ScopeVarData& svd = itpair->second;
             const AstScope* const scopep = svd.m_scopep;
             const AstVar* const varp = svd.m_varp;
-            const std::tuple<int, int, std::string> dimensions = getDimensions(varp);
-            const int pdim = std::get<0>(dimensions);
-            const int udim = std::get<1>(dimensions);
-            const std::string bounds = std::get<2>(dimensions);
-            stmt += insertVarStatement(svd, scopep, varp, udim, pdim, bounds);
+            const VarDims dims = dimsFor(svd);
+            stmt
+                += insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, boundsString(dims));
         }
 
         stmt += "}";
@@ -986,6 +1063,50 @@ void EmitCSyms::emitSymImpPreamble() {
         needsNewLine = true;
     }
     if (needsNewLine) puts("\n");
+
+    // So split ctor sub-functions in other translation units can reference
+    // the VPI variable tables defined below.
+    if (!m_varTables.empty() || !m_scopeTableRows.empty()) {
+        for (const auto& kv : m_varTables) {
+            puts("extern const VlVarTableEntry " + kv.first + "[];\n");
+        }
+        if (!m_scopeTableRows.empty()) {
+            puts("extern const VlScopeTableEntry " + m_scopeTableName + "[];\n");
+        }
+        puts("\n");
+    }
+}
+
+void EmitCSyms::emitVarTables() {
+    if (m_varTables.empty() && m_scopeTableRows.empty()) return;
+    puts("\n// VPI VARIABLE/SCOPE TABLES\n");
+    // offsetof on the (non-standard-layout) generated module/Syms classes is well
+    // defined on all supported compilers but warns; suppress just here.
+    puts("#if defined(__GNUC__)\n");
+    puts("# pragma GCC diagnostic push\n");
+    puts("# pragma GCC diagnostic ignored \"-Winvalid-offsetof\"\n");
+    puts("#endif\n");
+    for (const auto& kv : m_varTables) {
+        puts("extern const VlVarTableEntry " + kv.first + "[] = {\n");
+        for (const std::string& row : kv.second) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
+    if (!m_scopeTableRows.empty()) {
+        puts("extern const VlScopeTableEntry " + m_scopeTableName + "[] = {\n");
+        for (const std::string& row : m_scopeTableRows) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
+    puts("#if defined(__GNUC__)\n");
+    puts("# pragma GCC diagnostic pop\n");
+    puts("#endif\n");
 }
 
 void EmitCSyms::emitScopeHier(std::vector<std::string>& stmts, bool destroy) {
@@ -1110,21 +1231,30 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
             + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");");
     }
 
-    add("// Setup scopes");
-    for (const auto& itpair : m_scopeNames) {
-        const ScopeData& sd = itpair.second;
-        std::string stmt;
-        stmt += protect("__Vscopep_" + sd.m_symName) + " = new VerilatedScope{this, \"";
-        stmt += V3OutFormatter::quoteNameControls(
-            VIdProtect::protectWordsIf(sd.m_prettyName, true));
-        stmt += "\", \"";
-        stmt += V3OutFormatter::quoteNameControls(protect(scopeDecodeIdentifier(sd.m_prettyName)));
-        stmt += "\", \"";
-        stmt += V3OutFormatter::quoteNameControls(sd.m_defName);
-        stmt += "\", ";
-        stmt += std::to_string(sd.m_timeunit);
-        stmt += ", VerilatedScope::" + sd.m_type + "};";
-        add(stmt);
+    // Every scope has the same construction shape, so all fold into one table with no
+    // residual; offsetof bakes the target __Vscopep_* member address into each row.
+    if (!m_scopeNames.empty()) {
+        add("// Setup scopes");
+        const std::string symClass = symClassName();
+        for (const auto& itpair : m_scopeNames) {
+            const ScopeData& sd = itpair.second;
+            std::string row
+                = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + sd.m_symName) + "), \"";
+            row += V3OutFormatter::quoteNameControls(
+                VIdProtect::protectWordsIf(sd.m_prettyName, true));
+            row += "\", \"";
+            row += V3OutFormatter::quoteNameControls(
+                protect(scopeDecodeIdentifier(sd.m_prettyName)));
+            row += "\", \"";
+            row += V3OutFormatter::quoteNameControls(sd.m_defName);
+            row += "\", ";
+            row += std::to_string(sd.m_timeunit);
+            row += ", VerilatedScope::" + sd.m_type + "}";
+            m_scopeTableRows.emplace_back(std::move(row));
+        }
+        m_scopeTableName = symClass + "__VpiScopeTable";
+        add("VerilatedScope::scopesConstructFromTable(" + m_scopeTableName + ", "
+            + std::to_string(m_scopeNames.size()) + ", this);");
     }
 
     emitScopeHier(stmts, false);
@@ -1154,45 +1284,99 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
         }
     }
 
-    // It would be less code if each module inserted its own variables. Someday.
+    // Relies on m_scopeVars being sorted so each VPI scope's vars are
+    // contiguous. Tables are deduplicated by row content, not by scope, so
+    // distinct scopes mapping to the same C++ class (e.g. --public-flat-rw)
+    // still share a table when their rows are identical.
     if (!m_scopeVars.empty()) {
         add("// Setup public variables");
-        for (const auto& itpair : m_scopeVars) {
-            const ScopeVarData& svd = itpair.second;
-            const AstScope* const scopep = svd.m_scopep;
-            const AstVar* const varp = svd.m_varp;
-            const std::tuple<int, int, std::string> dimensions = getDimensions(varp);
-            const int pdim = std::get<0>(dimensions);
-            const int udim = std::get<1>(dimensions);
-            const std::string bounds = std::get<2>(dimensions);
+        // Keyed by '\0'-joined row text so identical rows share one table.
+        std::unordered_map<std::string, std::string> tableByRows;
+        int tableCounter = 0;
 
-            const std::pair<bool, std::string> isForceControlResult = isForceControlSignal(varp);
-            const bool currentSignalIsForceControlSignal = isForceControlResult.first;
-            const std::string baseSignalName = isForceControlResult.second;
-            if (currentSignalIsForceControlSignal && baseSignalIsPublic(scopep, baseSignalName)
-                && baseSignalIsValid(scopep, varp, baseSignalName)) {
-                continue;
-            }
+        auto it = m_scopeVars.cbegin();
+        while (it != m_scopeVars.cend()) {
+            const std::string scopeName = it->second.m_scopeName;
+            const AstScope* const instScopep = it->second.m_scopep;
+            const AstNodeModule* const modp = it->second.m_modp;
+            const std::string modClassName = EmitCUtil::prefixNameProtect(modp);
 
-            if (varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
-                const std::string stmt
-                    = insertForceableVarStatement(svd, scopep, varp, udim, pdim, bounds) + ";";
-                add(stmt);
-            } else {
-                const std::string stmt
-                    = insertVarStatement(svd, scopep, varp, udim, pdim, bounds) + ";";
-                add(stmt);
-                if (const AstNodeUOrStructDType* const sdtypep
-                    = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
-                    if (!sdtypep->packed()) {
-                        addUOrStructMemberVars(stmts, svd, scopep, svd.m_varBasePretty,
-                                               protect(varp->name()), sdtypep);
+            std::vector<std::string> rows;
+            std::vector<std::string> residual;
+
+            for (; it != m_scopeVars.cend() && it->second.m_scopeName == scopeName; ++it) {
+                const ScopeVarData& svd = it->second;
+                const AstScope* const scopep = svd.m_scopep;
+                UASSERT(scopep == instScopep && svd.m_modp == modp,
+                        "VPI scope '" << scopeName << "' spans multiple C++ instances");
+                const AstVar* const varp = svd.m_varp;
+                const VarDims dims = dimsFor(svd);
+
+                // Force-control signals fold into the base signal's forceable insert.
+                const std::pair<bool, std::string> fc = isForceControlSignal(varp);
+                if (fc.first && baseSignalIsPublic(scopep, fc.second)
+                    && baseSignalIsValid(scopep, varp, fc.second)) {
+                    continue;
+                }
+
+                std::string row;
+                const TableEntryKind kind
+                    = tryBuildTableEntry(svd, varp, scopep, modClassName, dims, row);
+                switch (kind) {
+                case TableEntryKind::TABLE_ROW: rows.emplace_back(row); break;
+                case TableEntryKind::FORCEABLE_RESIDUAL: {
+                    const std::string bounds = boundsString(dims);
+                    residual.emplace_back(insertForceableVarStatement(svd, scopep, varp, dims.udim,
+                                                                      dims.pdim, bounds)
+                                          + ";");
+                    break;
+                }
+                case TableEntryKind::PLAIN_RESIDUAL: {
+                    const std::string bounds = boundsString(dims);
+                    residual.emplace_back(
+                        insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, bounds) + ";");
+                    if (const AstNodeUOrStructDType* const sdtypep
+                        = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
+                        if (!sdtypep->packed()) {
+                            addUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                                   protect(varp->name()), sdtypep);
+                        }
+                    } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+                        addUnpackedArrayUOrStructMemberVars(residual, svd, scopep,
+                                                            svd.m_varBasePretty,
+                                                            protect(varp->name()), varp->dtypep());
                     }
-                } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-                    addUnpackedArrayUOrStructMemberVars(stmts, svd, scopep, svd.m_varBasePretty,
-                                                        protect(varp->name()), varp->dtypep());
+                    break;
+                }
+                default: v3fatalSrc("Bad case");
                 }
             }
+
+            if (!rows.empty()) {
+                const size_t rowCount = rows.size();
+                std::string key;
+                for (const std::string& r : rows) {
+                    key += r;
+                    key += '\0';
+                }
+                const auto itt = tableByRows.find(key);
+                std::string tableName;
+                if (itt != tableByRows.end()) {
+                    tableName = itt->second;
+                } else {
+                    tableName = modClassName + "__VpiVarTable" + std::to_string(tableCounter++);
+                    tableByRows.emplace(std::move(key), tableName);
+                    m_varTables.emplace_back(tableName, std::move(rows));
+                }
+
+                std::string call
+                    = protect("__Vscopep_" + scopeName) + "->varsInsertFromTable(" + tableName
+                      + ", " + std::to_string(rowCount) + ", &("
+                      + VIdProtect::protectIf(instScopep->nameDotless(), instScopep->protect())
+                      + "));";
+                add(call);
+            }
+            for (const std::string& r : residual) add(r);
         }
     }
 
@@ -1308,6 +1492,7 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
 
     openNewOutputSourceFile(symClassName(), true, true, "Symbol table implementation internals");
     emitSymImpPreamble();
+    emitVarTables();
 
     // Constructor
     const std::string ctorArgs
@@ -1434,8 +1619,12 @@ void EmitCSyms::emitDpiHdr() {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
             putsDecoration(nodep, "// DPI import" + sourceLoc + "\n");
         }
-        putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
-                         + cFuncArgs(nodep) + ");\n");
+        if (nodep->dpiCDeclOverride()) {
+            putns(nodep, "extern " + nodep->dpiCDecl() + ";\n");
+        } else {
+            putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
+                             + cFuncArgs(nodep) + ");\n");
+        }
     }
 
     puts("\n");

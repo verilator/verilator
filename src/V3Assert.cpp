@@ -90,11 +90,68 @@ public:
     explicit DefaultDisablePropagateVisitor(AstNetlist* nodep) { iterate(nodep); }
 };
 
+// Lower a sequence used as an event control ('@seq', IEEE 1800-2023 9.4.2.4) into a
+// synthesized event fired by an internal 'cover sequence' on each end-of-match
+class SeqEventLowerVisitor final : public VNVisitor {
+    // STATE
+    AstNodeModule* m_modp = nullptr;  // Current module
+    V3UniqueNames m_names{"__VseqEvent"};  // Synthesized event names
+
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstSenItem* nodep) override {
+        AstFuncRef* const funcrefp = VN_CAST(nodep->sensp(), FuncRef);
+        if (funcrefp && VN_IS(funcrefp->taskp(), Sequence)) {
+            FileLine* const flp = nodep->fileline();
+            AstVar* const eventp = new AstVar{flp, VVarType::MODULETEMP, m_names.get(nodep),
+                                              m_modp->findBasicDType(VBasicDTypeKwd::EVENT)};
+            eventp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(eventp);
+            v3Global.setHasEvents();
+            funcrefp->unlinkFrBack();
+            nodep->sensp(new AstVarRef{flp, eventp, VAccess::READ});
+            const bool automaticActual = funcrefp->exists([](const AstNodeVarRef* refp) {
+                return refp->varp() && refp->varp()->lifetime().isAutomatic();
+            });
+            if (automaticActual) {
+                nodep->v3error("Arguments to a sequence used as an event control must be"
+                               " static (IEEE 1800-2023 9.4.2.4)");
+                VN_AS(funcrefp->taskp(), Sequence)->isReferenced(false);
+                VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+                return;
+            }
+            AstFireEvent* const firep
+                = new AstFireEvent{flp, new AstVarRef{flp, eventp, VAccess::WRITE}, false};
+            AstCover* const coverp
+                = new AstCover{flp, new AstPropSpec{flp, nullptr, nullptr, funcrefp}, firep,
+                               VAssertType::CONCURRENT};
+            coverp->isCoverSeq(true);
+            coverp->isSeqEvent(true);
+            m_modp->addStmtsp(coverp);
+            return;
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit SeqEventLowerVisitor(AstNetlist* nodep) { iterate(nodep); }
+};
+
 }  // namespace
 
 void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
     { DefaultDisableLocalVisitor{nodep}; }
     { DefaultDisablePropagateVisitor{nodep}; }
+}
+
+void V3AssertCommon::lowerSequenceEvents(AstNetlist* nodep) {
+    { SeqEventLowerVisitor{nodep}; }
+    V3Global::dumpCheckGlobalTree("assertseqevent", 0, dumpTreeEitherLevel() >= 3);
 }
 
 //######################################################################
@@ -546,14 +603,19 @@ class AssertVisitor final : public VNVisitor {
 
         bool selfDestruct = false;
         bool passspGated = false;
-        if (const AstCover* const snodep = VN_CAST(nodep, Cover)) {
+        const AstCover* const coverp = VN_CAST(nodep, Cover);
+        // A sequence event control is not an assertion directive; no assertion control
+        const bool seqEvent = coverp && coverp->isSeqEvent();
+        if (coverp) {
             ++m_statCover;
-            if (!v3Global.opt.coverageUser()) {
+            if (seqEvent) {
+                // Keep the event-fire action, with no coverage bucket
+            } else if (!v3Global.opt.coverageUser()) {
                 selfDestruct = true;
             } else {
                 // V3Coverage assigned us a bucket to increment.
-                AstCoverInc* const covincp = VN_AS(snodep->coverincsp(), CoverInc);
-                UASSERT_OBJ(covincp, snodep, "Missing AstCoverInc under assertion");
+                AstCoverInc* const covincp = VN_AS(coverp->coverincsp(), CoverInc);
+                UASSERT_OBJ(covincp, coverp, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
                 if (passsp) {
@@ -597,7 +659,8 @@ class AssertVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         bool passspAlreadyGated = false;
         if (passsp && VN_IS(passsp, If)) passspAlreadyGated = VN_AS(passsp, If)->user1();
-        if (passsp && !passspGated && !passspAlreadyGated && !VN_IS(propExprp, PExpr)) {
+        if (passsp && !passspGated && !passspAlreadyGated && !VN_IS(propExprp, PExpr)
+            && !seqEvent) {
             passsp = newIfAssertPassOn(passsp, nodep->directive(), nodep->userType(),
                                        /*vacuous=*/false);
         }
@@ -607,7 +670,7 @@ class AssertVisitor final : public VNVisitor {
         AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
         // Add assertOn check last, for better combining
-        bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
+        if (!seqEvent) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
         if (sentreep) bodysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, sentreep, bodysp};
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);
@@ -1009,11 +1072,7 @@ class AssertVisitor final : public VNVisitor {
                         = new AstSenItem{fl, VEdgeType::ET_CHANGED,
                                          // Clone so get VarRef or VarXRef as needed
                                          varrefp->cloneTree(false)};
-                    if (!monSenItemsp) {
-                        monSenItemsp = senItemp;
-                    } else {
-                        monSenItemsp->addNext(senItemp);
-                    }
+                    monSenItemsp = AstNode::addNextNull(monSenItemsp, senItemp);
                 });
             }
 

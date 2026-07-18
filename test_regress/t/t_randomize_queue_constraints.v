@@ -24,10 +24,12 @@ end
 
 class Foo;
   rand int m_intQueue[$];
+  rand int m_intQueueSized[$:9];
   rand int m_idx;
 
   function new;
     m_intQueue = '{10{0}};
+    m_intQueueSized = '{10{0}};
   endfunction
 
   constraint int_queue_c {
@@ -35,6 +37,13 @@ class Foo;
     m_intQueue[m_idx] == m_idx + 1;
     foreach (m_intQueue[i]) {
       m_intQueue[i] inside {[0:127]};
+    }
+  }
+  constraint int_queue_sized_c {
+    m_idx inside {[0:9]};
+    m_intQueueSized[m_idx] == m_idx + 1;
+    foreach (m_intQueueSized[i]) {
+      m_intQueueSized[i] inside {[0:127]};
     }
   }
 endclass
@@ -47,6 +56,12 @@ module t_randomize_queue_constraints;
     $display("Queue: %p", foo.m_intQueue);
     `check_rand(foo, foo.m_intQueue[3], foo.m_intQueue[5] inside {[0:127]});
     $display("Queue: %p", foo.m_intQueue);
+
+    `check_rand(foo, foo.m_idx, foo.m_idx inside {[0:9]} && foo.m_intQueueSized[foo.m_idx] == foo.m_idx + 1);
+    $display("Queue: %p", foo.m_intQueueSized);
+    `check_rand(foo, foo.m_intQueueSized[3], foo.m_intQueueSized[5] inside {[0:127]});
+    $display("Queue: %p", foo.m_intQueueSized);
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -40,6 +40,9 @@ PACKAGE_VERSION_STRING_CHAR
 // Define if coroutines are supported on this platform
 #undef HAVE_COROUTINES
 
+// Define if ThreadSanitizer is supported on this platform
+#undef HAVE_TSAN
+
 // Define if compiled with tcmalloc
 #undef HAVE_TCMALLOC
 

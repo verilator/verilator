@@ -1,0 +1,10 @@
+%Error: t/t_interface_typedef_bad2.v:15:13: Can't find definition of 'not_found_t' in dotted variable/method: 'i.not_found_t'
+                                          : ... note: In instance 't.u_sub'
+   15 |   typedef i.not_found_t choice_t;   
+      |             ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_interface_typedef_bad2.v:15:12: Expecting a data type, not a constant
+                                          : ... note: In instance 't.u_sub'
+   15 |   typedef i.not_found_t choice_t;   
+      |            ^
+%Error: Exiting due to

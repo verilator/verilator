@@ -23,4 +23,10 @@ module t (input clk);
   // Bad: [*N:0] zero max count
   assert property (@(posedge clk) a [*0:0] |-> 1);
 
+  // Bad: negative unbounded minimum
+  assert property (@(posedge clk) a [*-1:$] |-> 1);
+
+  // Bad: non-constant unbounded minimum
+  assert property (@(posedge clk) a [*n:$] |-> 1);
+
 endmodule

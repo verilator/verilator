@@ -679,8 +679,9 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     // the port variable. The constant can still be inlined, in which case
     // this is needed for tracing the inlined port variable.
     if (AstConst* const pinp = VN_CAST(pinExprp, Const)) {
-        AstAssignW* const ap
-            = new AstAssignW{flp, portRef(VAccess::WRITE), pinp->cloneTree(false)};
+        AstVarRef* const lhsp = portRef(VAccess::WRITE);
+        lhsp->varp()->isContinuously(true);
+        AstAssignW* const ap = new AstAssignW{flp, lhsp, pinp->cloneTree(false)};
         modp->addStmtsp(new AstAlways{ap});
         return;
     }
@@ -732,12 +733,14 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     // Otherwise create the continuous assignment between the port var and the pin expression
     UINFO(6, "Not inlining port variable: " << nodep);
     if (nodep->direction() == VDirection::INPUT) {
-        AstAssignW* const ap
-            = new AstAssignW{flp, portRef(VAccess::WRITE), pinRefAsExpr(VAccess::READ)};
+        AstVarRef* const lhsp = portRef(VAccess::WRITE);
+        lhsp->varp()->isContinuously(true);
+        AstAssignW* const ap = new AstAssignW{flp, lhsp, pinRefAsExpr(VAccess::READ)};
         modp->addStmtsp(new AstAlways{ap});
     } else if (nodep->direction() == VDirection::OUTPUT) {
-        AstAssignW* const ap
-            = new AstAssignW{flp, pinRefAsExpr(VAccess::WRITE), portRef(VAccess::READ)};
+        AstNodeVarRef* const lhsp = VN_AS(pinRefAsExpr(VAccess::WRITE), NodeVarRef);
+        lhsp->varp()->isContinuously(true);
+        AstAssignW* const ap = new AstAssignW{flp, lhsp, portRef(VAccess::READ)};
         modp->addStmtsp(new AstAlways{ap});
     } else {
         pinExprp->v3fatalSrc("V3Tristate left INOUT port");

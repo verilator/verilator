@@ -160,6 +160,21 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_NET = (1 << 15)  // Net object
 };
 
+// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
+// replaces per-variable varInsert() calls, which compiles faster at scale.
+struct VlVarTableEntry final {
+    static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
+    const char* namep;  // VPI-facing (protected) variable name, string literal
+    uint32_t byteOffset;  // offsetof of storage member from module instance base
+    VerilatedVarType vltype;
+    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
+    uint8_t udims;  // udims + pdims <= kMaxDims
+    uint8_t pdims;
+    // (left,right) pairs: unpacked dims first, then packed; int32_t since large
+    // unpacked memories exceed int16 range
+    int32_t dims[kMaxDims * 2];
+};
+
 // IEEE 1800-2023 Table 20-6
 enum class VerilatedAssertType : uint8_t {
     ASSERT_TYPE_CONCURRENT = (1 << 0),
@@ -756,6 +771,8 @@ public:  // But for internal use only
 // Verilator scope information class
 // Used for internal VPI implementation, and introspection into scopes
 
+struct VlScopeTableEntry;  // Defined below VerilatedScope; used by scopesConstructFromTable()
+
 class VerilatedScope final {
 public:
     enum Type : uint8_t {
@@ -792,6 +809,9 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
+    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
+                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -805,6 +825,17 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
     static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE;
     Type type() const { return m_type; }
+};
+
+// One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
+// per-scope 'new VerilatedScope{...}' statements, which compiles faster at scale.
+struct VlScopeTableEntry final {
+    uint32_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
+    const char* namep;  // Scope suffix name (protected), string literal
+    const char* identp;  // Identifier with escapes removed (protected)
+    const char* defnamep;  // Definition name (SCOPE_MODULE only), else "<null>"
+    int8_t timeunit;  // Timeunit in negative power-of-10
+    VerilatedScope::Type type;
 };
 
 class VerilatedHierarchy final {

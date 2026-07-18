@@ -8,7 +8,7 @@
 # Executed in the 'test' stage.
 ################################################################################
 
-# Destructive to the checkout (runs 'find . -delete'); never run locally
+# Destructive to the checkout (wipes most of it); never run locally
 if [ "$GITHUB_ACTIONS" != "true" ]; then
   echo "ERROR: $(basename "$0") must only be run in GitHub Actions CI" >&2
   exit 1
@@ -66,13 +66,14 @@ if [ -n "$OPT_RELOC" ]; then
   mv test_regress "$TEST_REGRESS"
   NODIST="$OPT_RELOC/nodist"
   mv nodist "$NODIST"
-  # Delete everything else
-  find . -delete
+  # Delete everything else, but keep the CI infrastructure
+  find . -mindepth 1 -maxdepth 1 ! -name .github ! -name ci -exec rm -rf {} +
   ls -la .
 fi
 
 # Run the specified suite
 ccache -z
+TEST_START=$SECONDS
 case $OPT_SUITE in
   dist-vlt-0)
     "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=0/4
@@ -162,5 +163,7 @@ case $OPT_SUITE in
     fatal "Unknown suite: $OPT_SUITE"
     ;;
 esac
+ccache -svv
+ccache --evict-older-than "$((SECONDS - TEST_START + 60))s"
 ccache -svv
 uptime # To see load average

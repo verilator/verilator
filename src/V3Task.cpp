@@ -1060,6 +1060,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Add DPI Import to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
+        funcp->dpiCDecl(nodep->dpiCDecl());
         if (!makePortList(nodep, funcp)) return nullptr;
         return funcp;
     }
@@ -1737,6 +1738,10 @@ class TaskVisitor final : public VNVisitor {
                 nodep->v3error("Cannot mix DPI import, DPI export, class methods, and/or public "
                                "on same function: "
                                << nodep->prettyNameQ());
+            }
+
+            if (nodep->isStatic() && nodep->isVirtual()) {
+                nodep->v3error("Static methods cannot be virtual");
             }
 
             const bool noInline = m_statep->ftaskNoInline(nodep);

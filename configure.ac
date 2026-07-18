@@ -129,6 +129,21 @@ AC_ARG_ENABLE([dev-gcov],
 AC_SUBST(CFG_WITH_DEV_GCOV)
 AC_MSG_RESULT($CFG_WITH_DEV_GCOV)
 
+# Flag to reduce the debug info in the debug executable to minimize its size
+AC_MSG_CHECKING(whether to reduce debug info in the debug executable)
+AC_ARG_ENABLE([light-debug],
+              [AS_HELP_STRING([--enable-light-debug],
+                              [Reduce the amount of debug information in the debug
+                               Verilator executable to minimize its size. Enable
+                               slight optimization. Enough for backtraces only.])],
+              [case "${enableval}" in
+                yes) CFG_WITH_LIGHT_DEBUG=yes ;;
+                no)  CFG_WITH_LIGHT_DEBUG=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-light-debug]) ;;
+               esac],
+               CFG_WITH_LIGHT_DEBUG=no)
+AC_MSG_RESULT($CFG_WITH_LIGHT_DEBUG)
+
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
 AC_ARG_ENABLE([defenv],
@@ -492,6 +507,11 @@ _MY_CXX_CHECK_CORO_SET(CFG_CXXFLAGS_COROUTINES,-std=gnu++20)
 AC_SUBST(CFG_CXXFLAGS_COROUTINES)
 AC_SUBST(HAVE_COROUTINES)
 
+# Check if the C++ compiler supports ThreadSanitizer
+_MY_CXX_CHECK_IFELSE(-fsanitize=thread,
+  [AC_DEFINE([HAVE_TSAN],[1],[Defined if ThreadSanitizer is supported by $CXX])])
+AC_SUBST(HAVE_TSAN)
+
 # Flags for compiling Verilator internals including parser always
 if test "$CFG_WITH_DEV_ASAN" = "yes"; then
   _MY_CXX_CHECK_IFELSE(-fsanitize=address -DVL_ASAN,
@@ -518,15 +538,27 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
 AC_SUBST(CFG_CXXFLAGS_PARSER)
 
 # Flags for compiling the debug version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
-if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-Og)
+if test "$CFG_WITH_LIGHT_DEBUG" = "yes"; then
+  # Slight optimization and minimal compressed debug info. This is enough for
+  # --gdb/--gdbbt backtraces, but omits the bulk of the debug info, which
+  # significantly reduces object file sizes. For CI or release builds.
+  if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-Og)
+  fi
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb1)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-fdebug-info-for-profiling) # For fully-qualified names with clang
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-gz)
+else
+  # Full debug: no optimization, full debug info, for development.
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-O0)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb)
 fi
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-gz)
 AC_SUBST(CFG_CXXFLAGS_DBG)
 
 # Flags for linking the debug version of Verilator (in addition to above CFG_LDFLAGS_SRC)
-_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DBG,-gz)
+if test "$CFG_WITH_LIGHT_DEBUG" = "yes"; then
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DBG,-gz)
+fi
 AC_SUBST(CFG_LDFLAGS_DBG)
 
 # Flags for compiling the optimized version of Verilator (in addition to above CFG_CXXFLAGS_SRC)

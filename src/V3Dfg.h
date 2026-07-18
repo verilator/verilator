@@ -487,9 +487,6 @@ public:
         for (const DfgVertex& vtx : m_opVertices) f(vtx);
     }
 
-    // Return an identical, independent copy of this graph. Vertex and edge order might differ.
-    std::unique_ptr<DfgGraph> clone() const VL_MT_DISABLED;
-
     // Merge contents of other graphs into this graph. Deletes the other graphs.
     // DfgVertexVar instances representing the same Ast variable are unified.
     void mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) VL_MT_DISABLED;
