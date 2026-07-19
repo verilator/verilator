@@ -3136,6 +3136,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_inPackedArray = false;  // Currently traversing a packed array tree
     bool m_replaceWithAlias
         = true;  // Replace VarScope with an alias. Used in the handling of AstAlias
+    bool m_isParam = false;  // Specifies whether currently visiting param variable
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -5096,6 +5097,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
+        VL_RESTORER(m_isParam);
+        m_isParam = nodep->varType().isParam();
         iterateChildren(nodep);
         if (m_statep->forPrimary() && nodep->isIO() && !m_ftaskp && !nodep->user4()) {
             nodep->v3error(
@@ -5277,27 +5280,32 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // which may find std::randomize and overwrite classOrPackagep
                 return;
             }
-            if (m_insideClassExtParam) {
-                // The reference may point to a method declared in a super class, which is proved
-                // by a parameter. In such a case, it can't be linked at the first stage.
-                // Must not do any linking, because e.g. might find an extends of an upper class
-                // because the current class (under parent) isn't yet importing it's extended class
-                // symbols
-                return;
-            }
-            if (AstClass* const targetClassp = VN_CAST(dotSymp->nodep(), Class)) {
-                if (m_extendsParam.count(targetClassp)) {
-                    // Target class has parameterized extends not yet resolved.
-                    // Its inherited symbols (e.g. static functions from the base class)
-                    // aren't imported yet - defer to linkDotParamed.
+            VSymEnt* const foundp
+                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            AstNodeFTask* const taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
+            AstNodeModule* const taskModulep = foundp ? foundp->classOrPackagep() : nullptr;
+            // Ignore deferring linking of functions inside params of classes extending
+            // parametric classes if referenced function can be linked in the first pass.
+            if (!m_isParam || !taskp
+                || (taskp->classMethod() && taskModulep && taskModulep->hasParameterList())) {
+                if (m_insideClassExtParam) {
+                    // The reference may point to a method declared in a super class, which is
+                    // proved by a parameter. In such a case, it can't be linked at the first
+                    // stage. Must not do any linking, because e.g. might find an extends of an
+                    // upper class because the current class (under parent) isn't yet importing
+                    // it's extended class symbols.
                     return;
+                }
+                if (AstClass* const targetClassp = VN_CAST(dotSymp->nodep(), Class)) {
+                    if (m_extendsParam.count(targetClassp)) {
+                        // Target class has parameterized extends not yet resolved.
+                        // Its inherited symbols (e.g. static functions from the base class)
+                        // aren't imported yet - defer to linkDotParamed.
+                        return;
+                    }
                 }
             }
 
-            VSymEnt* const foundp
-                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
-            AstNodeFTask* const taskp
-                = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;  // Maybe nullptr
             if (taskp) {
                 if (staticAccess && !taskp->isStatic()) {
                     // TODO bug4077
