@@ -952,7 +952,7 @@ class TimingControlVisitor final : public VNVisitor {
         VL_RESTORER(m_underIfaceCFunc);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
-        m_underIfaceCFunc = m_scopep && VN_IS(m_scopep->modp(), Iface);
+        m_underIfaceCFunc = VN_IS(m_scopep->modp(), Iface);
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;
