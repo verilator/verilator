@@ -31,6 +31,7 @@ Verilator 5.051 devel
 * Fix unique0 case side effects (#7787). [Pawel Klopotek]
 * Fix mid-window disable iff (#7792) (#7869). [Yilou Wang]
 * Fix cleaning purity cache after assertions. [Geza Lore, Testorrent USA, Inc.]
+* Fix uncaught type error leading to invalid C++ output (#7814). [Geza Lore, Testorrent USA, Inc.]
 * Fix internal error for coverpoints that reference a covergroup formal parameter (#7853 partial) (#7889). [Matthew Ballance]
 * Fix clang++ ambiguous overload of '==' operator (#7863). [Pawel Kojma, Antmicro Ltd.]
 * Fix heap-use-after-free in `VlRNG::VlRNG()` (#7865). [Dragon-Git]

@@ -5823,6 +5823,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_insideClassExtParam);
         {
             m_ds.init(m_curSymp);
+            m_insideClassExtParam = false;
             // Until overridden by a SCOPE
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
