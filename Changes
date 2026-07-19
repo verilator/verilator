@@ -20,9 +20,12 @@ Verilator 5.051 devel
 * Add user-provided DPI-C function declarations (#7626) (#7893). [Jakub Michalski]
 * Add error on static virtual functions (#7932). [Igor Zaworski, Antmicro Ltd.]
 * Support a sequence used as an event control (#7797) (#7846). [Yilou Wang]
+* Support `[\*N:$]` consecutive repetition (#7940). [Artur Bieniek, Antmicro Ltd.]
+* Support dynamic containers in unique constraints (#7947). [Adam Kostrzewski, Antmicro Ltd.]
 * Optimize random initialization. [Geza Lore, Testorrent USA, Inc.]
 * Optimize more always blocks in DFG (#7775). [Geza Lore, Testorrent USA, Inc.]
 * Optimize assertion NFAs using bit-vector ring buffers (#7885). [Artur Bieniek, Antmicro Ltd.]
+* Optimize VPI symbol registration and scope construction (#7936). [Nick Brereton]
 * Fix $display accepting streaming concat arguments (#7663) (#7890). [Jaeuk Lee]
 * Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
 * Fix unique0 case side effects (#7787). [Pawel Klopotek]
@@ -42,7 +45,15 @@ Verilator 5.051 devel
 * Fix release of forced port nets (#7907) (#7901). [Artur Bieniek, Antmicro Ltd.]
 * Fix VL_TO_STRING function for array of structs (#7912). [Kornel Uriasz, Antmicro Ltd.]
 * Fix queues falling into wrong template spec (#7914). [Adam Kostrzewski, Antmicro Ltd.]
+* Fix type resolution when a local name shadows a type name (#7915). [Pawel Klopotek]
 * Fix crash streaming an unpacked array of unpacked structs (#7917). [Nick Brereton]
+* Fix streaming concat as output-port lvalue into unpacked struct (#7918). [Nick Brereton]
+* Fix dropping variable writes across opaque calls (#7921) (#7933). [Philip Axer]
+* Fix dynamic array handling in solve...before (#7922). [Kornel Uriasz, Antmicro Ltd.]
+* Fix unlinked error with function call in derived class parameter (#7923). [Mateusz Gancarz, Antmicro Ltd.]
+* Fix class parameter resolution (#7935).
+* Fix FSM detection of coverage-only branches (#7941) (#7942). [Patrick Creighton]
+* Fix sampled-value clocks in repeated assertions (#7944). [Artur Bieniek, Antmicro Ltd.]
 
 
 Verilator 5.050 2026-07-01

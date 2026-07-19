@@ -45,8 +45,7 @@ module t;
       for (int i = 0; i < darr.size(); i++) begin
         for (int j = i + 1; j < darr.size(); j++) begin
           if (darr[i] == darr[j]) begin
-            $error("UNIQUENESS VIOLATION: darr[%0d] == darr[%0d] == 0x%h", i, j,
-                  darr[i]);
+            $error("UNIQUENESS VIOLATION: darr[%0d] == darr[%0d] == 0x%h", i, j, darr[i]);
             return 0;
           end
         end
@@ -55,8 +54,7 @@ module t;
       for (int i = 0; i < queue.size(); i++) begin
         for (int j = i + 1; j < queue.size(); j++) begin
           if (queue[i] == queue[j]) begin
-            $error("UNIQUENESS VIOLATION: queue[%0d] == queue[%0d] == 0x%h", i, j,
-                  queue[i]);
+            $error("UNIQUENESS VIOLATION: queue[%0d] == queue[%0d] == 0x%h", i, j, queue[i]);
             return 0;
           end
         end
@@ -65,8 +63,7 @@ module t;
       for (int i = 0; i < queue_c.size(); i++) begin
         for (int j = i + 1; j < queue_c.size(); j++) begin
           if (queue_c[i] == queue_c[j]) begin
-            $error("UNIQUENESS VIOLATION: queue_c[%0d] == queue_c[%0d] == 0x%h", i, j,
-                  queue_c[i]);
+            $error("UNIQUENESS VIOLATION: queue_c[%0d] == queue_c[%0d] == 0x%h", i, j, queue_c[i]);
             return 0;
           end
         end
@@ -78,8 +75,7 @@ module t;
             continue;
           end
           if (assoc[i] == assoc[j]) begin
-            $error("UNIQUENESS VIOLATION: assoc[%0d] == assoc[%0d] == 0x%h", i, j,
-                  assoc[i]);
+            $error("UNIQUENESS VIOLATION: assoc[%0d] == assoc[%0d] == 0x%h", i, j, assoc[i]);
             return 0;
           end
         end
@@ -87,12 +83,12 @@ module t;
       return 1;
     endfunction
 
-endclass : UniqueMultipleArray
+  endclass : UniqueMultipleArray
 
   initial begin
     automatic UniqueMultipleArray a = new();
     a.randomize();
-    assert(a.check_unique());
+    assert (a.check_unique());
 
     $write("*-* All Finished *-*\n");
     $finish;

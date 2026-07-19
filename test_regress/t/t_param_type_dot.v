@@ -14,25 +14,27 @@ class C;
   class nst;
     typedef logic [2:0] S;
   endclass
-endclass: C
+endclass
 
 class D;
   typedef logic [3:0] T;
   class nst;
     typedef logic [4:0] S;
   endclass
-endclass: D
+endclass
 
-class P#(type C);
+class P #(
+    type C
+);
   localparam type C1_t = C::T;
   parameter type C2_t = C::nst::S;
   C1_t x = '1;
   C2_t y = '1;
-endclass : P
+endclass
 
-module t();
-  P#(C) PC_data = new();
-  P#(D) PD_data = new();
+module t ();
+  P #(C) PC_data = new();
+  P #(D) PD_data = new();
   initial begin
     `checkd($bits(PC_data.x), 2);
     `checkd($bits(PC_data.y), 3);

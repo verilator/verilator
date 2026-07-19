@@ -4,8 +4,10 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
-`define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
 
 function automatic int align(input int a, input int b);
   return a - (a % b);
@@ -19,7 +21,9 @@ class Foo;
 
 endclass
 
-class FooParam #(parameter int param = 5);
+class FooParam #(
+    parameter int param = 5
+);
 
   static function int mul(input int a);
     return a * param;
@@ -27,7 +31,9 @@ class FooParam #(parameter int param = 5);
 
 endclass
 
-class Base #(parameter int param = 5);
+class Base #(
+    parameter int param = 5
+);
 
   function int get_base_param();
     return param;
@@ -40,14 +46,14 @@ class Base #(parameter int param = 5);
 endclass
 
 class Derived #(
-  parameter int a = 17,
-  parameter int b = 8,
-  parameter int c = align(a, b),
-  parameter int d = Base#(b)::alignUp(a),
-  parameter int e = Foo::mul(a, b),
-  parameter int f = FooParam#()::mul(a)
+    parameter int a = 17,
+    parameter int b = 8,
+    parameter int c = align(a, b),
+    parameter int d = Base#(b)::alignUp(a),
+    parameter int e = Foo::mul(a, b),
+    parameter int f = FooParam#()::mul(a)
 ) extends Base #(
-  .param (a)
+    .param(a)
 );
 
   function int get_third_param();
@@ -68,7 +74,9 @@ class Derived #(
 
 endclass
 
-module t (clk);
+module t (
+    clk
+);
   input clk;
 
   Derived inst = new;
