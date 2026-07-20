@@ -1520,16 +1520,36 @@ class AstToDfgSynthesize final {
         }
     }
 
+    // Returns true if 'rootp' depends on the entry value of the variable it represents
+    static bool dependsOnEntryValue(const DfgVertexVar* rootp) {
+        const AstVarScope* const targetp = rootp->tmpForp();
+        std::vector<const DfgVertex*> stack{rootp};
+        std::unordered_set<const DfgVertex*> visited;
+        while (!stack.empty()) {
+            const DfgVertex* const vtxp = stack.back();
+            stack.pop_back();
+            if (!visited.emplace(vtxp).second) continue;
+            if (const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>()) {
+                if (!varp->tmpForp() && varp->vscp() == targetp) return true;
+            }
+            vtxp->foreachSource([&](const DfgVertex& src) {
+                stack.emplace_back(&src);
+                return false;
+            });
+        }
+        return false;
+    }
+
     // Returns true if all external updates to volatile variables are observed correctly
     bool checkExtWrites() {
         for (const DfgVertex* const vtxp : m_logicp->synth()) {
             const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
             if (!varp) continue;
-            // If the variable we synthesized this vertex for is volatile, and
-            // the value of the synthesized temporary is observed, we might be
-            // missing an external update, so we mut give up.
             if (!varp->hasSinks()) continue;
             if (!DfgVertexVar::isVolatile(varp->tmpForp())) continue;
+            // An observed synthesized value is safe if it does not depend on the
+            // externally writable value present on entry to the process.
+            if (!dependsOnEntryValue(varp)) continue;
             ++m_ctx.m_synt.nonSynExtWrite;
             return false;
         }
