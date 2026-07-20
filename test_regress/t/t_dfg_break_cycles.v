@@ -436,6 +436,21 @@ module t (
   assign VOLATILE_PACKED_IN_CYCLE = volatile_packed_in_cycle;
   // verilator lint_on
 
+  wire logic [2:0] volatile_packed_independent /* verilator public_flat_rw */;
+  assign volatile_packed_independent[0] = rand_a[0];
+  assign volatile_packed_independent[1] = rand_b[0];
+  assign volatile_packed_independent[2] = ^volatile_packed_independent[1:0];
+  `signal(VOLATILE_PACKED_INDEPENDENT, 3); // UNOPTFLAT
+  assign VOLATILE_PACKED_INDEPENDENT = volatile_packed_independent;
+
+  wire logic [2:0] volatile_packed_partial /* verilator public_flat_rw */;
+  // verilator lint_off UNOPTFLAT
+  assign volatile_packed_partial[0] = rand_a[0];
+  assign volatile_packed_partial[2] = volatile_packed_partial[1] ^ rand_b[0];
+  `signal(VOLATILE_PACKED_PARTIAL, 3); // UNOPTFLAT
+  assign VOLATILE_PACKED_PARTIAL = volatile_packed_partial;
+  // verilator lint_on
+
   wire [2:0] volatile_array_out_of_cycle_a [2] /* verilator public_flat_rw */;
   assign volatile_array_out_of_cycle_a[0] = rand_a[2:0];
   wire [2:0] volatile_array_out_of_cycle_b [2];

@@ -477,9 +477,10 @@ class TraceDriver final : public DfgVisitor {
     }
 
     void visit(DfgVertexVar* vtxp) override {
-        UASSERT_OBJ(!vtxp->isVolatile(), vtxp, "Should not trace through volatile variable");
         VL_RESTORER(m_defaultp);
-        m_defaultp = vtxp->defaultp();
+        // External updates act as the default value of volatile variables. IndependentBits only
+        // marks explicitly driven ranges independent, so tracing those ranges must not use it.
+        m_defaultp = vtxp->isVolatile() ? nullptr : vtxp->defaultp();
         DfgVertex* const drvp = vtxp->srcp() ? vtxp->srcp() : m_defaultp;
         UASSERT_OBJ(drvp, vtxp, "Should not have to trace undriven variable");
         // Packed variable: trace the driver. Array variable: continue navigating it at
@@ -1019,14 +1020,15 @@ class IndependentBits final : public DfgVisitor {
     }  // LCOV_EXCL_STOP
 
     void visit(DfgVertexVar* vtxp) override {
-        // We cannot trace through a volatile variable, so pretend all bits are dependent
-        if (vtxp->isVolatile()) return;
+        // Keep volatile arrays conservative. Packed variables can inherit independence for
+        // explicitly driven ranges, while undriven ranges remain dependent on external updates.
+        if (vtxp->isVolatile() && !vtxp->isPacked()) return;
 
         BitMask& m = MASK(vtxp);
         DfgVertex* const srcp = vtxp->srcp();
         DfgVertex* const defaultp = vtxp->defaultp();
         // If there is a default driver, we start from that
-        if (defaultp) m = MASK(defaultp);
+        if (defaultp && !vtxp->isVolatile()) m = MASK(defaultp);
         // Then propagate mask from the driver
         propagateFromDriver(m, srcp);
     }
