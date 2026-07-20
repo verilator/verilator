@@ -395,8 +395,8 @@ module t;
       for (int i = 0; i < 64; ++i) begin
         ok = sv.randomize();
         `checkd(ok, 1);
-        if (sv.x == 5)++n5;
-        else if (sv.x == 1000000)++nbig;
+        if (sv.x == 5) n5++;
+        else if (sv.x == 1000000) nbig++;
         else $stop;
       end
       if (n5 <= nbig) $stop;
@@ -655,8 +655,8 @@ module t;
         ok = ix.randomize();
         `checkd(ok, 1);
         `checkd(ix.idx, 2);
-        if (ix.a[2] == 10)++n10;
-        else if (ix.a[2] == 20)++n20;
+        if (ix.a[2] == 10) n10++;
+        else if (ix.a[2] == 20) n20++;
         else $stop;
       end
       if (n10 == 0 || n20 == 0) $stop;
@@ -732,8 +732,8 @@ module t;
           ok = mf.randomize();
           `checkd(ok, 1);
           `checkd(mf.x, 600);
-          if (mf.x + mf.z == 10)++n10;
-          else if (mf.x + mf.z == 1000)++n1000;
+          if (mf.x + mf.z == 10) n10++;
+          else if (mf.x + mf.z == 1000) n1000++;
           else $stop;
         end
         if (n10 == 0 || n1000 == 0) $stop;
@@ -829,8 +829,8 @@ module t;
           ok = cs.randomize();
           `checkd(ok, 1);
           `checkd(cs.b, 1'b1);
-          if (cs.x == 5)++n5;
-          else if (cs.x == 70)++n70;
+          if (cs.x == 5) n5++;
+          else if (cs.x == 70) n70++;
           else $stop;
           if (cs.y != y0) yvar = 1;
         end

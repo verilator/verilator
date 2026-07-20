@@ -5101,12 +5101,10 @@ class RandomizeVisitor final : public VNVisitor {
 
             chainp = gateFrozenDist(chainp, distp, buckets, randModeVarp);
 
-            if (chainp) {
-                constrExprp->replaceWith(chainp);
-                VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
-                // Hard membership precedes the soft bucket chain in the constraint list.
-                chainp->addHereThisAsNext(membershipp);
-            }
+            constrExprp->replaceWith(chainp);
+            VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
+            // Hard membership precedes the soft bucket chain in the constraint list.
+            chainp->addHereThisAsNext(membershipp);
 
             // Clean up nodes used only as clone templates (never inserted into tree)
             for (auto& bucket : buckets) {
