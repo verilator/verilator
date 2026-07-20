@@ -14,8 +14,11 @@ test.scenarios('simulator')
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
-                 "--exe", test.pli_filename, "--public-flat-rw", "-Werror-UNOPTFLAT"
+                 "--exe", test.pli_filename, "--public-flat-rw", "--stats", "-Werror-UNOPTFLAT"
              ])
+
+test.file_grep(test.stats, r'Warnings, Suppressed UNOPTFLAT\s+(\d+)', 3)
+test.file_grep(test.stats, r'DFG, BreakCycles, clocked boundaries created\s+(\d+)', 1)
 
 test.execute()
 test.passes()

@@ -451,6 +451,15 @@ module t (
   assign VOLATILE_PACKED_PARTIAL = volatile_packed_partial;
   // verilator lint_on
 
+  logic [6:0] volatile_packed_clocked /* verilator public_flat_rw */;
+  assign volatile_packed_clocked[0] = ^volatile_packed_clocked[4:2] ^ rand_b[0];
+  always_ff @(posedge rand_a[0]) begin
+    volatile_packed_clocked[6:1] <= {volatile_packed_clocked[5:1],
+                                    volatile_packed_clocked[0]};
+  end
+  `signal(VOLATILE_PACKED_CLOCKED, 7); // UNOPTFLAT
+  assign VOLATILE_PACKED_CLOCKED = volatile_packed_clocked;
+
   wire [2:0] volatile_array_out_of_cycle_a [2] /* verilator public_flat_rw */;
   assign volatile_array_out_of_cycle_a[0] = rand_a[2:0];
   wire [2:0] volatile_array_out_of_cycle_b [2];

@@ -23,9 +23,11 @@ int main(int argc, char** argv) {
 
     top.a = 0;
     top.b = 1;
+    top.clk = 0;
     top.eval();
     TEST_CHECK_EQ(top.result, 6);
     TEST_CHECK_EQ(top.rootp->t__DOT__result, 6);
+    TEST_CHECK_EQ(top.pipeline_out, 1);
 
     top.rootp->t__DOT__result = 1;
     top.eval();
@@ -41,6 +43,23 @@ int main(int argc, char** argv) {
     top.eval();
     TEST_CHECK_EQ(top.partial_out, 4);
     TEST_CHECK_EQ(top.rootp->t__DOT__partial, 4);
+
+    top.clk = 1;
+    top.eval();
+    TEST_CHECK_EQ(top.pipeline_enable, 0);
+    TEST_CHECK_EQ(top.pipeline_out, 2);
+
+    top.rootp->t__DOT__pipeline = 0;
+    top.eval();
+    TEST_CHECK_EQ(top.pipeline_enable, 1);
+    TEST_CHECK_EQ(top.pipeline_out, 1);
+
+    top.clk = 0;
+    top.eval();
+    top.clk = 1;
+    top.eval();
+    TEST_CHECK_EQ(top.pipeline_enable, 0);
+    TEST_CHECK_EQ(top.pipeline_out, 2);
 
     std::cout << "*-* All Finished *-*\n";
     return errors;

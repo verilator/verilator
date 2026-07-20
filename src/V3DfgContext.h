@@ -32,6 +32,9 @@
 #include "V3Global.h"
 #include "V3Stats.h"
 
+#include <memory>
+#include <unordered_map>
+
 class V3DfgContext;
 
 //######################################################################
@@ -103,6 +106,7 @@ public:
     VDouble0 m_nImproved;  // Number of graphs that were improved but still cyclic
     VDouble0 m_nUnchanged;  // Number of graphs that were left unchanged
     VDouble0 m_nImprovements;  // Number of changes made to graphs
+    VDouble0 m_nClockedBoundaries;  // Number of clocked value boundaries created
 
 private:
     V3DfgBreakCyclesContext()
@@ -112,6 +116,7 @@ private:
         addStat("improved", m_nImproved);
         addStat("left unchanged", m_nUnchanged);
         addStat("changes applied", m_nImprovements);
+        addStat("clocked boundaries created", m_nClockedBoundaries);
     }
 };
 class V3DfgCseContext final : public V3DfgSubContext {
@@ -404,6 +409,18 @@ private:
 // Top level V3DfgContext
 
 class V3DfgContext final {
+    struct ModWriteInfo final {
+        V3Number m_clocked;
+        V3Number m_other;
+
+        explicit ModWriteInfo(AstVarScope* vscp)
+            : m_clocked{vscp, vscp->width(), 0}
+            , m_other{vscp, vscp->width(), 0} {}
+    };
+
+    std::unordered_map<const AstVarScope*, std::unique_ptr<ModWriteInfo>> m_modWriteInfo;
+    std::unordered_map<const AstVarScope*, AstVarScope*> m_clockedBoundaryVscps;
+
 public:
     // STATE
 
@@ -420,6 +437,30 @@ public:
     V3DfgRemoveSelectsContext m_removeSelectsContext;
     V3DfgRemoveUnobservableContext m_removeUnobservableContext;
     V3DfgSynthesisContext m_synthContext;
+
+    // Record a packed range written by logic that is not represented in the DFG.
+    void addModWrite(AstVarScope* vscp, bool clocked, uint32_t lsb, uint32_t width) {
+        std::unique_ptr<ModWriteInfo>& infop = m_modWriteInfo[vscp];
+        if (!infop) infop.reset(new ModWriteInfo{vscp});
+        V3Number& mask = clocked ? infop->m_clocked : infop->m_other;
+        mask.opSetRange(lsb, width, '1');
+    }
+    const V3Number* clockedWriteMask(const AstVarScope* vscp) const {
+        const auto it = m_modWriteInfo.find(vscp);
+        return it == m_modWriteInfo.end() ? nullptr : &it->second->m_clocked;
+    }
+    const V3Number* otherModWriteMask(const AstVarScope* vscp) const {
+        const auto it = m_modWriteInfo.find(vscp);
+        return it == m_modWriteInfo.end() ? nullptr : &it->second->m_other;
+    }
+    AstVarScope* clockedBoundaryVscp(const AstVarScope* vscp) const {
+        const auto it = m_clockedBoundaryVscps.find(vscp);
+        return it == m_clockedBoundaryVscps.end() ? nullptr : it->second;
+    }
+    void addClockedBoundaryVscp(const AstVarScope* vscp, AstVarScope* boundaryVscp) {
+        const bool newEntry = m_clockedBoundaryVscps.emplace(vscp, boundaryVscp).second;
+        UASSERT_OBJ(newEntry, vscp, "Duplicate clocked boundary");
+    }
 
     // CONSTRUCTOR
     V3DfgContext() = default;
