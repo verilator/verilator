@@ -25,6 +25,7 @@
 
 #include "verilatedos.h"
 
+#include <algorithm>
 #include <coroutine>
 #include <cstddef>
 #include <cstdint>
@@ -49,8 +50,26 @@ class VlFiber;
 
 #if defined(VERILATOR_FIBER_LINUX)
 
+struct VlFiberMemoryChunk {
+    void* m_chunkAddr;
+    void* m_lastFree;
+    size_t m_free;
+};
+
+class VlFiberMemoryPool final {
+    std::vector<VlFiberMemoryChunk*> m_chunks;
+    size_t m_free;
+
+public:
+    VlFiberMemoryPool();
+    VlFiberMemoryPool(const VlFiberMemoryPool& other) = delete;
+    VlFiberMemoryPool(VlFiberMemoryPool&& other) = delete;
+    void* get();
+    void* free(void* ptr);
+};
+
 class VlFiberContext final {
-private:
+    VlFiberMemoryPool m_memPool{};
     ucontext_t callerCtx{};  // Register state of caller context
     ucontext_t fiberCtx{};  // Register state of fiber context
     void* mappingp;  // Base of mmap allocation (includes guards)

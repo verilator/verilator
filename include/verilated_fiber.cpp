@@ -45,6 +45,28 @@
 
 static long pageSize = sysconf(_SC_PAGESIZE);
 
+// One chunk is 8 Mb
+static VL_CONSTEXPR_CXX17 unsigned long long chunkSize = 8388608;
+
+VlFiberMemoryPool::VlFiberMemoryPool()
+    : m_chunks{}
+    , m_free{0} {}
+
+void* VlFiberMemoryPool::get() {
+    if (VL_UNLIKELY(m_free == 0)) {
+        m_chunks.emplace_back();
+        size_t lastIdx = m_chunks.size() - 1;
+        m_free += m_chunks[lastIdx]->m_free - 1;
+        void* returnp = m_chunks[lastIdx]->m_lastFree;
+        m_chunks[lastIdx]->m_lastFree = reinterpret_cast<void*>(
+            reinterpret_cast<uintptr_t>(m_chunks[lastIdx]->m_lastFree) + chunkSize);
+        m_chunks[lastIdx]->m_free--;
+        return returnp;
+    }
+}
+
+void VlFiberMemoryPool::free(void* ptr) {}
+
 VlFiberContext::VlFiberContext(void (*f)(VlFiber*), VlFiber* arg) {
     if (VL_UNLIKELY(pageSize <= 0)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "sysconf(_SC_PAGESIZE) failed");
