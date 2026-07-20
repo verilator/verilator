@@ -3629,8 +3629,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return nullptr;
     }
     static const AstVar* getNextVarp(const AstNode* stmtsp) {
+        // Only match actual ports, skipping GPARAM/parameter declarations (explicit
+        // module value/type parameters and the synthetic __VGIfaceParam<port> var
+        // itself) -- those live on a separate paramsp() pin list, not the pinsp()
+        // list this is paired against, and must not consume a pairing slot here.
         while (stmtsp) {
-            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) return varp;
+            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) {
+                if (varp->isIO()) return varp;
+            }
             stmtsp = stmtsp->nextp();
         }
         return nullptr;
@@ -4436,7 +4442,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (varp->isIfaceRef() && m_genericIfaceModule
-                    && VN_IS(varp->childDTypep(), IfaceGenericDType)) {
+                    && VN_IS(varp->childDTypep(), IfaceGenericDType) && !start) {
+                    // Defer only when this reference is the object of a dotted
+                    // member-access chain (e.g. 'd.v'/'d.PARAM'); the concrete type
+                    // isn't known yet, so V3Param must specialize the module first
+                    // and linkDotParamed (LDS_PARAMED) must revisit it. A standalone
+                    // reference with no dot pending (e.g. forwarding a generic port
+                    // through to a sub-cell pin, '.x(d)') has nothing left to
+                    // resolve here, so it falls through to the ordinary 'allowVar'
+                    // path below and gets a real VarRef now.
                     ok = true;
                     m_ds.m_unresolvedGenericIface = true;
                 } else if (ifacerefp && varp->isIfaceRef()) {
