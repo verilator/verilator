@@ -13,7 +13,7 @@ class solve_before_soft_c;
   rand bit sel;
   rand int unsigned m;
   rand int unsigned x;
-  constraint m_soft {soft m == 0;}
+  constraint m_soft {soft m == 7;}
   constraint sb_cons {
     solve sel before x;
     if (sel)
@@ -27,8 +27,8 @@ class conflicting_soft_c;
   rand bit sel;
   rand int unsigned a;
   rand int unsigned b;
-  constraint a_soft0 {soft a == 0;}
-  constraint a_soft5 {soft a == 5;}
+  constraint a_soft3 {soft a == 3;}
+  constraint a_soft9 {soft a == 9;}
   constraint sb_cons {
     solve sel before b;
     if (sel)
@@ -44,11 +44,11 @@ module t;
     static conflicting_soft_c o2 = new();
     repeat (20) begin
       `checkd(o1.randomize(), 1)
-      `checkd(o1.m, 32'd0)
+      `checkd(o1.m, 32'd7)
     end
     repeat (20) begin
       `checkd(o2.randomize(), 1)
-      `checkd(o2.a, 32'd5)
+      `checkd(o2.a, 32'd9)
     end
     $write("*-* All Finished *-*\n");
     $finish;

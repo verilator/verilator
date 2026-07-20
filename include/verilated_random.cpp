@@ -684,9 +684,9 @@ void VlRandomizer::relaxSoftConstraints(std::iostream& os) {
     os << "(check-sat)\n";
     if (checkSat(os)) return;
     os << "(pop 1)\n";
-    for (int i = static_cast<int>(nSoft) - 1; i >= 0; --i) {
+    for (auto it = m_softConstraints.rbegin(); it != m_softConstraints.rend(); ++it) {
         os << "(push 1)\n";
-        os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
+        os << "(assert (= #b1 " << *it << "))\n";
         os << "(check-sat)\n";
         if (!checkSat(os)) os << "(pop 1)\n";
     }
