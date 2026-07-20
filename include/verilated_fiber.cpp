@@ -23,6 +23,7 @@
 
 #include "verilated.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
@@ -53,19 +54,32 @@ VlFiberMemoryPool::VlFiberMemoryPool()
     , m_free{0} {}
 
 void* VlFiberMemoryPool::get() {
-    if (VL_UNLIKELY(m_free == 0)) {
+    void* returnp{};
+    auto chunkIt = std::find_if(m_chunks.begin(), m_chunks.end(),
+                                [](const VlFiberMemoryChunk* chunk) { return chunk->m_free > 0; });
+    if (VL_UNLIKELY(chunkIt == m_chunks.end())) {
         m_chunks.emplace_back();
         size_t lastIdx = m_chunks.size() - 1;
-        m_free += m_chunks[lastIdx]->m_free - 1;
-        void* returnp = m_chunks[lastIdx]->m_lastFree;
-        m_chunks[lastIdx]->m_lastFree = reinterpret_cast<void*>(
-            reinterpret_cast<uintptr_t>(m_chunks[lastIdx]->m_lastFree) + chunkSize);
+        m_chunks[lastIdx]->m_top = reinterpret_cast<void*>(
+            reinterpret_cast<uintptr_t>(m_chunks[lastIdx]->m_top) + chunkSize);
         m_chunks[lastIdx]->m_free--;
-        return returnp;
+        return m_chunks[lastIdx]->m_top;
     }
+    VlFiberMemoryChunk* chunkp = *chunkIt;
+    if (!chunkp->m_freeTop) {
+        chunkp->m_top
+            = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(chunkp->m_top) + chunkSize);
+        chunkp->m_free--;
+        return chunkp->m_top;
+    }
+    returnp = chunkp->m_freeTop;
+    chunkp->m_freeTop = reinterpret_cast<void*>(*reinterpret_cast<uintptr_t*>(chunkp->m_freeTop));
+    return returnp;
 }
 
-void VlFiberMemoryPool::free(void* ptr) {}
+void VlFiberMemoryPool::free(void* ptr) {
+
+}
 
 VlFiberContext::VlFiberContext(void (*f)(VlFiber*), VlFiber* arg) {
     if (VL_UNLIKELY(pageSize <= 0)) {

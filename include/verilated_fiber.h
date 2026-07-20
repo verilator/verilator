@@ -52,13 +52,13 @@ class VlFiber;
 
 struct VlFiberMemoryChunk {
     void* m_chunkAddr;
-    void* m_lastFree;
+    void* m_top;
+    void* m_freeTop;
     size_t m_free;
 };
 
 class VlFiberMemoryPool final {
     std::vector<VlFiberMemoryChunk*> m_chunks;
-    size_t m_free;
 
 public:
     VlFiberMemoryPool();
