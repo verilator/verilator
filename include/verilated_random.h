@@ -260,6 +260,8 @@ class VlRandomizer VL_NOT_FINAL {
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& os, bool log = false);
     bool checkSat(std::iostream& os);
+    // Assert the maximal compatible soft-constraint set onto the open session.
+    void relaxSoftConstraints(std::iostream& os);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).
     std::vector<int> readUnsatAssumptions(std::iostream& os);
     void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints

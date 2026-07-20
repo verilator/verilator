@@ -524,9 +524,6 @@ bool VlRandomizer::next(VlRNG& rngr) {
         std::iostream& os = getSolver();
         if (!os) return false;
 
-        // Soft constraint relaxation (IEEE 1800-2023 18.5.13, last-wins priority):
-        // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
-        // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
         os << "(set-option :produce-models true)\n";
         // Lets the scalar pin path learn which free-bit assumptions conflict.
         os << "(set-option :produce-unsat-assumptions true)\n";
@@ -560,39 +557,9 @@ bool VlRandomizer::next(VlRNG& rngr) {
         // trivially UNSAT after the first cycle.
         if (!m_checkOnly) emitRandcExclusions(os);
 
-        const size_t nSoft = m_softConstraints.size();
-        bool sat = false;
-        if (nSoft > 0) {
-            // Fast path: try all soft constraints at once
-            os << "(push 1)\n";
-            for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
-            os << "(check-sat)\n";
-            sat = parseSolution(os, false);
-            if (!sat) {
-                // Some soft constraints conflict. Incrementally add from back
-                // (highest priority first), keeping only compatible ones.
-                // This preserves the maximum set of compatible soft constraints.
-                os << "(pop 1)\n";
-                for (int i = static_cast<int>(nSoft) - 1; i >= 0; --i) {
-                    os << "(push 1)\n";
-                    os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
-                    os << "(check-sat)\n";
-                    if (checkSat(os)) {
-                        // Compatible -- keep this push level
-                    } else {
-                        // Incompatible -- remove this soft constraint
-                        os << "(pop 1)\n";
-                    }
-                }
-                // Read solution with remaining compatible soft constraints
-                os << "(check-sat)\n";
-                sat = parseSolution(os, false);
-            }
-        } else {
-            // No soft constraints -- hard-only
-            os << "(check-sat)\n";
-            sat = parseSolution(os, false);
-        }
+        relaxSoftConstraints(os);
+        os << "(check-sat)\n";
+        bool sat = parseSolution(os, false);
 
         if (!sat) {
             os << "(reset)\n";
@@ -706,6 +673,23 @@ bool VlRandomizer::checkSat(std::iostream& os) {
     std::string result;
     do { std::getline(os, result); } while (result.empty());
     return result == "sat";
+}
+
+void VlRandomizer::relaxSoftConstraints(std::iostream& os) {
+    // Re-add softs highest-priority first, dropping incompatible ones.
+    const size_t nSoft = m_softConstraints.size();
+    if (nSoft == 0) return;
+    os << "(push 1)\n";
+    for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
+    os << "(check-sat)\n";
+    if (checkSat(os)) return;
+    os << "(pop 1)\n";
+    for (auto it = m_softConstraints.rbegin(); it != m_softConstraints.rend(); ++it) {
+        os << "(push 1)\n";
+        os << "(assert (= #b1 " << *it << "))\n";
+        os << "(check-sat)\n";
+        if (!checkSat(os)) os << "(pop 1)\n";
+    }
 }
 
 std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
@@ -1041,6 +1025,9 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
 
         // Randc: exclude previously used values
         emitRandcExclusions(os);
+
+        // Soft constraints participate in every phase, priority-ordered.
+        relaxSoftConstraints(os);
 
         // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
         os << "(check-sat)\n";
