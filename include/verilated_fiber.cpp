@@ -35,13 +35,13 @@
 //======================================================================
 // Platform-dependent internal implementation
 
-#if defined(FIBER_LINUX_X64)
+#if defined(VERILATOR_FIBER_LINUX)
 #include <ucontext.h>
 
 #include <sys/mman.h>
 #endif
 
-#if defined(FIBER_LINUX_X64)
+#if defined(VERILATOR_FIBER_LINUX)
 
 static long pageSize = sysconf(_SC_PAGESIZE);
 
@@ -75,9 +75,6 @@ void VlFiberContext::teardown() {
 
 void VlFiberContext::yield() {
     // Save fiber's state and return to caller
-    //if (setjmp(this->fiberCtx) == 0) {
-    //    longjmp(this->callerCtx, 1);  // Jump back to last resume()
-    //}
     if (VL_UNLIKELY(swapcontext(&fiberCtx, &callerCtx) == -1)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     (std::string{"swapcontext failed: "} + std::strerror(errno)).c_str());
@@ -87,9 +84,6 @@ void VlFiberContext::yield() {
 
 void VlFiberContext::resume() {
     // Save caller's state and switch to fiber context
-    //if (setjmp(this->callerCtx) == 0) {
-    //    longjmp(this->fiberCtx, 1);  // Jump back to last yield()
-    //}
     if (VL_UNLIKELY(swapcontext(&callerCtx, &fiberCtx) == -1)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     (std::string{"swapcontext failed: "} + std::strerror(errno)).c_str());

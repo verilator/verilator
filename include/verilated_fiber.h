@@ -32,13 +32,13 @@
 #include <memory>
 #include <vector>
 
-#if defined(__x86_64__) && defined(__linux__)
-#define FIBER_LINUX_X64
+#if defined(__linux__)
+#define VERILATOR_FIBER_LINUX
 #else
 #error "This platform is not supported"
 #endif
 
-#if defined(FIBER_LINUX_X64)
+#if defined(VERILATOR_FIBER_LINUX)
 #include <cstddef>
 #include <ucontext.h>
 
@@ -47,7 +47,7 @@
 
 class VlFiber;
 
-#if defined(FIBER_LINUX_X64)
+#if defined(VERILATOR_FIBER_LINUX)
 
 class VlFiberContext final {
 private:
