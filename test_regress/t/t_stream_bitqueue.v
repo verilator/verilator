@@ -62,6 +62,12 @@ module t (  /*AUTOARG*/
       `checkh(bit_qq[2], 1'b1);
       `checkh(bit_qq[3], 1'b0);
 
+      bit_q = {bit_q_t'(4'ha)};
+      `checkh(bit_q[0], 1'b1);
+      `checkh(bit_q[1], 1'b0);
+      `checkh(bit_q[2], 1'b1);
+      `checkh(bit_q[3], 1'b0);
+
       bit_q = bit_q_t'({>>{4'hd}});
       `checkh(bit_q[0], 1'b1);
       `checkh(bit_q[1], 1'b1);
@@ -72,6 +78,18 @@ module t (  /*AUTOARG*/
       `checkh(bit_q[0], 1'b0);
       `checkh(bit_q[1], 1'b0);
       `checkh(bit_q[2], 1'b1);
+      `checkh(bit_q[3], 1'b1);
+
+      bit_q = {bit_q_t'({>>{4'hf}})};
+      `checkh(bit_q[0], 1'b1);
+      `checkh(bit_q[1], 1'b1);
+      `checkh(bit_q[2], 1'b1);
+      `checkh(bit_q[3], 1'b1);
+
+      bit_q = {bit_q_t'({<<{4'hb}})};
+      `checkh(bit_q[0], 1'b1);
+      `checkh(bit_q[1], 1'b1);
+      `checkh(bit_q[2], 1'b0);
       `checkh(bit_q[3], 1'b1);
 
       bit_q = {>>{bit_q_t'(4'he)}};
