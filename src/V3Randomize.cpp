@@ -799,12 +799,33 @@ class ConstraintExprVisitor final : public VNVisitor {
         memberp->markConstrainedRand(true);
     }
 
+    // True when the aggregate is reached through rand-qualified struct members only
+    bool isRandQualifiedPath(const AstNodeExpr* nodep) {
+        while (nodep) {
+            if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+                if (AstStructDType* const structp
+                    = VN_CAST(selp->fromp()->dtypep()->skipRefp(), StructDType)) {
+                    const AstMemberDType* const memberp
+                        = VN_CAST(m_memberMap.findMember(structp, selp->name()), MemberDType);
+                    if (memberp && !memberp->rand().isRandomizable()) return false;
+                }
+                nodep = selp->fromp();
+            } else if (const AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
+                nodep = selp->fromp();
+            } else if (const AstCMethodHard* const methodp = VN_CAST(nodep, CMethodHard)) {
+                nodep = methodp->fromp();
+            } else {
+                break;
+            }
+        }
+        return true;
+    }
+
     // IEEE 1800-2023 18.4: all rand members of a rand unpacked struct are solved
     // concurrently, so unreferenced rand members must still reach the solver.
     static void markStructConstrainedRandRecurse(AstNodeDType* const dtypep) {
         AstStructDType* const structp = VN_CAST(arrayElementDTypep(dtypep), StructDType);
         if (!structp || structp->packed()) return;
-        if (structp->isConstrainedRand()) return;  // Already processed
         structp->markConstrainedRand(true);
         for (AstMemberDType* memberp = structp->membersp(); memberp;
              memberp = VN_AS(memberp->nextp(), MemberDType)) {
@@ -1950,7 +1971,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* const fromp = nodep->fromp();
             AstStructDType* const structp = VN_AS(fromp->dtypep()->skipRefp(), StructDType);
             markConstrainedRandMember(structp, nodep->name());
-            markStructConstrainedRandRecurse(fromp->dtypep());
+            if (isRandQualifiedPath(fromp)) {
+                markStructConstrainedRandRecurse(fromp->dtypep());
+            } else {
+                structp->markConstrainedRand(true);
+            }
         }
         // Mark Random for structArray
         if (VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), CMethodHard)) {
@@ -1960,7 +1985,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstStructDType* const structp
                 = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
             markConstrainedRandMember(structp, nodep->name());
-            markStructConstrainedRandRecurse(fromp->dtypep()->skipRefp()->subDTypep());
+            if (isRandQualifiedPath(fromp)) {
+                markStructConstrainedRandRecurse(fromp->dtypep()->skipRefp()->subDTypep());
+            } else {
+                structp->markConstrainedRand(true);
+            }
         }
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();

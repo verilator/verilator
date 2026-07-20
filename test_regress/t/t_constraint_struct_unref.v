@@ -94,6 +94,53 @@ class G;
   constraint gc {o.g < 5;}
 endclass
 
+// Rand members reached only through a NON-rand struct member: only the
+// referenced leaf is solved.
+typedef struct {
+  rand bit [3:0] kv;  // unreferenced: must keep its value
+  rand bit [3:0] rv;  // referenced
+} under_t;
+
+typedef struct {
+  under_t sub;  // non-rand
+  rand bit [3:0] hv;
+} hold_t;
+
+class H;
+  rand hold_t o;
+  constraint hc {o.sub.rv < 5;}
+  function new();
+    o.sub.kv = 4'hC;
+  endfunction
+endclass
+
+// Same reached through dynamic arrays of structs.
+typedef struct {
+  rand bit ec;  // unreferenced: must keep its value
+  rand bit [7:0] ed;  // referenced
+} delem_t;
+
+typedef struct {
+  delem_t subs[];  // non-rand
+} douter_t;
+
+class I;
+  rand douter_t cfgs[];
+  rand bit flip;
+  constraint ic {
+    foreach (cfgs[i]) {
+      cfgs[i].subs[0].ed[0] != flip;
+    }
+  }
+  function new();
+    cfgs = new[3];
+    foreach (cfgs[i]) begin
+      cfgs[i].subs = new[2];
+      for (int j = 0; j < 2; j++) cfgs[i].subs[j].ec = 1'b1;
+    end
+  endfunction
+endclass
+
 module t_constraint_struct_unref;
   initial begin
     C c;
@@ -101,6 +148,8 @@ module t_constraint_struct_unref;
     E e;
     F f;
     G g;
+    H h;
+    I iarr;
     int uid[16];
     int pid[16];
     int iid[16];
@@ -111,6 +160,7 @@ module t_constraint_struct_unref;
     int cid[16];
     int e0id[16];
     int e1id[16];
+    int hid[16];
     int un;
     int pn;
     int inn;
@@ -121,6 +171,7 @@ module t_constraint_struct_unref;
     int cn;
     int e0n;
     int e1n;
+    int hn;
     // Non-randomized use of the shared type: must stay untouched.
     unpacked_t plain;
     outer_t plain2;
@@ -129,6 +180,8 @@ module t_constraint_struct_unref;
     e = new();
     f = new();
     g = new();
+    h = new();
+    iarr = new();
     un = 0;
     pn = 0;
     inn = 0;
@@ -139,6 +192,7 @@ module t_constraint_struct_unref;
     cn = 0;
     e0n = 0;
     e1n = 0;
+    hn = 0;
     plain.id = 4'h5;
     plain.size = 3'h6;
     plain.inner.inner_id = 4'h7;
@@ -177,6 +231,16 @@ module t_constraint_struct_unref;
       `checkd((g.o.g < 5), 1'b1);
       e0id[g.o.es[0].f]++;  // unreferenced array-of-struct element
       e1id[g.o.es[1].f]++;
+      `checkd(h.randomize(), 1);
+      `checkd((h.o.sub.rv < 5), 1'b1);
+      `checkd(h.o.sub.kv, 4'hC);
+      hid[h.o.hv]++;
+      `checkd(iarr.randomize(), 1);
+      foreach (iarr.cfgs[k]) begin
+        `checkd((iarr.cfgs[k].subs[0].ed[0] != iarr.flip), 1'b1);
+        `checkd(iarr.cfgs[k].subs[0].ec, 1'b1);
+        `checkd(iarr.cfgs[k].subs[1].ec, 1'b1);
+      end
     end
     foreach (uid[k]) if (uid[k] > 0) un++;
     foreach (pid[k]) if (pid[k] > 0) pn++;
@@ -188,6 +252,7 @@ module t_constraint_struct_unref;
     foreach (cid[k]) if (cid[k] > 0) cn++;
     foreach (e0id[k]) if (e0id[k] > 0) e0n++;
     foreach (e1id[k]) if (e1id[k] > 0) e1n++;
+    foreach (hid[k]) if (hid[k] > 0) hn++;
     // Unreferenced rand members must vary; packed struct is the control case.
     `checkgt(un, 7);
     `checkgt(pn, 7);
@@ -199,6 +264,7 @@ module t_constraint_struct_unref;
     `checkgt(cn, 7);
     `checkgt(e0n, 7);
     `checkgt(e1n, 7);
+    `checkgt(hn, 7);
     `checkd(plain.id, 4'h5);
     `checkd(plain.size, 3'h6);
     `checkd(plain.inner.inner_id, 4'h7);
