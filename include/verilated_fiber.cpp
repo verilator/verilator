@@ -17,6 +17,8 @@
 ///
 //*************************************************************************
 
+#include "verilatedos.h"
+
 #include "verilated_fiber.h"
 
 #include "verilated.h"
@@ -34,82 +36,81 @@
 // Platform-dependent internal implementation
 
 #if defined(FIBER_LINUX_X64)
-#include <csetjmp>
+#include <ucontext.h>
 
 #include <sys/mman.h>
 #endif
 
-static std::uintptr_t alignDown(std::uintptr_t ptr, std::uintptr_t align) {
-    return ptr & ~(align - 1);
-}
-
 #if defined(FIBER_LINUX_X64)
 
+static long pageSize = sysconf(_SC_PAGESIZE);
+
 VlFiberContext::VlFiberContext(void (*f)(VlFiber*), VlFiber* arg) {
-    // Get system page size for guard page alignment
-    const long pageSize = ::sysconf(_SC_PAGESIZE);
     if (VL_UNLIKELY(pageSize <= 0)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "sysconf(_SC_PAGESIZE) failed");
     }
 
     // Allocate memory with mmap (anonymous, private mapping)
-    this->mappingSize = stackSize + 2 * pageSize;
-    this->mappingp = ::mmap(nullptr, this->mappingSize, PROT_READ | PROT_WRITE,
-                            MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-    if (VL_UNLIKELY(this->mappingp == MAP_FAILED)) {
+    mappingSize = stackSize + 2 * pageSize;
+    mappingp = ::mmap(nullptr, mappingSize, PROT_READ | PROT_WRITE,
+                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    if (VL_UNLIKELY(mappingp == MAP_FAILED)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     (std::string{"mmap failed: "} + std::strerror(errno)).c_str());
     }
 
     // Initialize memory layout pointers
-    this->rsp = alignDown(
-        reinterpret_cast<std::uintptr_t>(this->mappingp) + stackSize + pageSize - 1, 16);
-    this->rdi = reinterpret_cast<Register>(arg);
-    this->rip = reinterpret_cast<Register>(f);
-
-    // Protect guard pages (no read/write access) to catch stack overflow/underflow
-    void* const lowGuard = this->mappingp;
-    void* const highGuard = reinterpret_cast<void*>(alignDown(
-        reinterpret_cast<std::uintptr_t>(this->mappingp) + stackSize + pageSize, pageSize));
-
-    if (VL_UNLIKELY(::mprotect(lowGuard, pageSize, PROT_NONE) != 0)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for low guard page");
+    if (VL_UNLIKELY(getcontext(&fiberCtx) == -1)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    (std::string{"getcontext failed: "} + std::strerror(errno)).c_str());
     }
-    if (VL_UNLIKELY(::mprotect(highGuard, pageSize, PROT_NONE) != 0)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for high guard page");
-    }
+    fiberCtx.uc_stack.ss_sp = mappingp;
+    fiberCtx.uc_stack.ss_size = mappingSize;
+    makecontext(&fiberCtx, reinterpret_cast<void (*)()>(f), 1, arg);
 }
 
 void VlFiberContext::teardown() {
-    if (this->mappingp) ::munmap(this->mappingp, this->mappingSize);
+    if (mappingp) ::munmap(mappingp, mappingSize);
 }
 
 void VlFiberContext::yield() {
     // Save fiber's state and return to caller
-    if (setjmp(this->fiberCtx) == 0) {
-        longjmp(this->callerCtx, 1);  // Jump back to last resume()
+    //if (setjmp(this->fiberCtx) == 0) {
+    //    longjmp(this->callerCtx, 1);  // Jump back to last resume()
+    //}
+    if (VL_UNLIKELY(swapcontext(&fiberCtx, &callerCtx) == -1)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    (std::string{"swapcontext failed: "} + std::strerror(errno)).c_str());
     }
     // Returns here when fiber is resumed
 }
 
 void VlFiberContext::resume() {
     // Save caller's state and switch to fiber context
-    if (setjmp(this->callerCtx) == 0) {
-        longjmp(this->fiberCtx, 1);  // Jump back to last yield()
+    //if (setjmp(this->callerCtx) == 0) {
+    //    longjmp(this->fiberCtx, 1);  // Jump back to last yield()
+    //}
+    if (VL_UNLIKELY(swapcontext(&callerCtx, &fiberCtx) == -1)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    (std::string{"swapcontext failed: "} + std::strerror(errno)).c_str());
     }
     // Returns here when fiber yields or completes
 }
 
 void VlFiberContext::start() {
-    if (setjmp(this->callerCtx) == 0) {
-        asm volatile("mov %[stack], %%rsp\n\t"
-                     "xor %%rbp, %%rbp\n\t"
-                     "call *%[entry]\n\t"
-                     :
-                     : [stack] "r"(this->rsp), [entry] "r"(this->rip), "D"(this->rdi)
-                     : "memory");
+    if (VL_UNLIKELY(swapcontext(&callerCtx, &fiberCtx) == -1)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    (std::string{"swapcontext failed: "} + std::strerror(errno)).c_str());
     }
     // Returns here when fiber yields or completes
+}
+
+void VlFiberContext::end() {
+    if (VL_UNLIKELY(setcontext(&callerCtx) == -1)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    (std::string{"setcontext failed: "} + std::strerror(errno)).c_str());
+    }
+    __builtin_unreachable();
 }
 
 #endif
@@ -196,7 +197,6 @@ void VlFiber::entryPoint(VlFiber* fiberp) {
     fiberp->m_fn();
     fiberp->m_done = true;
     s_currentFiberp = nullptr;
-    // Resume one last time to finish fiber execution
-    fiberp->m_ctx.yield();
+    fiberp->m_ctx.end();
     __builtin_unreachable();
 }

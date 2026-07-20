@@ -39,8 +39,8 @@
 #endif
 
 #if defined(FIBER_LINUX_X64)
-#include <csetjmp>
 #include <cstddef>
+#include <ucontext.h>
 
 #include <sys/mman.h>
 #endif
@@ -50,17 +50,11 @@ class VlFiber;
 #if defined(FIBER_LINUX_X64)
 
 class VlFiberContext final {
-public:
-    using Register = std::uintptr_t;
-
 private:
-    std::jmp_buf callerCtx{};  // Register state of caller context
-    std::jmp_buf fiberCtx{};  // Register state of fiber context
+    ucontext_t callerCtx{};  // Register state of caller context
+    ucontext_t fiberCtx{};  // Register state of fiber context
     void* mappingp;  // Base of mmap allocation (includes guards)
     std::size_t mappingSize;  // Total size of allocation (stackSize + 2*pageSize)
-    Register rsp;
-    Register rdi;
-    Register rip;
 
 public:
     // Set maximum stack size to 16MB
@@ -72,6 +66,7 @@ public:
     void yield();
     void resume();
     void start();
+    void end() VL_ATTR_NORETURN;
 };
 
 #endif
