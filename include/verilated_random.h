@@ -399,8 +399,10 @@ public:
     // Mark a variable as rand_mode-disabled: solver keeps it in m_vars
     // (so constraints still reference it) but skips write-back after solving.
     void set_var_disabled(const char* name) { m_disabledVars.insert(name); }
+    void set_var_disabled(const std::string& name) { m_disabledVars.insert(name); }
     // Clear disabled state for a variable
     void clear_var_disabled(const char* name) { m_disabledVars.erase(name); }
+    void clear_var_disabled(const std::string& name) { m_disabledVars.erase(name); }
 
     // ---  write_var to register variables  ---
     // Register scalar variable (non-struct, basic type)
@@ -408,6 +410,17 @@ public:
     typename std::enable_if<!VlContainsCustomStruct<T>::value && !IsVlUnpacked<T>::value,
                             void>::type
     write_var(T& var, int width, const char* name, int dimension,
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        if (m_vars.find(name) != m_vars.end()) return;
+        // TODO: make_unique once VlRandomizer is per-instance not per-ref
+        m_vars[name]
+            = std::make_shared<const VlRandomVar>(name, width, &var, dimension, randmodeIdx);
+    }
+
+    template <typename T>
+    typename std::enable_if<!VlContainsCustomStruct<T>::value && !IsVlUnpacked<T>::value,
+                            void>::type
+    write_var(T& var, int width, const std::string& name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         // TODO: make_unique once VlRandomizer is per-instance not per-ref
@@ -698,6 +711,7 @@ public:
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
+    void markRandc(const std::string& name);  // Mark variable as randc for cyclic tracking
     void solveBefore(const std::string& beforeName,
                      const std::string& afterName);  // Register solve-before ordering
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
