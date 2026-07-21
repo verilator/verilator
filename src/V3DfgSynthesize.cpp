@@ -698,6 +698,25 @@ class AstToDfgSynthesize final {
         return drivers;
     }
 
+    // Returns true if the driver explicitly covers a whole array element
+    static bool driverCoversWholeElement(const Driver& driver) {
+        const DfgUnitArray* const unitp = driver.m_vtxp->cast<DfgUnitArray>();
+        if (!unitp) return false;
+        DfgVertexSplice* const splicep = unitp->srcp()->cast<DfgVertexSplice>();
+        return splicep && splicep->wholep();
+    }
+
+    // Returns true if the drivers explicitly cover the whole variable
+    static bool driversCoverWhole(const std::vector<Driver>& drivers, const DfgVertexVar& var) {
+        uint32_t next = 0;
+        for (const Driver& driver : drivers) {
+            if (driver.m_lo != next) return false;
+            if (!driverCoversWholeElement(driver)) return false;
+            next = driver.m_hi + 1;
+        }
+        return next == var.size();
+    }
+
     // Returns true if the driver cone contains any variable introduced by
     // tristate lowering. Used to distinguish intentional tristate contributor
     // overlap from accidental multidrive.
@@ -1310,6 +1329,41 @@ class AstToDfgSynthesize final {
         return propagatedDrivers;
     }
 
+    // Propagate non-overwritten single-element array drivers from 'oldp'
+    bool computePropagatedArrayDrivers(const std::vector<Driver>& newDrivers, DfgVertexVar* oldp,
+                                       std::vector<Driver>& propagatedDrivers) {
+        const std::vector<Driver> oldDrivers = gatherDrivers(oldp->srcp()->as<DfgVertexSplice>());
+        UASSERT_OBJ(!oldDrivers.empty(), oldp, "Should have a proper driver");
+        for (const Driver& nDriver : newDrivers) {
+            if (!nDriver.m_vtxp->is<DfgUnitArray>()) return false;
+        }
+        for (const Driver& oDriver : oldDrivers) {
+            if (!oDriver.m_vtxp->is<DfgUnitArray>()) return false;
+        }
+
+        for (const Driver& oDriver : oldDrivers) {
+            bool overwritten = false;
+            for (const Driver& nDriver : newDrivers) {
+                if (nDriver.m_lo > oDriver.m_lo) break;
+                if (nDriver.m_lo <= oDriver.m_lo && nDriver.m_hi >= oDriver.m_hi) {
+                    if (!driverCoversWholeElement(nDriver)) return false;
+                    overwritten = true;
+                    break;
+                }
+            }
+            if (overwritten) continue;
+            FileLine* const flp = oDriver.m_flp;
+            const DfgUnitArray* const oldUnitp = oDriver.m_vtxp->as<DfgUnitArray>();
+            DfgArraySel* const selp = make<DfgArraySel>(flp, oldUnitp->srcp()->dtype());
+            selp->fromp(oldp);
+            selp->bitp(make<DfgConst>(flp, VL_IDATASIZE, oDriver.m_lo));
+            DfgUnitArray* const newUnitp = make<DfgUnitArray>(flp, oldUnitp->dtype());
+            newUnitp->srcp(selp);
+            propagatedDrivers.emplace_back(newUnitp, oDriver.m_lo, flp);
+        }
+        return true;
+    }
+
     // Given the drivers of a variable after converting a single statement
     // 'newp', add drivers from 'oldp' that were not reassigned be drivers
     // in newp. This computes the total result of all previous assignments.
@@ -1325,17 +1379,15 @@ class AstToDfgSynthesize final {
         // If the old value is the real variable we just computed the new value for,
         // then it is the circular feedback into the synthesized block, add it as default driver.
         if (oldp->vscp() == vscp) {
-            if (!nSplicep->wholep()) newp->defaultp(oldp);
+            bool fullyDriven = nSplicep->wholep();
+            if (!newp->isPacked() && !fullyDriven) {
+                fullyDriven = driversCoverWhole(gatherDrivers(nSplicep), *newp);
+            }
+            if (!fullyDriven) newp->defaultp(oldp);
             return true;
         }
 
         UASSERT_OBJ(oldp->srcp(), vscp, "Previously assigned variable has no driver");
-
-        // Can't do arrays yet
-        if (!newp->isPacked()) {
-            ++m_ctx.m_synt.nonSynArray;
-            return false;
-        }
 
         // Gather drivers of 'newp' - they are in incresing range order with no overlaps
         UASSERT_OBJ(!newp->defaultp(), newp, "Converted value should not have default");
@@ -1343,24 +1395,34 @@ class AstToDfgSynthesize final {
         UASSERT_OBJ(!nDrivers.empty(), newp, "Should have a proper driver");
 
         // Additional drivers of 'newp' propagated from 'oldp'
-        std::vector<Driver> pDrivers = computePropagatedDrivers(nDrivers, oldp);
+        std::vector<Driver> pDrivers;
+        if (newp->isPacked()) {
+            pDrivers = computePropagatedDrivers(nDrivers, oldp);
+        } else if (!computePropagatedArrayDrivers(nDrivers, oldp, pDrivers)) {
+            ++m_ctx.m_synt.nonSynArray;
+            return false;
+        }
 
+        std::vector<Driver> drivers;
         if (!pDrivers.empty()) {
             // Need to merge propagated sources, so reset the splice
             nSplicep->resetDrivers();
             // Merge drivers - they are both sorted and non-overlapping
-            std::vector<Driver> drivers;
             drivers.reserve(nDrivers.size() + pDrivers.size());
             std::merge(nDrivers.begin(), nDrivers.end(), pDrivers.begin(), pDrivers.end(),
                        std::back_inserter(drivers));
             // Coalesce adjacent ranges
-            coalesceDrivers(drivers);
+            if (newp->isPacked()) coalesceDrivers(drivers);
             // Reinsert drivers in order
             for (const Driver& d : drivers) nSplicep->addDriver(d.m_vtxp, d.m_lo, d.m_flp);
         }
 
         // If the old had a default, add to the new one too, unless redundant
-        if (oldp->defaultp() && !nSplicep->wholep()) newp->defaultp(oldp->defaultp());
+        bool fullyDriven = nSplicep->wholep();
+        if (!newp->isPacked() && !fullyDriven) {
+            fullyDriven = driversCoverWhole(pDrivers.empty() ? nDrivers : drivers, *newp);
+        }
+        if (oldp->defaultp() && !fullyDriven) newp->defaultp(oldp->defaultp());
 
         // Done
         return true;

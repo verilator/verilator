@@ -13,6 +13,9 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=["--public-flat-rw", "--stats", "--top-module top"])
 
-test.file_grep(test.stats, r'DFG, Synthesis, synt / non-synthesizable \(ext write\)\s+(\d+)$', 1)
+test.file_grep(test.stats, r'DFG, Synthesis, synt / always blocks considered\s+(\d+)$', 5)
+test.file_grep(test.stats, r'DFG, Synthesis, synt / always blocks synthesized\s+(\d+)$', 3)
+test.file_grep(test.stats, r'DFG, Synthesis, synt / non-synthesizable \(array\)\s+(\d+)$', 0)
+test.file_grep(test.stats, r'DFG, Synthesis, synt / non-synthesizable \(ext write\)\s+(\d+)$', 2)
 
 test.passes()
