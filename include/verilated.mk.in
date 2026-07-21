@@ -55,6 +55,8 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 # Linker flags/libraries for runtime VPI library loading (+verilator+vpi+<lib>)
 CFG_LDFLAGS_DYNAMIC = @CFG_LDFLAGS_DYNAMIC@
 CFG_LDLIBS_DYNAMIC = @CFG_LDLIBS_DYNAMIC@
+# Package prefix for finding third-party dependencies on BSD
+CFG_PACKAGE_PREFIX = @CFG_PACKAGE_PREFIX@
 
 ######################################################################
 # Programs
@@ -110,6 +112,14 @@ VPATH += $(VERILATOR_ROOT)/include
 VPATH += $(VERILATOR_ROOT)/include/vltstd
 
 LDFLAGS += $(CFG_LDFLAGS_VERILATED)
+
+# On BSD systems, packaged dependencies (e.g. liblz4) live under a
+# non-default prefix such as /usr/local. Point the compiler and linker there.
+ifneq ($(CFG_PACKAGE_PREFIX),)
+  CXXFLAGS += -I$(CFG_PACKAGE_PREFIX)/include
+  CPPFLAGS += -I$(CFG_PACKAGE_PREFIX)/include
+  LDFLAGS += -L$(CFG_PACKAGE_PREFIX)/lib
+endif
 
 #OPT = -ggdb -DPRINTINITSTR -DDETECTCHANGE
 #OPT = -ggdb -DPRINTINITSTR
