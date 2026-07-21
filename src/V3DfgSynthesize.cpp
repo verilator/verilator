@@ -1356,7 +1356,7 @@ class AstToDfgSynthesize final {
             const DfgUnitArray* const oldUnitp = oDriver.m_vtxp->as<DfgUnitArray>();
             DfgArraySel* const selp = make<DfgArraySel>(flp, oldUnitp->srcp()->dtype());
             selp->fromp(oldp);
-            selp->bitp(make<DfgConst>(flp, VL_IDATASIZE, oDriver.m_lo));
+            selp->bitp(make<DfgConst>(flp, static_cast<size_t>(VL_IDATASIZE), oDriver.m_lo));
             DfgUnitArray* const newUnitp = make<DfgUnitArray>(flp, oldUnitp->dtype());
             newUnitp->srcp(selp);
             propagatedDrivers.emplace_back(newUnitp, oDriver.m_lo, flp);
