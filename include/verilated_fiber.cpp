@@ -44,33 +44,61 @@
 
 #if defined(VERILATOR_FIBER_LINUX)
 
-static long pageSize = sysconf(_SC_PAGESIZE);
+static thread_local VlFiberMemoryPool memoryPool{};
 
-// One chunk is 8 Mb
-static VL_CONSTEXPR_CXX17 unsigned long long chunkSize = 8388608;
+//======================================================================
+// VlFiberMemoryPool
+
+// One stack allocation is 8 Mb
+static VL_CONSTEXPR_CXX17 unsigned long long allocationSize = 8388608;
+
+// Allocate space for 16 stacks at once
+static VL_CONSTEXPR_CXX17 unsigned long long allocationCount = 16;
+static VL_CONSTEXPR_CXX17 unsigned long long chunkSize = allocationSize * allocationCount;
+
+VlFiberMemoryChunk::VlFiberMemoryChunk()
+    : m_chunkAddr{}
+    , m_top{}
+    , m_freeTop{}
+    , m_free{0} {
+    // Use MAP_NORESERVE to prevent eager page allocation
+    m_chunkAddr = ::mmap(nullptr, chunkSize, PROT_READ | PROT_WRITE,
+                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    if (VL_UNLIKELY(m_chunkAddr == MAP_FAILED)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    (std::string{"mmap failed: "} + std::strerror(errno)).c_str());
+    }
+    m_top = m_chunkAddr;
+    m_free = allocationCount;
+}
+
+VlFiberMemoryChunk::~VlFiberMemoryChunk() {
+    if (m_chunkAddr) ::munmap(m_chunkAddr, chunkSize);
+}
 
 VlFiberMemoryPool::VlFiberMemoryPool()
-    : m_chunks{}
-    , m_free{0} {}
+    : m_chunks{} {}
 
 void* VlFiberMemoryPool::get() {
     void* returnp{};
     auto chunkIt = std::find_if(m_chunks.begin(), m_chunks.end(),
                                 [](const VlFiberMemoryChunk* chunk) { return chunk->m_free > 0; });
     if (VL_UNLIKELY(chunkIt == m_chunks.end())) {
-        m_chunks.emplace_back();
+        m_chunks.push_back(new VlFiberMemoryChunk{});
         size_t lastIdx = m_chunks.size() - 1;
+        returnp = m_chunks[lastIdx]->m_top;
         m_chunks[lastIdx]->m_top = reinterpret_cast<void*>(
-            reinterpret_cast<uintptr_t>(m_chunks[lastIdx]->m_top) + chunkSize);
+            reinterpret_cast<uintptr_t>(m_chunks[lastIdx]->m_top) + allocationSize);
         m_chunks[lastIdx]->m_free--;
-        return m_chunks[lastIdx]->m_top;
+        return returnp;
     }
     VlFiberMemoryChunk* chunkp = *chunkIt;
     if (!chunkp->m_freeTop) {
+        returnp = chunkp->m_top;
         chunkp->m_top
-            = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(chunkp->m_top) + chunkSize);
+            = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(chunkp->m_top) + allocationSize);
         chunkp->m_free--;
-        return chunkp->m_top;
+        return returnp;
     }
     returnp = chunkp->m_freeTop;
     chunkp->m_freeTop = reinterpret_cast<void*>(*reinterpret_cast<uintptr_t*>(chunkp->m_freeTop));
@@ -78,24 +106,27 @@ void* VlFiberMemoryPool::get() {
 }
 
 void VlFiberMemoryPool::free(void* ptr) {
-
+    auto chunkIt
+        = std::find_if(m_chunks.begin(), m_chunks.end(), [&ptr](const VlFiberMemoryChunk* chunk) {
+              return chunk->m_chunkAddr <= ptr
+                     and ptr <= reinterpret_cast<void*>(
+                             reinterpret_cast<uintptr_t>(chunk->m_chunkAddr)
+                             + (allocationSize - chunkSize));
+          });
+    if (chunkIt == m_chunks.end()) return;
+    VlFiberMemoryChunk* chunkp = *chunkIt;
+    *reinterpret_cast<uintptr_t*>(ptr) = reinterpret_cast<uintptr_t>(chunkp->m_freeTop);
+    chunkp->m_freeTop = ptr;
+    chunkp->m_free++;
 }
 
+//======================================================================
+// VlFiberContext
+
 VlFiberContext::VlFiberContext(void (*f)(VlFiber*), VlFiber* arg) {
-    if (VL_UNLIKELY(pageSize <= 0)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "sysconf(_SC_PAGESIZE) failed");
-    }
+    mappingSize = allocationSize;
+    mappingp = memoryPool.get();
 
-    // Allocate memory with mmap (anonymous, private mapping)
-    mappingSize = stackSize + 2 * pageSize;
-    mappingp = ::mmap(nullptr, mappingSize, PROT_READ | PROT_WRITE,
-                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-    if (VL_UNLIKELY(mappingp == MAP_FAILED)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "",
-                    (std::string{"mmap failed: "} + std::strerror(errno)).c_str());
-    }
-
-    // Initialize memory layout pointers
     if (VL_UNLIKELY(getcontext(&fiberCtx) == -1)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     (std::string{"getcontext failed: "} + std::strerror(errno)).c_str());
@@ -106,7 +137,7 @@ VlFiberContext::VlFiberContext(void (*f)(VlFiber*), VlFiber* arg) {
 }
 
 void VlFiberContext::teardown() {
-    if (mappingp) ::munmap(mappingp, mappingSize);
+    if (mappingp) memoryPool.free(mappingp);
 }
 
 void VlFiberContext::yield() {

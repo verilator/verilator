@@ -50,11 +50,14 @@ class VlFiber;
 
 #if defined(VERILATOR_FIBER_LINUX)
 
-struct VlFiberMemoryChunk {
+struct VlFiberMemoryChunk final {
     void* m_chunkAddr;
     void* m_top;
     void* m_freeTop;
     size_t m_free;
+
+    VlFiberMemoryChunk();
+    ~VlFiberMemoryChunk();
 };
 
 class VlFiberMemoryPool final {
@@ -65,11 +68,10 @@ public:
     VlFiberMemoryPool(const VlFiberMemoryPool& other) = delete;
     VlFiberMemoryPool(VlFiberMemoryPool&& other) = delete;
     void* get();
-    void* free(void* ptr);
+    void free(void* ptr);
 };
 
 class VlFiberContext final {
-    VlFiberMemoryPool m_memPool{};
     ucontext_t callerCtx{};  // Register state of caller context
     ucontext_t fiberCtx{};  // Register state of fiber context
     void* mappingp;  // Base of mmap allocation (includes guards)
