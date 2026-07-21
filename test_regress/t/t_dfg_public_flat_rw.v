@@ -61,13 +61,90 @@ module external_array_write_guard (
   // verilator lint_on UNOPTFLAT
 endmodule
 
+module conditional_packed_output (
+    input logic data,
+    input logic enable,
+    input logic qualify,
+    output logic [1:0] result
+);
+  always_comb begin
+    result[1] = data;
+    result[0] = result[1] && qualify;
+    if (enable) begin
+      result[1] = !data;
+      result[0] = result[1] && qualify;
+    end
+  end
+endmodule
+
+module cross_process_packed_output (
+    input logic data,
+    input logic enable,
+    input logic qualify,
+    output logic result
+);
+  // verilator lint_off UNOPTFLAT
+  logic feedback;
+  logic [1:0] state;
+
+  // The packed DFG dependency check must use the provisional driver of state[1]
+  // when following feedback, rather than treating it as an external entry value.
+  assign feedback = state[1] && qualify;
+  always_comb begin
+    state[1] = data;
+    state[0] = state[1] && feedback;
+    if (enable) begin
+      state[1] = !data;
+      state[0] = state[1] && feedback;
+    end
+  end
+  assign result = state[0];
+  // verilator lint_on UNOPTFLAT
+endmodule
+
+module cross_process_external_write_guard (
+    input logic data,
+    input logic enable,
+    output logic observed,
+    output logic result
+);
+  // verilator lint_off UNOPTFLAT
+  logic [1:0] feedback;
+  logic [1:0] state;
+
+  // This process is initially safe using the provisional feedback driver, but
+  // must be rejected after that driving process is rejected below.
+  always_comb begin
+    state[1] = data;
+    state[0] = state[1] && feedback[0];
+    if (enable) begin
+      state[1] = !data;
+      state[0] = state[1] && feedback[0];
+    end
+  end
+
+  // An external write to feedback[1] before evaluation must be visible to observed.
+  always_comb begin
+    feedback[0] = state[1];
+    observed = feedback[1];
+  end
+
+  assign result = state[0];
+  // verilator lint_on UNOPTFLAT
+endmodule
+
 module top (
     input logic ptr_empty,
     input logic input_valid,
+    input logic mode,
     output logic pop_qual,
     output logic old_empty,
     output logic array_transfer_ready,
-    output logic [1:0] old_status
+    output logic [1:0] old_status,
+    output logic [1:0] conditional_result,
+    output logic cross_process_result,
+    output logic fixed_point_observed,
+    output logic fixed_point_result
 );
   logic empty;
   logic pop_en;
@@ -105,5 +182,26 @@ module top (
   external_array_write_guard u_external_array_write_guard (
       .new_status({ptr_empty, input_valid}),
       .old_status(old_status)
+  );
+
+  conditional_packed_output u_conditional_packed_output (
+      .data(ptr_empty),
+      .enable(input_valid),
+      .qualify(mode),
+      .result(conditional_result)
+  );
+
+  cross_process_packed_output u_cross_process_packed_output (
+      .data(ptr_empty),
+      .enable(input_valid),
+      .qualify(mode),
+      .result(cross_process_result)
+  );
+
+  cross_process_external_write_guard u_cross_process_external_write_guard (
+      .data(ptr_empty),
+      .enable(input_valid),
+      .observed(fixed_point_observed),
+      .result(fixed_point_result)
   );
 endmodule
