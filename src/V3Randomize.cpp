@@ -3487,7 +3487,8 @@ class RandomizeVisitor final : public VNVisitor {
             m_dynarrayDtp->dtypep(m_dynarrayDtp);
             v3Global.rootp()->typeTablep()->addTypesp(m_dynarrayDtp);
         }
-        AstVar* const modeVarp = new AstVar{fl, VVarType::MODULETEMP, name, m_dynarrayDtp};
+        // MEMBER, not MODULETEMP, so V3Localize does not localize it into new().
+        AstVar* const modeVarp = new AstVar{fl, VVarType::MEMBER, name, m_dynarrayDtp};
         modeVarp->user2p(classp);
         classp->addStmtsp(modeVarp);
         return modeVarp;
@@ -3508,6 +3509,9 @@ class RandomizeVisitor final : public VNVisitor {
         // to point to the package scope when the variable is moved by V3Class.
         modeVarp->user2p(classp);
         classp->addStmtsp(modeVarp);
+        // Register so findStaticRandModeVarMember sees it through the already
+        // scanned member cache
+        m_memberMap.insert(classp, modeVarp);
         return modeVarp;
     }
     static void addSetRandMode(AstNodeFTask* const ftaskp, AstVar* const genp,
@@ -4627,11 +4631,16 @@ class RandomizeVisitor final : public VNVisitor {
     }
 
     static bool distBoundRefsRandVar(const AstNode* boundp) {
-        bool found = false;
-        boundp->foreach([&](const AstVarRef* vrefp) {
-            if (vrefp->varp()->rand().isRandomizable()) found = true;
+        return boundp->exists(
+            [](const AstVarRef* vrefp) { return vrefp->varp()->rand().isRandomizable(); });
+    }
+
+    static bool distBoundRefsModeVar(const AstNode* boundp) {
+        return boundp->exists([](const AstVarRef* vrefp) {
+            if (!vrefp->varp()->rand().isRandomizable()) return false;
+            const RandomizeMode rmode = {.asInt = vrefp->varp()->user1()};
+            return rmode.usesMode;
         });
-        return found;
     }
 
     // (distExpr >= lo) && (distExpr <= hi); signed comparisons for signed vars
@@ -4730,6 +4739,175 @@ class RandomizeVisitor final : public VNVisitor {
         return new AstConstraintExpr{fl, unionExprp};
     }
 
+    // Gate junction with constants folded and identical terms merged.
+    AstNodeExpr* newGateJoin(FileLine* fl, AstNodeExpr* ap, AstNodeExpr* bp, bool isAnd) {
+        if (ap->sameTree(bp)) {
+            VL_DO_DANGLING(pushDeletep(bp), bp);
+            return ap;
+        }
+        if (VN_IS(bp, Const)) std::swap(ap, bp);
+        if (VN_IS(ap, Const)) {
+            const bool constWins = VN_AS(ap, Const)->isZero() == isAnd;
+            if (!constWins) std::swap(ap, bp);
+            VL_DO_DANGLING(pushDeletep(bp), bp);
+            return ap;
+        }
+        if (isAnd) return new AstLogAnd{fl, ap, bp};
+        return new AstLogOr{fl, ap, bp};
+    }
+    AstNodeExpr* newGateOr(FileLine* fl, AstNodeExpr* ap, AstNodeExpr* bp) {
+        return newGateJoin(fl, ap, bp, false);
+    }
+    AstNodeExpr* newGateAnd(FileLine* fl, AstNodeExpr* ap, AstNodeExpr* bp) {
+        return newGateJoin(fl, ap, bp, true);
+    }
+
+    // The rand_mode bit of varp: static class var, owner object's array via the
+    // member select, or this object's array.
+    AstNodeExpr* newModeBitRead(AstVar* varp, const AstMemberSel* mselp, AstVar* randModeVarp,
+                                FileLine* fl) {
+        AstNodeExpr* arrayp = nullptr;
+        if (varp->lifetime().isStatic()) {
+            AstClass* const ownerp = VN_CAST(varp->user2p(), Class);
+            UASSERT_OBJ(ownerp, varp, "usesMode static var without an owning class");
+            AstVar* const smodep = getStaticRandModeVar(ownerp);
+            UASSERT_OBJ(smodep, varp, "usesMode static var without a static rand-mode array");
+            arrayp = new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep, VAccess::READ};
+        } else if (mselp) {
+            AstVar* const memberModep = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
+            UASSERT_OBJ(memberModep, varp, "usesMode member without a class rand-mode array");
+            arrayp = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
+        } else {
+            UASSERT_OBJ(randModeVarp, varp, "rand_mode variable without a class mode array");
+            arrayp = new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
+                                   VAccess::READ};
+        }
+        const RandomizeMode rmode = {.asInt = varp->user1()};
+        AstCMethodHard* const atp
+            = new AstCMethodHard{fl, arrayp, VCMethod::ARRAY_AT, new AstConst{fl, rmode.index}};
+        atp->dtypeSetUInt32();
+        return atp;
+    }
+
+    // The rand_mode bit of one variable access, or a constant when it has none.
+    // A non-rand value can never be re-drawn; a non-rand owner level is skipped.
+    AstNodeExpr* newVarGate(AstVar* varp, const AstMemberSel* mselp, bool ownerLevel,
+                            AstVar* randModeVarp, FileLine* fl) {
+        if (!varp->rand().isRandomizable()) {
+            return new AstConst{fl, AstConst::BitTrue{}, ownerLevel};
+        }
+        const RandomizeMode rmode = {.asInt = varp->user1()};
+        if (!rmode.usesMode) return new AstConst{fl, AstConst::BitTrue{}};
+        return newModeBitRead(varp, mselp, randModeVarp, fl);
+    }
+
+    // Change bit of one variable access, ANDed level by level down the
+    // member-select owner path.
+    AstNodeExpr* newAccessGate(const AstNode* nodep, bool ownerLevel, AstVar* randModeVarp,
+                               FileLine* fl) {
+        if (const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel)) {
+            return newGateAnd(fl, newVarGate(mselp->varp(), mselp, ownerLevel, randModeVarp, fl),
+                              newAccessGate(mselp->fromp(), true, randModeVarp, fl));
+        }
+        if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+            return newVarGate(refp->varp(), nullptr, ownerLevel, randModeVarp, fl);
+        }
+        if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+            return newAccessGate(selp->fromp(), true, randModeVarp, fl);
+        }
+        if (distBoundRefsModeVar(nodep)) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: 'rand_mode' on a variable used inside this form of"
+                          " 'dist' expression");
+        }
+        return new AstConst{fl, AstConst::BitTrue{}};
+    }
+
+    // Gate of one dist expression node: nonzero while its value can still be
+    // freshly drawn. Constant when no runtime rand_mode bit is involved.
+    AstNodeExpr* newDistGate(const AstNode* nodep, AstVar* randModeVarp, FileLine* fl) {
+        if (VN_IS(nodep, NodeVarRef) || VN_IS(nodep, MemberSel)) {
+            return newAccessGate(nodep, false, randModeVarp, fl);
+        }
+        // A selection is drawn through its base; the index never gates.
+        if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+            return newDistGate(selp->fromp(), randModeVarp, fl);
+        }
+        if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
+            return newDistGate(selp->fromp(), randModeVarp, fl);
+        }
+        // A conditional re-draws through an active selector or the selected arm.
+        if (const AstCond* const condp = VN_CAST(nodep, Cond)) {
+            AstNodeExpr* const thenGatep = newDistGate(condp->thenp(), randModeVarp, fl);
+            AstNodeExpr* elseGatep = newDistGate(condp->elsep(), randModeVarp, fl);
+            AstNodeExpr* armGatep = thenGatep;
+            if (thenGatep->sameTree(elseGatep)) {
+                VL_DO_DANGLING(pushDeletep(elseGatep), elseGatep);
+            } else {
+                armGatep
+                    = new AstCond{fl, condp->condp()->cloneTreePure(false), thenGatep, elseGatep};
+            }
+            return newGateOr(fl, newDistGate(condp->condp(), randModeVarp, fl), armGatep);
+        }
+        if (const AstNodeUniop* const uopp = VN_CAST(nodep, NodeUniop)) {
+            return newDistGate(uopp->lhsp(), randModeVarp, fl);
+        }
+        if (const AstNodeBiop* const bopp = VN_CAST(nodep, NodeBiop)) {
+            return newGateOr(fl, newDistGate(bopp->lhsp(), randModeVarp, fl),
+                             newDistGate(bopp->rhsp(), randModeVarp, fl));
+        }
+        if (distBoundRefsModeVar(nodep)) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: 'rand_mode' on a variable used inside this form of"
+                          " 'dist' expression");
+        }
+        // Constants and remaining forms re-draw only if a rand var is inside.
+        return new AstConst{fl, AstConst::BitTrue{}, distBoundRefsRandVar(nodep)};
+    }
+
+    // Membership union of the dist set, with runtime-zero weights excluded.
+    AstConstraintExpr* buildFrozenMembership(AstDist* distp,
+                                             const std::vector<DistBucket>& buckets) {
+        FileLine* const fl = distp->fileline();
+        AstNodeExpr* unionExprp = nullptr;
+        for (const auto& bucket : buckets) {
+            AstNodeExpr* termp = newDistMembershipTerm(distp, bucket.rangep);
+            // A weight that is zero only at runtime excludes the bucket's values too.
+            const bool runtimeWeight
+                = bucket.weightExprp->exists([](const AstNodeVarRef*) { return true; });
+            if (runtimeWeight) {
+                AstNeq* const nzp = new AstNeq{fl, bucket.weightExprp->cloneTreePure(false),
+                                               new AstConst{fl, AstConst::Unsized64{}, 0}};
+                nzp->user1(true);
+                termp = new AstLogAnd{fl, termp, nzp};
+                termp->user1(true);
+            }
+            if (unionExprp) {
+                unionExprp = new AstLogOr{fl, unionExprp, termp};
+                unionExprp->user1(true);
+            } else {
+                unionExprp = termp;
+            }
+        }
+        return new AstConstraintExpr{fl, unionExprp};
+    }
+
+    // Weighted chain while the dist value can still be freshly drawn, membership
+    // once it is frozen; membership only when it can never be re-drawn.
+    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
+                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
+        FileLine* const fl = distp->fileline();
+        AstNodeExpr* gatep = newDistGate(distp->exprp(), randModeVarp, fl);
+        if (VN_IS(gatep, Const)) {
+            const bool drawable = !VN_AS(gatep, Const)->isZero();
+            VL_DO_DANGLING(pushDeletep(gatep), gatep);
+            if (drawable) return chainp;
+            VL_DO_DANGLING(pushDeletep(chainp), chainp);
+            return buildFrozenMembership(distp, buckets);
+        }
+        return new AstConstraintIf{fl, gatep, chainp, buildFrozenMembership(distp, buckets)};
+    }
+
     AstNodeExpr* newUniformRangePick(AstDist* distp, const AstInsideRange* irp) {
         FileLine* const fl = distp->fileline();
         AstNodeExpr* const distExprCopyp = distp->exprp()->cloneTreePure(false);
@@ -4801,7 +4979,7 @@ class RandomizeVisitor final : public VNVisitor {
 
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
     // Supports both constant and variable weight expressions.
-    void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp,
+    void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp, AstVar* randModeVarp,
                               AstConstraintForeach* foreachp = nullptr) {
         // When inside a foreach, bucket preamble stmts are stored in foreachp->user3p()
         // (as a linked list) so visit(AstConstraintForeach*) can inject them into the
@@ -4827,13 +5005,15 @@ class RandomizeVisitor final : public VNVisitor {
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
                 UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
-                lowerDistConstraints(taskp, cifp->thensp(), foreachp);
-                if (cifp->elsesp()) { lowerDistConstraints(taskp, cifp->elsesp(), foreachp); }
+                lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp);
+                if (cifp->elsesp()) {
+                    lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp);
+                }
                 continue;
             }
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
                 UASSERT_OBJ(cfep->bodyp(), cfep, "constraint foreach without a body");
-                lowerDistConstraints(taskp, cfep->bodyp(), cfep);
+                lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep);
                 continue;
             }
 
@@ -4853,7 +5033,7 @@ class RandomizeVisitor final : public VNVisitor {
                     AstConstraintIf* const liftedp = liftLogIfChainToConstraintIf(topLogIfp);
                     constrExprp->replaceWith(liftedp);
                     VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
-                    lowerDistConstraints(taskp, liftedp->thensp(), foreachp);
+                    lowerDistConstraints(taskp, liftedp->thensp(), randModeVarp, foreachp);
                     continue;
                 }
             }
@@ -4933,7 +5113,10 @@ class RandomizeVisitor final : public VNVisitor {
                 cumSums.push_back(runningSump->cloneTreePure(true));
             }
 
-            AstNode* const chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
+            AstNode* chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
+
+            chainp = gateFrozenDist(chainp, distp, buckets, randModeVarp);
+
             constrExprp->replaceWith(chainp);
             VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
             // Hard membership precedes the soft bucket chain in the constraint list.
@@ -5026,7 +5209,9 @@ class RandomizeVisitor final : public VNVisitor {
                 }
 
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
-                if (constrp->itemsp()) lowerDistConstraints(taskp, constrp->itemsp());
+                if (constrp->itemsp()) {
+                    lowerDistConstraints(taskp, constrp->itemsp(), randModeVarp);
+                }
                 std::set<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
                 ConstraintExprVisitor{classp,        m_memberMap, constrp->itemsp(),
                                       nullptr,       genp,        randModeVarp,
