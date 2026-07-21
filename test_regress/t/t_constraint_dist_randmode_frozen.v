@@ -305,6 +305,21 @@ class NonRandMember;
   endfunction
 endclass
 
+class QSel;
+  rand Sub q[$];
+  int pick;
+  constraint c {
+    q[pick].x dist {
+      30 := 9,
+      90 := 1
+    };
+  }
+  function new();
+    Sub tmp = new;
+    q.push_back(tmp);
+  endfunction
+endclass
+
 module t;
   int ok;
   initial begin
@@ -908,6 +923,24 @@ module t;
       ok = nr.randomize();
       `checkd(ok, 1);
       `checkd(nr.m.nf, 5);
+    end
+
+    // Queue element member: draws both values, biased toward the heavy bucket.
+    begin
+      QSel qs;
+      qs = new;
+      begin
+        automatic int n30 = 0, n90 = 0;
+        for (int i = 0; i < 64; ++i) begin
+          ok = qs.randomize();
+          `checkd(ok, 1);
+          if (qs.q[0].x == 30) n30++;
+          else if (qs.q[0].x == 90) n90++;
+          else $stop;
+        end
+        if (n30 == 0 || n90 == 0) $stop;
+        if (n30 <= n90) $stop;
+      end
     end
 
     $write("*-* All Finished *-*\n");

@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_constraint_dist_randmode_unsup.v:14:6: Unsupported: 'rand_mode' on a variable used inside this form of 'dist' expression
+                                                             : ... note: In instance 't'
+   14 |     q[0].x dist {
+      |      ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_constraint_dist_randmode_unsup.v:28:7: Unsupported: 'rand_mode' on a variable used inside this form of 'dist' expression
+                                                             : ... note: In instance 't'
+   28 |     iq[0] dist {
+      |       ^
+%Error: Exiting due to

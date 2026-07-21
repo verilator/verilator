@@ -4638,6 +4638,16 @@ class RandomizeVisitor final : public VNVisitor {
         return found;
     }
 
+    static bool distBoundRefsModeVar(const AstNode* boundp) {
+        bool found = false;
+        boundp->foreach([&](const AstVarRef* vrefp) {
+            if (!vrefp->varp()->rand().isRandomizable()) return;
+            const RandomizeMode rmode = {.asInt = vrefp->varp()->user1()};
+            if (rmode.usesMode) found = true;
+        });
+        return found;
+    }
+
     // (distExpr >= lo) && (distExpr <= hi); signed comparisons for signed vars
     static AstNodeExpr* newDistRangeMembership(AstDist* distp, const AstInsideRange* irp) {
         FileLine* const fl = distp->fileline();
@@ -4797,7 +4807,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
 
     // Change bit of one variable access, ANDed level by level down the
-    // member-select owner path. An owner level of another shape never gates.
+    // member-select owner path.
     AstNodeExpr* newAccessGate(const AstNode* nodep, bool ownerLevel, AstVar* randModeVarp,
                                FileLine* fl) {
         if (const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel)) {
@@ -4807,9 +4817,15 @@ class RandomizeVisitor final : public VNVisitor {
         if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
             return newVarGate(refp->varp(), nullptr, ownerLevel, randModeVarp, fl);
         }
-        const AstNodeSel* const selp = VN_CAST(nodep, NodeSel);
-        return selp ? newAccessGate(selp->fromp(), true, randModeVarp, fl)
-                    : new AstConst{fl, AstConst::BitTrue{}};
+        if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+            return newAccessGate(selp->fromp(), true, randModeVarp, fl);
+        }
+        if (distBoundRefsModeVar(nodep)) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: 'rand_mode' on a variable used inside this form of"
+                          " 'dist' expression");
+        }
+        return new AstConst{fl, AstConst::BitTrue{}};
     }
 
     // Gate of one dist expression node: nonzero while its value can still be
@@ -4844,6 +4860,11 @@ class RandomizeVisitor final : public VNVisitor {
         if (const AstNodeBiop* const bopp = VN_CAST(nodep, NodeBiop)) {
             return newGateOr(fl, newDistGate(bopp->lhsp(), randModeVarp, fl),
                              newDistGate(bopp->rhsp(), randModeVarp, fl));
+        }
+        if (distBoundRefsModeVar(nodep)) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: 'rand_mode' on a variable used inside this form of"
+                          " 'dist' expression");
         }
         // Constants and remaining forms re-draw only if a rand var is inside.
         return new AstConst{fl, AstConst::BitTrue{}, distBoundRefsRandVar(nodep)};
