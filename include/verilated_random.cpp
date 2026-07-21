@@ -1254,7 +1254,7 @@ void VlRandomizer::clearAll() {
     m_randcConstraintHash = 0;
 }
 
-void VlRandomizer::markRandc(const char* name) { m_randcVarNames.insert(name); }
+void VlRandomizer::markRandc(const std::string& name) { m_randcVarNames.insert(name); }
 
 void VlRandomizer::solveBefore(const std::string& beforeName, const std::string& afterName) {
     m_solveBefore.emplace_back(beforeName, afterName);
