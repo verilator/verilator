@@ -4631,21 +4631,16 @@ class RandomizeVisitor final : public VNVisitor {
     }
 
     static bool distBoundRefsRandVar(const AstNode* boundp) {
-        bool found = false;
-        boundp->foreach([&](const AstVarRef* vrefp) {
-            if (vrefp->varp()->rand().isRandomizable()) found = true;
-        });
-        return found;
+        return boundp->exists(
+            [](const AstVarRef* vrefp) { return vrefp->varp()->rand().isRandomizable(); });
     }
 
     static bool distBoundRefsModeVar(const AstNode* boundp) {
-        bool found = false;
-        boundp->foreach([&](const AstVarRef* vrefp) {
-            if (!vrefp->varp()->rand().isRandomizable()) return;
+        return boundp->exists([](const AstVarRef* vrefp) {
+            if (!vrefp->varp()->rand().isRandomizable()) return false;
             const RandomizeMode rmode = {.asInt = vrefp->varp()->user1()};
-            if (rmode.usesMode) found = true;
+            return rmode.usesMode;
         });
-        return found;
     }
 
     // (distExpr >= lo) && (distExpr <= hi); signed comparisons for signed vars
