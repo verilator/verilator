@@ -1474,6 +1474,32 @@ List Of Warnings
    reduced optimizations.
 
 
+.. option:: MULTIDRIVENPROC
+
+   Warns that the whole of a variable is driven by more than one plain
+   ``always`` block. Unlike the :option:`MULTIDRIVEN` cases, plain
+   ``always`` blocks carry no ``always_comb``/``always_ff`` intent, so this
+   is legal SystemVerilog rather than an IEEE 1800 violation. It is,
+   however, typically a synthesis error: hardware cannot have a signal
+   driven by two separate sequential blocks, so the design usually will not
+   behave as the RTL simulation suggests.
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_msg.rst
+
+   To fix, drive the signal from a single ``always`` block, or use
+   ``always_ff``/``always_comb`` if the intent is a single specialized
+   process.
+
+
 .. option:: MULTITOP
 
    .. TODO better example
