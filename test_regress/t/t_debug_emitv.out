@@ -10,6 +10,7 @@ module Vt_debug_emitv_t;
     } ps_t;
     typedef struct {
         logic signed [2:0]  a;
+        logic [1:0]  b;
     } us_t;
     typedef union {
         logic a;
@@ -19,6 +20,7 @@ module Vt_debug_emitv_t;
     } ps[0:2];
     struct {
         logic signed [2:0]  a;
+        logic [1:0]  b;
     } us;
     union {
         logic a;

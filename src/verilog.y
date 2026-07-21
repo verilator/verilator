@@ -2204,11 +2204,13 @@ struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
         ;
 
 struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
-        //                      // UNSUP random_qualifer not propagated until have randomize support
                 random_qualifierE data_type_or_void
-        /*mid*/         { GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
+        /*mid*/         { GRAMMARP->m_memDTypep = $2;  // As a list follows, need to attach this dtype to each member.
+                          GRAMMARP->m_memRand = $1.randAttr(); }
         /*cont*/    list_of_member_decl_assignments ';'
-                        { $$ = $4; DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr; }
+                        { $$ = $4;
+                          DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr;
+                          GRAMMARP->m_memRand = VRandAttr::NONE; }
         |       vlTag                                   { $$ = nullptr; }
         ;
 
@@ -2226,6 +2228,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
                                                                          ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
                                                                         $2, false),
                                                   nullptr};
+                          $$->rand(GRAMMARP->m_memRand);
                           PARSEP->tagNodep($$);
                         }
         |       idAny variable_dimensionListE '=' variable_declExpr
@@ -2234,6 +2237,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
                                                                          ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
                                                                         $2, false),
                                                   $4};
+                          $$->rand(GRAMMARP->m_memRand);
                           PARSEP->tagNodep($$);
                         }
         |       idSVKwd                                 { $$ = nullptr; }

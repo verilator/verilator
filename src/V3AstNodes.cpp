@@ -2499,12 +2499,14 @@ const char* AstLoopTest::broken() const {
 void AstMemberDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     if (isConstrainedRand()) str << " [CONSTRAINEDRAND]";
+    if (rand().isRandomizable()) str << " [" << rand() << "]";
     if (name() != "") str << " name=" << name();
     if (tag() != "") str << " tag=" << tag();
 }
 
 void AstMemberDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConstrainedRand);
+    if (rand().isRandomizable()) dumpJsonStr(str, "rand", rand().ascii());
     dumpJsonStrFunc(str, name);
     dumpJsonStrFunc(str, tag);
     dumpJsonGen(str);
