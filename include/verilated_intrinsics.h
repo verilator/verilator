@@ -38,8 +38,43 @@
 #  define VL_HAVE_AVX2 1
 #  include <immintrin.h>
 # endif
+# if defined(__LZCNT__) && !defined(VL_DISABLE_LZCNT)
+#  define VL_HAVE_LZCNT 1
+#  ifndef VL_HAVE_AVX2
+#   include <immintrin.h>
+#  endif
+# endif
 #endif
 
 // clang-format on
+
+VL_ATTR_ALWINLINE int vlIntrinClz32(uint32_t value) {
+    VL_DEBUG_IFDEF(assert(value););
+#ifdef VL_HAVE_LZCNT
+    return static_cast<int>(_lzcnt_u32(value));
+#elif (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return __builtin_clz(value);
+#else
+    int zeros = 0;
+    uint32_t bit = 1U << 31;
+    while (!(value & bit)) {
+        ++zeros;
+        bit >>= 1;
+    }
+    return zeros;
+#endif
+}
+
+VL_ATTR_ALWINLINE int vlIntrinClz64(uint64_t value) {
+    VL_DEBUG_IFDEF(assert(value););
+#if defined(VL_HAVE_LZCNT) && (defined(__x86_64__) || defined(_M_X64))
+    return static_cast<int>(_lzcnt_u64(value));
+#elif (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return __builtin_clzll(static_cast<unsigned long long>(value));
+#else
+    const uint32_t upper = static_cast<uint32_t>(value >> 32);
+    return upper ? vlIntrinClz32(upper) : 32 + vlIntrinClz32(static_cast<uint32_t>(value));
+#endif
+}
 
 #endif  // Guard
