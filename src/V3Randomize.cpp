@@ -2397,12 +2397,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             return;
         }
 
-        AstNodeModule* const modp = VN_AS(genVarp->user2p(), NodeModule);
-        UASSERT_OBJ(modp, nodep, "genVarp has no NodeModule set");
+        AstNodeModule* const genModp = VN_AS(genVarp->user2p(), NodeModule);
+        UASSERT_OBJ(genModp, nodep, "genVarp has no NodeModule set");
 
         for (AstNode* itemp = nodep->rangesp(); itemp; itemp = itemp->nextp()) {
             if (AstVarRef* const varRefp = VN_CAST(itemp, VarRef)) {
                 AstVar* const varp = varRefp->varp();
+                AstNodeModule* const varModp = VN_AS(varp->user2p(), NodeModule);
+                UASSERT_OBJ(varModp, nodep, "varp has no NodeModule set");
                 AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
                 AstConst* dtypeWidthp = nullptr;
 
@@ -2444,9 +2446,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                     fl, AstCExpr::Pure{}, "\"" + varp->name() + "\"", varp->width()};
 
                 AstCMethodHard* const writeVarCallp
-                    = new AstCMethodHard{fl, new AstVarRef{fl, modp, genVarp, VAccess::READ},
+                    = new AstCMethodHard{fl, new AstVarRef{fl, genModp, genVarp, VAccess::READ},
                                          VCMethod::RANDOMIZER_WRITE_VAR};
-                writeVarCallp->addPinsp(new AstVarRef{fl, varp, VAccess::READ});
+                writeVarCallp->addPinsp(new AstVarRef{fl, varModp, varp, VAccess::READ});
                 writeVarCallp->addPinsp(dtypeWidthp);
                 writeVarCallp->addPinsp(varnamep);
                 writeVarCallp->addPinsp(new AstConst{fl, 1});  // Dimension
@@ -2473,7 +2475,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                     ? VCMethod::ASSOC_SIZE
                                                     : VCMethod::DYN_SIZE;
                     AstCMethodHard* const dynSizep = new AstCMethodHard{
-                        fl, new AstVarRef{fl, modp, varp, VAccess::READ}, sizeMethod};
+                        fl, new AstVarRef{fl, varModp, varp, VAccess::READ}, sizeMethod};
                     dynSizep->dtypeSetUInt32();
                     // unable to check dynamic array size during verilation
                     randUniquePinsp->addNext(dynSizep);
@@ -2484,7 +2486,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
 
                 AstCMethodHard* const randUniqueCallp
-                    = new AstCMethodHard{fl, new AstVarRef{fl, modp, genVarp, VAccess::READ},
+                    = new AstCMethodHard{fl, new AstVarRef{fl, genModp, genVarp, VAccess::READ},
                                          VCMethod::RANDOMIZER_UNIQUE, randUniquePinsp};
                 randUniqueCallp->dtypep(nodep->findVoidDType());
                 initTaskp->addStmtsp(new AstStmtExpr{fl, randUniqueCallp});
