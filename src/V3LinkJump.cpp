@@ -68,6 +68,7 @@ class LinkJumpVisitor final : public VNVisitor {
         "__VprocessQueue"};  // Names for queues needed for 'disable' handling
     std::unordered_map<const AstTask*, AstVar*> m_taskDisableQueues;  // Per-task process queues
     std::unordered_map<const AstBegin*, AstVar*> m_beginDisableQueues;  // Per-begin process queues
+    std::unordered_map<const AstNode*, AstVar*> m_forkDisableQueues;  // Per-fork process queues
     std::unordered_map<const AstTask*, AstBegin*>
         m_taskDisableBegins;  // Per-task process wrappers
     std::unordered_map<const AstBegin*, AstBegin*>
@@ -335,17 +336,22 @@ class LinkJumpVisitor final : public VNVisitor {
         }
 
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
-        AstVar* const processQueuep = getProcessQueuep(targetp, fl);
-        AstVarRef* const queueWriteRefp
-            = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
-        AstStmtExpr* pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
+        auto [it, isFirstDisableForFork] = m_forkDisableQueues.try_emplace(targetp, nullptr);
+        if (isFirstDisableForFork) {
+            AstVar* const processQueuep = getProcessQueuep(targetp, fl);
+            it->second = processQueuep;
+            AstVarRef* const queueWriteRefp
+                = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
+            AstStmtExpr* pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
 
-        for (AstBegin* const beginp : forks) {
-            if (pushCurrentProcessp->backp()) {
-                pushCurrentProcessp = pushCurrentProcessp->cloneTree(false);
+            for (AstBegin* const beginp : forks) {
+                if (pushCurrentProcessp->backp()) {
+                    pushCurrentProcessp = pushCurrentProcessp->cloneTree(false);
+                }
+                prependStmtsp(beginp, pushCurrentProcessp);
             }
-            prependStmtsp(beginp, pushCurrentProcessp);
         }
+        AstVar* const processQueuep = it->second;
         AstStmtExpr* const killStmtp = insertKillStmtp(nodep, processQueuep);
 
         // 'process::kill' does not immediately kill the current process
