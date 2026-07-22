@@ -25,8 +25,9 @@
                                               : ... note: In instance 't'
    29 |     import_func0(sig0[1]);
       |                      ^
-%Warning-WIDTHEXPAND: t/t_dpi_unpack_bad.v:29:5: Operator TASKREF 'import_func0' expects 4 bits on the Function Argument, but Function Argument's ARRAYSEL generates 3 bits.
-                                               : ... note: In instance 't'
+%Error: t/t_dpi_unpack_bad.v:29:22: Function Argument expects 'logic[3:0]$[0:2]', got 'logic[2:0]'
+                                  : ... note: In instance 't'
    29 |     import_func0(sig0[1]);
-      |     ^~~~~~~~~~~~
+      |                      ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
