@@ -264,7 +264,7 @@ void VlcTop::writeInfo(const string& filename) {
             for (const auto& point : sc.points()) {
                 if (point->isFsmArc()) continue;
                 daCount = std::max(daCount, point->count());
-                if (!point->isFsmState()) infoPoints.push_back(point);
+                infoPoints.push_back(point);
             }
             os << "DA:" << sc.lineno() << "," << daCount << "\n";
             if (infoPoints.size() <= 1) continue;
