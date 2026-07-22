@@ -1,0 +1,11 @@
+TN:verilator_coverage
+SF:t/t_cover_fsm_basic.v
+DA:45,4
+BRDA:45,2,ANY->S_IDLE,1
+BRDA:45,2,S_DONE->S_DONE,4
+BRDA:45,2,S_IDLE->S_IDLE,3
+BRDA:45,2,S_IDLE->S_RUN,1
+BRDA:45,2,S_RUN->S_DONE,1
+BRF:5
+BRH:0
+end_of_record
