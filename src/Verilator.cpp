@@ -397,6 +397,9 @@ static void process() {
             // Loop unrolling
             V3Unroll::unrollAll(v3Global.rootp());
 
+            // Materialize task activation locals after statement-cloning loop transforms.
+            V3Task::taskLocalizeAll(v3Global.rootp());
+
             // Expand slices of arrays
             V3Slice::sliceAll(v3Global.rootp());
 

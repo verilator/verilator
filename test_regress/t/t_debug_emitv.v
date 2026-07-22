@@ -130,8 +130,8 @@ module t (/*AUTOARG*/
   } nibble_t;
   nibble_t [5:4] nibblearray[3:2];
 
-  task t;
-    $display("stmt");
+  task t(input int value);
+    $display("stmt %d", value);
   endtask
   function int f(input int v);
     $display("stmt");
@@ -147,7 +147,7 @@ module t (/*AUTOARG*/
       for (int i = 0; i < 3; ++i) begin
         other = f(i);
         $display("stmt %d %d", i, other);
-        t();
+        t(i);
       end
     end
     begin : named

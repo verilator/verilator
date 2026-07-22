@@ -478,6 +478,7 @@ class TimingControlVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
+    AstNode* m_varInsertp = nullptr;  // Nearest node that owns function-local variables
     bool m_hasProcess = false;  // True if current scope has a VlProcess handle available
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
@@ -806,8 +807,8 @@ class TimingControlVisitor final : public VNVisitor {
         forkp->addNextHere(new AstCAwait{flp, joinp});
     }
 
-    // `procp` shall be a NodeProcedure/CFunc/Begin and within it vars from `varsp` will be placed.
-    // `varsp` vector of vars which shall be localized.
+    // `procp` shall be a NodeProcedure/CFunc/Begin/CLocalScope and within it vars from `varsp`
+    // will be placed. `varsp` vector of vars which shall be localized.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         UASSERT(procp, "procp is nullptr");
         AstNode* firstStmtp;
@@ -824,15 +825,19 @@ class TimingControlVisitor final : public VNVisitor {
             firstStmtp = cfuncp->varsp();
         } else if (AstBegin* const beginp = VN_CAST(procp, Begin)) {
             firstStmtp = beginp->stmtsp();
+        } else if (AstCLocalScope* const localScopep = VN_CAST(procp, CLocalScope)) {
+            firstStmtp = localScopep->stmtsp();
         } else {
             procp->v3fatalSrc(
                 procp->prettyNameQ()
-                << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
+                << " is not of an expected type NodeProcedure/CFunc/Begin/CLocalScope instead it "
+                   "is: "
                 << procp->prettyTypeName());
         }
         UASSERT_OBJ(firstStmtp, procp,
-                    procp->prettyNameQ() << " has no non-var statement. 'localizeVars()' is ment "
-                                            "to be called on non-empty NodeProcedure/CFunc/Begin");
+                    procp->prettyNameQ()
+                        << " has no non-var statement. 'localizeVars()' is meant to be called on "
+                           "non-empty NodeProcedure/CFunc/Begin/CLocalScope");
         for (AstVar* const varp : varsp) {
             varp->funcLocal(true);
             firstStmtp->addHereThisAsNext(varp->unlinkFrBack());
@@ -889,8 +894,10 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_varInsertp);
         VL_RESTORER(m_hasProcess);
         m_procp = nodep;
+        m_varInsertp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
@@ -913,8 +920,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_varInsertp);
         VL_RESTORER(m_hasProcess);
         m_procp = nodep;
+        m_varInsertp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
@@ -947,8 +956,10 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_varInsertp);
         VL_RESTORER(m_hasProcess);
         m_procp = nodep;
+        m_varInsertp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
@@ -1101,7 +1112,7 @@ class TimingControlVisitor final : public VNVisitor {
                                                 m_senExprBuilderp->build(sentreep).first};
             // Get the SenExprBuilder results
             const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
-            localizeVars(m_procp, senResults.m_vars);
+            localizeVars(m_varInsertp, senResults.m_vars);
             // If post updates are destructive (e.g. clearFired on events), perform a
             // conservative pre-clear once before entering the wait loop so stale state from a
             // previous wait does not cause an immediate false-positive trigger.
@@ -1419,10 +1430,17 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_varInsertp);
         VL_RESTORER(m_hasProcess);
         m_hasProcess |= hasFlags(nodep, T_HAS_PROC);
         m_procp = nodep;
+        m_varInsertp = nodep;
         if (m_hasProcess) nodep->setNeedProcess();
+        iterateChildren(nodep);
+    }
+    void visit(AstCLocalScope* nodep) override {
+        VL_RESTORER(m_varInsertp);
+        m_varInsertp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {

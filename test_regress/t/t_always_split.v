@@ -55,6 +55,24 @@ module t (
     l_split_1 <= l_split_2 | m_din;
   end
 
+  task automatic copy_task(input logic [15:0] value, output logic [15:0] result);
+    result = value;
+  endtask
+
+  reg [15:0] t_split_1, t_split_2;
+  always @(  /*AS*/ m_din) begin
+    copy_task(m_din, t_split_1);
+    t_split_2 = ~m_din;
+  end
+
+  reg [15:0] n_split_1, n_split_2;
+  always @(  /*AS*/ m_din) begin
+    for (int i = 0; i < m_din[15]; ++i) begin
+      copy_task(m_din, n_split_1);
+    end
+    n_split_2 = ~m_din;
+  end
+
   // (The checker block is an exception, it won't split.)
   always @(posedge clk) begin
     if (cyc != 0) begin
@@ -68,18 +86,24 @@ module t (
         m_din <= 16'he11e;
         //$write(" A %x %x\n", a_split_1, a_split_2);
         if (!(a_split_1 == 16'hfeed && a_split_2 == 16'hfeed)) $stop;
+        if (!(t_split_1 == 16'hfeed && t_split_2 == 16'h0112)) $stop;
+        if (!(n_split_1 == 16'hfeed && n_split_2 == 16'h0112)) $stop;
         if (!(d_split_1 == 16'h0112 && d_split_2 == 16'h0112)) $stop;
         if (!(h_split_1 == 16'hfeed && h_split_2 == 16'h0112)) $stop;
       end
       if (cyc == 5) begin
         m_din <= 16'he22e;
         if (!(a_split_1 == 16'he11e && a_split_2 == 16'he11e)) $stop;
+        if (!(t_split_1 == 16'he11e && t_split_2 == 16'h1ee1)) $stop;
+        if (!(n_split_1 == 16'he11e && n_split_2 == 16'h1ee1)) $stop;
         if (!(d_split_1 == 16'h0112 && d_split_2 == 16'h0112)) $stop;
         if (!(h_split_1 == 16'hfeed && h_split_2 == 16'h0112)) $stop;
       end
       if (cyc == 6) begin
         m_din <= 16'he33e;
         if (!(a_split_1 == 16'he22e && a_split_2 == 16'he22e)) $stop;
+        if (!(t_split_1 == 16'he22e && t_split_2 == 16'h1dd1)) $stop;
+        if (!(n_split_1 == 16'he22e && n_split_2 == 16'h1dd1)) $stop;
         if (!(d_split_1 == 16'h1ee1 && d_split_2 == 16'h0112)) $stop;
         if (!(h_split_1 == 16'he11e && h_split_2 == 16'h1ee1)) $stop;
       end

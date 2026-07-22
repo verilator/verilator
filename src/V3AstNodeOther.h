@@ -1889,6 +1889,26 @@ public:
     bool isPure() override { return false; }
     bool isOutputter() override { return true; }
 };
+class AstTaskLocalVar final : public AstNode {
+    // A task activation-local variable before loop unrolling is complete. The local variable is
+    // deliberately unscoped so cloning this node cannot invalidate an external AstVarScope. The
+    // temporary scoped variable carries references until V3Task materializes the local variable.
+    // @astgen op1 := varp : AstVar
+    // @astgen ptr := m_templateVscp : AstVarScope
+public:
+    AstTaskLocalVar(FileLine* fl, AstVar* varp, AstVarScope* templateVscp)
+        : ASTGEN_SUPER_TaskLocalVar(fl)
+        , m_templateVscp{templateVscp} {
+        if (varp) this->varp(varp);
+    }
+    ASTGEN_MEMBERS_AstTaskLocalVar;
+    AstVarScope* templateVscp() const { return m_templateVscp; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        return templateVscp() == VN_DBG_AS(samep, TaskLocalVar)->templateVscp();
+    }
+};
 class AstText final : public AstNode {
     // Represents a piece of text to be emitted into the output
     //
