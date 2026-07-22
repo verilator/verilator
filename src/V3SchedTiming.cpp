@@ -53,6 +53,15 @@ TimingKit::remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>
     return remappedDomainMap;
 }
 
+void TimingKit::remapReadySenses(
+    const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) {
+    for (auto& p : m_readySenTrees) {
+        const auto it = trigMap.find(p.second);
+        UASSERT(it != trigMap.end(), "Clocking-event ready sense missing from trigger map");
+        p.second = it->second;
+    }
+}
+
 //============================================================================
 // Creates a timing resume call (if needed, else returns null)
 
@@ -70,7 +79,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 
         for (const auto& p : m_lbs) {
             AstActive* const activep = p.second;
-            activep->foreach([this](AstCMethodHard* const exprp) {
+            activep->foreach([this, activep](AstCMethodHard* const exprp) {
                 if (exprp->method() != VCMethod::SCHED_RESUME) return;
                 AstNodeExpr* const fromp = exprp->fromp();
                 if (VN_AS(fromp->dtypep(), BasicDType)->keyword()
@@ -82,7 +91,16 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
                     VCMethod::SCHED_MOVE_TO_RESUME_QUEUE,
                     exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
                 moveToResumep->dtypeSetVoid();
-                m_resumeFuncp->addStmtsp(moveToResumep->makeStmt());
+                AstNode* stmtp = moveToResumep->makeStmt();
+                // Clocking-event schedulers: reach the resume queue only when the event fires,
+                // while ready() (on the clock edge) froze the eligible set. See createReady.
+                const auto it = m_readySenTrees.find(VN_AS(fromp, VarRef)->varScopep());
+                if (it != m_readySenTrees.end()) {
+                    AstIf* const ifp = V3Sched::util::createIfFromSenTree(activep->sentreep());
+                    ifp->addThensp(stmtp);
+                    stmtp = ifp;
+                }
+                m_resumeFuncp->addStmtsp(stmtp);
             });
         }
 
@@ -152,7 +170,11 @@ AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
                 scopeTopp->addBlocksp(m_readyFuncp);
             }
 
-            AstSenTree* const senTreep = activep->sentreep();
+            // Clocking-event waits gate ready() on the clock edge, not the event. See
+            // createResume.
+            AstSenTree* senTreep = activep->sentreep();
+            const auto readyIt = m_readySenTrees.find(schedulerp);
+            if (readyIt != m_readySenTrees.end()) senTreep = readyIt->second;
             FileLine* const flp = senTreep->fileline();
 
             // Create an 'AstIf' sensitive to the suspending triggers
@@ -190,6 +212,8 @@ class AwaitVisitor final : public VNVisitor {
     AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
     // Additional var sensitivities
     std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
+    // Trigger-scheduler vscp -> clock sense that gates its ready() (clocking events)
+    std::map<const AstVarScope*, AstSenTree*>& m_readySenTrees;
     std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
     // Variables written by suspendable processes
     std::vector<AstVarScope*> m_writtenBySuspendable;
@@ -213,6 +237,10 @@ class AwaitVisitor final : public VNVisitor {
         auto* const methodp = VN_AS(awaitp->exprp(), CMethodHard);
         AstVarScope* const schedulerp = VN_AS(methodp->fromp(), VarRef)->varScopep();
         AstSenTree* const sentreep = awaitp->sentreep();
+        // Record the clock sense that gates ready() for a clocking-event wait (see createReady).
+        if (AstSenTree* const readySensep = awaitp->readySenTreep()) {
+            m_readySenTrees.emplace(schedulerp, readySensep);
+        }
         FileLine* const flp = sentreep->fileline();
         // Create a resume() call on the timing scheduler
         auto* const resumep = new AstCMethodHard{
@@ -282,11 +310,13 @@ class AwaitVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit AwaitVisitor(AstNetlist* nodep, LogicByScope& lbs, AstNodeStmt*& postUpdatesr,
-                          std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains)
+                          std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains,
+                          std::map<const AstVarScope*, AstSenTree*>& readySenTrees)
         : m_scopeTopp{nodep->topScopep()->scopep()}
         , m_lbs{lbs}
         , m_postUpdatesr{postUpdatesr}
-        , m_externalDomains{externalDomains} {
+        , m_externalDomains{externalDomains}
+        , m_readySenTrees{readySenTrees} {
         iterate(nodep);
     }
     ~AwaitVisitor() override = default;
@@ -297,8 +327,11 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
     LogicByScope lbs;
     AstNodeStmt* postUpdates = nullptr;
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
-    { AwaitVisitor{netlistp, lbs, postUpdates, externalDomains}; }
-    return {std::move(lbs), postUpdates, std::move(externalDomains)};
+    std::map<const AstVarScope*, AstSenTree*> readySenTrees;
+    { AwaitVisitor{netlistp, lbs, postUpdates, externalDomains, readySenTrees}; }
+    TimingKit kit{std::move(lbs), postUpdates, std::move(externalDomains)};
+    kit.m_readySenTrees = std::move(readySenTrees);
+    return kit;
 }
 
 //============================================================================

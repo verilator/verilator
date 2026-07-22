@@ -509,6 +509,11 @@ class TimingControlVisitor final : public VNVisitor {
     // Other
     SenTreeFinder m_finder{m_netlistp};  // Sentree finder and uniquifier
     SenExprBuilder* m_senExprBuilderp = nullptr;  // Sens expression builder for current m_scope
+    // Clocking-event var -> the clock sense that gates its @(cb) ready()
+    std::map<const AstVarScope*, AstSenTree*> m_clockingEventSenses;
+    // Ditto keyed by AstVar, for @(vif.cb) reached through a (virtual) interface handle
+    std::map<const AstVar*, AstSenTree*> m_clockingEventSensesByVar;
+    bool m_clockingEventSensesGathered = false;
 
     // Stats
     size_t m_statZeroDelays = 0;  // Number of statically known #0 delays
@@ -657,6 +662,68 @@ class TimingControlVisitor final : public VNVisitor {
             sentreep->user1p(trigSchedp);
         }
         return VN_AS(sentreep->user1p(), VarScope);
+    }
+    // Map each clocking-event var to the clock sense of the Observed active that fires it. The
+    // event fire is lowered to opaque code in V3Delayed (after this pass), so gather it here.
+    void gatherClockingEventSenses() {
+        if (m_clockingEventSensesGathered) return;
+        m_clockingEventSensesGathered = true;
+        m_netlistp->foreach([this](AstActive* const activep) {
+            if (!activep->sentreep()) return;
+            activep->foreach([&](AstFireEvent* const firep) {
+                const AstVarRef* const refp = VN_CAST(firep->operandp(), VarRef);
+                if (!refp || !refp->varp()->isClockingEvent()) return;
+                // Canonicalize so the pointer is to a stable, pointable sentree, as for
+                // m_sentreep.
+                AstSenTree* const sensep = m_finder.getSenTree(activep->sentreep());
+                m_clockingEventSenses.emplace(refp->varScopep(), sensep);
+                m_clockingEventSensesByVar.emplace(refp->varp(), sensep);
+            });
+        });
+    }
+    // The clock sense that fires the given clocking-event var, by concrete VarScope
+    AstSenTree* clockingEventSensep(const AstVarScope* const evtVscp) {
+        gatherClockingEventSenses();
+        const auto it = m_clockingEventSenses.find(evtVscp);
+        return it == m_clockingEventSenses.end() ? nullptr : it->second;
+    }
+    // Ditto by AstVar, for a clocking event reached through a (virtual) interface handle
+    AstSenTree* clockingEventSenseByVarp(const AstVar* const evtVarp) {
+        gatherClockingEventSenses();
+        const auto it = m_clockingEventSensesByVar.find(evtVarp);
+        return it == m_clockingEventSensesByVar.end() ? nullptr : it->second;
+    }
+    // Rebuild a clock edge through an interface handle: 'posedge vif.clk' from the
+    // instance-scope 'posedge clk'. Null unless the clock is a member of that interface
+    // (V3Width keeps it one), as a MemberSel on a non-member only fails at C++ compile time.
+    AstSenTree* buildHandleClockSensep(AstSenTree* const instClkSenp, AstNodeExpr* const handlep) {
+        const AstNodeDType* const hdtypep
+            = handlep->dtypep() ? handlep->dtypep()->skipRefp() : nullptr;
+        const AstIfaceRefDType* const ifrefp = VN_CAST(hdtypep, IfaceRefDType);
+        if (!ifrefp || !ifrefp->ifaceViaCellp()) return nullptr;
+        AstSenItem* const sip = instClkSenp->sensesp();
+        if (sip->nextp()) return nullptr;  // Multi-edge clocking event; not rebuildable
+        AstVarRef* const refp = VN_CAST(sip->sensp(), VarRef);
+        if (!refp || !refp->varScopep()
+            || refp->varScopep()->scopep()->modp() != ifrefp->ifaceViaCellp()) {
+            return nullptr;
+        }
+        AstMemberSel* const mselp
+            = new AstMemberSel{sip->fileline(), handlep->cloneTree(false), refp->varp()};
+        return new AstSenTree{instClkSenp->fileline(),
+                              new AstSenItem{sip->fileline(), sip->edgeType(), mselp}};
+    }
+    // The clock edge to latch for a @(vif.cb) wait, which wakes on the clock edge but resumes
+    // on the event (as for plain @(cb)) so a mid-timestep arrival defers to the next edge. The
+    // handle resolves at run time, so it is gated in the dynamic poll loop. Null otherwise.
+    AstSenTree* handleClockSensep(AstEventControl* const nodep) {
+        if (nodep->syncCurrentCycle()) return nullptr;
+        AstSenItem* const senip = nodep->sentreep()->sensesp();
+        if (!senip || senip->nextp() || senip->edgeType() != VEdgeType::ET_EVENT) return nullptr;
+        const AstMemberSel* const mselp = VN_CAST(senip->sensp(), MemberSel);
+        if (!mselp || !mselp->varp() || !mselp->varp()->isClockingEvent()) return nullptr;
+        AstSenTree* const instClkp = clockingEventSenseByVarp(mselp->varp());
+        return instClkp ? buildHandleClockSensep(instClkp, mselp->fromp()) : nullptr;
     }
     // Creates a string describing the sentree
     AstCExpr* createEventDescription(AstSenTree* const sentreep) const {
@@ -1077,10 +1144,11 @@ class TimingControlVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         // Relink child statements after the event control
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
-        if (needDynamicTrigger(nodep->sentreep())) {
+        AstSenTree* const latchClkSenp = handleClockSensep(nodep);
+        if (needDynamicTrigger(nodep->sentreep()) || latchClkSenp) {
             // Create the trigger variable and init it with 0
-            AstVarScope* const trigvscp
-                = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
+            const std::string trigName = m_dynTrigNames.get(nodep);
+            AstVarScope* const trigvscp = createTemp(flp, trigName, nodep->findBitDType(), nodep);
             auto* const initp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                               new AstConst{flp, AstConst::BitFalse{}}};
             // Await the eval step with the dynamic trigger scheduler. First, create the method
@@ -1097,10 +1165,31 @@ class TimingControlVisitor final : public VNVisitor {
                 = new AstCAwait{flp, evalMethodp, getCreateDynamicTriggerSenTree()};
             // Construct the sen expression for this sentree
             UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
-            auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
-                                                m_senExprBuilderp->build(sentreep).first};
+            // For @(vif.cb), trigger only once the latched edge and the event have both come
+            AstNodeStmt* readyInitp = nullptr;
+            AstNodeStmt* readyLatchp = nullptr;
+            AstNodeExpr* trigExprp;
+            if (latchClkSenp) {
+                AstNodeExpr* const edgep = m_senExprBuilderp->build(latchClkSenp).first;
+                AstNodeExpr* const eventp = m_senExprBuilderp->build(sentreep).first;
+                AstVarScope* const readyvscp
+                    = createTemp(flp, trigName + "__ready", nodep->findBitDType(), nodep);
+                readyInitp = new AstAssign{flp, new AstVarRef{flp, readyvscp, VAccess::WRITE},
+                                           new AstConst{flp, AstConst::BitFalse{}}};
+                readyLatchp = new AstAssign{
+                    flp, new AstVarRef{flp, readyvscp, VAccess::WRITE},
+                    new AstOr{flp, new AstVarRef{flp, readyvscp, VAccess::READ}, edgep}};
+                trigExprp = new AstAnd{flp, new AstVarRef{flp, readyvscp, VAccess::READ}, eventp};
+            } else {
+                trigExprp = m_senExprBuilderp->build(sentreep).first;
+            }
+            auto* const assignp
+                = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE}, trigExprp};
             // Get the SenExprBuilder results
             const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
+            // Delete only after getAndClearResults(): the builder holds VNRef keys into
+            // latchClkSenp until then.
+            if (latchClkSenp) VL_DO_DANGLING(latchClkSenp->deleteTree(), latchClkSenp);
             localizeVars(m_procp, senResults.m_vars);
             // If post updates are destructive (e.g. clearFired on events), perform a
             // conservative pre-clear once before entering the wait loop so stale state from a
@@ -1115,6 +1204,8 @@ class TimingControlVisitor final : public VNVisitor {
             loopp->addStmtsp(awaitEvalp);
             // Put pre updates before the trigger check and assignment
             for (AstNodeStmt* const stmtp : senResults.m_preUpdates) loopp->addStmtsp(stmtp);
+            // Latch the clock edge before the trigger assignment reads it
+            if (readyLatchp) loopp->addStmtsp(readyLatchp);
             // Then the trigger check and assignment
             loopp->addStmtsp(assignp);
             // Let the dynamic trigger scheduler know if this trigger was set
@@ -1138,9 +1229,11 @@ class TimingControlVisitor final : public VNVisitor {
             VN_AS(awaitResumep->exprp(), CMethodHard)->method(VCMethod::SCHED_RESUMPTION);
             AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep);
             // Replace the event control with one explicit stmt chain:
-            //   init -> [inits] -> [optional destructive pre-clears] -> loop -> awaitResumption
+            //   init -> [ready init] -> [inits] -> [optional destructive pre-clears] -> loop
+            //        -> awaitResumption
             AstNodeStmt* chainp = nullptr;
             chainp = AstNode::addNextNull(chainp, initp);
+            if (readyInitp) chainp = AstNode::addNextNull(chainp, readyInitp);
             for (AstNodeStmt* const stmtp : senResults.m_inits) {
                 chainp = AstNode::addNextNull(chainp, stmtp);
             }
@@ -1167,6 +1260,20 @@ class TimingControlVisitor final : public VNVisitor {
             addEventDebugInfo(triggerMethodp, sentreep);
             // Create the co_await
             AstCAwait* const awaitp = new AstCAwait{flp, triggerMethodp, sentreep};
+            // A plain @(cb) wait gates ready() on the clock edge, not the event, so a process
+            // reaching it mid-timestep blocks to the next edge. See V3SchedTiming.
+            AstSenItem* const senip = sentreep->sensesp();
+            if (!nodep->syncCurrentCycle() && senip && !senip->nextp()
+                && senip->edgeType() == VEdgeType::ET_EVENT) {
+                if (const AstVarRef* const evrefp = VN_CAST(senip->sensp(), VarRef)) {
+                    if (evrefp->varp()->isClockingEvent()) {
+                        if (AstSenTree* const clkSensep
+                            = clockingEventSensep(evrefp->varScopep())) {
+                            awaitp->readySenTreep(clkSensep);
+                        }
+                    }
+                }
+            }
             nodep->replaceWith(awaitp);
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);

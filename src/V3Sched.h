@@ -374,10 +374,15 @@ class TimingKit final {
 public:
     LogicByScope m_lbs;  // Actives that resume timing schedulers
     AstNodeStmt* m_postUpdates = nullptr;  // Post updates for the trigger eval function
+    // Trigger-scheduler vscp -> clock sense that gates its ready() (clocking events)
+    std::map<const AstVarScope*, AstSenTree*> m_readySenTrees;
 
     // Remaps external domains using the specified trigger map
     std::map<const AstVarScope*, std::vector<AstSenTree*>> remapDomains(
         const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const VL_MT_DISABLED;
+    // Remaps the clocking-event ready senses in-place using the specified trigger map
+    void remapReadySenses(const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap)
+        VL_MT_DISABLED;
     // Get the delay scheduler variable
     AstVarScope* getDelayScheduler(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing resume call (if needed, else returns null)

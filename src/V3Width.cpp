@@ -3870,8 +3870,17 @@ class WidthVisitor final : public VNVisitor {
             if (memberSelClass(nodep, adtypep)) return;
         } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
             if (AstNode* foundp = memberSelIface(nodep, adtypep)) {
-                if (AstClocking* const clockingp = VN_CAST(foundp, Clocking))
+                if (AstClocking* const clockingp = VN_CAST(foundp, Clocking)) {
+                    // @(vif.cb) reads the clock through the handle (see V3Timing), so it
+                    // must stay a member rather than be optimized to its driver
+                    if (adtypep->isVirtual()) {
+                        AstIface* const clkIfacep = adtypep->ifaceViaCellp();
+                        clockingp->sensesp()->foreach([clkIfacep](AstVarRef* const refp) {
+                            refp->varp()->sensIfacep(clkIfacep);
+                        });
+                    }
                     foundp = clockingp->ensureEventp();
+                }
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
                     nodep->dtypep(foundp->dtypep());

@@ -474,6 +474,8 @@ private:
                 new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_EVENT,
                                                    new AstVarRef{flp, evtVarp, VAccess::READ}}},
                 nullptr};
+            // ##0 may resolve on the current cycle's clocking event; do not defer to next edge.
+            waitp->syncCurrentCycle(true);
             AstIf* const ifp = new AstIf{flp, new AstNot{flp, isTriggeredp}, waitp};
             nodep->replaceWith(ifp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
