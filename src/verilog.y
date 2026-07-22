@@ -2776,7 +2776,7 @@ module_or_generate_item_declaration<nodep>:     // ==IEEE: module_or_generate_it
 
 modDefaultClocking<nodep>:  // IEEE: part of module_or_generate_item_declaration/checker_or_...
                 yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
+                        { $$ = new AstDefaultClocking{$<fl>2, *$3}; }
         ;
 
 defaultDisable<nodep>:  // IEEE: part of module_/checker_or_generate_item_declaration
