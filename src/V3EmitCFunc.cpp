@@ -617,6 +617,26 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
+            } else if (v3Global.opt.fourstate()
+                       && (varp->isFourstateComplement() || varp->fourstateComplementp())) {
+                bool setTozero = false;
+                if (varp->varType() == VVarType::PORT) {
+                    const AstNode* iter = varp;
+                    while (!iter->firstAbovep()) iter = iter->backp();
+                    if (AstModule* const modep = VN_CAST(iter->firstAbovep(), Module)) {
+                        setTozero = modep->isTop();
+                    }
+                }
+                if (!setTozero && (varp->isFourstateComplement() || !varp->varType().isNet())) {
+                    out += "VL_ALLONES_W(";  // This is a temporary solution - interleaved signals
+                                             // will change this
+                } else {
+                    out += (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(");
+                }
+                out += cvtToStr(dtypep->widthMin());
+                out += ", " + varNameProtected + suffix;
+                out += ");\n";
+                return out;
             } else {
                 out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(")
                               : (varp->isXTemp() ? "VL_SCOPED_RAND_RESET_ASSIGN_W("
@@ -644,6 +664,23 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 const AstConst* const constp = VN_AS(valuep, Const);
                 UASSERT_OBJ(constp, varp, "non-const initializer for variable");
                 out += cvtToStr(constp->num().edataWord(0)) + "U;\n";
+                out += ";\n";
+            } else if (v3Global.opt.fourstate()
+                       && (varp->fourstateComplementp() || varp->isFourstateComplement())) {
+                V3Number xNum{varp->fileline(), varp->width(), 0};
+                bool setTozero = false;
+                if (varp->varType() == VVarType::PORT) {
+                    const AstNode* iter = varp;
+                    while (!iter->firstAbovep()) iter = iter->backp();
+                    if (AstModule* const modep = VN_CAST(iter->firstAbovep(), Module)) {
+                        setTozero = modep->isTop();
+                    }
+                }
+                if (!setTozero && (varp->isFourstateComplement() || !varp->varType().isNet())) {
+                    xNum.setAllBits1();
+                }
+                out += " = ";
+                out += xNum.emitC();
                 out += ";\n";
             } else if (zeroit) {
                 out += " = 0;\n";

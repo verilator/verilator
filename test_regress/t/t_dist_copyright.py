@@ -77,20 +77,24 @@ for filename in files:
     with open(open_filename, 'r', encoding="utf8") as fh:
         spdx = None
         copyright_msg = None
-        for line in fh:
-            line = line.rstrip()
-            if 'SP' + 'DX-License-Identifier:' in line:
-                spdx = line
-            elif re.search(r'(SP()DX-FileCopyrightText: 20[0-9][0-9])', line):
-                copyright_msg = line
-                if 'Wilson Snyder' in line:
-                    pass
-                elif re.search(EXEMPT_AUTHOR_RE, filename):
-                    pass
-                else:
-                    print("   " + copyright_msg)
-                    test.error_keep_going(filename + ": Please use standard 'SP" +
-                                          "DX-FileCopyrightText: " + yeardash + " Wilson Snyder'")
+        try:
+            for line in fh:
+                line = line.rstrip()
+                if 'SP' + 'DX-License-Identifier:' in line:
+                    spdx = line
+                elif re.search(r'(SP()DX-FileCopyrightText: 20[0-9][0-9])', line):
+                    copyright_msg = line
+                    if 'Wilson Snyder' in line:
+                        pass
+                    elif re.search(EXEMPT_AUTHOR_RE, filename):
+                        pass
+                    else:
+                        print("   " + copyright_msg)
+                        test.error_keep_going(filename + ": Please use standard 'SP" +
+                                              "DX-FileCopyrightText: " + yeardash +
+                                              " Wilson Snyder'")
+        except UnicodeDecodeError as e:
+            test.error_keep_going(filename + ": " + e.reason)
 
         if not copyright_msg:
             test.error_keep_going(filename + ": Please add standard 'SP" +

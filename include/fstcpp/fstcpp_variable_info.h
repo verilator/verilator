@@ -517,7 +517,7 @@ public:
 				} else {
 					unsigned val = 0;
 					for (unsigned i = 0; i < num_element; ++i) {
-						val |= rh.peek<T>(i);
+						val |= rh.peek<T>(i) << i;
 					}
 					uint64_t delta_time_index = time_index - prev_time_index;
 					prev_time_index = time_index;
@@ -525,8 +525,8 @@ public:
 						// clang-format off
 					case 0: delta_time_index = (delta_time_index<<2) | (0<<1) | 0; break; // '0'
 					case 1: delta_time_index = (delta_time_index<<2) | (1<<1) | 0; break; // '1'
-					case 2: delta_time_index = (delta_time_index<<4) | (0<<1) | 1; break; // 'X'
-					case 3: delta_time_index = (delta_time_index<<4) | (1<<1) | 1; break; // 'Z'
+					case 2: delta_time_index = (delta_time_index<<4) | (1<<1) | 1; break; // 'Z'
+					case 3: delta_time_index = (delta_time_index<<4) | (0<<1) | 1; break; // 'X'
 					// Not supporting VHDL now
 					// LCOV_EXCL_START
 					case 4: delta_time_index = (delta_time_index<<4) | (2<<1) | 1; break; // 'H'
@@ -556,13 +556,27 @@ public:
 				if (first) {
 					first = false;
 				} else {
-					FST_CHECK(enc == EncodingType::BINARY);  // TODO
-					const bool has_non_binary = enc != EncodingType::BINARY;
 					const uint64_t delta_time_index = time_index - prev_time_index;
 					prev_time_index = time_index;
-					h  //
-						.writeLEB128((delta_time_index << 1) | has_non_binary)
-						.writeUIntPartialForValueChange(rh.peek<T>(), bitwidth);
+					switch (enc) {
+					case EncodingType::BINARY: {
+						h  //
+							.writeLEB128(delta_time_index << 1)
+							.writeUIntPartialForValueChange(rh.peek<T>(), bitwidth);
+					} break;
+					case EncodingType::VERILOG: {
+						h.writeLEB128((delta_time_index << 1) | 1);
+						const T val = rh.peek<T>();
+						const T xz = rh.peek<T>(1);
+						for (int j = bitwidth; j > 0;) {
+							--j;
+							h.writeUIntBE("01zx"[(((xz >> j) << 1) & 2) | ((val >> j) & 1)]);
+						}
+					} break;
+					[[unlikely]] case EncodingType::VHDL: {
+						FST_FAIL_STRING("VHDL format is unsupported with wide values");
+					} break;
+					}
 				}
 				rh.skip(num_byte);
 			}
@@ -573,16 +587,26 @@ public:
 class VariableInfoLongInt {
 	VariableInfo &info;
 	unsigned num_words() const { return (info.bitwidth() + 63) / 64; }
+	unsigned num_words32() const { return (info.bitwidth() + 31) / 32; }
 
 public:
 	VariableInfoLongInt(VariableInfo &info_) : info(info_) {}
 
 public:
+	size_t computeBytesNeededNoHeader(EncodingType encoding) const {
+		switch (encoding) {
+		case EncodingType::BINARY:
+			return num_words() * sizeof(uint64_t);
+		case EncodingType::VERILOG:
+			return num_words32() * sizeof(uint32_t) * 2;
+		[[unlikely]] case EncodingType::VHDL:
+			FST_FAIL_STRING("VHDL format is unsupported with wide values");
+		}
+		FST_UNREACHABLE;
+	}
+
 	size_t computeBytesNeeded(EncodingType encoding) const {
-		return (
-			kEmitTimeIndexAndEncodingSize +
-			num_words() * sizeof(uint64_t) * bitPerEncodedBit(encoding)
-		);
+		return kEmitTimeIndexAndEncodingSize + computeBytesNeededNoHeader(encoding);
 	}
 
 	EmitWriterHelper emitValueChangeCommonPart(uint64_t current_time_index, EncodingType encoding) {
@@ -600,13 +624,12 @@ public:
 
 public:
 	void construct() {
-		const size_t nw = num_words();
+		const size_t nw = num_words32();
 		info.resize(computeBytesNeeded(EncodingType::VERILOG));
 		EmitWriterHelper wh(info.data_ptr());
 		wh  //
 			.writeTimeIndexAndEncoding(0, EncodingType::VERILOG)
-			.fill(uint64_t(0), nw)
-			.fill(uint64_t(-1), nw);
+			.fill(static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()) << 32, nw);
 	}
 
 	void emitValueChange(uint64_t current_time_index, const uint64_t val) {
@@ -616,12 +639,13 @@ public:
 	}
 
 	void emitValueChange(uint64_t current_time_index, const uint32_t *val, EncodingType encoding) {
-		const unsigned nw32 = (info.bitwidth() + 31) / 32;
+		const unsigned nw32 = num_words32();
 		const unsigned bpb = bitPerEncodedBit(encoding);
 
 		auto wh = emitValueChangeCommonPart(current_time_index, encoding);
 
-		for (unsigned i = 0; i < bpb; ++i) {
+		switch (encoding) {
+		case EncodingType::BINARY: {
 			for (unsigned j = 0; j < nw32 / 2; ++j) {
 				uint64_t v = val[1];  // high bits
 				v <<= 32;
@@ -634,13 +658,25 @@ public:
 				wh.write(v);
 				val += 1;
 			}
+		} break;
+		case EncodingType::VERILOG: {
+			for (unsigned j = 0; j < nw32; ++j) {
+				uint64_t v = val[1];  // high bits
+				v <<= 32;
+				v |= val[0];  // low bits
+				wh.write(v);
+				val += 2;
+			}
+		} break;
+		[[unlikely]] case EncodingType::VHDL:
+			FST_FAIL_STRING("VHDL format is unsupported with wide values");
 		}
 	}
 
 	void emitValueChange(uint64_t current_time_index, const uint64_t *val, EncodingType encoding) {
-		const unsigned nw_encoded = num_words() * bitPerEncodedBit(encoding);
 		auto wh = emitValueChangeCommonPart(current_time_index, encoding);
-		wh.write(val, nw_encoded);
+		FST_CHECK(encoding != EncodingType::VHDL);
+		wh.write(val, encoding == EncodingType::VERILOG ? num_words32() : num_words());
 	}
 
 	void dumpInitialBits(std::vector<uint8_t> &buf) const {
@@ -717,33 +753,58 @@ public:
 			FST_DCHECK_GT(tail, rh.ptr);
 			const auto time_index = rh.read<uint64_t>();
 			const auto enc = rh.read<EncodingType>();
-			const auto num_element = bitPerEncodedBit(enc);
-			const auto num_byte = num_element * nw * sizeof(uint64_t);
+			const auto num_byte = computeBytesNeededNoHeader(enc);
 			if (first) {
 				// Note: [0] is initial value, which is already dumped in dumpInitialBits()
 				first = false;
 			} else {
-				FST_CHECK(enc == EncodingType::BINARY);  // TODO
-				const bool has_non_binary = enc != EncodingType::BINARY;
 				const uint64_t delta_time_index = time_index - prev_time_index;
 				prev_time_index = time_index;
-				h.writeLEB128((delta_time_index << 1) | has_non_binary);
-				if (bitwidth % 64 != 0) {
-					const unsigned remaining = bitwidth % 64;
-					uint64_t hi64 = rh.peek<uint64_t>(nw - 1);
-					// write from nw-1 to 1
-					for (unsigned j = nw - 1; j > 0; --j) {
-						uint64_t lo64 = rh.peek<uint64_t>(j - 1);
-						h.writeUIntBE((hi64 << (64 - remaining)) | (lo64 >> remaining));
-						hi64 = lo64;
+				switch (enc) {
+				case EncodingType::BINARY: {
+					h.writeLEB128((delta_time_index << 1));
+					if (bitwidth % 64 != 0) {
+						const unsigned remaining = bitwidth % 64;
+						uint64_t hi64 = rh.peek<uint64_t>(nw - 1);
+						// write from nw-1 to 1
+						for (unsigned j = nw - 1; j > 0; --j) {
+							uint64_t lo64 = rh.peek<uint64_t>(j - 1);
+							h.writeUIntBE((hi64 << (64 - remaining)) | (lo64 >> remaining));
+							hi64 = lo64;
+						}
+						// write 0
+						h.writeUIntPartialForValueChange(hi64, remaining);
+					} else {
+						// write from nw-1 to 0
+						for (unsigned j = nw; j-- > 0;) {
+							h.writeUIntBE(rh.peek<uint64_t>(j));
+						}
 					}
-					// write 0
-					h.writeUIntPartialForValueChange(hi64, remaining);
-				} else {
-					// write from nw-1 to 0
-					for (unsigned j = nw; j-- > 0;) {
-						h.writeUIntBE(rh.peek<uint64_t>(j));
+				} break;
+				case EncodingType::VERILOG: {
+					h.writeLEB128((delta_time_index << 1) | 1);
+					const int fullWords = (bitwidth / 32);
+					if (int j = bitwidth % 32) {
+						const uint64_t val = rh.peek<uint64_t>(fullWords);
+						while (j > 0) {
+							--j;
+							const uint64_t v = val >> j;
+							h.writeUIntBE("01zx"[((v >> 31) & 2) | (v & 1)]);
+						}
 					}
+					for (size_t i = fullWords; i > 0;) {
+						--i;
+						const uint64_t val = rh.peek<uint64_t>(i);
+						for (int j = 32; j > 0;) {
+							--j;
+							const uint64_t v = val >> j;
+							h.writeUIntBE("01zx"[((v >> 31) & 2) | (v & 1)]);
+						}
+					}
+				} break;
+				[[unlikely]] case EncodingType::VHDL: {
+					FST_FAIL_STRING("VHDL format is unsupported with wide values");
+				} break;
 				}
 			}
 			rh.skip(num_byte);
