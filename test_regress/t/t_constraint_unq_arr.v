@@ -8,6 +8,46 @@
 // We only check uniqueness for small # of elements on a large range
 // as Z3 does not actually give unique elements (bug?) as of Jul 2026.
 
+class Subclass;
+  rand int sub_arr[];
+endclass
+
+class C extends Subclass;
+  rand int arr[];
+
+  function new ();
+    arr = new[10];
+    sub_arr = new[10];
+  endfunction
+
+  function bit check_unique();
+      // dynamic array inside class
+      for (int i = 0; i < $size(arr); i++) begin
+        for (int j = i + 1; j < $size(arr); j++) begin
+          if (arr[i] == arr[j]) begin
+            $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
+            return 0;
+          end
+        end
+      end
+      // dynamic array inside base class
+      for (int i = 0; i < $size(sub_arr); i++) begin
+        for (int j = i + 1; j < $size(sub_arr); j++) begin
+          if (sub_arr[i] == sub_arr[j]) begin
+            $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
+            return 0;
+          end
+        end
+      end
+      return 1;
+  endfunction
+
+  constraint c {
+    unique {arr};
+    unique {sub_arr};
+  }
+endclass
+
 module t;
   class UniqueMultipleArray;
     rand bit [15:0] arr[4];
@@ -86,9 +126,14 @@ module t;
   endclass : UniqueMultipleArray
 
   initial begin
+    automatic C cc = new();
     automatic UniqueMultipleArray a = new();
+
+    cc.randomize();
     a.randomize();
-    assert (a.check_unique());
+
+    assert(cc.check_unique());
+    assert(a.check_unique());
 
     $write("*-* All Finished *-*\n");
     $finish;
