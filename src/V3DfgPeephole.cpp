@@ -2548,7 +2548,13 @@ class V3DfgPeephole final : public DfgVisitor {
         if (DfgShiftL* const lShiftLp = lhsp->cast<DfgShiftL>()) {
             if (!lShiftLp->hasMultipleSinks() && rhsp->dtype() == lShiftLp->rhsp()->dtype()) {
                 APPLYING(REPLACE_SHIFTL_SHIFTL) {
-                    DfgAdd* const addp = make<DfgAdd>(rhsp, rhsp, lShiftLp->rhsp());
+                    // Fold '(a << b) << c' to 'a << (b + c)'.  Compute 'b + c'
+                    // one bit wider than the amounts so it cannot overflow.
+                    FileLine* const flp = vtxp->fileline();
+                    const DfgDataType& sumDType = DfgDataType::packed(rhsp->width() + 1);
+                    DfgVertex* const bp = make<DfgExtend>(flp, sumDType, lShiftLp->rhsp());
+                    DfgVertex* const cp = make<DfgExtend>(flp, sumDType, rhsp);
+                    DfgAdd* const addp = make<DfgAdd>(flp, sumDType, bp, cp);
                     replace(make<DfgShiftL>(vtxp, lShiftLp->lhsp(), addp));
                     return;
                 }
@@ -2637,7 +2643,13 @@ class V3DfgPeephole final : public DfgVisitor {
         if (DfgShiftR* const lShiftRp = lhsp->cast<DfgShiftR>()) {
             if (!lShiftRp->hasMultipleSinks() && rhsp->dtype() == lShiftRp->rhsp()->dtype()) {
                 APPLYING(REPLACE_SHIFTR_SHIFTR) {
-                    DfgAdd* const addp = make<DfgAdd>(rhsp, rhsp, lShiftRp->rhsp());
+                    // Fold '(a >> b) >> c' to 'a >> (b + c)'.  Compute 'b + c'
+                    // one bit wider than the amounts so it cannot overflow.
+                    FileLine* const flp = vtxp->fileline();
+                    const DfgDataType& sumDType = DfgDataType::packed(rhsp->width() + 1);
+                    DfgVertex* const bp = make<DfgExtend>(flp, sumDType, lShiftRp->rhsp());
+                    DfgVertex* const cp = make<DfgExtend>(flp, sumDType, rhsp);
+                    DfgAdd* const addp = make<DfgAdd>(flp, sumDType, bp, cp);
                     replace(make<DfgShiftR>(vtxp, lShiftRp->lhsp(), addp));
                     return;
                 }
