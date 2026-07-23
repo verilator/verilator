@@ -1,0 +1,11 @@
+%Error: t/t_class_param_dep_cycle_bad.v:8:10: Parameter default dependency is circular (IEEE 1800-2023 6.20.1): Parameter 'A' of 'SelfType'.
+    8 |     type A = A
+      |          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_param_dep_cycle_bad.v:14:9: Parameter default dependency is circular (IEEE 1800-2023 6.20.1): Parameter 'A' of 'SelfValue'.
+   14 |     int A = A + 1,
+      |         ^
+%Error: t/t_class_param_dep_cycle_bad.v:21:9: Parameter default dependency is circular (IEEE 1800-2023 6.20.1): Parameter 'A' of 'NestedValue'.
+   21 |     int A = NestedValue#()::M
+      |         ^
+%Error: Exiting due to

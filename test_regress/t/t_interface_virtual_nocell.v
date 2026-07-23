@@ -9,6 +9,13 @@ interface mem_if #(
 );
 endinterface
 
+interface required_if #(
+    type T,
+    int W
+);
+  T data;
+endinterface
+
 module t;
   class Cls #(
       type T = int
@@ -18,12 +25,15 @@ module t;
   // Note the referred-to virtual class is only used here, not instantiated
   typedef Cls#(virtual mem_if #(8)) cls_mem_if_t;
   typedef Cls#(virtual mem_if #()) cls_def_if_t;
+  typedef Cls#(virtual required_if#(logic [6:0], 7)) cls_required_if_t;
 
   initial begin
     cls_mem_if_t c;
     cls_def_if_t d;
+    cls_required_if_t e;
     c = new;
     d = new;
+    e = new;
     $finish;
   end
 

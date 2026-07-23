@@ -5,12 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls #(
+    type PARAMA,
     type PARAMB
 );
 endclass
 
 module t;
 
-  Cls c;  // Missing type param
+  // Missing type params
+  Cls c;
 
 endmodule

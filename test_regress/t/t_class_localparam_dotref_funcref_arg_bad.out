@@ -4,7 +4,7 @@
    27 |   localparam int y = D#(C#(7)::get_a())::x;
       |                                ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_class_localparam_dotref_funcref_arg_bad.v:27:32: Can't convert defparam value to constant: Param '__paramNumber1' of 'D'
+%Error: t/t_class_localparam_dotref_funcref_arg_bad.v:27:32: Can't convert defparam value to constant: Param 'v' of 'D'
                                                            : ... note: In instance 't'
    27 |   localparam int y = D#(C#(7)::get_a())::x;
       |                                ^~~~~

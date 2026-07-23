@@ -19,6 +19,18 @@ endinterface
 
 typedef struct packed {logic x;} my_logic_t;
 
+class BusElement #(type T = int);
+  typedef T value_t;
+endclass
+
+interface BusDependent #(
+    parameter int W = 3,
+    parameter int D = W + 2,
+    parameter type T = BusElement#(logic [D-1:0])::value_t,
+    parameter type U = T
+);
+  U data;
+endinterface
 module t;
   Bus #(6, 3) intf1 ();
   virtual Bus #(6, 3) vintf1 = intf1;
@@ -32,6 +44,15 @@ module t;
   BusTyped #(my_logic_t) intf3 ();
   virtual BusTyped #(my_logic_t) vintf3 = intf3;
 
+  BusDependent #(.W(5)) intf4 ();
+  virtual BusDependent #(.W(5)) vintf4 = intf4;
+  virtual BusDependent #(
+      .U(logic [6:0]),
+      .T(logic [6:0]),
+      .D(7),
+      .W(5)
+  ) vintf4_explicit = intf4;
+
   initial begin
     intf1.data = '1;
     if (vintf1.data != 6'b111111) $stop;
@@ -43,6 +64,11 @@ module t;
 
     intf3.data.x = '1;
     if (vintf3.data.x != 1'b1) $stop;
+
+    intf4.data = 7'h55;
+    if ($bits(vintf4.data) != 7) $stop;
+    if (vintf4.data != 7'h55) $stop;
+    if (vintf4_explicit.data != 7'h55) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;
