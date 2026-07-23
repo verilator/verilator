@@ -179,6 +179,40 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         return;
     }
 
+    if (const DfgPrev* const prevVtxp = vtx.cast<DfgPrev>()) {
+        const AstVarScope* const vscp = prevVtxp->vscp();
+        os << toDotId(vtx);
+        // Begin attributes
+        os << " [";
+        // Begin 'label'
+        os << "label=\"";
+        // Name
+        os << vscp->prettyName();
+        // Address
+        os << '\n' << cvtToHex(prevVtxp);
+        // Type and fanout
+        os << '\n';
+        prevVtxp->dtype().astDtypep()->dumpSmall(os);
+        os << " / F" << prevVtxp->fanout();
+        // End 'label'
+        os << '"';
+        // Shape
+        if (prevVtxp->isPacked()) {
+            os << ", shape=box";
+        } else if (prevVtxp->isArray()) {
+            os << ", shape=box3d";
+        } else {
+            prevVtxp->v3fatalSrc("Unhandled variable type");
+        }
+        // Color
+        const char* const colorp = "mediumorchid1";  // Purple
+        os << ", style=filled";
+        os << ", fillcolor=\"" << colorp << "\"";
+        // End attributes
+        os << "]\n";
+        return;
+    }
+
     if (const DfgConst* const constVtxp = vtx.cast<DfgConst>()) {
         const V3Number& num = constVtxp->num();
 
@@ -477,6 +511,10 @@ void DfgVertex::typeCheck(const DfgGraph& dfg) const {
         const DfgVertexVar& v = *as<DfgVertexVar>();
         CHECK(!v.defaultp() || v.defaultp()->dtype() == v.dtype(), "'defaultp' should match");
         CHECK(!v.srcp() || v.srcp()->dtype() == v.dtype(), "'srcp' should match");
+        return;
+    }
+    case VDfgType::Prev: {
+        CHECK(isPacked() || isArray(), "Should be Packed or Array type");
         return;
     }
     case VDfgType::SpliceArray:

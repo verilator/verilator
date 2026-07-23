@@ -816,6 +816,7 @@ bool DfgVertex::isCheaperThanLoad() const {
     if (is<DfgConst>()) return true;
     // Variables
     if (is<DfgVertexVar>()) return true;
+    if (is<DfgPrev>()) return true;
     // Array sels are just address computation, but the address itself can be expensive
     if (const DfgArraySel* aselp = cast<DfgArraySel>()) {
         if (aselp->bitp()->is<DfgMatchMasked>()) return false;

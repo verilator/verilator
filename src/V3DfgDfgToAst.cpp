@@ -224,6 +224,10 @@ class DfgToAstVisitor final : DfgVisitor {
         m_resultp = new AstVarRef{vtxp->fileline(), vtxp->vscp(), VAccess::READ};
     }
 
+    void visit(DfgPrev* vtxp) override {
+        m_resultp = new AstVarRef{vtxp->fileline(), vtxp->vscp(), VAccess::READ};
+    }
+
     void visit(DfgConst* vtxp) override {  //
         m_resultp = new AstConst{vtxp->fileline(), vtxp->num()};
     }
