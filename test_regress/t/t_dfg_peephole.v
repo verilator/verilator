@@ -341,6 +341,13 @@ module t (
   `signal(REPLACE_BITWISE_OF_REDUCTION_OF_SELS_WITH_REDUCTION_XOR_B, (^rand_a[12 +:2]) ^ (^rand_a[10 +: 2]));
   `signal(REPLACE_SHIFTL_SHIFTL, rand_a << 2 << 3);
   `signal(REPLACE_SHIFTR_SHIFTR, rand_a >> 2 >> 3);
+  // As above, but with 2-bit variable amounts whose sum can overflow the amount width (#7955).
+  wire [1:0] shl_shl_amt0 = rand_a[1:0];
+  wire [1:0] shl_shl_amt1 = rand_b[1:0];
+  `signal(REPLACE_SHIFTL_SHIFTL_OVERFLOW, (rand_a << shl_shl_amt0) << shl_shl_amt1);
+  wire [1:0] shr_shr_amt0 = rand_a[3:2];
+  wire [1:0] shr_shr_amt1 = rand_b[3:2];
+  `signal(REPLACE_SHIFTR_SHIFTR_OVERFLOW, (rand_a >> shr_shr_amt0) >> shr_shr_amt1);
   `signal(PUSH_COMMUTATIVE_BINARY_THROUGH_COND, 58'h1 + (rand_a[0] ? rand_b[1 +: 58] : ~rand_b[1 +: 58]));
   `signal(REMOVE_ADD_ZERO, rand_a + '0);
   `signal(REPLACE_ADD_WITH_COUNT_ONES_A, 4'(rand_a[63]) + 4'(rand_a[62]) + 4'(rand_a[61]));
