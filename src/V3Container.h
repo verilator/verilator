@@ -34,12 +34,20 @@ class VInsertionSet final {
     std::vector<T_Key> m_keys;  // Elements by insertion order
     std::unordered_set<T_Key> m_keySet;  // Elements by key
 public:
+    using const_iterator = typename std::vector<T_Key>::const_iterator;
+
     // METHODS
     bool insert(const T_Key& key) {
         // Returns if did insertion (second pair argument of traditional emplace)
         const auto itFoundPair = m_keySet.insert(key);
         if (itFoundPair.second) m_keys.push_back(key);
         return itFoundPair.second;
+    }
+    void insert(const_iterator begin, const const_iterator end) {
+        while (begin != end) {
+            if (m_keySet.insert(*begin).second) m_keys.push_back(*begin);
+            ++begin;
+        }
     }
     void clear() {
         m_keys.clear();
@@ -48,10 +56,10 @@ public:
 
     // ACCESSORS
     bool empty() const { return m_keys.empty(); }
+    size_t size() const { return m_keys.size(); }
     bool exists(const T_Key& key) const { return m_keySet.find(key) != m_keySet.end(); }
 
     // ITERATORS
-    using const_iterator = typename std::vector<T_Key>::const_iterator;
     const_iterator begin() const { return m_keys.begin(); }
     const_iterator end() const { return m_keys.end(); }
 };

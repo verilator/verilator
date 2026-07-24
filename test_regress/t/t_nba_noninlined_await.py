@@ -4,16 +4,17 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--binary'])
+test.compile(verilator_flags2=['--binary', '--stats'])
 
-# Issue #<TODO> makes this fail
-test.execute(fails=True)
+test.execute()
+
+test.file_grep(test.stats, r'Count of non-inlined co_awaits with SenTree\s+(\d+)', 2)
 
 test.passes()
