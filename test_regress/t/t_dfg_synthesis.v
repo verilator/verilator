@@ -586,4 +586,29 @@ module t (
   end
   `signal(ARRAY_READ, array_read);
 
+  logic [1:0] array_sequential [2];
+  always_comb begin
+    array_sequential[0] = rand_a[1:0];
+    array_sequential[1] = rand_b[1:0];
+  end
+  `signal(ARRAY_SEQUENTIAL, {array_sequential[1], array_sequential[0]});
+
+  logic [1:0] array_intermediate [2];
+  logic [1:0] array_intermediate_read;
+  always_comb begin
+    array_intermediate[0] = rand_a[1:0];
+    array_intermediate_read = array_intermediate[0];
+    array_intermediate[1] = rand_b[1:0];
+  end
+  `signal(ARRAY_INTERMEDIATE,
+          {array_intermediate[1], array_intermediate[0], array_intermediate_read});
+
+  logic [3:0] array_partial_reassign [2];
+  always_comb begin // nosynth
+    array_partial_reassign[0] = rand_a[3:0];
+    array_partial_reassign[1] = rand_b[3:0];
+    array_partial_reassign[1][1:0] = rand_a[1:0];
+  end
+  `signal(ARRAY_PARTIAL_REASSIGN, {array_partial_reassign[1], array_partial_reassign[0]});
+
 endmodule
