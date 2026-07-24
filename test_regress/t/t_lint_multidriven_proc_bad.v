@@ -7,8 +7,8 @@
 // Same clock: two plain always blocks drive the whole of 'q', reported by
 // MULTIDRIVENPROC.
 module t (
-    input  wire  clk,
-    input  wire  d,
+    input wire clk,
+    input wire d,
     output logic q
 );
 
@@ -20,9 +20,9 @@ endmodule
 // Different clocks: reported by MULTIDRIVEN (on by default). MULTIDRIVENPROC is
 // suppressed here so the conflict is reported only once.
 module t2 (
-    input  wire  clka,
-    input  wire  clkb,
-    input  wire  d,
+    input wire clka,
+    input wire clkb,
+    input wire d,
     output logic q
 );
 

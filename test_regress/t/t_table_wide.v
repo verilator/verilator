@@ -4,7 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module m(input in);
+module m (
+    input in
+);
   // at least 65 variables are required
   reg id42;
   reg id43;

@@ -4,19 +4,19 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-task dyn_task(input logic [30:0] data []);
+task dyn_task(input logic [30:0] data[]);
   $display("%p", data);
 endtask
 
-task unpacked_task(input logic [30:0] data [3:0]);
+task unpacked_task(input logic [30:0] data[3:0]);
   $display("%p", data);
 endtask
 
-task queue_task(input logic [30:0] data [$]);
+task queue_task(input logic [30:0] data[$]);
   $display("%p", data);
 endtask
 
-task assoc_task(input logic [30:0] data [int]);
+task assoc_task(input logic [30:0] data[int]);
   $display("%p", data);
 endtask
 
