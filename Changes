@@ -66,6 +66,7 @@ Verilator 5.051 devel
 * Fix lost writes when select width exceeds variable width (#7975). [Bartosz Skorowski]
 * Fix variable scope in unique on dynamic array (#7981). [Kornel Uriasz, Antmicro Ltd.]
 * Fix table optimization causing not contextually convertible to bool error (#7983). [Jakub Michalski]
+* Fix $fgets being mis-optimized away (#7976). [G-A. Kamendje]
 
 
 Verilator 5.050 2026-07-01

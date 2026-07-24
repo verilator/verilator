@@ -3259,6 +3259,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 64; }
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
 };
 class AstFUngetC final : public AstNodeBiop {
 public:
