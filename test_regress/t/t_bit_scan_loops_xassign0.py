@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # Reuse the same design.  '--x-assign 0' makes the auto-inserted out-of-range guard on a
 # non-power-of-two bit-select a plain '(idx <= W-1) && vec[idx]' (AstLogAnd), rather than

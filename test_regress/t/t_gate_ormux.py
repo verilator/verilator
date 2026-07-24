@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.cycles = (100000000 if test.benchmark else 100)
 test.sim_time = test.cycles * 10 + 1000
 

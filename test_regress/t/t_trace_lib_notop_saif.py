@@ -12,5 +12,6 @@ import trace_lib_common
 
 test.priority(10)
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 trace_lib_common.run(test)

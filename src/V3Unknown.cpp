@@ -207,7 +207,11 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_allowXUnique);
-        if (nodep->isParam()) m_allowXUnique = false;
+        if (nodep->isParam()) {
+            m_allowXUnique = false;
+        } else if (m_modp && m_modp->isTop() && nodep->varType() == VVarType::PORT) {
+            nodep->setIsTopLevelPort();
+        }
         iterateChildren(nodep);
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
@@ -394,7 +398,7 @@ class UnknownVisitor final : public VNVisitor {
 
     void visit(AstSel* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->user1SetOnce()) {
+        if (!v3Global.opt.fourstate() && !nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
             const AstNode* const basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
@@ -551,7 +555,8 @@ public:
     // CONSTRUCTORS
     explicit UnknownVisitor(AstNetlist* nodep)
         : m_lvboundNames{"__Vlvbound"}
-        , m_xrandNames{std::make_unique<V3UniqueNames>(s_xrandPrefix)} {
+        , m_xrandNames{std::make_unique<V3UniqueNames>(s_xrandPrefix)}
+        , m_allowXUnique{!v3Global.opt.fourstate()} {
         iterate(nodep);
     }
     ~UnknownVisitor() override {  //

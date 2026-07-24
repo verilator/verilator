@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 
 # Very hard to reliably trigger run-time race on small design,
 # use ThreadSanitizer to test

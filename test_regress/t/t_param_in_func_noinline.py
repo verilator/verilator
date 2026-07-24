@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_param_in_func.v"
 
 test.compile(verilator_flags2=["--stats", "+define+NO_INLINE=1"])

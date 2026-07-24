@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 
 test.compile(threads=2, fails=True, expect_filename=test.golden_filename)
 

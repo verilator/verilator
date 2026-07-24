@@ -605,7 +605,7 @@ void detail::ValueChangeData::writeEncodedPositions(
 			}
 
 			// encode as signed (value << 1) | 1 and write as signed LEB128
-			h.writeLEB128Signed((value_to_encode << 1) | 1);
+			h.writeLEB128Signed((static_cast<uint64_t>(value_to_encode) << 1) | 1);
 
 			++i;
 		}

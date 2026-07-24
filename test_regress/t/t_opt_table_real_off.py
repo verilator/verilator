@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator_st')
+test.fourstate_capable = False
 test.top_filename = 't/t_opt_table_real.v'
 test.golden_filename = 't/t_opt_table_real.out'
 
