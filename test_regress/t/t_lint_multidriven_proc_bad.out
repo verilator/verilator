@@ -1,0 +1,20 @@
+%Warning-MULTIDRIVENPROC: t/t_lint_multidriven_proc_bad.v:16:25: Variable written to in always block also written by another always block: 'q'
+                                                               : ... note: In instance 't'
+                          t/t_lint_multidriven_proc_bad.v:16:25: 
+   16 |   always @(posedge clk) q <= ~d;
+      |                         ^
+                          t/t_lint_multidriven_proc_bad.v:15:25: ... Location of other write
+   15 |   always @(posedge clk) q <= d;
+      |                         ^
+                          ... For warning description see https://verilator.org/warn/MULTIDRIVENPROC?v=latest
+                          ... Use "/* verilator lint_off MULTIDRIVENPROC */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_proc_bad.v:26:18: Signal has multiple driving blocks with different clocking: 't2.q'
+                      t/t_lint_multidriven_proc_bad.v:29:26: ... Location of first driving block
+   29 |   always @(posedge clka) q <= d;
+      |                          ^
+                      t/t_lint_multidriven_proc_bad.v:30:26: ... Location of other driving block
+   30 |   always @(posedge clkb) q <= ~d;
+      |                          ^
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Error: Exiting due to

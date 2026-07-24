@@ -47,6 +47,7 @@ class UndrivenVarEntry final {
     const AstAlways* m_alwCombp
         = nullptr;  // always_comb of var if driven within always_comb, else nullptr
     const AstAlways* m_alwFFp = nullptr;  // always_ff of var if driven within always_ff
+    const AstAlways* m_alwPlainp = nullptr;  // plain always of var if driven within plain always
     const AstNodeVarRef* m_nodep = nullptr;  // varref if driven, else nullptr
     const AstNode* m_initStaticp = nullptr;  // varref if in InitialStatic driven
     const AstNode* m_initialp = nullptr;  // varref if driven in an explicit initial block
@@ -62,7 +63,8 @@ class UndrivenVarEntry final {
         FLAG_DRIVEN = 1,  // Signal or bit has been written/driven
         FLAG_DRIVEN_ALWCOMB = 2,  // Whole signal has been driven from always_comb
         FLAG_DRIVEN_ALWFF = 3,  // Whole signal has been driven from always_ff
-        FLAGS_PER_BIT = 4  // Number of flags stored for each tracked bit
+        FLAG_DRIVEN_ALWPLAIN = 4,  // Whole signal has been driven from a plain always
+        FLAGS_PER_BIT = 5  // Number of flags stored for each tracked bit
     };
 
 public:
@@ -158,6 +160,10 @@ public:
         m_wholeFlags[FLAG_DRIVEN_ALWFF] = true;
         m_alwFFp = alwFFp;
     }
+    void drivenAlwaysPlainWhole(const AstAlways* alwPlainp) {
+        m_wholeFlags[FLAG_DRIVEN_ALWPLAIN] = true;
+        m_alwPlainp = alwPlainp;
+    }
 
     const AstNode* initStaticp() const { return m_initStaticp; }
     void initStaticp(const AstNode* nodep) { m_initStaticp = nodep; }
@@ -172,10 +178,12 @@ public:
     bool isDrivenWhole() const { return m_wholeFlags[FLAG_DRIVEN]; }
     bool isDrivenAlwaysCombWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWCOMB]; }
     bool isDrivenAlwaysFFWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWFF]; }
+    bool isDrivenAlwaysPlainWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWPLAIN]; }
     bool isFtaskDriven() const { return m_ftaskDriven; }
     const AstNodeVarRef* getNodep() const { return m_nodep; }
     const AstAlways* getAlwCombp() const { return m_alwCombp; }
     const AstAlways* getAlwFFp() const { return m_alwFFp; }
+    const AstAlways* getAlwPlainp() const { return m_alwPlainp; }
     void usedBit(int bit, int width, const AstNode* nodep) {
         UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name());
         for (int i = 0; i < width; i++) {
@@ -375,6 +383,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
     const AstAlways* m_alwaysFFp = nullptr;  // Current always if ff, otherwise nullptr
+    const AstAlways* m_alwaysPlainp = nullptr;  // Current always if plain (not comb/ff/latch)
 
     V3UndrivenCapture* const m_capturep = nullptr;  // Capture object.  'nullptr' if disabled.
 
@@ -536,7 +545,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType) && !sameFileLine
                     && !entryp->isUnderGen() && otherWritep && !entryp->isFtaskDriven()
                     && !ftaskDef && !m_inSelLhs
-                    && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
+                    && (!nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)
+                        || !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVENPROC))) {
                     const bool otherWriteIsStaticInit
                         = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
 
@@ -587,6 +597,35 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        << "... Location of always_ff write\n"
                                                        << otherWritep->warnContextSecondary());
                     }
+                    // Two plain always blocks driving the whole signal: legal
+                    // SystemVerilog, but a driver conflict for synthesis. The
+                    // always_ff/always_comb cases above already cover mixes with
+                    // an explicit process, so only warn for plain+plain here.
+                    // When the two blocks are clocked differently, the
+                    // (on-by-default) MULTIDRIVEN check in V3Delayed already reports
+                    // the conflict, so don't also emit MULTIDRIVENPROC for that case.
+                    const AstAlways* const otherAlwaysp = entryp->getAlwPlainp();
+                    const AstSenTree* const senp
+                        = m_alwaysPlainp ? m_alwaysPlainp->sentreep() : nullptr;
+                    const AstSenTree* const otherSenp
+                        = otherAlwaysp ? otherAlwaysp->sentreep() : nullptr;
+                    const bool differentClocking = senp && otherSenp && senp->hasClocked()
+                                                   && otherSenp->hasClocked()
+                                                   && !senp->sameTree(otherSenp);
+                    if (m_alwaysPlainp && entryp->isDrivenAlwaysPlainWhole()
+                        && m_alwaysPlainp != otherAlwaysp
+                        && m_alwaysPlainp->fileline() != otherAlwaysp->fileline()
+                        && !differentClocking) {
+                        nodep->v3warn(
+                            MULTIDRIVENPROC,
+                            "Variable written to in always block also written by another always "
+                            "block: "
+                                << nodep->prettyNameQ() << '\n'
+                                << nodep->warnOther() << '\n'
+                                << nodep->warnContextPrimary() << '\n'
+                                << otherWritep->warnOther() << "... Location of other write\n"
+                                << otherWritep->warnContextSecondary());
+                    }
                 }
                 if (!m_inInitialSetup || nodep->varp()->hasUserInit()) {
                     // Else don't count default initialization as a driver to a net/variable
@@ -598,6 +637,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     entryp->underGenerate();
                 if (m_alwaysCombp) entryp->drivenAlwaysCombWhole(m_alwaysCombp);
                 if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, nodep->varp());
+                if (m_alwaysPlainp) entryp->drivenAlwaysPlainWhole(m_alwaysPlainp);
             }
             if (nodep->access().isWriteOrRW() && !VN_IS(nodep, VarXRef)) {
                 // Ignoring xrefs as the initial and assignment to track might refer to two
@@ -689,6 +729,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         VL_RESTORER(m_alwaysp);
         VL_RESTORER(m_alwaysCombp);
         VL_RESTORER(m_alwaysFFp);
+        VL_RESTORER(m_alwaysPlainp);
         AstNode::user2ClearTree();
         m_alwaysp = nodep;
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
@@ -698,6 +739,7 @@ class UndrivenVisitor final : public VNVisitorConst {
             m_alwaysCombp = nullptr;
         }
         m_alwaysFFp = nodep->keyword() == VAlwaysKwd::ALWAYS_FF ? nodep : nullptr;
+        m_alwaysPlainp = nodep->keyword() == VAlwaysKwd::ALWAYS ? nodep : nullptr;
         iterateChildrenConst(nodep);
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep);
     }
