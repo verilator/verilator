@@ -33,7 +33,7 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 0) begin
-      logic_arr[0][2][-4] <= 1;
+      logic_arr[cyc][2][-4] <= 1;
       int_arr[0][0][2] <= 1;
       union_arr[1].x <= 1;
       real_arr[0][0][1] <= 1;

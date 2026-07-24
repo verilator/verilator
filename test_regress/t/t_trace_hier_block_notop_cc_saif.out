@@ -170,7 +170,7 @@
    (out6\[5\] (T0 170) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
    (out6\[6\] (T0 170) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
    (out6\[7\] (T0 170) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-   (count\[0\] (T0 90) (T1 80) (TZ 0) (TX 0) (TB 0) (TC 17))
+   (count\[0\] (T0 90) (T1 80) (TZ 0) (TX 0) (TB 0) (TC 16))
    (count\[1\] (T0 90) (T1 80) (TZ 0) (TX 0) (TB 0) (TC 8))
    (count\[2\] (T0 90) (T1 80) (TZ 0) (TX 0) (TB 0) (TC 4))
    (count\[3\] (T0 90) (T1 80) (TZ 0) (TX 0) (TB 0) (TC 2))

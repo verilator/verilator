@@ -179,191 +179,197 @@ module Vt_debug_emitv_t;
     int signed mod_val;
     int signed mod_res;
     always @(posedge clk) begin
-        begin
-            cyc <= (cyc + 'sh1);
-            r <= (r + 0.01);
-            fo = cyc;
-            sub.inc(fosum);
-            sum = sub.f(sum);
-            $display("[%0t] sum = %d", $time, sum);
-            $display("a?= %d", ($c('sh1) ? $c('sh14)
-                                 : $c('sh1e)));
-            $c(;);
-            $display("%d", $c(0));
-            fd = $fopen("/dev/null");
-            ;
-            $fclose(fd);
-            fd = $fopen("/dev/null", "r");
-            ;
-            $fgetc(fd);
-            $fflush(fd);
-            $fscanf(fd, "%d", sum);
-            ;
-            $fdisplay(32'h69203d20, "%d", sum);
-            $fwrite(fd, "hello");
-            $readmemh(string'(fd), array);
-            $readmemh(string'(fd), array, 'sh0);
-            $readmemh(string'(fd), array, 'sh0, 'sh0);
-            sum = 'sh0;
-            begin : unnamedblk3
-                int signed i;
-                i = 'sh0;
-                begin : label2
-                    while ((i < cyc)) begin
-                        begin
-                            sum = (sum + i);
-                            if ((sum > 'sha)) begin
-                                disable label2;
+        begin : label2
+            begin
+                cyc <= (cyc + 'sh1);
+                r <= (r + 0.01);
+                fo = cyc;
+                sub.inc(fosum);
+                sum = sub.f(sum);
+                $display("[%0t] sum = %d", $time, sum);
+                $display("a?= %d", ($c('sh1) ? $c('sh14)
+                                     : $c('sh1e)));
+                $c(;);
+                $display("%d", $c(0));
+                fd = $fopen("/dev/null");
+                ;
+                $fclose(fd);
+                fd = $fopen("/dev/null", "r");
+                ;
+                $fgetc(fd);
+                $fflush(fd);
+                $fscanf(fd, "%d", sum);
+                ;
+                $fdisplay(32'h69203d20, "%d", sum);
+                $fwrite(fd, "hello");
+                $readmemh(string'(fd), array);
+                $readmemh(string'(fd), array, 'sh0);
+                $readmemh(string'(fd), array, 'sh0, 
+                          'sh0);
+                sum = 'sh0;
+                begin : unnamedblk3
+                    int signed i;
+                    i = 'sh0;
+                    begin : label3
+                        while ((i < cyc)) begin
+                            begin
+                                sum = (sum + i);
+                                if ((sum > 'sha)) begin
+                                    disable label3;
+                                end
+                                else begin
+                                    sum = (sum + 'sh1);
+                                end
                             end
-                            else begin
-                                sum = (sum + 'sh1);
-                            end
+                            i = (i + 'h1);
                         end
-                        i = (i + 'h1);
                     end
                 end
-            end
-            if ((cyc == 'sh63)) begin
-                $finish;
-            end
-            if ((cyc == 'sh64)) begin
-                $stop;
-            end
-            case (in)
-                 // synopsys full_case parallel_case'sh1: begin $display("1");
+                if ((cyc == 'sh63)) begin
+                    $finish;
+                    disable label2;
                 end
-                default: begin $display("default");
+                if ((cyc == 'sh64)) begin
+                    $stop;
                 end
-            endcase
-            priority case (in)
-                'sh1: begin $display("1");
-                end
-                default: begin $display("default");
-                end
-            endcase
-            unique case (in)
-                'sh1: begin $display("1");
-                end
-                default: begin $display("default");
-                end
-            endcase
-            unique0 case (in)
-                'sh1: begin $display("1");
-                end
-                default: begin $display("default");
-                end
-            endcase
-            if (in) begin
-                $display("1");
-            end
-            else begin
-                $display("0");
-            end
-            priority if (in) begin
-                $display("1");
-            end
-            else begin
-                $display("0");
-            end
-            unique if (in) begin
-                $display("1");
-            end
-            else begin
-                $display("0");
-            end
-            unique0 if (in) begin
-                $display("1");
-            end
-            else begin
-                $display("0");
-            end
-            $display("%d%d", $past(cyc), $past(cyc, 
-                                               'sh1));
-            str = $sformatf("cyc=%d", cyc);
-            ;
-            $display("str = %s", str);
-            $display("struct = %p", ps);
-            $display("%% [%t] [%t] to=%o td=%d", $time, 
-                     $realtime, $time, $time);
-            $sscanf(40'h666f6f3d35, "foo=%d", i);
-            ;
-            $printtimescale;
-            if ((i != 'sh5)) begin
-                $stop;
-            end
-            sum = $random();
-            sum = $random('sha);
-            sum = $urandom();
-            sum = $urandom('sha);
-            sum = array.r_sum() with ((item * 'sh2)) ;
-            if ((PKG_PARAM != 'sh1)) begin
-                $stop;
-            end
-            sub.r = 62.0;
-            mod_res = (mod_val % 'sh5);
-            $display("%g", $log10(r));
-            $display("%g", $ln(r));
-            $display("%g", $exp(r));
-            $display("%g", $sqrt(r));
-            $display("%g", $floor(r));
-            $display("%g", $ceil(r));
-            $display("%g", $sin(r));
-            $display("%g", $cos(r));
-            $display("%g", $tan(r));
-            $display("%g", $asin(r));
-            $display("%g", $acos(r));
-            $display("%g", $atan(r));
-            $display("%g", $sinh(r));
-            $display("%g", $cosh(r));
-            $display("%g", $tanh(r));
-            $display("%g", $asinh(r));
-            $display("%g", $acosh(r));
-            $display("%g", $atanh(r));
-            if ($sampled(cyc[1])) begin
-                $write("");
-            end
-            if ($rose(cyc)) begin
-                $write("");
-            end
-            if ($fell(cyc)) begin
-                $write("");
-            end
-            if ($stable(cyc)) begin
-                $write("");
-            end
-            if ((! $stable(cyc))) begin
-                $write("");
-            end
-            if ($past(cyc[1])) begin
-                $write("");
-            end
-            if ($rose(cyc, @( clk))) begin
-                $write("");
-            end
-            if ($fell(cyc, @( clk))) begin
-                $write("");
-            end
-            if ($stable(cyc, @( clk))) begin
-                $write("");
-            end
-            if ((! $stable(cyc, @( clk)))) begin
-                $write("");
-            end
-            if ($past(cyc[1], 'sh5)) begin
-                $write("");
-            end
-            force sum = 'sha;
-            begin : unnamedblk1_1
-                int signed __Vrepeat0;
-                __Vrepeat0 = 'sh2;
-                while ((__Vrepeat0 > 32'h0)) begin
-                    if ((sum != 'sha)) begin
-                        $stop;
+                case (in)
+                     // synopsys full_case parallel_case'sh1: begin $display("1");
                     end
-                    __Vrepeat0 = (__Vrepeat0 - 32'h1);
+                    default: begin $display("default");
+                    end
+                endcase
+                priority case (in)
+                    'sh1: begin $display("1");
+                    end
+                    default: begin $display("default");
+                    end
+                endcase
+                unique case (in)
+                    'sh1: begin $display("1");
+                    end
+                    default: begin $display("default");
+                    end
+                endcase
+                unique0 case (in)
+                    'sh1: begin $display("1");
+                    end
+                    default: begin $display("default");
+                    end
+                endcase
+                if (in) begin
+                    $display("1");
                 end
+                else begin
+                    $display("0");
+                end
+                priority if (in) begin
+                    $display("1");
+                end
+                else begin
+                    $display("0");
+                end
+                unique if (in) begin
+                    $display("1");
+                end
+                else begin
+                    $display("0");
+                end
+                unique0 if (in) begin
+                    $display("1");
+                end
+                else begin
+                    $display("0");
+                end
+                $display("%d%d", $past(cyc), $past(
+                                                   cyc, 
+                                                   'sh1));
+                str = $sformatf("cyc=%d", cyc);
+                ;
+                $display("str = %s", str);
+                $display("struct = %p", ps);
+                $display("%% [%t] [%t] to=%o td=%d", 
+                         $time, $realtime, $time, $time);
+                $sscanf(40'h666f6f3d35, "foo=%d", i);
+                ;
+                $printtimescale;
+                if ((i != 'sh5)) begin
+                    $stop;
+                end
+                sum = $random();
+                sum = $random('sha);
+                sum = $urandom();
+                sum = $urandom('sha);
+                sum = array.r_sum() with ((item * 'sh2)) ;
+                if ((PKG_PARAM != 'sh1)) begin
+                    $stop;
+                end
+                sub.r = 62.0;
+                mod_res = (mod_val % 'sh5);
+                $display("%g", $log10(r));
+                $display("%g", $ln(r));
+                $display("%g", $exp(r));
+                $display("%g", $sqrt(r));
+                $display("%g", $floor(r));
+                $display("%g", $ceil(r));
+                $display("%g", $sin(r));
+                $display("%g", $cos(r));
+                $display("%g", $tan(r));
+                $display("%g", $asin(r));
+                $display("%g", $acos(r));
+                $display("%g", $atan(r));
+                $display("%g", $sinh(r));
+                $display("%g", $cosh(r));
+                $display("%g", $tanh(r));
+                $display("%g", $asinh(r));
+                $display("%g", $acosh(r));
+                $display("%g", $atanh(r));
+                if ($sampled(cyc[1])) begin
+                    $write("");
+                end
+                if ($rose(cyc)) begin
+                    $write("");
+                end
+                if ($fell(cyc)) begin
+                    $write("");
+                end
+                if ($stable(cyc)) begin
+                    $write("");
+                end
+                if ((! $stable(cyc))) begin
+                    $write("");
+                end
+                if ($past(cyc[1])) begin
+                    $write("");
+                end
+                if ($rose(cyc, @( clk))) begin
+                    $write("");
+                end
+                if ($fell(cyc, @( clk))) begin
+                    $write("");
+                end
+                if ($stable(cyc, @( clk))) begin
+                    $write("");
+                end
+                if ((! $stable(cyc, @( clk)))) begin
+                    $write("");
+                end
+                if ($past(cyc[1], 'sh5)) begin
+                    $write("");
+                end
+                force sum = 'sha;
+                begin : unnamedblk1_1
+                    int signed __Vrepeat0;
+                    __Vrepeat0 = 'sh2;
+                    while ((__Vrepeat0 > 32'h0)) begin
+                        if ((sum != 'sha)) begin
+                            $stop;
+                        end
+                        __Vrepeat0 = (__Vrepeat0 - 
+                                      32'h1);
+                    end
+                end
+                release sum;
             end
-            release sum;
         end
     end
     sequence s_clocked;
@@ -1016,7 +1022,7 @@ package Vt_debug_emitv_std;
             longint __Vincrement1;
             input int signed keyCount;
             longint ticket;
-            begin : label3
+            begin : label4
                 ticket = /*CRESET*/;
                 if (((m_keyCount >= keyCount) && (m_nextKeyCount 
                                                   > 
@@ -1024,7 +1030,7 @@ package Vt_debug_emitv_std;
                     begin
                         m_keyCount = (m_keyCount - 
                                       keyCount);
-                        disable label3;
+                        disable label4;
                     end
                 end
                 __Vincrement1 = m_nextTicket;
@@ -1039,15 +1045,15 @@ package Vt_debug_emitv_std;
         endtask
         function try_get;
             input int signed keyCount;
-            begin : label4
+            begin : label5
                 try_get = /*CRESET*/;
                 if ((m_keyCount < keyCount)) begin
                     try_get = 'sh0;
-                    disable label4;
+                    disable label5;
                 end
                 m_keyCount = (m_keyCount - keyCount);
                 try_get = 'sh1;
-                disable label4;
+                disable label5;
             end
         endfunction
     endclass
@@ -1062,12 +1068,12 @@ package Vt_debug_emitv_std;
         VlProcessRef m_process;
         function self;
             Vt_debug_emitv_process pVt_debug_emitv_process;
-            begin : label5
+            begin : label6
                 self = /*CRESET*/;
                 p = new();
                 $c(p.m_process = vlProcess;);
                 self = p;
-                disable label5;
+                disable label6;
             end
         endfunction
         task set_status;
@@ -1075,10 +1081,10 @@ package Vt_debug_emitv_std;
             $c(m_process->state(s););
         endtask
         function status;
-            begin : label6
+            begin : label7
                 status = /*CRESET*/;
                 status = ($c(m_process->state()));
-                disable label6;
+                disable label7;
             end
         endfunction
         task kill;
@@ -1146,12 +1152,12 @@ package Vt_debug_emitv_std;
         ???? // SYSTEMCSECTION
         function get_randstate;
             string s;
-            begin : label7
+            begin : label8
                 get_randstate = /*CRESET*/;
                 s = string'($c(0));
                 $c(s = m_process->randstate(););
                 get_randstate = s;
-                disable label7;
+                disable label8;
             end
         endfunction
         task set_randstate;
@@ -1284,11 +1290,11 @@ package Vt_debug_emitv___024unit;
     function rand_restricted;
         input Vt_debug_emitv_Cls objVt_debug_emitv_Cls;
         input int signed member;
-        begin : label8
+        begin : label9
             rand_restricted = randomize() with (
                 ???? // CONSTRAINTEXPR
                 (item.rmember1 < member)) ;
-            disable label8;
+            disable label9;
         end
     endfunction
 endpackage
@@ -1309,13 +1315,13 @@ module Vt_debug_emitv_sub;
     endtask
     function f;
         input int signed v;
-        begin : label9
+        begin : label10
             if ((v == 'sh0)) begin
                 f = 'sh21;
-                disable label9;
+                disable label10;
             end
             f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
-            disable label9;
+            disable label10;
         end
     endfunction
     real r;

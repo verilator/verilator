@@ -54,8 +54,7 @@ module t #(
     cg_inst.sample();
 
     // Coverage progression (NBA committed before sample() within always block).
-    // A final sample() also runs on the $finish cycle (value still 100), so the
-    // positive/maxv hit counts are one higher than the number of distinct stimuli.
+    // No sample runs on the $finish cycle; statements after $finish are skipped.
     // cyc=0: value=-100 -> negative + minv      -> 2/5=40%
     // cyc=1: value=0    -> zero                 -> 3/5=60%
     // cyc=2: value=50   -> positive             -> 4/5=80%

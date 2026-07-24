@@ -420,7 +420,7 @@ protected:
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
         bool m_gotError = false;  // A $finish statement executed
-        bool m_gotFinish = false;  // A $finish or $stop statement executed
+        std::atomic<bool> m_gotFinish{false};  // A $finish or $stop statement executed
         bool m_quiet = false;  // Quiet, no summary report
         // Slow path
         int8_t m_timeunit;  // Time unit as 0..15
@@ -577,7 +577,7 @@ public:
     /// Set if got a $stop or non-fatal error
     void gotError(bool flag) VL_MT_SAFE;
     /// Return if got a $finish or $stop/error
-    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
+    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish.load(); }
     /// Set if got a $finish or $stop/error
     void gotFinish(bool flag) VL_MT_SAFE;
     /// Check if generated final() code is executing

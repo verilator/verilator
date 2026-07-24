@@ -7,9 +7,9 @@ AST patterns with depth 1
            23 (CONST ZERO):a/a
            21 (VARREF):(w64)u[1:0]
            20 (CCAST _:a/1):a/1
+           19 (VARREF):a/1
            18 (AND (CONST #A):a/a _:a/a):a/a
            18 (SHIFTR _:a/b (CONST #A):a/a):a/1
-           17 (VARREF):a/1
            15 (SHIFTL _:a/1 (CONST #A):a/a):a/a
            14 (NEGATE _:a/1):a/a
            12 (AND (CONST #A):a/a _:a/b):a/b
@@ -28,6 +28,7 @@ AST patterns with depth 1
             6 (AND _:a/b _:a/b):a/b
             6 (REDXOR _:a/a):b/1
             5 (CCAST _:a/a):b/1
+            5 (CONST ZERO):a/1
             5 (OR _:a/a _:a/a):a/a
             4 (ADD _:a/a (VARREF):a/a):a/a
             4 (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):a/a):b/b
@@ -39,7 +40,6 @@ AST patterns with depth 1
             4 (NEGATE _:a/1):a/b
             4 (SHIFTL _:a/a (CONST #A):b/b):a/a
             3 (AND (VARREF):a/a (CONST #A):b/b):a/a
-            3 (CONST ZERO):a/1
             3 (CRESET):(w64)u[0:0]
             3 (CRESET):(w64)u[1:0]
             3 (NOT _:a/1):a/1
@@ -49,6 +49,7 @@ AST patterns with depth 1
             2 (CCALL [(VARREF):(w64)u[1:0], (VARREF):(w64)u[1:0]]):a/a
             2 (CCALL [(VARREF):(w64)u[1:0]]):a/1
             2 (CCALL []):a/1
+            2 (CEXPR [(TEXT):?]):a/1
             2 (CRESET):(G/str)
             2 (GT (CONST #A):a/a (VARREF):a/a):a/1
             2 (LT (CONST #A):a/a (VARREF):a/a):a/1

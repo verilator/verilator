@@ -85,6 +85,13 @@ void invertAndMergeSenTreeMap(
     for (const auto& pair : senTreeMap) result.emplace(pair.second, pair.first);
 }
 
+bool containsFinish(AstNode* const nodep) {
+    bool result = false;
+    nodep->foreachAndNext([&](const AstFinish*) { result = true; });
+    nodep->foreachAndNext([&](const AstFinishFork*) { result = true; });
+    return result;
+}
+
 // Find VIF triggers that a given VarScope should be sensitive to.
 // Case 2 (non-virtual interface read): sensitive to that specific VarScope's trigger only
 // Case 3 (virtual interface read): sensitive to all member triggers of the same interface type
@@ -233,6 +240,10 @@ EvalLoop createEvalLoop(
         AstAssign* const resultAssignp
             = new AstAssign{flp, new AstVarRef{flp, phaseResultp, VAccess::WRITE}, callp};
         loopp->addStmtsp(resultAssignp);
+        AstIf* const finishIfp = new AstIf{
+            flp, new AstCExpr{flp, "VL_UNLIKELY(vlSymsp->_vm_contextp__->gotFinish())", 1}};
+        finishIfp->addThensp(util::setVar(phaseResultp, 0));
+        loopp->addStmtsp(finishIfp);
         // Clear FirstIteration flag
         AstAssign* const firstClearp
             = new AstAssign{flp, new AstVarRef{flp, firstIterFlagp, VAccess::WRITE},
@@ -301,8 +312,12 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
 
 void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
     // Create new subfunc for scope
-    const auto createNewSubFuncp = [&](AstScope* const scopep) {
-        const string subName{funcp->name() + "__" + scopep->nameDotless()};
+    const auto createNewSubFuncp = [&](AstScope* const scopep, const string& suffix = "") {
+        const int seq = scopep->user2Inc();
+        string subName{funcp->name() + "__" + scopep->nameDotless()};
+        if (!suffix.empty() || seq) {
+            subName += "__" + (suffix.empty() ? "Vsequent"s : suffix) + "__" + cvtToStr(seq);
+        }
         AstCFunc* const subFuncp = new AstCFunc{scopep->fileline(), subName, scopep};
         subFuncp->isLoose(true);
         subFuncp->isConst(false);
@@ -318,32 +333,41 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
     for (const auto& pair : lbs) {
         AstScope* const scopep = pair.first;
         AstActive* const activep = pair.second;
-        // Create a sub-function per scope so we can V3Combine them later
-        if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
+        const auto currentSubFuncp = [&]() {
+            // Create a sub-function per scope so we can V3Combine them later
+            if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
+            return VN_AS(scopep->user1p(), CFunc);
+        };
         // Add statements to sub-function
         for (AstNode *logicp = activep->stmtsp(), *nextp; logicp; logicp = nextp) {
-            auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
+            AstCFunc* subFuncp = nullptr;
             nextp = logicp->nextp();
             if (AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure)) {
                 if (AstNode* bodyp = procp->stmtsp()) {
                     bodyp->unlinkFrBackWithNext();
-                    // If the process is suspendable, we need a separate function (a coroutine)
-                    if (procp->isSuspendable()) {
-                        funcp->slow(false);
-                        subFuncp = createNewSubFuncp(scopep);
-                        subFuncp->name(subFuncp->name() + "__Vtiming__"
-                                       + cvtToStr(scopep->user2Inc()));
-                        subFuncp->rtnType("VlCoroutine");
-                        if (VN_IS(procp, Always)) {
+                    const bool hasFinish = containsFinish(bodyp);
+                    // If the process is suspendable, we need a separate function (a coroutine).
+                    // If the process contains $finish, keep C++ return local to this process.
+                    if (procp->isSuspendable() || hasFinish) {
+                        subFuncp = createNewSubFuncp(scopep, procp->isSuspendable() ? "Vtiming"
+                                                                                    : "Vfinish");
+                        if (procp->isSuspendable()) {
+                            funcp->slow(false);
+                            subFuncp->rtnType("VlCoroutine");
                             subFuncp->slow(false);
-                            FileLine* const flp = procp->fileline();
-                            AstNodeExpr* const condp = new AstCExpr{
-                                flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1};
-                            AstLoop* const loopp = new AstLoop{flp};
-                            loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
-                            loopp->addStmtsp(bodyp);
-                            bodyp = loopp;
+                            if (VN_IS(procp, Always)) {
+                                FileLine* const flp = procp->fileline();
+                                AstNodeExpr* const condp = new AstCExpr{
+                                    flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1};
+                                AstLoop* const loopp = new AstLoop{flp};
+                                loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+                                loopp->addStmtsp(bodyp);
+                                bodyp = loopp;
+                            }
                         }
+                        scopep->user1p(nullptr);
+                    } else {
+                        subFuncp = currentSubFuncp();
                     }
                     subFuncp->addStmtsp(bodyp);
                     if (procp->needProcess()) subFuncp->setNeedProcess();
@@ -351,6 +375,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                 }
             } else {
                 logicp->unlinkFrBack();
+                subFuncp = currentSubFuncp();
                 subFuncp->addStmtsp(logicp);
             }
         }

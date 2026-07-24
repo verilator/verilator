@@ -137,12 +137,12 @@ private:
 
     // NODE STATE
     //  AstVarRef::user1      -> Flag indicating not to replace reference
+    //  AstAssign::user2      -> true if generated force-read update; do not rewrite
     //  AstAssignForce::user2 -> true if force is synthetic (externally forceable)
     //  AstVar::user3p()      -> AstVarScope*: Generated <name>__VforceRd helper
     //  AstVar::user4p()      -> AstVarScope*: Generated <name>__VforceEn helper
     //  AstVarScope::user3p() -> AstVarScope*: Generated <name>__VforceVal helper
     const VNUser1InUse m_user1InUse;
-    const VNUser2InUse m_user2InUse;
 
     std::vector<VarForceInfo> m_varInfos;  // Indexed by stable variable ID
     std::unordered_map<AstVarScope*, int> m_varToId;
@@ -210,6 +210,13 @@ public:
 
     static bool isNotReplaceable(const AstVarRef* const nodep) { return nodep->user1(); }
     static void markNonReplaceable(AstVarRef* const nodep) { nodep->user1SetOnce(); }
+
+    static AstNodeStmt* markNoAssignRhsUpdates(AstNodeStmt* const stmtsp) {
+        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+            VN_AS(nodep, Assign)->user2(true);
+        }
+        return stmtsp;
+    }
 
     static std::vector<ForceInfo*> forceInfosInIdOrder(VarForceInfo& info) {
         std::vector<ForceInfo*> forceps;
@@ -675,8 +682,9 @@ public:
                 AstActive* const activep
                     = new AstActive{flp, "force-rd-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
-                activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
-                                                 createForceRdUpdateStmt(info)});
+                activep->addStmtsp(
+                    new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
+                                  markNoAssignRhsUpdates(createForceRdUpdateStmt(info))});
                 scopep->addBlocksp(activep);
             }
         }
@@ -880,11 +888,11 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                                    rangeInfo.m_padMsb, rangeInfo.m_hasArraySel);
     }
 
-    void visit(AstAssign* nodep) override {
-        if (m_state.doingAssign() && m_inClockedActive) {
-            if (AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
-                m_state.markClockedWrite(lhsp->varp());
-            }
+    void visit(AstNodeAssign* nodep) override {
+        if (m_inClockedActive) {
+            nodep->lhsp()->foreach([&](AstVarRef* const refp) {
+                if (refp->access().isWriteOrRW()) m_state.markClockedWrite(refp->varp());
+            });
         }
         iterateChildrenConst(nodep);
     }
@@ -1277,9 +1285,29 @@ class ForceReplaceVisitor final : public VNVisitor {
         m_stmtp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstActive* nodep) override {
+        if (!nodep->hasClocked()) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        iterateChildren(nodep);
+
+        AstAlwaysPost* postp = nullptr;
+        nodep->foreach([&](AstVarRef* const refp) {
+            if (!refp->access().isWriteOrRW()) return;
+            const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(refp->varScopep());
+            if (!varInfo || !varInfo->m_forceRdVscp) return;
+            if (!postp) postp = new AstAlwaysPost{nodep->fileline()};
+            postp->addStmtsp(
+                ForceState::markNoAssignRhsUpdates(m_state.createForceRdUpdateStmt(*varInfo)));
+        });
+        if (postp) nodep->addStmtsp(postp);
+    }
     void visit(AstAssign* nodep) override {
         VL_RESTORER(m_stmtp);
         m_stmtp = nodep;
+        if (nodep->user2()) return;
         iterate(nodep->lhsp());
         iterate(nodep->rhsp());
         if (AstVarRef* const lhsp = VN_CAST(AstArraySel::baseFromp(nodep->lhsp(), true), VarRef)) {
@@ -1482,6 +1510,7 @@ public:
 
 namespace {
 class ForceUserSlots final {
+    const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
 };

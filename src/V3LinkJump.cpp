@@ -57,6 +57,7 @@ class LinkJumpVisitor final : public VNVisitor {
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeProcedure* m_procp = nullptr;  // Current procedural block
     AstNode* m_loopp = nullptr;  // Current loop
     AstRandSequence* m_randsequencep = nullptr;  // Current randsequence
     bool m_loopInc = false;  // In loop increment
@@ -94,6 +95,9 @@ class LinkJumpVisitor final : public VNVisitor {
         } else if (AstNodeFTask* const fTaskp = VN_CAST(nodep, NodeFTask)) {
             UASSERT_OBJ(!endOfIter, nodep, "No endOfIter for FTask");
             underp = fTaskp->stmtsp();
+        } else if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
+            UASSERT_OBJ(!endOfIter, nodep, "No endOfIter for procedural block");
+            underp = procp->stmtsp();
         } else if (AstForeach* const foreachp = VN_CAST(nodep, Foreach)) {
             if (endOfIter) {
                 underp = foreachp->bodyp();
@@ -147,6 +151,17 @@ class LinkJumpVisitor final : public VNVisitor {
             if (VN_IS(varp, Var)) blockp->addHereThisAsNext(varp->unlinkFrBack());
         }
         return blockp;
+    }
+    static const AstNode* containerp(const AstNode* nodep) {
+        while (nodep->backp()->nextp() == nodep) nodep = nodep->backp();
+        return nodep->backp();
+    }
+    bool finishNeedsJump(const AstFinish* const nodep, const AstNode* const limitp) const {
+        if (m_loopp) return true;
+        for (const AstNode* scanp = nodep; scanp != limitp; scanp = containerp(scanp)) {
+            if (scanp->nextp()) return true;
+        }
+        return false;
     }
     void addPrefixToBlocksRecurse(const std::string& prefix, AstNode* const nodep) {
         // Add a prefix to blocks
@@ -367,6 +382,11 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_procp);
+        m_procp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstBegin* nodep) override {
@@ -591,9 +611,20 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstFinish* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
+        if (AstNode* const nextp = nodep->nextp()) {
+            VL_DO_DANGLING(pushDeletep(nextp->unlinkFrBackWithNext()), nextp);
+        }
         if (m_inFork) {
             nodep->replaceWith(new AstFinishFork{nodep->fileline()});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (m_ftaskp && finishNeedsJump(nodep, m_ftaskp)) {
+            // Jump to the end of the function/task (post-finish)
+            AstJumpBlock* const blockp = getJumpBlock(m_ftaskp, false);
+            nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
+        } else if (m_procp && finishNeedsJump(nodep, m_procp)) {
+            // Jump to the end of the process (post-finish)
+            AstJumpBlock* const blockp = getJumpBlock(m_procp, false);
+            nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
         } else if (m_loopp) {
             // Jump to the end of the loop (post-finish)
             AstJumpBlock* const blockp = getJumpBlock(m_loopp, false);
