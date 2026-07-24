@@ -1,0 +1,4 @@
+%Warning-NOEFFECT: --public-flat-rw has no effect when --vpi-lazy-public-rw is set; the lazy path is used instead. Mark individual signals with a public_flat_rw attribute for write access
+                   ... For warning description see https://verilator.org/warn/NOEFFECT?v=latest
+                   ... Use "/* verilator lint_off NOEFFECT */" and lint_on around source to disable this message.
+%Error: Exiting due to

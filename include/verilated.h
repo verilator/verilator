@@ -100,6 +100,7 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+class VerilatedSyms;
 template <typename, typename>
 class VerilatedTrace;
 class VerilatedTraceBaseC;
@@ -157,7 +158,17 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
     VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
-    VLVF_NET = (1 << 15)  // Net object
+    VLVF_NET = (1 << 15),  // Net object
+    VLVF_LAZY_PUBLIC_RW = (1 << 16)  // VPI public_rw storage resolved on demand
+};
+
+// Descriptor for a --vpi-lazy-public-rw variable: refreshp reconstructs just
+// this signal (and its transitive reconstructed cone, memoised per epoch);
+// storagep is where the value lands; selfp is the owning module instance.
+struct VerilatedVarLazyDatap final {
+    void (*refreshp)(void* selfp);  // loose recon func; derives its syms from selfp
+    void* storagep;
+    void* selfp;
 };
 
 // One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
@@ -167,9 +178,10 @@ struct VlVarTableEntry final {
     const char* namep;  // VPI-facing (protected) variable name, string literal
     uint32_t byteOffset;  // offsetof of storage member from module instance base
     VerilatedVarType vltype;
-    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
+    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_PUBLIC_RW
     uint8_t udims;  // udims + pdims <= kMaxDims
     uint8_t pdims;
+    int32_t lazyIdx;  // -1: normal; else module-relative --vpi-lazy-public-rw slot
     // (left,right) pairs: unpacked dims first, then packed; int32_t since large
     // unpacked memories exceed int16 range
     int32_t dims[kMaxDims * 2];
@@ -760,6 +772,11 @@ public:  // But for internal use only
     // Keep first so is at zero offset for fastest code
     VerilatedContext* const _vm_contextp__;  // Context for current model
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
+    // --vpi-lazy-public-rw freshness epoch: bumped by eval()/vpi_put_value so a
+    // reconstructed signal recomputes on its first read in a new epoch. Each
+    // signal stamps its own last-reconstructed epoch; equal == fresh. Starts at
+    // 1 so zero-initialised per-signal stamps read as stale.
+    uint64_t __Vm_lazyEpoch = 1;
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
     VL_UNCOPYABLE(VerilatedSyms);
@@ -809,7 +826,12 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
-    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    // lazyBasep/lazyReconFnsp may be null when the table has no lazy rows (see
+    // VlVarTableEntry). lazyReconFnsp is the module type's per-signal reconstruct
+    // function array, indexed by the row's module-relative lazyIdx.
+    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                             VerilatedVarLazyDatap* lazyBasep,
+                             void (*const* lazyReconFnsp)(void*)) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;
     // ACCESSORS
