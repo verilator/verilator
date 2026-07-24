@@ -135,6 +135,111 @@ public:
     }
 };
 
+struct ClockedBoundary final {
+    DfgVertexVar* const m_vtxp;
+    const V3Number m_mask;
+
+    ClockedBoundary(DfgVertexVar* vtxp, const V3Number& mask)
+        : m_vtxp{vtxp}
+        , m_mask{mask} {}
+};
+
+using ClockedBoundaryMap
+    = std::unordered_map<const DfgVertexVar*, std::unique_ptr<ClockedBoundary>>;
+
+// Create an event-synchronized view of a volatile value. The changed trigger is an ordering
+// boundary: combinational DFG logic can read clocked state without depending directly on the
+// same public variable that it drives, while NBA commits and external writes still update it.
+static AstVarScope* getClockedBoundaryVscp(V3DfgContext& ctx, AstVarScope* vscp) {
+    if (AstVarScope* const boundaryVscp = ctx.clockedBoundaryVscp(vscp)) return boundaryVscp;
+
+    FileLine* const flp = vscp->fileline();
+    AstScope* const scopep = vscp->scopep();
+    AstNodeModule* const modp = scopep->modp();
+    const std::string name
+        = "__VdfgClocked__" + vscp->varp()->shortName() + "__" + scopep->nameDotless();
+    AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, name, vscp->dtypep()};
+    varp->isInternal(true);
+    varp->noSubst(true);
+    modp->addStmtsp(varp);
+    AstVarScope* const boundaryVscp = new AstVarScope{flp, scopep, varp};
+    scopep->addVarsp(boundaryVscp);
+
+    AstActive* const initActivep
+        = new AstActive{flp, "dfg-clocked-boundary-init",
+                        new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
+    initActivep->senTreeStorep(initActivep->sentreep());
+    initActivep->addStmtsp(
+        new AstInitial{flp, new AstAssign{flp, new AstVarRef{flp, boundaryVscp, VAccess::WRITE},
+                                          new AstVarRef{flp, vscp, VAccess::READ}}});
+    scopep->addBlocksp(initActivep);
+
+    AstSenItem* const senItemp
+        = new AstSenItem{flp, VEdgeType::ET_CHANGED, new AstVarRef{flp, vscp, VAccess::READ}};
+    AstActive* const updateActivep
+        = new AstActive{flp, "dfg-clocked-boundary-update", new AstSenTree{flp, senItemp}};
+    updateActivep->senTreeStorep(updateActivep->sentreep());
+    updateActivep->addStmtsp(
+        new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
+                      new AstAssign{flp, new AstVarRef{flp, boundaryVscp, VAccess::WRITE},
+                                    new AstVarRef{flp, vscp, VAccess::READ}}});
+    scopep->addBlocksp(updateActivep);
+
+    ctx.addClockedBoundaryVscp(vscp, boundaryVscp);
+    return boundaryVscp;
+}
+
+static ClockedBoundaryMap makeClockedBoundaries(DfgGraph& dfg, V3DfgContext& ctx,
+                                                const SccInfo& sccInfo) {
+    std::vector<DfgVertexVar*> varps;
+    for (DfgVertexVar& vtx : dfg.varVertices()) varps.emplace_back(&vtx);
+
+    ClockedBoundaryMap boundaries;
+    for (DfgVertexVar* const vtxp : varps) {
+        if (!vtxp->isPacked() || !vtxp->isVolatile() || !sccInfo.get(*vtxp)) continue;
+        const V3Number* const clockedp = ctx.clockedWriteMask(vtxp->vscp());
+        if (!clockedp || clockedp->isEqZero()) continue;
+
+        // A bit is eligible only when clocked logic writes it and neither non-clocked AST logic
+        // nor the combinational DFG drives it.
+        V3Number eligible{*clockedp};
+        if (const V3Number* const otherp = ctx.otherModWriteMask(vtxp->vscp())) {
+            V3Number notOther{*otherp};
+            notOther.opNot(*otherp);
+            const V3Number prev{eligible};
+            eligible.opAnd(prev, notOther);
+        }
+
+        V3Number driven{vtxp->fileline(), static_cast<int>(vtxp->width()), 0};
+        if (DfgVertex* const srcp = vtxp->srcp()) {
+            if (const DfgSplicePacked* const splicep = srcp->cast<DfgSplicePacked>()) {
+                splicep->foreachDriver([&driven](const DfgVertex& src, uint32_t lsb) {
+                    driven.opSetRange(lsb, src.width(), '1');
+                    return false;
+                });
+            } else {
+                driven.setAllBits1();
+            }
+        }
+        V3Number notDriven{driven};
+        notDriven.opNot(driven);
+        const V3Number prev{eligible};
+        eligible.opAnd(prev, notDriven);
+        if (eligible.isEqZero()) continue;
+
+        AstVarScope* const boundaryVscp = getClockedBoundaryVscp(ctx, vtxp->vscp());
+        DfgVertexVar* const boundaryp = new DfgVarPacked{dfg, boundaryVscp};
+        const bool newEntry
+            = boundaries
+                  .emplace(vtxp, std::unique_ptr<ClockedBoundary>{new ClockedBoundary{boundaryp,
+                                                                                      eligible}})
+                  .second;
+        UASSERT_OBJ(newEntry, vtxp, "Duplicate clocked boundary");
+        ++ctx.m_breakCyclesContext.m_nClockedBoundaries;
+    }
+    return boundaries;
+}
+
 class TraceDriver final : public DfgVisitor {
     // TYPES
     // Key for caching the result of a trace
@@ -169,6 +274,7 @@ class TraceDriver final : public DfgVisitor {
     // STATE
     DfgGraph& m_dfg;  // The graph being processed
     SccInfo& m_sccInfo;  // The SccInfo instance
+    const ClockedBoundaryMap& m_clockedBoundaries;
     // The strongly connected component we are currently trying to escape
     uint64_t m_component = 0;
     uint32_t m_lsb = 0;  // LSB to extract from the currently visited Vertex
@@ -477,9 +583,15 @@ class TraceDriver final : public DfgVisitor {
     }
 
     void visit(DfgVertexVar* vtxp) override {
-        UASSERT_OBJ(!vtxp->isVolatile(), vtxp, "Should not trace through volatile variable");
         VL_RESTORER(m_defaultp);
-        m_defaultp = vtxp->defaultp();
+        // Volatile defaults cannot normally be traced. Clocked-only ranges use a synchronized
+        // value boundary, while explicitly driven ranges still trace through srcp.
+        if (vtxp->isVolatile()) {
+            const auto it = m_clockedBoundaries.find(vtxp);
+            m_defaultp = it == m_clockedBoundaries.end() ? nullptr : it->second->m_vtxp;
+        } else {
+            m_defaultp = vtxp->defaultp();
+        }
         DfgVertex* const drvp = vtxp->srcp() ? vtxp->srcp() : m_defaultp;
         UASSERT_OBJ(drvp, vtxp, "Should not have to trace undriven variable");
         // Packed variable: trace the driver. Array variable: continue navigating it at
@@ -765,9 +877,10 @@ class TraceDriver final : public DfgVisitor {
 
 public:
     // CONSTRUCTOR
-    TraceDriver(DfgGraph& dfg, SccInfo& sccInfo)
+    TraceDriver(DfgGraph& dfg, SccInfo& sccInfo, const ClockedBoundaryMap& clockedBoundaries)
         : m_dfg{dfg}
-        , m_sccInfo{sccInfo} {
+        , m_sccInfo{sccInfo}
+        , m_clockedBoundaries{clockedBoundaries} {
 #ifdef VL_DEBUG
         if (v3Global.opt.debugCheck()) {
             m_lineCoverageFile.open(  //
@@ -934,6 +1047,7 @@ class IndependentBits final : public DfgVisitor {
 
     // STATE
     const SccInfo& m_sccInfo;  // The SccInfo instance
+    const ClockedBoundaryMap& m_clockedBoundaries;
     // Vertex to current bit mask map. The mask is set for the bits that are independent of the SCC
     std::unordered_map<const DfgVertex*, BitMask> m_vtxp2Mask;
     // Work list for the traversal (min-queue of vertex RPO numbers)
@@ -1019,16 +1133,22 @@ class IndependentBits final : public DfgVisitor {
     }  // LCOV_EXCL_STOP
 
     void visit(DfgVertexVar* vtxp) override {
-        // We cannot trace through a volatile variable, so pretend all bits are dependent
-        if (vtxp->isVolatile()) return;
+        // Keep volatile arrays conservative. Packed variables can inherit independence for
+        // explicitly driven ranges, while undriven ranges remain dependent on external updates.
+        if (vtxp->isVolatile() && !vtxp->isPacked()) return;
 
         BitMask& m = MASK(vtxp);
         DfgVertex* const srcp = vtxp->srcp();
         DfgVertex* const defaultp = vtxp->defaultp();
         // If there is a default driver, we start from that
-        if (defaultp) m = MASK(defaultp);
+        if (defaultp && !vtxp->isVolatile()) m = MASK(defaultp);
         // Then propagate mask from the driver
         propagateFromDriver(m, srcp);
+        const auto it = m_clockedBoundaries.find(vtxp);
+        if (it != m_clockedBoundaries.end()) {
+            const V3Number prev{m.num()};
+            m.num().opOr(prev, it->second->m_mask);
+        }
     }
 
     void visit(DfgVertexSplice* vtxp) override {
@@ -1280,8 +1400,10 @@ class IndependentBits final : public DfgVisitor {
         postOrderEnumeration.emplace_back(&vtx);
     };
 
-    IndependentBits(DfgGraph& dfg, const SccInfo& sccInfo)
-        : m_sccInfo{sccInfo} {
+    IndependentBits(DfgGraph& dfg, const SccInfo& sccInfo,
+                    const ClockedBoundaryMap& clockedBoundaries)
+        : m_sccInfo{sccInfo}
+        , m_clockedBoundaries{clockedBoundaries} {
 
 #ifdef VL_DEBUG
         if (v3Global.opt.debugCheck()) {
@@ -1368,19 +1490,20 @@ public:
     // returns a map from vertices to a bit mask, where a bit in the mask is
     // set if the corresponding bit in that vertex is known to be independent
     // of the values of vertices in the same SCC as the vertex resides in.
-    static std::unordered_map<const DfgVertex*, BitMask> apply(DfgGraph& dfg,
-                                                               const SccInfo& sccInfo) {
-        return std::move(IndependentBits{dfg, sccInfo}.m_vtxp2Mask);
+    static std::unordered_map<const DfgVertex*, BitMask>
+    apply(DfgGraph& dfg, const SccInfo& sccInfo, const ClockedBoundaryMap& boundaries) {
+        return std::move(IndependentBits{dfg, sccInfo, boundaries}.m_vtxp2Mask);
     }
 };
 
 class FixUp final {
     DfgGraph& m_dfg;  // The graph being processed
     SccInfo& m_sccInfo;  // The SccInfo instance
-    TraceDriver m_traceDriver{m_dfg, m_sccInfo};
+    const ClockedBoundaryMap& m_clockedBoundaries;
+    TraceDriver m_traceDriver{m_dfg, m_sccInfo, m_clockedBoundaries};
     // The independent bits map
     const std::unordered_map<const DfgVertex*, BitMask> m_independentBits
-        = IndependentBits::apply(m_dfg, m_sccInfo);
+        = IndependentBits::apply(m_dfg, m_sccInfo, m_clockedBoundaries);
     size_t m_nImprovements = 0;  // Number of improvements made
 
     // Returns a bitmask set if that bit of 'vtx' is used (has a sink)
@@ -1556,18 +1679,20 @@ class FixUp final {
         UINFO(9, "FixUp made " << m_nImprovements << " improvements");
     }
 
-    FixUp(DfgGraph& dfg, SccInfo& sccInfo)
+    FixUp(DfgGraph& dfg, SccInfo& sccInfo, const ClockedBoundaryMap& clockedBoundaries)
         : m_dfg{dfg}
-        , m_sccInfo{sccInfo} {}
+        , m_sccInfo{sccInfo}
+        , m_clockedBoundaries{clockedBoundaries} {}
 
 public:
     // Compute which bits of vertices are independent of the SCC they reside
     // in, and replace rferences to used independent bits with an equivalent
     // vertex that is not part of the same SCC.
-    static size_t apply(DfgGraph& dfg, SccInfo& sccInfo) {
+    static size_t apply(DfgGraph& dfg, SccInfo& sccInfo,
+                        const ClockedBoundaryMap& clockedBoundaries) {
         if (!sccInfo.isCyclic()) return 0;
 
-        FixUp fixUp{dfg, sccInfo};
+        FixUp fixUp{dfg, sccInfo, clockedBoundaries};
 
         // TODO: Compute minimal feedback vertex set and cut only those.
         //       Sadly that is a computationally hard problem.
@@ -1583,7 +1708,7 @@ public:
     }
 };
 
-bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
+bool breakCycles(DfgGraph& dfg, V3DfgContext& ctx) {
     // Shorthand for dumping graph at given dump level
     const auto dump = [&](int level, const DfgGraph& dfg, const std::string& name) {
         if (dumpDfgLevel() >= level) dfg.dumpDotFilePrefixed("breakCycles-" + name);
@@ -1598,6 +1723,8 @@ bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
     // How many improvements have we made
     size_t nImprovements = 0;
     size_t prevNImprovements;
+    const SccInfo initialSccInfo{dfg};
+    const ClockedBoundaryMap clockedBoundaries = makeClockedBoundaries(dfg, ctx, initialSccInfo);
 
     // Iterate while an improvement can be made and the graph is still cyclic
     do {
@@ -1607,10 +1734,10 @@ bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
         // Fix up independent ranges in vertices
         UINFO(9, "New iteration after " << nImprovements << " improvements");
         prevNImprovements = nImprovements;
-        const size_t nFixed = FixUp::apply(dfg, sccInfo);
+        const size_t nFixed = FixUp::apply(dfg, sccInfo, clockedBoundaries);
         if (nFixed) {
             nImprovements += nFixed;
-            ctx.m_nImprovements += nFixed;
+            ctx.m_breakCyclesContext.m_nImprovements += nFixed;
             dump(9, dfg, "FixUp");
         }
 
@@ -1621,7 +1748,7 @@ bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
         if (!sccInfo.isCyclic()) {
             UINFO(7, "Graph became acyclic after " << nImprovements << " improvements");
             dump(7, dfg, "result-acyclic");
-            ++ctx.m_nFixed;
+            ++ctx.m_breakCyclesContext.m_nFixed;
             return true;
         }
     } while (nImprovements != prevNImprovements);
@@ -1638,11 +1765,11 @@ bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
     if (nImprovements) {
         UINFO(7, "Graph was improved " << nImprovements << " times");
         dump(7, dfg, "result-improved");
-        ++ctx.m_nImproved;
+        ++ctx.m_breakCyclesContext.m_nImproved;
     } else {
         UINFO(7, "Graph NOT improved");
         dump(7, dfg, "result-original");
-        ++ctx.m_nUnchanged;
+        ++ctx.m_breakCyclesContext.m_nUnchanged;
     }
     return false;
 }
@@ -1650,7 +1777,7 @@ bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
 }  //namespace V3DfgBreakCycles
 
 bool V3DfgPasses::breakCycles(DfgGraph& dfg, V3DfgContext& ctx) {
-    const bool res = V3DfgBreakCycles::breakCycles(dfg, ctx.m_breakCyclesContext);
+    const bool res = V3DfgBreakCycles::breakCycles(dfg, ctx);
     if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
     V3DfgPasses::removeUnused(dfg);
     return res;

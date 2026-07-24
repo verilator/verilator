@@ -35,8 +35,16 @@ class AstToDfgAddAstRefs final : public VNVisitorConst {
     DfgGraph& m_dfg;  // The graph being processed
     // Function to get the DfgVertexVar for a AstVarScope
     const std::function<DfgVertexVar*(AstVarScope*)> m_getVarVertex;
+    V3DfgContext* const m_ctxp;  // Persistent context, if collecting non-DFG writes
     bool m_inSenItem = false;  // Inside an AstSenItem
     bool m_inLoop = false;  // Inside an AstLoop
+    bool m_inClocked = false;  // Inside logic triggered by a clock edge
+
+    static bool isClockedEdge(const AstSenItem* nodep) {
+        const VEdgeType edgeType = nodep->edgeType();
+        return edgeType == VEdgeType::ET_BOTHEDGE || edgeType == VEdgeType::ET_NEGEDGE
+               || edgeType == VEdgeType::ET_POSEDGE;
+    }
 
     // VISITORS
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -50,6 +58,19 @@ class AstToDfgAddAstRefs final : public VNVisitorConst {
     void visit(AstLoop* nodep) override {
         VL_RESTORER(m_inLoop);
         m_inLoop = true;
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstActive* nodep) override {
+        VL_RESTORER(m_inClocked);
+        m_inClocked = nodep->sentreep()->sensesp() != nullptr;
+        for (AstSenItem* senp = nodep->sentreep()->sensesp(); senp;
+             senp = VN_AS(senp->nextp(), SenItem)) {
+            if (!isClockedEdge(senp)) {
+                m_inClocked = false;
+                break;
+            }
+        }
         iterateChildrenConst(nodep);
     }
 
@@ -72,19 +93,38 @@ class AstToDfgAddAstRefs final : public VNVisitorConst {
         }
         // Mark as written from non-DFG logic
         DfgVertexVar::setHasModWrRefs(vscp);
+        if (!m_ctxp) return;
+
+        uint32_t lsb = 0;
+        uint32_t width = vscp->width();
+        if (const AstSel* const selp = VN_CAST(nodep->firstAbovep(), Sel)) {
+            if (selp->fromp() == nodep) {
+                if (const AstConst* const lsbp = VN_CAST(selp->lsbp(), Const)) {
+                    const uint32_t selLsb = lsbp->toUInt();
+                    const uint32_t selWidth = selp->widthConst();
+                    if (selLsb + selWidth <= width) {
+                        lsb = selLsb;
+                        width = selWidth;
+                    }
+                }
+            }
+        }
+        m_ctxp->addModWrite(vscp, m_inClocked, lsb, width);
     }
 
     AstToDfgAddAstRefs(DfgGraph& dfg, AstNode* nodep,
-                       std::function<DfgVertexVar*(AstVarScope*)> getVarVertex)
+                       std::function<DfgVertexVar*(AstVarScope*)> getVarVertex, V3DfgContext* ctxp)
         : m_dfg{dfg}
-        , m_getVarVertex{getVarVertex} {
+        , m_getVarVertex{getVarVertex}
+        , m_ctxp{ctxp} {
         iterateConst(nodep);
     }
 
 public:
     static void apply(DfgGraph& dfg, AstNode* nodep,
-                      std::function<DfgVertexVar*(AstVarScope*)> getVarVertex) {
-        AstToDfgAddAstRefs{dfg, nodep, getVarVertex};
+                      std::function<DfgVertexVar*(AstVarScope*)> getVarVertex,
+                      V3DfgContext* ctxp = nullptr) {
+        AstToDfgAddAstRefs{dfg, nodep, getVarVertex, ctxp};
     }
 };
 
@@ -102,15 +142,15 @@ class AstToDfgVisitor final : public VNVisitor {
     // STATE
     DfgGraph& m_dfg;  // The graph being built
     V3DfgAstToDfgContext& m_ctx;  // The context for stats
+    V3DfgContext& m_dfgCtx;  // The persistent context
     AstScope* m_scopep = nullptr;  // The current scope, iff T_Scoped
 
     // METHODS
 
     // Mark variables referenced under node
     void markReferenced(AstNode* nodep) {
-        V3DfgPasses::addAstRefs(m_dfg, nodep, [this](AstVarScope* vscp) {  //
-            return getVarVertex(vscp);
-        });
+        AstToDfgAddAstRefs::apply(
+            m_dfg, nodep, [this](AstVarScope* vscp) { return getVarVertex(vscp); }, &m_dfgCtx);
     }
 
     DfgVertexVar* getVarVertex(AstVarScope* varp) {
@@ -297,16 +337,17 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
     // CONSTRUCTOR
-    AstToDfgVisitor(DfgGraph& dfg, AstNetlist& root, V3DfgAstToDfgContext& ctx)
+    AstToDfgVisitor(DfgGraph& dfg, AstNetlist& root, V3DfgContext& ctx)
         : m_dfg{dfg}
-        , m_ctx{ctx} {
+        , m_ctx{ctx.m_ast2DfgContext}
+        , m_dfgCtx{ctx} {
         iterate(&root);
     }
     VL_UNCOPYABLE(AstToDfgVisitor);
     VL_UNMOVABLE(AstToDfgVisitor);
 
 public:
-    static void apply(DfgGraph& dfg, AstNetlist& root, V3DfgAstToDfgContext& ctx) {
+    static void apply(DfgGraph& dfg, AstNetlist& root, V3DfgContext& ctx) {
         // Convert all logic under 'root'
         AstToDfgVisitor{dfg, root, ctx};
         // Remove unread and undriven variables (created when something failed to convert)
@@ -323,6 +364,6 @@ public:
 
 std::unique_ptr<DfgGraph> V3DfgPasses::astToDfg(AstNetlist& netlist, V3DfgContext& ctx) {
     DfgGraph* const dfgp = new DfgGraph{"netlist"};
-    AstToDfgVisitor::apply(*dfgp, netlist, ctx.m_ast2DfgContext);
+    AstToDfgVisitor::apply(*dfgp, netlist, ctx);
     return std::unique_ptr<DfgGraph>{dfgp};
 }
