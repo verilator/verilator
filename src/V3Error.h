@@ -298,10 +298,9 @@ public:
                 || m_e == BLKSEQ || m_e == DECLFILENAME || m_e == DEFPARAM || m_e == EOFNEWLINE
                 || m_e == GENUNNAMED || m_e == IMPORTSTAR || m_e == INCABSPATH
                 || m_e == MULTIDRIVENPROC || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT
-                || m_e == PROCASSINIT
-                || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSEDGENVAR
-                || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL
-                || m_e == VARHIDDEN);
+                || m_e == PROCASSINIT || m_e == SYNCASYNCNET || m_e == UNDRIVEN
+                || m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
+                || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
     }
     bool isNamed() const { return m_e >= EC_FIRST_NAMED; }
 

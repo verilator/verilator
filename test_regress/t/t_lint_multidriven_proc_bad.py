@@ -16,7 +16,8 @@ test.scenarios('linter')
 # instead, confirming MULTIDRIVENPROC is suppressed there.
 # -Wno-MULTITOP: both modules are top-level here on purpose (two independent
 # demonstrations), so silence the unrelated multiple-top-module warning.
-test.lint(fails=True, verilator_flags2=['-Wwarn-MULTIDRIVENPROC', '-Wno-MULTITOP'],
+test.lint(fails=True,
+          verilator_flags2=['-Wwarn-MULTIDRIVENPROC', '-Wno-MULTITOP'],
           expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
