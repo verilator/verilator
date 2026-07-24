@@ -441,12 +441,12 @@ class UndrivenVisitor final : public VNVisitorConst {
             // For combo always, run both usr==1 for above, and also
             // usr==2 for always-only checks.
             UndrivenVarEntry* const entryp = getEntryp(nodep, usr);
-            if ((nodep->isNonOutput() && !funcInout) || nodep->isSigPublic()
+            if ((nodep->isNonOutput() && !funcInout) || nodep->isOrMaySigPublic()
                 || nodep->hasUserInit() || nodep->isSigUserRWPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->drivenWhole(nodep);
             }
-            if ((nodep->isWritable() && !funcInout) || nodep->isSigPublic()
+            if ((nodep->isWritable() && !funcInout) || nodep->isOrMaySigPublic()
                 || nodep->isSigUserRWPublic() || nodep->isSigUserRdPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->usedWhole(nodep);

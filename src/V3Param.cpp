@@ -51,6 +51,7 @@
 
 #include "V3Case.h"
 #include "V3Const.h"
+#include "V3Control.h"
 #include "V3EmitV.h"
 #include "V3Hasher.h"
 #include "V3LinkDotIfaceCapture.h"
@@ -1960,6 +1961,15 @@ class ParamProcessor final {
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
         string longname = srcModp->name() + "_";
+        // Clone for .vlt -path'ed variants
+        // Without this, -path on one instance would have to infect all instances
+        if (VN_IS(nodep, Cell)) {
+            const int pubVariant = V3Control::cellPathPublicVariant(srcModp->someInstanceName());
+            if (pubVariant >= 0) {
+                any_overrides = true;
+                longname += "__Vhier" + cvtToStr(pubVariant);
+            }
+        }
         if (debug() >= 9 && paramsp) paramsp->dumpTreeAndNext(cout, "-  cellparams: ");
 
         if (srcModp->hierBlock()) {

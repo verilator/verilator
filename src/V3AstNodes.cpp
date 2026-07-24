@@ -654,7 +654,7 @@ void AstVar::combineType(const AstVar* otherp) {
     // "this" is the port var. otherp is the reg var, or vice-versa
     propagateAttrFrom(otherp);
     combineType(otherp->varType());
-    if (otherp->isSigPublic()) sigPublic(true);
+    if (otherp->isOrMaySigPublic()) sigPublic(true);
     if (otherp->isSigModPublic()) sigModPublic(true);
     if (otherp->isSigUserRdPublic()) sigUserRdPublic(true);
     if (otherp->isSigUserRWPublic()) sigUserRWPublic(true);
@@ -3278,7 +3278,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isConst()) str << " [CONST]";
     if (isPullup()) str << " [PULLUP]";
     if (isPulldown()) str << " [PULLDOWN]";
-    if (isSigPublic()) str << " [P]";
+    if (isOrMaySigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
     if (isReadByDpi()) str << " [DPIRD]";

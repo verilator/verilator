@@ -597,7 +597,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         } else {
             const AstVar* const baseSignalVarp = baseSignalIt->second.m_varp;
             // Should not actually occur if the variable is in the m_scopeVars
-            if (!baseSignalVarp->isSigPublic()) return false;
+            if (!baseSignalVarp->isOrMaySigPublic()) return false;
         }
         return true;
     }

@@ -1,0 +1,17 @@
+%Error: t/t_vlt_public_spec_hier_attr_bad.vlt:10:1: 'VAR_SC_BV' attribute does not support -path
+   10 | sc_bv -path "top.i_mid_0.mid_tmp"
+      | ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_vlt_public_spec_hier_attr_bad.vlt:11:1: 'VAR_SC_BIGUINT' attribute does not support -path
+   11 | sc_biguint -path "top.i_mid_0.mid_tmp"
+      | ^~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_attr_bad.vlt:12:1: 'VAR_SFORMAT' attribute does not support -path
+   12 | sformat -path "top.i_mid_0.mid_tmp"
+      | ^~~~~~~
+%Error: t/t_vlt_public_spec_hier_attr_bad.vlt:13:1: 'VAR_SPLIT_VAR' attribute does not support -path
+   13 | split_var -path "top.i_mid_0.mid_tmp"
+      | ^~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_attr_bad.vlt:14:1: 'VAR_FORCEABLE' attribute does not support -path
+   14 | forceable -path "top.i_mid_0.mid_tmp"
+      | ^~~~~~~~~
+%Error: Exiting due to

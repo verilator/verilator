@@ -1273,7 +1273,7 @@ class TraceVisitor final : public VNVisitor {
             V3GraphVertex* const traceVtxp = m_tracep->user1u().toGraphVertex();
             new V3GraphEdge{&m_graph, varVtxp, traceVtxp, 1};
             if (nodep->varp()->isPrimaryInish()  // Always need to trace primary inputs
-                || nodep->varp()->isSigPublic()) {  // Or ones user can change
+                || nodep->varp()->isOrMaySigPublic()) {  // Or ones user can change
                 new V3GraphEdge{&m_graph, m_alwaysVtxp, traceVtxp, 1};
             }
             if (m_tracep->dtypeCallp()) varscopep->user2p(m_tracep);

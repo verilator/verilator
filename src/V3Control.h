@@ -65,6 +65,11 @@ public:
                            VarSpecKind kind, const string& pattern, VAttrType type,
                            AstSenTree* nodep);
 
+    static void addHierVarAttr(FileLine* fl, const string& path, VAttrType type);
+    static void applyHierVarAttrs(AstNetlist* netlistp);
+    static int cellPathPublicVariant(const std::string& cellInstancePath);
+    static void applyHierVarScopes(AstNetlist* netlistp);
+
     static void applyCase(AstCase* nodep);
     static void applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep);
     static void applyCoverageBlock(AstNodeModule* modulep, AstGenBlock* nodep);

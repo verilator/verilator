@@ -1,0 +1,33 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Scope / variable lookup failures
+public_flat -path "no_such_top.no_such_var"
+public_flat -path "top.i_bogus.mid_tmp"
+public_flat -path "top.i_mid_0.no_such_var"
+public_flat -path "top.no_such_gen.x"
+public_flat -path "top.gen_loop[0].no_such_var"
+public_flat -path "top.gen_if.no_such_var"
+public_flat -path "top.gen_loop[0].no_such_cell.leaf"
+
+// Path-string parse errors
+public_flat -path "top.\\ .mid_tmp"
+public_flat -path "top..mid_tmp"
+public_flat -path "top.i_mid_0."
+public_flat -path "top.\\i_mid_0 mid_tmp"
+public_flat -path "top.\\foo] [2.mid_tmp"
+public_flat -path "top"
+
+// Array-index malformation
+public_flat -path "top.i_arr1[abc].leaf"
+public_flat -path "top.i_arr1[99999999999].leaf"
+public_flat -path "top.\\foo] [abc].leaf"
+public_flat -path "top.i_arr1].leaf"
+public_flat -path "top.[0].leaf"
+public_flat -path "top.i_arr2[1][abc].leaf"
+public_flat -path "top.i_arr1[1]x[0].leaf"

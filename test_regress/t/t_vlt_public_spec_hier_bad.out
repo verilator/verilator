@@ -1,0 +1,62 @@
+%Error: t/t_vlt_public_spec_hier_bad.vlt:10:1: -path 'no_such_top.no_such_var': cannot find top scope 'no_such_top'
+   10 | public_flat -path "no_such_top.no_such_var"
+      | ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_vlt_public_spec_hier_bad.vlt:11:1: -path 'top.i_bogus.mid_tmp': cannot find scope 'i_bogus' in scope 'top'
+   11 | public_flat -path "top.i_bogus.mid_tmp"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:12:1: -path 'top.i_mid_0.no_such_var': cannot find variable 'no_such_var' in scope 'mid_m'
+   12 | public_flat -path "top.i_mid_0.no_such_var"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:13:1: -path 'top.no_such_gen.x': cannot find scope 'no_such_gen' in scope 'top'
+   13 | public_flat -path "top.no_such_gen.x"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:14:1: -path 'top.gen_loop[0].no_such_var': cannot find variable 'no_such_var' in scope 'gen_loop'
+   14 | public_flat -path "top.gen_loop[0].no_such_var"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:15:1: -path 'top.gen_if.no_such_var': cannot find variable 'no_such_var' in scope 'gen_if'
+   15 | public_flat -path "top.gen_if.no_such_var"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:16:1: -path 'top.gen_loop[0].no_such_cell.leaf': cannot find scope 'no_such_cell' in scope 'gen_loop'
+   16 | public_flat -path "top.gen_loop[0].no_such_cell.leaf"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:19:1: -path 'top.\ .mid_tmp': empty escaped identifier
+   19 | public_flat -path "top.\\ .mid_tmp"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:20:1: -path 'top..mid_tmp': empty identifier in path
+   20 | public_flat -path "top..mid_tmp"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:21:1: -path 'top.i_mid_0.': trailing '.' with no identifier
+   21 | public_flat -path "top.i_mid_0."
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:22:1: -path 'top.\i_mid_0 mid_tmp': expected '.' separator between identifiers
+   22 | public_flat -path "top.\\i_mid_0 mid_tmp"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:23:1: -path 'top.\foo] [2.mid_tmp': unterminated '[' in escaped-name array index
+   23 | public_flat -path "top.\\foo] [2.mid_tmp"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:24:1: -path 'top': must name at least a scope and a variable
+   24 | public_flat -path "top"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:27:1: -path 'top.i_arr1[abc].leaf': malformed array index in segment 'i_arr1[abc]'
+   27 | public_flat -path "top.i_arr1[abc].leaf"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:28:1: -path 'top.i_arr1[99999999999].leaf': malformed array index in segment 'i_arr1[99999999999]'
+   28 | public_flat -path "top.i_arr1[99999999999].leaf"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:29:1: -path 'top.\foo] [abc].leaf': malformed array index '[abc]'
+   29 | public_flat -path "top.\\foo] [abc].leaf"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:30:1: -path 'top.i_arr1].leaf': malformed array index in segment 'i_arr1]'
+   30 | public_flat -path "top.i_arr1].leaf"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:31:1: -path 'top.[0].leaf': malformed array index in segment '[0]'
+   31 | public_flat -path "top.[0].leaf"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:32:1: -path 'top.i_arr2[1][abc].leaf': malformed array index in segment 'i_arr2[1][abc]'
+   32 | public_flat -path "top.i_arr2[1][abc].leaf"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_public_spec_hier_bad.vlt:33:1: -path 'top.i_arr1[1]x[0].leaf': malformed array index in segment 'i_arr1[1]x[0]'
+   33 | public_flat -path "top.i_arr1[1]x[0].leaf"
+      | ^~~~~~~~~~~
+%Error: Exiting due to

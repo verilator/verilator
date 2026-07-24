@@ -52,7 +52,7 @@
                                              : ... note: In instance 't'
    19 |   wire should_show_warning2  /*verilator split_var*/;
       |        ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:23:15: 'public_signal' has split_var metacomment but will not be split because it is public.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:23:15: 'public_signal' has split_var metacomment but will not be split because it is or may become public.
                                               : ... note: In instance 't'
    23 |   logic [1:0] public_signal  /*verilator public*/  /*verilator split_var*/;
       |               ^~~~~~~~~~~~~
