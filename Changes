@@ -67,6 +67,7 @@ Verilator 5.051 devel
 * Fix variable scope in unique on dynamic array (#7981). [Kornel Uriasz, Antmicro Ltd.]
 * Fix table optimization causing not contextually convertible to bool error (#7983). [Jakub Michalski]
 * Fix $fgets being mis-optimized away (#7976). [G-A. Kamendje]
+* Fix SYNCASYNCNET false positive with changed non-edge logic (#7980). [Oron Port]
 
 
 Verilator 5.050 2026-07-01
