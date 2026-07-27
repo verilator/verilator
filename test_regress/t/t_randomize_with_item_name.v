@@ -18,6 +18,20 @@ class Payload;
   rand bit [31:0] addr;
 endclass
 
+// The randomized class's own member is spelled 'item'. An undotted name in a
+// randomize() with resolves in the object's scope first (18.7), so this must
+// reach the member being randomized and not any outer 'item'.
+class Tagged;
+  rand bit [31:0] item;
+  rand bit [31:0] other;
+endclass
+
+// A queue to fold with an array-method 'with', from inside a randomize 'with'.
+class Summed;
+  rand bit [31:0] other;
+  int q[$] = '{1, 4, 2, 7};
+endclass
+
 class Seq;
   Payload item;  // class member deliberately named 'item'
 
@@ -68,6 +82,31 @@ class Seq;
     `checkd(found[0], 4)
     `checkd(found[1], 7)
   endfunction
+
+  // A rand member of the randomized class named 'item', referenced undotted.
+  // The member wins over the caller's own 'item'.
+  function void check_target_member();
+    Tagged t = new();
+    int ok;
+    ok = t.randomize() with {
+      item == 32'd42;
+      other == item + 1;
+    };
+    `checkd(ok, 1)
+    `checkh(t.item, 32'd42)
+    `checkh(t.other, 32'd43)
+  endfunction
+
+  // An array-method 'with' nested inside a randomize() 'with'. The two now use
+  // different implicit names, so both must bind: the inner 'item' to the queue
+  // element, the constraint to the object being randomized.
+  function void check_nested_iterator();
+    Summed t = new();
+    int ok;
+    ok = t.randomize() with {other == q.sum() with (item);};
+    `checkd(ok, 1)
+    `checkh(t.other, 32'd14)
+  endfunction
 endclass
 
 module t (  /*AUTOARG*/);
@@ -77,6 +116,8 @@ module t (  /*AUTOARG*/);
     s.check_not_tautology();
     s.check_local_handle();
     s.check_array_method_iterator();
+    s.check_target_member();
+    s.check_nested_iterator();
     $write("*-* All Finished *-*\n");
     $finish;
   end

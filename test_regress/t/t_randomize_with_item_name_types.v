@@ -50,13 +50,37 @@ class Seq;
     `checkd(ok, 1)
     `checkh(r.addr, 32'hcafe_f00d)
   endfunction
+
+  // A queue member named 'item'. The randomize target has no such member, so
+  // this must resolve to the caller's queue and index it normally.
+  function void check_queue_element();
+    Payload r = new();
+    bit [31:0] item[$] = '{32'h1111_1111, 32'h2222_2222};
+    int ok;
+    ok = r.randomize() with {addr == item[1];};
+    `checkd(ok, 1)
+    `checkh(r.addr, 32'h2222_2222)
+  endfunction
 endclass
 
 module t (  /*AUTOARG*/);
+  // std::randomize() with reaches the 'with' clause through a different call
+  // site than a class randomize(), and must not shadow 'item' either.
+  function automatic void check_std_randomize();
+    bit [31:0] item = 32'h5eed_5eed;
+    bit [31:0] v;
+    int ok;
+    ok = std::randomize(v) with {v == item;};
+    `checkd(ok, 1)
+    `checkh(v, 32'h5eed_5eed)
+  endfunction
+
   initial begin
     automatic Seq s = new();
     s.check_other_type();
     s.check_bare_scalar();
+    s.check_queue_element();
+    check_std_randomize();
     $write("*-* All Finished *-*\n");
     $finish;
   end
