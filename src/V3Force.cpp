@@ -1389,7 +1389,12 @@ class ForceReplaceVisitor final : public VNVisitor {
 
     void visit(AstVarRef* nodep) override {
         if (ForceState::isNotReplaceable(nodep)) return;
-        if (nodep->backp() && VN_IS(nodep->backp(), ArraySel)) return;
+        // The array an ArraySel selects from is left to visit(AstArraySel), which builds
+        // the force-aware read for the whole select. The index is an ordinary read and
+        // must still be substituted here, so check which child this is.
+        if (const AstArraySel* const backSelp = VN_CAST(nodep->backp(), ArraySel)) {
+            if (backSelp->fromp() == nodep) return;
+        }
 
         const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(nodep->varScopep());
         if (!varInfo) return;
