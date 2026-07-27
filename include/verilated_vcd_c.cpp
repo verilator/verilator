@@ -640,7 +640,7 @@ void VerilatedVcdBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     CData value = newval << (VL_BYTESIZE - bits);
-    if (VL_UNLIKELY(!value)) {
+    if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;
@@ -655,7 +655,7 @@ void VerilatedVcdBuffer::emitSData(uint32_t code, SData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     SData value = newval << (VL_SHORTSIZE - bits);
-    if (VL_UNLIKELY(!value)) {
+    if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;
@@ -670,7 +670,7 @@ void VerilatedVcdBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     IData value = newval << (VL_IDATASIZE - bits);
-    if (VL_UNLIKELY(!value)) {
+    if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;
@@ -685,7 +685,7 @@ void VerilatedVcdBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     QData value = newval << (VL_QUADSIZE - bits);
-    if (VL_UNLIKELY(!value)) {
+    if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;
@@ -710,7 +710,7 @@ void VerilatedVcdBuffer::emitWData(uint32_t code, WDataInP newval, int bits) {
         bitsInWord = VL_EDATASIZE;
     }
 
-    if (VL_UNLIKELY(!value)) {
+    if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;

@@ -36,6 +36,17 @@ module t (
   longint fst_longint;
   byte fst_byte;
   time fst_time;
+`ifdef TRACE_VCD
+  logic [3:0] zero4 = 4'b0;
+  logic [3:0] small4 = 4'b0010;
+  logic [7:0] small8 = 8'h01;
+  logic [15:0] msb16 = 16'h8000;
+  logic [31:0] mid32 = 32'h0000_00a5;
+  logic [63:0] msb64 = 64'h8000_0000_0000_0000;
+  logic [99:0] wide_skip = 100'h1_0000_0000;
+  logic [67:0] wide_partial = 68'h2_0000_0000_0000_0000;
+  logic signed [66:0] wide_negative = -67'sd1;
+`endif
 
   parameter fst_parameter = 123;
   localparam fst_lparam = 456;

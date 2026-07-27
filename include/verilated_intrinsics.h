@@ -30,6 +30,9 @@
 
 // Use VL_PORTABLE_ONLY to disable all intrinsics based optimization
 #ifndef VL_PORTABLE_ONLY
+# if defined(_MSC_VER)
+#  include <intrin.h>
+# endif
 # if defined(__SSE2__) && !defined(VL_DISABLE_SSE2)
 #  define VL_HAVE_SSE2 1
 #  include <emmintrin.h>
@@ -52,6 +55,11 @@ VL_ATTR_ALWINLINE int vlIntrinClz32(uint32_t value) {
     VL_DEBUG_IFDEF(assert(value););
 #ifdef VL_HAVE_LZCNT
     return static_cast<int>(_lzcnt_u32(value));
+#elif defined(_MSC_VER) && !defined(VL_NO_BUILTINS) && !defined(VL_PORTABLE_ONLY)
+    __assume(value);
+    unsigned long index;
+    (void)_BitScanReverse(&index, static_cast<unsigned long>(value));
+    return 31 - static_cast<int>(index);
 #elif (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
     return __builtin_clz(value);
 #else
