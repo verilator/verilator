@@ -7,7 +7,7 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
-# Forwards the SMT-LIB conversation to a real z3 and tampers the reply stream.
+# Forwards the SMT-LIB conversation to a real solver and tampers the reply stream.
 # Response index = 1-based count of sat/unsat/unknown lines (1 = init handshake).
 # TAMPER: none | err_once | err_multiline | unknown_once | unsupported_once
 #         | die_at | silent_at | garbage_model | crlf | success | multiline | stall_stdin
@@ -16,6 +16,7 @@
 # pylint: disable=consider-using-with
 
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -23,11 +24,20 @@ import threading
 mode = os.environ.get("TAMPER", "none")
 at = int(os.environ.get("TAMPER_AT", "2"))
 
+
+def real_solver():
+    for cmd in (["z3", "-in"], ["cvc5", "--incremental"], ["cvc4", "--lang=smt2",
+                                                           "--incremental"]):
+        if shutil.which(cmd[0]):
+            return cmd
+    sys.exit("randomize_solver_tamper: no SMT solver found")
+
+
 stall = threading.Event()
 
 if mode == "stall_stdin":
     # Interpose stdin so the pump can stop consuming, backpressuring the model
-    proc = subprocess.Popen(["z3", "-in"],
+    proc = subprocess.Popen(real_solver(),
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             text=True)
@@ -43,7 +53,7 @@ if mode == "stall_stdin":
 
     threading.Thread(target=pump, daemon=True).start()
 else:
-    proc = subprocess.Popen(["z3", "-in"], stdin=sys.stdin, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(real_solver(), stdin=sys.stdin, stdout=subprocess.PIPE, text=True)
 
 n = 0
 done = False

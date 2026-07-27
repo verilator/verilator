@@ -7,8 +7,6 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import shutil
-
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -16,8 +14,6 @@ test.top_filename = "t/t_randomize_solver_fault.v"
 
 if not test.have_solver:
     test.skip("No constraint solver installed")
-if not shutil.which('z3'):
-    test.skip("No z3 in PATH")
 
 test.compile()
 
