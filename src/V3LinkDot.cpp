@@ -2195,7 +2195,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (const AstDot* const dotp = VN_CAST(nodep->funcrefp(), Dot))
             funcrefp = VN_CAST(dotp->rhsp(), NodeFTaskRef);
         UASSERT_OBJ(funcrefp, nodep, "'with' only can operate on a function/task");
-        string name = "item";
+        string name = funcrefp->name() == "randomize" ? "__Vrandwith_obj" : "item";
         FileLine* argFl = nodep->fileline();
         AstArg* const argsp = funcrefp->argsp();
         if (argsp) {
@@ -4298,7 +4298,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstLambdaArgRef* const lambdaRefp
-                        = new AstLambdaArgRef{nodep->fileline(), "item", false};
+                        = new AstLambdaArgRef{nodep->fileline(), "__Vrandwith_obj", false};
                     AstMemberSel* newp = new AstMemberSel{nodep->fileline(), lambdaRefp,
                                                           VFlagChildDType{}, nodep->name()};
                     nodep->replaceWith(newp);
@@ -5259,7 +5259,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
                     AstNode* const newp = new AstMethodCall{
-                        nodep->fileline(), new AstLambdaArgRef{nodep->fileline(), "item", false},
+                        nodep->fileline(),
+                        new AstLambdaArgRef{nodep->fileline(), "__Vrandwith_obj", false},
                         VFlagChildDType{}, nodep->name(), argsp};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
