@@ -167,6 +167,18 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         return false;
     }
+    AstBegin* innerForkBranchp(const AstNodeBlock* const targetp) const {
+        AstBegin* innerForkBranchp = nullptr;
+        AstNodeBlock* prevBlockp = nullptr;
+        for (AstNodeBlock* const blockp : vlstd::reverse_view(m_blockStack)) {
+            if (!innerForkBranchp && VN_IS(blockp, Fork)) {
+                innerForkBranchp = VN_CAST(prevBlockp, Begin);
+            }
+            if (blockp == targetp) return innerForkBranchp;
+            prevBlockp = blockp;
+        }
+        return nullptr;
+    }
     static AstStmtExpr* getQueuePushProcessSelfp(AstVarRef* const queueRefp) {
         // Constructs queue.push_back(std::process::self()) statement
         FileLine* const flp = queueRefp->fileline();
@@ -205,10 +217,6 @@ class LinkJumpVisitor final : public VNVisitor {
             stmtp->addNext(origStmtsp);
         }
         nodep->addStmtsp(stmtp);
-    }
-    static bool directlyUnderFork(const AstNode* const nodep) {
-        if (nodep->backp()->nextp() == nodep) return directlyUnderFork(nodep->backp());
-        return VN_IS(nodep->backp(), Fork);
     }
     AstBegin* getOrCreateTaskDisableBeginp(AstTask* const taskp, FileLine* const fl) {
         const auto it = m_taskDisableBegins.find(taskp);
@@ -565,16 +573,10 @@ class LinkJumpVisitor final : public VNVisitor {
                     // process::kill does not terminate the currently running process immediately.
                     // If disable executes inside a fork branch of this named block, jump to the
                     // end of that branch to prevent statements after disable from executing.
-                    AstBegin* currentBeginp = nullptr;
-                    for (AstNodeBlock* const blockp : vlstd::reverse_view(m_blockStack)) {
-                        if (VN_IS(blockp, Begin)) {
-                            currentBeginp = VN_AS(blockp, Begin);
-                            break;
-                        }
-                    }
-                    if (currentBeginp && directlyUnderFork(currentBeginp)) {
-                        addJumpAfterKill(killStmtp, currentBeginp);
-                    }
+                    AstBegin* const branchp = innerForkBranchp(beginp);
+                    AstBegin* const jumpTargetp
+                        = branchp ? branchp : m_beginDisableBegins.at(beginp);
+                    addJumpAfterKill(killStmtp, jumpTargetp);
                 }
             } else {
                 AstVar* const processQueuep
