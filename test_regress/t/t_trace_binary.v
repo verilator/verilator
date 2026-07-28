@@ -8,6 +8,7 @@
 
 module t;
   int sig;
+  logic [63:0] sig64 = 64'h8000_0000_0000_0000;
 
   initial begin
     sig = 10;
