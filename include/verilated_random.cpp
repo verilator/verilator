@@ -193,10 +193,7 @@ protected:
             struct pollfd pfd = {fd, events, 0};
             const int r = ::poll(&pfd, 1, waitMs);
             if (r > 0) return true;
-            if (r == -1 && errno != EINTR) {
-                perror("poll");
-                return false;
-            }
+            if (r == -1 && errno != EINTR) return false;
         }
 #else
         (void)fd;
@@ -345,8 +342,10 @@ public:
             // Child
             close(fd_stdin[P_WR]);
             dup2(fd_stdin[P_RD], STDIN_FILENO);
+            close(fd_stdin[P_RD]);
             close(fd_stdout[P_RD]);
             dup2(fd_stdout[P_WR], STDOUT_FILENO);
+            close(fd_stdout[P_WR]);
             execvp(cmd[0], const_cast<char* const*>(cmd));
             std::stringstream msg;
             msg << "VlRProcess::open: execvp(" << cmd[0] << ")";
@@ -376,11 +375,7 @@ public:
             while ((fcntlRc = fcntl(m_writeFd, F_SETNOSIGPIPE, 1)) == -1 && errno == EINTR) {}
         }
 #endif
-        if (VL_UNLIKELY(fcntlRc == -1)) {
-            perror("VlRProcess::open: fcntl");
-            terminate();
-            return false;
-        }
+        if (VL_UNLIKELY(fcntlRc == -1)) return false;
 
         return true;
 #else
@@ -902,15 +897,7 @@ void VlRandomizer::recordRandcValues() {
         if (varIt == m_vars.end()) continue;
         const VlRandomVar& var = *varIt->second;
         std::set<uint64_t>& used = m_randcUsedValues[name];
-        if (used.size() >= RANDC_TRACK_MAX) {
-            used.clear();
-            static bool s_warnedCap = false;  // Guarded by the session mutex
-            if (!s_warnedCap) {
-                s_warnedCap = true;
-                VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                           "randc variable exceeded 65536 tracked values; cycle restarts early");
-            }
-        }
+        if (used.size() >= RANDC_TRACK_MAX) used.clear();
         used.insert(readVarValueU64(var.datap(0), var.width()));
     }
 }
@@ -1188,34 +1175,25 @@ void VlRandomizer::reportUnsatCore(VlSolverSession& sess) VL_REQUIRES(sess.m_mut
         for (const int n : numbers) {
             if (static_cast<size_t>(n) < m_constraints_line.size()) {
                 const std::string& constraint_info = m_constraints_line[n];
-                // Parse "filename:linenum   source" format
+                // Parse "filename:linenum   source" format, parts optional
+                std::string filename;
+                int linenum = 0;
+                std::string source = constraint_info;
                 const size_t colon_pos = constraint_info.find(':');
                 if (colon_pos != std::string::npos) {
-                    const std::string filename = constraint_info.substr(0, colon_pos);
+                    filename = constraint_info.substr(0, colon_pos);
                     const size_t space_pos = constraint_info.find("   ", colon_pos);
-                    std::string linenum_str;
-                    std::string source;
-                    if (space_pos != std::string::npos) {
-                        linenum_str
-                            = constraint_info.substr(colon_pos + 1, space_pos - colon_pos - 1);
-                        source = constraint_info.substr(space_pos + 3);
-                    } else {
-                        linenum_str = constraint_info.substr(colon_pos + 1);
-                    }
-                    const int linenum = std::stoi(linenum_str);
-                    std::string msg = "UNSATCONSTR: Unsatisfied constraint";
-                    if (!source.empty()) {
-                        // Trim leading whitespace and add quotes
-                        const size_t start = source.find_first_not_of(" \t");
-                        if (start != std::string::npos) {
-                            msg += ": '" + source.substr(start) + "'";
-                        }
-                    }
-                    VL_WARN_MT(filename.c_str(), linenum, "", msg.c_str());
-                } else {
-                    VL_PRINTF("%%Warning-UNSATCONSTR: Unsatisfied constraint: %s\n",
-                              constraint_info.c_str());
+                    const size_t num_end
+                        = space_pos == std::string::npos ? constraint_info.size() : space_pos;
+                    linenum = std::atoi(
+                        constraint_info.substr(colon_pos + 1, num_end - colon_pos - 1).c_str());
+                    source
+                        = space_pos == std::string::npos ? "" : constraint_info.substr(space_pos + 3);
                 }
+                std::string msg = "UNSATCONSTR: Unsatisfied constraint";
+                const size_t start = source.find_first_not_of(" \t");
+                if (start != std::string::npos) msg += ": '" + source.substr(start) + "'";
+                VL_WARN_MT(filename.c_str(), linenum, "", msg.c_str());
             }
         }
     }
@@ -1446,15 +1424,12 @@ bool VlRandomizer::nextPhased(VlRNG& rngr, VlSolverSession& sess,
     VlSolverTxn txn{sess};
     if (!txn.ok()) return false;
     // Randc retry: if unsat due to randc exhaustion, clear history and retry once
-    const bool hasRandc = !m_randcVarNames.empty();
-    for (int attempt = 0; attempt < (hasRandc ? 2 : 1); ++attempt) {
-        bool exhausted = false;
-        if (solvePhases(rngr, sess, layers, uniqueExprs, exhausted)) return true;
-        if (!exhausted || attempt != 0) return false;
-        m_randcUsedValues.clear();
-        sess.os() << "(reset)\n";
-    }
-    return false;  // Should not reach here
+    bool exhausted = false;
+    if (solvePhases(rngr, sess, layers, uniqueExprs, exhausted)) return true;
+    if (!exhausted) return false;
+    m_randcUsedValues.clear();
+    sess.os() << "(reset)\n";
+    return solvePhases(rngr, sess, layers, uniqueExprs, exhausted);
 }
 
 bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,

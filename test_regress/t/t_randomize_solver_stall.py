@@ -10,11 +10,12 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = "t/t_randomize_solver_fault.v"
 
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
-test.compile()
+test.compile(verilator_flags2=['+define+T_STALL'])
 
 # Solver stalls stdin while alive: oversized write fails at the deadline
 test.execute(run_env='VERILATOR_SOLVER=' + test.t_dir +

@@ -1934,10 +1934,6 @@ List Of Warnings
    Warned that the ``randc`` keyword was unsupported and was converted
    to ``rand``.
 
-   Cycle tracking is bounded to 65536 previously-seen values per ``randc``
-   variable; a variable wider than 16 bits restarts its cycle early once
-   that many values have been used, with a warning.
-
 
 .. option:: REALCVT
 

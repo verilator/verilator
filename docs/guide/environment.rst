@@ -145,14 +145,14 @@ associated programs.
 
 .. option:: VERILATOR_SOLVER_TIMEOUT
 
-   If set to a positive integer, the wall-clock budget in milliseconds for
+   If set to a positive integer, the wall-clock budget in walltime milliseconds for
    each ``randomize()`` call handed to the constrained randomization
-   backend. When the budget is exceeded, the call returns 0 (or keeps the
+   backend. When the budget is exceeded, the randomize returns 0 (or keeps the
    solution found so far) with a warning instead of blocking the
    simulation. A solver that overruns the budget is killed and restarted
    on the next call; after three consecutive failed calls, constrained
    randomization is disabled with a warning and ``randomize()`` returns 0.
-   If not set, solver interactions are unbounded.
+   If not set, solver interactions have no time limit.
 
 .. option:: VERILATOR_VALGRIND
 

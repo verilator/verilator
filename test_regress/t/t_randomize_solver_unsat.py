@@ -10,11 +10,12 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = "t/t_randomize_solver_fault.v"
 
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
-test.compile()
+test.compile(verilator_flags2=['+define+T_UNSAT'])
 
 # Genuine UNSAT with wrapped replies: the unsat-core path consumes its whole reply
 test.execute(run_env='VERILATOR_SOLVER=' + test.t_dir +
@@ -22,5 +23,22 @@ test.execute(run_env='VERILATOR_SOLVER=' + test.t_dir +
 
 test.file_grep(test.run_log_filename, r'NFAIL=5')
 test.file_grep(test.run_log_filename, r'All Finished')
+
+# Error instead of the unsat-core reply
+logfile = test.obj_dir + "/vlt_sim_err.log"
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER=' + test.t_dir +
+             '/randomize_solver_tamper.py TAMPER=err_reply TAMPER_AT=1')
+test.file_grep(logfile, r'Solver reported an error')
+test.file_grep(logfile, r'NFAIL=5')
+
+# No solver at all: warn once, then disable after repeated spawn failures
+logfile = test.obj_dir + "/vlt_sim_nosolver.log"
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER=/nonexistent_solver_binary'
+             ' VERILATOR_SOLVER_TIMEOUT=99999999999999999999')
+test.file_grep(logfile, r'Unable to communicate')
+test.file_grep(logfile, r'randomization disabled')
+test.file_grep(logfile, r'NFAIL=5')
 
 test.passes()
