@@ -1542,14 +1542,14 @@ string AstNode::instanceStr() const {
     return "";
 }
 void AstNode::v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
-    // Don't look for instance name when warning is disabled.
-    // In case of large number of warnings, this can
-    // take significant amount of time
-    const string instanceStrExtra
-        = m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr();
     if (!m_fileline) {
-        V3Error::v3errorEnd(str, instanceStrExtra, nullptr);
+        V3Error::v3errorEnd(str, "", nullptr);
     } else {
+        // Don't look for instance name when warning is disabled.
+        // In case of large number of warnings, this can
+        // take significant amount of time
+        const string instanceStrExtra
+            = m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr();
         std::ostringstream nsstr;
         nsstr << str.str();
         if (debug()) {
