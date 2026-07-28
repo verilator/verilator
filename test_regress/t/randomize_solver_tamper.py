@@ -17,7 +17,7 @@
 # TAMPER_AT: response index for the one-shot modes above (default 2);
 #            err_reply and garbage_reply count paren replies instead of statuses
 
-# pylint: disable=C0114,consider-using-with
+# pylint: disable=C0103,C0114,consider-using-with
 
 import os
 import shutil

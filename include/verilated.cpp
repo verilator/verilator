@@ -3884,10 +3884,7 @@ void Verilated::runFlushCallbacks() VL_MT_SAFE {
     // When running internal code coverage (gcc --coverage, as opposed to
     // verilator --coverage), dump coverage data to properly cover failing
     // tests.
-    VL_GCOV_DUMP();
-    // Dumping is one-shot: re-arm it, else the at-exit dump is skipped and
-    // everything counted after the first warning is lost
-    VL_GCOV_RESET();
+    VL_GCOV_DUMP_RESET();
 }
 
 void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE { addCbExit(cb, datap); }

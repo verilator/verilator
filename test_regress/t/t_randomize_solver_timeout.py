@@ -26,4 +26,9 @@ test.file_grep(test.run_log_filename, r'exceeded VERILATOR_SOLVER_TIMEOUT')
 test.file_grep(test.run_log_filename, r'randomization disabled')
 test.file_grep(test.run_log_filename, r'All Finished')
 
+# Budget above the internal cap is clamped, both env parse and per-call refresh
+logfile = test.obj_dir + "/vlt_sim_cap.log"
+test.execute(logfile=logfile, run_env='VERILATOR_SOLVER_TIMEOUT=2000000000')
+test.file_grep(logfile, r'NPASS=5')
+
 test.passes()
