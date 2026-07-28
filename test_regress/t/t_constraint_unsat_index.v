@@ -7,7 +7,7 @@
 class Packet;
   rand bit [7:0] a;
   rand bit [7:0] b;
-  constraint c {
+  constraint c_pad {
     b > 8'd1;
     b > 8'd2;
     b > 8'd3;
@@ -18,6 +18,8 @@ class Packet;
     b > 8'd8;
     b > 8'd9;
     b > 8'd10;
+  }
+  constraint c_a {
     a > 8'd200;
     a < 8'd100;
   }
@@ -26,7 +28,13 @@ endclass
 module t;
   initial begin
     automatic Packet p = new;
-    if (p.randomize() != 0) $stop;
+    repeat (3) begin
+      p.c_a.constraint_mode(0);
+      if (p.randomize() == 0) $stop;
+      if (!(p.b > 8'd10)) $stop;
+      p.c_a.constraint_mode(1);
+      if (p.randomize() != 0) $stop;
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end
