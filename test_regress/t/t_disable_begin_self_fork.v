@@ -17,6 +17,8 @@
 module t;
 
   bit after_disable = 1'b0;
+  bit after_disable_fork = 1'b0;
+  bit disable_fork_survived = 1'b0;
   bit fork_survived = 1'b0;
 
   initial begin : blk
@@ -31,9 +33,24 @@ module t;
     after_disable = 1'b1;
   end
 
+  // A named fork disabled after join_none has no active enclosing fork branch.
+  initial begin
+    fork : fork_blk
+      begin
+        #5;
+        disable_fork_survived = 1'b1;
+      end
+    join_none
+    #1;
+    disable fork_blk;
+    after_disable_fork = 1'b1;
+  end
+
   initial begin
     #10;
     `checkd(after_disable, 1'b0);
+    `checkd(after_disable_fork, 1'b1);
+    `checkd(disable_fork_survived, 1'b0);
     `checkd(fork_survived, 1'b0);
     $write("*-* All Finished *-*\n");
     $finish;
