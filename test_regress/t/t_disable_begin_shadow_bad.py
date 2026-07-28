@@ -12,8 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 # Exit on the deliberate LinkJump error before later passes inspect the tree.
-test.lint(verilator_flags2=["--no-debug-check"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["--no-debug-check"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()
