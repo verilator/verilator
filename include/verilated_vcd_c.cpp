@@ -639,14 +639,14 @@ VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    CData value = newval << (VL_BYTESIZE - bits);  // LCOV_EXCL_BR_LINE
+    const CData value = newval << (VL_BYTESIZE - bits);
     if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;
     }
-    const int skip = vlIntrinClz32(value) - (VL_IDATASIZE - VL_BYTESIZE);  // LCOV_EXCL_BR_LINE
-    cvtCDataToStr(wp, value << skip);  // LCOV_EXCL_BR_LINE
+    const int skip = vlIntrinClz32(value) - (VL_IDATASIZE - VL_BYTESIZE);
+    cvtCDataToStr(wp, value << skip);
     finishLine(code, wp + bits - skip);
 }
 
@@ -654,14 +654,14 @@ VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitSData(uint32_t code, SData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    SData value = newval << (VL_SHORTSIZE - bits);  // LCOV_EXCL_BR_LINE
+    const SData value = newval << (VL_SHORTSIZE - bits);
     if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;
     }
-    const int skip = vlIntrinClz32(value) - (VL_IDATASIZE - VL_SHORTSIZE);  // LCOV_EXCL_BR_LINE
-    cvtSDataToStr(wp, value << skip);  // LCOV_EXCL_BR_LINE
+    const int skip = vlIntrinClz32(value) - (VL_IDATASIZE - VL_SHORTSIZE);
+    cvtSDataToStr(wp, value << skip);
     finishLine(code, wp + bits - skip);
 }
 
@@ -669,14 +669,14 @@ VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    IData value = newval << (VL_IDATASIZE - bits);  // LCOV_EXCL_BR_LINE
+    const IData value = newval << (VL_IDATASIZE - bits);
     if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;
     }
     const int skip = vlIntrinClz32(value);
-    cvtIDataToStr(wp, value << skip);  // LCOV_EXCL_BR_LINE
+    cvtIDataToStr(wp, value << skip);
     finishLine(code, wp + bits - skip);
 }
 
@@ -684,14 +684,14 @@ VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    QData value = newval << (VL_QUADSIZE - bits);  // LCOV_EXCL_BR_LINE
+    const QData value = newval << (VL_QUADSIZE - bits);
     if (!value) {
         *wp++ = '0';
         finishLine(code, wp);
         return;
     }
     const int skip = vlIntrinClz64(value);
-    cvtQDataToStr(wp, value << skip);  // LCOV_EXCL_BR_LINE
+    cvtQDataToStr(wp, value << skip);
     finishLine(code, wp + bits - skip);
 }
 
@@ -717,7 +717,7 @@ void VerilatedVcdBuffer::emitWData(uint32_t code, WDataInP newval, int bits) {
     }
 
     const int skip = vlIntrinClz32(value) - (VL_EDATASIZE - bitsInWord);
-    cvtEDataToStr(wp, value << (VL_EDATASIZE - bitsInWord + skip));  // LCOV_EXCL_BR_LINE
+    cvtEDataToStr(wp, value << (VL_EDATASIZE - bitsInWord + skip));
     wp += bitsInWord - skip;
 
     while (word > 0) {

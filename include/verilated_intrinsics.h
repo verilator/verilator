@@ -52,7 +52,7 @@
 // clang-format on
 
 VL_ATTR_ALWINLINE int vlIntrinClz32(uint32_t value) {
-    VL_DEBUG_IFDEF(assert(value););  // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(value););
 #ifdef VL_HAVE_LZCNT
     return static_cast<int>(_lzcnt_u32(value));
 #elif defined(_MSC_VER) && !defined(VL_NO_BUILTINS) && !defined(VL_PORTABLE_ONLY)
@@ -61,7 +61,7 @@ VL_ATTR_ALWINLINE int vlIntrinClz32(uint32_t value) {
     (void)_BitScanReverse(&index, static_cast<unsigned long>(value));
     return 31 - static_cast<int>(index);
 #elif (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
-    return __builtin_clz(value);  // LCOV_EXCL_BR_LINE
+    return __builtin_clz(value);
 #else
     int zeros = 0;
     uint32_t bit = 1U << 31;
@@ -74,13 +74,13 @@ VL_ATTR_ALWINLINE int vlIntrinClz32(uint32_t value) {
 }
 
 VL_ATTR_ALWINLINE int vlIntrinClz64(uint64_t value) {
-    VL_DEBUG_IFDEF(assert(value););  // LCOV_EXCL_BR_LINE
+    VL_DEBUG_IFDEF(assert(value););
 #if defined(VL_HAVE_LZCNT) && (defined(__x86_64__) || defined(_M_X64))
     return static_cast<int>(_lzcnt_u64(value));
 #elif (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
-    return __builtin_clzll(static_cast<unsigned long long>(value));  // LCOV_EXCL_BR_LINE
+    return __builtin_clzll(static_cast<unsigned long long>(value));
 #else
-    const uint32_t upper = static_cast<uint32_t>(value >> 32);
+    const uint32_t upper = static_cast<uint32_t>(value >> 32ULL);
     return upper ? vlIntrinClz32(upper) : 32 + vlIntrinClz32(static_cast<uint32_t>(value));
 #endif
 }
