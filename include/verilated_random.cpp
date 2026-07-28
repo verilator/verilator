@@ -1187,8 +1187,9 @@ void VlRandomizer::reportUnsatCore(VlSolverSession& sess) VL_REQUIRES(sess.m_mut
                         = space_pos == std::string::npos ? constraint_info.size() : space_pos;
                     linenum = std::atoi(
                         constraint_info.substr(colon_pos + 1, num_end - colon_pos - 1).c_str());
-                    source
-                        = space_pos == std::string::npos ? "" : constraint_info.substr(space_pos + 3);
+                    source = space_pos == std::string::npos
+                                 ? ""
+                                 : constraint_info.substr(space_pos + 3);
                 }
                 std::string msg = "UNSATCONSTR: Unsatisfied constraint";
                 const size_t start = source.find_first_not_of(" \t");
