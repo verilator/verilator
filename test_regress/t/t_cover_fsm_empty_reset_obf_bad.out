@@ -1,0 +1,4 @@
+%Error: Internal Error: t/t_cover_fsm_empty_reset_obf_bad.sv:27:5: ../V3FsmDetect.cpp:#: Empty reset branch unexpectedly survived to FSM detection
+   27 |     if (rst) begin
+      |     ^~
+                        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
