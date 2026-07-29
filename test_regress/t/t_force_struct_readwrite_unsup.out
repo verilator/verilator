@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_force_struct_readwrite_unsup.v:28:18: Unsupported: Signals used via read-write reference cannot be forced
+                                                            : ... note: In instance 't'
+   28 |     cls.take_ref(s);
+      |                  ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
