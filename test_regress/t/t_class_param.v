@@ -249,6 +249,9 @@ module t;
     if (Sum#(real)::sum != 0) $stop;
     Sum#(real)::add(1.9);  // rounds
     if (Sum#(real)::sum != 2) $stop;
+    if (Sum#(shortreal)::sum != 0) $stop;
+    Sum#(shortreal)::add(2.1);  // rounds
+    if (Sum#(shortreal)::sum != 2) $stop;
 
     if (ClsParam#(ClsStatic)::param_t::x != 1) $stop;
     if (ClsParam#(ClsStatic)::param_t::get_2() != 2) $stop;

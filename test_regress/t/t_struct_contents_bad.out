@@ -3,40 +3,40 @@
    23 |     real r;   
       |          ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_struct_contents_bad.v:25:15: Unpacked data type 'real' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:24:15: Unpacked data type 'shortreal' in packed struct/union (IEEE 1800-2023 7.2.1)
                                        : ... note: In instance 't'
-   25 |     shortreal sr;   
+   24 |     shortreal sr;   
       |               ^~
-%Error: t/t_struct_contents_bad.v:26:14: Unpacked data type 'real' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:25:14: Unpacked data type 'real' in packed struct/union (IEEE 1800-2023 7.2.1)
                                        : ... note: In instance 't'
-   26 |     realtime rt;   
+   25 |     realtime rt;   
       |              ^~
-%Error: t/t_struct_contents_bad.v:27:13: Unpacked data type 'chandle' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:26:13: Unpacked data type 'chandle' in packed struct/union (IEEE 1800-2023 7.2.1)
                                        : ... note: In instance 't'
-   27 |     chandle ch;   
+   26 |     chandle ch;   
       |             ^~
-%Error: t/t_struct_contents_bad.v:28:12: Unpacked data type 'string' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:27:12: Unpacked data type 'string' in packed struct/union (IEEE 1800-2023 7.2.1)
                                        : ... note: In instance 't'
-   28 |     string s;   
+   27 |     string s;   
       |            ^
-%Error: t/t_struct_contents_bad.v:29:11: Unpacked data type 'event' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:28:11: Unpacked data type 'event' in packed struct/union (IEEE 1800-2023 7.2.1)
                                        : ... note: In instance 't'
-   29 |     event e;   
+   28 |     event e;   
       |           ^
-%Error: t/t_struct_contents_bad.v:30:23: Unpacked data type 'struct{}t.struct_unpacked_t' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:29:23: Unpacked data type 'struct{}t.struct_unpacked_t' in packed struct/union (IEEE 1800-2023 7.2.1)
                                        : ... note: In instance 't'
-   30 |     struct_unpacked_t sp;   
+   29 |     struct_unpacked_t sp;   
       |                       ^~
-%Error: t/t_struct_contents_bad.v:31:22: Unpacked data type 'union{}t.union_unpacked_t' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:30:22: Unpacked data type 'union{}t.union_unpacked_t' in packed struct/union (IEEE 1800-2023 7.2.1)
                                        : ... note: In instance 't'
-   31 |     union_unpacked_t up;   
+   30 |     union_unpacked_t up;   
       |                      ^~
-%Error: t/t_struct_contents_bad.v:32:9: Unpacked data type 'int$[0:1]' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:31:9: Unpacked data type 'int$[0:1]' in packed struct/union (IEEE 1800-2023 7.2.1)
                                       : ... note: In instance 't'
-   32 |     int uarray[2];   
+   31 |     int uarray[2];   
       |         ^~~~~~
-%Error: t/t_struct_contents_bad.v:33:9: Unpacked data type 'class{}Cls' in packed struct/union (IEEE 1800-2023 7.2.1)
+%Error: t/t_struct_contents_bad.v:32:9: Unpacked data type 'class{}Cls' in packed struct/union (IEEE 1800-2023 7.2.1)
                                       : ... note: In instance 't'
-   33 |     Cls c;   
+   32 |     Cls c;   
       |         ^
 %Error: Exiting due to

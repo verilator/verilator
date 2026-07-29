@@ -152,7 +152,7 @@ for s in [
         'Unsupported: static cast to',
         'Unsupported: super',
         'Unsupported: with[] stream expression',
-        'expected non-complex non-double',
+        'expected non-complex non-floating',
         'loading other than unpacked-array variable',
         'loading other than unpacked/associative-array variable',
         # These are safety limits requiring >1000 bins or >10000 members to trigger

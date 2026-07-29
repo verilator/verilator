@@ -29,7 +29,6 @@
 typedef long long sv_longint_t;
 typedef unsigned long long sv_longint_unsigned_t;
 typedef const void** sv_chandle_array_ptr_t;
-# define NO_SHORTREAL
 # define NO_UNPACK_STRUCT
 # define CONSTARG const
 #elif defined(VCS)  // VCS

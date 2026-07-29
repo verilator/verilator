@@ -21,7 +21,6 @@
 `endif
 
 `ifdef VERILATOR
- `define NO_SHORTREAL
  `define NULL 64'd0
 `else
  `define NULL null

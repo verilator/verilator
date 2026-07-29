@@ -2287,9 +2287,6 @@ anticipated to be ever implemented for the reasons indicated.
 IEEE 1800-2023 3.3 modules within modules
    Little/no tool support, and arguably not a good practice.
 
-IEEE 1800-2023 6.12 "shortreal"
-   Little/no tool support, and easily promoted to real.
-
 IEEE 1800-2023 11.11 Min, typ, max
    No SDF support, so will always use typical.
 

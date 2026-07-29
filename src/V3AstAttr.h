@@ -464,6 +464,7 @@ public:
         LOGIC,
         LONGINT,
         DOUBLE,
+        SHORTREAL,
         SHORTINT,
         TIME,
         // Closer to a class type, but limited usage
@@ -502,6 +503,7 @@ public:
                                             "logic",
                                             "longint",
                                             "real",
+                                            "shortreal",
                                             "shortint",
                                             "time",
                                             "string",
@@ -534,6 +536,7 @@ public:
                                             "svLogic",
                                             "long long",
                                             "double",
+                                            "float",
                                             "short",
                                             "%E-time",
                                             "const char*",
@@ -579,6 +582,7 @@ public:
         case LOGIC: return 1;  // scalar, can't bit extract unless ranged
         case LONGINT: return 64;
         case DOUBLE: return 64;  // opaque
+        case SHORTREAL: return 32;  // opaque
         case SHORTINT: return 16;
         case TIME: return 64;
         case STRING: return 64;  // opaque  // Just the pointer, for today
@@ -599,7 +603,7 @@ public:
     }
     bool isSigned() const {
         return m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
-               || m_e == DOUBLE;
+               || m_e == DOUBLE || m_e == SHORTREAL;
     }
     bool isUnsigned() const {
         return m_e == CHANDLE || m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
@@ -610,7 +614,8 @@ public:
     }
     bool isZeroInit() const {  // Otherwise initializes to X
         return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == EVENT || m_e == INT
-                || m_e == LONGINT || m_e == SHORTINT || m_e == STRING || m_e == DOUBLE);
+                || m_e == LONGINT || m_e == SHORTINT || m_e == STRING || m_e == DOUBLE
+                || m_e == SHORTREAL);
     }
     bool isIntNumeric() const {  // Enum increment supported
         return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
@@ -626,17 +631,20 @@ public:
     }
     bool isDpiCLayout() const {  // Uses standard C layout, for DPI runtime access
         return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == INT || m_e == LONGINT
-                || m_e == DOUBLE || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
+                || m_e == DOUBLE || m_e == SHORTREAL || m_e == SHORTINT || m_e == UINT32
+                || m_e == UINT64);
     }
     bool isOpaque() const VL_MT_SAFE {  // IE not a simple number we can bit optimize
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
                 || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE
-                || m_e == UNTYPED);
+                || m_e == SHORTREAL || m_e == UNTYPED);
     }
     bool isCHandle() const VL_MT_SAFE { return m_e == CHANDLE; }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
+    bool isShortReal() const VL_MT_SAFE { return m_e == SHORTREAL; }
+    bool isFloating() const VL_MT_SAFE { return isDouble() || isShortReal(); }
     bool isEvent() const { return m_e == EVENT; }
     bool isString() const VL_MT_SAFE { return m_e == STRING; }
     bool isMTaskState() const VL_MT_SAFE { return m_e == MTASKSTATE; }
@@ -651,6 +659,7 @@ public:
         case LOGIC:
         case LONGINT:
         case DOUBLE:
+        case SHORTREAL:
         case SHORTINT:
         case SCOPEPTR:
         case CHARPTR:
@@ -674,6 +683,7 @@ public:
             /* LOGIC:                     */ "LOGIC",
             /* LONGINT:                   */ "LONGINT",
             /* DOUBLE:                    */ "DOUBLE",
+            /* SHORTREAL:                 */ "SHORTREAL",
             /* SHORTINT:                  */ "SHORTINT",
             /* TIME:                      */ "TIME",
             /* STRING:                    */ "",

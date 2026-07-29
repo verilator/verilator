@@ -16,6 +16,12 @@ function bit check_double(real d);
   return 1'b0;
 endfunction
 
+function bit check_shortreal(shortreal f);
+  if (f inside {0.0, 2.5})
+    return 1'b1;
+  return 1'b0;
+endfunction
+
 module t;
   initial begin
     if (!check_string("WO"))
@@ -29,6 +35,12 @@ module t;
     if (!check_double(2.5))
       $stop;
     if (check_double(1.0))
+      $stop;
+    if (!check_shortreal(0.0))
+      $stop;
+    if (!check_shortreal(2.5))
+      $stop;
+    if (check_shortreal(1.0))
       $stop;
 
     $display("*-* All Finished *-*");

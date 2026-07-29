@@ -22,7 +22,6 @@
 `endif
 
 `ifdef VERILATOR
- `define NO_SHORTREAL
  `define NO_UNPACK_STRUCT
 `endif
 

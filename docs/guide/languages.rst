@@ -463,8 +463,8 @@ interface
    interfaces nor unnamed interfaces.
 
 shortreal
-   Short floating point (shortreal) numbers are converted to real. Most
-   other simulators either do not support float, or convert likewise.
+   Short floating point (shortreal) numbers are supported as IEEE 754
+   single-precision values.
 
 specify specparam
    All timing checks and specify blocks (except specparam, which is

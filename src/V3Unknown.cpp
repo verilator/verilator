@@ -511,6 +511,8 @@ class UnknownVisitor final : public VNVisitor {
                 V3Number xnum{nodep, nodep->width()};
                 if (nodeDtp->isDouble()) {
                     xnum = V3Number{nodep, V3Number::Double{}, 0.0};
+                } else if (nodeDtp->isShortReal()) {
+                    xnum = V3Number{nodep, V3Number::ShortReal{}, 0.0F};
                 } else if (nodeDtp->isString()) {
                     xnum = V3Number{nodep, V3Number::String{}, ""};
                 } else {

@@ -39,6 +39,7 @@ module sub (
   reg [31:0] vec[2:1][2:1];
   reg [2:1][2:1][31:0] pvec;
   real r;
+  shortreal sr;
   string s, s2;
   string sarr[2:1];
   string assoc[string];
@@ -68,6 +69,7 @@ module sub (
       pvec[2][1] <= 32'h10201;
       pvec[2][2] <= 32'h10202;
       r <= 1.234;
+      sr <= 2.5;
       s <= "hello";
       // Blocking to avoid delayed to dynamic var
       sarr[1] = "sarr[1]";
@@ -95,6 +97,7 @@ module sub (
       if (pvec[2][1] !== 32'h10201) $stop;
       if (pvec[2][2] !== 32'h10202) $stop;
       if (r != 1.234) $stop;
+      if (sr != 2.5) $stop;
       $display("%s", s);
       $display("%s", sarr[1]);
       $display("%s", sarr[2]);

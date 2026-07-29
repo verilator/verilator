@@ -46,6 +46,7 @@ public:
         //
         COMPLEX = VL_VFORMATATTR_COMPLEX,
         DOUBLE = VL_VFORMATATTR_DOUBLE,
+        SHORTREAL = VL_VFORMATATTR_SHORTREAL,
         ENUM = VL_VFORMATATTR_ENUM,
         SCOPE = VL_VFORMATATTR_SCOPE,
         STRING = VL_VFORMATATTR_STRING,
@@ -64,7 +65,9 @@ public:
     bool isComplex() const { return m_e == COMPLEX; }
     bool isDouble() const { return m_e == DOUBLE; }
     bool isEnum() const { return m_e == ENUM; }
+    bool isFloating() const { return isDouble() || isShortReal(); }
     bool isSigned() const { return m_e == SIGNED; }
+    bool isShortReal() const { return m_e == SHORTREAL; }
     bool isString() const { return m_e == STRING; }
     bool isUnsigned() const { return m_e == UNSIGNED; }
 };
@@ -97,6 +100,7 @@ public:
         LOGIC = 1,
         DOUBLE = 2,
         STRING = 3,
+        SHORTREAL = 4,
     };
     friend std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) VL_MT_SAFE {
         switch (rhs) {
@@ -104,6 +108,7 @@ public:
         case V3NumberDataType::LOGIC: return os << "LOGIC";
         case V3NumberDataType::DOUBLE: return os << "DOUBLE";
         case V3NumberDataType::STRING: return os << "STRING";
+        case V3NumberDataType::SHORTREAL: return os << "SHORTREAL";
         }
         return os;
     }
@@ -306,6 +311,12 @@ public:
         m_type = V3NumberDataType::DOUBLE;
         resize(64);
     }
+    void setShortReal() {
+        destroyStoredValue();
+        if (!isInlineNumber()) initInlineNumber();
+        m_type = V3NumberDataType::SHORTREAL;
+        resize(32);
+    }
 
     void setLogic() {
         if (isString()) destroyString();
@@ -324,11 +335,13 @@ private:
     static constexpr int bitsToWords(int bitsCount) VL_PURE { return (bitsCount + 31) / 32; }
 
     bool isNumber() const VL_MT_SAFE {
-        return m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC;
+        return m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::SHORTREAL
+               || m_type == V3NumberDataType::LOGIC;
     }
     bool isInlineNumber() const VL_MT_SAFE {
         return (m_width <= MAX_INLINE_WIDTH)
-               && (m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC);
+               && (m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::SHORTREAL
+                   || m_type == V3NumberDataType::LOGIC);
     }
     bool isDynamicNumber() const VL_MT_SAFE {
         return (m_width > MAX_INLINE_WIDTH) && (m_type == V3NumberDataType::LOGIC);
@@ -411,6 +424,7 @@ public:
     V3Number& setLong(uint32_t value);
     V3Number& setLongS(int32_t value);
     V3Number& setDouble(double value);
+    V3Number& setShortReal(float value);
     void setBitX0(int bit);
     void setBit(int bit, char value) {  // Note: must be initialized as number and pre-zeroed!
         if (bit >= m_data.width()) return;
@@ -553,6 +567,11 @@ public:
         init(nodep, 64);
         setDouble(value);
     }
+    class ShortReal {};
+    V3Number(AstNode* nodep, ShortReal, float value) {
+        init(nodep, 32);
+        setShortReal(value);
+    }
     class String {};
     V3Number(AstNode* nodep, String, const string& value) {
         init(nodep);
@@ -665,6 +684,7 @@ public:
         switch (newType) {
         case V3NumberDataType::STRING: m_data.setString(); break;
         case V3NumberDataType::DOUBLE: m_data.setDouble(); break;
+        case V3NumberDataType::SHORTREAL: m_data.setShortReal(); break;
         case V3NumberDataType::LOGIC: m_data.setLogic(); break;
         case V3NumberDataType::UNINITIALIZED: break;
         }
@@ -674,11 +694,13 @@ public:
     bool isSigned() const VL_MT_SAFE { return m_data.m_signed; }
     void isSigned(bool ssigned) { m_data.m_signed = ssigned; }
     bool isDouble() const VL_MT_SAFE { return dataType() == V3NumberDataType::DOUBLE; }
+    bool isShortReal() const VL_MT_SAFE { return dataType() == V3NumberDataType::SHORTREAL; }
     bool isString() const VL_MT_SAFE { return dataType() == V3NumberDataType::STRING; }
-    bool isOpaque() const VL_MT_SAFE { return isDouble() || isString(); }
+    bool isOpaque() const VL_MT_SAFE { return isDouble() || isShortReal() || isString(); }
     bool isNumber() const VL_MT_SAFE {
         return m_data.type() == V3NumberDataType::LOGIC
-               || m_data.type() == V3NumberDataType::DOUBLE;
+               || m_data.type() == V3NumberDataType::DOUBLE
+               || m_data.type() == V3NumberDataType::SHORTREAL;
     }
     bool isNegative() const VL_MT_SAFE {
         // Correct number of zero bits/width matters
@@ -721,6 +743,7 @@ public:
     string toDecimalS() const VL_MT_STABLE;  // return ASCII signed decimal number
     string toDecimalU() const VL_MT_STABLE;  // return ASCII unsigned decimal number
     double toDouble() const VL_MT_SAFE;
+    float toShortReal() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;
     uint8_t dataByte(int byte) const;
@@ -820,26 +843,44 @@ public:
     V3Number& opLte(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteS(const V3Number& lhs, const V3Number& rhs);  // Signed
 
-    // "D" - double (aka real) math
+    // "D"/"F" - floating point math
     V3Number& opIToRD(const V3Number& lhs, bool isSigned = false);
     V3Number& opISToRD(const V3Number& lhs) { return opIToRD(lhs, true); }
+    V3Number& opIToRF(const V3Number& lhs, bool isSigned = false);
+    V3Number& opISToRF(const V3Number& lhs) { return opIToRF(lhs, true); }
     V3Number& opRToIS(const V3Number& lhs);
+    V3Number& opFToIS(const V3Number& lhs);
     V3Number& opRToIRoundS(const V3Number& lhs);
+    V3Number& opFToIRoundS(const V3Number& lhs);
     V3Number& opRealToBits(const V3Number& lhs);
+    V3Number& opShortRealToBits(const V3Number& lhs);
     V3Number& opBitsToRealD(const V3Number& lhs);
+    V3Number& opBitsToShortReal(const V3Number& lhs);
     V3Number& opNegateD(const V3Number& lhs);
+    V3Number& opNegateF(const V3Number& lhs);
     V3Number& opAddD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opAddF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSubD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opSubF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opMulD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opMulF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opDivD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opDivF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opPowD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opPowF(const V3Number& lhs, const V3Number& rhs);
     // Comparisons
     V3Number& opEqD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opEqF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opNeqD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opNeqF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opGtD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opGtF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opGteD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opGteF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLtD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLtF(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteD(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLteF(const V3Number& lhs, const V3Number& rhs);
 
     // "N" - string operations
     V3Number& opAtoN(const V3Number& lhs, int base);

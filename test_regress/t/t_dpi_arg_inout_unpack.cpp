@@ -28,7 +28,6 @@
 # include "Vt_dpi_arg_inout_unpack__Dpi.h"
 typedef long long sv_longint_t;
 typedef unsigned long long sv_longint_unsigned_t;
-# define NO_SHORTREAL
 # define NO_UNPACK_STRUCT
 # define CONSTARG const
 #elif defined(VCS)  // VCS

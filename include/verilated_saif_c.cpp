@@ -571,6 +571,9 @@ void VerilatedSaif::declWide(const uint32_t code, const uint32_t fidx, const cha
 void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name) {
     declare(code, fidx, name, "real", false, -1, false, 63, 0);
 }
+void VerilatedSaif::declFloat(const uint32_t code, const uint32_t fidx, const char* name) {
+    declare(code, fidx, name, "real", false, -1, false, 31, 0);
+}
 
 // versions to call when the sig is array member
 void VerilatedSaif::declEventArray(const uint32_t code, const uint32_t fidx, const char* name,
@@ -596,6 +599,10 @@ void VerilatedSaif::declWideArray(const uint32_t code, const uint32_t fidx, cons
 void VerilatedSaif::declDoubleArray(const uint32_t code, const uint32_t fidx, const char* name,
                                     const int arraynum) {
     declare(code, fidx, name, "real", true, arraynum, false, 63, 0);
+}
+void VerilatedSaif::declFloatArray(const uint32_t code, const uint32_t fidx, const char* name,
+                                   const int arraynum) {
+    declare(code, fidx, name, "real", true, arraynum, false, 31, 0);
 }
 
 //=============================================================================
@@ -680,5 +687,10 @@ void VerilatedSaifBuffer::emitWData(const uint32_t code, WDataInP newval, const 
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitDouble(const uint32_t code, const double newval) {
+    // NOP
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitFloat(const uint32_t code, const float newval) {
     // NOP
 }

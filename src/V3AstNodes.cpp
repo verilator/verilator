@@ -334,6 +334,8 @@ AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         return new AstEqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
         return new AstEqD{fl, lhsp, rhsp};
+    } else if (lhsp->isShortReal() && rhsp->isShortReal()) {
+        return new AstEqF{fl, lhsp, rhsp};
     } else {
         return new AstEq{fl, lhsp, rhsp};
     }
@@ -344,6 +346,8 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
         return new AstEqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
         return new AstEqD{fl, lhsp, rhsp};
+    } else if (lhsp->isShortReal() && rhsp->isShortReal()) {
+        return new AstEqF{fl, lhsp, rhsp};
     } else {
         return new AstEqWild{fl, lhsp, rhsp};
     }
@@ -354,6 +358,8 @@ AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp
         return new AstNeqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
         return new AstNeqD{fl, lhsp, rhsp};
+    } else if (lhsp->isShortReal() && rhsp->isShortReal()) {
+        return new AstNeqF{fl, lhsp, rhsp};
     } else {
         return new AstNeq{fl, lhsp, rhsp};
     }
@@ -730,6 +736,8 @@ string AstNodeDType::vlEnumType() const {
         return "VLVT_PTR";
     } else if (strtype) {
         arg += "VLVT_STRING";
+    } else if (isShortReal()) {
+        arg += "VLVT_SHORTREAL";
     } else if (isDouble()) {
         arg += "VLVT_REAL";
     } else if (sdtypep && !sdtypep->packed()) {
@@ -865,7 +873,7 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     string arg;
     if (isWide() && isReadOnly()) arg += "const ";
     const bool asRef = !forReturn && (isWritable() || this->isRef() || this->isConstRef());
-    if (VN_IS(dtypeSkipRefp(), BasicDType) && !dtypeSkipRefp()->isDouble()
+    if (VN_IS(dtypeSkipRefp(), BasicDType) && !dtypeSkipRefp()->isFloating()
         && !dtypeSkipRefp()->isString()) {
         // Backward compatible type declaration
         if (widthMin() == 1) {
@@ -998,6 +1006,8 @@ string AstVar::scType() const {
                 + "> ");  // Keep the space so don't get >>
     } else if (isScBv()) {
         return ("sc_dt::sc_bv<"s + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
+    } else if (isShortReal()) {
+        return "float";
     } else if (widthMin() == 1) {
         return "bool";
     } else if (widthMin() <= VL_IDATASIZE) {
@@ -1238,6 +1248,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "const char*";
         } else if (bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR) {
             info.m_type = "const VerilatedScope*";
+        } else if (bdtypep->keyword().isShortReal()) {
+            info.m_type = "float";
         } else if (bdtypep->keyword().isDouble()) {
             info.m_type = "double";
         } else if (bdtypep->keyword().isString()) {
@@ -3034,6 +3046,7 @@ VFormatAttr AstSFormatArg::formatAttrDefauled(const AstSFormatArg* nodep,
     if (!dtypep) return VFormatAttr{};
     const AstNodeDType* skipDtypep = dtypep->skipRefp();
     if (skipDtypep->isDouble()) return VFormatAttr{VFormatAttr::DOUBLE};
+    if (skipDtypep->isShortReal()) return VFormatAttr{VFormatAttr::SHORTREAL};
     if (skipDtypep->isString()) return VFormatAttr{VFormatAttr::STRING};
     return VFormatAttr{};
 }

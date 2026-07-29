@@ -126,16 +126,22 @@ Handle Writer::createVar(
 
 	// determine real/string handling like original C implementation
 	bool is_real{false};
+	uint32_t stored_bitwidth{bitwidth};
 	switch (vartype) {
 	case Hierarchy::VarType::VCD_REAL:
 	case Hierarchy::VarType::VCD_REAL_PARAMETER:
 	case Hierarchy::VarType::VCD_REALTIME:
-	case Hierarchy::VarType::SV_SHORTREAL:
 		is_real = true;
 		bitwidth = 8;  // recast to double size
+		stored_bitwidth = bitwidth;
+		break;
+	case Hierarchy::VarType::SV_SHORTREAL:
+		is_real = true;
+		stored_bitwidth = 8;
 		break;
 	case Hierarchy::VarType::GEN_STRING:
 		bitwidth = 0;
+		stored_bitwidth = bitwidth;
 		break;
 	default:
 		break;
@@ -166,7 +172,7 @@ Handle Writer::createVar(
 		// I don't know why the original C implementation encode bitwidth again
 		const uint32_t geom_len{(bitwidth == 0 ? uint32_t(-1) : is_real ? uint32_t(0) : bitwidth)};
 		g.writeLEB128(geom_len);
-		m_value_change_data_.m_variable_infos.emplace_back(bitwidth, is_real);
+		m_value_change_data_.m_variable_infos.emplace_back(stored_bitwidth, is_real);
 	}
 
 	return alias_handle;

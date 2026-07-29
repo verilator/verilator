@@ -138,6 +138,33 @@ module t(clk);
     for (int i = 0 ; i < 128; ++i) `checkr(array4[i], 1e50);
   end
 
+  // Case 4b: shortreal
+  typedef shortreal elem4b_t;
+  typedef elem4b_t array4b_t[128];
+  array4b_t array4b;
+  `at_posedge_clk_on_cycle(0) begin
+    for (int i = 0 ; i < 128; ++i) array4b[i] = 0.25;
+    for (int i = 0 ; i < 128; ++i) `checkr(array4b[i], 0.25);
+  end
+  `at_posedge_clk_on_cycle(1) begin
+    for (int i = 0 ; i < 128; ++i) `checkr(array4b[i], 0.25);
+    for (int i = 0 ; i < 128; ++i) array4b[i] <= shortreal'(3.25 * i);
+    for (int i = 0 ; i < 128; ++i) `checkr(array4b[i], 0.25);
+  end
+  `at_posedge_clk_on_cycle(2) begin
+    for (int i = 0 ; i < 128; ++i) `checkr(array4b[i], shortreal'(3.25 * i));
+    for (int i = 0 ; i < 128; ++i) array4b[i] <= shortreal'(2.5 * i);
+    for (int i = 0 ; i < 128; ++i) `checkr(array4b[i], shortreal'(3.25 * i));
+  end
+  `at_posedge_clk_on_cycle(3) begin
+    for (int i = 0 ; i < 128; ++i) `checkr(array4b[i], shortreal'(2.5 * i));
+    for (int i = 0 ; i < 128; ++i) array4b[i] <= 1.25;
+    for (int i = 0 ; i < 128; ++i) `checkr(array4b[i], shortreal'(2.5 * i));
+  end
+  `at_posedge_clk_on_cycle(4) begin
+    for (int i = 0 ; i < 128; ++i) `checkr(array4b[i], 1.25);
+  end
+
   // Case 5: narrow packed variable, partial element updates - 1D
   typedef logic [31:0] elem5_t;
   typedef elem5_t array5_t[128];

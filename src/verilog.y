@@ -154,11 +154,6 @@ static void ASSIGNEQEXPR(FileLine* fileline) {
                          << "... Was a '==' intended, or suggest use a separate statement");
 }
 
-static void UNSUPREAL(FileLine* fileline) {
-    fileline->v3warn(SHORTREAL,
-                     "Unsupported: shortreal being promoted to real (suggest use real instead)");
-}
-
 //======================================================================
 
 void yyerror(const char* errmsg) { PARSEP->bisonLastFileline()->v3error(errmsg); }
@@ -2027,7 +2022,7 @@ integer_vector_type<basicDTypep>:       // ==IEEE: integer_atom_type
 non_integer_type<basicDTypep>:  // ==IEEE: non_integer_type
                 yREAL                                   { $$ = new AstBasicDType{$1, VBasicDTypeKwd::DOUBLE}; }
         |       yREALTIME                               { $$ = new AstBasicDType{$1, VBasicDTypeKwd::DOUBLE}; }
-        |       ySHORTREAL                              { $$ = new AstBasicDType{$1, VBasicDTypeKwd::DOUBLE}; UNSUPREAL($1); }
+        |       ySHORTREAL                              { $$ = new AstBasicDType{$1, VBasicDTypeKwd::SHORTREAL}; }
         ;
 
 signingE<signstate>:            // IEEE: signing - plus empty
@@ -4445,7 +4440,7 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         |       yD_BITS '(' exprOrDataType ')'          { $$ = new AstAttrOf{$1, VAttrType::DIM_BITS, $3}; }
         |       yD_BITS '(' exprOrDataType ',' expr ')' { $$ = new AstAttrOf{$1, VAttrType::DIM_BITS, $3, $5}; }
         |       yD_BITSTOREAL '(' expr ')'              { $$ = new AstBitsToRealD{$1, $3}; }
-        |       yD_BITSTOSHORTREAL '(' expr ')'         { $$ = new AstBitsToRealD{$1, $3}; UNSUPREAL($1); }
+        |       yD_BITSTOSHORTREAL '(' expr ')'         { $$ = new AstBitsToShortReal{$1, $3}; }
         |       yD_CEIL '(' expr ')'                    { $$ = new AstCeilD{$1, $3}; }
         |       yD_CHANGED '(' expr ')'                 { $$ = new AstLogNot{$1, new AstStable{$1, $3, nullptr}}; }
         |       yD_CHANGED '(' expr ',' expr ')'
@@ -4538,7 +4533,7 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         |       yD_RTOI '(' expr ')'                    { $$ = new AstRToIS{$1, $3}; }
         |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3, $3->dtypep()}; }
         |       yD_SFORMATF '(' exprDispList ')'        { $$ = new AstSFormatF{$1, AstSFormatF::ExprFormat{}, $3, 'd', false}; }
-        |       yD_SHORTREALTOBITS '(' expr ')'         { $$ = new AstRealToBits{$1, $3}; UNSUPREAL($1); }
+        |       yD_SHORTREALTOBITS '(' expr ')'         { $$ = new AstShortRealToBits{$1, $3}; }
         |       yD_SIGNED '(' expr ')'                  { $$ = new AstSigned{$1, $3}; }
         |       yD_SIN '(' expr ')'                     { $$ = new AstSinD{$1, $3}; }
         |       yD_SINH '(' expr ')'                    { $$ = new AstSinhD{$1, $3}; }

@@ -12,6 +12,7 @@ module t (
 
   reg [2:0] cyc;
   real x;
+  shortreal xs;
 
   initial cyc = 0;
   always @(posedge clk) cyc <= cyc + 1;
@@ -27,7 +28,19 @@ module t (
     endcase
   end
 
+  always @(cyc) begin
+    case (cyc)
+      3'd0: xs = 1.0;
+      3'd1: xs = 2.0;
+      3'd2: xs = 3.0;
+      3'd4: xs = 5.0;
+      3'd5: xs = 6.0;
+      default: xs = 0.0;
+    endcase
+  end
+
   always @(posedge clk) begin
+    if (xs != shortreal'(x)) $stop;
     $display("cyle %d = %.1f", cyc, x);
     if (cyc == 7) begin
       $write("*-* All Finished *-*\n");

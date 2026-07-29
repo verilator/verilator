@@ -33,6 +33,10 @@ extern "C" int mon_check();
   reg [68:0] write_customs_nonzero_index_rl [4:1] `PUBLIC_FLAT_RW;
 
   integer write_integers [0:3] `PUBLIC_FLAT_RW;
+`ifdef VERILATOR
+  shortreal write_shortreals [0:3] `PUBLIC_FLAT_RW;
+  shortreal write_shortreals_rl [3:0] `PUBLIC_FLAT_RW;
+`endif
 
   reg [7:0] write_scalar `PUBLIC_FLAT_RW;
   reg [7:0] write_bounds [1:3] `PUBLIC_FLAT_RW;

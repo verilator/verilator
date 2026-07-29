@@ -1142,6 +1142,19 @@ int _mon_check_var() {
         p = vpi_get_str(vpiType, vh101);
         CHECK_RESULT_CSTR(p, "vpiRealVar");
     }
+    tmpValue.format = vpiShortRealVal;
+    {
+        TestVpiHandle vh101 = VPI_HANDLE("shortreal1");
+        CHECK_RESULT_NZ(vh101);
+        d = vpi_get(vpiType, vh101);
+        CHECK_RESULT(d, vpiShortRealVar);
+        auto sn = vpi_get(vpiSigned, vh101);
+        CHECK_RESULT(sn, 1);
+        vpi_get_value(vh101, &tmpValue);
+        TEST_CHECK_REAL_EQ(tmpValue.value.real, 1.25, 0.0005);
+        p = vpi_get_str(vpiType, vh101);
+        CHECK_RESULT_CSTR(p, "vpiShortRealVar");
+    }
 
     // string variable
     tmpValue.format = vpiStringVal;
@@ -1342,6 +1355,19 @@ int _mon_check_getput() {
     v.value.real = 0.0f;
     vpi_get_value(vh3, &v);
     TEST_CHECK_REAL_EQ(v.value.real, 123456.789, 0.0005);
+
+    // shortreal
+    TestVpiHandle vhshortreal = VPI_HANDLE("shortreal1");
+    CHECK_RESULT_NZ(vhshortreal);
+    v.format = vpiShortRealVal;
+    vpi_get_value(vhshortreal, &v);
+    TEST_CHECK_REAL_EQ(v.value.real, 1.25, 0.0005);
+
+    v.value.real = 123456.789;
+    vpi_put_value(vhshortreal, &v, &t, vpiNoDelay);
+    v.value.real = 0.0;
+    vpi_get_value(vhshortreal, &v);
+    TEST_CHECK_REAL_EQ(v.value.real, 123456.789, 0.001);
 
     // string
     TestVpiHandle vh4 = VPI_HANDLE("str1");

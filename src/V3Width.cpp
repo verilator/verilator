@@ -355,6 +355,13 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstLteD* nodep) override { visit_cmp_real(nodep); }
     void visit(AstGtD* nodep) override { visit_cmp_real(nodep); }
     void visit(AstGteD* nodep) override { visit_cmp_real(nodep); }
+    // ...    Shortreal compares
+    void visit(AstEqF* nodep) override { visit_cmp_shortreal(nodep); }
+    void visit(AstNeqF* nodep) override { visit_cmp_shortreal(nodep); }
+    void visit(AstLtF* nodep) override { visit_cmp_shortreal(nodep); }
+    void visit(AstLteF* nodep) override { visit_cmp_shortreal(nodep); }
+    void visit(AstGtF* nodep) override { visit_cmp_shortreal(nodep); }
+    void visit(AstGteF* nodep) override { visit_cmp_shortreal(nodep); }
     // ...    String compares
     void visit(AstEqN* nodep) override { visit_cmp_string(nodep); }
     void visit(AstNeqN* nodep) override { visit_cmp_string(nodep); }
@@ -401,9 +408,17 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstMulD* nodep) override { visit_real_add_sub(nodep); }
     void visit(AstPowD* nodep) override { visit_real_add_sub(nodep); }
     void visit(AstNodeSystemBiopD* nodep) override { visit_real_add_sub(nodep); }
+    // Shortreal: inputs and output shortreal
+    void visit(AstAddF* nodep) override { visit_shortreal_add_sub(nodep); }
+    void visit(AstSubF* nodep) override { visit_shortreal_add_sub(nodep); }
+    void visit(AstDivF* nodep) override { visit_shortreal_add_sub(nodep); }
+    void visit(AstMulF* nodep) override { visit_shortreal_add_sub(nodep); }
+    void visit(AstPowF* nodep) override { visit_shortreal_add_sub(nodep); }
     // Real: Output real
     void visit(AstNegateD* nodep) override { visit_real_neg_ceil(nodep); }
     void visit(AstNodeSystemUniopD* nodep) override { visit_real_neg_ceil(nodep); }
+    // Shortreal: Output shortreal
+    void visit(AstNegateF* nodep) override { visit_shortreal_neg_ceil(nodep); }
 
     // Widths: out signed/unsigned width = lhs width, input un|signed
     void visit(AstSigned* nodep) override { visit_signed_unsigned(nodep, VSigning::SIGNED); }
@@ -419,8 +434,20 @@ class WidthVisitor final : public VNVisitor {
     //========
     // Widths: Output real, input integer signed
     void visit(AstBitsToRealD* nodep) override { visit_Or_Lu64(nodep); }
+    void visit(AstBitsToShortReal* nodep) override { visit_Of_Lu32(nodep); }
+    void visit(AstDToF* nodep) override { visit_Of_Lr(nodep); }
+    void visit(AstFToD* nodep) override { visit_Or_Lf(nodep); }
 
     // Widths: Output integer signed, input real
+    void visit(AstFToIS* nodep) override { visit_Os32_Lf(nodep); }
+    void visit(AstFToIRoundS* nodep) override {
+        // Only created here, size comes from upper expression
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+        }
+        UASSERT_OBJ(nodep->dtypep()->widthSized(), nodep, "FToIRoundS should be presized");
+    }
     void visit(AstRToIS* nodep) override { visit_Os32_Lr(nodep); }
     void visit(AstRToIRoundS* nodep) override {
         // Only created here, size comes from upper expression
@@ -433,6 +460,7 @@ class WidthVisitor final : public VNVisitor {
 
     // Widths: Output integer unsigned, input real
     void visit(AstRealToBits* nodep) override { visit_Ou64_Lr(nodep); }
+    void visit(AstShortRealToBits* nodep) override { visit_Ou32_Lf(nodep); }
 
     // Output integer, input string
     void visit(AstLenN* nodep) override {
@@ -581,6 +609,8 @@ class WidthVisitor final : public VNVisitor {
                 }
             } else if (nodep->thenp()->isDouble() || nodep->elsep()->isDouble()) {
                 nodep->dtypeSetDouble();
+            } else if (nodep->thenp()->isShortReal() || nodep->elsep()->isShortReal()) {
+                nodep->dtypeSetShortReal();
             } else if (nodep->thenp()->isString() || nodep->elsep()->isString()) {
                 nodep->dtypeSetString();
             } else {
@@ -2040,6 +2070,11 @@ class WidthVisitor final : public VNVisitor {
                 spliceCvtD(nodep->rhsp());
                 VL_DO_DANGLING(replaceWithDVersion(nodep), nodep);
                 return;
+            } else if (nodep->lhsp()->isShortReal() || nodep->rhsp()->isShortReal()) {
+                spliceCvtF(nodep->lhsp());
+                spliceCvtF(nodep->rhsp());
+                VL_DO_DANGLING(replaceWithFVersion(nodep), nodep);
+                return;
             }
 
             checkCvtUS(nodep->lhsp(), false);
@@ -2791,7 +2826,7 @@ class WidthVisitor final : public VNVisitor {
             } else if (AstBasicDType* const basicp = toDtp->basicp()) {
                 if (!basicp->isString() && fromDtp->isString()) {
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
-                } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
+                } else if (!basicp->isFloating() && !fromDtp->isFloating()) {
                     AstNodeDType* const origDTypep = nodep->dtypep();
                     if (!VN_IS(fromDtp, StreamDType)) {
                         const int width = toDtp->width();
@@ -2805,13 +2840,26 @@ class WidthVisitor final : public VNVisitor {
                 }
                 if (newp) {
                 } else if (basicp->isDouble() && !nodep->fromp()->isDouble()) {
-                    if (nodep->fromp()->isSigned()) {
+                    if (nodep->fromp()->isShortReal()) {
+                        newp = new AstFToD{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    } else if (nodep->fromp()->isSigned()) {
                         newp = new AstISToRD{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                     } else {
                         newp = new AstIToRD{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                     }
-                } else if (!basicp->isDouble() && nodep->fromp()->isDouble()) {
+                } else if (basicp->isShortReal() && !nodep->fromp()->isShortReal()) {
+                    if (nodep->fromp()->isDouble()) {
+                        newp = new AstDToF{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    } else if (nodep->fromp()->isSigned()) {
+                        newp = new AstISToRF{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    } else {
+                        newp = new AstIToRF{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    }
+                } else if (!basicp->isFloating() && nodep->fromp()->isDouble()) {
                     newp = new AstRToIRoundS{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    newp->dtypep(basicp);
+                } else if (!basicp->isFloating() && nodep->fromp()->isShortReal()) {
+                    newp = new AstFToIRoundS{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                     newp->dtypep(basicp);
                 } else if (basicp->isSigned() && !nodep->fromp()->isSigned()) {
                     newp = new AstSigned{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
@@ -3035,6 +3083,9 @@ class WidthVisitor final : public VNVisitor {
                 // This prevents width warnings at the location the parameter is substituted in
                 if (nodep->valuep()->isDouble()) {
                     nodep->dtypeSetDouble();
+                    VL_DANGLING(bdtypep);
+                } else if (nodep->valuep()->isShortReal()) {
+                    nodep->dtypeSetShortReal();
                     VL_DANGLING(bdtypep);
                 } else if (nodep->valuep()->isString()) {
                     nodep->dtypeSetString();
@@ -3567,6 +3618,9 @@ class WidthVisitor final : public VNVisitor {
         } else if (dtype && dtype->isDouble()) {
             nodep->dtypeSetDouble();
             expDTypep = nodep->findDoubleDType();
+        } else if (dtype && dtype->isShortReal()) {
+            nodep->dtypeSetShortReal();
+            expDTypep = nodep->findShortRealDType();
         } else {
             // Take width as maximum across all items
             int width = nodep->exprp()->width();
@@ -6227,6 +6281,8 @@ class WidthVisitor final : public VNVisitor {
 
                 if (condp->dtypep()->isDouble() || subDTypep->isDouble()) {
                     subDTypep = casep->findDoubleDType();
+                } else if (condp->dtypep()->isShortReal() || subDTypep->isShortReal()) {
+                    subDTypep = casep->findShortRealDType();
                 } else if (condp->dtypep()->isString() || subDTypep->isString()) {
                     subDTypep = casep->findStringDType();
                 } else {
@@ -6626,6 +6682,8 @@ class WidthVisitor final : public VNVisitor {
             const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
             if (dtypep->isDouble()) {
                 formatAttr = VFormatAttr::DOUBLE;
+            } else if (dtypep->isShortReal()) {
+                formatAttr = VFormatAttr::SHORTREAL;
             } else if (dtypep->isString()) {
                 formatAttr = VFormatAttr::STRING;
             } else if (isFormatNonNumericArg(dtypep)) {
@@ -7914,6 +7972,19 @@ class WidthVisitor final : public VNVisitor {
             iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, subDTypep, EXTEND_EXP);
         }
     }
+    void visit_Of_Lu32(AstNodeUniop* nodep) {
+        // CALLER: AstBitsToShortReal
+        // Shortreal: Output shortreal
+        // LHS presumed self-determined, then coerced to 32-bit unsigned bits
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            nodep->dtypeSetShortReal();
+            AstNodeDType* const subDTypep = nodep->findLogicDType(32, 32, VSigning::UNSIGNED);
+            // Self-determined operand
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, subDTypep, EXTEND_EXP);
+        }
+    }
     void visit(AstIToRD* nodep) override {
         // Real: Output real
         // LHS presumed self-determined, then coerced to real
@@ -7929,6 +8000,21 @@ class WidthVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstIToRF* nodep) override {
+        // Shortreal: Output shortreal
+        // LHS presumed self-determined, then coerced to shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            nodep->dtypeSetShortReal();
+            // Self-determined operand (TODO check if numeric type)
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            if (nodep->lhsp()->isSigned()) {
+                nodep->replaceWith(
+                    new AstISToRF{nodep->fileline(), nodep->lhsp()->unlinkFrBack()});
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            }
+        }
+    }
     void visit(AstISToRD* nodep) override {
         // Real: Output real
         // LHS presumed self-determined, then coerced to real
@@ -7937,6 +8023,34 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetDouble();
             // Self-determined operand (TODO check if numeric type)
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+        }
+    }
+    void visit(AstISToRF* nodep) override {
+        // Shortreal: Output shortreal
+        // LHS presumed self-determined, then coerced to shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            nodep->dtypeSetShortReal();
+            // Self-determined operand (TODO check if numeric type)
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+        }
+    }
+    void visit_Or_Lf(AstNodeUniop* nodep) {
+        // CALLER: FToD
+        // Real: Output real, input shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetDouble();
+        }
+    }
+    void visit_Of_Lr(AstNodeUniop* nodep) {
+        // CALLER: DToF
+        // Shortreal: Output shortreal, input real
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetShortReal();
         }
     }
     void visit_Os32_Lr(AstNodeUniop* nodep) {
@@ -7949,6 +8063,16 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetInteger();
         }
     }
+    void visit_Os32_Lf(AstNodeUniop* nodep) {
+        // CALLER: FToI
+        // Shortreal: LHS shortreal
+        // LHS presumed self-determined, then coerced to shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetInteger();
+        }
+    }
     void visit_Ou64_Lr(AstNodeUniop* nodep) {
         // CALLER: RealToBits
         // Real: LHS real
@@ -7957,6 +8081,16 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {  // First stage evaluation
             iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
             nodep->dtypeSetUInt64();
+        }
+    }
+    void visit_Ou32_Lf(AstNodeUniop* nodep) {
+        // CALLER: ShortRealToBits
+        // Shortreal: LHS shortreal
+        // LHS presumed self-determined, then coerced to shortreal
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetUInt32();
         }
     }
 
@@ -8191,6 +8325,20 @@ class WidthVisitor final : public VNVisitor {
                     iterateCheckReal(nodep, "LHS", nodep->lhsp(), FINAL);
                     iterateCheckReal(nodep, "RHS", nodep->rhsp(), FINAL);
                 }
+            } else if (nodep->lhsp()->isShortReal() || nodep->rhsp()->isShortReal()) {
+                if (!realok) {
+                    nodep->v3error("Real is illegal operand to ?== operator");
+                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+                if (AstNodeBiop* const newp = replaceWithFVersion(nodep)) {
+                    VL_DANGLING(nodep);
+                    nodep = newp;  // Process new node instead
+                    iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), FINAL);
+                    iterateCheckShortReal(nodep, "RHS", nodep->rhsp(), FINAL);
+                }
             } else if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
                 if (AstNodeBiop* const newp = replaceWithNVersion(nodep)) {
                     VL_DANGLING(nodep);
@@ -8307,6 +8455,15 @@ class WidthVisitor final : public VNVisitor {
                 nodep = newp;  // Process new node instead
                 iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
                 nodep->dtypeSetDouble();
+                return;
+            }
+        } else if (real_ok && nodep->lhsp()->isShortReal()) {
+            spliceCvtF(nodep->lhsp());
+            if (AstNodeUniop* const newp = replaceWithFVersion(nodep)) {
+                VL_DANGLING(nodep);
+                nodep = newp;  // Process new node instead
+                iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+                nodep->dtypeSetShortReal();
                 return;
             }
         } else {
@@ -8481,6 +8638,17 @@ class WidthVisitor final : public VNVisitor {
                 iterateCheckReal(nodep, "LHS", nodep->lhsp(), FINAL);
                 iterateCheckReal(nodep, "RHS", nodep->rhsp(), FINAL);
                 return;
+            } else if (nodep->lhsp()->isShortReal() || nodep->rhsp()->isShortReal()) {
+                spliceCvtF(nodep->lhsp());
+                spliceCvtF(nodep->rhsp());
+                if (AstNodeBiop* const newp = replaceWithFVersion(nodep)) {
+                    VL_DANGLING(nodep);
+                    nodep = newp;  // Process new node instead
+                }
+                nodep->dtypeSetShortReal();
+                iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), FINAL);
+                iterateCheckShortReal(nodep, "RHS", nodep->rhsp(), FINAL);
+                return;
             } else if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
                 nodep->v3error(
                     "Operator "
@@ -8553,6 +8721,34 @@ class WidthVisitor final : public VNVisitor {
             // See alsl visit_negate_not conversion
             iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
             nodep->dtypeSetDouble();
+        }
+    }
+    void visit_cmp_shortreal(AstNodeBiop* nodep) {
+        // CALLER: EqF, LtF
+        // Widths: 1 bit out, lhs width == rhs width
+        UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckShortReal(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit_shortreal_add_sub(AstNodeBiop* nodep) {
+        // CALLER: AddF, MulF, ...
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckShortReal(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetShortReal();
+        }
+    }
+    void visit_shortreal_neg_ceil(AstNodeUniop* nodep) {
+        // CALLER: NegateF
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckShortReal(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetShortReal();
         }
     }
 
@@ -8763,6 +8959,9 @@ class WidthVisitor final : public VNVisitor {
             // TODO do all to-real and to-integer conversions in this function
             // rather than in callers
             AstNodeExpr* const newp = spliceCvtD(nodep);
+            nodep = newp;
+        } else if (expDTypep->isShortReal() && !nodep->isShortReal()) {
+            AstNodeExpr* const newp = spliceCvtF(nodep);
             nodep = newp;
         }
         nodep->dtypep(expDTypep);
@@ -8995,6 +9194,10 @@ class WidthVisitor final : public VNVisitor {
         // otherwise self-determined was correct
         iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findDoubleDType(), stage);
     }
+    void iterateCheckShortReal(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
+        // Coerce child to shortreal if not already. Child is self-determined.
+        iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findShortRealDType(), stage);
+    }
     void iterateCheckSigned8(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to signed8 if not already. Child is self-determined
         iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findSigned8DType(), stage);
@@ -9219,12 +9422,20 @@ class WidthVisitor final : public VNVisitor {
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());
+        } else if (expDTypep->isShortReal() && underp->isShortReal()) {  // Also good
+            underp = userIterateSubtreeReturnEdits(underp,
+                                                   WidthVP{expDTypep, FINAL, childStreamUse}.p());
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtD(VN_AS(underp, NodeExpr));
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
-        } else if (!expDTypep->isDouble() && underp->isDouble()) {
+        } else if (expDTypep->isShortReal() && !underp->isShortReal()) {
+            AstNode* const oldp
+                = underp;  // Need FINAL on children; otherwise splice would block it
+            spliceCvtF(VN_AS(underp, NodeExpr));
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
+        } else if (!expDTypep->isFloating() && underp->isFloating()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtS(VN_AS(underp, NodeExpr), true, expDTypep->width());  // Round RHS
@@ -9341,16 +9552,18 @@ class WidthVisitor final : public VNVisitor {
         const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
         if (expDTypep == underp->dtypep()) {
             return;  // Same type must match
-        } else if (!expBasicp || expBasicp->isDouble() || !underBasicp
-                   || underBasicp->isDouble()) {
+        } else if (!expBasicp || expBasicp->isFloating() || !underBasicp
+                   || underBasicp->isFloating()) {
             // This is perhaps a v3fatalSrc as we should have checked the types
             // before calling widthCheck, but we may have missed a non-sized
             // check in earlier code, so might as well assume it is the users'
             // fault.
             parentp->v3error(ucfirst(parentp->prettyOperatorName())
-                             << " expected non-complex non-double " << side << " in width check");
+                             << " expected non-complex non-floating " << side
+                             << " in width check");
 #if VL_DEBUG
-            parentp->v3fatalSrc("widthCheckSized should not be called on doubles/complex types");
+            parentp->v3fatalSrc(
+                "widthCheckSized should not be called on floating/complex types");
 #endif
             return;
         } else {
@@ -9433,7 +9646,7 @@ class WidthVisitor final : public VNVisitor {
     // SIGNED/DOUBLE METHODS
 
     AstNodeExpr* checkCvtUS(AstNodeExpr* nodep, bool fatal) {
-        if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
+        if (nodep && nodep->isFloating()) {
             if (fatal) {
                 nodep->v3error("Expected integral input to " << nodep->backp()->prettyTypeName());
             } else {
@@ -9454,7 +9667,9 @@ class WidthVisitor final : public VNVisitor {
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             AstNodeExpr* newp;
-            if (nodep->dtypep()->skipRefp()->isSigned()) {
+            if (nodep->isShortReal()) {
+                newp = new AstFToD{nodep->fileline(), nodep};
+            } else if (nodep->dtypep()->skipRefp()->isSigned()) {
                 newp = new AstISToRD{nodep->fileline(), nodep};
             } else {
                 newp = new AstIToRD{nodep->fileline(), nodep};
@@ -9465,11 +9680,32 @@ class WidthVisitor final : public VNVisitor {
             return nodep;
         }
     }
+    AstNodeExpr* spliceCvtF(AstNodeExpr* nodep) {
+        // For integer or real used in SHORTREAL context, convert to shortreal
+        if (nodep && !nodep->isShortReal()) {
+            UINFO(6, "   spliceCvtF: " << nodep);
+            VNRelinker linker;
+            nodep->unlinkFrBack(&linker);
+            AstNodeExpr* newp;
+            if (nodep->isDouble()) {
+                newp = new AstDToF{nodep->fileline(), nodep};
+            } else if (nodep->dtypep()->skipRefp()->isSigned()) {
+                newp = new AstISToRF{nodep->fileline(), nodep};
+            } else {
+                newp = new AstIToRF{nodep->fileline(), nodep};
+            }
+            linker.relink(newp);
+            return newp;
+        } else {
+            return nodep;
+        }
+    }
     AstNodeExpr* spliceCvtS(AstNodeExpr* nodep, bool warnOn, int width) {
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
         // 11.8.2: Argument to convert is self-determined
-        if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
+        if (nodep && nodep->isFloating()) {
             UINFO(6, "   spliceCvtS: " << nodep);
+            const bool shortReal = nodep->isShortReal();
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
             if (const AstConst* const constp = VN_CAST(nodep, Const)) {
@@ -9477,10 +9713,18 @@ class WidthVisitor final : public VNVisitor {
                 // representable in integer's number of bits
                 if (constp->isDouble() && V3Number::epsilonIntegral(constp->num().toDouble())) {
                     warnOn = false;
+                } else if (constp->isShortReal()
+                           && V3Number::epsilonIntegral(constp->num().toShortReal())) {
+                    warnOn = false;
                 }
             }
             if (warnOn) nodep->v3warn(REALCVT, "Implicit conversion of real to integer");
-            AstNodeExpr* const newp = new AstRToIRoundS{nodep->fileline(), nodep};
+            AstNodeExpr* newp;
+            if (shortReal) {
+                newp = new AstFToIRoundS{nodep->fileline(), nodep};
+            } else {
+                newp = new AstRToIRoundS{nodep->fileline(), nodep};
+            }
             linker.relink(newp);
             newp->dtypeSetBitSized(width, VSigning::SIGNED);
             return newp;
@@ -9589,6 +9833,44 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return newp;
     }
+    AstNodeBiop* replaceWithFVersion(AstNodeBiop* nodep) {
+        // Given an integral node type, replace with a shortreal version
+        // Return new node or nullptr if nothing
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNodeBiop* newp = nullptr;
+        // No width change on output; all below have bool or shortreal outputs
+        switch (nodep->type()) {
+        case VNType::Add: newp = new AstAddF{fl, lhsp, rhsp}; break;
+        case VNType::Sub: newp = new AstSubF{fl, lhsp, rhsp}; break;
+        case VNType::Pow: newp = new AstPowF{fl, lhsp, rhsp}; break;
+        case VNType::Eq:
+        case VNType::EqCase: newp = new AstEqF{fl, lhsp, rhsp}; break;
+        case VNType::Neq:
+        case VNType::NeqCase: newp = new AstNeqF{fl, lhsp, rhsp}; break;
+        case VNType::Gt:
+        case VNType::GtS: newp = new AstGtF{fl, lhsp, rhsp}; break;
+        case VNType::Gte:
+        case VNType::GteS: newp = new AstGteF{fl, lhsp, rhsp}; break;
+        case VNType::Lt:
+        case VNType::LtS: newp = new AstLtF{fl, lhsp, rhsp}; break;
+        case VNType::Lte:
+        case VNType::LteS: newp = new AstLteF{fl, lhsp, rhsp}; break;
+        case VNType::Div:
+        case VNType::DivS: newp = new AstDivF{fl, lhsp, rhsp}; break;
+        case VNType::Mul:
+        case VNType::MulS: newp = new AstMulF{fl, lhsp, rhsp}; break;
+        default:  // LCOV_EXCL_LINE
+            nodep->v3fatalSrc("Node needs conversion to shortreal, but bad case: " << nodep);
+            break;
+        }
+        UINFO(6, "   ReplaceWithFVersion: " << nodep << " w/ " << newp);
+        nodep->replaceWith(newp);
+        // No width change; the default created type (bool or shortreal) is correct
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return newp;
+    }
     AstNodeBiop* replaceWithNVersion(AstNodeBiop* nodep) {
         // Given a signed/unsigned node type, replace with string version
         // Return new node or nullptr if nothing
@@ -9620,6 +9902,23 @@ class WidthVisitor final : public VNVisitor {
         UINFO(6, "   ReplaceWithNVersion: " << nodep << " w/ " << newp);
         nodep->replaceWith(newp);
         // No width change; the default created type (bool or string) is correct
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return newp;
+    }
+    AstNodeUniop* replaceWithFVersion(AstNodeUniop* nodep) {
+        // Given an integral node type, replace with a shortreal version
+        // Return new node or nullptr if nothing
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+        AstNodeUniop* newp = nullptr;
+        switch (nodep->type()) {
+        case VNType::Negate: newp = new AstNegateF{fl, lhsp}; break;
+        default:  // LCOV_EXCL_LINE
+            nodep->v3fatalSrc("Node needs conversion to shortreal, but bad case: " << nodep);
+            break;
+        }
+        UINFO(6, "   ReplaceWithFVersion: " << nodep << " w/ " << newp);
+        nodep->replaceWithKeepDType(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return newp;
     }

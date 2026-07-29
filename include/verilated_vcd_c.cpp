@@ -470,6 +470,9 @@ void VerilatedVcd::declWide(uint32_t code, const char* name, int msb, int lsb) {
 void VerilatedVcd::declDouble(uint32_t code, const char* name) {
     declare(code, name, "real", false, -1, false, 63, 0);
 }
+void VerilatedVcd::declFloat(uint32_t code, const char* name) {
+    declare(code, name, "real", false, -1, false, 31, 0);
+}
 
 // versions to call when the sig is array member
 void VerilatedVcd::declEventArray(uint32_t code, const char* name, int arraynum) {
@@ -489,6 +492,9 @@ void VerilatedVcd::declWideArray(uint32_t code, const char* name, int arraynum, 
 }
 void VerilatedVcd::declDoubleArray(uint32_t code, const char* name, int arraynum) {
     declare(code, name, "real", true, arraynum, false, 63, 0);
+}
+void VerilatedVcd::declFloatArray(uint32_t code, const char* name, int arraynum) {
+    declare(code, name, "real", true, arraynum, false, 31, 0);
 }
 
 //=============================================================================
@@ -689,6 +695,15 @@ void VerilatedVcdBuffer::emitDouble(uint32_t code, double newval) {
     char* wp = m_writep;
     // Buffer can't overflow before VL_SNPRINTF; we sized during declaration
     (void)VL_SNPRINTF(wp, m_maxSignalBytes, "r%.16g", newval);
+    wp += std::strlen(wp);
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFloat(uint32_t code, float newval) {
+    char* wp = m_writep;
+    // Buffer can't overflow before VL_SNPRINTF; we sized during declaration
+    (void)VL_SNPRINTF(wp, m_maxSignalBytes, "r%.8g", static_cast<double>(newval));
     wp += std::strlen(wp);
     finishLine(code, wp);
 }

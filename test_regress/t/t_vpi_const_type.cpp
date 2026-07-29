@@ -55,6 +55,13 @@ int mon_check() {
     const char* realConstTypeStr = vpi_get_str(vpiConstType, realHandle);
     CHECK_RESULT_CSTR(realConstTypeStr, "vpiRealConst")
 
+    TestVpiHandle shortrealHandle = vpi_handle_by_name((PLI_BYTE8*)"t.shortrealParam", NULL);
+    CHECK_RESULT_NZ(shortrealHandle)
+    PLI_INT32 shortrealConstType = vpi_get(vpiConstType, shortrealHandle);
+    CHECK_RESULT(shortrealConstType, vpiRealConst)
+    const char* shortrealConstTypeStr = vpi_get_str(vpiConstType, shortrealHandle);
+    CHECK_RESULT_CSTR(shortrealConstTypeStr, "vpiRealConst")
+
     TestVpiHandle strHandle = vpi_handle_by_name((PLI_BYTE8*)"t.strParam", NULL);
     CHECK_RESULT_NZ(strHandle)
     PLI_INT32 strConstType = vpi_get(vpiConstType, strHandle);

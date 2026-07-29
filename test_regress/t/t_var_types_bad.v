@@ -30,7 +30,7 @@ module t;
   reg          d_regz;
 
   // IEEE: non_integer_type
-  //UNSUP shortreal    d_shortreal;
+  shortreal    d_shortreal;
   real         d_real;
   realtime     d_realtime;
 
@@ -45,6 +45,7 @@ module t;
     d_chandle[0] = 1'b1;      // Illegal
 `endif
     d_real[0] = 1'b1;         // Illegal
+    d_shortreal[0] = 1'b1;    // Illegal
     d_realtime[0] = 1'b1;     // Illegal
     // verilator lint_on WIDTH
 

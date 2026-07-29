@@ -85,6 +85,7 @@ enum class VerilatedTraceSigKind : uint8_t {
 // Base data type of signal
 enum class VerilatedTraceSigType : uint8_t {
     DOUBLE,
+    SHORTREAL,
     INTEGER,
     BIT,
     LOGIC,
@@ -380,6 +381,7 @@ public:
     // duck-typed void emitQData(uint32_t code, QData newval, int bits) = 0;
     // duck-typed void emitWData(uint32_t code, WDataInP newval, int bits) = 0;
     // duck-typed void emitDouble(uint32_t code, double newval) = 0;
+    // duck-typed void emitFloat(uint32_t code, float newval) = 0;
 
     VL_ATTR_ALWINLINE uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
 
@@ -391,6 +393,7 @@ public:
     void fullQData(uint32_t* oldp, QData newval, int bits);
     void fullWData(uint32_t* oldp, WDataInP newval, int bits);
     void fullDouble(uint32_t* oldp, double newval);
+    void fullFloat(uint32_t* oldp, float newval);
     void fullEvent(uint32_t* oldp, const VlEventBase* newvalp);
     void fullEventTriggered(uint32_t* oldp);
 
@@ -433,6 +436,11 @@ public:
         double old;  // LCOV_EXCL_LINE  // lcov bug
         std::memcpy(&old, oldp, sizeof(old));
         if (VL_UNLIKELY(old != newval)) fullDouble(oldp, newval);
+    }
+    VL_ATTR_ALWINLINE void chgFloat(uint32_t* oldp, float newval) {
+        uint32_t newvalBits;
+        std::memcpy(&newvalBits, &newval, sizeof(newvalBits));
+        if (VL_UNLIKELY(*oldp != newvalBits)) fullFloat(oldp, newval);
     }
 };
 

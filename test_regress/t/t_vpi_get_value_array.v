@@ -31,6 +31,10 @@ extern "C" int mon_check();
   reg [31:0] read_words_rl [3:0] `PUBLIC_FLAT_RD;
   reg [63:0] read_longs [0:3] `PUBLIC_FLAT_RD;
   integer read_integers [0:3] `PUBLIC_FLAT_RD;
+`ifdef VERILATOR
+  shortreal read_shortreals [0:3] `PUBLIC_FLAT_RD;
+  shortreal read_shortreals_rl [3:0] `PUBLIC_FLAT_RD;
+`endif
   reg [68:0] read_customs [0:3] `PUBLIC_FLAT_RD;
   reg [68:0] read_customs_nonzero_index_rl [4:1] `PUBLIC_FLAT_RD;
 
@@ -74,6 +78,18 @@ extern "C" int mon_check();
     read_longs[1] = 64'h0001020304050607;
     read_longs[2] = 64'h08090a0b0c0d0e0f;
     read_longs[3] = 64'h1011121314151617;
+
+`ifdef VERILATOR
+    read_shortreals[0] = 1.25;
+    read_shortreals[1] = -2.5;
+    read_shortreals[2] = 3.75;
+    read_shortreals[3] = -4.0;
+
+    read_shortreals_rl[3] = 1.25;
+    read_shortreals_rl[2] = -2.5;
+    read_shortreals_rl[1] = 3.75;
+    read_shortreals_rl[0] = -4.0;
+`endif
 
     read_customs[0] = 69'hFAdeadbeefcafef00d; //0x001F'FFFF'FFFF'FFFF'FFFF
     read_customs[1] = 69'hF50001020304050607;

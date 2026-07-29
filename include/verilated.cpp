@@ -881,6 +881,28 @@ double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     _vl_clean_inplace_w(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
 }
+float VL_ITOR_F_W(int lbits, const WDataInP lwp) VL_PURE {
+    int ms_word = VL_WORDS_I(lbits) - 1;
+    for (; !lwp[ms_word] && ms_word > 0;) --ms_word;
+    if (ms_word == 0) return static_cast<float>(lwp[0]);
+    if (ms_word == 1) return static_cast<float>(VL_SET_QW(lwp));
+    // We need 24 bits of mantissa, which might mean looking at 2 words.
+    const EData ihi = lwp[ms_word];
+    const EData ilo = lwp[ms_word - 1];
+    const float hi = static_cast<float>(ihi) * std::exp2(static_cast<float>(VL_EDATASIZE));
+    const float lo = static_cast<float>(ilo);
+    const float f = (hi + lo) * std::exp2(static_cast<float>(VL_EDATASIZE * (ms_word - 1)));
+    return f;
+}
+float VL_ISTOR_F_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
+    if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_F_W(lbits, lwp);
+    const int words = VL_WORDS_I(lbits);
+    VL_DEBUG_IFDEF(assert(words <= VL_MULS_MAX_WORDS););
+    VlWide<VL_MULS_MAX_WORDS + 1> pos;
+    VL_NEGATE_W(words, pos, lwp);
+    _vl_clean_inplace_w(lbits, pos);
+    return -VL_ITOR_F_W(lbits, pos);
+}
 
 //===========================================================================
 // Formatting
@@ -1154,8 +1176,10 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             if (formatAttr == VL_VFORMATATTR_COMPLEX) {  // printed as string
                 thingp = va_arg(ap, std::string*);
                 if (fmt != 'p') fmt = 's';  // Override
-            } else if (formatAttr == VL_VFORMATATTR_DOUBLE) {
+            } else if (formatAttr == VL_VFORMATATTR_DOUBLE
+                       || formatAttr == VL_VFORMATATTR_SHORTREAL) {
                 real = va_arg(ap, double);
+                if (formatAttr == VL_VFORMATATTR_SHORTREAL) real = static_cast<float>(real);
                 ld = VL_RTOIROUND_Q_D(real);
                 strwide.resize(2);
                 WDataOutP strwidep = WDataOutP::external(strwide.data());
@@ -1264,8 +1288,9 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             }
             case 'p': {  // Pattern
                 // 'p' with NUMBER was earlier converted to 'd'
-                if (formatAttr
-                    == VL_VFORMATATTR_DOUBLE) {  // Can't just change to 'g' as need fixed format
+                const bool isRealFormat = formatAttr == VL_VFORMATATTR_DOUBLE
+                                          || formatAttr == VL_VFORMATATTR_SHORTREAL;
+                if (isRealFormat) {  // Can't just change to 'g' as need fixed format
                     _vl_snprintf_string(t_tmp, "%g", real);
                     output += t_tmp;
                 } else if (formatAttr == VL_VFORMATATTR_STRING) {
@@ -1336,7 +1361,9 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             }
             case 't': {  // Time
                 // Timeunit was read earlier from up-front arguments
-                if (formatAttr == VL_VFORMATATTR_DOUBLE) {  // Realtime
+                const bool isRealFormat = formatAttr == VL_VFORMATATTR_DOUBLE
+                                          || formatAttr == VL_VFORMATATTR_SHORTREAL;
+                if (isRealFormat) {  // Realtime
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
                     output += _vl_vsformat_time(t_tmp, real, timeunit, left, width);
                 } else {
@@ -1784,6 +1811,9 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 } else if (formatAttr == VL_VFORMATATTR_DOUBLE) {
                     double* const p = static_cast<double*>(thingp);
                     *p = real;
+                } else if (formatAttr == VL_VFORMATATTR_SHORTREAL) {
+                    float* const p = static_cast<float*>(thingp);
+                    *p = static_cast<float>(real);
                 } else if (formatAttr == VL_VFORMATATTR_STRING) {
                     std::string* const p = static_cast<std::string*>(thingp);
                     *p = t_tmp;

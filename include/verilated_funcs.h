@@ -251,6 +251,22 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
     u.d = lhs;
     return u.q;
 }
+// Return float from IData (bits, not numerically)
+static inline float VL_CVT_F_I(IData lhs) VL_PURE {
+    union { float f; IData i; } u;
+    u.i = lhs;
+    return u.f;
+}
+// Return IData from float (bits, not numerically)
+static inline IData VL_CVT_I_F(float lhs) VL_PURE {
+    union { float f; IData i; } u;
+    u.f = lhs;
+    return u.i;
+}
+// Return double from float (numeric)
+static inline double VL_CAST_D_F(float lhs) VL_PURE { return static_cast<double>(lhs); }
+// Return float from double (numeric)
+static inline float VL_CAST_F_D(double lhs) VL_PURE { return static_cast<float>(lhs); }
 // clang-format on
 // Return string from DPI char*
 static inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
@@ -322,8 +338,32 @@ static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_MT_SAFE {
     VL_SET_WQ(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
 }
+// Return float from lhs (numeric) unsigned
+float VL_ITOR_F_W(int lbits, WDataInP const lwp) VL_PURE;
+static inline float VL_ITOR_F_I(int, IData lhs) VL_PURE {
+    return static_cast<float>(static_cast<uint32_t>(lhs));
+}
+static inline float VL_ITOR_F_Q(int, QData lhs) VL_PURE {
+    return static_cast<float>(static_cast<uint64_t>(lhs));
+}
+// Return float from lhs (numeric) signed
+float VL_ISTOR_F_W(int lbits, WDataInP const lwp) VL_MT_SAFE;
+static inline float VL_ISTOR_F_I(int lbits, IData lhs) VL_MT_SAFE {
+    if (lbits == 32) return static_cast<float>(static_cast<int32_t>(lhs));
+    VlWide<VL_WQ_WORDS_E> lwp;
+    VL_SET_WI(lwp, lhs);
+    return VL_ISTOR_F_W(lbits, lwp);
+}
+static inline float VL_ISTOR_F_Q(int lbits, QData lhs) VL_MT_SAFE {
+    if (lbits == 64) return static_cast<float>(static_cast<int64_t>(lhs));
+    VlWide<VL_WQ_WORDS_E> lwp;
+    VL_SET_WQ(lwp, lhs);
+    return VL_ISTOR_F_W(lbits, lwp);
+}
 // Return IData truncated from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }
+// Return IData truncated from float (numeric)
+static inline IData VL_RTOI_I_F(float lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
@@ -3383,6 +3423,45 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
     if (lhs < 0) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
     return owp;
 }
+// Return QData from float (numeric)
+// EMIT_RULE: VL_RTOIROUND_Q_F:  oclean=dirty; lclean==clean/shortreal
+static inline QData VL_RTOIROUND_Q_F(float lhs) VL_PURE {
+    // IEEE format: [31]=sign [30:23]=exp+127 [22:0]=mantissa
+    // This does not need to support subnormals as they are sub-integral
+    lhs = static_cast<float>(VL_ROUND(lhs));
+    if (lhs == 0.0f) return 0;
+    const IData i = VL_CVT_I_F(lhs);
+    const int lsb = static_cast<int>((i >> 23U) & VL_MASK_I(8)) - 127 - 23;
+    const uint32_t mantissa = (i & VL_MASK_I(23)) | (1U << 23);
+    uint64_t out = 0;
+    if (lsb < 0) {
+        out = mantissa >> -lsb;
+    } else if (lsb < 64) {
+        out = static_cast<uint64_t>(mantissa) << lsb;
+    }
+    if (lhs < 0.0f) out = -out;
+    return out;
+}
+static inline IData VL_RTOIROUND_I_F(float lhs) VL_PURE {
+    return static_cast<IData>(VL_RTOIROUND_Q_F(lhs));
+}
+static inline WDataOutP VL_RTOIROUND_W_F(int obits, WDataOutP owp, float lhs) VL_MT_SAFE {
+    // IEEE format: [31]=sign [30:23]=exp+127 [22:0]=mantissa
+    // This does not need to support subnormals as they are sub-integral
+    lhs = static_cast<float>(VL_ROUND(lhs));
+    VL_ZERO_W(obits, owp);
+    if (lhs == 0.0f) return owp;
+    const IData i = VL_CVT_I_F(lhs);
+    const int lsb = static_cast<int>((i >> 23U) & VL_MASK_I(8)) - 127 - 23;
+    const QData mantissa = (i & VL_MASK_I(23)) | (1ULL << 23);
+    if (lsb < 0) {
+        VL_SET_WQ(owp, mantissa >> -lsb);
+    } else if (lsb < obits) {
+        _vl_insert_WQ(owp, mantissa, lsb + 23, lsb);
+    }
+    if (lhs < 0.0f) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
+    return owp;
+}
 
 //======================================================================
 // Range assignments
@@ -3734,6 +3813,12 @@ inline IData VL_VALUEPLUSARGS_IND(int rbits, const std::string& ld, double& rdr)
     VlWide<2> rwp;
     const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
+    return got;
+}
+inline IData VL_VALUEPLUSARGS_INF(int rbits, const std::string& ld, float& rdr) VL_MT_SAFE {
+    VlWide<2> rwp;
+    const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
+    if (got) rdr = static_cast<float>(VL_CVT_D_Q(VL_SET_QW(rwp)));
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {

@@ -22,7 +22,6 @@
 `endif
 
 `ifdef VERILATOR
- `define NO_SHORTREAL
  `define NO_UNPACK_STRUCT
 //%Error-TASKNSVAR: Unsupported: Function/task input argument is not simple variable
  `define NO_INOUT_COMPLEX_TYPE

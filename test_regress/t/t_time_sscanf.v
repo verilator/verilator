@@ -15,6 +15,7 @@
 module main;
 
   real r;
+  shortreal sr;
   integer rc;
   time t;
 
@@ -24,6 +25,10 @@ module main;
     rc = $sscanf("8.125", "%f", r);  // as real
     `checkd(rc, 1);
     `checkr(r, 8.125);
+
+    rc = $sscanf("8.125", "%f", sr);  // as shortreal
+    `checkd(rc, 1);
+    `checkr(sr, 8.125);
 
     rc = $sscanf("8125", "%t", r);  // in ns but round to 100 ps
     `checkd(rc, 1);

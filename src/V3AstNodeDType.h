@@ -177,7 +177,12 @@ public:
     string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
-        return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
+        return (isString()      ? "N"
+                : isWide()      ? "W"
+                : isDouble()    ? "D"
+                : isShortReal() ? "F"
+                : isQuad()      ? "Q"
+                                : "I");
     }
     string cType(const string& name, bool forFunc, bool isRef, bool packed = false) const;
     // Represents a C++ LiteralType? (can be constexpr)
@@ -476,6 +481,8 @@ public:
     bool isBit() const { return keyword().isBit(); }
     bool isCHandle() const VL_MT_STABLE { return keyword().isCHandle(); }
     bool isDouble() const VL_MT_STABLE { return keyword().isDouble(); }
+    bool isShortReal() const VL_MT_STABLE { return keyword().isShortReal(); }
+    bool isFloating() const VL_MT_STABLE { return keyword().isFloating(); }
     bool isEvent() const VL_MT_STABLE { return keyword() == VBasicDTypeKwd::EVENT; }
     bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
     bool isProcessRef() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::PROCESS_REFERENCE; }

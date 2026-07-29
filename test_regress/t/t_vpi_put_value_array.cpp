@@ -360,6 +360,38 @@ int test_vpiLongIntVal(char* name, PLI_BYTE8* test_data, int index, const unsign
     return 0;
 }
 
+int test_vpiShortRealVal(char* name, float* test_data, int index, const unsigned num,
+                         const unsigned size) {
+#ifdef TEST_VERBOSE
+    printf("%%\n%s: name=%s index=%u num=%u size=%u\n\n", __func__, name, index, num, size);
+#endif
+
+    int index_arr[1] = {index};
+
+    TestVpiHandle arrayhandle = vpi_handle_by_name(name, NULL);
+    CHECK_RESULT_NZ(arrayhandle);
+
+    s_vpi_arrayvalue arrayvalue;
+    arrayvalue.format = vpiShortRealVal;
+    arrayvalue.flags = 0;
+    arrayvalue.value.shortreals = test_data;
+    vpi_put_value_array(arrayhandle, &arrayvalue, index_arr, num);
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
+
+    arrayvalue.value.shortreals = 0;
+    vpi_get_value_array(arrayhandle, &arrayvalue, index_arr, size);
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
+
+    for (unsigned i = 0; i < num; i++) {
+#ifdef TEST_VERBOSE
+        printf("arr[%u] == test[%u]\n", i, i);
+#endif
+        CHECK_RESULT(arrayvalue.value.shortreals[i], test_data[i]);
+    }
+
+    return 0;
+}
+
 int mon_check_props(void) {
     // skip test if not verilator (value_array accessors unimplemented in other sims)
     if (!TestSimulator::is_verilator()) {
@@ -416,6 +448,8 @@ int mon_check_props(void) {
         static_cast<PLI_BYTE8>(0x14), static_cast<PLI_BYTE8>(0x13), static_cast<PLI_BYTE8>(0x12),
         static_cast<PLI_BYTE8>(0x11), static_cast<PLI_BYTE8>(0x10), static_cast<PLI_BYTE8>(0x05)};
 
+    float write_shortreals[NUM_ELEMENTS] = {1.25f, -2.5f, 3.75f, -4.0f};
+
     char write_bytes_name[] = "test.write_bytes";
     char write_bytes_nonzero_index_name[] = "test.write_bytes_nonzero_index";
     char write_bytes_rl_name[] = "test.write_bytes_rl";
@@ -423,6 +457,8 @@ int mon_check_props(void) {
     char write_words_name[] = "test.write_words";
     char write_integers_name[] = "test.write_integers";
     char write_longs_name[] = "test.write_longs";
+    char write_shortreals_name[] = "test.write_shortreals";
+    char write_shortreals_rl_name[] = "test.write_shortreals_rl";
     char write_customs_name[] = "test.write_customs";
     char write_customs_nonzero_index_rl_name[] = "test.write_customs_nonzero_index_rl";
 
@@ -518,6 +554,13 @@ int mon_check_props(void) {
             if (test_vpiLongIntVal(write_integers_name, write_words, i, j, NUM_ELEMENTS, 4))
                 return 1;
             if (test_vpiLongIntVal(write_longs_name, write_longs, i, j, NUM_ELEMENTS, 8)) return 1;
+
+            if (test_vpiShortRealVal(write_shortreals_name, write_shortreals, i, j,
+                                     NUM_ELEMENTS))
+                return 1;
+            if (test_vpiShortRealVal(write_shortreals_rl_name, write_shortreals, i, j,
+                                     NUM_ELEMENTS))
+                return 1;
         }
     }
 

@@ -99,7 +99,7 @@ enum class Direction : uint8_t {
 };
 
 #ifndef IVERILOG
-const std::array<TestSignal, 37> TestSignals = {
+const std::array<TestSignal, 38> TestSignals = {
 #else  // Multidimensional packed arrays aren't tested in Icarus
 const std::array<TestSignal, 18> TestSignals = {
 #endif
@@ -249,6 +249,16 @@ const std::array<TestSignal, 18> TestSignals = {
                {},  // reals cannot be packed and individual bits cannot be accessed,so there is no
                     // way to partially force a real signal.
                {}},
+    TestSignal{
+        "shortreal1",
+        vpiShortRealVal,
+        {},
+        {.real = 1.25},
+        {.real = static_cast<float>(123456.789)},
+        false,
+        {},  // shortreals cannot be packed and individual bits cannot be accessed, so there is no
+             // way to partially force a shortreal signal.
+        {}},
 
     TestSignal{"textHalf",
                vpiStringVal,
@@ -732,6 +742,10 @@ bool vpiValuesEqual(const std::size_t bitCount, const s_vpi_value& first,
         return std::abs(first.value.real - second.value.real)
                < std::numeric_limits<double>::epsilon();
         break;
+    case vpiShortRealVal:
+        return std::abs(static_cast<float>(first.value.real) - static_cast<float>(second.value.real))
+               < std::numeric_limits<float>::epsilon();
+        break;
     case vpiStringVal:
     case vpiBinStrVal:
     case vpiOctStrVal:
@@ -758,6 +772,7 @@ std::unique_ptr<s_vpi_value> vpiValueWithFormat(const PLI_INT32 signalFormat,
     case vpiScalarVal: value_sp->value = {.scalar = value.integer}; break;
     case vpiVectorVal: value_sp->value = {.vector = const_cast<p_vpi_vecval>(value.vector)}; break;
     case vpiRealVal: value_sp->value = {.real = value.real}; break;
+    case vpiShortRealVal: value_sp->value = {.real = static_cast<float>(value.real)}; break;
     case vpiStringVal:
     case vpiBinStrVal:
     case vpiOctStrVal:

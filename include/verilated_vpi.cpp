@@ -278,6 +278,10 @@ public:
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_REAL););
         return reinterpret_cast<double*>(varDatap());
     }
+    float* varShortRealDatap() const {
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_SHORTREAL););
+        return reinterpret_cast<float*>(varDatap());
+    }
     std::string* varStringDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_STRING););
         return reinterpret_cast<std::string*>(varDatap());
@@ -304,7 +308,8 @@ public:
         case VLVT_UINT64:
         case VLVT_WDATA: return vpiDecConst;
         case VLVT_STRING: return vpiStringConst;
-        case VLVT_REAL: return vpiRealConst;
+        case VLVT_REAL:
+        case VLVT_SHORTREAL: return vpiRealConst;
         default: return vpiUndefined;
         }
     }
@@ -523,6 +528,7 @@ public:
         // TODO have V3EmitCSyms.cpp put vpiType directly into constant table
         switch (varp()->vltype()) {
         case VLVT_REAL: type = vpiRealVar; break;
+        case VLVT_SHORTREAL: type = varp()->isNet() ? vpiShortRealNet : vpiShortRealVar; break;
         case VLVT_STRING: type = vpiStringVar; break;
         case VLVT_STRUCT: type = varp()->isNet() ? vpiStructNet : vpiStructVar; break;
         case VLVT_UNION: type = varp()->isNet() ? vpiUnionNet : vpiUnionVar; break;
@@ -1587,6 +1593,18 @@ double VerilatedVpiImp::getReadDataWord(const VerilatedVpioVar* baseSignalVop,
     return readData;
 }
 
+template <>
+float VerilatedVpiImp::getReadDataWord(const VerilatedVpioVar* baseSignalVop,
+                                       const VerilatedVpioVar* forceEnableSignalVop,
+                                       const VerilatedVpioVar* forceValueSignalVop,
+                                       size_t /*bitCount*/, size_t /*bitOffset*/) {
+    const float baseSignalData = *baseSignalVop->varShortRealDatap();
+    const bool forceEnableData = *forceEnableSignalVop->varCDatap();
+    const float forceValueData = *forceValueSignalVop->varShortRealDatap();
+    const float readData = forceEnableData ? forceValueData : baseSignalData;
+    return readData;
+}
+
 std::size_t VerilatedVpiImp::vlTypeSize(const VerilatedVarType vltype) {
     switch (vltype) {
     case VLVT_UINT8: return sizeof(CData); break;
@@ -1876,6 +1894,7 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_PURE {
     if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     // vpiUnionNet is outside the otherwise contiguous SystemVerilog object type range.
     if (vpiVal == vpiUnionNet) return "vpiUnionNet";
+    if (vpiVal == vpiShortRealNet) return "vpiShortRealNet";
     if (vpiVal <= vpiAutomatics) return names[vpiVal];
     if (vpiVal >= vpiPackage && vpiVal <= vpiPropFormalDecl)
         return sv_names1[(vpiVal - vpiPackage)];
@@ -2242,6 +2261,7 @@ void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStructVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUnionVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUnionNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiShortRealNet);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBitVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClassObj);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiChandleVar);
@@ -3137,6 +3157,12 @@ bool vl_check_format(const VerilatedVpioVarBase* vop, const p_vpi_value valuep, 
         default:;  // LCOV_EXCL_LINE
         }
         break;
+    case vpiShortRealVal:
+        switch (varp->vltype()) {
+        case VLVT_SHORTREAL: return true;
+        default:;  // LCOV_EXCL_LINE
+        }
+        break;
     case vpiScalarVal:
         switch (varp->vltype()) {
         case VLVT_UINT8:
@@ -3168,6 +3194,7 @@ PLI_INT32 vl_get_vltype_format(VerilatedVarType vlType) {
                               // vpi_put_value for releasing a forceable signal, and string signals
                               // cannot be forced
     case VLVT_REAL: return vpiRealVal;
+    case VLVT_SHORTREAL: return vpiShortRealVal;
     default:  // LCOV_EXCL_START - Cannot test, because vpi_put_value would already exit due to
               // failed vl_check_format before calling this
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vltype (%d)", __func__, vlType);
@@ -3430,6 +3457,9 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
     } else if (valuep->format == vpiRealVal) {
         valuep->value.real = *(vop->varRealDatap());
         return;
+    } else if (valuep->format == vpiShortRealVal) {
+        valuep->value.real = *(vop->varShortRealDatap());
+        return;
     } else if (valuep->format == vpiScalarVal) {
         valuep->value.scalar = vl_vpi_get_word(vop, 32, 0) ? vpi1 : vpi0;
         return;
@@ -3598,6 +3628,12 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                       const double readData = VerilatedVpiImp::getReadDataWord<double>(
                           baseSignalVop, forceEnableSignalVop, forceValueSignalVop, 64, 0);
                       *forceReadSignalVop->varRealDatap() = readData;
+                      return;
+                  }
+                  if (baseSignalVop->varp()->vltype() == VLVT_SHORTREAL) {
+                      const float readData = VerilatedVpiImp::getReadDataWord<float>(
+                          baseSignalVop, forceEnableSignalVop, forceValueSignalVop, 32, 0);
+                      *forceReadSignalVop->varShortRealDatap() = readData;
                       return;
                   }
 
@@ -3822,6 +3858,12 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 if (baseSignalVop->varp()->isForceable()) updateVforceRd();
                 return object;
             }
+        } else if (valuep->format == vpiShortRealVal) {
+            if (valueVop->varp()->vltype() == VLVT_SHORTREAL) {
+                *(valueVop->varShortRealDatap()) = static_cast<float>(valuep->value.real);
+                if (baseSignalVop->varp()->isForceable()) updateVforceRd();
+                return object;
+            }
         } else if (valuep->format == vpiScalarVal) {
             put_word(valueVop, (valuep->value.scalar == vpi1 ? 1 : 0), 1, 0);
             return object;
@@ -3893,6 +3935,12 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         default:;  // LCOV_EXCL_LINE
         }
         break;
+    case vpiShortRealVal:
+        switch (varp->vltype()) {
+        case VLVT_SHORTREAL: return true;
+        default:;  // LCOV_EXCL_LINE
+        }
+        break;
     default:;
     }
 
@@ -3914,6 +3962,17 @@ void vl_get_value_array_integrals(unsigned index, const unsigned num, const unsi
     }
 }
 
+template <typename T>
+void vl_get_value_array_floats(unsigned index, const unsigned num, const unsigned size,
+                               const bool leftIsLow, const T* src, T* dst) {
+    for (unsigned i = 0; i < num; ++i) {
+        dst[i] = src[index];
+        index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
+                : index == 0 ? size - 1
+                             : index - 1;
+    }
+}
+
 template <typename T, typename K>
 void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsigned size,
                                   const unsigned packedSize, const bool leftIsLow, const T* src,
@@ -3927,6 +3986,17 @@ void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsi
                        : ~(static_cast<T>(-1) << (element_size_bytes * 8));
     for (unsigned i = 0; i < num; ++i) {
         dst[index] = src[i] & static_cast<T>(mask);
+        index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
+                : index == 0 ? size - 1
+                             : index - 1;
+    }
+}
+
+template <typename T>
+void vl_put_value_array_floats(unsigned index, const unsigned num, const unsigned size,
+                               const bool leftIsLow, const T* src, T* dst) {
+    for (unsigned i = 0; i < num; ++i) {
+        dst[index] = src[i];
         index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
                 : index == 0 ? size - 1
                              : index - 1;
@@ -4135,6 +4205,19 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
         }
 
         return;
+    } else if (arrayvalue_p->format == vpiShortRealVal) {
+        const size_t bytes = num * sizeof(float);
+        t_out_data.resize((bytes + sizeof(EData) - 1) / sizeof(EData));
+
+        float* shortrealsp = reinterpret_cast<float*>(t_out_data.data());
+        arrayvalue_p->value.shortreals = shortrealsp;
+
+        if (varp->vltype() == VLVT_SHORTREAL) {
+            vl_get_value_array_floats(index, num, size, leftIsLow, vop->varShortRealDatap(),
+                                      shortrealsp);
+        }
+
+        return;
     } else if (arrayvalue_p->format == vpiVectorVal) {
         t_out_data.resize((VL_WORDS_I(varp->entBits()) * 4 * num));
 
@@ -4325,6 +4408,15 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, longintsp,
                                          vop->varQDatap());
+        }
+
+        return;
+    } else if (arrayvalue_p->format == vpiShortRealVal) {
+        const float* shortrealsp = arrayvalue_p->value.shortreals;
+
+        if (varp->vltype() == VLVT_SHORTREAL) {
+            vl_put_value_array_floats(index, num, size, leftIsLow, shortrealsp,
+                                      vop->varShortRealDatap());
         }
 
         return;

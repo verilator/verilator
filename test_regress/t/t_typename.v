@@ -33,6 +33,7 @@ import A::*;
 module t;
 
   real r;
+  shortreal sr;
   logic l;
   typedef bit mybit_t;
   localparam type MYBIT_T = mybit_t;
@@ -57,11 +58,13 @@ module t;
   initial begin
     // $write({$typename(real), "\n"});
     `printtype(real, "real");
+    `printtype(shortreal, "shortreal");
     `printtype(bit, "bit");
     `printtype(int, "int");
     `printtype(logic, "logic");
     `printtype(string, "string");
     `printtype(r, "real");
+    `printtype(sr, "shortreal");
     `printtype(l, "logic");
     `printtype(mybit_t, "bit");
     `printtype(bitp20, "bit[2:0]");

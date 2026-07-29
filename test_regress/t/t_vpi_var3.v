@@ -71,6 +71,7 @@ extern "C" int mon_check();
   int            int1;
   longint        long1;
   real           real1;
+  shortreal      shortreal1;
   string         str1;
   localparam int nullptr = 123;
   logic [31:0] some_mem [4] = {0, 0, 0, 432};
@@ -103,6 +104,7 @@ extern "C" int mon_check();
     int1 = 123;
     long1 = 123;
     real1 = 1.0;
+    shortreal1 = 1.25;
     str1 = "hello";
     \escaped_with_brackets[3]  = 8'h5a;
 
@@ -160,6 +162,7 @@ extern "C" int mon_check();
     if (text != "lorem ipsum") $stop;
     if (str1 != "something a lot longer than hello") $stop;
     if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
+    if ($shortrealtobits(shortreal1) != 32'h47f12065) $stop;
   end
 
   always @(posedge clk) begin

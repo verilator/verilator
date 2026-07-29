@@ -22,7 +22,6 @@
 `endif
 
 `ifdef VERILATOR
- `define NO_SHORTREAL
  `define NO_UNPACK_STRUCT
 `else
 `endif
@@ -1100,11 +1099,11 @@ module t;
     i_shortreal_3d(shortreal_array);
 
     shortreal_array1[0][0][0] = 52;
-    i_shortreal_1d1(shotreal_array1[0][0]);
+    i_shortreal_1d1(shortreal_array1[0][0]);
     shortreal_array1[0][0][0] = 53;
-    i_shortreal_2d1(shotreal_array1[0]);
+    i_shortreal_2d1(shortreal_array1[0]);
     shortreal_array1[0][0][0] = 54;
-    i_shortreal_3d1(shotreal_array1);
+    i_shortreal_3d1(shortreal_array1);
 `endif
 
     for (int i = 0; i < 4; ++i)

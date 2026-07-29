@@ -12,14 +12,22 @@ module t;
     input ignored;
     get_real_one = 1.1;
   endfunction
+  function shortreal get_shortreal_one;
+    input ignored;
+    get_shortreal_one = 1.25;
+  endfunction
 
   localparam R_PARAM = get_real_one(1'b0);
   localparam R_PARAM_2 = (R_PARAM > 0);
+  localparam SR_PARAM = get_shortreal_one(1'b0);
+  localparam SR_PARAM_2 = (SR_PARAM > 0);
 
   generate
     initial begin
       if (R_PARAM != 1.1) $stop;
       if (R_PARAM_2 != 1'b1) $stop;
+      if (SR_PARAM != 1.25) $stop;
+      if (SR_PARAM_2 != 1'b1) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
     end
