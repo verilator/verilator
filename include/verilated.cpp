@@ -243,26 +243,50 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
+    const bool haveFilename = filename;
+    const bool haveHier = hier;
+    const std::string filenameStr{haveFilename ? filename : ""};
+    const std::string hierStr{haveHier ? hier : ""};
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_finish(filename, linenum, hier);
+        vl_finish(haveFilename ? filenameStr.c_str() : nullptr, linenum,
+                  haveHier ? hierStr.c_str() : nullptr);
     }});
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
+    const bool haveFilename = filename;
+    const bool haveHier = hier;
+    const std::string filenameStr{haveFilename ? filename : ""};
+    const std::string hierStr{haveHier ? hier : ""};
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_stop_maybe(filename, linenum, hier, maybe);
+        vl_stop_maybe(haveFilename ? filenameStr.c_str() : nullptr, linenum,
+                      haveHier ? hierStr.c_str() : nullptr, maybe);
     }});
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+    const bool haveFilename = filename;
+    const bool haveHier = hier;
+    const bool haveMsg = msg;
+    const std::string filenameStr{haveFilename ? filename : ""};
+    const std::string hierStr{haveHier ? hier : ""};
+    const std::string msgStr{haveMsg ? msg : ""};
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_fatal(filename, linenum, hier, msg);
+        vl_fatal(haveFilename ? filenameStr.c_str() : nullptr, linenum,
+                 haveHier ? hierStr.c_str() : nullptr, haveMsg ? msgStr.c_str() : nullptr);
     }});
 }
 
 void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+    const bool haveFilename = filename;
+    const bool haveHier = hier;
+    const bool haveMsg = msg;
+    const std::string filenameStr{haveFilename ? filename : ""};
+    const std::string hierStr{haveHier ? hier : ""};
+    const std::string msgStr{haveMsg ? msg : ""};
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_warn(filename, linenum, hier, msg);
+        vl_warn(haveFilename ? filenameStr.c_str() : nullptr, linenum,
+                haveHier ? hierStr.c_str() : nullptr, haveMsg ? msgStr.c_str() : nullptr);
     }});
 }
 
