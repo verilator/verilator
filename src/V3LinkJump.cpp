@@ -172,7 +172,8 @@ class LinkJumpVisitor final : public VNVisitor {
         for (AstNode* curp = nodep; curp; curp = curp->aboveLoopp()) {
             if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
         }
-        return nullptr;
+        nodep->v3fatalSrc("Disable target is not under a module");
+        return nullptr;  // LCOV_EXCL_LINE
     }
     static std::string targetInstancePath(const AstDisable* const nodep) {
         if (const AstVarXRef* const xrefp = VN_CAST(nodep->targetRefp(), VarXRef)) {
@@ -271,9 +272,7 @@ class LinkJumpVisitor final : public VNVisitor {
         return processQueuep;
     }
     AstVar* getProcessQueuep(AstNode* const nodep, FileLine* const fl) {
-        AstNodeModule* ownerp = findOwnerModulep(nodep);
-        if (!ownerp) ownerp = m_modp;
-        UASSERT_OBJ(ownerp, nodep, "Disable queue owner is not under a module");
+        AstNodeModule* const ownerp = findOwnerModulep(nodep);
 
         if (VN_IS(ownerp, Package) || VN_IS(ownerp, Class)) {
             AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
