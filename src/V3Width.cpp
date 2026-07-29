@@ -239,6 +239,7 @@ class WidthVisitor final : public VNVisitor {
     AstClass* m_cgClassp = nullptr;  // Current covergroup class
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
+    const AstConstraintExpr* m_constraintExprp = nullptr;  // Current constraint expression
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
@@ -2935,6 +2936,8 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->rhssp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstConstraintExpr* nodep) override {
+        VL_RESTORER(m_constraintExprp);
+        m_constraintExprp = nodep;
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstConstraintUnique* nodep) override {
@@ -3517,7 +3520,9 @@ class WidthVisitor final : public VNVisitor {
         // Inside a constraint, V3Randomize handles dist lowering with proper weights,
         // but only for simple scalar/range items. Container-type items (queues, arrays)
         // must be lowered here via insideItem() which knows how to expand them.
-        if (m_constraintp) {
+        // V3Width runs before V3Randomize, so every AstConstraintExpr here came
+        // from the grammar: a constraint block, or an inline randomize() with {}.
+        if (m_constraintExprp) {
             bool canLower = true;
             for (AstDistItem* ditemp = nodep->itemsp(); ditemp;
                  ditemp = VN_AS(ditemp->nextp(), DistItem)) {
