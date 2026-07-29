@@ -541,15 +541,20 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        : entryp->callNodep();
                 const bool sameFileLine
                     = otherVarRefp && nodep->fileline() == otherVarRefp->fileline();
-                if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
-                    && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType) && !sameFileLine
-                    && !entryp->isUnderGen() && otherWritep && !entryp->isFtaskDriven()
-                    && !ftaskDef && !m_inSelLhs
-                    && (!nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)
-                        || !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVENPROC))) {
+                // Preconditions shared by MULTIDRIVEN and MULTIDRIVENPROC.
+                const bool multidrivenCommon
+                    = entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
+                      && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType) && !sameFileLine
+                      && !entryp->isUnderGen() && otherWritep && !entryp->isFtaskDriven()
+                      && !ftaskDef && !m_inSelLhs;
+                // The two warnings are gated independently on the variable
+                // declaration's fileline, as v3warn suppression will check
+                // the driving fileline and still warn even if the warning
+                // was suppressed with lint_off at the declaration.
+                if (multidrivenCommon
+                    && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
                     const bool otherWriteIsStaticInit
                         = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
-
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
                             || (m_alwaysCombp != entryp->getAlwCombp()
@@ -597,6 +602,9 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        << "... Location of always_ff write\n"
                                                        << otherWritep->warnContextSecondary());
                     }
+                }
+                if (multidrivenCommon
+                    && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVENPROC)) {
                     // Two plain always blocks driving the whole signal: legal
                     // SystemVerilog, but a driver conflict for synthesis. The
                     // always_ff/always_comb cases above already cover mixes with

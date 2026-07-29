@@ -1,0 +1,5 @@
+%Error: t/t_disable_begin_shadow_bad.v:19:7: break isn't underneath a loop
+   19 |       break;
+      |       ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
