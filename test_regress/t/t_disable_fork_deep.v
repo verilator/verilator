@@ -33,6 +33,17 @@ module t;
   bit d2a_resumed = 1'b0;
   bit d2r_resumed = 1'b0;
   bit ja1_resumed = 1'b0;
+  int prefix_queue[$];
+
+  // An ordinary queue push at the start of a fork branch must not be mistaken
+  // for compiler-generated disable queue registration.
+  initial begin
+    fork
+      begin
+        prefix_queue.push_back(1);
+      end
+    join
+  end
 
   // fork..join nested two levels: disabling the outer named fork from inside the
   // inner fork must kill the inner delayed sibling and the outer delayed sibling.
@@ -199,6 +210,7 @@ module t;
     `checkd(d2a_resumed, 1'b1);
     `checkd(d2r_resumed, 1'b1);
     `checkd(ja1_resumed, 1'b1);
+    `checkd(prefix_queue.size(), 1);
     $write("*-* All Finished *-*\n");
     $finish;
   end
