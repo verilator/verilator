@@ -14,10 +14,13 @@ module t;
 
     function void m_uvm_execute_field_op();
       real sa_real[3];
+      shortreal sa_shortreal[3];
       string s;
       // 5 doesn't match array size of 3
       for (int i = 0; i < 5; ++i) begin
         s = $sformatf("%g", sa_real[i]);
+        `checks(s, "0");
+        s = $sformatf("%g", sa_shortreal[i]);
         `checks(s, "0");
         s = $sformatf("%p", sa_real[i]);
         `checks(s, "0");

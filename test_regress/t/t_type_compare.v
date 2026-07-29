@@ -27,12 +27,21 @@ module t;
     type(real): ;
     default: initial $stop;
   endcase
+  case (type(shortreal))
+    type(real): initial $stop;
+    type(shortreal): ;
+    default: initial $stop;
+  endcase
 
   initial begin
     if (type(real) == type(logic[12:0])) $stop;
     if (type(real) === type(logic[12:0])) $stop;
     if (type(real) != type(real)) $stop;
     if (type(real) !== type(real)) $stop;
+    if (type(shortreal) == type(real)) $stop;
+    if (type(shortreal) === type(real)) $stop;
+    if (type(shortreal) != type(shortreal)) $stop;
+    if (type(shortreal) !== type(shortreal)) $stop;
     if (type(logic[12:0]) !== type(logic[12:0])) $stop;
     if (type(logic[12:0]) != type(logic12_t)) $stop;
     if (type(logic[12:0]) !== type(logic12_t)) $stop;
@@ -55,11 +64,18 @@ module t;
     endcase
     if (case_ok != 2) $stop;
 
+    case (type(shortreal))
+      type(shortreal): case_ok = 3;
+      type(real): $stop;
+      default: $stop;
+    endcase
+    if (case_ok != 3) $stop;
+
     // No body selected
     case (type(real))
       type(int): $stop;
     endcase
-    if (case_ok != 2) $stop;
+    if (case_ok != 3) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

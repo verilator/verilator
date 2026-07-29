@@ -25,7 +25,7 @@ module t;
   reg    [1:0] d_reg2;
 
   // IEEE: non_integer_type
-  //UNSUP shortreal    d_shortreal;
+  shortreal    d_shortreal;
   real         d_real;
   realtime     d_realtime;
 
@@ -65,6 +65,7 @@ module t;
   bit          v_bit[2];
   logic        v_logic[2];
   reg          v_reg[2];
+  shortreal    v_shortreal[2];
   real         v_real[2];
   realtime     v_realtime[2];
 
@@ -88,6 +89,7 @@ module t;
   function logic [1:0] f_logic2;       logic [1:0]     lv_logic2;      f_logic2        = lv_logic2;    endfunction
   function time        f_time;         time            lv_time;        f_time          = lv_time;      endfunction
   function chandle     f_chandle;      chandle         lv_chandle;     f_chandle       = lv_chandle;   endfunction
+  function shortreal   f_shortreal;    shortreal       lv_shortreal;   f_shortreal     = lv_shortreal; endfunction
   // verilator lint_on WIDTH
 
 `ifdef verilator
@@ -177,6 +179,7 @@ module t;
     `CHECK_B(v_bit[1]         ,1 );
     `CHECK_B(v_logic[1]       ,1 );
     `CHECK_B(v_reg[1]         ,1 );
+    `CHECK_B(v_shortreal[1]   ,32);
     //`CHECK_B(v_real[1]      ,64);   // $bits not allowed
     //`CHECK_B(v_realtime[1]  ,64);   // $bits not allowed
 
@@ -204,6 +207,14 @@ module t;
     `CHECK_F(f_bit2           ,2 ,1'b1);
     `CHECK_F(f_logic2         ,2 ,1'b0);
     `CHECK_F(f_reg2           ,2 ,1'b0);
+    `CHECK_F(f_shortreal      ,32,1'b1);
+
+    if (d_shortreal != 0.0) $stop;
+    d_shortreal = 1.25;
+    if (d_shortreal != 1.25) $stop;
+    if (v_shortreal[1] != 0.0) $stop;
+    v_shortreal[1] = 2.5;
+    if (v_shortreal[1] != 2.5) $stop;
 
     // For unpacked types we don't want width warnings for unsized numbers that fit
     d_byte    = 2;

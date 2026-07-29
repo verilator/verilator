@@ -10,6 +10,7 @@ module t;
   reg [15:0] p_s;  // signal type SData
   reg [7:0] p_c;  // signal type CData
   real p_r;  // signal type double
+  shortreal p_sr;  // signal type float
   reg [7*8:1] p_str;
   string sv_str;
   reg [7*8:1] p_in;
@@ -66,6 +67,11 @@ module t;
     if (!$value$plusargs("REAL=%e", p_r)) $stop;
     $display("r='%e'", p_r);
     if (p_r !== 1.2345) $stop;
+
+    // Check handling of float type signals
+    p_sr = 0;
+    if (!$value$plusargs("REAL=%f", p_sr)) $stop;
+    if (p_sr != shortreal'(1.2345)) $stop;
 
     p_r = 0;
     if (!$value$plusargs("REAL=%f", p_r)) $stop;

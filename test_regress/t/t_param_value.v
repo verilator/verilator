@@ -14,6 +14,7 @@ module t;
   localparam unsigned [63:0] UNSIGNED = 64'h99934567_89abcdef;
   localparam signed [63:0] SIGNED = 64'sh99934567_89abcdef;
   localparam real REAL = 1.234;
+  localparam shortreal SHORTREAL = 1.25;
   `ASSERT(UNSIGNED > 0);
   `ASSERT(SIGNED < 0);
 
@@ -23,6 +24,8 @@ module t;
 
   localparam A2_REAL = REAL;
   `ASSERT(A2_REAL == 1.234);
+  localparam A2_SHORTREAL = SHORTREAL;
+  `ASSERT(A2_SHORTREAL == 1.25);
 
   localparam A3_SIGNED = SIGNED;
   `ASSERT($bits(A3_SIGNED) == 64 && A3_SIGNED < 0);

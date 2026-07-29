@@ -82,7 +82,7 @@ class CastVisitor final : public VNVisitor {
     }
     void ensureCast(AstNodeExpr* nodep) {
         if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
-            if (!nodep->isNull() && !nodep->isString() && !nodep->isDouble())
+            if (!nodep->isNull() && !nodep->isString() && !nodep->isFloating())
                 insertCast(nodep, castSize(nodep->backp()));
         }
     }

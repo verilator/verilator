@@ -35,10 +35,15 @@ module t;
     int i;
     real r;
   } sir_t;
+  typedef struct {
+    int i;
+    shortreal r;
+  } sisr_t;
 
   sab4u_t ab4u[2][3];
   sab4p_t ab4p[2][3];
   sir_t sir;
+  sisr_t sisr;
 
   initial begin
     abcp = '{1, 2, 3};
@@ -105,6 +110,9 @@ module t;
     sir = '{1, 2.2};
     if (sir.i !== 1) $stop;
     if (sir.r !== 2.2) $stop;
+    sisr = '{1, 2.25};
+    if (sisr.i !== 1) $stop;
+    if (sisr.r !== 2.25) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

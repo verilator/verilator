@@ -215,6 +215,18 @@ public:
                 var = varNum.toDouble();
             }
             return V3Number::epsilonEqual(var, hierOptParamp->num().toDouble());
+        } else if (hierOptParamp->isShortReal()) {
+            float var;
+            if (pinValuep->isShortReal()) {
+                var = pinValuep->num().toShortReal();
+            } else if (pinValuep->isDouble()) {
+                var = static_cast<float>(pinValuep->num().toDouble());
+            } else {
+                V3Number varNum{pinValuep, V3Number::ShortReal{}, 0.0F};
+                varNum.opIToRF(pinValuep->num());
+                var = varNum.toShortReal();
+            }
+            return V3Number::epsilonEqual(var, hierOptParamp->num().toShortReal());
         } else {  // Now integer type is assumed
             // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
             // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
@@ -224,6 +236,8 @@ public:
                 // Parameter is actually an integral type, but passed value is floating point.
                 // Conversion from real to integer uses rounding in V3Width.cpp
                 varNum.opRToIRoundS(pinValuep->num());
+            } else if (pinValuep->isShortReal()) {
+                varNum.opFToIRoundS(pinValuep->num());
             } else if (pinValuep->isSigned()) {
                 varNum.opExtendS(pinValuep->num(), pinValuep->num().width());
             } else {
@@ -1497,7 +1511,8 @@ class ParamProcessor final {
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 // Width the pin to the port's type so equal values hash the same (#5479).
                 AstConst* normedNamep = nullptr;
-                if (exprp && !exprp->num().isDouble() && !exprp->num().isString()) {
+                if (exprp && !exprp->num().isDouble() && !exprp->num().isShortReal()
+                    && !exprp->num().isString()) {
                     AstVar* cloneVarp = modvarp->cloneTree(false);
                     bool cloneVarpUnresolved = false;
                     if (AstNode* const oldValuep = cloneVarp->valuep()) {
@@ -1613,7 +1628,9 @@ class ParamProcessor final {
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
                     UINFO(9, "cellPinCleanup: same as default " << pinp);
-                } else if (namingExprp->num().isDouble() || namingExprp->num().isString()
+                } else if (namingExprp->num().isDouble()
+                           || namingExprp->num().isShortReal()
+                           || namingExprp->num().isString()
                            || namingExprp->num().isFourState()
                            || namingExprp->num().width() != 32) {
                     longnamer += ("_" + paramSmallName(srcModp, modvarp)

@@ -30,11 +30,15 @@ endfunction
 module t;
 
   u_cache #(real, real) obj;
+  u_cache #(shortreal, shortreal) obj_sr;
 
   initial begin
     obj = new("fred", 62);
     if (obj.m_name != "fred") $stop;
     if (obj.m_max_size != 62) $stop;
+    obj_sr = new("barney", 63);
+    if (obj_sr.m_name != "barney") $stop;
+    if (obj_sr.m_max_size != 63) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

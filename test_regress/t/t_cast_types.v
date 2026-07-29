@@ -53,6 +53,7 @@ typedef bit signed [7:0] simple_a1_t;
 module t;
 
   real v_real;  // IEEE 6.12.2 - by rounding
+  shortreal v_shortreal;  // IEEE 6.12.2 - by rounding
   string v_string;
   int v_int;
   int_t v_int_t;
@@ -90,6 +91,7 @@ module t;
   initial begin
     // 6.22.1
     `MATCHING(v_real, v_real);
+    `MATCHING(v_shortreal, v_shortreal);
     `MATCHING(v_string, v_string);
     `MATCHING(v_int, v_int);
     `MATCHING(v_chandle, v_chandle);
@@ -114,6 +116,8 @@ module t;
     `COMPATIBLE(v_int, v_enum_a);
     `COMPATIBLE(v_int, v_real);
     `COMPATIBLE(v_real, v_int);
+    `COMPATIBLE(v_int, v_shortreal);
+    `COMPATIBLE(v_shortreal, v_int);
     // 6.22.4->5.9
 `ifndef NC
     `CAST_COMPATIBLE(v_string, v_int);
@@ -129,6 +133,8 @@ module t;
 `ifndef VCS
     `INCOMPATIBLE(v_real, v_assoc_a);
     `INCOMPATIBLE(v_real, v_q_a);
+    `INCOMPATIBLE(v_shortreal, v_assoc_a);
+    `INCOMPATIBLE(v_shortreal, v_q_a);
 `endif
 `ifndef VCS
 `ifndef VERILATOR

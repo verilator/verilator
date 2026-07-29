@@ -308,7 +308,8 @@ public:
         case VLVT_UINT64:
         case VLVT_WDATA: return vpiDecConst;
         case VLVT_STRING: return vpiStringConst;
-        case VLVT_REAL: return vpiRealConst;
+        case VLVT_REAL:
+        case VLVT_SHORTREAL: return vpiRealConst;
         default: return vpiUndefined;
         }
     }

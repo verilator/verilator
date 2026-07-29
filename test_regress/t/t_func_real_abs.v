@@ -7,9 +7,13 @@
 //bug591
 
 module t;
+  shortreal f;
 
   function real ABS(real num);
     ABS = (num < 0) ? -num : num;
+  endfunction
+  function shortreal ABS_F(shortreal num);
+    ABS_F = (num < 0) ? -num : num;
   endfunction
 
   function logic range_chk;
@@ -35,6 +39,7 @@ module t;
   endfunction
 
   initial begin
+    f = -1.25;
     if (range_chk(-1.1, 2.2, 3.3) != 1'b0) $stop;
     if (range_chk(1.1, 2.2, 0.3) != 1'b1) $stop;
     if (range_chk(1.1, 2.2, 2.3) != 1'b0) $stop;
@@ -42,6 +47,7 @@ module t;
     if (range_chk(2.2, 1.1, 2.3) != 1'b0) $stop;
     if (ceil(-2.1) != -2) $stop;
     if (ceil(2.1) != 3) $stop;
+    if (ABS_F(f) != 1.25) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

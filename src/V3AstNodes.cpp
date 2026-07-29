@@ -334,6 +334,8 @@ AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         return new AstEqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
         return new AstEqD{fl, lhsp, rhsp};
+    } else if (lhsp->isShortReal() && rhsp->isShortReal()) {
+        return new AstEqF{fl, lhsp, rhsp};
     } else {
         return new AstEq{fl, lhsp, rhsp};
     }
@@ -344,6 +346,8 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
         return new AstEqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
         return new AstEqD{fl, lhsp, rhsp};
+    } else if (lhsp->isShortReal() && rhsp->isShortReal()) {
+        return new AstEqF{fl, lhsp, rhsp};
     } else {
         return new AstEqWild{fl, lhsp, rhsp};
     }
@@ -354,6 +358,8 @@ AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp
         return new AstNeqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
         return new AstNeqD{fl, lhsp, rhsp};
+    } else if (lhsp->isShortReal() && rhsp->isShortReal()) {
+        return new AstNeqF{fl, lhsp, rhsp};
     } else {
         return new AstNeq{fl, lhsp, rhsp};
     }
@@ -3040,6 +3046,7 @@ VFormatAttr AstSFormatArg::formatAttrDefauled(const AstSFormatArg* nodep,
     if (!dtypep) return VFormatAttr{};
     const AstNodeDType* skipDtypep = dtypep->skipRefp();
     if (skipDtypep->isDouble()) return VFormatAttr{VFormatAttr::DOUBLE};
+    if (skipDtypep->isShortReal()) return VFormatAttr{VFormatAttr::SHORTREAL};
     if (skipDtypep->isString()) return VFormatAttr{VFormatAttr::STRING};
     return VFormatAttr{};
 }

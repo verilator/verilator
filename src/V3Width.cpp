@@ -3084,6 +3084,9 @@ class WidthVisitor final : public VNVisitor {
                 if (nodep->valuep()->isDouble()) {
                     nodep->dtypeSetDouble();
                     VL_DANGLING(bdtypep);
+                } else if (nodep->valuep()->isShortReal()) {
+                    nodep->dtypeSetShortReal();
+                    VL_DANGLING(bdtypep);
                 } else if (nodep->valuep()->isString()) {
                     nodep->dtypeSetString();
                     VL_DANGLING(bdtypep);
@@ -3615,6 +3618,9 @@ class WidthVisitor final : public VNVisitor {
         } else if (dtype && dtype->isDouble()) {
             nodep->dtypeSetDouble();
             expDTypep = nodep->findDoubleDType();
+        } else if (dtype && dtype->isShortReal()) {
+            nodep->dtypeSetShortReal();
+            expDTypep = nodep->findShortRealDType();
         } else {
             // Take width as maximum across all items
             int width = nodep->exprp()->width();
@@ -6676,6 +6682,8 @@ class WidthVisitor final : public VNVisitor {
             const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
             if (dtypep->isDouble()) {
                 formatAttr = VFormatAttr::DOUBLE;
+            } else if (dtypep->isShortReal()) {
+                formatAttr = VFormatAttr::SHORTREAL;
             } else if (dtypep->isString()) {
                 formatAttr = VFormatAttr::STRING;
             } else if (isFormatNonNumericArg(dtypep)) {
@@ -8951,6 +8959,9 @@ class WidthVisitor final : public VNVisitor {
             // TODO do all to-real and to-integer conversions in this function
             // rather than in callers
             AstNodeExpr* const newp = spliceCvtD(nodep);
+            nodep = newp;
+        } else if (expDTypep->isShortReal() && !nodep->isShortReal()) {
+            AstNodeExpr* const newp = spliceCvtF(nodep);
             nodep = newp;
         }
         nodep->dtypep(expDTypep);

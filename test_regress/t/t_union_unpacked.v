@@ -11,6 +11,10 @@ module t;
     bit [3:0] val2;
     real r;
   } u;
+  union {
+    bit [7:0] val;
+    shortreal r;
+  } su;
 
   initial begin
     u.val1 = 8'h7c;
@@ -18,6 +22,8 @@ module t;
     if (u.val2 != 4'hc) $stop;
     u.r = 1.24;
     if (u.r != 1.24) $stop;
+    su.r = 1.25;
+    if (su.r != 1.25) $stop;
     $display("%p", u);
     $write("*-* All Finished *-*\n");
     $finish;

@@ -1811,6 +1811,9 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 } else if (formatAttr == VL_VFORMATATTR_DOUBLE) {
                     double* const p = static_cast<double*>(thingp);
                     *p = real;
+                } else if (formatAttr == VL_VFORMATATTR_SHORTREAL) {
+                    float* const p = static_cast<float*>(thingp);
+                    *p = static_cast<float>(real);
                 } else if (formatAttr == VL_VFORMATATTR_STRING) {
                     std::string* const p = static_cast<std::string*>(thingp);
                     *p = t_tmp;

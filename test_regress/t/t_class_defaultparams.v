@@ -46,6 +46,8 @@ endclass
 c1 #(real) c1inst1;\
 c1 #(real, real) c1inst2;\
 c1 #(real, int) c1inst3;\
+c1 #(shortreal) c1inst_sr1;\
+c1 #(shortreal, shortreal) c1inst_sr2;\
 c1 #() c1inst4;\
 c1 c1inst5;
 

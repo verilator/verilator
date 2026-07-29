@@ -32,6 +32,7 @@ module t (
   reg [39:0] instruction_str[1:0];
 
   real r;
+  shortreal sr;
 
   function string cvt2string(input int width, input int v);
     string fmt;
@@ -75,6 +76,10 @@ module t (
     r = 0.01;
     $swrite(str2, "e=%e f=%f g=%g", r, r, r);
     `checks(str2, "e=1.000000e-02 f=0.010000 g=0.01");
+
+    sr = 0.125;
+    $swrite(str2, "e=%e f=%f g=%g", sr, sr, sr);
+    `checks(str2, "e=1.250000e-01 f=0.125000 g=0.125");
 
     $swrite(str2, "mod=%m");
     `checks(str2, "mod=top.t");

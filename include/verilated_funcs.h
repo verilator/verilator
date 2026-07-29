@@ -3815,6 +3815,12 @@ inline IData VL_VALUEPLUSARGS_IND(int rbits, const std::string& ld, double& rdr)
     if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
     return got;
 }
+inline IData VL_VALUEPLUSARGS_INF(int rbits, const std::string& ld, float& rdr) VL_MT_SAFE {
+    VlWide<2> rwp;
+    const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
+    if (got) rdr = static_cast<float>(VL_CVT_D_Q(VL_SET_QW(rwp)));
+    return got;
+}
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     VlWide<2> rwp;
     const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);

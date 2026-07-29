@@ -426,7 +426,7 @@ class DelayedVisitor final : public VNVisitor {
                 // Arrays with compound element types are currently not supported in loops
                 if (!basicp
                     || !(basicp->isIntegralOrPacked()  //
-                         || basicp->isDouble()  //
+                         || basicp->isFloating()  //
                          || basicp->isString())) {
                     return Scheme::UnsupportedCompoundArrayInLoop;
                 }

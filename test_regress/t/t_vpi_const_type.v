@@ -13,6 +13,7 @@ module t (  /*AUTOARG*/
 
   parameter int intParam  /*verilator public_flat_rd*/ = 5;
   parameter real realParam  /*verilator public_flat_rd*/ = 2.3;
+  parameter shortreal shortrealParam  /*verilator public_flat_rd*/ = 2.5;
   parameter time timeParam  /*verilator public_flat_rd*/ = 0;
   parameter string strParam  /*verilator public_flat_rd*/ = "abc";
 
