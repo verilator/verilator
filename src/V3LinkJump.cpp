@@ -168,6 +168,23 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         return false;
     }
+    static AstNodeModule* findOwnerModulep(AstNode* nodep) {
+        for (AstNode* curp = nodep; curp; curp = curp->aboveLoopp()) {
+            if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
+        }
+        nodep->v3fatalSrc("Disable target is not under a module");
+        return nullptr;  // LCOV_EXCL_LINE
+    }
+    static std::string targetInstancePath(const AstDisable* const nodep) {
+        if (const AstVarXRef* const xrefp = VN_CAST(nodep->targetRefp(), VarXRef)) {
+            return xrefp->dotted();
+        }
+        return "";
+    }
+    static std::string queueDotted(const AstDisable* const nodep,
+                                   const AstVar* const processQueuep) {
+        return processQueuep->isTemp() ? targetInstancePath(nodep) : "";
+    }
     AstBegin* innerForkBranchp(const AstNodeBlock* const targetp) const {
         AstBegin* innerForkBranchp = nullptr;
         AstNodeBlock* prevBlockp = nullptr;
@@ -188,17 +205,24 @@ class LinkJumpVisitor final : public VNVisitor {
             new AstMethodCall{flp, queueRefp, "push_back",
                               new AstArg{flp, "", v3Global.rootp()->stdPackageProcessSelfp(flp)}}};
     }
-    static AstVarRef* newQueueRefp(FileLine* const fl, AstVar* const processQueuep,
-                                   const VAccess& access) {
+    static AstNodeVarRef* newQueueRefp(FileLine* const fl, AstVar* const processQueuep,
+                                       const VAccess& access, const std::string& dotted = "") {
+        if (dotted != "") return new AstVarXRef{fl, processQueuep, dotted, access};
+        if (!processQueuep->lifetime().isStatic() || processQueuep->isTemp()) {
+            return new AstVarRef{fl, processQueuep, access};
+        }
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
         return new AstVarRef{fl, topPkgp, processQueuep, access};
     }
     static AstStmtExpr* getQueuePushProcessSelfp(FileLine* const fl, AstVar* const processQueuep) {
-        AstVarRef* const queueWriteRefp = newQueueRefp(fl, processQueuep, VAccess::WRITE);
+        AstVarRef* const queueWriteRefp
+            = VN_AS(newQueueRefp(fl, processQueuep, VAccess::WRITE), VarRef);
         return getQueuePushProcessSelfp(queueWriteRefp);
     }
-    static AstStmtExpr* getQueueKillStmtp(FileLine* const fl, AstVar* const processQueuep) {
-        AstVarRef* const queueRefp = newQueueRefp(fl, processQueuep, VAccess::READWRITE);
+    static AstStmtExpr* getQueueKillStmtp(FileLine* const fl, AstVar* const processQueuep,
+                                          const std::string& dotted = "") {
+        AstNodeVarRef* const queueRefp
+            = newQueueRefp(fl, processQueuep, VAccess::READWRITE, dotted);
         AstTaskRef* killQueueCall = nullptr;
         for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
              itemp = itemp->nextp()) {
@@ -248,10 +272,19 @@ class LinkJumpVisitor final : public VNVisitor {
         return processQueuep;
     }
     AstVar* getProcessQueuep(AstNode* const nodep, FileLine* const fl) {
-        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
-        AstVar* const processQueuep = newProcessQueuep(nodep, fl, VVarType::VAR);
+        AstNodeModule* const ownerp = findOwnerModulep(nodep);
+
+        if (VN_IS(ownerp, Package) || VN_IS(ownerp, Class)) {
+            AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+            AstVar* const processQueuep = newProcessQueuep(nodep, fl, VVarType::VAR);
+            processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
+            topPkgp->addStmtsp(processQueuep);
+            return processQueuep;
+        }
+
+        AstVar* const processQueuep = newProcessQueuep(nodep, fl, VVarType::MODULETEMP);
         processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
-        topPkgp->addStmtsp(processQueuep);
+        ownerp->addStmtsp(processQueuep);
         return processQueuep;
     }
     AstVar* getOrCreateTaskDisableQueuep(AstTask* const taskp, FileLine* const fl) {
@@ -327,7 +360,9 @@ class LinkJumpVisitor final : public VNVisitor {
         return processQueuep;
     }
     AstStmtExpr* insertKillStmtp(AstDisable* const nodep, AstVar* const processQueuep) {
-        AstStmtExpr* const killStmtp = getQueueKillStmtp(nodep->fileline(), processQueuep);
+        FileLine* const fl = nodep->fileline();
+        AstStmtExpr* const killStmtp
+            = getQueueKillStmtp(fl, processQueuep, queueDotted(nodep, processQueuep));
         nodep->addNextHere(killStmtp);
         return killStmtp;
     }
