@@ -244,19 +244,36 @@ AstNodeModule* V3LinkDotIfaceCapture::findCloneViaHierarchy(AstNodeModule* conta
 namespace {
 using LiveNodes = std::unordered_set<const AstNode*>;
 
+// A scoped snapshot of every node currently in the tree.  V3Broken::isLinkable()
+// cannot serve this role: its table is populated only while V3Broken::brokenAll()
+// runs and is cleared before it returns, and brokenAll() would itself assert on
+// the dangling cross-links this pass has yet to repair.
 LiveNodes collectLiveNodes() {
     LiveNodes liveNodes;
     v3Global.rootp()->foreach([&](AstNode* nodep) { liveNodes.insert(nodep); });
     return liveNodes;
 }
 
-AstNodeModule* findOwnerModuleIfLive(AstNode* nodep, const LiveNodes& liveNodes) {
-    for (AstNode* curp = nodep; curp;) {
-        if (!liveNodes.count(curp)) return nullptr;
+// A live snapshot, when supplied, stops the walk at the first stale back link;
+// callers without one fall back to the sentinel guard below.
+AstNodeModule* findOwnerModuleImpl(AstNode* nodep, const LiveNodes* liveNodesp) {
+    for (AstNode* curp = nodep; curp; curp = curp->backp()) {
+        if (liveNodesp) {
+            if (!liveNodesp->count(curp)) return nullptr;
+        } else if (reinterpret_cast<uintptr_t>(curp) < 0x1000) {
+            // Legacy callers lack a liveness snapshot; retain the existing guard
+            // against sentinel values encountered in corrupted backp() chains.
+            // It cannot prove an arbitrary freed pointer safe - invalidating
+            // ledger entries at deletion time would make it unnecessary.
+            return nullptr;
+        }
         if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
-        curp = curp->backp();
     }
     return nullptr;
+}
+
+AstNodeModule* findOwnerModuleIfLive(AstNode* nodep, const LiveNodes& liveNodes) {
+    return findOwnerModuleImpl(nodep, &liveNodes);
 }
 
 bool moduleMatchesOwner(const AstNodeModule* modp, const string& ownerName) {
@@ -329,13 +346,7 @@ AstNodeModule* V3LinkDotIfaceCapture::findLiveCloneOf(AstNodeModule* deadTargetM
 }
 
 AstNodeModule* V3LinkDotIfaceCapture::findOwnerModule(AstNode* nodep) {
-    for (AstNode* curp = nodep; curp; curp = curp->backp()) {
-        // Guard against corrupted backp() chains (e.g. freed memory,
-        // low addresses like 0x1) from nodes unlinked by linkDotParamed.
-        if (reinterpret_cast<uintptr_t>(curp) < 0x1000) return nullptr;
-        if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
-    }
-    return nullptr;
+    return findOwnerModuleImpl(nodep, nullptr);
 }
 
 void V3LinkDotIfaceCapture::nullStaleLedgerRefs(const std::unordered_set<const AstNode*>& live) {
@@ -1025,9 +1036,10 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     if (!v3Global.rootp()) return;
     clearModuleCache();  // Ensure fresh view after all cloning/widthing
 
-    // Later parameter and LinkDot work can remove captured refs after the purge
-    // at the end of V3Param::param().  Use one scoped liveness snapshot both to
-    // purge the ledger and to guard every legacy cross-link inspection below.
+    // purgeStaleRefs() snapshotted liveness at the end of V3Param::param() and
+    // discarded it; linkDotParamed, finalizeDeferredParams, linkLValue and linkWith
+    // have since mutated the tree.  Take a fresh snapshot and reuse it here both to
+    // purge the ledger and to guard every legacy cross-link inspection.
     const LiveNodes liveNodes = collectLiveNodes();
     nullStaleLedgerRefs(liveNodes);
 
@@ -1060,6 +1072,8 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     V3Stats::addStat("IfaceCapture, Dead refs fixed in modules", moduleFixed);
     V3Stats::addStat("IfaceCapture, Captured refs resolved", capturedFixed);
 
-    verifyNoDeadRefs(liveNodes);
+    // Independent debug-only audit of the repairs above; kept separate from the
+    // repair traversal so it can catch omissions in that repair.
+    if (debug() >= 9) verifyNoDeadRefs(liveNodes);
     reset();
 }
