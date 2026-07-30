@@ -264,12 +264,31 @@ class VlRandomizer VL_NOT_FINAL {
     void relaxSoftConstraints(std::iostream& os);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).
     std::vector<int> readUnsatAssumptions(std::iostream& os);
-    void reportUnsatSetup(std::iostream& os);
+    void reportUnsatSetup(std::iostream& os, const std::vector<std::string>& uniqueExprs);
     void reportUnsatCore(std::iostream& os);
     void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
     void recordRandcValues();  // Record solved randc values for future exclusion
-    size_t hashConstraints() const;
-    bool nextPhased(VlRNG& rngr);  // Phased solving for solve...before
+    size_t hashConstraints(const std::vector<std::string>& extras) const;
+    bool nextRandomize(VlRNG& rngr, bool checkOnly);
+    // "(distinct ...)" expression per unique-constrained array
+    std::vector<std::string> buildUniqueExprs() const;
+    void emitDefines(std::ostream& os) const;
+    void emitDeclares(std::ostream& os, bool pinCurrent) const;
+    void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
+    bool nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
+    void solveDiversity(VlRNG& rngr, std::iostream& os);
+    void solveDiversityPins(VlRNG& rngr, std::iostream& os);
+    void solveDiversityXor(VlRNG& rngr, std::iostream& os);
+    // Layers of solve...before variables in dependency order
+    bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
+    const char* phasedLogic() const;
+    bool nextPhased(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
+    bool solvePhases(VlRNG& rngr, const std::vector<std::vector<std::string>>& layers,
+                     const std::vector<std::string>& uniqueExprs);
+    bool solvePhaseValues(std::iostream& os, VlRNG& rngr,
+                          const std::vector<std::string>& layerVars,
+                          std::map<std::string, std::string>& solvedValuesr);
+    bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
 
 public:
     // CONSTRUCTORS
