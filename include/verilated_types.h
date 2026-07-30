@@ -214,7 +214,7 @@ public:
 };
 static_assert(sizeof(WDataInP) == sizeof(EData*), "WDataInP should be a single pointer");
 
-static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
+inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
 
 template <std::size_t N_Words>
 bool VlWide<N_Words>::operator<(const VlWide<N_Words>& rhs) const VL_PURE {
@@ -2119,7 +2119,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull){};
+    VlClassRef(VlNull) {};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class} {
@@ -2240,7 +2240,7 @@ public:
 };
 
 template <typename T_Lhs, typename T_Out>
-static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr) {
+inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr) {
     if (!in) {
         outr = VlNull{};
         return true;
@@ -2254,7 +2254,7 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr
 }
 
 template <typename T_Lhs>
-static inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
+inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
 }

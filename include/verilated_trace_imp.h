@@ -449,7 +449,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::initLib(const std::string& name) VL_MT_
 // All of these take a destination pointer where the string will be emitted,
 // and a value to convert. There are a couple of variants for efficiency.
 
-static inline void cvtCDataToStr(char* dstp, CData value) {
+inline void cvtCDataToStr(char* dstp, CData value) {
 #ifdef VL_HAVE_SSE2
     // Similar to cvtSDataToStr but only the bottom 8 byte lanes are used
     const __m128i a = _mm_cvtsi32_si128(value);
@@ -471,7 +471,7 @@ static inline void cvtCDataToStr(char* dstp, CData value) {
 #endif
 }
 
-static inline void cvtSDataToStr(char* dstp, SData value) {
+inline void cvtSDataToStr(char* dstp, SData value) {
 #ifdef VL_HAVE_SSE2
     // We want each bit in the 16-bit input value to end up in a byte lane
     // within the 128-bit XMM register. Note that x86 is little-endian and we
@@ -507,7 +507,7 @@ static inline void cvtSDataToStr(char* dstp, SData value) {
 #endif
 }
 
-static inline void cvtIDataToStr(char* dstp, IData value) {
+inline void cvtIDataToStr(char* dstp, IData value) {
 #ifdef VL_HAVE_AVX2
     // Similar to cvtSDataToStr but the bottom 16-bits are processed in the
     // top half of the YMM registers
@@ -526,7 +526,7 @@ static inline void cvtIDataToStr(char* dstp, IData value) {
 #endif
 }
 
-static inline void cvtQDataToStr(char* dstp, QData value) {
+inline void cvtQDataToStr(char* dstp, QData value) {
     cvtIDataToStr(dstp, value >> 32);
     cvtIDataToStr(dstp + 32, value);
 }
