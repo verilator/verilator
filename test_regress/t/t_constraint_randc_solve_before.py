@@ -18,6 +18,4 @@ test.compile()
 
 test.execute()
 
-test.file_grep(test.run_log_filename, r'NPASS=8 UPASS=4')
-
 test.passes()

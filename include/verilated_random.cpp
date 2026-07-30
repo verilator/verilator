@@ -85,7 +85,10 @@ static ssize_t vlWriteNoSigpipe(int fd, const void* datap, size_t len) {
     const int writeErrno = errno;
     if (n == -1 && writeErrno == EPIPE && !wasPending) {
         const struct timespec zeroTs = {0, 0};
-        while (sigtimedwait(&sigpipeMask, nullptr, &zeroTs) == -1 && errno == EINTR) {}
+        int sigRc;
+        do {
+            sigRc = sigtimedwait(&sigpipeMask, nullptr, &zeroTs);
+        } while (sigRc == -1 && errno == EINTR);
     }
     pthread_sigmask(SIG_SETMASK, &prevMask, nullptr);
     errno = writeErrno;
@@ -157,7 +160,9 @@ protected:
             return traits_type::eof();
         }
         ssize_t n;
-        while ((n = ::read(m_readFd, m_readBuf, sizeof(m_readBuf))) == -1 && errno == EINTR) {}
+        do {
+            n = ::read(m_readFd, m_readBuf, sizeof(m_readBuf));
+        } while (n == -1 && errno == EINTR);
         if (VL_UNLIKELY(n == -1)) perror("read");
         if (n <= 0) {
             wait_report();
@@ -184,17 +189,17 @@ protected:
     // Poll fd until ready; false on deadline expiry or poll failure
     bool waitFd(int fd, short events) {
 #ifdef _VL_SOLVER_PIPE
-        while (true) {
+        int pollRc = 0;
+        do {
             int waitMs = -1;
             if (m_deadlineArmed) {
                 waitMs = deadlineWaitMs();
                 if (waitMs < 0) return false;
             }
             struct pollfd pfd = {fd, events, 0};
-            const int r = ::poll(&pfd, 1, waitMs);
-            if (r > 0) return true;
-            if (r == -1 && errno != EINTR) return false;
-        }
+            pollRc = ::poll(&pfd, 1, waitMs);
+        } while (pollRc == 0 || (pollRc == -1 && errno == EINTR));
+        return pollRc > 0;
 #else
         (void)fd;
         (void)events;
@@ -225,16 +230,16 @@ public:
         if (gptr() < egptr()) return true;
         sync();
         const auto limit = std::chrono::steady_clock::now() + std::chrono::milliseconds{graceMs};
-        while (true) {
+        int pollRc = 0;
+        do {
             const auto now = std::chrono::steady_clock::now();
             if (now >= limit) return false;
             const int waitMs = static_cast<int>(
                 std::chrono::duration_cast<std::chrono::milliseconds>(limit - now).count() + 1);
             struct pollfd pfd = {m_readFd, POLLIN, 0};
-            const int r = ::poll(&pfd, 1, waitMs);
-            if (r > 0) return true;
-            if (r == -1 && errno != EINTR) return false;
-        }
+            pollRc = ::poll(&pfd, 1, waitMs);
+        } while (pollRc == 0 || (pollRc == -1 && errno == EINTR));
+        return pollRc > 0;
 #else
         (void)graceMs;
         return true;
@@ -245,7 +250,10 @@ public:
 #ifdef _VL_SOLVER_PIPE
         if (!m_pidExited && m_pid) {
             ::kill(m_pid, SIGKILL);
-            while (waitpid(m_pid, &m_pidStatus, 0) == -1 && errno == EINTR) {}
+            pid_t waitRc;
+            do {
+                waitRc = waitpid(m_pid, &m_pidStatus, 0);
+            } while (waitRc == -1 && errno == EINTR);
         }
 #endif
         m_pidExited = true;
@@ -258,7 +266,7 @@ public:
         if (m_pidExited) return;
 #ifdef _VL_SOLVER_PIPE
         pid_t rc;
-        while ((rc = waitpid(m_pid, &m_pidStatus, WNOHANG)) == -1 && errno == EINTR) {}
+        do { rc = waitpid(m_pid, &m_pidStatus, WNOHANG); } while (rc == -1 && errno == EINTR);
         if (rc == 0) return;  // Still running; terminate() reaps it
         // -1 (reaped elsewhere): clear so terminate() cannot signal a reused pid
         if (rc == -1) m_pidStatus = 0;
@@ -364,15 +372,18 @@ public:
         close(fd_stdout[P_WR]);
 
         int flags;
-        while ((flags = fcntl(m_writeFd, F_GETFL)) == -1 && errno == EINTR) {}
+        do { flags = fcntl(m_writeFd, F_GETFL); } while (flags == -1 && errno == EINTR);
         int fcntlRc = flags;
         if (fcntlRc != -1) {
-            while ((fcntlRc = fcntl(m_writeFd, F_SETFL, flags | O_NONBLOCK)) == -1
-                   && errno == EINTR) {}
+            do {
+                fcntlRc = fcntl(m_writeFd, F_SETFL, flags | O_NONBLOCK);
+            } while (fcntlRc == -1 && errno == EINTR);
         }
 #ifdef F_SETNOSIGPIPE
         if (fcntlRc != -1) {
-            while ((fcntlRc = fcntl(m_writeFd, F_SETNOSIGPIPE, 1)) == -1 && errno == EINTR) {}
+            do {
+                fcntlRc = fcntl(m_writeFd, F_SETNOSIGPIPE, 1);
+            } while (fcntlRc == -1 && errno == EINTR);
         }
 #endif
         if (VL_UNLIKELY(fcntlRc == -1)) return false;
@@ -682,9 +693,8 @@ private:
     bool finishErrorReply(std::string& liner) VL_REQUIRES(m_mutex) {
         int depth = 0;
         bool inString = false;
-        std::string chunk = liner;
-        while (true) {
-            for (const char c : chunk) {
+        const auto scanDepth = [&](const std::string& str) {
+            for (const char c : str) {
                 if (inString) {
                     if (c == '"') inString = false;
                 } else if (c == '"') {
@@ -695,11 +705,16 @@ private:
                     --depth;
                 }
             }
-            if (depth <= 0) return true;
+        };
+        scanDepth(liner);
+        while (depth > 0) {
+            std::string chunk;
             if (!readLine(chunk)) return false;
             liner += ' ';
             liner += chunk;
+            scanDepth(chunk);
         }
+        return true;
     }
 };
 

@@ -47,7 +47,8 @@ module t;
         upass++;
       end
     end
-    $display("NPASS=%0d UPASS=%0d", npass, upass);
+    if (npass != 8) $stop;
+    if (upass != 4) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
