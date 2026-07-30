@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 
 mode = os.environ.get("TAMPER", "none")
 at = int(os.environ.get("TAMPER_AT", "2"))
@@ -102,6 +103,7 @@ for line in proc.stdout:
             if mode == "err_once":
                 emit('(error "injected transient desync")')
                 done = True
+                time.sleep(0.3)
             elif mode == "err_multiline":
                 emit('(error "injected')
                 emit('multiline error")')
