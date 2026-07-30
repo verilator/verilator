@@ -534,6 +534,11 @@ class TaskVisitor final : public VNVisitor {
             }
             postRhsp->dtypeFrom(outPinp);
         }
+        if (VN_IS(outPinp, IToRD) || VN_IS(outPinp, ISToRD)) {
+            outPinp = VN_AS(outPinp, NodeUniop)->lhsp();
+            postRhsp = new AstRToIRoundS{pinp->fileline(), postRhsp};
+            postRhsp->dtypeFrom(outPinp);
+        }
         // Put output assignment AFTER function call
         AstNodeExpr* const outPinClonep
             = pureCheck ? outPinp->cloneTreePure(true) : outPinp->cloneTree(true);
