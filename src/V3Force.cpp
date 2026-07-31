@@ -247,7 +247,7 @@ public:
             if (AstNodeExpr* exprp = VN_CAST(sampledp->exprp(), NodeExpr))
                 return getOneVarRef(exprp);
         AstVarRef* const varRefp = VN_CAST(basep, VarRef);
-        UASSERT_OBJ(varRefp, forceStmtp, "`force` assignment has no VarRef on LHS");
+        UASSERT_OBJ(varRefp, forceStmtp, "Force/release expression has no VarRef at its base");
         return varRefp;
     }
 
@@ -366,8 +366,11 @@ public:
                                      AstNodeExpr* indexExprp) const {
         UASSERT(varInfo.m_forceVecVscp, "No forceVec for forced variable");
 
-        originalExprp->foreach(
-            [](AstVarRef* const refp) { ForceState::markNonReplaceable(refp); });
+        // Protect only the read this call replaces, which would otherwise be replaced
+        // again and recurse.  Everything else in the expression is an ordinary read and
+        // must still see its own force, including an index read of the same array as in
+        // 'mem[mem[0]]'.
+        markNonReplaceable(getOneVarRef(originalExprp));
         AstNodeExpr* const origValp
             = addRhsValueReads(varInfo, castToNodeDType(originalExprp, dtypeFromp));
 
@@ -552,12 +555,36 @@ public:
 
     static AstNodeExpr* buildFlattenIndexExpr(FileLine* flp, const ArraySelInfo& info) {
         const std::vector<int> dimSizes = arraySelDimSizes(info);
-        std::vector<int> constIndices;
-        constIndices.reserve(info.m_sels.size());
+        bool allConst = true;
         for (AstArraySel* const selp : info.m_sels) {
-            constIndices.push_back(VN_AS(selp->bitp(), Const)->toSInt());
+            if (!VN_IS(selp->bitp(), Const)) {
+                allConst = false;
+                break;
+            }
         }
-        return makeConst32(flp, flattenIndex(constIndices, dimSizes));
+        if (allConst) {
+            std::vector<int> constIndices;
+            constIndices.reserve(info.m_sels.size());
+            for (AstArraySel* const selp : info.m_sels) {
+                constIndices.push_back(VN_AS(selp->bitp(), Const)->toSInt());
+            }
+            return makeConst32(flp, flattenIndex(constIndices, dimSizes));
+        }
+        // A read may select the element at run time, so compute the same flattened index
+        // as flattenIndex() does, but as an expression.  Only a force target has to be a
+        // constant element; 'array[i]' with a variable 'i' is an ordinary read.
+        AstNodeExpr* resultp = nullptr;
+        int stride = 1;
+        for (int i = static_cast<int>(info.m_sels.size()) - 1; i >= 0; --i) {
+            AstNodeExpr* termp = info.m_sels[i]->bitp()->cloneTreePure(false);
+            // V3Width sizes an array index to at most 32 bits, so widening is all that
+            // is needed to keep the arithmetic below width matched.
+            if (termp->width() < 32) termp = new AstExtend{flp, termp, 32};
+            if (stride != 1) termp = new AstMul{flp, termp, makeConst32(flp, stride)};
+            resultp = resultp ? new AstAdd{flp, resultp, termp} : termp;
+            stride *= dimSizes[i];
+        }
+        return resultp;
     }
 
     static AstNodeExpr* buildRhsDataExpr(FileLine* flp, const ForceInfo& finfo) {
@@ -1350,11 +1377,15 @@ class ForceReplaceVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstArraySel* nodep) override {
-        if (nodep->backp() && VN_IS(nodep->backp(), ArraySel)) {
-            // Only the outermost unpacked array selection should become a force-aware read;
-            // inner nested selections are folded into the final flattened index.
-            iterateChildren(nodep);
-            return;
+        if (const AstArraySel* const backSelp = VN_CAST(nodep->backp(), ArraySel)) {
+            // Only the outermost selection of the array path should become a force-aware
+            // read; inner selections along 'fromp' fold into the final flattened index.
+            // A selection used as the index is a read in its own right, as in
+            // 'mem[mem[0]]', so it must not be skipped here.
+            if (backSelp->fromp() == nodep) {
+                iterateChildren(nodep);
+                return;
+            }
         }
 
         AstNode* const basep = AstArraySel::baseFromp(nodep, true);
@@ -1379,6 +1410,11 @@ class ForceReplaceVisitor final : public VNVisitor {
             return;
         }
         const ForceState::ArraySelInfo arrayInfo = ForceState::getArraySelInfo(nodep);
+        // Substitute forced reads inside the index expressions before anything is cloned,
+        // so the fallback value and the flattened index use the same, force-aware index.
+        // An index is an ordinary read, including when it reads the same array as in
+        // 'mem[mem[0]]'.
+        for (AstArraySel* const selp : arrayInfo.m_sels) iterateAndNextNull(selp->bitp());
         AstNodeExpr* const indexExprp
             = ForceState::buildFlattenIndexExpr(nodep->fileline(), arrayInfo);
         AstNodeExpr* const readExprp

@@ -3521,7 +3521,14 @@ class WidthVisitor final : public VNVisitor {
             bool canLower = true;
             for (AstDistItem* ditemp = nodep->itemsp(); ditemp;
                  ditemp = VN_AS(ditemp->nextp(), DistItem)) {
-                if (!VN_IS(ditemp->rangep(), Const) && !VN_IS(ditemp->rangep(), InsideRange)) {
+                if (VN_IS(ditemp->rangep(), InsideRange)) continue;
+                // An integral item is a plain equality on either path, so it may be
+                // non-constant.  Testing for AstConst here instead would silently drop
+                // the weights of a dist whose items are state variables.  Compound
+                // items (containers, strings) still need insideItem(), and an impure
+                // item must not be cloned into the bucket chain.
+                const AstNodeDType* const itemDtp = ditemp->rangep()->dtypep()->skipRefp();
+                if (!itemDtp->isIntegralOrPacked() || !ditemp->rangep()->isPure()) {
                     canLower = false;
                     break;
                 }

@@ -1003,7 +1003,13 @@ void VlRandomizer::emitAsserts(std::ostream& os, const std::vector<std::string>&
             os << "(assert (= #b1 " << constraint << "))\n";
         }
     }
-    for (const std::string& extra : extras) os << "(assert (= #b1 " << extra << "))\n";
+    for (const std::string& extra : extras) {
+        if (named) {
+            os << "(assert (! (= #b1 " << extra << ") :named cons" << j++ << "))\n";
+        } else {
+            os << "(assert (= #b1 " << extra << "))\n";
+        }
+    }
 }
 
 bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
