@@ -245,23 +245,24 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
-    Verilated::threadContextp()->finishPendingInc();
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_finish(filename, linenum, hier);
-        Verilated::threadContextp()->finishPendingDec();
+        contextp->finishPendingDec();
     }});
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
+    VerilatedContext* const contextp = Verilated::threadContextp();
 #ifdef VL_USER_STOP_MAYBE
     // The user hook decides; pending only for a definite stop request
-    if (!maybe) Verilated::threadContextp()->finishPendingInc();
+    if (!maybe) contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_stop_maybe(filename, linenum, hier, maybe);
-        if (!maybe) Verilated::threadContextp()->finishPendingDec();
+        if (!maybe) contextp->finishPendingDec();
     }});
 #else
-    VerilatedContext* const contextp = Verilated::threadContextp();
     bool firstIgnored = false;
     const bool stop = contextp->errorCountIncMaybeStop(maybe, firstIgnored);
     if (stop) contextp->finishPendingInc();
@@ -273,10 +274,11 @@ void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe)
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
-    Verilated::threadContextp()->finishPendingInc();
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_fatal(filename, linenum, hier, msg);
-        Verilated::threadContextp()->finishPendingDec();
+        contextp->finishPendingDec();
     }});
 }
 
@@ -3304,29 +3306,8 @@ void VerilatedContext::gotError(bool flag) VL_MT_SAFE {
 }
 void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    m_s.m_gotFinish.store(flag, std::memory_order_relaxed);
-    if (!flag && !m_s.m_finishPending.load(std::memory_order_relaxed)) {
-        m_s.m_finishPendingTimeValid = false;
-    }
-}
-void VerilatedContext::finishPendingInc() VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    if (!m_s.m_finishPendingTimeValid) {
-        m_s.m_finishPendingTime = time();
-        m_s.m_finishPendingTimeValid = true;
-    }
-    m_s.m_finishPending.fetch_add(1, std::memory_order_relaxed);
-}
-void VerilatedContext::finishPendingDec() VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    if (m_s.m_finishPending.fetch_sub(1, std::memory_order_relaxed) == 1
-        && !m_s.m_gotFinish.load(std::memory_order_relaxed)) {
-        m_s.m_finishPendingTimeValid = false;
-    }
-}
-uint64_t VerilatedContext::finishPendingTime() const VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    return m_s.m_finishPendingTimeValid ? m_s.m_finishPendingTime : time();
+    m_s.m_gotFinish = flag;
+    if (!flag && !m_ns.m_finishPending) m_ns.m_finishPendingTimeValid = false;
 }
 bool VerilatedContext::executingFinal() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

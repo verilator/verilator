@@ -537,10 +537,10 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // #defines, to avoid requiring math.h on all compile runs
 
 #ifdef _MSC_VER
-static inline double VL_TRUNC(double n) {
+inline double VL_TRUNC(double n) {
     return (n < 0) ? std::ceil(n) : std::floor(n);
 }
-static inline double VL_ROUND(double n) {
+inline double VL_ROUND(double n) {
     return (n < 0) ? std::ceil(n-0.5) : std::floor(n + 0.5);
 }
 #else

@@ -199,6 +199,7 @@ class GateBuildVisitor final : public VNVisitorConst {
     const AstScope* m_scopep = nullptr;  // Current scope being processed
     AstActive* m_activep = nullptr;  // Current active
     bool m_inClockedActive = false;  // Underneath clocked active
+    bool m_inEdgeActive = false;  // Underneath edge active
     bool m_inStaticActive = false;  // Underneath static active
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
 
@@ -248,9 +249,11 @@ class GateBuildVisitor final : public VNVisitorConst {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
         VL_RESTORER(m_activep);
         VL_RESTORER(m_inClockedActive);
+        VL_RESTORER(m_inEdgeActive);
         VL_RESTORER(m_inStaticActive);
         m_activep = nodep;
         m_inClockedActive = nodep->hasClocked();
+        m_inEdgeActive = nodep->sentreep() && nodep->sentreep()->hasEdge();
         m_inStaticActive = nodep->hasStatic();
 
         // AstVarScope::user2 -> bool: Signal used in SenItem in *this* active block
@@ -286,7 +289,7 @@ class GateBuildVisitor final : public VNVisitorConst {
         if (m_inSenItem) {
             vVtxp->setIsClock();
             vscp->user2(true);
-        } else if (m_inClockedActive && nodep->access().isReadOnly()) {
+        } else if (m_inEdgeActive && nodep->access().isReadOnly()) {
             // For SYNCASYNCNET
             if (vscp->user2()) {
                 if (!vVtxp->rstAsyncNodep()) vVtxp->rstAsyncNodep(nodep);

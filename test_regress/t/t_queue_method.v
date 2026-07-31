@@ -35,6 +35,7 @@ module t;
     bit b;
     string string_q[$];
     string string_qv[$];
+    string string_qe[$];
     point_3d points_q[$];  // Same as q and qv, but complex value type
     point_3d points_qv[$];
     Cls cls;
@@ -179,6 +180,19 @@ module t;
     `checkp(qv, "'{}");
     qv = qe.max;
     `checkp(qv, "'{}");
+
+    string_qv = string_q.min;
+    `checks(string_qv[0], "A");
+    string_qv = string_q.min(x) with (int'(x[0]) + 10);
+    `checks(string_qv[0],"A");
+    string_qv = string_q.max;
+    `checks(string_qv[0], "b");
+    string_qv = string_q.max(x) with (int'(x[0]) + 10);
+    `checks(string_qv[0],"b");
+    string_qv = string_qe.min;
+    `checkp(string_qv,"'{}");
+    string_qv = string_qe.max;
+    `checkp(string_qv,"'{}");
 
     // Reduction methods
     i = q.sum;

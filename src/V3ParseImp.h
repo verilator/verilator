@@ -69,6 +69,11 @@ struct VMemberQualifiers final {
         q.m_flags = a.m_flags | b.m_flags;
         return q;
     }
+    VRandAttr randAttr() const {
+        if (m_randc) return VRandAttr::RAND_CYCLIC;
+        if (m_rand) return VRandAttr::RAND;
+        return VRandAttr::NONE;
+    }
     void applyToNodes(AstNodeFTask* nodesp) const {
         for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), NodeFTask)) {
             if (m_local) nodep->isHideLocal(true);

@@ -441,9 +441,12 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
     os << ')';
 }
 
-size_t VlRandomizer::hashConstraints() const {
+size_t VlRandomizer::hashConstraints(const std::vector<std::string>& extras) const {
     size_t h = 0;
     for (const auto& c : m_constraints) {
+        h ^= std::hash<std::string>{}(c) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    }
+    for (const auto& c : extras) {
         h ^= std::hash<std::string>{}(c) + 0x9e3779b9 + (h << 6) + (h >> 2);
     }
     return h;
@@ -478,36 +481,20 @@ void VlRandomizer::recordRandcValues() {
     }
 }
 
-bool VlRandomizer::next_check_only(VlRNG& rngr) {
-    m_checkOnly = true;
-    const bool result = next(rngr);
-    m_checkOnly = false;
-    return result;
-}
+bool VlRandomizer::next_check_only(VlRNG& rngr) { return nextRandomize(rngr, true); }
 
-bool VlRandomizer::next(VlRNG& rngr) {
-    if (!m_checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
-    if (m_checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
-    for (const std::string& baseName : m_unique_arrays) {
-        const auto it = m_vars.find(baseName);
-        const uint32_t size = m_unique_array_sizes.at(baseName);
+bool VlRandomizer::next(VlRNG& rngr) { return nextRandomize(rngr, false); }
 
-        if (it != m_vars.end()) {
-            std::string distinctExpr = "(__Vbv (distinct";
-            for (uint32_t i = 0; i < size; ++i) {
-                char hexIdx[12];
-                (void)VL_SNPRINTF(hexIdx, sizeof(hexIdx), "#x%08x", i);
-                distinctExpr += " (select " + it->first + " " + hexIdx + ")";
-            }
-            distinctExpr += "))";
-            m_constraints.push_back(distinctExpr);
-        }
-    }
+bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
+    if (!checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
+    if (checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
+    m_checkOnly = checkOnly;
+    const std::vector<std::string> uniqueExprs = buildUniqueExprs();
 
     // Randc exclusion-based cycling: exclude previously used values per randc var.
     // When solver returns unsat (all values exhausted), clear history for new cycle.
     if (!m_randcVarNames.empty()) {
-        const size_t currentHash = hashConstraints();
+        const size_t currentHash = hashConstraints(uniqueExprs);
         // Invalidate history if constraints changed (e.g., constraint_mode toggled)
         if (currentHash != m_randcConstraintHash) {
             m_randcUsedValues.clear();
@@ -516,83 +503,99 @@ bool VlRandomizer::next(VlRNG& rngr) {
     }
 
     // Pinned vars make phase ordering moot; skip phased path in check-only.
-    if (!m_checkOnly && !m_solveBefore.empty()) return nextPhased(rngr);
+    bool result;
+    if (!m_checkOnly && !m_solveBefore.empty()) {
+        result = nextPhased(rngr, uniqueExprs);
+    } else {
+        result = nextFlat(rngr, uniqueExprs);
+    }
+    m_checkOnly = false;
+    return result;
+}
 
+std::vector<std::string> VlRandomizer::buildUniqueExprs() const {
+    std::vector<std::string> exprs;
+    for (const std::string& baseName : m_unique_arrays) {
+        const auto it = m_vars.find(baseName);
+        if (it == m_vars.end()) continue;
+        const uint32_t size = m_unique_array_sizes.at(baseName);
+        std::string distinctExpr = "(__Vbv (distinct";
+        for (uint32_t i = 0; i < size; ++i) {
+            char hexIdx[12];
+            (void)VL_SNPRINTF(hexIdx, sizeof(hexIdx), "#x%08x", i);
+            distinctExpr += " (select " + it->first + " " + hexIdx + ")";
+        }
+        distinctExpr += "))";
+        exprs.push_back(std::move(distinctExpr));
+    }
+    return exprs;
+}
+
+void VlRandomizer::emitDefines(std::ostream& os) const {
+    os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+    os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+}
+
+void VlRandomizer::emitDeclares(std::ostream& os, bool pinCurrent) const {
+    for (const auto& var : m_vars) {
+        if (var.second->dimension() > 0) {
+            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+            var.second->setArrayInfo(arrVarsp);
+        }
+        os << "(declare-fun " << var.first << " () ";
+        var.second->emitType(os);
+        os << ")\n";
+        // Pin each var to its current value
+        if (pinCurrent) {
+            assert(var.second->dimension() == 0);
+            os << "(assert (= " << var.first << ' ';
+            var.second->emitConcreteValue(os);
+            os << "))\n";
+        }
+    }
+}
+
+void VlRandomizer::emitAsserts(std::ostream& os, const std::vector<std::string>& extras,
+                               bool named) const {
+    int j = 0;
+    for (const std::string& constraint : m_constraints) {
+        if (named) {
+            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j++ << "))\n";
+        } else {
+            os << "(assert (= #b1 " << constraint << "))\n";
+        }
+    }
+    for (const std::string& extra : extras) {
+        if (named) {
+            os << "(assert (! (= #b1 " << extra << ") :named cons" << j++ << "))\n";
+        } else {
+            os << "(assert (= #b1 " << extra << "))\n";
+        }
+    }
+}
+
+bool VlRandomizer::nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs) {
     // Randc retry: if unsat due to randc exhaustion, clear history and retry once
     const bool hasRandc = !m_randcVarNames.empty();
     for (int attempt = 0; attempt < (hasRandc ? 2 : 1); ++attempt) {
         std::iostream& os = getSolver();
         if (!os) return false;
 
-        // Soft constraint relaxation (IEEE 1800-2023 18.5.13, last-wins priority):
-        // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
-        // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
         os << "(set-option :produce-models true)\n";
         // Lets the scalar pin path learn which free-bit assumptions conflict.
         os << "(set-option :produce-unsat-assumptions true)\n";
         os << "(set-logic QF_ABV)\n";
-        os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
-        os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
-        for (const auto& var : m_vars) {
-            if (var.second->dimension() > 0) {
-                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-                var.second->setArrayInfo(arrVarsp);
-            }
-            os << "(declare-fun " << var.first << " () ";
-            var.second->emitType(os);
-            os << ")\n";
-            // Pin each var to its current value: SAT iff the current values
-            // satisfy the constraints. V3Randomize rejects non-scalar rand
-            // members upstream, hence the assert.
-            if (m_checkOnly) {
-                assert(var.second->dimension() == 0);
-                os << "(assert (= " << var.first << ' ';
-                var.second->emitConcreteValue(os);
-                os << "))\n";
-            }
-        }
-
-        for (const std::string& constraint : m_constraints) {
-            os << "(assert (= #b1 " << constraint << "))\n";
-        }
+        emitDefines(os);
+        emitDeclares(os, m_checkOnly);
+        emitAsserts(os, uniqueExprs, false);
 
         // randc exclusions vs. a pinned current value would make every check
         // trivially UNSAT after the first cycle.
         if (!m_checkOnly) emitRandcExclusions(os);
 
-        const size_t nSoft = m_softConstraints.size();
-        bool sat = false;
-        if (nSoft > 0) {
-            // Fast path: try all soft constraints at once
-            os << "(push 1)\n";
-            for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
-            os << "(check-sat)\n";
-            sat = parseSolution(os, false);
-            if (!sat) {
-                // Some soft constraints conflict. Incrementally add from back
-                // (highest priority first), keeping only compatible ones.
-                // This preserves the maximum set of compatible soft constraints.
-                os << "(pop 1)\n";
-                for (int i = static_cast<int>(nSoft) - 1; i >= 0; --i) {
-                    os << "(push 1)\n";
-                    os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
-                    os << "(check-sat)\n";
-                    if (checkSat(os)) {
-                        // Compatible -- keep this push level
-                    } else {
-                        // Incompatible -- remove this soft constraint
-                        os << "(pop 1)\n";
-                    }
-                }
-                // Read solution with remaining compatible soft constraints
-                os << "(check-sat)\n";
-                sat = parseSolution(os, false);
-            }
-        } else {
-            // No soft constraints -- hard-only
-            os << "(check-sat)\n";
-            sat = parseSolution(os, false);
-        }
+        relaxSoftConstraints(os);
+        os << "(check-sat)\n";
+        const bool sat = parseSolution(os);
 
         if (!sat) {
             os << "(reset)\n";
@@ -606,100 +609,82 @@ bool VlRandomizer::next(VlRNG& rngr) {
             // the solver's free assignment.
             if (m_checkOnly) return false;
             // Genuine unsat: report via unsat-core
-            os << "(set-option :produce-unsat-cores true)\n";
-            os << "(set-logic QF_ABV)\n";
-            os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
-            os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
-            for (const auto& var : m_vars) {
-                if (var.second->dimension() > 0) {
-                    auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-                    var.second->setArrayInfo(arrVarsp);
-                }
-                os << "(declare-fun " << var.first << " () ";
-                var.second->emitType(os);
-                os << ")\n";
-            }
-            int j = 0;
-            for (const std::string& constraint : m_constraints) {
-                os << "(assert (! (= #b1 " << constraint << ") :named cons" << j++ << "))\n";
-            }
-            os << "(check-sat)\n";
-            sat = parseSolution(os, true);
-            (void)sat;
+            reportUnsatSetup(os, uniqueExprs);
             os << "(reset)\n";
             return false;
         }
 
         if (!m_checkOnly) {
-            bool hasArray = false;
-            for (const auto& var : m_vars) {
-                if (var.second->dimension() > 0) {
-                    hasArray = true;
-                    break;
-                }
-            }
-            if (!hasArray) {
-                // Tie each free bit to a fresh random target via a boolean
-                // assumption literal a_k <=> (bit_k == target_k), then force the
-                // bits with (check-sat-assuming ...). If UNSAT,
-                // (get-unsat-assumptions) names the literals clashing with the
-                // feasible base; drop ONE per round so the maximal compatible
-                // set survives -- dropping a whole conflicting group at once
-                // would collapse the diversity of tightly coupled bits (one-hot,
-                // 2-value sets) onto the solver's fixed default. Assumptions are
-                // ephemeral, so rounds need no push/pop or re-asserting and the
-                // solver keeps its learned clauses. Each round drops >= 1 -> ends
-                // in <= npins rounds.
-                std::vector<bool> targets;
-                int npins = 0;
-                for (const auto& var : m_vars) {
-                    const int w = var.second->totalWidth();
-                    for (int b = 0; b < w; b++) {
-                        const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
-                        targets.push_back(target);
-                        os << "(declare-fun a" << npins << " () Bool)\n";
-                        os << "(assert (= a" << npins << " (=";
-                        var.second->emitExtract(os, b);
-                        os << " #b" << (target ? '1' : '0') << ")))\n";
-                        ++npins;
-                    }
-                }
-                std::vector<bool> dropped(npins, false);
-                for (int round = 0; round <= npins; ++round) {
-                    os << "(check-sat-assuming (";
-                    for (int k = 0; k < npins; k++)
-                        if (!dropped[k]) os << " a" << k;
-                    os << "))\n";
-                    if (parseSolution(os, false)) break;
-                    // get-unsat-assumptions only echoes still-active literals,
-                    // so the first in-range index is a live conflicting bit.
-                    const std::vector<int> core = readUnsatAssumptions(os);
-                    for (const int idx : core)
-                        if (idx < npins) {
-                            dropped[idx] = true;
-                            break;
-                        }
-                }
-            } else {
-                // Array present: original XOR-rounds path.
-                for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-                    os << "(assert ";
-                    randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-                    os << ")\n";
-                    os << "\n(check-sat)\n";
-                    sat = parseSolution(os, false);
-                    (void)sat;
-                }
-            }
+            solveDiversity(rngr, os);
+            // Check-only must not advance randc cycle state.
+            recordRandcValues();
         }
-
-        // Check-only must not advance randc cycle state.
-        if (!m_checkOnly) recordRandcValues();
 
         os << "(reset)\n";
         return true;
     }
     return false;  // Should not reach here
+}
+
+void VlRandomizer::solveDiversity(VlRNG& rngr, std::iostream& os) {
+    bool hasArray = false;
+    for (const auto& var : m_vars) {
+        if (var.second->dimension() > 0) {
+            hasArray = true;
+            break;
+        }
+    }
+    if (hasArray) {
+        solveDiversityXor(rngr, os);
+    } else {
+        solveDiversityPins(rngr, os);
+    }
+}
+
+void VlRandomizer::solveDiversityPins(VlRNG& rngr, std::iostream& os) {
+    // Tie each free bit to a random target via an assumption literal;
+    // drop one conflicting literal per round until compatible
+    int npins = 0;
+    for (const auto& var : m_vars) {
+        const int w = var.second->totalWidth();
+        for (int b = 0; b < w; ++b) {
+            const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
+            os << "(declare-fun a" << npins << " () Bool)\n";
+            os << "(assert (= a" << npins << " (=";
+            var.second->emitExtract(os, b);
+            os << " #b" << (target ? '1' : '0') << ")))\n";
+            ++npins;
+        }
+    }
+    std::vector<bool> dropped(npins, false);
+    for (int round = 0; round <= npins; ++round) {
+        os << "(check-sat-assuming (";
+        for (int k = 0; k < npins; ++k) {
+            if (!dropped[k]) os << " a" << k;
+        }
+        os << "))\n";
+        if (parseSolution(os)) return;
+        // get-unsat-assumptions only echoes still-active literals,
+        // so the first in-range index is a live conflicting bit.
+        const std::vector<int> core = readUnsatAssumptions(os);
+        for (const int idx : core) {
+            if (idx < npins) {
+                dropped[idx] = true;
+                break;
+            }
+        }
+    }
+}
+
+void VlRandomizer::solveDiversityXor(VlRNG& rngr, std::iostream& os) {
+    bool sat = true;
+    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+        os << "(assert ";
+        randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+        os << ")\n";
+        os << "\n(check-sat)\n";
+        sat = parseSolution(os);
+    }
 }
 
 bool VlRandomizer::checkSat(std::iostream& os) {
@@ -708,14 +693,28 @@ bool VlRandomizer::checkSat(std::iostream& os) {
     return result == "sat";
 }
 
-std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
-    os << "(get-unsat-assumptions)\n";
-    std::string line;
-    do { std::getline(os, line); } while (line.empty());
-    // The response lists only "a<N>" literals; collect each full integer run.
+void VlRandomizer::relaxSoftConstraints(std::iostream& os) {
+    // Re-add softs highest-priority first, dropping incompatible ones.
+    const size_t nSoft = m_softConstraints.size();
+    if (nSoft == 0) return;
+    os << "(push 1)\n";
+    for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
+    os << "(check-sat)\n";
+    if (checkSat(os)) return;
+    os << "(pop 1)\n";
+    for (auto it = m_softConstraints.rbegin(); it != m_softConstraints.rend(); ++it) {
+        os << "(push 1)\n";
+        os << "(assert (= #b1 " << *it << "))\n";
+        os << "(check-sat)\n";
+        if (!checkSat(os)) os << "(pop 1)\n";
+    }
+}
+
+// Every complete run of digits in the reply, in order
+static std::vector<int> scanIntRuns(const std::string& reply) {
     std::vector<int> idxs;
     std::string num;
-    for (const char c : line) {
+    for (const char c : reply) {
         if (std::isdigit(static_cast<unsigned char>(c))) {
             num += c;
         } else if (!num.empty()) {
@@ -727,60 +726,66 @@ std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
     return idxs;
 }
 
-bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
+std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
+    os << "(get-unsat-assumptions)\n";
+    std::string line;
+    do { std::getline(os, line); } while (line.empty());
+    // The response lists only "a<N>" literals; collect each full integer run.
+    return scanIntRuns(line);
+}
+
+// Re-solve with named asserts so an unsat core can name the failing constraints
+void VlRandomizer::reportUnsatSetup(std::iostream& os,
+                                    const std::vector<std::string>& uniqueExprs) {
+    os << "(set-option :produce-unsat-cores true)\n";
+    os << "(set-logic QF_ABV)\n";
+    emitDefines(os);
+    emitDeclares(os, false);
+    emitAsserts(os, uniqueExprs, true);
+    os << "(check-sat)\n";
+    std::string status;
+    do { std::getline(os, status); } while (status.empty());
+    if (status == "unsat") reportUnsatCore(os);
+}
+
+void VlRandomizer::reportUnsatCore(std::iostream& os) {
+    os << "(get-unsat-core)\n";
+    std::string reply;
+    std::getline(os, reply);
+    const std::vector<int> numbers = scanIntRuns(reply);
+    if (Verilated::threadContextp()->warnUnsatConstr()) {
+        for (const int n : numbers) {
+            if (static_cast<size_t>(n) < m_constraints_line.size()) {
+                const std::string& constraint_info = m_constraints_line[n];
+                // Parse "filename:linenum   source" format, parts optional
+                std::string filename;
+                int linenum = 0;
+                std::string source = constraint_info;
+                const size_t colon_pos = constraint_info.find(':');
+                if (colon_pos != std::string::npos) {
+                    filename = constraint_info.substr(0, colon_pos);
+                    const size_t space_pos = constraint_info.find("   ", colon_pos);
+                    const size_t num_end
+                        = space_pos == std::string::npos ? constraint_info.size() : space_pos;
+                    linenum = std::atoi(
+                        constraint_info.substr(colon_pos + 1, num_end - colon_pos - 1).c_str());
+                    source = space_pos == std::string::npos
+                                 ? ""
+                                 : constraint_info.substr(space_pos + 3);
+                }
+                std::string msg = "UNSATCONSTR: Unsatisfied constraint";
+                const size_t start = source.find_first_not_of(" \t");
+                if (start != std::string::npos) msg += ": '" + source.substr(start) + "'";
+                VL_WARN_MT(filename.c_str(), linenum, "", msg.c_str());
+            }
+        }
+    }
+}
+
+bool VlRandomizer::parseSolution(std::iostream& os) {
     std::string sat;
     do { std::getline(os, sat); } while (sat == "");
-    if (sat == "unsat") {
-        if (!log) return false;
-        os << "(get-unsat-core) \n";
-        sat.clear();
-        std::getline(os, sat);
-        std::vector<int> numbers;
-        std::string currentNum;
-        for (const char c : sat) {
-            if (std::isdigit(c)) {
-                currentNum += c;
-                numbers.push_back(std::stoi(currentNum));
-                currentNum.clear();
-            }
-        }
-        if (Verilated::threadContextp()->warnUnsatConstr()) {
-            for (const int n : numbers) {
-                if (n < m_constraints_line.size()) {
-                    const std::string& constraint_info = m_constraints_line[n];
-                    // Parse "filename:linenum   source" format
-                    const size_t colon_pos = constraint_info.find(':');
-                    if (colon_pos != std::string::npos) {
-                        const std::string filename = constraint_info.substr(0, colon_pos);
-                        const size_t space_pos = constraint_info.find("   ", colon_pos);
-                        std::string linenum_str;
-                        std::string source;
-                        if (space_pos != std::string::npos) {
-                            linenum_str
-                                = constraint_info.substr(colon_pos + 1, space_pos - colon_pos - 1);
-                            source = constraint_info.substr(space_pos + 3);
-                        } else {
-                            linenum_str = constraint_info.substr(colon_pos + 1);
-                        }
-                        const int linenum = std::stoi(linenum_str);
-                        std::string msg = "UNSATCONSTR: Unsatisfied constraint";
-                        if (!source.empty()) {
-                            // Trim leading whitespace and add quotes
-                            const size_t start = source.find_first_not_of(" \t");
-                            if (start != std::string::npos) {
-                                msg += ": '" + source.substr(start) + "'";
-                            }
-                        }
-                        VL_WARN_MT(filename.c_str(), linenum, "", msg.c_str());
-                    } else {
-                        VL_PRINTF("%%Warning-UNSATCONSTR: Unsatisfied constraint: %s\n",
-                                  constraint_info.c_str());
-                    }
-                }
-            }
-        }
-        return false;
-    }
+    if (sat == "unsat") return false;
     if (sat != "sat") {
         std::stringstream msg;
         msg << "Internal: Solver error: " << sat;
@@ -930,13 +935,7 @@ void VlRandomizer::solveBefore(const std::string& beforeName, const std::string&
     m_solveBefore.emplace_back(beforeName, afterName);
 }
 
-bool VlRandomizer::nextPhased(VlRNG& rngr) {
-    // Phased solving for solve...before constraints.
-    // Variables are solved in layers determined by topological sort of the
-    // solve-before dependency graph. Each layer is solved with ALL constraints
-    // (preserving the solution space) but earlier layers' values are pinned.
-
-    // Step 1: Build dependency graph (before -> {after vars})
+bool VlRandomizer::buildSolveLayers(std::vector<std::vector<std::string>>& layersr) {
     std::map<std::string, std::set<std::string>> graph;
     std::map<std::string, int> inDegree;
     std::set<std::string> solveBeforeVars;
@@ -953,18 +952,12 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
         if (inDegree.find(after) == inDegree.end()) inDegree[after] = 0;
     }
 
-    // Compute in-degrees (after depends on before, so edge is before->after,
-    // but for solving order: before has no incoming edge from after)
-    // Actually: "solve x before y" means x should be solved first.
-    // Dependency: y depends on x. Edge: x -> y. in-degree of y increases.
+    // "solve x before y": edge x -> y, in-degree of y increases
     for (const auto& entry : graph) {
         for (const auto& to : entry.second) { inDegree[to]++; }
     }
 
-    // Step 2: Topological sort into layers (Kahn's algorithm)
-    std::vector<std::vector<std::string>> layers;
     std::set<std::string> remaining = solveBeforeVars;
-
     while (!remaining.empty()) {
         std::vector<std::string> currentLayer;
         for (const auto& var : remaining) {
@@ -981,32 +974,34 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
                 for (const auto& to : graph[var]) { inDegree[to]--; }
             }
         }
-        layers.push_back(std::move(currentLayer));
+        layersr.push_back(std::move(currentLayer));
     }
+    return true;
+}
 
-    // If only one layer, no phased solving needed -- fall through to normal path
-    // (all solve_before vars are independent, no actual ordering required)
-    if (layers.size() <= 1) {
-        // Clear solve_before temporarily and call normal next()
-        const auto saved = std::move(m_solveBefore);
-        m_solveBefore.clear();
-        const bool result = next(rngr);
-        m_solveBefore = std::move(saved);
-        return result;
-    }
-
-    // Step 3: Solve phase by phase
-    std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
-
-    bool needsAllLogic = false;
+const char* VlRandomizer::phasedLogic() const {
     for (const auto& var : m_vars) {
         if (var.second->dimension() == 0) continue;
-        if (!var.second->hasMatchingElements(m_arr_vars, var.second->name())) {
-            needsAllLogic = true;
-            break;
-        }
+        if (!var.second->hasMatchingElements(m_arr_vars, var.second->name())) return "ALL";
     }
-    const char* const logicp = needsAllLogic ? "ALL" : "QF_ABV";
+    return "QF_ABV";
+}
+
+bool VlRandomizer::nextPhased(VlRNG& rngr, const std::vector<std::string>& uniqueExprs) {
+    // Solve layer by layer with ALL constraints, pinning earlier layers
+    std::vector<std::vector<std::string>> layers;
+    if (!buildSolveLayers(layers)) return false;
+
+    // One layer: all solve_before vars are independent, no ordering required
+    if (layers.size() <= 1) return nextFlat(rngr, uniqueExprs);
+
+    return solvePhases(rngr, layers, uniqueExprs);
+}
+
+bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::string>>& layers,
+                               const std::vector<std::string>& uniqueExprs) {
+    std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
+    const char* const logicp = phasedLogic();
 
     for (size_t phase = 0; phase < layers.size(); phase++) {
         const bool isFinalPhase = (phase == layers.size() - 1);
@@ -1016,38 +1011,26 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
 
         os << "(set-option :produce-models true)\n";
         os << "(set-logic " << logicp << ")\n";
-        os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
-        os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
-
-        // Declare ALL variables
-        for (const auto& var : m_vars) {
-            if (var.second->dimension() > 0) {
-                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-                var.second->setArrayInfo(arrVarsp);
-            }
-            os << "(declare-fun " << var.first << " () ";
-            var.second->emitType(os);
-            os << ")\n";
-        }
+        emitDefines(os);
+        emitDeclares(os, false);
 
         for (const auto& entry : solvedValues) {
             os << "(assert (= " << entry.first << " " << entry.second << "))\n";
         }
-
-        // Assert ALL constraints
-        for (const std::string& constraint : m_constraints) {
-            os << "(assert (= #b1 " << constraint << "))\n";
-        }
+        emitAsserts(os, uniqueExprs, false);
 
         // Randc: exclude previously used values
         emitRandcExclusions(os);
+
+        // Soft constraints participate in every phase, priority-ordered.
+        relaxSoftConstraints(os);
 
         // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
         os << "(check-sat)\n";
 
         if (isFinalPhase) {
             // Final phase: use parseSolution to write ALL values to memory
-            bool sat = parseSolution(os, true);
+            const bool sat = parseSolution(os);
             if (!sat) {
                 if (!m_randcVarNames.empty()) m_randcUsedValues.clear();
                 os << "(reset)\n";
@@ -1055,111 +1038,101 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             }
             // Record solved randc values for future exclusion
             recordRandcValues();
-            // Diversity loop (same as normal next())
-            for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-                os << "(assert ";
-                randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-                os << ")\n";
-                os << "\n(check-sat)\n";
-                sat = parseSolution(os, false);
-                (void)sat;
-            }
+            solveDiversityXor(rngr, os);
             os << "(reset)\n";
         } else {
-            // Intermediate phase: extract values for current layer variables only
-            std::string satResponse;
-            do { std::getline(os, satResponse); } while (satResponse.empty());
-
-            if (satResponse != "sat") {
+            if (!checkSat(os)) {
                 os << "(reset)\n";
                 return false;
             }
-
-            // Build get-value variable list for this layer
-            const auto& layerVars = layers[phase];
-            auto getValueCmd = [&]() {
-                os << "(get-value (";
-                for (const auto& varName : layerVars) {
-                    const auto it = m_vars.find(varName);
-                    if (it->second->dimension() > 0) {
-                        auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-                        it->second->setArrayInfo(arrVarsp);
-                        // Enumerable arrays: query each element for a QF_ABV-safe pin.
-                        if (it->second->hasMatchingElements(m_arr_vars, it->second->name())) {
-                            it->second->emitGetValue(os);
-                            continue;
-                        }
-                    }
-                    os << varName << " ";
-                }
-                os << "))\n";
-            };
-
-            auto parseGetValue = [&]() -> bool {
-                // Parse ((name value) ...): one paren-depth counter drives every match.
-                char c;
-                os >> c;  // outer '('
-                if (c != '(') return false;
-                int depth = 1;
-                std::string tokens[2];
-                std::string cur;
-                int fields = 0;
-                auto flush = [&]() {
-                    if (cur.empty()) return;
-                    if (fields < 2) tokens[fields] = cur;
-                    ++fields;
-                    cur.clear();
-                };
-                while (depth > 0 && os.get(c)) {
-                    if (c == '(') {
-                        ++depth;
-                        if (depth >= 3) cur += c;
-                    } else if (c == ')') {
-                        --depth;
-                        if (depth >= 2) {
-                            cur += c;
-                        } else if (depth == 1) {
-                            flush();
-                            if (fields == 2) solvedValues[tokens[0]] = tokens[1];
-                            fields = 0;
-                        }
-                    } else if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-                        if (depth >= 3) {
-                            cur += c;
-                        } else {
-                            flush();
-                        }
-                    } else {
-                        cur += c;
-                    }
-                }
-                return true;
-            };
-
-            // Get baseline values (deterministic, always valid)
-            getValueCmd();
-            if (!parseGetValue()) {
+            if (!solvePhaseValues(os, rngr, layers[phase], solvedValues)) {
                 os << "(reset)\n";
                 return false;
             }
-
-            // Try diversity: add random constraint, re-check. If sat, get
-            // updated (more diverse) values. If unsat, keep baseline values.
-            os << "(assert ";
-            randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-            os << ")\n";
-            os << "(check-sat)\n";
-            satResponse.clear();
-            do { std::getline(os, satResponse); } while (satResponse.empty());
-            if (satResponse == "sat") {
-                getValueCmd();
-                parseGetValue();
-            }
-
             os << "(reset)\n";
         }
     }
 
+    return true;
+}
+
+// Intermediate phase: extract this layer's values, then try one diversity round
+bool VlRandomizer::solvePhaseValues(std::iostream& os, VlRNG& rngr,
+                                    const std::vector<std::string>& layerVars,
+                                    std::map<std::string, std::string>& solvedValuesr) {
+    const auto emitGetValueCmd = [&]() {
+        os << "(get-value (";
+        for (const auto& varName : layerVars) {
+            const auto it = m_vars.find(varName);
+            if (it->second->dimension() > 0) {
+                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                it->second->setArrayInfo(arrVarsp);
+                // Enumerable arrays: query each element for a QF_ABV-safe pin.
+                if (it->second->hasMatchingElements(m_arr_vars, it->second->name())) {
+                    it->second->emitGetValue(os);
+                    continue;
+                }
+            }
+            os << varName << " ";
+        }
+        os << "))\n";
+    };
+    // Get baseline values (deterministic, always valid)
+    emitGetValueCmd();
+    if (!parsePhaseValues(os, solvedValuesr)) return false;
+
+    // Try diversity: add random constraint, re-check. If sat, get
+    // updated (more diverse) values. If unsat, keep baseline values.
+    os << "(assert ";
+    randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+    os << ")\n";
+    os << "(check-sat)\n";
+    if (checkSat(os)) {
+        emitGetValueCmd();
+        (void)parsePhaseValues(os, solvedValuesr);
+    }
+    return true;
+}
+
+bool VlRandomizer::parsePhaseValues(std::istream& is,
+                                    std::map<std::string, std::string>& solvedValuesr) {
+    // Parse ((name value) ...): one paren-depth counter drives every match.
+    char c = 0;
+    is >> c;  // outer '('
+    if (c != '(') return false;
+    int depth = 1;
+    std::string tokens[2];
+    std::string cur;
+    int fields = 0;
+    const auto flush = [&]() {
+        if (cur.empty()) return;
+        if (fields < 2) tokens[fields] = cur;
+        ++fields;
+        cur.clear();
+    };
+    while (depth > 0 && is.get(c)) {
+        if (c == '(') {
+            ++depth;
+            if (depth >= 3) cur += c;
+        } else if (c == ')') {
+            --depth;
+            if (depth >= 2) {
+                cur += c;
+            } else if (depth == 1) {
+                flush();
+                if (fields == 2) solvedValuesr[tokens[0]] = tokens[1];
+                fields = 0;
+            }
+        } else if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+            if (depth >= 3) {
+                cur += c;
+            } else {
+                flush();
+            }
+        } else {
+            cur += c;
+        }
+    }
     return true;
 }
 

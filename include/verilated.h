@@ -420,12 +420,7 @@ protected:
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
         bool m_gotError = false;  // A $finish statement executed
-        // A $finish or $stop statement executed; also read by worker threads
-        std::atomic<bool> m_gotFinish{false};
-        // Posted $finish/$stop requests not yet executed via the thread queue
-        std::atomic<uint32_t> m_finishPending{0};
-        uint64_t m_finishPendingTime = 0;  // Time of the first posted request
-        bool m_finishPendingTimeValid = false;  // m_finishPendingTime is stamped
+        bool m_gotFinish = false;  // A $finish or $stop statement executed
         bool m_quiet = false;  // Quiet, no summary report
         // Slow path
         int8_t m_timeunit;  // Time unit as 0..15
@@ -450,6 +445,10 @@ protected:
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        // A worker queues $finish before the main thread callback can set m_gotFinish.
+        std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
+        std::atomic<uint64_t> m_finishPendingTime{0};  // Time of the first queued callback
+        std::atomic<bool> m_finishPendingTimeValid{false};  // m_finishPendingTime is stamped
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
@@ -584,20 +583,9 @@ public:
     /// Set if got a $stop or non-fatal error
     void gotError(bool flag) VL_MT_SAFE;
     /// Return if got a $finish or $stop/error
-    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish.load(std::memory_order_relaxed); }
+    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
     /// Set if got a $finish or $stop/error
     void gotFinish(bool flag) VL_MT_SAFE;
-    /// Return if a $finish/$stop was requested, even if not yet executed
-    bool finishPending() const VL_MT_SAFE {
-        return m_s.m_finishPending.load(std::memory_order_relaxed)
-               || m_s.m_gotFinish.load(std::memory_order_relaxed);
-    }
-    /// Record a posted $finish/$stop request awaiting execution
-    void finishPendingInc() VL_MT_SAFE;
-    /// Balance finishPendingInc once the posted request ran or was ignored
-    void finishPendingDec() VL_MT_SAFE;
-    /// Return the time of the first termination request, else the current time
-    uint64_t finishPendingTime() const VL_MT_SAFE;
     /// Check if generated final() code is executing
     bool executingFinal() const VL_MT_SAFE;
     /// Set if generated final() code is executing
@@ -701,6 +689,24 @@ public:
     void scopesDump() const VL_MT_SAFE;
 
     // METHODS - public but for internal use only
+
+    // Internal: Track $finish/$stop callbacks queued by worker threads, including executed ones
+    bool finishPending() const VL_MT_SAFE {
+        return m_ns.m_finishPending.load() != 0 || gotFinish();
+    }
+    void finishPendingInc() VL_MT_SAFE {
+        ++m_ns.m_finishPending;
+        if (!m_ns.m_finishPendingTimeValid.exchange(true)) m_ns.m_finishPendingTime = time();
+    }
+    void finishPendingDec() VL_MT_SAFE {
+        const uint32_t previous = m_ns.m_finishPending.fetch_sub(1);
+        assert(previous > 0);
+        if (previous == 1 && !gotFinish()) m_ns.m_finishPendingTimeValid = false;
+    }
+    // Internal: Time of the first queued request, else the current time
+    uint64_t finishPendingTime() const VL_MT_SAFE {
+        return m_ns.m_finishPendingTimeValid ? m_ns.m_finishPendingTime.load() : time();
+    }
 
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
