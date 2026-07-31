@@ -55,7 +55,8 @@ class OrderMoveGraphBuilder final {
 
     // MEMBERS
     OrderGraph& m_orderGraph;  // Input OrderGraph
-    std::unique_ptr<OrderMoveGraph> m_moveGraphp{new OrderMoveGraph};  // Output OrderMoveGraph
+    // Output OrderMoveGraph
+    std::unique_ptr<OrderMoveGraph> m_moveGraphp{new OrderMoveGraph{m_orderGraph}};
     // Map from Trigger reference AstSenItem to the original AstSenTree
     const V3Order::TrigToSenMap& m_trigToSen;
     // Storage for domain -> OrderMoveVertex, maps held in OrderVarVertex::userp()

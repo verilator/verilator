@@ -96,7 +96,6 @@
 #include "V3Sampled.h"
 #include "V3Sched.h"
 #include "V3Scope.h"
-#include "V3Scoreboard.h"
 #include "V3Slice.h"
 #include "V3Split.h"
 #include "V3SplitVar.h"
@@ -744,8 +743,6 @@ static bool verilate(const string& argString) {
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
-        V3ScoreboardBase::selfTest();
-        V3Order::selfTestParallel();
         V3ExecGraph::selfTest();
         V3PreShell::selfTest();
         V3Broken::selfTest();

@@ -51,14 +51,9 @@ void processDomains(AstNetlist* netlistp,  //
                     const std::string& tag,  //
                     const ExternalDomainsProvider& externalDomains);
 
-AstNodeStmt* createSerial(OrderMoveGraph& moveGraph,  //
-                          const std::string& tag,  //
-                          bool slow);
+AstNodeStmt* createSerial(OrderMoveGraph& moveGraph, const std::string& tag, bool slow);
 
-AstNodeStmt* createParallel(const OrderGraph& orderGraph,  //
-                            OrderMoveGraph& moveGraph,  //
-                            const std::string& tag,  //
-                            bool slow);
+AstNodeStmt* createParallel(OrderMoveGraph& moveGraph, const std::string& tag, bool slow);
 
 };  // namespace V3Order
 
