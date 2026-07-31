@@ -2293,6 +2293,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         // methods work under a generage block?
     }
     void visit(AstBegin* nodep) override {}
+    // Prepend the bucket preamble stmts stored on user3p by lowerDistConstraints to the
+    // statements that will become the body of the generated AstForeach, so the per-element
+    // bucket draw is declared and evaluated in the same scope as its references.
+    static AstNode* prependDistPreamble(AstConstraintForeach* nodep, AstNode* bodyp) {
+        AstNode* const preamblep = nodep->user3p();
+        if (!preamblep) return bodyp;
+        nodep->user3p(nullptr);
+        preamblep->addNext(bodyp);
+        return preamblep;
+    }
     void visit(AstConstraintForeach* nodep) override {
         // Convert to plain foreach
         FileLine* const fl = nodep->fileline();
@@ -2306,25 +2316,22 @@ class ConstraintExprVisitor final : public VNVisitor {
             cstmtp->add("ret += ");
             cstmtp->add(itemp);
             cstmtp->add(";");
+            AstNode* const bodyp = prependDistPreamble(nodep, cstmtp);
             AstCExpr* const cexprp = new AstCExpr{fl};
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
             cexprp->add(new AstBegin{
-                fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), cstmtp}, true});
+                fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
             cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
             iterateAndNextNull(nodep->bodyp());
-            AstNode* bodyp = nodep->bodyp()->unlinkFrBackWithNext();
-            // Prepend bucket preamble stmts stored by lowerDistConstraints (foreach case)
-            if (AstNode* const preamblep = nodep->user3p()) {
-                preamblep->addNext(bodyp);
-                bodyp = preamblep;
-                nodep->user3p(nullptr);
-            }
+            AstNode* const bodyp
+                = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
             nodep->replaceWith(new AstBegin{
                 fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
         }
+        UASSERT_OBJ(!nodep->user3p(), nodep, "Dist bucket preamble not injected into foreach");
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstConstraintBefore* nodep) override {
