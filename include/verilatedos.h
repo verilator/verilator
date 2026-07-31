@@ -332,10 +332,19 @@
 
 #ifdef VL_GCOV
 extern "C" void __gcov_dump();
+extern "C" void __gcov_reset();
 // Dump internal code coverage data before e.g. std::abort()
 # define VL_GCOV_DUMP() __gcov_dump()
+// Dump, then re-arm dumping; dumping is one-shot, so without the reset a dump
+// on a nonfatal path would silently discard everything counted after it
+# define VL_GCOV_DUMP_RESET() \
+        do { \
+            __gcov_dump(); \
+            __gcov_reset(); \
+        } while (false)
 #else
 # define VL_GCOV_DUMP()
+# define VL_GCOV_DUMP_RESET()
 #endif
 
 //=========================================================================
