@@ -23,7 +23,7 @@ runs = [
     ('die_status_at', 4, 1),  # solver exits with a soft constraint status pending
     ('die_status_at', 7, 2),  # solver exits between the status and the model read
     ('mute_at', 3, 2),  # solver stays running but stops answering
-    ('garbage_at', 2, 1),  # solver answers, but not with an S-expression
+    ('garbage_at', 2, 3),  # solver answers, but not with an S-expression
 ]
 
 for mode, at, npass in runs:

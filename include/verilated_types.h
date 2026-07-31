@@ -278,6 +278,7 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 // Random Number Generator with internal state
 class VlRNG final {
     std::array<uint64_t, 2> m_state;
+    uint64_t m_reseeds = 0;  // Times the state was set from outside
 
 public:
     // The default constructor simply sets state, to avoid vl_rand64()
@@ -286,6 +287,8 @@ public:
     VlRNG() VL_MT_SAFE;
     explicit VlRNG(uint64_t seed) VL_PURE;
     void srandom(uint64_t n) VL_MT_UNSAFE;
+    // A count, not the state itself, so restoring the same state still shows up
+    uint64_t reseeds() const VL_MT_UNSAFE { return m_reseeds; }
     std::string get_randstate() const VL_MT_UNSAFE;
     void set_randstate(const std::string& state) VL_MT_UNSAFE;
     uint64_t rand64() VL_MT_UNSAFE;
