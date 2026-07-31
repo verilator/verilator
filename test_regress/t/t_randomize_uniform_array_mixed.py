@@ -12,6 +12,9 @@ import randomize_uniform_common
 
 test.scenarios('simulator')
 
-SOLUTIONS = list(range(1 << 6))  # value < (1 << m_size), m_size set to 6 at run time
+# (sel, arr[0], arr[1]): sel==1 -> arr[0] > arr[1]; sel==0 -> arr[0] <= arr[1]
+SOLUTIONS = [
+    '%d %d %d' % ((1 if arr0 > arr1 else 0), arr0, arr1) for arr0 in range(8) for arr1 in range(8)
+]
 
-randomize_uniform_common.run(test, SOLUTIONS, r'\d+', key=int)
+randomize_uniform_common.run(test, SOLUTIONS, r'\d+ \d+ \d+')

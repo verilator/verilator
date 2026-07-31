@@ -578,6 +578,8 @@ void VlRandomVar::emitExtract(std::ostream& s, int i) const {
     s << " ((_ extract " << i << ' ' << i << ") " << m_name << ')';
 }
 void VlRandomVar::emitType(std::ostream& s) const { s << "(_ BitVec " << width() << ')'; }
+// A scalar var IS its only element, so "element j" is just the whole var.
+void VlRandomVar::emitElement(std::ostream& s, int /*j*/) const { s << ' ' << m_name; }
 // Serialize the current runtime value as an SMT-LIB binary literal. Used by
 // randomize(null) to pin a var via `(assert (= var #b...))`. Binary (#b)
 // rather than hex (#x) sidesteps SMT-LIB's hex-width-multiple-of-4 rule.
@@ -707,6 +709,15 @@ size_t VlRandomizer::hashConstraints(const std::vector<std::string>& extras) con
     for (const auto& c : extras) {
         h ^= std::hash<std::string>{}(c) + 0x9e3779b9 + (h << 6) + (h >> 2);
     }
+    for (const auto& var : m_vars) {
+        h ^= std::hash<std::string>{}(var.first) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<int>{}(var.second->width()) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<int>{}(var.second->dimension()) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    }
+    // Keys are one per array element, so a resized queue gets a different hash.
+    for (const auto& elem : m_arr_vars) {
+        h ^= std::hash<std::string>{}(elem.first) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    }
     return h;
 }
 
@@ -739,11 +750,35 @@ void VlRandomizer::recordRandcValues() {
     }
 }
 
-bool VlRandomizer::next_check_only(VlRNG& rngr) { return nextRandomize(rngr, true); }
+bool VlRandomizer::isFrozenVar(const std::string& name, const VlRandomVar& var) const {
+    if (!var.randModeIdxNone()) {
+        const VlQueue<CData>* const modep
+            = m_staticVars.count(name) ? m_static_randmodep : m_randmodep;
+        // modep is never null in practice, the fallthrough matches the return below
+        if (VL_UNCOVERABLE(!modep)) return m_disabledVars.count(name) != 0;
+        if (!modep->at(var.randModeIdx())) return true;
+    }
+    // Struct/nested members are disabled via m_disabledVars.
+    // They have no randModeIdx of their own.
+    return m_disabledVars.count(name) != 0;
+}
 
-bool VlRandomizer::next(VlRNG& rngr) { return nextRandomize(rngr, false); }
+bool VlRandomizer::hasFrozenVar() const {
+    bool mayBeFrozen = m_randmodep || m_static_randmodep;
+    // A disabled var means the class uses rand_mode, so it never shows up without one
+    if (VL_UNCOVERABLE(!mayBeFrozen && !m_disabledVars.empty())) mayBeFrozen = true;
+    if (!mayBeFrozen) return false;
+    for (const auto& var : m_vars) {
+        if (isFrozenVar(var.first, *var.second)) return true;
+    }
+    return false;
+}
 
-bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
+bool VlRandomizer::next_check_only(VlRNGReseeds& rngr) { return nextRandomize(rngr, true); }
+
+bool VlRandomizer::next(VlRNGReseeds& rngr) { return nextRandomize(rngr, false); }
+
+bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
     if (!checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
     if (checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
     VlSolverSession& sess = s_solverSession;
@@ -762,6 +797,9 @@ bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
         }
     }
 
+    // Reseeded from outside, so everything cached came from the old seed.
+    if (m_ug2.rngReseeds != rngr.reseeds()) m_ug2 = Unigen2State{};
+
     // Pinned vars make phase ordering moot; skip phased path in check-only.
     bool result;
     if (!m_checkOnly && !m_solveBefore.empty()) {
@@ -769,6 +807,7 @@ bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
     } else {
         result = nextFlat(rngr, sess, uniqueExprs);
     }
+    m_ug2.rngReseeds = rngr.reseeds();
     m_checkOnly = false;
     return result;
 }
@@ -841,6 +880,10 @@ void VlRandomizer::emitAsserts(std::ostream& os, const std::vector<std::string>&
 bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
                             const std::vector<std::string>& uniqueExprs)
     VL_REQUIRES(sess.m_mutex) {
+    if (m_randcVarNames.empty() && !m_checkOnly && !hasFrozenVar()
+        && unigen2(rngr, sess, uniqueExprs)) {
+        return true;
+    }
     VlSolverTxn txn{sess};
     if (!txn.ok()) return false;
     std::iostream& os = sess.os();
@@ -889,6 +932,299 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
         return true;
     }
     return false;  // Should not reach here
+}
+
+// Enumerate one cell of the solution space, and cache the solutions in m_ug2.loThreshWitnesses.
+// The next call with the same constraint set will drain the cache before running the full
+// mechanism again.
+bool VlRandomizer::unigen2(VlRNG& rngr, VlSolverSession& sess,
+                           const std::vector<std::string>& uniqueExprs) VL_REQUIRES(sess.m_mutex) {
+    if (!m_softConstraints.empty()) return false;
+
+    const size_t currentHash = hashConstraints(uniqueExprs);
+    // Params and batch are computed for specific constraint set, so drop them
+    // once it changes.
+    if (m_ug2.paramHash != currentHash) {
+        m_ug2.loThreshWitnesses.clear();
+        m_ug2.paramsValid = false;
+        m_ug2.isLargeSpace = false;
+        m_ug2.paramHash = currentHash;
+        // First sighting of this constraint set.
+        // Decline now and let the next call with the same set run UG2.
+        return false;
+    }
+
+    // Nothing cached from a previous UG2 run, so refill the batch first.
+    if (m_ug2.loThreshWitnesses.empty()) {
+        VlSolverTxn txn{sess};
+        if (!txn.ok()) return false;
+        std::iostream& solver = sess.os();
+
+        solver << "(set-option :produce-models true)\n";
+        solver << "(set-logic QF_ABV)\n";
+        emitDefines(solver);
+        emitDeclares(solver, false);
+        emitAsserts(solver, uniqueExprs, false);
+
+        if (!m_ug2.paramsValid) {
+            // Searches once per constraint set for how finely to cut the space, and
+            // caches parameters
+            if (!estimateParameters(sess, rngr)) return false;
+            m_ug2.paramsValid = true;
+            m_ug2.lastSuccessI = -1;  // new params, so the old hint no longer applies
+        }
+
+        // generateSamples() always finds a candidate in practice
+        if (VL_UNCOVERABLE(!generateSamples(sess, rngr))) return false;
+    }
+
+    // Cached or just refilled - there is a witness to write into the variables
+    Witness witness = std::move(m_ug2.loThreshWitnesses.back());
+    m_ug2.loThreshWitnesses.pop_back();
+    writeBackWitness(witness);
+    return true;
+}
+
+void VlRandomizer::writeBackWitness(const Witness& witness) {
+    for (const auto& varEntry : witness) {
+        const auto& varp = m_vars.at(varEntry.first);
+        for (const auto& elemEntry : varEntry.second) {
+            if (varp->dimension() > 0) {
+                // set() needs current array info, and a witness from the
+                // cached batch skips the solver, so nothing else sets it.
+                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                varp->setArrayInfo(arrVarsp);
+                std::ostringstream idxStream;
+                idxStream << "#x" << std::hex << std::setw(8) << std::setfill('0')
+                          << elemEntry.first;
+                varp->set(idxStream.str(), elemEntry.second);
+            } else {
+                varp->set("", elemEntry.second);
+            }
+        }
+    }
+}
+
+// Ask for a solution, block it, ask again - so every answer is a new one.
+int VlRandomizer::bsat(VlSolverSession& sess, size_t bound, std::vector<Witness>& witnesses,
+                       VlRNG* diversifyRngp) VL_REQUIRES(sess.m_mutex) {
+    std::iostream& solver = sess.os();
+    witnesses.clear();
+    witnesses.reserve(bound);
+    // get-value responses preserve request order, so build the (var,
+    // element) order once and read results back positionally.
+    std::vector<std::pair<std::string, int>>& order = m_ug2.bsatOrder;
+    order.clear();
+    for (const auto& var : m_vars) {
+        const int elementCount = var.second->totalWidth() / var.second->width();
+        for (int j = 0; j < elementCount; ++j) order.emplace_back(var.first, j);
+    }
+
+    int assumeNum = 0;
+    while (witnesses.size() < bound) {
+        VlSolverStatus status = VlSolverStatus::FAIL;
+        if (diversifyRngp && !witnesses.empty()) {
+            // To increase the randomization, add an assumption for one var in one specific call
+            const Witness& prev = witnesses.back();
+            const std::pair<std::string, int>& pick
+                = order[VL_RANDOM_RNG_I(*diversifyRngp) % order.size()];
+            solver << "(declare-fun d" << assumeNum << " () Bool)\n";
+            solver << "(assert (= d" << assumeNum << " (not (=";
+            m_vars.at(pick.first)->emitElement(solver, pick.second);
+            solver << ' ' << prev.at(pick.first).at(pick.second) << "))))\n";
+            solver << "(check-sat-assuming (d" << assumeNum << "))\n";
+            ++assumeNum;
+            status = sess.readStatus();
+        }
+        if (status != VlSolverStatus::SAT) {
+            solver << "(check-sat)\n";
+            status = sess.readStatus();
+        }
+        if (status != VlSolverStatus::SAT) {
+            // "unsat" is the cell running out; anything else is the solver giving up
+            if (VL_UNLIKELY(status != VlSolverStatus::UNSAT)) return -1;
+            break;
+        }
+
+        solver << "(get-value (";
+        for (const auto& entry : order) m_vars.at(entry.first)->emitElement(solver, entry.second);
+        solver << "))\n";
+
+        // Read the whole balanced reply first, so a malformed one cannot desync the pipe
+        std::string reply;
+        if (VL_UNLIKELY(!sess.readSExpr(reply))) return -1;
+        std::istringstream is{reply};
+        char c = 0;
+        is >> c;  // readSExpr only returns a reply that opens with '('
+        Witness witness;
+        for (const auto& entry : order) {
+            if (VL_UNLIKELY(!(is >> c) || c != '(')) return -1;  // LCOV_EXCL_BR_LINE
+            std::string exprHead;
+            is >> exprHead;  // bare var name, or literally "(select" if an array element
+            const bool isSelect = exprHead == "(select";
+            if (isSelect) readUntilBalanced(is);
+            if (VL_UNLIKELY(!isSelect && exprHead != entry.first)) return -1;
+            std::string value;
+            std::getline(is, value, ')');
+            // The batch outlives this call, so reject a bad value before it is cached
+            if (VL_UNLIKELY(!validSMTNum(value))) return -1;
+            witness[entry.first][entry.second] = value;
+        }  // LCOV_EXCL_BR_LINE
+        if (VL_UNLIKELY(!(is >> c) || c != ')')) return -1;  // LCOV_EXCL_BR_LINE
+
+        // Forbid this exact assignment so the next
+        // (check-sat) is forced to find a genuinely different witness.
+        solver << "(assert (not (and";
+        for (const auto& varEntry : witness) {
+            for (const auto& elemEntry : varEntry.second) {
+                solver << " (=";
+                m_vars.at(varEntry.first)->emitElement(solver, elemEntry.first);
+                solver << ' ' << elemEntry.second << ")";
+            }
+        }
+        solver << ")))\n";
+        witnesses.push_back(std::move(witness));
+    }  // LCOV_EXCL_BR_LINE
+    return static_cast<int>(witnesses.size());
+}
+
+// Each equation selects a random subset of bits by a coin-flip for each bit, and then sets the XOR
+// of those bits to a random value.
+void VlRandomizer::unigenXors(std::iostream& solver, VlRNG& rngr, int bits) {
+    if (bits <= 0) return;  // 0 hash constraints == no extra assertion needed at all
+    std::vector<bool> target(bits);
+    for (int k = 0; k < bits; ++k) target[k] = VL_RANDOM_RNG_I(rngr) & 1;
+
+    solver << "(assert ";
+    solver << "(= #b";
+    for (int k = 0; k < bits; ++k) solver << (target[k] ? '1' : '0');
+    if (bits > 1) solver << " (concat";
+    for (int k = 0; k < bits; ++k) {
+        // #b0 seeds the bvxor chain so it's always >=2 operands (valid even
+        // if this equation's coin flips happen to select zero/one bits).
+        // 0 xor 0 == 0, 0 xor 1 == 1, so the seed cannot change the result.
+        solver << " (bvxor #b0";
+        for (const auto& var : m_vars) {
+            for (int j = 0; j < var.second->totalWidth(); ++j) {
+                if (VL_RANDOM_RNG_I(rngr) & 1) var.second->emitExtract(solver, j);
+            }
+        }
+        solver << ')';
+    }
+    if (bits > 1) solver << ')';
+    solver << "))\n";
+}
+
+// --- UniGen2 constants ---
+static constexpr double ug2Kappa = 0.638;  // Parameter controlling the tolerance of the uniformity
+                                           // guarantee. Set at the paper's default value.
+// Values used in the large space mode:
+static constexpr int ug2HiThreshLargeSpace = 16;  // Num of solutions to enumerate
+static constexpr int ug2BatchLargeSpace = 16;  // Num of solutions to cache
+static constexpr int ug2HashBitsLargeSpace
+    = 10;  // Num of XORs to add to the solver, also cap of the bsat() search
+
+bool VlRandomizer::estimateParameters(VlSolverSession& sess, VlRNG& rngr)
+    VL_REQUIRES(sess.m_mutex) {
+    std::iostream& solver = sess.os();
+    // Below formulas are taken from the UniGen2 paper, Sec. 4, Algorithm 1
+    const double pivot = ceil(4.03 * pow((1 + 1 / ug2Kappa), 2));
+    m_ug2.hiThresh = static_cast<int>(ceil(1 + sqrt(2) * (1 + ug2Kappa) * pivot));
+    m_ug2.loThresh = static_cast<int>(floor(pivot / (sqrt(2) * (1 + ug2Kappa))));
+
+    // A space so small can never reach loThresh, so enumerate it whole instead.
+    // push/pop keeps bsat() blocking clauses out of that search.
+    solver << "(push 1)\n";
+    std::vector<Witness> tinyWitnesses;
+    const int tinyCellSize = bsat(sess, 61, tinyWitnesses);
+    solver << "(pop 1)\n";
+    if (tinyCellSize < 0) return false;
+    if (tinyCellSize >= 1 && tinyCellSize <= 60) {
+        m_ug2.hashBits = 0;
+        m_ug2.loThresh = tinyCellSize;  // batch = the whole enumerated set
+        m_ug2.hiThresh = tinyCellSize + 1;
+        return true;
+    }
+
+    int totalBits = 0;
+    for (const auto& var : m_vars) totalBits += var.second->totalWidth();
+    int solCount = 0;
+    // Cap the search with ug2HashBitsLargeSpace: Larger spaces cannot be hashed in useful
+    // time, so stop and just use fixed number of XORs. Limit set empirically from measured solve
+    // times.
+    const int iMax = totalBits < ug2HashBitsLargeSpace ? totalBits : ug2HashBitsLargeSpace;
+    std::vector<Witness> witnesses;  // Reused across trials; bsat() clears it
+    for (int i = 1; i <= iMax; ++i) {
+        solver << "(push 1)\n";
+        unigenXors(solver, rngr, i);
+        const int bound = 61;
+        solCount = bsat(sess, bound, witnesses);
+        if (solCount < 0) {
+            solver << "(pop 1)\n";
+            return false;
+        }
+        if (solCount >= 1 && solCount < bound) {
+            m_ug2.hashBits
+                = static_cast<int>(round(log2(solCount) + i + log2(1.8)
+                                         - log2(pivot)));  // formula taken from the Unigen2 paper
+            solver << "(pop 1)\n";
+            return true;
+        }
+        solver << "(pop 1)\n";
+    }
+    m_ug2.isLargeSpace = true;
+    m_ug2.hashBits = ug2HashBitsLargeSpace;
+    m_ug2.hiThresh = ug2HiThreshLargeSpace;
+    return true;
+}
+
+bool VlRandomizer::generateSamples(VlSolverSession& sess, VlRNG& rngr) VL_REQUIRES(sess.m_mutex) {
+    std::iostream& solver = sess.os();
+    // Try whichever of hashBits number worked last call first
+    // (UniGen2 Sec. 4, "leapfrogging" in spirit but without weakening guarantees).
+    // On a large space no cell was ever enumerable, so just try most hash bits first for the
+    // smallest cell.
+    const int lowestCount = m_ug2.hashBits - 2;
+    int candidates[3] = {lowestCount, lowestCount + 1, lowestCount + 2};
+    if (m_ug2.isLargeSpace) {
+        candidates[0] = m_ug2.hashBits;
+        candidates[1] = m_ug2.hashBits - 1;
+        candidates[2] = m_ug2.hashBits - 2;
+    } else if (m_ug2.lastSuccessI >= 0) {
+        std::swap(candidates[0], candidates[m_ug2.lastSuccessI - lowestCount]);
+    }
+
+    std::vector<Witness> witnesses;  // Reused across candidates; bsat() clears it
+    for (int t = 0; t < 3; ++t) {  // LCOV_EXCL_BR_LINE - Always finds a candidate in practice
+        const int i = candidates[t];
+        if (i < 0) continue;  // hashBits below 2 leaves fewer than three counts to try
+
+        solver << "(push 1)\n";
+        unigenXors(solver, rngr, i);
+        const int solCount
+            = bsat(sess, m_ug2.hiThresh, witnesses, m_ug2.isLargeSpace ? &rngr : nullptr);
+        if (m_ug2.loThresh <= solCount && (solCount < m_ug2.hiThresh || m_ug2.isLargeSpace)) {
+            m_ug2.lastSuccessI = i;
+            const int take
+                = m_ug2.isLargeSpace ? std::min(ug2BatchLargeSpace, solCount) : m_ug2.loThresh;
+            // Pick them at random rather than the first ones enumerated -
+            // partial Fisher-Yates, so the picks stay distinct.
+            m_ug2.loThreshWitnesses.clear();
+            std::vector<int> indices(witnesses.size());
+            for (size_t k = 0; k < indices.size(); ++k) indices[k] = static_cast<int>(k);
+            for (int k = 0; k < take; ++k) {
+                const size_t pick
+                    = static_cast<size_t>(k) + (VL_RANDOM_RNG_I(rngr) % (indices.size() - k));
+                std::swap(indices[k], indices[pick]);
+                m_ug2.loThreshWitnesses.push_back(std::move(witnesses[indices[k]]));
+            }
+            solver << "(pop 1)\n";
+            return true;
+        }
+        solver << "(pop 1)\n";
+    }
+    m_ug2.lastSuccessI = -1;  // LCOV_EXCL_LINE
+    return false;  // LCOV_EXCL_LINE
 }
 
 void VlRandomizer::solveDiversity(VlRNG& rngr, VlSolverSession& sess) VL_REQUIRES(sess.m_mutex) {
@@ -1319,8 +1655,8 @@ bool VlRandomizer::nextPhased(VlRNG& rngr, VlSolverSession& sess,
     std::vector<std::vector<std::string>> layers;
     if (!buildSolveLayers(layers)) return false;
 
-    // One layer: all solve_before vars are independent, no ordering required
-    if (layers.size() <= 1) return nextFlat(rngr, sess, uniqueExprs);
+    // No layers means no solve_before pair survived
+    if (layers.empty()) return nextFlat(rngr, sess, uniqueExprs);
 
     VlSolverTxn txn{sess};
     if (!txn.ok()) return false;

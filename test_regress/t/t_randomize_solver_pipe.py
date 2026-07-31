@@ -67,4 +67,27 @@ test.file_grep(logfile, r'NPASS=(\d+)', 11)
 test.file_grep_not(logfile, r'Solver failed repeatedly')
 test.file_grep_not(logfile, r'Solver died')
 
+# A reply the unigen2 sampler can't read while it measures the solution space.
+# Falls back to the plain solve, so every randomize still succeeds
+logfile = test.obj_dir + '/sim_ug2_estimate.log'
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=model_trunc TAMPER_AT=8 ')
+test.file_grep(logfile, r'NPASS=(\d+)', 12)
+
+# A value the sampler can't parse, and a status it can't use, seen while it
+# enumerates a cell.
+logfile = test.obj_dir + '/sim_ug2_value.log'
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=bad_base TAMPER_AT=5 ')
+test.file_grep(logfile, r'NPASS=(\d+)', 9)
+
+# A reply naming a variable the sampler didn't ask for.
+logfile = test.obj_dir + '/sim_ug2_var.log'
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=unknown_var TAMPER_AT=10 ')
+test.file_grep(logfile, r'NPASS=(\d+)', 12)
+
 test.passes()

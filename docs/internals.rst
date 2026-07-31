@@ -1082,9 +1082,17 @@ solver gets a setup query, then the definition of variables, then all the
 constraints (SMT assertions) about the variables. Since the solver has no
 information about the class' PRNG state, if the problem is satisfiable, the
 solution space is further constrained by adding extra random constraints,
-and querying the values satisfying the problem statement. The constraint is
-currently constructed as fixing a simple xor of randomly chosen bits of the
-variables being randomized.
+and querying the values satisfying the problem statement. The constraints
+are currently built by the UniGen2 algorithm ("On Parallel Scalable Uniform
+SAT Witness Generation", Chakraborty et al.). It first works out how many
+random xor equations are needed to split the solution space into cells of a
+size worth enumerating, then draws one cell and enumerates it, which gives
+a near-uniform sample of the whole space. Both the estimate and the
+leftover solutions are cached, so the following calls are answered without
+asking the solver again. Cases outside its assumptions, such as ``randc``
+variables or soft constraints, fall back to pinning every free bit to a
+random value, or, when arrays are involved, to asserting four random xor
+equations in a row.
 
 The runtime classes used for handling the randomization are defined in
 ``verilated_random.h`` and ``verilated_random.cpp``.
