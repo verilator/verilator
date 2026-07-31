@@ -445,6 +445,8 @@ protected:
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        // A worker queues $finish before the main thread callback can set m_gotFinish.
+        std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
@@ -683,6 +685,14 @@ public:
     void scopesDump() const VL_MT_SAFE;
 
     // METHODS - public but for internal use only
+
+    // Internal: Track $finish callbacks queued by worker threads
+    bool finishPending() const VL_MT_SAFE { return m_ns.m_finishPending.load() != 0; }
+    void finishPendingInc() VL_MT_SAFE { ++m_ns.m_finishPending; }
+    void finishPendingDec() VL_MT_SAFE {
+        const uint32_t previous = m_ns.m_finishPending.fetch_sub(1);
+        assert(previous > 0);
+    }
 
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
