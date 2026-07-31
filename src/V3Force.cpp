@@ -15,20 +15,33 @@
 //*************************************************************************
 //  V3Force's Transformations:
 //
+//  Every force target on a variable is given a slot in that variable's VlForceVec.  A plain
+//  bitwise variable is addressed by bit range, so a slot is a bit.  Anything else is addressed
+//  by leaf: an aggregate is laid out depth first, and a leaf's slot is the member offsets its
+//  path crosses plus each element index times that element's own slot count.  One numbering
+//  covers 's.arr[2]', 's.scalar' and 'sa[0].arr[2]' alike, and a run-time element index
+//  computes its slot with the same arithmetic.
+//
 //  For each forceable var/net "<name>":
 //    - Create <name>__VforceVec (VlForceVec) to track active force ranges
 //    - Create <name>__VforceRHS<ID> vars to hold RHS shadow values
 //    - Add continuous assignments: <name>__VforceRHS<ID> = RHS
 //
-//  For each `force <name>[range] = <RHS>` with ID:
-//    - <name>__VforceVec.addForce(lsb, msb, &__VforceRHS, rhsLsb)
+//  For each `force <name><path> = <RHS>` with ID:
+//    - <name>__VforceVec.addForce(slot_lsb, slot_msb, &__VforceRHS, rhsLsb)
 //
-//  For each `release <name>[range]`:
-//    - If not continuously driven: <name> = VlForceVec::read(<name>, __VforceVec)
-//    - <name>__VforceVec.release(lsb, msb)
+//  For each `release <name><path>`:
+//    - If not continuously driven: <name><path> = VlForceVec::read(<name><path>, __VforceVec)
+//    - <name>__VforceVec.release(slot_lsb, slot_msb)
 //
-//  For each read of <name>:
-//    - Replace with: VlForceVec::read(<name>, __VforceVec)
+//  For each read of <name><path>:
+//    - Replace with: VlForceVec::read(<name><path>, __VforceVec, slot)
+//
+//  A whole-variable read cannot be one such call when the variable is, or holds, an unpacked
+//  struct or union, as its leaves are not one uniform stride.  Those variables get a
+//  <name>__VforceSlotRd shadow, kept up to date by copying the variable and then overriding
+//  only the paths that are forced, and whole-variable reads are pointed at it.  A force or
+//  release naming such an aggregate is lowered to one target per leaf before any of the above.
 //
 //*************************************************************************
 
@@ -54,17 +67,17 @@ public:
     struct ForceInfo final : ForceRange {
         // MEMBERS
         int m_forceId = 0;  // Unique (per signal) variable of this force assignment
-        bool m_hasArraySel = false;  // If this has an array select on LHS
         AstVarScope* m_rhsVarVscp = nullptr;  // Scope of the var containing RHSID
         AstNodeExpr* m_rhsExprp = nullptr;  // Expression on RHS of this force assignment
+        AstNodeExpr* m_lhsPathp = nullptr;  // Copy of the target path, owned here
 
         ForceInfo() = default;
         ForceInfo(int rangeLsb, int rangeMsb, int padLsb, int padMsb, int forceId,
-                  bool hasArraySel, AstVarScope* rhsVarVscp, AstNodeExpr* rhsExprp)
+                  AstVarScope* rhsVarVscp, AstNodeExpr* rhsExprp, AstNodeExpr* lhsPathp)
             : m_forceId{forceId}
-            , m_hasArraySel{hasArraySel}
             , m_rhsVarVscp{rhsVarVscp}
-            , m_rhsExprp{rhsExprp} {
+            , m_rhsExprp{rhsExprp}
+            , m_lhsPathp{lhsPathp} {
             m_rangeLsb = rangeLsb;
             m_rangeMsb = rangeMsb;
             m_padLsb = padLsb;
@@ -75,51 +88,13 @@ public:
     struct VarForceInfo final {
         AstVarScope* m_forceVecVscp = nullptr;
         AstVarScope* m_forceRdVscp = nullptr;
+        AstVarScope* m_slotRdVscp = nullptr;  // Whole-value read of a slot-indexed variable
         AstVarScope* m_forceEnVscp = nullptr;
         AstVarScope* m_forceValVscp = nullptr;
         AstVarScope* m_varVscp = nullptr;
         AstVar* m_varp = nullptr;
         AstScope* m_scopep = nullptr;
         std::unordered_map<AstAssignForce*, ForceInfo> m_forces;
-        std::unordered_map<string, int> m_forcePathToIndex;
-        int m_nextForcePathIndex = 1;  // Start at 1 so 0 can be the base path (whole signal)
-
-    private:
-        static void buildForcePathKeyRecurse(AstNodeExpr* nodep, string& out) {
-            if (VN_IS(nodep, VarRef)) return;
-            if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
-                buildForcePathKeyRecurse(selp->fromp(), out);
-                out += "|S" + cvtToStr(selp->lsbConst()) + ":" + cvtToStr(selp->widthConst());
-                return;
-            }
-            if (AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
-                AstNodeExpr* const fromp = selp->fromp();
-                buildForcePathKeyRecurse(fromp, out);
-                out += "|T" + selp->name();
-                return;
-            }
-            nodep->v3fatalSrc("Unsupported: opaque force path selector "
-                              << nodep->prettyTypeName());
-        }
-
-        static string forcePathKey(AstNodeExpr* nodep) {
-            string out;
-            buildForcePathKeyRecurse(nodep, out);
-            return out;
-        }
-
-    public:
-        int getOrCreateForcePathIndex(AstNodeExpr* nodep) {
-            const auto pair
-                = m_forcePathToIndex.emplace(forcePathKey(nodep), m_nextForcePathIndex);
-            if (pair.second) ++m_nextForcePathIndex;
-            return pair.first->second;
-        }
-
-        int findForcePathIndex(AstNodeExpr* nodep) const {
-            const auto it = m_forcePathToIndex.find(forcePathKey(nodep));
-            return it != m_forcePathToIndex.end() ? it->second : -1;
-        }
     };
 
     struct ForceHelperVars final {
@@ -128,14 +103,11 @@ public:
         AstVar* m_valVarp = nullptr;
     };
 
-    struct ArraySelInfo final {
-        std::vector<AstArraySel*> m_sels;
-        bool m_hasBitSel = false;
-    };
-
-    struct ForceRangeInfo final : ForceRange {
-        bool m_hasArraySel = false;
-        ArraySelInfo m_arrayInfo;
+    // Slot ordinal of a leaf within its base variable, split into the part known at
+    // verilation time and the part a run-time element index contributes.
+    struct ForceOrdinal final {
+        int m_constOffset = 0;
+        AstNodeExpr* m_exprp = nullptr;  // Null when every element index is constant
     };
 
 private:
@@ -165,6 +137,17 @@ public:
     ForceState(bool doingAssign, ForceHelperVarsByVar& forceHelperVarsByVar)
         : m_forceHelperVarsByVar{forceHelperVarsByVar}
         , m_doingAssign{doingAssign} {}
+    ~ForceState() {
+        // The target paths are copies kept for building shadow updates, and are never
+        // linked into the tree, so this owns them
+        for (VarForceInfo& info : m_varInfos) {
+            for (auto& pair : info.m_forces) {
+                if (AstNodeExpr* const pathp = pair.second.m_lhsPathp) {
+                    VL_DO_DANGLING(pathp->deleteTree(), pathp);
+                }
+            }
+        }
+    }
     VL_UNCOPYABLE(ForceState);
 
     // STATIC METHODS
@@ -201,6 +184,63 @@ public:
 
     static bool isUnpackedArrayDType(const AstNodeDType* dtypep) {
         return VN_IS(dtypep->skipRefp(), UnpackArrayDType);
+    }
+
+    // Force tracking gives every separately forceable leaf of a variable its own slot in that
+    // variable's VlForceVec.  An aggregate is laid out depth first, so a leaf's slot is the sum
+    // of a fixed offset per member crossed and the element index times the element's own slot
+    // count.  That keeps 's.arr[2]', 's.scalar' and 'sa[0].arr[2]' in one numbering that cannot
+    // collide, and lets a run-time element index be computed with the same arithmetic.
+    static int forceSlots(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+            return arrayp->declRange().elements() * forceSlots(arrayp->subDTypep());
+        }
+        if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+            // A packed struct or union is one bitwise value, so bit ranges address it instead
+            if (structp->packed()) return 1;
+            int slots = 0;
+            for (AstMemberDType* memberp = structp->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), MemberDType)) {
+                slots += forceSlots(memberp->dtypep());
+            }
+            // Union members overlay in storage but are tracked apart, as they always have been
+            return slots ? slots : 1;
+        }
+        return 1;
+    }
+
+    // True when a type is, or holds, an unpacked struct or union.  VlForceVec reaches a slot
+    // by striding over the target, which such a type does not lay out as one uniform stride,
+    // so it is these types, and only these, that need the per-leaf handling below.
+    static bool holdsUnpackedStructOrUnion(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+            return holdsUnpackedStructOrUnion(arrayp->subDTypep());
+        }
+        if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+            return !structp->packed();
+        }
+        return false;
+    }
+
+    // True when this variable's VlForceVec is indexed by leaf slot rather than by bit
+    static bool usesForceSlots(AstVar* varp) {
+        return forceSlots(varp->dtypep()) > 1 || !isBitwiseDType(varp);
+    }
+
+    static int memberSlotOffset(const AstNodeDType* fromDtypep, const string& name) {
+        const AstNodeUOrStructDType* const structp
+            = VN_CAST(fromDtypep->skipRefp(), NodeUOrStructDType);
+        UASSERT_OBJ(structp, fromDtypep, "Member select is not on a struct or union");
+        int offset = 0;
+        for (AstMemberDType* memberp = structp->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+            if (memberp->name() == name) return offset;
+            offset += forceSlots(memberp->dtypep());
+        }
+        structp->v3fatalSrc("Member '" << name << "' not found in struct or union");
+        return 0;
     }
 
     static bool isBitwiseDType(AstNode* nodep) {
@@ -241,14 +281,37 @@ public:
         return forceps;
     }
 
-    static bool isOpaquePathSelector(const AstNode* nodep) {
-        return VN_IS(nodep, Sel) || VN_IS(nodep, NodeSel) || VN_IS(nodep, StructSel);
+    // A target path is addressed by walking its member and element selections.  Any other
+    // way of selecting has no slot to be given, so report it rather than force nothing.
+    static AstNode* unsupportedPathSelector(AstNodeExpr* nodep) {
+        if (VN_IS(nodep, AssocSel) || VN_IS(nodep, WildcardSel) || VN_IS(nodep, CMethodHard)) {
+            return nodep;
+        }
+        if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
+            return unsupportedPathSelector(selp->fromp());
+        }
+        if (const AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
+            return unsupportedPathSelector(selp->fromp());
+        }
+        if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+            return unsupportedPathSelector(selp->fromp());
+        }
+        return nullptr;
     }
 
-    static bool isOutermostOpaquePathSelector(const AstNode* nodep) {
-        if (!isOpaquePathSelector(nodep)) return false;
+    // True when an enclosing selector reaches this node through its 'from' side, so that
+    // selector names a longer path and covers this node.  A node used as an index instead is
+    // a read of its own, as in 'mem[mem[0]]', and this is false for it.
+    static bool isPathFromOfSelector(const AstNode* nodep) {
         const AstNode* const backp = nodep->backp();
-        return !backp || !isOpaquePathSelector(backp);
+        if (!backp) return false;
+        if (const AstSel* const selp = VN_CAST(backp, Sel)) return selp->fromp() == nodep;
+        if (const AstArraySel* const selp = VN_CAST(backp, ArraySel))
+            return selp->fromp() == nodep;
+        if (const AstStructSel* const selp = VN_CAST(backp, StructSel)) {
+            return selp->fromp() == nodep;
+        }
+        return false;
     }
 
     static AstVarRef* getOneVarRef(AstNodeExpr* forceStmtp) {
@@ -294,12 +357,8 @@ public:
         return headp;
     }
 
-    ForceRangeInfo getForceRangeInfo(AstNodeExpr* lhsp, AstVar* varp,
-                                     bool requireConstRangeSelect) {
-        ForceRangeInfo info;
-        info.m_arrayInfo = getArraySelInfo(lhsp);
-        info.m_hasArraySel = !info.m_arrayInfo.m_sels.empty();
-
+    ForceRange getForceRangeInfo(AstNodeExpr* lhsp, AstVar* varp, bool requireConstRangeSelect) {
+        ForceRange info;
         info.m_padMsb = isBitwiseDType(varp) ? (varp->width() - 1) : 0;
 
         if (const AstSel* const outerSelp = VN_CAST(lhsp, Sel)) {
@@ -318,31 +377,15 @@ public:
 
         info.m_rangeLsb = info.m_padLsb;
         info.m_rangeMsb = info.m_padMsb;
-        if (info.m_hasArraySel) {
-            // Unpacked array selections are tracked as a single flattened element index
-            // inside VlForceVec, regardless of how many unpacked dimensions the source uses.
-            std::vector<int> indices;
-            indices.reserve(info.m_arrayInfo.m_sels.size());
-            for (AstArraySel* const selp : info.m_arrayInfo.m_sels) {
-                UASSERT_OBJ(VN_IS(selp->bitp(), Const), selp,
-                            "Unsupported: force on non-constant array select");
-                indices.push_back(VN_AS(selp->bitp(), Const)->toSInt());
-            }
-            info.m_rangeLsb = flattenIndex(indices, arraySelDimSizes(info.m_arrayInfo));
-
-            info.m_rangeMsb = info.m_rangeLsb;
-        } else if (isUnpackedArrayDType(varp->dtypep())) {
-            lhsp->v3fatalSrc("Whole unpacked-array force/release should have been lowered via "
-                             "element selections");
-        }
-        if (!isBitwiseDType(varp) && !info.m_hasArraySel && !VN_IS(lhsp, VarRef)) {
-            // Non-bitwise member/struct paths cannot use a real bit range, so map each distinct
-            // source path onto a synthetic index in VlForceVec and use that index consistently
-            // for force, release, and readback.
-            VarForceInfo& varInfo = getOrCreateVarInfo(getOneVarRef(lhsp)->varScopep());
-            const int index = varInfo.getOrCreateForcePathIndex(lhsp);
-            info.m_rangeLsb = index;
-            info.m_rangeMsb = index;
+        if (usesForceSlots(varp)) {
+            // An aggregate addresses VlForceVec by leaf slot rather than by bit, so the whole
+            // member and element path decides the slot.  A whole-aggregate target covers every
+            // slot it contains; those are lowered to per-leaf targets before this point, so what
+            // arrives here selects one leaf.
+            const ForceOrdinal ordinal = forceOrdinal(lhsp->fileline(), lhsp);
+            UASSERT_OBJ(!ordinal.m_exprp, lhsp, "Unsupported: force on non-constant array select");
+            info.m_rangeLsb = ordinal.m_constOffset;
+            info.m_rangeMsb = info.m_rangeLsb + forceSlots(lhsp->dtypep()) - 1;
         }
         return info;
     }
@@ -398,6 +441,18 @@ public:
         AstVar* const varp = varInfo.m_varVscp->varp();
         if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
             return createForceRdUpdateStmtUnpacked(varInfo);
+        }
+        if (usesForceSlots(varp)) {
+            // An externally forceable aggregate enables its whole value at once, while code
+            // may force single leaves.  Merge each leaf's slot first, then let the external
+            // force override the whole value.
+            AstNodeStmt* const stmtsp = createSlotRdUpdateStmt(varInfo, varInfo.m_forceRdVscp);
+            AstNodeExpr* const rdReadp = new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::READ};
+            stmtsp->addNext(new AstAssign{
+                flp, new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::WRITE},
+                new AstCond{flp, new AstVarRef{flp, varInfo.m_forceEnVscp, VAccess::READ},
+                            new AstVarRef{flp, varInfo.m_forceValVscp, VAccess::READ}, rdReadp}});
+            return stmtsp;
         }
         AstNodeExpr* readExprp = nullptr;
         AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
@@ -518,7 +573,7 @@ public:
     }
     void addForceAssignment(AstVar* varp, AstVarScope* vscp, AstNodeExpr* rhsExprp,
                             AstAssignForce* forceStmtp, int rangeLsb, int rangeMsb, int padLsb,
-                            int padMsb, bool hasArraySel) {
+                            int padMsb, AstNodeExpr* lhsPathp) {
         v3Global.setUsesForce();
         varp->setForcedByCode();
 
@@ -544,9 +599,9 @@ public:
             scopep->addVarsp(info.m_forceVecVscp);
         }
 
-        auto pair = info.m_forces.emplace(forceStmtp,
-                                          ForceInfo{rangeLsb, rangeMsb, padLsb, padMsb, forceId,
-                                                    hasArraySel, nullptr, rhsExprp});
+        auto pair
+            = info.m_forces.emplace(forceStmtp, ForceInfo{rangeLsb, rangeMsb, padLsb, padMsb,
+                                                          forceId, nullptr, rhsExprp, lhsPathp});
         ForceInfo& finfo = pair.first->second;
         if (doingAssign()) {
             std::vector<AstVar*> depVarps;
@@ -565,79 +620,65 @@ public:
                                    << rangeLsb << "]\n");
     }
 
-    static void collectArraySelInfo(AstNodeExpr* exprp, ArraySelInfo& info) {
-        if (const auto* const selp = VN_CAST(exprp, Sel)) {
-            info.m_hasBitSel = true;
-            collectArraySelInfo(selp->fromp(), info);
-        } else if (auto* const selp = VN_CAST(exprp, ArraySel)) {
-            collectArraySelInfo(selp->fromp(), info);
-            info.m_sels.push_back(selp);
+    static void collectArraySels(AstNodeExpr* exprp, std::vector<AstArraySel*>& out) {
+        if (auto* const selp = VN_CAST(exprp, ArraySel)) {
+            collectArraySels(selp->fromp(), out);
+            out.push_back(selp);
         } else if (const auto* const memberp = VN_CAST(exprp, StructSel)) {
-            collectArraySelInfo(memberp->fromp(), info);
+            collectArraySels(memberp->fromp(), out);
         }
     }
 
-    static ArraySelInfo getArraySelInfo(AstNodeExpr* exprp) {
-        ArraySelInfo info;
-        collectArraySelInfo(exprp, info);
-        return info;
+    static std::vector<AstArraySel*> arraySelsOf(AstNodeExpr* exprp) {
+        std::vector<AstArraySel*> out;
+        collectArraySels(exprp, out);
+        return out;
     }
 
-    static std::vector<int> arraySelDimSizes(const ArraySelInfo& info) {
-        std::vector<int> dims;
-        dims.reserve(info.m_sels.size());
-        for (AstArraySel* const selp : info.m_sels) {
-            AstNodeDType* const dtypep = selp->fromp()->dtypep()->skipRefp();
-            const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType);
-            UASSERT_OBJ(arrayp, selp, "Array select is not on unpacked array");
-            dims.push_back(arrayp->declRange().elements());
+    static void forceOrdinalRecurse(FileLine* flp, AstNodeExpr* nodep, ForceOrdinal& out) {
+        if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
+            // A bit or part select stays inside one leaf, and is tracked as a bit range
+            forceOrdinalRecurse(flp, selp->fromp(), out);
+            return;
         }
-        return dims;
-    }
-
-    static int flattenIndex(const std::vector<int>& indices, const std::vector<int>& dimSizes) {
-        UASSERT(indices.size() == dimSizes.size(), "Array index and dimension size mismatch");
-        int index = 0;
-        int stride = 1;
-        for (int i = static_cast<int>(indices.size()) - 1; i >= 0; --i) {
-            index += indices[i] * stride;
-            stride *= dimSizes[i];
-        }
-        return index;
-    }
-
-    static AstNodeExpr* buildFlattenIndexExpr(FileLine* flp, const ArraySelInfo& info) {
-        const std::vector<int> dimSizes = arraySelDimSizes(info);
-        bool allConst = true;
-        for (AstArraySel* const selp : info.m_sels) {
-            if (!VN_IS(selp->bitp(), Const)) {
-                allConst = false;
-                break;
+        if (AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
+            forceOrdinalRecurse(flp, selp->fromp(), out);
+            // The element's own slot count is this dimension's stride, so nested dimensions
+            // fall out of the recursion without needing the dimension sizes separately
+            const int stride = forceSlots(selp->dtypep());
+            if (const AstConst* const constp = VN_CAST(selp->bitp(), Const)) {
+                out.m_constOffset += constp->toSInt() * stride;
+                return;
             }
-        }
-        if (allConst) {
-            std::vector<int> constIndices;
-            constIndices.reserve(info.m_sels.size());
-            for (AstArraySel* const selp : info.m_sels) {
-                constIndices.push_back(VN_AS(selp->bitp(), Const)->toSInt());
-            }
-            return makeConst32(flp, flattenIndex(constIndices, dimSizes));
-        }
-        // A read may select the element at run time, so compute the same flattened index
-        // as flattenIndex() does, but as an expression.  Only a force target has to be a
-        // constant element; 'array[i]' with a variable 'i' is an ordinary read.
-        AstNodeExpr* resultp = nullptr;
-        int stride = 1;
-        for (int i = static_cast<int>(info.m_sels.size()) - 1; i >= 0; --i) {
-            AstNodeExpr* termp = info.m_sels[i]->bitp()->cloneTreePure(false);
-            // V3Width sizes an array index to at most 32 bits, so widening is all that
-            // is needed to keep the arithmetic below width matched.
+            // A read may select the element at run time.  Only a force target has to name a
+            // constant element; 'array[i]' with a variable 'i' is an ordinary read.
+            AstNodeExpr* termp = selp->bitp()->cloneTreePure(false);
+            // V3Width sizes an array index to at most 32 bits, so widening is all that is
+            // needed to keep the arithmetic below width matched.
             if (termp->width() < 32) termp = new AstExtend{flp, termp, 32};
             if (stride != 1) termp = new AstMul{flp, termp, makeConst32(flp, stride)};
-            resultp = resultp ? new AstAdd{flp, resultp, termp} : termp;
-            stride *= dimSizes[i];
+            out.m_exprp = out.m_exprp ? new AstAdd{flp, out.m_exprp, termp} : termp;
+            return;
         }
-        return resultp;
+        if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+            forceOrdinalRecurse(flp, selp->fromp(), out);
+            out.m_constOffset += memberSlotOffset(selp->fromp()->dtypep(), selp->name());
+            return;
+        }
+        // An AstVarRef, or anything else, is the base the path is measured from
+    }
+
+    static ForceOrdinal forceOrdinal(FileLine* flp, AstNodeExpr* nodep) {
+        ForceOrdinal out;
+        forceOrdinalRecurse(flp, nodep, out);
+        return out;
+    }
+
+    static AstNodeExpr* buildForceOrdinalExpr(FileLine* flp, AstNodeExpr* nodep) {
+        const ForceOrdinal ordinal = forceOrdinal(flp, nodep);
+        if (!ordinal.m_exprp) return makeConst32(flp, ordinal.m_constOffset);
+        if (!ordinal.m_constOffset) return ordinal.m_exprp;
+        return new AstAdd{flp, ordinal.m_exprp, makeConst32(flp, ordinal.m_constOffset)};
     }
 
     static AstNodeExpr* buildRhsDataExpr(FileLine* flp, const ForceInfo& finfo) {
@@ -706,6 +747,32 @@ public:
                 scopep->addBlocksp(activep);
             }
 
+            if (holdsUnpackedStructOrUnion(varp->dtypep()) && !info.m_forceRdVscp) {
+                // Reads of a leaf go straight to that leaf's slot, but a read of the whole
+                // variable has to merge every leaf, which no single VlForceVec read can do.
+                // Keep a shadow of the whole value up to date and read that instead.
+                // Named per pass, as forceAll() and assignAll() each track their own
+                // overrides and so each need their own shadow of the same variable
+                AstVar* const slotRdVarp = new AstVar{
+                    flp, VVarType::WIRE,
+                    varp->name() + (doingAssign() ? "_VassignSlotRd" : "__VforceSlotRd"),
+                    varp->dtypep()};
+                slotRdVarp->noSubst(true);
+                varp->addNextHere(slotRdVarp);
+                info.m_slotRdVscp = new AstVarScope{flp, scopep, slotRdVarp};
+                scopep->addVarsp(info.m_slotRdVscp);
+
+                // Combinational, so scheduling orders this ahead of whatever reads the shadow
+                // rather than leaving the update to a later region
+                AstActive* const activep
+                    = new AstActive{flp, "force-slot-rd-update",
+                                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}}};
+                activep->senTreeStorep(activep->sentreep());
+                activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
+                                                 createSlotRdUpdateStmt(info, info.m_slotRdVscp)});
+                scopep->addBlocksp(activep);
+            }
+
             if (info.m_forceRdVscp) {
                 AstActive* const activeInitp = new AstActive{
                     flp, "force-init",
@@ -760,6 +827,61 @@ public:
                 scopep->addBlocksp(activep);
             }
         }
+    }
+
+    // Build 'rd<path> = forceVec.read(var<path>, slot)' for every leaf of a slot-indexed
+    // variable, so that a read of the whole variable sees each leaf's own force.
+    // Rebuild a target path over a different base variable, so the same member and element
+    // path can be applied to the shadow as to the variable it shadows
+    static AstNodeExpr* rebasePath(AstNodeExpr* pathp, AstVarScope* baseVscp, VAccess access) {
+        AstNodeExpr* const clonep = pathp->cloneTreePure(false);
+        AstVarRef* const baseRefp = VN_CAST(AstArraySel::baseFromp(clonep, true), VarRef);
+        UASSERT_OBJ(baseRefp, pathp, "Force target path has no VarRef at its base");
+        baseRefp->varp(baseVscp->varp());
+        baseRefp->varScopep(baseVscp);
+        baseRefp->access(access);
+        markNonReplaceable(baseRefp);
+        return clonep;
+    }
+
+    // Keep a whole-value shadow of a slot-indexed variable up to date.  Copying the variable
+    // and then overriding only the paths that are actually forced keeps this proportional to
+    // the number of force statements rather than to the number of leaves, which matters when
+    // the variable holds a large array.  The copy also gives overlaid union members the same
+    // value, as the override writes through the storage they share.
+    AstNodeStmt* createSlotRdUpdateStmt(const VarForceInfo& info, AstVarScope* targetVscp) const {
+        FileLine* const flp = info.m_varVscp->fileline();
+        AstVarRef* const wholeRhsp = new AstVarRef{flp, info.m_varVscp, VAccess::READ};
+        markNonReplaceable(wholeRhsp);
+        AstNodeStmt* headp
+            = new AstAssign{flp, new AstVarRef{flp, targetVscp, VAccess::WRITE}, wholeRhsp};
+        AstNodeStmt* tailp = headp;
+
+        for (const ForceInfo* const finfop : forceInfosInIdOrder(info)) {
+            UASSERT_OBJ(finfop->m_lhsPathp, info.m_varp, "Force with no recorded target path");
+            // A bit or part select addresses inside one leaf, and the read below already
+            // applies the forced bit range, so override at the leaf
+            AstNodeExpr* leafp = finfop->m_lhsPathp;
+            while (const AstSel* const selp = VN_CAST(leafp, Sel)) leafp = selp->fromp();
+
+            AstNodeExpr* const readFromp = rebasePath(leafp, info.m_varVscp, VAccess::READ);
+            AstNodeExpr* const readp
+                = forceSlots(leafp->dtypep()) > 1
+                      ? createForceReadRangeExpression(info, readFromp, finfop->m_rangeLsb)
+                      : createForceReadIndexExpression(info, readFromp,
+                                                       makeConst32(flp, finfop->m_rangeLsb));
+            VL_DO_DANGLING(readFromp->deleteTree(), readFromp);
+            AstAssign* const assignp
+                = new AstAssign{flp, rebasePath(leafp, targetVscp, VAccess::WRITE), readp};
+            // Only override while this force is active, so a force that never executes, or
+            // was released, does not write the raw value over an overlaid union sibling
+            AstIf* const ifp = new AstIf{
+                flp, createIsForcedExpression(info, flp, finfop->m_rangeLsb, finfop->m_rangeMsb),
+                assignp};
+            tailp->addNextHere(ifp);
+            tailp = ifp;
+        }
+        return headp;
     }
 
     AstNode* createRhsUpdatesForWrite(FileLine* flp, AstVar* writtenVarp) const {
@@ -818,6 +940,89 @@ public:
                                    originalExprp->cloneTreePure(false), originalExprp, indexExprp);
     }
 
+    // Read a whole uniform-stride subtree, an unpacked-array member for example, whose leaves
+    // occupy the slot range starting at slotLsb
+    AstNodeExpr* createForceReadRangeExpression(const VarForceInfo& varInfo,
+                                                AstNodeExpr* originalExprp, int slotLsb) const {
+        FileLine* const flp = originalExprp->fileline();
+        return createForceReadCall(varInfo, flp, VCMethod::FORCE_READ_RANGE,
+                                   originalExprp->cloneTreePure(false), originalExprp,
+                                   makeConst32(flp, slotLsb));
+    }
+
+    // True when any active force overlaps the slot range, for guarding shadow updates
+    AstNodeExpr* createIsForcedExpression(const VarForceInfo& varInfo, FileLine* flp, int lsb,
+                                          int msb) const {
+        AstCMethodHard* const callp
+            = new AstCMethodHard{flp, new AstVarRef{flp, varInfo.m_forceVecVscp, VAccess::READ},
+                                 VCMethod::FORCE_IS_FORCED, makeConst32(flp, lsb)};
+        callp->addPinsp(makeConst32(flp, msb));
+        callp->dtypeSetBit();
+        return callp;
+    }
+
+    // True for a path built only from selections over a variable, which can be cloned per leaf
+    // without changing how often anything is evaluated
+    static bool isSimpleRef(const AstNodeExpr* nodep) {
+        if (VN_IS(nodep, VarRef)) return true;
+        if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
+            return VN_IS(selp->lsbp(), Const) && isSimpleRef(selp->fromp());
+        }
+        if (const AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
+            return VN_IS(selp->bitp(), Const) && isSimpleRef(selp->fromp());
+        }
+        if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+            return isSimpleRef(selp->fromp());
+        }
+        return false;
+    }
+
+    // Collect one left/right pair per leaf of an aggregate, so a target naming the whole
+    // aggregate can be rewritten as a target per leaf.  'rhsp' is null for a release.
+    static void collectAggregateLeaves(AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+                                       std::vector<std::pair<AstNodeExpr*, AstNodeExpr*>>& out) {
+        FileLine* const flp = lhsp->fileline();
+        AstNodeDType* const dtypep = lhsp->dtypep()->skipRefp();
+        // A uniform-stride subtree, a plain unpacked array of a bitwise type for example, is
+        // one slot range that VlForceVec addresses on its own, so it is one target and the
+        // generated code stays independent of its size
+        if (!holdsUnpackedStructOrUnion(dtypep)) {
+            out.emplace_back(lhsp->cloneTreePure(false),
+                             rhsp ? rhsp->cloneTreePure(false) : nullptr);
+            return;
+        }
+        if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+            for (int i = 0; i < arrayp->declRange().elements(); ++i) {
+                AstNodeExpr* const subLhsp = new AstArraySel{flp, lhsp->cloneTreePure(false), i};
+                AstNodeExpr* const subRhsp
+                    = rhsp ? new AstArraySel{flp, rhsp->cloneTreePure(false), i} : nullptr;
+                collectAggregateLeaves(subLhsp, subRhsp, out);
+                VL_DO_DANGLING(subLhsp->deleteTree(), subLhsp);
+                if (subRhsp) VL_DO_DANGLING(subRhsp->deleteTree(), subRhsp);
+            }
+            return;
+        }
+        const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType);
+        if (structp && !structp->packed()) {
+            for (AstMemberDType* memberp = structp->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), MemberDType)) {
+                AstStructSel* const subLhsp
+                    = new AstStructSel{flp, lhsp->cloneTreePure(false), memberp->name()};
+                subLhsp->dtypep(memberp->dtypep());
+                AstStructSel* subRhsp = nullptr;
+                if (rhsp) {
+                    subRhsp = new AstStructSel{flp, rhsp->cloneTreePure(false), memberp->name()};
+                    subRhsp->dtypep(memberp->dtypep());
+                }
+                collectAggregateLeaves(subLhsp, subRhsp, out);
+                VL_DO_DANGLING(subLhsp->deleteTree(), subLhsp);
+                if (subRhsp) VL_DO_DANGLING(subRhsp->deleteTree(), subRhsp);
+            }
+            return;
+        }
+        out.emplace_back(lhsp->cloneTreePure(false), rhsp ? rhsp->cloneTreePure(false) : nullptr);
+    }
+
     static AstNodeExpr* rebuildSelPath(AstNodeExpr* pathp, AstNodeExpr* baseExprp) {
         if (const AstSel* const selp = VN_CAST(pathp, Sel)) {
             AstNodeExpr* const fromp = rebuildSelPath(selp->fromp(), baseExprp);
@@ -829,6 +1034,59 @@ public:
         return baseExprp;
     }
 };
+
+// Rewrite a force or release that names a whole aggregate into one per leaf, so that every leaf
+// gets its own slot, its own shadow value and a shadow of its own type.  Reads reach a leaf
+// through a member or element path, and only a per-leaf target lets such a read see the force.
+static void expandAggregateTargets(AstNetlist* nodep) {
+    std::vector<AstNodeStmt*> stmtps;
+    nodep->foreach([&](AstNodeStmt* stmtp) {
+        if (VN_IS(stmtp, AssignForce) || VN_IS(stmtp, Release)) stmtps.push_back(stmtp);
+    });
+    for (AstNodeStmt* const stmtp : stmtps) {
+        AstAssignForce* const forcep = VN_CAST(stmtp, AssignForce);
+        AstNodeExpr* const lhsp = forcep ? forcep->lhsp() : VN_AS(stmtp, Release)->lhsp();
+        if (AstNode* const badp = ForceState::unsupportedPathSelector(lhsp)) {
+            badp->v3warn(E_UNSUPPORTED,
+                         "Unsupported: Force or release of "
+                             << badp->prettyTypeName()
+                             << ", as only member and element selections have a force target");
+            VL_DO_DANGLING(stmtp->unlinkFrBack()->deleteTree(), stmtp);
+            continue;
+        }
+        AstNodeExpr* const rhsp = forcep ? forcep->rhsp() : nullptr;
+        if (ForceState::forceSlots(lhsp->dtypep()) <= 1) continue;
+        // A uniform unpacked array is one stride that VlForceVec addresses on its own, so it
+        // needs no per-leaf targets and keeps the generated code independent of its size
+        if (!ForceState::holdsUnpackedStructOrUnion(lhsp->dtypep())) continue;
+        // The right-hand side is cloned once per leaf, which is only safe when evaluating it
+        // more than once cannot be observed.  V3Task lifts an impure right-hand side into a
+        // temporary before this point, so one should never arrive here.
+        if (rhsp && !rhsp->isPure()) rhsp->v3fatalSrc("Force of an aggregate from an impure RHS");
+
+        std::vector<std::pair<AstNodeExpr*, AstNodeExpr*>> leaves;
+        ForceState::collectAggregateLeaves(lhsp, rhsp, leaves);
+        if (leaves.empty()) continue;
+
+        FileLine* const flp = stmtp->fileline();
+        AstNodeStmt* headp = nullptr;
+        AstNodeStmt* tailp = nullptr;
+        for (const auto& leaf : leaves) {
+            AstNodeStmt* const leafStmtp
+                = forcep
+                      ? static_cast<AstNodeStmt*>(new AstAssignForce{flp, leaf.first, leaf.second})
+                      : static_cast<AstNodeStmt*>(new AstRelease{flp, leaf.first});
+            if (tailp) {
+                tailp->addNextHere(leafStmtp);
+            } else {
+                headp = leafStmtp;
+            }
+            tailp = leafStmtp;
+        }
+        stmtp->replaceWith(headp);
+        VL_DO_DANGLING(stmtp->deleteTree(), stmtp);
+    }
+}
 
 // Split deassign concat LHS before converting to release internals.
 static void splitDeassign(AstDeassign* nodep) {
@@ -909,7 +1167,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                 m_state.addForceAssignment(varp, nodep, rhsClonep, forceAssignp,
                                            /*rangeLsb=*/flat, /*rangeMsb=*/flat,
                                            /*padLsb=*/0, /*padMsb=*/innerWidth - 1,
-                                           /*hasArraySel=*/true);
+                                           lhsSelp->cloneTreePure(false));
                 return forceAssignp;
             });
         activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, alwaysBodyHeadp});
@@ -925,7 +1183,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
         UASSERT(forcedVarp, "VarRef missing Varp");
 
         // Resolve force bookkeeping range/padding for the LHS shape.
-        ForceState::ForceRangeInfo rangeInfo
+        ForceState::ForceRange rangeInfo
             = m_state.getForceRangeInfo(nodep->lhsp(), forcedVarp, true);
 
         // Keep narrow rhs, VlForceVec blends unpacked-array bit-select forces at read time
@@ -933,7 +1191,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
 
         m_state.addForceAssignment(forcedVarp, lhsVarRefp->varScopep(), rhsExprp, nodep,
                                    rangeInfo.m_rangeLsb, rangeInfo.m_rangeMsb, rangeInfo.m_padLsb,
-                                   rangeInfo.m_padMsb, rangeInfo.m_hasArraySel);
+                                   rangeInfo.m_padMsb, nodep->lhsp()->cloneTreePure(false));
     }
 
     void visit(AstAssign* nodep) override {
@@ -1023,7 +1281,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                 nodep->v3fatalSrc("Forceable unpacked arrays should have been rejected earlier");
             }
             m_state.addForceAssignment(varp, nodep, rhsClonep, forceAssignp, rangeLsb, rangeMsb, 0,
-                                       padMsb, false);
+                                       padMsb, new AstVarRef{flp, nodep, VAccess::READ});
         }
         iterateChildrenConst(nodep);
     }
@@ -1068,9 +1326,10 @@ class ForceConvertVisitor final : public VNVisitor {
         const bool bitwiseForcedVar = ForceState::isBitwiseDType(forcedVarp);
         // When an externally forceable signal is also forced in (System)Verilog code
         // keep the public __VforceEn/__VforceVal signals in sync with the procedural force too.
-        // Don't do this for array selections; those are represented only in VlForceVec.
-        if (!nodep->user2() && varInfo->m_forceEnVscp && varInfo->m_forceValVscp
-            && !info.m_hasArraySel) {
+        // Those signals hold one whole value, so a force naming a single leaf of a slot-indexed
+        // variable cannot be expressed in them and lives only in VlForceVec.
+        const bool wholeSlotVar = !ForceState::usesForceSlots(forcedVarp) || VN_IS(lhsp, VarRef);
+        if (!nodep->user2() && varInfo->m_forceEnVscp && varInfo->m_forceValVscp && wholeSlotVar) {
             AstNodeExpr* baseExprp = nodep->rhsp()->cloneTreePure(false);
             baseExprp->foreach(
                 [](AstVarRef* const refp) { ForceState::markNonReplaceable(refp); });
@@ -1112,8 +1371,10 @@ class ForceConvertVisitor final : public VNVisitor {
         // Verilog pseudocode:
         //   forceVec.addForce(range_lsb, range_msb, &forceRHS[id], rhs_lsb);
         const AstSel* const selLhsp = VN_CAST(lhsp, Sel);
+        // A slot holds one whole leaf, so a bit or part select of that leaf has to carry its
+        // bit range alongside the slot ordinal
         const bool arrayBitSel
-            = info.m_hasArraySel && selLhsp && ForceState::getArraySelInfo(lhsp).m_hasBitSel
+            = ForceState::usesForceSlots(forcedVarp) && selLhsp
               && ForceState::isBitwiseDType(selLhsp->fromp())
               && (info.m_padMsb - info.m_padLsb + 1) < selLhsp->fromp()->width();
         AstNodeExpr* const rhsDatap = ForceState::buildRhsDataExpr(flp, info);
@@ -1170,12 +1431,12 @@ class ForceConvertVisitor final : public VNVisitor {
 
         FileLine* const flp = nodep->fileline();
 
-        const ForceState::ForceRangeInfo rangeInfo
+        const ForceState::ForceRange rangeInfo
             = m_state.getForceRangeInfo(lhsp, releasedVarp, false);
 
         const AstSel* const selLhsp = VN_CAST(lhsp, Sel);
         const bool arrayBitSel
-            = rangeInfo.m_hasArraySel && selLhsp && rangeInfo.m_arrayInfo.m_hasBitSel
+            = ForceState::usesForceSlots(releasedVarp) && selLhsp
               && ForceState::isBitwiseDType(selLhsp->fromp())
               && (rangeInfo.m_padMsb - rangeInfo.m_padLsb + 1) < selLhsp->fromp()->width();
         AstCMethodHard* const releaseCallp = new AstCMethodHard{
@@ -1194,7 +1455,8 @@ class ForceConvertVisitor final : public VNVisitor {
         // Releases must also clear the external/public force-enable, but only for
         // directly forceable variables and only for non-array-select cases that use that external
         // force.
-        if (releasedVarp->isForceable() && varInfo->m_forceEnVscp && !rangeInfo.m_hasArraySel) {
+        if (releasedVarp->isForceable() && varInfo->m_forceEnVscp
+            && (!ForceState::usesForceSlots(releasedVarp) || VN_IS(lhsp, VarRef))) {
             AstNodeExpr* const enWritep
                 = new AstVarRef{flp, varInfo->m_forceEnVscp, VAccess::WRITE};
             if (ForceState::isBitwiseDType(releasedVarp)) {
@@ -1218,7 +1480,6 @@ class ForceConvertVisitor final : public VNVisitor {
         }
 
         const AstSel* const selp = VN_CAST(lhsp, Sel);
-        AstNodeExpr* const basep = selp ? selp->fromp() : lhsp;
 
         AstNode* stmtListp = releasep;
         if (clearEnp) {
@@ -1228,27 +1489,27 @@ class ForceConvertVisitor final : public VNVisitor {
 
         // IEEE 1800-2023 10.6.2: When released, if the variable is not continuously driven,
         // it maintains its current value until the next procedural assignment.
-        const bool fullBitwiseRelease
-            = ForceState::isBitwiseDType(releasedVarp) && !rangeInfo.m_hasArraySel && !selp
-              && rangeInfo.m_rangeLsb == 0 && rangeInfo.m_rangeMsb == releasedVarp->width() - 1;
+        const bool fullBitwiseRelease = ForceState::isBitwiseDType(releasedVarp)
+                                        && !ForceState::usesForceSlots(releasedVarp) && !selp
+                                        && rangeInfo.m_rangeLsb == 0
+                                        && rangeInfo.m_rangeMsb == releasedVarp->width() - 1;
         if (!releasedVarp->isContinuously()
             && !(m_state.doingAssign() && m_state.hasClockedWrite(releasedVarp)
                  && fullBitwiseRelease)) {
-            // Member/struct paths on non-bitwise types do not lower to a plain VarRef/bit range,
-            // so their current forced value is recovered via the same synthetic path index.
+            // A slot-indexed variable recovers its current forced value through the same slot
+            // ordinal the force used, so member and element paths agree with each other.
             // if (!continuously_driven) lhs = force_read_current(lhs_path);
             // forceVec.release(range);
-            const bool hasOpaquePath = !ForceState::isBitwiseDType(releasedVarp)
-                                       && !rangeInfo.m_hasArraySel && !VN_IS(lhsp, VarRef);
             AstNodeExpr* forceReadp = nullptr;
-            if (hasOpaquePath) {
-                forceReadp = m_state.createForceReadIndexExpression(
-                    *varInfo, lhsp, ForceState::makeConst32(flp, rangeInfo.m_rangeLsb));
-            } else if (rangeInfo.m_hasArraySel) {
-                forceReadp = m_state.createForceReadIndexExpression(
-                    *varInfo, basep,
-                    ForceState::buildFlattenIndexExpr(flp, rangeInfo.m_arrayInfo));
-                if (selp) { forceReadp = ForceState::rebuildSelPath(lhsp, forceReadp); }
+            if (ForceState::usesForceSlots(releasedVarp)) {
+                AstNodeExpr* const leafp = selp ? selp->fromp() : lhsp;
+                forceReadp = ForceState::forceSlots(leafp->dtypep()) > 1
+                                 ? m_state.createForceReadRangeExpression(*varInfo, leafp,
+                                                                          rangeInfo.m_rangeLsb)
+                                 : m_state.createForceReadIndexExpression(
+                                       *varInfo, leafp,
+                                       ForceState::makeConst32(flp, rangeInfo.m_rangeLsb));
+                if (selp) forceReadp = ForceState::rebuildSelPath(lhsp, forceReadp);
             } else {
                 forceReadp
                     = selp ? ForceState::rebuildSelPath(
@@ -1283,6 +1544,8 @@ class ForceReplaceVisitor final : public VNVisitor {
     VDouble0 m_nonOverlappingForceSels;  // Statistic tracking
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
+    // Statements already given a shadow refresh, so several reads in one statement share it
+    std::set<std::pair<AstNodeStmt*, const ForceState::VarForceInfo*>> m_slotRdRefreshed;
 
     void iterateLogic(AstNode* nodep) {
         VL_RESTORER(m_inLogic);
@@ -1326,6 +1589,8 @@ class ForceReplaceVisitor final : public VNVisitor {
     }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
     void visit(AstSel* nodep) override {
+        // A select of a leaf inside an aggregate goes through the slot-indexed path instead
+        if (replacePathRead(nodep)) return;
         // Replace Sel on a wide with readSelI/Q/W to avoid materializing the full value
         AstVarRef* const refp = VN_CAST(nodep->fromp(), VarRef);
         if (!refp || ForceState::isNotReplaceable(refp) || !refp->access().isReadOnly()) {
@@ -1367,51 +1632,71 @@ class ForceReplaceVisitor final : public VNVisitor {
         nodep->replaceWith(callp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstArraySel* nodep) override {
-        if (const AstArraySel* const backSelp = VN_CAST(nodep->backp(), ArraySel)) {
-            // Only the outermost selection of the array path should become a force-aware
-            // read; inner selections along 'fromp' fold into the final flattened index.
-            // A selection used as the index is a read in its own right, as in
-            // 'mem[mem[0]]', so it must not be skipped here.
-            if (backSelp->fromp() == nodep) {
-                iterateChildren(nodep);
-                return;
-            }
-        }
+    // Replace a read of one leaf of a slot-indexed variable, reached through any mix of member
+    // and element selections, with a force-aware read of that leaf's slot.  Returns false when
+    // this node is not such a read, so the caller keeps iterating.
+    bool replacePathRead(AstNodeExpr* nodep) {
+        if (ForceState::isPathFromOfSelector(nodep)) return false;  // An outer node covers it
 
-        AstNode* const basep = AstArraySel::baseFromp(nodep, true);
-        AstVarRef* const baseRefp = VN_CAST(basep, VarRef);
-        if (!baseRefp) {
-            iterateChildren(nodep);
-            return;
-        }
-        AstVar* const varp = baseRefp->varp();
+        // Trailing bit or part selects address bits inside the leaf, so find the leaf first
+        // and put those selects back on top of the force-aware read afterwards.
+        AstNodeExpr* leafp = nodep;
+        while (const AstSel* const selp = VN_CAST(leafp, Sel)) leafp = selp->fromp();
+        if (VN_IS(leafp, VarRef)) return false;  // Whole variable, visit(AstVarRef) handles it
+
+        AstVarRef* const baseRefp = VN_CAST(AstArraySel::baseFromp(leafp, true), VarRef);
+        if (!baseRefp || ForceState::isNotReplaceable(baseRefp)) return false;
         const ForceState::VarForceInfo* const varInfo = m_state.getVarInfo(baseRefp->varScopep());
-        // Skip non-forceable reads, reads we intentionally protected earlier, and intermediate
-        // selections that still evaluate to an unpacked array rather than a scalar element.
-        if (ForceState::isNotReplaceable(baseRefp) || !varInfo
-            || !ForceState::isUnpackedArrayDType(varp->dtypep())
-            || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
-            iterateChildren(nodep);
-            return;
+        if (!varInfo) return false;
+        // An externally forceable aggregate other than an unpacked array keeps its merged value
+        // in __VforceRd, and reads of it go through that instead
+        if (varInfo->m_forceRdVscp
+            && !ForceState::isUnpackedArrayDType(baseRefp->varp()->dtypep())) {
+            return false;
+        }
+        if (!ForceState::usesForceSlots(baseRefp->varp())) return false;
+        if (!baseRefp->access().isReadOnly()) return false;
+        // An intermediate selection still naming an aggregate is not one leaf.  Rebase it onto
+        // the whole-value shadow, which merges every leaf's force, and keep iterating so any
+        // index expressions inside it are still substituted.
+        if (ForceState::forceSlots(leafp->dtypep()) > 1) {
+            if (varInfo->m_slotRdVscp) {
+                if (m_inLogic && m_stmtp && m_slotRdRefreshed.emplace(m_stmtp, varInfo).second) {
+                    m_stmtp->addHereThisAsNext(
+                        m_state.createSlotRdUpdateStmt(*varInfo, varInfo->m_slotRdVscp));
+                }
+                baseRefp->varp(varInfo->m_slotRdVscp->varp());
+                baseRefp->varScopep(varInfo->m_slotRdVscp);
+                ForceState::markNonReplaceable(baseRefp);
+            }
+            return false;
         }
 
-        if (!baseRefp->access().isReadOnly()) {
-            iterateChildren(nodep);
-            return;
+        // Substitute forced reads inside the index expressions before anything is cloned, so
+        // the fallback value and the slot ordinal use the same, force-aware index.  An index
+        // is an ordinary read, including when it reads the same array as in 'mem[mem[0]]'.
+        for (AstArraySel* const selp : ForceState::arraySelsOf(leafp)) {
+            iterateAndNextNull(selp->bitp());
         }
-        const ForceState::ArraySelInfo arrayInfo = ForceState::getArraySelInfo(nodep);
-        // Substitute forced reads inside the index expressions before anything is cloned,
-        // so the fallback value and the flattened index use the same, force-aware index.
-        // An index is an ordinary read, including when it reads the same array as in
-        // 'mem[mem[0]]'.
-        for (AstArraySel* const selp : arrayInfo.m_sels) iterateAndNextNull(selp->bitp());
-        AstNodeExpr* const indexExprp
-            = ForceState::buildFlattenIndexExpr(nodep->fileline(), arrayInfo);
-        AstNodeExpr* const readExprp
-            = m_state.createForceReadIndexExpression(*varInfo, nodep, indexExprp);
-        nodep->replaceWith(readExprp);
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const readExprp = m_state.createForceReadIndexExpression(
+            *varInfo, leafp, ForceState::buildForceOrdinalExpr(flp, leafp));
+        if (leafp == nodep) {
+            nodep->replaceWith(readExprp);
+        } else {
+            nodep->replaceWith(ForceState::rebuildSelPath(nodep, readExprp));
+        }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return true;
+    }
+
+    void visit(AstArraySel* nodep) override {
+        // A selection used as an index is a read in its own right, as in 'mem[mem[0]]', so
+        // isPathFromOfSelector() inside replacePathRead() only skips selections along 'fromp'.
+        if (!replacePathRead(nodep)) iterateChildren(nodep);
+    }
+    void visit(AstStructSel* nodep) override {
+        if (!replacePathRead(nodep)) iterateChildren(nodep);
     }
 
     void visit(AstVarRef* nodep) override {
@@ -1446,15 +1731,39 @@ class ForceReplaceVisitor final : public VNVisitor {
             return;
         }
 
-        // For opaque member/struct paths we rewrite the outer path node instead of the base
-        // VarRef, so leave the base reference alone and let visit(AstNode*) handle it.
-        if (nodep->backp() && (VN_IS(nodep->backp(), Sel) || VN_IS(nodep->backp(), StructSel))
-            && !ForceState::isBitwiseDType(nodep->varp())
-            && !ForceState::isUnpackedArrayDType(nodep->varp()->dtypep())) {
+        // On a slot-indexed variable a member or element path is rewritten at its outermost
+        // selector, which needs the base reference left as it is.  A bit-range variable
+        // instead has its whole value read here, and the selects above pick from that.
+        if (ForceState::usesForceSlots(nodep->varp()) && ForceState::isPathFromOfSelector(nodep)) {
             return;
         }
 
         UASSERT_OBJ(!varInfo->m_forces.empty(), nodep, "Var info for variable with no forces");
+
+        if (varInfo->m_slotRdVscp) {
+            if (nodep->access().isRW()) {
+                if (m_inLogic) {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Signals used via read-write reference cannot be "
+                                  "forced");
+                }
+                return;
+            }
+            // Reading the whole of a slot-indexed variable means reading its shadow, which
+            // already merges the force on each leaf
+            if (nodep->access().isReadOnly()) {
+                // In procedural code the read may happen in the same time step as the force,
+                // before the block that maintains the shadow has had a chance to run, so
+                // refresh it just ahead of this statement as well.
+                if (m_inLogic && m_stmtp && m_slotRdRefreshed.emplace(m_stmtp, varInfo).second) {
+                    m_stmtp->addHereThisAsNext(
+                        m_state.createSlotRdUpdateStmt(*varInfo, varInfo->m_slotRdVscp));
+                }
+                nodep->varp(varInfo->m_slotRdVscp->varp());
+                nodep->varScopep(varInfo->m_slotRdVscp);
+            }
+            return;
+        }
 
         if (nodep->access().isRW()) {
             nodep->v3warn(E_UNSUPPORTED,
@@ -1466,36 +1775,7 @@ class ForceReplaceVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
-    void visit(AstNode* nodep) override {
-        if (ForceState::isOutermostOpaquePathSelector(nodep)) {
-            // Handle the whole opaque path at its outermost node so we can assign one stable
-            // synthetic force-path index to the full selection/member chain.
-            AstNodeExpr* const exprp = VN_AS(nodep, NodeExpr);
-            AstNode* const basep = AstArraySel::baseFromp(exprp, true);
-            AstVarRef* const baseRefp = VN_CAST(basep, VarRef);
-            if (baseRefp) {
-                AstVar* const varp = baseRefp->varp();
-                if (!ForceState::isBitwiseDType(varp)
-                    && !ForceState::isUnpackedArrayDType(varp->dtypep())) {
-                    const ForceState::VarForceInfo* const varInfo
-                        = m_state.getVarInfo(baseRefp->varScopep());
-                    if (!ForceState::isNotReplaceable(baseRefp) && varInfo) {
-                        const int forcePathIndex = varInfo->findForcePathIndex(exprp);
-                        if (forcePathIndex >= 0) {
-                            if (!baseRefp->access().isReadOnly()) return;
-                            AstNodeExpr* const readExprp = m_state.createForceReadIndexExpression(
-                                *varInfo, exprp,
-                                ForceState::makeConst32(nodep->fileline(), forcePathIndex));
-                            nodep->replaceWith(readExprp);
-                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-        iterateChildren(nodep);
-    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit ForceReplaceVisitor(AstNetlist* nodep, const ForceState& state)
@@ -1515,11 +1795,16 @@ public:
 static void forceAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& helperVars) {
     UINFO(2, __FUNCTION__ << ":\n");
     if (!v3Global.hasForceableSignals()) return;
-    ForceState state{false, helperVars};
-    { ForceDiscoveryVisitor{nodep, state}; }
-    state.finalizeRhsVars();
-    { ForceConvertVisitor{nodep, state}; }
-    { ForceReplaceVisitor{nodep, state}; }
+    expandAggregateTargets(nodep);
+    {
+        // Scoped so the state, which owns copies of the target paths, is gone before the
+        // tree check below looks for anything left unlinked
+        ForceState state{false, helperVars};
+        { ForceDiscoveryVisitor{nodep, state}; }
+        state.finalizeRhsVars();
+        { ForceConvertVisitor{nodep, state}; }
+        { ForceReplaceVisitor{nodep, state}; }
+    }
     V3Global::dumpCheckGlobalTree("force", 0, dumpTreeEitherLevel() >= 3);
 }
 
@@ -1552,11 +1837,14 @@ static void assignAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& h
             new AstRelease{deassignp->fileline(), deassignp->lhsp()->cloneTreePure(true)});
         deassignp->deleteTree();
     }
-    ForceState state{true, helperVars};
-    { ForceDiscoveryVisitor{nodep, state}; }
-    state.finalizeRhsVars();
-    { ForceConvertVisitor{nodep, state}; }
-    { ForceReplaceVisitor{nodep, state}; }
+    expandAggregateTargets(nodep);
+    {
+        ForceState state{true, helperVars};
+        { ForceDiscoveryVisitor{nodep, state}; }
+        state.finalizeRhsVars();
+        { ForceConvertVisitor{nodep, state}; }
+        { ForceReplaceVisitor{nodep, state}; }
+    }
     V3Global::dumpCheckGlobalTree("assign-deassign", 0, dumpTreeEitherLevel() >= 3);
 }
 

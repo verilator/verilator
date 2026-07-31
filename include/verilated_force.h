@@ -302,6 +302,42 @@ public:
         return result;
     }
 
+    // True when any active force overlaps the slot range [lsb, msb]
+    bool isForced(int lsb, int msb) const {
+        const auto it = std::lower_bound(m_entries.begin(), m_entries.end(), lsb,
+                                         [](const Entry& e, int bit) { return e.m_msb < bit; });
+        return it != m_entries.end() && it->m_lsb <= msb;
+    }
+
+    // Read a whole unpacked array whose elements occupy the slot range starting at slotLsb.
+    // Work is proportional to the active forces overlapping that range, not to the array size.
+    template <typename T>
+    T readRange(const T& val, int slotLsb) const {
+        T result = val;
+        constexpr int size = static_cast<int>(VlForceArrayIndexer<T>::size);
+        const int slotMsb = slotLsb + size - 1;
+        using ElemRef
+            = decltype(VlForceArrayIndexer<T>::elem(result, static_cast<std::size_t>(0)));
+        using Elem = VlForceBaseType<ElemRef>;
+        auto it = std::lower_bound(m_entries.begin(), m_entries.end(), slotLsb,
+                                   [](const Entry& e, int bit) { return e.m_msb < bit; });
+        for (; it != m_entries.end() && it->m_lsb <= slotMsb; ++it) {
+            const int startIdx = std::max(it->m_lsb, slotLsb);
+            const int endIdx = std::min(it->m_msb, slotMsb);
+            for (int idx = startIdx; idx <= endIdx; ++idx) {
+                Elem& dst = VlForceArrayIndexer<T>::elem(result,
+                                                         static_cast<std::size_t>(idx - slotLsb));
+                if (it->m_elemWidth == 0) {
+                    const Elem* const rhsBasep = static_cast<const Elem*>(it->m_rhsDatap);
+                    dst = rhsBasep[idx - it->m_rhsLsb];
+                } else {
+                    dst = blendElem<Elem>(dst, *it);
+                }
+            }
+        }
+        return result;
+    }
+
     template <typename T>
     T readIndex(T origVal, int index) const {
         if (m_entries.empty()) return origVal;
