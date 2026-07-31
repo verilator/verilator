@@ -514,22 +514,31 @@ class TaskVisitor final : public VNVisitor {
         AstNodeExpr* postRhsp = new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ};
         if (AstResizeLValue* soutPinp = VN_CAST(outPinp, ResizeLValue)) {
             outPinp = soutPinp->lhsp();
-            if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, Extend)) {
-                outPinp = aoutPinp->lhsp();
-            } else if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, ExtendS)) {
-                outPinp = aoutPinp->lhsp();
-            } else if (AstSel* aoutPinp = VN_CAST(outPinp, Sel)) {
-                outPinp = aoutPinp->fromp();
-            } else {
-                outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
-            }
-            if (outPinp->width() < portp->width()) {
-                postRhsp = new AstSel{pinp->fileline(), postRhsp, 0, pinp->width()};
-            } else {  // pin width > port width
-                if (pinp->isSigned() && postRhsp->isSigned()) {
-                    postRhsp = new AstExtendS{pinp->fileline(), postRhsp};
+            if (VN_IS(outPinp, RToIRoundS) || VN_IS(outPinp, RToIS)) {
+                outPinp = VN_AS(outPinp, NodeUniop)->lhsp();
+                if (postRhsp->isSigned()) {
+                    postRhsp = new AstISToRD{pinp->fileline(), postRhsp};
                 } else {
-                    postRhsp = new AstExtend{pinp->fileline(), postRhsp};
+                    postRhsp = new AstIToRD{pinp->fileline(), postRhsp};
+                }
+            } else {
+                if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, Extend)) {
+                    outPinp = aoutPinp->lhsp();
+                } else if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, ExtendS)) {
+                    outPinp = aoutPinp->lhsp();
+                } else if (AstSel* aoutPinp = VN_CAST(outPinp, Sel)) {
+                    outPinp = aoutPinp->fromp();
+                } else {
+                    outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
+                }
+                if (outPinp->width() < portp->width()) {
+                    postRhsp = new AstSel{pinp->fileline(), postRhsp, 0, pinp->width()};
+                } else {  // pin width > port width
+                    if (pinp->isSigned() && postRhsp->isSigned()) {
+                        postRhsp = new AstExtendS{pinp->fileline(), postRhsp};
+                    } else {
+                        postRhsp = new AstExtend{pinp->fileline(), postRhsp};
+                    }
                 }
             }
             postRhsp->dtypeFrom(outPinp);
