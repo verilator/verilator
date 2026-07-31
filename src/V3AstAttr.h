@@ -881,8 +881,11 @@ public:
         EVENT_IS_FIRED,
         EVENT_IS_TRIGGERED,
         FORCE_ADD,
+        FORCE_ADD_AT,
+        FORCE_BLEND_OWNED,
+        FORCE_OWNS_ANY,
+        FORCE_OWNS_SLOT,
         FORCE_READ,
-        FORCE_READ_INDEX,
         FORCE_READ_SEL,
         FORCE_RELEASE,
         FORCE_TOUCH,
@@ -1035,8 +1038,11 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {EVENT_IS_FIRED, "isFired", true}, \
            {EVENT_IS_TRIGGERED, "isTriggered", true}, \
            {FORCE_ADD, "addForce", false}, \
+           {FORCE_ADD_AT, "addForceAt", false}, \
+           {FORCE_BLEND_OWNED, "blendOwned", true}, \
+           {FORCE_OWNS_ANY, "ownsAny", true}, \
+           {FORCE_OWNS_SLOT, "ownsSlot", true}, \
            {FORCE_READ, "read", true}, \
-           {FORCE_READ_INDEX, "readIndex", true}, \
            {FORCE_READ_SEL, "readSel", true}, \
            {FORCE_RELEASE, "release", false}, \
            {FORCE_TOUCH, "touch", false}, \

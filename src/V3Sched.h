@@ -43,7 +43,8 @@ inline bool isVlForceVec(const AstVarScope* vscp) {
 }
 
 inline bool isForceReadMethod(VCMethod method) {
-    return method == VCMethod::FORCE_READ || method == VCMethod::FORCE_READ_INDEX;
+    return method == VCMethod::FORCE_READ || method == VCMethod::FORCE_BLEND_OWNED
+           || method == VCMethod::FORCE_OWNS_ANY || method == VCMethod::FORCE_OWNS_SLOT;
 }
 
 inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
