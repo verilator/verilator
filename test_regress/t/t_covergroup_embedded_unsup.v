@@ -5,9 +5,7 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Test that two currently-unsupported coverpoint reference styles are properly flagged
-// as COVIGN: references to containing-class members ; references to covergroup formal
-// parameters
+// Test that unsupported coverpoint reference styles are properly flagged as COVERIGN.
 
 class ubus_transfer;
   bit [15:0] addr;
@@ -53,12 +51,45 @@ class parameterized_monitor;
   endfunction
 endclass
 
+class mixed_monitor;
+  bit [3:0] local_value;
+  coverage_state cs;
+
+  // The formal-handle guard must still apply when the expression also has an enclosing member.
+  covergroup cov_mixed(coverage_state st);
+    cp: coverpoint local_value + st.test;
+  endgroup
+
+  function new();
+    cs = new;
+    cov_mixed = new(cs);
+  endfunction
+endclass
+
+class unconstructed_monitor;
+  bit [3:0] local_value;
+
+  // Without a construction site, the enclosing-class back-pointer cannot be initialized.
+  covergroup cov_unconstructed;
+    cp: coverpoint local_value;
+    cp2: coverpoint local_value[2:0];
+    cp_x_cp2: cross cp, cp2;
+  endgroup
+
+  function new();
+  endfunction
+endclass
+
 module t;
   ubus_master_monitor m;
   parameterized_monitor p;
+  mixed_monitor q;
+  unconstructed_monitor r;
   initial begin
     m = new;
     p = new;
+    q = new;
+    r = new;
     $write("*-* All Finished *-*\n");
     $finish;
   end

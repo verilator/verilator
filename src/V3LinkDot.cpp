@@ -4338,6 +4338,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
+            if (!foundp && m_ds.m_dotp && VN_IS(m_ds.m_dotp->lhsp(), ParseRef)
+                && m_ds.m_dotp->lhsp()->name() == "this") {
+                const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
+                if (classp && classp->isCovergroup()) {
+                    VSymEnt* const parentClassSymp = m_ds.m_dotSymp->parentp();
+                    UASSERT_OBJ(parentClassSymp && VN_IS(parentClassSymp->nodep(), Class), classp,
+                                "Embedded covergroup not directly under enclosing class");
+                    foundp = parentClassSymp->findIdFallback(nodep->name());
+                    if (foundp) m_ds.m_dotSymp = parentClassSymp;
+                }
+            }
             // If not found in modport, check interface fallback for parameters and typedefs.
             // Parameters and typedefs are always visible through a modport (IEEE 1800-2023 25.5).
             // This mirrors the VarXRef modport parameter fallback in visit(AstVarXRef).

@@ -1,0 +1,82 @@
+GlobalCg.cp_global.auto_0: 0
+GlobalCg.cp_global.auto_1: 0
+GlobalCg.cp_global.auto_10: 0
+GlobalCg.cp_global.auto_11: 0
+GlobalCg.cp_global.auto_12: 0
+GlobalCg.cp_global.auto_13: 0
+GlobalCg.cp_global.auto_14: 0
+GlobalCg.cp_global.auto_15: 0
+GlobalCg.cp_global.auto_2: 0
+GlobalCg.cp_global.auto_3: 0
+GlobalCg.cp_global.auto_4: 0
+GlobalCg.cp_global.auto_5: 0
+GlobalCg.cp_global.auto_6: 0
+GlobalCg.cp_global.auto_7: 0
+GlobalCg.cp_global.auto_8: 0
+GlobalCg.cp_global.auto_9: 0
+__vlAnonCG_branch_cg.cp_branch.hi: 8
+__vlAnonCG_branch_cg.cp_branch.lo: 8
+__vlAnonCG_cg.cp_base.auto_0: 0
+__vlAnonCG_cg.cp_base.auto_1: 0
+__vlAnonCG_cg.cp_base.auto_10: 0
+__vlAnonCG_cg.cp_base.auto_11: 0
+__vlAnonCG_cg.cp_base.auto_12: 0
+__vlAnonCG_cg.cp_base.auto_13: 0
+__vlAnonCG_cg.cp_base.auto_14: 0
+__vlAnonCG_cg.cp_base.auto_15: 0
+__vlAnonCG_cg.cp_base.auto_2: 0
+__vlAnonCG_cg.cp_base.auto_3: 0
+__vlAnonCG_cg.cp_base.auto_4: 0
+__vlAnonCG_cg.cp_base.auto_5: 0
+__vlAnonCG_cg.cp_base.auto_6: 0
+__vlAnonCG_cg.cp_base.auto_7: 0
+__vlAnonCG_cg.cp_base.auto_8: 0
+__vlAnonCG_cg.cp_base.auto_9: 0
+__vlAnonCG_cg.cp_derived.auto_0: 0
+__vlAnonCG_cg.cp_derived.auto_1: 0
+__vlAnonCG_cg.cp_derived.auto_10: 0
+__vlAnonCG_cg.cp_derived.auto_11: 0
+__vlAnonCG_cg.cp_derived.auto_12: 0
+__vlAnonCG_cg.cp_derived.auto_13: 0
+__vlAnonCG_cg.cp_derived.auto_14: 0
+__vlAnonCG_cg.cp_derived.auto_15: 0
+__vlAnonCG_cg.cp_derived.auto_2: 0
+__vlAnonCG_cg.cp_derived.auto_3: 0
+__vlAnonCG_cg.cp_derived.auto_4: 0
+__vlAnonCG_cg.cp_derived.auto_5: 0
+__vlAnonCG_cg.cp_derived.auto_6: 0
+__vlAnonCG_cg.cp_derived.auto_7: 0
+__vlAnonCG_cg.cp_derived.auto_8: 0
+__vlAnonCG_cg.cp_derived.auto_9: 0
+__vlAnonCG_copy_cg.cp_copy.hi: 0
+__vlAnonCG_copy_cg.cp_copy.lo: 1
+__vlAnonCG_derived_cg.cp_inherited.hi: 8
+__vlAnonCG_derived_cg.cp_inherited.lo: 8
+__vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_0 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_1 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_2 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_3 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.lo_x_auto_0 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.lo_x_auto_1 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.lo_x_auto_2 [cross]: 2
+__vlAnonCG_mon_cg.addr_x_op_b.lo_x_auto_3 [cross]: 2
+__vlAnonCG_mon_cg.cp_addr.hi: 8
+__vlAnonCG_mon_cg.cp_addr.lo: 8
+__vlAnonCG_mon_cg.cp_enabled.hi: 8
+__vlAnonCG_mon_cg.cp_enabled.lo: 0
+__vlAnonCG_mon_cg.cp_inner.hi: 8
+__vlAnonCG_mon_cg.cp_inner.lo: 8
+__vlAnonCG_mon_cg.cp_op_a.hi: 8
+__vlAnonCG_mon_cg.cp_op_a.lo: 8
+__vlAnonCG_mon_cg.cp_op_b.auto_0: 4
+__vlAnonCG_mon_cg.cp_op_b.auto_1: 4
+__vlAnonCG_mon_cg.cp_op_b.auto_2: 4
+__vlAnonCG_mon_cg.cp_op_b.auto_3: 4
+__vlAnonCG_static_cg.cp_instance.hi: 8
+__vlAnonCG_static_cg.cp_instance.lo: 8
+__vlAnonCG_static_cg.cp_static.hi: 8
+__vlAnonCG_static_cg.cp_static.lo: 8
+__vlAnonCG_static_only_cg.cp_static_only.hi: 8
+__vlAnonCG_static_only_cg.cp_static_only.lo: 8
+__vlAnonCG_this_cg.cp_this.hi: 8
+__vlAnonCG_this_cg.cp_this.lo: 8

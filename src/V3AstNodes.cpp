@@ -1194,7 +1194,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type = "VlSampleQueue<" + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
-        info.m_type = "VlClassRef<" + EmitCUtil::prefixNameProtect(adtypep) + ">";
+        const string className = EmitCUtil::prefixNameProtect(adtypep);
+        info.m_type = adtypep->rawPointer() ? className + "*" : "VlClassRef<" + className + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = EmitCUtil::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
@@ -2196,8 +2197,22 @@ void AstClassRefDType::dump(std::ostream& str) const {
     } else {
         str << " -> UNLINKED";
     }
+    if (rawPointer()) str << " [RAWPTR]";
 }
-void AstClassRefDType::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstClassRefDType::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, rawPointer);
+    dumpJsonGen(str);
+}
+void AstClassRefDType::selfTest() {
+    FileLine* const fl = new FileLine{FileLine::commandLineFilename()};
+    AstClassRefDType* const owningp = new AstClassRefDType{fl, nullptr, nullptr};
+    AstClassRefDType* const rawp = new AstClassRefDType{fl, nullptr, nullptr};
+    rawp->rawPointer(true);
+    UASSERT_OBJ(!owningp->sameNode(rawp) && rawp->sameNode(rawp), rawp,
+                "Raw class pointer must have distinct type identity");
+    VL_DO_DANGLING(owningp->deleteTree(), owningp);
+    VL_DO_DANGLING(rawp->deleteTree(), rawp);
+}
 void AstClassRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "class:" << name();
