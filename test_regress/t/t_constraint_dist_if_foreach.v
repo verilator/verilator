@@ -136,6 +136,94 @@ class ClsIndep;
   }
 endclass
 
+// if (gate) foreach (q[i]) q[i] dist {...}, over a queue
+class ClsQueue;
+  rand bit [2:0] q[$];
+  bit gate;
+  constraint sz {q.size() == 4;}
+  constraint c {
+    if (gate == 1'b1) {
+      foreach (q[i]) {
+        q[i] dist {
+          [3'd0 : 3'd1] :/ 90,
+          [3'd2 : 3'd5] :/ 10
+        };
+      }
+    }
+  }
+endclass
+
+// if (gate) foreach (d[i]) d[i] dist {...}, over a dynamic array
+class ClsDynArray;
+  rand bit [2:0] d[];
+  bit gate;
+  constraint sz {d.size() == 4;}
+  constraint c {
+    if (gate == 1'b1) {
+      foreach (d[i]) {
+        d[i] dist {
+          [3'd0 : 3'd1] :/ 90,
+          [3'd2 : 3'd5] :/ 10
+        };
+      }
+    }
+  }
+endclass
+
+// Weight given by a variable rather than a literal
+class ClsVarWeight;
+  rand bit [2:0] a[4];
+  bit gate;
+  int w;
+  constraint c {
+    if (gate == 1'b1) {
+      foreach (a[i]) {
+        a[i] dist {
+          [3'd0 : 3'd1] :/ w,
+          [3'd2 : 3'd5] :/ 1
+        };
+      }
+    }
+  }
+endclass
+
+// foreach (m[i]) if (gate) foreach (m[i][j]) m[i][j] dist {...}, so the
+// constraint if sits between the two foreach levels
+class ClsForeachIfForeach;
+  rand bit [2:0] m[2][4];
+  bit gate;
+  constraint c {
+    foreach (m[i]) {
+      if (gate == 1'b1) {
+        foreach (m[i][j]) {
+          m[i][j] dist {
+            [3'd0 : 3'd1] :/ 90,
+            [3'd2 : 3'd5] :/ 10
+          };
+        }
+      }
+    }
+  }
+endclass
+
+// if (gate) foreach (a[i]) if (gate2) a[i] dist {...}
+class ClsIfForeachIf;
+  rand bit [2:0] a[4];
+  bit gate, gate2;
+  constraint c {
+    if (gate == 1'b1) {
+      foreach (a[i]) {
+        if (gate2 == 1'b1) {
+          a[i] dist {
+            [3'd0 : 3'd1] :/ 90,
+            [3'd2 : 3'd5] :/ 10
+          };
+        }
+      }
+    }
+  }
+endclass
+
 module t;
   initial begin
     // dist inside if + foreach stays in range and reaches both buckets
@@ -290,6 +378,113 @@ module t;
         if (seen_lo > 0 && seen_hi > 0) seen_mixed++;
       end
       `checkgt(seen_mixed, 0);
+    end
+
+    // dist applies to every element of a queue
+    begin
+      static ClsQueue obj = new();
+      int seen_low, seen_high;
+      obj.gate = 1'b1;
+      seen_low = 0;
+      seen_high = 0;
+      repeat (100) begin
+        `checkd(obj.randomize(), 1);
+        `checkd(obj.q.size(), 4);
+        foreach (obj.q[i]) begin
+          `checkd((obj.q[i] inside {[3'd0 : 3'd5]}), 1'b1);
+          if (obj.q[i] <= 1) seen_low++;
+          else seen_high++;
+        end
+      end
+      `checkgt(seen_low, 0);
+      `checkgt(seen_high, 0);
+      `checkgt(seen_low, seen_high);
+    end
+
+    // dist applies to every element of a dynamic array
+    begin
+      static ClsDynArray obj = new();
+      int seen_low, seen_high;
+      obj.gate = 1'b1;
+      seen_low = 0;
+      seen_high = 0;
+      repeat (100) begin
+        `checkd(obj.randomize(), 1);
+        `checkd(obj.d.size(), 4);
+        foreach (obj.d[i]) begin
+          `checkd((obj.d[i] inside {[3'd0 : 3'd5]}), 1'b1);
+          if (obj.d[i] <= 1) seen_low++;
+          else seen_high++;
+        end
+      end
+      `checkgt(seen_low, 0);
+      `checkgt(seen_high, 0);
+      `checkgt(seen_low, seen_high);
+    end
+
+    // A weight held in a variable is read at run time, so a 3 :/ 1 split
+    // reaches both buckets and leaves the low one dominant
+    begin
+      static ClsVarWeight obj = new();
+      int seen_low, seen_high;
+      obj.gate = 1'b1;
+      obj.w = 3;
+      seen_low = 0;
+      seen_high = 0;
+      repeat (100) begin
+        `checkd(obj.randomize(), 1);
+        foreach (obj.a[i]) begin
+          `checkd((obj.a[i] inside {[3'd0 : 3'd5]}), 1'b1);
+          if (obj.a[i] <= 1) seen_low++;
+          else seen_high++;
+        end
+      end
+      `checkgt(seen_low, 0);
+      `checkgt(seen_high, 0);
+      `checkgt(seen_low, seen_high);
+    end
+
+    // A constraint if between two foreach levels
+    begin
+      static ClsForeachIfForeach obj = new();
+      int seen_low, seen_high;
+      obj.gate = 1'b1;
+      seen_low = 0;
+      seen_high = 0;
+      repeat (100) begin
+        `checkd(obj.randomize(), 1);
+        foreach (obj.m[i]) begin
+          foreach (obj.m[i][j]) begin
+            `checkd((obj.m[i][j] inside {[3'd0 : 3'd5]}), 1'b1);
+            if (obj.m[i][j] <= 1) seen_low++;
+            else seen_high++;
+          end
+        end
+      end
+      `checkgt(seen_low, 0);
+      `checkgt(seen_high, 0);
+      `checkgt(seen_low, seen_high);
+    end
+
+    // A second constraint if inside the foreach body
+    begin
+      static ClsIfForeachIf obj = new();
+      int seen_low, seen_high;
+      obj.gate = 1'b1;
+      obj.gate2 = 1'b1;
+      seen_low = 0;
+      seen_high = 0;
+      repeat (100) begin
+        `checkd(obj.randomize(), 1);
+        foreach (obj.a[i]) begin
+          `checkd((obj.a[i] inside {[3'd0 : 3'd5]}), 1'b1);
+          if (obj.a[i] <= 1) seen_low++;
+          else seen_high++;
+        end
+      end
+      `checkgt(seen_low, 0);
+      `checkgt(seen_high, 0);
+      `checkgt(seen_low, seen_high);
     end
 
     $write("*-* All Finished *-*\n");
