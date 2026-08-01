@@ -1176,6 +1176,17 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->user1(anyChild);
     }
 
+    // Prepend the bucket preamble stmts stored on user3p by lowerDistConstraints to the
+    // statements that will become the body of the generated AstForeach, so the per-element
+    // bucket draw is declared and evaluated in the same scope as its references.
+    static AstNode* prependDistPreamble(AstConstraintForeach* nodep, AstNode* bodyp) {
+        AstNode* const preamblep = nodep->user3p();
+        if (!preamblep) return bodyp;
+        nodep->user3p(nullptr);
+        preamblep->addNext(bodyp);
+        return preamblep;
+    }
+
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         AstVar* varp = nodep->varp();
@@ -2293,16 +2304,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         // methods work under a generage block?
     }
     void visit(AstBegin* nodep) override {}
-    // Prepend the bucket preamble stmts stored on user3p by lowerDistConstraints to the
-    // statements that will become the body of the generated AstForeach, so the per-element
-    // bucket draw is declared and evaluated in the same scope as its references.
-    static AstNode* prependDistPreamble(AstConstraintForeach* nodep, AstNode* bodyp) {
-        AstNode* const preamblep = nodep->user3p();
-        if (!preamblep) return bodyp;
-        nodep->user3p(nullptr);
-        preamblep->addNext(bodyp);
-        return preamblep;
-    }
     void visit(AstConstraintForeach* nodep) override {
         // Convert to plain foreach
         FileLine* const fl = nodep->fileline();
