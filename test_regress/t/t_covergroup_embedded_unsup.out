@@ -8,8 +8,4 @@
                                                         : ... note: In instance 't'
    60 |     cp: coverpoint local_value + st.test;
       |                                     ^~~~
-%Warning-COVERIGN: t/t_covergroup_embedded_unsup.v:74:20: Unsupported: 'covergroup' coverage construct referencing enclosing class member; ignoring covergroup '__vlAnonCG_cov_unconstructed'
-                                                        : ... note: In instance 't'
-   74 |     cp: coverpoint local_value;
-      |                    ^~~~~~~~~~~
 %Error: Exiting due to

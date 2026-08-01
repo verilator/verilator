@@ -310,6 +310,19 @@ class NestedContainer;
   endclass
 endclass
 
+class UnconstructedMonitor;
+  bit [3:0] local_value;
+
+  covergroup unconstructed_cg;
+    cp: coverpoint local_value;
+    cp2: coverpoint local_value[2:0];
+    cp_x_cp2: cross cp, cp2;
+  endgroup
+
+  function new();
+  endfunction
+endclass
+
 module t;
   Monitor mon;
   BranchMonitor branch_a;
@@ -332,6 +345,7 @@ module t;
   MultipleMonitor multiple_mon;
   NestedContainer nested_container;
   NestedContainer::NestedMonitor nested_mon;
+  UnconstructedMonitor unconstructed_mon;
   int i;
 
   initial begin
@@ -352,6 +366,8 @@ module t;
     multiple_mon = new;
     nested_container = new;
     nested_mon = new(nested_container);
+    unconstructed_mon = new;
+    `checkd(unconstructed_mon.unconstructed_cg == null, 1);
 
     for (i = 0; i < 16; ++i) begin
       mon.observe(i[3:0], i[7:0] * 17, i[1:0], i[3:0]);

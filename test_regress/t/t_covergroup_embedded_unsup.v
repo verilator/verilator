@@ -66,30 +66,14 @@ class mixed_monitor;
   endfunction
 endclass
 
-class unconstructed_monitor;
-  bit [3:0] local_value;
-
-  // Without a construction site, the enclosing-class back-pointer cannot be initialized.
-  covergroup cov_unconstructed;
-    cp: coverpoint local_value;
-    cp2: coverpoint local_value[2:0];
-    cp_x_cp2: cross cp, cp2;
-  endgroup
-
-  function new();
-  endfunction
-endclass
-
 module t;
   ubus_master_monitor m;
   parameterized_monitor p;
   mixed_monitor q;
-  unconstructed_monitor r;
   initial begin
     m = new;
     p = new;
     q = new;
-    r = new;
     $write("*-* All Finished *-*\n");
     $finish;
   end
