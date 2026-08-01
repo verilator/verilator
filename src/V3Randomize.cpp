@@ -2385,7 +2385,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             pushDeletep(nodep->unlinkFrBack());
             return;
         }
-        UASSERT_OBJ(m_classp, nodep, "m_classp not set");
 
         FileLine* const fl = nodep->fileline();
 
@@ -2408,16 +2407,51 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(genVarp->user2p(), NodeModule);
         UASSERT_OBJ(genModp, nodep, "genVarp has no NodeModule set");
 
+        // Registration calls emitted where the unique statement stood, so they end up
+        // in the constraint setup task and re-run on every randomize()
+        AstNode* setupStmtsp = nullptr;
+        // Under a condition the distinctness must instead become part of the guarded
+        // constraint expression, which needs an element count known at verilation time
+        std::vector<std::string> smtExprs;
         for (AstNode* itemp = nodep->rangesp(); itemp; itemp = itemp->nextp()) {
             if (AstVarRef* const varRefp = VN_CAST(itemp, VarRef)) {
                 AstVar* const varp = varRefp->varp();
                 AstNodeModule* const varModp = VN_AS(varp->user2p(), NodeModule);
                 UASSERT_OBJ(varModp, nodep, "varp has no NodeModule set");
                 AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
-                AstConst* dtypeWidthp = nullptr;
 
-                // Ensure it is ONLY 1-D by checking that the sub-type is NOT an array/queue
-                AstNodeDType* const subp = dtypep->subDTypep()->skipRefp();
+                const static auto dynDTypeSupported
+                    = [](const AstNodeDType* const dtypep) -> bool {
+                    return VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)
+                           || VN_IS(dtypep, AssocArrayDType);
+                };
+
+                // Establish it is an array before asking for its element type
+                uint64_t elemWidth;
+                uint32_t staticSize = 0;  // Element count, zero when only known at run time
+                if (const AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType)) {
+                    const AstRange* const rangep = up->rangep();
+                    UASSERT_OBJ(rangep && VN_IS(rangep->leftp(), Const)
+                                    && VN_IS(rangep->rightp(), Const),
+                                nodep, "Unpack array does not have a constant range");
+                    staticSize = up->elementsConst();
+                    if (staticSize > 100) {
+                        nodep->v3warn(
+                            CONSTRAINTIGN,
+                            "Unsupported: Unique constraint on static arrays of size > 100");
+                        continue;
+                    }
+                    elemWidth = static_cast<uint64_t>(varp->dtypep()->width());
+                } else if (dynDTypeSupported(dtypep)) {
+                    elemWidth = static_cast<uint64_t>(dtypep->subDTypep()->width());
+                } else {
+                    nodep->v3warn(CONSTRAINTIGN, "Unsupported: Unique constraint on "
+                                                     << dtypep->prettyDTypeName(false));
+                    continue;
+                }
+
+                // Ensure it is ONLY 1-D by checking that the element type is not an array/queue
+                const AstNodeDType* const subp = dtypep->subDTypep()->skipRefp();
                 if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType)
                     || VN_IS(subp, DynArrayDType) || VN_IS(subp, AssocArrayDType)
                     || VN_IS(subp, WildcardArrayDType)) {
@@ -2426,80 +2460,77 @@ class ConstraintExprVisitor final : public VNVisitor {
                     continue;
                 }
 
-                const static auto dynDTypeSupported
-                    = [](const AstNodeDType* const dtypep) -> bool {
-                    return VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)
-                           || VN_IS(dtypep, AssocArrayDType);
-                };
-
-                if (AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType)) {
-                    const AstRange* const rangep = up->rangep();
-                    UASSERT_OBJ(rangep && VN_IS(rangep->leftp(), Const)
-                                    && VN_IS(rangep->rightp(), Const),
-                                nodep, "Unpack array does not have a constant range");
-                    dtypeWidthp = new AstConst{fl, AstConst::Unsized64{},
-                                               static_cast<uint64_t>(varp->dtypep()->width())};
-                } else if (dynDTypeSupported(dtypep)) {
-                    dtypeWidthp
-                        = new AstConst{fl, AstConst::Unsized64{},
-                                       static_cast<uint64_t>(dtypep->subDTypep()->width())};
-                } else {
-                    nodep->v3warn(CONSTRAINTIGN, "Unsupported: Unique constraint on "
-                                                     << dtypep->prettyDTypeName(false));
+                if (m_wantSingle && !staticSize) {
+                    nodep->v3warn(CONSTRAINTIGN,
+                                  "Unsupported: Unique constraint on dynamically sized array "
+                                  "inside conditional constraint");
                     continue;
                 }
 
-                // convert to c string
-                AstNodeExpr* const varnamep = new AstCExpr{
-                    fl, AstCExpr::Pure{}, "\"" + varp->name() + "\"", varp->width()};
+                if (!varp->user3()) {
+                    varp->user3(true);  // Solver owns it; __VBasicRand must not overwrite
+                    // Convert to C string
+                    AstNodeExpr* const varnamep = new AstCExpr{
+                        fl, AstCExpr::Pure{}, "\"" + varp->name() + "\"", varp->width()};
 
-                AstCMethodHard* const writeVarCallp
-                    = new AstCMethodHard{fl, new AstVarRef{fl, genModp, genVarp, VAccess::READ},
-                                         VCMethod::RANDOMIZER_WRITE_VAR};
-                writeVarCallp->addPinsp(new AstVarRef{fl, varModp, varp, VAccess::READ});
-                writeVarCallp->addPinsp(dtypeWidthp);
-                writeVarCallp->addPinsp(varnamep);
-                writeVarCallp->addPinsp(new AstConst{fl, 1});  // Dimension
-
-                writeVarCallp->dtypeSetVoid();
-                initTaskp->addStmtsp(new AstStmtExpr{fl, writeVarCallp});
-
-                AstNodeExpr* const randUniquePinsp
-                    = new AstConst{fl, AstConst::String{}, varp->name()};
-
-                if (AstUnpackArrayDType* const adtypep
-                    = VN_CAST(varp->dtypep(), UnpackArrayDType)) {
-                    uint32_t arraySize = adtypep->elementsConst();
-                    if (arraySize > 100) {
-                        nodep->v3warn(
-                            CONSTRAINTIGN,
-                            "Unsupported: Unique constraint on static arrays of size > 100");
-                        VL_DO_DANGLING(randUniquePinsp->deleteTree(), randUniquePinsp);
-                        continue;
+                    AstCMethodHard* const writeVarCallp = new AstCMethodHard{
+                        fl, new AstVarRef{fl, genModp, genVarp, VAccess::READ},
+                        VCMethod::RANDOMIZER_WRITE_VAR};
+                    writeVarCallp->addPinsp(new AstVarRef{fl, varModp, varp, VAccess::READ});
+                    writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, elemWidth});
+                    writeVarCallp->addPinsp(varnamep);
+                    writeVarCallp->addPinsp(new AstConst{fl, 1});  // Dimension
+                    const RandomizeMode randMode = {.asInt = varp->user1()};
+                    if (randMode.usesMode) {
+                        writeVarCallp->addPinsp(
+                            new AstConst{fl, AstConst::Unsized64{}, randMode.index});
                     }
-                    randUniquePinsp->addNext(new AstConst{fl, arraySize});
-                } else if (dynDTypeSupported(dtypep)) {  // LCOV_EXCL_BR_LINE
-                    const VCMethod sizeMethod = VN_IS(dtypep, AssocArrayDType)
-                                                    ? VCMethod::ASSOC_SIZE
-                                                    : VCMethod::DYN_SIZE;
-                    AstCMethodHard* const dynSizep = new AstCMethodHard{
-                        fl, new AstVarRef{fl, varModp, varp, VAccess::READ}, sizeMethod};
-                    dynSizep->dtypeSetUInt32();
-                    // unable to check dynamic array size during verilation
-                    randUniquePinsp->addNext(dynSizep);
-                } else {
-                    varp->v3fatalSrc("Unexpected variable type "
-                                     << varp->dtypep()->prettyDTypeNameQ());
+                    writeVarCallp->dtypeSetVoid();
+                    initTaskp->addStmtsp(new AstStmtExpr{fl, writeVarCallp});
+                }
+
+                // A solver-sized container is resized between solve passes; joining the
+                // size-constrained set gets its element table refreshed in between
+                if (varp->user4p() && m_sizeConstrainedArraysp) {
+                    m_sizeConstrainedArraysp->insert(varp);
+                }
+
+                if (m_wantSingle) {
+                    // Fewer than two elements are trivially distinct
+                    if (staticSize < 2) continue;
+                    std::string exprStr = "(__Vbv (distinct";
+                    for (uint32_t i = 0; i < staticSize; ++i) {
+                        exprStr += " (select " + varp->name() + " #x";
+                        for (int shift = 28; shift >= 0; shift -= 4) {
+                            exprStr += "0123456789abcdef"[(i >> shift) & 0xf];
+                        }
+                        exprStr += ')';
+                    }
+                    smtExprs.emplace_back(exprStr + "))");
                     continue;
                 }
 
+                AstNodeExpr* const namep = new AstConst{fl, AstConst::String{}, varp->name()};
                 AstCMethodHard* const randUniqueCallp
                     = new AstCMethodHard{fl, new AstVarRef{fl, genModp, genVarp, VAccess::READ},
-                                         VCMethod::RANDOMIZER_UNIQUE, randUniquePinsp};
+                                         VCMethod::RANDOMIZER_UNIQUE, namep};
                 randUniqueCallp->dtypep(nodep->findVoidDType());
-                initTaskp->addStmtsp(new AstStmtExpr{fl, randUniqueCallp});
+                setupStmtsp = AstNode::addNext(setupStmtsp, new AstStmtExpr{fl, randUniqueCallp});
             }
         }
+        if (m_wantSingle && !smtExprs.empty()) {
+            std::string exprStr = smtExprs.front();
+            if (smtExprs.size() > 1) {
+                exprStr = "(bvand";
+                for (const std::string& oneExprp : smtExprs) exprStr += " " + oneExprp;
+                exprStr += ')';
+            }
+            AstSFormatF* const newp = new AstSFormatF{fl, exprStr, false, nullptr};
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        if (setupStmtsp) nodep->addHereThisAsNext(setupStmtsp);
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -3381,10 +3412,23 @@ class RandomizeVisitor final : public VNVisitor {
     }
     // Expand unique{a,b,c} with explicit elements into pairwise != constraints.
     // Whole-array unique{arr} is left for ConstraintExprVisitor's rand_unique handling.
+    // Recurses into conditional and foreach bodies, so that the pairwise
+    // constraints stay under the guard they were written under.
     static void expandUniqueElementList(AstNode* itemsp) {
         AstNode* itemp = itemsp;
         while (itemp) {
             AstNode* const nextp = itemp->nextp();
+            if (const AstConstraintIf* const ifp = VN_CAST(itemp, ConstraintIf)) {
+                expandUniqueElementList(ifp->thensp());
+                expandUniqueElementList(ifp->elsesp());
+                itemp = nextp;
+                continue;
+            }
+            if (const AstConstraintForeach* const foreachp = VN_CAST(itemp, ConstraintForeach)) {
+                expandUniqueElementList(foreachp->bodyp());
+                itemp = nextp;
+                continue;
+            }
             AstConstraintUnique* const uniquep = VN_CAST(itemp, ConstraintUnique);
             if (!uniquep) {
                 itemp = nextp;
@@ -3394,8 +3438,12 @@ class RandomizeVisitor final : public VNVisitor {
             std::vector<AstNodeExpr*> exprItems;
             bool hasArrayVarRef = false;
             for (AstNode* rp = uniquep->rangesp(); rp; rp = rp->nextp()) {
-                if (AstVarRef* const vrp = VN_CAST(rp, VarRef)) {
-                    if (VN_IS(vrp->varp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (const AstVarRef* const vrp = VN_CAST(rp, VarRef)) {
+                    // A container's elements are made distinct by rand_unique, not pairwise
+                    const AstNodeDType* const dtypep = vrp->varp()->dtypep()->skipRefp();
+                    if (VN_IS(dtypep, NodeArrayDType) || VN_IS(dtypep, QueueDType)
+                        || VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, AssocArrayDType)
+                        || VN_IS(dtypep, WildcardArrayDType)) {
                         hasArrayVarRef = true;
                         continue;
                     }
@@ -3419,6 +3467,10 @@ class RandomizeVisitor final : public VNVisitor {
                     uniquep->unlinkFrBack();
                     VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
                 }
+            } else if (exprItems.size() == 1 && !hasArrayVarRef) {
+                // A set of one element is unique whatever that element holds
+                uniquep->unlinkFrBack();
+                VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
             }
             itemp = nextp;
         }
