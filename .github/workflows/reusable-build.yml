@@ -97,6 +97,7 @@ jobs:
           ./ci/ci-build.bash \
             --prefix ${{ github.workspace }}/install \
             --compiler ${{ inputs.cc }} \
+            --light-debug \
             ${{ inputs.ccwarn && '--ccwarn' || '' }} \
             ${{ inputs.dev-asan && '--asan' || '' }} \
             ${{ inputs.dev-gcov && '--gcov' || '' }}
