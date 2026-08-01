@@ -159,6 +159,21 @@ public:
         if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
+    VSymEnt* findSimilarIdFlat(const string& name) const {
+        // Find identifier without looking upward through symbol hierarchy
+        // Were looking for symbols that are the same when compared without
+	// caring about case, but that are not the same name
+	string s = name;
+	for (auto & c: s) c = (char)toupper(c);
+        for (auto it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
+		string t = it->first;
+		for (auto & c: t) c = (char)toupper(c);
+		if (t == s &&  name != it->first) { 
+			return it->second;
+		}
+	}
+        return nullptr;
+    }
     VSymEnt* findIdFallback(const string& name) const {
         // Find identifier looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name

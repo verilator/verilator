@@ -360,6 +360,22 @@ public:
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
+	    if (name.find("__DOT__") != std::string::npos) { // ignore hierarchical equivalents
+	        const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
+	        if (alt) {
+               	    UINFO(4, "name " << name);  // Not always same as nodep->name
+            	    UINFO(4, "Var1 " << nodep);
+            	    UINFO(4, "Var2 " << alt->nodep());
+                    nodep->v3warn(
+                        SIMILARNAMES,
+                        "Declaration of signal with the same name, but with different cases, this is valid verilog but may cause problems in other VLSI tools "
+                        << nodep->prettyNameQ() << '\n'
+                        << nodep->warnContextPrimary() << '\n'
+                        << alt->nodep()->warnOther()
+                        << "... Location of original declaration\n"
+                        << alt->nodep()->warnContextSecondary());
+                }
+            }
         } else if (nodep == fnodep) {  // Already inserted.
             // Good.
         } else if (foundp->imported()) {  // From package
