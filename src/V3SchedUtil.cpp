@@ -33,6 +33,32 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 namespace V3Sched {
 namespace util {
 
+AstNode* cloneLogic(AstNode* logicp) {
+    AstNode* const clonep = logicp->cloneTree(false);
+    std::map<AstVarScope*, AstVarScope*> clonedVscps;
+    clonep->foreach([&](AstNodeVarRef* refp) {
+        AstVarScope* const oldVscp = refp->varScopep();
+        // cloneTree relinks an in-tree local AstVar, but its out-of-tree AstVarScope still points
+        // at the original declaration. Give each cloned declaration an independent scope.
+        if (!oldVscp || oldVscp->varp() == refp->varp()) return;
+
+        const auto pair = clonedVscps.emplace(oldVscp, nullptr);
+        if (pair.second) {
+            AstVarScope* const newVscp
+                = new AstVarScope{refp->fileline(), oldVscp->scopep(), refp->varp()};
+            newVscp->trace(oldVscp->isTrace());
+            newVscp->optimizeLifePost(oldVscp->optimizeLifePost());
+            oldVscp->scopep()->addVarsp(newVscp);
+            pair.first->second = newVscp;
+        } else {
+            UASSERT_OBJ(pair.first->second->varp() == refp->varp(), refp,
+                        "Cloned variable scope maps to multiple variables");
+        }
+        refp->varScopep(pair.first->second);
+    });
+    return clonep;
+}
+
 AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow) {
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();
     AstCFunc* const funcp = new AstCFunc{netlistp->fileline(), name, scopeTopp, ""};

@@ -14,10 +14,20 @@ module t;
 
   int nonConst3 = $c("3");
 
+  task automatic copy_task(input int value, output int result);
+    result = value;
+  endtask
+
   initial begin
     // Basic loop
     for (int i = 0; i < 3; ++i) begin : loop_0
       $display("loop_0 %0d", i);
+    end
+    // Loop containing activation-local task staging
+    for (int i = 0; i < 2; ++i) begin : loop_task
+      int result;
+      copy_task(i, result);
+      if (result != i) $stop;
     end
     // Loop with 2 init/step
     for (int i = 0, j = 5; i < j; i += 2, j += 1) begin : loop_1

@@ -274,7 +274,7 @@ LogicReplicas replicate(Graph* graphp) {
     for (V3GraphVertex& vtx : graphp->vertices()) {
         if (SchedReplicateLogicVertex* const lvtxp = vtx.cast<SchedReplicateLogicVertex>()) {
             const auto replicateTo = [&](LogicByScope& lbs) {
-                lbs.add(lvtxp->scopep(), lvtxp->senTreep(), lvtxp->logicp()->cloneTree(false));
+                lbs.add(lvtxp->scopep(), lvtxp->senTreep(), util::cloneLogic(lvtxp->logicp()));
             };
             const uint8_t targetRegions = lvtxp->drivingRegions() & ~lvtxp->assignedRegion();
             UASSERT(!lvtxp->senTreep()->hasClocked() || targetRegions == 0,

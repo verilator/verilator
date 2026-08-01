@@ -50,6 +50,14 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace V3Sched {
 
+LogicByScope LogicByScope::clone() const {
+    LogicByScope result;
+    for (const auto& pair : *this) {
+        result.emplace_back(pair.first, VN_AS(util::cloneLogic(pair.second), Active));
+    }
+    return result;
+}
+
 namespace {
 
 //============================================================================
@@ -928,6 +936,28 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
     return std::unordered_map<const AstSenTree*, AstSenTree*>{pairs.begin(), pairs.end()};
 }
 
+void removeVarScopesForDeletedLogic(AstNetlist* netlistp) {
+    // Scheduler ordering deletes logic replicas after moving their statements. Remove only
+    // unreferenced scopes whose cloned local declaration was deleted with such a replica.
+    std::unordered_set<const AstVar*> liveVarps;
+    std::unordered_set<const AstVarScope*> referencedVscps;
+    std::vector<AstVarScope*> staleVscps;
+
+    netlistp->foreach([&](const AstVar* varp) { liveVarps.emplace(varp); });
+    netlistp->foreach([&](const AstNodeVarRef* refp) {
+        if (refp->varScopep()) referencedVscps.emplace(refp->varScopep());
+    });
+    netlistp->foreach([&](AstVarScope* vscp) {
+        if (!liveVarps.count(vscp->varp())) staleVscps.push_back(vscp);
+    });
+
+    for (AstVarScope* const vscp : staleVscps) {
+        UASSERT_OBJ(!referencedVscps.count(vscp), vscp,
+                    "Variable scope still referenced after its declaration was deleted");
+        VL_DO_DANGLING(vscp->unlinkFrBack()->deleteTree(), vscp);
+    }
+}
+
 //============================================================================
 // Top level entry-point to scheduling
 
@@ -1204,6 +1234,7 @@ void schedule(AstNetlist* netlistp) {
 
     // Step 16: Clean up
     netlistp->clearStlFirstIterationp();
+    removeVarScopesForDeletedLogic(netlistp);
 
     // Haven't split static initializer yet
     util::splitCheck(staticp);
