@@ -91,13 +91,31 @@ class BranchMonitor;
   endfunction
 endclass
 
+// IEEE 1800-2012 8.13 makes inherited members part of the derived class as if declared
+// there; 19.4 permits those class members in an embedded covergroup.
 class BaseMonitor;
-  bit [3:0] inherited_value;
+  protected bit [3:0] inherited_value;
+
+  covergroup base_cg;
+    cp_base: coverpoint inherited_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    base_cg = new;
+  endfunction
 endclass
 
 class DerivedMonitor extends BaseMonitor;
+  bit [3:0] derived_value;
+
   covergroup derived_cg;
     cp_inherited: coverpoint inherited_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_this_inherited: coverpoint this.inherited_value {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+    cp_derived: coverpoint derived_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_cross: cross cp_inherited, cp_derived;
   endgroup
 
   function new();
@@ -106,7 +124,62 @@ class DerivedMonitor extends BaseMonitor;
 
   function void observe(bit [3:0] v);
     inherited_value = v;
+    derived_value = 15 - v;
+    base_cg.sample();
     derived_cg.sample();
+  endfunction
+endclass
+
+// IEEE 1800-2012 8.18 makes protected members visible to subclasses.  Combined with
+// 8.13 and 19.4, a leaf class covergroup may cover a protected root-class property.
+class RootMonitor;
+  protected bit [3:0] root_value;
+endclass
+
+class MiddleMonitor extends RootMonitor;
+endclass
+
+class LeafMonitor extends MiddleMonitor;
+  bit [3:0] leaf_value;
+
+  covergroup leaf_cg;
+    cp_root: coverpoint root_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_leaf: coverpoint leaf_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_cross: cross cp_root, cp_leaf;
+  endgroup
+
+  function new();
+    leaf_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    root_value = v;
+    leaf_value = 15 - v;
+    leaf_cg.sample();
+  endfunction
+endclass
+
+class ParameterizedBaseMonitor #(
+    int WIDTH = 4
+);
+  bit [WIDTH-1:0] parameterized_value;
+endclass
+
+class ParameterizedDerivedMonitor extends ParameterizedBaseMonitor #(4);
+  covergroup parameterized_cg;
+    cp_parameterized: coverpoint parameterized_value {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+  endgroup
+
+  function new();
+    parameterized_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    parameterized_value = v;
+    parameterized_cg.sample();
   endfunction
 endclass
 
@@ -286,6 +359,7 @@ class MultipleMonitor;
 endclass
 
 class NestedContainer;
+  protected static bit [3:0] static_value;
   bit [3:0] value;
 
   class NestedMonitor;
@@ -295,6 +369,8 @@ class NestedContainer;
     covergroup nested_cg;
       cp_local: coverpoint local_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
       cp_container: coverpoint container.value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+      // IEEE 1800-2012 8.23 permits implicit access to static outer-class members.
+      cp_static: coverpoint static_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
     endgroup
 
     function new(NestedContainer container_arg);
@@ -305,6 +381,7 @@ class NestedContainer;
     function void observe(bit [3:0] v);
       local_value = v;
       container.value = 15 - v;
+      static_value = v;
       nested_cg.sample();
     endfunction
   endclass
@@ -328,6 +405,8 @@ module t;
   BranchMonitor branch_a;
   BranchMonitor branch_b;
   DerivedMonitor derived;
+  LeafMonitor leaf;
+  ParameterizedDerivedMonitor parameterized;
   ThisMonitor this_mon;
   ThisSampleMonitor this_sample_mon;
 `ifdef VERILATOR
@@ -353,6 +432,8 @@ module t;
     branch_a = new(1);
     branch_b = new(0);
     derived = new;
+    leaf = new;
+    parameterized = new;
     this_mon = new;
     this_sample_mon = new;
 `ifdef VERILATOR
@@ -372,6 +453,8 @@ module t;
     for (i = 0; i < 16; ++i) begin
       mon.observe(i[3:0], i[7:0] * 17, i[1:0], i[3:0]);
       derived.observe(i[3:0]);
+      leaf.observe(i[3:0]);
+      parameterized.observe(i[3:0]);
       this_mon.observe(i[3:0]);
       this_sample_mon.observe(i[3:0]);
 `ifdef VERILATOR

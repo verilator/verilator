@@ -119,7 +119,11 @@ private:
             nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
         }
         if (local || prot) {
-            const auto refClassp = VN_CAST(m_modp, Class);
+            // In case of covergroup, the reference is to the enclosing class, not the covergroup
+            // itself
+            const AstClass* refClassp = VN_CAST(m_modp, Class);
+            if (refClassp && refClassp->isCovergroup())
+                refClassp = refClassp->covergroupEnclosingClassp();
             const char* how = nullptr;
             // Inner nested classes can access `local` or `protected` members of their outer class
             const auto nestedAccess = [refClassp](const AstClass*, const AstNode* memberp) {
