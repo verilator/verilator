@@ -2208,7 +2208,7 @@ void AstClassRefDType::selfTest() {
     AstClassRefDType* const owningp = new AstClassRefDType{fl, nullptr, nullptr};
     AstClassRefDType* const rawp = new AstClassRefDType{fl, nullptr, nullptr};
     rawp->rawPointer(true);
-    UASSERT_OBJ(!owningp->sameNode(rawp) && rawp->sameNode(rawp), rawp,
+    UASSERT_OBJ(!owningp->sameNode(rawp) && !rawp->sameNode(owningp) && rawp->sameNode(rawp), rawp,
                 "Raw class pointer must have distinct type identity");
     VL_DO_DANGLING(owningp->deleteTree(), owningp);
     VL_DO_DANGLING(rawp->deleteTree(), rawp);

@@ -252,15 +252,11 @@ class EmitCHeader final : public EmitCConstInit {
                 using EmbeddedCovergroupVar = std::pair<const AstClass*, const AstVar*>;
                 std::vector<EmbeddedCovergroupVar> embeddedCovergroupVars;
                 const auto hasEnclosingBackPointer = [](const AstClass* covergroupp) {
-                    for (const AstNode* stmtp = covergroupp->stmtsp(); stmtp;
-                         stmtp = stmtp->nextp()) {
-                        const AstVar* const varp = VN_CAST(stmtp, Var);
-                        if (!varp) continue;
+                    return covergroupp->exists([](const AstVar* const varp) {
                         const AstClassRefDType* const refp
                             = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
-                        if (refp && refp->rawPointer()) return true;
-                    }
-                    return false;
+                        return refp && refp->rawPointer();
+                    });
                 };
                 const_cast<AstClass*>(classp)->foreachMember(
                     [&](AstClass* const memberClassp, AstVar* const varp) {

@@ -52,6 +52,8 @@ __vlAnonCG_copy_cg.cp_copy.hi: 0
 __vlAnonCG_copy_cg.cp_copy.lo: 1
 __vlAnonCG_derived_cg.cp_inherited.hi: 8
 __vlAnonCG_derived_cg.cp_inherited.lo: 8
+__vlAnonCG_first_cg.cp_first.hi: 8
+__vlAnonCG_first_cg.cp_first.lo: 8
 __vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_0 [cross]: 2
 __vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_1 [cross]: 2
 __vlAnonCG_mon_cg.addr_x_op_b.hi_x_auto_2 [cross]: 2
@@ -72,6 +74,12 @@ __vlAnonCG_mon_cg.cp_op_b.auto_0: 4
 __vlAnonCG_mon_cg.cp_op_b.auto_1: 4
 __vlAnonCG_mon_cg.cp_op_b.auto_2: 4
 __vlAnonCG_mon_cg.cp_op_b.auto_3: 4
+__vlAnonCG_nested_cg.cp_container.hi: 8
+__vlAnonCG_nested_cg.cp_container.lo: 8
+__vlAnonCG_nested_cg.cp_local.hi: 8
+__vlAnonCG_nested_cg.cp_local.lo: 8
+__vlAnonCG_second_cg.cp_second.hi: 8
+__vlAnonCG_second_cg.cp_second.lo: 8
 __vlAnonCG_static_cg.cp_instance.hi: 8
 __vlAnonCG_static_cg.cp_instance.lo: 8
 __vlAnonCG_static_cg.cp_static.hi: 8
@@ -80,3 +88,25 @@ __vlAnonCG_static_only_cg.cp_static_only.hi: 8
 __vlAnonCG_static_only_cg.cp_static_only.lo: 8
 __vlAnonCG_this_cg.cp_this.hi: 8
 __vlAnonCG_this_cg.cp_this.lo: 8
+__vlAnonCG_this_handle_cg.cp_this_handle.hi: 8
+__vlAnonCG_this_handle_cg.cp_this_handle.lo: 8
+__vlAnonCG_this_sample_cg.cp_this_member.hi: 8
+__vlAnonCG_this_sample_cg.cp_this_member.lo: 8
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_0: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_1: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_10: 16
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_11: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_12: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_13: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_14: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_15: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_2: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_3: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_4: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_5: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_6: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_7: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_8: 0
+__vlAnonCG_this_sample_cg.cp_this_parameter.auto_9: 0
+__vlAnonCG_this_sample_cg.cp_this_sample.hi: 8
+__vlAnonCG_this_sample_cg.cp_this_sample.lo: 8
