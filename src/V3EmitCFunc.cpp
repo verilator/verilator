@@ -541,8 +541,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                      depth + 1, suffix + ".atDefault()", nullptr);
     } else if (VN_IS(dtypep, CDType)) {
         return "";  // Constructor does it
-    } else if (VN_IS(dtypep, ClassRefDType)) {
-        return "";  // Constructor does it
+    } else if (const AstClassRefDType* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
+        return adtypep->rawPointer() ? varNameProtected + suffix + " = nullptr;\n" : "";
     } else if (VN_IS(dtypep, IfaceRefDType)) {
         return varNameProtected + suffix + " = nullptr;\n";
     } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
