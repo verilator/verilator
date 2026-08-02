@@ -2127,9 +2127,11 @@ List Of Warnings
       reg Abcd;
       wire abcd;
 
-   This is still valid Verilog and will not effect Verilator simulation. However
-   some downstream VLSI tools may not distinguish net and gate names with the
-   same case and may result in damaged netlists and hard to debug errors.
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   This is a warning as some downstream VLSI tools do
+   not distinguish net and gate names with the same case.
 
 
 .. option:: SPECIFYIGN
