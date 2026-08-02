@@ -705,6 +705,7 @@ class AstCell final : public AstNode {
     bool m_hasIfaceVar : 1;  // True if a Var has been created for this cell
     bool m_recursive : 1;  // Self-recursive module
     bool m_trace : 1;  // Trace this cell
+    bool m_virtIfaceScopeAnchor : 1;  // LinkDot-only scope anchor, not an instantiation demand
 public:
     AstCell(FileLine* fl, FileLine* mfl, const string& instName, const string& modName,
             AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
@@ -715,7 +716,8 @@ public:
         , m_modName{modName}
         , m_hasIfaceVar{false}
         , m_recursive{false}
-        , m_trace{true} {
+        , m_trace{true}
+        , m_virtIfaceScopeAnchor{false} {
         addPinsp(pinsp);
         addParamsp(paramsp);
         addRangep(rangep);
@@ -742,6 +744,12 @@ public:
     bool isTrace() const { return m_trace; }
     void recursive(bool flag) { m_recursive = flag; }
     bool recursive() const { return m_recursive; }
+    void virtIfaceScopeAnchor(bool flag) { m_virtIfaceScopeAnchor = flag; }
+    bool virtIfaceScopeAnchor() const { return m_virtIfaceScopeAnchor; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstCell* const asamep = VN_DBG_AS(samep, Cell);
+        return virtIfaceScopeAnchor() == asamep->virtIfaceScopeAnchor();
+    }
 };
 class AstCellInline final : public AstNode {
     // A instantiation cell that was removed by inlining
@@ -1468,8 +1476,6 @@ class AstNetlist final : public AstNode {
     std::string m_resolvedTopModuleName;  // Selected design top before wrapping under $root
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
-    // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
-    std::set<AstVar*> m_deferredParamVarps;
     // Sparse metadata for constants produced from named parameters/localparams. Keep this off
     // AstConst itself, as AstConst is a very common node and only a small fraction carry this
     // name.
@@ -1479,9 +1485,6 @@ public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
     const char* broken() const override;
-    void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.insert(varp); }
-    const std::set<AstVar*>& deferredParamVarps() const { return m_deferredParamVarps; }
-    void clearDeferredParamVarps() { m_deferredParamVarps.clear(); }
     void deleteContents();
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     string name() const override VL_MT_STABLE { return "$root"; }
@@ -1609,6 +1612,8 @@ class AstPin final : public AstNode {
     string m_name;  // Pin name, or "" for number based interconnect
     string m_paramPath;  // Original defparam cell path, if this pin came from a defparam
     bool m_param = false;  // Pin connects to parameter
+    bool m_elabBinding = false;  // Member of a canonical binding tuple produced by V3Elab
+    bool m_elabDefault = false;  // Synthesized from a resolved default by V3Elab
     bool m_svDotName = false;  // Pin is SystemVerilog .name'ed
     bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed, allow implicit
 public:
@@ -1634,6 +1639,10 @@ public:
     void modPTypep(AstParamTypeDType* nodep) { m_modPTypep = nodep; }
     bool param() const { return m_param; }
     void param(bool flag) { m_param = flag; }
+    bool elabBinding() const { return m_elabBinding; }
+    void elabBinding(bool flag) { m_elabBinding = flag; }
+    bool elabDefault() const { return m_elabDefault; }
+    void elabDefault(bool flag) { m_elabDefault = flag; }
     const string& paramPath() const { return m_paramPath; }
     void paramPath(const string& path) { m_paramPath = path; }
     bool svDotName() const { return m_svDotName; }

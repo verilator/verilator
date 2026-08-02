@@ -7,6 +7,7 @@
 module t;
   simple_bus sb_intf ();
   simple_bus #(.PARAMETER(sb_intf.dummy)) simple ();
+  required_bus missing ();
   initial begin
     $write("*-* All Finished *-*\n");
     $finish;
@@ -17,4 +18,10 @@ interface simple_bus #(
     PARAMETER = 0
 );
   logic dummy;
+endinterface
+
+interface required_bus #(
+    type T,
+    int W
+);
 endinterface

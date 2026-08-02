@@ -1,6 +1,8 @@
-%Error: t/t_param_circ_bad.v:13:15: Variable's initial value is circular: 'X'
-                                  : ... note: In instance 't.sub'
+%Error: t/t_param_circ_bad.v:12:15: Parameter default dependency is circular (IEEE 1800-2023 6.20.1): Parameter 'WIDTH' of 'sub'.
+   12 |     parameter WIDTH = X,
+      |               ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_circ_bad.v:13:15: Parameter default dependency is circular (IEEE 1800-2023 6.20.1): Parameter 'X' of 'sub'.
    13 |     parameter X = WIDTH
       |               ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

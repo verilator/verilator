@@ -1,10 +1,18 @@
-%Error: t/t_class_param_bad2.v:14:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
+%Error: t/t_class_param_bad2.v:16:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMA'
                                    : ... note: In instance 't'
-   14 |   Cls c;   
+   16 |   Cls c;
       |   ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_param_bad2.v:8:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
+%Error: t/t_class_param_bad2.v:16:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
                                    : ... note: In instance 't'
-    8 |     type PARAMB
+   16 |   Cls c;
+      |   ^~~
+%Error: t/t_class_param_bad2.v:8:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMA'
+                                   : ... note: In instance 't'
+    8 |     type PARAMA,
+      |          ^~~~~~
+%Error: t/t_class_param_bad2.v:9:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
+                                   : ... note: In instance 't'
+    9 |     type PARAMB
       |          ^~~~~~
 %Error: Exiting due to

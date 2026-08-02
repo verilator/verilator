@@ -34,8 +34,6 @@ class VSymEnt;
 
 class V3LinkDotIfaceCapture final {
 public:
-    enum class CaptureType : uint8_t { IFACE, CLASS };
-
     // Path-based map key: no pointers, only stable strings.
     // {ownerModName, refName, cellPath, cloneCellPath} uniquely identifies
     // every captured REFDTYPE.  You cannot have two typedefs with the same
@@ -69,12 +67,10 @@ public:
     };
 
     struct CapturedEntry final {
-        CaptureType captureType = CaptureType::IFACE;
         AstRefDType* refp = nullptr;
         string cellPath;  // Template path (e.g. "cca_io.tlb_io") - immutable key component
         string cloneCellPath;  // Instance-specific path (e.g. "cca_io1.tlb_io") - set by
                                // propagateClone when V3Param clones; empty for original entries
-        AstClass* origClassp = nullptr;  // For CLASS captures
         // Module where the RefDType lives
         AstNodeModule* ownerModp = nullptr;
         // Typedef definition being referenced
@@ -112,7 +108,6 @@ public:
             callOnNode(typedefp);
             callOnNode(paramTypep);
             callOnNode(ifacePortVarp);
-            callOnNode(origClassp);
             for (auto& xrefp : extraRefps) callOnNode(xrefp);
         }
     };
@@ -159,8 +154,6 @@ public:
     static void add(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
                     AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "",
                     AstVar* ifacePortVarp = nullptr);
-    static void addClass(AstRefDType* refp, AstClass* origClassp, AstNodeModule* ownerModp,
-                         AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "");
     static void addParamType(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
                              AstParamTypeDType* paramTypep, const string& paramTypeOwnerModName,
                              AstVar* ifacePortVarp);
