@@ -2130,7 +2130,7 @@ List Of Warnings
    This is still valid Verilog and will not effect Verilator simulation. However
    some downstream VLSI tools may not distinguish net and gate names with the
    same case and may result in damaged netlists and hard to debug errors.
-   
+
 
 .. option:: SPECIFYIGN
 

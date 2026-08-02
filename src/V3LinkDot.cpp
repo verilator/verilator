@@ -361,20 +361,18 @@ public:
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
-            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) { // ignore typedefs etc
+            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) {  // ignore typedefs etc
                 const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
                 if (alt) {
                     UINFO(4, "name " << name);  // Not always same as nodep->name
                     UINFO(4, "Var1 " << nodep);
                     UINFO(4, "Var2 " << alt->nodep());
-                    nodep->v3warn(
-                       SIMILARNAME,
-                       "Declaration overlaps another with different case: "
-                       << nodep->prettyNameQ() << '\n'
-                       << nodep->warnContextPrimary() << '\n'
-                       << alt->nodep()->warnOther()
-                       << "... Location of original declaration\n"
-                       << alt->nodep()->warnContextSecondary());
+                    nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
+                                                   << nodep->prettyNameQ() << '\n'
+                                                   << nodep->warnContextPrimary() << '\n'
+                                                   << alt->nodep()->warnOther()
+                                                   << "... Location of original declaration\n"
+                                                   << alt->nodep()->warnContextSecondary());
                 }
             }
         } else if (nodep == fnodep) {  // Already inserted.
