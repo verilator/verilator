@@ -22,8 +22,10 @@ module t (/*AUTOARG*/
   // verilator lint_off PINMISSING
   t_tri0 tri0a (.line(`__LINE__), .expval(1'b0)); // Pin missing
   t_tri0 tri0b (.line(`__LINE__), .expval(1'b0),    .tn());
+  // verilator lint_off SIMILARNAME 
   t_tri0 tri0z (.line(`__LINE__), .expval(1'b0),    .tn(z0));
   t_tri0 tri0Z (.line(`__LINE__), .expval(1'b0),    .tn(1'bz));
+  // verilator lint_on SIMILARNAME 
   t_tri0 tri0c (.line(`__LINE__), .expval(1'b0),    .tn(1'b0));
   t_tri0 tri0d (.line(`__LINE__), .expval(1'b1),    .tn(1'b1));  // Warning would be reasonable given tri0 connect
   t_tri0 tri0e (.line(`__LINE__), .expval(1'b0),    .tn(~one));
@@ -33,8 +35,10 @@ module t (/*AUTOARG*/
 
   t_tri1 tri1a (.line(`__LINE__), .expval(1'b1)); // Pin missing
   t_tri1 tri1b (.line(`__LINE__), .expval(1'b1),    .tn());
+  // verilator lint_off SIMILARNAME 
   t_tri1 tri1z (.line(`__LINE__), .expval(1'b1),    .tn(z1));
   t_tri1 tri1Z (.line(`__LINE__), .expval(1'b1),    .tn(1'bz));
+  // verilator lint_on SIMILARNAME 
   t_tri1 tri1c (.line(`__LINE__), .expval(1'b0),    .tn(1'b0));  // Warning would be reasonable given tri1 connect
   t_tri1 tri1d (.line(`__LINE__), .expval(1'b1),    .tn(1'b1));
   t_tri1 tri1e (.line(`__LINE__), .expval(1'b0),    .tn(~one));
@@ -44,8 +48,10 @@ module t (/*AUTOARG*/
 
   t_tri2 tri2a (.line(`__LINE__), .expval(1'b0)); // Pin missing
   t_tri2 tri2b (.line(`__LINE__), .expval(1'b0),    .tn());
+  // verilator lint_off SIMILARNAME 
   t_tri2 tri2z (.line(`__LINE__), .expval(1'b0),    .tn(z2));
   t_tri2 tri2Z (.line(`__LINE__), .expval(1'b0),    .tn(1'bz));
+  // verilator lint_on SIMILARNAME 
   t_tri2 tri2c (.line(`__LINE__), .expval(1'b0),    .tn(1'b0));
   t_tri2 tri2d (.line(`__LINE__), .expval(1'b1),    .tn(1'b1));
   t_tri2 tri2e (.line(`__LINE__), .expval(1'b0),    .tn(~one));
@@ -55,8 +61,10 @@ module t (/*AUTOARG*/
 
   t_tri3 tri3a (.line(`__LINE__), .expval(1'b1)); // Pin missing
   t_tri3 tri3b (.line(`__LINE__), .expval(1'b1),    .tn());
+  // verilator lint_off SIMILARNAME 
   t_tri3 tri3z (.line(`__LINE__), .expval(1'b1),    .tn(z3));
   t_tri3 tri3Z (.line(`__LINE__), .expval(1'b1),    .tn(1'bz));
+  // verilator lint_on SIMILARNAME 
   t_tri3 tri3c (.line(`__LINE__), .expval(1'b0),    .tn(1'b0));
   t_tri3 tri3d (.line(`__LINE__), .expval(1'b1),    .tn(1'b1));
   t_tri3 tri3e (.line(`__LINE__), .expval(1'b0),    .tn(~one));

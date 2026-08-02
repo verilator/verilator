@@ -8,7 +8,9 @@ module t;
   int array_bad[0];  // <--- Error: Must be positive size
   int array2_bad[-1];  // <--- Error: Must be positive size
   localparam X = 32'bz;
+  // verilator lint_off SIMILARNAME
   logic [X:0] x;  // <--- Error: X range
+  // verilator lint_on SIMILARNAME
   sub #(1) u_sub ();
 endmodule
 

@@ -52,7 +52,9 @@ module t (
 
   //////////////////////////////////////////////////////////////////////////
 
+  // verilator lint_off SIMILARNAME 
   logic [2:0] simple;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     simple[0] = rand_a[0];
     simple[1] = rand_a[1];
@@ -60,7 +62,9 @@ module t (
   end
   `signal(SIMPLE, simple);
 
+  // verilator lint_off SIMILARNAME 
   logic [1:0] reassign;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     reassign[0] =  rand_a[0];
     reassign[0] = ~rand_a[0];
@@ -81,7 +85,9 @@ module t (
   end
   `signal(USE_INTERMEDIATE, {use_intermediate_a, use_intermediate_b});
 
+  // verilator lint_off SIMILARNAME 
   logic [2:0] self_circular;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     self_circular[0] = rand_a[0];
     self_circular[1] = ~self_circular[0];
@@ -89,7 +95,9 @@ module t (
   end
   `signal(SELF_CIRCULAR, self_circular);
 
+  // verilator lint_off SIMILARNAME 
   logic [2:0] part_circular;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     part_circular[0] = rand_a[0];
     part_circular[1] = ~part_circular[0];
@@ -97,7 +105,9 @@ module t (
   // part_circular[2] deliberately undriven!
   `signal(PART_CIRCULAR, part_circular);
 
+  // verilator lint_off SIMILARNAME 
   logic [3:0] split_circular;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     split_circular[0] = rand_a[0];
     split_circular[2] = rand_a[1];
@@ -376,7 +386,9 @@ module t (
   end
   `signal(PARTIAL_CONDITONAL_B, partial_conditional_b);
 
+  // verilator lint_off SIMILARNAME 
   logic [3:0] becomes_full;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     becomes_full[2:0] = rand_a[2:0];
     becomes_full[3] = ~rand_a[3];
@@ -440,7 +452,9 @@ module t (
   assign circular_0_z = circular_0_x & rand_a[0];
   `signal(CIRCULAR_0, {circular_0_x, circular_0_y, circular_0_z});
 
+  // verilator lint_off SIMILARNAME 
   logic [2:0] nsp_a; // Non series-parallel CFG
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     do begin
       nsp_a = 3'd0; // BB 0 -> BB 1 / BB 2
@@ -459,7 +473,9 @@ module t (
   end
   `signal(NSP_A, nsp_a);
 
+  // verilator lint_off SIMILARNAME 
   logic [2:0] nsp_b; // Non series-parallel CFG
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     do begin
       nsp_b = 3'd0;
@@ -485,7 +501,9 @@ module t (
   end
   `signal(NSP_B, nsp_b);
 
+  // verilator lint_off SIMILARNAME 
   logic [2:0] part_sp_a; // Contains series-parallel sub-graph CFG
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     do begin
       part_sp_a = 3'd0;
@@ -512,7 +530,9 @@ module t (
   end
   `signal(PART_SP_A, part_sp_a);
 
+  // verilator lint_off SIMILARNAME 
   logic [1:0] both_break;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     do begin
       if (rand_a[0]) begin
@@ -530,7 +550,9 @@ module t (
   end
   `signal(BOTH_BREAK, both_break);
 
+  // verilator lint_off SIMILARNAME 
   logic [1:0] uses_tmp;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     uses_tmp = 2'd0;
     if (rand_a[0]) begin
@@ -541,7 +563,9 @@ module t (
   end
   `signal(USES_TMP, uses_tmp);
 
+  // verilator lint_off SIMILARNAME 
   logic [3:0] uses_loop_var;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     uses_loop_var = 4'd0;
     if (rand_a[0]) begin
@@ -555,22 +579,30 @@ module t (
   function automatic logic [7:0] add(input logic [7:0] a, input logic [7:0] b);
     return a + b;
   endfunction
+  // verilator lint_off SIMILARNAME 
   logic [7:0] func_1;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     func_1 = add(rand_a[7:0], rand_b[7:0]);
   end
   `signal(FUNC_1, func_1);
 
+  // verilator lint_off SIMILARNAME 
   logic [7:0] func_2;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     func_2 = pkg::sub(rand_a[7:0], rand_b[7:0]);
   end
   `signal(FUNC_2, func_2);
 
+  // verilator lint_off SIMILARNAME 
   wire logic [7:0] func_3 = pkg::branchy(rand_a[7:0], rand_b[7:0]);
+  // verilator lint_on SIMILARNAME 
   `signal(FUNC_3, func_3);
 
+  // verilator lint_off SIMILARNAME 
   logic [1:0] via_creset;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     automatic logic [1:0] a /* = AstCReset */;
     via_creset = a + 2'd1;
@@ -578,7 +610,9 @@ module t (
   `signal(VIA_CRESET, via_creset);
 
   logic [1:0] LUT [2] = '{0: 2'b11, 1: 2'b10};
+  // verilator lint_off SIMILARNAME 
   logic [1:0] array_read;
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     array_read = 2'd0;
     array_read += LUT[rand_a[0]];

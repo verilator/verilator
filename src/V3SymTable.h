@@ -45,6 +45,8 @@ class VSymEnt final {
     // MEMBERS
     using IdNameMap = std::multimap<std::string, VSymEnt*>;
     IdNameMap m_idNameMap;  // Hash of variables by name
+    using IdNameSimilarMap = std::unordered_set<std::string>;
+    IdNameSimilarMap  m_idNameSimilarMap;  // Hash of variables by name with the same case
     AstNode* m_nodep;  // Node that entry belongs to
     VSymEnt* m_fallbackp = nullptr;  // Table "above" this in name scope, for fallback resolution
     VSymEnt* m_parentp = nullptr;  // Table that created this
@@ -135,6 +137,14 @@ public:
         } else {
             m_idNameMap.emplace(name, entp);
         }
+        if (name.find("__DOT__") == std::string::npos && !ignoreForSimilarTest(entp->nodep()->type())) { // ignore hierarchical equivalents
+            string lc = name;
+            for (auto & c: lc) c = (char)tolower(c);
+            if (m_idNameSimilarMap.find(lc) == m_idNameSimilarMap.end()) {
+                m_idNameSimilarMap.insert(lc);
+            }
+        }
+            
         return entp;
     }
     void reinsert(const string& name, VSymEnt* entp) {
@@ -159,19 +169,38 @@ public:
         if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
+    bool ignoreForSimilarTest(VNType t) {    // node types that don't affect final net types
+        switch (t) {
+        case VNType::TypedefFwd:
+        case VNType::Typedef:
+        case VNType::ParamTypeDType:
+        case VNType::EnumItem:
+        case VNType::EnumItemRef:
+        case VNType::Let:
+        case VNType::Class:
+        case VNType::Task:
+        case VNType::Func:
+                    return true;
+        default:    return false;
+        }
+    }
     VSymEnt* findSimilarIdFlat(const string& name) const {
         // Find identifier without looking upward through symbol hierarchy
         // Were looking for symbols that are the same when compared without
-	// caring about case, but that are not the same name
-	string s = name;
-	for (auto & c: s) c = (char)toupper(c);
+        // caring about case, but that are not the same name
+        if (name.find("__DOT__") != std::string::npos) // ignore hierarchical equivalents
+            return nullptr;
+        string s = name;
+        for (auto & c: s) c = (char)tolower(c);
+        if (m_idNameSimilarMap.find(s) == m_idNameSimilarMap.end()) 
+            return nullptr;
         for (auto it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
-		string t = it->first;
-		for (auto & c: t) c = (char)toupper(c);
-		if (t == s &&  name != it->first) { 
-			return it->second;
-		}
-	}
+            string t = it->first;
+            for (auto & c: t) c = (char)tolower(c);
+            if (t == s &&  name != it->first) { 
+                return it->second;
+            }
+        }
         return nullptr;
     }
     VSymEnt* findIdFallback(const string& name) const {

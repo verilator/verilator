@@ -27,7 +27,9 @@ module t;
     max4 = max2(max2(x, y), max2(z, w));
   endfunction
 
+  // verilator lint_off SIMILARNAME 
   localparam MAX4 = max4(1, 1, 0, 0);
+  // verilator lint_on SIMILARNAME 
 
   initial begin
     if (MAX4 != 1) $stop;

@@ -34,7 +34,9 @@ module t;
     end
   endfunction
 
+  // verilator lint_off SIMILARNAME 
   localparam string VALUE = value();
+  // verilator lint_on SIMILARNAME 
 
   initial begin
     $write("%s", VALUE);

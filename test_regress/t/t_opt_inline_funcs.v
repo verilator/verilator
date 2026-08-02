@@ -33,10 +33,12 @@ module t;
 
   logic [2:0]  lut_idx;
   logic [4:0]  lut_o;
+  // verilator lint_off SIMILARNAME 
   localparam logic [4:0] LUT [7:0] = '{5'd0, 5'd1, 5'd2, 5'd3, 5'd4, 5'd5, 5'd6, 5'd7};
   function automatic logic [4:0] lut(logic [2:0] idx);
     return LUT[idx];
   endfunction
+  // verilator lint_on SIMILARNAME 
   always_comb begin
     lut_o = lut(lut_idx);
     `check(lut_o, 5'd7 - 5'(lut_idx));

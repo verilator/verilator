@@ -7,7 +7,9 @@
 module src #(
     parameter [3:0] VAL = 4'h0
 ) (
+  // verilator lint_off SIMILARNAME 
     output logic [3:0] val
+  // verilator lint_on SIMILARNAME 
 );
   /*verilator no_inline_module*/
   assign val = VAL;

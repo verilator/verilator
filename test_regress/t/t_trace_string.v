@@ -21,9 +21,11 @@ module t (
                                 "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
   // verilog_format: on
 
+  // verilator lint_off SIMILARNAME 
   function automatic string regx(logic [5-1:0] r, bit abi = 1'b0);
     regx = abi ? REGX[r] : $sformatf("x%0d", r);
   endfunction : regx
+  // verilator lint_on SIMILARNAME 
 
   function string dis32(logic [32-1:0] op);
     casez (op)

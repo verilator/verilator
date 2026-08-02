@@ -16,9 +16,11 @@ module t;
                     "s10", "s11", "t3", "t4", "t5", "t6"};
   // verilog_format: on
 
+  // verilator lint_off SIMILARNAME 
   function automatic string reg_x(logic [4:0] r, bit abi = 1'b0);
     reg_x = abi ? REG_X[r] : $sformatf("x%0d", r);
   endfunction
+  // verilator lint_on SIMILARNAME 
 
   // the issue is triggered by a second function containing a case statement
   function automatic string f2(logic [4:0] r, bit abi = 0);

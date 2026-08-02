@@ -2115,6 +2115,23 @@ List Of Warnings
    simulators.
 
 
+.. option:: SIMILARNAME
+
+   Warning that two or more  variable names differ only in their lexical case.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+
+      reg Abcd;
+      wire abcd;
+
+   This is still valid Verilog and will not effect Verilator simulation. However
+   some downstream VLSI tools may not distinguish net and gate names with the
+   same case and may result in damaged netlists and hard to debug errors.
+   
+
 .. option:: SPECIFYIGN
 
    Warns that Verilator does not support certain constructs in

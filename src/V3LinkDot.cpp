@@ -356,24 +356,25 @@ public:
         //
         // Note we only check for conflicts at the same level; it's ok if one block hides another
         // We also wouldn't want to not insert it even though it's lower down
+
         const VSymEnt* const foundp = lookupSymp->findIdFlat(name);
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
-	    if (name.find("__DOT__") != std::string::npos) { // ignore hierarchical equivalents
-	        const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
-	        if (alt) {
-               	    UINFO(4, "name " << name);  // Not always same as nodep->name
-            	    UINFO(4, "Var1 " << nodep);
-            	    UINFO(4, "Var2 " << alt->nodep());
+            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) { // ignore typedefs etc
+                const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
+                if (alt) {
+                    UINFO(4, "name " << name);  // Not always same as nodep->name
+                    UINFO(4, "Var1 " << nodep);
+                    UINFO(4, "Var2 " << alt->nodep());
                     nodep->v3warn(
-                        SIMILARNAMES,
-                        "Declaration of signal with the same name, but with different cases, this is valid verilog but may cause problems in other VLSI tools "
-                        << nodep->prettyNameQ() << '\n'
-                        << nodep->warnContextPrimary() << '\n'
-                        << alt->nodep()->warnOther()
-                        << "... Location of original declaration\n"
-                        << alt->nodep()->warnContextSecondary());
+                       SIMILARNAME,
+                       "Declaration overlaps another with different case: "
+                       << nodep->prettyNameQ() << '\n'
+                       << nodep->warnContextPrimary() << '\n'
+                       << alt->nodep()->warnOther()
+                       << "... Location of original declaration\n"
+                       << alt->nodep()->warnContextSecondary());
                 }
             }
         } else if (nodep == fnodep) {  // Already inserted.
