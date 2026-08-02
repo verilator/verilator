@@ -1838,10 +1838,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return selp;
     }
 
-    AstNodeDType* eventDTypep(const EmbeddedEventTrigger& trigger) const {
-        return trigger.memberVarp ? trigger.memberVarp->dtypep() : trigger.baseVarp->dtypep();
-    }
-
     string eventPrevName(const EmbeddedEventTrigger& trigger, size_t triggerIndex) const {
         string name = "__Vcg_prev_" + m_embeddedVarp->name() + "_" + std::to_string(triggerIndex)
                       + "_" + trigger.baseVarp->name();
@@ -1898,14 +1894,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return new AstLogAnd{fl, newEmbeddedVarNonNull(fl), edgep};
     }
 
-    AstNodeStmt* newPrevUpdate(FileLine* fl, const EmbeddedEventTrigger& trigger) const {
-        return new AstAssign{fl, new AstVarRef{fl, trigger.prevVarp, VAccess::WRITE},
-                             newEventRead(fl, trigger)};
-    }
-
     std::vector<EmbeddedEventTrigger> collectEmbeddedEventTriggers(AstCovergroup* cgp) {
         std::vector<EmbeddedEventTrigger> triggers;
-        std::vector<AstSenItem*> itemps;
         const std::set<const AstVar*> enclosingVars = enclosingInstanceVars();
         for (AstNode* senp = cgp->eventp()->sensesp(); senp; senp = senp->nextp()) {
             AstSenItem* const itemp = VN_AS(senp, SenItem);
@@ -1915,13 +1905,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 || !enclosingVars.count(baseVarp)) {
                 return {};
             }
-            itemps.push_back(itemp);
-        }
-        for (AstSenItem* const itemp : itemps) {
-            AstVar* baseVarp = nullptr;
-            AstVar* memberVarp = nullptr;
-            UASSERT_OBJ(parseEmbeddedEventExpr(itemp->sensp(), baseVarp, memberVarp), itemp,
-                        "Bad embedded covergroup event expression");
             triggers.emplace_back(itemp->fileline(), baseVarp, memberVarp, itemp->edgeType());
         }
         return triggers;
@@ -1945,9 +1928,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                               "full support.");
                 continue;
             }
-            AstVar* const prevVarp
-                = new AstVar{trigger.eventFl, VVarType::MEMBER,
-                             eventPrevName(trigger, triggerIndex), eventDTypep(trigger)};
+            AstNodeDType* const dtypep
+                = trigger.memberVarp ? trigger.memberVarp->dtypep() : trigger.baseVarp->dtypep();
+            AstVar* const prevVarp = new AstVar{trigger.eventFl, VVarType::MEMBER,
+                                                eventPrevName(trigger, triggerIndex), dtypep};
             prevVarp->isStatic(false);
             m_enclosingClassp->addMembersp(prevVarp);
             trigger.prevVarp = prevVarp;
@@ -1955,7 +1939,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 FileLine* const fl = asgnp->fileline();
                 AstIf* const ifp
                     = new AstIf{fl, newEventReadyCondition(fl, trigger), newSampleStmt(fl)};
-                ifp->addNextHere(newPrevUpdate(fl, trigger));
+                ifp->addNextHere(new AstAssign{fl,
+                                               new AstVarRef{fl, trigger.prevVarp, VAccess::WRITE},
+                                               newEventRead(fl, trigger)});
                 asgnp->addNextHere(ifp);
             }
         }
