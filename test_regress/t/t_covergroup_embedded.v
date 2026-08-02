@@ -553,14 +553,24 @@ module t;
     end
 
     copy_src.observe(4'h1);
+`ifdef VERILATOR
+    // IEEE 1800-2023 8.12 requires embedded covergroups to be null after a shallow copy.
+    // No new coverage object is created, so the copied object's properties are not covered.
+    // Questa instead aliases the source coverage object; Xcelium retains a non-null handle
+    // whose source and copied instances both report zero coverage.
     copy_dst = new copy_src;
     `checkd(copy_dst.copy_cg == null, 1);
-    global_dst = new global_src;
-    `checkd(global_dst.cg == global_src.cg, 1);
     clone_dst = new clone_src;
     clone_base_view = clone_dst;
     `checkd(clone_dst.cg == null, 1);
     `checkd(clone_base_view.cg == null, 1);
+`endif
+
+    global_dst = new global_src;
+`ifndef NC
+    // Comparing a covergroup variable with a non-null value is unsupported in Xcelium.
+    `checkd(global_dst.cg == global_src.cg, 1);
+`endif
 
     $write("*-* All Finished *-*\n");
     $finish;
