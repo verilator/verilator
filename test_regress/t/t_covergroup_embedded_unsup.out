@@ -1,11 +1,11 @@
-%Warning-COVERIGN: t/t_covergroup_embedded_unsup.v:44:23: Unsupported: 'covergroup' coverpoint dereferencing a class handle member; ignoring covergroup '__vlAnonCG_cov_param'
+%Warning-COVERIGN: t/t_covergroup_embedded_unsup.v:45:23: Unsupported: 'covergroup' coverpoint dereferencing a class handle member; ignoring covergroup '__vlAnonCG_cov_param'
                                                         : ... note: In instance 't'
-   44 |     cp: coverpoint st.test;
+   45 |     cp: coverpoint st.test;
       |                       ^~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_covergroup_embedded_unsup.v:60:37: Unsupported: 'covergroup' coverpoint dereferencing a class handle member; ignoring covergroup '__vlAnonCG_cov_mixed'
+%Warning-COVERIGN: t/t_covergroup_embedded_unsup.v:61:37: Unsupported: 'covergroup' coverpoint dereferencing a class handle member; ignoring covergroup '__vlAnonCG_cov_mixed'
                                                         : ... note: In instance 't'
-   60 |     cp: coverpoint local_value + st.test;
+   61 |     cp: coverpoint local_value + st.test;
       |                                     ^~~~
 %Error: Exiting due to

@@ -1568,15 +1568,26 @@ class AstFork final : public AstNodeBlock {
     //
     // @astgen op3 := forksp : List[AstBegin]
     const VJoinType m_joinType;  // Join keyword type
+    // Compiler-generated covergroup watchers must arm before construction continues to sample
+    // every clocking event (IEEE 1800-2023 19.3). Source forks retain the deferred branch startup
+    // required by IEEE 1800-2023 9.3.2.
+    bool m_immediateStart = false;
+
 public:
     AstFork(FileLine* fl, VJoinType joinType, const string& name = "")
         : ASTGEN_SUPER_Fork(fl, name)
         , m_joinType{joinType} {}
     ASTGEN_MEMBERS_AstFork;
+    bool sameNode(const AstNode* samep) const override {
+        const AstFork* const asamep = VN_DBG_AS(samep, Fork);
+        return joinType() == asamep->joinType() && immediateStart() == asamep->immediateStart();
+    }
     bool isTimingControl() const override { return !joinType().joinNone(); }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     VJoinType joinType() const { return m_joinType; }
+    bool immediateStart() const { return m_immediateStart; }
+    void immediateStart(bool flag) { m_immediateStart = flag; }
 };
 
 // === AstNodeCoverOrAssert ===

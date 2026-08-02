@@ -36,11 +36,12 @@ endclass
 
 class parameterized_monitor;
   coverage_state cs;
+  bit clk;
 
   // Parameterized covergroup: the coverpoints dereference the class-handle argument 'st'.
   // Two handle-dereferencing coverpoints ensure the safety net reports only the first
   // offender (a second AstMemberSel is seen with the offender already latched).
-  covergroup cov_param(coverage_state st);
+  covergroup cov_param(coverage_state st) @(posedge clk);
     cp: coverpoint st.test;
     cp2: coverpoint st.test2;
   endgroup

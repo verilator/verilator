@@ -252,6 +252,75 @@ class ThisHandleMonitor;
 endclass
 `endif
 
+class ClockEvent;
+  bit clk;
+endclass
+
+class ClockMonitor;
+  ClockEvent ev;
+  bit [3:0] sampled;
+
+  covergroup clock_cg @(posedge ev.clk);
+    cp_clocked: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    ev = new;
+    ev.clk = 0;
+    clock_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    sampled = v;
+    ev.clk = 0;
+    ev.clk = 1;
+  endfunction
+endclass
+
+class VectorClockMonitor;
+  bit [2:0] clk_vec;
+  bit [3:0] sampled;
+
+  covergroup pos_cg @(posedge clk_vec);
+    cp_pos: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup neg_cg @(negedge clk_vec);
+    cp_neg: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup both_cg @(posedge clk_vec or negedge clk_vec);
+    cp_both: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup edge_cg @(edge clk_vec);
+    cp_edge: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup change_cg @(clk_vec);
+    cp_change: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    clk_vec = 3'b000;
+    pos_cg = new;
+    neg_cg = new;
+    both_cg = new;
+    edge_cg = new;
+    change_cg = new;
+  endfunction
+
+  function void observe(bit [2:0] next_clk, bit [3:0] value);
+    sampled = value;
+    clk_vec = next_clk;
+  endfunction
+
+  function void observe_bit(bit next_clk, bit [3:0] value);
+    sampled = value;
+    clk_vec[0] = next_clk;
+  endfunction
+endclass
+
 class CopyMonitor;
   bit [3:0] value;
 
@@ -412,6 +481,8 @@ module t;
 `ifdef VERILATOR
   ThisHandleMonitor this_handle_mon;
 `endif
+  ClockMonitor clock_mon;
+  VectorClockMonitor vector_clock_mon;
   CopyMonitor copy_src;
   CopyMonitor copy_dst;
   GlobalCgHolder global_src;
@@ -439,6 +510,8 @@ module t;
 `ifdef VERILATOR
     this_handle_mon = new;
 `endif
+    clock_mon = new;
+    vector_clock_mon = new;
     copy_src = new;
     global_src = new;
     clone_src = new;
@@ -460,11 +533,19 @@ module t;
 `ifdef VERILATOR
       this_handle_mon.observe(i[3:0]);
 `endif
+      clock_mon.observe(i[3:0]);
       static_mon.observe(i[3:0]);
       static_only_mon.observe(i[3:0]);
       multiple_mon.observe(i[3:0], 15 - i[3:0]);
       nested_mon.observe(i[3:0]);
     end
+
+    vector_clock_mon.observe(3'b010, 4'hf);
+    vector_clock_mon.observe(3'b011, 4'h1);
+    vector_clock_mon.observe(3'b010, 4'h2);
+    vector_clock_mon.observe(3'b000, 4'he);
+    vector_clock_mon.observe_bit(1'b1, 4'h3);
+    vector_clock_mon.observe_bit(1'b0, 4'h4);
 
     for (i = 0; i < 8; ++i) begin
       branch_a.observe(i[2:0]);
