@@ -1,0 +1,9 @@
+%Warning-SIMILARNAME: t_lint_similarname.v:12:8: Declaration overlaps another with different case: 'I'
+   12 |   wire I;
+      |        ^
+                      t_lint_similarname.v:11:7: ... Location of original declaration
+   11 |   reg i;
+      |       ^
+                      ... For warning description see https://verilator.org/warn/SIMILARNAME?v=5.051
+                      ... Use "/* verilator lint_off SIMILARNAME */" and lint_on around source to disable this message.
+%Error: Exiting due to 1 warning(s)
