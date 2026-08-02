@@ -4022,33 +4022,22 @@ patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
         ;
 
 patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
-        //                      // IEEE: structure_pattern_key
-        //                      // id/*member*/ is part of constExpr below
-        //UNSUP constExpr                               { $$ = $1; }
-        //                      // IEEE: assignment_pattern_key
+        //                      // IEEE: structure_pattern_key: member_identifier | assignment_pattern_key
+        //                      // IEEE: array_pattern_key: constant_expression | assignment_pattern_key
         //                      // Verilator:
-        //                      //   The above expressions cause problems because "foo" may be
-        //                      //   a constant identifier (if array) or a reference to the
-        //                      //   "foo"member (if structure)
-        //                      //   So for now we only allow a true constant number, or an
-        //                      //   identifier which we treat as a structure member name
-                yaINTNUM
-                        { $$ = new AstConst{$<fl>1, *$1}; }
-        |       '-' yaINTNUM
-                        { V3Number neg{*$2}; neg.opNegate(*$2); $$ = new AstConst{$<fl>2, neg}; }
-        |       yaFLOATNUM
-                        { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
-        |       id
-                        { $$ = new AstText{$<fl>1, *$1}; }
-        |       strAsInt
-                        { $$ = $1; }
+        //                      //   A bare "foo" is ambiguous here, as it may be a constant
+        //                      //   identifier (if array) or a reference to the "foo" member
+        //                      //   (if structure).  Both spell the same in expr, so the
+        //                      //   bare-identifier case becomes a Text node and V3LinkDot
+        //                      //   resolves which one it is.
+                expr
+                        { $$ = GRAMMARP->createPatternKey($1); }
+        //                      // IEEE: assignment_pattern_key
         |       simple_typeNoRef
                         { $$ = $1; }
         //                      // expanded from simple_type ps_type_identifier (part of simple_type)
         //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
-        |       packageClassScope id
-                        { $$ = AstDot::newIfPkg($<fl>1, $1,
-                                                new AstParseRef{$<fl>2, *$2, nullptr, nullptr}); }
+        //                      // (simple_type ps_parameter_identifier is part of expr above)
         |       packageClassScopeE idType
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
                           $$ = refp; }
