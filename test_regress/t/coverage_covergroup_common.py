@@ -45,8 +45,8 @@ def covergroup_coverage_report(test, outfile=None):
     return outfile
 
 
-def run(test, *, verilator_flags2=()):
-    test.compile(verilator_flags2=['--coverage', *verilator_flags2])
+def run(test, *, verilator_flags2=(), timing_loop=False):
+    test.compile(verilator_flags2=['--coverage', *verilator_flags2], timing_loop=timing_loop)
     test.execute()
     covergroup_coverage_report(test)
     test.files_identical(test.obj_dir + '/covergroup_report.txt', test.golden_filename)
