@@ -16,12 +16,4 @@ test.lint(verilator_flags2=['-Wall -Wno-DECLFILENAME'],
           fails=True,
           expect_filename=test.golden_filename)
 
-test.extract(in_filename=test.top_filename,
-             out_filename=test.root + "/docs/gen/ex_SIMILARNAME_faulty.rst",
-             lines="11-12")
-
-test.extract(in_filename=test.golden_filename,
-             out_filename=test.root + "/docs/gen/ex_SIMILARNAME_msg.rst",
-             lines="1-1")
-
 test.passes()
