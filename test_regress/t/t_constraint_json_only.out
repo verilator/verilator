@@ -17,7 +17,7 @@
   ]},
   {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","verilogName":"\\$unit ","level":2,"inLibrary":true,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"CLASS","name":"Packet","addr":"(O)","loc":"d,7:1,7:6","origName":"Packet","verilogName":"Packet","level":3,"timeunit":"1ps","classOrPackagep":"UNLINKED","inlinesp": [],
+    {"type":"CLASS","name":"Packet","addr":"(O)","loc":"d,7:1,7:6","origName":"Packet","verilogName":"Packet","level":3,"timeunit":"1ps","classOrPackagep":"UNLINKED","covergroupEnclosingClassp":"UNLINKED","inlinesp": [],
      "stmtsp": [
       {"type":"VAR","name":"header","addr":"(P)","loc":"d,8:12,8:18","dtypep":"(Q)","origName":"header","verilogName":"header","direction":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"int","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"VAR","name":"length","addr":"(R)","loc":"d,9:12,9:18","dtypep":"(Q)","origName":"length","verilogName":"length","direction":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"int","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},

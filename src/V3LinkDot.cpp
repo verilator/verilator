@@ -4341,6 +4341,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
+            if (!foundp && m_ds.m_dotp && VN_IS(m_ds.m_dotp->lhsp(), ParseRef)
+                && m_ds.m_dotp->lhsp()->name() == "this") {
+                const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
+                if (classp && classp->isCovergroup() && classp->covergroupEnclosingClassp()) {
+                    VSymEnt* const enclosingClassSymp
+                        = m_statep->getNodeSym(classp->covergroupEnclosingClassp());
+                    foundp = enclosingClassSymp->findIdFallback(nodep->name());
+                    if (foundp) m_ds.m_dotSymp = enclosingClassSymp;
+                }
+            }
             // If not found in modport, check interface fallback for parameters and typedefs.
             // Parameters and typedefs are always visible through a modport (IEEE 1800-2023 25.5).
             // This mirrors the VarXRef modport parameter fallback in visit(AstVarXRef).
@@ -5853,7 +5863,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_insideClassExtParam);
         {
             m_ds.init(m_curSymp);
-            m_insideClassExtParam = false;
+            m_insideClassExtParam = nodep->isCovergroup() && nodep->covergroupEnclosingClassp()
+                                    && m_extendsParam.find(nodep->covergroupEnclosingClassp())
+                                           != m_extendsParam.end();
             // Until overridden by a SCOPE
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
