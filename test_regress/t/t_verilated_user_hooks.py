@@ -13,7 +13,10 @@ test.scenarios('vlt_all')
 
 test.compile(make_top_shell=False,
              make_main=False,
-             verilator_flags2=['--exe', test.pli_filename, '-CFLAGS', '-DVL_USER_STOP_MAYBE'])
+             verilator_flags2=[
+                 '--exe', test.pli_filename,
+                 "-CFLAGS '-DVL_USER_FINISH -DVL_USER_STOP -DVL_USER_FATAL -DVL_USER_WARN'"
+             ])
 
 test.execute()
 

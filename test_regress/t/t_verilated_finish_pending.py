@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: VerilatedContext pending termination state test
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -11,9 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(make_top_shell=False,
-             make_main=False,
-             verilator_flags2=['--exe', test.pli_filename, '-CFLAGS', '-DVL_USER_FATAL'])
+test.compile(
+    make_top_shell=False,
+    make_main=False,
+    verilator_flags2=['--exe', test.pli_filename, "-CFLAGS '-DVL_USER_STOP -DVL_USER_FATAL'"])
 
 test.execute()
 
