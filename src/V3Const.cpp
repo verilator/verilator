@@ -932,7 +932,6 @@ class ConstVisitor final : public VNVisitor {
     bool m_hasLoopTest = false;  // Contains AstLoopTest
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
-    const AstArraySel* m_selp = nullptr;  // Current select
     const AstScope* m_scopep = nullptr;  // Current scope
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
@@ -3284,34 +3283,12 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstArraySel* nodep) override {
         iterateAndNextNull(nodep->bitp());
-        if (VN_IS(nodep->bitp(), Const)
-            && VN_IS(nodep->fromp(), VarRef)
-            // Need to make sure it's an array object so don't mis-allow a constant (bug509.)
-            && VN_AS(nodep->fromp(), VarRef)->varp()
-            && VN_IS(VN_AS(nodep->fromp(), VarRef)->varp()->valuep(), InitArray)) {
-            m_selp = nodep;  // Ask visit(AstVarRef) to replace varref with const
-        }
         iterateAndNextNull(nodep->fromp());
-        if (VN_IS(nodep->fromp(), Const)) {  // It did.
-            if (!m_selp) {
-                nodep->v3error("Illegal assignment of constant to unpacked array");
-            } else {
-                AstNode* const fromp = nodep->fromp()->unlinkFrBack();
-                nodep->replaceWithKeepDType(fromp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            }
+        if (VN_IS(nodep->fromp(), Const)) {
+            nodep->v3error("Illegal assignment of constant to unpacked array");
+        } else if (m_required) {
+            replaceWithSimulation(nodep);
         }
-        // Handle ARRAYSEL directly on InitArray (not through VarRef)
-        else if (VN_IS(nodep->bitp(), Const) && VN_IS(nodep->fromp(), InitArray)) {
-            const AstInitArray* const initarp = VN_AS(nodep->fromp(), InitArray);
-            const uint32_t bit = VN_AS(nodep->bitp(), Const)->toUInt();
-            const AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
-            if (VN_IS(itemp, Const)) {
-                const V3Number& num = VN_AS(itemp, Const)->num();
-                VL_DO_DANGLING(replaceNum(nodep, num), nodep);
-            }
-        }
-        m_selp = nullptr;
     }
 
     // Evaluate a slice of an unpacked array.  If constantification is
@@ -3374,21 +3351,8 @@ class ConstVisitor final : public VNVisitor {
                         = nodep->varp()->isParam() ? nodep->varp()->name() : "";
                     VL_DO_DANGLING(replaceNum(nodep, num, origParamName), nodep);
                     did = true;
-                } else if (m_selp && VN_IS(valuep, InitArray)) {
-                    const AstInitArray* const initarp = VN_AS(valuep, InitArray);
-                    const uint32_t bit = m_selp->bitConst();
-                    const AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
-                    if (VN_IS(itemp, Const)) {
-                        const V3Number& num = VN_AS(itemp, Const)->num();
-                        // UINFO(2, "constVisit " << cvtToHex(valuep) << " " << num);
-                        VL_DO_DANGLING(replaceNum(nodep, num), nodep);
-                        did = true;
-                    }
                 } else if (m_params && VN_IS(valuep, InitArray)) {
                     // Allow parameters to pass arrays
-                    // Earlier recursion of InitArray made sure each array value is constant
-                    // This exception is fairly fragile, i.e. doesn't
-                    // support arrays of arrays or other stuff
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWithKeepDType(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
