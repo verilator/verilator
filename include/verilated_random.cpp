@@ -1336,8 +1336,11 @@ void VlRandomizer::dump() const {
         VL_PRINTF("Soft constraint: %s   [vars: %s]\n", c.m_expr.c_str(), c.m_vars.c_str());
     }
     for (const VlDistGroup& g : m_distPicks) {
+        // Bind before taking c_str(): calling it straight off an accessor is the
+        // shape that hides a dangling pointer when the accessor returns by value.
+        const std::string& gvars = g.vars();
         VL_PRINTF("Dist group%s [vars: %s]:\n", g.softOwned() ? " (soft dist)" : "",
-                  g.vars().c_str());
+                  gvars.c_str());
         for (const VlDistPick& p : g.m_buckets) {
             VL_PRINTF("  weight %" VL_PRI64 "u: %s\n", p.m_weight, p.m_expr.c_str());
         }
