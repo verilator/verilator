@@ -42,51 +42,6 @@ class LogicMTask;
 template <GraphWay::en N_Way>
 class PropagateCp;
 
-// When computing critical path costs, use a step function on the actual underlying vertex cost.
-//
-// If there are huge vertices, when a tiny vertex merges into a huge vertex, we can often avoid
-// increasing the huge vertex's stepped cost. If the stepped cost hasn't increased, and the
-// critical path into the huge vertex hasn't increased, we can avoid propagating a new critical
-// path to vertices past the huge vertex. Since huge vertices tend to have huge lists of children
-// and parents, this can be a substantial savings.
-//
-// Does not seem to reduce the quality of the partitioner's output.
-//
-// If you have huge vertices, leave this 'true', it is the major setting that allows the
-// partitioner to handle such difficult graphs on anything like a human time scale.
-//
-// If you don't have huge vertices, the 'true' value doesn't help much but should cost almost
-// nothing in terms of partitioner quality.
-//
-// If you want the most aggressive possible partition, set it "false" and be prepared to be
-// disappointed when the improvement in the partition is negligible / in the noise.
-//
-// Q) Why retain the control, if there is really no downside?
-//
-// A) Cost stepping can lead to corner cases. A developer may wish to disable cost stepping to
-//    rule it out as the cause of unexpected behavior.
-#define PART_STEPPED_COST true
-
-//######################################################################
-// Misc graph and assertion utilities
-
-inline void partCheckCachedScoreVsActual(uint64_t cached, uint64_t actual) {
-#if PART_STEPPED_COST
-    // Cached CP might be a little bigger than actual, due to stepped CPs.
-    // Example:
-    // Let's say we have a parent with stepped_cost 40 and a grandparent
-    // with stepped_cost 27. Our forward-cp is 67. Then our parent and
-    // grandparent get merged, the merged node has stepped cost 66.  We
-    // won't propagate that new CP to children as it hasn't grown.  So,
-    // children may continue to think that the CP coming through this path
-    // is a little higher than it really is; permit that.
-    UASSERT((((cached * 10) <= (actual * 11)) && (cached * 11) >= (actual * 10)),
-            "Calculation error in scoring (approximate, may need tweak)");
-#else
-    UASSERT(cached == actual, "Calculation error in scoring");
-#endif
-}
-
 //=============================================================================
 // OrderMTaskGraph
 
@@ -235,28 +190,6 @@ public:
     const OrderMoveVertex::List& vertexList() const { return m_mVertices; }
     uint32_t id() const { return m_id; }
     uint64_t cost() const VL_MT_SAFE { return m_cost; }
-    static uint64_t stepCost(uint64_t cost) {
-#if PART_STEPPED_COST
-        // Round cost up to the nearest 5%. Use this when computing all critical paths. The idea is
-        // that critical path changes don't need to propagate when they don't exceed the next step,
-        // saving a lot of recursion.
-        if (cost == 0) return 0;
-
-        double logcost = log(cost);
-        // log(1.05) is about 0.05, so round logcost up to the next 0.05 boundary
-        logcost *= 20.0;
-        logcost = ceil(logcost);
-        logcost = logcost / 20.0;
-
-        const uint64_t sCost = static_cast<uint64_t>(exp(logcost));
-        UDEBUGONLY(UASSERT_STATIC(sCost >= cost, "stepped cost error exceeded"););
-        UDEBUGONLY(UASSERT_STATIC(sCost <= ((cost * 11 / 10)), "stepped cost error exceeded"););
-        return sCost;
-#else
-        return cost;
-#endif
-    }
-    uint64_t stepCost() const { return stepCost(m_cost); }
     uint64_t critPathCost(GraphWay way) const { return m_critPathCost[way]; }
     void setCritPathCost(GraphWay way, uint64_t cost) { m_critPathCost[way] = cost; }
 
@@ -275,7 +208,7 @@ public:
         // Add to the edge heap
         LogicMTask* const relativep = edgep->furtherMTaskp<N_Way>();
         // Value is !way cp to this edge
-        const uint64_t cp = relativep->stepCost() + relativep->critPathCost(inv);
+        const uint64_t cp = relativep->cost() + relativep->critPathCost(inv);
         m_edgeHeap[way].insert(&edgep->m_edgeHeapNode[way], {cp, relativep->id()});
     }
     template <GraphWay::en N_Way>
@@ -311,8 +244,8 @@ public:
             const LogicMTask* const relativep
                 = static_cast<const LogicMTask*>(edge.furtherp<N_Way>());
             const uint64_t cachedCp = static_cast<const MTaskEdge&>(edge).cachedCp(way);
-            const uint64_t cp = relativep->critPathCost(way.invert()) + relativep->stepCost();
-            partCheckCachedScoreVsActual(cachedCp, cp);
+            const uint64_t cp = relativep->critPathCost(way.invert()) + relativep->cost();
+            UASSERT(cachedCp == cp, "Calculation error in scoring");
         }
     }
 
@@ -354,10 +287,10 @@ private:
 
         // Base case: fromp is too late, cannot possibly be a prereq for top.
         if (fromp->critPathCost(GraphWay::REVERSE)
-            < (top->critPathCost(GraphWay::REVERSE) + top->stepCost())) {
+            < (top->critPathCost(GraphWay::REVERSE) + top->cost())) {
             return false;
         }
-        if ((fromp->critPathCost(GraphWay::FORWARD) + fromp->stepCost())
+        if ((fromp->critPathCost(GraphWay::FORWARD) + fromp->cost())
             > top->critPathCost(GraphWay::FORWARD)) {
             return false;
         }
