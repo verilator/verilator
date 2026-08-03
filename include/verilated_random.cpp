@@ -843,18 +843,22 @@ bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
 
 std::vector<std::string> VlRandomizer::buildUniqueExprs() const {
     std::vector<std::string> exprs;
+    if (m_unique_arrays.empty()) return exprs;
+    const auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
     for (const std::string& baseName : m_unique_arrays) {
         const auto it = m_vars.find(baseName);
         if (it == m_vars.end()) continue;
-        const uint32_t size = m_unique_array_sizes.at(baseName);
-        std::string distinctExpr = "(__Vbv (distinct";
-        for (uint32_t i = 0; i < size; ++i) {
-            char hexIdx[12];
-            (void)VL_SNPRINTF(hexIdx, sizeof(hexIdx), "#x%08x", i);
-            distinctExpr += " (select " + it->first + " " + hexIdx + ")";
-        }
-        distinctExpr += "))";
-        exprs.push_back(std::move(distinctExpr));
+        const VlRandomVar& var = *it->second;
+        // Select the elements the array actually holds now, by their own index
+        // or key, rather than by ordinal position
+        var.setArrayInfo(arrVarsp);
+        // 'distinct' needs at least two operands; fewer elements are trivially unique
+        if (var.countMatchingElements(*arrVarsp, baseName) < 2) continue;
+        std::ostringstream os;
+        os << "(__Vbv (distinct ";
+        var.emitGetValue(os);
+        os << "))";
+        exprs.push_back(os.str());
     }
     return exprs;
 }
@@ -1247,6 +1251,7 @@ void VlRandomizer::clearConstraints() {
     m_constraints_line.clear();
     m_solveBefore.clear();
     m_softConstraints.clear();
+    m_unique_arrays.clear();  // Re-registered by constraint setup
     // Keep m_vars for class member randomization
 }
 

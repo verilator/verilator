@@ -2529,12 +2529,17 @@ class ParamVisitor final : public VNVisitor {
     std::deque<std::string> m_strings;  // Allocator for temporary strings
     std::map<const AstRefDType*, bool>
         m_isCircular;  // Stores information whether `AstRefDType` is circular
+    using VarsByName = std::unordered_map<std::string, AstVar*>;
+    // Persists across modules; one specialized interface clone serves every module bound to it
+    std::unordered_map<const AstNodeModule*, VarsByName> m_ifaceParams;
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Module iterating
     std::unordered_set<std::string> m_ifacePortNames;  // Interface port names in current module
     std::unordered_map<std::string, AstCell*>
         m_ifaceInstCells;  // Local interface instance cells in current module, keyed by name
+    VarsByName m_modIfaceRefs;  // Interface-ref Vars in current module, keyed by name
+    bool m_modIfaceRefsDone = false;  // m_modIfaceRefs has been gathered for m_modp
     string m_generateHierName;  // Generate portion of hierarchy name
 
     // METHODS
@@ -2573,7 +2578,10 @@ class ParamVisitor final : public VNVisitor {
                     VL_RESTORER(m_modp);
                     VL_RESTORER_CLEAR(m_ifacePortNames);
                     VL_RESTORER_CLEAR(m_ifaceInstCells);
+                    VL_RESTORER_CLEAR(m_modIfaceRefs);
+                    VL_RESTORER(m_modIfaceRefsDone);
                     m_modp = modp;
+                    m_modIfaceRefsDone = false;
                     iterateChildren(modp);
                 }
             }
@@ -2925,6 +2933,76 @@ class ParamVisitor final : public VNVisitor {
         if (!VN_IS(nodep->classOrPackageNodep(), Typedef)) visitCellOrClassRef(nodep, false);
     }
 
+    // Recurse into AstGenBlock as generate blocks aren't flattened until V3Begin::debeginAll,
+    // well after V3Param runs
+    static void gatherVars(AstNode* stmtsp, bool (*matchp)(const AstVar*), VarsByName& varsr) {
+        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+            if (AstVar* const varp = VN_CAST(nodep, Var)) {
+                // emplace, not assign, so the first declaration of a name wins
+                if (matchp(varp)) varsr.emplace(varp->name(), varp);
+            } else if (AstGenBlock* const genp = VN_CAST(nodep, GenBlock)) {
+                gatherVars(genp->itemsp(), matchp, varsr);
+            }
+        }
+    }
+    const VarsByName& modIfaceRefs() {
+        if (!m_modIfaceRefsDone) {
+            gatherVars(
+                m_modp->stmtsp(), [](const AstVar* varp) { return varp->isIfaceRef(); },
+                m_modIfaceRefs);
+            m_modIfaceRefsDone = true;
+        }
+        return m_modIfaceRefs;
+    }
+    const VarsByName& ifaceParams(AstNodeModule* ifacep) {
+        const auto pair = m_ifaceParams.emplace(ifacep, VarsByName{});
+        if (pair.second) {
+            gatherVars(
+                ifacep->stmtsp(), [](const AstVar* varp) { return varp->isParam(); },
+                pair.first->second);
+        }
+        return pair.first->second;
+    }
+    // Resolve a generic-interface 'ifacePort.member' Dot left unlinked by V3LinkDot, now that
+    // ifacePort may have been specialized. Returns nullptr if still unresolvable
+    AstNode* tryResolveGenericIfaceDot(AstDot* dotp) {
+        AstParseRef* const lhsp = VN_CAST(dotp->lhsp(), ParseRef);
+        AstParseRef* const rhsp = VN_CAST(dotp->rhsp(), ParseRef);
+        if (!lhsp || !rhsp) return nullptr;
+        // Always called from visit(AstVar) inside processWorkQ()'s VL_RESTORER(m_modp) scope
+        if (VL_UNCOVERABLE(!m_modp)) return nullptr;
+
+        const auto& refVars = modIfaceRefs();
+        const auto ifaceVarIt = refVars.find(lhsp->name());
+        // V3LinkDot only defers Dots whose lhs is a non-array iface-ref var, so this can't fail
+        if (VL_UNCOVERABLE(ifaceVarIt == refVars.end())) return nullptr;
+        AstVar* const ifaceVarp = ifaceVarIt->second;
+        AstIfaceRefDType* const ifacerefp = VN_CAST(ifaceVarp->subDTypep(), IfaceRefDType);
+        if (VL_UNCOVERABLE(!ifacerefp || !ifacerefp->ifacep())) return nullptr;
+
+        const auto& ifaceVars = ifaceParams(ifacerefp->ifacep());
+        const auto targetVarIt = ifaceVars.find(rhsp->name());
+        if (targetVarIt == ifaceVars.end()) return nullptr;
+        AstVar* const targetVarp = targetVarIt->second;
+        // processWorkQ() visits interface cells first, so the interface is already constified
+        if (VL_UNCOVERABLE(!VN_IS(targetVarp->valuep(), Const))) iterate(targetVarp);
+        if (VL_UNCOVERABLE(!targetVarp->valuep() || !VN_IS(targetVarp->valuep(), Const))) {
+            return nullptr;  // LCOV_EXCL_LINE
+        }
+        return targetVarp->valuep()->cloneTree(false);
+    }
+    void resolveGenericIfaceDotsIn(AstNode* nodep) {
+        // Collect first: the deleteTree() below frees a node foreach() would still read from
+        std::vector<AstDot*> dotps;
+        nodep->foreach([&](AstDot* dotp) { dotps.push_back(dotp); });
+        for (AstDot* const dotp : dotps) {
+            if (AstNode* const newp = tryResolveGenericIfaceDot(dotp)) {
+                dotp->replaceWith(newp);
+                VL_DO_DANGLING(dotp->deleteTree(), dotp);
+            }
+        }
+    }
+
     // Make sure all parameters are constantified
     void visit(AstVar* nodep) override {
         if (nodep->user2SetOnce()) return;  // Process once
@@ -2937,6 +3015,8 @@ class ParamVisitor final : public VNVisitor {
                 nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
             } else if (nodep->valuep()) {
+                // Resolve now: a sibling cell's pin fold may need this before linkDotParamed
+                resolveGenericIfaceDotsIn(nodep->valuep());
                 // If the value expression contains a VarXRef to an interface
                 // localparam whose value is not yet constant, defer constification
                 // to avoid premature widthing with unresolved values (see
@@ -2952,9 +3032,8 @@ class ParamVisitor final : public VNVisitor {
                     }
                 });
                 if (hasUnresolvedLparamXRef) return;
-                // Defer if value has a class::member Dot, or references a deferred lparam
-                const bool hasDot = nodep->valuep()->exists(
-                    [](AstDot* dotp) { return VN_IS(dotp->lhsp(), ClassOrPackageRef); });
+                // Defer if value has any unresolved Dot, or references a deferred lparam
+                const bool hasDot = nodep->valuep()->exists([](AstDot*) { return true; });
                 bool refsDeferred = false;
                 if (!hasDot) {
                     const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();

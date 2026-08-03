@@ -121,7 +121,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     AstNodeStmt* stmtsp = nullptr;
     if (!moveGraphp->empty()) {
         if (parallel) {
-            stmtsp = createParallel(*graph, *moveGraphp, tag, slow);
+            stmtsp = createParallel(*moveGraphp, tag, slow);
         } else {
             stmtsp = createSerial(*moveGraphp, tag, slow);
         }

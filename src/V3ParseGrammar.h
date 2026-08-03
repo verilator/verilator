@@ -98,6 +98,19 @@ public:
         nodep->trace(singletonp()->allTracingOn(fileline));
         return nodep;
     }
+    static AstNode* createPatternKey(AstNodeExpr* exprp) {
+        // Assignment pattern key.  A bare identifier may name a structure
+        // member rather than a constant, so pass it on as a Text node for
+        // V3LinkDot to resolve; anything else is a constant expression.
+        if (const AstParseRef* const refp = VN_CAST(exprp, ParseRef)) {
+            if (!refp->lhsp() && !refp->ftaskrefp()) {
+                AstNode* const textp = new AstText{refp->fileline(), refp->name()};
+                VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                return textp;
+            }
+        }
+        return exprp;
+    }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};
         AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, false});

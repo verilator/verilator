@@ -5,8 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Based on t_constraint_unsup_unq_arr.v
-// We only check uniqueness for small # of elements on a large range
-// as Z3 does not actually give unique elements (bug?) as of Jul 2026.
+// Every element of each unique-constrained container differs from every other.
 
 class Subclass;
   rand int sub_arr[];

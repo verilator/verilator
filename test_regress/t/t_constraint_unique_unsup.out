@@ -1,0 +1,10 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_unique_unsup.v:17:7: Unsupported: Unique constraint on dynamically sized array inside conditional constraint
+   17 |       unique {q};
+      |       ^~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_constraint_unique_unsup.v:21:31: Unsupported: Unique constraint on bit[3:0]
+                                                           : ... note: In instance 't'
+   21 |   constraint scalar_vs_array {unique {x, arr};}
+      |                               ^~~~~~
+%Error: Exiting due to
