@@ -17,7 +17,7 @@ if not test.have_solver:
 
 test.compile()
 
-# Error then silence with no timeout: must fail bounded, not hang
+# Error then silence: must fail bounded, not hang
 test.execute(run_env='VERILATOR_SOLVER=' + test.t_dir +
              '/randomize_solver_tamper.py TAMPER=silent_at TAMPER_AT=2')
 

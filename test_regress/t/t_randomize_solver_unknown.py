@@ -19,8 +19,7 @@ test.compile()
 
 # Diversity-round unknown keeps the base solution, issues no get-unsat-assumptions
 test.execute(run_env='VERILATOR_SOLVER=' + test.t_dir +
-             '/randomize_solver_tamper.py TAMPER=unknown_once TAMPER_AT=3' +
-             ' VERILATOR_SOLVER_TIMEOUT=10000')
+             '/randomize_solver_tamper.py TAMPER=unknown_once TAMPER_AT=3')
 
 test.file_grep(test.run_log_filename, r'Solver returned unknown')
 test.file_grep(test.run_log_filename, r'NPASS=5')

@@ -13,7 +13,7 @@
 # Input arguments from environment variables:
 # TAMPER: none | err_once | err_multiline | unknown_once | unsupported_once
 #         | die_at | epipe_at | silent_at | garbage_status | garbage_model | crlf
-#         | success | multiline | stall_stdin | err_reply | garbage_reply
+#         | success | multiline | err_reply | garbage_reply
 # TAMPER_AT: response index for the one-shot modes above (default 2);
 #            err_reply and garbage_reply count paren replies instead of statuses
 
@@ -23,7 +23,6 @@ import os
 import shutil
 import subprocess
 import sys
-import threading
 import time
 
 mode = os.environ.get("TAMPER", "none")
@@ -39,28 +38,7 @@ def real_solver():
     sys.exit("randomize_solver_tamper.py: no SMT solver found")
 
 
-stall = threading.Event()
-
-if mode == "stall_stdin":
-    # Interpose stdin so the pump can stop consuming, backpressuring the model
-    proc = subprocess.Popen(real_solver(),
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE,
-                            text=True)
-
-    def pump():
-        """Forward stdin to the solver until the stall event fires"""
-        while not stall.is_set():
-            data = sys.stdin.buffer.read1(4096)
-            if not data:
-                proc.stdin.close()
-                return
-            proc.stdin.write(data.decode())
-            proc.stdin.flush()
-
-    threading.Thread(target=pump, daemon=True).start()
-else:
-    proc = subprocess.Popen(real_solver(), stdin=sys.stdin, stdout=subprocess.PIPE, text=True)
+proc = subprocess.Popen(real_solver(), stdin=sys.stdin, stdout=subprocess.PIPE, text=True)
 
 n = 0
 replies = 0
@@ -133,9 +111,6 @@ for line in proc.stdout:
                 emit("flurble")
                 done = True
                 continue
-            elif mode == "stall_stdin":
-                stall.set()
-                done = True
     elif mode == "garbage_model" and not done and n >= at and line.startswith("(("):
         emit('((a #x0b) junk)')
         done = True

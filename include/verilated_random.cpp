@@ -25,7 +25,6 @@
 
 #include <cassert>
 #include <chrono>
-#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -111,9 +110,6 @@ class VlRProcess final : private std::streambuf, public std::iostream {
     int m_readFd = -1;  // File descriptor FROM subprocess
     char m_readBuf[BUFFER_SIZE];
     char m_writeBuf[BUFFER_SIZE];
-    std::chrono::steady_clock::time_point m_deadline;  // Read deadline when armed
-    bool m_deadlineArmed = false;  // Reads bounded by m_deadline
-    bool m_ioTimedOut = false;  // Read or write failed on the deadline
 
     std::unique_ptr<std::ofstream> m_logfp;  // Log file stream
     uint64_t m_logLastTime = ~0ULL;  // Last timestamp for logfile
@@ -135,11 +131,6 @@ protected:
                 const ssize_t n = ::write(m_writeFd, wp, left);
 #endif
                 if (n == -1 && errno == EINTR) continue;
-                if (n == -1 && errno == EAGAIN) {
-                    if (waitWritable()) continue;
-                    m_ioTimedOut = true;
-                    return traits_type::eof();
-                }
                 if (VL_UNLIKELY(n == -1 && errno != EPIPE)) perror("write");
                 if (n <= 0) {
                     wait_report();
@@ -155,10 +146,6 @@ protected:
     }
     int underflow() override {
         if (sync() != 0) return traits_type::eof();
-        if (VL_UNLIKELY(m_deadlineArmed) && !waitReadable()) {
-            m_ioTimedOut = true;
-            return traits_type::eof();
-        }
         ssize_t n;
         do {
             n = ::read(m_readFd, m_readBuf, sizeof(m_readBuf));
@@ -173,39 +160,6 @@ protected:
         return traits_type::to_int_type(m_readBuf[0]);
     }
     int sync() override { return overflow() == traits_type::eof() ? -1 : 0; }
-    // Milliseconds until deadline (+ slack for the solver's own timeout); -1 = expired
-    int deadlineWaitMs() const {
-        constexpr int SLACK_MS = 200;
-        constexpr int MAX_WAIT_MS = 3600000;
-        const auto limit = m_deadline + std::chrono::milliseconds{SLACK_MS};
-        const auto now = std::chrono::steady_clock::now();
-        if (now >= limit) return -1;
-        const long long ms
-            = std::chrono::duration_cast<std::chrono::milliseconds>(limit - now).count() + 1;
-        return ms > MAX_WAIT_MS ? MAX_WAIT_MS : static_cast<int>(ms);
-    }
-    bool waitReadable() { return waitFd(m_readFd, POLLIN); }
-    bool waitWritable() { return waitFd(m_writeFd, POLLOUT); }
-    // Poll fd until ready; false on deadline expiry or poll failure
-    bool waitFd(int fd, short events) {
-#ifdef _VL_SOLVER_PIPE
-        int pollRc = 0;
-        do {
-            int waitMs = -1;
-            if (m_deadlineArmed) {
-                waitMs = deadlineWaitMs();
-                if (waitMs < 0) return false;
-            }
-            struct pollfd pfd = {fd, events, 0};
-            pollRc = ::poll(&pfd, 1, waitMs);
-        } while (pollRc == 0 || (pollRc == -1 && errno == EINTR));
-        return pollRc > 0;
-#else
-        (void)fd;
-        (void)events;
-        return true;
-#endif
-    }
 
 public:
     explicit VlRProcess(const char* const* const cmd = nullptr)
@@ -216,13 +170,6 @@ public:
         open(cmd);
     }
 
-    void armDeadline(const std::chrono::steady_clock::time_point& deadline) {
-        m_deadline = deadline;
-        m_deadlineArmed = true;
-        m_ioTimedOut = false;
-    }
-    void disarmDeadline() { m_deadlineArmed = false; }
-    bool ioTimedOut() const { return m_ioTimedOut; }
     bool alive() const { return !m_pidExited; }
     // True if reply data is already buffered or arrives within graceMs
     bool peekReadable(int graceMs) {
@@ -259,7 +206,6 @@ public:
         m_pidExited = true;
         m_pid = 0;
         closeFds();
-        m_ioTimedOut = false;
     }
 
     void wait_report() {
@@ -302,7 +248,6 @@ public:
 
     bool open(const char* const* const cmd) {
         clear();
-        m_ioTimedOut = false;
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
 #ifdef _VL_SOLVER_PIPE
@@ -371,22 +316,13 @@ public:
         close(fd_stdin[P_RD]);
         close(fd_stdout[P_WR]);
 
-        int flags;
-        do { flags = fcntl(m_writeFd, F_GETFL); } while (flags == -1 && errno == EINTR);
-        int fcntlRc = flags;
-        if (fcntlRc != -1) {
-            do {
-                fcntlRc = fcntl(m_writeFd, F_SETFL, flags | O_NONBLOCK);
-            } while (fcntlRc == -1 && errno == EINTR);
-        }
 #ifdef F_SETNOSIGPIPE
-        if (fcntlRc != -1) {
-            do {
-                fcntlRc = fcntl(m_writeFd, F_SETNOSIGPIPE, 1);
-            } while (fcntlRc == -1 && errno == EINTR);
-        }
-#endif
+        int fcntlRc;
+        do {
+            fcntlRc = fcntl(m_writeFd, F_SETNOSIGPIPE, 1);
+        } while (fcntlRc == -1 && errno == EINTR);
         if (VL_UNLIKELY(fcntlRc == -1)) return false;
+#endif
 
         return true;
 #else
@@ -427,24 +363,6 @@ private:
 //======================================================================
 // VlSolverSession: solver process, lifecycle, and read protocol
 
-static constexpr long MAX_SOLVER_TIMEOUT_MS = 0x3FFFFFFF;
-
-// Whole-randomize() wall budget in ms from VERILATOR_SOLVER_TIMEOUT; 0 = unbounded
-static int solverTimeoutMs() {
-    static const int s_ms = [] {
-        const char* const envp = std::getenv("VERILATOR_SOLVER_TIMEOUT");
-        if (!envp || !envp[0]) return 0;
-        char* endp = nullptr;
-        errno = 0;
-        const long v = std::strtol(envp, &endp, 10);
-        if (endp == envp || v <= 0) return 0;
-        if (errno == ERANGE || v > MAX_SOLVER_TIMEOUT_MS)
-            return static_cast<int>(MAX_SOLVER_TIMEOUT_MS);
-        return static_cast<int>(v);
-    }();
-    return s_ms;
-}
-
 static bool isSolverError(const std::string& reply) { return reply.compare(0, 6, "(error") == 0; }
 
 enum class VlSolverStatus : uint8_t { SAT, UNSAT, UNKNOWN, FAIL };
@@ -479,12 +397,8 @@ class VlSolverSession final {
     bool m_dirty VL_GUARDED_BY(m_mutex) = false;  // Transaction left unread bytes in the pipe
     std::string m_program VL_GUARDED_BY(m_mutex);  // Solver command storage backing m_argv
     std::vector<const char*> m_argv VL_GUARDED_BY(m_mutex);  // Solver argv
-    std::chrono::steady_clock::time_point
-        m_deadline VL_GUARDED_BY(m_mutex);  // Wall deadline of this call
-    bool m_deadlineArmed VL_GUARDED_BY(m_mutex) = false;
     bool m_warnedError VL_GUARDED_BY(m_mutex) = false;
     bool m_warnedUnknown VL_GUARDED_BY(m_mutex) = false;
-    bool m_warnedTimeout VL_GUARDED_BY(m_mutex) = false;
     bool m_warnedRespawn VL_GUARDED_BY(m_mutex) = false;
     bool m_warnedSpawnFail VL_GUARDED_BY(m_mutex) = false;
     bool m_warnedDisabled VL_GUARDED_BY(m_mutex) = false;
@@ -497,7 +411,7 @@ public:
     std::iostream& os() VL_REQUIRES(m_mutex) { return m_proc; }
     void abandon() VL_REQUIRES(m_mutex) { m_dirty = true; }
 
-    // Start a transaction: solver live (spawning or respawning as needed), deadline armed
+    // Start a transaction: solver live, spawning or respawning as needed
     bool begin() VL_REQUIRES(m_mutex) {
         m_dirty = false;
         if (m_state == State::BROKEN && m_consecFails >= MAX_CONSEC_FAILS) {
@@ -509,12 +423,6 @@ public:
                            "randomize() will return 0");
             }
         }
-        if (solverTimeoutMs() > 0) {
-            m_deadline
-                = std::chrono::steady_clock::now() + std::chrono::milliseconds{solverTimeoutMs()};
-            m_deadlineArmed = true;
-            m_proc.armDeadline(m_deadline);
-        }
         if (m_state == State::UNSTARTED || m_state == State::BROKEN) spawn();
         return m_state == State::LIVE;
     }
@@ -522,7 +430,7 @@ public:
     // End a transaction: clean sessions reset, desynced or dead ones are condemned
     void end() VL_REQUIRES(m_mutex) {
         if (m_state == State::LIVE) {
-            bool healthy = !m_dirty && !m_proc.ioTimedOut() && m_proc.alive() && !m_proc.fail();
+            bool healthy = !m_dirty && m_proc.alive() && !m_proc.fail();
             if (healthy) {
                 m_proc << "(reset)\n";
                 m_proc.flush();
@@ -531,30 +439,12 @@ public:
             if (healthy) {
                 m_consecFails = 0;
             } else {
-                if (m_proc.ioTimedOut() && !m_warnedTimeout) {
-                    m_warnedTimeout = true;
-                    VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                               "Solver exceeded VERILATOR_SOLVER_TIMEOUT; this randomize() "
-                               "call may fail, later calls continue");
-                }
                 m_proc.terminate();
                 m_state = State::BROKEN;
                 ++m_consecFails;
             }
         }
         m_dirty = false;
-        m_deadlineArmed = false;
-        m_proc.disarmDeadline();
-    }
-
-    // Refresh the solver-side timeout to the remaining wall budget
-    void emitTimeout() VL_REQUIRES(m_mutex) {
-        if (!m_deadlineArmed) return;
-        const auto now = std::chrono::steady_clock::now();
-        long ms = std::chrono::duration_cast<std::chrono::milliseconds>(m_deadline - now).count();
-        if (ms < 1) ms = 1;
-        if (ms > MAX_SOLVER_TIMEOUT_MS) ms = MAX_SOLVER_TIMEOUT_MS;
-        m_proc << "(set-option :timeout " << ms << ")\n";
     }
 
     void warnSolverError(const std::string& line) VL_REQUIRES(m_mutex) {
@@ -574,7 +464,7 @@ public:
             if (isSolverError(line)) {
                 if (!finishErrorReply(line)) break;
                 warnSolverError(line);
-                if (!m_deadlineArmed && !m_proc.peekReadable(ERROR_STATUS_GRACE_MS)) {
+                if (!m_proc.peekReadable(ERROR_STATUS_GRACE_MS)) {
                     abandon();
                     return VlSolverStatus::FAIL;
                 }
@@ -680,10 +570,10 @@ private:
 
     bool readLine(std::string& liner) VL_REQUIRES(m_mutex) {
         while (std::getline(m_proc, liner)) {
-            const size_t b = liner.find_first_not_of(" \t\r");
-            if (b == std::string::npos) continue;
-            const size_t e = liner.find_last_not_of(" \t\r");
-            liner = liner.substr(b, e - b + 1);
+            const size_t first = liner.find_first_not_of(" \t\r");
+            if (first == std::string::npos) continue;
+            const size_t last = liner.find_last_not_of(" \t\r");
+            liner = liner.substr(first, last - first + 1);
             return true;
         }
         return false;
@@ -1024,7 +914,6 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
         os << "(set-option :produce-models true)\n";
         // Lets the scalar pin path learn which free-bit assumptions conflict.
         os << "(set-option :produce-unsat-assumptions true)\n";
-        sess.emitTimeout();
         os << "(set-logic QF_ABV)\n";
         emitDefines(os);
         // randc exclusions vs. a pinned current value would make every check
@@ -1065,7 +954,6 @@ void VlRandomizer::reportUnsatSetup(VlSolverSession& sess,
     VL_REQUIRES(sess.m_mutex) {
     std::iostream& os = sess.os();
     os << "(set-option :produce-unsat-cores true)\n";
-    sess.emitTimeout();
     os << "(set-logic QF_ABV)\n";
     emitDefines(os);
     emitDeclares(os, false);
@@ -1108,7 +996,6 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess)
     }
     std::vector<bool> dropped(npins, false);
     for (int round = 0; round <= npins; ++round) {
-        sess.emitTimeout();
         os << "(check-sat-assuming (";
         for (int k = 0; k < npins; ++k) {
             if (!dropped[k]) os << " a" << k;
@@ -1139,7 +1026,6 @@ void VlRandomizer::solveDiversityXor(VlRNG& rngr, VlSolverSession& sess)
     VL_REQUIRES(sess.m_mutex) {
     std::iostream& os = sess.os();
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL; ++i) {
-        sess.emitTimeout();
         os << "(assert ";
         randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
         os << ")\n";
@@ -1162,7 +1048,6 @@ void VlRandomizer::relaxSoftConstraints(VlSolverSession& sess) VL_REQUIRES(sess.
     for (auto it = m_softConstraints.rbegin(); it != m_softConstraints.rend(); ++it) {
         os << "(push 1)\n";
         os << "(assert (= #b1 " << *it << "))\n";
-        sess.emitTimeout();
         os << "(check-sat)\n";
         const VlSolverStatus probe = sess.readStatus();
         if (probe == VlSolverStatus::FAIL) return;
@@ -1466,7 +1351,6 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
         const bool isFinalPhase = (phase == layers.size() - 1);
 
         os << "(set-option :produce-models true)\n";
-        sess.emitTimeout();
         os << "(set-logic " << logicp << ")\n";
         emitDefines(os);
         emitDeclares(os, false);
@@ -1544,7 +1428,6 @@ bool VlRandomizer::solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
     if (!readPhaseValues(sess, solvedValuesr)) return false;
 
     // One diversity round; on unsat keep the baseline values
-    sess.emitTimeout();
     os << "(assert ";
     randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
     os << ")\n";

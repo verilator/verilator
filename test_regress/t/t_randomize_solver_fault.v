@@ -5,10 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-`ifdef T_STALL
-  rand bit [7:0] arr[4096];
-  constraint c {foreach (arr[i]) arr[i] > 8'd1;}
-`elsif T_UNSAT
+`ifdef T_UNSAT
   rand bit [7:0] a;
   constraint c {
     a > 8'd200;
@@ -51,12 +48,6 @@ module t;
     rc = p.randomize();
     if (rc == 0) $stop;
     if (!(p.a > 8'd10)) $stop;
-`elsif T_STALL
-    automatic int nfail = 0;
-    for (int i = 0; i < 3; i++) begin
-      if (p.randomize() == 0) nfail++;
-    end
-    $display("NFAIL=%0d", nfail);
 `elsif T_UNSAT
     automatic int nfail = 0;
     for (int i = 0; i < 5; i++) begin

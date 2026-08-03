@@ -34,9 +34,7 @@ test.file_grep(logfile, r'NFAIL=5')
 
 # No solver at all: warn once, then disable after repeated spawn failures
 logfile = test.obj_dir + "/vlt_sim_nosolver.log"
-test.execute(logfile=logfile,
-             run_env='VERILATOR_SOLVER=/nonexistent_solver_binary'
-             ' VERILATOR_SOLVER_TIMEOUT=99999999999999999999')
+test.execute(logfile=logfile, run_env='VERILATOR_SOLVER=/nonexistent_solver_binary')
 test.file_grep(logfile, r'Unable to communicate')
 test.file_grep(logfile, r'randomization disabled')
 test.file_grep(logfile, r'NFAIL=5')
