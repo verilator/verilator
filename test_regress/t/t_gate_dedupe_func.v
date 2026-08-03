@@ -5,9 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module game_test(output [7:0] st_dout);
-  jtcop_game_sdram u_game(
-    .snd_vu(),
-    .snd_peak(),
+  jtcop_game u_game(
+    .clk(clk),
+    .ba2mcu_addr(ba2mcu_addr),
+    .main_addr(main_addr),
+    .st_addr(st_addr),
     .st_dout(st_dout)
   );
 endmodule
@@ -65,24 +67,9 @@ module jtcop_game(
     output [13:1] ba2mcu_addr,
     output [18:1] main_addr
 );
-  wire [7:0] st_snd;
-  reg [7:0] st_mux;
-  assign st_dout = st_mux;
+  assign st_dout = std_video;
+  assign main_addr = '0;
 
-  always @(posedge clk) begin
-    case (st_addr[7:6])
-      0: st_mux <= st_main;
-      1: st_mux <= st_snd;
-      2: st_mux <= snd_latch;
-      3: st_mux <= std_video;
-    endcase
-  end
-
-  jtcop_main u_main(
-    .snd_latch(snd_latch),
-    .cpu_addr(main_addr),
-    .st_dout(st_main)
-  );
   jtcop_video u_video(
     .game_id(game_id),
     .cpu_addr(main_addr[12:1]),
@@ -92,34 +79,6 @@ module jtcop_game(
     .st_dout(std_video)
   );
   jtcop_sdram u_sdram(.game_id(game_id));
-endmodule
-
-module jtcop_main(
-    output [18:1] cpu_addr,
-    output reg [7:0] snd_latch,
-    output reg [7:0] st_dout
-);
-  assign cpu_dout = 0,
-         cpu_addr = 0,
-         UDSWn = 1,
-         LDSWn = 1,
-         RnW = 0,
-         sec = 0,
-         pal_cs = 0,
-         fmode_cs = 0,
-         fsft_cs = 0,
-         fmap_cs = 0,
-         bmode_cs = 0,
-         bsft_cs = 0,
-         bmap_cs = 0,
-         cmode_cs = 0,
-         csft_cs = 0,
-         cmap_cs = 0,
-         huc_cs = 0,
-         obj_cs = 0,
-         obj_copy = 0,
-         ram_cs = 0,
-         rom_cs = 0;
 endmodule
 
 module jtcop_sdram(output reg [1:0] game_id = 0);
@@ -154,19 +113,5 @@ module jtcop_video(
     .cpu_dsn(ba2_dsn),
     .st_addr(st_addr),
     .st_dout(st_dout2)
-  );
-endmodule
-
-module jtcop_game_sdram(
-    output [7:0] st_dout,
-    output [5:0] snd_vu,
-    output snd_peak
-);
-  jtcop_game u_game(
-    .clk(clk),
-    .ba2mcu_addr(ba2mcu_addr),
-    .main_addr(main_addr),
-    .st_addr(st_addr),
-    .st_dout(st_dout)
   );
 endmodule

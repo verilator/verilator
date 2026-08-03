@@ -985,9 +985,9 @@ public:
         if (m_dedupable && m_assignp) {
             const AstNode* const lhsp = m_assignp->lhsp();
             // Possible todo, handle more complex lhs expressions
-            if (const AstNodeVarRef* const lRefp = VN_CAST(lhsp, NodeVarRef)) {
-                UASSERT_OBJ(lRefp->varScopep() == consumerVscp, consumerVscp,
-                            "Consumer doesn't match lhs of assign");
+            // A logic vertex may also contain a function argument assignment.
+            if (const AstNodeVarRef* const lRefp = VN_CAST(lhsp, NodeVarRef);
+                lRefp && lRefp->varScopep() == consumerVscp) {
                 if (const AstNodeAssign* const dup
                     = m_ghash.hashAndFindDupe(m_assignp, activep, m_ifCondp)) {
                     return static_cast<AstNodeVarRef*>(dup->lhsp());
