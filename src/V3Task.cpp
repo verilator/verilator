@@ -1892,8 +1892,8 @@ class TaskIfaceSensVisitor final : public VNVisitorConst {
     bool m_underSenses = false;  // Under a sensitivity expression of such a CFunc
 
     // METHODS
-    void markSenses(AstNode* nodep) {
-        if (!m_underIfaceFunc || !nodep) return;
+    void markSensesAndIterate(AstNode* nodep) {
+        if (!m_underIfaceFunc) return;
         VL_RESTORER(m_underSenses);
         m_underSenses = true;
         iterateAndNextConstNull(nodep);
@@ -1904,17 +1904,10 @@ class TaskIfaceSensVisitor final : public VNVisitorConst {
         m_underIfaceFunc = VN_IS(nodep->scopep()->modp(), Iface);
         iterateChildrenConst(nodep);
     }
-    void visit(AstEventControl* nodep) override {
-        markSenses(nodep->sentreep());
-        iterateAndNextConstNull(nodep->stmtsp());
-    }
+    void visit(AstSenTree* nodep) override { markSensesAndIterate(nodep->sensesp()); }
     void visit(AstWait* nodep) override {
-        markSenses(nodep->condp());
+        markSensesAndIterate(nodep->condp());
         iterateAndNextConstNull(nodep->stmtsp());
-    }
-    void visit(AstNodeAssign* nodep) override {
-        markSenses(VN_CAST(nodep->timingControlp(), SenTree));
-        iterateChildrenConst(nodep);
     }
     void visit(AstVarRef* nodep) override {
         if (!m_underSenses) return;
