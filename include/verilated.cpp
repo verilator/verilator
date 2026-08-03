@@ -214,6 +214,23 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
 }
 #endif
 
+#ifndef VL_USER_STOP_MAYBE  ///< Define this to override the vl_stop_maybe function
+void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_UNSAFE {
+    // $stop or $fatal
+    Verilated::threadContextp()->errorCountInc();
+    if (maybe
+        && Verilated::threadContextp()->errorCount() < Verilated::threadContextp()->errorLimit()) {
+        // Do just once when cross error limit
+        if (Verilated::threadContextp()->errorCount() == 1) {
+            vl_print_warn_error("-Info", filename, linenum,
+                                "Verilog $stop, ignored due to +verilator+error+limit");
+        }
+    } else {
+        vl_stop(filename, linenum, hier);
+    }
+}
+#endif
+
 #ifndef VL_USER_WARN  ///< Define this to override the vl_warn function
 void vl_warn(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     (void)hier;  // hier is unused in the default implementation.
@@ -235,19 +252,14 @@ void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAF
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
-    // $stop or $fatal; the error limit decides here, not when the queued message runs
+    // Classify now, so a queued request is pending from the moment it is posted
     VerilatedContext* const contextp = Verilated::threadContextp();
-    bool firstIgnored = false;
-    const bool stop = contextp->errorCountIncMaybeStop(maybe, firstIgnored);
+    const bool stop = contextp->stopRequestReserve(maybe);
     if (stop) contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        if (stop) {
-            vl_stop(filename, linenum, hier);
-            contextp->finishPendingDec();
-        } else if (firstIgnored) {
-            vl_print_warn_error("-Info", filename, linenum,
-                                "Verilog $stop, ignored due to +verilator+error+limit");
-        }
+        vl_stop_maybe(filename, linenum, hier, maybe);
+        contextp->stopRequestRelease();
+        if (stop) contextp->finishPendingDec();
     }});
 }
 
@@ -3259,13 +3271,6 @@ void VerilatedContext::errorCountInc() VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     ++m_s.m_errorCount;
 }
-bool VerilatedContext::errorCountIncMaybeStop(bool maybe, bool& firstIgnored) VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    const int count = ++m_s.m_errorCount;
-    const bool stop = !maybe || count >= m_s.m_errorLimit;
-    firstIgnored = !stop && count == 1;
-    return stop;
-}
 void VerilatedContext::errorLimit(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_errorLimit = val;
@@ -3285,7 +3290,15 @@ void VerilatedContext::gotError(bool flag) VL_MT_SAFE {
 void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_gotFinish = flag;
-    if (!flag && !m_ns.m_finishPending) m_ns.m_finishPendingTimeValid = false;
+}
+bool VerilatedContext::stopRequestReserve(bool maybe) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    const int reserved = ++m_ns.m_stopReserved;
+    return !maybe || m_s.m_errorCount + reserved >= m_s.m_errorLimit;
+}
+void VerilatedContext::stopRequestRelease() VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    --m_ns.m_stopReserved;
 }
 bool VerilatedContext::executingFinal() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

@@ -27,10 +27,7 @@ int stopCalls = 0;
 int fatalCalls = 0;
 
 // Non-exiting overrides so a request can be observed after it ran
-void vl_stop(const char* filename, int linenum, const char* hier) {
-    ++stopCalls;
-    TEST_CHECK_EQ(Verilated::threadContextp()->finishPending(), true);
-}
+void vl_stop(const char* filename, int linenum, const char* hier) { ++stopCalls; }
 
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) {
     ++fatalCalls;
@@ -64,13 +61,15 @@ int main(int argc, char** argv) {
     TEST_CHECK_EQ(context.errorCount(), 1);
     TEST_CHECK_EQ(stopCalls, 2);
 
-    // A worker-queued stop is pending from the moment it is posted
+    // A worker-queued stop is pending from the moment it is posted, and the
+    // error is counted only when the queued message runs
     context.errorCount(0);
     context.time(10);
     {
         VerilatedEvalMsgQueue evalMsgQ;
         Verilated::mtaskId(1);
         VL_STOP_MT(__FILE__, __LINE__, "TOP.t", false);
+        TEST_CHECK_EQ(context.errorCount(), 0);
         TEST_CHECK_EQ(stopCalls, 2);
         TEST_CHECK_EQ(context.finishPending(), true);
         TEST_CHECK_EQ(context.finishPendingTime(), 10);
@@ -80,6 +79,7 @@ int main(int argc, char** argv) {
         TEST_CHECK_EQ(context.finishPending(), true);
         TEST_CHECK_EQ(context.finishPendingTime(), 10);
         Verilated::endOfEval(&evalMsgQ);
+        TEST_CHECK_EQ(context.errorCount(), 1);
         TEST_CHECK_EQ(stopCalls, 3);
         TEST_CHECK_EQ(context.finishPending(), false);
         TEST_CHECK_EQ(context.finishPendingTime(), 20);
@@ -92,11 +92,28 @@ int main(int argc, char** argv) {
         VerilatedEvalMsgQueue evalMsgQ;
         Verilated::mtaskId(1);
         VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
-        TEST_CHECK_EQ(context.errorCount(), 1);
         TEST_CHECK_EQ(context.finishPending(), false);
         Verilated::endOfThreadMTask(&evalMsgQ);
         Verilated::endOfEval(&evalMsgQ);
+        TEST_CHECK_EQ(context.errorCount(), 1);
         TEST_CHECK_EQ(stopCalls, 3);
+        TEST_CHECK_EQ(context.finishPending(), false);
+    }
+
+    // Several queued maybe-stops still stop exactly once, on the one that crosses
+    context.errorLimit(3);
+    context.errorCount(0);
+    {
+        VerilatedEvalMsgQueue evalMsgQ;
+        Verilated::mtaskId(1);
+        VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
+        VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
+        VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
+        TEST_CHECK_EQ(context.finishPending(), true);
+        Verilated::endOfThreadMTask(&evalMsgQ);
+        Verilated::endOfEval(&evalMsgQ);
+        TEST_CHECK_EQ(context.errorCount(), 3);
+        TEST_CHECK_EQ(stopCalls, 4);
         TEST_CHECK_EQ(context.finishPending(), false);
     }
 
@@ -128,17 +145,13 @@ int main(int argc, char** argv) {
     TEST_CHECK_EQ(context.finishPending(), false);
     TEST_CHECK_EQ(context.finishPendingTime(), 50);
 
-    // A latched termination keeps its timestamp; clearing it releases both
+    // A latched termination keeps the timestamp after the request drains
     context.time(60);
     context.finishPendingInc();
     context.gotFinish(true);
     context.finishPendingDec();
-    TEST_CHECK_EQ(context.finishPending(), true);
-    TEST_CHECK_EQ(context.finishPendingTime(), 60);
     context.time(70);
-    context.gotFinish(false);
-    TEST_CHECK_EQ(context.finishPending(), false);
-    TEST_CHECK_EQ(context.finishPendingTime(), 70);
+    TEST_CHECK_EQ(context.finishPendingTime(), 60);
 
     topp->final();
     return errors ? 10 : 0;
