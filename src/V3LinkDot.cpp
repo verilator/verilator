@@ -3653,8 +3653,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return nullptr;
     }
     static const AstVar* getNextVarp(const AstNode* stmtsp) {
+        // Only IO ports, as parameters are on paramsp(), not the pinsp() list paired here
         while (stmtsp) {
-            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) return varp;
+            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) {
+                if (varp->isIO()) return varp;
+            }
             stmtsp = stmtsp->nextp();
         }
         return nullptr;
@@ -4470,7 +4473,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (varp->isIfaceRef() && m_genericIfaceModule
-                    && VN_IS(varp->childDTypep(), IfaceGenericDType)) {
+                    && VN_IS(varp->childDTypep(), IfaceGenericDType) && !start) {
+                    // Defer only dotted member access ('d.PARAM'), as V3Param must specialize
+                    // first; a standalone ref ('.x(d)') resolves via allowVar below now
                     ok = true;
                     m_ds.m_unresolvedGenericIface = true;
                 } else if (ifacerefp && varp->isIfaceRef()) {
