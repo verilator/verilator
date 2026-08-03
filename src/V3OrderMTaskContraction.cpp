@@ -251,7 +251,7 @@ static uint64_t siblingScore(const SiblingMC* sibsp) {
         = std::max(ap->critPathCost(GraphWay::FORWARD), bp->critPathCost(GraphWay::FORWARD));
     const uint64_t mergedCpCostRev
         = std::max(ap->critPathCost(GraphWay::REVERSE), bp->critPathCost(GraphWay::REVERSE));
-    return mergedCpCostRev + mergedCpCostFwd + LogicMTask::stepCost(ap->cost() + bp->cost());
+    return mergedCpCostRev + mergedCpCostFwd + ap->cost() + bp->cost();
 }
 
 static uint64_t edgeScore(const MTaskEdge* edgep) {
@@ -264,7 +264,7 @@ static uint64_t edgeScore(const MTaskEdge* edgep) {
                                               top->critPathCostWithout<GraphWay::FORWARD>(edgep));
     const uint64_t mergedCpCostRev = std::max(fromp->critPathCostWithout<GraphWay::REVERSE>(edgep),
                                               top->critPathCost(GraphWay::REVERSE));
-    return mergedCpCostRev + mergedCpCostFwd + LogicMTask::stepCost(fromp->cost() + top->cost());
+    return mergedCpCostRev + mergedCpCostFwd + fromp->cost() + top->cost();
 }
 
 void MergeCandidate::rescore() {
@@ -446,11 +446,10 @@ static void partInitHalfCriticalPaths(V3Graph& mTaskGraph, bool checkOnly) {
             relatives.insert(edge.furtherp<rev>());
 #endif
             const LogicMTask* const relativep = static_cast<LogicMTask*>(edge.furtherp<rev>());
-            cpCost = std::max(cpCost, (relativep->critPathCost(way)
-                                       + static_cast<uint64_t>(relativep->stepCost())));
+            cpCost = std::max(cpCost, (relativep->critPathCost(way) + relativep->cost()));
         }
         if (checkOnly) {
-            partCheckCachedScoreVsActual(mtaskp->critPathCost(way), cpCost);
+            UASSERT(mtaskp->critPathCost(way) == cpCost, "Calculation error in scoring");
         } else {
             mtaskp->setCritPathCost(way, cpCost);
         }
@@ -651,7 +650,7 @@ public:
                 UASSERT_OBJ(first, mtaskp, "Set CP on node twice");
             }
             mtaskp->setCritPathCost(way, newCp);
-            cpHasIncreased(mtaskp, newCp + mtaskp->stepCost());
+            cpHasIncreased(mtaskp, newCp + mtaskp->cost());
         }
 
         if (VL_UNLIKELY(m_slowAsserts)) m_seen.clear();
@@ -824,13 +823,12 @@ class Contraction final {
             newCp = std::max(otherp->critPathCost(way), mtaskp->critPathCost(way));
         }
 
-        const uint64_t origRelativesCp = mtaskp->critPathCost(way) + mtaskp->stepCost();
-        const uint64_t newRelativesCp
-            = newCp + LogicMTask::stepCost(mtaskp->cost() + otherp->cost());
+        const uint64_t oldRelativesCp = mtaskp->critPathCost(way) + mtaskp->cost();
+        const uint64_t newRelativesCp = newCp + mtaskp->cost() + otherp->cost();
 
         NewCp result;
         result.cp = newCp;
-        result.propagate = (newRelativesCp > origRelativesCp);
+        result.propagate = (newRelativesCp > oldRelativesCp);
         result.propagateCp = newRelativesCp;
         return result;
     }
@@ -919,7 +917,7 @@ class Contraction final {
             m_sb.removeSibling(mergeSibsp);
         }
 
-        // This also updates cost and stepCost on recipientp
+        // This also updates cost on recipientp
         recipientp->moveAllVerticesFrom(donorp);
 
         UINFO(9, "recipient = " << recipientp->id() << ", donor = " << donorp->id()
@@ -1232,7 +1230,7 @@ class Contraction final {
                 continue;
             }
 
-            partCheckCachedScoreVsActual(cachedScore, actualScore);
+            UASSERT(cachedScore == actualScore, "Calculation error in scoring");
 
             // Finally there's no cycle risk, no need to rescore, we're
             // within m_scoreLimit and m_scoreLimitBeforeRescore.
