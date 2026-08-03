@@ -176,10 +176,11 @@ public:
 #ifdef _VL_SOLVER_PIPE
         if (gptr() < egptr()) return true;
         sync();
-        const auto limit = std::chrono::steady_clock::now() + std::chrono::milliseconds{graceMs};
+        const std::chrono::steady_clock::time_point limit
+            = std::chrono::steady_clock::now() + std::chrono::milliseconds{graceMs};
         int pollRc = 0;
         do {
-            const auto now = std::chrono::steady_clock::now();
+            const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
             if (now >= limit) return false;
             const int waitMs = static_cast<int>(
                 std::chrono::duration_cast<std::chrono::milliseconds>(limit - now).count() + 1);
