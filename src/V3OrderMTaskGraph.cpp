@@ -18,6 +18,7 @@
 
 #include "V3OrderMTaskGraph.h"
 
+#include "V3Global.h"
 #include "V3InstrCount.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -28,7 +29,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 OrderMTaskGraph::OrderMTaskGraph(OrderMoveGraph& moveGraph)
     : m_moveGraph{moveGraph}
     , m_entryp{new LogicMTask{*this, nullptr}}
-    , m_exitp{new LogicMTask{*this, nullptr}} {}
+    , m_exitp{new LogicMTask{*this, nullptr}}
+    , m_forwardPropagator{v3Global.opt.debugPartition()}
+    , m_reversePropagator{v3Global.opt.debugPartition()} {}
 
 uint64_t OrderMTaskGraph::totalCost() const {
     uint64_t cost = 0;
