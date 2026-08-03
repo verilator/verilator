@@ -153,6 +153,8 @@ class LogicMTask final : public V3GraphVertex {
     OrderMoveVertex::List m_mVertices;
 
     // Cost estimate for this LogicMTask, derived from V3InstrCount, in abstract time units.
+    // Cost estimates and critical path lengths are bounded by number of AstNodes * constant,
+    // will run out of host memory storing the Ast way before they can overflow.
     uint64_t m_cost = 0;
 
     // Cost of critical paths going FORWARD from graph-start to the start
