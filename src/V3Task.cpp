@@ -1884,6 +1884,49 @@ public:
 };
 
 //######################################################################
+// Mark interface members under timing controls of interface CFuncs as interface-sensed
+
+class TaskIfaceSensVisitor final : public VNVisitorConst {
+    // STATE
+    bool m_underIfaceFunc = false;  // Under a CFunc owned by an interface scope
+    bool m_underSenses = false;  // Under a sensitivity expression of such a CFunc
+
+    // METHODS
+    void markSensesAndIterate(AstNode* nodep) {
+        if (!m_underIfaceFunc) return;
+        VL_RESTORER(m_underSenses);
+        m_underSenses = true;
+        iterateAndNextConstNull(nodep);
+    }
+    // VISITORS
+    void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_underIfaceFunc);
+        m_underIfaceFunc = VN_IS(nodep->scopep()->modp(), Iface);
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstSenTree* nodep) override { markSensesAndIterate(nodep->sensesp()); }
+    void visit(AstWait* nodep) override {
+        markSensesAndIterate(nodep->condp());
+        iterateAndNextConstNull(nodep->stmtsp());
+    }
+    void visit(AstVarRef* nodep) override {
+        if (!m_underSenses) return;
+        UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope");
+        // Keep temps: the clocking event var is a MODULETEMP
+        if (nodep->varp()->isFuncLocal()) return;
+        if (AstIface* const ifacep = VN_CAST(nodep->varScopep()->scopep()->modp(), Iface)) {
+            nodep->varp()->sensIfacep(ifacep);
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit TaskIfaceSensVisitor(AstNetlist* nodep) { iterateChildrenConst(nodep); }
+    ~TaskIfaceSensVisitor() override = default;
+};
+
+//######################################################################
 // Task class functions
 
 const char* const V3Task::s_dpiTemporaryVarSuffix = "__Vcvt";
@@ -2302,5 +2345,6 @@ void V3Task::taskAll(AstNetlist* nodep) {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
+    { TaskIfaceSensVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("task", 0, dumpTreeEitherLevel() >= 3);
 }
