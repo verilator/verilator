@@ -309,6 +309,9 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Order.o \
   V3OrderGraphBuilder.o \
   V3OrderMoveGraph.o \
+  V3OrderMTaskContraction.o \
+  V3OrderMTaskFixHazards.o \
+  V3OrderMTaskGraph.o \
   V3OrderParallel.o \
   V3OrderProcessDomains.o \
   V3OrderSerial.o \
@@ -330,7 +333,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3SchedUtil.o \
   V3SchedVirtIface.o \
   V3Scope.o \
-  V3Scoreboard.o \
   V3Slice.o \
   V3Split.o \
   V3SplitVar.o \

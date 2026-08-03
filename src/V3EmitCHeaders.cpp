@@ -249,8 +249,37 @@ class EmitCHeader final : public EmitCConstInit {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             if (!classp->isInterfaceClass() && !classp->isVirtual()) {
                 decorateFirst(first, section);
-                putns(classp, "VlClass* clone() const { return new "
-                                  + EmitCUtil::prefixNameProtect(classp) + "(*this); }\n");
+                using EmbeddedCovergroupVar = std::pair<const AstClass*, const AstVar*>;
+                std::vector<EmbeddedCovergroupVar> embeddedCovergroupVars;
+                const auto hasEnclosingBackPointer = [](const AstClass* covergroupp) {
+                    return covergroupp->exists([](const AstVar* const varp) {
+                        const AstClassRefDType* const refp
+                            = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+                        return refp && refp->rawPointer();
+                    });
+                };
+                const_cast<AstClass*>(classp)->foreachMember(
+                    [&](AstClass* const memberClassp, AstVar* const varp) {
+                        const AstClassRefDType* const refp
+                            = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+                        if (refp && refp->classp()->isCovergroup()
+                            && hasEnclosingBackPointer(refp->classp())) {
+                            embeddedCovergroupVars.emplace_back(memberClassp, varp);
+                        }
+                    });
+                const string className = EmitCUtil::prefixNameProtect(classp);
+                if (embeddedCovergroupVars.empty()) {
+                    putns(classp,
+                          "VlClass* clone() const { return new " + className + "(*this); }\n");
+                } else {
+                    putns(classp, "VlClass* clone() const { " + className + "* const clonep = new "
+                                      + className + "(*this); ");
+                    for (const EmbeddedCovergroupVar& item : embeddedCovergroupVars) {
+                        puts("clonep->" + EmitCUtil::prefixNameProtect(item.first)
+                             + "::" + item.second->nameProtect() + " = VlNull{}; ");
+                    }
+                    puts("return clonep; }\n");
+                }
             }
         }
     }

@@ -16,11 +16,9 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t(  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
 
   typedef struct packed {
     logic [7:0] a;
@@ -29,9 +27,9 @@ module t(  /*AUTOARG*/
 
   // Unpacked struct, $bits == 40
   typedef struct {
-    inner_t      x;
+    inner_t x;
     logic [15:0] c;
-    logic [7:0]  d;
+    logic [7:0] d;
   } order_t;
 
   // Unpacked array, also $bits == 40 (so producer width OW is shared).
@@ -47,19 +45,49 @@ module t(  /*AUTOARG*/
   // unpacked struct (needs CvtPackedToArray) and an unpacked array (does not).
   order_t out_r;  // right-stream {>>{}}
   order_t out_l;  // left-stream  {<<8{}}
-  arr_t   arr_r;
-  arr_t   arr_l;
-  producer #(.W(OW)) u_r (.din(src), .dout({>>{out_r}}));
-  producer #(.W(OW)) u_l (.din(src), .dout({<<8{out_l}}));
-  producer #(.W(OW)) u_ar (.din(src), .dout({>>{arr_r}}));
-  producer #(.W(OW)) u_al (.din(src), .dout({<<8{arr_l}}));
+  arr_t arr_r;
+  arr_t arr_l;
+  producer #(
+      .W(OW)
+  ) u_r (
+      .din(src),
+      .dout({>>{out_r}})
+  );
+  producer #(
+      .W(OW)
+  ) u_l (
+      .din(src),
+      .dout({<<8{out_l}})
+  );
+  producer #(
+      .W(OW)
+  ) u_ar (
+      .din(src),
+      .dout({>>{arr_r}})
+  );
+  producer #(
+      .W(OW)
+  ) u_al (
+      .din(src),
+      .dout({<<8{arr_l}})
+  );
 
   // Reference: plain packed port + separate streaming unpack assign.
   wire [OW-1:0] pack_r;
   wire [OW-1:0] pack_l;
   order_t ref_r, ref_l;
-  producer #(.W(OW)) u_pr (.din(src), .dout(pack_r));
-  producer #(.W(OW)) u_pl (.din(src), .dout(pack_l));
+  producer #(
+      .W(OW)
+  ) u_pr (
+      .din(src),
+      .dout(pack_r)
+  );
+  producer #(
+      .W(OW)
+  ) u_pl (
+      .din(src),
+      .dout(pack_l)
+  );
   assign ref_r = {>>{pack_r}};
   assign ref_l = {<<8{pack_l}};
 
@@ -104,7 +132,7 @@ endmodule
 module producer #(
     parameter int W = 1
 ) (
-    input  logic [W-1:0] din,
+    input logic [W-1:0] din,
     output logic [W-1:0] dout
 );
   assign dout = din;

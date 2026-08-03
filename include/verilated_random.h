@@ -242,8 +242,7 @@ class VlRandomizer VL_NOT_FINAL {
     std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
                                            // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
-    std::vector<std::string> m_unique_arrays;
-    std::map<std::string, uint32_t> m_unique_array_sizes;
+    std::vector<std::string> m_unique_arrays;  // Arrays whose elements must be distinct
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     const VlQueue<CData>* m_static_randmodep = nullptr;  // Static rand_mode state (shared)
     std::unordered_set<std::string> m_staticVars;  // Names of static rand vars
@@ -258,14 +257,37 @@ class VlRandomizer VL_NOT_FINAL {
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& os, bool log = false);
+    bool parseSolution(std::iostream& os);
     bool checkSat(std::iostream& os);
+    // Assert the maximal compatible soft-constraint set onto the open session.
+    void relaxSoftConstraints(std::iostream& os);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).
     std::vector<int> readUnsatAssumptions(std::iostream& os);
+    void reportUnsatSetup(std::iostream& os, const std::vector<std::string>& uniqueExprs);
+    void reportUnsatCore(std::iostream& os);
     void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
     void recordRandcValues();  // Record solved randc values for future exclusion
-    size_t hashConstraints() const;
-    bool nextPhased(VlRNG& rngr);  // Phased solving for solve...before
+    size_t hashConstraints(const std::vector<std::string>& extras) const;
+    bool nextRandomize(VlRNG& rngr, bool checkOnly);
+    // "(distinct ...)" expression per unique-constrained array
+    std::vector<std::string> buildUniqueExprs() const;
+    void emitDefines(std::ostream& os) const;
+    void emitDeclares(std::ostream& os, bool pinCurrent) const;
+    void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
+    bool nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
+    void solveDiversity(VlRNG& rngr, std::iostream& os);
+    void solveDiversityPins(VlRNG& rngr, std::iostream& os);
+    void solveDiversityXor(VlRNG& rngr, std::iostream& os);
+    // Layers of solve...before variables in dependency order
+    bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
+    const char* phasedLogic() const;
+    bool nextPhased(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
+    bool solvePhases(VlRNG& rngr, const std::vector<std::vector<std::string>>& layers,
+                     const std::vector<std::string>& uniqueExprs);
+    bool solvePhaseValues(std::iostream& os, VlRNG& rngr,
+                          const std::vector<std::string>& layerVars,
+                          std::map<std::string, std::string>& solvedValuesr);
+    bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
 
 public:
     // CONSTRUCTORS
@@ -492,11 +514,10 @@ public:
         ++m_index;
     }
 
-    // This is the "Sender" API for the generated code
-    void rand_unique(const std::string& name, uint32_t size) {
-        m_unique_arrays.push_back(name);
-        m_unique_array_sizes[name] = size;
-    }
+    // This is the "Sender" API for the generated code.
+    // The elements to make distinct are taken from the array element table at
+    // solve time, so a container resized by the solver is handled correctly.
+    void rand_unique(const std::string& name) { m_unique_arrays.push_back(name); }
 
     // Recursively record all elements in an unpacked array
     template <typename T, std::size_t N_Depth>

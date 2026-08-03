@@ -370,8 +370,11 @@ private:
                 V3Number outputChgMask{nodep, static_cast<int>(m_outVarps.size()), 0};
                 outputChgMask.setBit(tov.ord(), 1);
                 AstNodeExpr* const condp
-                    = new AstAnd{fl, select(fl, outputAssignedTableVscp, indexVscp),
-                                 new AstConst{fl, outputChgMask}};
+                    = new AstNeq{fl,
+                                 new AstAnd{fl, select(fl, outputAssignedTableVscp, indexVscp),
+                                            new AstConst{fl, outputChgMask}},
+                                 new AstConst{fl, AstConst::WidthedValue{},
+                                              static_cast<int>(m_outVarps.size()), 0}};
                 outsetp = new AstIf{fl, condp, outsetp};
             }
 

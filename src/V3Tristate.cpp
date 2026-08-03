@@ -422,9 +422,11 @@ class TristateVisitor final : public TristateBaseVisitor {
     struct RefStrength final {
         AstNodeVarRef* m_varrefp;
         VStrength m_strength;
-        RefStrength(AstNodeVarRef* varrefp, VStrength strength)
+        AstDelay* m_delayp;  // Explicit delay on the continuous assignment
+        RefStrength(AstNodeVarRef* varrefp, VStrength strength, AstDelay* delayp)
             : m_varrefp{varrefp}
-            , m_strength{strength} {}
+            , m_strength{strength}
+            , m_delayp{delayp} {}
     };
     using RefStrengthVec = std::vector<RefStrength>;
     using VarMap = std::map<AstVar*, RefStrengthVec*>;
@@ -449,6 +451,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     bool m_processedIfaces = false;  // Interface modules already processed (interfaces-first pass)
     VStrength m_currentStrength = VStrength::STRONG;  // Current strength of assignment,
                                                       // Used only on LHS of assignment
+    AstDelay* m_currentDelayp = nullptr;  // Delay of assignment currently collecting LHS drivers
     const AstNode* m_logicp = nullptr;  // Current logic being built
     TristateGraph m_tgraph;  // Logic graph
     // Map: interface AstVar* -> list of per-module (enVarp, outVarp) contribution pairs
@@ -635,7 +638,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstVar* const key = nodep->varp();
         const auto pair = m_lhsmap.emplace(key, nullptr);
         if (pair.second) pair.first->second = new RefStrengthVec;
-        pair.first->second->push_back(RefStrength{nodep, m_currentStrength});
+        pair.first->second->push_back(RefStrength{nodep, m_currentStrength, m_currentDelayp});
     }
 
     AstNodeExpr* newEnableDeposit(AstSel* selp, AstNodeExpr* enp) {
@@ -854,6 +857,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstAssignW* const enLhspAssignp = new AstAssignW{
                 refp->fileline(), new AstVarRef{refp->fileline(), newEnLhsp, VAccess::WRITE},
                 getEnp(refp)};
+            if (it->m_delayp) { enLhspAssignp->timingControlp(it->m_delayp->cloneTree(false)); }
             UINFO(9, "       newenlhspAssignp " << enLhspAssignp);
             nodep->addStmtsp(new AstAlways{enLhspAssignp});
 
@@ -1567,11 +1571,18 @@ class TristateVisitor final : public TristateBaseVisitor {
     void visitAssign(AstNodeAssign* nodep) {
         VL_RESTORER(m_alhs);
         VL_RESTORER(m_currentStrength);
+        VL_RESTORER(m_currentDelayp);
         if (VN_IS(nodep->rhsp(), CReset)) return;
+        if (AstAssignW* const assignWp = VN_CAST(nodep, AssignW)) {
+            m_currentDelayp = VN_CAST(assignWp->timingControlp(), Delay);
+        }
         if (m_graphing) {
             if (AstAssignW* assignWp = VN_CAST(nodep, AssignW)) {
-                if (assignWp->timingControlp() || assignWp->getLhsNetDelay()) return;
-                addToAssignmentList(assignWp);
+                if (assignWp->getLhsNetDelay()) return;
+                if (assignWp->timingControlp() && !m_currentDelayp) return;
+                // Separate data and enable assignments cannot preserve distinct rise/fall delays.
+                if (m_currentDelayp && m_currentDelayp->fallDelay()) return;
+                if (!assignWp->timingControlp()) addToAssignmentList(assignWp);
             }
 
             if (nodep->user2() & U2_GRAPHING) return;

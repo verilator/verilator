@@ -96,6 +96,30 @@ static string extractDottedPath(AstNode* nodep, bool& hasPartSelect) {
     }
     return "";
 }
+static string lexicalDisablePath(AstNode* const targetp) {
+    std::vector<string> names;
+    for (AstNode* curp = targetp; curp; curp = curp->aboveLoopp()) {
+        if (AstNodeBlock* const blockp = VN_CAST(curp, NodeBlock)) {
+            if (blockp->name() != "") names.push_back(blockp->name());
+        } else if (AstNodeFTask* const ftaskp = VN_CAST(curp, NodeFTask)) {
+            names.push_back(ftaskp->name());
+        } else if (VN_IS(curp, NodeModule)) {
+            break;
+        }
+    }
+    string path;
+    for (auto it = names.crbegin(); it != names.crend(); ++it) {
+        path = VString::dot(path, ".", *it);
+    }
+    return path;
+}
+static string targetInstancePath(AstNode* const targetp, const string& targetPath) {
+    const string lexicalPath = lexicalDisablePath(targetp);
+    if (lexicalPath == "" || targetPath == lexicalPath) return "";
+    const string suffix = "." + lexicalPath;
+    if (!VString::endsWith(targetPath, suffix)) return "";
+    return targetPath.substr(0, targetPath.size() - suffix.size());
+}
 
 // ######################################################################
 //  Matcher classes (for suggestion matching)
@@ -2195,7 +2219,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (const AstDot* const dotp = VN_CAST(nodep->funcrefp(), Dot))
             funcrefp = VN_CAST(dotp->rhsp(), NodeFTaskRef);
         UASSERT_OBJ(funcrefp, nodep, "'with' only can operate on a function/task");
-        string name = "item";
+        string name = funcrefp->name() == "randomize" ? "__Vrandwith_obj" : "item";
         FileLine* argFl = nodep->fileline();
         AstArg* const argsp = funcrefp->argsp();
         if (argsp) {
@@ -3136,6 +3160,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_inPackedArray = false;  // Currently traversing a packed array tree
     bool m_replaceWithAlias
         = true;  // Replace VarScope with an alias. Used in the handling of AstAlias
+    bool m_isParam = false;  // Specifies whether currently visiting param variable
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -4297,7 +4322,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstLambdaArgRef* const lambdaRefp
-                        = new AstLambdaArgRef{nodep->fileline(), "item", false};
+                        = new AstLambdaArgRef{nodep->fileline(), "__Vrandwith_obj", false};
                     AstMemberSel* newp = new AstMemberSel{nodep->fileline(), lambdaRefp,
                                                           VFlagChildDType{}, nodep->name()};
                     nodep->replaceWith(newp);
@@ -4312,6 +4337,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
+            }
+            if (!foundp && m_ds.m_dotp && VN_IS(m_ds.m_dotp->lhsp(), ParseRef)
+                && m_ds.m_dotp->lhsp()->name() == "this") {
+                const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
+                if (classp && classp->isCovergroup() && classp->covergroupEnclosingClassp()) {
+                    VSymEnt* const enclosingClassSymp
+                        = m_statep->getNodeSym(classp->covergroupEnclosingClassp());
+                    foundp = enclosingClassSymp->findIdFallback(nodep->name());
+                    if (foundp) m_ds.m_dotSymp = enclosingClassSymp;
+                }
             }
             // If not found in modport, check interface fallback for parameters and typedefs.
             // Parameters and typedefs are always visible through a modport (IEEE 1800-2023 25.5).
@@ -5096,6 +5131,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
+        VL_RESTORER(m_isParam);
+        m_isParam = nodep->varType().isParam();
         iterateChildren(nodep);
         if (m_statep->forPrimary() && nodep->isIO() && !m_ftaskp && !nodep->user4()) {
             nodep->v3error(
@@ -5256,7 +5293,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
                     AstNode* const newp = new AstMethodCall{
-                        nodep->fileline(), new AstLambdaArgRef{nodep->fileline(), "item", false},
+                        nodep->fileline(),
+                        new AstLambdaArgRef{nodep->fileline(), "__Vrandwith_obj", false},
                         VFlagChildDType{}, nodep->name(), argsp};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -5277,27 +5315,32 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // which may find std::randomize and overwrite classOrPackagep
                 return;
             }
-            if (m_insideClassExtParam) {
-                // The reference may point to a method declared in a super class, which is proved
-                // by a parameter. In such a case, it can't be linked at the first stage.
-                // Must not do any linking, because e.g. might find an extends of an upper class
-                // because the current class (under parent) isn't yet importing it's extended class
-                // symbols
-                return;
-            }
-            if (AstClass* const targetClassp = VN_CAST(dotSymp->nodep(), Class)) {
-                if (m_extendsParam.count(targetClassp)) {
-                    // Target class has parameterized extends not yet resolved.
-                    // Its inherited symbols (e.g. static functions from the base class)
-                    // aren't imported yet - defer to linkDotParamed.
+            VSymEnt* const foundp
+                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            AstNodeFTask* const taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
+            AstNodeModule* const taskModulep = foundp ? foundp->classOrPackagep() : nullptr;
+            // Ignore deferring linking of functions inside params of classes extending
+            // parametric classes if referenced function can be linked in the first pass.
+            if (!m_isParam || !taskp
+                || (taskp->classMethod() && taskModulep && taskModulep->hasParameterList())) {
+                if (m_insideClassExtParam) {
+                    // The reference may point to a method declared in a super class, which is
+                    // proved by a parameter. In such a case, it can't be linked at the first
+                    // stage. Must not do any linking, because e.g. might find an extends of an
+                    // upper class because the current class (under parent) isn't yet importing
+                    // it's extended class symbols.
                     return;
+                }
+                if (AstClass* const targetClassp = VN_CAST(dotSymp->nodep(), Class)) {
+                    if (m_extendsParam.count(targetClassp)) {
+                        // Target class has parameterized extends not yet resolved.
+                        // Its inherited symbols (e.g. static functions from the base class)
+                        // aren't imported yet - defer to linkDotParamed.
+                        return;
+                    }
                 }
             }
 
-            VSymEnt* const foundp
-                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
-            AstNodeFTask* const taskp
-                = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;  // Maybe nullptr
             if (taskp) {
                 if (staticAccess && !taskp->isStatic()) {
                     // TODO bug4077
@@ -5815,6 +5858,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_insideClassExtParam);
         {
             m_ds.init(m_curSymp);
+            m_insideClassExtParam = nodep->isCovergroup() && nodep->covergroupEnclosingClassp()
+                                    && m_extendsParam.find(nodep->covergroupEnclosingClassp())
+                                           != m_extendsParam.end();
             // Until overridden by a SCOPE
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
@@ -6167,6 +6213,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstDisable* nodep) override {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
+        bool hasPartSelect = false;
+        const string targetPath
+            = nodep->targetRefp() ? extractDottedPath(nodep->targetRefp(), hasPartSelect) : "";
         VL_RESTORER_COPY(m_ds);
         m_ds.init(m_curSymp);
         m_ds.m_dotPos = DP_FIRST;
@@ -6183,8 +6232,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 pushDeletep(nodep->unlinkFrBack());
             }
             if (nodep->targetp()) {
-                // If the target is already linked, there is no need to store reference as child
-                VL_DO_DANGLING(nodep->targetRefp()->unlinkFrBack()->deleteTree(), nodep);
+                nodep->targetRefp()->unlinkFrBack()->deleteTree();
+                if (!hasPartSelect) {
+                    const string instancePath = targetInstancePath(nodep->targetp(), targetPath);
+                    if (!instancePath.empty()) {
+                        // Keep only the instance prefix so V3LinkJump can reference the selected
+                        // instance's process queue without reparsing the disable target.
+                        nodep->targetRefp(
+                            new AstVarXRef{nodep->fileline(), "", instancePath, VAccess::READ});
+                    }
+                }
             }
         }
     }

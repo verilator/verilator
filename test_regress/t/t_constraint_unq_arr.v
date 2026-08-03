@@ -5,8 +5,47 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Based on t_constraint_unsup_unq_arr.v
-// We only check uniqueness for small # of elements on a large range
-// as Z3 does not actually give unique elements (bug?) as of Jul 2026.
+// Every element of each unique-constrained container differs from every other.
+
+class Subclass;
+  rand int sub_arr[];
+endclass
+
+class C extends Subclass;
+  rand int arr[];
+
+  function new ();
+    arr = new[10];
+    sub_arr = new[10];
+  endfunction
+
+  function bit check_unique();
+      // dynamic array inside class
+      for (int i = 0; i < $size(arr); i++) begin
+        for (int j = i + 1; j < $size(arr); j++) begin
+          if (arr[i] == arr[j]) begin
+            $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
+            return 0;
+          end
+        end
+      end
+      // dynamic array inside base class
+      for (int i = 0; i < $size(sub_arr); i++) begin
+        for (int j = i + 1; j < $size(sub_arr); j++) begin
+          if (sub_arr[i] == sub_arr[j]) begin
+            $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
+            return 0;
+          end
+        end
+      end
+      return 1;
+  endfunction
+
+  constraint c {
+    unique {arr};
+    unique {sub_arr};
+  }
+endclass
 
 module t;
   class UniqueMultipleArray;
@@ -45,8 +84,7 @@ module t;
       for (int i = 0; i < darr.size(); i++) begin
         for (int j = i + 1; j < darr.size(); j++) begin
           if (darr[i] == darr[j]) begin
-            $error("UNIQUENESS VIOLATION: darr[%0d] == darr[%0d] == 0x%h", i, j,
-                  darr[i]);
+            $error("UNIQUENESS VIOLATION: darr[%0d] == darr[%0d] == 0x%h", i, j, darr[i]);
             return 0;
           end
         end
@@ -55,8 +93,7 @@ module t;
       for (int i = 0; i < queue.size(); i++) begin
         for (int j = i + 1; j < queue.size(); j++) begin
           if (queue[i] == queue[j]) begin
-            $error("UNIQUENESS VIOLATION: queue[%0d] == queue[%0d] == 0x%h", i, j,
-                  queue[i]);
+            $error("UNIQUENESS VIOLATION: queue[%0d] == queue[%0d] == 0x%h", i, j, queue[i]);
             return 0;
           end
         end
@@ -65,8 +102,7 @@ module t;
       for (int i = 0; i < queue_c.size(); i++) begin
         for (int j = i + 1; j < queue_c.size(); j++) begin
           if (queue_c[i] == queue_c[j]) begin
-            $error("UNIQUENESS VIOLATION: queue_c[%0d] == queue_c[%0d] == 0x%h", i, j,
-                  queue_c[i]);
+            $error("UNIQUENESS VIOLATION: queue_c[%0d] == queue_c[%0d] == 0x%h", i, j, queue_c[i]);
             return 0;
           end
         end
@@ -78,8 +114,7 @@ module t;
             continue;
           end
           if (assoc[i] == assoc[j]) begin
-            $error("UNIQUENESS VIOLATION: assoc[%0d] == assoc[%0d] == 0x%h", i, j,
-                  assoc[i]);
+            $error("UNIQUENESS VIOLATION: assoc[%0d] == assoc[%0d] == 0x%h", i, j, assoc[i]);
             return 0;
           end
         end
@@ -87,11 +122,16 @@ module t;
       return 1;
     endfunction
 
-endclass : UniqueMultipleArray
+  endclass : UniqueMultipleArray
 
   initial begin
+    automatic C cc = new();
     automatic UniqueMultipleArray a = new();
+
+    cc.randomize();
     a.randomize();
+
+    assert(cc.check_unique());
     assert(a.check_unique());
 
     $write("*-* All Finished *-*\n");
