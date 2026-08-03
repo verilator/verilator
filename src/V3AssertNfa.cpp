@@ -2075,10 +2075,6 @@ class SvaNfaLowering final {
             VL_DO_DANGLING(snapshotOkp->deleteTree(), snapshotOkp);
             snapshotOkp = nullptr;
         }
-        if (c.disableExprp) {
-            VL_DO_DANGLING(c.disableExprp->deleteTree(), c.disableExprp);
-            c.disableExprp = nullptr;
-        }
 
         return sigs;
     }
@@ -2163,11 +2159,17 @@ class SvaNfaLowering final {
         }
     }
 
+public:
     // Combine terminal/reject signals into final output expression.
-    AstNodeExpr* assembleResult(FileLine* flp, bool isCover, bool negated, AstNodeExpr* matchCondp,
-                                AstNodeExpr* terminalActivep, AstNodeExpr* rejectBasep,
-                                AstNodeExpr* throughoutRejectp, AstNodeExpr* requiredStepRejectp,
-                                AstNodeExpr** outMatchpp) {
+    static AstNodeExpr* assembleResult(AstNodeCoverOrAssert* const assertp, const bool negated,
+                                       AstNodeExpr* const matchCondp, const SignalSet& sigs,
+                                       AstNodeExpr** const outMatchpp) {
+        FileLine* const flp = assertp->fileline();
+        const bool isCover = VN_IS(assertp, Cover);
+        AstNodeExpr* const terminalActivep = sigs.terminalActivep;
+        AstNodeExpr* const rejectBasep = sigs.rejectBasep;
+        AstNodeExpr* const throughoutRejectp = sigs.throughoutRejectp;
+        AstNodeExpr* const requiredStepRejectp = sigs.requiredStepRejectp;
         // Property negation (IEEE 1800-2023 16.12.1 `not`): invert match/reject.
         if (negated) {
             if (isCover) {
@@ -2252,22 +2254,25 @@ class SvaNfaLowering final {
         return resultExprp;
     }
 
-public:
     explicit SvaNfaLowering(AstNodeModule* modp)
         : m_modp{modp} {}
 
-    // Lower NFA graph to synthesizable AstAlways blocks with state registers.
+    // Lower NFA graph to synthesizable AstAlways blocks and raw result signals.
     // Links are combinational; Edges are registered (NBA).
-    // Returns !reject for assert/assume, or match for cover.
-    AstNodeExpr* lower(FileLine* flp, SvaGraph& graph, AstNodeExpr* triggerExprp,
-                       AstSenTree* senTreep, AstNodeExpr* matchCondp, bool isCover,
-                       AstNodeExpr* disableExprp = nullptr, bool negated = false,
-                       AstNodeExpr** outMatchpp = nullptr, AstVar* disableCntVarp = nullptr,
-                       AstVar* snapshotVarp = nullptr,
-                       std::vector<AstNodeExpr*>* outRequiredStepSrcsp = nullptr,
-                       std::vector<AstNodeExpr*>* outPerMidSrcsp = nullptr,
-                       VAssertType assertType = VAssertType::INTERNAL,
-                       VAssertDirectiveType directiveType = VAssertDirectiveType::INTERNAL) {
+    SignalSet lower(AstNodeCoverOrAssert* const assertp, SvaGraph& graph,
+                    AstSenTree* const senTreep, AstNodeExpr* const matchCondp,
+                    AstNodeExpr* const disableExprp, AstVar* const disableCntVarp,
+                    AstVar* const snapshotVarp,
+                    std::vector<AstNodeExpr*>* const outRequiredStepSrcsp,
+                    std::vector<AstNodeExpr*>* const outPerMidSrcsp) {
+        FileLine* const flp = assertp->fileline();
+        AstCover* const coverp = VN_CAST(assertp, Cover);
+        const bool isSeqEvent = coverp && coverp->isSeqEvent();
+        const VAssertType assertType
+            = isSeqEvent ? VAssertType{VAssertType::INTERNAL} : assertp->userType();
+        const VAssertDirectiveType directiveType
+            = isSeqEvent ? VAssertDirectiveType{VAssertDirectiveType::INTERNAL}
+                         : assertp->directive();
         const std::string baseName = m_names.get("");
 
         // Number vertices with sequential colors for array indexing.
@@ -2353,7 +2358,11 @@ public:
                    snapshotVarp, assertType, directiveType, killVarp,   graph};
 
         // Phase 1: Resolve combinational Links via fixed-point propagation.
+        AstNodeExpr* const triggerExprp
+            = isSeqEvent ? new AstConst{flp, AstConst::BitTrue{}}
+                         : assertOnCond(flp, assertp->userType(), assertp->directive());
         resolveLinks(c, triggerExprp);
+        VL_DO_DANGLING(triggerExprp->deleteTree(), triggerExprp);
 
         // Phase 2/2b/2c: Emit NBA state-update, delay-ring, and SAnd done-latch logic.
         emitStateRegisterNba(c);
@@ -2363,10 +2372,6 @@ public:
 
         // Phase 3/3a/3b: Compute terminal match/reject signals (cleans up stateSig).
         const SignalSet sigs = computeSignals(c, outRequiredStepSrcsp, outPerMidSrcsp);
-
-        AstNodeExpr* const resultp = assembleResult(
-            flp, isCover, negated, matchCondp, sigs.terminalActivep, sigs.rejectBasep,
-            sigs.throughoutRejectp, sigs.requiredStepRejectp, outMatchpp);
 
         // Strong s_always[m:n] end-of-simulation liveness: if any in-window state
         // is still set at $finish, the universal-quantifier window never completed
@@ -2397,7 +2402,7 @@ public:
 
         // Clear userp on every vertex before vertexData unique_ptrs are destroyed.
         for (int i = 0; i < N; ++i) vtx[i]->userp(nullptr);
-        return resultp;
+        return sigs;
     }
 };
 
@@ -2764,7 +2769,7 @@ class AssertNfaVisitor final : public VNVisitor {
     }
 
     // Install the pass-action handler and per-thread fail-handlers generated by
-    // lower() on a negated assert.
+    // assembleResult() on a negated assert.
     void attachMatchHandlers(FileLine* flp, AstAssert* assertAssertp, AstAssert* assertWithFailp,
                              AstNodeExpr* matchExprp, AstSenTree* perSrcSenTreep,
                              const std::vector<AstNodeExpr*>& requiredStepSrcs) {
@@ -3022,7 +3027,6 @@ class AssertNfaVisitor final : public VNVisitor {
                                             && canSplitImplicationPassActions(parts);
         const bool needMatch = assertAssertp && assertAssertp->passsp()
                                && (!parts.hasImplication || splitImplicationPasssp);
-        AstNodeExpr* matchExprp = nullptr;
 
         AstAssert* const assertWithFailp = VN_CAST(assertp, Assert);
         const bool needPerSrcFail
@@ -3035,34 +3039,27 @@ class AssertNfaVisitor final : public VNVisitor {
         // coverp / isCoverSeq are computed earlier (passed to SvaNfaBuilder).
         std::vector<AstNodeExpr*> perMidSrcs;
 
-        AstNodeExpr* const alwaysTriggerp
-            = isSeqEvent ? new AstConst{flp, AstConst::BitTrue{}}
-                         : assertOnCond(flp, assertp->userType(), assertp->directive());
-        AstNodeExpr* const outputExprp = m_loweringp->lower(
-            flp, graph, alwaysTriggerp, senTreep, result.finalCondp, isCover,
-            disableExprp ? disableExprp->cloneTreePure(false) : nullptr, negated,
-            needMatch ? &matchExprp : nullptr, disableCntVarp, snapshotVarp,
-            needPerSrcFail ? &requiredStepSrcs : nullptr, isCoverSeq ? &perMidSrcs : nullptr,
-            isSeqEvent ? VAssertType{VAssertType::INTERNAL} : assertp->userType(),
-            isSeqEvent ? VAssertDirectiveType{VAssertDirectiveType::INTERNAL}
-                       : assertp->directive());
+        const auto signals = m_loweringp->lower(assertp, graph, senTreep, result.finalCondp,
+                                                disableExprp, disableCntVarp, snapshotVarp,
+                                                needPerSrcFail ? &requiredStepSrcs : nullptr,
+                                                isCoverSeq ? &perMidSrcs : nullptr);
+        AstNodeExpr* matchExprp = nullptr;
+        AstNodeExpr* const outputExprp = m_loweringp->assembleResult(
+            assertp, negated, result.finalCondp, signals, needMatch ? &matchExprp : nullptr);
 
         AstSenTree* const perSrcSenTreep
             = (requiredStepSrcs.size() >= 2) ? senTreep->cloneTree(false) : nullptr;
 
-        VL_DO_DANGLING(pushDeletep(alwaysTriggerp), alwaysTriggerp);
         if (senTreeOwned) VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
         if (disableExprUnlinked) VL_DO_DANGLING(pushDeletep(disableExprp), disableExprp);
         if (result.finalCondp && !result.finalCondp->backp()) pushDeletep(result.finalCondp);
 
         if (splitImplicationPasssp) {
             splitImplicationPassActions(assertAssertp, parts, matchExprp);
-            matchExprp = nullptr;
         } else {
             attachMatchHandlers(flp, assertAssertp, assertWithFailp,
                                 needMatch ? matchExprp : nullptr, perSrcSenTreep,
                                 requiredStepSrcs);
-            matchExprp = nullptr;
         }
 
         if (isCoverSeq && perMidSrcs.size() > 1) {
