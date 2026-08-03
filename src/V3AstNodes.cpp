@@ -524,10 +524,30 @@ void AstConstraintExpr::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isDisableSoft()) str << " [DISSOFT]";
     if (isSoft()) str << " [SOFT]";
+    if (isDistPick()) str << " [DISTPICK]";
+    if (softOwned()) str << " [SOFTOWNED]";
+    if (!varNames().empty()) str << " vars=" << varNames();
+    if (distBucketIdx() >= 0) {
+        str << " bucket=" << distBucketIdx() << " weight=" << distWeight();
+    }
 }
 void AstConstraintExpr::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isDisableSoft);
     dumpJsonBoolFuncIf(str, isSoft);
+    dumpJsonBoolFuncIf(str, isDistPick);
+    dumpJsonBoolFuncIf(str, softOwned);
+    dumpJsonNumFunc(str, distBucketIdx);
+    dumpJsonNumFunc(str, distWeight);
+    dumpJsonGen(str);
+}
+void AstConstraintIf::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (distPick()) str << " [DISTPICK]";
+    if (softOwned()) str << " [SOFTOWNED]";
+}
+void AstConstraintIf::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, distPick);
+    dumpJsonBoolFuncIf(str, softOwned);
     dumpJsonGen(str);
 }
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {

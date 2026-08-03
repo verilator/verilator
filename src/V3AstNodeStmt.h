@@ -456,6 +456,21 @@ class AstConstraintExpr final : public AstNodeStmt {
     // @astgen op1 := exprp : AstNodeExpr
     bool m_isDisableSoft = false;  // Disable soft constraint expression
     bool m_isSoft = false;  // Soft constraint expression
+    bool m_isDistPick
+        = false;  // Internal 'dist' weighted bucket pick (preference, not constraint)
+    bool m_softOwned
+        = false;  // Dist pick belonging to a 'soft dist' (removable by 'disable soft')
+    // Space-separated variables the expression references, for 'disable soft' to
+    // match by name.  Only set when the node is built by folding a constraint if,
+    // whose arms are already SMT text by then and no longer name their variables.
+    string m_varNames;
+    // One bucket of a 'dist', when the weighted draw is left to the runtime so it
+    // can re-draw among the buckets other constraints still allow.  Index 0 opens
+    // a new group; the weight is the bucket's share of the draw.  Index -1 means
+    // the pick is a single already-drawn alternative instead.
+    int m_distBucketIdx = -1;
+    uint64_t m_distWeight = 0;
+
 public:
     AstConstraintExpr(FileLine* fl, AstNodeExpr* exprp)
         : ASTGEN_SUPER_ConstraintExpr(fl) {
@@ -466,11 +481,31 @@ public:
     void dumpJson(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    // Every field below decides how the expression is lowered -- as a hard or
+    // soft constraint, as a dist preference, or as a 'disable soft' directive --
+    // and which variables 'disable soft' can match it by.  Two expressions that
+    // differ in any of them must not be treated as the same node.
+    bool sameNode(const AstNode* samep) const override {
+        const AstConstraintExpr* const sp = VN_DBG_AS(samep, ConstraintExpr);
+        return m_isDisableSoft == sp->m_isDisableSoft && m_isSoft == sp->m_isSoft
+               && m_isDistPick == sp->m_isDistPick && m_softOwned == sp->m_softOwned
+               && m_varNames == sp->m_varNames && m_distBucketIdx == sp->m_distBucketIdx
+               && m_distWeight == sp->m_distWeight;
+    }
     bool isDisableSoft() const { return m_isDisableSoft; }
     void isDisableSoft(bool flag) { m_isDisableSoft = flag; }
     bool isSoft() const { return m_isSoft; }
     void isSoft(bool flag) { m_isSoft = flag; }
+    bool isDistPick() const { return m_isDistPick; }
+    void isDistPick(bool flag) { m_isDistPick = flag; }
+    bool softOwned() const { return m_softOwned; }
+    void softOwned(bool flag) { m_softOwned = flag; }
+    string varNames() const { return m_varNames; }
+    void varNames(const string& names) { m_varNames = names; }
+    int distBucketIdx() const { return m_distBucketIdx; }
+    void distBucketIdx(int idx) { m_distBucketIdx = idx; }
+    uint64_t distWeight() const { return m_distWeight; }
+    void distWeight(uint64_t weight) { m_distWeight = weight; }
 };
 class AstConstraintUnique final : public AstNodeStmt {
     // Constraint unique statement
@@ -1654,10 +1689,27 @@ public:
 
 // === AstNodeIf ===
 class AstConstraintIf final : public AstNodeIf {
+    // A 'dist' weighted bucket chain: every leaf below is an AstConstraintExpr
+    // marked isDistPick.  Lets visit(AstConstraintIf) fold the chain into one
+    // runtime string select and still emit it as a preference, not a constraint.
+    bool m_distPick = false;
+    bool m_softOwned = false;  // Chain belongs to a 'soft dist'
 public:
     AstConstraintIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
         : ASTGEN_SUPER_ConstraintIf(fl, condp, thensp, elsesp) {}
     ASTGEN_MEMBERS_AstConstraintIf;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    // Both fields decide whether the folded result is emitted as a constraint or
+    // as a dist preference, and whether 'disable soft' may remove it.
+    bool sameNode(const AstNode* samep) const override {
+        const AstConstraintIf* const sp = VN_DBG_AS(samep, ConstraintIf);
+        return m_distPick == sp->m_distPick && m_softOwned == sp->m_softOwned;
+    }
+    bool distPick() const { return m_distPick; }
+    void distPick(bool flag) { m_distPick = flag; }
+    bool softOwned() const { return m_softOwned; }
+    void softOwned(bool flag) { m_softOwned = flag; }
 };
 
 class AstIf final : public AstNodeIf {
