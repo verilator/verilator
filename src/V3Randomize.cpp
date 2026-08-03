@@ -754,6 +754,14 @@ public:
 //######################################################################
 // Visitor that turns constraints into template strings for solvers
 
+// A branch condition the solver gets to choose, rather than state that is already
+// settled when the setup task runs.  Only such a condition can be steered to suit
+// a draw, which is what makes folding both arms into one preference necessary.
+static bool condIsSolverChosen(const AstNodeExpr* condp) {
+    return condp->exists(
+        [](const AstNodeVarRef* refp) { return refp->varp()->rand().isRandomizable(); });
+}
+
 class ConstraintExprVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user3() -> bool. Handled in constraints
@@ -2337,6 +2345,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Only a dist preference is matched by name, so skip the walk otherwise.
         const std::string varNames
             = nodep->distPick() ? collectConstraintVarNames(nodep) : std::string{};
+        // Folding discards the node the arms were on, so a bucket leaf reaching
+        // here would silently lose the index and weight that group it, and become
+        // its own single-alternative group.  Guard such a leaf in place instead.
+        nodep->foreach([nodep](const AstConstraintExpr* ep) {
+            UASSERT_OBJ(ep->distBucketIdx() < 0, nodep,
+                        "Dist bucket leaf folded into a constraint if");
+        });
         AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
         AstNodeExpr* const elsep = editSingle(fl, nodep->elsesp());
         if (thenp && elsep) {
@@ -3225,6 +3240,25 @@ class ConstraintExprVisitor final : public VNVisitor {
         guardedp->softOwned(softOwned);
         return guardedp;
     }
+    // Guard a bucket leaf by rewriting its expression, so it stays one
+    // AstConstraintExpr and keeps the bucket index and weight that tie it to its
+    // group.  Wrapping it in a conditional instead would fold into a fresh node
+    // and lose both.
+    AstConstraintExpr* guardPickLeaf(AstConstraintExpr* exprp, AstNodeExpr* guardp) {
+        FileLine* const fl = exprp->fileline();
+        normalizeBareConstraintExpr(exprp);
+        AstNodeExpr* const impp
+            = new AstLogIf{fl, guardp->cloneTreePure(false), exprp->exprp()->unlinkFrBack()};
+        impp->dtypeSetBit();
+        impp->user1(true);  // Assume result-dependent
+        exprp->exprp(impp);
+        return exprp;
+    }
+
+    AstNode* guardPickSubtree(AstNode* subtreep, AstNodeExpr* guardp, bool softOwned) {
+        subtreep->replaceWith(newTrueConstraint(subtreep->fileline()));
+        return newGuardedPick(subtreep, guardp, softOwned);
+    }
     void guardPickInPlace(AstNode* subtreep, AstNodeExpr* guardp, bool softOwned) {
         VNRelinker handle;
         subtreep->unlinkFrBack(&handle);
@@ -3264,34 +3298,55 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Lift the weight picks out of a constraint if, pairing the arms dist by dist
     // so each dist stays one preference under one conditional.
     //
-    // Hoisting each arm separately would be logically equivalent but not
-    // statistically: with a random branch condition, two independent implications
-    // "c -> pickA" and "!c -> pickB" let the solver choose whichever branch suits
-    // the draw it was handed, which correlates the condition with the draw and
-    // skews both arms' distributions.  As one "ite" the condition is chosen first
-    // and the value follows from it, which is what the weights describe.
+    // Only worth doing when the condition is one the solver chooses.  Two
+    // independent implications "c -> pickA" and "!c -> pickB" would then let it
+    // pick whichever branch suits the draw it was handed, correlating the
+    // condition with the draw and skewing both arms.  As one "ite" the condition
+    // is settled first and the value follows from it, which is what the weights
+    // describe.  Under a condition that is already-settled state there is nothing
+    // to steer, so the caller guards each dist on its own instead -- which also
+    // lets those keep the bucket-level form that survives narrowing.
     //
-    // Pairing rather than merging matters just as much: one node per if would take
-    // a single soft-ownership flag and a single variable list for every dist in the
-    // arm, so 'disable soft' on one of them would strip a hard dist's weights too.
+    // Arms are paired by what the dist constrains and whether it is soft, never by
+    // position.  Pairing positionally would hand one arm's dist the other's
+    // soft-ownership and variables, so 'disable soft' on one could strip a hard
+    // dist's weights, and reordering the arms would change which pairs form.
     std::vector<AstNode*> combinePickArms(AstConstraintIf* ifp) {
-        const std::vector<AstNode*> thenPicks = takePickSubtrees(ifp->thensp());
-        const std::vector<AstNode*> elsePicks
+        std::vector<AstNode*> thenPicks = takePickSubtrees(ifp->thensp());
+        std::vector<AstNode*> elsePicks
             = ifp->elsesp() ? takePickSubtrees(ifp->elsesp()) : std::vector<AstNode*>{};
+        std::vector<bool> elseUsed(elsePicks.size(), false);
         std::vector<AstNode*> outps;
-        const size_t n = std::max(thenPicks.size(), elsePicks.size());
         FileLine* const fl = ifp->fileline();
-        for (size_t i = 0; i < n; ++i) {
-            AstNode* const thenp = i < thenPicks.size() ? thenPicks[i] : newTrueConstraint(fl);
-            AstNode* const elsep = i < elsePicks.size() ? elsePicks[i] : newTrueConstraint(fl);
-            AstNodeExpr* const condp = ifp->condp()->cloneTreePure(false);
-            propagateUser1InlineRecurse(condp);
-            AstConstraintIf* const newp = new AstConstraintIf{fl, condp, thenp, elsep};
-            newp->distPick(true);
-            newp->softOwned(anySoftOwned(newp));
-            outps.push_back(newp);
+        const auto identity = [this](AstNode* nodep) {
+            return collectConstraintVarNames(nodep) + (anySoftOwned(nodep) ? " #soft" : "");
+        };
+        for (AstNode* const thenp : thenPicks) {
+            AstNode* elsep = nullptr;
+            for (size_t j = 0; j < elsePicks.size(); ++j) {
+                if (elseUsed[j] || identity(elsePicks[j]) != identity(thenp)) continue;
+                elsep = elsePicks[j];
+                elseUsed[j] = true;
+                break;
+            }
+            outps.push_back(newCombinedPick(ifp, thenp, elsep ? elsep : newTrueConstraint(fl)));
+        }
+        for (size_t j = 0; j < elsePicks.size(); ++j) {
+            if (!elseUsed[j]) {
+                outps.push_back(newCombinedPick(ifp, newTrueConstraint(fl), elsePicks[j]));
+            }
         }
         return outps;
+    }
+
+    AstConstraintIf* newCombinedPick(AstConstraintIf* ifp, AstNode* thenp, AstNode* elsep) {
+        FileLine* const fl = ifp->fileline();
+        AstNodeExpr* const condp = ifp->condp()->cloneTreePure(false);
+        propagateUser1InlineRecurse(condp);
+        AstConstraintIf* const newp = new AstConstraintIf{fl, condp, thenp, elsep};
+        newp->distPick(true);
+        newp->softOwned(anySoftOwned(newp));
+        return newp;
     }
 
     // Whether a foreach body still holds material that must not be folded away:
@@ -3342,7 +3397,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
             } else if (AstConstraintExpr* const exprp = VN_CAST(stmtp, ConstraintExpr)) {
                 if (exprp->isDistPick()) {
-                    guardPickInPlace(exprp, guardp, exprp->softOwned());
+                    // Rewrite the expression rather than wrap the node: a bucket
+                    // leaf must keep the index and weight tying it to its group.
+                    guardPickLeaf(exprp, guardp);
                 } else if (exprp->isSoft()) {
                     guardSoftInPlace(exprp, guardp);
                 } else {
@@ -3405,13 +3462,18 @@ class ConstraintExprVisitor final : public VNVisitor {
             hoistListp = hoistListp ? AstNode::addNext(hoistListp, nodep) : nodep;
         };
         if (AstConstraintIf* const ifp = VN_CAST(stmtp, ConstraintIf)) {
-            // An unconditional bucket chain is uniform already and stays put.
-            if (ifp->distPick()) return nullptr;
+            // A bucket chain: uniform already, so it only needs the branch guard.
+            if (ifp->distPick()) {
+                if (guardp) addHoist(guardPickSubtree(ifp, guardp, ifp->softOwned()));
+                return hoistListp;
+            }
             FileLine* const fl = ifp->fileline();
-            // Weight picks come out first and as a unit, keeping both arms under
-            // one conditional; only the soft constraints below are hoisted per arm.
-            // Nested picks come out with them, so the walk below sees none left.
-            for (AstNode* const pickp : combinePickArms(ifp)) addHoist(pickp);
+            // Only a condition the solver chooses needs its arms combined; see
+            // combinePickArms().  Otherwise leave the picks for the walk below,
+            // which guards each on its own and keeps its bucket structure.
+            if (condIsSolverChosen(ifp->condp())) {
+                for (AstNode* const pickp : combinePickArms(ifp)) addHoist(pickp);
+            }
             AstNodeExpr* const thenGuardp = newBranchGuard(fl, guardp, ifp->condp(), false);
             if (AstNode* const hp = extractConditionalKinds(ifp->thensp(), thenGuardp)) {
                 addHoist(hp);
@@ -3432,7 +3494,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         } else if (AstConstraintExpr* const exprp = VN_CAST(stmtp, ConstraintExpr)) {
             if (!guardp) return nullptr;  // Unconditional: already emitted as its own call
-            if (exprp->isSoft()) addHoist(guardSoft(exprp, guardp));
+            if (exprp->isDistPick()) {
+                addHoist(guardPickLeaf(takeWithTrue(exprp), guardp));
+            } else if (exprp->isSoft()) {
+                addHoist(guardSoft(exprp, guardp));
+            }
         }
         return hoistListp;
     }
@@ -5608,7 +5674,8 @@ class RandomizeVisitor final : public VNVisitor {
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
     // Supports both constant and variable weight expressions.
     void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp, AstVar* randModeVarp,
-                              AstConstraintForeach* foreachp = nullptr, bool underIf = false) {
+                              AstConstraintForeach* foreachp = nullptr,
+                              bool underSolverIf = false) {
         // When inside a foreach, bucket preamble stmts are stored in foreachp->user3p()
         // (as a linked list) so visit(AstConstraintForeach*) can inject them into the
         // real AstForeach body. Outside a foreach, they go directly into taskp.
@@ -5633,15 +5700,21 @@ class RandomizeVisitor final : public VNVisitor {
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
                 UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
-                lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp, true);
+                // Only a condition the solver chooses forces the drawn-ahead form,
+                // where both arms fold into one preference so it cannot steer the
+                // branch to suit the draw.  Under settled state there is nothing to
+                // steer, so the bucket-level form is kept and narrowing still
+                // leaves the surviving buckets in proportion.
+                const bool solverIf = underSolverIf || condIsSolverChosen(cifp->condp());
+                lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp, solverIf);
                 if (cifp->elsesp()) {
-                    lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp, true);
+                    lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp, solverIf);
                 }
                 continue;
             }
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
                 UASSERT_OBJ(cfep->bodyp(), cfep, "constraint foreach without a body");
-                lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep, underIf);
+                lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep, underSolverIf);
                 continue;
             }
 
@@ -5661,7 +5734,8 @@ class RandomizeVisitor final : public VNVisitor {
                     AstConstraintIf* const liftedp = liftLogIfChainToConstraintIf(topLogIfp);
                     constrExprp->replaceWith(liftedp);
                     VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
-                    lowerDistConstraints(taskp, liftedp->thensp(), randModeVarp, foreachp, true);
+                    lowerDistConstraints(taskp, liftedp->thensp(), randModeVarp, foreachp,
+                                         underSolverIf || condIsSolverChosen(liftedp->condp()));
                     continue;
                 }
             }
@@ -5693,12 +5767,12 @@ class RandomizeVisitor final : public VNVisitor {
             // Hand the whole distribution to the runtime when nothing has to be
             // decided here first, so a bucket the other constraints exclude can be
             // dropped and the draw repeated over the rest in proportion.  A dist
-            // under a constraint if keeps the drawn-ahead form: its arms fold into
-            // one conditional preference, which is what stops the solver from
-            // choosing the branch to suit the draw.  A rand_mode gate and
-            // non-constant weights likewise need the value settled here.
+            // under a condition the solver chooses keeps the drawn-ahead form: its
+            // arms fold into one conditional preference, which is what stops the
+            // solver from picking the branch that suits the draw.  A rand_mode gate
+            // and non-constant weights likewise need the value settled here.
             AstNodeExpr* const gatep = newDistGate(distp->exprp(), randModeVarp, fl);
-            const bool drawAtSolve = !underIf && VN_IS(gatep, Const)
+            const bool drawAtSolve = !underSolverIf && VN_IS(gatep, Const)
                                      && !VN_AS(gatep, Const)->isZero()
                                      && bucketWeightsAreConst(buckets);
             VL_DO_DANGLING(pushDeletep(gatep), gatep);
