@@ -40,8 +40,7 @@ module t (
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkd(count_fail_257, 0);
-      // Mismatch due to pre-existing ~26.5% NFA reject gap on |-> ##1 [*N]
-      `checkd(count_fail_513, 23);  // All other sims: 31
+      `checkd(count_fail_513, 31);
       $write("*-* All Finished *-*\n");
       $finish;
     end

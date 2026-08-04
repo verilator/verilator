@@ -783,12 +783,11 @@ class SvaNfaBuilder final {
                 guardedEdge(currentp, nextp, flp);
                 currentp = nextp;
             }
-            // Mark first and last boolean Links as rejectOnFail for correct
-            // reject on standalone ConsRep.
+            // Every repetition in the minimum prefix is required.
             SvaStateVertex* const condVtxp = scopedCreateVertex();
             SvaTransEdge* const linkp
                 = guardedLink(currentp, condVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
-            if (isTopLevelStep && (i == 0 || i == minN - 1)) { linkp->m_rejectOnFail = true; }
+            if (isTopLevelStep) linkp->m_rejectOnFail = true;
             currentp = condVtxp;
         }
         // After minN: currentp is the first valid end-of-match position for [*m:n].
