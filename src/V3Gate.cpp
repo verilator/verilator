@@ -986,8 +986,8 @@ public:
             const AstNode* const lhsp = m_assignp->lhsp();
             // Possible todo, handle more complex lhs expressions
             // A logic vertex may also contain a function argument assignment.
-            if (const AstNodeVarRef* const lRefp = VN_CAST(lhsp, NodeVarRef);
-                lRefp && lRefp->varScopep() == consumerVscp) {
+            const AstNodeVarRef* const lRefp = VN_CAST(lhsp, NodeVarRef);
+            if (lRefp && lRefp->varScopep() == consumerVscp) {
                 if (const AstNodeAssign* const dup
                     = m_ghash.hashAndFindDupe(m_assignp, activep, m_ifCondp)) {
                     return static_cast<AstNodeVarRef*>(dup->lhsp());
