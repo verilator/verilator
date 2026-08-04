@@ -1,0 +1,66 @@
+%Error: t/t_property_untyped_bad.v:17:20: Expected numeric type, but got a 'int$[0:1]' data type
+                                        : ... note: In instance 't'
+   17 |     @(posedge clk) $changed(signal)
+      |                    ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_property_untyped_bad.v:18:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   18 |     && $changed_gclk(signal)
+      |        ^~~~~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:19:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   19 |     && $changing_gclk(signal)
+      |        ^~~~~~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:20:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   20 |     && $falling_gclk(signal)
+      |        ^~~~~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:21:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   21 |     && $fell(signal)
+      |        ^~~~~
+%Error: t/t_property_untyped_bad.v:22:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   22 |     && $fell_gclk(signal)
+      |        ^~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:23:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   23 |     && $future_gclk(signal)
+      |        ^~~~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:24:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   24 |     && $past(signal)
+      |        ^~~~~
+%Error: t/t_property_untyped_bad.v:25:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   25 |     && $past_gclk(signal)
+      |        ^~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:26:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   26 |     && $rising_gclk(signal)
+      |        ^~~~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:27:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   27 |     && $rose(signal)
+      |        ^~~~~
+%Error: t/t_property_untyped_bad.v:28:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   28 |     && $rose_gclk(signal)
+      |        ^~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:29:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   29 |     && $sampled(signal)
+      |        ^~~~~~~~
+%Error: t/t_property_untyped_bad.v:30:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   30 |     && $stable(signal)
+      |        ^~~~~~~
+%Error: t/t_property_untyped_bad.v:31:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   31 |     && $stable_gclk(signal)
+      |        ^~~~~~~~~~~~
+%Error: t/t_property_untyped_bad.v:32:8: Expected numeric type, but got a 'int$[0:1]' data type
+                                       : ... note: In instance 't'
+   32 |     && $steady_gclk(signal);
+      |        ^~~~~~~~~~~~
+%Error: Exiting due to

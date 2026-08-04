@@ -3066,6 +3066,14 @@ void AstSFormatF::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, exprFormat);
     dumpJsonBoolFuncIf(str, optionalFormat);
 }
+void AstSampled::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (internal()) str << " [INTERNAL]";
+}
+void AstSampled::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, internal);
+    dumpJsonGen(str);
+}
 void AstSel::dump(std::ostream& str) const {
     this->AstNodeBiop::dump(str);
     str << " widthConst=" << this->widthConst();
