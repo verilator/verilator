@@ -33,6 +33,7 @@
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
+#include <algorithm>
 #include <limits>
 #include <map>
 #include <unordered_set>
@@ -1511,13 +1512,14 @@ class SvaNfaBuilder final {
 
         std::vector<AstImplication*> branches;
         collectPropertyControlBranches(nodep, branches);
-        for (AstImplication* const branchp : branches) {
-            if (containsImpureExpr(branchp->lhsp())) {
-                branchp->lhsp()->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: impure property if/case selector cannot be sampled once");
-                return BuildResult::failWithError();
-            }
+        const auto impureIt
+            = std::find_if(branches.begin(), branches.end(),
+                           [](AstImplication* bp) { return containsImpureExpr(bp->lhsp()); });
+        if (impureIt != branches.end()) {
+            (*impureIt)->lhsp()->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: impure property if/case selector cannot be sampled once");
+            return BuildResult::failWithError();
         }
 
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
@@ -3813,11 +3815,7 @@ class AssertNfaVisitor final : public VNVisitor {
             VL_DO_DANGLING(samplep->deleteTree(), samplep);
             AstAssign* const assignp = new AstAssign{
                 sampleFlp, new AstVarRef{sampleFlp, varp, VAccess::WRITE}, sampledValuep};
-            if (sampleBodyp) {
-                sampleBodyp->addNext(assignp);
-            } else {
-                sampleBodyp = assignp;
-            }
+            sampleBodyp = AstNode::addNext(sampleBodyp, assignp);
         }
         if (sampleBodyp) {
             m_modp->addStmtsp(
