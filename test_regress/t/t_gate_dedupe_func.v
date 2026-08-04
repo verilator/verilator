@@ -49,18 +49,11 @@ endmodule
 module jtcop_game(input clk, output [7:0] st_dout);
   wire [12:1] cpu_addr;
   jtcop_main u_main(.cpu_addr(cpu_addr));
-  jtcop_video u_video(.cpu_addr(cpu_addr), .st_dout(st_dout));
+  jtcop_bac06 u_ba2(.rst(rst), .clk(clk), .cpu_dout(ba2_din),
+                    .cpu_addr(cpu_addr), .cpu_dsn(ba2_dsn), .st_addr(st_addr),
+                    .st_dout(st_dout));
 endmodule
 
 module jtcop_main(output [12:1] cpu_addr);
   assign cpu_addr = '0;
-endmodule
-
-module jtcop_video(
-    input [12:1] cpu_addr,
-    output reg [7:0] st_dout
-);
-  jtcop_bac06 u_ba2(.rst(rst), .clk(clk), .cpu_dout(ba2_din),
-                    .cpu_addr(cpu_addr), .cpu_dsn(ba2_dsn), .st_addr(st_addr),
-                    .st_dout(st_dout));
 endmodule
