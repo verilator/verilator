@@ -7,6 +7,7 @@ contribution terms including the AI policy in ``docs/CONTRIBUTING.rst``.
 
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
+24bit-xjkp
 404allen404
 Adam Bagley
 Adam Kostrzewski
@@ -31,13 +32,14 @@ Andrii Andrieiev
 anonkey
 Anthony Donlon
 Anthony Moore
+apocelipes
 Arkadiusz Kozdra
 Arthur Rosa
 Artur Bieniek
 AUDIY
 Aylon Chaim Porat
-Bartłomiej Chmiel
 Bartosz Skorowski
+Bartłomiej Chmiel
 Benjamin Collier
 BRDR LIFE
 Brian Li
@@ -63,24 +65,28 @@ David Ledger
 David Metz
 David Stanford
 David Turner
+dependabot[bot]
 Dercury
 Diego Roux
 Dominick Grochowina
-Dragon-Git
 Don Williamson
+Dragon-Git
 Drew Ranck
 Drew Taussig
 Driss Hafdi
 Edgar E. Iglesias
+em2machine
+emmettifelts
 Eric Mejdrich
 Eric Müller
 Eric Rippey
 Eryk Szpotański
-Eunseo Song
 Ethan Sifferman
+Eunseo Song
 Eyck Jentzsch
 Fabian Keßler-Schulz
 Fan Shupei
+february cozzocrea
 Felix Neumärker
 Felix Yan
 Frans Skarman
@@ -154,11 +160,11 @@ Jonathan Schröter
 Jordan McConnon
 Jose Drowne
 Jose Loyola
-Jose Tejada (JOTEGO)
 Josep Sans
 Joseph Nwabueze
 Josh Redford
 Joshua Leahy
+JOTEGO (Jose Tejada)
 Julian Carrier
 Julian Daube
 Julie Schwartz
@@ -220,6 +226,7 @@ Mladen Slijepcevic
 Morten Borup Petersen
 Mostafa Gamal
 Moubarak Jeje
+Muzaffer Kal
 Nandu Raj
 Natan Kreimer
 Nathan Graybeal
@@ -275,13 +282,16 @@ Sergey Chusov
 Sergey Fedorov
 Sergi Granell
 Seth Pellegrino
+Shashvat Prabhu
 Shogo Yamazaki
 Shou-Li Hsu
+spomatasmd
 Srinivasan Venkataramanan
 Stefan Wallentowitz
 Stephen Henry
 Steven Hugg
 Stuart Morris
+sumpster
 Szymon Gizler
 Sören Tempel
 Teng Huang
@@ -321,9 +331,11 @@ Wolfgang Mayerwieser
 Xi Zhang
 Yan Xu
 Yangyu Chen
+Yilin Li
 Yilou Wang
 Yinan Xu
 Yoda Lee
+Yogish Sekhar
 Yossi Nivin
 Yu-Sheng Lin
 Yuri Victorovich
@@ -334,18 +346,6 @@ Zhen Yan
 Zhou Shen
 Zhouyi Shen
 Zixi Li
-apocelipes
-dependabot[bot]
-february cozzocrea
-sumpster
-em2machine
-emmettifelts
+Zubin Jain
 Àlex Torregrosa
 Ícaro Lima
-Yogish Sekhar
-24bit-xjkp
-Zubin Jain
-Muzaffer Kal
-Yilin Li
-Shashvat Prabhu
-spomatasmd
