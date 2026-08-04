@@ -593,22 +593,50 @@ class ForkVisitor final : public VNVisitor {
         const AstConst* const constp = VN_CAST(delayp->lhsp(), Const);
         return constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
     }
-    static void moveForkSentinelAfterDisableQueuePushes(AstBegin* const beginp) {
-        AstNode* const firstStmtp = beginp->stmtsp();
-        if (!isForkJoinNoneSentinelDelay(firstStmtp)) return;
-
-        AstNode* insertBeforep = firstStmtp->nextp();
+    static bool isDisableQueuePushSelfPrefix(AstNode* nodep) {
+        while (AstJumpBlock* const jumpBlockp = VN_CAST(nodep, JumpBlock)) {
+            nodep = jumpBlockp->stmtsp();
+        }
+        return nodep && nodep->isDisableQueuePushSelfStmt();
+    }
+    template <typename T_Owner>
+    static bool insertForkSentinelAfterDisableQueuePushes(T_Owner* const ownerp,
+                                                          AstNode* const firstStmtp,
+                                                          AstNode* const delayp) {
+        AstNode* insertBeforep = firstStmtp;
         while (insertBeforep && insertBeforep->isDisableQueuePushSelfStmt()) {
             insertBeforep = insertBeforep->nextp();
         }
-        if (insertBeforep == firstStmtp->nextp()) return;
-
-        AstNode* const delayp = firstStmtp->unlinkFrBack();
+        if (AstJumpBlock* const jumpBlockp = VN_CAST(insertBeforep, JumpBlock)) {
+            if (insertForkSentinelAfterDisableQueuePushes(jumpBlockp, jumpBlockp->stmtsp(),
+                                                          delayp)) {
+                return true;
+            }
+        }
+        if (insertBeforep == firstStmtp) return false;
         if (insertBeforep) {
             insertBeforep->addHereThisAsNext(delayp);
         } else {
-            beginp->addStmtsp(delayp);
+            ownerp->addStmtsp(delayp);
         }
+        return true;
+    }
+    static void moveForkSentinelAfterDisableQueuePushes(AstBegin* const beginp) {
+        AstNode* const firstStmtp = beginp->stmtsp();
+        if (!isForkJoinNoneSentinelDelay(firstStmtp)) return;
+        AstNode* const afterSentinelp = firstStmtp->nextp();
+        if (!isDisableQueuePushSelfPrefix(afterSentinelp)) return;
+
+        AstNode* const delayp = firstStmtp->unlinkFrBack();
+        const bool moved
+            = insertForkSentinelAfterDisableQueuePushes(beginp, afterSentinelp, delayp);
+        UASSERT_OBJ(moved, beginp, "Failed to move fork sentinel after disable queue pushes");
+    }
+    static bool forkIsDisableable(AstFork* const nodep) {
+        for (AstBegin* itemp = nodep->forksp(); itemp; itemp = VN_AS(itemp->nextp(), Begin)) {
+            if (isDisableQueuePushSelfPrefix(itemp->stmtsp())) return true;
+        }
+        return false;
     }
 
     // VISITORS
@@ -625,17 +653,14 @@ class ForkVisitor final : public VNVisitor {
     }
 
     void visit(AstFork* nodep) override {
-        if (nodep->joinType().join()) {
-            iterateChildren(nodep);
-            return;
-        }
-
         // IEEE 1800-2023 9.3.2: In all cases, processes spawned by a fork-join block shall not
-        // start executing until the parent process is blocked or terminates.
-        // Because join and join_any block the parent process, it is only needed when join_none
-        // is used.
-        if (nodep->joinType().joinNone()) {
-            UINFO(9, "Visiting fork..join_none " << nodep);
+        // start executing until the parent process is blocked or terminates. Because join and
+        // join_any block the parent process, deferring branch start with a synthetic #0 delay is
+        // normally only needed for join_none. A fork that can be disabled by name needs the same
+        // deferral for every join type so all branches register their processes before any branch
+        // body can disable the block.
+        if (nodep->joinType().joinNone() || forkIsDisableable(nodep)) {
+            UINFO(9, "Adding fork branch start sentinels " << nodep);
             FileLine* fl = nodep->fileline();
             // We use a sentinel value of UINT64_MAX to mark this delay so that it goes to the
             // ACTIVE region with a delay value of 0.
@@ -653,6 +678,17 @@ class ForkVisitor final : public VNVisitor {
 
         iterateAndNextNull(nodep->declsp());
         iterateAndNextNull(nodep->stmtsp());
+
+        // A plain 'join' blocks the parent until every branch finishes, so a branch cannot
+        // outlive the variables it references and need not be extracted into a task; just
+        // recurse to process any forks nested inside the branches. join_any and join_none
+        // branches may outlive the fork, so each branch body is wrapped in a task that
+        // captures the variables it references.
+        if (nodep->joinType().join()) {
+            iterateAndNextNull(nodep->forksp());
+            return;
+        }
+
         std::vector<AstBegin*> wrappedp;
         {
             VL_RESTORER(m_inFork);

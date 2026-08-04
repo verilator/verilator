@@ -1,14 +1,14 @@
-%Error: t/t_param_type_dot_bad.v:13:26: Found definition of 'C' as a PARAMTYPEDTYPE but expected a scope/variable
-   13 |   localparam type C1_t = C.T;
+%Error: t/t_param_type_dot_bad.v:15:26: Found definition of 'C' as a PARAMTYPEDTYPE but expected a scope/variable
+   15 |   localparam type C1_t = C.T;
       |                          ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_param_type_dot_bad.v:13:27: Expecting a data type, not a constant
-   13 |   localparam type C1_t = C.T;
+%Error: t/t_param_type_dot_bad.v:15:27: Expecting a data type, not a constant
+   15 |   localparam type C1_t = C.T;
       |                           ^
-%Error: t/t_param_type_dot_bad.v:14:25: Found definition of 'C' as a PARAMTYPEDTYPE but expected a scope/variable
-   14 |   parameter type C2_t = C.y;
+%Error: t/t_param_type_dot_bad.v:16:25: Found definition of 'C' as a PARAMTYPEDTYPE but expected a scope/variable
+   16 |   parameter type C2_t = C.y;
       |                         ^
-%Error: t/t_param_type_dot_bad.v:14:26: Expecting a data type, not a constant
-   14 |   parameter type C2_t = C.y;
+%Error: t/t_param_type_dot_bad.v:16:26: Expecting a data type, not a constant
+   16 |   parameter type C2_t = C.y;
       |                          ^
 %Error: Exiting due to

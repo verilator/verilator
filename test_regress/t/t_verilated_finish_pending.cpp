@@ -23,9 +23,12 @@
 
 int errors = 0;
 
+int stopCalls = 0;
 int fatalCalls = 0;
 
-// Non-exiting vl_fatal override
+// Non-exiting overrides so a request can be observed after it ran
+void vl_stop(const char* filename, int linenum, const char* hier) { ++stopCalls; }
+
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) {
     ++fatalCalls;
     TEST_CHECK_EQ(Verilated::threadContextp()->finishPending(), true);
@@ -37,74 +40,118 @@ int main(int argc, char** argv) {
     context.commandArgs(argc, argv);
     std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{&context}};
 
-    // An ignored maybe-stop reserves its error count without pending termination.
+    // A maybe-stop under the error limit is ignored and marks nothing pending
     context.errorLimit(3);
     context.errorCount(0);
-    vl_stop_maybe(__FILE__, __LINE__, "TOP.t", true);
+    VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
     TEST_CHECK_EQ(context.errorCount(), 1);
+    TEST_CHECK_EQ(stopCalls, 0);
     TEST_CHECK_EQ(context.finishPending(), false);
-    vl_stop_maybe(__FILE__, __LINE__, "TOP.t", true);
+    VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
     TEST_CHECK_EQ(context.errorCount(), 2);
+    TEST_CHECK_EQ(stopCalls, 0);
     TEST_CHECK_EQ(context.finishPending(), false);
 
-    bool firstIgnored = true;
-    TEST_CHECK_EQ(context.errorCountIncMaybeStop(true, firstIgnored), true);
-    TEST_CHECK_EQ(firstIgnored, false);
+    // Reaching the limit stops, and a definite stop always stops
+    VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
     TEST_CHECK_EQ(context.errorCount(), 3);
+    TEST_CHECK_EQ(stopCalls, 1);
     context.errorCount(0);
-    TEST_CHECK_EQ(context.errorCountIncMaybeStop(false, firstIgnored), true);
-    TEST_CHECK_EQ(firstIgnored, false);
+    VL_STOP_MT(__FILE__, __LINE__, "TOP.t", false);
     TEST_CHECK_EQ(context.errorCount(), 1);
+    TEST_CHECK_EQ(stopCalls, 2);
 
-    // The first pending request owns the timestamp until all requests drain.
-    context.gotFinish(false);
+    // A worker-queued stop is pending from the moment it is posted, and the
+    // error is counted only when the queued message runs
+    context.errorCount(0);
     context.time(10);
-    context.finishPendingInc();
-    context.time(20);
-    context.finishPendingInc();
-    TEST_CHECK_EQ(context.finishPending(), true);
-    TEST_CHECK_EQ(context.finishPendingTime(), 10);
-    context.finishPendingDec();
-    TEST_CHECK_EQ(context.finishPending(), true);
-    TEST_CHECK_EQ(context.finishPendingTime(), 10);
-    context.finishPendingDec();
-    TEST_CHECK_EQ(context.finishPending(), false);
-    TEST_CHECK_EQ(context.finishPendingTime(), 20);
+    {
+        VerilatedEvalMsgQueue evalMsgQ;
+        Verilated::mtaskId(1);
+        VL_STOP_MT(__FILE__, __LINE__, "TOP.t", false);
+        TEST_CHECK_EQ(context.errorCount(), 0);
+        TEST_CHECK_EQ(stopCalls, 2);
+        TEST_CHECK_EQ(context.finishPending(), true);
+        TEST_CHECK_EQ(context.finishPendingTime(), 10);
+        context.time(20);
+        Verilated::endOfThreadMTask(&evalMsgQ);
+        TEST_CHECK_EQ(stopCalls, 2);
+        TEST_CHECK_EQ(context.finishPending(), true);
+        TEST_CHECK_EQ(context.finishPendingTime(), 10);
+        Verilated::endOfEval(&evalMsgQ);
+        TEST_CHECK_EQ(context.errorCount(), 1);
+        TEST_CHECK_EQ(stopCalls, 3);
+        TEST_CHECK_EQ(context.finishPending(), false);
+        TEST_CHECK_EQ(context.finishPendingTime(), 20);
+    }
 
-    // Clearing gotFinish invalidates a stale timestamp for context reuse.
+    // An ignored worker-queued maybe-stop must not gate same-slot work
+    context.errorLimit(3);
+    context.errorCount(0);
+    {
+        VerilatedEvalMsgQueue evalMsgQ;
+        Verilated::mtaskId(1);
+        VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
+        TEST_CHECK_EQ(context.finishPending(), false);
+        Verilated::endOfThreadMTask(&evalMsgQ);
+        Verilated::endOfEval(&evalMsgQ);
+        TEST_CHECK_EQ(context.errorCount(), 1);
+        TEST_CHECK_EQ(stopCalls, 3);
+        TEST_CHECK_EQ(context.finishPending(), false);
+    }
+
+    // Several queued maybe-stops still stop exactly once, on the one that crosses
+    context.errorLimit(3);
+    context.errorCount(0);
+    {
+        VerilatedEvalMsgQueue evalMsgQ;
+        Verilated::mtaskId(1);
+        VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
+        VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
+        VL_STOP_MT(__FILE__, __LINE__, "TOP.t");
+        TEST_CHECK_EQ(context.finishPending(), true);
+        Verilated::endOfThreadMTask(&evalMsgQ);
+        Verilated::endOfEval(&evalMsgQ);
+        TEST_CHECK_EQ(context.errorCount(), 3);
+        TEST_CHECK_EQ(stopCalls, 4);
+        TEST_CHECK_EQ(context.finishPending(), false);
+    }
+
+    // A worker-queued fatal stays pending until end-of-eval runs its handler
     context.time(30);
-    context.finishPendingInc();
-    context.gotFinish(true);
-    context.finishPendingDec();
-    TEST_CHECK_EQ(context.finishPending(), true);
-    TEST_CHECK_EQ(context.finishPendingTime(), 30);
-    context.time(40);
-    context.gotFinish(false);
-    TEST_CHECK_EQ(context.finishPending(), false);
-    TEST_CHECK_EQ(context.finishPendingTime(), 40);
-
-    // A posted fatal request holds finishPending until its handler returns.
-    context.time(50);
-    VL_FATAL_MT(__FILE__, __LINE__, "TOP.t", "test fatal");
-    TEST_CHECK_EQ(fatalCalls, 1);
-    TEST_CHECK_EQ(context.finishPending(), false);
-
-    // A worker-queued fatal stays pending until end-of-eval runs its handler.
-    context.time(60);
     {
         VerilatedEvalMsgQueue evalMsgQ;
         Verilated::mtaskId(1);
         VL_FATAL_MT(__FILE__, __LINE__, "TOP.t", "queued fatal");
-        TEST_CHECK_EQ(fatalCalls, 1);
+        TEST_CHECK_EQ(fatalCalls, 0);
         TEST_CHECK_EQ(context.finishPending(), true);
-        TEST_CHECK_EQ(context.finishPendingTime(), 60);
+        TEST_CHECK_EQ(context.finishPendingTime(), 30);
         Verilated::endOfThreadMTask(&evalMsgQ);
-        TEST_CHECK_EQ(fatalCalls, 1);
-        TEST_CHECK_EQ(context.finishPending(), true);
         Verilated::endOfEval(&evalMsgQ);
-        TEST_CHECK_EQ(fatalCalls, 2);
+        TEST_CHECK_EQ(fatalCalls, 1);
         TEST_CHECK_EQ(context.finishPending(), false);
     }
+
+    // The first pending request owns the timestamp until all requests drain
+    context.time(40);
+    context.finishPendingInc();
+    context.time(50);
+    context.finishPendingInc();
+    TEST_CHECK_EQ(context.finishPendingTime(), 40);
+    context.finishPendingDec();
+    TEST_CHECK_EQ(context.finishPending(), true);
+    TEST_CHECK_EQ(context.finishPendingTime(), 40);
+    context.finishPendingDec();
+    TEST_CHECK_EQ(context.finishPending(), false);
+    TEST_CHECK_EQ(context.finishPendingTime(), 50);
+
+    // A latched termination keeps the timestamp after the request drains
+    context.time(60);
+    context.finishPendingInc();
+    context.gotFinish(true);
+    context.finishPendingDec();
+    context.time(70);
+    TEST_CHECK_EQ(context.finishPendingTime(), 60);
 
     topp->final();
     return errors ? 10 : 0;

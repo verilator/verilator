@@ -36,24 +36,24 @@ module t (
   assert property (@(posedge clk) always 1'b1);
 
   // Bounded weak always over constant-true input.
-  assert property (@(posedge clk) always[0: 3] a_high) high_bounded_pass_q.push_back(cyc);
+  assert property (@(posedge clk) always [0:3] a_high) high_bounded_pass_q.push_back(cyc);
 
   // Degenerate [0:0]: equivalent to immediate sample.
-  assert property (@(posedge clk) always[0: 0] a_high) high_degenerate_pass_q.push_back(cyc);
+  assert property (@(posedge clk) always [0:0] a_high) high_degenerate_pass_q.push_back(cyc);
 
   // Constant-false: every attempt fails.
-  assert property (@(posedge clk) always[0: 3] a_low)
+  assert property (@(posedge clk) always [0:3] a_low)
   else low_bounded_fail_q.push_back(cyc);
 
-  assert property (@(posedge clk) always[0: 0] a_low)
+  assert property (@(posedge clk) always [0:0] a_low)
   else low_degenerate_fail_q.push_back(cyc);
 
   // CRC-driven random input: window [cyc..cyc+3] of a_rand.
-  assert property (@(posedge clk) always[0: 3] a_rand) rand_bounded_pass_q.push_back(cyc);
+  assert property (@(posedge clk) always [0:3] a_rand) rand_bounded_pass_q.push_back(cyc);
   else rand_bounded_fail_q.push_back(cyc);
 
   // disable iff suppresses attempts whose start cyc has rst_rand=1.
-  assert property (@(posedge clk) disable iff (rst_rand) always[0: 3] a_rand)
+  assert property (@(posedge clk) disable iff (rst_rand) always [0:3] a_rand)
     disable_bounded_pass_q.push_back(cyc);
   else disable_bounded_fail_q.push_back(cyc);
 
@@ -65,7 +65,7 @@ module t (
 
   // disable iff inside named property.
   property p_disable_named;
-    @(posedge clk) disable iff (rst_rand) always[1: 2] a_high;
+    @(posedge clk) disable iff (rst_rand) always [1:2] a_high;
   endproperty
   assert property (p_disable_named);
 

@@ -28,7 +28,8 @@ module t (
 
   // Smoke: trivially-true forms must compile and never fail.
   assert property (@(posedge clk) 1'b1 #-# 1'b1);
-  assert property (@(posedge clk) 1'b1 #-# 1'b1) action_hits++;
+  assert property (@(posedge clk) 1'b1 #-# 1'b1)
+    action_hits++;
   assert property (@(posedge clk) 0 |-> (0 #-# 0));
   assert property (@(posedge clk) 0 |-> (0 #=# 0));
 

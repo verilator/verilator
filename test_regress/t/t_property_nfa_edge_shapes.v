@@ -4,7 +4,12 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Planner corner shapes: negated liveness pass, single-cycle cover abort, strong cover or
+// Corner shapes: negated liveness, single-cycle cover abort, strong cover or
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t (
     input clk
@@ -36,16 +41,12 @@ module t (
   end
 
   final begin
-`ifdef TEST_VERBOSE
-    $display("np1=%0d nf1=%0d nc2=%0d nc3=%0d nf4=%0d nc5=%0d", np1, nf1, nc2, nc3, nf4, nc5);
-`endif
-    if (np1 != 0) $stop;
-    // Unbounded attempts merge: one fail action per failing cycle, per-attempt would be 11
-    if (nf1 != 2) $stop;
-    if (nc2 != 1) $stop;  // Other simulator: 15
-    if (nc3 != 5) $stop;
-    if (nf4 != 0) $stop;
-    if (nc5 != 1) $stop;  // Other simulator: 15
+    `checkd(np1, 0);
+    `checkd(nf1, 2);
+    `checkd(nc2, 1);
+    `checkd(nc3, 5);
+    `checkd(nf4, 0);
+    `checkd(nc5, 1);
     $write("*-* All Finished *-*\n");
   end
 endmodule

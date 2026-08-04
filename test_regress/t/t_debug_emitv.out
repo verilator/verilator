@@ -10,6 +10,7 @@ module Vt_debug_emitv_t;
     } ps_t;
     typedef struct {
         logic signed [2:0]  a;
+        logic [1:0]  b;
     } us_t;
     typedef union {
         logic a;
@@ -19,6 +20,7 @@ module Vt_debug_emitv_t;
     } ps[0:2];
     struct {
         logic signed [2:0]  a;
+        logic [1:0]  b;
     } us;
     union {
         logic a;
@@ -1285,7 +1287,7 @@ package Vt_debug_emitv___024unit;
         begin : label8
             rand_restricted = randomize() with (
                 ???? // CONSTRAINTEXPR
-                (item.rmember1 < member)) ;
+                (__Vrandwith_obj.rmember1 < member)) ;
             disable label8;
         end
     endfunction

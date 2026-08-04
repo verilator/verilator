@@ -332,10 +332,19 @@
 
 #ifdef VL_GCOV
 extern "C" void __gcov_dump();
+extern "C" void __gcov_reset();
 // Dump internal code coverage data before e.g. std::abort()
 # define VL_GCOV_DUMP() __gcov_dump()
+// Dump, then re-arm dumping; dumping is one-shot, so without the reset a dump
+// on a nonfatal path would silently discard everything counted after it
+# define VL_GCOV_DUMP_RESET() \
+        do { \
+            __gcov_dump(); \
+            __gcov_reset(); \
+        } while (false)
 #else
 # define VL_GCOV_DUMP()
+# define VL_GCOV_DUMP_RESET()
 #endif
 
 //=========================================================================
@@ -537,10 +546,10 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // #defines, to avoid requiring math.h on all compile runs
 
 #ifdef _MSC_VER
-static inline double VL_TRUNC(double n) {
+inline double VL_TRUNC(double n) {
     return (n < 0) ? std::ceil(n) : std::floor(n);
 }
-static inline double VL_ROUND(double n) {
+inline double VL_ROUND(double n) {
     return (n < 0) ? std::ceil(n-0.5) : std::floor(n + 0.5);
 }
 #else

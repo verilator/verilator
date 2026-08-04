@@ -4,13 +4,14 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// $past in 'final' reads the correct stage for on-tick and between-tick ends
+// $past in 'final' for on-tick and between-tick simulation ends
 
 module t;
 
   bit clk = 0;
   bit data = 0;
   bit offedge = 0;
+  bit exp_past = 0;
   int cyc = 0;
 
   always #1 clk = ~clk;
@@ -29,6 +30,7 @@ module t;
 
   initial begin
     offedge = $test$plusargs("offedge") != 0;
+    void'($value$plusargs("expect_past=%b", exp_past));
     if (offedge) begin
       #6;
       $write("*-* All Finished *-*\n");
@@ -37,8 +39,9 @@ module t;
   end
 
   final begin
-    if ($past(data) !== (offedge ? 1'b0 : 1'b1)) begin
-      $display("%%Error: wrong $past in final: got=%0b offedge=%0b", $past(data), offedge);
+    if ($past(data) !== exp_past) begin
+      $display("%%Error: wrong $past in final: got=%0b exp=%0b offedge=%0b", $past(data), exp_past,
+               offedge);
       $stop;
     end
   end

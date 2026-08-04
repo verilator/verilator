@@ -1,0 +1,18 @@
+%Error: t/t_invalid_task_arguments_bad.v:25:20: Function Argument expects 'logic[30:0]$[]', got 'IData'
+                                              : ... note: In instance 't'
+   25 |     dyn_task(.data($urandom));
+      |                    ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_invalid_task_arguments_bad.v:26:25: Function Argument expects 'logic[30:0]$[3:0]', got 'IData'
+                                              : ... note: In instance 't'
+   26 |     unpacked_task(.data($urandom));
+      |                         ^~~~~~~~
+%Error: t/t_invalid_task_arguments_bad.v:27:22: Function Argument expects 'logic[30:0]$[$]', got 'IData'
+                                              : ... note: In instance 't'
+   27 |     queue_task(.data($urandom));
+      |                      ^~~~~~~~
+%Error: t/t_invalid_task_arguments_bad.v:28:22: Function Argument expects 'logic[30:0]$[int]', got 'IData'
+                                              : ... note: In instance 't'
+   28 |     assoc_task(.data($urandom));
+      |                      ^~~~~~~~
+%Error: Exiting due to

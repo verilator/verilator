@@ -64,6 +64,7 @@ module t (/*AUTOARG*/
   } ps_t;
   typedef struct {
     logic signed [2:0] a;
+    rand logic [1:0] b;
   } us_t;
   typedef union {
     logic a;

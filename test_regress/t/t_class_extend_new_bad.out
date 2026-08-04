@@ -1,0 +1,8 @@
+%Error: t/t_class_extend_new_bad.v:14:13: Function Argument expects a CLASSREFDTYPE 'uvm_component', got BASICDTYPE 'int'
+   14 |       super.new(name, parent);   
+      |             ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_extend_new_bad.v:21:13: Function Argument 'class{}uvm_component' cannot be assigned to non-class 'int'
+   21 |       super.new(name, parent);   
+      |             ^~~
+%Error: Exiting due to

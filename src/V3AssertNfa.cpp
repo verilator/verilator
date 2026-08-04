@@ -3473,7 +3473,10 @@ public:
         appendStmt(observedBodyp, captureBodyp);
         appendStmt(observedBodyp, c.updateBodyp);
         AstNodeExpr* const notFinishp
-            = new AstLogNot{flp, new AstCExpr{flp, "vlSymsp->_vm_contextp__->finishPending()", 1}};
+            = new AstLogNot{flp, new AstCExpr{flp,
+                                              "(vlSymsp->_vm_contextp__->finishPending()"
+                                              " || vlSymsp->_vm_contextp__->gotFinish())",
+                                              1}};
         m_modp->addStmtsp(new AstAlwaysObserved{flp, req.senTreep->cloneTree(false),
                                                 new AstIf{flp, notFinishp, observedBodyp}});
 

@@ -25,6 +25,7 @@ source "$(dirname "$0")/ci-common.bash"
 OPT_ASAN=0
 OPT_CCWARN=0
 OPT_GCOV=0
+OPT_LIGHT_DEBUG=0
 OPT_COMPILER=
 OPT_PREFIX=
 while [ $# -gt 0 ]; do
@@ -37,6 +38,7 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --gcov) OPT_GCOV=1 ;;
+    --light-debug) OPT_LIGHT_DEBUG=1 ;;
     --prefix)
       [ $# -ge 2 ] || fatal "--prefix requires an argument"
       OPT_PREFIX="$2"
@@ -60,7 +62,7 @@ esac
 ################################################################################
 # Configure
 
-CONFIGURE_ARGS="--prefix=$OPT_PREFIX --enable-longtests --enable-light-debug"
+CONFIGURE_ARGS="--prefix=$OPT_PREFIX --enable-longtests"
 if [ "$OPT_CCWARN" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-ccwarn"
 fi
@@ -70,6 +72,9 @@ if [ "$OPT_ASAN" = 1 ]; then
 fi
 if [ "$OPT_GCOV" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-dev-gcov"
+fi
+if [ "$OPT_LIGHT_DEBUG" = 1 ]; then
+  CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-light-debug"
 fi
 autoconf
 ./configure $CONFIGURE_ARGS CXX="$CXX"

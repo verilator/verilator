@@ -13,8 +13,8 @@ test.scenarios('vlt_all')
 
 test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing'])
 
-test.execute()
+test.execute(all_run_flags=['+expect_past=1'])
 
-test.execute(all_run_flags=['+offedge'])
+test.execute(all_run_flags=['+offedge', '+expect_past=0'])
 
 test.passes()

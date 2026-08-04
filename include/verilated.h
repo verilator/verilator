@@ -387,6 +387,8 @@ private:
     static uint32_t assertOnMask(VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_PURE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
+    // No termination request has stamped m_finishPendingTime yet
+    static constexpr uint64_t TIME_UNSET = ~0ULL;
 
 protected:
     // TYPES
@@ -420,14 +422,7 @@ protected:
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
         bool m_gotError = false;  // A $finish statement executed
-        // A $finish or $stop statement executed; read by worker termination gates
-        std::atomic<bool> m_gotFinish{false};
-        // Posted $finish/$stop requests not yet executed via the thread queue
-        std::atomic<uint32_t> m_finishPending{0};
-        // Time of the first posted $finish/$stop request
-        std::atomic<uint64_t> m_finishPendingTime{0};
-        // True once a request stamped m_finishPendingTime; latched by termination
-        std::atomic<bool> m_finishPendingTimeValid{false};
+        bool m_gotFinish = false;  // A $finish or $stop statement executed
         bool m_quiet = false;  // Quiet, no summary report
         // Slow path
         int8_t m_timeunit;  // Time unit as 0..15
@@ -452,6 +447,10 @@ protected:
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        // A worker queues $finish before the main thread callback can set m_gotFinish.
+        std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
+        std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
+        int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
@@ -567,8 +566,6 @@ public:
     void errorCount(int val) VL_MT_SAFE;
     /// Increment current number of errors/assertions
     void errorCountInc() VL_MT_SAFE;
-    /// Reserve one maybe-stop and return true if it reaches the termination limit
-    bool errorCountIncMaybeStop(bool maybe, bool& firstIgnored) VL_MT_SAFE;
     /// Return number of errors/assertions before stop
     int errorLimit() const VL_MT_SAFE { return m_s.m_errorLimit; }
     /// Set number of errors/assertions before stop
@@ -586,34 +583,9 @@ public:
     /// Set if got a $stop or non-fatal error
     void gotError(bool flag) VL_MT_SAFE;
     /// Return if got a $finish or $stop/error
-    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish.load(std::memory_order_relaxed); }
+    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
     /// Set if got a $finish or $stop/error
     void gotFinish(bool flag) VL_MT_SAFE;
-    /// Return if a $finish/$stop was requested, even if not yet executed
-    bool finishPending() const VL_MT_SAFE {
-        return m_s.m_finishPending.load(std::memory_order_relaxed)
-               || m_s.m_gotFinish.load(std::memory_order_relaxed);
-    }
-    /// Record a posted $finish/$stop request awaiting execution
-    void finishPendingInc() VL_MT_SAFE {
-        m_s.m_finishPending.fetch_add(1, std::memory_order_relaxed);
-        if (!m_s.m_finishPendingTimeValid.exchange(true, std::memory_order_relaxed)) {
-            m_s.m_finishPendingTime.store(time(), std::memory_order_relaxed);
-        }
-    }
-    /// Balance finishPendingInc once the posted request ran or was ignored
-    void finishPendingDec() VL_MT_SAFE {
-        if (m_s.m_finishPending.fetch_sub(1, std::memory_order_relaxed) == 1
-            && !m_s.m_gotFinish.load(std::memory_order_relaxed)) {
-            m_s.m_finishPendingTimeValid.store(false, std::memory_order_relaxed);
-        }
-    }
-    /// Return the time of the first termination request, else the current time
-    uint64_t finishPendingTime() const VL_MT_SAFE {
-        return m_s.m_finishPendingTimeValid.load(std::memory_order_relaxed)
-                   ? m_s.m_finishPendingTime.load(std::memory_order_relaxed)
-                   : time();
-    }
     /// Check if generated final() code is executing
     bool executingFinal() const VL_MT_SAFE;
     /// Set if generated final() code is executing
@@ -717,6 +689,27 @@ public:
     void scopesDump() const VL_MT_SAFE;
 
     // METHODS - public but for internal use only
+
+    // Internal: Track $finish/$stop callbacks queued by worker threads
+    bool finishPending() const VL_MT_SAFE { return m_ns.m_finishPending.load() != 0; }
+    void finishPendingInc() VL_MT_SAFE {
+        ++m_ns.m_finishPending;
+        uint64_t unset = TIME_UNSET;
+        m_ns.m_finishPendingTime.compare_exchange_strong(unset, time());
+    }
+    void finishPendingDec() VL_MT_SAFE {
+        const uint32_t previous = m_ns.m_finishPending.fetch_sub(1);
+        assert(previous > 0);
+        if (previous == 1 && !gotFinish()) m_ns.m_finishPendingTime = TIME_UNSET;
+    }
+    // Internal: Time of the first termination request, else the current time
+    uint64_t finishPendingTime() const VL_MT_SAFE {
+        const uint64_t stamped = m_ns.m_finishPendingTime.load();
+        return stamped == TIME_UNSET ? time() : stamped;
+    }
+    // Internal: Reserve a posted $stop, returning true if it reaches the termination limit
+    bool stopRequestReserve(bool maybe) VL_MT_SAFE;
+    void stopRequestRelease() VL_MT_SAFE;
 
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }

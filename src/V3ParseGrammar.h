@@ -31,6 +31,7 @@ public:
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
+    VRandAttr m_memRand;  // 'rand'/'randc' qualifier for next member declaration
     AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
@@ -96,6 +97,19 @@ public:
             singletonp()->scrubRangeMulti(rangelistp)};
         nodep->trace(singletonp()->allTracingOn(fileline));
         return nodep;
+    }
+    static AstNode* createPatternKey(AstNodeExpr* exprp) {
+        // Assignment pattern key.  A bare identifier may name a structure
+        // member rather than a constant, so pass it on as a Text node for
+        // V3LinkDot to resolve; anything else is a constant expression.
+        if (const AstParseRef* const refp = VN_CAST(exprp, ParseRef)) {
+            if (!refp->lhsp() && !refp->ftaskrefp()) {
+                AstNode* const textp = new AstText{refp->fileline(), refp->name()};
+                VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                return textp;
+            }
+        }
+        return exprp;
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};

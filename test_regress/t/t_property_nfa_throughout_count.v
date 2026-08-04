@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// A throughout guard drop fails each live delay-ring attempt independently.
+// Throughout guard-drop failure counts across live attempts.
 
 // verilog_format: off
 `define stop $stop
@@ -15,24 +15,16 @@ module t (
     input clk
 );
 
-  bit fixed_start = 0;
-  bit fixed_guard = 1;
-  bit drop_tag = 0;
-  int fixed_fail = 0;
-  int negated_pass = 0;
-  int negated_cover = 0;
+  bit fixed_start = 0, fixed_guard = 1, drop_tag = 0;
+  int fixed_fail = 0, negated_pass = 0, negated_cover = 0;
 
-  bit range_start = 0;
-  bit range_guard = 1;
-  bit range_done = 0;
+  bit range_start = 0, range_guard = 1, range_done = 0;
   int range_fail = 0;
 
-  bit disable_now = 0;
-  bit disabled_guard = 1;
+  bit disable_now = 0, disabled_guard = 1;
   int disabled_fail = 0;
 
-  bit kill_start = 0;
-  bit kill_guard = 1;
+  bit kill_start = 0, kill_guard = 1;
   int kill_fail = 0;
 
   assert property (@(posedge clk) fixed_start |-> (fixed_guard throughout (1'b1 ##300 1'b1)))
