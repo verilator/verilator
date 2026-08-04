@@ -1425,6 +1425,9 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
         } else if (VN_IS(nodep, WildcardSel)) {
             nodep = VN_AS(nodep, WildcardSel)->fromp();
             continue;
+        } else if (VN_IS(nodep, CMethodHard)) {
+            nodep = VN_AS(nodep, CMethodHard)->fromp();
+            continue;
         } else if (overMembers && VN_IS(nodep, MemberSel)) {
             nodep = VN_AS(nodep, MemberSel)->fromp();
             continue;
