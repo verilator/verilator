@@ -5,13 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module game_test(output [7:0] st_dout);
-  jtcop_game u_game(
-    .clk(clk),
-    .ba2mcu_addr(ba2mcu_addr),
-    .main_addr(main_addr),
-    .st_addr(st_addr),
-    .st_dout(st_dout)
-  );
+  jtcop_game u_game(.clk(clk), .st_addr(st_addr), .st_dout(st_dout));
 endmodule
 
 module jtcop_bac06(
@@ -24,8 +18,7 @@ module jtcop_bac06(
     output reg [7:0] st_dout
 );
   reg [7:0] mode[0:3];
-  reg [15:0] hscr;
-  reg [15:0] vscr;
+  reg [15:0] hscr, vscr;
   reg [3:0] colscr_sh, rowscr_sh;
   reg [7:0] def_cfg[0:15];
 
@@ -47,53 +40,34 @@ module jtcop_bac06(
   endfunction
 
   always @(posedge clk) begin
-    if (rst) begin
-      vscr <= {def_cfg[7], def_cfg[6]};
-    end else begin
-      case (cpu_addr[2:1])
-        0: hscr <= combine(hscr);
-        1: vscr <= combine(vscr);
-        2: colscr_sh <= cpu_dout[3:0];
-        3: rowscr_sh <= cpu_dout[3:0];
-      endcase
-    end
+    if (rst) vscr <= {def_cfg[7], def_cfg[6]};
+    else case (cpu_addr[2:1])
+      0: hscr <= combine(hscr);
+      1: vscr <= combine(vscr);
+      2: colscr_sh <= cpu_dout[3:0];
+      3: rowscr_sh <= cpu_dout[3:0];
+    endcase
   end
 endmodule
 
-module jtcop_game(
-    input clk,
-    input [7:0] st_addr,
-    output [7:0] st_dout,
-    output [13:1] ba2mcu_addr,
-    output [18:1] main_addr
-);
-  assign st_dout = std_video;
-  assign main_addr = '0;
-
-  jtcop_video u_video(
-    .game_id(game_id),
-    .cpu_addr(main_addr[12:1]),
-    .mcu_addr(ba2mcu_addr[10:1]),
-    .prisel(prisel),
-    .st_addr(sta_video),
-    .st_dout(std_video)
-  );
-  jtcop_sdram u_sdram(.game_id(game_id));
+module jtcop_game(input clk, input [7:0] st_addr, output [7:0] st_dout);
+  wire [12:1] cpu_addr;
+  jtcop_main u_main(.cpu_addr(cpu_addr));
+  jtcop_video u_video(.cpu_addr(cpu_addr), .prisel(prisel), .st_addr(st_addr),
+                      .st_dout(st_dout));
 endmodule
 
-module jtcop_sdram(output reg [1:0] game_id = 0);
+module jtcop_main(output [12:1] cpu_addr);
+  assign cpu_addr = '0;
 endmodule
 
 module jtcop_video(
-    input [1:0] game_id,
     input [12:1] cpu_addr,
-    input [9:0] mcu_addr,
     input [7:0] prisel,
     input [7:0] st_addr,
     output reg [7:0] st_dout
 );
-  localparam [1:0] HIPPODROME = 2'd1;
-  wire [7:0] st_dout0, st_dout1;
+  wire [7:0] st_dout0, st_dout1, st_dout2;
 
   always @(posedge clk) begin
     case (st_addr[5:4])
@@ -104,14 +78,7 @@ module jtcop_video(
     endcase
   end
 
-  assign ba2_addr = game_id == HIPPODROME ? {2'd0, mcu_addr} : cpu_addr;
-  jtcop_bac06 u_ba2(
-    .rst(rst),
-    .clk(clk),
-    .cpu_dout(ba2_din),
-    .cpu_addr(ba2_addr),
-    .cpu_dsn(ba2_dsn),
-    .st_addr(st_addr),
-    .st_dout(st_dout2)
-  );
+  jtcop_bac06 u_ba2(.rst(rst), .clk(clk), .cpu_dout(ba2_din),
+                    .cpu_addr(cpu_addr), .cpu_dsn(ba2_dsn), .st_addr(st_addr),
+                    .st_dout(st_dout2));
 endmodule
