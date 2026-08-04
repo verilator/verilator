@@ -160,7 +160,7 @@ module t (
     `checkd(unpacked_whole[1], 8'h2a);
     `checkd(unpacked_elements[0], 8'h31);
     `checkd(unpacked_elements[1], 8'h32);
-    `checkd(unpacked_elements[2], 8'h00);
+    `checkd(unpacked_elements[2], 8'h00);  // zero-ok: untouched element
     `checkd(unpacked_elements[3], 8'h42);
     `checkd(masked_event_seen, 1);
     `checkd(masked_parts, 16'h6202);

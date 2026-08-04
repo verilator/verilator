@@ -1183,15 +1183,9 @@ class SvaNfaBuilder final {
             return BuildResult::fail(lhs.errorEmitted || rhs.errorEmitted);
         }
 
-        if (lhs.termVertexp == entryVtxp && rhs.termVertexp == entryVtxp) {
-            UASSERT_OBJ(lhs.finalCondp && rhs.finalCondp, lhsExprp,
-                        "Single-cycle SAnd operands must have finalCondp");
-            AstNodeExpr* const condp = new AstLogAnd{flp, lhs.finalCondp->cloneTreePure(false),
-                                                     rhs.finalCondp->cloneTreePure(false)};
-            cleanupProbeResult(lhs);
-            cleanupProbeResult(rhs);
-            return {entryVtxp, condp, {}};
-        }
+        // Both-boolean operands have fixed length 0 and never route here (conjoined instead).
+        UASSERT_OBJ(lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp, lhsExprp,
+                    "SAnd combiner requires a non-fixed operand");
         if (!lhs.midSources.empty() || !rhs.midSources.empty()) {
             cleanupProbeResult(lhs);
             cleanupProbeResult(rhs);
@@ -1264,22 +1258,13 @@ class SvaNfaBuilder final {
             cleanupProbeResult(rhs);
             return BuildResult::fail(lhs.errorEmitted || rhs.errorEmitted);
         }
-        // Both operands stayed at entry => boolean leaves; reduce to a boolean AND.
-        if (lhs.termVertexp == entryVtxp && rhs.termVertexp == entryVtxp) {
-            UASSERT_OBJ(lhs.finalCondp && rhs.finalCondp, lhsExprp,
-                        "Single-cycle SAnd operands must have finalCondp");
-            AstNodeExpr* const condp = new AstLogAnd{flp, lhs.finalCondp->cloneTreePure(false),
-                                                     rhs.finalCondp->cloneTreePure(false)};
-            cleanupProbeResult(lhs);
-            cleanupProbeResult(rhs);
-            return {entryVtxp, condp, {}};
-        }
-        // Mid-window sources are not foldable into the combiner; defer.
-        if (!lhs.midSources.empty() || !rhs.midSources.empty()) {
-            cleanupProbeResult(lhs);
-            cleanupProbeResult(rhs);
-            return BuildResult::fail();
-        }
+        // Both-boolean operands have fixed length 0 and never route here (conjoined instead).
+        UASSERT_OBJ(lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp, lhsExprp,
+                    "Intersect combiner requires a non-fixed operand");
+        // Fixed-length operands (or-merge, bounded always, throughout of those) have no
+        // mid-window endpoints.
+        UASSERT_OBJ(lhs.midSources.empty() && rhs.midSources.empty(), lhsExprp,
+                    "Same-end intersect operands cannot have mid-window sources");
         SvaStateVertex* const combVtxp = scopedCreateVertex();
         combVtxp->m_isAndCombiner = true;
         combVtxp->m_andLhsTermp = lhs.termVertexp;
@@ -1344,10 +1329,8 @@ class SvaNfaBuilder final {
         AstNodeExpr* const combinedp = new AstSIntersect{flp, innerOrp, outerClonep};
         BuildResult result = buildExpr(combinedp, entryVtxp, isTopLevelStep);
         VL_DO_DANGLING(combinedp->deleteTree(), combinedp);
-        // When both operands are plain booleans, buildSameEndIntersectCombiner returns a
-        // freshly-allocated AstAnd as finalCondp with no parent. Callers up
-        // the chain clone-and-discard finalCondp, so leave it parent-less and
-        // it leaks; anchor it in the graph now via an edge.
+        // A conjoined boolean intersect returns a freshly-allocated finalCondp with no
+        // parent; callers clone-and-discard finalCondp, so anchor it in the graph via an edge.
         if (result.valid() && result.finalCondp && !result.finalCondp->backp()) {
             SvaStateVertex* const wrapVtxp = scopedCreateVertex();
             guardedLink(result.termVertexp, wrapVtxp, sampled(result.finalCondp), flp);
@@ -4710,6 +4693,14 @@ class AssertNfaVisitor final : public VNVisitor {
 
         AstNode* const propp = assertp->propp();
         if (!hasMultiCycleExpr(propp)) return;
+        // A nested property instance keeps its body behind the call; lowering would drop it.
+        if (propp->exists([](const AstFuncRef* refp) { return VN_IS(refp->taskp(), Property); })) {
+            assertp->v3warn(E_UNSUPPORTED,
+                            "Unsupported: property instance inside a multi-cycle property "
+                            "expression");
+            VL_DO_DANGLING(pushDeletep(assertp->unlinkFrBack()), assertp);
+            return;
+        }
         if (isBareTopLevelUntil(propp)) return;
 
         ProcState s;

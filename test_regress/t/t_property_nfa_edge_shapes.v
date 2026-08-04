@@ -41,7 +41,7 @@ module t (
   end
 
   final begin
-    `checkd(np1, 0);
+    `checkd(np1, 0);  // zero-ok: unbounded not() never resolves to a pass
     `checkd(nf1, 2);
     `checkd(nc2, 1);
     `checkd(nc3, 5);
