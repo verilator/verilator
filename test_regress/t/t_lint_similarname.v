@@ -12,7 +12,6 @@ module t;
   reg i;
   wire I;
 
-	
 
   initial begin
     $finish;

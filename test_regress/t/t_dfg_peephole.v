@@ -136,13 +136,13 @@ module t (
 
   `signal(FOLD_SEL,              const_a[3:1]);
 
-  // verilator lint_off SIMILARNAME 
+  // verilator lint_off SIMILARNAME
   int fold_arraysel_table;
-  // verilator lint_on SIMILARNAME 
+  // verilator lint_on SIMILARNAME
   ffs ffs_a(convoluted_zero[0] ? 20'hff: 20'd2, fold_arraysel_table);
-  // verilator lint_off SIMILARNAME 
+  // verilator lint_off SIMILARNAME
   int fold_matchmasked;
-  // verilator lint_on SIMILARNAME 
+  // verilator lint_on SIMILARNAME
   ffs ffs_b(convoluted_zero[1] ? 20'hff: 20'd7, fold_matchmasked);
   `signal(FOLD_ARRAYSEL_TABLE, fold_arraysel_table);
   `signal(FOLD_MATCHMASKED, fold_matchmasked);
@@ -418,9 +418,9 @@ module t (
   // Asscending ranges
   `signal(ASCENDNG_SEL, arand_a[0:4]);
   // verilator lint_off ASCRANGE
-  // verilator lint_off SIMILARNAME 
+  // verilator lint_off SIMILARNAME
   wire [0:7] ascending_assign;
-  // verilator lint_on SIMILARNAME 
+  // verilator lint_on SIMILARNAME
   // verilator lint_on ASCRANGE
   assign ascending_assign[0:3] = arand_a[4:7];
   assign ascending_assign[4:7] = arand_b[0:3];
