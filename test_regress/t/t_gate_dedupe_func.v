@@ -46,11 +46,10 @@ module jtcop_bac06(
   end
 endmodule
 
-module jtcop_game(input clk, input [7:0] st_addr, output [7:0] st_dout);
+module jtcop_game(input clk, output [7:0] st_dout);
   wire [12:1] cpu_addr;
   jtcop_main u_main(.cpu_addr(cpu_addr));
-  jtcop_video u_video(.cpu_addr(cpu_addr), .prisel(prisel), .st_addr(st_addr),
-                      .st_dout(st_dout));
+  jtcop_video u_video(.cpu_addr(cpu_addr), .st_dout(st_dout));
 endmodule
 
 module jtcop_main(output [12:1] cpu_addr);
@@ -59,22 +58,9 @@ endmodule
 
 module jtcop_video(
     input [12:1] cpu_addr,
-    input [7:0] prisel,
-    input [7:0] st_addr,
     output reg [7:0] st_dout
 );
-  wire [7:0] st_dout0, st_dout1, st_dout2;
-
-  always @(posedge clk) begin
-    case (st_addr[5:4])
-      0: st_dout <= st_dout0;
-      1: st_dout <= st_dout1;
-      2: st_dout <= st_dout2;
-      3: st_dout <= prisel;
-    endcase
-  end
-
   jtcop_bac06 u_ba2(.rst(rst), .clk(clk), .cpu_dout(ba2_din),
                     .cpu_addr(cpu_addr), .cpu_dsn(ba2_dsn), .st_addr(st_addr),
-                    .st_dout(st_dout2));
+                    .st_dout(st_dout));
 endmodule
