@@ -438,6 +438,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
     // Traverse down to see AstConst or AstVarRef
     LeafInfo findLeaf(AstNode* nodep, bool expectConst) {
+        if (!nodep->dtypep()->skipRefp()->isIntegralOrPacked()) return LeafInfo{};
         LeafInfo info{m_lsb};
         {
             VL_RESTORER(m_leafp);
