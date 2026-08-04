@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.compile(verilator_flags2=[
-    '--top-module', 'game_test', '-Wno-fatal', '-Wno-IMPLICIT',
+    '--top-module', 'jtcop_game', '-Wno-fatal', '-Wno-IMPLICIT',
     '-Wno-WIDTHEXPAND', '-Wno-WIDTHTRUNC',
 ])
 

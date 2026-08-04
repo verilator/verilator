@@ -4,10 +4,6 @@
 // SPDX-FileCopyrightText: 2026 Jose Tejada
 // SPDX-License-Identifier: CC0-1.0
 
-module game_test(output [7:0] st_dout);
-  jtcop_game u_game(.clk(clk), .st_addr(st_addr), .st_dout(st_dout));
-endmodule
-
 module jtcop_bac06(
     input rst,
     input clk,
