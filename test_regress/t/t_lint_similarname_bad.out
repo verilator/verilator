@@ -4,6 +4,6 @@
                       t/t_lint_similarname.v:12:7: ... Location of original declaration
    12 |   reg i;
       |       ^
-                      ... For warning description see https://verilator.org/warn/SIMILARNAME?v=5.051
+                      ... For warning description see https://verilator.org/warn/SIMILARNAME?v=latest
                       ... Use "/* verilator lint_off SIMILARNAME */" and lint_on around source to disable this message.
-%Error: Exiting due to 1 warning(s)
+%Error: Exiting due to
