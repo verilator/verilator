@@ -61,6 +61,18 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_timeunit{timeunit}
             , m_type{type} {}
     };
+    struct IfaceRefData final {
+        const AstScope* const m_scopep;  // Concrete interface scope referred to
+        const std::string m_suffix;  // Path relative to the model instance
+        const std::string m_name;  // Name of the reference port
+        const std::string m_modportName;  // "" = no modport
+        IfaceRefData(const AstScope* scopep, const std::string& suffix, const std::string& name,
+                     const std::string& modportName)
+            : m_scopep{scopep}
+            , m_suffix{suffix}
+            , m_name{name}
+            , m_modportName{modportName} {}
+    };
     struct ScopeFuncData final {
         const AstScopeName* const m_scopep;
         const AstCFunc* const m_cfuncp;
@@ -102,6 +114,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     ScopeNames m_scopeNames;  // Each unique AstScopeName. Dpi scopes added later
     ScopeNames m_dpiScopeNames;  // Each unique AstScopeName for DPI export
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
+    std::vector<IfaceRefData> m_ifaceRefs;  // Each interface reference, for VPI
     // The actual hierarchy of scopes
     std::map<const std::string, std::vector<std::string>> m_vpiScopeHierarchy;
     int m_coverBins = 0;  // Global coverage bin number for non-object helper functions
@@ -117,6 +130,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
+    std::string m_ifaceRefTableName;
+    std::vector<std::string> m_ifaceRefTableRows;
 
     // METHODS
     void emitSymHdr();
@@ -709,6 +724,54 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
     }
 
+    void collectIfaceRefs(const AstScope* nodep) {
+        const AstCell* const cellp = nodep->aboveCellp();
+        // Exclude classes inside interfaces; the cell's modp is the interface, not the Class
+        if (!cellp || !VN_IS(cellp->modp(), Iface) || !VN_IS(nodep->modp(), Iface)) return;
+
+        // vpiName() to match the scope table these are looked up alongside. Inlining
+        // flattens the hierarchy but leaves the inlined levels in the scope name, which
+        // therefore carries the full enclosing path.
+        const std::string path = AstNode::vpiName(nodep->name());
+        const std::string instName = AstNode::vpiName(cellp->origName());
+        UASSERT_OBJ(path.length() > instName.length() && VString::endsWith(path, instName), nodep,
+                    "Interface scope name " << path << " does not end with instance name "
+                                            << instName);
+        const std::string parentPath = path.substr(0, path.length() - instName.length());
+
+        for (AstIntfRef* intfRefp = cellp->intfRefsp(); intfRefp;
+             intfRefp = VN_AS(intfRefp->nextp(), IntfRef)) {
+            const std::string refName = AstNode::vpiName(intfRefp->name());
+            // Assume only references under the same parent scope reference the
+            // same interface. Same limitation as the trace path in V3TraceDecl.
+            if (!VString::startsWith(refName, parentPath)) continue;
+            m_ifaceRefs.emplace_back(nodep, refName, AstNode::vpiName(intfRefp->baseName()),
+                                     intfRefp->modportName());
+        }
+    }
+
+    void buildIfaceRefTable() {
+        if (m_ifaceRefs.empty()) return;
+        const std::string symClass = symClassName();
+        for (const IfaceRefData& ird : m_ifaceRefs) {
+            const std::string scopeSym = scopeSymString(ird.m_scopep->name());
+            // Only reference scopes that actually made it into the scope table
+            if (m_scopeNames.find(scopeSym) == m_scopeNames.end()) continue;
+            std::string row
+                = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + scopeSym) + "), \"";
+            row += V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(ird.m_name, true));
+            row += "\", \"";
+            row += V3OutFormatter::quoteNameControls(
+                VIdProtect::protectWordsIf(ird.m_suffix, true));
+            row += "\", \"";
+            row += V3OutFormatter::quoteNameControls(
+                VIdProtect::protectWordsIf(ird.m_modportName, true));
+            row += "\"}";
+            m_ifaceRefTableRows.emplace_back(std::move(row));
+        }
+        if (!m_ifaceRefTableRows.empty()) m_ifaceRefTableName = symClass + "__VpiIfaceRefTable";
+    }
+
     void buildVpiHierarchy() {
         for (const auto& itpair : m_scopeNames) {
             const std::string symName = itpair.second.m_symName;
@@ -798,6 +861,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             const std::string type = VN_IS(nodep->modp(), Package) ? "SCOPE_PACKAGE"  //
+                                     : VN_IS(nodep->modp(), Iface) ? "SCOPE_INTERFACE"  //
                                                                    : "SCOPE_MODULE";
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(  //
@@ -806,6 +870,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 std::forward_as_tuple(nodep, scopeSymString(nodep->name()),
                                       AstNode::vpiName(nodep->shortName()),
                                       nodep->modp()->origName(), timeunit, type));
+            collectIfaceRefs(nodep);
         }
         iterateChildrenConst(nodep);
     }
@@ -1066,19 +1131,22 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // So split ctor sub-functions in other translation units can reference
     // the VPI variable tables defined below.
-    if (!m_varTables.empty() || !m_scopeTableRows.empty()) {
+    if (!m_varTables.empty() || !m_scopeTableRows.empty() || !m_ifaceRefTableRows.empty()) {
         for (const auto& kv : m_varTables) {
             puts("extern const VlVarTableEntry " + kv.first + "[];\n");
         }
         if (!m_scopeTableRows.empty()) {
             puts("extern const VlScopeTableEntry " + m_scopeTableName + "[];\n");
         }
+        if (!m_ifaceRefTableRows.empty()) {
+            puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[];\n");
+        }
         puts("\n");
     }
 }
 
 void EmitCSyms::emitVarTables() {
-    if (m_varTables.empty() && m_scopeTableRows.empty()) return;
+    if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
     // offsetof on the (non-standard-layout) generated module/Syms classes is well
     // defined on all supported compilers but warns; suppress just here.
@@ -1098,6 +1166,15 @@ void EmitCSyms::emitVarTables() {
     if (!m_scopeTableRows.empty()) {
         puts("extern const VlScopeTableEntry " + m_scopeTableName + "[] = {\n");
         for (const std::string& row : m_scopeTableRows) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
+    if (!m_ifaceRefTableRows.empty()) {
+        puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[] = {\n");
+        for (const std::string& row : m_ifaceRefTableRows) {
             ofp()->putsNoTracking("    ");
             ofp()->putsNoTracking(row);
             ofp()->putsNoTracking(",\n");
@@ -1257,6 +1334,14 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
             + std::to_string(m_scopeNames.size()) + ", this);");
     }
 
+    // After the scopes above, as each row points at an already-built VerilatedScope
+    buildIfaceRefTable();
+    if (!m_ifaceRefTableRows.empty()) {
+        add("// Setup interface references");
+        add("VerilatedScope::ifaceRefsInsertFromTable(" + m_ifaceRefTableName + ", "
+            + std::to_string(m_ifaceRefTableRows.size()) + ", this);");
+    }
+
     emitScopeHier(stmts, false);
 
     if (v3Global.dpi()) {
@@ -1394,6 +1479,13 @@ std::vector<std::string> EmitCSyms::getSymDtorStmts() {
         add("_vm_pgoProfiler.write(\"" + topClassName()
             + "\", _vm_contextp__->profVltFilename());");
     }
+    // Before the scopes below, as each row names a scope being torn down
+    if (!m_ifaceRefTableRows.empty()) {
+        add("// Tear down interface references");
+        add("VerilatedScope::ifaceRefsEraseFromTable(" + m_ifaceRefTableName + ", "
+            + std::to_string(m_ifaceRefTableRows.size()) + ", this);");
+    }
+
     add("// Tear down scopes");
     for (const auto& itpair : m_scopeNames) {
         const ScopeData& sd = itpair.second;
