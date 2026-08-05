@@ -2278,9 +2278,112 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Hoisted runtime-conditional disable_soft statements parked in the
         // constraint-items list by the pre-pass; already fully lowered.
     }
+    // Tally whether an item list holds soft constraints, non-soft ones, or
+    // both.  A nested ConstraintIf contributes whatever its own arms hold.
+    static void scanSoftness(const AstNode* const itemsp, bool& anySoftr, bool& anyHardr) {
+        for (const AstNode* itemp = itemsp; itemp; itemp = itemp->nextp()) {
+            if (const AstConstraintExpr* const constrExprp = VN_CAST(itemp, ConstraintExpr)) {
+                if (constrExprp->isSoft()) {
+                    anySoftr = true;
+                } else {
+                    anyHardr = true;
+                }
+            } else if (const AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
+                scanSoftness(cifp->thensp(), anySoftr, anyHardr);
+                scanSoftness(cifp->elsesp(), anySoftr, anyHardr);
+            } else {
+                anyHardr = true;
+            }
+        }
+    }
+
+    static AstConstraintExpr* newTrueConstraint(FileLine* const fl, const bool isSoft) {
+        AstConstraintExpr* const truep
+            = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
+        truep->isSoft(isSoft);
+        return truep;
+    }
+
+    // Pruning can empty an arm that the original had.  Put a vacuous 'true'
+    // back, so the collapse below still builds an AstCond and visit(AstCond)
+    // can keep folding a condition the solver never sees into one C++ ternary.
+    // Dropping to a one-armed LogIf instead would push that condition into the
+    // SMT text, where a plain runtime value has no meaning.
+    static void refillArms(AstConstraintIf* const cifp, const bool hadElse, const bool isSoft) {
+        if (!cifp->thensp() && !cifp->elsesp()) return;  // Vacuous, dropped below
+        FileLine* const fl = cifp->fileline();
+        // A then arm always existed: constraint_set has no empty production, so
+        // only the else arm needs asking about.
+        if (!cifp->thensp()) cifp->addThensp(newTrueConstraint(fl, isSoft));
+        if (hadElse && !cifp->elsesp()) cifp->addElsesp(newTrueConstraint(fl, isSoft));
+    }
+
+    // Drop every item that is not of the wanted softness, and any ConstraintIf
+    // left with nothing in either arm.  Nested ConstraintIfs are refilled as
+    // they are pruned, not just the one being split, or a gated 'dist' nested
+    // under a user's if/else would lose its own arm shape.
+    void pruneToSoftness(AstNode* const itemsp, const bool keepSoft) {
+        for (AstNode* itemp = itemsp; itemp;) {
+            AstNode* const nextp = itemp->nextp();
+            bool drop;
+            if (const AstConstraintExpr* const constrExprp = VN_CAST(itemp, ConstraintExpr)) {
+                drop = constrExprp->isSoft() != keepSoft;
+            } else if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
+                const bool hadElse = cifp->elsesp() != nullptr;
+                pruneToSoftness(cifp->thensp(), keepSoft);
+                pruneToSoftness(cifp->elsesp(), keepSoft);
+                refillArms(cifp, hadElse, keepSoft);
+                drop = !cifp->thensp() && !cifp->elsesp();
+            } else {
+                drop = keepSoft;  // Anything else counts as hard
+            }
+            if (drop) {
+                itemp->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(itemp), itemp);
+            }
+            itemp = nextp;
+        }
+    }
+
     void visit(AstConstraintIf* nodep) override {
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
+        // The arms collapse into one expression below, which can carry only one
+        // softness.  The arms are alternatives, so the result is no harder than
+        // what it came from and must stay soft when they are: a 'dist' bucket
+        // choice is a chain of soft ConstraintIfs precisely so the solver may
+        // retract it and fall back on the membership constraint.
+        bool anySoft = false;
+        bool anyHard = false;
+        scanSoftness(nodep->thensp(), anySoft, anyHard);
+        scanSoftness(nodep->elsesp(), anySoft, anyHard);
+        // A 'dist' lowers to a hard membership constraint beside that soft
+        // chain, so an if/else the user wrapped around one holds both kinds in
+        // the same arm.  Split it into a hard copy and a soft copy, so neither
+        // has to be demoted to the other.  Under editSingle() the subtree was
+        // already split by the outermost ConstraintIf, which recurses.
+        if (anySoft && anyHard && !m_wantSingle) {
+            const bool hadElse = nodep->elsesp() != nullptr;
+            // The copy duplicates the condition, so an impure one would be
+            // evaluated twice.  Clone it pure to say so here; V3Width already
+            // rejects such a condition with SIDEEFFECT before this runs.  The
+            // arms are cloned plainly, as pruning discards one copy of each
+            // item rather than leaving both to be evaluated.
+            AstConstraintIf* const softCopyp = new AstConstraintIf{
+                fl, nodep->condp()->cloneTreePure(false), nodep->thensp()->cloneTree(true),
+                nodep->elsesp() ? nodep->elsesp()->cloneTree(true) : nullptr};
+            pruneToSoftness(nodep->thensp(), false);
+            pruneToSoftness(nodep->elsesp(), false);
+            pruneToSoftness(softCopyp->thensp(), true);
+            pruneToSoftness(softCopyp->elsesp(), true);
+            refillArms(nodep, hadElse, false);
+            refillArms(softCopyp, hadElse, true);
+            // iterateAndNext() re-reads nextp after this visit, so it reaches
+            // the copy without it having to be iterated here.
+            nodep->addNextHere(softCopyp);
+            anySoft = false;  // This node keeps only the hard items
+        }
+        const bool isSoft = anySoft && !anyHard;
         AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
         AstNodeExpr* const elsep = editSingle(fl, nodep->elsesp());
         if (thenp && elsep) {
@@ -2288,12 +2391,21 @@ class ConstraintExprVisitor final : public VNVisitor {
         } else if (thenp) {
             newp = new AstLogIf{fl, nodep->condp()->unlinkFrBack(), thenp};
         } else if (elsep) {
-            newp = new AstLogIf{fl, new AstNot{fl, nodep->condp()->unlinkFrBack()}, elsep};
+            // Only an else arm survives, so invert the condition.  AstLogNot
+            // rather than AstNot, with an explicit bit dtype: the condition may
+            // be wider than a bit and the result feeds a LogIf.
+            AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
+            AstNodeExpr* const notp = new AstLogNot{fl, condp};
+            notp->dtypeSetBit();
+            notp->user1(condp->user1());  // Solver-dependent exactly when the condition is
+            newp = new AstLogIf{fl, notp, elsep};
         }
         if (newp) {
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
             newp->user1(true);  // Assume result-dependent
-            nodep->replaceWith(new AstConstraintExpr{fl, newp});
+            AstConstraintExpr* const newConstraintp = new AstConstraintExpr{fl, newp};
+            newConstraintp->isSoft(isSoft);
+            nodep->replaceWith(newConstraintp);
         } else {
             nodep->unlinkFrBack();
         }
@@ -4900,6 +5012,10 @@ class RandomizeVisitor final : public VNVisitor {
     // A non-rand value can never be re-drawn; a non-rand owner level is skipped.
     AstNodeExpr* newVarGate(AstVar* varp, const AstMemberSel* mselp, bool ownerLevel,
                             AstVar* randModeVarp, FileLine* fl) {
+        // A std::randomize() argument is drawn every call even though it carries
+        // no 'rand' lifetime of its own, so it is never frozen.  Reporting it as
+        // such would drop the weighted bucket chain for an inline dist on it.
+        if (varp->isStdRandomizeArg()) return new AstConst{fl, AstConst::BitTrue{}};
         if (!varp->rand().isRandomizable()) {
             return new AstConst{fl, AstConst::BitTrue{}, ownerLevel};
         }
@@ -5086,7 +5202,9 @@ class RandomizeVisitor final : public VNVisitor {
 
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
     // Supports both constant and variable weight expressions.
-    void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp, AstVar* randModeVarp,
+    // taskp is the setup task for a class-scope constraint, or the generated
+    // __Vrandwith function for an inline randomize() with {} clause.
+    void lowerDistConstraints(AstNodeFTask* taskp, AstNode* constrItemsp, AstVar* randModeVarp,
                               AstConstraintForeach* foreachp = nullptr) {
         // When inside a foreach, bucket preamble stmts are stored in foreachp->user3p()
         // (as a linked list) so visit(AstConstraintForeach*) can inject them into the
@@ -5842,6 +5960,11 @@ class RandomizeVisitor final : public VNVisitor {
                     randomizeFuncp->addStmtsp(
                         implementConstraintsClearAll(randomizeFuncp->fileline(), stdrand));
                 }
+                // Lower any 'dist' while the clause is still under withp, so the
+                // bucket preamble lands in the function ahead of the constraint
+                // items that read it, exactly as for a class-scope constraint.
+                // std::randomize() has no class rand_mode variable.
+                lowerDistConstraints(randomizeFuncp, withp->exprp(), nullptr);
                 AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
                 randomizeFuncp->addStmtsp(capturedTreep);
                 {
@@ -5990,9 +6113,12 @@ class RandomizeVisitor final : public VNVisitor {
             }
         }
 
-        // Generate constraint setup code and a hardcoded call to the solver
-        AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
-        randomizeFuncp->addStmtsp(capturedTreep);
+        // Generate constraint setup code and a hardcoded call to the solver.
+        // The clause stays under withp through the passes below: lowering a
+        // 'dist' has to put its bucket preamble in the function ahead of the
+        // constraint items that read it, which is only possible while those
+        // items are not in the function yet.
+        AstNode* const withItemsp = withp->exprp();
 
         // Pre-scan captured tree for .size on dynamic/assoc arrays and replace
         // with size variables, using shared createOrGetSizeVar helper.
@@ -6002,7 +6128,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstNode* inlineResizeStmtsp = nullptr;
         {
             std::vector<AstCMethodHard*> sizeMethodps;
-            capturedTreep->foreachAndNext([&](AstCMethodHard* methodp) {
+            withItemsp->foreachAndNext([&](AstCMethodHard* methodp) {
                 if (methodp->method() == VCMethod::DYN_SIZE
                     || methodp->method() == VCMethod::ASSOC_SIZE) {
                     sizeMethodps.push_back(methodp);
@@ -6041,7 +6167,7 @@ class RandomizeVisitor final : public VNVisitor {
                     }
 
                     // Append size >= 0 constraint so ConstraintExprVisitor processes it
-                    capturedTreep->addNext(createSizeGteZeroConstraint(fl, sizeVarp));
+                    withItemsp->addNext(createSizeGteZeroConstraint(fl, sizeVarp));
                 }
                 AstVarRef* const sizeVarRefp
                     = new AstVarRef{fl, sizeClassp, sizeVarp, VAccess::READ};
@@ -6050,6 +6176,16 @@ class RandomizeVisitor final : public VNVisitor {
                 VL_DO_DANGLING(methodp->deleteTree(), methodp);
             }
         }
+
+        // Lower any 'dist' to its weighted bucket chain, then move the clause
+        // into the function, so the preamble the lowering just added comes
+        // first.  Adding it afterwards would leave the bucket variable read
+        // before it is assigned, and ConstraintExprVisitor, which follows
+        // nextp(), would walk the preamble as though it were constraint items.
+        lowerDistConstraints(randomizeFuncp, withp->exprp(), randModeVarp);
+
+        AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
+        randomizeFuncp->addStmtsp(capturedTreep);
 
         {
             expandUniqueElementList(capturedTreep);

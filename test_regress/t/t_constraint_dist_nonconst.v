@@ -9,12 +9,9 @@
 // variables for the call and hold a fixed value while it runs, so
 // 'x dist {lo :/ 10, ...}' is as well defined as 'x dist {3 :/ 10, ...}'.
 //
-// Before the accompanying fix the weights were dropped for such a 'dist' and
-// the draw came out uniform over the set.
-//
-// Only the single-value items are affected.  The controls below are the same
-// 'dist' written with literal items, and a 'dist' whose only non-constant
-// parts are range bounds; both were already weighted correctly.
+// The controls are the same 'dist' written with literal items, and a 'dist'
+// whose only non-constant parts are range bounds.  All three carry the same
+// expected weighted bands.
 
 // verilog_format: off
 `define stop $stop
@@ -24,10 +21,10 @@
 `define check_hist `check_tol(nlo, `N * `W_LO / `W_TOT) `check_tol(nmid, `N * `W_MID / `W_TOT) `check_tol(nhi, `N * `W_HI / `W_TOT)
 // verilog_format: on
 
-// The bands only have to separate the weighted draw from the uniform one the
-// bug produces, so they are deliberately loose: every check below sits at four
-// sigma or more, while the buggy value is far outside.  A tighter band would
-// turn any future change to solver call order into a spurious failure.
+// The bands are deliberately loose, so a failure means wrong weighting rather
+// than sampling noise: every check below sits at four sigma or more.  A tighter
+// band would turn any future change to solver call order into a spurious
+// failure.
 `define N 1000
 `define TOL_PCT 40
 `define W_LO 10
@@ -61,7 +58,7 @@ class VarBounds;
   }
 endclass
 
-// The single-value items are non-constant.  This is the defect.
+// The single-value items are non-constant.
 class VarItems;
   rand bit [3:0] x;
   bit [3:0] lo = 3;
@@ -103,6 +100,20 @@ class ColonEqItems;
   }
 endclass
 
+// A negative literal is an expression, a negation over a constant, rather than
+// a constant, so it is covered separately from the literal controls above.
+// Same three weights and bands.
+class NegLiteralItems;
+  rand int x;
+  constraint c {
+    x dist {
+      -3 :/ `W_LO,
+      [-2 : 2] :/ `W_MID,
+      3 :/ `W_HI
+    };
+  }
+endclass
+
 module t;
   int nlo, nmid, nhi;
   int neqy, nnine;
@@ -122,6 +133,7 @@ module t;
     automatic VarItems vi = new;
     automatic RandItems ri = new;
     automatic ColonEqItems ce = new;
+    automatic NegLiteralItems nli = new;
 
     nlo = 0;
     nmid = 0;
@@ -169,6 +181,20 @@ module t;
       if (ce.x == 10) nten++;
     end
     `check_tol(nten, `N / 11)
+
+    // Negative literal items.  Signed, so tally() with its bit [3:0] argument
+    // does not apply.
+    nlo = 0;
+    nmid = 0;
+    nhi = 0;
+    for (int i = 0; i < `N; i++) begin
+      `checkd(nli.randomize(), 1)
+      `check_range(nli.x, -3, 3)
+      if (nli.x == -3) nlo++;
+      else if (nli.x == 3) nhi++;
+      else nmid++;
+    end
+    `check_hist
 
     $write("*-* All Finished *-*\n");
     $finish;
