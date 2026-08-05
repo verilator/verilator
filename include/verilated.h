@@ -387,6 +387,8 @@ private:
     static uint32_t assertOnMask(VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_PURE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
+    // No termination request has stamped m_finishPendingTime yet
+    static constexpr uint64_t TIME_UNSET = ~0ULL;
 
 protected:
     // TYPES
@@ -447,6 +449,8 @@ protected:
         // Fast path
         // A worker queues $finish before the main thread callback can set m_gotFinish.
         std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
+        std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
+        int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
@@ -686,13 +690,26 @@ public:
 
     // METHODS - public but for internal use only
 
-    // Internal: Track $finish callbacks queued by worker threads
+    // Internal: Track $finish/$stop callbacks queued by worker threads
     bool finishPending() const VL_MT_SAFE { return m_ns.m_finishPending.load() != 0; }
-    void finishPendingInc() VL_MT_SAFE { ++m_ns.m_finishPending; }
+    void finishPendingInc() VL_MT_SAFE {
+        ++m_ns.m_finishPending;
+        uint64_t unset = TIME_UNSET;
+        m_ns.m_finishPendingTime.compare_exchange_strong(unset, time());
+    }
     void finishPendingDec() VL_MT_SAFE {
         const uint32_t previous = m_ns.m_finishPending.fetch_sub(1);
         assert(previous > 0);
+        if (previous == 1 && !gotFinish()) m_ns.m_finishPendingTime = TIME_UNSET;
     }
+    // Internal: Time of the first termination request, else the current time
+    uint64_t finishPendingTime() const VL_MT_SAFE {
+        const uint64_t stamped = m_ns.m_finishPendingTime.load();
+        return stamped == TIME_UNSET ? time() : stamped;
+    }
+    // Internal: Reserve a posted $stop, returning true if it reaches the termination limit
+    bool stopRequestReserve(bool maybe) VL_MT_SAFE;
+    void stopRequestRelease() VL_MT_SAFE;
 
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }

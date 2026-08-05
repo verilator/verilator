@@ -37,7 +37,6 @@
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
-#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -251,7 +250,7 @@ static uint64_t siblingScore(const SiblingMC* sibsp) {
         = std::max(ap->critPathCost(GraphWay::FORWARD), bp->critPathCost(GraphWay::FORWARD));
     const uint64_t mergedCpCostRev
         = std::max(ap->critPathCost(GraphWay::REVERSE), bp->critPathCost(GraphWay::REVERSE));
-    return mergedCpCostRev + mergedCpCostFwd + LogicMTask::stepCost(ap->cost() + bp->cost());
+    return mergedCpCostRev + mergedCpCostFwd + ap->cost() + bp->cost();
 }
 
 static uint64_t edgeScore(const MTaskEdge* edgep) {
@@ -264,7 +263,7 @@ static uint64_t edgeScore(const MTaskEdge* edgep) {
                                               top->critPathCostWithout<GraphWay::FORWARD>(edgep));
     const uint64_t mergedCpCostRev = std::max(fromp->critPathCostWithout<GraphWay::REVERSE>(edgep),
                                               top->critPathCost(GraphWay::REVERSE));
-    return mergedCpCostRev + mergedCpCostFwd + LogicMTask::stepCost(fromp->cost() + top->cost());
+    return mergedCpCostRev + mergedCpCostFwd + fromp->cost() + top->cost();
 }
 
 void MergeCandidate::rescore() {
@@ -446,11 +445,10 @@ static void partInitHalfCriticalPaths(V3Graph& mTaskGraph, bool checkOnly) {
             relatives.insert(edge.furtherp<rev>());
 #endif
             const LogicMTask* const relativep = static_cast<LogicMTask*>(edge.furtherp<rev>());
-            cpCost = std::max(cpCost, (relativep->critPathCost(way)
-                                       + static_cast<uint64_t>(relativep->stepCost())));
+            cpCost = std::max(cpCost, (relativep->critPathCost(way) + relativep->cost()));
         }
         if (checkOnly) {
-            partCheckCachedScoreVsActual(mtaskp->critPathCost(way), cpCost);
+            UASSERT(mtaskp->critPathCost(way) == cpCost, "Calculation error in scoring");
         } else {
             mtaskp->setCritPathCost(way, cpCost);
         }
@@ -481,186 +479,6 @@ static void partCheckCriticalPaths(V3Graph& mTaskGraph) {
     }
 }
 
-// ######################################################################
-//  PropagateCp
-
-template <GraphWay::en N_Way>
-class PropagateCp final {
-    // Propagate increasing critical path (CP) costs through a graph.
-    //
-    // Usage:
-    //  * Client increases the cost and/or CP at a node or small set of nodes
-    //    (often a pair in practice, eg. edge contraction.)
-    //  * Client calls PropagateCp::cpHasIncreased() one or more times.
-    //    Each call indicates that the inclusive CP of some "seed" vertex
-    //    has increased to a given value.
-    //    * NOTE: PropagateCp will neither read nor modify the cost
-    //      or CPs at the seed vertices, it only accesses and modifies
-    //      vertices wayward from the seeds.
-    //  * Client calls PropagateCp::go(). Internally, this iteratively
-    //    propagates the new CPs wayward through the graph.
-    //
-
-    // TYPES
-
-    // We keep pending vertices in a heap during critical path propagation
-    struct PendingKey final {
-        LogicMTask* m_mtaskp;  // The vertex in the heap
-        uint64_t m_score;  // The score of this entry
-        void increase(uint64_t score) {
-            UDEBUGONLY(UASSERT(score >= m_score, "Must increase"););
-            m_score = score;
-        }
-        bool operator<(const PendingKey& other) const {
-            if (m_score != other.m_score) return m_score < other.m_score;
-            return *m_mtaskp < *other.m_mtaskp;
-        }
-    };
-
-    using PendingHeap = PairingHeap<PendingKey>;
-    using PendingHeapNode = typename PendingHeap::Node;
-
-    // MEMBERS
-    PendingHeap m_pendingHeap;  // Heap of pending rescores
-
-    // We allocate this many heap nodes at once
-    static constexpr size_t ALLOC_CHUNK_SIZE = 128;
-    PendingHeapNode* m_freep = nullptr;  // List of free heap nodes
-    std::vector<std::unique_ptr<PendingHeapNode[]>> m_allocated;  // Allocated heap nodes
-
-    const bool m_slowAsserts;  // Enable nontrivial asserts
-    // Used only with slow asserts to check MTasks visited only once
-    std::unordered_set<LogicMTask*> m_seen;
-
-public:
-    // CONSTRUCTORS
-    explicit PropagateCp(bool slowAsserts)
-        : m_slowAsserts{slowAsserts} {}
-
-    // METHODS
-private:
-    // Allocate a HeapNode for the given element
-    PendingHeapNode* allocNode() {
-        // If no free nodes available, then make some
-        if (!m_freep) {
-            // Allocate in chunks for efficiency
-            m_allocated.emplace_back(new PendingHeapNode[ALLOC_CHUNK_SIZE]);
-            // Set up free list pointer
-            m_freep = m_allocated.back().get();
-            // Set up free list chain
-            for (size_t i = 1; i < ALLOC_CHUNK_SIZE; ++i) {
-                m_freep[i - 1].m_next.m_ptr = &m_freep[i];
-            }
-            // Clear the next pointer of the last entry
-            m_freep[ALLOC_CHUNK_SIZE - 1].m_next.m_ptr = nullptr;
-        }
-        // Free nodes are available, pick up the first one
-        PendingHeapNode* const resultp = m_freep;
-        m_freep = resultp->m_next.m_ptr;
-        resultp->m_next.m_ptr = nullptr;
-        return resultp;
-    }
-
-    // Release a heap node (make it available for future allocation)
-    void freeNode(PendingHeapNode* nodep) {
-        // Re-use the existing link pointers and simply prepend it to the free list
-        nodep->m_next.m_ptr = m_freep;
-        m_freep = nodep;
-    }
-
-public:
-    void cpHasIncreased(V3GraphVertex* vxp, uint64_t newInclusiveCp) {
-        constexpr GraphWay way{N_Way};
-        constexpr GraphWay inv{way.invert()};
-
-        // For *vxp, whose CP-inclusive has just increased to
-        // newInclusiveCp, iterate to all wayward nodes, update the edges
-        // of each, and add each to m_pending if its overall CP has grown.
-        for (V3GraphEdge& graphEdge : vxp->edges<way>()) {
-            MTaskEdge& edge = static_cast<MTaskEdge&>(graphEdge);
-
-            LogicMTask* const relativep = edge.furtherMTaskp<N_Way>();
-            EdgeHeap::Node& edgeHeapNode = edge.m_edgeHeapNode[inv];
-            if (newInclusiveCp > edgeHeapNode.key().m_score) {
-                relativep->m_edgeHeap[inv].increaseKey(&edgeHeapNode, newInclusiveCp);
-            }
-
-            const uint64_t critPathCost = relativep->critPathCost(way);
-
-            if (critPathCost >= newInclusiveCp) continue;
-
-            // relativep's critPathCost() is out of step with its longest !wayward edge.
-            // Schedule that to be resolved.
-            const uint64_t newVal = newInclusiveCp - critPathCost;
-
-            void*& pendingNodepRef = relativep->m_propagateHeapNodep;
-            if (PendingHeapNode* const nodep = static_cast<PendingHeapNode*>(pendingNodepRef)) {
-                // Already in heap. Increase score if needed.
-                if (newVal > nodep->key().m_score) m_pendingHeap.increaseKey(nodep, newVal);
-                continue;
-            }
-
-            // Add to heap
-            PendingHeapNode* const nodep = allocNode();
-            pendingNodepRef = nodep;
-            m_pendingHeap.insert(nodep, {relativep, newVal});
-        }
-    }
-
-    void go() {
-        constexpr GraphWay way{N_Way};
-        constexpr GraphWay inv{way.invert()};
-
-        // m_pending maps each pending vertex to the amount that it wayward
-        // CP will grow.
-        //
-        // We can iterate over the pending set in reverse order, always
-        // choosing the nodes with the largest pending CP-growth.
-        //
-        // The intuition is: if the original seed node had its CP grow by
-        // 50, the most any wayward node can possibly grow is also 50.  So
-        // for anything pending to grow by 50, we know we can process it
-        // once and we won't have to grow its CP again on the current pass.
-        // After we're done with all the grow-by-50s, nothing else will
-        // grow by 50 again on the current pass, and we can process the
-        // grow-by-49s and we know we'll only have to process each one
-        // once.  And so on.
-        //
-        // This generalizes to multiple seed nodes also.
-        while (!m_pendingHeap.empty()) {
-            // Pop max element from heap
-            PendingHeapNode* const maxp = m_pendingHeap.max();
-            m_pendingHeap.remove(maxp);
-            // Pick up values
-            LogicMTask* const mtaskp = maxp->key().m_mtaskp;
-            const uint64_t cpGrowBy = maxp->key().m_score;
-            // Free the heap node, we are done with it
-            freeNode(maxp);
-            mtaskp->m_propagateHeapNodep = nullptr;
-            // Update the critPathCost of mtaskp, that was out-of-date with respect to its edges
-            const uint64_t startCp = mtaskp->critPathCost(way);
-            const uint64_t newCp = startCp + cpGrowBy;
-            if (VL_UNLIKELY(m_slowAsserts)) {
-                // Check that CP matches that of the longest edge wayward of vxp.
-                const uint64_t edgeCp = mtaskp->m_edgeHeap[inv].max()->key().m_score;
-                UASSERT_OBJ(edgeCp == newCp, mtaskp, "CP doesn't match longest wayward edge");
-                // Confirm that we only set each node's CP once.  That's an
-                // important property of PropagateCp which allows it to be far
-                // faster than a recursive algorithm on some graphs.
-                const bool first = m_seen.insert(mtaskp).second;
-                UASSERT_OBJ(first, mtaskp, "Set CP on node twice");
-            }
-            mtaskp->setCritPathCost(way, newCp);
-            cpHasIncreased(mtaskp, newCp + mtaskp->stepCost());
-        }
-
-        if (VL_UNLIKELY(m_slowAsserts)) m_seen.clear();
-    }
-
-private:
-    VL_UNCOPYABLE(PropagateCp);
-};
-
 //######################################################################
 // Contraction
 
@@ -686,9 +504,6 @@ class Contraction final {
     // Owned here for the lifetime of this Contraction. A single array, as the number of MTasks is
     // fixed for that lifetime: merging only ever deletes vertices, never creates them.
     std::unique_ptr<MTaskContractionData[]> m_mtaskDatap;
-
-    PropagateCp<GraphWay::FORWARD> m_forwardPropagator{m_slowAsserts};  // Forward propagator
-    PropagateCp<GraphWay::REVERSE> m_reversePropagator{m_slowAsserts};  // Reverse propagator
 
     // Singular source vertex of the OrderMTaskGraph
     LogicMTask* const m_entryMTaskp = m_mTaskGraph.entryp();
@@ -824,13 +639,12 @@ class Contraction final {
             newCp = std::max(otherp->critPathCost(way), mtaskp->critPathCost(way));
         }
 
-        const uint64_t origRelativesCp = mtaskp->critPathCost(way) + mtaskp->stepCost();
-        const uint64_t newRelativesCp
-            = newCp + LogicMTask::stepCost(mtaskp->cost() + otherp->cost());
+        const uint64_t oldRelativesCp = mtaskp->critPathCost(way) + mtaskp->cost();
+        const uint64_t newRelativesCp = newCp + mtaskp->cost() + otherp->cost();
 
         NewCp result;
         result.cp = newCp;
-        result.propagate = (newRelativesCp > origRelativesCp);
+        result.propagate = (newRelativesCp > oldRelativesCp);
         result.propagateCp = newRelativesCp;
         return result;
     }
@@ -919,7 +733,7 @@ class Contraction final {
             m_sb.removeSibling(mergeSibsp);
         }
 
-        // This also updates cost and stepCost on recipientp
+        // This also updates cost on recipientp
         recipientp->moveAllVerticesFrom(donorp);
 
         UINFO(9, "recipient = " << recipientp->id() << ", donor = " << donorp->id()
@@ -933,20 +747,22 @@ class Contraction final {
 
         recipientp->setCritPathCost(GraphWay::FORWARD, recipientNewCpFwd.cp);
         if (recipientNewCpFwd.propagate) {
-            m_forwardPropagator.cpHasIncreased(recipientp, recipientNewCpFwd.propagateCp);
+            m_mTaskGraph.forwardPropagator().cpHasIncreased(recipientp,
+                                                            recipientNewCpFwd.propagateCp);
         }
         recipientp->setCritPathCost(GraphWay::REVERSE, recipientNewCpRev.cp);
         if (recipientNewCpRev.propagate) {
-            m_reversePropagator.cpHasIncreased(recipientp, recipientNewCpRev.propagateCp);
+            m_mTaskGraph.reversePropagator().cpHasIncreased(recipientp,
+                                                            recipientNewCpRev.propagateCp);
         }
         if (donorNewCpFwd.propagate) {
-            m_forwardPropagator.cpHasIncreased(donorp, donorNewCpFwd.propagateCp);
+            m_mTaskGraph.forwardPropagator().cpHasIncreased(donorp, donorNewCpFwd.propagateCp);
         }
         if (donorNewCpRev.propagate) {
-            m_reversePropagator.cpHasIncreased(donorp, donorNewCpRev.propagateCp);
+            m_mTaskGraph.reversePropagator().cpHasIncreased(donorp, donorNewCpRev.propagateCp);
         }
-        m_forwardPropagator.go();
-        m_reversePropagator.go();
+        m_mTaskGraph.forwardPropagator().go();
+        m_mTaskGraph.reversePropagator().go();
 
         // Remove all other SiblingMCs that include recipientp or donorp. We remove all siblingMCs
         // of recipientp so we do not get huge numbers of SiblingMCs. We'll recreate them below, up
@@ -1232,7 +1048,7 @@ class Contraction final {
                 continue;
             }
 
-            partCheckCachedScoreVsActual(cachedScore, actualScore);
+            UASSERT(cachedScore == actualScore, "Calculation error in scoring");
 
             // Finally there's no cycle risk, no need to rescore, we're
             // within m_scoreLimit and m_scoreLimitBeforeRescore.

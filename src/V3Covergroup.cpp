@@ -30,6 +30,7 @@
 #include "V3MemberMap.h"
 
 #include <set>
+#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -44,6 +45,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // STATE
     AstClass* m_covergroupp = nullptr;  // Current covergroup being processed
+    AstClass* m_enclosingClassp = nullptr;  // Class lexically enclosing the covergroup (if any)
     AstFunc* m_sampleFuncp = nullptr;  // Current sample() function
     AstFunc* m_constructorp = nullptr;  // Current constructor
     std::vector<AstCoverpoint*> m_coverpoints;  // Coverpoints in current covergroup
@@ -68,6 +70,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             , crossBins{cb} {}
     };
     std::vector<BinInfo> m_binInfos;  // All bins in current covergroup
+
     std::set<std::string> m_crossedCpNames;  // Coverpoints referenced by a cross (kept legacy)
     std::vector<AstVar*> m_convCpVars;  // VlCoverpoint members of converted coverpoints
     AstCDType* m_vlCoverpointDTypep = nullptr;  // Shared "VlCoverpoint" C++ member type
@@ -1692,38 +1695,185 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    AstNode* findUnsupportedCoverpointRef(AstClass* cgClassp) {
-        // An embedded covergroup is lowered into a sibling AstClass that (currently) has
-        // no handle to the enclosing object. Identify refs to the containing context
-        // or a formal param and flag as unsupported
+    static bool isEnclosingInstanceVar(const AstVar* varp) {
+        return varp->isClassMember() && !varp->lifetime().isStatic() && !varp->isParam();
+    }
+
+    void rewriteThisRef(AstThisRef* refp, AstVar* handleVarp) {
+        const AstClassRefDType* const refDTypep
+            = VN_CAST(refp->dtypep()->skipRefp(), ClassRefDType);
+        UASSERT_OBJ(refDTypep && refDTypep->classp() == m_covergroupp, refp,
+                    "Unexpected this reference in embedded covergroup");
+        AstNodeExpr* const newp = new AstVarRef{refp->fileline(), handleVarp, VAccess::READ};
+        refp->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(refp), refp);
+    }
+
+    void rewriteVarRef(AstVarRef* refp, AstVar* handleVarp) {
+        FileLine* const fl = refp->fileline();
+        AstMemberSel* const selp
+            = new AstMemberSel{fl, new AstVarRef{fl, handleVarp, VAccess::READ}, refp->varp()};
+        selp->access(refp->access());
+        refp->replaceWith(selp);
+        VL_DO_DANGLING(pushDeletep(refp), refp);
+    }
+
+    void deleteCoverageItems() {
+        for (AstCoverpoint* const cpp : m_coverpoints) {
+            VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
+        }
+        for (AstCoverCross* const crossp : m_coverCrosses) {
+            VL_DO_DANGLING(pushDeletep(crossp->unlinkFrBack()), crossp);
+        }
+    }
+
+    class FormalRefVisitor final : public VNVisitor {
+        const std::set<const AstVar*>& m_constructorArgs;
+        AstMemberSel* m_memberSelp = nullptr;
+        AstNode* m_offenderp = nullptr;
+
+        void visit(AstMemberSel* nodep) override {
+            if (m_offenderp) return;
+            VL_RESTORER(m_memberSelp);
+            if (!m_memberSelp) m_memberSelp = nodep;
+            iterateChildren(nodep);
+        }
+        void visit(AstVarRef* nodep) override {
+            if (m_memberSelp && m_constructorArgs.count(nodep->varp())) {
+                m_offenderp = m_memberSelp;
+            }
+        }
+        void visit(AstNode* nodep) override {
+            if (!m_offenderp) iterateChildren(nodep);
+        }
+
+    public:
+        explicit FormalRefVisitor(const std::set<const AstVar*>& constructorArgs)
+            : m_constructorArgs{constructorArgs} {}
+        void scan(AstNode* nodep) {
+            if (nodep && !m_offenderp) iterate(nodep);
+        }
+        AstNode* offenderp() const { return m_offenderp; }
+    };
+
+    AstNode* findUnsupportedFormalRef() {
+        std::set<const AstVar*> constructorArgs;
+        for (AstNode* stmtp = m_constructorp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isIO()) constructorArgs.insert(varp);
+            }
+        }
+        FormalRefVisitor visitor{constructorArgs};
+        for (AstCoverpoint* const cpp : m_coverpoints) {
+            visitor.scan(cpp->exprp());
+            visitor.scan(cpp->iffp());
+        }
+        return visitor.offenderp();
+    }
+
+    AstVarRef* installEnclosingBackPointer() {
+        // Simple-case support for embedded covergroups (IEEE 1800-2023 19.4) whose
+        // coverpoints reference members of the enclosing class ("Class members can be used
+        // in coverpoint expressions").  The covergroup is lowered into a sibling class with
+        // no implicit handle to the enclosing object, so such references would emit
+        // uncompilable C++.  Add an explicit back-pointer member to the enclosing instance,
+        // route the member references through it, and initialize it right after the
+        // 'cgvar = new' construction.  The enclosing member values are only read in
+        // sample(), which runs after construction, so this ordering is safe.  Returns an invalid
+        // reference if an outer class member cannot be reached; otherwise returns an empty result.
+        if (!m_enclosingClassp) return nullptr;  // Offending refs require an enclosing class
+
+        AstVarRef* invalidp = nullptr;
+        AstNode* offenderp = nullptr;
         std::set<const AstVar*> ownVars;
-        for (AstNode* itemp = cgClassp->membersp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* itemp = m_covergroupp->membersp(); itemp; itemp = itemp->nextp()) {
             if (const AstVar* const varp = VN_CAST(itemp, Var)) ownVars.insert(varp);
         }
-        // Flag non-static enclosing-class members reached without a handle as unsupported
-        AstNode* offenderp = nullptr;
-        const auto scanEnclosing = [&](AstNode* rootp) {
+        std::set<const AstVar*> enclosingVars;
+        m_enclosingClassp->foreachMember([&](AstClass* const, AstVar* const varp) {
+            if (isEnclosingInstanceVar(varp)) enclosingVars.insert(varp);
+        });
+
+        std::vector<AstVarRef*> refsToRewrite;
+        std::vector<AstThisRef*> thisRefsToRewrite;
+        const auto scan = [&](AstNode* rootp) {
             rootp->foreach([&](AstVarRef* refp) {
-                if (offenderp) return;
+                if (invalidp) return;
                 const AstVar* const varp = refp->varp();
-                if (varp->isClassMember() && !ownVars.count(varp)) offenderp = refp;
+                if (!isEnclosingInstanceVar(varp) || ownVars.count(varp)) return;
+                if (!enclosingVars.count(varp)) {
+                    invalidp = refp;
+                    return;
+                }
+                refsToRewrite.push_back(refp);
+                if (!offenderp) offenderp = refp;
+            });
+            if (invalidp) return;
+            rootp->foreach([&](AstThisRef* refp) {
+                const AstClassRefDType* const refDTypep
+                    = VN_CAST(refp->dtypep()->skipRefp(), ClassRefDType);
+                if (refDTypep && refDTypep->classp() == m_covergroupp) {
+                    thisRefsToRewrite.push_back(refp);
+                    if (!offenderp) offenderp = refp;
+                }
             });
         };
-        for (AstCoverpoint* cpp : m_coverpoints) scanEnclosing(cpp);
-        for (AstCoverCross* crossp : m_coverCrosses) scanEnclosing(crossp);
-        if (offenderp) return offenderp;
-        // Flag references to covergroup formal parameters as currently unsupported
-        const auto scanHandleDeref = [&](AstNode* rootp) {
-            if (!rootp) return;
-            rootp->foreach([&](AstMemberSel* selp) {
-                if (!offenderp) offenderp = selp;
-            });
-        };
-        for (AstCoverpoint* cpp : m_coverpoints) {
-            scanHandleDeref(cpp->exprp());
-            scanHandleDeref(cpp->iffp());
+        for (AstCoverpoint* const cpp : m_coverpoints) scan(cpp);
+        for (AstCoverCross* const crossp : m_coverCrosses) scan(crossp);
+        if (invalidp || !offenderp) return invalidp;
+
+        AstVar* embeddedVarp = nullptr;
+        for (AstNode* itemp = m_enclosingClassp->membersp(); itemp; itemp = itemp->nextp()) {
+            AstVar* const varp = VN_CAST(itemp, Var);
+            if (!varp) continue;
+            const AstClassRefDType* const refp
+                = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+            if (refp && refp->classp() == m_covergroupp) {
+                embeddedVarp = varp;
+                break;
+            }
         }
-        return offenderp;
+        UASSERT_OBJ(embeddedVarp, m_covergroupp, "Embedded covergroup variable not found");
+
+        std::vector<AstNodeAssign*> constructps;
+        AstFunc* const enclosingNewp
+            = VN_CAST(m_memberMap.findMember(m_enclosingClassp, "new"), Func);
+        if (enclosingNewp) {
+            enclosingNewp->foreach([&](AstNodeAssign* asgnp) {
+                const AstNew* const newp = VN_CAST(asgnp->rhsp(), New);
+                const AstVarRef* const lhsRefp = VN_CAST(asgnp->lhsp(), VarRef);
+                if (newp && lhsRefp && lhsRefp->varp() == embeddedVarp) {
+                    const AstClassRefDType* const refp = VN_CAST(newp->dtypep(), ClassRefDType);
+                    if (refp && refp->classp() == m_covergroupp) constructps.push_back(asgnp);
+                }
+            });
+        }
+        // Commit: add the back-pointer member, rewrite the references, initialize the handle.
+        FileLine* const fl = m_covergroupp->fileline();
+        AstClassRefDType* const enclDTypep = new AstClassRefDType{fl, m_enclosingClassp, nullptr};
+        enclDTypep->rawPointer(true);
+        v3Global.rootp()->typeTablep()->addTypesp(enclDTypep);
+        AstVar* const handleVarp
+            = new AstVar{fl, VVarType::MEMBER, "__Vcg_enclosingp", enclDTypep};
+        handleVarp->isStatic(false);
+        m_covergroupp->addMembersp(handleVarp);
+
+        // Route each enclosing-member reference through the back-pointer: 'm' -> 'h.m'.
+        for (AstVarRef* const refp : refsToRewrite) { rewriteVarRef(refp, handleVarp); }
+        for (AstThisRef* const refp : thisRefsToRewrite) { rewriteThisRef(refp, handleVarp); }
+
+        // Initialize the raw back-pointer after each construction.  With no construction site,
+        // the embedded covergroup handle remains null, so no back-pointer is observed.
+        for (AstNodeAssign* const constructp : constructps) {
+            FileLine* const cfl = constructp->fileline();
+            AstMemberSel* const lhsp
+                = new AstMemberSel{cfl, constructp->lhsp()->cloneTree(false), handleVarp};
+            lhsp->access(VAccess::WRITE);
+            AstCExpr* const thisp = new AstCExpr{cfl, "this"};
+            thisp->dtypep(enclDTypep);
+            constructp->addNextHere(new AstAssign{cfl, lhsp, thisp});
+        }
+        return nullptr;
     }
 
     void visit(AstClass* nodep) override {
@@ -1785,12 +1935,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             // but still clean up coverpoints so they don't reach downstream passes
             if (hasUnsupportedEvent) {
                 iterateChildren(nodep);
-                for (AstCoverpoint* cpp : m_coverpoints) {
-                    VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
-                }
-                for (AstCoverCross* crossp : m_coverCrosses) {
-                    VL_DO_DANGLING(pushDeletep(crossp->unlinkFrBack()), crossp);
-                }
+                deleteCoverageItems();
                 return;
             }
 
@@ -1806,35 +1951,35 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             iterateChildren(nodep);
 
-            // Identify embedded covergroup refs to enclosing class members or
-            // covergroup formal parameters and flag as currently unsupported.
-            if (AstNode* const offenderp = findUnsupportedCoverpointRef(nodep)) {
-                const bool viaHandle = VN_IS(offenderp, MemberSel);
-                offenderp->v3warn(COVERIGN,
-                                  "Unsupported: 'covergroup' coverpoint "
-                                      << (viaHandle ? "dereferencing a class handle member "
-                                                      "(parameterized covergroup)"
-                                                    : "referencing enclosing class member")
-                                      << "; ignoring covergroup " << nodep->prettyNameQ());
-                for (AstCoverpoint* cpp : m_coverpoints) {
-                    VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
-                }
-                for (AstCoverCross* crossp : m_coverCrosses) {
-                    VL_DO_DANGLING(pushDeletep(crossp->unlinkFrBack()), crossp);
-                }
+            if (AstNode* const offenderp = findUnsupportedFormalRef()) {
+                offenderp->v3warn(COVERIGN, "Unsupported: 'covergroup' coverpoint dereferencing a "
+                                            "class handle member; ignoring covergroup "
+                                                << nodep->prettyNameQ());
+                deleteCoverageItems();
                 return;
             }
 
+            // Embedded covergroups (IEEE 1800-2023 19.4): coverpoints, iff expressions, and
+            // crosses may reference members of the enclosing class. The covergroup is lowered
+            // into a sibling class with no implicit handle to the enclosing instance. Install
+            // an explicit back-pointer and route the references through it.
+            if (AstVarRef* const invalidp = installEnclosingBackPointer()) {
+                invalidp->v3error("Non-static member "
+                                  << invalidp->varp()->prettyNameQ()
+                                  << " of an outer class requires an explicit "
+                                     "object handle (IEEE 1800-2023 8.23).");
+                deleteCoverageItems();
+                return;
+            }
             processCovergroup();
             // Remove lowered coverpoints/crosses from the class - they have been
             // fully translated into C++ code and must not reach downstream passes
-            for (AstCoverpoint* cpp : m_coverpoints) {
-                VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
-            }
-            for (AstCoverCross* crossp : m_coverCrosses) {
-                VL_DO_DANGLING(pushDeletep(crossp->unlinkFrBack()), crossp);
-            }
+            deleteCoverageItems();
         } else {
+            // Track the lexically enclosing class so a nested covergroup can resolve
+            // references to the enclosing object's members (installEnclosingBackPointer).
+            VL_RESTORER(m_enclosingClassp);
+            m_enclosingClassp = nodep;
             iterateChildren(nodep);
         }
     }

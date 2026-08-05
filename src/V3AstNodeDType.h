@@ -584,6 +584,7 @@ class AstClassRefDType final : public AstNodeDType {
     //
     // @astgen ptr := m_classp : Optional[AstClass]  // data type pointed to, BELOW the AstTypedef
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package hierarchy
+    bool m_rawPointer = false;  // Emit as a non-owning C++ pointer rather than VlClassRef
 public:
     AstClassRefDType(FileLine* fl, AstClass* classp, AstPin* paramsp)
         : ASTGEN_SUPER_ClassRefDType(fl)
@@ -595,7 +596,8 @@ public:
     // METHODS
     bool sameNode(const AstNode* samep) const override {
         const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
-        return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
+        return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep
+                && m_rawPointer == asamep->m_rawPointer);
     }
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     void dump(std::ostream& str = std::cout) const override;
@@ -613,6 +615,9 @@ public:
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     AstClass* classp() const VL_MT_STABLE { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
+    bool rawPointer() const { return m_rawPointer; }
+    void rawPointer(bool flag) { m_rawPointer = flag; }
+    static void selfTest();
     bool isCompound() const override { return true; }
 };
 class AstConstDType final : public AstNodeDType {

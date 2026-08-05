@@ -48,6 +48,7 @@ class UndrivenVarEntry final {
         = nullptr;  // always_comb of var if driven within always_comb, else nullptr
     const AstAlways* m_alwFFp = nullptr;  // always_ff of var if driven within always_ff
     const AstAlways* m_alwPlainp = nullptr;  // plain always of var if driven within plain always
+    const AstClocking* m_clockingp = nullptr;  // clocking block of var if driven as output
     const AstNodeVarRef* m_nodep = nullptr;  // varref if driven, else nullptr
     const AstNode* m_initStaticp = nullptr;  // varref if in InitialStatic driven
     const AstNode* m_initialp = nullptr;  // varref if driven in an explicit initial block
@@ -64,7 +65,8 @@ class UndrivenVarEntry final {
         FLAG_DRIVEN_ALWCOMB = 2,  // Whole signal has been driven from always_comb
         FLAG_DRIVEN_ALWFF = 3,  // Whole signal has been driven from always_ff
         FLAG_DRIVEN_ALWPLAIN = 4,  // Whole signal has been driven from a plain always
-        FLAGS_PER_BIT = 5  // Number of flags stored for each tracked bit
+        FLAG_DRIVEN_CLOCKING = 5,  // Whole signal has been driven as a clocking block output
+        FLAGS_PER_BIT = 6  // Number of flags stored for each tracked bit
     };
 
 public:
@@ -164,6 +166,10 @@ public:
         m_wholeFlags[FLAG_DRIVEN_ALWPLAIN] = true;
         m_alwPlainp = alwPlainp;
     }
+    void drivenClockingWhole(const AstClocking* clockingp) {
+        m_wholeFlags[FLAG_DRIVEN_CLOCKING] = true;
+        m_clockingp = clockingp;
+    }
 
     const AstNode* initStaticp() const { return m_initStaticp; }
     void initStaticp(const AstNode* nodep) { m_initStaticp = nodep; }
@@ -179,11 +185,13 @@ public:
     bool isDrivenAlwaysCombWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWCOMB]; }
     bool isDrivenAlwaysFFWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWFF]; }
     bool isDrivenAlwaysPlainWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWPLAIN]; }
+    bool isDrivenClockingWhole() const { return m_wholeFlags[FLAG_DRIVEN_CLOCKING]; }
     bool isFtaskDriven() const { return m_ftaskDriven; }
     const AstNodeVarRef* getNodep() const { return m_nodep; }
     const AstAlways* getAlwCombp() const { return m_alwCombp; }
     const AstAlways* getAlwFFp() const { return m_alwFFp; }
     const AstAlways* getAlwPlainp() const { return m_alwPlainp; }
+    const AstClocking* getClockingp() const { return m_clockingp; }
     void usedBit(int bit, int width, const AstNode* nodep) {
         UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name());
         for (int i = 0; i < width; i++) {
@@ -384,6 +392,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
     const AstAlways* m_alwaysFFp = nullptr;  // Current always if ff, otherwise nullptr
     const AstAlways* m_alwaysPlainp = nullptr;  // Current always if plain (not comb/ff/latch)
+    const AstClocking* m_clockingp = nullptr;  // Current clocking block, otherwise nullptr
 
     V3UndrivenCapture* const m_capturep = nullptr;  // Capture object.  'nullptr' if disabled.
 
@@ -429,6 +438,84 @@ class UndrivenVisitor final : public VNVisitorConst {
                                         : ""));
             varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER,
                                             true);  // Complain just once for any usage
+        }
+    }
+    // A clocking block 'output' is an additional driver of the signal it names.
+    // The conflict is found from whichever driver is reached second.
+    bool clockingDrivesOther(const UndrivenVarEntry* entryp, bool otherWriteIsStaticInit) const {
+        const bool otherIsExplicitProc
+            = entryp->isDrivenAlwaysCombWhole() || entryp->isDrivenAlwaysFFWhole();
+        return m_clockingp && !otherIsExplicitProc && !otherWriteIsStaticInit
+               && m_clockingp != entryp->getClockingp();
+    }
+    bool otherDrivesClocking(const UndrivenVarEntry* entryp) const {
+        return !m_clockingp && !m_alwaysCombp && !m_alwaysFFp && !m_inInitialStatic
+               && entryp->isDrivenClockingWhole();
+    }
+    // A continuous assignment or a second clocking block contending with a
+    // clocking block 'output' is an unambiguous driver conflict.
+    void warnClockingDriven(AstNodeVarRef* nodep, const UndrivenVarEntry* entryp,
+                            const AstNode* otherWritep, bool otherWriteIsStaticInit) {
+        const AstClocking* const otherClockingp = entryp->getClockingp();
+        if (clockingDrivesOther(entryp, otherWriteIsStaticInit)) {
+            if (otherClockingp) {
+                nodep->v3warn(MULTIDRIVEN,
+                              "Variable written to in clocking block also written by another "
+                              "clocking block"
+                                  << " (IEEE 1800-2023 14.3): " << nodep->prettyNameQ() << '\n'
+                                  << nodep->warnOther() << '\n'
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << otherWritep->warnOther()
+                                  << "... Location of other clocking block output\n"
+                                  << otherWritep->warnContextSecondary());
+            } else if (otherWritep == entryp->contAssignp()) {
+                nodep->v3warn(MULTIDRIVEN,
+                              "Variable written to in clocking block also driven by continuous "
+                              "assignment"
+                                  << " (IEEE 1800-2023 14.3): " << nodep->prettyNameQ() << '\n'
+                                  << nodep->warnOther() << '\n'
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << otherWritep->warnOther()
+                                  << "... Location of continuous assignment\n"
+                                  << otherWritep->warnContextSecondary());
+            }
+        }
+        if (otherDrivesClocking(entryp) && m_inContAssign) {
+            nodep->v3warn(MULTIDRIVEN,
+                          "Variable driven by continuous assignment also written to in "
+                          "clocking block"
+                              << " (IEEE 1800-2023 14.3): " << nodep->prettyNameQ() << '\n'
+                              << nodep->warnOther() << '\n'
+                              << nodep->warnContextPrimary() << '\n'
+                              << otherWritep->warnOther()
+                              << "... Location of clocking block output\n"
+                              << otherWritep->warnContextSecondary());
+        }
+    }
+    // Driving a signal from both a clocking block and a plain process is a deliberate
+    // idiom in some testbenches, as with the plain always conflicts above.
+    void warnClockingDrivenProc(AstNodeVarRef* nodep, const UndrivenVarEntry* entryp,
+                                const AstNode* otherWritep, bool otherWriteIsStaticInit) {
+        if (clockingDrivesOther(entryp, otherWriteIsStaticInit) && !entryp->getClockingp()
+            && otherWritep != entryp->contAssignp()) {
+            nodep->v3warn(MULTIDRIVENPROC,
+                          "Variable written to in clocking block also written by another "
+                          "process"
+                              << " (IEEE 1800-2023 14.3): " << nodep->prettyNameQ() << '\n'
+                              << nodep->warnOther() << '\n'
+                              << nodep->warnContextPrimary() << '\n'
+                              << otherWritep->warnOther() << "... Location of other write\n"
+                              << otherWritep->warnContextSecondary());
+        }
+        if (otherDrivesClocking(entryp) && !m_inContAssign) {
+            nodep->v3warn(MULTIDRIVENPROC,
+                          "Variable written to in process also written to in clocking block"
+                              << " (IEEE 1800-2023 14.3): " << nodep->prettyNameQ() << '\n'
+                              << nodep->warnOther() << '\n'
+                              << nodep->warnContextPrimary() << '\n'
+                              << otherWritep->warnOther()
+                              << "... Location of clocking block output\n"
+                              << otherWritep->warnContextSecondary());
         }
     }
 
@@ -551,10 +638,10 @@ class UndrivenVisitor final : public VNVisitorConst {
                 // declaration's fileline, as v3warn suppression will check
                 // the driving fileline and still warn even if the warning
                 // was suppressed with lint_off at the declaration.
+                const bool otherWriteIsStaticInit
+                    = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
                 if (multidrivenCommon
                     && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
-                    const bool otherWriteIsStaticInit
-                        = nodep->varp()->hasUserInit() && otherWritep == entryp->initStaticp();
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
                             || (m_alwaysCombp != entryp->getAlwCombp()
@@ -602,6 +689,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        << "... Location of always_ff write\n"
                                                        << otherWritep->warnContextSecondary());
                     }
+                    warnClockingDriven(nodep, entryp, otherWritep, otherWriteIsStaticInit);
                 }
                 if (multidrivenCommon
                     && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVENPROC)) {
@@ -634,6 +722,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                                 << otherWritep->warnOther() << "... Location of other write\n"
                                 << otherWritep->warnContextSecondary());
                     }
+                    warnClockingDrivenProc(nodep, entryp, otherWritep, otherWriteIsStaticInit);
                 }
                 if (!m_inInitialSetup || nodep->varp()->hasUserInit()) {
                     // Else don't count default initialization as a driver to a net/variable
@@ -646,6 +735,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (m_alwaysCombp) entryp->drivenAlwaysCombWhole(m_alwaysCombp);
                 if (m_alwaysFFp) entryp->drivenAlwaysFFWhole(m_alwaysFFp, nodep->varp());
                 if (m_alwaysPlainp) entryp->drivenAlwaysPlainWhole(m_alwaysPlainp);
+                if (m_clockingp) entryp->drivenClockingWhole(m_clockingp);
             }
             if (nodep->access().isWriteOrRW() && !VN_IS(nodep, VarXRef)) {
                 // Ignoring xrefs as the initial and assignment to track might refer to two
@@ -750,6 +840,11 @@ class UndrivenVisitor final : public VNVisitorConst {
         m_alwaysPlainp = nodep->keyword() == VAlwaysKwd::ALWAYS ? nodep : nullptr;
         iterateChildrenConst(nodep);
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep);
+    }
+    void visit(AstClocking* nodep) override {
+        VL_RESTORER(m_clockingp);
+        m_clockingp = nodep;
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstNodeFTaskRef* nodep) override {
