@@ -1653,6 +1653,16 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
     return new AstLogAnd{fileline(), ap, bp};
 }
+void AstIntfRef::dump(std::ostream& str) const {  // LCOV_EXCL_START
+    Super::dump(str);
+    if (baseName() != "") str << " base=" << baseName();
+    if (modportName() != "") str << " mp=" << modportName();
+}  // LCOV_EXCL_STOP
+void AstIntfRef::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, baseName);
+    dumpJsonStrFunc(str, modportName);
+    dumpJsonGen(str);
+}
 bool AstJumpBlock::getPurityRecurse() const {
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (!stmtp->isPure()) return false;
