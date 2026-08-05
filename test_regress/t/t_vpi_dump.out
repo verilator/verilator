@@ -77,14 +77,12 @@ t (vpiModule) t  vpiDefName=t
                 subsig1 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig1 
                 subsig2 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig2 
                 vpiParameter:
-    intf_arr[0] (vpiModule) t.intf_arr[0]  vpiDefName=TestInterface
+    intf_arr[0] (vpiInterface) t.intf_arr[0] 
         vpiReg:
         addr (vpiReg) t.intf_arr[0].addr 
-        vpiParameter:
-    intf_arr[1] (vpiModule) t.intf_arr[1]  vpiDefName=TestInterface
+    intf_arr[1] (vpiInterface) t.intf_arr[1] 
         vpiReg:
         addr (vpiReg) t.intf_arr[1].addr 
-        vpiParameter:
     outer_scope[1] (vpiGenScope) t.outer_scope[1] 
         vpiReg:
         scoped_param (vpiParameter) t.outer_scope[1].scoped_param  vpiConstType=vpiDecConst

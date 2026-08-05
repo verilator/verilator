@@ -686,7 +686,7 @@ class AstCell final : public AstNode {
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
     // @astgen op3 := rangep : List[AstRange] // Range(s) for arrayed instances; multi-dim chains
     // via nextp()
-    // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing
+    // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing/VPI
     //
     // @astgen ptr := m_modp : Optional[AstNodeModule]  // [AfterLink] Pointer to module instanced
     FileLine* m_modNameFileline;  // Where module the cell instances token was
@@ -1317,13 +1317,21 @@ public:
 };
 class AstIntfRef final : public AstNode {
     // An interface reference
-    string m_name;  // Name of the reference
+    string m_name;  // Hierarchical path of the reference
+    string m_baseName;  // Final component of m_name, i.e. the reference port name
+    string m_modportName;  // "" = no modport, else name of the modport referenced
 public:
-    AstIntfRef(FileLine* fl, const string& name)
+    AstIntfRef(FileLine* fl, const string& name, const string& baseName, const string& modportName)
         : ASTGEN_SUPER_IntfRef(fl)
-        , m_name{name} {}
-    string name() const override VL_MT_STABLE { return m_name; }
+        , m_name{name}
+        , m_baseName{baseName}
+        , m_modportName{modportName} {}
     ASTGEN_MEMBERS_AstIntfRef;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
+    string name() const override VL_MT_STABLE { return m_name; }
+    string baseName() const { return m_baseName; }
+    string modportName() const { return m_modportName; }
 };
 class AstLibrary final : public AstNode {
     // Parents: NETLIST

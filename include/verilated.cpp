@@ -3743,11 +3743,17 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
 // VerilatedContext:: Methods - scopes
 
 void VerilatedContext::scopesDump() const VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_impdatap->m_nameMutex};
-    VL_PRINTF_MT("  scopesDump:\n");
-    for (const auto& i : m_impdatap->m_nameMap) {
-        const VerilatedScope* const scopep = i.second;
-        scopep->scopeDump();
+    {
+        const VerilatedLockGuard lock{m_impdatap->m_nameMutex};
+        VL_PRINTF_MT("  scopesDump:\n");
+        for (const auto& i : m_impdatap->m_nameMap) {
+            const VerilatedScope* const scopep = i.second;
+            scopep->scopeDump();
+        }
+    }
+    {
+        const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
+        for (const auto& i : m_impdatap->m_ifaceRefMap) i.second.ifaceRefDump();
     }
     VL_PRINTF_MT("\n");
 }
@@ -3775,6 +3781,31 @@ const VerilatedScope* VerilatedContext::scopeFind(const char* namep) const VL_MT
 }
 const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
     return &(impp()->m_impdatap->m_nameMap);
+}
+
+void VerilatedContextImp::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE {
+    // Slow ok - called once/interface-reference at construction
+    const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
+    m_impdatap->m_ifaceRefMap.emplace(ifaceRef.fullname(), ifaceRef);
+}
+void VerilatedContextImp::ifaceRefErase(const std::string& fullname,
+                                        const VerilatedScope* scopep) VL_MT_SAFE {
+    // Slow ok - called once/interface-reference at destruction
+    const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
+    const auto it = m_impdatap->m_ifaceRefMap.find(fullname);
+    // Models sharing an instance name collide on the key; only erase our own,
+    // so tearing one down leaves another's live reference registered
+    if (it != m_impdatap->m_ifaceRefMap.end() && it->second.scopep() == scopep) {
+        m_impdatap->m_ifaceRefMap.erase(it);
+    }
+}
+const VerilatedIfaceRef*
+VerilatedContext::ifaceRefFind(const char* namep) const VL_MT_SAFE_POSTINIT {
+    // Thread safe only assuming this is called only after model construction completed
+    const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
+    const auto& it = m_impdatap->m_ifaceRefMap.find(namep);
+    if (VL_UNLIKELY(it == m_impdatap->m_ifaceRefMap.end())) return nullptr;
+    return &it->second;
 }
 
 //======================================================================
@@ -4310,6 +4341,41 @@ void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, siz
     }
 }
 
+// Prefix with the model instance name, as VerilatedScope's constructor does
+static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* suffixp) {
+    const char* const prefixp = symsp->name();
+    std::string out{prefixp};
+    if (*prefixp && *suffixp) out += '.';
+    out += suffixp;
+    return out;
+}
+
+void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
+                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+    // Use the model's own context; at destruction threadContextp() may be another's
+    VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
+    uint8_t* const base = reinterpret_cast<uint8_t*>(symsp);
+    for (size_t i = 0; i < n; ++i) {
+        const VlIfaceRefTableEntry& e = entp[i];
+        const VerilatedScope* const scopep
+            = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
+        impp->ifaceRefInsert(
+            VerilatedIfaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp), e.modportp});
+    }
+}
+
+void VerilatedScope::ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
+                                             const VerilatedSyms* symsp) VL_MT_UNSAFE {
+    VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
+    uint8_t* const base = reinterpret_cast<uint8_t*>(const_cast<VerilatedSyms*>(symsp));
+    for (size_t i = 0; i < n; ++i) {
+        const VlIfaceRefTableEntry& e = entp[i];
+        const VerilatedScope* const scopep
+            = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
+        impp->ifaceRefErase(vl_ifaceRefFullname(symsp, e.suffixp), scopep);
+    }
+}
+
 VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, bool isParam,
                                              VerilatedVarType vltype, int vlflags, int udims,
                                              uint32_t entSize...) VL_MT_UNSAFE {
@@ -4453,6 +4519,12 @@ void VerilatedScope::scopeDump() const {
     if (const VerilatedVarNameMap* const ivarsp = this->varsp()) {
         for (const auto& i : *ivarsp) VL_PRINTF_MT("       VAR %p: %s\n", &(i.second), i.first);
     }
+}
+
+void VerilatedIfaceRef::ifaceRefDump() const VL_MT_SAFE_POSTINIT {
+    VL_PRINTF_MT("    IFACEREF %p: %s -> %s", this, fullname(), scopep()->name());
+    if (hasModport()) VL_PRINTF_MT(".%s", modport());
+    VL_PRINTF_MT("\n");
 }
 
 void VerilatedHierarchy::add(const VerilatedScope* fromp, const VerilatedScope* top) {
