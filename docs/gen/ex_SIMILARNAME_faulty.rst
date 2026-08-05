@@ -2,5 +2,5 @@
 .. code-block:: sv
    :linenos:
 
-
      reg i;
+     wire I;
