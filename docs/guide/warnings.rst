@@ -2117,15 +2117,15 @@ List Of Warnings
 
 .. option:: SIMILARNAME
 
-   Warning that two or more  variable names differ only in their lexical case.
+   Warns that a variable name only differs from another in lexical case.
 
    Faulty example:
 
-   .. code-block:: sv
-      :linenos:
+   .. include:: ../../docs/gen/ex_SIMILARNAME_faulty.rst
 
-      reg Abcd;
-      wire abcd;
+   Results in:
+
+   .. include:: ../../docs/gen/ex_SIMILARNAME_msg.rst
 
    Disabled by default as this is a code-style warning; it will simulate
    correctly.
