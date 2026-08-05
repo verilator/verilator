@@ -2146,6 +2146,7 @@ class AstVar final : public AstNode {
     bool m_sigModPublic : 1;  // User C code accesses this signal and module
     bool m_sigUserRdPublic : 1;  // User C code accesses this signal, read only
     bool m_sigUserRWPublic : 1;  // User C code accesses this signal, read-write
+    bool m_mayBecomePublic : 1;  // Pre-V3Begin: candidate for hier-var-driven public flag
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_funcLocal : 1;  // Local variable for a function
@@ -2212,6 +2213,7 @@ class AstVar final : public AstNode {
         m_sigModPublic = false;
         m_sigUserRdPublic = false;
         m_sigUserRWPublic = false;
+        m_mayBecomePublic = false;
         m_funcLocal = false;
         m_funcLocalSticky = false;
         m_funcReturn = false;
@@ -2388,6 +2390,8 @@ public:
         m_sigUserRWPublic = flag;
         if (flag) sigUserRdPublic(true);
     }
+    bool mayBecomePublic() const { return m_mayBecomePublic; }
+    void mayBecomePublic(bool flag) { m_mayBecomePublic = flag; }
     void sc(bool flag) { m_sc = flag; }
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
@@ -2517,6 +2521,7 @@ public:
     bool isScBigUint() const VL_MT_STABLE;
     bool isScSensitive() const { return m_scSensitive; }
     bool isSigPublic() const;
+    bool isOrMaySigPublic() const { return isSigPublic() || m_mayBecomePublic; }
     bool isSigModPublic() const { return m_sigModPublic && !isIfaceRef(); }
     bool isSigUserRdPublic() const { return m_sigUserRdPublic && !isIfaceRef(); }
     bool isSigUserRWPublic() const { return m_sigUserRWPublic && !isIfaceRef(); }

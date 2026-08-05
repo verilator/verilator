@@ -1,0 +1,8 @@
+  scopesDump:
+    SCOPE 0x#: top
+    SCOPE 0x#: top.i_sub
+       VAR 0x#: SUB_LOCALPARAM
+       VAR 0x#: SUB_PARAM
+       VAR 0x#: by_vlt
+
+*-* All Finished *-*
