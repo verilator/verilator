@@ -598,8 +598,7 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueE
         if (!m_checkOnly) emitRandcExclusions(os);
 
         relaxSoftConstraints(os);
-        os << "(check-sat)\n";
-        const bool sat = parseSolution(os);
+        const bool sat = checkSatWithPicks(rngr, os, /*readModel=*/true);
 
         if (!sat) {
             os << "(reset)\n";
@@ -702,16 +701,116 @@ void VlRandomizer::relaxSoftConstraints(std::iostream& os) {
     const size_t nSoft = m_softConstraints.size();
     if (nSoft == 0) return;
     os << "(push 1)\n";
-    for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
+    for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s.m_expr << "))\n";
     os << "(check-sat)\n";
     if (checkSat(os)) return;
     os << "(pop 1)\n";
     for (auto it = m_softConstraints.rbegin(); it != m_softConstraints.rend(); ++it) {
         os << "(push 1)\n";
-        os << "(assert (= #b1 " << *it << "))\n";
+        os << "(assert (= #b1 " << it->m_expr << "))\n";
         os << "(check-sat)\n";
         if (!checkSat(os)) os << "(pop 1)\n";
     }
+}
+
+// Final check-sat, with the dist weight picks applied.
+//
+// A pick is a preference, never a constraint: relaxSoftConstraints() has already
+// asserted the soft constraints that survived, so a pick that conflicts with those
+// or with the hard constraints must give way rather than fail the solve, and can
+// never displace a soft.
+//
+// Giving way means re-drawing, not dropping.  A dist whose drawn bucket another
+// constraint excludes has to fall back on its remaining buckets in their declared
+// proportion; dropping the preference outright would leave the value to the
+// diversity heuristic and lose the weights.  So a conflicting group excludes the
+// bucket named by (get-unsat-assumptions), draws again over what is left, and
+// retries.  Only a group that runs out of buckets stops constraining anything.
+//
+// Re-drawing needs the picks as assumption literals so the solver can name them,
+// but only when one actually conflicts; the common path asserts them outright,
+// which matches the query count and shape of a solve with no picks at all.
+bool VlRandomizer::checkSatWithPicks(VlRNG& rngr, std::iostream& os, bool readModel) {
+    const auto check = [&]() { return readModel ? parseSolution(os) : checkSat(os); };
+    // Check-only validates the current values; a preference has no meaning there.
+    const size_t nGroups = m_checkOnly ? 0 : m_distPicks.size();
+    if (nGroups == 0) {
+        os << "(check-sat)\n";
+        return check();
+    }
+    for (auto& group : m_distPicks) group.draw();
+
+    // Fast path: assert the drawn buckets outright.  They are compatible in all
+    // but the rare conflicting case, and a plain assertion lets the solver
+    // simplify with them, which an assumption literal does not.
+    os << "(push 1)\n";
+    for (const auto& group : m_distPicks) {
+        if (group.m_live) os << "(assert (= #b1 " << group.chosenExpr() << "))\n";
+    }
+    os << "(check-sat)\n";
+    if (check()) return true;
+    os << "(pop 1)\n";
+
+    // At least one group conflicts.  Re-declare its literal each round, since the
+    // bucket it stands for changes as the group re-draws.
+    // Each round rules out exactly one bucket, so the total number of buckets
+    // bounds the loop.  Anything less could give up while a feasible bucket was
+    // still to be tried, and a preference must never be what fails a solve.
+    size_t budget = 0;
+    for (const auto& group : m_distPicks) budget += group.m_buckets.size();
+    int lit = 0;
+    for (size_t round = 0; round <= budget; ++round) {
+        const int base = lit;
+        std::vector<int> litOf(nGroups, -1);
+        for (size_t g = 0; g < nGroups; ++g) {
+            if (!m_distPicks[g].m_live) continue;
+            litOf[g] = lit++;
+            os << "(declare-fun p" << litOf[g] << " () Bool)\n";
+            os << "(assert (= p" << litOf[g] << " (= #b1 " << m_distPicks[g].chosenExpr()
+               << ")))\n";
+        }
+        os << "(check-sat-assuming (";
+        for (size_t g = 0; g < nGroups; ++g) {
+            if (litOf[g] >= 0) os << " p" << litOf[g];
+        }
+        os << "))\n";
+        if (check()) {
+            // Assert the survivors so the diversity rounds, which assume their
+            // own "a<N>" literals afterwards, cannot undo the drawn distribution.
+            for (size_t g = 0; g < nGroups; ++g) {
+                if (litOf[g] >= 0) os << "(assert p" << litOf[g] << ")\n";
+            }
+            return true;
+        }
+        // Only "p<N>" literals are assumed at this point, so every index named
+        // belongs to a group -- but literals from earlier rounds are no longer
+        // assumed, so ignore anything below this round's base.  An empty core
+        // means the hard constraints are unsatisfiable on their own and no
+        // amount of re-drawing helps.
+        const std::vector<int> core = readUnsatAssumptions(os);
+        std::vector<size_t> blamed;
+        for (const int idx : core) {
+            if (idx < base || idx >= lit) continue;
+            for (size_t g = 0; g < nGroups; ++g) {
+                if (litOf[g] == idx) blamed.push_back(g);
+            }
+        }
+        if (blamed.empty()) return false;
+        // When several groups are jointly to blame -- two dists pulled apart by a
+        // constraint between them, say -- which of them gives way decides the
+        // outcome, so choose at random rather than letting the order the solver
+        // happens to report the core in settle it.
+        const size_t pick = blamed.size() == 1 ? blamed[0] : blamed[VL_RANDOM_Q() % blamed.size()];
+        VlDistGroup& group = m_distPicks[pick];
+        group.m_excluded[group.m_chosen] = true;
+        group.draw();  // Clears m_live when nothing is left
+    }
+    // Out of budget with conflicts left.  Give up on the preferences rather than
+    // on the solve: the hard constraints may well still be satisfiable, and a
+    // preference must never be what makes randomize() fail.
+    for (auto& group : m_distPicks) group.m_live = false;
+    os << "(check-sat)\n";
+    return check();
 }
 
 // Every complete run of digits in the reply, in order
@@ -904,16 +1003,100 @@ void VlRandomizer::hard(std::string&& constraint, const char* filename, uint32_t
 }
 
 void VlRandomizer::soft(std::string&& constraint, const char* /*filename*/, uint32_t /*linenum*/,
-                        const char* /*source*/) {
-    m_softConstraints.emplace_back(std::move(constraint));
+                        const char* /*source*/, const char* vars) {
+    m_softConstraints.emplace_back(VlSoftConstraint{std::move(constraint), vars});
+}
+
+bool VlDistGroup::draw() {
+    // A single alternative has nothing to choose between.  Returning before
+    // touching the RNG also keeps a preference that was drawn ahead of the solve
+    // from perturbing the random stream every other variable draws from.
+    if (m_buckets.size() == 1) {
+        m_chosen = 0;
+        if (m_excluded[0]) m_live = false;
+        return m_live;
+    }
+    uint64_t total = 0;
+    size_t first = m_buckets.size();
+    for (size_t i = 0; i < m_buckets.size(); ++i) {
+        if (m_excluded[i]) continue;
+        if (first == m_buckets.size()) first = i;
+        total += m_buckets[i].m_weight;
+    }
+    if (first == m_buckets.size()) {
+        m_live = false;  // Every bucket ruled out
+        return false;
+    }
+    if (total == 0) {
+        // Nothing to weigh by; the buckets left are equally preferable
+        m_chosen = first;
+        return true;
+    }
+    // Same source the draw used when it was made in generated code ahead of the
+    // solve, so introducing it here does not shift the per-object stream that the
+    // diversity rounds draw from and change unrelated values.
+    uint64_t point = VL_RANDOM_Q() % total;
+    for (size_t i = 0; i < m_buckets.size(); ++i) {
+        if (m_excluded[i]) continue;
+        if (point < m_buckets[i].m_weight) {
+            m_chosen = i;
+            return true;
+        }
+        point -= m_buckets[i].m_weight;
+    }
+    m_live = false;  // LCOV_EXCL_LINE
+    return false;  // LCOV_EXCL_LINE
+}
+
+void VlRandomizer::dist_pick(std::string&& constraint, const char* vars, bool softOwned,
+                             int bucketIdx, uint64_t weight) {
+    // A single already-drawn alternative is its own group and carries no weight
+    // of its own; give it one so the group has something to draw.
+    if (bucketIdx < 0) weight = 1;
+    VlDistPick pick{std::move(constraint), vars, softOwned, weight};
+    if (bucketIdx > 0 && !m_distPicks.empty()) {
+        // Another bucket of the group opened by index 0
+        m_distPicks.back().m_buckets.emplace_back(std::move(pick));
+        m_distPicks.back().m_excluded.push_back(false);
+        return;
+    }
+    VlDistGroup group;
+    group.m_buckets.emplace_back(std::move(pick));
+    group.m_excluded.push_back(false);
+    m_distPicks.emplace_back(std::move(group));
+}
+
+// Whole-name membership test over a space-separated variable list.  Substring
+// matching is not usable here: every SMT hex literal contains "#x", so a
+// substring test for "x" hits nearly every constraint, and "a" would hit "ab".
+static bool varListHas(const std::string& vars, const std::string& name) {
+    for (size_t pos = 0; pos <= vars.size();) {
+        size_t end = vars.find(' ', pos);
+        if (end == std::string::npos) end = vars.size();
+        if (end != pos && vars.compare(pos, end - pos, name) == 0) return true;
+        pos = end + 1;
+    }
+    return false;
 }
 
 void VlRandomizer::disable_soft(const std::string& varName) {
-    // IEEE 1800-2023 18.5.13: Remove all soft constraints referencing the variable
+    // IEEE 1800-2023 18.5.14.2: discard the already-registered (lower priority)
+    // soft constraints that reference the variable.  Soft constraints declared
+    // after this directive have higher priority and are left alone; they are
+    // registered later so they are simply not in the vector yet.
     m_softConstraints.erase(
         std::remove_if(m_softConstraints.begin(), m_softConstraints.end(),
-                       [&](const std::string& c) { return c.find(varName) != std::string::npos; }),
+                       [&](const VlSoftConstraint& c) { return varListHas(c.m_vars, varName); }),
         m_softConstraints.end());
+    // A 'soft dist' is discarded as a unit: its membership is a soft constraint
+    // (erased above) and its weight picks go with it.  A hard dist's picks stay,
+    // since 'disable soft' only discards soft constraints and dropping them
+    // would silently turn a hard dist into a uniform draw.
+    m_distPicks.erase(std::remove_if(m_distPicks.begin(), m_distPicks.end(),
+                                     [&](const VlDistGroup& g) {
+                                         return g.softOwned() && varListHas(g.vars(), varName);
+                                     }),
+                      m_distPicks.end());
 }
 
 void VlRandomizer::clearConstraints() {
@@ -921,6 +1104,7 @@ void VlRandomizer::clearConstraints() {
     m_constraints_line.clear();
     m_solveBefore.clear();
     m_softConstraints.clear();
+    m_distPicks.clear();
     m_unique_arrays.clear();  // Re-registered by constraint setup
     // Keep m_vars for class member randomization
 }
@@ -928,6 +1112,7 @@ void VlRandomizer::clearConstraints() {
 void VlRandomizer::clearAll() {
     m_constraints.clear();
     m_softConstraints.clear();
+    m_distPicks.clear();
     m_vars.clear();
     m_randcVarNames.clear();
     m_randcUsedValues.clear();
@@ -1015,6 +1200,8 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
         if (!os) return false;
 
         os << "(set-option :produce-models true)\n";
+        // Lets the dist-pick path learn which picks conflict.
+        os << "(set-option :produce-unsat-assumptions true)\n";
         os << "(set-logic " << logicp << ")\n";
         emitDefines(os);
         emitDeclares(os, false);
@@ -1030,12 +1217,10 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
         // Soft constraints participate in every phase, priority-ordered.
         relaxSoftConstraints(os);
 
-        // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
-        os << "(check-sat)\n";
-
         if (isFinalPhase) {
-            // Final phase: use parseSolution to write ALL values to memory
-            const bool sat = parseSolution(os);
+            // Final phase: read the model so ALL values reach memory.
+            // Initial check-sat WITHOUT diversity (sat if the constraints are consistent)
+            const bool sat = checkSatWithPicks(rngr, os, /*readModel=*/true);
             if (!sat) {
                 if (!m_randcVarNames.empty()) m_randcUsedValues.clear();
                 os << "(reset)\n";
@@ -1046,7 +1231,7 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
             solveDiversityXor(rngr, os);
             os << "(reset)\n";
         } else {
-            if (!checkSat(os)) {
+            if (!checkSatWithPicks(rngr, os, /*readModel=*/false)) {
                 os << "(reset)\n";
                 return false;
             }
@@ -1147,5 +1332,18 @@ void VlRandomizer::dump() const {
         VL_PRINTF("Variable (%d): %s\n", var.second->width(), var.second->name().c_str());
     }
     for (const std::string& c : m_constraints) VL_PRINTF("Constraint: %s\n", c.c_str());
+    for (const VlSoftConstraint& c : m_softConstraints) {
+        VL_PRINTF("Soft constraint: %s   [vars: %s]\n", c.m_expr.c_str(), c.m_vars.c_str());
+    }
+    for (const VlDistGroup& g : m_distPicks) {
+        // Bind before taking c_str(): calling it straight off an accessor is the
+        // shape that hides a dangling pointer when the accessor returns by value.
+        const std::string& gvars = g.vars();
+        VL_PRINTF("Dist group%s [vars: %s]:\n", g.softOwned() ? " (soft dist)" : "",
+                  gvars.c_str());
+        for (const VlDistPick& p : g.m_buckets) {
+            VL_PRINTF("  weight %" VL_PRI64 "u: %s\n", p.m_weight, p.m_expr.c_str());
+        }
+    }
 }
 #endif
