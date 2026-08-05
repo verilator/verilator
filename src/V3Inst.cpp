@@ -26,8 +26,15 @@
 #include "V3Inst.h"
 
 #include "V3Const.h"
+#include "V3Width.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+static void markContinuousLhs(AstNode* const nodep) {
+    nodep->foreach([](AstNodeVarRef* refp) {
+        if (refp->access().isWriteOrRW()) refp->varp()->isContinuously(true);
+    });
+}
 
 //######################################################################
 // Inst state, as a visitor of each AstNode
@@ -73,16 +80,17 @@ class InstVisitor final : public VNVisitor {
             } else if (nodep->modVarp()->isWritable()) {
                 AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                          m_cellp->name(), VAccess::READ};
+                markContinuousLhs(exprp);
                 AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
                 m_cellp->addNextHere(new AstAlways{assp});
             } else if (nodep->modVarp()->isNonOutput()) {
                 // Don't bother moving constants now,
                 // we'll be pushing the const down to the cell soon enough.
-                AstAssignW* const assp
-                    = new AstAssignW{exprp->fileline(),
-                                     new AstVarXRef{exprp->fileline(), nodep->modVarp(),
-                                                    m_cellp->name(), VAccess::WRITE},
-                                     exprp};
+                AstVarXRef* const lhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
+                                                        m_cellp->name(), VAccess::WRITE};
+
+                markContinuousLhs(lhsp);
+                AstAssignW* const assp = new AstAssignW{exprp->fileline(), lhsp, exprp};
                 m_cellp->addNextHere(new AstAlways{assp});
                 UINFOTREE(9, assp, "", "_new");
             } else if (nodep->modVarp()->isIfaceRef()
@@ -550,11 +558,7 @@ private:
                         varNewp->origName(varNewp->origName() + portSuffix);
                         varNewp->dtypep(portIrp);
                         m_deModVars.insert(varNewp);
-                        if (!prevp) {
-                            prevp = varNewp;
-                        } else {
-                            prevp->addNextHere(varNewp);
-                        }
+                        prevp = AstNode::addNextNull(prevp, varNewp);
                     }
                     if (!varNewp) {
                         if (debug() >= 9) m_deModVars.dump();  // LCOV_EXCL_LINE
@@ -569,11 +573,7 @@ private:
                     newVarXRefp->varp(newp->modVarp());
                     newp->exprp()->unlinkFrBack()->deleteTree();
                     newp->exprp(newVarXRefp);
-                    if (!prevPinp) {
-                        prevPinp = newp;
-                    } else {
-                        prevPinp->addNextHere(newp);
-                    }
+                    prevPinp = AstNode::addNextNull(prevPinp, newp);
                 }
                 if (prevp) {
                     pinVarp->replaceWith(prevp);
@@ -609,11 +609,7 @@ private:
                     varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(i) + "__KET__");
                     varNewp->dtypep(ifaceRefp);
                     m_deModVars.insert(varNewp);
-                    if (!prevp) {
-                        prevp = varNewp;
-                    } else {
-                        prevp->addNextHere(varNewp);
-                    }
+                    prevp = AstNode::addNextNull(prevp, varNewp);
                 }
                 if (!varNewp) {
                     if (debug() >= 9) m_deModVars.dump();  // LCOV_EXCL_LINE
@@ -651,11 +647,7 @@ private:
                 newVarXRefp->varp(newp->modVarp());
                 newp->exprp()->unlinkFrBack()->deleteTree();
                 newp->exprp(newVarXRefp);
-                if (!prevPinp) {
-                    prevPinp = newp;
-                } else {
-                    prevPinp->addNextHere(newp);
-                }
+                prevPinp = AstNode::addNextNull(prevPinp, newp);
             }
             if (prevp) {
                 pinVarp->replaceWith(prevp);
@@ -902,10 +894,17 @@ public:
                                            << pinexprp->width());
                 rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
                 pinp->exprp(new AstVarRef{newvarp->fileline(), newvarp, VAccess::WRITE});
-                AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
-                assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
+                markContinuousLhs(pinexprp);
+                if (VN_IS(pinexprp, NodeStream)) {
+                    assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
+                    V3Width::streamAssignLowerEdit(assignp);
+                } else {
+                    AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                    assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
+                }
             } else {
                 // V3 width should have range/extended to make the widths correct
+                newvarp->isContinuously(true);
                 assignp = new AstAssignW{pinp->fileline(),
                                          new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE},
                                          pinexprp};

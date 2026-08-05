@@ -385,8 +385,7 @@ class CoverageVisitor final : public VNVisitor {
         VL_RESTORER(m_state);
         VL_RESTORER(m_exprStmtsp);
         VL_RESTORER(m_inToggleOff);
-        // skip properties for expresison coverage
-        if (!VN_IS(nodep, Property)) m_exprStmtsp = nodep;
+        m_exprStmtsp = nodep;
         m_inToggleOff = true;
         createHandle(nodep);
         iterateChildren(nodep);
@@ -744,6 +743,11 @@ class CoverageVisitor final : public VNVisitor {
             nodep->addCoverincsp(
                 newCoverInc(nodep->fileline(), declp, m_beginHier + "_vlCoverageUserTrace"));
         }
+    }
+    void visit(AstPropSpec* nodep) override {
+        VL_RESTORER(m_exprStmtsp);
+        m_exprStmtsp = nullptr;
+        iterateChildren(nodep);
     }
     void visit(AstStop* nodep) override {
         UINFO(4, "  STOP: " << nodep);

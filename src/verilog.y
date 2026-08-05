@@ -2204,11 +2204,13 @@ struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
         ;
 
 struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
-        //                      // UNSUP random_qualifer not propagated until have randomize support
                 random_qualifierE data_type_or_void
-        /*mid*/         { GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
+        /*mid*/         { GRAMMARP->m_memDTypep = $2;  // As a list follows, need to attach this dtype to each member.
+                          GRAMMARP->m_memRand = $1.randAttr(); }
         /*cont*/    list_of_member_decl_assignments ';'
-                        { $$ = $4; DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr; }
+                        { $$ = $4;
+                          DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr;
+                          GRAMMARP->m_memRand = VRandAttr::NONE; }
         |       vlTag                                   { $$ = nullptr; }
         ;
 
@@ -2226,6 +2228,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
                                                                          ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
                                                                         $2, false),
                                                   nullptr};
+                          $$->rand(GRAMMARP->m_memRand);
                           PARSEP->tagNodep($$);
                         }
         |       idAny variable_dimensionListE '=' variable_declExpr
@@ -2234,6 +2237,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
                                                                          ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
                                                                         $2, false),
                                                   $4};
+                          $$->rand(GRAMMARP->m_memRand);
                           PARSEP->tagNodep($$);
                         }
         |       idSVKwd                                 { $$ = nullptr; }
@@ -4018,33 +4022,22 @@ patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
         ;
 
 patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
-        //                      // IEEE: structure_pattern_key
-        //                      // id/*member*/ is part of constExpr below
-        //UNSUP constExpr                               { $$ = $1; }
-        //                      // IEEE: assignment_pattern_key
+        //                      // IEEE: structure_pattern_key: member_identifier | assignment_pattern_key
+        //                      // IEEE: array_pattern_key: constant_expression | assignment_pattern_key
         //                      // Verilator:
-        //                      //   The above expressions cause problems because "foo" may be
-        //                      //   a constant identifier (if array) or a reference to the
-        //                      //   "foo"member (if structure)
-        //                      //   So for now we only allow a true constant number, or an
-        //                      //   identifier which we treat as a structure member name
-                yaINTNUM
-                        { $$ = new AstConst{$<fl>1, *$1}; }
-        |       '-' yaINTNUM
-                        { V3Number neg{*$2}; neg.opNegate(*$2); $$ = new AstConst{$<fl>2, neg}; }
-        |       yaFLOATNUM
-                        { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
-        |       id
-                        { $$ = new AstText{$<fl>1, *$1}; }
-        |       strAsInt
-                        { $$ = $1; }
+        //                      //   A bare "foo" is ambiguous here, as it may be a constant
+        //                      //   identifier (if array) or a reference to the "foo" member
+        //                      //   (if structure).  Both spell the same in expr, so the
+        //                      //   bare-identifier case becomes a Text node and V3LinkDot
+        //                      //   resolves which one it is.
+                expr
+                        { $$ = GRAMMARP->createPatternKey($1); }
+        //                      // IEEE: assignment_pattern_key
         |       simple_typeNoRef
                         { $$ = $1; }
         //                      // expanded from simple_type ps_type_identifier (part of simple_type)
         //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
-        |       packageClassScope id
-                        { $$ = AstDot::newIfPkg($<fl>1, $1,
-                                                new AstParseRef{$<fl>2, *$2, nullptr, nullptr}); }
+        //                      // (simple_type ps_parameter_identifier is part of expr above)
         |       packageClassScopeE idType
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
                           $$ = refp; }
@@ -6874,9 +6867,16 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // [*N] exact count
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ']'
                         { $$ = new AstSConsRep{$<fl>2, $1, $3}; }
-        //                      // [*N:M] range
+        //                      // [*N:M] bounded range or [*N:$] unbounded range
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRASTAR constExpr ':' constExpr ']'
-                        { $$ = new AstSConsRep{$<fl>2, $1, $3, $5, false}; }  // LCOV_EXCL_LINE
+                        {
+                            if (VN_IS($5, Unbounded)) {
+                                DEL($5);
+                                $$ = new AstSConsRep{$<fl>2, $1, $3, nullptr, true};
+                            } else {
+                                $$ = new AstSConsRep{$<fl>2, $1, $3, $5, false};
+                            }
+                        }
         //                      // [+] = [*1:$]
         |       ~p~sexpr/*sexpression_or_dist*/ yP_BRAPLUSKET
                         { $$ = new AstSConsRep{$<fl>2, $1,

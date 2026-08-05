@@ -92,13 +92,17 @@ model.
 Refer to ``examples/make_tracing_c`` in the distribution for a detailed
 commented example.
 
-Top level IO signals are read and written as members of the model. You call
-the model's ``eval()`` method to evaluate the model. When the simulation is
-complete call the model's ``final()`` method to execute any SystemVerilog
-final blocks, and complete any assertions. If using :vlopt:`--timing`,
-there are two additional functions for checking if there are any events
-pending in the simulation due to delays, and for retrieving the simulation
-time of the next delayed event. See :ref:`Evaluation Loop`.
+Top level IO signals are read and written as members of the model. All
+inputs must be sanitized, that is have no bits set above those
+corresponding to the width of the Verilog construct;
+:vlopt:`--runtime-debug` will assert this is correct.
+
+Call the model's ``eval()`` method to evaluate the model. When the
+simulation is complete call the model's ``final()`` method to execute any
+SystemVerilog final blocks, and complete any assertions. If using
+:vlopt:`--timing`, there are two additional functions for checking if there
+are any events pending in the simulation due to delays, and for retrieving
+the simulation time of the next delayed event. See :ref:`Evaluation Loop`.
 
 
 Connecting to SystemC

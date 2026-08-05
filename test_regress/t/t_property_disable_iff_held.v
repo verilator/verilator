@@ -9,47 +9,65 @@
 `define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// IEEE 1800-2023 16.12: a disable iff condition held continuously true must
-// disable every attempt of a multi-cycle property (verilator/verilator#7792).
-// en_held is a plain non-$sampled, non-constant signal held 1, so it exercises
-// the NFA disable-counter path. The held assert/cover must never fire; the
-// `disable iff (1'b0)` controls prove the same assert/cover do fire when enabled.
+// A disable iff held true for the whole attempt window disables it.
 
 module t (
     input clk
 );
+  localparam int N = 5;
+  localparam int PERIOD = 9;
+  localparam int NATT = 40;
+
   int cyc = 0;
   reg [63:0] crc = 64'h5aef0c8d_d70a4497;
-  wire a = crc[0];
-  wire b = crc[4];
 
-  bit en_held = 1'b1;
+  int phase = 0;
+  int idx = 0;
+  wire in_run = (idx < NATT);
+  wire trig = in_run && (phase == 0);
 
-  int n_held_assert = 0;
-  int n_held_cover = 0;
-  int n_ctrl_assert = 0;
-  int n_ctrl_cover = 0;
+  reg hold = 0;
+  reg fail_now = 0;
+  wire value = !(in_run && (phase == N) && fail_now);
+  wire dis = in_run && hold && (phase >= 1);
 
-  // Held-true disable: assert + cover must be fully suppressed.
-  assert property (@(posedge clk) disable iff (en_held) (a ##1 b))
-    else n_held_assert <= n_held_assert + 1;
-  cover property (@(posedge clk) disable iff (en_held) (a ##1 b))
-    n_held_cover <= n_held_cover + 1;
+  int n_held_fire = 0;
+  int n_ctrl_fire = 0;
+  int exp_held_fire = 0;
+  int exp_ctrl_fire = 0;
 
-  // Enabled control (disable iff 1'b0): same assert + cover must fire.
-  assert property (@(posedge clk) disable iff (1'b0) (a ##1 b))
-    else n_ctrl_assert <= n_ctrl_assert + 1;
-  cover property (@(posedge clk) disable iff (1'b0) (a ##1 b))
-    n_ctrl_cover <= n_ctrl_cover + 1;
+  assert property (@(posedge clk) disable iff (dis) trig |-> ##N value)
+  else n_held_fire <= n_held_fire + 1;
+
+  assert property (@(posedge clk) disable iff (1'b0) trig |-> ##N value)
+  else n_ctrl_fire <= n_ctrl_fire + 1;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
-    if (cyc == 99) begin
-      `checkd(n_held_assert, 0);
-      `checkd(n_held_cover, 0);
-      `checkd(n_ctrl_assert, 58);
-      `checkd(n_ctrl_cover, 26);  // Others: 26, One other: 0
+    if (phase == PERIOD - 1) begin
+      phase <= 0;
+      idx <= idx + 1;
+    end
+    else begin
+      phase <= phase + 1;
+    end
+    if (phase == 0) begin
+      hold <= crc[3];
+      fail_now <= crc[7];
+    end
+    if (in_run && phase == N) begin
+      exp_ctrl_fire <= exp_ctrl_fire + (fail_now ? 1 : 0);
+      if (!hold) exp_held_fire <= exp_held_fire + (fail_now ? 1 : 0);
+    end
+    if (idx == NATT && phase == 4) begin
+`ifdef TEST_VERBOSE
+      $write("n_held_fire=%0d exp=%0d n_ctrl_fire=%0d exp_ctrl=%0d\n", n_held_fire, exp_held_fire,
+             n_ctrl_fire, exp_ctrl_fire);
+`endif
+      `checkd(n_held_fire, exp_held_fire);
+      `checkd(n_ctrl_fire, exp_ctrl_fire);
+      if (n_held_fire == 0 || n_held_fire == NATT) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
     end

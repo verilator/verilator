@@ -21,15 +21,17 @@ module t;
   pkt_if pkt_if_init (clk);
   //this will not compile without -fno-life
   initial begin
-  byte byte_pkt[$];
+    byte byte_pkt[$];
+    byte got_pkt;
     //---------------------- STREAM WITH INTERFACE -------------------
     //using this forces verilator to a AstSel Node into a Stream Node
     #0 //make sure we dont optimize it all away in v3life
     pkt_if_init.s.extra = 8'hd;
     byte_pkt = {>>{pkt_if_init.s.extra}};
-    if(8'hd == {>>{byte_pkt}}) begin
-        $write("*-* All Finished *-*\n");
-        $finish();
+    got_pkt = {>>{byte_pkt}};
+    if (8'hd == got_pkt) begin
+      $write("*-* All Finished *-*\n");
+      $finish();
     end
   end
 

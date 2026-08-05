@@ -22,6 +22,7 @@
 
 class AstNetlist;
 class AstNode;
+class AstNodeAssign;
 class AstNodeDType;
 
 //============================================================================
@@ -32,6 +33,7 @@ public:
     static AstNode* widthParamsEdit(AstNode* nodep) VL_MT_DISABLED;
     static AstNode* widthGenerateParamsEdit(AstNode* nodep) VL_MT_DISABLED;
     static AstNode* selectNonConstantRecurse(AstNode* nodep, bool inSel = false) VL_MT_DISABLED;
+    static void streamAssignLowerEdit(AstNodeAssign* nodep) VL_MT_DISABLED;
 
     // For use only in WidthVisitor
     // Replace AstSelBit, etc with AstSel/AstArraySel

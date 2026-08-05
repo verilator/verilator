@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-  import "DPI-C" function string func(input string arg) /*verilator dpi_c_decl*/;
+  import "DPI-C" function string func(input string arg)  /*verilator dpi_c_decl*/;
 
   initial begin
     $write("*-* All Finished *-*\n");

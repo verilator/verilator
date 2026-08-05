@@ -13,4 +13,7 @@ module t (
   // compiler, now an error names the limit so the user can raise it.
   assert property (@(posedge clk) a [* 25700000] |-> b);
 
+  // The mandatory prefix of an unbounded repetition is subject to the same limit.
+  assert property (@(posedge clk) a [* 25700000:$] |-> b);
+
 endmodule

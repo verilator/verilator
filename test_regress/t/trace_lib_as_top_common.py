@@ -17,6 +17,9 @@ def run(test, *, verilator_flags2=()):
     if platform.system() == "Windows":
         test.skip("Skipping on Windows: test depends on Unix-style shared-library loading")
 
+    if test.tsan:
+        test.skip("ThreadSanitizer instrumented library cannot be loaded by python")
+
     # All test use the same SV file
     test.top_filename = "t/t_trace_lib_as_top.v"
     test.pli_filename = os.path.abspath("t/t_trace_lib_as_top.cpp")

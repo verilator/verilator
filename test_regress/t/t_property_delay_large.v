@@ -45,7 +45,8 @@ module t (
   assert property (@(posedge clk) fixed_a |-> ##1024 fixed_b)
   else fixed_fail_q.push_back($sampled(cyc) + 1);
 
-  cover property (@(posedge clk) range_a ##[5:300] range_b) range_pass_q.push_back($sampled(cyc) + 1);
+  cover property (@(posedge clk) range_a ##[5:300] range_b)
+    range_pass_q.push_back($sampled(cyc) + 1);
 
   assert property (@(posedge clk) range_a |-> ##[5:300] range_b)
   else range_fail_q.push_back($sampled(cyc) + 1);

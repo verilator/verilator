@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_constraint_solve_before_assoc_unsup.v:11:11: Unsupported: 'solve ... before' with associative array
+                                                                   : ... note: In instance 't'
+   11 |     solve m before s;
+      |           ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

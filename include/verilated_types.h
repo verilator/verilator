@@ -214,7 +214,7 @@ public:
 };
 static_assert(sizeof(WDataInP) == sizeof(EData*), "WDataInP should be a single pointer");
 
-static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
+inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
 
 template <std::size_t N_Words>
 bool VlWide<N_Words>::operator<(const VlWide<N_Words>& rhs) const VL_PURE {
@@ -932,7 +932,7 @@ public:
     VlQueue min(T_Func with_func) const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::min_element(m_deque.cbegin(), m_deque.cend(),
-                                         [&with_func](const IData& a, const IData& b) {
+                                         [&with_func](const T_Value& a, const T_Value& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
         return VlQueue::consV(*it);
@@ -946,7 +946,7 @@ public:
     VlQueue max(T_Func with_func) const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::max_element(m_deque.cbegin(), m_deque.cend(),
-                                         [&with_func](const IData& a, const IData& b) {
+                                         [&with_func](const T_Value& a, const T_Value& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
         return VlQueue::consV(*it);
@@ -2240,7 +2240,7 @@ public:
 };
 
 template <typename T_Lhs, typename T_Out>
-static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr) {
+inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr) {
     if (!in) {
         outr = VlNull{};
         return true;
@@ -2254,7 +2254,7 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr
 }
 
 template <typename T_Lhs>
-static inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
+inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
 }

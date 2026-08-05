@@ -1,0 +1,47 @@
+%Error: t/t_display_stream_bad.v:19:15: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   19 |     result = {<<{value}} + 1;
+      |               ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_display_stream_bad.v:20:23: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   20 |     result = value + {<<{value}};
+      |                       ^~
+%Error: t/t_display_stream_bad.v:21:26: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   21 |     result = value[0] ? {<<{value}} : other;
+      |                          ^~
+%Error: t/t_display_stream_bad.v:22:16: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   22 |     result = {{<<{value}}};
+      |                ^~
+%Error: t/t_display_stream_bad.v:23:14: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   23 |     flag = ({<<{value}} == other);
+      |              ^~
+%Error: t/t_display_stream_bad.v:24:15: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   24 |     $display({<<{value}});
+      |               ^~
+%Error: t/t_display_stream_bad.v:25:22: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   25 |     $display("%0d", {<<{value}});
+      |                      ^~
+%Error: t/t_display_stream_bad.v:26:29: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   26 |     void'($sformatf("%0d", {<<{value}}));
+      |                             ^~
+%Error: t/t_display_stream_bad.v:27:27: Streaming concatenation cannot be used in an implicitly cast context (IEEE 1800-2023 11.4.17)
+                                      : ... note: In instance 't'
+                                      : ... Suggest use a cast
+   27 |     result = passthrough({<<{value}} + 1);
+      |                           ^~
+%Error: Exiting due to

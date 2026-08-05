@@ -830,9 +830,10 @@ public:
     static string getSupported(const string& var);
     static bool systemCSystemWide();
     static bool systemCFound();  // SystemC installed, or environment points to it
-    static bool coroutineSupport();  // Compiler supports coroutines
-    static bool devAsan();  // Compiler built with AddressSanitizer
-    static bool devGcov();  // Compiler built with code coverage for gcov
+    static bool coroutineSupport();  // Configured C++ compiler supports coroutines
+    static bool devAsan();  // 'verilator_bin' built with AddressSanitizer
+    static bool devGcov();  // 'verilator_bin' built with code coverage for gcov
+    static bool tsanSupport();  // Configured C++ compiler supports ThreadSanitizer
 
     // METHODS (file utilities using these options)
     string fileExists(const string& filename);

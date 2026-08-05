@@ -16,6 +16,7 @@
 // V3AssertNfa's Transformations:
 //
 //  - Convert multi-cycle SVA sequences/properties into NFA graphs.
+//  - Attach inherited assertion clocks before moving sampled-value functions.
 //  - Emit module-level state registers driven by AstAlways blocks.
 //  - Replace converted assertions with combinational match/reject checks
 //    so V3AssertPre sees no multi-cycle SExpr (unsupported ones fall through).
@@ -782,12 +783,11 @@ class SvaNfaBuilder final {
                 guardedEdge(currentp, nextp, flp);
                 currentp = nextp;
             }
-            // Mark first and last boolean Links as rejectOnFail for correct
-            // reject on standalone ConsRep.
+            // Every repetition in the minimum prefix is required.
             SvaStateVertex* const condVtxp = scopedCreateVertex();
             SvaTransEdge* const linkp
                 = guardedLink(currentp, condVtxp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
-            if (isTopLevelStep && (i == 0 || i == minN - 1)) { linkp->m_rejectOnFail = true; }
+            if (isTopLevelStep) linkp->m_rejectOnFail = true;
             currentp = condVtxp;
         }
         // After minN: currentp is the first valid end-of-match position for [*m:n].
@@ -1718,7 +1718,7 @@ class SvaNfaLowering final {
                 AstNodeExpr* srcSigp = c.vtx[fromIdx]->datap()->stateSigp->cloneTreePure(false);
                 srcSigp = andCond(c.flp, srcSigp, te.m_condp);
 
-                if (c.disableExprp && !c.snapshotVarp) {
+                if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
                     srcSigp = new AstLogAnd{c.flp, srcSigp, notDisp};
@@ -1770,7 +1770,7 @@ class SvaNfaLowering final {
                             "Delay-ring incoming source missing stateSig");
                 AstNodeExpr* contribp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
                 contribp = andCond(c.flp, contribp, tep->m_condp);
-                if (c.disableExprp && !c.snapshotVarp) {
+                if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
                     contribp = new AstLogAnd{c.flp, contribp, notDisp};
@@ -1805,7 +1805,7 @@ class SvaNfaLowering final {
             if (vtxp->m_delayRingClearCondp) {
                 clearCondp = sampled(vtxp->m_delayRingClearCondp->cloneTreePure(false));
             }
-            if (c.disableExprp && !c.snapshotVarp) {
+            if (c.disableExprp) {
                 clearCondp = orExprs(c.flp, clearCondp, c.disableExprp->cloneTreePure(false));
             }
             AstNodeExpr* guardp = nullptr;
@@ -2411,10 +2411,19 @@ class AssertNfaVisitor final : public VNVisitor {
     AstClocking* m_defaultClockingp = nullptr;  // Default clocking
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
+    AstSenTree* m_sampledValueClockp = nullptr;  // Inherited clock during scoped attachment
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
+
+    template <typename T_Node>
+    void visitSampledValue(T_Node* const nodep) {
+        if (m_sampledValueClockp && !nodep->sentreep()) {
+            nodep->sentreep(m_sampledValueClockp->cloneTree(true));
+        }
+        iterateChildren(nodep);
+    }
 
     // Wire match vertex and mid-window sources for a successful NFA build.
     static void wireMatchAndMidSources(SvaGraph& graph, const BuildResult& result, FileLine* flp) {
@@ -2972,6 +2981,15 @@ class AssertNfaVisitor final : public VNVisitor {
         AstNodeExpr* disableExprp = propSpecp->disablep();
         if (!senTreep) return;
 
+        // NFA lowering clones repeated operands and may hoist them into an
+        // always_comb block. Resolve implicit sampled-value clocks first, while
+        // the enclosing assertion clock is still available.
+        {
+            VL_RESTORER(m_sampledValueClockp);
+            m_sampledValueClockp = senTreep;
+            iterate(propSpecp->propp());
+        }
+
         FileLine* const flp = assertp->fileline();
 
         SvaGraph graph;
@@ -3107,6 +3125,10 @@ class AssertNfaVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstDefaultDisable* nodep) override {}
+    void visit(AstFell* nodep) override { visitSampledValue(nodep); }
+    void visit(AstPast* nodep) override { visitSampledValue(nodep); }
+    void visit(AstRose* nodep) override { visitSampledValue(nodep); }
+    void visit(AstStable* nodep) override { visitSampledValue(nodep); }
     void visit(AstAssert* nodep) override { processAssertion(nodep); }
     void visit(AstCover* nodep) override { processAssertion(nodep); }
     void visit(AstRestrict* nodep) override {

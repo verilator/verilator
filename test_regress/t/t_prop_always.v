@@ -88,7 +88,7 @@ module t (
       `checkd(rand_bounded_pass_q.size(), 0);
       `checkd(rand_bounded_fail_q.size(), 20);  // Other sims: 19, 11
       `checkd(disable_bounded_pass_q.size(), 0);
-      `checkd(disable_bounded_fail_q.size(), 13);  // Other sims: 5, 6
+      `checkd(disable_bounded_fail_q.size(), 8);  // Other sims: 5, 6
       $write("*-* All Finished *-*\n");
       $finish;
     end

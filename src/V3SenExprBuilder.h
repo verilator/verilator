@@ -290,7 +290,18 @@ private:
             AstCMethodHard* const callp
                 = new AstCMethodHard{flp, currp(), VCMethod::EVENT_IS_FIRED};
             callp->dtypeSetBit();
-            return {wrapExprWithNullCheck(flp, callp, baseClassRefp), false};
+            AstNodeExpr* const firedp = wrapExprWithNullCheck(flp, callp, baseClassRefp);
+            if (const AstVarRef* const refp = VN_CAST(senp, VarRef)) {
+                // The private NBA event must run so pending assignments finish settling.
+                if (refp->varScopep() == v3Global.rootp()->nbaEventp()) return {firedp, false};
+            }
+            // Do not trigger user named-event processes after $finish.
+            AstNodeExpr* const notFinishp
+                = new AstCExpr{flp,
+                               "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish() && "
+                               "!vlSymsp->_vm_contextp__->finishPending())",
+                               1};
+            return {new AstLogAnd{flp, notFinishp, firedp}, false};
         }
         case VEdgeType::ET_TRUE:  //
             return {currp(), false};

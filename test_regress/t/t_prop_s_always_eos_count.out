@@ -1,0 +1,9 @@
+*-* All Finished *-*
+[115] %Error: t_prop_s_always_eos_count.v:33: Assertion failed in top.t
+[115] %Error: t_prop_s_always_eos_count.v:40: Assertion failed in top.t
+[115] %Error: t_prop_s_always_eos_count.v:44: Assertion failed in top.t
+[115] %Error: t_prop_s_always_eos_count.v:48: Assertion failed in top.t
+[115] %Error: t_prop_s_always_eos_count.v:56: Assertion failed in top.t
+[115] %Error: t_prop_s_always_eos_count.v:62: Assertion failed in top.t
+[115] %Error: t_prop_s_always_eos_count.v:70: Assertion failed in top.t
+[115] %Error: t_prop_s_always_eos_count.v:73: Assertion failed in top.t

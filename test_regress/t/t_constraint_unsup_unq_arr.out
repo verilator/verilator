@@ -1,23 +1,31 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:19:5: Unsupported: Unique constraint on static arrays of size > 100
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:20:5: Unsupported: Unique constraint on static arrays of size > 100
                                                            : ... note: In instance 't'
-   19 |     unique {uniq_val_arr_400};   
+   20 |     unique {uniq_val_arr_400};
       |     ^~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:22:5: Unsupported: Unique constraint on other than static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:21:5: Unsupported: Unique constraint on multidimensional arrays
                                                            : ... note: In instance 't'
-   22 |     unique {uniq_val_darr};   
+   21 |     unique {uniq_val_arr_multidim_arr};
       |     ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:23:5: Unsupported: Unique constraint on other than static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:22:5: Unsupported: Unique constraint on multidimensional arrays
                                                            : ... note: In instance 't'
-   23 |     unique {uniq_val_hash};   
+   22 |     unique {uniq_val_arr_multidim_dynarr};
       |     ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:24:5: Unsupported: Unique constraint on other than static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:23:5: Unsupported: Unique constraint on multidimensional arrays
                                                            : ... note: In instance 't'
-   24 |     unique {uniq_val_queue};   
+   23 |     unique {uniq_val_arr_multidim_queue};
       |     ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:25:5: Unsupported: Unique constraint on other than static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:24:5: Unsupported: Unique constraint on multidimensional arrays
                                                            : ... note: In instance 't'
-   25 |     unique {uniq_val_arr_mda};   
+   24 |     unique {uniq_val_arr_multidim_assoc};
+      |     ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:25:5: Unsupported: Unique constraint on multidimensional arrays
+                                                           : ... note: In instance 't'
+   25 |     unique {uniq_val_arr_multidim_wild};
+      |     ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:26:5: Unsupported: Unique constraint on WILDCARDARRAYDTYPE
+                                                           : ... note: In instance 't'
+   26 |     unique {uniq_val_wild};
       |     ^~~~~~
 %Error: Exiting due to

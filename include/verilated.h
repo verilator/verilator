@@ -160,6 +160,21 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_NET = (1 << 15)  // Net object
 };
 
+// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
+// replaces per-variable varInsert() calls, which compiles faster at scale.
+struct VlVarTableEntry final {
+    static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
+    const char* namep;  // VPI-facing (protected) variable name, string literal
+    uint32_t byteOffset;  // offsetof of storage member from module instance base
+    VerilatedVarType vltype;
+    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
+    uint8_t udims;  // udims + pdims <= kMaxDims
+    uint8_t pdims;
+    // (left,right) pairs: unpacked dims first, then packed; int32_t since large
+    // unpacked memories exceed int16 range
+    int32_t dims[kMaxDims * 2];
+};
+
 // IEEE 1800-2023 Table 20-6
 enum class VerilatedAssertType : uint8_t {
     ASSERT_TYPE_CONCURRENT = (1 << 0),
@@ -372,6 +387,8 @@ private:
     static uint32_t assertOnMask(VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_PURE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
+    // No termination request has stamped m_finishPendingTime yet
+    static constexpr uint64_t TIME_UNSET = ~0ULL;
 
 protected:
     // TYPES
@@ -430,6 +447,10 @@ protected:
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        // A worker queues $finish before the main thread callback can set m_gotFinish.
+        std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
+        std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
+        int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
@@ -669,6 +690,27 @@ public:
 
     // METHODS - public but for internal use only
 
+    // Internal: Track $finish/$stop callbacks queued by worker threads
+    bool finishPending() const VL_MT_SAFE { return m_ns.m_finishPending.load() != 0; }
+    void finishPendingInc() VL_MT_SAFE {
+        ++m_ns.m_finishPending;
+        uint64_t unset = TIME_UNSET;
+        m_ns.m_finishPendingTime.compare_exchange_strong(unset, time());
+    }
+    void finishPendingDec() VL_MT_SAFE {
+        const uint32_t previous = m_ns.m_finishPending.fetch_sub(1);
+        assert(previous > 0);
+        if (previous == 1 && !gotFinish()) m_ns.m_finishPendingTime = TIME_UNSET;
+    }
+    // Internal: Time of the first termination request, else the current time
+    uint64_t finishPendingTime() const VL_MT_SAFE {
+        const uint64_t stamped = m_ns.m_finishPendingTime.load();
+        return stamped == TIME_UNSET ? time() : stamped;
+    }
+    // Internal: Reserve a posted $stop, returning true if it reaches the termination limit
+    bool stopRequestReserve(bool maybe) VL_MT_SAFE;
+    void stopRequestRelease() VL_MT_SAFE;
+
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
     const VerilatedContextImp* impp() const VL_MT_SAFE {
@@ -756,6 +798,8 @@ public:  // But for internal use only
 // Verilator scope information class
 // Used for internal VPI implementation, and introspection into scopes
 
+struct VlScopeTableEntry;  // Defined below VerilatedScope; used by scopesConstructFromTable()
+
 class VerilatedScope final {
 public:
     enum Type : uint8_t {
@@ -792,6 +836,9 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
+    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
+                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -805,6 +852,17 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
     static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE;
     Type type() const { return m_type; }
+};
+
+// One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
+// per-scope 'new VerilatedScope{...}' statements, which compiles faster at scale.
+struct VlScopeTableEntry final {
+    uint32_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
+    const char* namep;  // Scope suffix name (protected), string literal
+    const char* identp;  // Identifier with escapes removed (protected)
+    const char* defnamep;  // Definition name (SCOPE_MODULE only), else "<null>"
+    int8_t timeunit;  // Timeunit in negative power-of-10
+    VerilatedScope::Type type;
 };
 
 class VerilatedHierarchy final {

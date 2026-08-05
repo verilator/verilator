@@ -450,6 +450,10 @@ public:
     void dumpDotFilePrefixedAlways(const string& nameComment,
                                    bool colorAsSubgraph = false) const VL_MT_DISABLED;
     void dumpEdges(std::ostream& os, const V3GraphVertex& vertex) const VL_MT_DISABLED;
+    // Print a hash of the shape of graphp. When debugging nondeterminism, this can help
+    // pinpoint where it's coming from.
+    void hashGraphDebug(const char* debugName) const VL_MT_DISABLED;
+
     static void selfTest() VL_MT_DISABLED;
 
     class ParallelismReport final {

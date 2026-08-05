@@ -1285,6 +1285,7 @@ class LinkParseVisitor final : public VNVisitor {
         const string libname = m_modp->libname();
         AstClass* const cgClassp = new AstClass{nodep->fileline(), nodep->name(), libname};
         cgClassp->isCovergroup(true);
+        cgClassp->covergroupEnclosingClassp(VN_CAST(m_modp, Class));
         v3Global.useCovergroup(true);
 
         // Clocking event: unlink before deleteTree, attach as AstCovergroup child on class

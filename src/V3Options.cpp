@@ -887,6 +887,8 @@ string V3Options::getSupported(const string& var) {
     // If update below, also update V3Options::showVersion()
     if (var == "COROUTINES" && coroutineSupport()) {
         return "1";
+    } else if (var == "TSAN" && tsanSupport()) {
+        return "1";
     } else if (var == "DEV_ASAN" && devAsan()) {
         return "1";
     } else if (var == "DEV_GCOV" && devGcov()) {
@@ -930,6 +932,14 @@ bool V3Options::devAsan() {
 
 bool V3Options::devGcov() {
 #ifdef HAVE_DEV_GCOV
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool V3Options::tsanSupport() {
+#ifdef HAVE_TSAN
     return true;
 #else
     return false;
@@ -2285,6 +2295,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "Supported features (compiled-in or forced by environment):\n";
     cout << "    COROUTINES         = " << getSupported("COROUTINES") << "\n";
     cout << "    SYSTEMC            = " << getSupported("SYSTEMC") << "\n";
+    cout << "    TSAN               = " << getSupported("TSAN") << "\n";
 }
 
 //======================================================================
