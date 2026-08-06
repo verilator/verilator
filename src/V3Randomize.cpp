@@ -776,6 +776,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
+    AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
+                                          // (nullptr == always defined)
 
     // Routes nested sub-objects with static rand vars when the outer class has none.
     AstVar* findStaticRandModeVarMember(AstClass* classp) const {
@@ -1002,6 +1004,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(getConstFormat(nodep));
         return true;
     }
+    AstNodeExpr* wrapWithCond(AstNodeExpr* const exprp, AstNodeExpr* const condp,
+                              const int width) {
+        if (condp) {
+            FileLine* const flp = exprp->fileline();
+            return new AstCond{
+                flp, condp, exprp,
+                getConstFormat(new AstConst{flp, AstConst::WidthedValue{}, width, 0})};
+        }
+        return exprp;
+    }
     AstSFormatF* editSMT(AstNodeExpr* nodep, AstNodeExpr* lhsp = nullptr,
                          AstNodeExpr* rhsp = nullptr, AstNodeExpr* thsp = nullptr) {
         // Replace incomputable (result-dependent) expression with SMT expression
@@ -1011,15 +1023,34 @@ class ConstraintExprVisitor final : public VNVisitor {
             return nullptr;
         }
 
-        if (lhsp)
+        const int lhsWidth = lhsp ? lhsp->width() : 0;
+        const int rhsWidth = rhsp ? rhsp->width() : 0;
+        const int thsWidth = thsp ? thsp->width() : 0;
+        AstNodeExpr* lhsCondp = nullptr;
+        AstNodeExpr* rhsCondp = nullptr;
+        AstNodeExpr* thsCondp = nullptr;
+
+        if (lhsp) {
+            VL_RESTORER(m_conditionp);
+            m_conditionp = nullptr;
             lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp->backp() ? lhsp->unlinkFrBack() : lhsp),
                          NodeExpr);
-        if (rhsp)
+            lhsCondp = m_conditionp;
+        }
+        if (rhsp) {
+            VL_RESTORER(m_conditionp);
+            m_conditionp = nullptr;
             rhsp = VN_AS(iterateSubtreeReturnEdits(rhsp->backp() ? rhsp->unlinkFrBack() : rhsp),
                          NodeExpr);
-        if (thsp)
+            rhsCondp = m_conditionp;
+        }
+        if (thsp) {
+            VL_RESTORER(m_conditionp);
+            m_conditionp = nullptr;
             thsp = VN_AS(iterateSubtreeReturnEdits(thsp->backp() ? thsp->unlinkFrBack() : thsp),
                          NodeExpr);
+            thsCondp = m_conditionp;
+        }
 
         AstNodeExpr* argsp = nullptr;
         for (string::iterator pos = smtExpr.begin(); pos != smtExpr.end(); ++pos) {
@@ -1030,19 +1061,19 @@ class ConstraintExprVisitor final : public VNVisitor {
                 case 'l':
                     pos[0] = 's';
                     UASSERT_OBJ(lhsp, nodep, "emitSMT() references undef node");
-                    argsp = AstNode::addNext(argsp, lhsp);
+                    argsp = AstNode::addNext(argsp, wrapWithCond(lhsp, lhsCondp, lhsWidth));
                     lhsp = nullptr;
                     break;
                 case 'r':
                     pos[0] = 's';
                     UASSERT_OBJ(rhsp, nodep, "emitSMT() references undef node");
-                    argsp = AstNode::addNext(argsp, rhsp);
+                    argsp = AstNode::addNext(argsp, wrapWithCond(rhsp, rhsCondp, rhsWidth));
                     rhsp = nullptr;
                     break;
                 case 't':
                     pos[0] = 's';
                     UASSERT_OBJ(thsp, nodep, "emitSMT() references undef node");
-                    argsp = AstNode::addNext(argsp, thsp);
+                    argsp = AstNode::addNext(argsp, wrapWithCond(thsp, thsCondp, thsWidth));
                     thsp = nullptr;
                     break;
                 default: nodep->v3fatalSrc("Unknown emitSMT format code: %" << pos[0]); break;
@@ -2611,15 +2642,29 @@ class ConstraintExprVisitor final : public VNVisitor {
                 });
             }
             AstNodeExpr* const origp = indexIsRand ? nullptr : nodep->cloneTree(false);
+            AstCMethodHard* const sizep
+                = m_structSel ? new AstCMethodHard{fl, nodep->fromp()->cloneTreePure(false),
+                                                   VCMethod::DYN_SIZE}
+                              : nullptr;
+            AstNodeExpr* const originalPinp = nodep->pinsp();
             iterateChildren(nodep);
-            AstNodeExpr* pinp = nodep->pinsp()->unlinkFrBack();
+            AstNodeExpr* const pinp = nodep->pinsp()->unlinkFrBack();
             if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%x");
             AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
-            AstSFormatF* newp = nullptr;
-            if (m_structSel)
+            AstSFormatF* newp;
+            if (m_structSel) {
+                sizep->dtypeSetInt();
+                AstLogAnd* const condp = new AstLogAnd{
+                    fl,
+                    new AstLteS{
+                        fl, new AstConst{fl, AstConst::WidthedValue{}, originalPinp->width(), 0},
+                        originalPinp->cloneTreePure(false)},
+                    new AstLtS{fl, originalPinp->cloneTreePure(false), sizep}};
+                m_conditionp = m_conditionp ? new AstLogAnd{fl, m_conditionp, condp} : condp;
                 newp = new AstSFormatF{fl, "%s.%s", false, argsp};
-            else
+            } else {
                 newp = new AstSFormatF{fl, "(select %s %s)", false, argsp};
+            }
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             if (origp && !hoistRandModeOverSelect(newp, origp)) {
