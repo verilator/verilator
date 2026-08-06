@@ -3662,6 +3662,12 @@ class AssertNfaVisitor final : public VNVisitor {
         });
     }
 
+    static VPropStrength effectiveAssertPropStrength(const AstPropSpec* const propSpecp) {
+        if (propSpecp->propStrength() != VPropStrength::DEFAULT) return propSpecp->propStrength();
+        return propSpecp->fileline()->language() <= V3LangCode::L1800_2005 ? VPropStrength::STRONG
+                                                                           : VPropStrength::WEAK;
+    }
+
     // Bare `assert property (p until q)` with boolean operands stays on
     // V3AssertPre's AstLoop lowering, which preserves per-attempt action-block
     // firings that this NFA's single-bit aggregated state cannot. Strong bare
@@ -4686,7 +4692,15 @@ class AssertNfaVisitor final : public VNVisitor {
             if (hoistClockedSeq(specp)) return;
         }
 
-        AstNode* const propp = assertp->propp();
+        AstPropSpec* const propp = VN_AS(assertp->propp(), PropSpec);
+        const bool isCover = VN_IS(assertp, Cover);
+        if (!isCover && effectiveAssertPropStrength(propp) == VPropStrength::STRONG) {
+            propp->v3warn(E_UNSUPPORTED,
+                          "Unsupported: strong property in " + assertp->verilogKwd() + ".");
+            replaceBodyOnBuildError(assertp->fileline(), propp, /*errorEmitted=*/true);
+            return;
+        }
+
         if (!hasMultiCycleExpr(propp)) return;
         // A nested property instance keeps its body behind the call; lowering would drop it.
         if (propp->exists([](const AstFuncRef* refp) { return VN_IS(refp->taskp(), Property); })) {

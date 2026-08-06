@@ -301,6 +301,34 @@ constexpr VAssertType::en operator|(VAssertType::en lhs, VAssertType::en rhs) {
 
 // ######################################################################
 
+class VPropStrength final {
+public:
+    enum en : uint8_t {
+        DEFAULT = 0,  // Resolve from assertion/coverage context
+        WEAK,
+        STRONG,
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VPropStrength(en _e)
+        : m_e{_e} {}
+    const char* ascii() const {
+        static const char* const names[] = {"default", "weak", "strong"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VPropStrength& lhs, const VPropStrength& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VPropStrength& lhs, VPropStrength::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator!=(const VPropStrength& lhs, VPropStrength::en rhs) {
+    return lhs.m_e != rhs;
+}
+
+// ######################################################################
+
 class VAttrType final {
 public:
     // clang-format off
