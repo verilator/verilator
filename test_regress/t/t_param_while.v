@@ -14,13 +14,11 @@ module t;
 
   wire [NUM_OUT-1:0] z;
 
-  // verilator lint_off SIMILARNAME
   function integer num_out;
     input integer width;
     num_out = 1;
     while ((width + num_out - 1) / num_out > MAX_WIDTH) num_out = num_out * 2;
   endfunction
-  // verilator lint_on SIMILARNAME
 
   initial begin
     if (NUM_OUT != 4) $stop;

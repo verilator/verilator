@@ -15,10 +15,8 @@ module t (  /*AUTOARG*/
   reg [63:0] sum;
 
   // msg2946
-/* verilator lint_off SIMILARNAME */
   int A[7][1], B[8][1];
   int a[1], b[1];
-/* verilator lint_on SIMILARNAME */
   always_ff @(posedge clk) begin
     a <= A[crc[2:0]];
     b <= B[crc[2:0]];

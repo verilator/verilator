@@ -22,6 +22,6 @@ test.extract(in_filename=test.top_filename,
 
 test.extract(in_filename=test.golden_filename,
              out_filename=test.root + "/docs/gen/ex_SIMILARNAME_msg.rst",
-             lines="1-8")
+             lines="1-6")
 
 test.passes()

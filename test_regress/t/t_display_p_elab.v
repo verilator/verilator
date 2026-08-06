@@ -27,10 +27,8 @@ module t;
   parameter string RS = $sformatf(">%p<", R);
   initial `checks(RS, ">1.234<");
 
-  // verilator lint_off SIMILARNAME
   int u[2];
   parameter int U[2] = '{5, 6};
-  // verilator lint_on SIMILARNAME
   parameter string US = $sformatf(">%p<", U);
   initial `checks(US, ">'{'h5, 'h6}<");
 

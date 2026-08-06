@@ -219,17 +219,13 @@ module t (
   // PARTIAL[1] intentionally unconnected
   assign PARTIAL[3:2] = rand_a[3:2] ^ {PARTIAL[2], PARTIAL[0]};
 
-  // verilator lint_off SIMILARNAME
   wire [2:0] array_0 [2];
-  // verilator lint_on SIMILARNAME
   assign array_0[0] = rand_a[2:0];
   assign array_0[1] = array_0[0];
   `signal(ARRAY_0, 3); // UNOPTFLAT
   assign ARRAY_0 = array_0[1];
 
-  // verilator lint_off SIMILARNAME
   wire [2:0] array_1 [1];
-  // verilator lint_on SIMILARNAME
   assign array_1[0][0] = rand_a[0];
   assign array_1[0][1] = array_1[0][0];
   assign array_1[0][2] = array_1[0][1];
@@ -246,9 +242,7 @@ module t (
   `signal(ARRAY_2, 3);
   assign ARRAY_2 = array_2a[0];
 
-  // verilator lint_off SIMILARNAME
   wire [2:0] array_3 [2];
-  // verilator lint_on SIMILARNAME
   assign array_3[0] = rand_a[2:0] ^ array_3[1] >> 1;
   assign array_3[1] = array_3[0];
   `signal(ARRAY_3, 3); // UNOPTFLAT
@@ -334,9 +328,7 @@ module t (
   // verilator lint_on WIDTHTRUNC
 
   // verilator lint_off ALWCOMBORDER
-  // verilator lint_off SIMILARNAME
   logic [3:0] always_0;
-  // verilator lint_on SIMILARNAME
   always_comb begin
     always_0[3] = ~always_0[1];
     always_0[2] = always_0[1];
@@ -348,9 +340,7 @@ module t (
   // verilator lint_on ALWCOMBORDER
 
   // verilator lint_off ALWCOMBORDER
-  // verilator lint_off SIMILARNAME
   logic [4:0] always_1;
-  // verilator lint_on SIMILARNAME
   always_comb begin
     always_1[4] = always_1[0];
     always_1[0] = rand_a[0];
@@ -362,9 +352,7 @@ module t (
   // verilator lint_on ALWCOMBORDER
 
   // verilator lint_off ALWCOMBORDER
-  // verilator lint_off SIMILARNAME
   logic [3:0] always_2;
-  // verilator lint_on SIMILARNAME
   always_comb begin
     always_2[2:0] = 3'((always_2 << 1) | 4'(rand_a[0]));
     always_2[3] = rand_a[0];
@@ -374,9 +362,7 @@ module t (
   // verilator lint_on ALWCOMBORDER
 
   // verilator lint_off ALWCOMBORDER
-  // verilator lint_off SIMILARNAME
   logic [4:0] always_3;
-  // verilator lint_on SIMILARNAME
   always_comb begin
     always_3[4] = always_3[0];
     always_3[0] = rand_a[0];
@@ -388,9 +374,7 @@ module t (
   assign ALWAYS_3 = always_3;
   // verilator lint_on ALWCOMBORDER
 
-  // verilator lint_off SIMILARNAME
   logic [31:0] array_4[3]; // UNOPTFLAT
-  // verilator lint_on SIMILARNAME
   // Input
   assign array_4[0] = rand_a[31:0];
   // Sums 1
@@ -411,10 +395,8 @@ module t (
   `signal(ARRAY_4, 32);
   assign ARRAY_4  = array_4[2];
 
-  // verilator lint_off SIMILARNAME
   logic [1:0] packed_0; // UNOPTFLAT
   logic       packed_0_lsb;
-  // verilator lint_on SIMILARNAME
   always_comb begin
    packed_0[1] = rand_b[1];
    packed_0_lsb = packed_0[0];
@@ -430,9 +412,7 @@ module t (
   //////////////////////////////////////////////////////////////////////////
 
   // verilator lint_off UNOPTFLAT
-  // verilator lint_off SIMILARNAME
   logic array_5 [0:6];
-  // verilator lint_on SIMILARNAME
   // Unconnected d[0:3]
   assign array_5[4] = array_5[0] ? array_5[0] : array_5[1];
   assign array_5[5] = array_5[2] ? array_5[2] : array_5[3];
@@ -446,14 +426,10 @@ module t (
   //////////////////////////////////////////////////////////////////////////
 
   `signal(VOLATILE_PACKED_OUT_OF_CYCLE, 64); // UNOPTFLAT
-  // verilator lint_off SIMILARNAME
   wire logic [63:0] volatile_packed_out_of_cycle /* verilator forceable */ = rand_a;
-  // verilator lint_on SIMILARNAME
   assign VOLATILE_PACKED_OUT_OF_CYCLE = volatile_packed_out_of_cycle ^ 64'(VOLATILE_PACKED_OUT_OF_CYCLE[63:1]);
 
-  // verilator lint_off SIMILARNAME
   wire logic [2:0] volatile_packed_in_cycle /* verilator forceable */;
-  // verilator lint_on SIMILARNAME
   // verilator lint_off UNOPTFLAT
   `signal(VOLATILE_PACKED_IN_CYCLE, 3);
   assign volatile_packed_in_cycle = rand_a[2:0] ^ 3'(volatile_packed_in_cycle[2:1]);
@@ -469,9 +445,7 @@ module t (
   assign VOLATILE_ARRAY_OUT_OF_CYCLE = volatile_array_out_of_cycle_a[1];
 
   // verilator lint_off UNOPTFLAT
-  // verilator lint_off SIMILARNAME
   wire [2:0] volatile_array_in_cycle_0 [2] /* verilator public_flat_rw */;
-  // verilator lint_on SIMILARNAME
   assign volatile_array_in_cycle_0[0] = rand_a[2:0];
   assign volatile_array_in_cycle_0[1] = volatile_array_in_cycle_0[0];
   `signal(VOLATILE_ARRAY_IN_CYCLE_0, 3); // UNOPTFLAT
@@ -492,9 +466,7 @@ module t (
   // Match masked
   //////////////////////////////////////////////////////////////////////////
 
-  // verilator lint_off SIMILARNAME
   logic [63:0] match_masked; // UNOPTFLAT
-  // verilator lint_off SIMILARNAME
   always_comb begin
     casez (rand_a[31:0])
       32'b????????_????????_????????_???????1 : match_masked[31:0] = 32'd00;

@@ -7,5 +7,3 @@
                          example.v:1:7 ... Location of original declaration
       12 |   reg i;
          |       ^
-                         ... For warning description see https://verilator.org/warn/SIMILARNAME?v=latest
-                         ... Use "/* verilator lint_off SIMILARNAME */" and lint_on around source to disable this message.

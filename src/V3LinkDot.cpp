@@ -364,9 +364,6 @@ public:
             if (!lookupSymp->ignoreForSimilarTest(nodep->type())) {  // ignore typedefs etc
                 const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
                 if (alt) {
-                    UINFO(4, "name " << name);  // Not always same as nodep->name
-                    UINFO(4, "Var1 " << nodep);
-                    UINFO(4, "Var2 " << alt->nodep());
                     nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
                                                    << nodep->prettyNameQ() << '\n'
                                                    << nodep->warnContextPrimary() << '\n'

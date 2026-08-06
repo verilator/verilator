@@ -19,10 +19,8 @@ module t #(
     b
 );
 
-  // verilator lint_off SIMILARNAME
   input [A-1:0] a;
   input [B-1:0] b;
-  // verilator lint_on SIMILARNAME
   output logic [min(A,B)-1:0] c;
 
   always_comb for (int i = 0; i < min(A, B); i++) c[i] = a[i] | b[i];

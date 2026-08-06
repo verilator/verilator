@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test different uppercase/lowercase capitalization cases
-/* verilator lint_off SIMILARNAME */
 class ClsMixed;
   int m;
   int M;
@@ -63,4 +62,3 @@ module t;
   end
 
 endmodule
-/* verilator lint_on SIMILARNAME */

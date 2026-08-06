@@ -18,13 +18,9 @@ interface vip_tx_if (
 endinterface
 
 interface vip_if (
-  // verilator lint_off SIMILARNAME
     output reg Tx
-  // verilator lint_on SIMILARNAME
 );
-  // verilator lint_off SIMILARNAME
   vip_tx_if tx (Tx);
-  // verilator lint_on SIMILARNAME
 endinterface
 
 package vip_pkg;
