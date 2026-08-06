@@ -450,9 +450,7 @@ class VlCoroutine final {
 private:
     // TYPES
     struct VlPromise final {
-        // Continuation to resume when this coroutine finishes (mutually exclusive)
-        // Can be: nothing (monostate), coroutine handle, or fiber pointer
-        std::variant<std::monostate, std::coroutine_handle<>, VlFiber*> m_continuation;
+        std::coroutine_handle<> m_continuation;  // Coroutine to resume after this one finishes
         VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
 
         ~VlPromise();

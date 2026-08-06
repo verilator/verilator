@@ -165,8 +165,6 @@ decltype(auto) awaitExport(Callable&& call, Args&&... args) {
     }
 }
 
-#if VM_TIMING == 1
-
 namespace {
 class FiberAwaitable final {
     VlFiber& m_fiber;
@@ -207,7 +205,7 @@ decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
             VL_FATAL_MT(s_fileline.m_filename.c_str(), s_fileline.m_lineno, "",
                         "DPI exported task called from function context");
         }
-        VlFiber* const fiberp = VlFiber::current();
+        VlFiber* fiberp = VlFiber::current();
         if (VL_UNLIKELY(!fiberp)) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "DPI export with timing invoked outside of a fiber context");
@@ -224,8 +222,6 @@ decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
         call(std::forward<Args>(args)...);
     }
 }
-
-#endif
 
 };  //namespace VerilatedDpi
 
