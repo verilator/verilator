@@ -6935,14 +6935,22 @@ class WidthVisitor final : public VNVisitor {
             // Widthing handled as special init() case
             bool didWidth = false;
             if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
-                const AstVar* const modVarp = nodep->modVarp();
-                // Convert BracketArrayDType
-                userIterate(modVarp->childDTypep(),
-                            WidthVP{SELF, BOTH}.p());  // May relink pointed to node
-                AstNodeDType* const setDtp = modVarp->childDTypep();
-                if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
-                userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
-                didWidth = true;
+                // A pattern that already carries its own type, either from
+                // data_type '{...} or resolved by V3Param when the port's type
+                // depends on other parameters of this instantiation, is left to
+                // the self-determined widthing below.  Widthing the port's type
+                // here would resolve its parameter-dependent ranges against the
+                // unspecialized template's defaults.
+                if (!patternp->childDTypep()) {
+                    const AstVar* const modVarp = nodep->modVarp();
+                    // Convert BracketArrayDType
+                    userIterate(modVarp->childDTypep(),
+                                WidthVP{SELF, BOTH}.p());  // May relink pointed to node
+                    AstNodeDType* const setDtp = modVarp->childDTypep();
+                    patternp->childDTypep(setDtp->cloneTree(false));
+                    userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                    didWidth = true;
+                }
             }
             if (!didWidth) userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         } else if (!m_paramsOnly) {
