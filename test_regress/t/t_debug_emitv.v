@@ -365,7 +365,8 @@ module t (/*AUTOARG*/
   assert_prop_reject_on: assert property (@(posedge clk) reject_on (in) in);
   assert_prop_sync_accept_on: assert property (@(posedge clk) sync_accept_on (in) in);
   assert_prop_sync_reject_on: assert property (@(posedge clk) sync_reject_on (in) in);
-
+  assert_prop_weak: assert property (@(posedge clk) weak(in));
+  cover_prop_strong: cover property (@(posedge clk) strong(in));
 
   int a;
   int ao;
