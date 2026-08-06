@@ -140,10 +140,9 @@ public:
             && !ignoreForSimilarTest(entp->nodep()->type())) {  // ignore hierarchical equivalents
             string lc = name;
             for (auto& c : lc) c = (char)tolower(c);
-            if (m_idNameSimilarMap.find(lc) == m_idNameSimilarMap.end()) {
+            if (m_idNameSimilarMap.find(lc) == m_idNameSimilarMap.end()) 
                 m_idNameSimilarMap.insert(lc);
-                m_idNameSimilarMap.insert(lc);
-            }
+	}
 
             return entp;
         }
