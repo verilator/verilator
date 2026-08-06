@@ -45,8 +45,7 @@ class VSymEnt final {
     // MEMBERS
     using IdNameMap = std::multimap<std::string, VSymEnt*>;
     IdNameMap m_idNameMap;  // Hash of variables by name
-    using IdNameSimilarMap = std::unordered_set<std::string>;
-    IdNameSimilarMap m_idNameSimilarMap;  // Hash of variables by name with the same case
+    std::unordered_set<std::string> m_idNameSimilarMap;  // Variables by name with same case
     AstNode* m_nodep;  // Node that entry belongs to
     VSymEnt* m_fallbackp = nullptr;  // Table "above" this in name scope, for fallback resolution
     VSymEnt* m_parentp = nullptr;  // Table that created this
