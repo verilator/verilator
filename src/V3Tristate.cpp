@@ -1735,7 +1735,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
     void visitEqNeqWild(AstNodeBiop* nodep) {
-        V3Const::constifyEdit(nodep->rhsp());
         if (!VN_IS(nodep->rhsp(), Const) && nodep->rhsp()->dtypep()->isFourstate()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
