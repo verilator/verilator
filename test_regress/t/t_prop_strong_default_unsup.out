@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_prop_strong_default_unsup.v:13:5: Unsupported: strong property in assert.
+                                                        : ... note: In instance 't'
+   13 |     @(posedge clk) a ##1 a;
+      |     ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

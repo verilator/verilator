@@ -6686,16 +6686,27 @@ sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
 property_spec<propSpecp>:               // IEEE: property_spec
         //UNSUP: This rule has been super-specialized to what is supported now
         //UNSUP remove below
-                '@' '(' senitem ')' yDISABLE yIFF '(' expr ')' pexpr
-                        { $$ = new AstPropSpec{$1, $3, $8, $10}; }
-        |       '@' '(' senitem ')' pexpr
-                        { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
-        |       '@' senitemVar pexpr
-                        { $$ = new AstPropSpec{$1, $2, nullptr, $3}; }
-        |       yDISABLE yIFF '(' expr ')' '@' '(' senitem ')' pexpr
-                        { $$ = new AstPropSpec{$1, $8, $4, $10}; }
-        |       yDISABLE yIFF '(' expr ')' pexpr        { $$ = new AstPropSpec{$4->fileline(), nullptr, $4, $6}; }
-        |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
+                '@' '(' senitem ')' yDISABLE yIFF '(' expr ')' property_exprSpec
+                        { $$ = $10; $$->fileline($1); $$->sensesp($3); $$->disablep($8); }
+        |       '@' '(' senitem ')' property_exprSpec
+                        { $$ = $5; $$->fileline($1); $$->sensesp($3); }
+        |       '@' senitemVar property_exprSpec
+                        { $$ = $3; $$->fileline($1); $$->sensesp($2); }
+        |       yDISABLE yIFF '(' expr ')' '@' '(' senitem ')' property_exprSpec
+                        { $$ = $10; $$->fileline($1); $$->sensesp($8); $$->disablep($4); }
+        //UNSUP remove above
+        |       yDISABLE yIFF '(' expr ')' property_exprSpec
+                        { $$ = $6; $$->fileline($4->fileline()); $$->disablep($4); }
+        |       property_exprSpec                       { $$ = $1; }
+        ;
+
+property_exprSpec<propSpecp>:  // A property expression plus explicit weak/strong strength
+                pexpr
+                        { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
+        |       ySTRONG '(' sexpr ')'
+                        { $$ = new AstPropSpec{$1, nullptr, nullptr, $3, VPropStrength::STRONG}; }
+        |       yWEAK '(' sexpr ')'
+                        { $$ = new AstPropSpec{$1, nullptr, nullptr, $3, VPropStrength::WEAK}; }
         ;
 
 property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
@@ -6761,10 +6772,6 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //
                 yNOT pexpr
                         { $$ = new AstLogNot{$1, $2, /*fromProperty=*/true}; }
-        |       ySTRONG '(' sexpr ')'
-                        { $$ = $3; BBUNSUP($2, "Unsupported: strong (in property expression)"); }
-        |       yWEAK '(' sexpr ')'
-                        { $$ = $3; BBUNSUP($2, "Unsupported: weak (in property expression)"); }
         //                      // IEEE: pexpr yOR pexpr
         //                      // IEEE: pexpr yAND pexpr
         //                      // Under ~p~sexpr and/or ~p~sexpr

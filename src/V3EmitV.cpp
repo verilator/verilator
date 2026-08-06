@@ -1130,7 +1130,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
 
         puts(" ");
+        if (nodep->propStrength() != VPropStrength::DEFAULT) {
+            puts(nodep->propStrength().ascii());
+            puts("(");
+        }
         iterateConstNull(nodep->propp());
+        if (nodep->propStrength() != VPropStrength::DEFAULT) puts(")");
         puts("\n");
     }
     void visit(AstPExpr* nodep) override { iterateConst(nodep->bodyp()); }
