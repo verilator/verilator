@@ -1467,9 +1467,8 @@ class ParamProcessor final {
                         break;
                     }
                 }
-                AstNodeDType* const substp = overridePinp
-                                                 ? VN_CAST(overridePinp->exprp(), NodeDType)
-                                                 : ptdp->subDTypep();
+                AstNodeDType* const substp
+                    = overridePinp ? VN_CAST(overridePinp->exprp(), NodeDType) : ptdp->subDTypep();
                 if (substp) toReplace.emplace_back(refp, substp);
             });
             for (auto rit = toReplace.rbegin(); rit != toReplace.rend(); ++rit) {
