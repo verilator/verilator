@@ -122,7 +122,6 @@
 #include "V3Tristate.h"
 
 #include "V3AstUserAllocator.h"
-#include "V3Const.h"
 #include "V3Graph.h"
 #include "V3Inst.h"
 #include "V3Stats.h"
