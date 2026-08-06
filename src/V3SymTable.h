@@ -142,7 +142,7 @@ public:
             for (auto& c : lc) c = (char)tolower(c);
             if (m_idNameSimilarMap.find(lc) == m_idNameSimilarMap.end()) {
                 m_idNameSimilarMap.insert(lc);
-            }
+            m_idNameSimilarMap.insert(lc);
         }
 
         return entp;
