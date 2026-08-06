@@ -78,9 +78,6 @@ class VlFiberContext final {
     std::size_t mappingSize;  // Total size of allocation (stackSize + 2*pageSize)
 
 public:
-    // Set maximum stack size to 16MB
-    static constexpr std::size_t stackSize = 16 * (1 << 20);
-
     VlFiberContext(void (*f)(VlFiber*), VlFiber* arg);
     VlFiberContext() {};
     void teardown();

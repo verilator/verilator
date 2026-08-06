@@ -49,8 +49,8 @@ static thread_local VlFiberMemoryPool memoryPool{};
 //======================================================================
 // VlFiberMemoryPool
 
-// One stack allocation is 8 Mb
-static VL_CONSTEXPR_CXX17 unsigned long long allocationSize = 8388608;
+// One stack allocation is 1 Mb
+static VL_CONSTEXPR_CXX17 unsigned long long allocationSize = 1<<20;
 
 // Allocate space for 16 stacks at once
 static VL_CONSTEXPR_CXX17 unsigned long long allocationCount = 16;
