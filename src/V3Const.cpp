@@ -3422,6 +3422,14 @@ class ConstVisitor final : public VNVisitor {
             // Removing the ExprStmt might have made something impure above now pure
         }
     }
+    void visit(AstSampled* nodep) override {
+        iterateChildren(nodep);
+        if (AstConst* const constp = VN_CAST(nodep->exprp(), Const)) {
+            constp->unlinkFrBack();
+            nodep->replaceWithKeepDType(constp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");

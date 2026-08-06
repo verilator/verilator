@@ -122,6 +122,7 @@
 #include "V3Tristate.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3Const.h"
 #include "V3Graph.h"
 #include "V3Inst.h"
 #include "V3Stats.h"
@@ -1734,6 +1735,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
     void visitEqNeqWild(AstNodeBiop* nodep) {
+        V3Const::constifyEdit(nodep->rhsp());
         if (!VN_IS(nodep->rhsp(), Const) && nodep->rhsp()->dtypep()->isFourstate()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
