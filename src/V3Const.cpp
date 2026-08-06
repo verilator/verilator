@@ -4586,7 +4586,7 @@ class ConstVisitor final : public VNVisitor {
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");
     // Sampled value functions of a constant.
-    // $rose/$fell/$stable are lowered to $past by V3AssertPre, so they fold via AstPast
+    // $rose/$fell/$stable/$changed are lowered to $past by V3AssertPre, so they fold via AstPast
     TREEOPV("AstSampled{$exprp.castConst}", "replaceWChild(nodep, VN_AS(nodep->exprp(), NodeExpr))");
     TREEOPV("AstPast{$exprp.castConst, !$ticksp}", "replaceWChild(nodep, nodep->exprp())");
     // clang-format on
