@@ -9,15 +9,17 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+// randc values excluded by the value of another rand variable
 class Phased;
   randc bit [1:0] c;
   rand bit [3:0] x;
   rand bit [3:0] y;
   constraint order_c {solve x before y;}
   constraint rel_c {y > x;}
-  constraint link_c {x >= {2'b00, c};}
+  constraint link_c {{2'b00, c} < x;}
 endclass
 
+// Three dependency layers, so exhaustion lands two phases before the last
 class Layered;
   randc bit [1:0] c;
   rand bit [3:0] a;
@@ -25,10 +27,14 @@ class Layered;
   rand bit [3:0] d;
   constraint order_ab {solve a before b;}
   constraint order_bd {solve b before d;}
-  constraint rel_c {b > a; d > b;}
+  constraint rel_c {
+    b > a;
+    d > b;
+  }
   constraint link_c {a >= {2'b00, c};}
 endclass
 
+// Hard constraint shrinks the randc domain to three values
 class Limited;
   randc bit [1:0] c;
   rand bit [3:0] x;
@@ -38,25 +44,36 @@ class Limited;
   constraint lim_c {c != 2'd3;}
 endclass
 
+// randc pins a solve-before variable, so only randc-first keeps the cycle
+class Ordered;
+  randc bit [1:0] c;
+  rand bit [1:0] x;
+  rand bit [1:0] y;
+  constraint order_c {solve x before y;}
+  constraint tie_c {x == c;}
+  constraint rel_c {y == ~x;}
+endclass
+
+// Unsatisfiable before any randc value is recorded
 class Unsat;
+  randc bit [1:0] c;
   rand bit [3:0] x;
   rand bit [3:0] y;
   constraint order_c {solve x before y;}
-  constraint bad_c {
-    x > 14;
-    y > x;
-  }
+  constraint rel_c {y > x;}
 endclass
 
 module t;
   Phased p;
   Layered q;
   Limited r;
+  Ordered o;
   Unsat u;
   bit [3:0] seen;
   int pcount[4];
   int qcount[4];
   int rcount[4];
+  int ocount[4];
   int ok;
 
   initial begin
@@ -67,7 +84,7 @@ module t;
       ok = p.randomize();
       `checkd(ok, 1);
       `checkd(p.y > p.x, 1'b1);
-      `checkd(p.x >= {2'b00, p.c}, 1'b1);
+      `checkd({2'b00, p.c} < p.x, 1'b1);
       seen[p.c] = 1'b1;
       ++pcount[p.c];
       if (i % 4 == 3) begin
@@ -77,7 +94,6 @@ module t;
     end
     for (int v = 0; v < 4; ++v) `checkd(pcount[v], 2);
 
-    // Three dependency layers, so exhaustion lands two phases before the last
     q = new;
     seen = 4'b0;
     for (int i = 0; i < 8; ++i) begin
@@ -95,7 +111,6 @@ module t;
     end
     for (int v = 0; v < 4; ++v) `checkd(qcount[v], 2);
 
-    // Hard constraint shrinks the randc domain to three values
     r = new;
     seen = 4'b0;
     for (int i = 0; i < 6; ++i) begin
@@ -112,9 +127,32 @@ module t;
     for (int v = 0; v < 3; ++v) `checkd(rcount[v], 2);
     `checkd(rcount[3], 0);  // zero-ok: excluded by lim_c
 
+    o = new;
+    seen = 4'b0;
+    for (int i = 0; i < 8; ++i) begin
+      ok = o.randomize();
+      `checkd(ok, 1);
+      `checkd(o.x, o.c);
+      `checkd(o.y, ~o.x);
+      seen[o.x] = 1'b1;
+      ++ocount[o.x];
+      if (i % 4 == 3) begin
+        `checkd(seen, 4'b1111);
+        seen = 4'b0;
+      end
+    end
+    for (int v = 0; v < 4; ++v) `checkd(ocount[v], 2);
+
+    // Fails with an empty cycle, then the object still randomizes
     u = new;
-    ok = u.randomize();
+    ok = u.randomize() with {
+      x > 14;
+      y > x;
+    };
     `checkd(ok, 0);  // zero-ok: constraints are unsatisfiable
+    ok = u.randomize();
+    `checkd(ok, 1);
+    `checkd(u.y > u.x, 1'b1);
 
     $write("*-* All Finished *-*\n");
     $finish;
