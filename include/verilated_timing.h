@@ -27,7 +27,6 @@
 #define VERILATOR_VERILATED_TIMING_H_
 
 #include "verilated.h"
-#include "verilated_fiber.h"
 
 #include <limits>
 #include <variant>
@@ -503,7 +502,7 @@ public:
     void await_resume() const noexcept {}
 
     // Set fiber to be resumed when this coroutine completes (for DPI export timing support)
-    void setFiberContinuation(VlFiber* fiberp);
+    void setFiberContinuation(VlCoroutine* coro);
 };
 
 #endif  // Guard

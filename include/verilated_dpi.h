@@ -119,6 +119,8 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
     owp[1].bval = 0;
 }
 
+#if VM_TIMING == 1
+
 namespace VerilatedDpi {
 
 namespace {
@@ -210,10 +212,20 @@ decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "DPI export with timing invoked outside of a fiber context");
         }
+        VlCoroutine continuation = [=]() mutable -> VlCoroutine {
+            // Save fiber pointer
+            VlFiber* f = fiberp;
+
+            // Use std::suspend_always, so that fiber resumption
+            // is invoked once exported function finishes
+            co_await std::suspend_always{};
+            f->resume();
+            co_return;
+        }();
         // Call will return on first delay/event encountered
         VlCoroutine local{call(std::forward<Args>(args)...)};
         if (!local.await_ready()) {
-            local.setFiberContinuation(fiberp);
+            local.setFiberContinuation(&continuation);
             while (!local.await_ready()) { VlFiber::yield(); }
         }
     } else if (std::is_same<decltype(call(std::forward<Args>(args)...)), void>::value) {
@@ -224,6 +236,8 @@ decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
 }
 
 };  //namespace VerilatedDpi
+
+#endif
 
 //======================================================================
 

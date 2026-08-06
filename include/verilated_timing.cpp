@@ -23,6 +23,8 @@
 
 #include "verilated_timing.h"
 
+#include <coroutine>
+
 //======================================================================
 // VlCoroutineHandle:: Methods
 
@@ -362,20 +364,13 @@ std::suspend_never VlCoroutine::VlPromise::final_suspend() noexcept {
     return {};
 }
 
-void VlCoroutine::setFiberContinuation(VlFiber* fiberp) {
+void VlCoroutine::setFiberContinuation(VlCoroutine* coro) {
+    std::coroutine_handle<VlPromise> handle
+        = std::coroutine_handle<VlPromise>::from_promise(*coro->m_promisep);
     if (VL_UNLIKELY(!m_promisep)) {
-        // Coroutine already completed, resume fiber immediately
-        if (fiberp) fiberp->resume();
+        // Coroutine already completed, continue immediately
+        handle.resume();
         return;
     }
-    VlCoroutine continuation = [fiberp]() -> VlCoroutine {
-        // Keep the continuation coroutine alive until the outer coroutine finishes.  Its
-        // initial suspend is normally suspend_never, so suspend explicitly before storing its
-        // handle.
-        co_await std::suspend_always{};
-        fiberp->resume();
-        co_return;
-    }();
-    m_promisep->m_continuation
-        = std::coroutine_handle<VlPromise>::from_promise(*continuation.m_promisep);
+    m_promisep->m_continuation = handle;
 }
