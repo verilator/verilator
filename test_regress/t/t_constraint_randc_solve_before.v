@@ -9,14 +9,14 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// randc values excluded by the value of another rand variable
+// randc values excluded by the value of another rand variable: c cannot be 3
 class Phased;
   randc bit [1:0] c;
-  rand bit [3:0] x;
+  rand bit [1:0] x;
   rand bit [3:0] y;
   constraint order_c {solve x before y;}
-  constraint rel_c {y > x;}
-  constraint link_c {{2'b00, c} < x;}
+  constraint rel_c {y > {2'b00, x};}
+  constraint link_c {c < x;}
 endclass
 
 // Three dependency layers, so exhaustion lands two phases before the last
@@ -75,24 +75,30 @@ module t;
   int rcount[4];
   int ocount[4];
   int ok;
+  int psolved;
 
   initial begin
-    // Two full randc cycles; the second wraps inside a non-final solve-before phase
+    // c == 3 satisfies no x
     p = new;
     seen = 4'b0;
-    for (int i = 0; i < 8; ++i) begin
-      ok = p.randomize();
-      `checkd(ok, 1);
-      `checkd(p.y > p.x, 1'b1);
-      `checkd({2'b00, p.c} < p.x, 1'b1);
-      seen[p.c] = 1'b1;
-      ++pcount[p.c];
-      if (i % 4 == 3) begin
-        `checkd(seen, 4'b1111);  // Four draws covered four values, so none repeated
-        seen = 4'b0;
+    psolved = 0;
+    for (int i = 0; i < 12; ++i) begin
+      if (p.randomize() == 1) begin
+        `checkd(p.y > {2'b00, p.x}, 1'b1);
+        `checkd(p.c < p.x, 1'b1);
+        seen[p.c] = 1'b1;
+        ++pcount[p.c];
+        ++psolved;
+        if (psolved % 3 == 0) begin
+          `checkd(seen, 4'b0111);  // Three draws covered three values, so none repeated
+          seen = 4'b0;
+        end
       end
     end
-    for (int v = 0; v < 4; ++v) `checkd(pcount[v], 2);
+    `checkd(psolved % 3, 0);  // zero-ok: every cycle contributes three solved draws
+    `checkd(psolved >= 9, 1'b1);  // Twelve calls span three cycles at worst
+    for (int v = 0; v < 3; ++v) `checkd(pcount[v], pcount[0]);
+    `checkd(pcount[3], 0);  // zero-ok: c == 3 satisfies no x
 
     q = new;
     seen = 4'b0;
