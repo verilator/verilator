@@ -119,8 +119,6 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
     owp[1].bval = 0;
 }
 
-#if VM_TIMING == 1
-
 namespace VerilatedDpi {
 
 namespace {
@@ -166,6 +164,8 @@ decltype(auto) awaitExport(Callable&& call, Args&&... args) {
         return call(std::forward<Args>(args)...);
     }
 }
+
+#if VM_TIMING == 1
 
 namespace {
 class FiberAwaitable final {
@@ -235,9 +235,9 @@ decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
     }
 }
 
-};  //namespace VerilatedDpi
-
 #endif
+
+};  //namespace VerilatedDpi
 
 //======================================================================
 
