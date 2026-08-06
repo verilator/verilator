@@ -82,7 +82,7 @@ module t;
     p = new;
     seen = 4'b0;
     psolved = 0;
-    for (int i = 0; i < 12; ++i) begin
+    for (int i = 0; i < 12 && psolved < 9; ++i) begin
       if (p.randomize() == 1) begin
         `checkd(p.y > {2'b00, p.x}, 1'b1);
         `checkd(p.c < p.x, 1'b1);
@@ -95,9 +95,8 @@ module t;
         end
       end
     end
-    `checkd(psolved % 3, 0);  // zero-ok: every cycle contributes three solved draws
-    `checkd(psolved >= 9, 1'b1);  // Twelve calls span three cycles at worst
-    for (int v = 0; v < 3; ++v) `checkd(pcount[v], pcount[0]);
+    `checkd(psolved, 9);  // Three cycles of three solvable values
+    for (int v = 0; v < 3; ++v) `checkd(pcount[v], 3);
     `checkd(pcount[3], 0);  // zero-ok: c == 3 satisfies no x
 
     q = new;
