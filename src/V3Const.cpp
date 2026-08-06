@@ -3422,14 +3422,6 @@ class ConstVisitor final : public VNVisitor {
             // Removing the ExprStmt might have made something impure above now pure
         }
     }
-    void visit(AstSampled* nodep) override {
-        iterateChildren(nodep);
-        if (AstConst* const constp = VN_CAST(nodep->exprp(), Const)) {
-            constp->unlinkFrBack();
-            nodep->replaceWithKeepDType(constp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        }
-    }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
@@ -4593,6 +4585,10 @@ class ConstVisitor final : public VNVisitor {
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");
+    // Sampled value functions of a constant.
+    // $rose/$fell/$stable are lowered to $past by V3AssertPre, so they fold via AstPast
+    TREEOPV("AstSampled{$exprp.castConst}", "replaceWChild(nodep, VN_AS(nodep->exprp(), NodeExpr))");
+    TREEOPV("AstPast{$exprp.castConst, !$ticksp}", "replaceWChild(nodep, nodep->exprp())");
     // clang-format on
 
     // Possible futures:
