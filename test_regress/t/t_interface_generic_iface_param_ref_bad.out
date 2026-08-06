@@ -1,0 +1,7 @@
+%Error: t/t_interface_generic_iface_param_ref_bad.v:19:32: Can't find definition of 'NONEXISTENT_PARAM' in dotted variable/method: 'a.NONEXISTENT_PARAM'
+                                                         : ... note: In instance 't.genericModule'
+   19 |   localparam int LOC_PARAM = a.NONEXISTENT_PARAM;
+      |                                ^~~~~~~~~~~~~~~~~
+        ... Known scopes under 'a': <no instances found>
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

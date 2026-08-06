@@ -52,18 +52,6 @@ static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
     OrderMTaskGraph::fixDataHazards(*mTaskGraphp);
     mTaskGraphp->hashGraphDebug("MTask graph after fixDataHazards()");
 
-    // Order the graph. We know it's already ranked from fixDataHazards() so we don't need to rank
-    // it again.
-    //
-    // On at least some models, ordering the graph here seems to help performance. (Why? Is it just
-    // triggering noise in a lucky direction? Is it just as likely to harm results?)
-    //
-    // More diversity of models that can build with --threads will eventually tell us. For now keep
-    // the order() so we don't forget about it, in case it actually helps.  TODO: get more data and
-    // maybe remove this later if it doesn't really help.
-    mTaskGraphp->orderPreRanked();
-    mTaskGraphp->hashGraphDebug("MTask graph after orderPreRanked()");
-
     // Merge MTask nodes together, repeatedly, until the critical path budget is reached. Coarsens
     // the graph, usually by several orders of magnitude. Some tests disable this for stability,
     // it should always be enabled in production.

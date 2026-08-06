@@ -252,14 +252,23 @@ void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAF
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
+    // Classify now, so a queued request is pending from the moment it is posted
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    const bool stop = contextp->stopRequestReserve(maybe);
+    if (stop) contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_stop_maybe(filename, linenum, hier, maybe);
+        contextp->stopRequestRelease();
+        if (stop) contextp->finishPendingDec();
     }});
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_fatal(filename, linenum, hier, msg);
+        contextp->finishPendingDec();
     }});
 }
 
@@ -3281,6 +3290,15 @@ void VerilatedContext::gotError(bool flag) VL_MT_SAFE {
 void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_gotFinish = flag;
+}
+bool VerilatedContext::stopRequestReserve(bool maybe) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    const int reserved = ++m_ns.m_stopReserved;
+    return !maybe || m_s.m_errorCount + reserved >= m_s.m_errorLimit;
+}
+void VerilatedContext::stopRequestRelease() VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    --m_ns.m_stopReserved;
 }
 bool VerilatedContext::executingFinal() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

@@ -1469,6 +1469,13 @@ List Of Warnings
         q <= d;
       end
 
+   A further case is when a signal named as a clocking block ``output`` is
+   also driven by a continuous assignment, or is named as an ``output`` of a
+   second clocking block. The clocking block drives the signal, so the design
+   and the testbench contend for it and the synchronous drive may be silently
+   lost. Declare the clocking block ``input`` if the intent is only to
+   observe the signal.
+
    Ignoring this warning may hide clock domain crossing, timing, or
    portability bugs. It may also cause longer simulation runtimes due to
    reduced optimizations.
@@ -1494,6 +1501,12 @@ List Of Warnings
    Results in:
 
    .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_msg.rst
+
+   Also warns when a signal named as a clocking block ``output`` is driven
+   by a plain ``always`` block. Driving a signal from both a clocking block
+   and a plain ``always`` block is a deliberate idiom in some testbenches,
+   so it is reported as MULTIDRIVENPROC rather than under the on-by-default
+   :option:`MULTIDRIVEN`.
 
    To fix, drive the signal from a single ``always`` block, or use
    ``always_ff``/``always_comb`` if the intent is a single specialized

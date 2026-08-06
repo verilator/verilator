@@ -736,6 +736,7 @@ static bool verilate(const string& argString) {
     // and after removing files as may make debug output)
     VBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
+        AstClassRefDType::selfTest();
         V3Os::selfTest();
         V3Number::selfTest();
         VCMethod::selfTest();

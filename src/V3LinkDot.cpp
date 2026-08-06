@@ -3665,8 +3665,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return nullptr;
     }
     static const AstVar* getNextVarp(const AstNode* stmtsp) {
+        // Only IO ports, as parameters are on paramsp(), not the pinsp() list paired here
         while (stmtsp) {
-            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) return varp;
+            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) {
+                if (varp->isIO()) return varp;
+            }
             stmtsp = stmtsp->nextp();
         }
         return nullptr;
@@ -3932,6 +3935,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                       << (suggest.empty() ? "" : nodep->warnMore() + suggest)
                                       << '\n'
                                       << nodep->warnContextPrimary() << decl);
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
                 }
             }
@@ -4350,6 +4354,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
+            if (!foundp && m_ds.m_dotp && VN_IS(m_ds.m_dotp->lhsp(), ParseRef)
+                && m_ds.m_dotp->lhsp()->name() == "this") {
+                const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
+                if (classp && classp->isCovergroup() && classp->covergroupEnclosingClassp()) {
+                    VSymEnt* const enclosingClassSymp
+                        = m_statep->getNodeSym(classp->covergroupEnclosingClassp());
+                    foundp = enclosingClassSymp->findIdFallback(nodep->name());
+                    if (foundp) m_ds.m_dotSymp = enclosingClassSymp;
+                }
+            }
             // If not found in modport, check interface fallback for parameters and typedefs.
             // Parameters and typedefs are always visible through a modport (IEEE 1800-2023 25.5).
             // This mirrors the VarXRef modport parameter fallback in visit(AstVarXRef).
@@ -4472,7 +4486,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (varp->isIfaceRef() && m_genericIfaceModule
-                    && VN_IS(varp->childDTypep(), IfaceGenericDType)) {
+                    && VN_IS(varp->childDTypep(), IfaceGenericDType) && !start) {
+                    // Defer only dotted member access ('d.PARAM'), as V3Param must specialize
+                    // first; a standalone ref ('.x(d)') resolves via allowVar below now
                     ok = true;
                     m_ds.m_unresolvedGenericIface = true;
                 } else if (ifacerefp && varp->isIfaceRef()) {
@@ -5860,7 +5876,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_insideClassExtParam);
         {
             m_ds.init(m_curSymp);
-            m_insideClassExtParam = false;
+            m_insideClassExtParam = nodep->isCovergroup() && nodep->covergroupEnclosingClassp()
+                                    && m_extendsParam.find(nodep->covergroupEnclosingClassp())
+                                           != m_extendsParam.end();
             // Until overridden by a SCOPE
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
