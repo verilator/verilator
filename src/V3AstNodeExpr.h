@@ -2555,19 +2555,24 @@ public:
 class AstSampled final : public AstNodeExpr {
     // Verilog $sampled
     // @astgen op1 := exprp : AstNode<AstNodeExpr|AstPropSpec>
+    bool m_internal : 1;  // Internally created, not from a source $sampled
 public:
     AstSampled(FileLine* fl, AstNode* exprp, AstNodeDType* dtypep)
-        : ASTGEN_SUPER_Sampled(fl) {
+        : ASTGEN_SUPER_Sampled(fl)
+        , m_internal{false} {
         this->exprp(exprp);
         this->dtypep(dtypep);
     }
     ASTGEN_MEMBERS_AstSampled;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { return "$sampled(%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return 0; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool internal() const { return m_internal; }
+    void internal(bool flag) { m_internal = flag; }
     bool isSystemFunc() const override { return true; }
 };
 class AstScopeName final : public AstNodeExpr {

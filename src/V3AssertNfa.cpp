@@ -206,6 +206,7 @@ struct BuildResult final {
 
 static AstNodeExpr* sampled(AstNodeExpr* exprp) {
     AstSampled* const sp = new AstSampled{exprp->fileline(), exprp, exprp->dtypep()};
+    sp->internal(true);
     return sp;
 }
 
