@@ -11,6 +11,12 @@
 // SPDX-FileCopyrightText: 2026 Oyvind Janbu
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module m #(
     parameter int N = 1,
     parameter int V[N] = '{0}
@@ -127,70 +133,83 @@ module t;
 
   initial begin
     // Overridden size
-    if (i_m2.N != 2) $stop;
-    if ($size(i_m2.V) != 2) $stop;
-    if ($bits(i_m2.V) != 2 * 32) $stop;
-    if (i_m2.V[0] != 1 || i_m2.V[1] != 2) $stop;
+    `checkd(i_m2.N, 2);
+    `checkd($size(i_m2.V), 2);
+    `checkd($bits(i_m2.V), 2 * 32);
+    `checkd(i_m2.V[0], 1);
+    `checkd(i_m2.V[1], 2);
 
-    if ($size(i_m3.V) != 3) $stop;
-    if (i_m3.V[0] != 1 || i_m3.V[1] != 2 || i_m3.V[2] != 3) $stop;
+    `checkd($size(i_m3.V), 3);
+    `checkd(i_m3.V[0], 1);
+    `checkd(i_m3.V[1], 2);
+    `checkd(i_m3.V[2], 3);
 
     // Size override that is not a folded constant
-    if ($size(i_m3e.V) != 3) $stop;
-    if (i_m3e.V[2] != 3) $stop;
+    `checkd($size(i_m3e.V), 3);
+    `checkd(i_m3e.V[2], 3);
 
     // Size left at its default
-    if ($size(i_m1.V) != 1) $stop;
-    if (i_m1.V[0] != 1) $stop;
+    `checkd($size(i_m1.V), 1);
+    `checkd(i_m1.V[0], 1);
 
     // Patterns that don't name every element individually
-    if ($size(i_m4d.V) != 4) $stop;
-    if (i_m4d.V[0] != 1 || i_m4d.V[3] != 1) $stop;
-    if ($size(i_m3r.V) != 3) $stop;
-    if (i_m3r.V[0] != 1 || i_m3r.V[2] != 1) $stop;
+    `checkd($size(i_m4d.V), 4);
+    `checkd(i_m4d.V[0], 1);
+    `checkd(i_m4d.V[3], 1);
+    `checkd($size(i_m3r.V), 3);
+    `checkd(i_m3r.V[0], 1);
+    `checkd(i_m3r.V[2], 1);
 
     // Parameter-dependent element width
-    if ($size(i_p.B) != 2) $stop;
-    if ($bits(i_p.B) != 2 * 8) $stop;
-    if (i_p.B[0] != 8'ha || i_p.B[1] != 8'hb) $stop;
+    `checkd($size(i_p.B), 2);
+    `checkd($bits(i_p.B), 2 * 8);
+    `checkh(i_p.B[0], 8'ha);
+    `checkh(i_p.B[1], 8'hb);
 
     // Both dimensions parameter dependent
-    if ($size(i_d2.V) != 2) $stop;
-    if ($size(i_d2.V[0]) != 3) $stop;
-    if (i_d2.V[0][0] != 1 || i_d2.V[1][2] != 6) $stop;
+    `checkd($size(i_d2.V), 2);
+    `checkd($size(i_d2.V[0]), 3);
+    `checkd(i_d2.V[0][0], 1);
+    `checkd(i_d2.V[1][2], 6);
 
     // Interface parameters
-    if ($size(i_iface.V) != 3) $stop;
-    if (i_iface.V[0] != 1 || i_iface.V[2] != 3) $stop;
+    `checkd($size(i_iface.V), 3);
+    `checkd(i_iface.V[0], 1);
+    `checkd(i_iface.V[2], 3);
 
     // Concatenation value against a parameter-dependent width
-    if ($bits(i_c.P) != 16) $stop;
-    if (i_c.P != 16'h0a0b) $stop;
+    `checkd($bits(i_c.P), 16);
+    `checkh(i_c.P, 16'h0a0b);
 
     // Size parameter declared after the array parameter
-    if ($size(i_q2.V) != 2) $stop;
-    if (i_q2.V[0] != 1 || i_q2.V[1] != 2) $stop;
+    `checkd($size(i_q2.V), 2);
+    `checkd(i_q2.V[0], 1);
+    `checkd(i_q2.V[1], 2);
 
     // Size from a type parameter
-    if ($size(i_r.V) != 16) $stop;
-    if ($bits(i_r.V) != 16 * 16) $stop;
-    if (i_r.V[0] != 1 || i_r.V[15] != 1) $stop;
+    `checkd($size(i_r.V), 16);
+    `checkd($bits(i_r.V), 16 * 16);
+    `checkd(i_r.V[0], 1);
+    `checkd(i_r.V[15], 1);
 
     // Whole port type from a type parameter
-    if ($bits(i_sn.V) != 16) $stop;
-    if (i_sn.V.a != 8'h1 || i_sn.V.b != 8'h2) $stop;
-    if ($bits(i_sw.V) != 64) $stop;
-    if (i_sw.V.a != 32'h3 || i_sw.V.b != 32'h4) $stop;
+    `checkd($bits(i_sn.V), 16);
+    `checkh(i_sn.V.a, 8'h1);
+    `checkh(i_sn.V.b, 8'h2);
+    `checkd($bits(i_sw.V), 64);
+    `checkh(i_sw.V.a, 32'h3);
+    `checkh(i_sw.V.b, 32'h4);
 
     // Untyped parameter, parameter-dependent default value
-    if ($size(i_u.LST) != 8) $stop;
-    if ($size(i_ud.LST) != 8) $stop;
+    `checkd($size(i_u.LST), 8);
+    `checkd($size(i_ud.LST), 8);
 
     // Size from the enclosing module's parameter
-    if ($size(i_mid.i_pass.V) != 3) $stop;
-    if (i_mid.i_pass.V[0] != 1 || i_mid.i_pass.V[2] != 3) $stop;
-    if ($size(i_mid.i_expr.V) != 4) $stop;
-    if (i_mid.i_expr.V[3] != 4) $stop;
+    `checkd($size(i_mid.i_pass.V), 3);
+    `checkd(i_mid.i_pass.V[0], 1);
+    `checkd(i_mid.i_pass.V[2], 3);
+    `checkd($size(i_mid.i_expr.V), 4);
+    `checkd(i_mid.i_expr.V[3], 4);
 
     $write("*-* All Finished *-*\n");
     $finish;
