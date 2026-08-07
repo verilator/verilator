@@ -873,9 +873,7 @@ public:
     bool isDefault() const { return m_isDefault; }
     bool isGlobal() const { return m_isGlobal; }
     AstVar* ensureEventp(bool childDType = false);
-    void makeDefault() {
-        m_isDefault = true;
-    }
+    void makeDefault() { m_isDefault = true; }
 };
 class AstClockingItem final : public AstNode {
     // Parents:  CLOCKING
@@ -1239,8 +1237,7 @@ class AstDefaultClocking final : public AstNode {
 public:
     AstDefaultClocking(FileLine* fl, const std::string& name)
         : ASTGEN_SUPER_DefaultClocking(fl)
-        , m_name{name} {
-    }
+        , m_name{name} {}
     ASTGEN_MEMBERS_AstDefaultClocking;
     std::string name() const override VL_MT_STABLE { return m_name; }
 };
