@@ -4,11 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
+module t (
+  input clk
   );
-  input clk;
   int cyc = 0;
 
   always @(negedge clk) begin  // negedge so there is nothing after $finish

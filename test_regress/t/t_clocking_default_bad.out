@@ -1,6 +1,6 @@
-%Error: t/t_clocking_default_bad.v:15:12: Only one default clocking block allowed per module (IEEE 1800-2023 14.12)
+%Error: t/t_clocking_default_bad.v:13:12: Only one default clocking block allowed per module (IEEE 1800-2023 14.12)
                                         : ... note: In instance 't'
-   15 |   clocking cb2 @(negedge clk);
+   13 |   clocking cb2 @(negedge clk);
       |            ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

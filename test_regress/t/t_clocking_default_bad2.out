@@ -1,8 +1,8 @@
-%Error: t/t_clocking_default_bad2.v:16:11: Can't find definition of clocking: cb_nonexistent
-   16 |   default clocking cb_nonexistent;
+%Error: t/t_clocking_default_bad2.v:14:11: Can't find definition of clocking: 'cb_nonexistent'
+   14 |   default clocking cb_nonexistent;
       |           ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_clocking_default_bad2.v:17:11: foo is not a clocking identifier
-   17 |   default clocking foo;
+%Error: t/t_clocking_default_bad2.v:15:11: 'foo' is not a clocking identifier
+   15 |   default clocking foo;
       |           ^~~~~~~~
 %Error: Exiting due to

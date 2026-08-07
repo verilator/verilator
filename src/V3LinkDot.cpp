@@ -4141,14 +4141,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     void visit(AstDefaultClocking* nodep) override {
         if (VSymEnt* const foundp = m_curSymp->findIdFallback(nodep->name())) {
-            if (AstClocking* clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+            if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
                 clockingp->makeDefault();
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             } else {
-                nodep->v3error(nodep->name() << " is not a clocking identifier");
+                nodep->v3error(nodep->prettyNameQ() << " is not a clocking identifier");
             }
         } else {
-            nodep->v3error("Can't find definition of clocking: " << nodep->name());
+            nodep->v3error("Can't find definition of clocking: " << nodep->prettyNameQ());
         }
     }
     void visit(AstSenItem* nodep) override {
