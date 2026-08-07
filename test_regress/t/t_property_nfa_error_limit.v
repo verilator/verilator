@@ -75,9 +75,9 @@ module t (
 
   always @(negedge clk) begin
     if (cyc == 8) begin
-      `checkd(temporal_small_fail, 1);
-      `checkd(temporal_ring_fail, 1);
-      `checkd(boolean_ant_fail, 1);
+      `checkd(temporal_small_fail, 2);
+      `checkd(temporal_ring_fail, 2);
+      `checkd(boolean_ant_fail, 2);
       `checkd(impossible_pass, 0);
       `checkd(impossible_fail, 0);
       $write("*-* All Finished *-*\n");

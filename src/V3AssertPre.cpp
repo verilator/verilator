@@ -667,6 +667,12 @@ private:
         iterateAndNextNull(nodep->stmtsp());
         m_seniAlwaysp = nullptr;
     }
+    void visit(AstAlwaysObserved* nodep) override {
+        iterateAndNextNull(nodep->sentreep());
+        if (nodep->sentreep()) m_seniAlwaysp = nodep->sentreep()->sensesp();
+        iterateAndNextNull(nodep->stmtsp());
+        m_seniAlwaysp = nullptr;
+    }
 
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed

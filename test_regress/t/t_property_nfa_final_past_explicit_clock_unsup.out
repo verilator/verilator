@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_property_nfa_final_past_explicit_clock_unsup.v:14:12: Unsupported: $past expr2 and/or clock arguments
+   14 |     return $past(data, 1, 1'b1, @(posedge clk));
+      |            ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

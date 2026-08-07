@@ -42,13 +42,10 @@ module t (
     cyc <= cyc + 1;
     if (cyc >= 4) a_drop <= 1'b0;
     if (cyc == 19) begin
-      // Counts pinned to Verilator (NFA per-cycle reject). For all-fail windows
-      // others are one lower (it does not fire the end-of-sim tick); see the sva
-      // lessons "multi-cycle end-of-simulation offset" note.
       `checkd(high_fail_q.size(), 0);
-      `checkd(low0_fail_q.size(), 20);  // All others: 19
-      `checkd(low2_fail_q.size(), 18);  // All others: 17
-      `checkd(drop_fail_q[0], 5);  // All others: 6; first fail tick: a_drop sampled low from cyc 5
+      `checkd(low0_fail_q.size(), 19);
+      `checkd(low2_fail_q.size(), 17);
+      `checkd(drop_fail_q[0], 6);
       $write("*-* All Finished *-*\n");
       $finish;
     end

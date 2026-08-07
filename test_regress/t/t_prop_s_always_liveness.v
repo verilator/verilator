@@ -19,6 +19,7 @@ module t (
 
   int low_s_fail_q[$];
   int low_w_fail_q[$];
+  bit finish_pending = 0;
 
   // The youngest [2:5] windows are still open at $finish, so strong s_always
   // reports a liveness failure even with a_high always 1; weak always does not.
@@ -32,7 +33,12 @@ module t (
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
-    if (cyc == 10) begin
+    if (cyc == 10) finish_pending <= 1;
+  end
+
+  // Check at negedge so the final posedge's Reactive action is visible.
+  always @(negedge clk) begin
+    if (finish_pending) begin
       `checkd(low_s_fail_q.size(), low_w_fail_q.size());
       `checkd(low_w_fail_q.size(), 9);
       $write("*-* All Finished *-*\n");
