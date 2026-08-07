@@ -2128,6 +2128,25 @@ List Of Warnings
    simulators.
 
 
+.. option:: SIMILARNAME
+
+   Warns that a variable name only differs from another in lexical case.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_SIMILARNAME_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_SIMILARNAME_msg.rst
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   This is a warning as some downstream VLSI tools do
+   not distinguish net and gate names with the same case.
+
+
 .. option:: SPECIFYIGN
 
    Warns that Verilator does not support certain constructs in
