@@ -1,0 +1,14 @@
+%Error: t/t_class_lparam_struct_field_chain_bad.v:37:25: Malformed dotted select in parameter value
+                                                       : ... note: In instance 't.u'
+   37 |   Sub #(int'(CFG::cfg.jt.cam_type[0])) u_fieldref ();
+      |                         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_lparam_struct_field_chain_bad.v:39:26: Dotted member select on non-struct parameter value
+                                                       : ... note: In instance 't.u'
+   39 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
+      |                          ^
+%Error: t/t_class_lparam_struct_field_chain_bad.v:41:25: Member 'nosuchfield' not found in structure
+                                                       : ... note: In instance 't.u'
+   41 |   Sub #(int'(CFG::cfg.jt.nosuchfield)) u_nomember ();
+      |                         ^
+%Error: Exiting due to
