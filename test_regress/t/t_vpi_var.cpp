@@ -66,6 +66,7 @@ unsigned int callback_count_half = 0;
 unsigned int callback_count_quad = 0;
 unsigned int callback_count_strs = 0;
 unsigned int callback_count_strs_max = 500;
+unsigned int callback_count_3d = 0;
 
 //======================================================================
 
@@ -233,6 +234,156 @@ int _mon_check_value_callbacks() {
 
         TestVpiHandle callback_h = vpi_register_cb(&cb_data);
         CHECK_RESULT_NZ(callback_h);
+    }
+    return 0;
+}
+
+int _value_callback_3d(p_cb_data cb_data) {
+    ++callback_count_3d;
+    return 0;
+}
+
+int _mon_check_value_callbacks_array() {
+    t_cb_data cb_data{};
+    cb_data.reason = cbValueChange;
+    cb_data.time = nullptr;
+
+    {
+        TestVpiHandle vh = VPI_HANDLE("multi_packed_bit");
+        CHECK_RESULT_NZ(vh);
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0x123456;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh, &put_val, &time_s, vpiNoDelay);
+    }
+
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[1][2][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        // Put value between other values and check if value change applies only here
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[1][2][1]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_3d;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh1, &put_val, &time_s, vpiNoDelay);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[1][2][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[1][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[0][0][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[0][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_unpacked_bit[1][2][3]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_unpacked_bit[1][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_short[1][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_short[1][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_3d;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 1;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh1, &put_val, &time_s, vpiNoDelay);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_wide[1][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_wide[1][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_3d;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 1;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh1, &put_val, &time_s, vpiNoDelay);
     }
     return 0;
 }
@@ -2209,6 +2360,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_mcd()) return status;
     if (int status = _mon_check_callbacks()) return status;
     if (int status = _mon_check_value_callbacks()) return status;
+    if (int status = _mon_check_value_callbacks_array()) return status;
     if (int status = _mon_check_var()) return status;
     if (int status = _mon_check_rev()) return status;
     if (int status = _mon_check_varlist()) return status;
@@ -2311,6 +2463,7 @@ int main(int argc, char** argv) {
     CHECK_RESULT(callback_count_half, 250);
     CHECK_RESULT(callback_count_quad, 2);
     CHECK_RESULT(callback_count_strs, callback_count_strs_max);
+    CHECK_RESULT(callback_count_3d, 3);
     VerilatedVpi::clearEvalNeeded();
     if (VerilatedVpi::evalNeeded()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Unexpected VPI dirty state");
