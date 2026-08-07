@@ -23,8 +23,6 @@
 
 #include "verilated_timing.h"
 
-#include <coroutine>
-
 //======================================================================
 // VlCoroutineHandle:: Methods
 
@@ -344,8 +342,8 @@ void VlForkSyncState::done(const char* filename, int lineno) {
 VlCoroutine::VlPromise::~VlPromise() {
     // Indicate to the return object that the coroutine has finished or been destroyed
     if (m_corop) m_corop->m_promisep = nullptr;
-    // If there is a coroutine continuation, destroy it
-    if (m_continuation) { m_continuation.destroy(); }
+    // If there is a continuation, destroy it
+    if (m_continuation) m_continuation.destroy();
 }
 
 std::suspend_never VlCoroutine::VlPromise::final_suspend() noexcept {

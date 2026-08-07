@@ -33,8 +33,6 @@
 #if VM_TIMING == 1
 #include "verilated_fiber.h"
 #include "verilated_timing.h"
-
-#include <coroutine>
 #else
 
 #define VL_UNKNOWN "<unknown>"
