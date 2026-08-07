@@ -852,7 +852,7 @@ class AstClocking final : public AstNode {
     // @astgen op2 := itemsp : List[AstNode]
     // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
-    const bool m_isDefault;  // True if default clocking
+    bool m_isDefault;  // True if default clocking
     const bool m_isGlobal;  // True if global clocking
 
 public:
@@ -873,6 +873,7 @@ public:
     bool isDefault() const { return m_isDefault; }
     bool isGlobal() const { return m_isGlobal; }
     AstVar* ensureEventp(bool childDType = false);
+    void makeDefault() { m_isDefault = true; }
 };
 class AstClockingItem final : public AstNode {
     // Parents:  CLOCKING
@@ -1229,6 +1230,16 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
+};
+class AstDefaultClocking final : public AstNode {
+    std::string m_name;  // Clocking block name
+
+public:
+    AstDefaultClocking(FileLine* fl, const std::string& name)
+        : ASTGEN_SUPER_DefaultClocking(fl)
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstDefaultClocking;
+    std::string name() const override VL_MT_STABLE { return m_name; }
 };
 class AstDefaultDisable final : public AstNode {
     // @astgen op1 := condp : AstNodeExpr
