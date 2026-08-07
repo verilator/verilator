@@ -46,6 +46,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // STATE
     AstClass* m_covergroupp = nullptr;  // Current covergroup being processed
     AstClass* m_enclosingClassp = nullptr;  // Class lexically enclosing the covergroup (if any)
+    AstVar* m_embeddedVarp = nullptr;  // Enclosing class member holding the embedded covergroup
     AstFunc* m_sampleFuncp = nullptr;  // Current sample() function
     AstFunc* m_constructorp = nullptr;  // Current constructor
     std::vector<AstCoverpoint*> m_coverpoints;  // Coverpoints in current covergroup
@@ -70,6 +71,21 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             , crossBins{cb} {}
     };
     std::vector<BinInfo> m_binInfos;  // All bins in current covergroup
+
+    struct EmbeddedEventTrigger final {
+        FileLine* eventFl;  // Source location of the clocking-event item
+        AstVar* baseVarp;  // Enclosing-class member naming the event signal
+        AstVar* memberVarp;  // Sub-member for 'base.member', otherwise nullptr
+        VEdgeType edgeType;  // Edge sensitivity
+        AstVar* prevVarp;  // Previous-value member, created when an assignment is found
+        EmbeddedEventTrigger(FileLine* eventFl, AstVar* baseVarp, AstVar* memberVarp,
+                             VEdgeType edgeType)
+            : eventFl{eventFl}
+            , baseVarp{baseVarp}
+            , memberVarp{memberVarp}
+            , edgeType{edgeType}
+            , prevVarp{nullptr} {}
+    };
 
     std::set<std::string> m_crossedCpNames;  // Coverpoints referenced by a cross (kept legacy)
     std::vector<AstVar*> m_convCpVars;  // VlCoverpoint members of converted coverpoints
@@ -1718,6 +1734,219 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(refp), refp);
     }
 
+    bool isEmbeddedCovergroupVar(const AstVar* varp) const {
+        if (!varp || !varp->isClassMember()) return false;
+        const AstClassRefDType* const refp = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+        return refp && refp->classp() == m_covergroupp;
+    }
+
+    AstVar* findEmbeddedCovergroupVar() const {
+        if (!m_enclosingClassp) return nullptr;
+        for (AstNode* itemp = m_enclosingClassp->membersp(); itemp; itemp = itemp->nextp()) {
+            AstVar* const varp = VN_CAST(itemp, Var);
+            if (isEmbeddedCovergroupVar(varp)) return varp;
+        }
+        // V3LinkParse always creates an implicit variable for an embedded covergroup.
+        return nullptr;  // LCOV_EXCL_LINE
+    }
+
+    std::vector<AstNodeAssign*> findCovergroupConstructions() {
+        std::vector<AstNodeAssign*> foundps;
+        if (!m_embeddedVarp) return foundps;
+        AstFunc* const enclosingNewp
+            = VN_CAST(m_memberMap.findMember(m_enclosingClassp, "new"), Func);
+        if (!enclosingNewp) return foundps;
+        enclosingNewp->foreach([&](AstNodeAssign* asgnp) {
+            const AstNew* const newp = VN_CAST(asgnp->rhsp(), New);
+            const AstVarRef* const lhsRefp = VN_CAST(asgnp->lhsp(), VarRef);
+            if (!newp || !lhsRefp || lhsRefp->varp() != m_embeddedVarp) return;
+            const AstClassRefDType* const refp = VN_CAST(newp->dtypep(), ClassRefDType);
+            if (refp && refp->classp() == m_covergroupp) foundps.push_back(asgnp);
+        });
+        return foundps;
+    }
+
+    AstNodeAssign* findInvalidEmbeddedCovergroupAssignment() {
+        if (!m_embeddedVarp) return nullptr;
+        std::set<const AstNodeAssign*> constructorAssignps;
+        AstFunc* const enclosingNewp
+            = VN_CAST(m_memberMap.findMember(m_enclosingClassp, "new"), Func);
+        if (enclosingNewp) {
+            enclosingNewp->foreach([&](AstNodeAssign* asgnp) {
+                const AstVarRef* const refp = VN_CAST(asgnp->lhsp(), VarRef);
+                if (refp && refp->varp() == m_embeddedVarp) constructorAssignps.insert(asgnp);
+            });
+        }
+        AstNodeAssign* invalidp = nullptr;
+        m_enclosingClassp->foreach([&](AstNodeAssign* asgnp) {
+            if (invalidp || constructorAssignps.count(asgnp)) return;
+            const AstVarRef* const refp = VN_CAST(asgnp->lhsp(), VarRef);
+            if (refp && refp->varp() == m_embeddedVarp) invalidp = asgnp;
+        });
+        return invalidp;
+    }
+
+    std::set<const AstVar*> enclosingInstanceVars() const {
+        std::set<const AstVar*> vars;
+        if (m_enclosingClassp) {
+            m_enclosingClassp->foreachMember([&](AstClass* const, AstVar* const varp) {
+                if (isEnclosingInstanceVar(varp)) vars.insert(varp);
+            });
+        }
+        return vars;
+    }
+
+    bool hasEnclosingEventRef(AstCovergroup* cgp) const {
+        if (!m_embeddedVarp || !cgp->eventp()) return false;
+        const std::set<const AstVar*> enclosingVars = enclosingInstanceVars();
+        bool found = false;
+        cgp->eventp()->foreach([&](AstVarRef* refp) {
+            if (enclosingVars.count(refp->varp())) found = true;
+        });
+        return found;
+    }
+
+    static bool parseEmbeddedEventExpr(AstNodeExpr* exprp, AstVar*& baseVarp,
+                                       AstVar*& memberVarp) {
+        if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+            baseVarp = refp->varp();
+            memberVarp = nullptr;
+            return true;
+        }
+        AstMemberSel* const selp = VN_CAST(exprp, MemberSel);
+        if (!selp) return false;
+        AstVarRef* const baseRefp = VN_CAST(selp->fromp(), VarRef);
+        if (!baseRefp) return false;
+        baseVarp = baseRefp->varp();
+        memberVarp = selp->varp();
+        return true;
+    }
+
+    bool isEventLvalue(AstNodeExpr* exprp, const EmbeddedEventTrigger& trigger) const {
+        if (AstSel* const selp = VN_CAST(exprp, Sel)) exprp = selp->fromp();
+        AstVar* baseVarp = nullptr;
+        AstVar* memberVarp = nullptr;
+        if (!parseEmbeddedEventExpr(exprp, baseVarp, memberVarp)) return false;
+        return baseVarp == trigger.baseVarp && memberVarp == trigger.memberVarp;
+    }
+
+    AstNodeExpr* newEventRead(FileLine* fl, const EmbeddedEventTrigger& trigger) const {
+        AstNodeExpr* const basep = new AstVarRef{fl, trigger.baseVarp, VAccess::READ};
+        if (!trigger.memberVarp) return basep;
+        AstMemberSel* const selp = new AstMemberSel{fl, basep, trigger.memberVarp};
+        selp->access(VAccess::READ);
+        return selp;
+    }
+
+    string eventPrevName(const EmbeddedEventTrigger& trigger, size_t triggerIndex) const {
+        string name = "__Vcg_prev_" + m_embeddedVarp->name() + "_" + std::to_string(triggerIndex)
+                      + "_" + trigger.baseVarp->name();
+        if (trigger.memberVarp) name += "_" + trigger.memberVarp->name();
+        return name;
+    }
+
+    AstNodeExpr* newEmbeddedVarNonNull(FileLine* fl) const {
+        return new AstNeq{fl, new AstVarRef{fl, m_embeddedVarp, VAccess::READ},
+                          new AstConst{fl, AstConst::Null{}}};
+    }
+
+    AstNodeStmt* newSampleStmt(FileLine* fl) const {
+        AstMethodCall* const callp = new AstMethodCall{
+            fl, new AstVarRef{fl, m_embeddedVarp, VAccess::READ}, "sample", nullptr};
+        callp->taskp(m_sampleFuncp);
+        callp->dtypeSetVoid();
+        return callp->makeStmt();
+    }
+
+    void installEmbeddedEventFork(AstSenTree* eventp,
+                                  const std::vector<AstNodeAssign*>& constructps) {
+        // IEEE 1800-2023 19.3 samples coverpoints whenever their clocking event occurs. A
+        // per-instance event cannot use V3Active's static sensitivity path, so spawn
+        // 'fork forever begin @(event); cg.sample(); end join_none' after each construction.
+        for (AstNodeAssign* const constructp : constructps) {
+            FileLine* const fl = constructp->fileline();
+            AstLoop* const loopp = new AstLoop{fl};
+            loopp->addStmtsp(new AstEventControl{fl, eventp->cloneTree(false), nullptr});
+            loopp->addStmtsp(new AstIf{fl, newEmbeddedVarNonNull(fl), newSampleStmt(fl)});
+            AstFork* const forkp = new AstFork{fl, VJoinType::JOIN_NONE};
+            forkp->immediateStart(true);
+            forkp->addForksp(new AstBegin{fl, "", loopp, true});
+            constructp->addNextHere(forkp);
+        }
+        VL_DO_DANGLING(pushDeletep(eventp), eventp);
+    }
+
+    AstNodeExpr* newEventReadyCondition(FileLine* fl, const EmbeddedEventTrigger& trigger) const {
+        AstNodeExpr* const curp = newEventRead(fl, trigger);
+        AstNodeExpr* const prevp = new AstVarRef{fl, trigger.prevVarp, VAccess::READ};
+        AstNodeExpr* edgep = nullptr;
+        // IEEE 1800-2023 9.4.2 detects edge-qualified events only on the expression's LSB,
+        // while an implicit change event observes the complete expression.
+        if (trigger.edgeType == VEdgeType::ET_POSEDGE) {
+            edgep = new AstSel{fl, new AstAnd{fl, curp, new AstNot{fl, prevp}}, 0, 1};
+        } else if (trigger.edgeType == VEdgeType::ET_NEGEDGE) {
+            edgep = new AstSel{fl, new AstAnd{fl, new AstNot{fl, curp}, prevp}, 0, 1};
+        } else if (trigger.edgeType == VEdgeType::ET_BOTHEDGE) {
+            edgep = new AstSel{fl, new AstXor{fl, curp, prevp}, 0, 1};
+        } else {
+            edgep = new AstNeq{fl, curp, prevp};
+        }
+        return new AstLogAnd{fl, newEmbeddedVarNonNull(fl), edgep};
+    }
+
+    std::vector<EmbeddedEventTrigger> collectEmbeddedEventTriggers(AstCovergroup* cgp) {
+        std::vector<EmbeddedEventTrigger> triggers;
+        const std::set<const AstVar*> enclosingVars = enclosingInstanceVars();
+        for (AstNode* senp = cgp->eventp()->sensesp(); senp; senp = senp->nextp()) {
+            AstSenItem* const itemp = VN_AS(senp, SenItem);
+            AstVar* baseVarp = nullptr;
+            AstVar* memberVarp = nullptr;
+            if (!parseEmbeddedEventExpr(itemp->sensp(), baseVarp, memberVarp)
+                || !enclosingVars.count(baseVarp)) {
+                return {};
+            }
+            triggers.emplace_back(itemp->fileline(), baseVarp, memberVarp, itemp->edgeType());
+        }
+        return triggers;
+    }
+
+    void installEmbeddedEventTriggers(std::vector<EmbeddedEventTrigger>& triggers,
+                                      const std::vector<AstNodeAssign*>& constructps) {
+        // Without --timing, approximate a per-instance event by sampling after assignments
+        // within the enclosing class. External writes and exact scheduling cannot be observed.
+        if (constructps.empty()) return;
+        for (size_t triggerIndex = 0; triggerIndex < triggers.size(); ++triggerIndex) {
+            EmbeddedEventTrigger& trigger = triggers[triggerIndex];
+            std::vector<AstNodeAssign*> assignps;
+            m_enclosingClassp->foreach([&](AstNodeAssign* asgnp) {
+                if (isEventLvalue(asgnp->lhsp(), trigger)) assignps.push_back(asgnp);
+            });
+            if (assignps.empty()) {
+                trigger.eventFl->v3warn(
+                    COVERIGN, "Unsupported: 'covergroup' clocking event signal has no assignment "
+                              "within the enclosing class; no coverage sampled. Use --timing for "
+                              "full support.");
+                continue;
+            }
+            AstNodeDType* const dtypep
+                = trigger.memberVarp ? trigger.memberVarp->dtypep() : trigger.baseVarp->dtypep();
+            AstVar* const prevVarp = new AstVar{trigger.eventFl, VVarType::MEMBER,
+                                                eventPrevName(trigger, triggerIndex), dtypep};
+            prevVarp->isStatic(false);
+            m_enclosingClassp->addMembersp(prevVarp);
+            trigger.prevVarp = prevVarp;
+            for (AstNodeAssign* const asgnp : assignps) {
+                FileLine* const fl = asgnp->fileline();
+                AstIf* const ifp
+                    = new AstIf{fl, newEventReadyCondition(fl, trigger), newSampleStmt(fl)};
+                ifp->addNextHere(new AstAssign{fl,
+                                               new AstVarRef{fl, trigger.prevVarp, VAccess::WRITE},
+                                               newEventRead(fl, trigger)});
+                asgnp->addNextHere(ifp);
+            }
+        }
+    }
+
     void deleteCoverageItems() {
         for (AstCoverpoint* const cpp : m_coverpoints) {
             VL_DO_DANGLING(pushDeletep(cpp->unlinkFrBack()), cpp);
@@ -1771,7 +2000,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return visitor.offenderp();
     }
 
-    AstVarRef* installEnclosingBackPointer() {
+    AstVarRef* installEnclosingBackPointer(const std::vector<AstNodeAssign*>& constructps) {
         // Simple-case support for embedded covergroups (IEEE 1800-2023 19.4) whose
         // coverpoints reference members of the enclosing class ("Class members can be used
         // in coverpoint expressions").  The covergroup is lowered into a sibling class with
@@ -1789,11 +2018,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstNode* itemp = m_covergroupp->membersp(); itemp; itemp = itemp->nextp()) {
             if (const AstVar* const varp = VN_CAST(itemp, Var)) ownVars.insert(varp);
         }
-        std::set<const AstVar*> enclosingVars;
-        m_enclosingClassp->foreachMember([&](AstClass* const, AstVar* const varp) {
-            if (isEnclosingInstanceVar(varp)) enclosingVars.insert(varp);
-        });
-
+        const std::set<const AstVar*> enclosingVars = enclosingInstanceVars();
         std::vector<AstVarRef*> refsToRewrite;
         std::vector<AstThisRef*> thisRefsToRewrite;
         const auto scan = [&](AstNode* rootp) {
@@ -1822,32 +2047,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstCoverCross* const crossp : m_coverCrosses) scan(crossp);
         if (invalidp || !offenderp) return invalidp;
 
-        AstVar* embeddedVarp = nullptr;
-        for (AstNode* itemp = m_enclosingClassp->membersp(); itemp; itemp = itemp->nextp()) {
-            AstVar* const varp = VN_CAST(itemp, Var);
-            if (!varp) continue;
-            const AstClassRefDType* const refp
-                = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
-            if (refp && refp->classp() == m_covergroupp) {
-                embeddedVarp = varp;
-                break;
-            }
-        }
-        UASSERT_OBJ(embeddedVarp, m_covergroupp, "Embedded covergroup variable not found");
-
-        std::vector<AstNodeAssign*> constructps;
-        AstFunc* const enclosingNewp
-            = VN_CAST(m_memberMap.findMember(m_enclosingClassp, "new"), Func);
-        if (enclosingNewp) {
-            enclosingNewp->foreach([&](AstNodeAssign* asgnp) {
-                const AstNew* const newp = VN_CAST(asgnp->rhsp(), New);
-                const AstVarRef* const lhsRefp = VN_CAST(asgnp->lhsp(), VarRef);
-                if (newp && lhsRefp && lhsRefp->varp() == embeddedVarp) {
-                    const AstClassRefDType* const refp = VN_CAST(newp->dtypep(), ClassRefDType);
-                    if (refp && refp->classp() == m_covergroupp) constructps.push_back(asgnp);
-                }
-            });
-        }
+        UASSERT_OBJ(m_embeddedVarp, m_covergroupp, "Embedded covergroup variable not found");
         // Commit: add the back-pointer member, rewrite the references, initialize the handle.
         FileLine* const fl = m_covergroupp->fileline();
         AstClassRefDType* const enclDTypep = new AstClassRefDType{fl, m_enclosingClassp, nullptr};
@@ -1880,14 +2080,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         UINFO(9, "Visiting class: " << nodep->name() << " isCovergroup=" << nodep->isCovergroup());
         if (nodep->isCovergroup()) {
             VL_RESTORER(m_covergroupp);
+            VL_RESTORER(m_embeddedVarp);
             VL_RESTORER(m_sampleFuncp);
             VL_RESTORER(m_constructorp);
             VL_RESTORER_CLEAR(m_coverpoints);
             VL_RESTORER_CLEAR(m_coverpointMap);
             VL_RESTORER_CLEAR(m_coverCrosses);
             m_covergroupp = nodep;
+            m_embeddedVarp = findEmbeddedCovergroupVar();
             m_sampleFuncp = nullptr;
             m_constructorp = nullptr;
+            std::vector<EmbeddedEventTrigger> embeddedEventTriggers;
+            AstSenTree* embeddedEventForkp = nullptr;
 
             // Extract and store the clocking event from AstCovergroup node
             // The parser creates this node to preserve the event information
@@ -1900,33 +2104,42 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     // event exists, so cgp->eventp() is always non-null here.
                     UASSERT_OBJ(cgp->eventp(), cgp,
                                 "Sentinel AstCovergroup in class must have non-null eventp");
-                    // Check if the clocking event references a member variable (unsupported)
-                    // Clocking events should be on signals/nets, not class members
-                    bool eventUnsupported = false;
-                    for (AstNode* senp = cgp->eventp()->sensesp(); senp; senp = senp->nextp()) {
-                        AstSenItem* const senItemp = VN_AS(senp, SenItem);
-                        if (AstVarRef* const varrefp  // LCOV_EXCL_BR_LINE
-                            = VN_CAST(senItemp->sensp(), VarRef)) {
-                            if (varrefp->varp()->isClassMember()) {
-                                cgp->v3warn(COVERIGN, "Unsupported: 'covergroup' clocking event "
-                                                      "on member variable");
-                                eventUnsupported = true;
+                    if (hasEnclosingEventRef(cgp)) {
+                        UASSERT_OBJ(m_embeddedVarp, cgp,
+                                    "Embedded covergroup event has no instance variable");
+                        // IEEE 1800-2023 19.4 permits assignment to an embedded covergroup
+                        // variable only in the enclosing class's new method.
+                        if (AstNodeAssign* const invalidp
+                            = findInvalidEmbeddedCovergroupAssignment()) {
+                            invalidp->v3error(
+                                "Embedded covergroup variable "
+                                << m_embeddedVarp->prettyNameQ()
+                                << " may only be assigned in the enclosing class's 'new' method "
+                                   "(IEEE 1800-2023 19.4).");
+                            hasUnsupportedEvent = true;
+                            VL_DO_DANGLING(pushDeletep(cgp->unlinkFrBack()), cgp);
+                            itemp = nextp;
+                            continue;
+                        }
+                        if (v3Global.opt.timing().isSetTrue()) {
+                            embeddedEventForkp = cgp->eventp()->unlinkFrBack();
+                        } else {
+                            embeddedEventTriggers = collectEmbeddedEventTriggers(cgp);
+                            if (embeddedEventTriggers.empty()) {
+                                cgp->v3warn(COVERIGN,
+                                            "Unsupported: 'covergroup' clocking event on complex "
+                                            "member expression; use --timing for full support.");
                                 hasUnsupportedEvent = true;
-                                break;
                             }
                         }
-                    }
-
-                    if (!eventUnsupported) {
-                        // Leave cgp in the class membersp so the SenTree stays
-                        // linked in the AST. V3Active will find it via membersp,
-                        // use the event, then delete the AstCovergroup itself.
-                        UINFO(4, "Keeping covergroup event node for V3Active: " << nodep->name());
+                        VL_DO_DANGLING(pushDeletep(cgp->unlinkFrBack()), cgp);
                         itemp = nextp;
                         continue;
                     }
-                    // Remove the AstCovergroup node - either unsupported event or no event
-                    VL_DO_DANGLING(pushDeletep(cgp->unlinkFrBack()), cgp);
+                    // V3Active handles events that do not depend on an enclosing instance.
+                    UINFO(4, "Keeping covergroup event node for V3Active: " << nodep->name());
+                    itemp = nextp;
+                    continue;
                 }
                 itemp = nextp;
             }
@@ -1956,21 +2169,31 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                             "class handle member; ignoring covergroup "
                                                 << nodep->prettyNameQ());
                 deleteCoverageItems();
+                if (embeddedEventForkp) {
+                    VL_DO_DANGLING(pushDeletep(embeddedEventForkp), embeddedEventForkp);
+                }
                 return;
             }
+
+            const std::vector<AstNodeAssign*> constructps = findCovergroupConstructions();
 
             // Embedded covergroups (IEEE 1800-2023 19.4): coverpoints, iff expressions, and
             // crosses may reference members of the enclosing class. The covergroup is lowered
             // into a sibling class with no implicit handle to the enclosing instance. Install
             // an explicit back-pointer and route the references through it.
-            if (AstVarRef* const invalidp = installEnclosingBackPointer()) {
+            if (AstVarRef* const invalidp = installEnclosingBackPointer(constructps)) {
                 invalidp->v3error("Non-static member "
                                   << invalidp->varp()->prettyNameQ()
                                   << " of an outer class requires an explicit "
                                      "object handle (IEEE 1800-2023 8.23).");
                 deleteCoverageItems();
+                if (embeddedEventForkp) {
+                    VL_DO_DANGLING(pushDeletep(embeddedEventForkp), embeddedEventForkp);
+                }
                 return;
             }
+            installEmbeddedEventTriggers(embeddedEventTriggers, constructps);
+            if (embeddedEventForkp) installEmbeddedEventFork(embeddedEventForkp, constructps);
             processCovergroup();
             // Remove lowered coverpoints/crosses from the class - they have been
             // fully translated into C++ code and must not reach downstream passes

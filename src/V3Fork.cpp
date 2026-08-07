@@ -658,8 +658,10 @@ class ForkVisitor final : public VNVisitor {
         // join_any block the parent process, deferring branch start with a synthetic #0 delay is
         // normally only needed for join_none. A fork that can be disabled by name needs the same
         // deferral for every join type so all branches register their processes before any branch
-        // body can disable the block.
-        if (nodep->joinType().joinNone() || forkIsDisableable(nodep)) {
+        // body can disable the block. Compiler-generated immediate-start forks already have the
+        // required ordering and must arm their event controls before the parent continues.
+        if ((nodep->joinType().joinNone() && !nodep->immediateStart())
+            || forkIsDisableable(nodep)) {
             UINFO(9, "Adding fork branch start sentinels " << nodep);
             FileLine* fl = nodep->fileline();
             // We use a sentinel value of UINT64_MAX to mark this delay so that it goes to the

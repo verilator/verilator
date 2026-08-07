@@ -11,6 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['--timing'], expect_filename=test.golden_filename, fails=True)
+test.compile(
+    verilator_flags2=['--no-timing'],
+    fails=True,
+    expect_filename=test.golden_filename,
+)
 
 test.passes()

@@ -1228,12 +1228,13 @@ package Vt_debug_emitv_std;
 endpackage
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
+        bit cg_clk;
         int signed member;
         member = 'sh1;
         int signed rmember1;
         int signed rmember2;
         covergroup Vt_debug_emitv___vlAnonCG_cg_in_class;
-        function new;
+        @(posedge cg_clk)function new;
             cp_m: coverpoint member {
                 bins one = {'sh1};
                 bins two = {'sh2};
@@ -1283,13 +1284,14 @@ package Vt_debug_emitv___024unit;
         endfunction
         endcovergroup
         Vt_debug_emitv___vlAnonCG_cg_in_class cg_in_classVt_debug_emitv___vlAnonCG_cg_in_class;
+        function new;
+            cg_in_class = new();
+        endfunction
         task method;
             if ((this != this)) begin
                 $stop;
             end
         endtask
-        function new;
-        endfunction
         function randomize;
         endfunction
     endclass
