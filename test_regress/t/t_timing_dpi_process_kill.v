@@ -52,8 +52,6 @@ task dpi_export();
   #10;
   p.kill();
 
-  if ($time != 10) $stop;
-
   ->evt1;
   @evt2 begin
     if (!foo.event_received) $stop;
@@ -66,6 +64,7 @@ import "DPI-C" context task dpi_import();
 module t;
   initial begin
     dpi_import();
+    if ($time != 10) $stop;
     $display("*-* All Finished *-*\n");
     $finish;
   end
