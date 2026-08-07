@@ -649,9 +649,11 @@ class AssertVisitor final : public VNVisitor {
 
         AstNode* propExprp;
         AstNodeExpr* disablep = nullptr;
+        AstNodeExpr* matchCountp = nullptr;
         if (AstPropSpec* const specp = VN_CAST(nodep->propp(), PropSpec)) {
             propExprp = specp->propp()->unlinkFrBack();
             if (specp->disablep()) disablep = specp->disablep()->unlinkFrBack();
+            matchCountp = specp->matchCountp();
         } else {
             propExprp = nodep->propp()->unlinkFrBack();
         }
@@ -665,6 +667,28 @@ class AssertVisitor final : public VNVisitor {
         }
         if (failsp && !VN_IS(propExprp, PExpr)) {
             failsp = newIfAssertFailOn(failsp, nodep->directive(), nodep->userType());
+        }
+        if (coverp && matchCountp && passsp) {
+            // Convert the match count into a loop that decrements a temporary variable until it
+            // reaches zero.
+            matchCountp->unlinkFrBack();
+            AstVar* const remainingp = new AstVar{
+                flp, VVarType::BLOCKTEMP, "__VnfaRemainingMatchCount", matchCountp->dtypep()};
+            remainingp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            AstBegin* const replayp = new AstBegin{flp, "", remainingp, true};
+            replayp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, remainingp, VAccess::WRITE}, matchCountp});
+            AstLoop* const loopp = new AstLoop{flp};
+            loopp->addStmtsp(
+                new AstLoopTest{flp, loopp, new AstVarRef{flp, remainingp, VAccess::READ}});
+            loopp->addStmtsp(passsp);
+            loopp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, remainingp, VAccess::WRITE},
+                              new AstSub{flp, new AstVarRef{flp, remainingp, VAccess::READ},
+                                         new AstConst{flp, AstConst::WidthedValue{},
+                                                      remainingp->dtypep()->width(), 1}}});
+            replayp->addStmtsp(loopp);
+            passsp = replayp;
         }
         AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};

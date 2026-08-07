@@ -2009,10 +2009,12 @@ void AstPropSpec::dump(std::ostream& str) const {
     if (propStrength() != VPropStrength::DEFAULT) {
         str << " [" << VString::upcase(propStrength().ascii()) << "]";
     }
+    if (matchCountp()) str << " [MATCHCOUNT]";
 }
 void AstPropSpec::dumpJson(std::ostream& str) const {
     if (propStrength() != VPropStrength::DEFAULT)
         dumpJsonStr(str, "strength", propStrength().ascii());
+    dumpJsonBoolIf(str, "hasMatchCount", matchCountp());
     dumpJsonGen(str);
 }
 
