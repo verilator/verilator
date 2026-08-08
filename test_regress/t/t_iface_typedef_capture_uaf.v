@@ -42,7 +42,10 @@ module t;
   for (genvar g = 0; g < 2; ++g) begin : gen_block
     avmm_if #(.DW(32 * (g + 1))) m_if ();
     avmm_if #(.DW(32 * (g + 1))) s_if ();
-    avmm_autopipeline pipe (.master(m_if), .slave(s_if));
+    avmm_autopipeline pipe (
+        .master(m_if),
+        .slave(s_if)
+    );
   end
 
   initial begin

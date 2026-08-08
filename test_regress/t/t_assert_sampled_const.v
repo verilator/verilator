@@ -10,7 +10,7 @@
 // verilog_format: on
 
 module t (
-  input logic clk
+    input logic clk
 );
 
   localparam OP_UNTYPED = 3'b000;

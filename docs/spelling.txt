@@ -709,6 +709,7 @@ de
 dearray
 deassign
 debugi
+deduplication
 defenv
 defname
 defparam
@@ -1177,6 +1178,7 @@ tcmalloc
 tcmalloc
 tenghtt
 testbench
+testbenches
 threadsafe
 threashold
 timeInc

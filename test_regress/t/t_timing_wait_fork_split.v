@@ -11,23 +11,34 @@
 
 module t;
   logic clk = 1'b0;
-  int   cnt = 0;
+  int cnt = 0;
 
   always #5 clk = ~clk;
 
   task automatic phase(int n);
-    fork begin @(posedge clk); cnt += n; end join_none
+    fork
+      begin
+        @(posedge clk);
+        cnt += n;
+      end
+    join_none
     wait fork;
   endtask
 
   initial begin
-    fork @(posedge clk); join_none
+    fork
+      @(posedge clk);
+    join_none
     wait fork;
     phase(1);
-    fork @(negedge clk); join_none
+    fork
+      @(negedge clk);
+    join_none
     wait fork;
     phase(2);
-    fork @(posedge clk); join_none
+    fork
+      @(posedge clk);
+    join_none
     wait fork;
     phase(4);
     if (cnt != 7) begin

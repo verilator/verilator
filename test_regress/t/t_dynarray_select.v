@@ -24,7 +24,7 @@ module t;
     gen = new;
     arr = new[1];
     arr[0][gen.get_num(3)] = 1'b1;
-    `checkh(arr[0][3],1'b1);
+    `checkh(arr[0][3], 1'b1);
     $finish;
   end
 endmodule

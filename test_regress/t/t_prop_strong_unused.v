@@ -10,6 +10,6 @@ module t (
   logic a = 1'b1;
 
   property p_unused_strong;
-    @(posedge clk) strong(a);
+    @(posedge clk) strong (a);
   endproperty
 endmodule

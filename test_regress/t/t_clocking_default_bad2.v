@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  input clk
-  );
+    input clk
+);
 
-  initial begin: foo
+  initial begin : foo
   end
 
   default clocking cb_nonexistent;

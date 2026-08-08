@@ -28,11 +28,11 @@ class QueueHolder;
   endtask
 endclass
 
-module child(
-  input bit do_disable,
-  output bit survived_a,
-  output bit survived_b,
-  output bit done
+module child (
+    input bit do_disable,
+    output bit survived_a,
+    output bit survived_b,
+    output bit done
 );
 
   initial begin
@@ -42,7 +42,8 @@ module child(
           #1;
           disable fork_blk;
           $stop;
-        end else begin
+        end
+        else begin
           #6;
           survived_a = 1'b1;
         end
@@ -50,7 +51,8 @@ module child(
       begin
         if (do_disable) begin
           #5 $stop;
-        end else begin
+        end
+        else begin
           #6;
           survived_b = 1'b1;
         end
@@ -72,18 +74,18 @@ module t;
   bit done1;
   QueueHolder holder;
 
-  child child0(
-    .do_disable(do_disable0),
-    .survived_a(survived_a0),
-    .survived_b(survived_b0),
-    .done(done0)
+  child child0 (
+      .do_disable(do_disable0),
+      .survived_a(survived_a0),
+      .survived_b(survived_b0),
+      .done(done0)
   );
 
-  child child1(
-    .do_disable(do_disable1),
-    .survived_a(survived_a1),
-    .survived_b(survived_b1),
-    .done(done1)
+  child child1 (
+      .do_disable(do_disable1),
+      .survived_a(survived_a1),
+      .survived_b(survived_b1),
+      .done(done1)
   );
 
   initial begin

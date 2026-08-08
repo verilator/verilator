@@ -17,7 +17,7 @@ class Indep;
   Sub s[];
 
   function new();
-    s = new [10];
+    s = new[10];
   endfunction
 endclass
 

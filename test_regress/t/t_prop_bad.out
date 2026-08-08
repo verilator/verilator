@@ -1,47 +1,47 @@
-%Error: t/t_prop_bad.v:14:40: syntax error, unexpected s_eventually, expecting IDENTIFIER-for-type
-   14 |   assert property (@(posedge clk) weak(s_eventually a));
-      |                                        ^~~~~~~~~~~~
+%Error: t/t_prop_bad.v:14:41: syntax error, unexpected s_eventually, expecting IDENTIFIER-for-type
+   14 |   assert property (@(posedge clk) weak (s_eventually a));
+      |                                         ^~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_prop_bad.v:15:40: syntax error, unexpected s_always, expecting IDENTIFIER-for-type
-   15 |   assert property (@(posedge clk) weak(s_always [1:2] a));
-      |                                        ^~~~~~~~
-%Error: t/t_prop_bad.v:16:40: syntax error, unexpected nexttime, expecting IDENTIFIER-for-type
-   16 |   assert property (@(posedge clk) weak(nexttime a));
-      |                                        ^~~~~~~~
-%Error: t/t_prop_bad.v:17:40: syntax error, unexpected s_nexttime, expecting IDENTIFIER-for-type
-   17 |   assert property (@(posedge clk) weak(s_nexttime a));
-      |                                        ^~~~~~~~~~
-%Error: t/t_prop_bad.v:18:40: syntax error, unexpected always, expecting IDENTIFIER-for-type
-   18 |   assert property (@(posedge clk) weak(always a));
-      |                                        ^~~~~~
-%Error: t/t_prop_bad.v:19:40: syntax error, unexpected eventually, expecting IDENTIFIER-for-type
-   19 |   assert property (@(posedge clk) weak(eventually [1:2] a));
-      |                                        ^~~~~~~~~~
-%Error: t/t_prop_bad.v:20:42: syntax error, unexpected |->
-   20 |   assert property (@(posedge clk) weak(a |-> b));
-      |                                          ^~~
-%Error: t/t_prop_bad.v:21:42: syntax error, unexpected |=>
-   21 |   assert property (@(posedge clk) weak(a |=> b));
-      |                                          ^~~
-%Error: t/t_prop_bad.v:22:42: syntax error, unexpected implies
-   22 |   assert property (@(posedge clk) weak(a implies b));
-      |                                          ^~~~~~~
-%Error: t/t_prop_bad.v:23:42: syntax error, unexpected iff
-   23 |   assert property (@(posedge clk) weak(a iff b));
-      |                                          ^~~
-%Error: t/t_prop_bad.v:24:40: syntax error, unexpected accept_on, expecting IDENTIFIER-for-type
-   24 |   assert property (@(posedge clk) weak(accept_on (a) b));
-      |                                        ^~~~~~~~~
-%Error: t/t_prop_bad.v:25:40: syntax error, unexpected reject_on, expecting IDENTIFIER-for-type
-   25 |   assert property (@(posedge clk) weak(reject_on (a) b));
-      |                                        ^~~~~~~~~
+%Error: t/t_prop_bad.v:15:41: syntax error, unexpected s_always, expecting IDENTIFIER-for-type
+   15 |   assert property (@(posedge clk) weak (s_always[1: 2] a));
+      |                                         ^~~~~~~~
+%Error: t/t_prop_bad.v:16:41: syntax error, unexpected nexttime, expecting IDENTIFIER-for-type
+   16 |   assert property (@(posedge clk) weak (nexttime a));
+      |                                         ^~~~~~~~
+%Error: t/t_prop_bad.v:17:41: syntax error, unexpected s_nexttime, expecting IDENTIFIER-for-type
+   17 |   assert property (@(posedge clk) weak (s_nexttime a));
+      |                                         ^~~~~~~~~~
+%Error: t/t_prop_bad.v:18:41: syntax error, unexpected always, expecting IDENTIFIER-for-type
+   18 |   assert property (@(posedge clk) weak (always a));
+      |                                         ^~~~~~
+%Error: t/t_prop_bad.v:19:41: syntax error, unexpected eventually, expecting IDENTIFIER-for-type
+   19 |   assert property (@(posedge clk) weak (eventually[1: 2] a));
+      |                                         ^~~~~~~~~~
+%Error: t/t_prop_bad.v:20:43: syntax error, unexpected |->
+   20 |   assert property (@(posedge clk) weak (a |-> b));
+      |                                           ^~~
+%Error: t/t_prop_bad.v:21:43: syntax error, unexpected |=>
+   21 |   assert property (@(posedge clk) weak (a |=> b));
+      |                                           ^~~
+%Error: t/t_prop_bad.v:22:43: syntax error, unexpected implies
+   22 |   assert property (@(posedge clk) weak (a implies b));
+      |                                           ^~~~~~~
+%Error: t/t_prop_bad.v:23:43: syntax error, unexpected iff
+   23 |   assert property (@(posedge clk) weak (a iff b));
+      |                                           ^~~
+%Error: t/t_prop_bad.v:24:41: syntax error, unexpected accept_on, expecting IDENTIFIER-for-type
+   24 |   assert property (@(posedge clk) weak (accept_on (a) b));
+      |                                         ^~~~~~~~~
+%Error: t/t_prop_bad.v:25:41: syntax error, unexpected reject_on, expecting IDENTIFIER-for-type
+   25 |   assert property (@(posedge clk) weak (reject_on (a) b));
+      |                                         ^~~~~~~~~
 %Error: t/t_prop_bad.v:26:40: syntax error, unexpected if, expecting IDENTIFIER-for-type
    26 |   assert property (@(posedge clk) weak(if (a) b else c));
       |                                        ^~
-%Error: t/t_prop_bad.v:27:40: syntax error, unexpected strong, expecting IDENTIFIER-for-type
-   27 |   assert property (@(posedge clk) weak(strong(a)));
-      |                                        ^~~~~~
-%Error: t/t_prop_bad.v:28:42: syntax error, unexpected weak, expecting IDENTIFIER-for-type
-   28 |   assert property (@(posedge clk) strong(weak(a)));
-      |                                          ^~~~
+%Error: t/t_prop_bad.v:27:41: syntax error, unexpected strong, expecting IDENTIFIER-for-type
+   27 |   assert property (@(posedge clk) weak (strong (a)));
+      |                                         ^~~~~~
+%Error: t/t_prop_bad.v:28:43: syntax error, unexpected weak, expecting IDENTIFIER-for-type
+   28 |   assert property (@(posedge clk) strong (weak (a)));
+      |                                           ^~~~
 %Error: Exiting due to
