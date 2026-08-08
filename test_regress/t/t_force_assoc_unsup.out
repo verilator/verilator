@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_force_assoc_unsup.v:15:18: Unsupported: Force or release of ASSOCSEL, as only member and element selections have a force target
+   15 |   initial force a[0] = 1;
+      |                  ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

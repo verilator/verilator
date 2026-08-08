@@ -881,8 +881,10 @@ public:
         EVENT_IS_FIRED,
         EVENT_IS_TRIGGERED,
         FORCE_ADD,
+        FORCE_IS_FORCED,
         FORCE_READ,
         FORCE_READ_INDEX,
+        FORCE_READ_RANGE,
         FORCE_READ_SEL,
         FORCE_RELEASE,
         FORCE_TOUCH,
@@ -1035,8 +1037,10 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {EVENT_IS_FIRED, "isFired", true}, \
            {EVENT_IS_TRIGGERED, "isTriggered", true}, \
            {FORCE_ADD, "addForce", false}, \
+           {FORCE_IS_FORCED, "isForced", true}, \
            {FORCE_READ, "read", true}, \
            {FORCE_READ_INDEX, "readIndex", true}, \
+           {FORCE_READ_RANGE, "readRange", true}, \
            {FORCE_READ_SEL, "readSel", true}, \
            {FORCE_RELEASE, "release", false}, \
            {FORCE_TOUCH, "touch", false}, \
