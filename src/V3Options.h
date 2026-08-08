@@ -309,6 +309,7 @@ private:
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
     bool m_verilate = true;         // main switch: --verilate
     bool m_vpi = false;             // main switch: --vpi
+    bool m_vpiLazyPublicRW = false;  // main switch: --vpi-lazy-public-rw
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
 
@@ -359,6 +360,7 @@ private:
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
     int         m_constraintArrayLimit = 64;  // main switch: --constraint-array-limit
     int         m_verilateJobs = -1;  // main switch: --verilate-jobs
+    int         m_vpiLazyFoldBudget = 100000;  // main switch: --vpi-lazy-fold-budget
 
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
@@ -613,6 +615,7 @@ public:
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
+    bool vpiLazyPublicRW() const { return m_vpiLazyPublicRW; }
     bool waiverMultiline() const { return m_waiverMultiline; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool serializeOnly() const { return m_jsonOnly; }
@@ -668,6 +671,7 @@ public:
     int unrollStmts() const { return m_unrollStmts; }
     int constraintArrayLimit() const { return m_constraintArrayLimit; }
     int verilateJobs() const { return m_verilateJobs; }
+    int vpiLazyFoldBudget() const { return m_vpiLazyFoldBudget; }
 
     int compLimitBlocks() const { return m_compLimitBlocks; }
     int compLimitMembers() const VL_MT_SAFE { return m_compLimitMembers; }

@@ -662,6 +662,7 @@ void AstVar::combineType(const AstVar* otherp) {
     if (otherp->isSigModPublic()) sigModPublic(true);
     if (otherp->isSigUserRdPublic()) sigUserRdPublic(true);
     if (otherp->isSigUserRWPublic()) sigUserRWPublic(true);
+    sigVpiLazyRWPublic(isSigVpiLazyRWPublic() || otherp->isSigVpiLazyRWPublic());
     if (otherp->varType() == VVarType::PORT) {
         varType(otherp->varType());
         direction(otherp->direction());
@@ -767,7 +768,7 @@ string AstVar::vlEnumDir() const {
         out = "VLVD_NODIR";
     }
     //
-    if (isSigUserRWPublic()) {
+    if (isSigExternallyRWPublic()) {
         out += "|VLVF_PUB_RW";
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
@@ -3375,6 +3376,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
     dumpJsonBoolFuncIf(str, isSigUserRdPublic);
     dumpJsonBoolFuncIf(str, isSigUserRWPublic);
+    dumpJsonBoolFuncIf(str, isSigVpiLazyRWPublic);
     dumpJsonBoolFuncIf(str, isReadByDpi);
     dumpJsonBoolFuncIf(str, isWrittenByDpi);
     dumpJsonBoolFuncIf(str, isGParam);

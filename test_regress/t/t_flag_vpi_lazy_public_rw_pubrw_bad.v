@@ -1,0 +1,2 @@
+module t;
+endmodule

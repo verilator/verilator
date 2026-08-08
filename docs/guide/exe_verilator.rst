@@ -2094,6 +2094,57 @@ Summary:
 
    Enable the use of VPI and linking against the :file:`verilated_vpi.cpp` files.
 
+.. option:: --vpi-lazy-fold-budget <value>
+
+   Experimental. Only meaningful with :vlopt:`--vpi-lazy-public-rw`. Bounds
+   the number of AST nodes that the always_comb/partial-write reconstruction
+   fold may clone while assembling a single signal's read expression, which
+   guards against exponential accumulation of cloned nodes on signals with
+   deep if/case fan-out. A target whose fold would exceed the budget is
+   instead retained with ordinary read-write storage. Defaults to 100000. A
+   value of 0 disables folding entirely, so every reconstructable target is
+   retained.
+
+.. option:: --vpi-lazy-public-rw
+
+   Experimental. Requires :vlopt:`--vpi`. Exposes signals to VPI read access
+   similarly to :vlopt:`--public-flat-rw`, but without pinning them onto the
+   active evaluation path, so it costs far less simulation time on designs
+   with many combinational nets (for example, those with heavy
+   ``_zz_``-style temporary generation).
+
+   Signals that the optimizer would otherwise eliminate are reconstructed
+   on demand, read-only, from a cold function invoked by the VPI runtime; a
+   ``vpi_put_value`` on such a signal is rejected. A signal that must remain
+   writable can be marked ``/*verilator public_flat_rw*/`` individually, which
+   pins it read-write rather than reconstructing it. If the global
+   :vlopt:`--public-flat-rw` is also given, this option takes precedence (the
+   global pin is dropped) and a :option:`NOEFFECT` warning is issued, so callers
+   that always pass :vlopt:`--public-flat-rw` can still opt into lazy mode.
+   Signals that require storage to represent, namely registers, unpacked
+   aggregates, aliases, combinational cycles, and any signal the
+   reconstruction cannot express, are instead retained with full read-write
+   storage on the evaluation path, as with :vlopt:`--public-flat-rw`.
+
+   Reconstruction supports packed variables and packed aggregates (packed
+   structs, unions, and arrays) driven by continuous or combinational
+   (``always_comb``) assignments, including partial bit writes and signals
+   assembled from multiple continuous partial assignments. Unpacked
+   aggregates, latches, combinational cycles, and multiply- or
+   mixed-driven signals are always retained rather than reconstructed. A
+   VPI read of either kind of signal returns its value as of the most
+   recent evaluation of the model; there is no separate settle value.
+
+   This option guarantees a completeness floor: every signal remains at least
+   VPI-readable, so the set of signals visible to VPI is a superset of what
+   :vlopt:`--public-flat-rw` would expose. Almost every lazy signal is
+   reconstructed, retargeted, or retained, but a narrow residual (undriven or
+   otherwise stateless nets, and a few signals no classification path handles)
+   would otherwise be left unpinned and removed by the optimizer, receiving no
+   VPI entry. Each such residual is instead retained with ordinary storage, at
+   the cost of a small amount of the optimization win on the residual;
+   reconstructed and retargeted signals keep their full performance benefit.
+
 .. option:: --waiver-multiline
 
    When using :vlopt:`--waiver-output \<filename\> <--waiver-output>`,

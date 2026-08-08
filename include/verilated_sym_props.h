@@ -165,6 +165,7 @@ public:
         return bits;
     }
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
+    bool isLazyPublicRW() const { return ((m_vlflags & VLVF_LAZY_PUBLIC_RW) != 0); }
     bool isForceable() const { return ((m_vlflags & VLVF_FORCEABLE) != 0); }
     bool isContinuously() const { return ((m_vlflags & VLVF_CONTINUOUSLY) != 0); }
     // DPI compatible C standard layout
@@ -284,6 +285,7 @@ public:
     VerilatedVar(VerilatedVar&&);
     // ACCESSORS
     void* datap() const { return m_datap; }
+    inline void* datapRefresh() const;
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
     const VerilatedForceControlSignals* forceControlSignals() const {
@@ -324,5 +326,12 @@ inline VerilatedVar::VerilatedVar(
     , m_isParam{isParam} {}
 inline VerilatedVar::~VerilatedVar() = default;
 inline VerilatedVar::VerilatedVar(VerilatedVar&&) = default;
+inline void* VerilatedVar::datapRefresh() const {
+    if (!isLazyPublicRW()) return m_datap;
+    // Reconstructed variable: recompute if stale, then return the storage.
+    const auto* const lazyDatap = static_cast<const VerilatedVarLazyDatap*>(m_datap);
+    if (lazyDatap->refreshp) (lazyDatap->refreshp)(lazyDatap->selfp);
+    return lazyDatap->storagep;
+}
 
 #endif  // Guard
