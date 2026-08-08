@@ -230,8 +230,11 @@ public:
     }
 };
 
+class VlSolverSession;
+
 //=============================================================================
 // Object holding constraints and variable references.
+
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
@@ -257,37 +260,40 @@ class VlRandomizer VL_NOT_FINAL {
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& os);
-    bool checkSat(std::iostream& os);
-    // Assert the maximal compatible soft-constraint set onto the open session.
-    void relaxSoftConstraints(std::iostream& os);
-    // Indices of the "a<N>" literals named by (get-unsat-assumptions).
-    std::vector<int> readUnsatAssumptions(std::iostream& os);
-    void reportUnsatSetup(std::iostream& os, const std::vector<std::string>& uniqueExprs);
-    void reportUnsatCore(std::iostream& os);
-    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
-    void recordRandcValues();  // Record solved randc values for future exclusion
-    size_t hashConstraints(const std::vector<std::string>& extras) const;
     bool nextRandomize(VlRNG& rngr, bool checkOnly);
-    // "(distinct ...)" expression per unique-constrained array
+    bool nextFlat(VlRNG& rngr, VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
+    // Phased solving for solve...before
+    bool nextPhased(VlRNG& rngr, VlSolverSession& sess,
+                    const std::vector<std::string>& uniqueExprs);
+    bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
+    bool solvePhases(VlRNG& rngr, VlSolverSession& sess,
+                     const std::vector<std::vector<std::string>>& layers,
+                     const std::vector<std::string>& uniqueExprs, bool& exhaustedr);
+    const char* phasedLogic() const;
+    bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
+                          const std::vector<std::string>& layerVars,
+                          std::map<std::string, std::string>& solvedValuesr);
+    bool readPhaseValues(VlSolverSession& sess, std::map<std::string, std::string>& solvedValuesr);
+    bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
+    // Fetch the model and write it into the registered variables.
+    bool applyModel(VlSolverSession& sess);
+    bool parseModel(std::istream& is);
+    // Assert the maximal compatible soft-constraint set onto the open session.
+    void relaxSoftConstraints(VlSolverSession& sess);
+    // Indices of the "a<N>" literals named by (get-unsat-assumptions).
+    std::vector<int> readUnsatAssumptions(VlSolverSession& sess);
+    void reportUnsatSetup(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
+    void reportUnsatCore(VlSolverSession& sess);
+    void solveDiversity(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversityXor(VlRNG& rngr, VlSolverSession& sess);
     std::vector<std::string> buildUniqueExprs() const;
     void emitDefines(std::ostream& os) const;
     void emitDeclares(std::ostream& os, bool pinCurrent) const;
     void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
-    bool nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
-    void solveDiversity(VlRNG& rngr, std::iostream& os);
-    void solveDiversityPins(VlRNG& rngr, std::iostream& os);
-    void solveDiversityXor(VlRNG& rngr, std::iostream& os);
-    // Layers of solve...before variables in dependency order
-    bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
-    const char* phasedLogic() const;
-    bool nextPhased(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
-    bool solvePhases(VlRNG& rngr, const std::vector<std::vector<std::string>>& layers,
-                     const std::vector<std::string>& uniqueExprs);
-    bool solvePhaseValues(std::iostream& os, VlRNG& rngr,
-                          const std::vector<std::string>& layerVars,
-                          std::map<std::string, std::string>& solvedValuesr);
-    bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
+    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
+    void recordRandcValues();  // Record solved randc values for future exclusion
+    size_t hashConstraints(const std::vector<std::string>& extras) const;
 
 public:
     // CONSTRUCTORS
