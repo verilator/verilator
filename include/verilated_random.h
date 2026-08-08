@@ -56,6 +56,12 @@ public:
         , m_idxWidths{idxWidths} {}
 };
 using ArrayInfoMap = std::map<std::string, std::shared_ptr<const ArrayInfo>>;
+// One sampled assignment, a "witness" in UniGen2 terms.
+// var name -> {flat element index -> raw SMT value string}.
+// Scalars just have a single {0: value} entry. Element index
+// matches VlRandomArrayVarTemplate's flat naming (name()+to_string(j)), the
+// same index ArrayInfo::m_index uses, so it can be fed straight to set().
+using Witness = std::map<std::string, std::map<int, std::string>>;
 
 class VlRandomVar VL_NOT_FINAL {
     std::string m_name;  // Variable name
@@ -83,6 +89,10 @@ public:
     virtual void emitGetValue(std::ostream& s) const;
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
+    // Emit the expression referring to element j as a whole (the full var
+    // for scalars, "(select arr idx...)" for array element j). Used by BSAT
+    // to query/re-assert one whole element's value, not a single bit.
+    virtual void emitElement(std::ostream& s, int j) const;
     // Emit the current runtime value as an SMT bit-vector literal (#b...).
     // Used by randomize(null) to pin a var to its existing value.
     virtual void emitConcreteValue(std::ostream& s) const;
@@ -213,6 +223,18 @@ public:
         const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
         return width() * elementCounts;
     }
+    void emitElement(std::ostream& s, int j) const override {
+        const std::string indexed_name = name() + std::to_string(j);
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        if (it != m_arrVarsRefp->end()) {
+            const std::vector<IData>& indices = it->second->m_indices;
+            const std::vector<size_t>& idxWidths = it->second->m_idxWidths;
+            s << ' ';
+            emitSelect(s, indices, idxWidths);
+        } else {
+            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
+        }
+    }
     void emitExtract(std::ostream& s, int i) const override {
         const int j = i / width();
         i = i % width();
@@ -254,6 +276,26 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<std::pair<std::string, std::string>>
         m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
     bool m_checkOnly = false;  // Set for randomize(null)
+    // True if any var is currently rand_mode(0)-frozen: generated code bakes
+    // such a var's concrete value directly into the constraint text, so it's
+    // no longer symbolically constrained even though it's still a declared
+    // solver variable -- Unigen2 must not be used while this holds.
+    bool hasFrozenVar() const;
+
+    // ---  UniGen2 sampling state  ---
+    std::vector<Witness> m_witnesses;  // Raw BSAT pool for this cell
+    std::vector<Witness>
+        m_loTreshWitnesses;  // Consumable batch: loThresh random picks from m_witnesses
+    // What estimateParameters worked out, kept until the constraints change
+    // so the search is not repeated on every call.
+    bool m_ug2ParamsValid = false;  // Whether the three values below are set
+    size_t m_ug2ParamHash = 0;  // Constraint set they were computed for
+    int m_ug2HashBits = 0;  // How many XOR equations to cut the space with
+    int m_ug2LoTresh = 0;  // Smallest usable cell, and how many samples to take
+    int m_ug2HiTresh = 0;  // First cell size counted as too big
+    bool m_ug2Unusable = false;  // Set when estimateParameters gave up on that set
+    size_t m_ug2PrevHash = 0;  // Constraint set seen on the previous call
+    int m_ug2LastSuccessI = -1;  // Hash-bit count that worked last time, -1 if none
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
@@ -274,7 +316,45 @@ class VlRandomizer VL_NOT_FINAL {
     void emitDefines(std::ostream& os) const;
     void emitDeclares(std::ostream& os, bool pinCurrent) const;
     void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
-    bool nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
+    bool nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs,
+                  bool allowUnigen2 = true);
+
+    // ---  UniGen2 sampling  ---
+    // For reference see "On Parallel Scalable Uniform SAT Witness Generation",
+    // Supratik Chakraborty et al., TACAS 2015. Section 4 of it is the source of
+    // the terms used below -- witness, cell, hashBits, loThresh/hiThresh, BSAT.
+    // Each term is explained where it is declared.
+
+    // A uniform sampler: random XOR constraints hash the solution space into
+    // small cells, and one cell is enumerated. That search is expensive, but
+    // it fills a batch of solutions that later randomize() calls are served
+    // from. Returns true when a solution was written back; false when it
+    // declined, leaving the solver reset for the caller to solve as usual.
+    // The caller skips it for randc, solve-before and rand_mode(0)-frozen
+    // vars; it declines itself when the batch could not be reused: soft
+    // constraints, a constraint set differing from the previous call, or a
+    // space too large for estimateParameters to hash.
+    bool Unigen2(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
+    bool estimateParameters(std::iostream& os, VlRNG& rngr, double epsilon, int& hashBits,
+                            int& loTresh, int& hiTresh);
+    // The counting step: lists up to `bound` distinct solutions of whatever
+    // is currently asserted, by asking for one and then blocking it so the
+    // next check-sat must find another. Used first to measure how big a cell
+    // is, and then to collect the batch of samples out of a good one.
+    int BSAT(std::iostream& solver, int bound, std::vector<Witness>& witnesses);
+    // The hashing step: asserts `bits` random XOR equations over the rand
+    // vars' bits, splitting the solution space into cells holding roughly
+    // 1/2**bits of it each. The hash being random is what makes a single
+    // cell a near-uniform sample of the whole space -- that is where the
+    // uniformity comes from. Unrelated to solveDiversityXor, which only
+    // nudges one solve rather than partitioning anything.
+    bool unigenXors(std::iostream& os, VlRNG& rngr, int bits);
+    bool generateSamples(int hashBits, int loTresh, int hiTresh, std::iostream& solver,
+                         VlRNG& rngr);
+    // Write one sampled witness back into the live SV variables (scalars via
+    // set("", value); array elements via a hex-encoded flat index).
+    void writeBackWitness(const Witness& witness);
+
     void solveDiversity(VlRNG& rngr, std::iostream& os);
     void solveDiversityPins(VlRNG& rngr, std::iostream& os);
     void solveDiversityXor(VlRNG& rngr, std::iostream& os);
