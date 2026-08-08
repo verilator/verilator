@@ -108,6 +108,18 @@ public:
         });
     }
 
+    // Update after replacing 'vtxp' with 'replacement'
+    void updateReplacement(const DfgVertex& vtx, DfgVertex& replacement) {
+        updateAcyclic(vtx);
+        if (!get(replacement)) {
+            replacement.foreachSink([&](DfgVertex& dst) {
+                if (!get(dst)) return false;
+                if (!stillCyclicFwd(dst)) updateAcyclic(dst);
+                return false;
+            });
+        }
+    }
+
     /*
        Check stored information is consistent with actual SCCs. Note we
        can't detect during updates if an SCC has split into multiple SCCs.
@@ -1518,17 +1530,8 @@ class FixUp final {
         UASSERT_OBJ(!vtx.hasSinks() == !m_sccInfo.get(*replacementp), &vtx,
                     "Replacement vertex SCC inconsistent");
 
-        // If we broke the cycle through this vertex we can update the SccInfo
-        if (!vtx.hasSinks()) {
-            m_sccInfo.updateAcyclic(vtx);
-            if (!m_sccInfo.get(*replacementp)) {
-                replacementp->foreachSink([&](DfgVertex& dst) {
-                    if (!m_sccInfo.get(dst)) return false;
-                    if (!m_sccInfo.stillCyclicFwd(dst)) m_sccInfo.updateAcyclic(dst);
-                    return false;
-                });
-            }
-        }
+        // If we broke the cycle through this vertex, update the SccInfo
+        if (!vtx.hasSinks()) m_sccInfo.updateReplacement(vtx, *replacementp);
     }
 
     void main(DfgVertexVar& var) {
@@ -1583,7 +1586,7 @@ public:
     }
 };
 
-bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
+void breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
     // Shorthand for dumping graph at given dump level
     const auto dump = [&](int level, const DfgGraph& dfg, const std::string& name) {
         if (dumpDfgLevel() >= level) dfg.dumpDotFilePrefixed("breakCycles-" + name);
@@ -1622,7 +1625,7 @@ bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
             UINFO(7, "Graph became acyclic after " << nImprovements << " improvements");
             dump(7, dfg, "result-acyclic");
             ++ctx.m_nFixed;
-            return true;
+            return;
         }
     } while (nImprovements != prevNImprovements);
 
@@ -1641,17 +1644,62 @@ bool breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
         ++ctx.m_nImproved;
     } else {
         UINFO(7, "Graph NOT improved");
-        dump(7, dfg, "result-original");
         ++ctx.m_nUnchanged;
     }
-    return false;
+
+    // Break any remaining cycles by inserting a DfgPrev for variables still in a cycle.
+    // Doing this unconditionally is both safe and sufficient:
+    //  - Safe: a DfgPrev makes the variable's readers read its stored value instead
+    //    of its in-graph driver, while the variable itself is still assigned. This
+    //    merely reconstructs the cyclic variable-level dataflow, which the scheduler
+    //    will resolve via its settle loop, so the computation is equivalent.
+    //  - Sufficient: every cycle must pass through a variable, and in particular
+    //    through a non-temporary one (synthesis doesn't create cycles within a single
+    //    logic block).
+    // Also note that synthesized logic that depends on an in-graph update will read
+    // the synthesis temporary, not the real variable (which is what we are cutting),
+    // so the graph still holds all updates in a form visible to later optimizers.
+
+    // Gather all non-temporary variables as candidate cut points, prefer those that
+    // are kept regardless. Breaking a cycle there is essentially free, as they must be
+    // materialized anyway, whereas cutting an internal variable forces it to survive
+    // via its DfgPrev when it could otherwise be inlined away later.
+    std::vector<DfgVertexVar*> varps;
+    for (DfgVertexVar& vtx : dfg.varVertices()) {
+        if (!vtx.tmpForp()) varps.push_back(&vtx);
+    }
+    std::stable_partition(varps.begin(), varps.end(), [](const DfgVertexVar* varp) {
+        return varp->hasExtRefs() || varp->isVolatile();
+    });
+
+    // Insert DfgPrev vertices until the graph becomes acyclic
+    SccInfo sccInfo{dfg};
+    for (DfgVertexVar* const varp : varps) {
+        // Stop as soon as it becomes acyclic
+        if (!sccInfo.isCyclic()) break;
+
+        // Ignore if variable is not part of a cycle
+        if (!sccInfo.get(*varp)) continue;
+
+        // Insert a DfgPrev vertex for the variable
+        DfgPrev* const prevp = new DfgPrev{dfg, varp->vscp()};
+        sccInfo.add(*prevp, 0);
+        varp->replaceWith(prevp);
+        ++ctx.m_nPrevInserted;
+
+        // Update SCC info
+        sccInfo.updateReplacement(*varp, *prevp);
+    }
+    // Validate SccInfo if in debug mode
+    if (v3Global.opt.debugCheck()) sccInfo.validate();
+    UASSERT(!sccInfo.isCyclic(), "Graph should become acyclic");
+
+    dump(7, dfg, "result-withprev");
 }
 
 }  //namespace V3DfgBreakCycles
-
-bool V3DfgPasses::breakCycles(DfgGraph& dfg, V3DfgContext& ctx) {
-    const bool res = V3DfgBreakCycles::breakCycles(dfg, ctx.m_breakCyclesContext);
+void V3DfgPasses::breakCycles(DfgGraph& dfg, V3DfgContext& ctx) {
+    V3DfgBreakCycles::breakCycles(dfg, ctx.m_breakCyclesContext);
     if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
     V3DfgPasses::removeUnused(dfg);
-    return res;
 }

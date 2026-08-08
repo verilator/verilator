@@ -55,6 +55,7 @@ class V3DfgCse final {
         case VDfgType::CReset:
         case VDfgType::VarArray:
         case VDfgType::VarPacked:
+        case VDfgType::Prev:
         case VDfgType::AstRd:  // LCOV_EXCL_STOP
             vtx.v3fatalSrc("Hash should have been pre-computed");
 
@@ -173,6 +174,7 @@ class V3DfgCse final {
         // Special vertices
         case VDfgType::Const: return a.as<DfgConst>()->num().isCaseEq(b.as<DfgConst>()->num());
         case VDfgType::CReset: return false;
+        case VDfgType::Prev: return false;
 
         case VDfgType::VarArray:
         case VDfgType::VarPacked:  // CSE does not combine variables
@@ -307,9 +309,10 @@ class V3DfgCse final {
         for (const DfgVertexVar& vtx : dfg.varVertices()) m_hashCache[vtx] = V3Hash{++varHash};
         // Pre-hash Ast references, these are all unique like variables
         for (const DfgVertexAst& vtx : dfg.astVertices()) m_hashCache[vtx] = V3Hash{++varHash};
-        // Pre-hash CReset vertices, these are all unique
+        // Pre-hash CReset and Prev vertices, these are all unique
         for (const DfgVertex& vtx : dfg.opVertices()) {
             if (vtx.is<DfgCReset>()) m_hashCache[vtx] = V3Hash{++varHash};
+            if (vtx.is<DfgPrev>()) m_hashCache[vtx] = V3Hash{++varHash};
         }
 
         // Similarly pre-hash constants for speed. While we don't combine constants, we do want
