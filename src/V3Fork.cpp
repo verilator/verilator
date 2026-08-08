@@ -267,10 +267,10 @@ private:
 
 class DynScopeVisitor final : public VNVisitor {
     // NODE STATE
-    // AstVar::user1()          -> int, timing-control fork nesting level of that variable
-    // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
+    // AstVar::user1()          -> int.  timing-control fork nesting level of that variable
+    // AstVarRef::user2()       -> bool. Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
-    // AstAssignDly::user2()    -> bool, true if already visited
+    // AstAssignDly::user2()    -> bool.  Already visited
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 

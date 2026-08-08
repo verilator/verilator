@@ -819,10 +819,10 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
 void process(AstNetlist* netlistp, InlineModGraph& graph) {
     // NODE STATE
     // Cleared entire netlist
-    //   AstIfaceRefDType::user1()  // Whether the cell pointed to by this
+    //   AstIfaceRefDType::user1()  // bool; Whether the cell pointed to by this
     //                              // AstIfaceRefDType has been inlined
-    //   AstCell::user3p()      // AstCell*, the clone
-    //   AstVar::user3p()       // AstVar*, the clone
+    //   AstCell::user3p()      // AstCell*.  The clone
+    //   AstVar::user3p()       // AstVar*.  The clone
     // Cleared each cell
     //   AstVar::user2p()       // AstVarRef*/AstConst* This port is connected to (AstPin::expr())
     const VNUser1InUse user1InUse;

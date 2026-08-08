@@ -3361,6 +3361,7 @@ class RandomizeVisitor final : public VNVisitor {
     //  AstConstraintForeach::user3p() -> AstNode*. Dist bucket preamble stmts (foreach case)
     //  AstClass::user4p()      -> AstVar*.  Constraint mode state variable
     //  AstVar::user4p()        -> AstVar*.  Size variable for constrained queues
+    //  AstNodeFTaskRef::user4() -> bool.  Processed
     //  AstMemberSel::user2p()  -> AstNodeModule*. Pointer to containing module
     // VNUser1InUse    m_inuser1;      (Allocated for use in RandomizeMarkVisitor)
     // VNUser2InUse    m_inuser2;      (Allocated for use in RandomizeMarkVisitor)
@@ -4586,8 +4587,7 @@ class RandomizeVisitor final : public VNVisitor {
     void wrapRandomizeCallWithNullGuard(AstNodeFTaskRef* nodep) {
         AstMethodCall* const callp = VN_CAST(nodep, MethodCall);
         if (!callp) return;
-        if (callp->user4()) return;
-        callp->user4(true);
+        if (callp->user4SetOnce()) return;
         FileLine* const fl = callp->fileline();
         AstNodeExpr* const checkp
             = new AstNeq{fl, callp->fromp()->cloneTree(false), new AstConst{fl, AstConst::Null{}}};

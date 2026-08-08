@@ -114,7 +114,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
 
     // NODE STATE
     // AstVarScope::user1()    -> bool: referenced outside _eval__nba
-    // AstVarScope::user4()    -> AstVarScope*: Replacement variable
+    // AstVarScope::user4p()   -> AstVarScope*: Replacement variable
     // AstExecGraph::user1p()  -> GraphPathChecker*: path checker for this AstExecGraph
     const VNUser1InUse m_inuser1;
     const VNUser4InUse m_inuser4;

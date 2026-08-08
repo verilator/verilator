@@ -142,8 +142,8 @@ private:
     using ScopeVarCache = std::unordered_map<const AstVar*, AstVarScope*>;
 
     // NODE STATE
-    //  AstVarRef::user1      -> Flag indicating not to replace reference
-    //  AstAssignForce::user2 -> true if force is synthetic (externally forceable)
+    //  AstVarRef::user1      -> bool.  Not to replace reference
+    //  AstAssignForce::user2 -> bool.  Force is synthetic (externally forceable)
     //  AstVar::user3         -> ForceHelperVars via m_forceHelperVarsByVar
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;

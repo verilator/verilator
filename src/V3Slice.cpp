@@ -52,8 +52,8 @@ class SliceVisitor final : public VNVisitor {
     //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()       -> AstVarRef. The VarRef that the final ArraySel points to
     const VNUser1InUse m_inuser1;
-    //  AstInitArray::user2()       -> Previously accessed itemIdx
-    //  AstInitItem::user2()        -> Corresponding first elemIdx
+    //  AstInitArray::user2()       -> int.  Previously accessed itemIdx
+    //  AstInitItem::user2()        -> int.  Corresponding first elemIdx
     const VNUser2InUse m_inuser2;
 
     // STATE - across all visitors
