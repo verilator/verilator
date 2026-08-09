@@ -29,6 +29,7 @@
 #include <iomanip>
 #include <map>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -42,9 +43,16 @@ using VSymConstMap = std::unordered_set<const VSymEnt*>;
 
 class VSymEnt final {
     // Symbol table that can have a "superior" table for resolving upper references
+    struct FoldedNameEntry final {
+        string m_origName;
+        VSymEnt* m_entp;
+    };
     // MEMBERS
     using IdNameMap = std::multimap<std::string, VSymEnt*>;
     IdNameMap m_idNameMap;  // Hash of variables by name
+    // Case-folded names for SIMILARNAME; equal_range is typically size 1 unless case differs
+    using FoldedNameMap = std::unordered_multimap<std::string, FoldedNameEntry>;
+    FoldedNameMap m_foldedNameMap;
     AstNode* m_nodep;  // Node that entry belongs to
     VSymEnt* m_fallbackp = nullptr;  // Table "above" this in name scope, for fallback resolution
     VSymEnt* m_parentp = nullptr;  // Table that created this
@@ -135,6 +143,12 @@ public:
         } else {
             m_idNameMap.emplace(name, entp);
         }
+        if (name.find("__DOT__") == std::string::npos
+            && !ignoreForSimilarTest(entp->nodep()->type())) {
+            const string lc = VString::downcase(name);
+            m_foldedNameMap.emplace(lc, FoldedNameEntry{name, entp});
+        }
+
         return entp;
     }
     void reinsert(const string& name, VSymEnt* entp) {
@@ -157,6 +171,32 @@ public:
                                                  : "se" + cvtToHex(it->second)
                                                        + " n=" + cvtToHex(it->second->nodep())));
         if (it != m_idNameMap.end()) return it->second;
+        return nullptr;
+    }
+    static bool ignoreForSimilarTest(VNType t) {
+        // Types that do not appear in synthesized netlists
+        switch (t) {
+        case VNType::TypedefFwd:
+        case VNType::Typedef:
+        case VNType::ParamTypeDType:
+        case VNType::EnumItem:
+        case VNType::EnumItemRef:
+        case VNType::Let:
+        case VNType::Class:
+        case VNType::Task:
+        case VNType::Func: return true;
+        default: return false;
+        }
+    }
+    VSymEnt* findSimilarIdFlat(const string& name) const {
+        // Find identifier without looking upward through symbol hierarchy.
+        // Return a prior declaration whose name matches case-insensitively.
+        if (name.find("__DOT__") != std::string::npos) return nullptr;
+        const string lc = VString::downcase(name);
+        const auto range = m_foldedNameMap.equal_range(lc);
+        for (auto it = range.first; it != range.second; ++it) {
+            if (it->second.m_origName != name) return it->second.m_entp;
+        }
         return nullptr;
     }
     VSymEnt* findIdFallback(const string& name) const {

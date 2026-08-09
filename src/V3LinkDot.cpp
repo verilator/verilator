@@ -360,6 +360,17 @@ public:
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
+            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) {
+                const VSymEnt* const altp = lookupSymp->findSimilarIdFlat(name);
+                if (altp) {
+                    nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
+                                                   << nodep->prettyNameQ() << '\n'
+                                                   << nodep->warnContextPrimary() << '\n'
+                                                   << altp->nodep()->warnOther()
+                                                   << "... Location of original declaration\n"
+                                                   << altp->nodep()->warnContextSecondary());
+                }
+            }
         } else if (nodep == fnodep) {  // Already inserted.
             // Good.
         } else if (foundp->imported()) {  // From package
