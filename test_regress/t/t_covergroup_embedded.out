@@ -16,6 +16,8 @@ GlobalCg.cp_global.auto_8: 0
 GlobalCg.cp_global.auto_9: 0
 __vlAnonCG_base_cg.cp_base.hi: 8
 __vlAnonCG_base_cg.cp_base.lo: 8
+__vlAnonCG_both_cg.cp_both.hi: 0
+__vlAnonCG_both_cg.cp_both.lo: 4
 __vlAnonCG_branch_cg.cp_branch.hi: 8
 __vlAnonCG_branch_cg.cp_branch.lo: 8
 __vlAnonCG_cg.cp_base.auto_0: 0
@@ -50,6 +52,10 @@ __vlAnonCG_cg.cp_derived.auto_6: 0
 __vlAnonCG_cg.cp_derived.auto_7: 0
 __vlAnonCG_cg.cp_derived.auto_8: 0
 __vlAnonCG_cg.cp_derived.auto_9: 0
+__vlAnonCG_change_cg.cp_change.hi: 2
+__vlAnonCG_change_cg.cp_change.lo: 4
+__vlAnonCG_clock_cg.cp_clocked.hi: 8
+__vlAnonCG_clock_cg.cp_clocked.lo: 8
 __vlAnonCG_copy_cg.cp_copy.hi: 0
 __vlAnonCG_copy_cg.cp_copy.lo: 1
 __vlAnonCG_derived_cg.cp_cross.hi_x_hi [cross]: 0
@@ -62,6 +68,8 @@ __vlAnonCG_derived_cg.cp_inherited.hi: 8
 __vlAnonCG_derived_cg.cp_inherited.lo: 8
 __vlAnonCG_derived_cg.cp_this_inherited.hi: 8
 __vlAnonCG_derived_cg.cp_this_inherited.lo: 8
+__vlAnonCG_edge_cg.cp_edge.hi: 0
+__vlAnonCG_edge_cg.cp_edge.lo: 4
 __vlAnonCG_first_cg.cp_first.hi: 8
 __vlAnonCG_first_cg.cp_first.lo: 8
 __vlAnonCG_leaf_cg.cp_cross.hi_x_hi [cross]: 0
@@ -92,6 +100,8 @@ __vlAnonCG_mon_cg.cp_op_b.auto_0: 4
 __vlAnonCG_mon_cg.cp_op_b.auto_1: 4
 __vlAnonCG_mon_cg.cp_op_b.auto_2: 4
 __vlAnonCG_mon_cg.cp_op_b.auto_3: 4
+__vlAnonCG_neg_cg.cp_neg.hi: 0
+__vlAnonCG_neg_cg.cp_neg.lo: 2
 __vlAnonCG_nested_cg.cp_container.hi: 8
 __vlAnonCG_nested_cg.cp_container.lo: 8
 __vlAnonCG_nested_cg.cp_local.hi: 8
@@ -100,6 +110,8 @@ __vlAnonCG_nested_cg.cp_static.hi: 8
 __vlAnonCG_nested_cg.cp_static.lo: 8
 __vlAnonCG_parameterized_cg.cp_parameterized.hi: 8
 __vlAnonCG_parameterized_cg.cp_parameterized.lo: 8
+__vlAnonCG_pos_cg.cp_pos.hi: 0
+__vlAnonCG_pos_cg.cp_pos.lo: 2
 __vlAnonCG_second_cg.cp_second.hi: 8
 __vlAnonCG_second_cg.cp_second.lo: 8
 __vlAnonCG_static_cg.cp_instance.hi: 8

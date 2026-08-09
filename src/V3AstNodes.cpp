@@ -3649,9 +3649,11 @@ void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstFork::dump(std::ostream& str) const {
     this->AstNodeBlock::dump(str);
     str << " [" << joinType() << "]";
+    if (immediateStart()) str << " [IMMEDIATE]";
 }
 void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "joinType", joinType().ascii());
+    dumpJsonBoolFuncIf(str, immediateStart);
     dumpJsonGen(str);
 }
 void AstStop::dump(std::ostream& str) const {
