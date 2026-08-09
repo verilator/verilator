@@ -1442,9 +1442,20 @@ class ParamProcessor final {
                 // Cast/CastSize default values are not yet folded by V3Width.
                 // Constify here so the comparison below sees a Const node.
                 // Other node kinds are handled in the branches above.
+                //
+                // Only fold when the cast is self-contained.  modvarp is the
+                // parameter on the shared module template and constifyParamsEdit
+                // is destructive: a default that reads another parameter
+                // (VarRef) or a type parameter (RefDType) must be evaluated per
+                // instance, and folding it here would evaluate it against the
+                // template's own defaults and bake that in for every later
+                // instance that relies on the default.
                 if (modvarp->valuep()
                     && (VN_IS(modvarp->valuep(), Cast) || VN_IS(modvarp->valuep(), CastSize))) {
-                    V3Const::constifyParamsEdit(modvarp->valuep());
+                    bool dependent = false;
+                    modvarp->valuep()->foreach([&](AstVarRef*) { dependent = true; });
+                    modvarp->valuep()->foreach([&](AstRefDType*) { dependent = true; });
+                    if (!dependent) V3Const::constifyParamsEdit(modvarp->valuep());
                 }
                 UINFO(9, "cellPinCleanup: after constify " << pinp);
                 // String constants are parsed as logic arrays and converted to strings in V3Const.
