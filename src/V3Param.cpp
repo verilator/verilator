@@ -1452,9 +1452,8 @@ class ParamProcessor final {
                 // instance that relies on the default.
                 if (modvarp->valuep()
                     && (VN_IS(modvarp->valuep(), Cast) || VN_IS(modvarp->valuep(), CastSize))) {
-                    bool dependent = false;
-                    modvarp->valuep()->foreach([&](AstVarRef*) { dependent = true; });
-                    modvarp->valuep()->foreach([&](AstRefDType*) { dependent = true; });
+                    const bool dependent = modvarp->valuep()->exists(
+                        [](AstNode* np) { return VN_IS(np, VarRef) || VN_IS(np, RefDType); });
                     if (!dependent) V3Const::constifyParamsEdit(modvarp->valuep());
                 }
                 UINFO(9, "cellPinCleanup: after constify " << pinp);
