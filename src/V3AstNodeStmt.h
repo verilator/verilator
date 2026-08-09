@@ -1568,7 +1568,7 @@ class AstFork final : public AstNodeBlock {
     //
     // @astgen op3 := forksp : List[AstBegin]
     const VJoinType m_joinType;  // Join keyword type
-    bool m_immediateStart = false;  // True if fork starts before its parent blocks or exits
+    bool m_immediateStart = false;  // Fork starts before its parent blocks or exits
 
 public:
     AstFork(FileLine* fl, VJoinType joinType, const string& name = "")

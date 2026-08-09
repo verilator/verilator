@@ -1743,8 +1743,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstVar* findEmbeddedCovergroupVar() const {
         if (!m_enclosingClassp) return nullptr;
         for (AstNode* itemp = m_enclosingClassp->membersp(); itemp; itemp = itemp->nextp()) {
-            AstVar* const varp = VN_CAST(itemp, Var);
-            if (isEmbeddedCovergroupVar(varp)) return varp;
+            if (AstVar* const varp = VN_CAST(itemp, Var)) {
+                if (isEmbeddedCovergroupVar(varp)) return varp;
+            }
         }
         // V3LinkParse always creates an implicit variable for an embedded covergroup.
         return nullptr;  // LCOV_EXCL_LINE
