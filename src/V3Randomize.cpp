@@ -2435,13 +2435,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             return VN_AS(classp->user3p(), Var);
         }(m_classp);
 
-        // UASSERT_OBJ(genVarp, nodep, "No generator variable");
-        if (!genVarp) {
-            // This shall be substituted with an assert when it will be supported
-            nodep->v3warn(CONSTRAINTIGN, "Unsupported: Unique constraint in randomize() with {}");
-            pushDeletep(nodep->unlinkFrBack());
-            return;
-        }
+        // Every remaining ConstraintExprVisitor construction site passes a non-null
+        // genp whenever m_classp is set (class-level: only reached inside
+        // `if (genp) {...}` in visit(AstClass*); with{}-block: always a freshly
+        // created local generator var), so genVarp (== m_genp, or the class's
+        // persistent generator as a defensive fallback) can no longer be null here.
+        UASSERT_OBJ(genVarp, nodep, "No generator variable");
 
         // genVarp's containing module is only meaningful for a class member (the
         // persistent, class-level generator). A with{}-block's local generator is a
