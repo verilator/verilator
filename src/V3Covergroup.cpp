@@ -1959,6 +1959,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     class FormalRefVisitor final : public VNVisitor {
         const std::set<const AstVar*>& m_constructorArgs;
+        const std::map<const AstVar*, AstVar*>& m_replacements;
         AstMemberSel* m_memberSelp = nullptr;
         AstNode* m_offenderp = nullptr;
 
@@ -1969,7 +1970,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
         void visit(AstVarRef* nodep) override {
-            if (m_memberSelp && m_constructorArgs.count(nodep->varp())) {
+            if (!m_memberSelp) return;
+            const auto it = m_replacements.find(nodep->varp());
+            if (it != m_replacements.end()) {
+                nodep->varp(it->second);
+            } else if (m_constructorArgs.count(nodep->varp())) {
                 m_offenderp = m_memberSelp;
             }
         }
@@ -1978,8 +1983,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
 
     public:
-        explicit FormalRefVisitor(const std::set<const AstVar*>& constructorArgs)
-            : m_constructorArgs{constructorArgs} {}
+        FormalRefVisitor(const std::set<const AstVar*>& constructorArgs,
+                         const std::map<const AstVar*, AstVar*>& replacements)
+            : m_constructorArgs{constructorArgs}
+            , m_replacements{replacements} {}
         void scan(AstNode* nodep) {
             if (nodep && !m_offenderp) iterate(nodep);
         }
@@ -1988,12 +1995,19 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     AstNode* findUnsupportedFormalRef() {
         std::set<const AstVar*> constructorArgs;
+        std::map<const AstVar*, AstVar*> replacements;
         for (AstNode* stmtp = m_constructorp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (varp->isIO()) constructorArgs.insert(varp);
-            }
+            AstVar* const varp = VN_CAST(stmtp, Var);
+            if (!varp || !varp->isIO()) continue;
+            constructorArgs.insert(varp);
+            if (!VN_IS(varp->dtypep()->skipRefp(), ClassRefDType)) continue;
+            AstVar* const memberp
+                = VN_CAST(m_memberMap.findMember(m_covergroupp, varp->name()), Var);
+            UASSERT_OBJ(memberp && memberp->isClassMember(), varp,
+                        "Covergroup constructor argument missing persistent member");
+            replacements.emplace(varp, memberp);
         }
-        FormalRefVisitor visitor{constructorArgs};
+        FormalRefVisitor visitor{constructorArgs, replacements};
         for (AstCoverpoint* const cpp : m_coverpoints) {
             visitor.scan(cpp->exprp());
             visitor.scan(cpp->iffp());
@@ -2167,7 +2181,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             if (AstNode* const offenderp = findUnsupportedFormalRef()) {
                 offenderp->v3warn(COVERIGN, "Unsupported: 'covergroup' coverpoint dereferencing a "
-                                            "class handle member; ignoring covergroup "
+                                            "non-class constructor argument; ignoring covergroup "
                                                 << nodep->prettyNameQ());
                 deleteCoverageItems();
                 if (embeddedEventForkp) {
