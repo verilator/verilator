@@ -11,11 +11,13 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--stats"])
+test.compile(verilator_flags2=["--stats --verilate-jobs 2"])
 
 memUsageMB = int(test.file_grep(test.stats, r'Peak Memory Usage \(MB\) +(\d+)')[0])
 
 if memUsageMB > 128 and not test.have_dev_asan:
     test.error("Consumed over 128MB memory")
+
+test.file_grep(test.stats, r'Verilate jobs: 2')
 
 test.passes()
