@@ -45,8 +45,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // STATE
     AstClass* m_covergroupp = nullptr;  // Current covergroup being processed
-    AstClass* m_enclosingClassp = nullptr;  // Class lexically enclosing the covergroup (if any)
-    AstVar* m_embeddedVarp = nullptr;  // Enclosing class member holding the embedded covergroup
+    AstClass* m_enclosingClassp = nullptr;  // Class lexically enclosing the covergroup, if any
+    AstVar* m_embeddedVarp = nullptr;  // Embedded covergroup member of m_enclosingClassp, if any
     AstFunc* m_sampleFuncp = nullptr;  // Current sample() function
     AstFunc* m_constructorp = nullptr;  // Current constructor
     std::vector<AstCoverpoint*> m_coverpoints;  // Coverpoints in current covergroup
@@ -73,11 +73,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::vector<BinInfo> m_binInfos;  // All bins in current covergroup
 
     struct EmbeddedEventTrigger final {
-        FileLine* eventFl;  // Source location of the clocking-event item
-        AstVar* baseVarp;  // Enclosing-class member naming the event signal
-        AstVar* memberVarp;  // Sub-member for 'base.member', otherwise nullptr
-        VEdgeType edgeType;  // Edge sensitivity
-        AstVar* prevVarp;  // Previous-value member, created when an assignment is found
+        FileLine* eventFl;  // Clocking-event source location
+        AstVar* baseVarp;  // Base enclosing-class member in the event expression
+        AstVar* memberVarp;  // Selected member in a 'base.member' expression, or nullptr
+        VEdgeType edgeType;  // Clocking-event edge qualifier
+        AstVar* prevVarp;  // Member containing the previous event value, or nullptr
         EmbeddedEventTrigger(FileLine* eventFl, AstVar* baseVarp, AstVar* memberVarp,
                              VEdgeType edgeType)
             : eventFl{eventFl}

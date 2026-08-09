@@ -1568,10 +1568,7 @@ class AstFork final : public AstNodeBlock {
     //
     // @astgen op3 := forksp : List[AstBegin]
     const VJoinType m_joinType;  // Join keyword type
-    // Compiler-generated covergroup watchers must arm before construction continues to sample
-    // every clocking event (IEEE 1800-2023 19.3). Source forks retain the deferred branch startup
-    // required by IEEE 1800-2023 9.3.2.
-    bool m_immediateStart = false;
+    bool m_immediateStart = false;  // True if fork starts before its parent blocks or exits
 
 public:
     AstFork(FileLine* fl, VJoinType joinType, const string& name = "")
