@@ -74,6 +74,8 @@ class BeginVisitor final : public VNVisitor {
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
     bool m_keepBegins = false;  // True if begins should not be inlined
+    bool m_skipBeginInHierName = false;  // Does the begin name have to be skipped in hierarchical
+                                         // names (false if not or if we are not inside begin)
 
     // METHODS
 
@@ -223,13 +225,15 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
+        VL_RESTORER(m_skipBeginInHierName);
         VL_RESTORER_COPY(m_displayScope);
         VL_RESTORER_COPY(m_namedScope);
         VL_RESTORER_COPY(m_unnamedScope);
+        m_skipBeginInHierName = nodep->skipInHierName();
         {
             VL_RESTORER(m_keepBegins);
             m_keepBegins = false;
-            dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
+            if (!m_skipBeginInHierName) dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
             iterateChildren(nodep);
         }
 
@@ -325,7 +329,7 @@ class BeginVisitor final : public VNVisitor {
             nodep->name(newName);
             m_ftaskp->addHereThisAsNext(nodep);
             nodep->funcLocal(false);
-        } else if (m_unnamedScope != "") {
+        } else if (m_unnamedScope != "" || m_skipBeginInHierName) {
             // Rename it
             nodep->name(dot(m_unnamedScope, nodep->name()));
             m_statep->userMarkChanged(nodep);
