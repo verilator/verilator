@@ -30,10 +30,7 @@
 
 #include "verilatedos.h"
 
-#include <algorithm>
-#include <coroutine>
 #include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -44,14 +41,44 @@
 #error "This platform is not supported"
 #endif
 
+// clang-format off
+// Some preprocessor magic to support both Clang and GCC coroutines with both libc++ and libstdc++
+#ifdef _LIBCPP_VERSION  // libc++
+# if defined(__has_include) && !__has_include(<coroutine>) && __has_include(<experimental/coroutine>)
+#  if __clang_major__ > 13  // Clang > 13 warns that coroutine types in std::experimental are deprecated
+#   pragma clang diagnostic push
+#   pragma clang diagnostic ignored "-Wdeprecated-experimental-coroutine"
+#  endif
+#  include <experimental/coroutine>
+   namespace std {
+       using namespace experimental;  // Bring std::experimental into the std namespace
+   }
+# else
+#  include <coroutine>
+# endif
+#else
+# if defined __clang__ && defined __GLIBCXX__ && !defined __cpp_impl_coroutine
+#  define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
+# endif
+# include <coroutine>
+# if __clang_major__ < 14
+   namespace std {  // Bring coroutine library into std::experimental, as Clang < 14 expects it to be there
+       namespace experimental {
+           using namespace std;
+       }
+   }
+# endif
+#endif
+// clang-format on
+
 #if defined(VERILATOR_FIBER_LINUX)
-#include <cstddef>
 #include <ucontext.h>
 
 #include <sys/mman.h>
 #endif
 
 #if defined(VERILATOR_FIBER_LINUX)
+class VlFiber;
 
 struct VlFiberMemoryChunk final {
     void* m_chunkAddr;
@@ -77,12 +104,12 @@ public:
 class VlFiberContext final {
     ucontext_t callerCtx{};  // Register state of caller context
     ucontext_t fiberCtx{};  // Register state of fiber context
-    void* mappingp;  // Base of mmap allocation (includes guards)
-    std::size_t mappingSize;  // Total size of allocation (stackSize + 2*pageSize)
+    void* mappingp{};  // Base of mmap allocation (includes guards)
+    std::size_t mappingSize{};  // Total size of allocation (stackSize + 2*pageSize)
 
 public:
     VlFiberContext(void (*f)(VlFiber*), VlFiber* arg);
-    VlFiberContext() {};
+    VlFiberContext() = default;
     void teardown();
     void yield();
     void resume();

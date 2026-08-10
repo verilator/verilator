@@ -1496,7 +1496,7 @@ void V3Timing::timingAll(AstNetlist* nodep) {
     {
         const VNUser1InUse m_user1InUse;
         const VNUser2InUse m_user2InUse;
-        TimingSuspendableVisitor{nodep};
+        { TimingSuspendableVisitor{nodep}; }
         if (v3Global.opt.timing().isTrue() || v3Global.dpi()) TimingControlVisitor{nodep};
     }
     V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeEitherLevel() >= 3);
