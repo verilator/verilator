@@ -102,16 +102,16 @@ module t (
       // p1/p2/p5 use |->; the NFA currently fires the pass action on
       // vacuous passes too, so counts are inflated vs. others. Pre-existing
       // engine-wide behavior, not within-specific.
-      `checkd(count_p1, 23);  // Other sims: 23, or 16
-      `checkd(count_p2, 44);  // Other sims: 44, or 21
-      `checkd(count_p3, 20);  // Other sims: 20
-      `checkd(count_p4, 22);  // Other sims: 22
+      `checkd(count_p1, 23);  // One other sim: 16
+      `checkd(count_p2, 44);  // One other sim: 21
+      `checkd(count_p3, 20);
+      `checkd(count_p4, 22);
       `checkd(count_p5, 26);
-      `checkd(count_p6, 16);  // Other sims: 16
-      `checkd(count_p7, 9);  // Other sims: 9
-      `checkd(count_p8, 4);  // Other sims: 4
-      `checkd(count_p9, 10);  // Other sims: 10
-      `checkd(count_p10, 15);  // Other sims: 15
+      `checkd(count_p6, 16);
+      `checkd(count_p7, 9);
+      `checkd(count_p8, 4);
+      `checkd(count_p9, 10);
+      `checkd(count_p10, 15);
       $write("*-* All Finished *-*\n");
       $finish;
     end

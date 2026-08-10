@@ -61,7 +61,7 @@ module t;
 
   final begin
     `checkd(imm_fails, 5);
-    `checkd(conc_fails, 7);  // Other sims: 7 or 1
+    `checkd(conc_fails, 7);  // One other sim: 1
     $write("*-* All Finished *-*\n");
   end
 endmodule
