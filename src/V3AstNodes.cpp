@@ -484,6 +484,7 @@ int AstBasicDType::widthTotalBytes() const {
 void AstBegin::dump(std::ostream& str) const {
     Super::dump(str);
     if (implied()) str << " [IMPLIED]";
+    if (skipInHierName()) str << " [SKIPHNAME]";
     if (needProcess()) str << " [NPRC]";
 }
 void AstBegin::dumpJson(std::ostream& str) const {
