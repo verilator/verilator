@@ -64,6 +64,7 @@
 
 #include "V3Timing.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Global.h"
@@ -393,6 +394,10 @@ class TimingSuspendableVisitor final : public VNVisitor {
     void visit(AstAssignW* nodep) override {
         if (nodep->timingControlp()) v3Global.setUsesTiming();
         // Containing process will not suspend, don't mark it
+    }
+    void visit(AstCFuncHard* nodep) override {
+        if (nodep->function() == VCFunction::CALL_IMPORT_TASK)
+            if (m_procp) addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER);
     }
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
@@ -979,6 +984,25 @@ class TimingControlVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstCFuncHard* nodep) override {
+        switch (nodep->function()) {
+        case VCFunction::CALL_IMPORT_TASK: {
+            if (m_procp) addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER);
+            AstStmtExpr* const stmtExprp = VN_AS(nodep->backp(), StmtExpr);
+            nodep->function(VCFunction::CALL_IMPORT_IN_FIBER);
+            AstCFuncHard* const cFuncp = nodep->unlinkFrBack();
+            stmtExprp->replaceWith(new AstCAwait{nodep->fileline(), cFuncp});
+            break;
+        }
+        case VCFunction::AWAIT_EXPORT_TASK: {
+            nodep->function(VCFunction::AWAIT_EXPORT_IN_FIBER);
+            break;
+        }
+        default: {
+            break;
+        }
+        }
+    }
     void visit(AstNodeCCall* nodep) override {
         AstCFunc* const funcp = nodep->funcp();
 
@@ -1497,7 +1521,7 @@ void V3Timing::timingAll(AstNetlist* nodep) {
         const VNUser1InUse m_user1InUse;
         const VNUser2InUse m_user2InUse;
         { TimingSuspendableVisitor{nodep}; }
-        if (v3Global.opt.timing().isTrue() || v3Global.dpi()) TimingControlVisitor{nodep};
+        if (v3Global.usesTiming()) TimingControlVisitor{nodep};
     }
     V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeEitherLevel() >= 3);
 }

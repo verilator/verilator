@@ -127,14 +127,12 @@ static thread_local struct {
 } s_fileline;
 };  //namespace
 
-template <bool isTask, typename Callable, typename... Args>
-decltype(auto) callImport(const char* const filename, int lineno, Callable&& call,
-                          Args&&... args) {
-    if VL_CONSTEXPR_CXX17 (!isTask) {
-        s_fileline.m_inFuncContext = true;
-        s_fileline.m_filename = std::string{filename};
-        s_fileline.m_lineno = lineno;
-    }
+template <typename Callable, typename... Args>
+decltype(auto) callImportFunction(const char* const filename, int lineno, Callable&& call,
+                                  Args&&... args) {
+    s_fileline.m_inFuncContext = true;
+    s_fileline.m_filename = std::string{filename};
+    s_fileline.m_lineno = lineno;
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                         void>::value) {
         call(std::forward<Args>(args)...);
@@ -146,13 +144,33 @@ decltype(auto) callImport(const char* const filename, int lineno, Callable&& cal
     }
 }
 
-template <bool isTask, typename Callable, typename... Args>
-decltype(auto) awaitExport(Callable&& call, Args&&... args) {
-    if VL_CONSTEXPR_CXX17 (isTask) {
-        if (s_fileline.m_inFuncContext) {
-            VL_FATAL_MT(s_fileline.m_filename.c_str(), s_fileline.m_lineno, "",
-                        "DPI exported task called from function context");
-        }
+template <typename Callable, typename... Args>
+decltype(auto) callImportTask(const char* const filename, int lineno, Callable&& call,
+                              Args&&... args) {
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
+                                        void>::value) {
+        call(std::forward<Args>(args)...);
+    } else {
+        return call(std::forward<Args>(args)...);
+    }
+}
+
+template <typename Callable, typename... Args>
+decltype(auto) awaitExportFunction(Callable&& call, Args&&... args) {
+
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
+                                        void>::value) {
+        call(std::forward<Args>(args)...);
+    } else {
+        return call(std::forward<Args>(args)...);
+    }
+}
+
+template <typename Callable, typename... Args>
+decltype(auto) awaitExportTask(Callable&& call, Args&&... args) {
+    if (s_fileline.m_inFuncContext) {
+        VL_FATAL_MT(s_fileline.m_filename.c_str(), s_fileline.m_lineno, "",
+                    "DPI exported task called from function context");
     }
 
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
@@ -183,7 +201,7 @@ public:
 // This allows the C code to call DPI exports with timing controls
 // Callable has void return type because it is a task.
 template <typename Callable, typename... Args>
-VlCoroutine callImportFiber(Callable&& call, Args&&... args) {
+VlCoroutine callImportFiber(const char* const filename, int lineno, Callable&& call, Args&&... args) {
     static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), int>::value,
                   "Functions called inside a fiber should have 'int' return type");
     auto fiberp{VlFiber::create(

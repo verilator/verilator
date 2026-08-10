@@ -812,6 +812,12 @@ public:
     // Entries in this table need to match below VCFunction::s_itemData[] table
     enum en : uint8_t {
         _NONE,  // Unknown
+        CALL_IMPORT_IN_FIBER,
+        AWAIT_EXPORT_IN_FIBER,
+        CALL_IMPORT_TASK,
+        CALL_IMPORT_FUNCTION,
+        AWAIT_EXPORT_TASK,
+        AWAIT_EXPORT_FUNCTION,
         _ENUM_MAX  // Leave last
     };
 
@@ -850,8 +856,15 @@ inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
 //
 // {Mnemonic, C++ function, pure}
 #define V3AST_VCFUNCTION_ITEMDATA_DECL \
-    VCFunction::Item VCFunction::s_itemData[] \
-        = {{_NONE, "_none", false}, {_ENUM_MAX, "_ENUM_MAX", false}};
+    VCFunction::Item VCFunction::s_itemData[] = { \
+        {_NONE, "_none", false}, \
+        {CALL_IMPORT_IN_FIBER, "VerilatedDpi::callImportFiber", false}, \
+        {AWAIT_EXPORT_IN_FIBER, "VerilatedDpi::awaitExportFiber", false}, \
+        {CALL_IMPORT_FUNCTION, "VerilatedDpi::callImportFunction", false}, \
+        {CALL_IMPORT_TASK, "VerilatedDpi::callImportTask", false}, \
+        {AWAIT_EXPORT_FUNCTION, "VerilatedDpi::awaitExportFunction", false}, \
+        {AWAIT_EXPORT_TASK, "VerilatedDpi::awaitExportTask", false}, \
+        {_ENUM_MAX, "_ENUM_MAX", false}};
 
 class VCMethod final {
 public:
