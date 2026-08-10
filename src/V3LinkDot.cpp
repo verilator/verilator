@@ -356,10 +356,22 @@ public:
         //
         // Note we only check for conflicts at the same level; it's ok if one block hides another
         // We also wouldn't want to not insert it even though it's lower down
+
         const VSymEnt* const foundp = lookupSymp->findIdFlat(name);
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
+            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) {  // ignore typedefs etc
+                const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
+                if (alt) {
+                    nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
+                                                   << nodep->prettyNameQ() << '\n'
+                                                   << nodep->warnContextPrimary() << '\n'
+                                                   << alt->nodep()->warnOther()
+                                                   << "... Location of original declaration\n"
+                                                   << alt->nodep()->warnContextSecondary());
+                }
+            }
         } else if (nodep == fnodep) {  // Already inserted.
             // Good.
         } else if (foundp->imported()) {  // From package
