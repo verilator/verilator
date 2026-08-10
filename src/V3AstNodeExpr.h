@@ -3980,12 +3980,16 @@ public:
 class AstSAnd final : public AstNodeBiop {
     // Sequence 'and' (IEEE 1800-2023 16.9.5): both operand sequences must match.
     // Operates on match sets, not values. For boolean operands, lowered to AstLogAnd.
+    const bool m_propertyControl;  // Parser-generated property if/case branch conjunction
 public:
-    AstSAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_SAnd(fl, lhsp, rhsp) {
+    AstSAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool propertyControl = false)
+        : ASTGEN_SUPER_SAnd(fl, lhsp, rhsp)
+        , m_propertyControl{propertyControl} {
         dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstSAnd;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLogAnd(lhs, rhs);
     }
@@ -3999,6 +4003,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isMultiCycleSva() const override { return true; }
+    bool propertyControl() const { return m_propertyControl; }
 };
 class AstSIntersect final : public AstNodeBiop {
     // Sequence 'intersect' (IEEE 1800-2023 16.9.6): both operands match with equal length.

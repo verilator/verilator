@@ -137,7 +137,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
                                   new AstLogNot{itemp->fileline(), matchedp->cloneTreePure(false)}}
                   : itemMatchp->cloneTreePure(false);
         AstNodeExpr* const branchp = new AstImplication{itemp->fileline(), guardp, propp, true};
-        resultp = resultp ? new AstSAnd{flp, resultp, branchp} : branchp;
+        resultp = resultp ? new AstSAnd{flp, resultp, branchp, /*propertyControl=*/true} : branchp;
         matchedp = matchedp ? new AstLogOr{itemp->fileline(), matchedp, itemMatchp} : itemMatchp;
     }
     itemsp->deleteTree();
@@ -150,7 +150,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         AstNodeExpr* const noMatchp
             = static_cast<AstNodeExpr*>(new AstLogNot{defaultFlp, matchedp->cloneTreePure(false)});
         AstNodeExpr* const branchp = new AstImplication{defaultFlp, noMatchp, defaultPropp, true};
-        resultp = new AstSAnd{flp, resultp, branchp};
+        resultp = new AstSAnd{flp, resultp, branchp, /*propertyControl=*/true};
     }
     matchedp->deleteTree();
     exprp->deleteTree();

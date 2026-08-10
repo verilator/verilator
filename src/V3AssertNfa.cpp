@@ -204,6 +204,28 @@ struct BuildResult final {
     static BuildResult failWithError() { return {nullptr, nullptr, {}, true}; }
 };
 
+// Parser-marked SAnd of overlapped implications: a property if/else/case.
+static bool isPropertyControlConjunction(const AstNodeExpr* nodep) {
+    if (const AstSAnd* const andp = VN_CAST(nodep, SAnd)) {
+        if (!andp->propertyControl()) return false;
+        return isPropertyControlConjunction(andp->lhsp())
+               && isPropertyControlConjunction(andp->rhsp());
+    }
+    const AstImplication* const implicationp = VN_CAST(nodep, Implication);
+    return implicationp && implicationp->isOverlapped() && !implicationp->isFollowedBy();
+}
+
+static bool hasPropertyControlConjunction(const AstNodeExpr* nodep) {
+    return nodep->exists([](const AstSAnd* andp) { return isPropertyControlConjunction(andp); });
+}
+
+// A peeled top-level abort expression remains owned by its source AstAbortOn.
+struct AbortSpec final {
+    VAbortKind kind;  // Accept/reject and sync/async flavor
+    AstNodeExpr* condp;  // Abort condition (owned by nodep)
+    AstAbortOn* nodep;  // Source node, deleted after lowering
+};
+
 static AstNodeExpr* sampled(AstNodeExpr* exprp) {
     AstSampled* const sp = new AstSampled{exprp->fileline(), exprp, exprp->dtypep()};
     return sp;
@@ -2645,6 +2667,36 @@ class AssertNfaVisitor final : public VNVisitor {
         return parts;
     }
 
+    static std::vector<AbortSpec> peelAbortPrefix(AstNodeExpr*& exprpr) {
+        std::vector<AbortSpec> result;
+        while (AstAbortOn* const abortp = VN_CAST(exprpr, AbortOn)) {
+            result.push_back({abortp->kind(), abortp->condp(), abortp});
+            exprpr = abortp->propp();
+        }
+        return result;
+    }
+
+    static bool isLinearAbortBody(AstNodeExpr* nodep) {
+        if (AstImplication* const implp = VN_CAST(nodep, Implication)) {
+            return !hasMultiCycleExpr(implp->lhsp()) && isLinearAbortBody(implp->rhsp());
+        }
+        if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
+            AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
+            if (!delayp || !delayp->isCycleDelay() || delayp->isUnbounded()) return false;
+            if (delayp->isRangeDelay() && sexprp->exprp()->isMultiCycleSva()) return false;
+            return (!sexprp->preExprp() || isLinearAbortBody(sexprp->preExprp()))
+                   && isLinearAbortBody(sexprp->exprp());
+        }
+        if (AstPropAlways* const alwaysp = VN_CAST(nodep, PropAlways)) {
+            return !VN_IS(alwaysp->hiBoundp(), Unbounded) && !hasMultiCycleExpr(alwaysp->propp());
+        }
+        if (AstLogNot* const notp = VN_CAST(nodep, LogNot)) {
+            return isLinearAbortBody(notp->lhsp());
+        }
+        if (VN_IS(nodep, AbortOn)) return false;
+        return !nodep->isMultiCycleSva();
+    }
+
     static bool canSplitImplicationPassActions(const PropertyParts& parts) {
         UASSERT(parts.hasImplication,
                 "Implication pass action split requested without implication");
@@ -2926,6 +2978,68 @@ class AssertNfaVisitor final : public VNVisitor {
         return false;
     }
 
+    bool rejectUnsupportedAbort(AstNodeCoverOrAssert* assertp, AstPropSpec* propSpecp,
+                                AstNodeExpr* decompositionRootp,
+                                const std::vector<AbortSpec>& abortSpecs,
+                                bool abortHasLiveWindow) {
+        for (const AbortSpec& spec : abortSpecs) {
+            if (!abortHasLiveWindow || !spec.kind.isAsync()) continue;
+            spec.nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: asynchronous abort operator in a multi-cycle property");
+            replaceBodyOnBuildError(assertp->fileline(), propSpecp,
+                                    /*errorEmitted=*/true);
+            return true;
+        }
+        if (abortHasLiveWindow
+            && decompositionRootp->exists([](const AstAbortOn*) { return true; })) {
+            decompositionRootp->v3warn(
+                E_UNSUPPORTED, "Unsupported: nested abort operator in a multi-cycle property");
+            replaceBodyOnBuildError(assertp->fileline(), propSpecp,
+                                    /*errorEmitted=*/true);
+            return true;
+        }
+        if (abortHasLiveWindow && !abortSpecs.empty() && VN_IS(assertp, Cover)) {
+            abortSpecs.front().nodep->v3warn(
+                E_UNSUPPORTED, "Unsupported: abort operator in a multi-cycle cover property");
+            replaceBodyOnBuildError(assertp->fileline(), propSpecp,
+                                    /*errorEmitted=*/true);
+            return true;
+        }
+        if (!abortSpecs.empty() && !isLinearAbortBody(decompositionRootp)) {
+            decompositionRootp->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: abort operator around a branching or unbounded property");
+            replaceBodyOnBuildError(assertp->fileline(), propSpecp,
+                                    /*errorEmitted=*/true);
+            return true;
+        }
+        return false;
+    }
+
+    bool rejectUnsupportedPropertyControl(AstNodeCoverOrAssert* assertp, AstPropSpec* propSpecp,
+                                          AstNodeExpr* seqBodyp, bool negated,
+                                          const std::vector<AbortSpec>& abortSpecs) {
+        const bool hasPropertyControl = hasPropertyControlConjunction(seqBodyp);
+        const AstAssert* const controlAssertp = VN_CAST(assertp, Assert);
+        const bool hasStrongControlBranch
+            = hasPropertyControl && seqBodyp->exists([](const AstPropAlways* alwaysp) {
+                  return alwaysp->isStrong();
+              });
+        if (hasPropertyControl
+            && (negated || VN_IS(assertp, Cover) || (controlAssertp && controlAssertp->passsp())
+                || !abortSpecs.empty() || hasStrongControlBranch)) {
+            seqBodyp->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: temporal property if/case with pass action, cover, negation, "
+                "abort, or strong end-of-trace obligation");
+            replaceBodyOnBuildError(assertp->fileline(), propSpecp,
+                                    /*errorEmitted=*/true);
+            return true;
+        }
+        return false;
+    }
+
     void processAssertion(AstNodeCoverOrAssert* assertp) {
         if (assertp->immediate()) return;
 
@@ -2953,7 +3067,22 @@ class AssertNfaVisitor final : public VNVisitor {
         }
 
         if (!hasMultiCycleExpr(propp)) return;
+        // A nested property instance keeps its body behind the call; lowering would drop it.
+        if (propp->exists([](const AstFuncRef* refp) { return VN_IS(refp->taskp(), Property); })) {
+            assertp->v3warn(E_UNSUPPORTED,
+                            "Unsupported: property instance inside a multi-cycle property "
+                            "expression");
+            VL_DO_DANGLING(pushDeletep(assertp->unlinkFrBack()), assertp);
+            return;
+        }
         if (isBareTopLevelUntil(propp)) return;
+
+        AstNodeExpr* abortBodyp = VN_AS(propp->propp(), NodeExpr);
+        const std::vector<AbortSpec> abortSpecs = peelAbortPrefix(abortBodyp);
+        const bool abortHasLiveWindow = hasMultiCycleExpr(abortBodyp);
+        if (rejectUnsupportedAbort(assertp, propp, abortBodyp, abortSpecs, abortHasLiveWindow)) {
+            return;
+        }
 
         PropertyParts parts = decomposeProperty(propp);
         UASSERT_OBJ(parts.seqExprp, propp, "Property body must be an expression");
@@ -2964,6 +3093,10 @@ class AssertNfaVisitor final : public VNVisitor {
         while (AstLogNot* const notp = VN_CAST(seqBodyp, LogNot)) {
             negated = !negated;
             seqBodyp = notp->lhsp();
+        }
+
+        if (rejectUnsupportedPropertyControl(assertp, propp, seqBodyp, negated, abortSpecs)) {
+            return;
         }
 
         // Substitute property-local match-item refs in consequent with

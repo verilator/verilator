@@ -1,0 +1,54 @@
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:20:63: Unsupported: temporal property if/case with pass action, cover, negation, abort, or strong end-of-trace obligation
+                                                       : ... note: In instance 't'
+   20 |   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c) $display("pass");
+      |                                                               ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:21:62: Unsupported: temporal property if/case with pass action, cover, negation, abort, or strong end-of-trace obligation
+                                                       : ... note: In instance 't'
+   21 |   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
+      |                                                              ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:22:68: Unsupported: temporal property if/case with pass action, cover, negation, abort, or strong end-of-trace obligation
+                                                       : ... note: In instance 't'
+   22 |   assert property (@(posedge clk) not (if (a) 1'b1 ##1 b else 1'b1 ##2 c));
+      |                                                                    ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:24:69: Unsupported: temporal property if/case with pass action, cover, negation, abort, or strong end-of-trace obligation
+                                                       : ... note: In instance 't'
+   24 |   assert property (@(posedge clk) if (a) s_always [1:2] b else 1'b1 ##1 c);
+      |                                                                     ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:27:65: Unsupported: abort operator around a branching or unbounded property
+                                                       : ... note: In instance 't'
+   27 |   assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) |-> d));
+      |                                                                 ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:28:57: Unsupported: abort operator around a branching or unbounded property
+                                                       : ... note: In instance 't'
+   28 |   assert property (@(posedge clk) sync_accept_on (a) (b ##[1:2] (c ##1 d)));
+      |                                                         ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:29:57: Unsupported: abort operator around a branching or unbounded property
+                                                       : ... note: In instance 't'
+   29 |   assert property (@(posedge clk) sync_accept_on (a) (b ##[1:$] c));
+      |                                                         ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:30:55: Unsupported: abort operator around a branching or unbounded property
+                                                       : ... note: In instance 't'
+   30 |   assert property (@(posedge clk) sync_accept_on (a) (always [0:$] b));
+      |                                                       ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:31:55: Unsupported: asynchronous abort operator in a multi-cycle property
+                                                       : ... note: In instance 't'
+   31 |   assert property (@(posedge clk) sync_accept_on (a) (accept_on (b) (c ##1 d)));
+      |                                                       ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:34:3: Unsupported: property instance inside a multi-cycle property expression
+                                                      : ... note: In instance 't'
+   34 |   assert property (@(posedge clk) p_nested or e);
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:37:35: Unsupported: asynchronous abort operator in a multi-cycle property
+                                                       : ... note: In instance 't'
+   37 |   assert property (@(posedge clk) accept_on (abort_cond) (a ##1 b));
+      |                                   ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:39:35: Unsupported: nested abort operator in a multi-cycle property
+                                                       : ... note: In instance 't'
+   39 |   assert property (@(posedge clk) not (sync_accept_on (abort_cond) (a ##1 b)));
+      |                                   ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:41:34: Unsupported: abort operator in a multi-cycle cover property
+                                                       : ... note: In instance 't'
+   41 |   cover property (@(posedge clk) sync_accept_on (abort_cond) (a ##1 b));
+      |                                  ^~~~~~~~~~~~~~
+%Error: Exiting due to
