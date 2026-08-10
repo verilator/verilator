@@ -11,10 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# Must elaborate cleanly. Before the fix this is a use-after-free in
-# V3LinkDotIfaceCapture (see t_iface_typedef_bits_uaf.v): it aborts under
-# --enable-dev-asan, and SIGSEGVs in a --debug build once the findOwnerModule
-# address guard is removed.
 test.lint()
 
 test.passes()
