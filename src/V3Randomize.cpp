@@ -6312,7 +6312,12 @@ class RandomizeVisitor final : public VNVisitor {
                 if (isDynArrOfClassTypeRecurse(arrVarp->dtypep())) {
                     const uint32_t unpackedDims = arrVarp->dtypep()->dimensions(false).second;
                     if (unpackedDims > 1) {
-                        arrVarp->v3warn(
+                        // A genuinely nested (unpackedDims > 1) dynamic array of
+                        // class-typed elements already hits unrelated, pre-existing
+                        // unsupported-constraint/internal-error paths well before
+                        // reaching a randomize() with {} two-phase solve, so this
+                        // can't currently be exercised from here.
+                        arrVarp->v3warn(  // LCOV_EXCL_LINE
                             E_UNSUPPORTED,
                             "Unsupported: Nested array element access in global constraint");
                     }
