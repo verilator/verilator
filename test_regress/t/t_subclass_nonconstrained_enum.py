@@ -9,8 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.lint(verilator_flags2=['--timing'], expect_filename=test.golden_filename, fails=True)
+if not test.have_solver:
+    test.skip("No constraint solver installed")
+
+test.compile()
+
+test.execute()
 
 test.passes()

@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+test.sim_time = 11000
+
 test.compile()
 
 test.execute()

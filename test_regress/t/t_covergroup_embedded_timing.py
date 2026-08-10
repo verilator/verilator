@@ -9,8 +9,8 @@
 
 import vltest_bootstrap
 
+import coverage_covergroup_common
+
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['--timing'], expect_filename=test.golden_filename, fails=True)
-
-test.passes()
+coverage_covergroup_common.run(test, verilator_flags2=['--timing'], timing_loop=True)

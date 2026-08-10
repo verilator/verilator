@@ -1,0 +1,6 @@
+%Error: t/t_covergroup_embedded_event_bad.v:31:8: Embedded covergroup variable 'cg' may only be assigned in the enclosing class's 'new' method (IEEE 1800-2023 19.4).
+                                                : ... note: In instance 't'
+   31 |     cg = new;
+      |        ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
