@@ -15,8 +15,13 @@
 /// \file
 /// \brief Lightweight fiber abstraction for DPI stack switching
 ///
-/// This file is included automatically by Verilator in C++ files that need
-/// to suspend DPI code independently of the host stack.
+/// This file is included automatically by Verilator in some of the C++ files
+/// to support DPI exported tasks with timing constructs.
+///
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use.
+///
+/// See the internals documentation docs/internals.rst for details.
 ///
 //*************************************************************************
 
@@ -45,8 +50,6 @@
 
 #include <sys/mman.h>
 #endif
-
-class VlFiber;
 
 #if defined(VERILATOR_FIBER_LINUX)
 
