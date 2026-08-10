@@ -89,7 +89,7 @@ module t (
       `checkd(count_fail2, 33);
       `checkd(count_fail3, 31);
       `checkd(count_fail4, 35);
-      `checkd(count_fail5, 36);
+      `checkd(count_fail5, 36);  // All other sims: 36
       `checkd(count_fail6, 33);
       $write("*-* All Finished *-*\n");
       $finish;

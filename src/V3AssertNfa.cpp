@@ -34,7 +34,6 @@
 #include "V3UniqueNames.h"
 
 #include <algorithm>
-#include <limits>
 #include <map>
 #include <unordered_set>
 #include <vector>
@@ -231,9 +230,9 @@ static bool hasPropertyControlConjunction(const AstNodeExpr* nodep) {
 
 // A peeled top-level abort expression remains owned by its source AstAbortOn.
 struct AbortSpec final {
-    VAbortKind kind;
-    AstNodeExpr* condp;
-    AstAbortOn* nodep;
+    VAbortKind kind;  // Accept/reject and sync/async flavor
+    AstNodeExpr* condp;  // Abort condition (owned by nodep)
+    AstAbortOn* nodep;  // Source node, deleted after lowering
 };
 
 static AstNodeExpr* sampled(AstNodeExpr* exprp) {
@@ -373,10 +372,9 @@ class SvaNfaBuilder final {
         AstNodeExpr* const constp = V3Const::constifyEdit(exprp->cloneTreePure(false));
         const AstConst* const cp = VN_CAST(constp, Const);
         int val = -1;
-        if (cp && !cp->num().isFourState() && !cp->num().isNegative() && cp->width() <= 64) {
-            const uint64_t uval = cp->toUQuad();
-            constexpr uint64_t kMaxInt = static_cast<uint64_t>(std::numeric_limits<int>::max());
-            if (uval <= kMaxInt) val = static_cast<int>(uval);
+        if (cp && !cp->num().isFourState() && !cp->num().isNegative()
+            && cp->num().mostSetBitP1() <= 31) {
+            val = static_cast<int>(cp->toUQuad());
         }
         VL_DO_DANGLING(constp->deleteTree(), constp);
         return val;
@@ -832,24 +830,35 @@ class SvaNfaBuilder final {
         return {currentp, exprp, std::move(rangeMidSources)};
     }
 
+    // Read one repetition bound, diagnosing invalid or oversized values.
+    static int readRepCount(AstSConsRep* repp, AstNodeExpr* countp, const char* whatp) {
+        AstNodeExpr* const constp = V3Const::constifyEdit(countp->cloneTreePure(false));
+        const AstConst* const cp = VN_CAST(constp, Const);
+        int result = -1;
+        if (!cp || cp->num().isFourState() || cp->num().isNegative()) {
+            repp->v3error(whatp << " is not a non-negative elaboration-time constant");
+        } else if (cp->num().mostSetBitP1() > 31) {
+            repp->v3error(whatp << " " << cp->num().toDecimalU()
+                                << " exceeds --assert-unroll-limit ("
+                                << v3Global.opt.assertUnrollLimit()
+                                << "); raise '--assert-unroll-limit' to compile");
+        } else {
+            result = static_cast<int>(cp->toUQuad());
+        }
+        VL_DO_DANGLING(constp->deleteTree(), constp);
+        return result;
+    }
+
     // Sum prefix and range-tail repetition counts for one shared hoist site.
     static bool readConsRepCounts(AstSConsRep* repp, int& minNr, int64_t& totalSitesr) {
-        minNr = getConstInt(repp->countp());
-        if (minNr < 0) {
-            repp->v3error(
-                "Repetition count is not a supported non-negative elaboration-time constant");
-            return false;
-        }
+        minNr = readRepCount(repp, repp->countp(), "Repetition count");
+        if (minNr < 0) return false;
         totalSitesr = minNr;
         if (repp->unbounded()) {
             totalSitesr += 1;
         } else if (repp->maxCountp()) {
-            const int maxCount = getConstInt(repp->maxCountp());
-            if (maxCount < 0) {
-                repp->v3error("Repetition maximum is not a supported non-negative"
-                              " elaboration-time constant");
-                return false;
-            }
+            const int maxCount = readRepCount(repp, repp->maxCountp(), "Repetition maximum");
+            if (maxCount < 0) return false;
             totalSitesr += maxCount - minNr;
         }
         return !exceedsAssertUnrollLimit(repp, totalSitesr);
@@ -1948,10 +1957,10 @@ public:
         const std::vector<AbortSpec>* abortSpecsp = nullptr;  // Peeled abort prefix
         AstVar* disableCntVarp = nullptr;  // Disable posedge epoch counter
         AstVar* snapshotVarp = nullptr;  // Disable epoch snapshot
-        bool isCover = false;
-        bool negated = false;
-        VAssertType assertType = VAssertType::INTERNAL;
-        VAssertDirectiveType directiveType = VAssertDirectiveType::INTERNAL;
+        bool isCover = false;  // Cover directive: count matches, no rejects
+        bool negated = false;  // Property under not(): swap match/reject roles
+        VAssertType assertType = VAssertType::INTERNAL;  // For assertion-control gating
+        VAssertDirectiveType directiveType = VAssertDirectiveType::INTERNAL;  // Likewise
         // Requested optional outputs; unset ones stay empty in LowerResult
         bool wantPerSrcFail = false;
         // The synthesized default handler only needs a count for true multiplicity.
@@ -1979,7 +1988,7 @@ public:
 
 private:
     AstNodeModule* const m_modp;  // Module to add state vars and always blocks to
-    V3UniqueNames m_names{"__Vnfa"};
+    V3UniqueNames m_names{"__Vnfa"};  // Generated state variable names
 
     // Per-lowering shared context (passed to phase sub-functions)
     // Per-vertex lowering state is stored in SvaVertexData and accessed via
@@ -3801,13 +3810,17 @@ class AssertNfaVisitor final : public VNVisitor {
         FileLine* const flp = disableExprp->fileline();
         AstNodeExpr* const normalizedp
             = new AstLogNot{flp, new AstLogNot{flp, disableExprp->cloneTreePure(false)}};
+        std::vector<AstSampled*> sampleps;
+        normalizedp->foreach([&sampleps](AstSampled* const nodep) { sampleps.push_back(nodep); });
+        std::unordered_set<const AstSampled*> nestedps;
+        for (AstSampled* const samplep : sampleps) {
+            samplep->exprp()->foreach(
+                [&nestedps](AstSampled* const nodep) { nestedps.insert(nodep); });
+        }
         AstNode* sampleBodyp = nullptr;
-        while (true) {
-            AstSampled* samplep = nullptr;
-            normalizedp->foreach([&samplep](AstSampled* const nodep) {
-                if (!samplep) samplep = nodep;
-            });
-            if (!samplep) break;
+        for (AstSampled* const samplep : sampleps) {
+            // Nested $sampled moves with the outer clone; extract outermost only
+            if (nestedps.count(samplep)) continue;
             FileLine* const sampleFlp = samplep->fileline();
             AstVar* const varp = new AstVar{sampleFlp, VVarType::MODULETEMP,
                                             m_disableSampleNames.get(""), samplep->dtypep()};

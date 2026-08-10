@@ -143,6 +143,9 @@ module t (
   // Ranged consecutive repetition under 'and' uses the variable-length combiner.
   assert property (@(posedge clk) 1'b0 |-> ((a [* 1:3]) and (b ##2 c)));
 
+  // A wide constant with a small value is a legal repetition count.
+  assert property (@(posedge clk) 1'b1 [* 66'd2]);
+
   // Default-clocking action handlers (clockless assertion forms).
   int dc_pass = 0, dc_vac = 0, dc_cover = 0;
 

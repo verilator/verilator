@@ -15,6 +15,7 @@ test.scenarios('vlt')
 
 test.lint(v_flags=["--assert --timing --dumpi-tree 3 --dumpi-tree-json 3 --no-json-edit-nums"])
 
+# The JSON dump of an NFA-lowered design must stay parseable
 jsons = glob.glob(test.obj_dir + "/V" + test.name + "_*.tree.json")
 if not jsons:
     test.error("No .tree.json dumped")
@@ -22,15 +23,7 @@ for fn in jsons:
     with open(fn, 'r', encoding="utf8") as fh:
         json.load(fh)
 
-
-def tree_has_nfa_assert(filename):
-    with open(filename, encoding="latin-1") as fh:
-        contents = fh.read()
-    return 'ASSERT' in contents and '[NFA]' in contents
-
-
-trees = glob.glob(test.obj_dir + "/V" + test.name + "_*.tree")
-if not any(tree_has_nfa_assert(t) for t in trees):
-    test.error("No NFA-lowered ASSERT node dumped")
+# The tree dump must show the lowered assertion with its [NFA] marker
+test.file_grep_any(glob.glob(test.obj_dir + "/V" + test.name + "_*.tree"), r'ASSERT.*\[NFA\]')
 
 test.passes()

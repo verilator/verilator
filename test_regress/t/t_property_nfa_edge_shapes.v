@@ -44,11 +44,11 @@ module t (
 
   final begin
     `checkd(np1, 0);  // zero-ok: unbounded not() never resolves to a pass
-    `checkd(nf1, 2);
-    `checkd(nc2, 1);
+    `checkd(nf1, 2);  // One other sim: 11
+    `checkd(nc2, 1);  // One other sim: 15
     `checkd(nc3, 5);
     `checkd(nf4, 0);
-    `checkd(nc5, 1);
+    `checkd(nc5, 1);  // One other sim: 15
     `checkd(np6, 12);
     `checkd(nf6, 1);
     $write("*-* All Finished *-*\n");

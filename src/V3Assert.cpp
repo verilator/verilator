@@ -268,9 +268,11 @@ public:
 // AssertVisitor
 
 class FinalPastCallGraphVisitor final : public VNVisitor {
-    AstNodeFTask* m_ftaskp = nullptr;
-    std::unordered_set<const AstNodeFTask*> m_pastFTasksp;
-    std::unordered_map<const AstNodeFTask*, std::vector<const AstNodeFTask*>> m_callees;
+    // STATE
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task being iterated
+    std::unordered_set<const AstNodeFTask*> m_pastFTasksp;  // FTasks that reach a $past
+    std::unordered_map<const AstNodeFTask*, std::vector<const AstNodeFTask*>>
+        m_callees;  // Caller -> called FTasks, for the transitive closure
 
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
@@ -281,12 +283,10 @@ class FinalPastCallGraphVisitor final : public VNVisitor {
         if (m_ftaskp) m_pastFTasksp.insert(m_ftaskp);
         iterateChildren(nodep);
     }
-    void visitFTaskRef(AstNodeFTaskRef* nodep) {
+    void visit(AstNodeFTaskRef* nodep) override {
         if (m_ftaskp && nodep->taskp()) m_callees[m_ftaskp].push_back(nodep->taskp());
         iterateChildren(nodep);
     }
-    void visit(AstFuncRef* nodep) override { visitFTaskRef(nodep); }
-    void visit(AstTaskRef* nodep) override { visitFTaskRef(nodep); }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -351,7 +351,7 @@ class AssertVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     const std::unordered_set<const AstNodeFTask*>& m_finalPastFTasksp;  // Final-reachable $past
     V3UniqueNames m_caseTempNames{"__VCase"};
-    V3UniqueNames m_actionCountNames{"__VassertActionCount"};
+    V3UniqueNames m_actionCountNames{"__VassertActionCount"};  // Action repeat count temps
     bool m_inReactiveAssertionAction = false;  // Action will execute after NBA
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>

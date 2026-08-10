@@ -23,12 +23,6 @@ module t (
     return impure_count[0];
   endfunction
 
-  // Repetition count is not a supported non-negative elaboration-time constant
-  assert property (@(posedge clk) a [* 66'd2] |-> b);
-
-  // Repetition maximum is not a supported non-negative elaboration-time constant
-  assert property (@(posedge clk) a [* 1: 66'd3] |-> b);
-
   // Unsupported: impure expression in a temporal 'or' composite
   assert property (@(posedge clk) (fimp() ##1 a) or(b ##1 c));
 

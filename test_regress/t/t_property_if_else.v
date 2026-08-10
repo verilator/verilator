@@ -32,7 +32,8 @@ module t (
   end
 
   // Read the action counter in final to avoid a same-slot threaded race.
-  final `checkd(vacuous_passes, 10);
+  // IEEE 1800-2023 20.11: by default the pass action executes on vacuous success.
+  final `checkd(vacuous_passes, 10);  // One other sim: 2
 
   property p_named;
     if (sel) a else c;

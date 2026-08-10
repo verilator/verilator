@@ -55,8 +55,8 @@ module t (
     if (cyc == 32) begin
       $display("ovl=%0d novl=%0d impl=%0d nimp=%0d wide=%0d", ovl_f, novl_f, impl_f, nimp_f,
                wide_f);
-      `checkd(ovl_f, 28);
-      `checkd(novl_f, 19);
+      `checkd(ovl_f, 28);  // Other sims: 28, one other sim: 5
+      `checkd(novl_f, 19);  // Other sims: 19
       `checkd(impl_f, 9);
       `checkd(nimp_f, 0);
       `checkd(wide_f, 0);
