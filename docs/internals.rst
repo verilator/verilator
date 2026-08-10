@@ -812,7 +812,7 @@ restore the main stack and jump to the place where ``VlFiber::resume()`` was cal
 Subsequent resumptions of the same fiber will restore the context and jump to the callsite
 of the last ``VlFiber::yield()`` call.
 
-DPI with timings
+DPI with timing constructs
 ++++++++++++++++
 
 In order to support DPIs with timing constructs, ``verilated_dpi.h`` provides
