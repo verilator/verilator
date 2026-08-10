@@ -55,6 +55,7 @@ public:
         // MEMBERS
         int m_forceId = 0;  // Unique (per signal) variable of this force assignment
         bool m_hasArraySel = false;  // If this has an array select on LHS
+        bool m_synthetic = false;  // True if this is a synthetic externally-forceable force
         AstVarScope* m_rhsVarVscp = nullptr;  // Scope of the var containing RHSID
         AstNodeExpr* m_rhsExprp = nullptr;  // Expression on RHS of this force assignment
 
@@ -119,6 +120,16 @@ public:
         int findForcePathIndex(AstNodeExpr* nodep) const {
             const auto it = m_forcePathToIndex.find(forcePathKey(nodep));
             return it != m_forcePathToIndex.end() ? it->second : -1;
+        }
+
+        bool hasTrackingProceduralForce() const {
+            for (const auto& pair : m_forces) {
+                const ForceInfo& finfo = pair.second;
+                if (!finfo.m_synthetic && finfo.m_rhsExprp && !VN_IS(finfo.m_rhsExprp, Const)) {
+                    return true;
+                }
+            }
+            return false;
         }
     };
 
@@ -402,6 +413,12 @@ public:
         AstNodeExpr* readExprp = nullptr;
         AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
         markNonReplaceable(baseRefp);
+        if (varInfo.hasTrackingProceduralForce()) {
+            readExprp
+                = createForceReadCall(varInfo, flp, VCMethod::FORCE_READ, baseRefp, varp, nullptr);
+            return new AstAssign{flp, new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::WRITE},
+                                 readExprp};
+        }
         AstNodeExpr* const enRefp = new AstVarRef{flp, varInfo.m_forceEnVscp, VAccess::READ};
         AstNodeExpr* const valRefp = new AstVarRef{flp, varInfo.m_forceValVscp, VAccess::READ};
         if (isBitwiseDType(varp)) {
@@ -548,6 +565,7 @@ public:
                                           ForceInfo{rangeLsb, rangeMsb, padLsb, padMsb, forceId,
                                                     hasArraySel, nullptr, rhsExprp});
         ForceInfo& finfo = pair.first->second;
+        finfo.m_synthetic = forceStmtp->user2();
         if (doingAssign()) {
             std::vector<AstVar*> depVarps;
             finfo.m_rhsExprp->foreach([&](AstVarRef* const refp) {
@@ -1070,7 +1088,7 @@ class ForceConvertVisitor final : public VNVisitor {
         // keep the public __VforceEn/__VforceVal signals in sync with the procedural force too.
         // Don't do this for array selections; those are represented only in VlForceVec.
         if (!nodep->user2() && varInfo->m_forceEnVscp && varInfo->m_forceValVscp
-            && !info.m_hasArraySel) {
+            && !info.m_hasArraySel && !varInfo->hasTrackingProceduralForce()) {
             AstNodeExpr* baseExprp = nodep->rhsp()->cloneTreePure(false);
             baseExprp->foreach(
                 [](AstVarRef* const refp) { ForceState::markNonReplaceable(refp); });
