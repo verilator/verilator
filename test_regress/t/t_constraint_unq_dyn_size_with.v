@@ -15,6 +15,11 @@
 // on one of those arrays and relies on a class-level foreach range
 // constraint on the other. Both constraints must be checked against the
 // arrays' solved (post-resize) length, not their pre-solve (empty) length.
+//
+// m_count spans a range (not a single fixed value), so repeated calls can
+// settle on different sizes; the test checks that at least two different
+// sizes are actually observed, confirming randomize() isn't stuck always
+// returning the same solution.
 class Frame;
   rand int m_count;
   rand int m_slots[];
@@ -32,11 +37,15 @@ module t;
   initial begin
     automatic Frame fr = new;
     automatic int ok;
+    automatic int first_count = -1;
+    automatic bit found_variety = 0;
     repeat (50) begin
       ok = fr.randomize() with {unique {m_slots};};
       `checkd(ok, 1)
       `checkd(fr.m_slots.size(), fr.m_count)
       `checkd(fr.m_vals.size(), fr.m_count)
+      if (first_count == -1) first_count = fr.m_count;
+      else if (fr.m_count != first_count) found_variety = 1;
       for (int i = 0; i < fr.m_count; i++) begin
         if (fr.m_vals[i] < 0 || fr.m_vals[i] > 9) begin
           $write("%%Error: m_vals[%0d]=%0d not in [0:9]\n", i, fr.m_vals[i]);
@@ -50,6 +59,11 @@ module t;
           end
         end
       end
+    end
+    if (!found_variety) begin
+      $write("%%Error: randomize() always produced m_count=%0d, no variety across repeats\n",
+             first_count);
+      `stop;
     end
     $write("*-* All Finished *-*\n");
     $finish;

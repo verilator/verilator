@@ -14,26 +14,45 @@
 // randomize() with {} call. Exercises the queue (rather than dynamic array)
 // element-table refresh path, and the case where there is no class-level
 // generator to fall back on.
+//
+// The size constraint is a range (not a single fixed value), so repeated
+// calls can settle on different sizes; the test checks that at least two
+// different sizes are actually observed, confirming randomize() isn't stuck
+// always returning the same solution.
 class Foo;
-  rand logic[2:0] q[$];
+  rand logic [2:0] q[$];
 endclass
 
 module t;
   initial begin
     automatic Foo f = new;
     automatic int ok;
-    repeat (20) begin
-      ok = f.randomize() with {q.size() == 4; unique {q};};
+    automatic int sz;
+    automatic int first_size = -1;
+    automatic bit found_variety = 0;
+    repeat (30) begin
+      ok = f.randomize() with {q.size() inside {[3 : 5]}; unique {q};};
       `checkd(ok, 1)
-      `checkd(f.q.size(), 4)
-      for (int i = 0; i < 4; i++) begin
-        for (int j = i + 1; j < 4; j++) begin
+      sz = f.q.size();
+      if (sz < 3 || sz > 5) begin
+        $write("%%Error: q.size()=%0d not in [3:5]\n", sz);
+        `stop;
+      end
+      if (first_size == -1) first_size = sz;
+      else if (sz != first_size) found_variety = 1;
+      for (int i = 0; i < sz; i++) begin
+        for (int j = i + 1; j < sz; j++) begin
           if (f.q[i] == f.q[j]) begin
             $write("%%Error: q[%0d] == q[%0d] == %0d, not unique\n", i, j, f.q[i]);
             `stop;
           end
         end
       end
+    end
+    if (!found_variety) begin
+      $write("%%Error: randomize() always produced q.size()=%0d, no variety across repeats\n",
+             first_size);
+      `stop;
     end
     $write("*-* All Finished *-*\n");
     $finish;
