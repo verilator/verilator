@@ -1,42 +1,30 @@
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:20:63: Unsupported: temporal property if/case with a pass action
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:28:63: Unsupported: temporal property if/case with a pass action
                                                        : ... note: In instance 't'
-   20 |   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c) $display("pass");
+   28 |   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c) $display("pass");
       |                                                               ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:21:62: Unsupported: temporal property if/case with cover
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:29:62: Unsupported: temporal property if/case with cover
                                                        : ... note: In instance 't'
-   21 |   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
+   29 |   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
       |                                                              ^~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:22:68: Unsupported: temporal property if/case with negation
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:30:68: Unsupported: temporal property if/case with negation
                                                        : ... note: In instance 't'
-   22 |   assert property (@(posedge clk) not (if (a) 1'b1 ##1 b else 1'b1 ##2 c));
+   30 |   assert property (@(posedge clk) not (if (a) 1'b1 ##1 b else 1'b1 ##2 c));
       |                                                                    ^~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:25:20: Unsupported: temporal property if/case with a pass action
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:33:20: Unsupported: temporal property if/case with a pass action
                                                        : ... note: In instance 't'
-   25 |                    case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d; endcase)
+   33 |                    case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d; endcase)
       |                    ^~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:29:35: Unsupported: abort operator around a property with an implication
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:37:64: Unsupported: multi-cycle sequence expression inside consecutive repetition (IEEE 1800-2023 16.9.2)
                                                        : ... note: In instance 't'
-   29 |   assert property (@(posedge clk) sync_accept_on (a) (b |-> c));
-      |                                   ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:30:35: Unsupported: abort operator around a property with an implication
+   37 |   assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c)[*2]));
+      |                                                                ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:40:52: Unsupported: multi-cycle sequence expression inside consecutive repetition (IEEE 1800-2023 16.9.2)
                                                        : ... note: In instance 't'
-   30 |   assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) |-> d));
-      |                                   ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:31:35: Unsupported: abort operator around a property with an implication
-                                                       : ... note: In instance 't'
-   31 |   assert property (@(posedge clk) accept_on (a) (b |=> c));
-      |                                   ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:32:35: Unsupported: abort operator around a property with an implication
-                                                       : ... note: In instance 't'
-   32 |   assert property (@(posedge clk) sync_accept_on (a) ((b |-> c) or d));
-      |                                   ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:33:35: Unsupported: abort operator around a property with an implication
-                                                       : ... note: In instance 't'
-   33 |   assert property (@(posedge clk) sync_accept_on (a) (d or (b |-> c)));
-      |                                   ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:36:3: Unsupported: property instance inside a multi-cycle property expression
+   40 |   assert property (@(posedge clk) if (a) ((b ##1 c)[*2]) else d) $display("pass");
+      |                                                    ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:43:3: Unsupported: property instance inside a multi-cycle property expression
                                                       : ... note: In instance 't'
-   36 |   assert property (@(posedge clk) p_nested or e);
+   43 |   assert property (@(posedge clk) p_nested or e);
       |   ^~~~~~
 %Error: Exiting due to

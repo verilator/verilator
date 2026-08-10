@@ -1444,10 +1444,12 @@ class SvaNfaBuilder final {
         std::unordered_set<const V3GraphVertex*> preExisting;
         for (const V3GraphVertex& vtxr : m_graph.m_graph.vertices()) preExisting.insert(&vtxr);
 
+        // The body may resetScope() and clear the stack, so restore rather than pop.
+        const std::vector<AstNodeExpr*> savedAbortStack = m_outerAbortStack;
         m_outerAbortStack.push_back(condp);
         const BuildResult bodyResult = buildExpr(bodyp, entryVtxp, /*isTopLevelStep=*/false);
-        m_outerAbortStack.pop_back();
-        UASSERT_OBJ(bodyResult.valid(), bodyp, "abort body must be a valid SVA expression");
+        m_outerAbortStack = savedAbortStack;
+        if (!bodyResult.valid()) return bodyResult;
 
         // Live-thread sources for the abort edge: entry + new body vertices,
         // minus reject sinks (they carry reject fuel, not live-thread fuel).
@@ -2734,25 +2736,6 @@ class AssertNfaVisitor final : public VNVisitor {
         return parts;
     }
 
-    // Strip the abort prefix chain; returns the innermost non-abort body.
-    static AstNodeExpr* peelAbortPrefix(AstNodeExpr* exprp) {
-        while (AstAbortOn* const abortp = VN_CAST(exprp, AbortOn)) exprp = abortp->propp();
-        return exprp;
-    }
-
-    // Implication reachable without crossing a 'not', which lowers separately.
-    static bool hasBareImplication(const AstNode* nodep) {
-        if (VN_IS(nodep, LogNot)) return false;
-        if (VN_IS(nodep, Implication)) return true;
-        for (const AstNode* opp = nodep->op1p(); opp; opp = opp->nextp()) {
-            if (hasBareImplication(opp)) return true;
-        }
-        for (const AstNode* opp = nodep->op2p(); opp; opp = opp->nextp()) {
-            if (hasBareImplication(opp)) return true;
-        }
-        return false;
-    }
-
     static bool canSplitImplicationPassActions(const PropertyParts& parts) {
         UASSERT(parts.hasImplication,
                 "Implication pass action split requested without implication");
@@ -3038,33 +3021,16 @@ class AssertNfaVisitor final : public VNVisitor {
         return false;
     }
 
-    // Lowering an implication under an abort dereferences a failed sub-build.
-    bool rejectUnsupportedAbort(AstNodeCoverOrAssert* assertp, AstPropSpec* propSpecp,
-                                AstNodeExpr* abortp) {
-        AstNodeExpr* const bodyp = peelAbortPrefix(abortp);
-        if (bodyp == abortp || !hasBareImplication(bodyp)) return false;
-        abortp->v3warn(E_UNSUPPORTED,
-                       "Unsupported: abort operator around a property with an implication");
-        replaceBodyOnBuildError(assertp->fileline(), propSpecp, /*errorEmitted=*/true);
-        return true;
-    }
-
-    bool rejectUnsupportedPropertyControl(AstNodeCoverOrAssert* assertp, AstPropSpec* propSpecp,
-                                          AstNodeExpr* seqBodyp, bool negated) {
-        if (!hasPropertyControlConjunction(seqBodyp)) return false;
+    // Outcome counts for a property if/case are wrong in an outcome-multiplying
+    // context. Returns that context, or nullptr when the shape is supported.
+    static const char* unsupportedPropertyControl(const AstNodeCoverOrAssert* assertp,
+                                                  const AstNodeExpr* seqBodyp, bool negated) {
+        if (!hasPropertyControlConjunction(seqBodyp)) return nullptr;
         const AstAssert* const controlAssertp = VN_CAST(assertp, Assert);
-        const char* whatp = nullptr;
-        if (negated) {
-            whatp = "negation";
-        } else if (VN_IS(assertp, Cover)) {
-            whatp = "cover";
-        } else if (controlAssertp && controlAssertp->passsp()) {
-            whatp = "a pass action";
-        }
-        if (!whatp) return false;
-        seqBodyp->v3warn(E_UNSUPPORTED, "Unsupported: temporal property if/case with " << whatp);
-        replaceBodyOnBuildError(assertp->fileline(), propSpecp, /*errorEmitted=*/true);
-        return true;
+        if (negated) return "negation";
+        if (VN_IS(assertp, Cover)) return "cover";
+        if (controlAssertp && controlAssertp->passsp()) return "a pass action";
+        return nullptr;
     }
 
     void processAssertion(AstNodeCoverOrAssert* assertp) {
@@ -3104,8 +3070,6 @@ class AssertNfaVisitor final : public VNVisitor {
         }
         if (isBareTopLevelUntil(propp)) return;
 
-        if (rejectUnsupportedAbort(assertp, propp, VN_AS(propp->propp(), NodeExpr))) return;
-
         PropertyParts parts = decomposeProperty(propp);
         UASSERT_OBJ(parts.seqExprp, propp, "Property body must be an expression");
 
@@ -3117,7 +3081,8 @@ class AssertNfaVisitor final : public VNVisitor {
             seqBodyp = notp->lhsp();
         }
 
-        if (rejectUnsupportedPropertyControl(assertp, propp, seqBodyp, negated)) return;
+        const char* const propertyControlp
+            = unsupportedPropertyControl(assertp, seqBodyp, negated);
 
         // Substitute property-local match-item refs in consequent with
         // $past(rhs, K) before NFA build (IEEE 1800-2023 16.10).
@@ -3171,6 +3136,14 @@ class AssertNfaVisitor final : public VNVisitor {
             // from this attempt become orphan MODULETEMPs; V3Dead removes
             // them along with the dead always_comb driver.
             replaceBodyOnBuildError(flp, propp, result.errorEmitted);
+            if (senTreeOwned) VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
+            return;
+        }
+        // After the build, so a construct the builder rejects reports itself.
+        if (propertyControlp) {
+            seqBodyp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: temporal property if/case with " << propertyControlp);
+            replaceBodyOnBuildError(flp, propp, /*errorEmitted=*/true);
             if (senTreeOwned) VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
             return;
         }

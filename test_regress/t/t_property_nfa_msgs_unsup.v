@@ -16,6 +16,14 @@ module t (
     a ##1 b;
   endproperty
 
+  sequence s_nested;
+    a ##1 b;
+  endsequence
+
+  function automatic bit fbool();
+    return a;
+  endfunction
+
   // Property if/else control the fail-only count engine cannot lower
   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c) $display("pass");
   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
@@ -25,19 +33,20 @@ module t (
                    case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d; endcase)
     $display("pass");
 
-  // Abort around an implication crashes the lowering
-  assert property (@(posedge clk) sync_accept_on (a) (b |-> c));
-  assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) |-> d));
-  assert property (@(posedge clk) accept_on (a) (b |=> c));
-  assert property (@(posedge clk) sync_accept_on (a) ((b |-> c) or d));
-  assert property (@(posedge clk) sync_accept_on (a) (d or (b |-> c)));
+  // An unsupported body under an abort reports itself, not an internal error
+  assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c)[*2]));
+
+  // A body the builder rejects wins over the property if/case message
+  assert property (@(posedge clk) if (a) ((b ##1 c)[*2]) else d) $display("pass");
 
   // A named property instance nested in a composite is rejected, not dropped
   assert property (@(posedge clk) p_nested or e);
 
-  // Abort bodies without a bare implication are lowered, not rejected
-  assert property (@(posedge clk) sync_accept_on (a) (not (b |-> c)));
-  assert property (@(posedge clk) sync_accept_on (a) (b or c));
+  // A named sequence instance is inlined, not rejected
+  assert property (@(posedge clk) s_nested or e);
+
+  // A function call is not a property instance
+  assert property (@(posedge clk) fbool() ##1 b);
 
   // A user-written 'and' of implications is not a property if/case
   assert property (@(posedge clk) (a |-> 1'b1 ##1 b) and (c |-> 1'b1 ##2 d));
