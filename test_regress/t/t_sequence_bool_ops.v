@@ -42,6 +42,7 @@ module t (
     end else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkh(sum, 64'hdb7bc8bfe61f987e);
+      `checkh(dc_pass, 'h62);
       $write("*-* All Finished *-*\n");
       $finish;
     end
@@ -97,33 +98,64 @@ module t (
   assert property (@(posedge clk)
       (a | b) |-> (a ##1 1'b1) or (b ##1 1'b1));
 
-  // Sequence 'or': different lengths, CRC-driven
-  assert property (@(posedge clk)
-      (a | b) |-> (a ##1 1'b1) or (b ##2 1'b1));
-
-  // Sequence 'or': standalone (constant, always passes)
-  assert property (@(posedge clk)
-      (1'b1 ##1 1'b1) or (1'b1 ##2 1'b1));
-
   // Sequence 'or' where both branches end in registered state (no finalCondp).
-  // Exercises guardedLink(termVertexp,...) in buildOrCombiner for both sides.
+  // Exercises guardedLink(termVertexp,...) in buildOrMerge for both sides.
   cover property (@(posedge clk) (a[*2]) or (b[*2]));
 
-  // Sequence 'and' with unbounded range on one side -- marks combiner unbounded.
-  cover property (@(posedge clk) (a ##[1:$] b) and (c ##1 d));
+  // Unequal-end 'or' and unbounded temporal 'and' diagnostics live in
+  // t_property_nfa_msgs_unsup.
 
   // =========================================================================
   // SAnd edge cases (NFA builder coverage)
   // =========================================================================
 
-  // SAnd where only one side has finalCondp: a[*2] has no finalCond (consumed
-  // by ConsRep); b ##1 c has finalCond=c. Exercises single-cond path in
-  // buildAndCombiner.
+  // Fixed-end SAnd forms are flattened into a single per-cycle trace.
   cover property (@(posedge clk) (a[*2]) and (b ##1 c));
 
-  // SAnd where both sides lack finalCondp (both end with registered state).
-  // Exercises buildMatchNow(!condp) path.
   cover property (@(posedge clk) (a[*2]) and (b[*2]));
+
+  // An unbounded single-end operand uses the persistent endpoint combiner.
+  assert property (@(posedge clk) (1'b1 ##1 1'b1) and (1'b1 [-> 1]));
+  assert property (@(posedge clk) (1'b1 [-> 1]) and (1'b1 ##1 1'b1));
+  assert property (@(posedge clk) disable iff (cyc < 0) (1'b1 ##1 1'b1) and (1'b1 [-> 1]));
+
+  // Nested fixed-end conjunctions exercise recursive trace flattening.
+  assert property (@(posedge clk) ((1'b1 ##1 1'b1) and (1'b1 ##1 1'b1)) and (1'b1 ##1 1'b1));
+
+  // A boolean intersect is folded before the following temporal step.
+  assert property (@(posedge clk) (1'b1 intersect 1'b1) ##1 1'b1);
+
+  // A constant-true always operand cannot reject early.
+  assert property (@(posedge clk) (always [1:2] 1'b1) or (c ##2 d));
+
+  // Non-overlapped implication and mixed branch forms in property control.
+  assert property (@(posedge clk) case (a) 1'b0: 1'b0 |=> b; default: 1'b1; endcase);
+  assert property (@(posedge clk) if (a) 1'b1 else (1'b1 ##1 1'b1));
+
+  // Same-end intersect nested in an unbounded window.
+  assert property (@(posedge clk) 1'b0 |-> (a ##[1:$]
+      (((1'b1 ##1 1'b1) or (1'b1 ##1 1'b1)) intersect (1'b1 ##1 1'b1))));
+
+  // Constant 'or' operands fold to the constant or the remaining sequence.
+  assert property (@(posedge clk) (a ##1 1'b1) or 1'b1);
+  assert property (@(posedge clk) 1'b0 or (1'b1 ##1 1'b1));
+
+  // Ranged consecutive repetition under 'and' uses the variable-length combiner.
+  assert property (@(posedge clk) 1'b0 |-> ((a [* 1:3]) and (b ##2 c)));
+
+  // A wide constant with a small value is a legal repetition count.
+  assert property (@(posedge clk) 1'b1 [* 66'd2]);
+
+  // Default-clocking action handlers (clockless assertion forms).
+  int dc_pass = 0, dc_vac = 0, dc_cover = 0;
+
+  default clocking cb @(posedge clk);
+  endclocking
+
+  assert property (1'b1 ##1 1'b1) dc_pass++;
+  else $display("dc fail");
+  assert property (b |-> ##1 1'b1) dc_vac++;
+  cover property (1'b1 ##1 1'b1) dc_cover++;
 
   // =========================================================================
   // Negated cover property (NFA assembleResult negated+cover branches)

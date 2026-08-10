@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-`define STRINGIFY(x) `"x`"
-`define TRIGGER(e) ->e; $display("[%0t] triggered %s", $time, `STRINGIFY(e))
+// No display here: it would race the reactive action prints under --threads
+`define TRIGGER(e) ->e
 
 module t (  /*AUTOARG*/
     // Inputs

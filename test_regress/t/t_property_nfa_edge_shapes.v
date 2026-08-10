@@ -17,7 +17,7 @@ module t (
 
   logic a = 0, b = 0, c = 0, x = 0;
   int cyc = 0;
-  int np1 = 0, nf1 = 0, nc2 = 0, nc3 = 0, nf4 = 0, nc5 = 0;
+  int np1 = 0, nf1 = 0, nc2 = 0, nc3 = 0, nf4 = 0, nc5 = 0, np6 = 0, nf6 = 0;
 
   // verilog_format: off
   assert property (@(posedge clk) not (##[1:$] b)) np1 = np1 + 1; else nf1 = nf1 + 1;
@@ -29,6 +29,8 @@ module t (
   assert property (@(posedge clk) ((a ##2 b) or (c ##2 b)) |-> s_always [1:2] a) else nf4 = nf4 + 1;
 
   cover property (@(posedge clk) sync_accept_on (x) c) nc5 = nc5 + 1;
+
+  assert property (@(posedge clk) disable iff ($sampled(a) || $sampled(c)) not (b ##1 !b)) np6 = np6 + 1; else nf6 = nf6 + 1;
   // verilog_format: on
 
   always @(posedge clk) begin
@@ -41,12 +43,14 @@ module t (
   end
 
   final begin
-    `checkd(np1, 19);
-    `checkd(nf1, 2);
-    `checkd(nc2, 1);
+    `checkd(np1, 0);  // zero-ok: unbounded not() never resolves to a pass
+    `checkd(nf1, 2);  // One other sim: 11
+    `checkd(nc2, 1);  // One other sim: 15
     `checkd(nc3, 5);
     `checkd(nf4, 0);
-    `checkd(nc5, 1);
+    `checkd(nc5, 1);  // One other sim: 15
+    `checkd(np6, 12);
+    `checkd(nf6, 1);
     $write("*-* All Finished *-*\n");
   end
 endmodule
