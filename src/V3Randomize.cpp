@@ -6282,6 +6282,33 @@ class RandomizeVisitor final : public VNVisitor {
             // lowering pass below, so it is redone here by hand, same as the
             // class-level pattern above.
             for (AstVar* const arrVarp : allSizeArrays) {
+                // The size var itself needs write_var'ing here too, unconditionally:
+                // the pin below always references it by name, but nothing else in
+                // THIS with-block's own (re-)lowered tree is guaranteed to touch it --
+                // unlike the class-level pattern, where the class's constraint setup
+                // always re-asserts the arr.size() == expr equality (and so always
+                // write_vars the size var as a side effect), a with-block that adds
+                // unique{} to an array sized by a *different* call/constraint has no
+                // size-var reference of its own to trigger that.
+                if (AstVar* const sizeVarp = VN_CAST(arrVarp->user4p(), Var)) {
+                    AstCMethodHard* const sizeMethodp = new AstCMethodHard{
+                        fl, new AstVarRef{fl, localGenp, VAccess::READWRITE},
+                        VCMethod::RANDOMIZER_WRITE_VAR};
+                    sizeMethodp->dtypeSetVoid();
+                    AstNodeModule* const sizeClassp = VN_AS(sizeVarp->user2p(), NodeModule);
+                    AstVarRef* const sizeVarRefp
+                        = new AstVarRef{fl, sizeClassp, sizeVarp, VAccess::WRITE};
+                    sizeVarRefp->classOrPackagep(sizeClassp);
+                    sizeMethodp->addPinsp(sizeVarRefp);
+                    sizeMethodp->addPinsp(new AstConst{
+                        fl, AstConst::Unsized64{}, static_cast<uint64_t>(sizeVarp->width())});
+                    AstNodeExpr* const sizeNamep = new AstCExpr{
+                        fl, AstCExpr::Pure{}, "\"" + sizeVarp->name() + "\"", sizeVarp->width()};
+                    sizeMethodp->addPinsp(sizeNamep);
+                    sizeMethodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 0});
+                    randomizeFuncp->addStmtsp(sizeMethodp->makeStmt());
+                }
+
                 if (isDynArrOfClassTypeRecurse(arrVarp->dtypep())) {
                     const uint32_t unpackedDims = arrVarp->dtypep()->dimensions(false).second;
                     if (unpackedDims > 1) {
