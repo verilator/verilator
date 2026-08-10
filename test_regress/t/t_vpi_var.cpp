@@ -67,6 +67,7 @@ unsigned int callback_count_quad = 0;
 unsigned int callback_count_strs = 0;
 unsigned int callback_count_strs_max = 500;
 unsigned int callback_count_3d = 0;
+unsigned int callback_count_endian = 0;
 
 //======================================================================
 
@@ -243,6 +244,28 @@ int _value_callback_3d(p_cb_data cb_data) {
     return 0;
 }
 
+int _value_callback_big_endian(p_cb_data cb_data) {
+    static bool called = false;
+    if (called) {
+        printf("%%Error: callback should be called only once\n");
+        exit(-1);
+    }
+    called = true;
+    ++callback_count_endian;
+    return 0;
+}
+
+int _value_callback_little_endian(p_cb_data cb_data) {
+    static bool called = false;
+    if (called) {
+        printf("%%Error: callback should be called only once\n");
+        exit(-1);
+    }
+    called = true;
+    ++callback_count_endian;
+    return 0;
+}
+
 int _mon_check_value_callbacks_array() {
     t_cb_data cb_data{};
     cb_data.reason = cbValueChange;
@@ -318,6 +341,70 @@ int _mon_check_value_callbacks_array() {
 
         TestVpiHandle callback_h = vpi_register_cb(&cb_data);
         CHECK_RESULT_NZ(callback_h);
+    }
+    {  // Set a single bit and hit it with value change, big endian
+        TestVpiHandle vh = VPI_HANDLE("multi_packed_endian");
+        CHECK_RESULT_NZ(vh);
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0b000100;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh, &put_val, &time_s, vpiNoDelay);
+
+        for (int i = -1; i <= 1; ++i) {
+            TestVpiHandle i_handle = vpi_handle_by_index(vh, i);
+            CHECK_RESULT_NZ(i_handle);
+            for (int j = 1; j <= 2; ++j) {
+                TestVpiHandle i_j_handle = vpi_handle_by_index(i_handle, j);
+                CHECK_RESULT_NZ(i_j_handle);
+                cb_data.obj = i_j_handle;
+                if (i == 0 && j == 1) {
+                    cb_data.cb_rtn = _value_callback_big_endian;
+                } else {
+                    cb_data.cb_rtn = _value_callback_never;
+                }
+                TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+                CHECK_RESULT_NZ(callback_h);
+
+                s_vpi_value put_val;
+                put_val.format = vpiIntVal;
+                put_val.value.integer = 0;
+                s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+                vpi_put_value(i_j_handle, &put_val, &time_s, vpiNoDelay);
+            }
+        }
+    }
+    {  // Set a single bit and hit it with value change, little endian
+        TestVpiHandle vh = VPI_HANDLE("multi_packed_little_endian");
+        CHECK_RESULT_NZ(vh);
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0b001000;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh, &put_val, &time_s, vpiNoDelay);
+
+        for (int i = -1; i <= 1; ++i) {
+            TestVpiHandle i_handle = vpi_handle_by_index(vh, i);
+            CHECK_RESULT_NZ(i_handle);
+            for (int j = 1; j <= 2; ++j) {
+                TestVpiHandle i_j_handle = vpi_handle_by_index(i_handle, j);
+                CHECK_RESULT_NZ(i_j_handle);
+                cb_data.obj = i_j_handle;
+                if (i == 0 && j == 1) {
+                    cb_data.cb_rtn = _value_callback_little_endian;
+                } else {
+                    cb_data.cb_rtn = _value_callback_never;
+                }
+                TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+                CHECK_RESULT_NZ(callback_h);
+
+                s_vpi_value put_val;
+                put_val.format = vpiIntVal;
+                put_val.value.integer = 0;
+                s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+                vpi_put_value(i_j_handle, &put_val, &time_s, vpiNoDelay);
+            }
+        }
     }
     {
         TestVpiHandle vh1 = VPI_HANDLE("multi_unpacked_bit[1][2][3]");
@@ -2464,6 +2551,7 @@ int main(int argc, char** argv) {
     CHECK_RESULT(callback_count_quad, 2);
     CHECK_RESULT(callback_count_strs, callback_count_strs_max);
     CHECK_RESULT(callback_count_3d, 3);
+    CHECK_RESULT(callback_count_endian, 2);
     VerilatedVpi::clearEvalNeeded();
     if (VerilatedVpi::evalNeeded()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Unexpected VPI dirty state");
