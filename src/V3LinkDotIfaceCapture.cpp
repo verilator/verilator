@@ -358,9 +358,11 @@ void V3LinkDotIfaceCapture::purgeStaleRefs() {
 
 void V3LinkDotIfaceCapture::purgeDeletedSubtree(AstNode* nodep) {
     if (!s_enabled || s_map.empty() || !nodep) return;
-    // Only look at the subtree being deleted, so this stays cheap.
+    // Only track nodes something could point to, within the subtree being deleted.
     std::unordered_set<const AstNode*> deadps;
-    nodep->foreach([&](AstNode* np) { deadps.insert(np); });
+    nodep->foreach([&](AstNode* np) {
+        if (np->maybePointedTo()) deadps.insert(np);
+    });
     for (auto& kv : s_map) {
         CapturedEntry& entry = kv.second;
         // If the main reference is dying, promote a live one so consumers
