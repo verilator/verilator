@@ -812,8 +812,6 @@ public:
     // Entries in this table need to match below VCFunction::s_itemData[] table
     enum en : uint8_t {
         _NONE,  // Unknown
-        CALL_IMPORT_IN_FIBER,
-        CALL_IMPORT,
         _ENUM_MAX  // Leave last
     };
 
