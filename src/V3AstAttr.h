@@ -814,10 +814,10 @@ public:
         _NONE,  // Unknown
         CALL_IMPORT_IN_FIBER,
         AWAIT_EXPORT_IN_FIBER,
-        CALL_IMPORT_TASK,
         CALL_IMPORT_FUNCTION,
-        AWAIT_EXPORT_TASK,
+        CALL_IMPORT_TASK,
         AWAIT_EXPORT_FUNCTION,
+        AWAIT_EXPORT_TASK,
         _ENUM_MAX  // Leave last
     };
 

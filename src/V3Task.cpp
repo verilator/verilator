@@ -1225,9 +1225,12 @@ class TaskVisitor final : public VNVisitor {
             cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
 
-        VCFunction funcCall = (nodep->verilogTask()) ? VCFunction::CALL_IMPORT_TASK
-                                                     : VCFunction::CALL_IMPORT_FUNCTION;
-        AstCFuncHard* const callImportp = new AstCFuncHard{nodep->fileline(), funcCall};
+        AstCFuncHard* const callImportp = new AstCFuncHard{nodep->fileline()};
+        if (nodep->verilogFunction())
+            callImportp->function(VCFunction::CALL_IMPORT_FUNCTION);
+        else if (nodep->verilogTask())
+            callImportp->function(VCFunction::CALL_IMPORT_TASK);
+
         callImportp->dtypeSetVoid();
         // Add arguments
         addDebugInfo(callImportp);
