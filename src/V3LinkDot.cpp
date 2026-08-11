@@ -4635,9 +4635,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds.m_dotText = "";
             } else if (AstClass* const defp = VN_CAST(foundp->nodep(), Class)) {
                 if (allowVar) {
-                    AstRefDType* const newp = new AstRefDType{nodep->fileline(), nodep->name()};
-                    replaceWithCheckBreak(nodep, newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    if (m_ds.m_dotPos == DP_SCOPE && !staticAccess) {
+                        // Continue hierarchical lookup in the class scope.
+                        m_ds.m_dotSymp = foundp;
+                    } else {
+                        AstRefDType* const newp
+                            = new AstRefDType{nodep->fileline(), nodep->name()};
+                        replaceWithCheckBreak(nodep, newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
                     ok = true;
                     m_ds.m_dotText = "";
                 } else {
