@@ -1812,26 +1812,18 @@ class SvaNfaLowering final {
                              VAccess::WRITE),
                 incomingp};
             AstNode* updateBodyp = writeIncomingp;
-            if (!vtxp->m_isFixedDelayRing) {
-                // ring[next_idx] <= 1'b0;
-                AstAssignDly* const clearExpirep = new AstAssignDly{
-                    c.flp,
-                    delayRingBit(c.flp, ringp, nextRingIndex(c.flp, idxp, size), VAccess::WRITE),
-                    new AstConst{c.flp, AstConst::BitFalse{}}};
-                clearExpirep->addNext(writeIncomingp);
-                updateBodyp = clearExpirep;
-            }
             // live_count <= live_count + incoming_bit - outgoing_bit;
             const int liveCountWidth = liveCountVarp->dtypep()->width();
             AstNodeExpr* const incomingIncrementp
                 = new AstExtend{c.flp, incomingp->cloneTreePure(false), liveCountWidth};
+            AstNodeExpr* const outgoingIdxp = vtxp->m_isFixedDelayRing
+                                                  ? new AstVarRef{c.flp, idxp, VAccess::READ}
+                                                  : nextRingIndex(c.flp, idxp, size);
             AstSub* const nextLiveCountp = new AstSub{
                 c.flp,
                 new AstAdd{c.flp, new AstVarRef{c.flp, liveCountVarp, VAccess::READ},
                            incomingIncrementp},
-                new AstExtend{
-                    c.flp, delayRingBit(c.flp, ringp, new AstVarRef{c.flp, idxp, VAccess::READ}),
-                    liveCountWidth}};
+                new AstExtend{c.flp, delayRingBit(c.flp, ringp, outgoingIdxp), liveCountWidth}};
             updateBodyp->addNext(new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, liveCountVarp, VAccess::WRITE}, nextLiveCountp});
 
