@@ -1373,6 +1373,20 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-expr", OnOff, &m_coverageExpr);
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
     DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
+    DECL_OPTION("-coverage-fsm-expand", CbVal, [this, fl](const char* const valp) {
+        if (!std::strcmp(valp, "auto")) {
+            m_coverageFsmExpand = VFsmExpandType::AUTO;
+        } else if (!std::strcmp(valp, "auto-expand")) {
+            m_coverageFsmExpand = VFsmExpandType::AUTO_EXPAND;
+        } else if (!std::strcmp(valp, "full")) {
+            m_coverageFsmExpand = VFsmExpandType::FULL;
+        } else {
+            fl->v3error("Unknown setting for --coverage-fsm-expand: '"
+                        << valp << "'\n"
+                        << fl->warnMore() << "... Suggest 'auto', 'auto-expand', or 'full'");
+        }
+    });
+    DECL_OPTION("-coverage-fsm-max-arcs", Set, &m_coverageFsmMaxArcs);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
     // Covergroup bins limits; the runtime indexes bins with 32 bits
     const auto parseBinsLimit = [fl](const char* optp, const char* valp, uint32_t& limitr) {
@@ -2327,6 +2341,7 @@ void V3Options::showVersion(bool verbose) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
+    m_coverageFsmExpand = VFsmExpandType::AUTO;  // Auto is a default global default
     m_makeDir = "obj_dir";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
