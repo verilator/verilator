@@ -541,7 +541,7 @@ public:
         of.puts("VM_C11 = 1\n");
         of.puts("# Timing enabled?  0/1\n");
         of.puts("VM_TIMING = ");
-        of.puts(v3Global.opt.timing().isTrue() ? "1" : "0");
+        of.puts(v3Global.usesTiming() ? "1" : "0");
         of.puts("\n");
         of.puts("# Coverage output mode?  0/1 (from --coverage)\n");
         of.puts("VM_COVERAGE = ");

@@ -960,7 +960,7 @@ class TaskVisitor final : public VNVisitor {
         // but the compare is only done on first call then memoized, so
         // it's not worth optimizing.
 
-        // Peramble - fetch the exported function from the scope table
+        // Preamble - fetch the exported function from the scope table
         AstCStmt* const prep = new AstCStmt{flp};
         funcp->addStmtsp(prep);
         // Static doesn't need save-restore as if below will re-fill proper value

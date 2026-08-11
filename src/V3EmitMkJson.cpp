@@ -94,7 +94,7 @@ class V3EmitMkJsonEmitter final {
             .putList("ldflags", v3Global.opt.ldLibs())
             .put("system_c", v3Global.opt.systemC())
             .put("coverage", v3Global.opt.coverage())
-            .put("use_timing", v3Global.opt.timing().isTrue())
+            .put("use_timing", v3Global.usesTiming())
             .put("threads", v3Global.opt.threads())
             .put("trace", v3Global.opt.trace())
             .put("trace_fst", v3Global.opt.traceEnabledFst())

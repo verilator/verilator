@@ -385,7 +385,7 @@ public:
 };
 
 TimingKit prepareTiming(AstNetlist* const netlistp) {
-    if (!v3Global.opt.timing().isTrue()) return {};
+    if (!v3Global.usesTiming()) return {};
     LogicByScope lbs;
     AstNodeStmt* postUpdates = nullptr;
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
@@ -557,7 +557,7 @@ public:
 };
 
 void transformForks(AstNetlist* const netlistp) {
-    if (!v3Global.opt.timing().isTrue()) return;
+    if (!v3Global.usesTiming()) return;
     { TransformForksVisitor{netlistp}; }
     V3Global::dumpCheckGlobalTree("transform_forks", 0, dumpTreeEitherLevel() >= 3);
 }

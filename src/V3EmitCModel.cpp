@@ -177,7 +177,7 @@ class EmitCModel final : public EmitCFunc {
         if (!optSystemC()) {
             puts("/// Evaluate the model.  Application must call when inputs change.\n");
         }
-        if (optSystemC() && v3Global.opt.timing().isTrue()) {
+        if (optSystemC() && v3Global.usesTiming()) {
             puts("void eval();\n");
         } else {
             puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
@@ -388,7 +388,7 @@ class EmitCModel final : public EmitCFunc {
         puts("void " + topModNameProtected + "__" + protect("_eval_settle") + selfDecl + ";\n");
         puts("void " + topModNameProtected + "__" + protect("_eval") + selfDecl + ";\n");
 
-        if (optSystemC() && v3Global.opt.timing().isTrue()) {
+        if (optSystemC() && v3Global.usesTiming()) {
             // ::eval
             puts("\nvoid " + EmitCUtil::topClassName() + "::eval() {\n");
             puts("eval_step();\n");
