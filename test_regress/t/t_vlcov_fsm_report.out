@@ -20,7 +20,7 @@
 %000001   logic rst;
 %000001   logic start;
 %000003   state_t state_default  /*verilator fsm_arc_include_cond*/;
-%000001   state_t state_reset_incl  /*verilator fsm_reset_arc*/;
+%000001   state_t state_reset_incl  /*verilator fsm_state*/;
 %000001   state_t state_reset_excl;
         
 %000001   initial begin
@@ -49,11 +49,12 @@
 %000005     else begin
 %000005       case (state_default)
         // [FSM coverage]
-%000001        // [fsm_arc t.state_default::ANY->S0[reset]] [reset arc, excluded from %]
 %000000        // [fsm_arc t.state_default::S0->S1]
 %000003        // [fsm_arc t.state_default::S0->S2]
-%000000        // [SYNTHETIC DEFAULT ARC: t.state_default::default->S0]
-%000002        // [fsm_state t.state_default::S0]
+%000000        // [fsm_arc t.state_default::S1->S0]
+%000002        // [fsm_arc t.state_default::S2->S0]
+%000000        // [fsm_arc t.state_default::S3->S0]
+%000003        // [fsm_state t.state_default::S0]
 %000000        // [fsm_state t.state_default::S1] *** UNCOVERED ***
 %000003        // [fsm_state t.state_default::S2]
 %000000        // [fsm_state t.state_default::S3] *** UNCOVERED ***
@@ -74,9 +75,11 @@
 %000005     else begin
 %000005       case (state_reset_incl)
         // [FSM coverage]
-%000001        // [fsm_arc t.state_reset_incl::ANY->S0[reset_include]] [reset arc, excluded from %]
 %000001        // [fsm_arc t.state_reset_incl::S0->S1]
-%000000        // [fsm_state t.state_reset_incl::S0] *** UNCOVERED ***
+%000000        // [fsm_arc t.state_reset_incl::S1->S0]
+%000000        // [fsm_arc t.state_reset_incl::S2->S0]
+%000000        // [fsm_arc t.state_reset_incl::S3->S0]
+%000001        // [fsm_state t.state_reset_incl::S0]
 %000001        // [fsm_state t.state_reset_incl::S1]
 %000000        // [fsm_state t.state_reset_incl::S2] *** UNCOVERED ***
 %000000        // [fsm_state t.state_reset_incl::S3] *** UNCOVERED ***
@@ -93,9 +96,11 @@
 %000005     else begin
 %000005       case (state_reset_excl)
         // [FSM coverage]
-%000001        // [fsm_arc t.state_reset_excl::ANY->S0[reset]] [reset arc, excluded from %]
 %000001        // [fsm_arc t.state_reset_excl::S0->S1]
-%000000        // [fsm_state t.state_reset_excl::S0] *** UNCOVERED ***
+%000000        // [fsm_arc t.state_reset_excl::S1->S0]
+%000000        // [fsm_arc t.state_reset_excl::S2->S0]
+%000000        // [fsm_arc t.state_reset_excl::S3->S0]
+%000001        // [fsm_state t.state_reset_excl::S0]
 %000001        // [fsm_state t.state_reset_excl::S1]
 %000000        // [fsm_state t.state_reset_excl::S2] *** UNCOVERED ***
 %000000        // [fsm_state t.state_reset_excl::S3] *** UNCOVERED ***

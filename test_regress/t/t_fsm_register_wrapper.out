@@ -94,13 +94,13 @@
         
           always_comb begin
             state_d = state_q;
-%000006     unique case (state_q)
+%000002     unique case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.auto_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000006        // [fsm_arc t.auto_u.state_q::S0->S0]
 %000001        // [fsm_arc t.auto_u.state_q::S0->S1]
+%000000        // [fsm_arc t.auto_u.state_q::S1->S0]
 %000001        // [fsm_arc t.auto_u.state_q::S1->S2]
-%000001        // [fsm_state t.auto_u.state_q::S0]
+%000001        // [fsm_arc t.auto_u.state_q::S2->S0]
+%000002        // [fsm_state t.auto_u.state_q::S0]
 %000001        // [fsm_state t.auto_u.state_q::S1]
 %000001        // [fsm_state t.auto_u.state_q::S2]
               S0: state_d = start ? S1 : S0;
@@ -136,13 +136,13 @@
         
           always_comb begin
             state_d = state_q;
-%000006     unique case (state_q)
+%000002     unique case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.noargs_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000006        // [fsm_arc t.noargs_u.state_q::S0->S0]
 %000001        // [fsm_arc t.noargs_u.state_q::S0->S1]
+%000000        // [fsm_arc t.noargs_u.state_q::S1->S0]
 %000001        // [fsm_arc t.noargs_u.state_q::S1->S2]
-%000001        // [fsm_state t.noargs_u.state_q::S0]
+%000001        // [fsm_arc t.noargs_u.state_q::S2->S0]
+%000002        // [fsm_state t.noargs_u.state_q::S0]
 %000001        // [fsm_state t.noargs_u.state_q::S1]
 %000001        // [fsm_state t.noargs_u.state_q::S2]
               S0: state_d = start ? S1 : S0;
@@ -178,13 +178,13 @@
         
           always_comb begin
             state_d = state_q;
-%000006     unique case (state_q)
+%000002     unique case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.prim_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000006        // [fsm_arc t.prim_u.state_q::S0->S0]
 %000001        // [fsm_arc t.prim_u.state_q::S0->S1]
+%000000        // [fsm_arc t.prim_u.state_q::S1->S0]
 %000001        // [fsm_arc t.prim_u.state_q::S1->S2]
-%000001        // [fsm_state t.prim_u.state_q::S0]
+%000001        // [fsm_arc t.prim_u.state_q::S2->S0]
+%000002        // [fsm_state t.prim_u.state_q::S0]
 %000001        // [fsm_state t.prim_u.state_q::S1]
 %000001        // [fsm_state t.prim_u.state_q::S2]
               S0: state_d = start ? S1 : S0;
@@ -220,12 +220,12 @@
         
           always_comb begin
             state_d = state_q;
-%000005     unique case (state_q)
+%000002     unique case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.sparse_prim_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000005        // [fsm_arc t.sparse_prim_u.state_q::S0->S0]
 %000001        // [fsm_arc t.sparse_prim_u.state_q::S0->S1]
+%000000        // [fsm_arc t.sparse_prim_u.state_q::S1->S0]
 %000001        // [fsm_arc t.sparse_prim_u.state_q::S1->S2]
+%000001        // [fsm_arc t.sparse_prim_u.state_q::S2->S0]
 %000002        // [fsm_state t.sparse_prim_u.state_q::S0]
 %000001        // [fsm_state t.sparse_prim_u.state_q::S1]
 %000001        // [fsm_state t.sparse_prim_u.state_q::S2]
@@ -300,12 +300,12 @@
         
           always_comb begin
             state_d = state_q;
-%000005     unique case (state_q)
+%000002     unique case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.wide_sparse_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000005        // [fsm_arc t.wide_sparse_u.state_q::S0->S0]
 %000001        // [fsm_arc t.wide_sparse_u.state_q::S0->S1]
+%000000        // [fsm_arc t.wide_sparse_u.state_q::S1->S0]
 %000001        // [fsm_arc t.wide_sparse_u.state_q::S1->S2]
+%000001        // [fsm_arc t.wide_sparse_u.state_q::S2->S0]
 %000002        // [fsm_state t.wide_sparse_u.state_q::S0]
 %000001        // [fsm_state t.wide_sparse_u.state_q::S1]
 %000001        // [fsm_state t.wide_sparse_u.state_q::S2]
@@ -342,13 +342,13 @@
         
           always_comb begin
             state_d = state_q;
-%000006     unique case (state_q)
+%000002     unique case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.annotated_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000006        // [fsm_arc t.annotated_u.state_q::S0->S0]
 %000001        // [fsm_arc t.annotated_u.state_q::S0->S1]
+%000000        // [fsm_arc t.annotated_u.state_q::S1->S0]
 %000001        // [fsm_arc t.annotated_u.state_q::S1->S2]
-%000001        // [fsm_state t.annotated_u.state_q::S0]
+%000001        // [fsm_arc t.annotated_u.state_q::S2->S0]
+%000002        // [fsm_state t.annotated_u.state_q::S0]
 %000001        // [fsm_state t.annotated_u.state_q::S1]
 %000001        // [fsm_state t.annotated_u.state_q::S2]
               S0: state_d = start ? S1 : S0;
@@ -384,13 +384,13 @@
         
           always_comb begin
             state_d = state_q;
-%000006     unique case (state_q)
+%000002     unique case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.non_simple_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000006        // [fsm_arc t.non_simple_u.state_q::S0->S0]
 %000001        // [fsm_arc t.non_simple_u.state_q::S0->S1]
+%000000        // [fsm_arc t.non_simple_u.state_q::S1->S0]
 %000001        // [fsm_arc t.non_simple_u.state_q::S1->S2]
-%000001        // [fsm_state t.non_simple_u.state_q::S0]
+%000001        // [fsm_arc t.non_simple_u.state_q::S2->S0]
+%000002        // [fsm_state t.non_simple_u.state_q::S0]
 %000001        // [fsm_state t.non_simple_u.state_q::S1]
 %000001        // [fsm_state t.non_simple_u.state_q::S2]
               S0: state_d = start ? S1 : S0;
@@ -458,13 +458,13 @@
         
           always_comb begin
             state_d = state_q;
-%000006     unique case (state_q)
+%000002     unique case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.ignored_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
-%000006        // [fsm_arc t.ignored_u.state_q::S0->S0]
 %000001        // [fsm_arc t.ignored_u.state_q::S0->S1]
+%000000        // [fsm_arc t.ignored_u.state_q::S1->S0]
 %000001        // [fsm_arc t.ignored_u.state_q::S1->S2]
-%000001        // [fsm_state t.ignored_u.state_q::S0]
+%000001        // [fsm_arc t.ignored_u.state_q::S2->S0]
+%000002        // [fsm_state t.ignored_u.state_q::S0]
 %000001        // [fsm_state t.ignored_u.state_q::S1]
 %000001        // [fsm_state t.ignored_u.state_q::S2]
               S0: state_d = start ? S1 : S0;

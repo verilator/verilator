@@ -19,7 +19,7 @@ module fsm_case_next_other_assign_ok (
   } state_t;
 
   logic [1:0] aux;
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   initial aux = 2'b00;
@@ -54,7 +54,7 @@ module fsm_case_next_other_lhs_ok (
     S2 = 2'b10
   } state_t;
 
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t other_d;
 

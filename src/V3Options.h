@@ -322,6 +322,7 @@ private:
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_debugAllocRandom = 0;  // main switch: --debug-alloc-random <seed>
     int         m_expandLimit = 256;  // main switch: --expand-limit
+    int         m_coverageFsmMaxArcs = 4096;  // main switch: --coverage-fsm-max-arcs
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_hierChild = 0;      // main switch: --hierarchical-child
     int         m_hierThreads = 0;      // main switch: --hierarchical-threads
@@ -370,6 +371,7 @@ private:
     string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
     string      m_diagnosticsSarifOutput;  // main switch: --diagnostics-sarif-output
     string      m_exeName;      // main switch: -o {name}
+    string      m_coverageFsmExpand;  // main switch: --coverage-fsm-expand <mode>
     VFileLibList m_hierParamsFile; // main switch: --hierarchical-params-file
     string      m_jsonOnlyOutput;    // main switch: --json-only-output
     string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
@@ -531,6 +533,7 @@ public:
     }
     bool coverageExpr() const { return m_coverageExpr; }
     bool coverageFsm() const { return m_coverageFsm; }
+    int coverageFsmMaxArcs() const { return m_coverageFsmMaxArcs; }
     bool coverageLine() const { return m_coverageLine; }
     bool coveragePerInstance() const { return m_coveragePerInstance; }
     bool coverageToggle() const { return m_coverageToggle; }
@@ -678,6 +681,7 @@ public:
                                                 : m_diagnosticsSarifOutput;
     }
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
+    const string& coverageFsmExpand() const { return m_coverageFsmExpand; }
     VFileLibList hierParamFile() const { return m_hierParamsFile; }
     string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
     string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }

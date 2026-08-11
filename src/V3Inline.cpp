@@ -446,7 +446,9 @@ void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
                 AstNodeCoverDecl* const declp = incp->declp();
                 if (declp->perInstance()) {
                     // Not cloned, fix up the path here, as only this scope refers to it
-                    declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    if (!declp->user2SetOnce()) {
+                        declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    }
                     return;
                 }
                 if (AstNodeCoverDecl* const newDeclp = VN_CAST(declp->user3p(), NodeCoverDecl)) {
@@ -515,7 +517,9 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
     UINFO(5, " into Module  " << modp);
 
     // NODE STATE
-    //  AstNode::user3p()  -> AstNode*. The clone of this module level declaration
+    //  AstNodeCoverDecl::user2()   -> bool.     true if hier() updated
+    //  AstNode::user3p()           -> AstNode*. The clone of this module level declaration
+    const VNUser2InUse user2InUse;
     const VNUser3InUse user3InUse;
 
     VNDeleter deleter;

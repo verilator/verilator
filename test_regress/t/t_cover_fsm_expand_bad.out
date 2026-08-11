@@ -1,0 +1,4 @@
+%Error: Unknown setting for --coverage-fsm-expand: 'fulll'
+        ... Suggest 'auto', 'auto-expand', or 'full'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

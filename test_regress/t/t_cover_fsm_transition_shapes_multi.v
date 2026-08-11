@@ -229,7 +229,7 @@ module fsm_combo_sel_expr_bad (
   logic rst;
   logic start;
   integer cyc;
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   initial begin
@@ -274,7 +274,7 @@ module fsm_normalized_if_noelse_bad (
   logic rst;
   logic start;
   integer cyc;
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   initial begin
@@ -665,7 +665,7 @@ module fsm_case_next_wrongrhs_bad (
   logic rst;
   logic start;
   integer cyc;
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   state_t other_d;
 

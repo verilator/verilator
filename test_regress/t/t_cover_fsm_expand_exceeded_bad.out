@@ -1,0 +1,7 @@
+%Error: t/t_cover_fsm_expand_exceeded_bad.v:26:11: Exceeded size of max expandable fsm: 100000 with: 18446744073709551615
+                                                 : ... note: In instance 't'
+                                                 : Use --coverage-fsm-max-arcs <value> to change this value
+   26 |   state_t state  /*verilator fsm_arc_include_cond*/;
+      |           ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
