@@ -19,7 +19,7 @@ module t (
   logic rst;
   logic start;
   state_t state_default  /*verilator fsm_arc_include_cond*/;
-  state_t state_reset_incl  /*verilator fsm_reset_arc*/;
+  state_t state_reset_incl  /*verilator fsm_state*/;
   state_t state_reset_excl;
 
   initial begin

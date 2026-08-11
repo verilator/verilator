@@ -533,16 +533,21 @@ class AstCoverInc final : public AstNodeStmt {
     // These are expressions to which the node corresponds. Used only in toggle coverage
     //
     // @astgen ptr := m_declp : AstNodeCoverDecl  // [After V3CoverageJoin] Declaration
+
+    bool m_isDuplicate = false;  // Duplicate AstCoverInc associated with one AstNodeCoverDecl
+
 public:
-    AstCoverInc(FileLine* fl, AstNodeCoverDecl* declp)
+    AstCoverInc(FileLine* fl, AstNodeCoverDecl* declp, const bool isDuplicate = false)
         : ASTGEN_SUPER_CoverInc(fl)
+        , m_isDuplicate{isDuplicate}
         , m_declp{declp} {}
     ASTGEN_MEMBERS_AstCoverInc;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
     bool sameNode(const AstNode* samep) const override {
-        return declp() == VN_DBG_AS(samep, CoverInc)->declp();
+        const AstCoverInc* const otherp = VN_DBG_AS(samep, CoverInc);
+        return declp() == otherp->declp() && isDuplicate() == otherp->isDuplicate();
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
@@ -550,6 +555,7 @@ public:
     bool isPure() override { return false; }
     AstNodeCoverDecl* declp() const { return m_declp; }  // Where defined
     void declp(AstNodeCoverDecl* nodep) { m_declp = nodep; }
+    bool isDuplicate() const { return m_isDuplicate; }
 };
 class AstDeassign final : public AstNodeStmt {
     // Procedural 'deassign' statement

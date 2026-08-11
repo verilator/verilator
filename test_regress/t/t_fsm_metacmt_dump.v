@@ -14,7 +14,7 @@ module t (
     S1 = 1'b1
   } state_t;
 
-  state_t state_reset  /*verilator fsm_reset_arc*/;
+  state_t state_reset  /*verilator fsm_state*/;
   state_t state_cond  /*verilator fsm_arc_include_cond*/;
   logic forced_state  /*verilator fsm_state*/;
 

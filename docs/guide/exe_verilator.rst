@@ -312,6 +312,45 @@ Summary:
 
    Enables native FSM state and arc coverage. See :ref:`FSM Coverage`.
 
+.. option:: --coverage-fsm-expand <mode>
+
+   Specifies the mode of FSM expansion for coverage.
+   One of the following modes may be chosen:
+
+    * `auto`
+      * Counts of how many times FSM was in each of the used states.
+      * Count of how many times certain FSM transition occurred -
+        counted for:
+        * all defined transitions in the code,
+        * from all used states to a reset state,
+        * from any terminal state to default state.
+
+    * `auto-expand`
+      * Counts of how many times FSM was in each of the used states.
+      * Count of how many times certain FSM transition occurred -
+        counted for all possible transitions between used states.
+
+    * `full`
+      * Counts of how many times FSM was in each of the possible states.
+      * Count of how many times certain FSM transition occurred -
+        counted for all possible transitions between all
+        possible states.
+
+   `possible states` - means every value that variable of
+   a certain width representing an FSM may have i.e. 2^(width).
+
+   `all possible transitions between n-states` - all transitions
+   that may be created i.e. (2^n - n) - value is decreased by n
+   because transitions between same states are not counted.
+
+   Defaults to `auto`.
+
+.. option:: --coverage-fsm-max-arcs <value>
+
+   Specifies the maximum count of FSM transitions to be tracked by coverage for a single FSM.
+
+   Defaults to 4096.
+
 .. option:: --coverage-line
 
    Enables basic block line coverage analysis. See :ref:`Line Coverage`.
