@@ -1400,6 +1400,12 @@ class ForceReplaceVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
+        if (m_state.doingAssign() && varInfo->m_forceRdVscp) {
+            baseRefp->varp(varInfo->m_forceRdVscp->varp());
+            baseRefp->varScopep(varInfo->m_forceRdVscp);
+            iterateChildren(nodep);
+            return;
+        }
         const ForceState::ArraySelInfo arrayInfo = ForceState::getArraySelInfo(nodep);
         // Substitute forced reads inside the index expressions before anything is cloned,
         // so the fallback value and the flattened index use the same, force-aware index.
