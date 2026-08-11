@@ -636,6 +636,7 @@ description of these arguments.
 
 =for VL_SPHINX_EXTRACT "_build/gen/args_verilated.rst"
 
+     +verilator+assert+lock                Lock assertion status changes at startup
      +verilator+coverage+file+<filename>   Set coverage output filename
      +verilator+debug                      Enable debugging
      +verilator+debugi+<value>             Enable debugging at a level
