@@ -976,11 +976,19 @@ class SvaNfaBuilder final {
     }
 
     // Build merge vertex for SOr / LogOr: both branches feed into one vertex.
+    // Free a dropped sub-result condition that is not linked into the AST
+    // (abort folds synthesize unparented finalCondp trees).
+    static void freeUnlinkedCondp(AstNodeExpr* condp) {
+        if (condp && !condp->backp()) VL_DO_DANGLING(condp->deleteTree(), condp);
+    }
+
     BuildResult buildOrMerge(AstNodeExpr* lhsp, AstNodeExpr* rhsp, SvaStateVertex* entryVtxp,
                              FileLine* flp) {
         const BuildResult lhs = buildExpr(lhsp, entryVtxp);
         const BuildResult rhs = buildExpr(rhsp, entryVtxp);
         if (!lhs.valid() || !rhs.valid()) {  // LCOV_EXCL_START -- sub-build fail bail
+            freeUnlinkedCondp(lhs.finalCondp);
+            freeUnlinkedCondp(rhs.finalCondp);
             return BuildResult::fail(lhs.errorEmitted || rhs.errorEmitted);
         }  // LCOV_EXCL_STOP
         // IEEE 1800-2023 16.14.3: a cover sequence counts every end-of-match. A
@@ -990,6 +998,8 @@ class SvaNfaBuilder final {
         // is handled by the OR-fold.
         if (m_isCoverSeq && (lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp)) {
             warnEndpointUnsupported(flp, "a sequence operand of 'or'");
+            freeUnlinkedCondp(lhs.finalCondp);
+            freeUnlinkedCondp(rhs.finalCondp);
             return BuildResult::failWithError();
         }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
@@ -1005,6 +1015,8 @@ class SvaNfaBuilder final {
         } else {
             guardedLink(rhs.termVertexp, mergeVtxp, flp);
         }
+        freeUnlinkedCondp(lhs.finalCondp);
+        freeUnlinkedCondp(rhs.finalCondp);
         return {mergeVtxp, nullptr, {}};
     }
 
@@ -1020,6 +1032,8 @@ class SvaNfaBuilder final {
         const bool rhsScope = m_inUnboundedScope;
         m_inUnboundedScope = savedScope || lhsScope || rhsScope;
         if (!lhs.valid() || !rhs.valid()) {  // LCOV_EXCL_START -- sub-build fail bail
+            freeUnlinkedCondp(lhs.finalCondp);
+            freeUnlinkedCondp(rhs.finalCondp);
             return BuildResult::fail(lhs.errorEmitted || rhs.errorEmitted);
         }  // LCOV_EXCL_STOP
 
@@ -1031,12 +1045,18 @@ class SvaNfaBuilder final {
                         "Single-cycle SAnd operands must have finalCondp");
             AstNodeExpr* const condp = new AstLogAnd{flp, lhs.finalCondp->cloneTreePure(false),
                                                      rhs.finalCondp->cloneTreePure(false)};
+            freeUnlinkedCondp(lhs.finalCondp);
+            freeUnlinkedCondp(rhs.finalCondp);
             return {entryVtxp, condp, {}};
         }
         // Range-delay mid-window sources in either sub-branch would need
         // to be folded into the latch's match-now signal, which the
         // current combiner does not support. Defer (UNSUPPORTED).
-        if (!lhs.midSources.empty() || !rhs.midSources.empty()) return BuildResult::fail();
+        if (!lhs.midSources.empty() || !rhs.midSources.empty()) {
+            freeUnlinkedCondp(lhs.finalCondp);
+            freeUnlinkedCondp(rhs.finalCondp);
+            return BuildResult::fail();
+        }
         SvaStateVertex* const combVtxp = scopedCreateVertex();
         combVtxp->m_isAndCombiner = true;
         combVtxp->m_andLhsTermp = lhs.termVertexp;
@@ -1074,6 +1094,8 @@ class SvaNfaBuilder final {
                 }
             }
         }
+        freeUnlinkedCondp(lhs.finalCondp);
+        freeUnlinkedCondp(rhs.finalCondp);
         return {combVtxp, nullptr, {}};
     }
 
