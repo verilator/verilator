@@ -36,7 +36,7 @@
 #ifdef NEED_EXTERNS
 
 extern "C" {
-extern int dpix_run_tests(int *o);
+extern int dpix_run_tests(int* o);
 
 extern int dpix_t_int(int i, int* o);
 extern int dpix_t_renamed(int i, int* o);
