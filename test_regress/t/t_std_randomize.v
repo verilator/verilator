@@ -63,7 +63,7 @@ module t_scope_std_randomize;
     old_addr = addr;
     old_data = data;
     old_ready = ready;
-    success = randomize(addr, ready); // std::randomize
+    success = randomize(addr, ready);  // std::randomize
     if (success == 0) return 0;
     if (addr == old_addr && data != old_data && ready == old_ready) begin
       return 0;

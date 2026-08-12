@@ -26,7 +26,9 @@ module t;
     virtual function void deliver();
       $display("fast delivery");
     endfunction
-    virtual function int seats(); return 4; endfunction
+    virtual function int seats();
+      return 4;
+    endfunction
   endclass
 
   class MetaCar extends Car;

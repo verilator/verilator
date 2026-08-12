@@ -10,7 +10,7 @@
 // verilog_format: on
 
 module t;
-  logic var_en [0:1] /*verilator forceable*/;
+  logic var_en[0:1]  /*verilator forceable*/;
   logic sig;
 
   initial begin

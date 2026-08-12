@@ -18,6 +18,6 @@ memUsageMB = int(test.file_grep(test.stats, r'Peak Memory Usage \(MB\) +(\d+)')[
 if memUsageMB > 128 and not test.have_dev_asan:
     test.error("Consumed over 128MB memory")
 
-test.file_grep(test.stats, r'Verilate jobs: 2')
+test.file_grep(test.stats, r'Verilate jobs: (\d+)', 2)
 
 test.passes()

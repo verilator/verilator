@@ -10,9 +10,7 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-typedef struct{
-  rand bit [31:0] x;
-} Bar;
+typedef struct {rand bit [31:0] x;} Bar;
 
 class Foo;
   rand Bar bar0[];
@@ -40,7 +38,7 @@ module t;
     `checkd(foo.bar1.size(), 1);
     `checkd(foo.bar0[0].x, 0);
     `checkd(foo.bar1[0].x, 0);
-    repeat(100) begin
+    repeat (100) begin
       `checkd(foo.randomize(), 1);
       `checkd(foo.bar0.size(), 1);
       `checkd(foo.bar1.size(), 1);

@@ -5,32 +5,32 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module class_tb ();
-interface class Ibase;
-  pure virtual function int fn();
-endclass
+  interface class Ibase;
+    pure virtual function int fn();
+  endclass
 
-interface class Ic1 extends Ibase;
-  pure virtual function int fn1();
-endclass
+  interface class Ic1 extends Ibase;
+    pure virtual function int fn1();
+  endclass
 
-interface class Ic2 extends Ibase;
-  pure virtual function int fn2();
-endclass
+  interface class Ic2 extends Ibase;
+    pure virtual function int fn2();
+  endclass
 
-interface class Ic3 extends Ic1, Ic2;
-endclass
+  interface class Ic3 extends Ic1, Ic2;
+  endclass
 
-class Cls implements Ic3;
-  virtual function int fn();
-    return 10;
-  endfunction
-  virtual function int fn1();
-    return 1;
-  endfunction
-  virtual function int fn2();
-    return 2;
-  endfunction
-endclass
+  class Cls implements Ic3;
+    virtual function int fn();
+      return 10;
+    endfunction
+    virtual function int fn1();
+      return 1;
+    endfunction
+    virtual function int fn2();
+      return 2;
+    endfunction
+  endclass
 
   initial begin
     Cls cls;

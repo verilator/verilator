@@ -11,18 +11,17 @@
 
 class Sub;
   typedef enum bit [1:0] {
-    one,
-    two,
-    three,
-    four
+    ONE,
+    TWO,
+    THREE,
+    FOUR
   } enum_t;
 
   rand bit num;
   rand enum_t en;
 
-  constraint c {
-    num == 0;
-  };
+  constraint c {num == 0;}
+
 endclass
 
 class Top;
