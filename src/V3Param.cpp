@@ -1189,6 +1189,46 @@ class ParamProcessor final {
         }
     }
 
+    // Fold a param/lparam member's value to a Const in place.  Resolves any
+    // class::member Dots in the value first (including those buried behind
+    // VarRefs to sibling lparams that are not yet const, e.g. `one = base`
+    // where `base = inner_a::v`), resolving siblings deepest-first so the
+    // whole chain constifies.  `inProgress` guards against reference cycles.
+    void constifyMemberValue(AstVar* varp, std::set<AstVar*>& inProgress) {
+        if (!varp->valuep() || VN_IS(varp->valuep(), Const)) return;
+        if (!inProgress.insert(varp).second) {
+            // Re-entered while still resolving varp: its value transitively
+            // references itself.  Report and replace the value with a Const so
+            // the unresolved Dot can't crash the following width pass
+            varp->v3error("Variable's initial value is circular: " << varp->prettyNameQ());
+            varp->valuep()->unlinkFrBack()->deleteTree();
+            varp->valuep(new AstConst{varp->fileline(), AstConst::BitTrue{}});
+            varp->dtypeFrom(varp->valuep());
+            return;
+        }
+        // First resolve sibling lparams this value references, so their Dots
+        // are folded before we inline them here.
+        std::set<AstVar*> siblings;
+        varp->valuep()->foreach([&](const AstVarRef* refp) {
+            AstVar* const refVarp = refp->varp();
+            if (refVarp && refVarp != varp && refVarp->varType() == VVarType::LPARAM
+                && refVarp->valuep() && !VN_IS(refVarp->valuep(), Const)) {
+                siblings.insert(refVarp);
+            }
+        });
+        for (AstVar* const sibp : siblings) constifyMemberValue(sibp, inProgress);
+        // Now resolve any class::member Dots directly in this value.
+        std::vector<AstDot*> nestedDots;
+        varp->valuep()->foreach([&](AstDot* const dp) {
+            if (VN_IS(dp->lhsp(), ClassOrPackageRef)) nestedDots.push_back(dp);
+        });
+        for (auto it = nestedDots.rbegin(); it != nestedDots.rend(); ++it) {
+            resolveDotToTypedef(*it);
+        }
+        V3Const::constifyParamsEdit(varp);
+        inProgress.erase(varp);
+    }
+
     // Helper to resolve DOT to RefDType for class type references.
     // If the class is parameterized and not yet specialized, specialize it first.
     // This handles cases like: iface #(param_class#(value)::typedef_name)
@@ -1247,89 +1287,78 @@ class ParamProcessor final {
             dotp->replaceWith(refp);
             VL_DO_DANGLING(dotp->deleteTree(), dotp);
         } else if (AstVar* const varp = VN_CAST(memberp, Var)) {
-            // Param/lparam member: substitute its constant value so the caller's constify can
-            // succeed.
-            if (varp->isParam() && varp->valuep()) {
-                if (!VN_IS(varp->valuep(), Const)) {
-                    // If the value contains nested class::member Dots (e.g. this
-                    // member's expression references another paramed class), resolve
-                    // those first so constify can fold the whole chain.
-                    std::vector<AstDot*> nestedDots;
-                    varp->valuep()->foreach([&](AstDot* const dp) {
-                        if (VN_IS(dp->lhsp(), ClassOrPackageRef)) nestedDots.push_back(dp);
-                    });
-                    for (auto it = nestedDots.rbegin(); it != nestedDots.rend(); ++it) {
-                        resolveDotToTypedef(*it);
-                    }
-                    V3Const::constifyParamsEdit(varp);
-                }
-                if (AstConst* const constp = VN_CAST(varp->valuep(), Const)) {
-                    // Walk up any outer `.fieldN[.fieldM...]` chain (struct lparam
-                    // member access like `CFG::cfg.jt.cam_type`) and accumulate the
-                    // packed-struct bit offset.  Replace the topmost Dot with a
-                    // Sel(constp, lsb, width) matching V3Width::memberSelStruct.
-                    int totalLsb = 0;
-                    int sliceWidth = varp->width();
-                    AstNodeDType* curDTypep = varp->dtypep();
-                    AstNode* topp = dotp;
-                    AstDot* outerDotp = VN_CAST(dotp->backp(), Dot);
-                    const auto errorRecover = [&](AstDot* const badp, const string& msg) {
-                        badp->v3error(msg);
-                        badp->replaceWith(new AstConst{badp->fileline(), AstConst::Signed32{}, 0});
-                        VL_DO_DANGLING(badp->deleteTree(), badp);
-                    };
-                    bool errored = false;
-                    while (outerDotp && outerDotp->lhsp() == topp) {  // LCOV_EXCL_BR_LINE
-                        const AstParseRef* const fieldRefp = VN_CAST(outerDotp->rhsp(), ParseRef);
-                        if (!fieldRefp) {
-                            errorRecover(outerDotp, "Malformed dotted select in parameter value");
-                            errored = true;
-                            break;
-                        }
-                        UASSERT_OBJ(curDTypep, outerDotp,
-                                    "curDTypep null in struct field chain walk");
-                        AstNodeDType* const skippedp = curDTypep->skipRefp();
-                        AstNodeUOrStructDType* const structp
-                            = VN_CAST(skippedp, NodeUOrStructDType);
-                        if (!structp) {
-                            errorRecover(outerDotp,
-                                         "Dotted member select on non-struct parameter value");
-                            errored = true;
-                            break;
-                        }
-                        AstMemberDType* const foundMemp = VN_CAST(
-                            m_memberMap.findMember(structp, fieldRefp->name()), MemberDType);
-                        if (!foundMemp) {
-                            errorRecover(outerDotp, "Member " + fieldRefp->prettyNameQ()
-                                                        + " not found in structure");
-                            errored = true;
-                            break;
-                        }
-                        UASSERT_OBJ(foundMemp->subDTypep(), outerDotp,
-                                    "member has null subDTypep");
-                        totalLsb += foundMemp->lsb();
-                        sliceWidth = foundMemp->width();
-                        curDTypep = foundMemp->subDTypep();
-                        topp = outerDotp;
-                        outerDotp = VN_CAST(outerDotp->backp(), Dot);
-                    }
-                    if (errored) return;
-                    if (topp == dotp) {
-                        dotp->replaceWith(constp->cloneTree(false));
-                        VL_DO_DANGLING(dotp->deleteTree(), dotp);
-                    } else {
-                        AstConst* const clonep = static_cast<AstConst*>(constp->cloneTree(false));
-                        AstSel* const selp
-                            = new AstSel{topp->fileline(), clonep, totalLsb, sliceWidth};
-                        // Match V3Width::memberSelStruct: skip RefDTypes to surface
-                        // enum dtype, and mark didWidth so V3Width doesn't reflatten.
-                        selp->dtypep(curDTypep->skipRefToEnump());
-                        selp->didWidth(true);
-                        topp->replaceWith(selp);
-                        VL_DO_DANGLING(topp->deleteTree(), topp);
-                    }
-                }
+            substituteParamMember(dotp, varp);
+        }
+    }
+
+    // Substitute a class param/lparam member's constant value for `dotp`, so the
+    // caller's constify can succeed.  Any outer `.fieldN[.fieldM...]` chain (struct
+    // lparam member access like `CFG::cfg.jt.cam_type`) is folded into a Sel of the
+    // constant.
+    void substituteParamMember(AstDot* const dotp, AstVar* const varp) {
+        if (!varp->isParam() || !varp->valuep()) return;
+        if (!VN_IS(varp->valuep(), Const)) {
+            std::set<AstVar*> inProgress;
+            constifyMemberValue(varp, inProgress);
+        }
+        AstConst* const constp = VN_CAST(varp->valuep(), Const);
+        if (!constp) return;
+        // Walk up the outer field chain accumulating the packed-struct bit offset.
+        // Replace the topmost Dot with a Sel(constp, lsb, width) matching
+        // V3Width::memberSelStruct.
+        int totalLsb = 0;
+        int sliceWidth = varp->width();
+        AstNodeDType* curDTypep = varp->dtypep();
+        AstNode* topp = dotp;
+        AstDot* outerDotp = VN_CAST(dotp->backp(), Dot);
+        while (outerDotp && outerDotp->lhsp() == topp) {  // LCOV_EXCL_BR_LINE
+            const AstParseRef* const fieldRefp = VN_CAST(outerDotp->rhsp(), ParseRef);
+            if (!fieldRefp) {
+                outerDotp->v3error("Malformed dotted select in parameter value");
+                outerDotp->replaceWith(
+                    new AstConst{outerDotp->fileline(), AstConst::Signed32{}, 0});
+                VL_DO_DANGLING(outerDotp->deleteTree(), outerDotp);
+                return;
             }
+            UASSERT_OBJ(curDTypep, outerDotp, "curDTypep null in struct field chain walk");
+            AstNodeDType* const skippedp = curDTypep->skipRefp();
+            AstNodeUOrStructDType* const structp = VN_CAST(skippedp, NodeUOrStructDType);
+            if (!structp) {
+                outerDotp->v3error("Dotted member select on non-struct parameter value");
+                outerDotp->replaceWith(
+                    new AstConst{outerDotp->fileline(), AstConst::Signed32{}, 0});
+                VL_DO_DANGLING(outerDotp->deleteTree(), outerDotp);
+                return;
+            }
+            AstMemberDType* const foundMemp
+                = VN_CAST(m_memberMap.findMember(structp, fieldRefp->name()), MemberDType);
+            if (!foundMemp) {
+                outerDotp->v3error("Member " << fieldRefp->prettyNameQ()
+                                             << " not found in structure");
+                outerDotp->replaceWith(
+                    new AstConst{outerDotp->fileline(), AstConst::Signed32{}, 0});
+                VL_DO_DANGLING(outerDotp->deleteTree(), outerDotp);
+                return;
+            }
+            UASSERT_OBJ(foundMemp->subDTypep(), outerDotp, "member has null subDTypep");
+            totalLsb += foundMemp->lsb();
+            sliceWidth = foundMemp->width();
+            curDTypep = foundMemp->subDTypep();
+            topp = outerDotp;
+            outerDotp = VN_CAST(outerDotp->backp(), Dot);
+        }
+        if (topp == dotp) {
+            dotp->replaceWith(constp->cloneTree(false));
+            VL_DO_DANGLING(dotp->deleteTree(), dotp);
+        } else {
+            AstConst* const clonep = static_cast<AstConst*>(constp->cloneTree(false));
+            AstSel* const selp = new AstSel{topp->fileline(), clonep, totalLsb, sliceWidth};
+            // Match V3Width::memberSelStruct: skip RefDTypes to surface enum dtype,
+            // and mark didWidth so V3Width doesn't reflatten.
+            selp->dtypep(curDTypep->skipRefToEnump());
+            selp->didWidth(true);
+            topp->replaceWith(selp);
+            VL_DO_DANGLING(topp->deleteTree(), topp);
         }
     }
 
