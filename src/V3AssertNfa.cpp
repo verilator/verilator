@@ -215,8 +215,7 @@ static AstConst* newTypedConstp(FileLine* const flp, const AstNodeDType* const d
 }
 
 static AstNodeExpr* sampled(AstNodeExpr* exprp) {
-    AstSampled* const sp = new AstSampled{exprp->fileline(), exprp, exprp->dtypep()};
-    return sp;
+    return new AstSampled{exprp->fileline(), exprp, exprp->dtypep(), true};
 }
 
 static string assertCtlGetCall(const char* query, VAssertType type,
