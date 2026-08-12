@@ -44,17 +44,23 @@
 
 #if defined(VERILATOR_FIBER_LINUX)
 
+//======================================================================
+// VlFiberMemoryPool:: Global variables
+
 static thread_local VlFiberMemoryPool memoryPool{};
 
 //======================================================================
-// VlFiberMemoryPool
+// VlFiberMemoryPool:: Constants
 
 // One stack allocation is 1 Mb
-static VL_CONSTEXPR_CXX17 unsigned long long allocationSize = 1<<20;
+static VL_CONSTEXPR_CXX17 unsigned long long allocationSize = 1 << 20;
 
 // Allocate space for 16 stacks at once
 static VL_CONSTEXPR_CXX17 unsigned long long allocationCount = 16;
 static VL_CONSTEXPR_CXX17 unsigned long long chunkSize = allocationSize * allocationCount;
+
+//======================================================================
+// VlFiberMemoryPool:: Methods
 
 VlFiberMemoryChunk::VlFiberMemoryChunk()
     : m_chunkAddr{}
@@ -121,7 +127,7 @@ void VlFiberMemoryPool::free(void* ptr) {
 }
 
 //======================================================================
-// VlFiberContext
+// VlFiberContext:: Methods
 
 VlFiberContext::VlFiberContext(void (*f)(VlFiber*), VlFiber* arg) {
     mappingSize = allocationSize;
@@ -177,12 +183,12 @@ void VlFiberContext::end() {
 #endif
 
 //======================================================================
-// Statics
+// VlFiber:: Static variables
 
 thread_local VlFiber* VlFiber::s_currentFiberp = nullptr;
 
 //======================================================================
-// Construction helpers
+// VlFiber:: Methods
 
 std::unique_ptr<VlFiber> VlFiber::create(Fn fn) {
     return std::unique_ptr<VlFiber>(new VlFiber{std::move(fn)});
@@ -197,9 +203,6 @@ VlFiber::~VlFiber() {
     resumeWaiter();
     m_ctx.teardown();
 }
-
-//======================================================================
-// Scheduling helpers
 
 void VlFiber::resume() {
     if (m_done) {
@@ -249,9 +252,6 @@ void VlFiber::setWaiter(std::coroutine_handle<> waiter) {
     if (!waiter) return;
     m_waiter = waiter;
 }
-
-//======================================================================
-// Bootstrap
 
 void VlFiber::entryPoint(VlFiber* fiberp) {
     s_currentFiberp = fiberp;

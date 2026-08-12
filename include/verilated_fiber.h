@@ -78,38 +78,58 @@
 #endif
 
 #if defined(VERILATOR_FIBER_LINUX)
+// Forward declaration for VlFiberContext
 class VlFiber;
 
+//=============================================================================
+// VlFiberMemoryChunk stores one fiber stack allocation.
+
 struct VlFiberMemoryChunk final {
+    // MEMBERS
     void* m_chunkAddr;
     void* m_top;
     void* m_freeTop;
     size_t m_free;
 
+    // CONSTRUCTORS
     VlFiberMemoryChunk();
     ~VlFiberMemoryChunk();
 };
 
+//=============================================================================
+// VlFiberMemoryPool manages reusable fiber stack allocations.
+
 class VlFiberMemoryPool final {
+    // MEMBERS
     std::vector<VlFiberMemoryChunk*> m_chunks;
 
 public:
+    // CONSTRUCTORS
     VlFiberMemoryPool();
     VlFiberMemoryPool(const VlFiberMemoryPool& other) = delete;
     VlFiberMemoryPool(VlFiberMemoryPool&& other) = delete;
+
+    // METHODS
     void* get();
     void free(void* ptr);
 };
 
+//=============================================================================
+// VlFiberContext stores the platform-specific execution context for a fiber.
+
 class VlFiberContext final {
+    // MEMBERS
     ucontext_t callerCtx{};  // Register state of caller context
     ucontext_t fiberCtx{};  // Register state of fiber context
     void* mappingp{};  // Base of mmap allocation (includes guards)
     std::size_t mappingSize{};  // Total size of allocation (stackSize + 2*pageSize)
 
 public:
+    // CONSTRUCTORS
     VlFiberContext(void (*f)(VlFiber*), VlFiber* arg);
     VlFiberContext() = default;
+
+    // METHODS
     void teardown();
     void yield();
     void resume();
@@ -119,12 +139,23 @@ public:
 
 #endif
 
-// Simple userspace fiber used to run DPI code on an alternate stack.
+//=============================================================================
+// VlFiber is a lightweight userspace fiber used to run DPI code on an alternate stack.
+
 class VlFiber final {
 public:
+    // TYPES
     // Function executed when the fiber starts running
     using Fn = std::function<void()>;
 
+    // CONSTRUCTORS
+    VlFiber(const VlFiber&) = delete;
+    VlFiber& operator=(const VlFiber&) = delete;
+
+    // Destructor releases mapped memory and resumes waiters if necessary
+    ~VlFiber();
+
+    // METHODS
     // Factory helper returning a unique_ptr so callers cannot forget to destroy
     static std::unique_ptr<VlFiber> create(Fn fn);
 
@@ -143,13 +174,8 @@ public:
     // Register a coroutine to be resumed once the fiber completes
     void setWaiter(std::coroutine_handle<> waiter);
 
-    // Destructor releases mapped memory and resumes waiters if necessary
-    ~VlFiber();
-
-    VlFiber(const VlFiber&) = delete;
-    VlFiber& operator=(const VlFiber&) = delete;
-
 private:
+    // MEMBERS
     VlFiberContext m_ctx;  // Platform-dependent internal fiber context
     Fn m_fn;  // Function executed by the fiber
     bool m_started = false;  // Indicates whether start() already ran
@@ -158,8 +184,10 @@ private:
 
     static thread_local VlFiber* s_currentFiberp;  // Fiber currently executing on the thread
 
+    // CONSTRUCTORS
     VlFiber(Fn fn);
 
+    // METHODS
     // Actual function executing the user callable and performing cleanup
     static void entryPoint(VlFiber* fiberp) VL_ATTR_NORETURN;
 
