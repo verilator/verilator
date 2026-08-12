@@ -3119,12 +3119,8 @@ void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
     if (assertCtlsLocked()) return;
     m_s.m_assertOn &= ~assertOnMask(types, directives);
 }
-bool VerilatedContext::assertCtlsLocked() const VL_MT_SAFE {
-    return m_ns.m_assertCtlsLocked;
-}
-void VerilatedContext::assertCtlsLocked(bool flag) VL_MT_SAFE {
-    m_ns.m_assertCtlsLocked = flag;
-}
+bool VerilatedContext::assertCtlsLocked() const VL_MT_SAFE { return m_ns.m_assertCtlsLocked; }
+void VerilatedContext::assertCtlsLocked(bool flag) VL_MT_SAFE { m_ns.m_assertCtlsLocked = flag; }
 void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
     // IEEE 1800-2023 Table 20-5 control_type. Lock freezes the On/Off state of the

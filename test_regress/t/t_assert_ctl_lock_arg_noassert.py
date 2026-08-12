@@ -12,8 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t_assert_ctl_lock_arg.v"
 
-test.compile(
-    verilator_flags2=["--binary --assert +define+T_ASSERT_CTL_LOCK_ARG_NOASSERT"])
+test.compile(verilator_flags2=["--binary --assert +define+T_ASSERT_CTL_LOCK_ARG_NOASSERT"])
 
 test.execute(all_run_flags=["+verilator+noassert", "+verilator+assert+lock"])
 

@@ -450,7 +450,8 @@ protected:
         // A worker queues $finish before the main thread callback can set m_gotFinish.
         std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
         std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
-        std::atomic<bool> m_assertCtlsLocked{false};  // When true, all assertion-control updates are ignored
+        std::atomic<bool> m_assertCtlsLocked{
+            false};  // When true, all assertion-control updates are ignored
         int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
