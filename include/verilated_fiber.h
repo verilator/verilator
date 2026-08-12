@@ -82,7 +82,7 @@
 class VlFiber;
 
 //=============================================================================
-// VlFiberMemoryChunk stores one fiber stack allocation.
+// VlFiberMemoryChunk holds a contiguous area of memory from which fiber stacks are allocated.
 
 struct VlFiberMemoryChunk final {
     // MEMBERS
@@ -140,7 +140,7 @@ public:
 #endif
 
 //=============================================================================
-// VlFiber is a lightweight userspace fiber used to run DPI code on an alternate stack.
+// VlFiber is a lightweight userspace thread used to run DPI code on an alternate stack.
 
 class VlFiber final {
 public:
