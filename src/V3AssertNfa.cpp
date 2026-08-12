@@ -1431,6 +1431,24 @@ class SvaNfaBuilder final {
         return resultp;
     }
 
+    // True when a same-tick Link chain already accounts the attempt: a
+    // required-step Link covers both outcomes; followed-by pairs both edges.
+    static bool chainAccountsSource(const SvaStateVertex* srcp,
+                                    const std::unordered_set<const V3GraphEdge*>& preEdges) {
+        bool plainNonSink = false;
+        bool markedSink = false;
+        for (const V3GraphEdge& er : srcp->outEdges()) {
+            if (preEdges.count(&er)) continue;
+            const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
+            if (te.m_consumesCycle) continue;
+            const bool sink = static_cast<const SvaStateVertex*>(te.toVtxp())->m_isRejectSink;
+            if (te.m_rejectOnFail && !sink) return true;
+            if (!te.m_rejectOnFail && !sink) plainNonSink = true;
+            if (te.m_rejectOnFail && sink) markedSink = true;
+        }
+        return plainNonSink && markedSink;
+    }
+
     // On the fire tick: kill body threads; accept kinds also forgive step misses.
     void gateBodyEdgesOnAbort(const std::unordered_set<const V3GraphEdge*>& preEdges,
                               AstNodeExpr* condp, VAbortKind kind, FileLine* flp) {
@@ -1508,24 +1526,13 @@ class SvaNfaBuilder final {
 
         // rejectOnFail treats m_condp as the success condition and fires on
         // !condp, so the edge carries !sampledAbortFire().
-        // A Link-chained entry is covered by its successor; skip to count once.
-        bool entryChained = false;
-        for (V3GraphEdge& er : entryVtxp->outEdges()) {
-            if (preEdges.count(&er)) continue;
-            const SvaTransEdge& te = static_cast<SvaTransEdge&>(er);
-            if (te.m_consumesCycle) continue;
-            if (!static_cast<const SvaStateVertex*>(te.toVtxp())->m_isRejectSink) {
-                entryChained = true;
-                break;
-            }
-        }
         SvaStateVertex* const rejectSinkp = m_graph.createStateVertex();
         rejectSinkp->m_isRejectSink = true;
         for (SvaStateVertex* const srcp : abortSources) {
-            if (srcp == entryVtxp && entryChained) continue;
-            m_graph.addLink(srcp, rejectSinkp, new AstLogNot{flp, sampledAbortFire()})
-                ->m_rejectOnFail
-                = true;
+            if (chainAccountsSource(srcp, preEdges)) continue;
+            SvaTransEdge* const ep
+                = m_graph.addLink(srcp, rejectSinkp, new AstLogNot{flp, sampledAbortFire()});
+            ep->m_rejectOnFail = true;
         }
         AstNodeExpr* finalCondp = bodyResult.finalCondp;
         if (finalCondp) {
@@ -1825,9 +1832,7 @@ class SvaNfaLowering final {
         }
 
         // Capture disableCnt in Phase-2 NBA before any reactive re-evaluation.
-        // snapshotVarp and disableCntVarp are allocated together. Emitted even
-        // for stateless graphs: snapshotOk gates rejects unconditionally, and a
-        // never-updated snapshot would stick it false after a disable edge.
+        // Emitted even for stateless graphs; snapshotOk gates rejects there too.
         if (c.snapshotVarp) {
             UASSERT_OBJ(c.disableCntVarp, c.senTreep, "snapshotVarp set without disableCntVarp");
             // disable_snapshot <= disable_count;

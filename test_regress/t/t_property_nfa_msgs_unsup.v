@@ -16,9 +16,7 @@ module t (
     a ##1 b;
   endproperty
 
-  sequence s_nested;
-    a ##1 b;
-  endsequence
+  sequence s_nested; a ##1 b; endsequence
 
   function automatic bit fbool();
     return a;
@@ -29,12 +27,12 @@ module t (
   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
   assert property (@(posedge clk) not (if (a) 1'b1 ##1 b else 1'b1 ##2 c));
 
-  assert property (@(posedge clk)
-                   case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d; endcase)
+  assert property (@(posedge clk) case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d;
+  endcase)
     $display("pass");
 
   // An unsupported body under an abort reports itself, not an internal error
-  assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c)[*2]));
+  assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) [* 2]));
 
   // A body the builder rejects wins over the property if/case message
   assert property (@(posedge clk) if (a) ((b ##1 c)[*2]) else d) $display("pass");
@@ -49,9 +47,12 @@ module t (
   assert property (@(posedge clk) fbool() ##1 b);
 
   // A user-written 'and' of implications is not a property if/case
-  assert property (@(posedge clk) (a |-> 1'b1 ##1 b) and (c |-> 1'b1 ##2 d));
+  assert property (@(posedge clk) (a |-> 1'b1 ##1 b) and(c |-> 1'b1 ##2 d));
 
   // Property if/else without an action is lowered, not rejected
   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
+
+  // A multi-cycle property with no clocking event is left to later passes
+  assert property (a [* 2]);
 
 endmodule
