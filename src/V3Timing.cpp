@@ -62,6 +62,8 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "verilatedos.h"
+
 #include "V3Timing.h"
 
 #include "V3Ast.h"
@@ -992,6 +994,7 @@ class TimingControlVisitor final : public VNVisitor {
             nodep->function(VCFunction::CALL_IMPORT_IN_FIBER);
             AstCFuncHard* const cFuncp = nodep->unlinkFrBack();
             stmtExprp->replaceWith(new AstCAwait{nodep->fileline(), cFuncp});
+            VL_DO_DANGLING(pushDeletep(stmtExprp), stmtExprp);
             break;
         }
         case VCFunction::AWAIT_EXPORT_TASK: {
