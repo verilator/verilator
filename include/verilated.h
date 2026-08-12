@@ -450,6 +450,7 @@ protected:
         // A worker queues $finish before the main thread callback can set m_gotFinish.
         std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
         std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
+        std::atomic<bool> m_assertCtlsLocked{false};  // When true, all assertion-control updates are ignored
         int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
@@ -531,6 +532,12 @@ public:
     /// Clear enabled status for given assertion types
     void assertOnClear(VerilatedAssertType_t types,
                        VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Return if assertion-control updates are locked. When locked, RTL assert
+    // control statements ($asserton/$assertoff/$assertcontrol) are ignored, as
+    // are updates from the C++ API.
+    bool assertCtlsLocked() const VL_MT_SAFE;
+    /// Lock/unlock assertion-control updates.
+    void assertCtlsLocked(bool flag) VL_MT_SAFE;
     /// Apply assertion control for given control, assertion, and directive types
     void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
