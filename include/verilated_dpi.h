@@ -121,7 +121,7 @@ namespace VerilatedDpi {
 
 namespace {
 static thread_local struct {
-    std::string m_filename{};
+    char* m_filename{};
     int m_lineno{};
     bool m_inFuncContext{false};
 } s_fileline;
@@ -131,7 +131,7 @@ template <typename Callable, typename... Args>
 decltype(auto) callImportFunction(const char* const filename, int lineno, Callable&& call,
                                   Args&&... args) {
     s_fileline.m_inFuncContext = true;
-    s_fileline.m_filename = std::string{filename};
+    s_fileline.m_filename = filename;
     s_fileline.m_lineno = lineno;
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                         void>::value) {
@@ -169,7 +169,7 @@ decltype(auto) awaitExportFunction(Callable&& call, Args&&... args) {
 template <typename Callable, typename... Args>
 decltype(auto) awaitExportTask(Callable&& call, Args&&... args) {
     if (s_fileline.m_inFuncContext) {
-        VL_FATAL_MT(s_fileline.m_filename.c_str(), s_fileline.m_lineno, "",
+        VL_FATAL_MT(s_fileline.m_filename, s_fileline.m_lineno, "",
                     "DPI exported task called from function context");
     }
 
@@ -201,7 +201,8 @@ public:
 // This allows the C code to call DPI exports with timing controls
 // Callable has void return type because it is a task.
 template <typename Callable, typename... Args>
-VlCoroutine callImportFiber(const char* const filename, int lineno, Callable&& call, Args&&... args) {
+VlCoroutine callImportFiber(const char* const filename, int lineno, Callable&& call,
+                            Args&&... args) {
     static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), int>::value,
                   "Functions called inside a fiber should have 'int' return type");
     auto fiberp{VlFiber::create(
@@ -220,7 +221,7 @@ decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                         VlCoroutine>::value) {
         if (s_fileline.m_inFuncContext) {
-            VL_FATAL_MT(s_fileline.m_filename.c_str(), s_fileline.m_lineno, "",
+            VL_FATAL_MT(s_fileline.m_filename, s_fileline.m_lineno, "",
                         "DPI exported task called from function context");
         }
         VlFiber* fiberp = VlFiber::current();

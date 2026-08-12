@@ -142,7 +142,7 @@ VlFiberContext::VlFiberContext(void (*f)(VlFiber*), VlFiber* arg) {
     makecontext(&fiberCtx, reinterpret_cast<void (*)()>(f), 1, arg);
 }
 
-void VlFiberContext::teardown() {
+VlFiberContext::~VlFiberContext() {
     if (mappingp) memoryPool.free(mappingp);
 }
 
@@ -195,14 +195,10 @@ std::unique_ptr<VlFiber> VlFiber::create(Fn fn) {
 }
 
 VlFiber::VlFiber(Fn fn)
-    : m_fn{std::move(fn)} {
-    m_ctx = VlFiberContext{&VlFiber::entryPoint, this};
-}
+    : m_fn{std::move(fn)}
+    , m_ctx{VlFiberContext{&VlFiber::entryPoint, this}} {}
 
-VlFiber::~VlFiber() {
-    resumeWaiter();
-    m_ctx.teardown();
-}
+VlFiber::~VlFiber() { resumeWaiter(); }
 
 void VlFiber::resume() {
     if (m_done) {

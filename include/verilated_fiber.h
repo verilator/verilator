@@ -119,18 +119,18 @@ public:
 
 class VlFiberContext final {
     // MEMBERS
-    ucontext_t callerCtx{};  // Register state of caller context
-    ucontext_t fiberCtx{};  // Register state of fiber context
-    void* mappingp{};  // Base of mmap allocation (includes guards)
-    std::size_t mappingSize{};  // Total size of allocation (stackSize + 2*pageSize)
+    ucontext_t callerCtx{};  // State of caller context
+    ucontext_t fiberCtx{};  // State of fiber context
+    void* mappingp{};  // Base address of allocated stack
+    std::size_t mappingSize{};  // Total size of allocated stack
 
 public:
     // CONSTRUCTORS
     VlFiberContext(void (*f)(VlFiber*), VlFiber* arg);
     VlFiberContext() = default;
+    ~VlFiberContext();
 
     // METHODS
-    void teardown();
     void yield();
     void resume();
     void start();
@@ -180,7 +180,7 @@ private:
     Fn m_fn;  // Function executed by the fiber
     bool m_started = false;  // Indicates whether start() already ran
     bool m_done = false;  // Set once m_fn returns
-    std::coroutine_handle<void> m_waiter{};  // Coroutine resumed on completion
+    std::coroutine_handle<void> m_waiter;  // Coroutine resumed on completion
 
     static thread_local VlFiber* s_currentFiberp;  // Fiber currently executing on the thread
 
