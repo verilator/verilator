@@ -837,7 +837,9 @@ public:
     bool isPure() const VL_PURE { return s_itemData[m_e].m_pure; }
     static void selfTest();
 };
-constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
 constexpr bool operator==(const VCFunction& lhs, VCFunction::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VCFunction::en lhs, const VCFunction& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
@@ -848,9 +850,8 @@ inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
 //
 // {Mnemonic, C++ function, pure}
 #define V3AST_VCFUNCTION_ITEMDATA_DECL \
-    VCFunction::Item VCFunction::s_itemData[] = { \
-        {_NONE, "_none", false}, \
-        {_ENUM_MAX, "_ENUM_MAX", false}};
+    VCFunction::Item VCFunction::s_itemData[] \
+        = {{_NONE, "_none", false}, {_ENUM_MAX, "_ENUM_MAX", false}};
 
 class VCMethod final {
 public:
