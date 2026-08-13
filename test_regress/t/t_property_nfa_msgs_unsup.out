@@ -27,6 +27,9 @@
                                                       : ... note: In instance 't'
    41 |   assert property (@(posedge clk) p_nested or e);
       |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:59:52: Unsupported: ranged cycle delay in an operand of property 'and'
+   59 |   assert property (@(posedge clk) (1'b1 ##[1:2] b) and c);
+      |                                                    ^~~
 %Error: t/t_property_nfa_msgs_unsup.v:56:22: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                            : ... note: In instance 't'
                                            : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context

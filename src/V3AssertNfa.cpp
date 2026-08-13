@@ -998,8 +998,6 @@ class SvaNfaBuilder final {
         // is handled by the OR-fold.
         if (m_isCoverSeq && (lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp)) {
             warnEndpointUnsupported(flp, "a sequence operand of 'or'");
-            freeUnlinkedCondp(lhs.finalCondp);
-            freeUnlinkedCondp(rhs.finalCondp);
             return BuildResult::failWithError();
         }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
@@ -1051,11 +1049,13 @@ class SvaNfaBuilder final {
         }
         // Range-delay mid-window sources in either sub-branch would need
         // to be folded into the latch's match-now signal, which the
-        // current combiner does not support. Defer (UNSUPPORTED).
+        // current combiner does not support.
         if (!lhs.midSources.empty() || !rhs.midSources.empty()) {
+            flp->v3warn(E_UNSUPPORTED,
+                        "Unsupported: ranged cycle delay in an operand of property 'and'");
             freeUnlinkedCondp(lhs.finalCondp);
             freeUnlinkedCondp(rhs.finalCondp);
-            return BuildResult::fail();
+            return BuildResult::failWithError();
         }
         SvaStateVertex* const combVtxp = scopedCreateVertex();
         combVtxp->m_isAndCombiner = true;
@@ -1471,6 +1471,14 @@ class SvaNfaBuilder final {
         return plainNonSink && markedSink;
     }
 
+    // Reject edge: fires when the source is live and the abort samples true.
+    void addAbortRejectEdge(SvaStateVertex* srcp, SvaStateVertex* sinkp, AstNodeExpr* condp,
+                            FileLine* flp) {
+        AstNodeExpr* const notFirep = new AstLogNot{flp, sampled(abortFireExpr(condp, flp))};
+        m_graph.addLink(srcp, sinkp, notFirep)->m_rejectOnFail = true;
+        return;
+    }
+
     // On the fire tick: kill body threads; accept kinds also forgive step misses.
     void gateBodyEdgesOnAbort(const std::unordered_set<const V3GraphEdge*>& preEdges,
                               AstNodeExpr* condp, VAbortKind kind, FileLine* flp) {
@@ -1550,12 +1558,9 @@ class SvaNfaBuilder final {
         // !condp, so the edge carries !sampledAbortFire().
         SvaStateVertex* const rejectSinkp = m_graph.createStateVertex();
         rejectSinkp->m_isRejectSink = true;
-        for (SvaStateVertex* const srcp : abortSources) {
-            if (chainAccountsSource(srcp, preEdges)) continue;
-            SvaTransEdge* const ep
-                = m_graph.addLink(srcp, rejectSinkp, new AstLogNot{flp, sampledAbortFire()});
-            ep->m_rejectOnFail = true;
-        }
+        for (SvaStateVertex* const srcp : abortSources)
+            if (!chainAccountsSource(srcp, preEdges))
+                addAbortRejectEdge(srcp, rejectSinkp, condp, flp);
         AstNodeExpr* finalCondp = bodyResult.finalCondp;
         if (finalCondp) {
             if (finalCondp->backp()) finalCondp = finalCondp->cloneTreePure(false);

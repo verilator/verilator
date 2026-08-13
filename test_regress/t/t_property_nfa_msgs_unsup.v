@@ -55,4 +55,7 @@ module t (
   // A multi-cycle property with no clocking event is left to later passes
   assert property (a [* 2]);
 
+  // An 'and' operand carrying mid-window sources defers to later passes
+  assert property (@(posedge clk) (1'b1 ##[1:2] b) and c);
+
 endmodule

@@ -30,6 +30,7 @@ module t;
   int fail_delay = 0;
   int fail_or = 0;
   int fail_fby = 0;
+  int fail_and = 0;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
@@ -80,6 +81,10 @@ module t;
   assert property (@(posedge clk) sync_reject_on (1'b0) (a #-# b))
   else fail_fby++;
 
+  assert property (@(posedge clk) (sync_accept_on (abrt) b) and c)
+  else fail_and++;
+
+
   initial begin
     repeat (40) #5 clk = ~clk;
     `checkd(fail_bool, 5);
@@ -97,6 +102,7 @@ module t;
     `checkd(fail_rep_r, 16);
     `checkd(fail_delay, 12);
     `checkd(fail_fby, 16);
+    `checkd(fail_and, 16);
     $write("*-* All Finished *-*\n");
     $finish;
   end
