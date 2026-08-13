@@ -1,0 +1,33 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:25:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   25 |     a + arr[0].sum() == 10;
+      |                ^~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:26:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   26 |     a + arr[1].product() == 10;
+      |                ^~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:27:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   27 |     a + arr[2].xor() == 10;
+      |                ^~~
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:28:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   28 |     a + arr[3].or() == 10;
+      |                ^~
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:29:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   29 |     a + arr[4].and() == 10;
+      |                ^~~
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:33:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   33 |     a + sc.arr.sum() == 10;
+      |                ^~~
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:34:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   34 |     a + sc.arr.product() == 10;
+      |                ^~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:35:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   35 |     a + sc.arr.xor() == 10;
+      |                ^~~
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:36:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   36 |     a + sc.arr.or() == 10;
+      |                ^~
+%Warning-CONSTRAINTIGN: t/t_constraint_red_arr_unsup.v:37:16: Unsupported: Array reduction constraint on dynamic array inside array or struct
+   37 |     a + sc.arr.and() == 10;
+      |                ^~~
+%Error: Exiting due to
