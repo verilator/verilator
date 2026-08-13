@@ -903,8 +903,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // verbatim, so obfuscate them like line/toggle points (per-word hierarchy, whole-
         // unit page).  No-ops when --protect-ids is off.
         const bool prot = v3Global.opt.protectIds();
-        const std::string hier = VIdProtect::protectWordsIf(
-            m_covergroupp->name() + "." + coverpointp->name(), prot);
+        const std::string hier
+            = VIdProtect::protectWordsIf(m_covergroupp->name() + "." + coverpointp->name(), prot);
         AstCStmt* const initp = new AstCStmt{fl};
         initp->add(memberRef(fl, cpVarp));
         initp->add(".init(\"" + hier + "\", " + std::to_string(atLeastValue) + ", "
@@ -1266,9 +1266,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Non-standard hierarchical/dotted cross item (e.g. 'cross a.b'): an implicit coverpoint
         // over the referenced expression (carried in refp->exprp()).  The grammar already warned
         // NONSTD; implicit coverpoints are not yet implemented, so generate no sampling code for
-        // this cross.  When support is added the implicit coverpoint should be synthesized upstream
-        // (V3LinkParse) as a real AstCoverpoint so it flows through the normal coverpoint path - by
-        // here coverpoint lowering has already run.
+        // this cross.  When support is added the implicit coverpoint should be synthesized
+        // upstream (V3LinkParse) as a real AstCoverpoint so it flows through the normal coverpoint
+        // path - by here coverpoint lowering has already run.
         for (AstNode* itemp = crossp->itemsp(); itemp; itemp = itemp->nextp()) {
             const AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
             if (refp->exprp()) {
