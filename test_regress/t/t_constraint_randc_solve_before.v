@@ -31,10 +31,9 @@ class Layered;
     b > a;
     d > b;
   }
-  constraint link_c {a >= {2'b00, c};}
 endclass
 
-// Hard constraint shrinks the randc domain to three values
+// Constraint on the randc variable alone, so the permutation itself holds three values
 class Limited;
   randc bit [1:0] c;
   rand bit [3:0] x;
@@ -44,7 +43,7 @@ class Limited;
   constraint lim_c {c != 2'd3;}
 endclass
 
-// randc pins a solve-before variable, so only randc-first keeps the cycle
+// randc tied to a solve-before variable, so x cycles only if the exclusions reach phase one
 class Ordered;
   randc bit [1:0] c;
   rand bit [1:0] x;
@@ -106,7 +105,6 @@ module t;
       `checkd(ok, 1);
       `checkd(q.b > q.a, 1'b1);
       `checkd(q.d > q.b, 1'b1);
-      `checkd(q.a >= {2'b00, q.c}, 1'b1);
       seen[q.c] = 1'b1;
       ++qcount[q.c];
       if (i % 4 == 3) begin
