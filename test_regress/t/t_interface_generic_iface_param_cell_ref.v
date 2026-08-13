@@ -9,22 +9,30 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-interface inf #(parameter int PARAM = 1);
+interface ifc #(
+    parameter int PARAM = 1
+);
   logic [PARAM-1:0] v;
-  modport mp (input v);
+  modport mp(input v);
 endinterface
 
-module Leaf #(parameter int PARAM = 1) (inf.mp leaf_a);
+module Leaf #(
+    parameter int PARAM = 1
+) (
+    ifc.mp leaf_a
+);
   initial begin
     #1;
     `checkd(leaf_a.PARAM, PARAM);
   end
 endmodule
 
-module GenericModule (interface.mp a);
+module GenericModule (
+    interface.mp a
+);
   localparam LOC_PARAM = a.PARAM;
   // A generic interface's parameter, parameterizing a sibling interface cell
-  inf #(.PARAM(LOC_PARAM)) nested_inst();
+  ifc #(.PARAM(LOC_PARAM)) nested_inst ();
   Leaf #(.PARAM(LOC_PARAM)) leaf (nested_inst);
   initial begin
     #1;
@@ -35,7 +43,7 @@ module GenericModule (interface.mp a);
 endmodule
 
 module t;
-  inf  #(.PARAM(13)) inf_inst();
+  ifc #(.PARAM(13)) inf_inst ();
   GenericModule genericModule (inf_inst);
   initial begin
     inf_inst.v = 7;
