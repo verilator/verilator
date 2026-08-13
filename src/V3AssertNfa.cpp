@@ -730,6 +730,7 @@ class SvaNfaBuilder final {
                     // Do not mark liveness sources: first boolean check is deferred.
                     edgep->m_rejectOnFail = true;
                 }
+                freeUnlinkedCondp(pre.finalCondp);
                 currentp = condVtxp;
             } else {
                 currentp = pre.termVertexp;
@@ -998,6 +999,8 @@ class SvaNfaBuilder final {
         // is handled by the OR-fold.
         if (m_isCoverSeq && (lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp)) {
             warnEndpointUnsupported(flp, "a sequence operand of 'or'");
+            freeUnlinkedCondp(lhs.finalCondp);
+            freeUnlinkedCondp(rhs.finalCondp);
             return BuildResult::failWithError();
         }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();

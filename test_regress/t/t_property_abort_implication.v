@@ -28,7 +28,6 @@ module t;
   int fail_rep_a = 0;
   int fail_rep_r = 0;
   int fail_delay = 0;
-  int fail_or = 0;
   int fail_fby = 0;
   int fail_and = 0;
 
@@ -83,6 +82,8 @@ module t;
 
   assert property (@(posedge clk) (sync_accept_on (abrt) b) and c)
   else fail_and++;
+
+  cover property (@(posedge clk) (a and b) ##1 c);
 
 
   initial begin

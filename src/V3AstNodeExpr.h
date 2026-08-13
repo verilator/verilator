@@ -4003,6 +4003,9 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isMultiCycleSva() const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_propertyControl == VN_DBG_AS(samep, SAnd)->m_propertyControl;
+    }
     bool propertyControl() const { return m_propertyControl; }
 };
 class AstSIntersect final : public AstNodeBiop {
