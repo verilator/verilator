@@ -195,8 +195,8 @@ std::unique_ptr<VlFiber> VlFiber::create(Fn fn) {
 }
 
 VlFiber::VlFiber(Fn fn)
-    : m_fn{std::move(fn)}
-    , m_ctx{VlFiberContext{&VlFiber::entryPoint, this}} {}
+    : m_ctx{VlFiberContext{&VlFiber::entryPoint, this}}
+    , m_fn{std::move(fn)} {}
 
 VlFiber::~VlFiber() { resumeWaiter(); }
 
