@@ -52,6 +52,7 @@ struct SvaVertexData final {
     AstVar* delayRingVarp = nullptr;  // Bitset ring buffer
     AstVar* delayRingIdxVarp = nullptr;  // Next slot written in delayRingVarp
     AstVar* delayRingLiveCountVarp = nullptr;  // Number of set bits in delayRingVarp
+    AstVar* delayRingWrappedVarp = nullptr;  // All slots written since the last clear
     AstVar* doneLVarp = nullptr;  // SAnd LHS done-latch
     AstVar* doneRVarp = nullptr;  // SAnd RHS done-latch
     AstNodeExpr* stateSigp = nullptr;  // Combinational state signal (owned during lowering)
@@ -1706,6 +1707,26 @@ class SvaNfaLowering final {
         // ring[idx]
         return new AstSel{flp, new AstVarRef{flp, ringp, access}, idxExprp, 1};
     }
+    static AstNodeExpr* delayRingAtLastIndex(FileLine* const flp, AstVar* const idxp,
+                                             const uint32_t size) {
+        return new AstEq{flp, new AstVarRef{flp, idxp, VAccess::READ},
+                         new AstConst{flp, AstConst::WidthedValue{}, 32, size - 1}};
+    }
+    static AstNodeExpr* delayRingOutput(FileLine* const flp, SvaStateVertex* const vtxp) {
+        AstVar* const idxp = vtxp->datap()->delayRingIdxVarp;
+        const uint32_t size = vtxp->m_delayRingSize;
+        AstNodeExpr* const outgoingIdxp = vtxp->m_isFixedDelayRing
+                                              ? new AstVarRef{flp, idxp, VAccess::READ}
+                                              : nextRingIndex(flp, idxp, size);
+        AstNodeExpr* outgoingValidp
+            = new AstVarRef{flp, vtxp->datap()->delayRingWrappedVarp, VAccess::READ};
+        if (!vtxp->m_isFixedDelayRing) {
+            outgoingValidp
+                = new AstLogOr{flp, outgoingValidp, delayRingAtLastIndex(flp, idxp, size)};
+        }
+        return new AstLogAnd{flp, outgoingValidp,
+                             delayRingBit(flp, vtxp->datap()->delayRingVarp, outgoingIdxp)};
+    }
     static AstNodeExpr* delayRingHasLiveBitsp(FileLine* const flp, AstVar* const liveCountVarp) {
         // active = live_count != 0;
         return new AstNeq{flp, new AstVarRef{flp, liveCountVarp, VAccess::READ},
@@ -1784,6 +1805,7 @@ class SvaNfaLowering final {
             AstVar* const ringp = vtxp->datap()->delayRingVarp;
             AstVar* const idxp = vtxp->datap()->delayRingIdxVarp;
             AstVar* const liveCountVarp = vtxp->datap()->delayRingLiveCountVarp;
+            AstVar* const wrappedp = vtxp->datap()->delayRingWrappedVarp;
             const uint32_t size = static_cast<uint32_t>(vtxp->m_delayRingSize);
 
             AstNodeExpr* incomingp = nullptr;
@@ -1815,16 +1837,23 @@ class SvaNfaLowering final {
             const int liveCountWidth = liveCountVarp->dtypep()->width();
             AstNodeExpr* const incomingIncrementp
                 = new AstExtend{c.flp, incomingp->cloneTreePure(false), liveCountWidth};
-            AstNodeExpr* const outgoingIdxp = vtxp->m_isFixedDelayRing
-                                                  ? new AstVarRef{c.flp, idxp, VAccess::READ}
-                                                  : nextRingIndex(c.flp, idxp, size);
-            AstSub* const nextLiveCountp = new AstSub{
-                c.flp,
-                new AstAdd{c.flp, new AstVarRef{c.flp, liveCountVarp, VAccess::READ},
-                           incomingIncrementp},
-                new AstExtend{c.flp, delayRingBit(c.flp, ringp, outgoingIdxp), liveCountWidth}};
+            AstNodeExpr* const outgoingp = delayRingOutput(c.flp, vtxp);
+            AstSub* const nextLiveCountp
+                = new AstSub{c.flp,
+                             new AstAdd{c.flp, new AstVarRef{c.flp, liveCountVarp, VAccess::READ},
+                                        incomingIncrementp},
+                             new AstExtend{c.flp, outgoingp, liveCountWidth}};
             updateBodyp->addNext(new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, liveCountVarp, VAccess::WRITE}, nextLiveCountp});
+            // wrapped <= wrapped || idx == size - 1;
+            updateBodyp->addNext(
+                new AstAssignDly{c.flp, new AstVarRef{c.flp, wrappedp, VAccess::WRITE},
+                                 new AstLogOr{c.flp, new AstVarRef{c.flp, wrappedp, VAccess::READ},
+                                              delayRingAtLastIndex(c.flp, idxp, size)}});
+            // idx <= next_idx;
+            updateBodyp->addNext(new AstAssignDly{c.flp,
+                                                  new AstVarRef{c.flp, idxp, VAccess::WRITE},
+                                                  nextRingIndex(c.flp, idxp, size)});
 
             AstNodeExpr* clearCondp = killActive(c);
             if (vtxp->m_delayRingClearCondp) {
@@ -1841,19 +1870,17 @@ class SvaNfaLowering final {
                                 : sampledp;
             }
             if (guardp) clearCondp = orExprs(c.flp, clearCondp, new AstLogNot{c.flp, guardp});
-            // ring <= '0; live_count <= 0;
-            AstConst* const zerop = new AstConst{c.flp, AstConst::DTyped{}, ringp->dtypep()};
-            zerop->num().setAllBits0();
-            AstAssignDly* const clearRingp
-                = new AstAssignDly{c.flp, new AstVarRef{c.flp, ringp, VAccess::WRITE}, zerop};
-            clearRingp->addNext(
-                new AstAssignDly{c.flp, new AstVarRef{c.flp, liveCountVarp, VAccess::WRITE},
-                                 newTypedConstp(c.flp, liveCountVarp->dtypep(), 0)});
-            updateBodyp = new AstIf{c.flp, clearCondp, clearRingp, updateBodyp};
-            // idx <= next_idx;
-            updateBodyp->addNext(new AstAssignDly{c.flp,
+            // Logically clear the ring without touching its wide storage.
+            AstAssignDly* const clearCountp
+                = new AstAssignDly{c.flp, new AstVarRef{c.flp, liveCountVarp, VAccess::WRITE},
+                                   newTypedConstp(c.flp, liveCountVarp->dtypep(), 0)};
+            clearCountp->addNext(new AstAssignDly{c.flp,
+                                                  new AstVarRef{c.flp, wrappedp, VAccess::WRITE},
+                                                  new AstConst{c.flp, AstConst::BitFalse{}}});
+            clearCountp->addNext(new AstAssignDly{c.flp,
                                                   new AstVarRef{c.flp, idxp, VAccess::WRITE},
-                                                  nextRingIndex(c.flp, idxp, size)});
+                                                  newTypedConstp(c.flp, idxp->dtypep(), 0)});
+            updateBodyp = new AstIf{c.flp, clearCondp, clearCountp, updateBodyp};
 
             m_modp->addStmtsp(new AstAlways{c.flp, VAlwaysKwd::ALWAYS,
                                             c.senTreep->cloneTree(false), updateBodyp});
@@ -1962,12 +1989,8 @@ class SvaNfaLowering final {
             if (tep->fromVtxp()->m_delayRingSize && !tep->fromVtxp()->m_isFixedDelayRing) {
                 sigs.terminalActivep
                     = orExprs(c.flp, sigs.terminalActivep, srcSigp->cloneTreePure(false));
-                AstVar* const ringp = c.vtx[fi]->datap()->delayRingVarp;
-                AstVar* const idxp = c.vtx[fi]->datap()->delayRingIdxVarp;
-                const uint32_t size = static_cast<uint32_t>(c.vtx[fi]->m_delayRingSize);
                 // reject |= ring[next_idx] && final_condition;
-                AstNodeExpr* expireContribp
-                    = delayRingBit(c.flp, ringp, nextRingIndex(c.flp, idxp, size));
+                AstNodeExpr* expireContribp = delayRingOutput(c.flp, tep->fromVtxp());
                 expireContribp = andCond(c.flp, expireContribp, tep->m_condp);
                 if (snapshotOkp) {
                     expireContribp
@@ -2141,9 +2164,7 @@ class SvaNfaLowering final {
             } else if (c.vtx[i]->datap()->delayRingVarp) {
                 if (c.vtx[i]->m_isFixedDelayRing) {
                     // state = ring[idx];
-                    c.vtx[i]->datap()->stateSigp = delayRingBit(
-                        c.flp, c.vtx[i]->datap()->delayRingVarp,
-                        new AstVarRef{c.flp, c.vtx[i]->datap()->delayRingIdxVarp, VAccess::READ});
+                    c.vtx[i]->datap()->stateSigp = delayRingOutput(c.flp, c.vtx[i]);
                 } else {
                     c.vtx[i]->datap()->stateSigp
                         = delayRingHasLiveBitsp(c.flp, c.vtx[i]->datap()->delayRingLiveCountVarp);
@@ -2395,6 +2416,11 @@ public:
                 liveCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(liveCountVarp);
                 vtx[i]->datap()->delayRingLiveCountVarp = liveCountVarp;
+                AstVar* const wrappedp = new AstVar{flp, VVarType::MODULETEMP, base + "_wrapped",
+                                                    m_modp->findBitDType()};
+                wrappedp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(wrappedp);
+                vtx[i]->datap()->delayRingWrappedVarp = wrappedp;
                 continue;
             }
             if (!vtx[i]->datap()->needsReg) continue;
