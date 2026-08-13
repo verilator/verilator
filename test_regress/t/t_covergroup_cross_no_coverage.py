@@ -13,7 +13,9 @@ test.scenarios('vlt_all')
 test.top_filename = 't/t_covergroup_cross.v'
 
 # runs without --coverage
-test.compile(verilator_flags2=['--Wno-COVERIGN'])
+# --Wno-ASCRANGE: cg_be / cg_be_arr intentionally declare ascending [0:N]
+# ("opposite-endian") vectors, which Verilator lints by default.
+test.compile(verilator_flags2=['--Wno-COVERIGN', '--Wno-ASCRANGE'])
 
 test.execute()
 
