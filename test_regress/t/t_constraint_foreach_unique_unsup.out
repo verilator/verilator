@@ -1,0 +1,11 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup.v:16:36: Unsupported: Unique constraint on randc array slice
+                                                                   : ... note: In instance 't'
+   16 |   constraint c2 {foreach (grid[i]) unique {grid[i]};}
+      |                                    ^~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup.v:22:36: Unsupported: Unique constraint on other than a 1-D array slice
+                                                                   : ... note: In instance 't'
+   22 |   constraint c1 {foreach (cube[i]) unique {cube[i]};}
+      |                                    ^~~~~~
+%Error: Exiting due to

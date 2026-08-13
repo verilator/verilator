@@ -2358,10 +2358,20 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
             iterateAndNextNull(nodep->bodyp());
-            AstNode* const bodyp
-                = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
-            nodep->replaceWith(new AstBegin{
-                fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
+            // Visiting the body may fully consume it without leaving a
+            // replacement -- e.g. an AstConstraintUnique that can't be expanded
+            // (unsupported shape) still unlinks and deletes itself, same as one
+            // that can. bodyp() can therefore be null here even though it
+            // wasn't before the iterate above.
+            AstNode* const rawBodyp
+                = nodep->bodyp() ? nodep->bodyp()->unlinkFrBackWithNext() : nullptr;
+            AstNode* const bodyp = prependDistPreamble(nodep, rawBodyp);
+            if (bodyp) {
+                nodep->replaceWith(new AstBegin{
+                    fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
+            } else {
+                nodep->unlinkFrBack();
+            }
         }
         UASSERT_OBJ(!nodep->user3p(), nodep, "Dist bucket preamble not injected into foreach");
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3530,9 +3540,79 @@ class RandomizeVisitor final : public VNVisitor {
                     VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
                 }
             } else if (exprItems.size() == 1 && !hasArrayVarRef) {
-                // A set of one element is unique whatever that element holds
-                uniquep->unlinkFrBack();
-                VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
+                // A single range-list item is not automatically a vacuous
+                // one-element set: unique{grid[i]} where grid[i] is itself an
+                // array (e.g. a row of a multi-dimensional array reached via a
+                // foreach-bound index) has sliceSize elements that need
+                // pairwise distinctness, same as an explicit unique{a,b,c}
+                // list. Only a true scalar item is vacuously unique.
+                AstNodeExpr* const soleItemp = exprItems[0];
+                AstNodeDType* const dtypep = soleItemp->dtypep()->skipRefp();
+                const AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType);
+                bool hasRandc = false;
+                soleItemp->foreach([&](const AstNodeVarRef* vrefp) {
+                    if (vrefp->varp()->isRandC()) hasRandc = true;
+                });
+                // Whenever this array-typed case can't be expanded, the uniquep
+                // node itself must be left in place (not unlinked) rather than
+                // just warned-and-dropped: if this is the only statement inside
+                // an enclosing foreach body, deleting it with nothing put back
+                // leaves that foreach with an empty body, which trips an
+                // unrelated, unconditional "constraint foreach without a body"
+                // assertion later in lowerDistConstraints(). Leaving the
+                // now-pointless node in place lets the later ConstraintExprVisitor
+                // pass see a non-empty body and warn/no-op on it there instead.
+                if (up && hasRandc) {
+                    // IEEE 1800-2023 18.5.4: "No randc variable shall appear in the group."
+                    uniquep->v3warn(CONSTRAINTIGN,
+                                    "Unsupported: Unique constraint on randc array slice");
+                } else if (up) {
+                    const AstNodeDType* const subp = up->subDTypep()->skipRefp();
+                    if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType)
+                        || VN_IS(subp, DynArrayDType) || VN_IS(subp, AssocArrayDType)
+                        || VN_IS(subp, WildcardArrayDType)) {
+                        uniquep->v3warn(CONSTRAINTIGN,
+                                        "Unsupported: Unique constraint on other than a "
+                                        "1-D array slice");
+                    } else {
+                        const uint32_t sliceSize = up->elementsConst();
+                        if (sliceSize > 100) {
+                            uniquep->v3warn(CONSTRAINTIGN,
+                                            "Unsupported: Unique constraint on array "
+                                            "slices of size > 100");
+                        } else {
+                            if (sliceSize >= 2) {
+                                FileLine* const fl = uniquep->fileline();
+                                for (uint32_t k1 = 0; k1 < sliceSize; ++k1) {
+                                    for (uint32_t k2 = k1 + 1; k2 < sliceSize; ++k2) {
+                                        AstNodeExpr* const lhsp = soleItemp->cloneTree(false);
+                                        AstNodeExpr* const rhsp = soleItemp->cloneTree(false);
+                                        lhsp->user1(true);
+                                        rhsp->user1(true);
+                                        AstArraySel* const lhsElemp
+                                            = new AstArraySel{fl, lhsp, static_cast<int>(k1)};
+                                        AstArraySel* const rhsElemp
+                                            = new AstArraySel{fl, rhsp, static_cast<int>(k2)};
+                                        lhsElemp->user1(true);
+                                        rhsElemp->user1(true);
+                                        AstNeq* const neqp = new AstNeq{fl, lhsElemp, rhsElemp};
+                                        neqp->user1(true);
+                                        AstConstraintExpr* const cexprp
+                                            = new AstConstraintExpr{fl, neqp};
+                                        uniquep->addNextHere(cexprp);
+                                    }
+                                }
+                            }
+                            // sliceSize < 2 is vacuously unique; nothing to add.
+                            uniquep->unlinkFrBack();
+                            VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
+                        }
+                    }
+                } else {
+                    // A true scalar is unique whatever it holds.
+                    uniquep->unlinkFrBack();
+                    VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
+                }
             }
             itemp = nextp;
         }
