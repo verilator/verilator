@@ -531,7 +531,9 @@ class ForkVisitor final : public VNVisitor {
 
     // STATE - for current AstFork item
     bool m_inFork = false;  // Traversal in an async fork
+    bool m_hasNestedFork = false;  // Branch being taskified contains a nested fork
     bool m_inInitStmt = false;  // Traversal in InitialStaticStmt/InitialAutomaticStmt
+    AstNodeFTask* m_ftaskp = nullptr;  // Enclosing function/task
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     AstArg* m_capturedArgsp = nullptr;  // References to captured variables (as args)
@@ -562,6 +564,8 @@ class ForkVisitor final : public VNVisitor {
     bool taskify(AstBegin* beginp) {
         // Visit statement to gather variables (And recursively process)
         VL_RESTORER_CLEAR(m_forkLocalsp);
+        VL_RESTORER(m_hasNestedFork);
+        m_hasNestedFork = false;
         VL_RESTORER(m_capturedVarsp);
         VL_RESTORER(m_capturedArgsp);
         m_capturedVarsp = nullptr;
@@ -575,6 +579,11 @@ class ForkVisitor final : public VNVisitor {
         FileLine* const flp = beginp->fileline();
         const std::string name = "__VforkTask_" + std::to_string(m_nForkTasks++);
         AstTask* const taskp = new AstTask{flp, name, m_capturedVarsp};
+        // A branch that spawns another process must hand its captured variables over to it
+        if (m_hasNestedFork) {
+            taskp->classMethod(VN_IS(m_modp, Class));
+            taskp->isStatic(m_ftaskp && m_ftaskp->isStatic());
+        }
         m_tasksp = AstNode::addNext(m_tasksp, taskp);
         if (beginp->declsp()) taskp->addStmtsp(beginp->declsp()->unlinkFrBackWithNext());
         if (beginp->stmtsp()) taskp->addStmtsp(beginp->stmtsp()->unlinkFrBackWithNext());
@@ -653,6 +662,7 @@ class ForkVisitor final : public VNVisitor {
     }
 
     void visit(AstFork* nodep) override {
+        m_hasNestedFork = true;
         // IEEE 1800-2023 9.3.2: In all cases, processes spawned by a fork-join block shall not
         // start executing until the parent process is blocked or terminates. Because join and
         // join_any block the parent process, deferring branch start with a synthetic #0 delay is
@@ -701,6 +711,11 @@ class ForkVisitor final : public VNVisitor {
         }
         // Analyze replacements in context of enclosing fork
         for (AstBegin* const beginp : wrappedp) iterateAndNextNull(beginp);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
         if (m_inFork) m_forkLocalsp.insert(nodep);
