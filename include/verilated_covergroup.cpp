@@ -33,32 +33,30 @@ void VlCoverpoint::init(const char* hier, uint32_t atLeast, int nBins) {
     m_total = nBins;
     m_counts.assign(nBins, 0);
     m_crossIdx.assign(nBins, -1);
+    m_crossToBin.clear();
 }
 
 void VlCoverpoint::addNamer(VlCovBinKind set, int count, VlCovBinNaming naming, const char* name,
                             const char* file, int line, int col) {
     m_namers.emplace_back(set, count, m_nextBase, naming, name, file, line, col);
     if (set == VlCovBinKind::KIND_NORMAL) {
-        // Assign each Normal bin its cross index (Normal-only re-indexing); ignore/
-        // illegal/default bins keep -1 and never enter a cross.
-        for (int b = m_nextBase; b < m_nextBase + count; ++b) m_crossIdx[b] = m_nextCrossIdx++;
+        // Assign each Normal bin a cross index, and record the inverse map.
+        for (int b = m_nextBase; b < m_nextBase + count; ++b) {
+            m_crossIdx[b] = static_cast<int>(m_crossToBin.size());
+            m_crossToBin.push_back(b);
+        }
         m_normal += count;
     }
     m_nextBase += count;
 }
 
 std::string VlCoverpoint::normalBinName(int crossIdx) const {
-    // Map a cross (Normal-only) index back to its full bin index, then build its name.
-    // Called only at cross registration, so a linear scan is acceptable.
-    for (int i = 0; i < m_total; ++i) {
-        if (m_crossIdx[i] == crossIdx) return binName(i);
-    }
-    VL_UNREACHABLE;  // LCOV_EXCL_LINE
+    // Build the bin name based on the bin index
+    return binName(m_crossToBin[crossIdx]);
 }
 
 const VlCovNamer& VlCoverpoint::namerFor(int i) const {
-    // Namers are appended in ascending, contiguous index order covering [0, m_total),
-    // and i is always a valid bin index, so the matching namer always exists.
+    // Namers are appended in ascending order covering [0, m_total),
     for (const VlCovNamer& nm : m_namers) {
         if (i < nm.base() + nm.count()) return nm;
     }

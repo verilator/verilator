@@ -27,6 +27,7 @@
 #include "V3Covergroup.h"
 
 #include "V3Const.h"
+#include "V3File.h"
 #include "V3MemberMap.h"
 
 #include <set>
@@ -99,10 +100,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             for (AstNode* itemp = crossp->itemsp(); itemp; itemp = itemp->nextp()) {
                 const AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
                 if (refp->exprp()) continue;  // hierarchical ref: dropped in generateCrossCode
-                if (m_coverpointMap.find(refp->name()) == m_coverpointMap.end())
+                if (m_coverpointMap.find(refp->name()) == m_coverpointMap.end()) {
                     m_droppedCrosses.insert(crossp);  // bare variable: drop this cross only
-                else
+                } else {
                     m_crossedCpNames.insert(refp->name());
+                }
             }
         }
 
@@ -532,35 +534,38 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return typep;
     }
 
-    // Constant bounds of one rangesp() element (an InsideRange or a single Const).
+    // Constant bounds of one rangesp() element (an InsideRange or a single Const).  Each bound is
+    // the raw AST node -- an AstConst or an AstUnbounded ('$') -- with the const/unbounded view
+    // derived on demand, so there is one source of truth per bound.  After a successful
+    // constRangeBounds() neither node is null; a single Const has both bounds aliasing one node.
     struct RangeBounds final {
-        AstConst* lc = nullptr;  // low-bound const (null iff loUnb)
-        AstConst* hc = nullptr;  // high-bound const (null iff hiUnb)
-        bool loUnb = false;  // low bound is '$'
-        bool hiUnb = false;  // high bound is '$'
+        AstNode* loNodep = nullptr;  // low bound: AstConst or AstUnbounded
+        AstNode* hiNodep = nullptr;  // high bound: AstConst or AstUnbounded
+        bool loUnbounded() const { return VN_IS(loNodep, Unbounded); }
+        bool hiUnbounded() const { return VN_IS(hiNodep, Unbounded); }
+        AstConst* loConstp() const { return VN_CAST(loNodep, Const); }
+        AstConst* hiConstp() const { return VN_CAST(hiNodep, Const); }
     };
 
     // Decode one rangesp() element into its constant bounds.  Returns false if rp is neither an
     // InsideRange nor a single Const, or if a present bound is non-constant or 4-state.  '$'
-    // bounds are flagged (loUnb/hiUnb), not resolved -- the caller applies its own policy.
+    // bounds are left as AstUnbounded (not resolved) -- the caller applies its own policy.
     // Centralizes the InsideRange/Const/Unbounded decode shared by the hit-list-bound paths.
     static bool constRangeBounds(AstNode* rp, RangeBounds& rb) {
         if (AstInsideRange* const irp = VN_CAST(rp, InsideRange)) {
-            rb.loUnb = VN_IS(irp->lhsp(), Unbounded);
-            rb.hiUnb = VN_IS(irp->rhsp(), Unbounded);
-            rb.lc = VN_CAST(irp->lhsp(), Const);
-            rb.hc = VN_CAST(irp->rhsp(), Const);
-            if ((!rb.lc && !rb.loUnb) || (!rb.hc && !rb.hiUnb)) return false;
-            if ((rb.lc && rb.lc->num().isFourState()) || (rb.hc && rb.hc->num().isFourState()))
-                return false;
-            return true;
+            rb.loNodep = irp->lhsp();
+            rb.hiNodep = irp->rhsp();
+        } else if (AstConst* const cp = VN_CAST(rp, Const)) {
+            rb.loNodep = rb.hiNodep = cp;
+        } else {
+            return false;
         }
-        if (AstConst* const cp = VN_CAST(rp, Const)) {
-            if (cp->num().isFourState()) return false;
-            rb.lc = rb.hc = cp;
-            return true;
-        }
-        return false;
+        // Each bound must be a constant unless it is '$'; reject non-const and 4-state.
+        AstConst* const lc = rb.loConstp();
+        AstConst* const hc = rb.hiConstp();
+        if ((!lc && !rb.loUnbounded()) || (!hc && !rb.hiUnbounded())) return false;
+        if ((lc && lc->num().isFourState()) || (hc && hc->num().isFourState())) return false;
+        return true;
     }
 
     // Collect the covered value intervals of a single (non-array) Normal bin.  Returns false
@@ -571,8 +576,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstNode* rp = cbinp->rangesp(); rp; rp = rp->nextp()) {
             RangeBounds rb;
             if (!constRangeBounds(rp, rb)) return false;
-            const uint64_t lo = rb.loUnb ? 0 : rb.lc->toUQuad();
-            const uint64_t hi = rb.hiUnb ? maxVal : rb.hc->toUQuad();
+            const uint64_t lo = rb.loUnbounded() ? 0 : rb.loConstp()->toUQuad();
+            const uint64_t hi = rb.hiUnbounded() ? maxVal : rb.hiConstp()->toUQuad();
             if (lo > hi) return false;
             out.emplace_back(lo, hi);
         }
@@ -587,26 +592,32 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     bool appendBinCrossSlots(AstCoverBin* cbinp, uint64_t maxVal,
                              std::vector<std::vector<std::pair<uint64_t, uint64_t>>>& bins,
                              int& slotCount) {
-        if (!cbinp->isArray()) {
-            ++slotCount;
-            std::vector<std::pair<uint64_t, uint64_t>> ivs;
-            if (cbinp->isWildcard() || !extractRangeIntervals(cbinp, maxVal, ivs)) return false;
-            bins.push_back(std::move(ivs));
-            return true;
-        }
-        // Array bin: each element value is its own single-value Normal bin.  '$'-bounded or
-        // non-constant elements can't be enumerated, so they count one slot but lose exactness.
+        if (cbinp->isArray()) return appendArrayBinCrossSlots(cbinp, bins, slotCount);
+        // Non-array bin: one slot covering the union of its intervals.
+        ++slotCount;
+        std::vector<std::pair<uint64_t, uint64_t>> ivs;
+        if (cbinp->isWildcard() || !extractRangeIntervals(cbinp, maxVal, ivs)) return false;
+        bins.push_back(std::move(ivs));
+        return true;
+    }
+
+    // Append the cross slots of an array Normal bin: each element value is its own single-value
+    // Normal bin.  '$'-bounded or non-constant elements can't be enumerated, so they count one
+    // slot but lose exactness.  Returns false if any element wasn't enumerable to exact values.
+    bool appendArrayBinCrossSlots(AstCoverBin* cbinp,
+                                  std::vector<std::vector<std::pair<uint64_t, uint64_t>>>& bins,
+                                  int& slotCount) {
         bool exact = true;
         for (AstNode* rp = cbinp->rangesp(); rp; rp = rp->nextp()) {
             RangeBounds rb;
-            if (!constRangeBounds(rp, rb) || rb.loUnb || rb.hiUnb) {
+            if (!constRangeBounds(rp, rb) || rb.loUnbounded() || rb.hiUnbounded()) {
                 ++slotCount;
                 exact = false;
-            } else if (rb.lc == rb.hc) {  // single Const element (lc/hc alias the same node)
+            } else if (rb.loNodep == rb.hiNodep) {  // single Const element (both alias one node)
                 ++slotCount;
-                bins.push_back({{rb.lc->toUQuad(), rb.lc->toUQuad()}});
+                bins.push_back({{rb.loConstp()->toUQuad(), rb.loConstp()->toUQuad()}});
             } else {  // [lo:hi] range: one single-value slot per enumerated value
-                for (int64_t v = rb.lc->toSInt(); v <= rb.hc->toSInt(); ++v) {
+                for (int64_t v = rb.loConstp()->toSInt(); v <= rb.hiConstp()->toSInt(); ++v) {
                     ++slotCount;
                     bins.push_back({{static_cast<uint64_t>(v), static_cast<uint64_t>(v)}});
                 }
@@ -728,15 +739,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = binp->fileline();
         AstCStmt* const cs = new AstCStmt{fl};
         cs->add(memberRef(fl, cpVarp));
-        const std::string loc = "\"" + std::string{fl->filename()} + "\", "
+        // Under --protect-ids the filename and bin name flow into the coverage database
+        // verbatim, so obfuscate them exactly as line/toggle coverage points are (whole-
+        // unit filename, per-word bin name).  A no-op when --protect-ids is off.
+        const bool prot = v3Global.opt.protectIds();
+        const std::string loc = "\"" + VIdProtect::protectIf(fl->filename(), prot) + "\", "
                                 + std::to_string(fl->lineno()) + ", "
                                 + std::to_string(fl->firstColumn()) + ");";
+        const std::string binName = VIdProtect::protectWordsIf(binp->name(), prot);
         if (count < 0) {  // single bin
             cs->add(".addSingleNamer(" + std::string{binp->binsType().binSetEnum()} + ", \""
-                    + binp->name() + "\", " + loc);
+                    + binName + "\", " + loc);
         } else {  // value array bin
             cs->add(".addArrayNamer(" + std::string{binp->binsType().binSetEnum()} + ", "
-                    + std::to_string(count) + ", \"" + binp->name() + "\", " + loc);
+                    + std::to_string(count) + ", \"" + binName + "\", " + loc);
         }
         return cs;
     }
@@ -882,8 +898,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                               exprp->cloneTree(false)});
         }
 
-        // Constructor: init (allocates), namers, then registration (under --coverage)
-        const std::string hier = m_covergroupp->name() + "." + coverpointp->name();
+        // Constructor: init (allocates), namers, then registration (under --coverage).
+        // Under --protect-ids the hierarchy and page string reach the coverage database
+        // verbatim, so obfuscate them like line/toggle points (per-word hierarchy, whole-
+        // unit page).  No-ops when --protect-ids is off.
+        const bool prot = v3Global.opt.protectIds();
+        const std::string hier = VIdProtect::protectWordsIf(
+            m_covergroupp->name() + "." + coverpointp->name(), prot);
         AstCStmt* const initp = new AstCStmt{fl};
         initp->add(memberRef(fl, cpVarp));
         initp->add(".init(\"" + hier + "\", " + std::to_string(atLeastValue) + ", "
@@ -891,10 +912,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_constructorp->addStmtsp(initp);
         for (AstCStmt* const ns : namerStmts) m_constructorp->addStmtsp(ns);
         if (v3Global.opt.coverage()) {
+            const std::string page
+                = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
             AstCStmt* const regp = new AstCStmt{fl};
             regp->add(memberRef(fl, cpVarp));
-            regp->add(".registerBins(vlSymsp->_vm_contextp__->coveragep(), \"v_covergroup/"
-                      + m_covergroupp->name() + "\");");
+            regp->add(".registerBins(vlSymsp->_vm_contextp__->coveragep(), \"" + page + "\");");
             m_constructorp->addStmtsp(regp);
         }
     }
@@ -1215,17 +1237,21 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_crossVars.push_back(cxVarp);
 
         // Constructor: init (after the coverpoints, which generate earlier) then registration.
-        const std::string hier = m_covergroupp->name() + "." + crossp->name();
-        const std::string initCall = ".init(\"" + hier + "\", " + std::to_string(dims)
-                                     + ", __Vcx_cps, \"" + std::string{fl->filename()} + "\", "
-                                     + std::to_string(fl->lineno()) + ", "
-                                     + std::to_string(fl->firstColumn()) + ");";
+        // Obfuscate the hierarchy/filename/page under --protect-ids as for coverpoints above.
+        const bool prot = v3Global.opt.protectIds();
+        const std::string hier
+            = VIdProtect::protectWordsIf(m_covergroupp->name() + "." + crossp->name(), prot);
+        const std::string initCall
+            = ".init(\"" + hier + "\", " + std::to_string(dims) + ", __Vcx_cps, \""
+              + VIdProtect::protectIf(fl->filename(), prot) + "\", " + std::to_string(fl->lineno())
+              + ", " + std::to_string(fl->firstColumn()) + ");";
         m_constructorp->addStmtsp(makeCrossCpsCall(fl, cpVars, cxVarp, initCall));
         if (v3Global.opt.coverage()) {
+            const std::string page
+                = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
             AstCStmt* const regp = new AstCStmt{fl};
             regp->add(memberRef(fl, cxVarp));
-            regp->add(".registerBins(vlSymsp->_vm_contextp__->coveragep(), \"v_covergroup/"
-                      + m_covergroupp->name() + "\");");
+            regp->add(".registerBins(vlSymsp->_vm_contextp__->coveragep(), \"" + page + "\");");
             m_constructorp->addStmtsp(regp);
         }
 
@@ -1260,9 +1286,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             for (AstNode* itemp = crossp->itemsp(); itemp; itemp = itemp->nextp()) {
                 const AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
                 if (m_coverpointMap.find(refp->name()) == m_coverpointMap.end()) {
-                    refp->v3warn(COVERIGN, "Unsupported: cross of '"
-                                               << refp->prettyName()
-                                               << "' which is not a coverpoint (implicit "
+                    refp->v3warn(COVERIGN, "Unsupported: cross of "
+                                               << refp->prettyNameQ()
+                                               << " which is not a coverpoint (implicit "
                                                   "coverpoint)");
                     break;
                 }

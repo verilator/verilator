@@ -20,6 +20,13 @@ module t;
   logic [3:0] state;
   logic [3:0] val;
 
+  // Ascending ("opposite-endian") bit ranges: bit 0 is the MSB.  Bit ordering must
+  // not change coverage results: range bins operate on the sampled value, so an
+  // ascending-declared coverpoint produces identical hit counts to the usual
+  // descending declaration.  Requires -Wno-ASCRANGE.
+  logic [0:1] be_addr;
+  logic [0:0] be_cmd;
+
   typedef struct packed {logic m_p; logic h_mode;} cfg_t;
   cfg_t s_cfg = '0;
 
@@ -222,6 +229,23 @@ module t;
     tx: cross cp_t, cp_v;
   endgroup
 
+  // Range bins over an ascending-declared coverpoint, crossed with another: the
+  // range interval extraction must ignore bit endianness (mirror of cg_range).
+  covergroup cg_be;
+    cp_addr: coverpoint be_addr {bins lo = {[0 : 1]}; bins hi = {[2 : 3]};}
+    cp_cmd: coverpoint be_cmd {bins read = {0}; bins write = {1};}
+    x: cross cp_addr, cp_cmd;
+  endgroup
+
+  // Array range bin over an ascending-declared coverpoint: {[0:1]} enumerates to
+  // av[0]=0, av[1]=1, exercising array-range slot enumeration under opposite
+  // endian (mirror of cg_arr_range).
+  covergroup cg_be_arr;
+    cp_addr: coverpoint be_addr {bins av[] = {[0 : 1]};}
+    cp_cmd: coverpoint be_cmd {bins read = {0}; bins write = {1};}
+    ax: cross cp_addr, cp_cmd;
+  endgroup
+
   cg2 cg2_inst = new;
   cg_ignore cg_ignore_inst = new;
   cg_range cg_range_inst = new;
@@ -245,6 +269,8 @@ module t;
   cg_inv cg_inv_inst = new;
   cg_noNormal cg_noNormal_inst = new;
   cg_trans cg_trans_inst = new;
+  cg_be cg_be_inst = new;
+  cg_be_arr cg_be_arr_inst = new;
 
   initial begin
     // Sample 2-way: hit all 4 combinations
@@ -508,6 +534,25 @@ module t;
     state = 1; val = 5; cg_trans_inst.sample();  // prev=0,cur=1: t01 completes; t01_x_v5
     state = 0; val = 6; cg_trans_inst.sample();  // prev=1,cur=0: no t01; v6 (no cross)
     `checkr(cg_trans_inst.get_inst_coverage(), 80.0);  // 4/5: t01_x_v6 not hit
+
+    // Sample cg_be: range bins over an ascending-declared coverpoint; cross 2x2
+    // cg_be: 2+2+4=8 bins; endianness must not change results (mirror of cg_range)
+    be_addr = 0; be_cmd = 0; cg_be_inst.sample();  // lo x read
+    `checkr(cg_be_inst.get_inst_coverage(), 37.5);  // 3/8
+    be_addr = 2; be_cmd = 1; cg_be_inst.sample();  // hi x write
+    `checkr(cg_be_inst.get_inst_coverage(), 75.0);  // 6/8
+    be_addr = 1; be_cmd = 1; cg_be_inst.sample();  // lo x write
+    `checkr(cg_be_inst.get_inst_coverage(), 87.5);  // 7/8
+    be_addr = 3; be_cmd = 0; cg_be_inst.sample();  // hi x read
+    `checkr(cg_be_inst.get_inst_coverage(), 100.0);  // 8/8
+
+    // Sample cg_be_arr: array range bin over an ascending-declared coverpoint; cross 2x2
+    // cg_be_arr: 2+2+4=8 bins; sample all combinations -> 100%
+    be_addr = 0; be_cmd = 0; cg_be_arr_inst.sample();  // av[0] x read
+    be_addr = 0; be_cmd = 1; cg_be_arr_inst.sample();  // av[0] x write
+    be_addr = 1; be_cmd = 0; cg_be_arr_inst.sample();  // av[1] x read
+    be_addr = 1; be_cmd = 1; cg_be_arr_inst.sample();  // av[1] x write
+    `checkr(cg_be_arr_inst.get_inst_coverage(), 100.0);  // 8/8
 
     $write("*-* All Finished *-*\n");
     $finish;

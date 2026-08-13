@@ -86,6 +86,22 @@ cg_at_least.cp_addr.addr0: 1
 cg_at_least.cp_addr.addr1: 1
 cg_at_least.cp_cmd.read: 1
 cg_at_least.cp_cmd.write: 1
+cg_be.cp_addr.hi: 2
+cg_be.cp_addr.lo: 2
+cg_be.cp_cmd.read: 2
+cg_be.cp_cmd.write: 2
+cg_be.x.hi_x_read [cross]: 1
+cg_be.x.hi_x_write [cross]: 1
+cg_be.x.lo_x_read [cross]: 1
+cg_be.x.lo_x_write [cross]: 1
+cg_be_arr.ax.av[0]_x_read [cross]: 1
+cg_be_arr.ax.av[0]_x_write [cross]: 1
+cg_be_arr.ax.av[1]_x_read [cross]: 1
+cg_be_arr.ax.av[1]_x_write [cross]: 1
+cg_be_arr.cp_addr.av[0]: 2
+cg_be_arr.cp_addr.av[1]: 2
+cg_be_arr.cp_cmd.read: 2
+cg_be_arr.cp_cmd.write: 2
 cg_def_cross.axc.a0_x_read [cross]: 1
 cg_def_cross.axc.a0_x_write [cross]: 0
 cg_def_cross.axc.a1_x_read [cross]: 0

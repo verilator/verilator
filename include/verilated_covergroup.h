@@ -98,11 +98,12 @@ protected:
     int m_total = 0;  // bins across all sets
     int m_normal = 0;  // Normal bins (coverage denominator)
     int m_nextBase = 0;  // running append cursor
-    int m_nextCrossIdx = 0;  // running cross-index cursor (Normal bins only)
     std::vector<uint32_t> m_counts;  // [m_total], one per bin
     std::vector<VlCovNamer> m_namers;  // appended in declaration order
-    std::vector<int>
-        m_crossIdx;  // [m_total] full bin idx -> cross idx (Normal-only), -1 otherwise
+    // [m_total] full bin idx -> cross idx (Normal-only), -1 otherwise
+    std::vector<int> m_crossIdx;
+    // [m_normal] inverse of m_crossIdx: cross idx -> full bin idx, appended in cross-index order
+    std::vector<int> m_crossToBin;
     int m_hitCount = 0;  // entries valid in the hit list this sample
 
 private:
@@ -203,16 +204,16 @@ public:
 class VlCoverCross final : public VlCoverpointIf {
     // MEMBERS
     std::string m_hier;  // "covergroup.cross"
-    const char* m_file = nullptr;  // cross declaration file (registration metadata)
-    int m_line = 0;  // cross declaration line
-    int m_col = 0;  // cross declaration column
-    int m_dims = 0;  // number of feeding coverpoints
-    int64_t m_numAutoBins = 0;  // product of per-dim Normal bin counts
-    int m_numCovered = 0;  // distinct bins hit >= 1 (maintained incrementally)
+    const char* m_file = nullptr;  // Cross declaration file (registration metadata)
+    int m_line = 0;  // Cross declaration line
+    int m_col = 0;  // Cross declaration column
+    int m_dims = 0;  // Number of feeding coverpoints
+    int64_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
+    int m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
     std::vector<int> m_cpBinCounts;  // [m_dims] Normal bin count per dimension
-    std::vector<int64_t> m_stride;  // [m_dims] flat-index stride per dimension
-    std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] per-bin hit counts
-    std::vector<VlCoverpoint*> m_cps;  // feeding coverpoints (the only name source)
+    std::vector<int64_t> m_stride;  // [m_dims] Flat-index stride per dimension
+    std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] Per-bin hit counts
+    std::vector<VlCoverpoint*> m_cps;  // Feeding coverpoints (the only name source)
 
     // PRIVATE METHODS
     void iterateProduct(VlCoverpoint* const* cps, int dim, int64_t baseIdx);
