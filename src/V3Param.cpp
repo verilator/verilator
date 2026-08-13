@@ -2653,6 +2653,7 @@ class ParamVisitor final : public VNVisitor {
     VarsByName m_modIfaceRefs;  // Interface-ref Vars in current module, keyed by name
     bool m_modIfaceRefsDone = false;  // m_modIfaceRefs has been gathered for m_modp
     string m_generateHierName;  // Generate portion of hierarchy name
+    bool m_inGenerateCond = false;  // Traversing a generate condition; see iterateGenerateCond
 
     // METHODS
 
@@ -2962,7 +2963,9 @@ class ParamVisitor final : public VNVisitor {
 
         // Visit parameters in the instantiation.
         iterateChildren(nodep);
-        m_cellps.emplace(!isIface, nodep);
+        // A generate condition is folded and deleted before the drain loop runs, so
+        // queueing from one only leaves a dangling pointer.  See iterateGenerateCond.
+        if (!m_inGenerateCond) m_cellps.emplace(!isIface, nodep);
     }
 
     // VISITORS
@@ -3373,9 +3376,22 @@ class ParamVisitor final : public VNVisitor {
     }
 
     // Generate Statements
+
+    // Traverse a generate condition (if/case expression, for init/cond/inc).
+    //
+    // m_cellps assumes a queued ref outlives the drain loop, which holds elsewhere
+    // because deletion is deferred.  A generate condition doesn't defer and folds
+    // immediately, so we can't queue. Anything queued here would be left dangling.
+    // Refs in the surviving arm are queued when it is recursed.
+    void iterateGenerateCond(AstNode* nodep) {
+        VL_RESTORER(m_inGenerateCond);
+        m_inGenerateCond = true;
+        iterateAndNextNull(nodep);
+    }
+
     void visit(AstGenIf* nodep) override {
         UINFO(9, "  GENIF " << nodep);
-        iterateAndNextNull(nodep->condp());
+        iterateGenerateCond(nodep->condp());
         // condp may reference deferred lparams whose Dot is still pending;
         // resolve them so widthing/constify can see Consts.
         m_processor.resolveDeferredDotsReachableFrom(nodep->condp(), m_modp);
@@ -3411,9 +3427,9 @@ class ParamVisitor final : public VNVisitor {
             UINFO(9, "  BEGIN " << nodep);
             UINFO(9, "  GENFOR " << forp);
             // Visit child nodes before unrolling
-            iterateAndNextNull(forp->initsp());
-            iterateAndNextNull(forp->condp());
-            iterateAndNextNull(forp->incsp());
+            iterateGenerateCond(forp->initsp());
+            iterateGenerateCond(forp->condp());
+            iterateGenerateCond(forp->incsp());
             // Cond/init/inc may reference deferred lparams whose Dot is still
             // pending; resolve them so widthing/constify can see Consts.
             m_processor.resolveDeferredDotsReachableFrom(forp, m_modp);
@@ -3448,7 +3464,7 @@ class ParamVisitor final : public VNVisitor {
         UINFO(9, "  GENCASE " << nodep);
         bool hit = false;
         AstNode* keepp = nullptr;
-        iterateAndNextNull(nodep->exprp());
+        iterateGenerateCond(nodep->exprp());
         V3Case::caseLint(nodep);
         // expr / case items may reference deferred lparams whose Dot is still
         // pending; resolve them so widthing/constify can see Consts.
@@ -3462,7 +3478,7 @@ class ParamVisitor final : public VNVisitor {
              itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
             for (AstNode* ep = itemp->condsp(); ep;) {
                 AstNode* const nextp = ep->nextp();  // May edit list
-                iterateAndNextNull(ep);
+                iterateGenerateCond(ep);
                 VL_DO_DANGLING(V3Const::constifyParamsEdit(ep), ep);  // ep may change
                 ep = nextp;
             }
