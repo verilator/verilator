@@ -34,5 +34,3 @@ test.file_grep_not(test.coverage_filename, r't_covergroup_cross_protect')
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "__idmap.xml", r'to="PS')
 
 test.passes()
-
-
