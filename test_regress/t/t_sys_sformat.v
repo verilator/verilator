@@ -43,9 +43,7 @@ module t (
   int mem[2] = '{1, 2};
   string s;
 
-  typedef struct{
-    integer dummy;
-  } test_struct_t;
+  typedef struct {integer dummy;} test_struct_t;
 
   test_struct_t structs[1];
 

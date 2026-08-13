@@ -4,7 +4,14 @@
 // SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t(b, si, i, li, w3, w4);
+module t (
+    b,
+    si,
+    i,
+    li,
+    w3,
+    w4
+);
   output b;  // Output before type
   output si;
   byte b;
