@@ -121,7 +121,7 @@ namespace VerilatedDpi {
 
 namespace {
 static thread_local struct {
-    char* m_filename{};
+    const char* m_filename{};
     int m_lineno{};
     bool m_inFuncContext{false};
 } s_fileline;
