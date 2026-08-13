@@ -3458,7 +3458,7 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
     }
 }
 void AstClassOrPackageRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
+AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp(const bool doRefs) const {
     AstNode* foundp = m_classOrPackageNodep;
     AstNode* lastp = nullptr;
     while (foundp != lastp) {
@@ -3466,11 +3466,12 @@ AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
         if (AstNodeDType* const anodep = VN_CAST(foundp, NodeDType)) {
             foundp = anodep->skipRefOrNullp();
         }
-        if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
-            foundp = anodep->subDTypep();
-        }
-        if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
-            foundp = anodep->classp();
+        if (doRefs) {
+            if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
+                foundp = anodep->subDTypep();
+            } else if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
+                foundp = anodep->classp();
+            }
         }
     }
     return VN_CAST(foundp, NodeModule);

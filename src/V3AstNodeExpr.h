@@ -905,7 +905,7 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     // There's no classOrPackagep(); use classOrPackageNodep() to get Node,
     // or iterating to package with classOrPackageSkipp()
-    AstNodeModule* classOrPackageSkipp() const;
+    AstNodeModule* classOrPackageSkipp(const bool doRefs = true) const;
     AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
     void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
     void classOrPackagep(AstNodeModule* nodep) {
