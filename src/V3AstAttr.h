@@ -856,15 +856,15 @@ inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
 //
 // {Mnemonic, C++ function, pure}
 #define V3AST_VCFUNCTION_ITEMDATA_DECL \
-    VCFunction::Item VCFunction::s_itemData[] = { \
-        {_NONE, "_none", false}, \
-        {CALL_IMPORT_IN_FIBER, "VerilatedDpi::callImportFiber", false}, \
-        {AWAIT_EXPORT_IN_FIBER, "VerilatedDpi::awaitExportFiber", false}, \
-        {CALL_IMPORT_FUNCTION, "VerilatedDpi::callImportFunction", false}, \
-        {CALL_IMPORT_TASK, "VerilatedDpi::callImportTask", false}, \
-        {AWAIT_EXPORT_FUNCTION, "VerilatedDpi::awaitExportFunction", false}, \
-        {AWAIT_EXPORT_TASK, "VerilatedDpi::awaitExportTask", false}, \
-        {_ENUM_MAX, "_ENUM_MAX", false}};
+    VCFunction::Item VCFunction::s_itemData[] \
+        = {{_NONE, "_none", false}, \
+           {CALL_IMPORT_IN_FIBER, "VerilatedDpi::callImportFiber", false}, \
+           {AWAIT_EXPORT_IN_FIBER, "VerilatedDpi::awaitExportFiber", false}, \
+           {CALL_IMPORT_FUNCTION, "VerilatedDpi::callImportFunction", false}, \
+           {CALL_IMPORT_TASK, "VerilatedDpi::callImportTask", false}, \
+           {AWAIT_EXPORT_FUNCTION, "VerilatedDpi::awaitExportFunction", false}, \
+           {AWAIT_EXPORT_TASK, "VerilatedDpi::awaitExportTask", false}, \
+           {_ENUM_MAX, "_ENUM_MAX", false}};
 
 class VCMethod final {
 public:
