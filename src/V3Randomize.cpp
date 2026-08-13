@@ -2358,10 +2358,18 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
             iterateAndNextNull(nodep->bodyp());
-            AstNode* const bodyp
-                = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
-            nodep->replaceWith(new AstBegin{
-                fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
+            // bodyp() may now be null: visiting it can fully consume it
+            // without leaving a replacement (e.g. an unexpandable
+            // AstConstraintUnique deletes itself).
+            AstNode* const rawBodyp
+                = nodep->bodyp() ? nodep->bodyp()->unlinkFrBackWithNext() : nullptr;
+            AstNode* const bodyp = prependDistPreamble(nodep, rawBodyp);
+            if (bodyp) {
+                nodep->replaceWith(new AstBegin{
+                    fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
+            } else {
+                nodep->unlinkFrBack();
+            }
         }
         UASSERT_OBJ(!nodep->user3p(), nodep, "Dist bucket preamble not injected into foreach");
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3530,9 +3538,61 @@ class RandomizeVisitor final : public VNVisitor {
                     VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
                 }
             } else if (exprItems.size() == 1 && !hasArrayVarRef) {
-                // A set of one element is unique whatever that element holds
-                uniquep->unlinkFrBack();
-                VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
+                // A single array-typed item (e.g. a foreach-indexed row) has
+                // multiple leaf elements, so it's not automatically vacuous
+                // the way a single scalar is.
+                AstNodeExpr* const soleItemp = exprItems[0];
+                AstNodeDType* const dtypep = soleItemp->dtypep()->skipRefp();
+                const AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType);
+                bool hasRandc = false;
+                soleItemp->foreach([&](const AstNodeVarRef* vrefp) {
+                    if (vrefp->varp()->isRandC()) hasRandc = true;
+                });
+                if (up && hasRandc) {
+                    uniquep->v3error("No randc variable shall appear in a unique group (IEEE "
+                                     "1800-2023 18.5.4)");
+                } else if (up) {
+                    const AstNodeDType* const subp = up->subDTypep()->skipRefp();
+                    if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType)
+                        || VN_IS(subp, DynArrayDType) || VN_IS(subp, AssocArrayDType)
+                        || VN_IS(subp, WildcardArrayDType)) {
+                        uniquep->v3warn(CONSTRAINTIGN,
+                                        "Unsupported: Unique constraint on other than a "
+                                        "1-D array slice");
+                    } else if (up->elementsConst() > 100) {
+                        uniquep->v3warn(
+                            CONSTRAINTIGN,
+                            "Unsupported: Unique constraint on array slices of size > 100");
+                    } else if (up->elementsConst() >= 2) {
+                        const uint32_t sliceSize = up->elementsConst();
+                        FileLine* const fl = uniquep->fileline();
+                        for (uint32_t k1 = 0; k1 < sliceSize; ++k1) {
+                            for (uint32_t k2 = k1 + 1; k2 < sliceSize; ++k2) {
+                                AstNodeExpr* const lhsp = soleItemp->cloneTree(false);
+                                AstNodeExpr* const rhsp = soleItemp->cloneTree(false);
+                                lhsp->user1(true);
+                                rhsp->user1(true);
+                                AstArraySel* const lhsElemp
+                                    = new AstArraySel{fl, lhsp, static_cast<int>(k1)};
+                                AstArraySel* const rhsElemp
+                                    = new AstArraySel{fl, rhsp, static_cast<int>(k2)};
+                                lhsElemp->user1(true);
+                                rhsElemp->user1(true);
+                                AstNeq* const neqp = new AstNeq{fl, lhsElemp, rhsElemp};
+                                neqp->user1(true);
+                                AstConstraintExpr* const cexprp = new AstConstraintExpr{fl, neqp};
+                                uniquep->addNextHere(cexprp);
+                            }
+                        }
+                        uniquep->unlinkFrBack();
+                        VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
+                    }
+                }
+                // Scalar, randc, unsupported dtype, or size <2: nothing to expand.
+                // uniquep is left in the tree rather than unlinked here -- deleting
+                // it with nothing put back would leave an enclosing foreach body
+                // empty, and ConstraintExprVisitor's own unique{} handling already
+                // no-ops safely on a leftover node like this.
             }
             itemp = nextp;
         }
