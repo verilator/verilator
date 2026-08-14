@@ -802,9 +802,9 @@ IEEE 1800-2023 35.5.1.5 states that imported tasks can suspend the current
 thread by calling an exported task with SystemVerilog timing constructs.
 
 Verilator supports DPI exported tasks with timing constructs by spawning a
-`fiber <https://en.wikipedia.org/wiki/Fiber_(computer_science)>`__ with a new
-call stack. Fibers allow context switching so simulation can progress while
-the fiber waits for an event to occur.
+`fiber <https://en.wikipedia.org/wiki/Fiber_(computer_science)>`__ with a
+new call stack. Fibers allow context switching so simulation can progress
+while the fiber waits for an event to occur.
 
 The fiber implementation is present in ``verilated_fiber.cpp`` and
 ``verilated_fiber.h``.
@@ -820,8 +820,8 @@ Main class encapsulating the fiber state. It should be constructed using
 It implements the following key functions:
 
 - ``resume()`` - Resumes execution of the function passed during
-  ``VlFiber::create()``. Resuming the same fiber restores the context at the
-  callsite of the last ``yield()`` call and jumps there.
+  ``VlFiber::create()``. Resuming the same fiber restores the context at
+  the callsite of the last ``yield()`` call and jumps there.
 - ``yield()`` - Returns execution to the previous call of ``resume()``.
 
 Calling ``yield()`` before ``resume()`` is undefined.
@@ -829,8 +829,8 @@ Calling ``yield()`` before ``resume()`` is undefined.
 ``VlFiberContext``
 ++++++++++++++++++
 
-This class represents the abstracted context for the ``VlFiber`` class.
-It implements the following operations using platform-dependent APIs:
+This class represents the abstracted context for the ``VlFiber`` class. It
+implements the following operations using platform-dependent APIs:
 
 - ``start()`` - Bootstraps the fiber, called only once.
 - ``resume()`` - Continues where the previous ``yield()`` occurred.
@@ -847,9 +847,9 @@ are supported.
 ``VlFiberMemoryPool``
 +++++++++++++++++++++
 
-Manages a memory pool for stack allocation for fibers.
-It is used to optimize the number of memory map/unmap syscalls.
-It implements the following functions:
+Manages a memory pool for stack allocation for fibers. It is used to
+optimize the number of memory map/unmap syscalls. It implements the
+following functions:
 
 - ``get()`` - Gets the base of an allocated stack with predefined size
   ``allocationSize``.
@@ -864,20 +864,19 @@ allocator allocates stacks.
 Calling and awaiting tasks with fibers
 ++++++++++++++++++++++++++++++++++++++
 
-Functions ``callImportFiber()`` and ``awaitExportFiber()`` implemented inside
-``verilated_dpi.h`` are emitted by Verilator to call an imported DPI task and
-await an exported task that might suspend.
-Those functions utilize fibers to save the call stack of a foreign function
-call and jump back to the simulation event loop when a timing control is
-encountered.
+Functions ``callImportFiber()`` and ``awaitExportFiber()`` implemented
+inside ``verilated_dpi.h`` are emitted by Verilator to call an imported DPI
+task and await an exported task that might suspend. Those functions utilize
+fibers to save the call stack of a foreign function call and jump back to
+the simulation event loop when a timing control is encountered.
 
 The ``callImportFiber()`` function creates a new fiber and calls the DPI
-imported function, forwarding all of the arguments. If the DPI import called
-an exported task with timing constructs, the call goes through
-``awaitExportFiber()``, which calls the exported task and yields on the first
-delay or event that occurs. Control is then passed back to the most recent
-``callImportFiber()``, which allows the event loop to continue by calling
-``co_await`` on ``FiberAwaitable``.
+imported function, forwarding all of the arguments. If the DPI import
+called an exported task with timing constructs, the call goes through
+``awaitExportFiber()``, which calls the exported task and yields on the
+first delay or event that occurs. Control is then passed back to the most
+recent ``callImportFiber()``, which allows the event loop to continue by
+calling ``co_await`` on ``FiberAwaitable``.
 
 Multithreaded Mode
 ------------------
