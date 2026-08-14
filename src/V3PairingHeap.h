@@ -25,8 +25,8 @@
 //=============================================================================
 // Pairing heap (max-heap) with increase key and delete.
 //
-// While this is written as a generic data structure, it's interface and
-// implementation is finely tuned for use by V3Partition, and is critical
+// While this is written as a generic data structure, its interface and
+// implementation is finely tuned for use by parallel scheduling, and is critical
 // to Verilation performance, so be very careful changing anything or adding any
 // new operations that would impact either memory usage, or performance of the
 // existing operations. This data structure is fully deterministic, meaning
