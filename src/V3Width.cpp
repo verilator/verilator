@@ -744,15 +744,39 @@ class WidthVisitor final : public VNVisitor {
         // it's like an if() condition.
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
+    static const AstConst* widthCheckSvaDelayBound(AstDelay* nodep, AstNodeExpr* boundp,
+                                                   const char* what) {
+        const AstConst* const constp = VN_CAST(boundp, Const);
+        if (!constp || (constp->dtypep()->isSigned() && constp->num().isNegative())) {
+            nodep->v3error(what << " is not a non-negative elaboration-time constant"
+                                   " (IEEE 1800-2023 16.7)");
+            return nullptr;
+        }
+        if (constp->num().mostSetBitP1() > 31) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: SVA cycle delay exceeds implementation limit of 2147483647");
+            return nullptr;
+        }
+        return constp;
+    }
     void visit(AstDelay* nodep) override {
         if (nodep->isCycleDelay() && m_underSExpr) {
             // Fold parameterized SVA cycle-delay bounds
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             V3Const::constifyParamsNoWarnEdit(nodep->lhsp());
+            const AstConst* const minConstp = widthCheckSvaDelayBound(
+                nodep, nodep->lhsp(),
+                nodep->isRangeDelay() ? "Range delay minimum" : "Delay value");
             if (nodep->rhsp() && !nodep->isUnbounded()) {
                 // Fold parametrized SVA cycle-delay max bound
                 userIterateAndNext(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
                 V3Const::constifyParamsNoWarnEdit(nodep->rhsp());
+                const AstConst* const maxConstp
+                    = widthCheckSvaDelayBound(nodep, nodep->rhsp(), "Range delay maximum");
+                if (minConstp && maxConstp && maxConstp->toUInt() < minConstp->toUInt()) {
+                    nodep->v3error("Range delay maximum must be >= minimum (IEEE 1800-2023 16.7)");
+                }
             }
             return;
         }
@@ -1832,7 +1856,11 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
-            if (nodep->maxCountp()) widthCheckGotoRepRange(nodep, "Goto");
+            if (nodep->maxCountp()) {
+                widthCheckGotoRepRange(nodep, "Goto");
+            } else {
+                widthCheckRepCount(nodep);
+            }
             nodep->dtypeSetBit();
         }
     }
@@ -1841,8 +1869,31 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
-            if (nodep->maxCountp()) widthCheckGotoRepRange(nodep, "Nonconsecutive");
+            if (nodep->maxCountp()) {
+                widthCheckGotoRepRange(nodep, "Nonconsecutive");
+            } else {
+                widthCheckRepCount(nodep);
+            }
             nodep->dtypeSetBit();
+        }
+    }
+    template <typename T_Rep>
+    void widthCheckRepCount(T_Rep* nodep) {
+        V3Const::constifyParamsNoWarnEdit(nodep->countp());
+        const AstConst* const constp = VN_CAST(nodep->countp(), Const);
+        if (!constp) {
+            nodep->v3error("Repetition count is not an elaboration-time constant"
+                           " (IEEE 1800-2023 16.9.2)");
+        } else if (constp->dtypep()->isSigned() && constp->num().isNegative()) {
+            nodep->v3error("Repetition count must be non-negative"
+                           " (IEEE 1800-2023 16.9.2)");
+        } else if (constp->num().mostSetBitP1() > 31) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: SVA repetition count exceeds implementation limit of 2147483647");
+        } else if (constp->isZero()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: zero repetition count"
+                                         " (IEEE 1800-2023 16.9.2)");
         }
     }
     // IEEE 1800-2023 16.9.2 range-form bound validation for goto/nonconsec.
