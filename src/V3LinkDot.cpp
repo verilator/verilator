@@ -1035,6 +1035,12 @@ public:
             if (!dtypep) dtypep = typedefp->childDTypep();
             if (VN_IS(dtypep, ClassRefDType)) return true;
             if (checkUnresolvedRef(VN_CAST(dtypep, RefDType))) return true;
+            // Handle type aliases
+            if (const AstRefDType* const refp = VN_CAST(dtypep, RefDType)) {
+                if (!refp->typeofp() && VN_IS(refp->classOrPackageOpp(), ClassOrPackageRef)) {
+                    return true;
+                }
+            }
         } else if (const AstParamTypeDType* const paramTypep
                    = VN_CAST(symp->nodep(), ParamTypeDType)) {
             // Before V3Param the declared default is in childDTypep (possibly
@@ -4801,7 +4807,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_RESTORER_COPY(m_ds);
             VL_RESTORER(m_pinSymp);
 
-            if (!nodep->classOrPackageSkipp() && nodep->name() != "local::") {
+            if (!nodep->classOrPackageSkipp() && !nodep->classOrPackageNodep()
+                && nodep->name() != "local::") {
                 const bool deferIfUnresolved = m_statep->forPrimary() && m_insideClassExtParam;
                 m_statep->resolveClassOrPackage(m_ds.m_dotSymp, nodep, m_ds.m_dotPos != DP_PACKAGE,
                                                 false, ":: reference", deferIfUnresolved);
@@ -5963,8 +5970,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         AstNodeModule* const outerModp = outerp->classOrPackageSkipp();
         if (!outerModp) return false;
-        // Resolve the inner name within the outer scope
-        if (!innerp->classOrPackageSkipp()
+        // Resolve the inner name within the outer scope.
+        if (!innerp->classOrPackageNodep()
             && !m_statep->resolveClassOrPackage(m_statep->getNodeSym(outerModp), innerp, false,
                                                 false, "class/package reference")) {
             return true;  // Error already reported
@@ -6066,7 +6073,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(cpackagep);
                     return;
                 }
-                if (!cpackagerefp->classOrPackageSkipp()) {
+                if (!cpackagerefp->classOrPackageSkipp() && !cpackagerefp->classOrPackageNodep()) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
                         m_ds.m_dotSymp, cpackagerefp, true, false, "class/package reference");
                     if (!foundp) return;
