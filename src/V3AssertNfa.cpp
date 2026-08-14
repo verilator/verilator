@@ -912,12 +912,10 @@ class SvaNfaBuilder final {
         UASSERT_OBJ(maxN >= minN, repp, "GotoRep range max < min (V3Width invariant)");
         if (exceedsAssertUnrollLimit(repp, maxN)) return BuildResult::failWithError();
 
-        // IEEE 1800-2023 16.14.3: a ranged goto repetition b[->M:N] ends at every
-        // M..N-th match, but only the shared merge vertex below reaches the
-        // terminal, so a cover sequence would under-count. Reject the ranged form
-        // (the single-count b[->N] has one end and is enumerated correctly).
-        if (m_isCoverSeq && hasMax && maxN > minN) {
-            warnEndpointUnsupported(flp, "a ranged goto repetition");
+        if (m_isCoverSeq) {
+            // Several matches may wait across false cycles, but the NFA stores only one bit for
+            // them, so a cover sequence action block could run too few times.
+            warnEndpointUnsupported(flp, "a goto repetition");
             return BuildResult::failWithError();
         }
 
