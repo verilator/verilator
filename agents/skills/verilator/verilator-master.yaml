@@ -1,0 +1,6 @@
+# verilator-master Skill Manifest
+name: verilator-master
+description: "Master index for Verilator development skills - unified entry point for any AI agent"
+file: verilator-master.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"

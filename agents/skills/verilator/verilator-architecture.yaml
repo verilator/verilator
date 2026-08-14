@@ -1,0 +1,6 @@
+# verilator-architecture Skill Manifest
+name: verilator-architecture
+description: "Understand Verilator's compiler architecture: pipeline stages, AST, visitors, passes"
+file: verilator-architecture.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"

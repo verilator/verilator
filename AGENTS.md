@@ -16,7 +16,13 @@ This file has two parts. **Orientation** gets you productive in the codebase fro
 a cold start. **Before you open a PR** is the checklist of conventions reviewers
 otherwise have to enforce by hand -- read it before submitting any change.
 
-Then read the directory guide for the area you are editing:
+## AI agent skills (optional tooling)
+
+Optional task guidance for AI coding agents lives in `agents/skills/verilator/`.
+Agents start at `verilator-skill-router.md`, which maps a task to the relevant
+skill (coding-conventions, architecture, testing, performance, examples,
+pr-review). Humans can ignore this directory entirely; it does not change how
+the compiler is built or reviewed.
 
 - [src/AGENTS.md](src/AGENTS.md) -- compiler C++ sources: AST, visitors, passes, parser, style
 - [include/AGENTS.md](include/AGENTS.md) -- runtime library (`verilated*`): C++14, MT-safety, fixed-width types

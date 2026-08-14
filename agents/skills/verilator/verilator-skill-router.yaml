@@ -1,0 +1,6 @@
+# verilator-skill-router Skill Manifest
+name: verilator-skill-router
+description: "Automatic skill routing for Verilator tasks - ensures AI agents invoke the right skills based on task type. ALWAYS use this skill first when working on Verilator."
+file: verilator-skill-router.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"

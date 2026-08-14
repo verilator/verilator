@@ -1,0 +1,203 @@
+# Verilator Skills Manifest
+# Auto-discovery, dependency resolution, and keyword triggers for AI agents
+
+canonical_path: ".claude/skills/verilator/"
+
+skills:
+  - id: verilator-skill-router
+    file: verilator-skill-router.md
+    description: "MANDATORY FIRST -- routes any Verilator task to exact skills needed"
+    triggers: ["verilator", "verilation", "systemverilog", "V3Width", "V3Assert", "V3Sched", "V3EmitC", "V3Link", "V3Param", "V3Const", "V3Randomize", "V3Dfg", "V3Timing", "V3Fork"]
+    priority: 100
+    mode: full
+
+    dependencies: []
+
+  - id: verilator-onboarding
+    file: verilator-onboarding.md
+    description: "5-minute mental model + quick start for new agents"
+    triggers: ["new to verilator", "cold start", "orientation", "getting started", "what is verilator"]
+    priority: 90
+    mode: full
+
+    dependencies: []
+
+  - id: verilator-architecture
+    file: verilator-architecture.md
+    description: "Pipeline stages, AST, visitors, passes, graph algorithms"
+    triggers: ["pipeline", "AST", "visitor", "pass", "V3Width", "V3Link", "V3LinkDot", "V3Param", "V3Const", "V3Randomize", "V3Assert", "V3Sched", "V3Timing", "V3Dfg", "DfgGraph", "V3EmitC", "V3EmitV"]
+    priority: 85
+    mode: reference
+
+    dependencies: ["verilator-onboarding"]
+
+  - id: verilator-coding-conventions
+    file: verilator-coding-conventions.md
+    description: "C++ style, AST rules, visitors, diagnostics, performance, thread safety"
+    triggers: ["coding style", "const", "VN_CAST", "skipRefp", "VL_RESTORER", "diagnostic", "warning", "error", "v3error", "v3warn", "VL_PURE", "VL_MT_SAFE", "VL_MT_STABLE", "VL_GUARDED_BY", "astgen", "isSame", "cloneRelink", "broken", "iterateChildren", "iterateAndNextNull", "VL_DO_DANGLING", "pushDeletep", "deleteTree", "VMemberMap", "findMember"]
+    priority: 95
+    mode: full
+
+    dependencies: ["verilator-architecture"]
+
+  - id: verilator-testing
+    file: verilator-testing.md
+    description: "Test structure, drivers, goldens, naming, self-checking patterns"
+    triggers: ["test", "golden", "HARNESS_UPDATE_GOLDEN", "checkd", "checkh", "t_lint", "t_flag", "vltest_bootstrap", "dist_whitespace", "warn_coverage"]
+    priority: 90
+    mode: reference
+
+    dependencies: ["verilator-coding-conventions"]
+
+  - id: verilator-pr-review
+    file: verilator-pr-review.md
+    description: "40+ maintainer feedback patterns, pre-PR checklist"
+    triggers: ["PR", "pull request", "review", "submit", "checklist", "maintainer", "merge", "reject", "feedback"]
+    priority: 98
+    mode: checklist
+
+    dependencies: ["verilator-coding-conventions", "verilator-testing"]
+
+  - id: verilator-performance
+    file: verilator-performance.md
+    description: "Memory efficiency, O(n^2) elimination, compile vs runtime"
+    triggers: ["performance", "optimization", "O(n^2)", "memory", "slow", "V3Stats", "addStat", "deferred delete", "static data"]
+    priority: 80
+    mode: reference
+
+    dependencies: ["verilator-coding-conventions"]
+
+  - id: verilator-runtime
+    file: verilator-runtime.md
+    description: "include/ library: C++14, fixed-width types, VPI, coverage, tracing"
+    triggers: ["runtime", "include/", "verilated", "C++14", "VPI", "coverage", "trace", "VL_WIDE", "CData", "SData", "IData", "QData", "vl_print_warn_error", "verilatedos.h"]
+    priority: 75
+    mode: reference
+
+    dependencies: []
+
+  - id: verilator-examples
+    file: verilator-examples.md
+    description: "7 worked examples: new pass, AST node, bug fix, warning, optimization"
+    triggers: ["example", "how to", "add pass", "new AST", "bug fix", "pattern", "warning", "optimization"]
+    priority: 85
+    mode: reference
+
+    dependencies: ["verilator-coding-conventions", "verilator-architecture"]
+
+  - id: verilator-performance-guard
+    file: verilator-performance-guard.md
+    description: "10 mandatory performance gates + automated verification script"
+    triggers: ["commit", "performance gate", "gate", "O(n^2) justified", "addStat", "deferred delete", "static data"]
+    priority: 97
+    mode: checklist
+
+    dependencies: ["verilator-performance", "verilator-coding-conventions"]
+
+  - id: verilator-master
+    file: verilator-master.md
+    description: "Unified index + decision map + golden rules + file layout"
+    triggers: ["index", "decision map", "where to look", "golden rules", "file layout", "build commands", "emergency debugging"]
+    priority: 80
+    mode: reference
+
+    dependencies: []
+
+  - id: verilator-debugging
+    file: verilator-debugging.md
+    description: "Debug Verilator - AST dumps, --dumpi-* flags, JSON AST, graphviz, reproduce minimal tests"
+    triggers: ["debug", "dump", "dumpi", "AST dump", "graphviz", "reproduce", "minimal test", "breakpoint", "gdb", "V3Stats"]
+    priority: 70
+    mode: reference
+
+    dependencies: ["verilator-architecture", "verilator-testing"]
+
+  - id: verilator-parser
+    file: verilator-parser.md
+    description: "Lexer/grammar specifics - token pipeline, precedence, //UNSUP, error recovery, verilog.y/verilog.l"
+    triggers: ["parser", "syntax", "grammar", "verilog.y", "verilog.l", "lexer", "token", "precedence", "UNSUP", "error recovery", "tokenPipeScan"]
+    priority: 75
+    mode: reference
+
+    dependencies: ["verilator-architecture", "verilator-coding-conventions"]
+
+  - id: verilator-release
+    file: verilator-release.md
+    description: "Release process - --enable-ccwarn, --enable-longtests, version bump, Changes file, tagging"
+    triggers: ["release", "version", "tag", "Changes", "ccwarn", "longtests", "configure.ac", "version bump"]
+    priority: 60
+    mode: checklist
+
+    dependencies: []
+
+  - id: verilator-vpi
+    file: verilator-vpi.md
+    description: "VPI module structure - verilated_vpi.cpp, --vpi vs --vpi-lazy, callbacks, PLI/VPI integration"
+    triggers: ["VPI", "vpi", "callback", "verilated_vpi", "PLI", "vlog_startup", "systf", "--vpi", "--vpi-lazy"]
+    priority: 65
+    mode: reference
+    dependencies: ["verilator-runtime"]
+
+  - id: verilator-code-map
+    file: verilator-code-map.md
+    description: "Symptom-to-function map for efficient navigation - which function/class in which file handles each issue type"
+    triggers: ["code map", "function", "class", "where to edit", "navigate", "symptom"]
+    priority: 85
+    mode: reference
+    dependencies: ["verilator-architecture", "verilator-coding-conventions"]
+
+# Agent entry point mappings
+agent_entry_points:
+  claude_code:
+    primary: "CLAUDE.md"
+    skills_dir: ".claude/skills/verilator/"
+    invocation: "Skill: verilator-skill-router"
+  codex:
+    primary: "AGENT.md"
+    skills_dir: ".codex/skills/verilator/"
+    invocation: "@verilator-skill-router"
+  generic:
+    primary: "AI_AGENTS.md"
+    skills_dir: ".claude/skills/verilator/"
+    invocation: "Read and follow verilator-skill-router.md"
+
+# Task -> skill auto-routing rules (for agents that support it)
+auto_route_rules:
+  - keywords: ["warning", "lint", "diagnostic", "v3warn", "v3error", "error message", "Unsupported"]
+    skills: ["verilator-coding-conventions", "verilator-testing"]
+  - keywords: ["performance", "slow", "O(n", "memory leak", "optimize", "V3Stats", "deferred"]
+    skills: ["verilator-performance", "verilator-performance-guard"]
+  - keywords: ["runtime", "verilated", "VPI", "trace", "coverage", "simulation"]
+    skills: ["verilator-runtime", "verilator-testing"]
+  - keywords: ["parser", "syntax", "grammar", "verilog.y", "verilog.l", "lexer"]
+    skills: ["verilator-architecture", "verilator-coding-conventions"]
+  - keywords: ["assert", "property", "sequence", "cover", "V3Assert", "SVA", "NFA"]
+    skills: ["verilator-architecture", "verilator-coding-conventions", "verilator-testing"]
+  - keywords: ["schedule", "NBA", "fork", "delay", "V3Sched", "V3Timing", "V3Fork"]
+    skills: ["verilator-architecture", "verilator-performance", "verilator-testing"]
+  - keywords: ["debug", "dump", "dumpi", "AST dump", "graphviz", "reproduce"]
+    skills: ["verilator-debugging", "verilator-testing"]
+  - keywords: ["parser", "syntax", "grammar", "verilog.y", "verilog.l", "lexer", "token", "precedence", "UNSUP", "error recovery", "tokenPipeScan"]
+    skills: ["verilator-parser", "verilator-architecture", "verilator-coding-conventions"]
+  - keywords: ["release", "version", "tag", "Changes", "ccwarn", "longtests", "configure.ac", "version bump"]
+    skills: ["verilator-release"]
+  - keywords: ["VPI", "vpi", "callback", "verilated_vpi", "PLI", "vlog_startup", "systf", "--vpi", "--vpi-lazy"]
+    skills: ["verilator-vpi", "verilator-runtime"]aphviz", "reproduce"]
+    skills: ["verilator-debugging", "verilator-testing"]
+  - keywords: ["release", "version", "tag", "Changes", "ccwarn", "longtests"]
+    skills: ["verilator-release"]
+  - keywords: ["VPI", "vpi", "callback", "verilated_vpi"]
+    skills: ["verilator-vpi", "verilator-runtime"]
+
+# Golden rules (from master.md) -- machine-readable for validation
+golden_rules:
+  - "Verilator is a compiler - optimize verilation time, not runtime"
+  - "Minimal correct change - no drive-by refactors"
+  - "Every diagnostic needs a test + golden - HARNESS_UPDATE_GOLDEN=1"
+  - "Const-correctness everywhere - Type* const ptr, const methods"
+  - "VN_CAST not VN_IS+VN_AS - single conditional cast"
+  - "Always skipRefp() on dtype - missing = typedef bugs"
+  - "No O(n^2) - build maps, use VMemberMap"
+  - "No static/global mutable data - breaks future parallelism"
+  - "AstForeach not unrolled loops - constant code size"
+  - "Single-purpose PRs - refactors, fixes, features = separate PRs"

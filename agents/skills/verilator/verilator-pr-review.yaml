@@ -1,0 +1,6 @@
+# verilator-pr-review Skill Manifest
+name: verilator-pr-review
+description: "Anticipate and avoid maintainer review feedback - patterns from 40+ PR reviews"
+file: verilator-pr-review.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"

@@ -1,0 +1,6 @@
+# verilator-parser Skill Manifest
+name: verilator-parser
+description: "Lexer/grammar specifics - token pipeline, precedence, //UNSUP, error recovery, verilog.y/verilog.l"
+file: verilator-parser.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"

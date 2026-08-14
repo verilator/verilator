@@ -52,3 +52,4 @@ xrun.history
 
 # Normal CMake build directory
 /build
+.claude/settings.json

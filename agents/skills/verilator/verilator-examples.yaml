@@ -1,0 +1,6 @@
+# verilator-examples Skill Manifest
+name: verilator-examples
+description: "Complete worked examples for common Verilator development tasks: new pass, new warning, new AST node, bug fix, feature"
+file: verilator-examples.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"

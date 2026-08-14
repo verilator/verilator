@@ -1,0 +1,6 @@
+# verilator-performance-guard Skill Manifest
+name: verilator-performance-guard
+description: "Mandatory performance checks for every change - prevents O(n^2), memory leaks, regressions"
+file: verilator-performance-guard.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"

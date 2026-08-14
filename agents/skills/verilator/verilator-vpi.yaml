@@ -1,0 +1,6 @@
+# verilator-vpi Skill Manifest
+name: verilator-vpi
+description: "VPI module structure - verilated_vpi.cpp, --vpi vs --vpi-lazy, callbacks, PLI/VPI integration"
+file: verilator-vpi.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"

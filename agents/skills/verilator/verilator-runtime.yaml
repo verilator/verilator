@@ -1,0 +1,6 @@
+# verilator-runtime Skill Manifest
+name: verilator-runtime
+description: "Verilator runtime library (include/) patterns: C++14 baseline, fixed-width types, thread safety, VPI, coverage, tracing"
+file: verilator-runtime.md
+canonical_path: ".claude/skills/verilator/"
+version: "1.0"
