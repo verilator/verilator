@@ -69,6 +69,79 @@ class Monitor;
   endfunction
 endclass
 
+class UbusTransfer;
+  bit [15:0] addr;
+  bit read_write;
+endclass
+
+class UbusMasterMonitor;
+  UbusTransfer trans_collected;
+
+  covergroup cov_trans;
+    trans_start_addr: coverpoint trans_collected.addr {option.auto_bin_max = 16;}
+    trans_dir: coverpoint trans_collected.read_write;
+    trans_addr_x_dir: cross trans_start_addr, trans_dir;
+  endgroup
+
+  function new();
+    trans_collected = new;
+    cov_trans = new;
+  endfunction
+
+  function void observe(bit [15:0] addr, bit read_write);
+    trans_collected.addr = addr;
+    trans_collected.read_write = read_write;
+    cov_trans.sample();
+  endfunction
+endclass
+
+class CoverageState;
+  bit [3:0] test;
+  bit [3:0] test2;
+endclass
+
+class ParameterizedMonitor;
+  CoverageState state;
+  bit clk;
+
+  covergroup cov_param(CoverageState st) @(posedge clk);
+    cp: coverpoint st.test;
+    cp2: coverpoint st.test2;
+  endgroup
+
+  function new();
+    state = new;
+    cov_param = new(state);
+  endfunction
+
+  function void observe(bit [3:0] test, bit [3:0] test2);
+    state.test = test;
+    state.test2 = test2;
+    clk = 0;
+    clk = 1;
+  endfunction
+endclass
+
+class MixedMonitor;
+  bit [3:0] local_value;
+  CoverageState state;
+
+  covergroup cov_mixed(CoverageState st);
+    cp: coverpoint local_value + st.test;
+  endgroup
+
+  function new();
+    state = new;
+    cov_mixed = new(state);
+  endfunction
+
+  function void observe(bit [3:0] local_value, bit [3:0] test);
+    this.local_value = local_value;
+    state.test = test;
+    cov_mixed.sample();
+  endfunction
+endclass
+
 class BranchMonitor;
   bit [2:0] value;
 
@@ -471,6 +544,9 @@ endclass
 
 module t;
   Monitor mon;
+  UbusMasterMonitor ubus_mon;
+  ParameterizedMonitor parameterized_arg_mon;
+  MixedMonitor mixed_arg_mon;
   BranchMonitor branch_a;
   BranchMonitor branch_b;
   DerivedMonitor derived;
@@ -500,6 +576,9 @@ module t;
 
   initial begin
     mon = new;
+    ubus_mon = new;
+    parameterized_arg_mon = new;
+    mixed_arg_mon = new;
     branch_a = new(1);
     branch_b = new(0);
     derived = new;
@@ -525,6 +604,9 @@ module t;
 
     for (i = 0; i < 16; ++i) begin
       mon.observe(i[3:0], i[7:0] * 17, i[1:0], i[3:0]);
+      ubus_mon.observe(i[15:0], i[0]);
+      parameterized_arg_mon.observe(i[3:0], 15 - i[3:0]);
+      mixed_arg_mon.observe(i[3:0], 15 - i[3:0]);
       derived.observe(i[3:0]);
       leaf.observe(i[3:0]);
       parameterized.observe(i[3:0]);
