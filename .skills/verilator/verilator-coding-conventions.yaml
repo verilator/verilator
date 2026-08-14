@@ -1,0 +1,6 @@
+# verilator-coding-conventions Skill Manifest
+name: verilator-coding-conventions
+description: "Verilator C++ coding standards: style, AST manipulation, visitors, errors/warnings, performance, thread safety"
+file: verilator-coding-conventions.md
+canonical_path: ".skills/verilator/"
+version: "1.0"

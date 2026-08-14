@@ -1,0 +1,6 @@
+# verilator-performance Skill Manifest
+name: verilator-performance
+description: "Verilator performance optimization patterns: memory efficiency, O(n^2) elimination, compile-time vs runtime, thread safety, fixed-width types"
+file: verilator-performance.md
+canonical_path: ".skills/verilator/"
+version: "1.0"

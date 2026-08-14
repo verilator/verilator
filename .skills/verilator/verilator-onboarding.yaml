@@ -1,0 +1,6 @@
+# verilator-onboarding Skill Manifest
+name: verilator-onboarding
+description: "Quick-start guide for any AI agent to understand Verilator architecture and contribute effectively in minutes"
+file: verilator-onboarding.md
+canonical_path: ".skills/verilator/"
+version: "1.0"

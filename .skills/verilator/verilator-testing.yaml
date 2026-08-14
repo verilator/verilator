@@ -1,0 +1,6 @@
+# verilator-testing Skill Manifest
+name: verilator-testing
+description: "Verilator regression test patterns: test structure, drivers, golden files, naming, coverage, self-checking"
+file: verilator-testing.md
+canonical_path: ".skills/verilator/"
+version: "1.0"

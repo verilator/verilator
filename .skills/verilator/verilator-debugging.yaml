@@ -1,0 +1,6 @@
+# verilator-debugging Skill Manifest
+name: verilator-debugging
+description: "Debug Verilator issues - AST dumps, --dumpi-* flags, JSON AST, graphviz, reproduce minimal tests"
+file: verilator-debugging.md
+canonical_path: ".skills/verilator/"
+version: "1.0"

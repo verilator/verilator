@@ -1,0 +1,6 @@
+# verilator-release Skill Manifest
+name: verilator-release
+description: "Release process - --enable-ccwarn, --enable-longtests, version bump, Changes file, tagging"
+file: verilator-release.md
+canonical_path: ".skills/verilator/"
+version: "1.0"

@@ -1,0 +1,6 @@
+# verilator-code-map Skill Manifest
+name: verilator-code-map
+description: "Symptom-to-function map for efficient navigation - which function/class in which file handles each issue type"
+file: verilator-code-map.md
+canonical_path: ".skills/verilator/"
+version: "1.0"
