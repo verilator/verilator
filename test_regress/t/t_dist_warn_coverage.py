@@ -28,49 +28,25 @@ for s in [
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         'exited with',  # Is hit; driver.py filters out
+        'expected non-complex non-double',  # V3Width warns and repairs earlier
         'loading non-variable',  # Instead 'storing to parameter' or syntax error
-
-        # Tested in t_vpi_force.cpp, but not picked up by pattern matching in this script yet
-        '%s: Trailing garbage \'%s\' in \'%s\' as value %s for \'%s\'',
-        '%s: Non hex character \'%c\' in \'%s\' as value %s for \'%s\'',
-        '%s: Non octal character \'%c\' in \'%s\' as value %s for \'%s\'',
 
         # Not yet analyzed
         '--pipe-filter protocol error, unexpected:',
         '--pipe-filter returned bad status',
         '--pipe-filter: stdin/stdout closed before pipe opened',
         '--pipe-filter: write to closed file',
-        'Assigning >32 bit to unranged parameter (defaults to 32 bits)',
-        'Assignment pattern with no members',
-        '%s: Ignoring vpi_put_value to vpiConstant \'%s\'',
-        '%s: Ignoring vpi_put_value to vpiParameter \'%s\'',
-        '%s: Index %u for object \'%s\' is out of bounds [%u,%u]',
-        '%s: Parsing failed for \'%s\' as value %s for \'%s\'',
-        '%s: Requested elements (%u) exceed array size (%u)',
-        '%s: Requested elements to set (%u) exceed array size (%u)',
-        '%s: Unsupported callback type %s',
-        '%s: Unsupported flags (%x)',
-        '%s: Unsupported format (%s) as requested for \'%s\'',
-        '%s: Unsupported format (%s) for \'%s\'',
-        '%s: Unsupported p_vpi_value as requested for \'%s\' with vpiInertialDelay',
-        '%s: Unsupported property %s, nothing will be returned',
+        '%s: Unsupported callback type \'%s\'',
         '%s: Unsupported type %s, ignoring',
         '%s: Unsupported type %s, nothing will be returned',
         '%s: Unsupported type (%d)',
-        '%s: Unsupported type (%p, %s)',
         '%s: Unsupported vltype (%d)',
-        '%s: Unsupported vpiHandle (%p)',
-        '%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned',
-        '%s: Unsupported vpiUserAllocFlag (%x)',
+        '%s: Unsupported vpiHandle \'%p\' for type \'%s\', nothing will be returned',
         '%s: VPI callback data pointer is null',
+        'Assigning >32 bit to unranged parameter (defaults to 32 bits)',
+        'Assignment pattern with no members',
         'Ignoring vpi_get_time with nullptr value pointer',
-        'Ignoring vpi_get_value_array with null index pointer',
-        'Ignoring vpi_get_value_array with null value pointer',
-        'Ignoring vpi_put_value with nullptr value pointer',
-        'Ignoring vpi_put_value_array to signal marked read-only,',
         'Ignoring vpi_put_value_array with null index pointer',
-        'Ignoring vpi_put_value_array with null value pointer',
-        'vpi_put_value was used on signal marked read-only,',
         'Can\'t find varpin scope of',
         'Can\'t read annotation file:',
         'Can\'t resolve module reference: \'',
@@ -143,7 +119,6 @@ for s in [
         'Unsupported: static cast to',
         'Unsupported: super',
         'Unsupported: with[] stream expression',
-        'expected non-complex non-double',
         'loading other than unpacked-array variable',
         'loading other than unpacked/associative-array variable',
         # These are safety limits requiring >1000 bins or >10000 members to trigger

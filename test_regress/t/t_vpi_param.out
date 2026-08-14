@@ -1,0 +1,13 @@
+Check parameter WIDTH vpi ...
+vpi_chk_error: vpi_get: Unsupported property 'vpiLocalParam', nothing will be returned
+vpi_chk_error: vpi_put_value: Ignoring vpi_put_value to vpiParameter 't.WIDTH'
+Check parameter DEPTH vpi ...
+vpi_chk_error: vpi_get: Unsupported property 'vpiLocalParam', nothing will be returned
+vpi_chk_error: vpi_put_value: Ignoring vpi_put_value to vpiParameter 't.DEPTH'
+Check parameter PARAM_LONG vpi ...
+vpi_chk_error: vpi_get: Unsupported property 'vpiLocalParam', nothing will be returned
+vpi_chk_error: vpi_put_value: Ignoring vpi_put_value to vpiParameter 't.PARAM_LONG'
+Check parameter PARAM_STR vpi ...
+vpi_chk_error: vpi_get: Unsupported property 'vpiLocalParam', nothing will be returned
+vpi_chk_error: vpi_put_value: Ignoring vpi_put_value to vpiParameter 't.PARAM_STR'
+*-* All Finished *-*

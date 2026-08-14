@@ -12,6 +12,9 @@
 #ifndef TEST_CHECK_H_
 #define TEST_CHECK_H_
 
+#include "sv_vpi_user.h"
+#include "vpi_user.h"
+
 #include <iostream>
 
 extern int errors;
@@ -83,6 +86,15 @@ static const bool verbose = false;
             ++errors; \
         } \
     } while (0)
+
+inline bool _test_check_error() {
+    t_vpi_error_info errorInfo{};
+    const PLI_INT32 gotError = vpi_chk_error(&errorInfo);
+    if (gotError) vpi_printf((PLI_BYTE8*)"vpi_chk_error: %s\n", errorInfo.message);
+    return gotError;
+}
+
+#define TEST_CHECK_ERROR(expectError) TEST_CHECK_HEX_EQ(_test_check_error(), expectError)
 
 //======================================================================
 

@@ -32,8 +32,11 @@
 #include <iostream>
 
 // These require the above. Comment prevents clang-format moving them
+#include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
+
+int errors = 0;
 
 extern "C" {
 int mon_check() {
@@ -74,10 +77,10 @@ int mon_check() {
     vpi_value.format = vpiIntVal;
     vpi_value.value.integer = 1;
     vpi_put_value(sigHandle, &vpi_value, NULL, vpiNoDelay);
-    CHECK_RESULT(vpi_chk_error(nullptr), vpiError);
+    TEST_CHECK_ERROR(true);
     // and an intertial write
     vpi_put_value(sigHandle, &vpi_value, NULL, vpiInertialDelay);
-    CHECK_RESULT(vpi_chk_error(nullptr), vpiError);
+    TEST_CHECK_ERROR(true);
 
     // t.signal_rw is not constant
     sigHandle = vpi_handle_by_name((PLI_BYTE8*)"t.signal_rw", NULL);
@@ -98,7 +101,7 @@ int mon_check() {
     PLI_INT32 timeConstType = vpi_get(vpiConstType, timeHandle);
     CHECK_RESULT(timeConstType, vpiDecConst)
 
-    return 0;  // Ok
+    return errors;  // Ok
 }
 }
 //======================================================================

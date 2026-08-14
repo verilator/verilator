@@ -486,12 +486,11 @@ int _mon_check_big() {
     Verilated::fatalOnVpiError(false);
     vpi_get_value(h, &v);
     Verilated::fatalOnVpiError(true);
-    s_vpi_error_info info;
-    CHECK_RESULT_Z(vpi_chk_error(&info));
+    TEST_CHECK_ERROR(false);
 
     v.format = vpiStringVal;
     vpi_get_value(h, &v);
-    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(false);
     CHECK_RESULT_CSTR_STRIP(v.value.str, "some text");
 #endif
 
@@ -1710,7 +1709,7 @@ int _mon_check_delayed() {
     v.format = vpiIntVal;
     v.value.integer = 123;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(false);
     vpi_get_value(vh, &v);
     CHECK_RESULT(v.value.integer, 0);
 
@@ -1720,19 +1719,24 @@ int _mon_check_delayed() {
     CHECK_RESULT_NZ(vhMemWord);
     v.value.integer = 456;
     vpi_put_value(vhMemWord, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(false);
 
     // test unsupported vpiInertialDelay cases
     // - should these also throw vpi errors?
     v.format = vpiStringVal;
     v.value.str = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(true);
 
     v.format = vpiVectorVal;
     v.value.vector = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(true);
+
+    // Test null value in put
+    v.format = vpiVectorVal;
+    vpi_put_value(vh, nullptr, &t, 0);
+    TEST_CHECK_ERROR(true);
 
     // This format throws an error now
 #ifdef VERILATOR
