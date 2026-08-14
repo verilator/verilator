@@ -19,14 +19,16 @@ Used_Suppressed = {}
 for s in [
         # Cannot hit, and comment as to why
         # Instead of adding here, consider adding a LCOV_EXCL_LINE/START/STOP to the sources on the message
-        'exited with',  # Is hit; driver.py filters out
-        'loading non-variable',  # Instead 'storing to parameter' or syntax error
+        '$VERILATOR_ROOT needs to be in environment',  # Would need special ./configure and build
         'Assigned pin is neither input nor output',  # Instead earlier error
         'Define missing argument \'',  # Instead get Define passed too many arguments
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
         'Expecting define formal arguments. Found:',  # Instead define syntax error
+        'Need $SYSTEMC_INCLUDE in environment or when Verilator configured,',  # Would need ./configure
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
+        'exited with',  # Is hit; driver.py filters out
+        'loading non-variable',  # Instead 'storing to parameter' or syntax error
 
         # Tested in t_vpi_force.cpp, but not picked up by pattern matching in this script yet
         '%s: Trailing garbage \'%s\' in \'%s\' as value %s for \'%s\'',
@@ -34,18 +36,12 @@ for s in [
         '%s: Non octal character \'%c\' in \'%s\' as value %s for \'%s\'',
 
         # Not yet analyzed
-        '$VERILATOR_ROOT needs to be in environment',
         '--pipe-filter protocol error, unexpected:',
         '--pipe-filter returned bad status',
         '--pipe-filter: stdin/stdout closed before pipe opened',
         '--pipe-filter: write to closed file',
         'Assigning >32 bit to unranged parameter (defaults to 32 bits)',
         'Assignment pattern with no members',
-        '%%Warning: DPI C Function called by Verilog DPI import with missing',
-        '%%Warning: DPI svOpenArrayHandle function called on',
-        '%%Warning: DPI svOpenArrayHandle function index 1',
-        '%%Warning: DPI svOpenArrayHandle function index 2',
-        '%%Warning: DPI svOpenArrayHandle function index 3',
         '%s: Ignoring vpi_put_value to vpiConstant \'%s\'',
         '%s: Ignoring vpi_put_value to vpiParameter \'%s\'',
         '%s: Index %u for object \'%s\' is out of bounds [%u,%u]',
@@ -95,7 +91,6 @@ for s in [
         'Modport item is not a variable:',
         'Modport not referenced as <interface>.',
         'Modport not referenced from underneath an interface:',
-        'Need $SYSTEMC_INCLUDE in environment or when Verilator configured,',
         'Non-interface used as an interface:',
         'Parameter type pin value isn\'t a type: Param',
         'Parameter type variable isn\'t a type: Param',
@@ -129,12 +124,9 @@ for s in [
         'Unsupported: Per-bit array instantiations',
         'Unsupported: Public functions with >64 bit outputs;',
         'Unsupported: Public functions with return > 64 bits wide.',
-        'Unsupported: Release statement argument is too complex array select',
         'Unsupported: Replication to form',
-        'Unsupported: Shifting of by over 32-bit number isn\'t supported.',
         'Unsupported: Size-changing cast on non-basic data type',
         'Unsupported: Slice of non-constant bounds',
-        'Unsupported: Stream operation on a variable of a type',
         'Unsupported: Using --protect-ids with public function',
         'Unsupported: Verilog 1995 gate primitive:',
         'Unsupported: [] dimensions',
@@ -145,7 +137,6 @@ for s in [
         'Unsupported: extern forkjoin',
         'Unsupported: extern task',
         'Unsupported: no_inline for tasks',
-        'Unsupported: non-const assert directive type expression',
         'Unsupported: property port \'local\'',
         'Unsupported: randsequence production function variable',
         'Unsupported: repeat event control',
@@ -273,11 +264,12 @@ def check_msg(msg):
             return
 
     # Try regexp, with %s in message changed to .*?
-    if re.search(r'%[a-z]', msg):
+    if re.search(r'%[%a-z]', msg):
         msg_re = re.escape(msg)
         msg_re = re.sub(r'^%[a-z]', r'', msg_re)
         msg_re = re.sub(r'%[a-z]$', r'', msg_re)
         msg_re = re.sub(r'%[a-z]', r'.*?', msg_re)
+        msg_re = re.sub(r'%%', r'%', msg_re)
         # print("msg_re='%s'" % (msg_re))
         m = re.compile(msg_re)
         for output in Outputs:
