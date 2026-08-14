@@ -5949,6 +5949,32 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
+
+    // Reduce a chained class-scope operand (`pkg::cls` in `pkg::cls::t`) to its
+    // innermost ClassOrPackageRef
+    bool reduceScopeDot(AstRefDType* nodep, AstDot* scopeDotp) {
+        AstClassOrPackageRef* const outerp = VN_CAST(scopeDotp->lhsp(), ClassOrPackageRef);
+        AstClassOrPackageRef* const innerp = VN_CAST(scopeDotp->rhsp(), ClassOrPackageRef);
+        if (!outerp || !innerp) return false;
+        if (!outerp->classOrPackageSkipp()
+            && !m_statep->resolveClassOrPackage(m_ds.m_dotSymp, outerp, true, false,
+                                                "class/package reference")) {
+            return true;  // Error already reported
+        }
+        AstNodeModule* const outerModp = outerp->classOrPackageSkipp();
+        if (!outerModp) return false;
+        // Resolve the inner name within the outer scope
+        if (!innerp->classOrPackageSkipp()
+            && !m_statep->resolveClassOrPackage(m_statep->getNodeSym(outerModp), innerp, false,
+                                                false, "class/package reference")) {
+            return true;  // Error already reported
+        }
+        innerp->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(scopeDotp->unlinkFrBack()), scopeDotp);
+        nodep->classOrPackageOpp(innerp);
+        return true;
+    }
+
     void visit(AstRefDType* nodep) override {
 
         if (auto* const typeOfp = nodep->typeofp()) {
@@ -6015,7 +6041,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
-        if (AstNode* const cpackagep = nodep->classOrPackageOpp()) {
+        if (nodep->classOrPackageOpp()) {
+            // Chained scope (`pkg::cls::t`, `pkg::cls#(P)::t`):   Resolve the outer scope, then
+            // the inner one within it.
+            bool scopeDotReported = false;
+            if (AstDot* const scopeDotp = VN_CAST(nodep->classOrPackageOpp(), Dot)) {
+                scopeDotReported = reduceScopeDot(nodep, scopeDotp);
+            }
+            // Re-read: reduceScopeDot may have replaced the operand
+            AstNode* const cpackagep = nodep->classOrPackageOpp();
             if (AstClassOrPackageRef* const cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
                 iterate(cpackagerefp);
                 const AstClass* const clsp = VN_CAST(cpackagerefp->classOrPackageNodep(), Class);
@@ -6054,7 +6088,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         << "'\n"
                         << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
                 }
-            } else {
+            } else if (!scopeDotReported) {
                 cpackagep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Multiple '::' package/class reference");
             }

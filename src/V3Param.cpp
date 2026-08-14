@@ -2267,13 +2267,17 @@ public:
     //       as a struct member).
     //   (3) `AstVarRef` to a deferred lparam - descend into its valuep so the
     //       chain `pin -> lparam -> ... -> class::lparam Dot` reaches the Dot.
+    //   (4) Any referenced variable's own dtype. IE `$bits(sig)` in a
+    //       parameter expression.
     // Discoveries of (2) and (3) feed back into the walk worklist; (1) and (2)
     // are also kept in lists for the resolution passes at the end.
     void resolveDeferredDotsReachableFrom(AstNode* rootp, AstNodeModule* modp) {
         std::vector<AstDot*> dotps;
         std::vector<AstTypedef*> tdefps;
+        std::vector<AstVar*> varps;
         const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
         std::set<AstVar*> reachedDeferred;
+        std::set<const AstVar*> reachedVars;
         std::set<const AstTypedef*> reachedTypedefs;
         std::vector<AstNode*> worklist{rootp};
         while (!worklist.empty()) {
@@ -2290,7 +2294,8 @@ public:
                     }
                 } else if (const AstVarRef* const refp = VN_CAST(np, VarRef)) {
                     AstVar* const varp = refp->varp();
-                    if (varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
+                    if (varp && reachedVars.insert(varp).second) varps.push_back(varp);
+                    if (varp && varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
                         && reachedDeferred.insert(varp).second) {
                         UASSERT_OBJ(varp->valuep(), varp, "VarRef should have non-null valuep");
                         worklist.push_back(varp->valuep());
@@ -2298,13 +2303,14 @@ public:
                 }
             });
         }
-        if (dotps.empty() && tdefps.empty()) return;
+        if (dotps.empty() && tdefps.empty() && varps.empty()) return;
         VL_RESTORER(m_modp);
         m_modp = modp;
         // Link unresolved class-scoped RefDTypes buried in any typedef reachable from
         // the pin/expr tree (e.g. `$bits(wrap_t)` where `wrap_t`'s struct members
         // reference `CFG::data_t` from a parameterized-class typedef alias).
         for (AstTypedef* const tdefp : tdefps) resolveParamClassRefDType(tdefp->subDTypep());
+        for (AstVar* const varp : varps) resolveParamClassRefDType(varp->subDTypep());
         // Reverse-iterate so inner Dots resolve before outer.
         for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
     }
@@ -3165,6 +3171,7 @@ class ParamVisitor final : public VNVisitor {
                     v3Global.rootp()->pushDeferredParamVarp(nodep);
                     return;
                 }
+                m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
                 V3Const::constifyParamsEdit(nodep);
             }
         }
