@@ -4895,9 +4895,11 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    bool isGateOptimizable() const override { return false; }  // AssocSel creates on miss
+    bool isGateOptimizable() const override {
+        return !isLValue();  // AssocSel creates on miss
+    }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return false; }  // AssocSel creates on miss
+    bool isPure() override { return !isLValue(); }  // AssocSel creates on miss
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
 };
