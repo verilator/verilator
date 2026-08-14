@@ -13,6 +13,10 @@ contributors that suggested or implemented a given issue are shown in []. Thanks
 Verilator 5.051 devel
 ==========================
 
+**Important:**
+
+* Verilator now supports UVM 2020-3.2; see (#1538) for limitations.
+
 **Other:**
 
 * Add comments as a branch description in coverage .info files (#7843). [Eryk Szpotanski]
