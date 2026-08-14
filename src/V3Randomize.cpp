@@ -1959,6 +1959,96 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftL* nodep) override { handleShift(nodep); }
     void visit(AstShiftR* nodep) override { handleShift(nodep); }
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
+    // True iff exprp's array can't be an SMT symbol (non-rand or unresolved).
+    static bool arrayCompareOperandNeedsExpansion(AstNodeExpr* exprp) {
+        AstVar* varp = nullptr;
+        if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+            varp = refp->varp();
+        } else if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+            varp = mselp->varp();
+        }
+        return !varp || !varp->rand().isRandomizable();
+    }
+    // True iff every array dimension of dtp bottoms out in a scalar leaf
+    // (no queue/dynamic/associative array anywhere in the shape).
+    static bool arrayShapeFullySupported(const AstNodeDType* dtp) {
+        if (const AstUnpackArrayDType* const arrp = VN_CAST(dtp, UnpackArrayDType)) {
+            return arrayShapeFullySupported(arrp->subDTypep()->skipRefp());
+        }
+        return !VN_IS(dtp, QueueDType) && !VN_IS(dtp, DynArrayDType)
+               && !VN_IS(dtp, AssocArrayDType) && !VN_IS(dtp, WildcardArrayDType);
+    }
+    // Builds lhs[0]==rhs[0] && lhs[1]==rhs[1] && ..., recursing into
+    // sub-arrays. Takes ownership of lhsp/rhsp. markLhs/markRhs: mark that
+    // side's element accesses symbolic (only for genuinely-rand arrays).
+    AstNodeExpr* buildElementwiseEq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+                                    const AstUnpackArrayDType* arrDtp, bool markLhs,
+                                    bool markRhs) {
+        const AstNodeDType* const subDtp = arrDtp->subDTypep()->skipRefp();
+        const AstUnpackArrayDType* const subArrDtp = VN_CAST(subDtp, UnpackArrayDType);
+        AstNodeExpr* resultp = nullptr;
+        for (int k = 0; k < arrDtp->elementsConst(); ++k) {
+            const uint32_t idxVal = static_cast<uint32_t>(arrDtp->lo() + k);
+            // cloneTreePure() doesn't preserve user1(), so re-mark the clone.
+            AstNodeExpr* const lhsBasep = lhsp->cloneTreePure(false);
+            AstNodeExpr* const rhsBasep = rhsp->cloneTreePure(false);
+            if (markLhs) lhsBasep->foreach([](AstNode* np) { np->user1(true); });
+            if (markRhs) rhsBasep->foreach([](AstNode* np) { np->user1(true); });
+            AstArraySel* const lhsElemp = new AstArraySel{
+                fl, lhsBasep, new AstConst{fl, AstConst::WidthedValue{}, 32, idxVal}};
+            AstArraySel* const rhsElemp = new AstArraySel{
+                fl, rhsBasep, new AstConst{fl, AstConst::WidthedValue{}, 32, idxVal}};
+            if (markLhs) lhsElemp->user1(true);
+            if (markRhs) rhsElemp->user1(true);
+            AstNodeExpr* const elemEqp
+                = subArrDtp
+                      ? buildElementwiseEq(fl, lhsElemp, rhsElemp, subArrDtp, markLhs, markRhs)
+                      : static_cast<AstNodeExpr*>(new AstEq{fl, lhsElemp, rhsElemp});
+            elemEqp->user1(true);
+            if (resultp) {
+                resultp = new AstLogAnd{fl, resultp, elemEqp};
+                resultp->user1(true);
+            } else {
+                resultp = elemEqp;
+            }
+        }
+        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+        return resultp;
+    }
+    // Rand-vs-rand array compares already work via native SMT array equality.
+    void visitArrayCompare(AstNodeBiop* nodep, bool isNeq) {
+        if (editFormat(nodep)) return;
+        const AstUnpackArrayDType* const arrDtp
+            = VN_CAST(nodep->lhsp()->dtypep()->skipRefp(), UnpackArrayDType);
+        if (arrDtp
+            && (arrayCompareOperandNeedsExpansion(nodep->lhsp())
+                || arrayCompareOperandNeedsExpansion(nodep->rhsp()))) {
+            FileLine* const fl = nodep->fileline();
+            if (!arrayShapeFullySupported(arrDtp)) {
+                nodep->v3error("Unsupported: array comparison in constraint on an array "
+                               "shape containing a queue, dynamic, or associative array");
+                return;
+            }
+            const bool lhsIsRand = !arrayCompareOperandNeedsExpansion(nodep->lhsp());
+            const bool rhsIsRand = !arrayCompareOperandNeedsExpansion(nodep->rhsp());
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* resultp
+                = buildElementwiseEq(fl, lhsp, rhsp, arrDtp, lhsIsRand, rhsIsRand);
+            if (isNeq) {
+                resultp = new AstLogNot{fl, resultp};
+                resultp->user1(true);
+            }
+            nodep->replaceWith(resultp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            iterate(resultp);
+            return;
+        }
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstEq* nodep) override { visitArrayCompare(nodep, false); }
+    void visit(AstNeq* nodep) override { visitArrayCompare(nodep, true); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
