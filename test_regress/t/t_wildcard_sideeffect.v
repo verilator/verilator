@@ -17,7 +17,7 @@ module t;
     int dict1d[*];
     int dict2d[*][*];
     int dict3d[*][*][*];
-    int dictmix[int][*];
+    int dictmix[int] [*];
 
     `checkd(dict1d[0], 0);
     `checkd(dict1d.size(), 0);

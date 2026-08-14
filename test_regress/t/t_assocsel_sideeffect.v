@@ -33,20 +33,20 @@ module t;
   initial begin
     // 1D
     foreach (dict1d[b]) begin
-      $error(b); // should never reach
+      $error(b);  // should never reach
     end
     `checkd(dict1d.size(), 0);
 
     // 2D
     foreach (dict2d[0][b]) begin
-      $error(b); // should never reach
+      $error(b);  // should never reach
     end
     `checkd(dict2d.size(), 0);
 
     // 3D
     foreach (dict3d[0][i]) begin
       foreach (dict3d[0][i][j]) begin
-        $error(i, j); // should never reach
+        $error(i, j);  // should never reach
       end
     end
     `checkd(dict3d.size(), 0);

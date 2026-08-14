@@ -32,12 +32,14 @@ Verilator 5.051 devel
 * Support `default clocking` (#7984). [Kamil Danecki, Antmicro Ltd.]
 * Support embedded covergroup clocking events (#8028). [Marco Bartoli]
 * Support `weak`/`strong` keywords in property expressions (#8054). [Artur Bieniek, Antmicro Ltd.]
+* Support class handle covergroup arguments (#8071). [Marco Bartoli]
 * Optimize random initialization. [Geza Lore, Testorrent USA, Inc.]
 * Optimize more always blocks in DFG (#7775). [Geza Lore, Testorrent USA, Inc.]
 * Optimize assertion NFAs using bit-vector ring buffers (#7885). [Artur Bieniek, Antmicro Ltd.]
 * Optimize VPI symbol registration and scope construction (#7936). [Nick Brereton]
 * Optimize bounded always properties using ring buffers (#8061) (#8092). [Artur Bieniek, Antmicro Ltd.]
 * Optimize VL_WORDS_I/VL_BYTES_I (#8095). [Geza Lore, Testorrent USA, Inc.]
+* Optimize temporary insertion for single bit replicates in DFG (#8110). [Geza Lore, Testorrent USA, Inc.]
 * Fix $finish continuing event loop (#7267) (#7950). [Artur Bieniek, Antmicro Ltd.]
 * Fix $display accepting streaming concat arguments (#7663) (#7890). [Jaeuk Lee]
 * Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
@@ -86,6 +88,7 @@ Verilator 5.051 devel
 * Fix variable scope in unique on dynamic array (#7981). [Kornel Uriasz, Antmicro Ltd.]
 * Fix table optimization causing not contextually convertible to bool error (#7983). [Jakub Michalski]
 * Fix wait fork trigger temporary split across generated functions (#7985) (#7986). [Marco Brambilla]
+* Fix randc cycling in a class that also uses solve...before (#7991 partial) (#8055). [Yilou Wang]
 * Fix randomize() with a user variable named 'item' (#7993) (#7994).
 * Fix UNSATCONSTR reporting constraint indices above 9 (#7995). [Yilou Wang]
 * Fix MULTIDRIVEN/PROC warning suppression via lint_off (#8000). [Gilberto Abram]
@@ -112,9 +115,14 @@ Verilator 5.051 devel
 * Fix untyped datatype error on sampling functions with property arguments (#8060). [Artur Bieniek, Antmicro Ltd.]
 * Fix VPI cbValueChange for 1-bit select (#8063). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix skipping non-constrained enum constraining when inside object of other class (#8075). [Kornel Uriasz, Antmicro Ltd.]
+* Fix unintended side-effect insertion on associative array read (#8077). [Adam Kostrzewski, Antmicro Ltd.]
 * Fix undefined symbol solver error (#8080). [Igor Zaworski, Antmicro Ltd.]
 * Fix unpacked array element force with procedural assign (#8084) (#8085). [Nikolai Kumar]
 * Fix hierarchical class scope resolution (#8094). [Artur Bieniek, Antmicro Ltd.]
+* Fix the clang compilation using precompiled headers (#8105). [Demin Han]
+* Fix invalid typedef (#8106). [Adam Kostrzewski, Antmicro Ltd.]
+* Fix R/W references to random builtin function seeds (#8112). [Geza Lore, Testorrent USA, Inc.]
+* Fix COVERIGN on SVA goto repetition (#8118). [Artur Bieniek, Antmicro Ltd.]
 
 
 Verilator 5.050 2026-07-01

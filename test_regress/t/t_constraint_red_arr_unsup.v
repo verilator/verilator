@@ -8,16 +8,14 @@ class ReductionDynSubArr;
   rand int arr[5][];
   rand int a;
 
-  typedef struct {
-    rand int arr[];
-  } Subcls;
+  typedef struct {rand int arr[];} Subcls;
 
   rand Subcls sc;
 
   function new();
     sc.arr = new[5];
     foreach (arr[i]) begin
-      arr[i] = new [5];
+      arr[i] = new[5];
     end
   endfunction
 
