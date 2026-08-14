@@ -2117,6 +2117,64 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
             if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
         });
+        // Non-rand arrays aren't declared as SMT symbols, so a rand-dependent
+        // index into one can't use the '(select arr idx)' path below.
+        AstVar* arrVarp = nullptr;
+        if (const AstVarRef* const refp = VN_CAST(nodep->fromp(), VarRef)) {
+            arrVarp = refp->varp();
+        } else if (const AstMemberSel* const mselp = VN_CAST(nodep->fromp(), MemberSel)) {
+            arrVarp = mselp->varp();
+        }
+        const AstUnpackArrayDType* const arrDtp
+            = arrVarp ? VN_CAST(arrVarp->dtypep()->skipRefp(), UnpackArrayDType) : nullptr;
+        const bool arrIsKnownRand = arrVarp && arrVarp->rand().isRandomizable();
+        // Only a 1-D array can be expanded below; each element must be a
+        // scalar leaf, not another array (same check unique{} uses).
+        bool arrIsSupported1D = false;
+        if (arrDtp) {
+            const AstNodeDType* const subp = arrDtp->subDTypep()->skipRefp();
+            arrIsSupported1D = !VN_IS(subp, NodeArrayDType) && !VN_IS(subp, QueueDType)
+                               && !VN_IS(subp, DynArrayDType) && !VN_IS(subp, AssocArrayDType)
+                               && !VN_IS(subp, WildcardArrayDType);
+        }
+        if (indexIsRand && !arrIsKnownRand && !(arrDtp && arrIsSupported1D)) {
+            // Can't expand (not a supported 1-D shape) or treat as state
+            // (nodep may still be array-typed, so no safe scalar fallback).
+            nodep->v3error("Unsupported: rand-dependent index into this array shape in "
+                           "constraint (multidimensional, queue, dynamic, or associative array)");
+            return;
+        }
+        if (indexIsRand && arrDtp && arrIsSupported1D && !arrIsKnownRand) {
+            AstNodeExpr* const idxp = nodep->bitp()->unlinkFrBack();
+            const int loIdx = arrDtp->lo();
+            const int elements = arrDtp->elementsConst();
+            AstNodeExpr* chainp = nullptr;
+            for (int k = elements - 1; k >= 0; --k) {
+                const int idxVal = loIdx + k;
+                AstArraySel* const elemp
+                    = new AstArraySel{fl, nodep->fromp()->cloneTreePure(false),
+                                      new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
+                                                   static_cast<uint32_t>(idxVal)}};
+                if (!chainp) {
+                    chainp = elemp;
+                } else {
+                    AstEq* const eqp
+                        = new AstEq{fl, idxp->cloneTreePure(false),
+                                    new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
+                                                 static_cast<uint32_t>(idxVal)}};
+                    // Mark symbolic, else editFormat() would fold this using
+                    // idxp's stale pre-solve value (same as AstExtend above).
+                    eqp->user1(true);
+                    chainp = new AstCond{fl, eqp, elemp, chainp};
+                    chainp->user1(true);
+                }
+            }
+            VL_DO_DANGLING(idxp->deleteTree(), idxp);
+            nodep->replaceWith(chainp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            iterate(chainp);
+            return;
+        }
         if (indexIsRand) {
             // Index depends on rand variable -- keep as SMT symbol.
             // Array index sort is 32-bit, so zero-extend narrower indices.
