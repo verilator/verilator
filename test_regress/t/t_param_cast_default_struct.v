@@ -10,7 +10,7 @@
 // verilog_format: on
 
 // A parameter whose default is a cast of a member of a struct-typed
-// parameter.  
+// parameter.
 
 typedef struct packed {int unsigned CAP;} cfg_t;
 
