@@ -201,6 +201,9 @@ public:
     // Called at pass boundaries before code dereferences ledger pointers.
     static void purgeStaleRefs();
 
+    // Remove any saved references that point into a subtree, just before it is deleted.
+    static void purgeDeletedSubtree(AstNode* nodep);
+
     // Debug: dump all captured entries
     static void dumpEntries(const string& label);
 
