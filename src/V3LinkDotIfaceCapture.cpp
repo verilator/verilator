@@ -254,19 +254,10 @@ LiveNodes collectLiveNodes() {
     return liveNodes;
 }
 
-// A live snapshot, when supplied, stops the walk at the first stale back link;
-// callers without one fall back to the sentinel guard below.
+// Find the module that owns this node; a snapshot, if given, stops the walk at a stale link.
 AstNodeModule* findOwnerModuleImpl(AstNode* nodep, const LiveNodes* liveNodesp) {
     for (AstNode* curp = nodep; curp; curp = curp->backp()) {
-        if (liveNodesp) {
-            if (!liveNodesp->count(curp)) return nullptr;
-        } else if (reinterpret_cast<uintptr_t>(curp) < 0x1000) {
-            // Legacy callers lack a liveness snapshot; retain the existing guard
-            // against sentinel values encountered in corrupted backp() chains.
-            // It cannot prove an arbitrary freed pointer safe - invalidating
-            // ledger entries at deletion time would make it unnecessary.
-            return nullptr;
-        }
+        if (liveNodesp && !liveNodesp->count(curp)) return nullptr;
         if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
     }
     return nullptr;
@@ -363,6 +354,34 @@ void V3LinkDotIfaceCapture::purgeStaleRefs() {
     // in the ledger (refp, ownerModp, typedefp, paramTypep, etc.).
     const LiveNodes liveNodes = collectLiveNodes();
     nullStaleLedgerRefs(liveNodes);
+}
+
+void V3LinkDotIfaceCapture::purgeDeletedSubtree(AstNode* nodep) {
+    if (!s_enabled || s_map.empty() || !nodep) return;
+    // Only track nodes something could point to, within the subtree being deleted.
+    std::unordered_set<const AstNode*> deadps;
+    nodep->foreach([&](AstNode* np) {
+        if (np->maybePointedTo()) deadps.insert(np);
+    });
+    for (auto& kv : s_map) {
+        CapturedEntry& entry = kv.second;
+        // If the main reference is dying, promote a live one so consumers
+        // (which skip an entry with a null reference) still retarget the rest.
+        if (entry.refp && deadps.count(entry.refp)) {
+            entry.refp = nullptr;
+            for (AstRefDType*& xrefp : entry.extraRefps) {
+                if (xrefp && !deadps.count(xrefp)) {
+                    entry.refp = xrefp;
+                    xrefp = nullptr;
+                    break;
+                }
+            }
+        }
+        // Null every remaining link into the deleted subtree.
+        entry.foreachLink([&](AstNode*& np) {
+            if (np && deadps.count(np)) np = nullptr;
+        });
+    }
 }
 
 void V3LinkDotIfaceCapture::dumpEntries(const string& label) {
