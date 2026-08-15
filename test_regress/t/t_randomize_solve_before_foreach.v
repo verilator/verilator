@@ -83,10 +83,12 @@ module t;
   initial begin
     static item it = new;
     static Packet pkt = new;
+    int randomize_result;
 
     // Test 1: solve...before with conditional constraints
     repeat (20) begin
-      `checkd(it.randomize(), 1);
+      randomize_result = it.randomize();
+      `checkd(randomize_result, 1);
       if (it.mode == 0) begin
         foreach (it.data[i]) begin
           `checkh(it.data[i], 8'h00);
@@ -96,7 +98,8 @@ module t;
 
     // Test 2: solve...before with unpacked/packed struct array members
     repeat (20) begin
-      `checkd(pkt.randomize(), 1);
+      randomize_result = pkt.randomize();
+      `checkd(randomize_result, 1);
       foreach (pkt.pdata[i]) begin
         `checkd(pkt.pdata[i] inside {8'h10, 8'h20, 8'h30, 8'h40, 8'h50}, 1);
       end
@@ -104,7 +107,8 @@ module t;
 
     // Test 3: solve...before with static array index (non-foreach)
     repeat (20) begin
-      `checkd(it.randomize(), 1);
+      randomize_result = it.randomize();
+      `checkd(randomize_result, 1);
     end
 
     $write("*-* All Finished *-*\n");
