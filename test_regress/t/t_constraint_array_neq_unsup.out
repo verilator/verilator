@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:14:24: Unsupported: array comparison in constraint on an array shape containing a queue, dynamic, or associative array
+                                                          : ... note: In instance 't'
+   14 |   constraint c { frame == target; }
+      |                        ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

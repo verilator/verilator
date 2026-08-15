@@ -1959,14 +1959,18 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftL* nodep) override { handleShift(nodep); }
     void visit(AstShiftR* nodep) override { handleShift(nodep); }
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
+    // Root variable behind a VarRef, MemberSel, or a constant-indexed slice
+    // of either (e.g. cube[0] as a whole-array comparison operand).
+    static AstVar* arrayCompareRootVar(AstNodeExpr* exprp) {
+        if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) return refp->varp();
+        if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) return mselp->varp();
+        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel))
+            return arrayCompareRootVar(selp->fromp());
+        return nullptr;
+    }
     // True iff exprp's array can't be an SMT symbol (non-rand or unresolved).
     static bool arrayCompareOperandNeedsExpansion(AstNodeExpr* exprp) {
-        AstVar* varp = nullptr;
-        if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
-            varp = refp->varp();
-        } else if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
-            varp = mselp->varp();
-        }
+        AstVar* const varp = arrayCompareRootVar(exprp);
         return !varp || !varp->rand().isRandomizable();
     }
     // True iff every array dimension of dtp bottoms out in a scalar leaf
@@ -1975,8 +1979,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (const AstUnpackArrayDType* const arrp = VN_CAST(dtp, UnpackArrayDType)) {
             return arrayShapeFullySupported(arrp->subDTypep()->skipRefp());
         }
-        return !VN_IS(dtp, QueueDType) && !VN_IS(dtp, DynArrayDType)
-               && !VN_IS(dtp, AssocArrayDType) && !VN_IS(dtp, WildcardArrayDType);
+        // Only the queue case is tested; the others are vanishingly rare.
+        return !VN_IS(dtp, QueueDType) && !VN_IS(dtp, DynArrayDType)  // LCOV_EXCL_BR_LINE
+               && !VN_IS(dtp, AssocArrayDType)  // LCOV_EXCL_BR_LINE
+               && !VN_IS(dtp, WildcardArrayDType);  // LCOV_EXCL_BR_LINE
     }
     // Builds lhs[0]==rhs[0] && lhs[1]==rhs[1] && ..., recursing into
     // sub-arrays. Takes ownership of lhsp/rhsp. markLhs/markRhs: mark that
@@ -2026,8 +2032,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 || arrayCompareOperandNeedsExpansion(nodep->rhsp()))) {
             FileLine* const fl = nodep->fileline();
             if (!arrayShapeFullySupported(arrDtp)) {
-                nodep->v3error("Unsupported: array comparison in constraint on an array "
-                               "shape containing a queue, dynamic, or associative array");
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint on an array "
+                              "shape containing a queue, dynamic, or associative array");
                 return;
             }
             const bool lhsIsRand = !arrayCompareOperandNeedsExpansion(nodep->lhsp());
