@@ -2523,6 +2523,7 @@ class VlTest:
                 line = re.sub(r'CPU Time: +[0-9.]+ seconds[^\n]+', 'CPU Time: ###', line)
                 line = re.sub(r'\?v=[0-9.]+', '?v=latest', line)  # warning URL
                 line = re.sub(r'_h[0-9a-f]{8}_', '_h########_', line)
+                line = re.sub(r'vpiHandle \'0x[0-9a-f]+\'', 'vpiHandle \'0x#\'', line)
                 # Avoid absolute paths
                 line = re.sub(r'%Error: /[^: ]+/([^/:])', r'%Error: .../\1', line)
                 line = re.sub(r'("file://)/[^: ]+/([^/:])', r'\1/.../\2', line)

@@ -35,9 +35,11 @@ endclass
 module t;
   Top top;
   initial begin
+    int randomize_result;
     top = new;
 
-    `checkd(top.randomize(), 1);
+    randomize_result = top.randomize();
+    `checkd(randomize_result, 1);
     `checkd(top.s.num, 0);
 
     $write("*-* All Finished *-*\n");
