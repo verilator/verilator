@@ -54,7 +54,9 @@ for filename in sorted(files.keys()):
 
     contents = test.file_contents(filename)
 
-    check_pattern(filename, contents, r'`check[a-z]+\([^\n]*?randomize\(',
-                  "check macros have side effects, suggest assign to randomize_result variable and check that")
+    check_pattern(
+        filename, contents, r'`check[a-z]+\([^\n]*?randomize\(',
+        "check macros have side effects, suggest assign to randomize_result variable and check that"
+    )
 
 test.passes()
