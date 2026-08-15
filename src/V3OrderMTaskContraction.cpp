@@ -527,8 +527,9 @@ class Contraction final {
         m_mTaskGraph.mergeMTasks(recipientp, donorp);
         VL_DANGLING(donorp);
 
-        // Confirm we haven't botched the CP updates.
-        m_mTaskGraph.validate();
+        // Confirm we haven't botched the CP updates. This is a whole graph walk after every single
+        // merge, so it is quadratic in the size of the graph, hence only under '--debug 9'.
+        if (VL_UNLIKELY(debug() >= 9)) m_mTaskGraph.validate();
 
         // Add the EdgeMCs of the merged MTask
         addEdgeMCs(recipientp);
