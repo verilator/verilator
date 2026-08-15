@@ -1993,17 +1993,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         const AstNodeDType* const subDtp = arrDtp->subDTypep()->skipRefp();
         const AstUnpackArrayDType* const subArrDtp = VN_CAST(subDtp, UnpackArrayDType);
         AstNodeExpr* resultp = nullptr;
+        // Index each synthesized AstArraySel with 0-based k, not
+        // arrDtp->lo()+k: a real source-level constant index gets bias-
+        // adjusted to 0-based by an earlier pass before elaboration, but
+        // one built fresh here skips that pass, so it needs k directly.
         for (int k = 0; k < arrDtp->elementsConst(); ++k) {
-            const uint32_t idxVal = static_cast<uint32_t>(arrDtp->lo() + k);
             // cloneTreePure() doesn't preserve user1(), so re-mark the clone.
             AstNodeExpr* const lhsBasep = lhsp->cloneTreePure(false);
             AstNodeExpr* const rhsBasep = rhsp->cloneTreePure(false);
             if (markLhs) lhsBasep->foreach([](AstNode* np) { np->user1(true); });
             if (markRhs) rhsBasep->foreach([](AstNode* np) { np->user1(true); });
             AstArraySel* const lhsElemp = new AstArraySel{
-                fl, lhsBasep, new AstConst{fl, AstConst::WidthedValue{}, 32, idxVal}};
+                fl, lhsBasep,
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
             AstArraySel* const rhsElemp = new AstArraySel{
-                fl, rhsBasep, new AstConst{fl, AstConst::WidthedValue{}, 32, idxVal}};
+                fl, rhsBasep,
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
             if (markLhs) lhsElemp->user1(true);
             if (markRhs) rhsElemp->user1(true);
             AstNodeExpr* const elemEqp

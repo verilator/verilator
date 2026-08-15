@@ -39,6 +39,21 @@ class frame_3d;
   endfunction
 endclass
 
+// Same idiom, but the array has a non-zero declared lower bound ([1:4]
+// instead of the usual [0:3]-equivalent [4]) -- each synthesized
+// array-element access has to account for that bias itself.
+class frame_nonzero_base;
+  rand bit [7:0] frame[1:4];
+  bit [7:0] target[1:4];
+  constraint c { frame == target; }
+  function new();
+    target[1] = 8'h11;
+    target[2] = 8'h22;
+    target[3] = 8'h33;
+    target[4] = 8'h44;
+  endfunction
+endclass
+
 // Same idiom, but the non-rand array is reached through a member select
 // (holder.target) rather than a plain variable reference.
 class Holder;
@@ -115,6 +130,7 @@ module t;
   initial begin
     frame_bothrand bothrand_obj;
     frame_3d d3_obj;
+    frame_nonzero_base nzbase_obj;
     frame_via_member member_obj;
     frame_rand_slice slice_obj;
     frame_eq eq_obj;
@@ -144,6 +160,15 @@ module t;
     `checkd(d3_obj.frame[1][0][1], 8'h06);
     `checkd(d3_obj.frame[1][1][0], 8'h07);
     `checkd(d3_obj.frame[1][1][1], 8'h08);
+
+    // A non-zero-based declared array range must force the exact value
+    nzbase_obj = new;
+    randomize_result = nzbase_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(nzbase_obj.frame[1], 8'h11);
+    `checkd(nzbase_obj.frame[2], 8'h22);
+    `checkd(nzbase_obj.frame[3], 8'h33);
+    `checkd(nzbase_obj.frame[4], 8'h44);
 
     // Non-rand array reached via a member select must force the exact value
     member_obj = new;
