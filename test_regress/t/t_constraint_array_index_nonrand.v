@@ -23,30 +23,68 @@ class UniqueIdPool;
   constraint c_unused { !used[id]; }
 endclass
 
+// Same idiom, but the array is reached through a member select
+// (holder.used[id]) rather than a plain variable reference.
+class Holder;
+  bit used[16];
+endclass
+
+class UniqueIdPoolViaMember;
+  rand int id;
+  Holder holder;
+
+  constraint c_range { id inside {[0:15]}; }
+  constraint c_unused { !holder.used[id]; }
+
+  function new();
+    holder = new;
+  endfunction
+endclass
+
 module t;
   initial begin
     UniqueIdPool obj;
+    UniqueIdPoolViaMember mobj;
     bit [15:0] seen;
-    obj = new;
-    seen = '0;
+    int randomize_result;
+
+    mobj = new;
     for (int i = 0; i < 16; i++) begin
-      `checkd(obj.randomize(), 1)
-      // Each draw must be a legal, not-yet-seen id
-      if (obj.id < 0 || obj.id > 15) begin
-        $write("%%Error: id out of range: %0d\n", obj.id);
+      randomize_result = mobj.randomize();
+      `checkd(randomize_result, 1);
+      if (mobj.id < 0 || mobj.id > 15) begin
+        $write("%%Error: id out of range: %0d\n", mobj.id);
         `stop;
       end
-      if (seen[obj.id]) begin
-        $write("%%Error: id %0d drawn twice\n", obj.id);
-        `stop;
-      end
-      seen[obj.id] = 1'b1;
-      obj.used[obj.id] = 1'b1;
+      mobj.holder.used[mobj.id] = 1'b1;
     end
-    // All 16 ids must have been drawn exactly once
-    `checkd(seen, 16'hffff)
-    // Pool is now exhausted -- no legal id remains
-    `checkd(obj.randomize(), 0)
+
+    // Repeat the whole draw-all-then-exhaust cycle on a fresh object each
+    // time, to guard against solver-randomness flakiness masking a bug.
+    repeat (20) begin
+      obj = new;
+      seen = '0;
+      for (int i = 0; i < 16; i++) begin
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
+        // Each draw must be a legal, not-yet-seen id
+        if (obj.id < 0 || obj.id > 15) begin
+          $write("%%Error: id out of range: %0d\n", obj.id);
+          `stop;
+        end
+        if (seen[obj.id]) begin
+          $write("%%Error: id %0d drawn twice\n", obj.id);
+          `stop;
+        end
+        seen[obj.id] = 1'b1;
+        obj.used[obj.id] = 1'b1;
+      end
+      // All 16 ids must have been drawn exactly once
+      `checkd(seen, 16'hffff);
+      // Pool is now exhausted -- no legal id remains
+      randomize_result = obj.randomize();
+      `checkd(randomize_result, 0);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;

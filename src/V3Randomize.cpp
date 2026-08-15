@@ -2133,15 +2133,20 @@ class ConstraintExprVisitor final : public VNVisitor {
         bool arrIsSupported1D = false;
         if (arrDtp) {
             const AstNodeDType* const subp = arrDtp->subDTypep()->skipRefp();
-            arrIsSupported1D = !VN_IS(subp, NodeArrayDType) && !VN_IS(subp, QueueDType)
-                               && !VN_IS(subp, DynArrayDType) && !VN_IS(subp, AssocArrayDType)
-                               && !VN_IS(subp, WildcardArrayDType);
+            // Queue/dynamic/assoc elements are always routed through a
+            // CMethodHard visit first, never reaching this check.
+            arrIsSupported1D = !VN_IS(subp, NodeArrayDType)
+                               && !VN_IS(subp, QueueDType)  // LCOV_EXCL_BR_LINE
+                               && !VN_IS(subp, DynArrayDType)  // LCOV_EXCL_BR_LINE
+                               && !VN_IS(subp, AssocArrayDType)  // LCOV_EXCL_BR_LINE
+                               && !VN_IS(subp, WildcardArrayDType);  // LCOV_EXCL_BR_LINE
         }
         if (indexIsRand && !arrIsKnownRand && !(arrDtp && arrIsSupported1D)) {
             // Can't expand (not a supported 1-D shape) or treat as state
             // (nodep may still be array-typed, so no safe scalar fallback).
-            nodep->v3error("Unsupported: rand-dependent index into this array shape in "
-                           "constraint (multidimensional, queue, dynamic, or associative array)");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: rand-dependent index into this array shape in "
+                          "constraint (multidimensional, queue, dynamic, or associative array)");
             return;
         }
         if (indexIsRand && arrDtp && arrIsSupported1D && !arrIsKnownRand) {

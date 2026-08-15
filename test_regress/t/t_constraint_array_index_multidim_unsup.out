@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:14:42: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+   14 |   constraint c { id inside {[0:3]}; !used[id][0]; }
+      |                                          ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:21:68: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+   21 |   constraint c { id1 inside {[0:3]}; id2 inside {[0:3]}; !used[id1][id2]; }
+      |                                                                    ^
+%Error: Exiting due to

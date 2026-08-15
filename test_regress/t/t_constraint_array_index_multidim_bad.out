@@ -1,5 +1,0 @@
-%Error: t/t_constraint_array_index_multidim_bad.v:14:42: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
-   14 |   constraint c { id inside {[0:3]}; !used[id][0]; }
-      |                                          ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Exiting due to
