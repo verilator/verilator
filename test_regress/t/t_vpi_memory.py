@@ -18,6 +18,6 @@ test.compile(make_top_shell=False,
              v_flags2=["+define+USE_VPI_NOT_DPI"],
              verilator_flags2=["--exe --vpi --no-l2name", test.pli_filename])
 
-test.execute(use_libvpi=True)
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.passes()

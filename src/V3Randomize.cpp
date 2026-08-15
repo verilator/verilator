@@ -2798,6 +2798,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
                 return;
             }
+            if (!VN_IS(nodep->fromp(), VarRef)) {
+                // Non-dynamic subarrays and member arrays are handled in other parts of code
+                nodep->v3warn(CONSTRAINTIGN, "Unsupported: Array reduction constraint on dynamic "
+                                             "array inside array or struct");
+                return;
+            }
 
             // Create loop variable and header
             AstVar* const loopVarp

@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <memory>  // For std::unique_ptr
 
+int errors = 0;
+
 namespace {
 
 constexpr int maxAllowedErrorLevel = vpiWarning;
@@ -704,6 +706,8 @@ int expectVpiPutError(const std::string& signalName, s_vpi_value value_s, const 
     const bool errorOccurred = receivedError.second;
     const std::string receivedErrorMessage = receivedError.first;
     CHECK_RESULT_NZ(errorOccurred);  // NOLINT(concurrency-mt-unsafe)
+
+    VL_PRINTF("vpi_chk_error: %s\n", receivedErrorMessage.c_str());
 
     // NOLINTNEXTLINE(concurrency-mt-unsafe,performance-avoid-endl)
     CHECK_RESULT(receivedErrorMessage, expectedErrorMessage);

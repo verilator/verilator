@@ -64,21 +64,25 @@ module t;
   UniqueElemSingle uesgl;
 
   initial begin
+    int randomize_result;
     ues = new();
     repeat (20) begin
-      `checkd(ues.randomize(), 1)
-      `checkd(ues.check_unique(), 1)
+      randomize_result = ues.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(ues.check_unique(), 1);
     end
 
     uef = new();
     repeat (20) begin
-      `checkd(uef.randomize(), 1)
-      `checkd(uef.check_unique(), 1)
+      randomize_result = uef.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(uef.check_unique(), 1);
     end
 
     uesgl = new();
     repeat (5) begin
-      `checkd(uesgl.randomize(), 1)
+      randomize_result = uesgl.randomize();
+      `checkd(randomize_result, 1);
     end
 
     $write("*-* All Finished *-*\n");

@@ -40,25 +40,28 @@ module t;
     static Derived d = new();
     static GrandChild g = new();
     int sum_check;
+    int randomize_result;
 
     // Test single-level inheritance with .sum()
     repeat (5) begin
-      `checkd(d.randomize(), 1)
-      `checkd(d.arr.size(), 4)
+      randomize_result = d.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(d.arr.size(), 4);
       sum_check = 0;
       foreach (d.arr[i]) sum_check += d.arr[i];
-      `checkd(sum_check, 200)
-      `checkd(d.base_val inside {[1:100]}, 1)
+      `checkd(sum_check, 200);
+      `checkd(d.base_val inside {[1:100]}, 1);
     end
 
     // Test multi-level inheritance with reduction on fixed array
     repeat (5) begin
       bit [7:0] or_check;
-      `checkd(g.randomize(), 1)
-      `checkd(g.arr.size(), 4)
+      randomize_result = g.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(g.arr.size(), 4);
       sum_check = 0;
       foreach (g.arr[i]) sum_check += g.arr[i];
-      `checkd(sum_check, 200)
+      `checkd(sum_check, 200);
       or_check = 0;
       foreach (g.extra[i]) or_check |= g.extra[i];
       if (or_check == 0) begin

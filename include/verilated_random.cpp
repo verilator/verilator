@@ -1000,6 +1000,10 @@ bool VlRandomizer::nextPhased(VlRNG& rngr, const std::vector<std::string>& uniqu
     // One layer: all solve_before vars are independent, no ordering required
     if (layers.size() <= 1) return nextFlat(rngr, uniqueExprs);
 
+    if (solvePhases(rngr, layers, uniqueExprs)) return true;
+    // Retry once with the randc cycle cleared, as nextFlat does
+    if (m_randcUsedValues.empty()) return false;
+    m_randcUsedValues.clear();
     return solvePhases(rngr, layers, uniqueExprs);
 }
 
@@ -1037,13 +1041,12 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
             // Final phase: use parseSolution to write ALL values to memory
             const bool sat = parseSolution(os);
             if (!sat) {
-                if (!m_randcVarNames.empty()) m_randcUsedValues.clear();
                 os << "(reset)\n";
                 return false;
             }
+            solveDiversityXor(rngr, os);
             // Record solved randc values for future exclusion
             recordRandcValues();
-            solveDiversityXor(rngr, os);
             os << "(reset)\n";
         } else {
             if (!checkSat(os)) {

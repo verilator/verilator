@@ -2053,6 +2053,8 @@ bool AstNodeExpr::isLValue() const {
         return varrefp->access().isWriteOrRW();
     } else if (const AstMemberSel* const memberselp = VN_CAST(this, MemberSel)) {
         return memberselp->access().isWriteOrRW();
+    } else if (const AstStructSel* const structselp = VN_CAST(this, StructSel)) {
+        return structselp->fromp()->isLValue();
     } else if (const AstSel* const selp = VN_CAST(this, Sel)) {
         return selp->fromp()->isLValue();
     } else if (const AstNodeSel* const nodeSelp = VN_CAST(this, NodeSel)) {
@@ -3458,7 +3460,7 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
     }
 }
 void AstClassOrPackageRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
+AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp(const bool doRefs) const {
     AstNode* foundp = m_classOrPackageNodep;
     AstNode* lastp = nullptr;
     while (foundp != lastp) {
@@ -3466,11 +3468,12 @@ AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
         if (AstNodeDType* const anodep = VN_CAST(foundp, NodeDType)) {
             foundp = anodep->skipRefOrNullp();
         }
-        if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
-            foundp = anodep->subDTypep();
-        }
-        if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
-            foundp = anodep->classp();
+        if (doRefs) {
+            if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
+                foundp = anodep->subDTypep();
+            } else if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
+                foundp = anodep->classp();
+            }
         }
     }
     return VN_CAST(foundp, NodeModule);
