@@ -1962,7 +1962,32 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
+        // Check for whole-array equality/inequality with non-rand array operand
+        // (e.g., frame != last_frame where last_frame is non-rand)
+        // These need the non-rand array declared as SMT array symbol
+        const bool isEqNeq = VN_IS(nodep, Eq) || VN_IS(nodep, Neq)
+            || VN_IS(nodep, EqCase) || VN_IS(nodep, EqD) || VN_IS(nodep, EqN) || VN_IS(nodep, EqT)
+            || VN_IS(nodep, NeqCase) || VN_IS(nodep, NeqD) || VN_IS(nodep, NeqN) || VN_IS(nodep, NeqT);
+        if (isEqNeq) {
+            checkAndTrackNonRandArray(nodep->lhsp());
+            checkAndTrackNonRandArray(nodep->rhsp());
+        }
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+
+    // Helper: if exprp is a non-rand array (or member-select of one), track it for solver declaration
+    void checkAndTrackNonRandArray(AstNodeExpr* exprp) {
+        if (!exprp) return;
+        AstVar* baseVarp = nullptr;
+        if (const AstNodeVarRef* const vrefp = VN_CAST(exprp, NodeVarRef)) {
+            baseVarp = vrefp->varp();
+        } else if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+            baseVarp = mselp->varp();
+        }
+        if (baseVarp && !baseVarp->rand().isRandomizable()
+            && baseVarp->dtypep()->skipRefp()->isNonPackedArray()) {
+            m_nonRandConstrainedArrays.insert(baseVarp);
+        }
     }
     void visit(AstNodeUniop* nodep) override {
         if (editFormat(nodep)) return;
