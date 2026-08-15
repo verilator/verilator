@@ -2008,6 +2008,12 @@ class WidthVisitor final : public VNVisitor {
         // Delete the assignment node (we've extracted the value)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
+    void visit(AstCoverCross* nodep) override {
+        userIterateAndNext(nodep->itemsp(), nullptr);
+        if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
+        userIterateAndNext(nodep->optionsp(), nullptr);
+        userIterateAndNext(nodep->rawBodyp(), nullptr);
+    }
     void visit(AstCoverpoint* nodep) override {
         // The coverpoint expression is self-determined (IEEE 1800-2023 19.5).  Width it
         // with a context so a bit/part-select (AstSel) is sized here; otherwise it would

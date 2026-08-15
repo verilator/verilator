@@ -361,6 +361,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             if (itemp != nodep->itemsp()) puts(", ");
             iterateConst(itemp);
         }
+        if (nodep->iffp()) {
+            puts(" iff (");
+            iterateConst(nodep->iffp());
+            puts(")");
+        }
         puts(";\n");
     }
     void visit(AstCoverTransSet* nodep) override {

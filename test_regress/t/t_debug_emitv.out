@@ -953,7 +953,7 @@ module Vt_debug_emitv_t;
             bins y0 = {'sh0};
             bins y1 = {'sh1};
         };
-      cx: cross cp_x, cp_y;
+      cx: cross cp_x, cp_y iff ((cg_sig[0] == cg_sig2[0]));
     endfunction
     int signed __Vint;
     struct {
