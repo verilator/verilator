@@ -2133,12 +2133,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         bool arrIsSupported1D = false;
         if (arrDtp) {
             const AstNodeDType* const subp = arrDtp->subDTypep()->skipRefp();
-            // Queue/dynamic/assoc elements are always routed through a
-            // CMethodHard visit first, never reaching this check.
-            arrIsSupported1D = !VN_IS(subp, NodeArrayDType)
-                               && !VN_IS(subp, QueueDType)  // LCOV_EXCL_BR_LINE
-                               && !VN_IS(subp, DynArrayDType)  // LCOV_EXCL_BR_LINE
-                               && !VN_IS(subp, AssocArrayDType)  // LCOV_EXCL_BR_LINE
+            // WildcardArrayDType alone excluded: a fixed array of wildcard
+            // assoc arrays hits an unrelated pre-existing V3Width internal
+            // error before ever reaching this code, so it can't be tested.
+            arrIsSupported1D = !VN_IS(subp, NodeArrayDType) && !VN_IS(subp, QueueDType)
+                               && !VN_IS(subp, DynArrayDType) && !VN_IS(subp, AssocArrayDType)
                                && !VN_IS(subp, WildcardArrayDType);  // LCOV_EXCL_BR_LINE
         }
         if (indexIsRand && !arrIsKnownRand && !(arrDtp && arrIsSupported1D)) {
@@ -2151,22 +2150,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         if (indexIsRand && arrDtp && arrIsSupported1D && !arrIsKnownRand) {
             AstNodeExpr* const idxp = nodep->bitp()->unlinkFrBack();
-            const int loIdx = arrDtp->lo();
             const int elements = arrDtp->elementsConst();
             AstNodeExpr* chainp = nullptr;
+            // Use 0-based k, not arrDtp->lo()+k: idxp is already bias-
+            // adjusted for a non-zero-based array (e.g. 'id - 1' for
+            // [1:16]), and a freshly built AstArraySel needs that too.
             for (int k = elements - 1; k >= 0; --k) {
-                const int idxVal = loIdx + k;
-                AstArraySel* const elemp
-                    = new AstArraySel{fl, nodep->fromp()->cloneTreePure(false),
-                                      new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
-                                                   static_cast<uint32_t>(idxVal)}};
+                AstArraySel* const elemp = new AstArraySel{
+                    fl, nodep->fromp()->cloneTreePure(false),
+                    new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
                 if (!chainp) {
                     chainp = elemp;
                 } else {
                     AstEq* const eqp
                         = new AstEq{fl, idxp->cloneTreePure(false),
                                     new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
-                                                 static_cast<uint32_t>(idxVal)}};
+                                                 static_cast<uint32_t>(k)}};
                     // Mark symbolic, else editFormat() would fold this using
                     // idxp's stale pre-solve value (same as AstExtend above).
                     eqp->user1(true);

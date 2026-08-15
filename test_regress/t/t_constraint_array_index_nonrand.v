@@ -41,12 +41,63 @@ class UniqueIdPoolViaMember;
   endfunction
 endclass
 
+// Same idiom, but the array has a non-zero, non-descending declared range
+// ([1:16] instead of the usual [15:0]-equivalent [16]) -- a synthesized
+// array-element index has to account for that bias itself.
+class UniqueIdPoolNonZeroBase;
+  rand int id;
+  bit used[1:16];
+
+  constraint c_range { id inside {[1:16]}; }
+  constraint c_unused { !used[id]; }
+endclass
+
+// A rand array indexed by a rand value already works via a genuine SMT
+// array declaration (unaffected by this fix, which only changes the
+// non-rand-array case) -- kept here too so this file's own coverage run
+// exercises the "array is rand" side of that check, not just the fix.
+class RandArrayRandIndex;
+  rand int idx;
+  rand bit [7:0] data[4];
+  constraint c_idx { idx inside {[0:3]}; }
+  constraint c_data { data[idx] == 8'hAA; }
+endclass
+
 module t;
   initial begin
     UniqueIdPool obj;
     UniqueIdPoolViaMember mobj;
+    UniqueIdPoolNonZeroBase nzobj;
+    RandArrayRandIndex rand_obj;
     bit [15:0] seen;
     int randomize_result;
+
+    nzobj = new;
+    seen = '0;
+    for (int i = 0; i < 16; i++) begin
+      randomize_result = nzobj.randomize();
+      `checkd(randomize_result, 1);
+      if (nzobj.id < 1 || nzobj.id > 16) begin
+        $write("%%Error: id out of range: %0d\n", nzobj.id);
+        `stop;
+      end
+      if (seen[nzobj.id - 1]) begin
+        $write("%%Error: id %0d drawn twice\n", nzobj.id);
+        `stop;
+      end
+      seen[nzobj.id - 1] = 1'b1;
+      nzobj.used[nzobj.id] = 1'b1;
+    end
+    `checkd(seen, 16'hffff);
+    randomize_result = nzobj.randomize();
+    `checkd(randomize_result, 0);
+
+    rand_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = rand_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(rand_obj.data[rand_obj.idx], 8'hAA);
+    end
 
     mobj = new;
     for (int i = 0; i < 16; i++) begin
