@@ -776,6 +776,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
+    std::set<AstVar*> m_nonRandConstrainedArrays;  // Non-rand arrays referenced in constraints
     AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
                                           // (nullptr == always defined)
 
@@ -2117,7 +2118,46 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
             if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
         });
-        if (indexIsRand) {
+
+        // Check if base array (fromp) is a non-rand array that needs solver declaration
+        AstNodeExpr* fromp = nodep->fromp();
+        AstVar* baseVarp = nullptr;
+        if (const AstNodeVarRef* const vrefp = VN_CAST(fromp, NodeVarRef)) {
+            baseVarp = vrefp->varp();
+        } else if (const AstMemberSel* const mselp = VN_CAST(fromp, MemberSel)) {
+            baseVarp = mselp->varp();
+        }
+        bool baseIsNonRandArray = baseVarp
+            && !baseVarp->rand().isRandomizable()
+            && baseVarp->dtypep()->skipRefp()->isNonPackedArray();
+
+        if (baseIsNonRandArray) {
+            // Non-rand array referenced in constraint -- must be declared in solver
+            // as an SMT array symbol and pinned to current value
+            m_nonRandConstrainedArrays.insert(baseVarp);
+            // Don't fold to constant; keep as SMT symbol
+            if (indexIsRand) {
+                // Index depends on rand variable -- keep as SMT symbol.
+                // Array index sort is 32-bit, so zero-extend narrower indices.
+                AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
+                if (indexp->width() < 32) {
+                    AstExtend* const extendp = new AstExtend{fl, indexp, 32};
+                    extendp->dtypeSetLogicSized(32, VSigning::UNSIGNED);
+                    extendp->user1(true);
+                    indexp = extendp;
+                }
+                handle.relink(indexp);
+                editSMT(nodep, nodep->fromp(), indexp);
+            } else {
+                // Index is constant or non-rand -- format as hex literal.
+                // Keep a pre-edit clone for the rand_mode hoist below.
+                AstNodeExpr* const origp = nodep->cloneTree(false);
+                AstNodeExpr* const indexp
+                    = new AstSFormatF{fl, "#x%8x", false, nodep->bitp()->unlinkFrBack(&handle)};
+                handle.relink(indexp);
+                AstSFormatF* const newp = editSMT(nodep, nodep->fromp(), indexp);
+            }
+        } else if (indexIsRand) {
             // Index depends on rand variable -- keep as SMT symbol.
             // Array index sort is 32-bit, so zero-extend narrower indices.
             AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
@@ -5414,9 +5454,40 @@ class RandomizeVisitor final : public VNVisitor {
                     lowerDistConstraints(taskp, constrp->itemsp(), randModeVarp);
                 }
                 std::set<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
-                ConstraintExprVisitor{classp,        m_memberMap, constrp->itemsp(),
-                                      nullptr,       genp,        randModeVarp,
-                                      m_writtenVars, randomizep,  &sizeArrays};
+                ConstraintExprVisitor constraintVisitor{classp, m_memberMap, constrp->itemsp(),
+                                                      nullptr,       genp,        randModeVarp,
+                                                      m_writtenVars, randomizep,  &sizeArrays};
+                // Add write_var calls for non-rand arrays referenced in constraints
+                if (!constraintVisitor.m_nonRandConstrainedArrays.empty()) {
+                    AstNodeFTask* initTaskp = m_inlineInitTaskp;
+                    if (!initTaskp) {
+                        initTaskp = VN_AS(m_memberMap.findMember(nodep, "new"), NodeFTask);
+                        UASSERT_OBJ(initTaskp, nodep, "No new() in class");
+                    }
+                    for (AstVar* const arrVarp : constraintVisitor.m_nonRandConstrainedArrays) {
+                        // Only add if not already written
+                        if (arrVarp->user3()) continue;
+                        arrVarp->user3(true);  // Solver owns it; __VBasicRand must not overwrite
+                        FileLine* const fl = arrVarp->fileline();
+                        const size_t elemWidth = arrayElementDTypep(arrVarp->dtypep())->width();
+                        const size_t dimension = arrVarp->dtypep()->skipRefp()->isNonPackedArray()
+                            ? arrVarp->dtypep()->dimensions(true).second
+                            : 0;
+                        AstNodeExpr* const varnamep = new AstCExpr{
+                            fl, AstCExpr::Pure{}, "\"" + arrVarp->name() + "\"", arrVarp->width()};
+                        AstCMethodHard* const writeVarCallp = new AstCMethodHard{
+                            fl, new AstVarRef{fl, VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                                              VAccess::READWRITE},
+                            VCMethod::RANDOMIZER_WRITE_VAR};
+                        writeVarCallp->addPinsp(new AstVarRef{fl, VN_AS(arrVarp->user2p(), NodeModule),
+                                                              arrVarp, VAccess::READ});
+                        writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, elemWidth});
+                        writeVarCallp->addPinsp(varnamep);
+                        writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, dimension});
+                        writeVarCallp->dtypeSetVoid();
+                        initTaskp->addStmtsp(new AstStmtExpr{fl, writeVarCallp});
+                    }
+                }
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
@@ -5942,8 +6013,33 @@ class RandomizeVisitor final : public VNVisitor {
                 randomizeFuncp->addStmtsp(capturedTreep);
                 {
                     expandUniqueElementList(capturedTreep);
-                    ConstraintExprVisitor{nullptr, m_memberMap, capturedTreep, randomizeFuncp,
-                                          stdrand, nullptr,     m_writtenVars, nullptr};
+                    ConstraintExprVisitor constraintVisitor{nullptr, m_memberMap, capturedTreep, randomizeFuncp,
+                                                          stdrand, nullptr,     m_writtenVars, nullptr};
+                    if (!constraintVisitor.m_nonRandConstrainedArrays.empty()) {
+                        AstVar* const localGenp = VN_AS(stdrand->user2p(), Var);
+                        for (AstVar* const arrVarp : constraintVisitor.m_nonRandConstrainedArrays) {
+                            if (arrVarp->user3()) continue;
+                            arrVarp->user3(true);
+                            FileLine* const fl = arrVarp->fileline();
+                            const size_t elemWidth = arrayElementDTypep(arrVarp->dtypep())->width();
+                            const size_t dimension = arrVarp->dtypep()->skipRefp()->isNonPackedArray()
+                                ? arrVarp->dtypep()->dimensions(true).second
+                                : 0;
+                            AstNodeExpr* const varnamep = new AstCExpr{
+                                fl, AstCExpr::Pure{}, "\"" + arrVarp->name() + "\"", arrVarp->width()};
+                            AstCMethodHard* const writeVarCallp = new AstCMethodHard{
+                                fl, new AstVarRef{fl, VN_AS(localGenp->user2p(), NodeModule), localGenp,
+                                                  VAccess::READWRITE},
+                                VCMethod::RANDOMIZER_WRITE_VAR};
+                            writeVarCallp->addPinsp(new AstVarRef{fl, VN_AS(arrVarp->user2p(), NodeModule),
+                                                                  arrVarp, VAccess::READ});
+                            writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, elemWidth});
+                            writeVarCallp->addPinsp(varnamep);
+                            writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, dimension});
+                            writeVarCallp->dtypeSetVoid();
+                            randomizeFuncp->addStmtsp(new AstStmtExpr{fl, writeVarCallp});
+                        }
+                    }
                 }
                 AstCExpr* const solverCallp = new AstCExpr{fl};
                 solverCallp->dtypeSetBit();
@@ -6159,8 +6255,32 @@ class RandomizeVisitor final : public VNVisitor {
 
         {
             expandUniqueElementList(capturedTreep);
-            ConstraintExprVisitor{classp,    m_memberMap,  capturedTreep, randomizeFuncp,
-                                  localGenp, randModeVarp, m_writtenVars, nullptr};
+            ConstraintExprVisitor constraintVisitor{classp, m_memberMap, capturedTreep, randomizeFuncp,
+                                                    localGenp, randModeVarp, m_writtenVars, nullptr};
+            if (!constraintVisitor.m_nonRandConstrainedArrays.empty()) {
+                for (AstVar* const arrVarp : constraintVisitor.m_nonRandConstrainedArrays) {
+                    if (arrVarp->user3()) continue;
+                    arrVarp->user3(true);
+                    FileLine* const fl = arrVarp->fileline();
+                    const size_t elemWidth = arrayElementDTypep(arrVarp->dtypep())->width();
+                    const size_t dimension = arrVarp->dtypep()->skipRefp()->isNonPackedArray()
+                        ? arrVarp->dtypep()->dimensions(true).second
+                        : 0;
+                    AstNodeExpr* const varnamep = new AstCExpr{
+                        fl, AstCExpr::Pure{}, "\"" + arrVarp->name() + "\"", arrVarp->width()};
+                    AstCMethodHard* const writeVarCallp = new AstCMethodHard{
+                        fl, new AstVarRef{fl, VN_AS(localGenp->user2p(), NodeModule), localGenp,
+                                          VAccess::READWRITE},
+                        VCMethod::RANDOMIZER_WRITE_VAR};
+                    writeVarCallp->addPinsp(new AstVarRef{fl, VN_AS(arrVarp->user2p(), NodeModule),
+                                                          arrVarp, VAccess::READ});
+                    writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, elemWidth});
+                    writeVarCallp->addPinsp(varnamep);
+                    writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, dimension});
+                    writeVarCallp->dtypeSetVoid();
+                    randomizeFuncp->addStmtsp(new AstStmtExpr{fl, writeVarCallp});
+                }
+            }
         }
 
         // Call the solver and set return value
