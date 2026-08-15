@@ -777,6 +777,12 @@ class ConstraintExprVisitor final : public VNVisitor {
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
     std::set<AstVar*> m_nonRandConstrainedArrays;  // Non-rand arrays referenced in constraints
+    // Public getters for members needed after constraint visiting
+    public:
+    AstNodeFTask* inlineInitTaskp() const { return m_inlineInitTaskp; }
+    AstVar* genp() const { return m_genp; }
+    std::set<AstVar*> nonRandConstrainedArrays() const { return m_nonRandConstrainedArrays; }
+    private:
     AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
                                           // (nullptr == always defined)
 
@@ -1979,14 +1985,26 @@ class ConstraintExprVisitor final : public VNVisitor {
     void checkAndTrackNonRandArray(AstNodeExpr* exprp) {
         if (!exprp) return;
         AstVar* baseVarp = nullptr;
+        AstNodeVarRef* baseVarRefp = nullptr;
         if (const AstNodeVarRef* const vrefp = VN_CAST(exprp, NodeVarRef)) {
             baseVarp = vrefp->varp();
+            baseVarRefp = const_cast<AstNodeVarRef*>(vrefp);
         } else if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
             baseVarp = mselp->varp();
+            // For member select, find the root VarRef
+            const AstNode* curp = mselp;
+            while (VN_IS(curp->backp(), MemberSel) || VN_IS(curp->backp(), StructSel)) {
+                curp = curp->backp();
+            }
+            if (VN_IS(curp, NodeVarRef)) {
+                baseVarRefp = const_cast<AstNodeVarRef*>(VN_AS(curp, NodeVarRef));
+            }
         }
         if (baseVarp && !baseVarp->rand().isRandomizable()
             && baseVarp->dtypep()->skipRefp()->isNonPackedArray()) {
             m_nonRandConstrainedArrays.insert(baseVarp);
+            // Mark base VarRef as solver-dependent to prevent editFormat from folding to constant
+            if (baseVarRefp) baseVarRefp->user1(true);
         }
     }
     void visit(AstNodeUniop* nodep) override {
@@ -2134,7 +2152,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
     void visit(AstArraySel* nodep) override {
-        if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         VNRelinker handle;
         // Check if index actually references a rand variable (not just user1,
@@ -2147,14 +2164,33 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Check if base array (fromp) is a non-rand array that needs solver declaration
         AstNodeExpr* fromp = nodep->fromp();
         AstVar* baseVarp = nullptr;
+        AstNodeVarRef* baseVarRefp = nullptr;
         if (const AstNodeVarRef* const vrefp = VN_CAST(fromp, NodeVarRef)) {
             baseVarp = vrefp->varp();
+            baseVarRefp = const_cast<AstNodeVarRef*>(vrefp);
         } else if (const AstMemberSel* const mselp = VN_CAST(fromp, MemberSel)) {
             baseVarp = mselp->varp();
+            // For member select, find the root VarRef
+            const AstNode* curp = mselp;
+            while (VN_IS(curp->backp(), MemberSel) || VN_IS(curp->backp(), StructSel)) {
+                curp = curp->backp();
+            }
+            if (VN_IS(curp, NodeVarRef)) {
+                baseVarRefp = const_cast<AstNodeVarRef*>(VN_AS(curp, NodeVarRef));
+            }
         }
         bool baseIsNonRandArray = baseVarp
             && !baseVarp->rand().isRandomizable()
             && baseVarp->dtypep()->skipRefp()->isNonPackedArray();
+
+        // If non-rand array with rand index, prevent folding to constant by editFormat
+        // Mark both the ArraySel and the base VarRef as solver-dependent
+        if (baseIsNonRandArray && indexIsRand) {
+            nodep->user1(true);  // Mark ArraySel as solver-dependent
+            if (baseVarRefp) baseVarRefp->user1(true);  // Mark base VarRef to prevent folding
+        }
+
+        if (editFormat(nodep)) return;
 
         if (baseIsNonRandArray) {
             // Non-rand array referenced in constraint -- must be declared in solver
@@ -5483,13 +5519,13 @@ class RandomizeVisitor final : public VNVisitor {
                                                       nullptr,       genp,        randModeVarp,
                                                       m_writtenVars, randomizep,  &sizeArrays};
                 // Add write_var calls for non-rand arrays referenced in constraints
-                if (!constraintVisitor.m_nonRandConstrainedArrays.empty()) {
-                    AstNodeFTask* initTaskp = m_inlineInitTaskp;
+                if (!constraintVisitor.nonRandConstrainedArrays().empty()) {
+                    AstNodeFTask* initTaskp = constraintVisitor.inlineInitTaskp();
                     if (!initTaskp) {
                         initTaskp = VN_AS(m_memberMap.findMember(nodep, "new"), NodeFTask);
                         UASSERT_OBJ(initTaskp, nodep, "No new() in class");
                     }
-                    for (AstVar* const arrVarp : constraintVisitor.m_nonRandConstrainedArrays) {
+                    for (AstVar* const arrVarp : constraintVisitor.nonRandConstrainedArrays()) {
                         // Only add if not already written
                         if (arrVarp->user3()) continue;
                         arrVarp->user3(true);  // Solver owns it; __VBasicRand must not overwrite
@@ -5501,8 +5537,8 @@ class RandomizeVisitor final : public VNVisitor {
                         AstNodeExpr* const varnamep = new AstCExpr{
                             fl, AstCExpr::Pure{}, "\"" + arrVarp->name() + "\"", arrVarp->width()};
                         AstCMethodHard* const writeVarCallp = new AstCMethodHard{
-                            fl, new AstVarRef{fl, VN_AS(m_genp->user2p(), NodeModule), m_genp,
-                                              VAccess::READWRITE},
+                            fl, new AstVarRef{fl, VN_AS(constraintVisitor.genp()->user2p(), NodeModule),
+                                              constraintVisitor.genp(), VAccess::READWRITE},
                             VCMethod::RANDOMIZER_WRITE_VAR};
                         writeVarCallp->addPinsp(new AstVarRef{fl, VN_AS(arrVarp->user2p(), NodeModule),
                                                               arrVarp, VAccess::READ});
@@ -6040,9 +6076,9 @@ class RandomizeVisitor final : public VNVisitor {
                     expandUniqueElementList(capturedTreep);
                     ConstraintExprVisitor constraintVisitor{nullptr, m_memberMap, capturedTreep, randomizeFuncp,
                                                           stdrand, nullptr,     m_writtenVars, nullptr};
-                    if (!constraintVisitor.m_nonRandConstrainedArrays.empty()) {
+                    if (!constraintVisitor.nonRandConstrainedArrays().empty()) {
                         AstVar* const localGenp = VN_AS(stdrand->user2p(), Var);
-                        for (AstVar* const arrVarp : constraintVisitor.m_nonRandConstrainedArrays) {
+                        for (AstVar* const arrVarp : constraintVisitor.nonRandConstrainedArrays()) {
                             if (arrVarp->user3()) continue;
                             arrVarp->user3(true);
                             FileLine* const fl = arrVarp->fileline();
@@ -6282,8 +6318,8 @@ class RandomizeVisitor final : public VNVisitor {
             expandUniqueElementList(capturedTreep);
             ConstraintExprVisitor constraintVisitor{classp, m_memberMap, capturedTreep, randomizeFuncp,
                                                     localGenp, randModeVarp, m_writtenVars, nullptr};
-            if (!constraintVisitor.m_nonRandConstrainedArrays.empty()) {
-                for (AstVar* const arrVarp : constraintVisitor.m_nonRandConstrainedArrays) {
+            if (!constraintVisitor.nonRandConstrainedArrays().empty()) {
+                for (AstVar* const arrVarp : constraintVisitor.nonRandConstrainedArrays()) {
                     if (arrVarp->user3()) continue;
                     arrVarp->user3(true);
                     FileLine* const fl = arrVarp->fileline();
