@@ -22,6 +22,9 @@
 /// it in the constructor (init + add*Namer), increments bins from sample(),
 /// and registers via registerBins().
 ///
+/// Collection and coverage queries are always available; only registerBins(),
+/// which publishes bin counters to the coverage database, requires VM_COVERAGE.
+///
 //=============================================================================
 
 #ifndef VERILATOR_VERILATED_COVERGROUP_H_
@@ -49,8 +52,8 @@ enum class VlCovBinNaming : uint8_t {
 class VlCovNamer final {
     // MEMBERS
     VlCovBinKind m_set;  // which set the bins belong to
-    int m_count;  // bins this namer covers (1 for Single)
-    int m_base;  // first bin index (declaration order), assigned on append
+    uint32_t m_count;  // bins this namer covers (1 for Single)
+    uint32_t m_base;  // first bin index (declaration order), assigned on append
     VlCovBinNaming m_naming;  // how bin names are built
     const char* m_name;  // bin name (Single) or array base name (Array)
     const char* m_file;  // declaration file
@@ -59,8 +62,8 @@ class VlCovNamer final {
 
 public:
     // CONSTRUCTORS
-    VlCovNamer(VlCovBinKind set, int count, int base, VlCovBinNaming naming, const char* name,
-               const char* file, int line, int col)
+    VlCovNamer(VlCovBinKind set, uint32_t count, uint32_t base, VlCovBinNaming naming,
+               const char* name, const char* file, int line, int col)
         : m_set{set}
         , m_count{count}
         , m_base{base}
@@ -72,8 +75,8 @@ public:
 
     // METHODS
     VlCovBinKind set() const { return m_set; }
-    int count() const { return m_count; }
-    int base() const { return m_base; }
+    uint32_t count() const { return m_count; }
+    uint32_t base() const { return m_base; }
     VlCovBinNaming naming() const { return m_naming; }
     const char* name() const { return m_name; }
     const char* file() const { return m_file; }
@@ -95,21 +98,22 @@ protected:
     // MEMBERS (protected so VlCoverpointT::incrementBin can update them)
     std::string m_hier;  // "covergroup.coverpoint"
     uint32_t m_atLeast = 1;  // option.at_least (coverpoint-wide)
-    int m_total = 0;  // bins across all sets
-    int m_normal = 0;  // Normal bins (coverage denominator)
-    int m_nextBase = 0;  // running append cursor
+    uint32_t m_total = 0;  // bins across all sets
+    uint32_t m_normal = 0;  // Normal bins (coverage denominator)
+    uint32_t m_nextBase = 0;  // running append cursor
     std::vector<uint32_t> m_counts;  // [m_total], one per bin
     std::vector<VlCovNamer> m_namers;  // appended in declaration order
-    // [m_total] full bin idx -> cross idx (Normal-only), -1 otherwise
+    // [m_total] full bin idx -> cross idx (Normal-only), -1 otherwise.  The only
+    // signed index here: -1 marks a non-Normal bin, which incrementBin filters on.
     std::vector<int> m_crossIdx;
     // [m_normal] inverse of m_crossIdx: cross idx -> full bin idx, appended in cross-index order
-    std::vector<int> m_crossToBin;
-    int m_hitCount = 0;  // entries valid in the hit list this sample
+    std::vector<uint32_t> m_crossToBin;
+    uint32_t m_hitCount = 0;  // entries valid in the hit list this sample
 
 private:
     // PRIVATE METHODS
-    const VlCovNamer& namerFor(int i) const;  // obtain the bin-specific name producer
-    void addNamer(VlCovBinKind set, int count, VlCovBinNaming naming, const char* name,
+    const VlCovNamer& namerFor(uint32_t i) const;  // obtain the bin-specific name producer
+    void addNamer(VlCovBinKind set, uint32_t count, VlCovBinNaming naming, const char* name,
                   const char* file, int line, int col);
 
 public:
@@ -118,12 +122,12 @@ public:
 
     // METHODS
     // ---- configuration (from generated constructor) ----
-    void init(const char* hier, uint32_t atLeast, int nBins);
+    void init(const char* hier, uint32_t atLeast, uint32_t nBins);
     void addSingleNamer(VlCovBinKind set, const char* name, const char* file, int line, int col) {
         addNamer(set, 1, VlCovBinNaming::Single, name, file, line, col);
     }
-    void addArrayNamer(VlCovBinKind set, int count, const char* name, const char* file, int line,
-                       int col) {
+    void addArrayNamer(VlCovBinKind set, uint32_t count, const char* name, const char* file,
+                       int line, int col) {
         addNamer(set, count, VlCovBinNaming::Array, name, file, line, col);
     }
     void registerBins(VerilatedCovContext* covcontextp, const char* page);
@@ -132,30 +136,30 @@ public:
     // Clear the hit list at the start of each sample() for a cross-fed coverpoint.
     void clearHitList() { m_hitCount = 0; }
     // Ignore/Illegal/Default: count only; never propagates to cross coverage.
-    void recordHit(int i) { ++m_counts[i]; }
+    void recordHit(uint32_t i) { ++m_counts[i]; }
     // incrementBin (Normal bin: count + hit-list append) lives in VlCoverpointT<MaxHits>,
     // where MaxHits is the gen-time max per-sample bin overlap.
 
     // ---- cross support (read by VlCoverCross) ----
-    int hitCount() const { return m_hitCount; }
-    virtual const int* hitList() const = 0;  // provided by VlCoverpointT
-    int normalBinCount() const { return m_normal; }  // cross dimension size (Normal bins)
-    std::string normalBinName(int crossIdx) const;  // name of the crossIdx-th Normal bin
+    uint32_t hitCount() const { return m_hitCount; }
+    virtual const uint32_t* hitList() const = 0;  // provided by VlCoverpointT
+    uint32_t normalBinCount() const { return m_normal; }  // cross dimension size (Normal bins)
+    std::string normalBinName(uint32_t crossIdx) const;  // name of the crossIdx-th Normal bin
 
     // ---- VlCoverpointIf ----
-    int binCount() const override { return m_total; }
-    std::string binName(int i) const override;
+    uint32_t binCount() const override { return m_total; }
+    std::string binName(uint32_t i) const override;
     // Deliberately not on VlCoverpointIf: only registerBins() needs it, via the
     // concrete coverpoint.  A cross has all-Normal bins and exposes no kind, so the
     // interface omits it; add it back only if a writer needs it polymorphically.
-    VlCovBinKind binKind(int i) const { return namerFor(i).set(); }
+    VlCovBinKind binKind(uint32_t i) const { return namerFor(i).set(); }
     void coverageParts(double& covered, double& total) const override {
         // Count Normal bins that reached option.at_least on demand, so the hot
         // path (incrementBin) stays a plain counter bump.
-        int numCovered = 0;
+        uint32_t numCovered = 0;
         for (const VlCovNamer& nm : m_namers) {
             if (nm.set() != VlCovBinKind::KIND_NORMAL) continue;
-            for (int i = nm.base(); i < nm.base() + nm.count(); ++i) {
+            for (uint32_t i = nm.base(); i < nm.base() + nm.count(); ++i) {
                 if (m_counts[i] >= m_atLeast) ++numCovered;
             }
         }
@@ -173,10 +177,10 @@ public:
 /// the coverpoint as VlCoverpointT<K> and calls incrementBin via the concrete
 /// type; the cross reads it polymorphically through VlCoverpoint*.
 
-template <int MaxHits>
+template <uint32_t MaxHits>
 class VlCoverpointT final : public VlCoverpoint {
     // MEMBERS
-    int m_hits[MaxHits];  // cross indices of Normal bins hit this sample
+    uint32_t m_hits[MaxHits];  // cross indices of Normal bins hit this sample
 
 public:
     // CONSTRUCTORS
@@ -186,12 +190,14 @@ public:
     // Normal bin: bump count and append the bin's cross index to the hit list.
     // m_hitCount can never exceed MaxHits (the gen-time overlap bound), so no hit
     // is ever dropped; the bound check is a compile-time-folded safety net.
-    void incrementBin(int i) {
+    void incrementBin(uint32_t i) {
         ++m_counts[i];
+        // m_crossIdx is signed only to carry the -1 "not a Normal bin" marker;
+        // the >= 0 test below is what makes every stored hit index unsigned-safe.
         const int cx = m_crossIdx[i];
-        if (cx >= 0 && m_hitCount < MaxHits) m_hits[m_hitCount++] = cx;
+        if (cx >= 0 && m_hitCount < MaxHits) m_hits[m_hitCount++] = static_cast<uint32_t>(cx);
     }
-    const int* hitList() const override { return m_hits; }
+    const uint32_t* hitList() const override { return m_hits; }
 };
 
 //=============================================================================
@@ -207,17 +213,21 @@ class VlCoverCross final : public VlCoverpointIf {
     const char* m_file = nullptr;  // Cross declaration file (registration metadata)
     int m_line = 0;  // Cross declaration line
     int m_col = 0;  // Cross declaration column
-    int m_dims = 0;  // Number of feeding coverpoints
-    int64_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
-    int m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
-    std::vector<int> m_cpBinCounts;  // [m_dims] Normal bin count per dimension
-    std::vector<int64_t> m_stride;  // [m_dims] Flat-index stride per dimension
+    uint32_t m_dims = 0;  // Number of feeding coverpoints
+    // Cross bin indexes are unsigned, like the coverpoint bin indexes they are
+    // built from.  init() fatals if the product would exceed UINT32_MAX, so every
+    // index computed here provably fits.  That bound is far beyond anything
+    // storable anyway: m_flatCounts alone would need 16GB.
+    uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
+    uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
+    std::vector<uint32_t> m_cpBinCounts;  // [m_dims] Normal bin count per dimension
+    std::vector<uint32_t> m_stride;  // [m_dims] Flat-index stride per dimension
     std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] Per-bin hit counts
     std::vector<VlCoverpoint*> m_cps;  // Feeding coverpoints (the only name source)
 
     // PRIVATE METHODS
-    void iterateProduct(VlCoverpoint* const* cps, int dim, int64_t baseIdx);
-    void incrementTuple(int64_t idx) {
+    void iterateProduct(VlCoverpoint* const* cps, uint32_t dim, uint32_t baseIdx);
+    void incrementTuple(uint32_t idx) {
         if (m_flatCounts[idx]++ == 0) ++m_numCovered;
     }
 
@@ -227,8 +237,8 @@ public:
 
     // METHODS
     // ---- configuration (from generated constructor, after coverpoints init'd) ----
-    void init(const char* hier, int dims, VlCoverpoint* const* cps, const char* file, int line,
-              int col);
+    void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
+              int line, int col);
     void registerBins(VerilatedCovContext* covcontextp, const char* page);
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
@@ -236,11 +246,11 @@ public:
 
     // ---- VlCoverpointIf ----
     // A cross is a coverpoint whose bins are the auto cross bins (all Normal).
-    int binCount() const override { return static_cast<int>(m_numAutoBins); }
-    std::string binName(int flat) const override;
+    uint32_t binCount() const override { return m_numAutoBins; }
+    std::string binName(uint32_t flat) const override;
     void coverageParts(double& covered, double& total) const override {
         covered = m_numCovered;
-        total = static_cast<double>(m_numAutoBins);
+        total = m_numAutoBins;
     }
 };
 

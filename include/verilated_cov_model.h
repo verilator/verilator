@@ -55,11 +55,11 @@ public:
     virtual ~VlCoverpointIf() = default;
 
     // METHODS
-    // All bins, across every set; index range [0, binCount())
-    virtual int binCount() const = 0;
+    // All bins, across every set; index range [0, binCount()).
+    virtual uint32_t binCount() const = 0;
     // Bin name in declaration order (e.g. "myBin" or "b[3]"); for a cross,
     // the concatenated cross bin name (e.g. "b1_x_b2_x_b3")
-    virtual std::string binName(int i) const = 0;
+    virtual std::string binName(uint32_t i) const = 0;
     // Bins covered / effective total (Normal set only) for the coverage calc
     virtual void coverageParts(double& covered, double& total) const = 0;
 };

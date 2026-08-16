@@ -12,6 +12,4 @@ import coverage_covergroup_common
 
 test.scenarios('vlt_all')
 
-# --Wno-ASCRANGE: cg_be / cg_be_arr intentionally declare ascending [0:N]
-# ("opposite-endian") vectors, which Verilator lints by default.
-coverage_covergroup_common.run(test, verilator_flags2=['--Wno-COVERIGN', '--Wno-ASCRANGE'])
+coverage_covergroup_common.run(test, verilator_flags2=['--Wno-COVERIGN'])

@@ -17,6 +17,9 @@ test.scenarios('vlt_all')
 # coverage.dat.  (Historically covergroup coverage bypassed --protect-ids and leaked
 # these in cleartext.)  The design also self-checks get_inst_coverage(), so sampling
 # correctness under hashed names is verified too.
+#
+# Everything that must stay hidden spells "secret" -- the identifiers in the .v and
+# the filename itself -- so one grep covers the whole property.
 test.compile(verilator_flags2=[
     '--coverage',
     '--protect-ids',
@@ -27,8 +30,7 @@ test.compile(verilator_flags2=[
 test.execute()
 
 # Security property: no original identifier or source filename in the coverage DB.
-test.file_grep_not(test.coverage_filename, r'cgsecret')
-test.file_grep_not(test.coverage_filename, r't_covergroup_cross_protect')
+test.file_grep_not(test.coverage_filename, r'secret')
 
 # Sanity: 'to="PS"' in the id map means something already-protected was re-protected.
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "__idmap.xml", r'to="PS')

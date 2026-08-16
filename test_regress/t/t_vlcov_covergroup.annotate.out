@@ -178,7 +178,8 @@
           // Ascending ("opposite-endian") bit ranges: bit 0 is the MSB.  Bit ordering must
           // not change coverage results: range bins operate on the sampled value, so an
           // ascending-declared coverpoint produces identical hit counts to the usual
-          // descending declaration.  Requires -Wno-ASCRANGE.
+          // descending declaration.
+          /* verilator lint_off ASCRANGE */
 %000001   logic [0:1] be_addr;
 -000000  point: type=toggle comment=be_addr[0]:0->1 hier=top.t
 -000000  point: type=toggle comment=be_addr[0]:1->0 hier=top.t
@@ -187,6 +188,7 @@
 %000001   logic [0:0] be_cmd;
 -000001  point: type=toggle comment=be_cmd[0]:0->1 hier=top.t
 -000000  point: type=toggle comment=be_cmd[0]:1->0 hier=top.t
+          /* verilator lint_on ASCRANGE */
         
           typedef struct packed {logic m_p; logic h_mode;} cfg_t;
 %000001   cfg_t s_cfg = '0;

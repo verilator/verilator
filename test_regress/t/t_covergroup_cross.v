@@ -23,9 +23,11 @@ module t;
   // Ascending ("opposite-endian") bit ranges: bit 0 is the MSB.  Bit ordering must
   // not change coverage results: range bins operate on the sampled value, so an
   // ascending-declared coverpoint produces identical hit counts to the usual
-  // descending declaration.  Requires -Wno-ASCRANGE.
+  // descending declaration.
+  /* verilator lint_off ASCRANGE */
   logic [0:1] be_addr;
   logic [0:0] be_cmd;
+  /* verilator lint_on ASCRANGE */
 
   typedef struct packed {logic m_p; logic h_mode;} cfg_t;
   cfg_t s_cfg = '0;
