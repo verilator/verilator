@@ -72,6 +72,16 @@ class RandMultidimRandIndex;
   constraint c_data { data[idx][0] == 8'hAA; }
 endclass
 
+// Same idiom again, but the rand array is a queue directly rather than a
+// fixed array.
+class RandQueueRandIndex;
+  rand bit data[$];
+  rand int idx;
+  constraint c_size { data.size() == 4; }
+  constraint c_idx { idx inside {[0:3]}; }
+  constraint c_data { data[idx] == 1; }
+endclass
+
 module t;
   initial begin
     UniqueIdPool obj;
@@ -80,6 +90,7 @@ module t;
     UniqueIdPoolDescBase descobj;
     RandArrayRandIndex rand_obj;
     RandMultidimRandIndex mrand_obj;
+    RandQueueRandIndex rq_obj;
     bit [15:0] seen;
     int randomize_result;
 
@@ -135,6 +146,13 @@ module t;
       randomize_result = mrand_obj.randomize();
       `checkd(randomize_result, 1);
       `checkd(mrand_obj.data[mrand_obj.idx][0], 8'hAA);
+    end
+
+    rq_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = rq_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(rq_obj.data[rq_obj.idx], 1'b1);
     end
 
     mobj = new;
