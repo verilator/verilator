@@ -4,11 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// A rand-dependent index into a multidimensional array (C1), chained
-// through another rand-dependent index (C2), or into a fixed array of
-// queues/dynamic/associative arrays (C3/C4/C5) is a compile-time error,
-// not a solver crash -- see t_constraint_array_index_nonrand.v for the
-// 1-D case this is all otherwise support for.
+// Rand-dependent indices into array shapes the solver can't expand
+// (multidim, chained, queue/dynamic/assoc) are a compile-time error.
 
 class C1;
   rand int id;

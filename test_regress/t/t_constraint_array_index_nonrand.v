@@ -9,11 +9,8 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// Test that a rand variable used as an index into a non-rand (state) array
-// is treated as symbolic in the solver, not folded to a scalar constant.
-// This is the standard "pick an unused ID from a pool" idiom: 'used' tracks
-// which IDs have already been drawn and is updated by the testbench between
-// randomize() calls, not by the solver itself.
+// Test the "pick an unused ID from a pool" idiom: a rand index into a
+// non-rand array must stay symbolic in the solver, not fold to a constant.
 
 class UniqueIdPool;
   rand int id;
@@ -23,8 +20,7 @@ class UniqueIdPool;
   constraint c_unused { !used[id]; }
 endclass
 
-// Same idiom, but the array is reached through a member select
-// (holder.used[id]) rather than a plain variable reference.
+// Same idiom, reached via a member select (holder.used[id]).
 class Holder;
   bit used[16];
 endclass
@@ -41,9 +37,7 @@ class UniqueIdPoolViaMember;
   endfunction
 endclass
 
-// Same idiom, but the array has a non-zero, non-descending declared range
-// ([1:16] instead of the usual [15:0]-equivalent [16]) -- a synthesized
-// array-element index has to account for that bias itself.
+// Same idiom, but 'used' has a non-zero declared range ([1:16]).
 class UniqueIdPoolNonZeroBase;
   rand int id;
   bit used[1:16];
@@ -52,10 +46,17 @@ class UniqueIdPoolNonZeroBase;
   constraint c_unused { !used[id]; }
 endclass
 
-// A rand array indexed by a rand value already works via a genuine SMT
-// array declaration (unaffected by this fix, which only changes the
-// non-rand-array case) -- kept here too so this file's own coverage run
-// exercises the "array is rand" side of that check, not just the fix.
+// Same, but the declared range runs the opposite direction ([16:1]).
+class UniqueIdPoolDescBase;
+  rand int id;
+  bit used[16:1];
+
+  constraint c_range { id inside {[1:16]}; }
+  constraint c_unused { !used[id]; }
+endclass
+
+// A rand array indexed by a rand value: unaffected by this fix, kept
+// here for coverage of the "array is rand" path.
 class RandArrayRandIndex;
   rand int idx;
   rand bit [7:0] data[4];
@@ -63,10 +64,7 @@ class RandArrayRandIndex;
   constraint c_data { data[idx] == 8'hAA; }
 endclass
 
-// A rand multidimensional array indexed by a rand value on the outer
-// dimension also already works via the same genuine SMT array symbol --
-// this exercises the "array is rand but not a supported 1-D shape" side
-// of the same check, which a plain 1-D rand array can't reach.
+// Same, but 'data' is multidimensional.
 class RandMultidimRandIndex;
   rand int idx;
   rand bit [7:0] data[4][4];
@@ -79,6 +77,7 @@ module t;
     UniqueIdPool obj;
     UniqueIdPoolViaMember mobj;
     UniqueIdPoolNonZeroBase nzobj;
+    UniqueIdPoolDescBase descobj;
     RandArrayRandIndex rand_obj;
     RandMultidimRandIndex mrand_obj;
     bit [15:0] seen;
@@ -102,6 +101,26 @@ module t;
     end
     `checkd(seen, 16'hffff);
     randomize_result = nzobj.randomize();
+    `checkd(randomize_result, 0);
+
+    descobj = new;
+    seen = '0;
+    for (int i = 0; i < 16; i++) begin
+      randomize_result = descobj.randomize();
+      `checkd(randomize_result, 1);
+      if (descobj.id < 1 || descobj.id > 16) begin
+        $write("%%Error: id out of range: %0d\n", descobj.id);
+        `stop;
+      end
+      if (seen[descobj.id - 1]) begin
+        $write("%%Error: id %0d drawn twice\n", descobj.id);
+        `stop;
+      end
+      seen[descobj.id - 1] = 1'b1;
+      descobj.used[descobj.id] = 1'b1;
+    end
+    `checkd(seen, 16'hffff);
+    randomize_result = descobj.randomize();
     `checkd(randomize_result, 0);
 
     rand_obj = new;
