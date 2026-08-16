@@ -89,7 +89,8 @@ struct VlFiberMemoryChunk final {
     void* m_chunkAddr;
     void* m_top;
     void* m_freeTop;
-    size_t m_free;
+    size_t m_free;  // Indicates how many stacks are left
+    bool m_retention : 1;  // Flag indicating that the chunk reached some fullness level
 
     // CONSTRUCTORS
     VlFiberMemoryChunk();
@@ -101,13 +102,15 @@ struct VlFiberMemoryChunk final {
 
 class VlFiberMemoryPool final {
     // MEMBERS
-    std::vector<VlFiberMemoryChunk*> m_chunks;
+    std::vector<std::unique_ptr<VlFiberMemoryChunk>> m_chunks;
+    std::size_t m_freed;
 
 public:
     // CONSTRUCTORS
     VlFiberMemoryPool();
     VlFiberMemoryPool(const VlFiberMemoryPool& other) = delete;
     VlFiberMemoryPool(VlFiberMemoryPool&& other) = delete;
+    ~VlFiberMemoryPool();
 
     // METHODS
     void* get();

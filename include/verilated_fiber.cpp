@@ -59,6 +59,9 @@ static VL_CONSTEXPR_CXX17 unsigned long long allocationSize = 1 << 20;
 static VL_CONSTEXPR_CXX17 unsigned long long allocationCount = 16;
 static VL_CONSTEXPR_CXX17 unsigned long long chunkSize = allocationSize * allocationCount;
 
+// Fullness level in percent
+static VL_CONSTEXPR_CXX17 unsigned long long fullnessLevel = 25;
+
 //======================================================================
 // VlFiberMemoryPool:: Methods
 
@@ -66,7 +69,8 @@ VlFiberMemoryChunk::VlFiberMemoryChunk()
     : m_chunkAddr{}
     , m_top{}
     , m_freeTop{}
-    , m_free{0} {
+    , m_free{}
+    , m_retention{false} {
     // Use MAP_NORESERVE to prevent eager page allocation
     m_chunkAddr = ::mmap(nullptr, chunkSize, PROT_READ | PROT_WRITE,
                          MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
@@ -85,12 +89,14 @@ VlFiberMemoryChunk::~VlFiberMemoryChunk() {
 VlFiberMemoryPool::VlFiberMemoryPool()
     : m_chunks{} {}
 
+VlFiberMemoryPool::~VlFiberMemoryPool() { m_chunks.erase(m_chunks.begin(), m_chunks.end()); }
+
 void* VlFiberMemoryPool::get() {
     void* returnp{};
     auto chunkIt = std::find_if(m_chunks.begin(), m_chunks.end(),
-                                [](const VlFiberMemoryChunk* chunk) { return chunk->m_free > 0; });
+                                [](const auto& chunkp) { return chunkp->m_free > 0; });
     if (VL_UNLIKELY(chunkIt == m_chunks.end())) {
-        m_chunks.push_back(new VlFiberMemoryChunk{});
+        m_chunks.emplace_back(new VlFiberMemoryChunk{});
         size_t lastIdx = m_chunks.size() - 1;
         returnp = m_chunks[lastIdx]->m_top;
         m_chunks[lastIdx]->m_top = reinterpret_cast<void*>(
@@ -98,32 +104,34 @@ void* VlFiberMemoryPool::get() {
         m_chunks[lastIdx]->m_free--;
         return returnp;
     }
-    VlFiberMemoryChunk* chunkp = *chunkIt;
+    VlFiberMemoryChunk* chunkp = chunkIt->get();
+    chunkp->m_free--;
+    if (((allocationCount - chunkp->m_free) * 100 / allocationCount) >= fullnessLevel) {
+        chunkp->m_retention = true;
+    }
     if (!chunkp->m_freeTop) {
         returnp = chunkp->m_top;
         chunkp->m_top
             = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(chunkp->m_top) + allocationSize);
-        chunkp->m_free--;
         return returnp;
     }
     returnp = chunkp->m_freeTop;
-    chunkp->m_freeTop = reinterpret_cast<void*>(*reinterpret_cast<uintptr_t*>(chunkp->m_freeTop));
+    chunkp->m_freeTop = *reinterpret_cast<void**>(chunkp->m_freeTop);
     return returnp;
 }
 
 void VlFiberMemoryPool::free(void* ptr) {
-    auto chunkIt
-        = std::find_if(m_chunks.begin(), m_chunks.end(), [&ptr](const VlFiberMemoryChunk* chunk) {
-              return chunk->m_chunkAddr <= ptr
-                     and ptr <= reinterpret_cast<void*>(
-                             reinterpret_cast<uintptr_t>(chunk->m_chunkAddr)
-                             + (allocationSize - chunkSize));
-          });
+    auto chunkIt = std::find_if(m_chunks.begin(), m_chunks.end(), [&ptr](const auto& chunkp) {
+        return chunkp->m_chunkAddr <= ptr
+               and ptr <= reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(chunkp->m_chunkAddr)
+                                                  + (allocationSize - chunkSize));
+    });
     if (chunkIt == m_chunks.end()) return;
-    VlFiberMemoryChunk* chunkp = *chunkIt;
+    VlFiberMemoryChunk* chunkp = chunkIt->get();
     *reinterpret_cast<uintptr_t*>(ptr) = reinterpret_cast<uintptr_t>(chunkp->m_freeTop);
     chunkp->m_freeTop = ptr;
     chunkp->m_free++;
+    if (chunkp->m_free == allocationCount and chunkp->m_retention) m_chunks.erase(chunkIt);
 }
 
 //======================================================================

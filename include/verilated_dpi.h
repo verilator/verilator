@@ -35,6 +35,7 @@
 #include "verilated_timing.h"
 #else
 
+// Placeholder for compiling with --protect-ids
 #define VL_UNKNOWN "<unknown>"
 
 #endif
