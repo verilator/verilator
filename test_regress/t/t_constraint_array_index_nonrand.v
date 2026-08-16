@@ -63,12 +63,24 @@ class RandArrayRandIndex;
   constraint c_data { data[idx] == 8'hAA; }
 endclass
 
+// A rand multidimensional array indexed by a rand value on the outer
+// dimension also already works via the same genuine SMT array symbol --
+// this exercises the "array is rand but not a supported 1-D shape" side
+// of the same check, which a plain 1-D rand array can't reach.
+class RandMultidimRandIndex;
+  rand int idx;
+  rand bit [7:0] data[4][4];
+  constraint c_idx { idx inside {[0:3]}; }
+  constraint c_data { data[idx][0] == 8'hAA; }
+endclass
+
 module t;
   initial begin
     UniqueIdPool obj;
     UniqueIdPoolViaMember mobj;
     UniqueIdPoolNonZeroBase nzobj;
     RandArrayRandIndex rand_obj;
+    RandMultidimRandIndex mrand_obj;
     bit [15:0] seen;
     int randomize_result;
 
@@ -97,6 +109,13 @@ module t;
       randomize_result = rand_obj.randomize();
       `checkd(randomize_result, 1);
       `checkd(rand_obj.data[rand_obj.idx], 8'hAA);
+    end
+
+    mrand_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = mrand_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(mrand_obj.data[mrand_obj.idx][0], 8'hAA);
     end
 
     mobj = new;
