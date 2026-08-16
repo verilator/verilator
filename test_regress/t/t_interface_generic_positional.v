@@ -4,11 +4,14 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-interface inf;
+interface ifc;
   int v;
 endinterface
 
-module GenericModule (interface a, interface b);
+module GenericModule (
+    interface a,
+    interface b
+);
   initial begin
     #1;
     if (a.v != 7) $stop;
@@ -16,8 +19,11 @@ module GenericModule (interface a, interface b);
 endmodule
 
 module t;
-  inf inf_inst[3]();
-  GenericModule genericModule (.a(inf_inst[1]), .b(inf_inst[2]));
+  ifc inf_inst[3] ();
+  GenericModule genericModule (
+      .a(inf_inst[1]),
+      .b(inf_inst[2])
+  );
   initial begin
     inf_inst[1].v = 7;
     $write("*-* All Finished *-*\n");

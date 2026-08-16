@@ -1120,9 +1120,7 @@ public:
         return 1;
     }
     // Setting. Verilog: assoc[index] = v
-    // Can't just overload operator[] or provide a "at" reference to set,
-    // because we need to be able to insert only when the value is set
-    T_Value& at(const T_Key& index) {
+    T_Value& atWrite(const T_Key& index) {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
             std::pair<typename Map::iterator, bool> pit = m_map.emplace(index, m_defaultValue);
@@ -1138,7 +1136,7 @@ public:
     }
     // Setting as a chained operation
     VlAssocArray& set(const T_Key& index, const T_Value& value) {
-        at(index) = value;
+        atWrite(index) = value;
         return *this;
     }
     VlAssocArray& setDefault(const T_Value& value) {
@@ -1395,7 +1393,7 @@ void VL_READMEM_N(bool hex, int bits, const std::string& filename,
         QData addr;
         std::string data;
         if (rmem.get(addr /*ref*/, data /*ref*/)) {
-            rmem.setData(&(obj.at(addr)), data);
+            rmem.setData(&(obj.atWrite(addr)), data);
         } else {
             break;
         }

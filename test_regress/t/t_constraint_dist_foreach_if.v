@@ -74,6 +74,7 @@ module t;
       static ClsIf obj = new();
       int seen_zero, seen_nonzero;
       int this_zero, this_nonzero, mixed;
+      int randomize_result;
       obj.gate = 1'b1;
       seen_zero = 0;
       seen_nonzero = 0;
@@ -81,7 +82,8 @@ module t;
       repeat (100) begin
         this_zero = 0;
         this_nonzero = 0;
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           if (obj.a[i] > 4) begin
             $write("%%Error: %s:%0d: if: value out of dist range: %0d\n", `__FILE__, `__LINE__,
@@ -113,6 +115,7 @@ module t;
       static ClsImpl obj = new();
       int seen_zero, seen_nonzero;
       int this_zero, this_nonzero, mixed;
+      int randomize_result;
       obj.gate = 1'b1;
       seen_zero = 0;
       seen_nonzero = 0;
@@ -120,7 +123,8 @@ module t;
       repeat (100) begin
         this_zero = 0;
         this_nonzero = 0;
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           if (obj.a[i] > 4) begin
             $write("%%Error: %s:%0d: ->: value out of dist range: %0d\n", `__FILE__, `__LINE__,
@@ -152,6 +156,7 @@ module t;
       static ClsImplChained obj = new();
       int seen_zero, seen_nonzero;
       int this_zero, this_nonzero, mixed;
+      int randomize_result;
       obj.gateA = 1'b1;
       obj.gateB = 1'b1;
       seen_zero = 0;
@@ -160,7 +165,8 @@ module t;
       repeat (100) begin
         this_zero = 0;
         this_nonzero = 0;
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           if (obj.a[i] > 4) begin
             $write("%%Error: %s:%0d: ->->: value out of dist range: %0d\n", `__FILE__, `__LINE__,

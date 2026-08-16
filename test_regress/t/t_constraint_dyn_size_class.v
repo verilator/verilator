@@ -7,6 +7,7 @@
 // verilator lint_off
 // verilog_format: off
 `define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%d exp=%d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define check_range(gotv, minv, maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
 // verilog_format: on
@@ -87,13 +88,17 @@ module t;
   IndepClass indep;
 
   initial begin
+    int randomize_result;
     indep = new;
     ext0 = new;
     ext1 = new;
     repeat (10) begin
-      `checkh(ext0.randomize(), 1);
-      `checkh(ext0.randomize(), 1);
-      `checkh(ext0.randomize_gpr(indep), 1);
+      randomize_result = ext0.randomize();
+      `checkd(randomize_result, 1);
+      randomize_result = ext0.randomize();
+      `checkd(randomize_result, 1);
+      randomize_result = ext0.randomize_gpr(indep);
+      `checkd(randomize_result, 1);
 
       `checkh(indep.val0 inside {ext0.arr}, 1);
       `checkh(indep.val1, 'hDEADBEEF);

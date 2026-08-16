@@ -4,11 +4,20 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module sub(input in, output out);
+module sub (
+    input in,
+    output out
+);
   assign out = in;
 endmodule
 
-module top(input clk, output out);
+module top (
+    input clk,
+    output out
+);
   logic one = '1;
-  sub sub_inst(.in(one), .out(out));
+  sub sub_inst (
+      .in(one),
+      .out(out)
+  );
 endmodule

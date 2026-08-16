@@ -7,7 +7,7 @@
 class Packet;
   rand int header;  // 0..7
   rand int length;  // 0..15
-  rand int sublength; // 0..15
+  rand int sublength;  // 0..15
   rand bit if_4;
   rand bit iff_5_6;
   rand bit if_state_ok;

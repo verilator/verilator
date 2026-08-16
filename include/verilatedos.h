@@ -470,6 +470,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Integer size macros
 
 #define VL_BYTESIZE 8  ///< Bits in a CData / byte
+#define VL_BYTESIZE_LOG2 3  ///< log2(VL_BYTESIZE)
 #define VL_SHORTSIZE 16  ///< Bits in a SData / short
 #define VL_IDATASIZE 32  ///< Bits in an IData / word
 #define VL_QUADSIZE 64  ///< Bits in a QData / quadword
@@ -482,9 +483,9 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #endif
 
 /// Return number of bytes argument-number of bits needs (1 bit=1 byte)
-#define VL_BYTES_I(nbits) (((nbits) + (VL_BYTESIZE - 1)) / VL_BYTESIZE)
+#define VL_BYTES_I(nbits) (((nbits) + (VL_BYTESIZE - 1)) >> VL_BYTESIZE_LOG2)
 /// Return Words/EDatas in argument-number of bits needs (1 bit=1 word)
-#define VL_WORDS_I(nbits) (((nbits) + (VL_EDATASIZE - 1)) / VL_EDATASIZE)
+#define VL_WORDS_I(nbits) (((nbits) + (VL_EDATASIZE - 1)) >> VL_EDATASIZE_LOG2)
 // Number of Words/EDatas a quad requires
 #define VL_WQ_WORDS_E VL_WORDS_I(VL_QUADSIZE)
 

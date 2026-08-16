@@ -3173,6 +3173,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_replaceWithAlias
         = true;  // Replace VarScope with an alias. Used in the handling of AstAlias
     bool m_isParam = false;  // Specifies whether currently visiting param variable
+    bool m_resolvingTypedef = false;  // Currently traversing a Typedef tree
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -4635,9 +4636,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds.m_dotText = "";
             } else if (AstClass* const defp = VN_CAST(foundp->nodep(), Class)) {
                 if (allowVar) {
-                    AstRefDType* const newp = new AstRefDType{nodep->fileline(), nodep->name()};
-                    replaceWithCheckBreak(nodep, newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    if (m_ds.m_dotPos == DP_SCOPE && !staticAccess) {
+                        // Continue hierarchical lookup in the class scope.
+                        m_ds.m_dotSymp = foundp;
+                    } else {
+                        AstRefDType* const newp
+                            = new AstRefDType{nodep->fileline(), nodep->name()};
+                        replaceWithCheckBreak(nodep, newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
                     ok = true;
                     m_ds.m_dotText = "";
                 } else {
@@ -6057,12 +6064,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(cpackagep);
                     return;
                 }
-                if (!cpackagerefp->classOrPackageSkipp()) {
+
+                const bool doDefaultTypedef = !(m_resolvingTypedef && m_statep->forPrimary());
+                if (!cpackagerefp->classOrPackageSkipp(doDefaultTypedef)) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
                         m_ds.m_dotSymp, cpackagerefp, true, false, "class/package reference");
                     if (!foundp) return;
                 }
-                nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
+                nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp(doDefaultTypedef));
                 if (!VN_IS(nodep->classOrPackagep(), Class)
                     && !VN_IS(nodep->classOrPackagep(), Package)) {
                     if (m_statep->forPrimary()) {
@@ -6349,6 +6358,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         VL_RESTORER(m_replaceWithAlias);
         if (nodep->user2()) m_replaceWithAlias = false;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstTypedef* nodep) override {
+        VL_RESTORER(m_resolvingTypedef)
+        m_resolvingTypedef = true;
         iterateChildren(nodep);
     }
 

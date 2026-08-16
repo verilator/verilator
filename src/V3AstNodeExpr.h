@@ -905,7 +905,7 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     // There's no classOrPackagep(); use classOrPackageNodep() to get Node,
     // or iterating to package with classOrPackageSkipp()
-    AstNodeModule* classOrPackageSkipp() const;
+    AstNodeModule* classOrPackageSkipp(const bool doRefs = true) const;
     AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
     void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
     void classOrPackagep(AstNodeModule* nodep) {
@@ -2555,19 +2555,26 @@ public:
 class AstSampled final : public AstNodeExpr {
     // Verilog $sampled
     // @astgen op1 := exprp : AstNode<AstNodeExpr|AstPropSpec>
+    bool m_internal : 1;  // Internally created, not from a source $sampled
 public:
-    AstSampled(FileLine* fl, AstNode* exprp, AstNodeDType* dtypep)
-        : ASTGEN_SUPER_Sampled(fl) {
+    AstSampled(FileLine* fl, AstNode* exprp, AstNodeDType* dtypep, bool internal = false)
+        : ASTGEN_SUPER_Sampled(fl)
+        , m_internal{internal} {
         this->exprp(exprp);
         this->dtypep(dtypep);
     }
     ASTGEN_MEMBERS_AstSampled;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { return "$sampled(%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return 0; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_internal == VN_DBG_AS(samep, Sampled)->m_internal;
+    }
+    bool internal() const { return m_internal; }
     bool isSystemFunc() const override { return true; }
 };
 class AstScopeName final : public AstNodeExpr {
@@ -4896,9 +4903,11 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    bool isGateOptimizable() const override { return false; }  // AssocSel creates on miss
+    bool isGateOptimizable() const override {
+        return !isLValue();  // AssocSel creates on miss
+    }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return false; }  // AssocSel creates on miss
+    bool isPure() override { return !isLValue(); }  // AssocSel creates on miss
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
 };

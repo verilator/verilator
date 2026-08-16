@@ -1519,7 +1519,8 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstFell* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
@@ -1527,14 +1528,16 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstFalling* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             nodep->dtypeSetBit();
         }
     }
     void visit(AstFuture* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeFrom(nodep->exprp());
         }
@@ -1542,10 +1545,12 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstPast* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             nodep->dtypeFrom(nodep->exprp());
             if (nodep->ticksp()) {
-                iterateCheckSizedSelf(nodep, "Ticks", nodep->ticksp(), SELF, BOTH);
+                iterateCheckSizedSelf(nodep, "Ticks", nodep->ticksp(), SELF, BOTH,
+                                      /* deferUntyped */ true);
                 V3Const::constifyParamsEdit(nodep->ticksp());  // ticksp may change
                 const AstConst* const constp = VN_CAST(nodep->ticksp(), Const);
                 if (!constp) {
@@ -1670,14 +1675,16 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstRising* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             nodep->dtypeSetBit();
         }
     }
     void visit(AstRose* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
@@ -1686,7 +1693,8 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSampled* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             nodep->dtypeFrom(nodep->exprp());
         }
     }
@@ -1743,7 +1751,8 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstStable* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
@@ -1751,7 +1760,8 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSteady* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
             nodep->dtypeSetBit();
         }
     }
@@ -2180,6 +2190,11 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
+    // Delete a subtree after removing any saved references that point into it.
+    static void deleteTreeCaptured(AstNode* nodep) {
+        V3LinkDotIfaceCapture::purgeDeletedSubtree(nodep);
+        nodep->deleteTree();
+    }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
         m_attrp = nodep;
@@ -2196,7 +2211,7 @@ class WidthVisitor final : public VNVisitor {
                 = (nodep->attrType() == VAttrType::DIM_UNPK_DIMENSIONS ? dim.second
                                                                        : (dim.first + dim.second));
             nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Signed32{}, val));
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
             break;
         }
         case VAttrType::DIM_BITS_OR_NUMBER: {
@@ -2239,7 +2254,7 @@ class WidthVisitor final : public VNVisitor {
                 case VAttrType::DIM_LOW: {
                     AstNode* const newp = new AstConst(nodep->fileline(), AstConst::Signed32{}, 0);
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
                     break;
                 }
                 case VAttrType::DIM_RIGHT:
@@ -2261,7 +2276,7 @@ class WidthVisitor final : public VNVisitor {
                     AstNodeExpr* const newp
                         = new AstConst(nodep->fileline(), AstConst::Signed32{}, -1);
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
                     break;
                 }
                 case VAttrType::DIM_BITS: {
@@ -2294,14 +2309,14 @@ class WidthVisitor final : public VNVisitor {
                         AstConst* const newp = dimensionValue(nodep->fileline(), baseDTypep,
                                                               nodep->attrType(), dim);
                         nodep->replaceWith(newp);
-                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                        VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
                     }
                 } else if (VN_IS(nodep->dimp(), Const)) {
                     const int dim = VN_AS(nodep->dimp(), Const)->toSInt();
                     AstConst* const newp
                         = dimensionValue(nodep->fileline(), dtypep, nodep->attrType(), dim);
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
                 } else {  // Need a runtime lookup table.  Yuk.
                     UASSERT_OBJ(nodep->fromp() && dtypep, nodep, "Unsized expression");
                     AstVar* const varp = dimensionVarp(dtypep, nodep->attrType(), msbdim);
@@ -2309,7 +2324,7 @@ class WidthVisitor final : public VNVisitor {
                     AstNodeExpr* const newp
                         = new AstArraySel{nodep->fileline(), newVarRefDollarUnit(varp), dimp};
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
                 }
             }
             break;
@@ -7532,7 +7547,10 @@ class WidthVisitor final : public VNVisitor {
                                                                << pinDTypep->prettyDTypeNameQ());
                     continue;
                 }
-                if (!portp->basicp() || portp->basicp()->isOpaque()) {
+                // An untyped formal preserves the actual argument's self-determined type.
+                if (portp->basicp() && portp->basicp()->untyped()) {
+                    iterateCheckSelf(nodep, "Function Argument", pinp, SELF, FINAL);
+                } else if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     // Output args: at return caller = callee, reverse direction.
                     checkClassAssign(nodep, "Function Argument", pinp, portDTypep,
                                      portp->direction() == VDirection::OUTPUT);
@@ -9081,7 +9099,7 @@ class WidthVisitor final : public VNVisitor {
         (void)underp;  // cppcheck
     }
     void iterateCheckSizedSelf(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
-                               Stage stage) {
+                               Stage stage, bool deferUntyped = false) {
         // Coerce child to any sized-number data type; child is self-determined
         // i.e. isolated from expected type.
         // e.g. parentp=CONCAT, underp=lhs in CONCAT(lhs,rhs)
@@ -9095,7 +9113,10 @@ class WidthVisitor final : public VNVisitor {
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         AstNodeDType* const checkDtp = expDTypep->skipRefToEnump();
-        if (!checkDtp->isIntegralOrPacked()) {
+        // Sampling functions may still reference an untyped property formal here.
+        // V3AssertPre checks the actual type after property argument substitution.
+        if (!checkDtp->isIntegralOrPacked()
+            && !(deferUntyped && checkDtp->basicp() && checkDtp->basicp()->untyped())) {
             parentp->v3error("Expected numeric type, but got a " << checkDtp->prettyDTypeNameQ()
                                                                  << " data type");
         }

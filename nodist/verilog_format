@@ -12,6 +12,8 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: CC0-1.0
 
+# These flags tested against verible-v0.0-4080-ga0a8d8eb
+
 verible-verilog-format \
     --inplace \
     --wrap_end_else_clauses  \

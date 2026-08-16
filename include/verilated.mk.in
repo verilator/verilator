@@ -43,7 +43,7 @@ CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 # Compiler flags that enable coroutine support
 CFG_CXXFLAGS_COROUTINES = @CFG_CXXFLAGS_COROUTINES@
 # Compiler flags when creating a precompiled header
-CFG_CXXFLAGS_PCH = -x c++-header
+CFG_CXXFLAGS_PCH = -c -x c++-header
 # Compiler option to put in front of filename to read precompiled header
 CFG_CXXFLAGS_PCH_I = @CFG_CXXFLAGS_PCH_I@
 # Compiler's filename prefix for precompiled headers, .gch if clang, empty if GCC

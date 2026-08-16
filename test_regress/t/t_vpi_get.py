@@ -18,6 +18,6 @@ test.compile(make_top_shell=False,
              iv_flags2=["-g2005-sv -D USE_VPI_NOT_DPI"],
              v_flags2=["+define+USE_VPI_NOT_DPI +define+VERILATOR_COMMENTS"])
 
-test.execute(use_libvpi=True)
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.passes()

@@ -122,12 +122,14 @@ module t;
     automatic VarItems vi = new;
     automatic RandItems ri = new;
     automatic ColonEqItems ce = new;
+    int randomize_result;
 
     nlo = 0;
     nmid = 0;
     nhi = 0;
     for (int i = 0; i < `N; i++) begin
-      `checkd(li.randomize(), 1)
+      randomize_result = li.randomize();
+      `checkd(randomize_result, 1);
       tally(li.x);
     end
     `check_hist
@@ -136,7 +138,8 @@ module t;
     nmid = 0;
     nhi = 0;
     for (int i = 0; i < `N; i++) begin
-      `checkd(vb.randomize(), 1)
+      randomize_result = vb.randomize();
+      `checkd(randomize_result, 1);
       tally(vb.x);
     end
     `check_hist
@@ -145,7 +148,8 @@ module t;
     nmid = 0;
     nhi = 0;
     for (int i = 0; i < `N; i++) begin
-      `checkd(vi.randomize(), 1)
+      randomize_result = vi.randomize();
+      `checkd(randomize_result, 1);
       tally(vi.x);
     end
     `check_hist
@@ -153,7 +157,8 @@ module t;
     neqy = 0;
     nnine = 0;
     for (int i = 0; i < `N; i++) begin
-      `checkd(ri.randomize(), 1)
+      randomize_result = ri.randomize();
+      `checkd(randomize_result, 1);
       if (ri.x == 9) nnine++;
       else if (ri.x == ri.y) neqy++;
       else `stop;
@@ -163,7 +168,8 @@ module t;
 
     nten = 0;
     for (int i = 0; i < `N; i++) begin
-      `checkd(ce.randomize(), 1)
+      randomize_result = ce.randomize();
+      `checkd(randomize_result, 1);
       // x is bit [3:0], so only the upper bound can fail
       if (ce.x > 10) `stop;
       if (ce.x == 10) nten++;

@@ -66,7 +66,7 @@ module t;
       automatic int i = 0;
       while (i < 5) begin : loop_7
         $display("loop_7 %0d", i);
-        for (int j = 0 ; j < 4; ++j) begin : loop_8
+        for (int j = 0; j < 4; ++j) begin : loop_8
           $display("loop_8 %0d", j);
           if (j == 3) ++i;
         end

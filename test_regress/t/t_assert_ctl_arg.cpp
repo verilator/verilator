@@ -138,8 +138,34 @@ void verilatedTest() {
     contextp->assertCtl(FAIL_ON, TYPE, DIRECTIVE);
     TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_FAIL_ON, TYPE, DIRECTIVE));
 }
+
+void verilatedLockedTest() {
+    // With +verilator+assert+lock, every assertion-control update is a no-op
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+
+    // Clear some bits to test assertOnSet
+    contextp->assertOnClear(2, 3);
+    const char* argsp[] = {"+verilator+assert+lock"};
+    contextp->commandArgsAdd(1, argsp);
+    TEST_CHECK_EQ(contextp->assertCtlsLocked(), true);
+
+    // Validate each assert control API call is a no-op
+    contextp->assertOn(false);
+    TEST_CHECK_NZ(contextp->assertOn());
+
+    contextp->assertOnSet(2, 3);
+    TEST_CHECK_Z(contextp->assertOnGet(2, 3));
+
+    contextp->assertOnClear(1, 1);
+    TEST_CHECK_NZ(contextp->assertOnGet(1, 1));
+
+    contextp->assertCtl(4, 4, 1);
+    TEST_CHECK_NZ(contextp->assertOnGet(4, 1));
+}
+
 int main(int argc, char** argv) {
     verilatedTest();
+    verilatedLockedTest();
     if (errors) return 10;
 
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
