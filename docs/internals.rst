@@ -798,7 +798,7 @@ locals are at least as long as the execution of the forked processes.
 DPI with timing
 ~~~~~~~~~~~~~~~
 
-IEEE 1800-2023 35.5.1.5 states that imported tasks can suspend the current
+IEEE 1800-2023 section 35.5.1.5 states that imported tasks can suspend the current
 thread by calling an exported task with SystemVerilog timing constructs.
 
 Verilator supports DPI exported tasks with timing constructs by spawning a
