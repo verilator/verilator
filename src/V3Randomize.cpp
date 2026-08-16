@@ -1973,16 +1973,20 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstVar* const varp = arrayCompareRootVar(exprp);
         return !varp || !varp->rand().isRandomizable();
     }
+    // True iff exprp isn't a variable, member select, or constant-indexed
+    // slice of either -- buildElementwiseEq can't safely clone anything
+    // else (e.g. a function call would run once per array element).
+    static bool arrayCompareOperandUnsupported(AstNodeExpr* exprp) {
+        return !arrayCompareRootVar(exprp);
+    }
     // True iff every array dimension of dtp bottoms out in a scalar leaf
     // (no queue/dynamic/associative array anywhere in the shape).
     static bool arrayShapeFullySupported(const AstNodeDType* dtp) {
         if (const AstUnpackArrayDType* const arrp = VN_CAST(dtp, UnpackArrayDType)) {
             return arrayShapeFullySupported(arrp->subDTypep()->skipRefp());
         }
-        // Only the queue case is tested; the others are vanishingly rare.
-        return !VN_IS(dtp, QueueDType) && !VN_IS(dtp, DynArrayDType)  // LCOV_EXCL_BR_LINE
-               && !VN_IS(dtp, AssocArrayDType)  // LCOV_EXCL_BR_LINE
-               && !VN_IS(dtp, WildcardArrayDType);  // LCOV_EXCL_BR_LINE
+        return !VN_IS(dtp, QueueDType) && !VN_IS(dtp, DynArrayDType)
+               && !VN_IS(dtp, AssocArrayDType) && !VN_IS(dtp, WildcardArrayDType);
     }
     // Builds lhs[0]==rhs[0] && lhs[1]==rhs[1] && ..., recursing into
     // sub-arrays. Takes ownership of lhsp/rhsp. markLhs/markRhs: mark that
@@ -2040,6 +2044,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: array comparison in constraint on an array "
                               "shape containing a queue, dynamic, or associative array");
+                return;
+            }
+            if (arrayCompareOperandUnsupported(nodep->lhsp())
+                || arrayCompareOperandUnsupported(nodep->rhsp())) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint with an operand "
+                              "that isn't a variable, member, or constant-indexed slice");
                 return;
             }
             const bool lhsIsRand = !arrayCompareOperandNeedsExpansion(nodep->lhsp());

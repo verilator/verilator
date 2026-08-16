@@ -10,12 +10,7 @@
 // verilog_format: on
 
 // Test that a whole-array '=='/'!=' constraint against a non-rand array
-// operand is genuinely enforced by the solver, not silently dropped. Both
-// operators are checked, plus a deliberate contradiction (forcing == and
-// != against the same non-rand array at once) to prove neither is a no-op.
-// Also covers two array shapes this fix must not disturb: a rand-vs-rand
-// array comparison (already worked via native SMT array equality) and a
-// 3-D non-rand array (the fix's recursion must not be depth-limited to 2-D).
+// operand is genuinely enforced by the solver, not silently dropped.
 
 class frame_bothrand;
   rand bit [7:0] frame[2][2];
@@ -39,9 +34,7 @@ class frame_3d;
   endfunction
 endclass
 
-// Same idiom, but the array has a non-zero declared lower bound ([1:4]
-// instead of the usual [0:3]-equivalent [4]) -- each synthesized
-// array-element access has to account for that bias itself.
+// Same, but 'frame'/'target' have a non-zero declared range ([1:4]).
 class frame_nonzero_base;
   rand bit [7:0] frame[1:4];
   bit [7:0] target[1:4];
@@ -54,8 +47,7 @@ class frame_nonzero_base;
   endfunction
 endclass
 
-// Same idiom, but the non-rand array is reached through a member select
-// (holder.target) rather than a plain variable reference.
+// Same, reached via a member select (holder.target).
 class Holder;
   bit [7:0] target[2][2];
   function new();
@@ -75,9 +67,7 @@ class frame_via_member;
   endfunction
 endclass
 
-// The rand side need not be a plain variable either -- a constant-indexed
-// slice of a larger rand array (cube[0]) must stay symbolic too, not fold
-// to a stale scalar the way a non-rand operand correctly does.
+// Rand side as a constant-indexed slice of a larger array (cube[0]).
 class frame_rand_slice;
   rand bit [7:0] cube[2][2][2];
   bit [7:0] target[2][2];
@@ -94,6 +84,20 @@ class frame_eq;
   rand bit [7:0] frame[2][2];
   bit [7:0] target[2][2];
   constraint c { frame == target; }
+  function new();
+    target[0][0] = 8'h11;
+    target[0][1] = 8'h22;
+    target[1][0] = 8'h33;
+    target[1][1] = 8'h44;
+  endfunction
+endclass
+
+// Non-rand operand written first: 'target == frame' instead of the usual
+// 'frame == target'.
+class frame_swapped;
+  rand bit [7:0] frame[2][2];
+  bit [7:0] target[2][2];
+  constraint c { target == frame; }
   function new();
     target[0][0] = 8'h11;
     target[0][1] = 8'h22;
@@ -134,6 +138,7 @@ module t;
     frame_via_member member_obj;
     frame_rand_slice slice_obj;
     frame_eq eq_obj;
+    frame_swapped swapped_obj;
     frame_neq neq_obj;
     frame_contradiction bad_obj;
     bit [7:0] prev[4][4];
@@ -197,6 +202,15 @@ module t;
     `checkd(eq_obj.frame[0][1], 8'h22);
     `checkd(eq_obj.frame[1][0], 8'h33);
     `checkd(eq_obj.frame[1][1], 8'h44);
+
+    // '==' must force the exact value with operands in either order
+    swapped_obj = new;
+    randomize_result = swapped_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(swapped_obj.frame[0][0], 8'h11);
+    `checkd(swapped_obj.frame[0][1], 8'h22);
+    `checkd(swapped_obj.frame[1][0], 8'h33);
+    `checkd(swapped_obj.frame[1][1], 8'h44);
 
     // '!=' against a non-rand array must be genuinely enforced every call
     neq_obj = new;
