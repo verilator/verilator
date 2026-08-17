@@ -71,6 +71,9 @@ static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
         mTaskGraphp->hashGraphDebug("MTask graph after contract()");
     }
 
+    // Note the graph is only mutated by generic V3Graph algorithms from here on. These neither
+    // maintain the critical paths of the MTasks, nor create MTaskEdges when rerouting, so the
+    // critical paths are stale below, and the graph must not be handed back to OrderMTaskGraph.
     mTaskGraphp->removeTransitiveEdges();
     mTaskGraphp->hashGraphDebug("MTask graph after removeTransitiveEdges()");
 
