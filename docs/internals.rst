@@ -798,8 +798,9 @@ locals are at least as long as the execution of the forked processes.
 DPI with timing
 ~~~~~~~~~~~~~~~
 
-IEEE 1800-2023 section 35.5.1.5 states that imported tasks can suspend the current
-thread by calling an exported task with SystemVerilog timing constructs.
+IEEE 1800-2023 section 35.5.1.5 states that imported tasks can suspend the
+current thread by calling an exported task with SystemVerilog timing
+constructs.
 
 Verilator supports DPI exported tasks with timing constructs by spawning a
 `fiber <https://en.wikipedia.org/wiki/Fiber_(computer_science)>`__ with a
@@ -809,7 +810,7 @@ while the fiber waits for an event to occur.
 The fiber implementation is present in ``verilated_fiber.cpp`` and
 ``verilated_fiber.h``.
 
-Explanation of the introduced classes and structures follows.
+Below is an explanation of the introduced classes and structures.
 
 ``VlFiber``
 +++++++++++
