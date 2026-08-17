@@ -24,7 +24,7 @@ module t;
   );
 
   initial begin
-    ping(10);
+    ping(300);
     $finish;
   end
 endmodule
