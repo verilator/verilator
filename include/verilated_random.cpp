@@ -29,6 +29,7 @@
 #include <iostream>
 #include <sstream>
 #include <streambuf>
+#include <tuple>
 
 // Diversity (scalar rand vars): tie each free bit to a random target via a
 //   boolean assumption literal, then force the bits with (check-sat-assuming).
@@ -265,6 +266,125 @@ private:
     }
 };
 
+//======================================================================
+// Solver reply protocol
+
+enum class VlSolverStatus : uint8_t { SAT, UNSAT, UNKNOWN, FAIL };
+
+static bool isSolverError(const std::string& reply) { return reply.compare(0, 6, "(error") == 0; }
+
+// One non-blank reply line, trimmed; false once the solver stops answering
+static bool readLine(std::istream& is, std::string& liner) {
+    while (std::getline(is, liner)) {
+        const size_t first = liner.find_first_not_of(" \t\r");
+        if (first == std::string::npos) continue;
+        const size_t last = liner.find_last_not_of(" \t\r");
+        liner = liner.substr(first, last - first + 1);
+        return true;
+    }
+    return false;
+}
+
+static void scanParenDepth(const std::string& str, int& depthr, bool& inStringr) {
+    for (const char c : str) {
+        if (inStringr) {
+            if (c == '"') inStringr = false;
+        } else if (c == '"') {
+            inStringr = true;
+        } else if (c == '(') {
+            ++depthr;
+        } else if (c == ')') {
+            --depthr;
+        }
+    }
+}
+
+// Append lines until the error s-expression started in liner is paren-balanced
+static bool finishErrorReply(std::istream& is, std::string& liner) {
+    int depth = 0;
+    bool inString = false;
+    scanParenDepth(liner, depth, inString);
+    while (depth > 0) {
+        std::string chunk;
+        if (!readLine(is, chunk)) return false;
+        liner += ' ';
+        liner += chunk;
+        scanParenDepth(chunk, depth, inString);
+    }
+    return true;
+}
+
+static void warnSolverReply(const std::string& reply) {
+    static bool s_warned = false;
+    if (s_warned) return;
+    s_warned = true;
+    const std::string msg
+        = "Solver did not answer with a status; this randomize() call fails, later calls "
+          "continue: "
+          + reply;
+    VL_WARN_MT(__FILE__, __LINE__, "randomize", msg.c_str());
+}
+
+// Read one solver status; only a print-success echo may precede it
+static VlSolverStatus readStatus(std::istream& is) {
+    std::string line;
+    while (readLine(is, line)) {
+        if (line == "success") continue;
+        if (line == "sat") return VlSolverStatus::SAT;
+        if (line == "unsat") return VlSolverStatus::UNSAT;
+        if (line == "unknown") {
+            static bool s_warnedUnknown = false;
+            if (!s_warnedUnknown) {
+                s_warnedUnknown = true;
+                VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                           "Solver returned unknown (timed out or incomplete); this randomize() "
+                           "call may fail, later calls continue");
+            }
+            return VlSolverStatus::UNKNOWN;
+        }
+        // Consume the whole error, so the next read starts on a reply boundary
+        if (isSolverError(line) && !finishErrorReply(is, line)) break;
+        warnSolverReply(line);
+        return VlSolverStatus::FAIL;
+    }
+    return VlSolverStatus::FAIL;
+}
+
+// Read one complete paren-balanced s-expression, which may span lines
+static bool readSExpr(std::istream& is, std::string& outr) {
+    outr.clear();
+    std::string pre;
+    int depth = 0;
+    bool inString = false;
+    char c = 0;
+    while (is.get(c)) {
+        if (depth == 0) {
+            if (c == '(') {
+                if (!pre.empty()) break;
+                outr += c;
+                depth = 1;
+            } else if (c == '\n') {
+                if (pre == "success") pre.clear();
+                if (!pre.empty()) break;
+            } else if (c != ' ' && c != '\t' && c != '\r') {
+                pre += c;
+            }
+            continue;
+        }
+        outr += c;
+        if (inString) {
+            if (c == '"') inString = false;
+        } else if (c == '"') {
+            inString = true;
+        } else if (c == '(') {
+            ++depth;
+        } else if (c == ')' && --depth == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static VlRProcess& getSolver() {
     static VlRProcess s_solver;
     static bool s_done = false;
@@ -287,9 +407,7 @@ static VlRProcess& getSolver() {
     s_solver << "(set-logic QF_ABV)\n";
     s_solver << "(check-sat)\n";
     s_solver << "(reset)\n";
-    std::string s;
-    getline(s_solver, s);
-    if (s == "sat") return s_solver;
+    if (readStatus(s_solver) == VlSolverStatus::SAT) return s_solver;
 
     std::stringstream msg;
     msg << "Unable to communicate with SAT solver, please check its installation or specify a "
@@ -299,8 +417,6 @@ static VlRProcess& getSolver() {
     msg << '\n';
     const std::string str = msg.str();
     VL_WARN_MT("", 0, "randomize", str.c_str());
-
-    while (getline(s_solver, s)) {}
     return s_solver;
 }
 
@@ -601,21 +717,26 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueE
 
         relaxSoftConstraints(os);
         os << "(check-sat)\n";
-        const bool sat = parseSolution(os);
+        const VlSolverStatus status = readStatus(os);
 
-        if (!sat) {
+        if (status != VlSolverStatus::SAT) {
             os << "(reset)\n";
+            if (status != VlSolverStatus::UNSAT) return false;
             // If randc vars have used values, this may be cycle exhaustion - retry
             if (hasRandc && !m_randcUsedValues.empty() && attempt == 0) {
                 m_randcUsedValues.clear();
                 continue;  // Retry without exclusions
             }
             // Skip the unsat-core path in check-only: it re-declares vars
-            // without pinning, so parseSolution would clobber user state with
-            // the solver's free assignment.
+            // without pinning, so the solver's free assignment would clobber
+            // user state.
             if (m_checkOnly) return false;
             // Genuine unsat: report via unsat-core
             reportUnsatSetup(os, uniqueExprs);
+            os << "(reset)\n";
+            return false;
+        }
+        if (!applyModel(os)) {
             os << "(reset)\n";
             return false;
         }
@@ -669,58 +790,55 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, std::iostream& os) {
             if (!dropped[k]) os << " a" << k;
         }
         os << "))\n";
-        if (parseSolution(os)) return;
+        const VlSolverStatus status = readStatus(os);
+        if (status == VlSolverStatus::SAT) {
+            applyModel(os);
+            return;
+        }
+        // Unknown or failure: the base solution already written stands
+        if (status != VlSolverStatus::UNSAT) return;
         // get-unsat-assumptions only echoes still-active literals,
         // so the first in-range index is a live conflicting bit.
         const std::vector<int> core = readUnsatAssumptions(os);
+        bool droppedOne = false;
         for (const int idx : core) {
             if (idx < npins) {
                 dropped[idx] = true;
+                droppedOne = true;
                 break;
             }
         }
+        if (!droppedOne) return;
     }
 }
 
 void VlRandomizer::solveDiversityXor(VlRNG& rngr, std::iostream& os) {
-    bool sat = true;
-    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL; ++i) {
         os << "(assert ";
         randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
         os << ")\n";
         os << "\n(check-sat)\n";
-        sat = parseSolution(os);
+        if (readStatus(os) != VlSolverStatus::SAT) break;
+        if (!applyModel(os)) break;
     }
 }
 
-// False once the solver is gone, so no reply loop can spin forever
-static bool readNonBlankLine(std::istream& is, std::string& liner) {
-    do {
-        if (!std::getline(is, liner)) return false;
-    } while (liner.empty());
-    return true;
-}
-
-bool VlRandomizer::checkSat(std::iostream& os) {
-    std::string result;
-    if (!readNonBlankLine(os, result)) return false;
-    return result == "sat";
-}
-
+// Re-add softs highest-priority first, dropping incompatible ones.
 void VlRandomizer::relaxSoftConstraints(std::iostream& os) {
-    // Re-add softs highest-priority first, dropping incompatible ones.
-    const size_t nSoft = m_softConstraints.size();
-    if (nSoft == 0) return;
+    if (m_softConstraints.empty()) return;
     os << "(push 1)\n";
     for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
     os << "(check-sat)\n";
-    if (checkSat(os)) return;
+    const VlSolverStatus status = readStatus(os);
+    if (status == VlSolverStatus::SAT || status == VlSolverStatus::FAIL) return;
     os << "(pop 1)\n";
     for (auto it = m_softConstraints.rbegin(); it != m_softConstraints.rend(); ++it) {
         os << "(push 1)\n";
         os << "(assert (= #b1 " << *it << "))\n";
         os << "(check-sat)\n";
-        if (!checkSat(os)) os << "(pop 1)\n";
+        const VlSolverStatus probe = readStatus(os);
+        if (probe == VlSolverStatus::FAIL) return;
+        if (probe != VlSolverStatus::SAT) os << "(pop 1)\n";
     }
 }
 
@@ -729,7 +847,8 @@ static std::vector<int> scanIntRuns(const std::string& reply) {
     std::vector<int> idxs;
     std::string num;
     for (const char c : reply) {
-        if (std::isdigit(static_cast<unsigned char>(c))) {
+        // Cap the run so a garbled reply cannot overflow std::stoi
+        if (std::isdigit(static_cast<unsigned char>(c)) && num.size() < 9) {
             num += c;
         } else if (!num.empty()) {
             idxs.push_back(std::stoi(num));
@@ -742,10 +861,14 @@ static std::vector<int> scanIntRuns(const std::string& reply) {
 
 std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
     os << "(get-unsat-assumptions)\n";
-    std::string line;
-    if (!readNonBlankLine(os, line)) return {};
+    std::string reply;
+    if (!readSExpr(os, reply)) return {};
+    if (isSolverError(reply)) {
+        warnSolverReply(reply);
+        return {};
+    }
     // The response lists only "a<N>" literals; collect each full integer run.
-    return scanIntRuns(line);
+    return scanIntRuns(reply);
 }
 
 // Re-solve with named asserts so an unsat core can name the failing constraints
@@ -757,15 +880,17 @@ void VlRandomizer::reportUnsatSetup(std::iostream& os,
     emitDeclares(os, false);
     emitAsserts(os, uniqueExprs, true);
     os << "(check-sat)\n";
-    std::string status;
-    if (!readNonBlankLine(os, status)) return;
-    if (status == "unsat") reportUnsatCore(os);
+    if (readStatus(os) == VlSolverStatus::UNSAT) reportUnsatCore(os);
 }
 
 void VlRandomizer::reportUnsatCore(std::iostream& os) {
     os << "(get-unsat-core)\n";
     std::string reply;
-    std::getline(os, reply);
+    if (!readSExpr(os, reply)) return;
+    if (isSolverError(reply)) {
+        warnSolverReply(reply);
+        return;
+    }
     const std::vector<int> numbers = scanIntRuns(reply);
     if (Verilated::threadContextp()->warnUnsatConstr()) {
         for (const int n : numbers) {
@@ -796,18 +921,7 @@ void VlRandomizer::reportUnsatCore(std::iostream& os) {
     }
 }
 
-bool VlRandomizer::parseSolution(std::iostream& os) {
-    std::string sat;
-    if (!readNonBlankLine(os, sat)) return false;
-    if (sat == "unsat") return false;
-    if (sat != "sat") {
-        std::stringstream msg;
-        msg << "Internal: Solver error: " << sat;
-        const std::string str = msg.str();
-        VL_WARN_MT(__FILE__, __LINE__, "randomize", str.c_str());
-        return false;
-    }
-
+bool VlRandomizer::applyModel(std::iostream& os) {
     os << "(get-value (";
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
@@ -817,15 +931,29 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
         var.second->emitGetValue(os);
     }
     os << "))\n";
+    std::string reply;
+    if (!readSExpr(os, reply)) return false;
+    if (isSolverError(reply)) {
+        warnSolverReply(reply);
+        return false;
+    }
+    std::istringstream is{reply};
+    return parseModel(is);
+}
+
+bool VlRandomizer::parseModel(std::istream& is) {
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
-    char c;
-    if (!(os >> c) || c != '(') {
+    char c = 0;
+    is >> c;
+    if (c != '(') {
         VL_WARN_MT(__FILE__, __LINE__, "randomize",
                    "Internal: Unable to parse solver's response: invalid S-expression");
         return false;
     }
+    // Stage writes; commit only after the whole reply parses so failure keeps prior values
+    std::vector<std::tuple<const VlRandomVar*, std::string, std::string>> staged;
     while (true) {
-        if (!(os >> c)) return false;
+        if (!(is >> c)) return false;
         if (c == ')') break;
         if (c != '(') {
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
@@ -836,15 +964,19 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
         std::string idx;
         std::string value;
         std::vector<std::string> indices;
-        os >> name;
+        is >> name;
         indices.clear();
         if (name == "(select") {
-            const std::string selectExpr = readUntilBalanced(os);
+            const std::string selectExpr = readUntilBalanced(is);
             name = parseNestedSelect(selectExpr, indices);
         }
-        std::getline(os, value, ')');
+        std::getline(is, value, ')');
         const auto it = m_vars.find(name);
-        if (it == m_vars.end()) continue;
+        if (it == m_vars.end()) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unable to parse solver's response: unknown variable");
+            return false;
+        }
         const VlRandomVar& varr = *it->second;
         if (!varr.randModeIdxNone()) {
             // Static rand vars have their rand_mode in a class-package shared queue,
@@ -891,7 +1023,14 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
                             "indexed_name not found in m_arr_vars");
             }
         }
-        varr.set(idx, value);
+        staged.emplace_back(&varr, idx, value);
+    }
+    for (const auto& entry : staged) {
+        if (!std::get<0>(entry)->set(std::get<1>(entry), std::get<2>(entry))) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unable to parse solver's response: invalid value");
+            return false;
+        }
     }
     return true;
 }
@@ -1045,11 +1184,13 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
 
         // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
         os << "(check-sat)\n";
+        if (readStatus(os) != VlSolverStatus::SAT) {
+            os << "(reset)\n";
+            return false;
+        }
 
         if (isFinalPhase) {
-            // Final phase: use parseSolution to write ALL values to memory
-            const bool sat = parseSolution(os);
-            if (!sat) {
+            if (!applyModel(os)) {
                 os << "(reset)\n";
                 return false;
             }
@@ -1058,10 +1199,6 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
             recordRandcValues();
             os << "(reset)\n";
         } else {
-            if (!checkSat(os)) {
-                os << "(reset)\n";
-                return false;
-            }
             if (!solvePhaseValues(os, rngr, layers[phase], solvedValues)) {
                 os << "(reset)\n";
                 return false;
@@ -1096,7 +1233,7 @@ bool VlRandomizer::solvePhaseValues(std::iostream& os, VlRNG& rngr,
     };
     // Get baseline values (deterministic, always valid)
     emitGetValueCmd();
-    if (!parsePhaseValues(os, solvedValuesr)) return false;
+    if (!readPhaseValues(os, solvedValuesr)) return false;
 
     // Try diversity: add random constraint, re-check. If sat, get
     // updated (more diverse) values. If unsat, keep baseline values.
@@ -1104,11 +1241,23 @@ bool VlRandomizer::solvePhaseValues(std::iostream& os, VlRNG& rngr,
     randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
     os << ")\n";
     os << "(check-sat)\n";
-    if (checkSat(os)) {
+    if (readStatus(os) == VlSolverStatus::SAT) {
         emitGetValueCmd();
-        (void)parsePhaseValues(os, solvedValuesr);
+        (void)readPhaseValues(os, solvedValuesr);
     }
     return true;
+}
+
+bool VlRandomizer::readPhaseValues(std::iostream& os,
+                                   std::map<std::string, std::string>& solvedValuesr) {
+    std::string reply;
+    if (!readSExpr(os, reply)) return false;
+    if (isSolverError(reply)) {
+        warnSolverReply(reply);
+        return false;
+    }
+    std::istringstream is{reply};
+    return parsePhaseValues(is, solvedValuesr);
 }
 
 bool VlRandomizer::parsePhaseValues(std::istream& is,
