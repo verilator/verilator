@@ -856,6 +856,16 @@ public:
         ASSOC_NEXT,
         ASSOC_SIZE,
         CLASS_SET_RANDMODE,
+        COVERGROUP_ADD_ARRAY_NAMER,
+        COVERGROUP_ADD_SINGLE_NAMER,
+        COVERGROUP_ATTACH,
+        COVERGROUP_CLEAR_HIT_LIST,
+        COVERGROUP_COVERAGE_PARTS,
+        COVERGROUP_INCREMENT_BIN,
+        COVERGROUP_INIT,
+        COVERGROUP_RECORD_HIT,
+        COVERGROUP_REGISTER_BINS,
+        COVERGROUP_SAMPLE,
         DYN_AT_WRITE_APPEND,
         DYN_AT_WRITE_APPEND_BACK,
         DYN_CLEAR,
@@ -1010,6 +1020,16 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {ASSOC_NEXT, "next", false}, \
            {ASSOC_SIZE, "size", true}, \
            {CLASS_SET_RANDMODE, "set_randmode", false}, \
+           {COVERGROUP_ADD_ARRAY_NAMER, "addArrayNamer", false}, \
+           {COVERGROUP_ADD_SINGLE_NAMER, "addSingleNamer", false}, \
+           {COVERGROUP_ATTACH, "attach", false}, \
+           {COVERGROUP_CLEAR_HIT_LIST, "clearHitList", false}, \
+           {COVERGROUP_COVERAGE_PARTS, "coverageParts", false}, \
+           {COVERGROUP_INCREMENT_BIN, "incrementBin", false}, \
+           {COVERGROUP_INIT, "init", false}, \
+           {COVERGROUP_RECORD_HIT, "recordHit", false}, \
+           {COVERGROUP_REGISTER_BINS, "registerBins", false}, \
+           {COVERGROUP_SAMPLE, "sample", false}, \
            {DYN_AT_WRITE_APPEND, "atWriteAppend", false}, \
            {DYN_AT_WRITE_APPEND_BACK, "atWriteAppendBack", false}, \
            {DYN_CLEAR, "clear", false}, \

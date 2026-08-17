@@ -27,12 +27,13 @@
 
 // This file is compiled whenever covergroups are used, with or without
 // "verilator --coverage" (see V3Global::verilatedCppFiles).  Bin counts are
-// members of the covergroup objects themselves, so sampling, bin naming, and
-// coverage queries such as get_inst_coverage() all work with no coverage
-// database present.  VL_COVER_INSERT does not copy a count; it hands the
-// database the address of a counter to read at write time.  Only that
-// publication step needs verilated_cov.cpp, which is compiled solely under
-// --coverage, so only the registerBins() bodies are gated on VM_COVERAGE.
+// owned by the covergroup instance nodes in the VerilatedContext's registry, so
+// sampling, bin naming, and coverage queries such as get_inst_coverage() all
+// work with no coverage database present.  VL_COVER_INSERT does not copy a
+// count; it hands the database the address of a counter the registry owns and
+// reads it at write time.  Only that publication step needs the database, so
+// only the registerBins() bodies -- and this include -- are gated on
+// VM_COVERAGE.
 #if VM_COVERAGE
 #include "verilated_cov.h"
 #endif
@@ -134,9 +135,10 @@ void VlCoverCross::init(const char* hier, uint32_t dims, VlCoverpoint* const* cp
     m_flatCounts.assign(m_numAutoBins, 0);
 }
 
-void VlCoverCross::iterateProduct(VlCoverpoint* const* cps, uint32_t dim, uint32_t baseIdx) {
-    const uint32_t hits = cps[dim]->hitCount();
-    const uint32_t* const list = cps[dim]->hitList();
+void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
+    const VlCoverpoint* const cpp = m_cps[dim];
+    const uint32_t hits = cpp->hitCount();
+    const uint32_t* const list = cpp->hitList();
     const bool last = (dim == m_dims - 1);
     const uint32_t stride = m_stride[dim];
     for (uint32_t hit = 0; hit < hits; ++hit) {
@@ -144,17 +146,17 @@ void VlCoverCross::iterateProduct(VlCoverpoint* const* cps, uint32_t dim, uint32
         if (last) {
             incrementTuple(idx);
         } else {
-            iterateProduct(cps, dim + 1, idx);
+            iterateProduct(dim + 1, idx);
         }
     }
 }
 
-void VlCoverCross::sample(VlCoverpoint* const* cps) {
+void VlCoverCross::sample() {
     // Fast path: if any dimension had no Normal-bin hit, the cross cannot hit.
     for (uint32_t d = 0; d < m_dims; ++d) {
-        if (cps[d]->hitCount() == 0) return;
+        if (m_cps[d]->hitCount() == 0) return;
     }
-    iterateProduct(cps, 0, 0);
+    iterateProduct(0, 0);
 }
 
 std::string VlCoverCross::binName(uint32_t flat) const {
@@ -190,3 +192,37 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
     }
 }
 #endif  // VM_COVERAGE
+
+//=============================================================================
+// VlCovergroupType / VlCovRegistry
+
+VlCovergroupInst* VlCovergroupType::newInstance() {
+    VlCovergroupInst* const instp = new VlCovergroupInst{};
+    m_insts.emplace_back(instp);
+    return instp;
+}
+
+// Defined here, not in verilated.cpp, so that the registry costs nothing in a model with no
+// covergroups: this file is linked only when covergroups are used (or --coverage is on).
+// Mirrors VerilatedContext::coveragep(), which lives in verilated_cov.cpp for the same reason.
+VlCovRegistry* VerilatedContext::covergroupRegistryp() VL_MT_SAFE {
+    static VerilatedMutex s_mutex;
+    // cppcheck-suppress identicalInnerCondition
+    if (VL_UNLIKELY(!m_covergroupsp)) {
+        const VerilatedLockGuard lock{s_mutex};
+        // cppcheck-suppress identicalInnerCondition
+        if (VL_LIKELY(!m_covergroupsp)) {  // LCOV_EXCL_LINE // Not redundant, prevents race
+            m_covergroupsp.reset(new VlCovRegistry{});
+        }
+    }
+    return static_cast<VlCovRegistry*>(m_covergroupsp.get());
+}
+
+VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
+    VlCovergroupType*& typep = m_byName[typeName];
+    if (!typep) {  // First instance of this type
+        m_types.emplace_back(new VlCovergroupType{});
+        typep = m_types.back().get();
+    }
+    return typep->newInstance();
+}

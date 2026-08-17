@@ -75,8 +75,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::map<std::string, AstVar*> m_cpVarMap;  // Coverpoint name -> its VlCoverpoint member
     std::set<AstCoverCross*>
         m_droppedCrosses;  // Crosses with a bare-variable item: drop (COVERIGN)
-    std::map<int, AstCDType*> m_vlCoverpointTypes;  // hit-list bound K -> "VlCoverpointT<K>" type
-    AstCDType* m_vlCoverCrossDTypep = nullptr;  // Shared "VlCoverCross" C++ member type
+    std::map<std::string, AstCDType*> m_cDTypes;  // C++ member type name -> interned AstCDType
+    AstVar* m_cgInstVarp = nullptr;  // __Vcg_inst handle member of the current covergroup
 
     VMemberMap m_memberMap;  // Member names cached for fast lookup
 
@@ -91,6 +91,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_crossVars.clear();
         m_cpVarMap.clear();
         m_droppedCrosses.clear();
+        m_cgInstVarp = nullptr;
 
         // Scan every cross item to record the coverpoints it references (the cross dimensions)
         // and to flag any cross naming a bare variable -- a would-be implicit coverpoint, which
@@ -107,6 +108,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
             }
         }
+
+        // The instance node owns this instance's coverpoint/cross runtimes, so it must exist
+        // before any of them is created.  Emitted first, ahead of both generate loops.
+        generateInstanceAttach();
 
         // For each coverpoint, generate sampling code
         for (AstCoverpoint* cpp : m_coverpoints) generateCoverpointCode(cpp);
@@ -523,15 +528,52 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return false;
     }
 
-    // Get (or create) the "VlCoverpointT<K>" member type for hit-list bound K.
-    AstCDType* vlCoverpointType(FileLine* fl, int hitBound) {
-        const auto it = m_vlCoverpointTypes.find(hitBound);
-        if (it != m_vlCoverpointTypes.end()) return it->second;
-        AstCDType* const typep
-            = new AstCDType{fl, "VlCoverpointT<" + std::to_string(hitBound) + ">"};
-        v3Global.rootp()->typeTablep()->addTypesp(typep);
-        m_vlCoverpointTypes.emplace(hitBound, typep);
+    // Get (or create) the AstCDType for a raw C++ member type name, interned so each distinct
+    // name yields one node.
+    AstCDType* cDType(FileLine* fl, const std::string& name) {
+        AstCDType*& typep = m_cDTypes[name];
+        if (!typep) {
+            typep = new AstCDType{fl, name};
+            v3Global.rootp()->typeTablep()->addTypesp(typep);
+        }
         return typep;
+    }
+
+    // Emit the covergroup's instance handle member and the constructor statement that creates
+    // its node in the per-context coverage registry.  Runs before any coverpoint or cross is
+    // generated, so their runtimes can be added to the node as they are created.
+    void generateInstanceAttach() {
+        FileLine* const fl = m_covergroupp->fileline();
+        // V3LinkParse synthesizes a 'new' for every covergroup; the item generators below already
+        // rely on that, and this attach runs even for a covergroup with no coverpoints at all.
+        UASSERT_OBJ(m_constructorp, m_covergroupp, "Covergroup missing synthesized constructor");
+        m_cgInstVarp
+            = new AstVar{fl, VVarType::MEMBER, "__Vcg_inst", cDType(fl, "VlCovInstHandle")};
+        m_cgInstVarp->isStatic(false);
+        m_covergroupp->addMembersp(m_cgInstVarp);
+
+        // The type node is keyed by the covergroup type name -- the same string that keys this
+        // covergroup's coverage-database hierarchy, so it is exactly as unique.  Obfuscated the
+        // same way, so --protect-ids exposes no new identifier.
+        const std::string typeName
+            = VIdProtect::protectWordsIf(m_covergroupp->name(), v3Global.opt.protectIds());
+        m_constructorp->addStmtsp(
+            itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_ATTACH,
+                     {"vlSymsp->_vm_contextp__->covergroupRegistryp()->newCovergroupInst("
+                      + quoted(typeName) + ")"},
+                     /*usePtr=*/false)
+                ->makeStmt());
+    }
+
+    // Emit 'this->__Vcp_x = this->__Vcg_inst.p()->addCoverpoint<K>();' (or addCross), which
+    // creates the item runtime in the instance node and borrows a pointer to it.
+    AstCStmt* makeItemCreate(FileLine* fl, AstVar* itemVarp, const std::string& call) {
+        AstCStmt* const cs = new AstCStmt{fl};
+        cs->add(memberRef(fl, itemVarp, VAccess::WRITE));
+        cs->add(" = ");
+        cs->add(memberRef(fl, m_cgInstVarp));
+        cs->add(".p()->" + call + ";");
+        return cs;
     }
 
     // Constant bounds of one rangesp() element (an InsideRange or a single Const).  Each bound is
@@ -669,10 +711,30 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // A 'this->m_member' reference for embedding in an AstCStmt
-    AstVarRef* memberRef(FileLine* fl, AstVar* varp) {
-        AstVarRef* const refp = new AstVarRef{fl, varp, VAccess::READ};
+    AstVarRef* memberRef(FileLine* fl, AstVar* varp, VAccess access = VAccess::READ) {
+        AstVarRef* const refp = new AstVarRef{fl, varp, access};
         refp->selfPointer(VSelfPointerText{VSelfPointerText::This{}});
         return refp;
+    }
+
+    // A 'this->m_member-><method>(args...)' call on one member.  usePtr is false only for
+    // __Vcg_inst, which is a value handle; the item members are borrowed pointers into the
+    // instance node.  Each argument is literal C++ text (string literal, bin-kind enum, or a
+    // '__V' temporary named by the caller).
+    AstCMethodHard* itemCall(FileLine* fl, AstVar* varp, VCMethod method,
+                             const std::vector<std::string>& args = {}, bool usePtr = true) {
+        AstCMethodHard* const callp = new AstCMethodHard{fl, memberRef(fl, varp), method};
+        for (const std::string& arg : args) callp->addPinsp(new AstCExpr{fl, arg});
+        callp->usePtr(usePtr);
+        callp->dtypeSetVoid();
+        return callp;
+    }
+
+    // A C++ string literal.  Escapes control characters as the emitter does elsewhere -- bin
+    // names and filenames reach the generated code verbatim when --protect-ids is off, and an
+    // SV escaped identifier may hold a quote or backslash.
+    static std::string quoted(const std::string& text) {
+        return "\"" + V3OutFormatter::quoteNameControls(text) + "\"";
     }
 
     // Individual equality targets of an array bin (bins b[] = {values/ranges}), in order.
@@ -734,27 +796,25 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return values;
     }
 
-    // Emit a 'this->m_cp.addSingleNamer/addArrayNamer(...)' statement for one bin
-    AstCStmt* makeNamer(AstVar* cpVarp, AstCoverBin* binp, int count) {
+    // Emit a 'this->m_cp->addSingleNamer/addArrayNamer(...)' statement for one bin
+    AstNodeStmt* makeNamer(AstVar* cpVarp, AstCoverBin* binp, int count) {
         FileLine* const fl = binp->fileline();
-        AstCStmt* const cs = new AstCStmt{fl};
-        cs->add(memberRef(fl, cpVarp));
         // Under --protect-ids the filename and bin name flow into the coverage database
         // verbatim, so obfuscate them exactly as line/toggle coverage points are (whole-
         // unit filename, per-word bin name).  A no-op when --protect-ids is off.
         const bool prot = v3Global.opt.protectIds();
-        const std::string loc = "\"" + VIdProtect::protectIf(fl->filename(), prot) + "\", "
-                                + std::to_string(fl->lineno()) + ", "
-                                + std::to_string(fl->firstColumn()) + ");";
-        const std::string binName = VIdProtect::protectWordsIf(binp->name(), prot);
-        if (count < 0) {  // single bin
-            cs->add(".addSingleNamer(" + std::string{binp->binsType().binSetEnum()} + ", \""
-                    + binName + "\", " + loc);
-        } else {  // value array bin
-            cs->add(".addArrayNamer(" + std::string{binp->binsType().binSetEnum()} + ", "
-                    + std::to_string(count) + ", \"" + binName + "\", " + loc);
-        }
-        return cs;
+        const bool single = count < 0;
+        std::vector<std::string> args{std::string{binp->binsType().binSetEnum()}};
+        if (!single) args.push_back(std::to_string(count));  // value array bin
+        args.push_back(quoted(VIdProtect::protectWordsIf(binp->name(), prot)));
+        args.push_back(quoted(VIdProtect::protectIf(fl->filename(), prot)));
+        args.push_back(std::to_string(fl->lineno()));
+        args.push_back(std::to_string(fl->firstColumn()));
+        return itemCall(fl, cpVarp,
+                        single ? VCMethod::COVERGROUP_ADD_SINGLE_NAMER
+                               : VCMethod::COVERGROUP_ADD_ARRAY_NAMER,
+                        args)
+            ->makeStmt();
     }
 
     // Emit 'if (iff && cond) m_cp.incrementBin(idx);' (or recordHit, + illegal action) in sample()
@@ -768,11 +828,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Emit 'this->m_cp.incrementBin(idx);' (Normal) or '.recordHit(idx);'
     // (ignore/illegal/default).
     AstNodeStmt* makeRuntimeBinHit(FileLine* fl, const ConvBinTarget& tgt) {
-        AstCStmt* const cs = new AstCStmt{fl};
-        cs->add(memberRef(fl, tgt.cpVarp));
-        cs->add((tgt.isNormal ? ".incrementBin(" : ".recordHit(") + std::to_string(tgt.idx)
-                + ");");
-        return cs;
+        return itemCall(fl, tgt.cpVarp,
+                        tgt.isNormal ? VCMethod::COVERGROUP_INCREMENT_BIN
+                                     : VCMethod::COVERGROUP_RECORD_HIT,
+                        {std::to_string(tgt.idx)})
+            ->makeStmt();
     }
 
     void emitConvHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp, int idx,
@@ -818,25 +878,27 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const int hitBound = computeHitListBound(coverpointp, exprp, crossFed);
         UINFO(6, "    Hit-list bound (max bin overlap) = " << hitBound);
         AstVar* const cpVarp = new AstVar{fl, VVarType::MEMBER, "__Vcp_" + coverpointp->name(),
-                                          vlCoverpointType(fl, hitBound)};
+                                          cDType(fl, "VlCoverpointT<"
+                                                      + std::to_string(hitBound) + ">*")};
         cpVarp->isStatic(false);
         m_covergroupp->addMembersp(cpVarp);
         m_cpVars.push_back(cpVarp);
         m_cpVarMap[coverpointp->name()] = cpVarp;
+        // Create the runtime in the instance node first; everything below configures it.
+        m_constructorp->addStmtsp(
+            makeItemCreate(fl, cpVarp, "addCoverpoint<" + std::to_string(hitBound) + ">()"));
 
         // A cross reads this coverpoint's hit list, so clear it at the start of the
         // coverpoint's sample() contribution (before any incrementBin appends to it).
         if (crossFed) {
-            AstCStmt* const clrp = new AstCStmt{fl};
-            clrp->add(memberRef(fl, cpVarp));
-            clrp->add(".clearHitList();");
             UASSERT_OBJ(m_sampleFuncp, coverpointp, "sample() CFunc not set for clearHitList");
-            m_sampleFuncp->addStmtsp(clrp);
+            m_sampleFuncp->addStmtsp(
+                itemCall(fl, cpVarp, VCMethod::COVERGROUP_CLEAR_HIT_LIST)->makeStmt());
         }
 
         // Walk bins (non-default, then default), assigning sequential indices that match the
         // namer append order; emit sample increments and collect namer statements.
-        std::vector<AstCStmt*> namerStmts;
+        std::vector<AstNodeStmt*> namerStmts;
         std::vector<AstCoverBin*> defaultBins;
         int idx = 0;
         for (AstNode* binp = coverpointp->binsp(); binp; binp = binp->nextp()) {
@@ -905,19 +967,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const bool prot = v3Global.opt.protectIds();
         const std::string hier
             = VIdProtect::protectWordsIf(m_covergroupp->name() + "." + coverpointp->name(), prot);
-        AstCStmt* const initp = new AstCStmt{fl};
-        initp->add(memberRef(fl, cpVarp));
-        initp->add(".init(\"" + hier + "\", " + std::to_string(atLeastValue) + ", "
-                   + std::to_string(idx) + ");");
-        m_constructorp->addStmtsp(initp);
-        for (AstCStmt* const ns : namerStmts) m_constructorp->addStmtsp(ns);
+        m_constructorp->addStmtsp(
+            itemCall(fl, cpVarp, VCMethod::COVERGROUP_INIT,
+                     {quoted(hier), std::to_string(atLeastValue), std::to_string(idx)})
+                ->makeStmt());
+        for (AstNodeStmt* const ns : namerStmts) m_constructorp->addStmtsp(ns);
         if (v3Global.opt.coverage()) {
             const std::string page
                 = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
-            AstCStmt* const regp = new AstCStmt{fl};
-            regp->add(memberRef(fl, cpVarp));
-            regp->add(".registerBins(vlSymsp->_vm_contextp__->coveragep(), \"" + page + "\");");
-            m_constructorp->addStmtsp(regp);
+            m_constructorp->addStmtsp(
+                itemCall(fl, cpVarp, VCMethod::COVERGROUP_REGISTER_BINS,
+                         {"vlSymsp->_vm_contextp__->coveragep()", quoted(page)})
+                    ->makeStmt());
         }
     }
 
@@ -1189,19 +1250,32 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
     }
 
-    // Append a "{ VlCoverpoint* __Vcx_cps[] = {&cp0, &cp1, ...}; <member>.<call> }" statement.
-    AstCStmt* makeCrossCpsCall(FileLine* fl, const std::vector<AstVar*>& cpVars, AstVar* cxVarp,
-                               const std::string& callText) {
+    // "{ double __Vc = 0.0; double __Vt = 0.0; <item>->coverageParts(__Vc, __Vt);
+    //    __Vcov += __Vc; __Vtot += __Vt; }" -- one item's contribution to get_coverage().
+    // The out-param temporaries make this a block, so only the call itself is a node.
+    AstCStmt* makeCoveragePartsBlock(FileLine* fl, AstVar* itemVarp) {
+        AstCStmt* const cs = new AstCStmt{fl};
+        cs->add("{ double __Vc = 0.0; double __Vt = 0.0; ");
+        cs->add(itemCall(fl, itemVarp, VCMethod::COVERGROUP_COVERAGE_PARTS, {"__Vc", "__Vt"}));
+        cs->add("; __Vcov += __Vc; __Vtot += __Vt; }");
+        return cs;
+    }
+
+    // Append a "{ VlCoverpoint* __Vcx_cps[] = {cp0, cp1, ...}; <call> }" statement.  The brace
+    // and the temporary array stay literal text -- a CMethodHard is one call, not a block --
+    // but callp itself carries the member, method and '->'.  Construction only: init() copies
+    // the array into the cross, so sample() reads it from there and needs no array at all.
+    AstCStmt* makeCrossCpsCall(FileLine* fl, const std::vector<AstVar*>& cpVars,
+                               AstCMethodHard* callp) {
         AstCStmt* const cs = new AstCStmt{fl};
         cs->add("{ VlCoverpoint* __Vcx_cps[] = {");
         for (size_t d = 0; d < cpVars.size(); ++d) {
-            cs->add(d == 0 ? "&" : ", &");
+            if (d != 0) cs->add(", ");
             cs->add(memberRef(fl, cpVars[d]));
         }
         cs->add("}; ");
-        cs->add(memberRef(fl, cxVarp));
-        cs->add(callText);
-        cs->add(" }");
+        cs->add(callp);
+        cs->add("; }");
         return cs;
     }
 
@@ -1226,38 +1300,36 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
         const int dims = static_cast<int>(cpVars.size());
 
-        if (!m_vlCoverCrossDTypep) {
-            m_vlCoverCrossDTypep = new AstCDType{fl, "VlCoverCross"};
-            v3Global.rootp()->typeTablep()->addTypesp(m_vlCoverCrossDTypep);
-        }
-        AstVar* const cxVarp
-            = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(), m_vlCoverCrossDTypep};
+        AstVar* const cxVarp = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(),
+                                          cDType(fl, "VlCoverCross*")};
         cxVarp->isStatic(false);
         m_covergroupp->addMembersp(cxVarp);
         m_crossVars.push_back(cxVarp);
+        m_constructorp->addStmtsp(makeItemCreate(fl, cxVarp, "addCross()"));
 
         // Constructor: init (after the coverpoints, which generate earlier) then registration.
         // Obfuscate the hierarchy/filename/page under --protect-ids as for coverpoints above.
         const bool prot = v3Global.opt.protectIds();
         const std::string hier
             = VIdProtect::protectWordsIf(m_covergroupp->name() + "." + crossp->name(), prot);
-        const std::string initCall
-            = ".init(\"" + hier + "\", " + std::to_string(dims) + ", __Vcx_cps, \""
-              + VIdProtect::protectIf(fl->filename(), prot) + "\", " + std::to_string(fl->lineno())
-              + ", " + std::to_string(fl->firstColumn()) + ");";
-        m_constructorp->addStmtsp(makeCrossCpsCall(fl, cpVars, cxVarp, initCall));
+        m_constructorp->addStmtsp(makeCrossCpsCall(
+            fl, cpVars,
+            itemCall(fl, cxVarp, VCMethod::COVERGROUP_INIT,
+                     {quoted(hier), std::to_string(dims), "__Vcx_cps",
+                      quoted(VIdProtect::protectIf(fl->filename(), prot)),
+                      std::to_string(fl->lineno()), std::to_string(fl->firstColumn())})));
         if (v3Global.opt.coverage()) {
             const std::string page
                 = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
-            AstCStmt* const regp = new AstCStmt{fl};
-            regp->add(memberRef(fl, cxVarp));
-            regp->add(".registerBins(vlSymsp->_vm_contextp__->coveragep(), \"" + page + "\");");
-            m_constructorp->addStmtsp(regp);
+            m_constructorp->addStmtsp(
+                itemCall(fl, cxVarp, VCMethod::COVERGROUP_REGISTER_BINS,
+                         {"vlSymsp->_vm_contextp__->coveragep()", quoted(page)})
+                    ->makeStmt());
         }
 
         // sample(): after all coverpoints have sampled (cross loop runs after coverpoint loop).
         UASSERT_OBJ(m_sampleFuncp, crossp, "sample() CFunc not set for cross");
-        m_sampleFuncp->addStmtsp(makeCrossCpsCall(fl, cpVars, cxVarp, ".sample(__Vcx_cps);"));
+        m_sampleFuncp->addStmtsp(itemCall(fl, cxVarp, VCMethod::COVERGROUP_SAMPLE)->makeStmt());
     }
 
     void generateCrossCode(AstCoverCross* crossp) {
@@ -1462,19 +1534,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         headp->add("double __Vcov = 0.0; double __Vtot = 0.0;");
         funcp->addStmtsp(headp);
         for (AstVar* const cpVarp : m_cpVars) {
-            AstCStmt* const cs = new AstCStmt{fl};
-            cs->add("{ double __Vc = 0.0; double __Vt = 0.0; ");
-            cs->add(memberRef(fl, cpVarp));
-            cs->add(".coverageParts(__Vc, __Vt); __Vcov += __Vc; __Vtot += __Vt; }");
-            funcp->addStmtsp(cs);
+            funcp->addStmtsp(makeCoveragePartsBlock(fl, cpVarp));
         }
         // Crosses contribute the same covered/total ratio as their per-tuple bins.
         for (AstVar* const cxVarp : m_crossVars) {
-            AstCStmt* const cs = new AstCStmt{fl};
-            cs->add("{ double __Vc = 0.0; double __Vt = 0.0; ");
-            cs->add(memberRef(fl, cxVarp));
-            cs->add(".coverageParts(__Vc, __Vt); __Vcov += __Vc; __Vtot += __Vt; }");
-            funcp->addStmtsp(cs);
+            funcp->addStmtsp(makeCoveragePartsBlock(fl, cxVarp));
         }
         AstCStmt* const retp = new AstCStmt{fl};
         retp->add(new AstVarRef{fl, returnVarp, VAccess::WRITE});
