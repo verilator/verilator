@@ -12,7 +12,8 @@
 # Input arguments from environment variables:
 # TAMPER: none | die_at | die_status_at | mute_at | garbage_at | err_once
 #         | err_multiline | unknown_once | unsupported_once | garbage_status
-#         | err_reply | garbage_model | success | crlf | multiline
+#         | err_reply | garbage_model | bad_value | bad_digits | short_model
+#         | dup_model | success | crlf | multiline
 #   die_at           - kill the solver and exit, closing every pipe end
 #   die_status_at    - same, counting sat/unsat status lines instead of models
 #   mute_at          - close the reply pipe but keep this wrapper running
@@ -24,6 +25,10 @@
 #   garbage_status   - replace the Nth status with a word that is not a status
 #   err_reply        - replace the Nth S-expression reply with (error ...)
 #   garbage_model    - replace the Nth model reply with a partly valid one
+#   bad_value        - same, but well-formed with one value lacking a base
+#   bad_digits       - same, but with one value holding digits outside its base
+#   short_model      - same, but omitting a requested variable
+#   dup_model        - same, but answering one variable twice
 #   success          - echo a print-success line before every reply
 #   crlf             - end every line with CRLF
 #   multiline        - split every S-expression reply one token per line
@@ -146,6 +151,24 @@ for line in proc.stdout:
         continue
     if mode == "garbage_model":
         emit("((a #x0b) junk)")
+        swallow(line)
+        continue
+    # A well-formed reply whose second value is unusable: the first must not
+    # reach the variable either
+    if mode == "bad_value":
+        emit("((a #x0b) (b bogus))")
+        swallow(line)
+        continue
+    if mode == "bad_digits":
+        emit("((a #x0b) (b #xgg))")
+        swallow(line)
+        continue
+    if mode == "short_model":
+        emit("((a #x0b))")
+        swallow(line)
+        continue
+    if mode == "dup_model":
+        emit("((a #x0b) (a #x0c) (b #x05))")
         swallow(line)
         continue
 

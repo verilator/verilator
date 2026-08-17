@@ -259,7 +259,7 @@ class VlRandomizer VL_NOT_FINAL {
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     // Fetch the model and write it into the registered variables.
     bool applyModel(std::iostream& os);
-    bool parseModel(std::istream& is);
+    bool parseModel(std::istream& is, size_t requested);
     // Assert the maximal compatible soft-constraint set onto the open session.
     void relaxSoftConstraints(std::iostream& os);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).

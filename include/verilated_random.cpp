@@ -486,19 +486,48 @@ void VlRandomVar::emitConcreteValue(std::ostream& s) const {
     }
 }
 int VlRandomVar::totalWidth() const { return m_width; }
-static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
-    int i;
-    for (i = 0; val[i] && val[i] != '#'; ++i) {}
-    if (val[i++] != '#') return false;
+// True if val is "#b/#o/#x/#h" followed by digits legal for that base
+static bool validSMTNum(const std::string& val) {
+    size_t i = val.find('#');
+    if (i == std::string::npos || ++i >= val.size()) return false;
+    int base;
     switch (val[i++]) {
-    case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
-    case 'o': _vl_vsss_based(owp, obits, 3, &val[i], 0, val.size() - i); break;
+    case 'b': base = 2; break;
+    case 'o': base = 8; break;
     case 'h':  // FALLTHRU
-    case 'x': _vl_vsss_based(owp, obits, 4, &val[i], 0, val.size() - i); break;
-    default:
+    case 'x': base = 16; break;
+    default: return false;
+    }
+    size_t end = val.find_last_not_of(" \t\r");
+    if (end == std::string::npos || end < i) return false;
+    for (; i <= end; ++i) {
+        const char c = val[i];
+        int digit;
+        if (c >= '0' && c <= '9') {
+            digit = c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            digit = c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            digit = c - 'A' + 10;
+        } else {
+            return false;
+        }
+        if (digit >= base) return false;
+    }
+    return true;
+}
+
+static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
+    if (!validSMTNum(val)) {
         VL_WARN_MT(__FILE__, __LINE__, "randomize",
                    "Internal: Unable to parse solver's randomized number");
         return false;
+    }
+    size_t i = val.find('#') + 1;
+    switch (val[i++]) {
+    case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
+    case 'o': _vl_vsss_based(owp, obits, 3, &val[i], 0, val.size() - i); break;
+    default: _vl_vsss_based(owp, obits, 4, &val[i], 0, val.size() - i); break;
     }
     return true;
 }
@@ -922,11 +951,15 @@ void VlRandomizer::reportUnsatCore(std::iostream& os) {
 }
 
 bool VlRandomizer::applyModel(std::iostream& os) {
+    size_t requested = 0;
     os << "(get-value (";
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
             auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
             var.second->setArrayInfo(arrVarsp);
+            requested += var.second->countMatchingElements(m_arr_vars, var.second->name());
+        } else {
+            ++requested;
         }
         var.second->emitGetValue(os);
     }
@@ -938,10 +971,10 @@ bool VlRandomizer::applyModel(std::iostream& os) {
         return false;
     }
     std::istringstream is{reply};
-    return parseModel(is);
+    return parseModel(is, requested);
 }
 
-bool VlRandomizer::parseModel(std::istream& is) {
+bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
     char c = 0;
     is >> c;
@@ -952,6 +985,8 @@ bool VlRandomizer::parseModel(std::istream& is) {
     }
     // Stage writes; commit only after the whole reply parses so failure keeps prior values
     std::vector<std::tuple<const VlRandomVar*, std::string, std::string>> staged;
+    // Every requested term must come back exactly once, whether or not it is written
+    std::set<std::string> answered;
     while (true) {
         if (!(is >> c)) return false;
         if (c == ')') break;
@@ -978,6 +1013,13 @@ bool VlRandomizer::parseModel(std::istream& is) {
             return false;
         }
         const VlRandomVar& varr = *it->second;
+        std::string key = name;
+        for (const auto& index : indices) key += index;
+        if (!answered.insert(key).second) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unable to parse solver's response: repeated variable");
+            return false;
+        }
         if (!varr.randModeIdxNone()) {
             // Static rand vars have their rand_mode in a class-package shared queue,
             // not the per-instance one.
@@ -997,6 +1039,11 @@ bool VlRandomizer::parseModel(std::istream& is) {
                     continue;
                 }
                 std::string trimmed_hex = hex_index.substr(start + 2);
+                if (!validSMTNum(hex_index)) {
+                    VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                               "Internal: Unable to parse solver's response: invalid array index");
+                    return false;
+                }
 
                 if (trimmed_hex.size() <= 8) {  // Small numbers: <= 32 bits
                     // Convert to decimal and output directly
@@ -1023,7 +1070,19 @@ bool VlRandomizer::parseModel(std::istream& is) {
                             "indexed_name not found in m_arr_vars");
             }
         }
+        // Reject before any commit, so a bad value later in the reply cannot
+        // leave earlier ones written
+        if (!validSMTNum(value) || (!idx.empty() && !validSMTNum(idx))) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unable to parse solver's response: invalid value");
+            return false;
+        }
         staged.emplace_back(&varr, idx, value);
+    }
+    if (answered.size() != requested) {
+        VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                   "Internal: Unable to parse solver's response: incomplete model");
+        return false;
     }
     for (const auto& entry : staged) {
         if (!std::get<0>(entry)->set(std::get<1>(entry), std::get<2>(entry))) {

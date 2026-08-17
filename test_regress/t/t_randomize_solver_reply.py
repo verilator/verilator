@@ -29,6 +29,10 @@ runs = [
     ('garbage_status', 2, 11),  # a word that is not a status
     ('err_reply', 1, 11),  # error in place of an S-expression reply
     ('garbage_model', 1, 11),  # half-valid model must not reach the variables
+    ('bad_value', 1, 11),  # a value with no base must not commit the earlier one
+    ('bad_digits', 1, 11),  # digits outside the stated base are not a number
+    ('short_model', 1, 11),  # a model missing a requested variable is not a model
+    ('dup_model', 1, 11),  # the same variable answered twice
 ]
 
 for mode, at, npass in runs:
