@@ -162,46 +162,6 @@ class FixDataHazards final {
 
     // METHODS
 
-    // Redirect all edges of 'donorp' onto 'recipientp'
-    static void redirectEdgesFrom(LogicMTask* recipientp, LogicMTask* donorp) {
-        // Process outgoing edges
-        while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(donorp->outEdges().frontp())) {
-            LogicMTask* const top = edgep->toMTaskp();
-            top->removeRelativeEdge<GraphWay::REVERSE>(edgep);
-
-            // If an edge already exists between recipient and sink of donor, drop the duplicate.
-            if (recipientp->hasRelativeMTask(top)) {
-                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-                continue;
-            }
-
-            // Otherwise redirect the edge from donorp->top to recipientp->top.
-            edgep->relinkFromp(recipientp);
-            recipientp->addRelativeMTask(top);
-            recipientp->stealRelativeEdge<GraphWay::FORWARD>(edgep);
-            top->addRelativeEdge<GraphWay::REVERSE>(edgep);
-        }
-
-        // Process incoming edges
-        while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(donorp->inEdges().frontp())) {
-            LogicMTask* const fromp = edgep->fromMTaskp();
-            fromp->removeRelativeMTask(donorp);
-            fromp->removeRelativeEdge<GraphWay::FORWARD>(edgep);
-
-            // If an edge already exists between recipient and source of donor, drop the duplicate.
-            if (fromp->hasRelativeMTask(recipientp)) {
-                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-                continue;
-            }
-
-            // Otherwise redirect the edge from fromp->donorp to fromp->recipientp.
-            edgep->relinkTop(recipientp);
-            fromp->addRelativeMTask(recipientp);
-            fromp->addRelativeEdge<GraphWay::FORWARD>(edgep);
-            recipientp->stealRelativeEdge<GraphWay::REVERSE>(edgep);
-        }
-    }
-
     void findAdjacentTasks(const OrderVarStdVertex* varVtxp, TasksByRank& tasksByRank) {
         // Find all writer tasks for this variable, group by rank.
         for (const V3GraphEdge& edge : varVtxp->inEdges()) {
@@ -219,8 +179,8 @@ class FixDataHazards final {
         LogicMTask* lastRecipientp = nullptr;
         for (const auto& pair : tasksByRank) {
             // Find the largest node at this rank, merge into it.  (If we
-            // happen to find a huge node, this saves time in
-            // redirectEdgesFrom() versus merging into an arbitrary node.)
+            // happen to find a huge node, this saves time in the merge
+            // versus merging into an arbitrary node.)
             LogicMTask* recipientp = nullptr;
             for (LogicMTask* const mtaskp : pair.second) {
                 if (!recipientp || (recipientp->cost() < mtaskp->cost())) recipientp = mtaskp;
@@ -231,20 +191,18 @@ class FixDataHazards final {
             for (LogicMTask* const donorp : pair.second) {
                 // Merge donor into recipient.
                 if (donorp == recipientp) continue;
-                // Fix up the map, so donor's OLVs map to recipientp
+                // Fix up the map, so donor's OLVs map to recipientp. Must do this while the donor
+                // still holds them.
                 for (const OrderMoveVertex& vtx : donorp->vertexList()) {
                     vtx.logicp()->userp(recipientp);
                 }
-                // Move all vertices from donorp to recipientp
-                recipientp->moveAllVerticesFrom(donorp);
-                // Redirect edges from donorp to recipientp
-                redirectEdgesFrom(recipientp, donorp);
-                // Remove donorp from the graph
-                VL_DO_DANGLING(donorp->unlinkDelete(&m_mTaskGraph), donorp);
+                // Merge donorp into recipientp, which also deletes donorp
+                m_mTaskGraph.mergeMTasks(recipientp, donorp);
+                VL_DANGLING(donorp);
             }
 
-            if (lastRecipientp && !lastRecipientp->hasRelativeMTask(recipientp)) {
-                new MTaskEdge{&m_mTaskGraph, lastRecipientp, recipientp, 1};
+            if (lastRecipientp && !lastRecipientp->hasEdgeTo(recipientp)) {
+                m_mTaskGraph.addEdge(lastRecipientp, recipientp);
             }
             lastRecipientp = recipientp;
         }
@@ -319,9 +277,8 @@ class FixDataHazards final {
         // given OVV.) Create edges across these remaining MTasks to ensure
         // they run in serial order (going along with the existing ranks.)
         //
-        // NOTE: we don't update the CP's stored in the LogicMTasks to
-        // reflect the changes we make to the graph. That's OK, as we
-        // haven't yet initialized CPs when we call this routine.
+        // NOTE: all graph mutations below go through OrderMTaskGraph (adding an edge, or merging
+        // two MTasks), so the CP's stored in the LogicMTasks are kept up to date throughout.
         for (const OrderVarStdVertex* const varVtxp : regularVars) {
             // Build a set of MTasks, per rank, which access this var.
             // Within a rank, sort by MTaskID to avoid nondeterminism.
@@ -387,4 +344,6 @@ public:
 
 void OrderMTaskGraph::fixDataHazards(OrderMTaskGraph& mtaskGraph) {
     FixDataHazards::apply(mtaskGraph);
+    // The critical paths are maintained as the graph is mutated, check them
+    mtaskGraph.validate();
 }
