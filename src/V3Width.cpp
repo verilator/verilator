@@ -2237,8 +2237,9 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_SIZE: {
             AstNodeDType* const dtypep = fromDTypep(nodep->fromp());
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
-            // A module that is still being copied does not have its final sizes.
-            {
+            // Only worth asking while parameters are still being worked out.
+            if (m_paramsOnly) {
+                // A module that is still being copied does not have its final sizes.
                 const AstNodeModule* ownModp = nullptr;
                 for (AstNode* curp = dtypep; curp; curp = curp->aboveLoopp()) {
                     if ((ownModp = VN_CAST(curp, NodeModule))) break;
