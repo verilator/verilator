@@ -877,9 +877,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const bool crossFed = m_crossedCpNames.count(coverpointp->name()) != 0;
         const int hitBound = computeHitListBound(coverpointp, exprp, crossFed);
         UINFO(6, "    Hit-list bound (max bin overlap) = " << hitBound);
-        AstVar* const cpVarp = new AstVar{fl, VVarType::MEMBER, "__Vcp_" + coverpointp->name(),
-                                          cDType(fl, "VlCoverpointT<"
-                                                      + std::to_string(hitBound) + ">*")};
+        AstVar* const cpVarp
+            = new AstVar{fl, VVarType::MEMBER, "__Vcp_" + coverpointp->name(),
+                         cDType(fl, "VlCoverpointT<" + std::to_string(hitBound) + ">*")};
         cpVarp->isStatic(false);
         m_covergroupp->addMembersp(cpVarp);
         m_cpVars.push_back(cpVarp);
