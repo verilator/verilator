@@ -129,7 +129,7 @@ public:
     void wait_report() {
         if (m_pidExited) return;
 #ifdef _VL_SOLVER_PIPE
-        if (waitpid(m_pid, &m_pidStatus, 0) != m_pid) return;
+        if (waitpid(m_pid, &m_pidStatus, WNOHANG) != m_pid) m_pidStatus = 0;
         if (m_pidStatus) {
             std::stringstream msg;
             msg << "Subprocess command `" << m_cmd[0];
@@ -208,8 +208,10 @@ public:
             // Child
             close(fd_stdin[P_WR]);
             dup2(fd_stdin[P_RD], STDIN_FILENO);
+            close(fd_stdin[P_RD]);
             close(fd_stdout[P_RD]);
             dup2(fd_stdout[P_WR], STDOUT_FILENO);
+            close(fd_stdout[P_WR]);
             execvp(cmd[0], const_cast<char* const*>(cmd));
             std::stringstream msg;
             msg << "VlRProcess::open: execvp(" << cmd[0] << ")";
@@ -691,9 +693,17 @@ void VlRandomizer::solveDiversityXor(VlRNG& rngr, std::iostream& os) {
     }
 }
 
+// False once the solver is gone, so no reply loop can spin forever
+static bool readNonBlankLine(std::istream& is, std::string& liner) {
+    do {
+        if (!std::getline(is, liner)) return false;
+    } while (liner.empty());
+    return true;
+}
+
 bool VlRandomizer::checkSat(std::iostream& os) {
     std::string result;
-    do { std::getline(os, result); } while (result.empty());
+    if (!readNonBlankLine(os, result)) return false;
     return result == "sat";
 }
 
@@ -733,7 +743,7 @@ static std::vector<int> scanIntRuns(const std::string& reply) {
 std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
     os << "(get-unsat-assumptions)\n";
     std::string line;
-    do { std::getline(os, line); } while (line.empty());
+    if (!readNonBlankLine(os, line)) return {};
     // The response lists only "a<N>" literals; collect each full integer run.
     return scanIntRuns(line);
 }
@@ -748,7 +758,7 @@ void VlRandomizer::reportUnsatSetup(std::iostream& os,
     emitAsserts(os, uniqueExprs, true);
     os << "(check-sat)\n";
     std::string status;
-    do { std::getline(os, status); } while (status.empty());
+    if (!readNonBlankLine(os, status)) return;
     if (status == "unsat") reportUnsatCore(os);
 }
 
@@ -788,7 +798,7 @@ void VlRandomizer::reportUnsatCore(std::iostream& os) {
 
 bool VlRandomizer::parseSolution(std::iostream& os) {
     std::string sat;
-    do { std::getline(os, sat); } while (sat == "");
+    if (!readNonBlankLine(os, sat)) return false;
     if (sat == "unsat") return false;
     if (sat != "sat") {
         std::stringstream msg;
@@ -809,14 +819,13 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
     os << "))\n";
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
     char c;
-    os >> c;
-    if (c != '(') {
+    if (!(os >> c) || c != '(') {
         VL_WARN_MT(__FILE__, __LINE__, "randomize",
                    "Internal: Unable to parse solver's response: invalid S-expression");
         return false;
     }
     while (true) {
-        os >> c;
+        if (!(os >> c)) return false;
         if (c == ')') break;
         if (c != '(') {
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
