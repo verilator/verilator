@@ -858,6 +858,16 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(ASSOC_NEXT,                         "next",                   false) \
     macro(ASSOC_SIZE,                         "size",                   true) \
     macro(CLASS_SET_RANDMODE,                 "set_randmode",           false) \
+    macro(COVERGROUP_ADD_ARRAY_NAMER,         "addArrayNamer",          false) \
+    macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false) \
+    macro(COVERGROUP_ATTACH,                  "attach",                 false) \
+    macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false) \
+    macro(COVERGROUP_COVERAGE_PARTS,          "coverageParts",          false) \
+    macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false) \
+    macro(COVERGROUP_INIT,                    "init",                   false) \
+    macro(COVERGROUP_RECORD_HIT,              "recordHit",              false) \
+    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false) \
+    macro(COVERGROUP_SAMPLE,                  "sample",                 false) \
     macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false) \
     macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false) \
     macro(DYN_CLEAR,                          "clear",                  false) \
