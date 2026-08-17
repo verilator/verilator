@@ -41,8 +41,8 @@ mode = os.environ.get("TAMPER", "none")
 at = int(os.environ.get("TAMPER_AT", "3"))
 
 # Modes acting on the TAMPER_AT'th status line rather than the Nth model reply
-STATUS_MODES = ("die_status_at", "err_once", "err_multiline", "unknown_once",
-                "unsupported_once", "garbage_status")
+STATUS_MODES = ("die_status_at", "err_once", "err_multiline", "unknown_once", "unsupported_once",
+                "garbage_status")
 # Modes acting on the TAMPER_AT'th S-expression reply of any kind
 REPLY_MODES = ("err_reply", )
 # Modes rewriting every line, so they never consume the index
