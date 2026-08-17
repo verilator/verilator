@@ -7539,9 +7539,11 @@ class WidthVisitor final : public VNVisitor {
                     relinkHandle.relink(newp);
                 }
                 if (portp->isWritable()) V3LinkLValue::linkLValueSet(pinp);
-                if (VN_IS(pinDTypep, BasicDType) && portp->direction() != VDirection::REF
-                    && (VN_IS(portDTypep, UnpackArrayDType) || VN_IS(portDTypep, DynArrayDType)
-                        || VN_IS(portDTypep, QueueDType) || VN_IS(portDTypep, AssocArrayDType))) {
+                if (portp->direction() != VDirection::REF
+                    && !(portp->basicp()
+                         && portp->basicp()->untyped())  // for properties, handled in V3AssertPre
+                    && ((VN_IS(portDTypep, BasicDType) && pinDTypep->isNonPackedArray())
+                        || (VN_IS(pinDTypep, BasicDType) && portDTypep->isNonPackedArray()))) {
                     pinp->v3error("Function Argument expects " << portDTypep->prettyDTypeNameQ()
                                                                << ", got "
                                                                << pinDTypep->prettyDTypeNameQ());
