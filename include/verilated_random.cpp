@@ -129,7 +129,7 @@ public:
     void wait_report() {
         if (m_pidExited) return;
 #ifdef _VL_SOLVER_PIPE
-        if (waitpid(m_pid, &m_pidStatus, WNOHANG) != m_pid) return;
+        if (waitpid(m_pid, &m_pidStatus, WNOHANG) != m_pid) m_pidStatus = 0;
         if (m_pidStatus) {
             std::stringstream msg;
             msg << "Subprocess command `" << m_cmd[0];
@@ -693,11 +693,17 @@ void VlRandomizer::solveDiversityXor(VlRNG& rngr, std::iostream& os) {
     }
 }
 
+// False once the solver is gone, so no reply loop can spin forever
+static bool readNonBlankLine(std::istream& is, std::string& liner) {
+    do {
+        if (!std::getline(is, liner)) return false;
+    } while (liner.empty());
+    return true;
+}
+
 bool VlRandomizer::checkSat(std::iostream& os) {
     std::string result;
-    do {
-        if (!std::getline(os, result)) return false;
-    } while (result.empty());
+    if (!readNonBlankLine(os, result)) return false;
     return result == "sat";
 }
 
@@ -737,9 +743,7 @@ static std::vector<int> scanIntRuns(const std::string& reply) {
 std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
     os << "(get-unsat-assumptions)\n";
     std::string line;
-    do {
-        if (!std::getline(os, line)) return {};
-    } while (line.empty());
+    if (!readNonBlankLine(os, line)) return {};
     // The response lists only "a<N>" literals; collect each full integer run.
     return scanIntRuns(line);
 }
@@ -754,9 +758,7 @@ void VlRandomizer::reportUnsatSetup(std::iostream& os,
     emitAsserts(os, uniqueExprs, true);
     os << "(check-sat)\n";
     std::string status;
-    do {
-        if (!std::getline(os, status)) return;
-    } while (status.empty());
+    if (!readNonBlankLine(os, status)) return;
     if (status == "unsat") reportUnsatCore(os);
 }
 
@@ -796,9 +798,7 @@ void VlRandomizer::reportUnsatCore(std::iostream& os) {
 
 bool VlRandomizer::parseSolution(std::iostream& os) {
     std::string sat;
-    do {
-        if (!std::getline(os, sat)) return false;
-    } while (sat == "");
+    if (!readNonBlankLine(os, sat)) return false;
     if (sat == "unsat") return false;
     if (sat != "sat") {
         std::stringstream msg;

@@ -19,9 +19,11 @@ test.compile()
 
 # Reply index picks which reply the runtime is waiting on when the solver goes
 runs = [
-    ('die_at', 3, 2),  # soft constraint and diversity assumption replies
-    ('die_at', 10, 3),  # model and unsat core replies
-    ('mute_at', 3, 2),  # solver stops answering but keeps running
+    ('die_at', 10, 3),  # solver exits with a model reply pending
+    ('die_status_at', 4, 1),  # solver exits with a soft constraint status pending
+    ('die_status_at', 7, 2),  # solver exits between the status and the model read
+    ('mute_at', 3, 2),  # solver stays running but stops answering
+    ('garbage_at', 2, 1),  # solver answers, but not with an S-expression
 ]
 
 for mode, at, npass in runs:

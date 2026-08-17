@@ -10,10 +10,12 @@
 # Forwards the SMT-LIB conversation to a real solver, then kills it.
 #
 # Input arguments from environment variables:
-# TAMPER: none | die_at | mute_at
-#   die_at  - kill the solver and exit, closing every pipe end
-#   mute_at - close the reply pipe but keep this wrapper running
-# TAMPER_AT: model reply index to die on (default 3)
+# TAMPER: none | die_at | die_status_at | mute_at | garbage_at
+#   die_at        - kill the solver and exit, closing every pipe end
+#   die_status_at - same, counting sat/unsat status lines instead of models
+#   mute_at       - close the reply pipe but keep this wrapper running
+#   garbage_at    - replace every Nth model reply with a non-S-expression line
+# TAMPER_AT: reply index to act on (default 3)
 
 # pylint: disable=C0103,C0114,consider-using-with
 
@@ -39,16 +41,23 @@ def real_solver():
 proc = subprocess.Popen(real_solver(), stdin=sys.stdin, stdout=subprocess.PIPE, text=True)
 
 replies = 0
+acting = False
 
 for line in proc.stdout:
     line = line.rstrip("\n")
-    if line.startswith("(("):
+    counted = line in ("sat", "unsat",
+                       "unknown") if mode == "die_status_at" else line.startswith("((")
+    if counted:
         replies += 1
+    acting = counted and replies >= at
+    if acting and mode == "garbage_at":
+        line = "junk"
+        replies = 0
     sys.stdout.write(line + "\n")
     sys.stdout.flush()
-    if replies < at:
+    if not acting:
         continue
-    if mode == "die_at":
+    if mode in ("die_at", "die_status_at"):
         proc.kill()
         proc.wait()
         sys.exit(0)
