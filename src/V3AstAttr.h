@@ -865,6 +865,19 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(ASSOC_NEXT,                         "next",                   false,  "m") \
     macro(ASSOC_SIZE,                         "size",                   PURE,   "") \
     macro(CLASS_SET_RANDMODE,                 "set_randmode",           false,  "r") \
+    macro(COVERGROUP_ADD_ARRAY_NAMER,         "addArrayNamer",          false,  "r+") \
+    macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  "r+") \
+    macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  "r+") \
+    macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
+    macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
+    macro(COVERGROUP_COVERAGE_PARTS,          "coverageParts",          false,  "TODO") \
+    macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  "") \
+    macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  "r") \
+    macro(COVERGROUP_INIT,                    "init",                   false,  "r+") \
+    macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  "r") \
+    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rr") \
+    macro(COVERGROUP_SAMPLE,                  "sample",                 false,  "") \
+    macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  "r") \
     macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
     macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \
     macro(DYN_CLEAR,                          "clear",                  false,  "") \
