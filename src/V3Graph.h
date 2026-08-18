@@ -311,10 +311,6 @@ public:
         VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
     /// Edges are routed around this vertex to point from "from" directly to "to"
     void rerouteEdges(V3Graph* graphp) VL_MT_DISABLED;
-    // Find the edge connecting this vertex to the given vertex.
-    // If edge is not found returns nullptr. O(edges) performance.
-    template <GraphWay::en N_Way>
-    V3GraphEdge* findConnectingEdgep(V3GraphVertex* otherp) VL_MT_DISABLED;
 };
 
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) VL_MT_DISABLED;
@@ -450,6 +446,10 @@ public:
     void dumpDotFilePrefixedAlways(const string& nameComment,
                                    bool colorAsSubgraph = false) const VL_MT_DISABLED;
     void dumpEdges(std::ostream& os, const V3GraphVertex& vertex) const VL_MT_DISABLED;
+    // Print a hash of the shape of graphp. When debugging nondeterminism, this can help
+    // pinpoint where it's coming from.
+    void hashGraphDebug(const char* debugName) const VL_MT_DISABLED;
+
     static void selfTest() VL_MT_DISABLED;
 
     class ParallelismReport final {

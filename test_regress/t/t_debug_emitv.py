@@ -20,6 +20,7 @@ test.lint(
         # unsupported (dropped) but the bin is still created with a non-NONE VTransRepType, which
         # is what exercises VTransRepType::ascii() and AstCoverTransItem::dump()'s repType arm.
         "--Wno-COVERIGN",
+        "--timing",
         "--dumpi-tree 9 --dumpi-V3EmitV 9 --debug-emitv",  # Dev coverage of the V3EmitV code
         "--dump-graph --dumpi-tree-json 9 --no-json-ids"
     ])

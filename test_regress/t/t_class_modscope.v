@@ -9,6 +9,25 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+interface class_if;
+  class scoped_class;
+    static function int fstatic();
+      return 42;
+    endfunction
+    function int fnonstatic();
+      return 43;
+    endfunction
+  endclass
+
+  scoped_class class_inst;
+
+  initial begin
+    `checkh(scoped_class::fstatic(), 42);
+    class_inst = new();
+    `checkh(class_inst.fnonstatic(), 43);
+  end
+endinterface
+
 module m ();
   class c;
     static function void fstatic();
@@ -22,6 +41,7 @@ module m ();
   endclass
 
   c classinst;
+  class_if class_if_inst();
   int v;
 
   initial begin
@@ -31,6 +51,7 @@ module m ();
     classinst = new();
     classinst.fnonstatic();
     `checkh(v, 44);
+    `checkh(class_if_inst.scoped_class.fstatic(), 42);
     $finish;
   end
 endmodule

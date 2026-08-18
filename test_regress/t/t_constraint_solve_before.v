@@ -67,42 +67,46 @@ module t;
     Simple s;
     MultiLevel m;
     int ok;
+    int randomize_result;
 
     // Test 1: Packet with conditional constraints
     p = new;
     repeat (20) begin
-      `checkd(p.randomize(), 1)
-      `check_range(p.mode, 0, 3)
-      if (p.mode == 0) `checkd(p.data, 0)
+      randomize_result = p.randomize();
+      `checkd(randomize_result, 1);
+      `check_range(p.mode, 0, 3);
+      if (p.mode == 0) `checkd(p.data, 0);
       if (p.mode == 1) begin
-        `check_range(p.data, 1, 15)
+        `check_range(p.data, 1, 15);
       end
       if (p.mode >= 2) begin
         ok = (p.data < 8'h80) ? 1 : 0;
-        `checkd(ok, 1)
+        `checkd(ok, 1);
       end
     end
 
     // Test 2: Simple range constraints
     s = new;
     repeat (20) begin
-      `checkd(s.randomize(), 1)
-      `check_range(s.x, 1, 5)
+      randomize_result = s.randomize();
+      `checkd(randomize_result, 1);
+      `check_range(s.x, 1, 5);
       ok = (s.y > s.x) ? 1 : 0;
-      `checkd(ok, 1)
+      `checkd(ok, 1);
       ok = (s.y < 4'hf) ? 1 : 0;
-      `checkd(ok, 1)
+      `checkd(ok, 1);
     end
 
     // Test 3: Multi-level chain
     m = new;
     repeat (20) begin
-      `checkd(m.randomize(), 1)
-      `check_range(m.a, 1, 3)
+      randomize_result = m.randomize();
+      `checkd(randomize_result, 1);
+      `check_range(m.a, 1, 3);
       ok = (m.b > m.a && m.b < 8) ? 1 : 0;
-      `checkd(ok, 1)
+      `checkd(ok, 1);
       ok = (m.c > m.b && m.c < 4'hf) ? 1 : 0;
-      `checkd(ok, 1)
+      `checkd(ok, 1);
     end
 
     $write("*-* All Finished *-*\n");

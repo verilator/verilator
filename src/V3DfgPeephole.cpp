@@ -266,6 +266,8 @@ class V3DfgPeephole final : public DfgVisitor {
     void deleteVertex(DfgVertex* vtxp) {
         UASSERT_OBJ(!m_vInfo[vtxp].m_workListIndex, vtxp, "Deleted Vertex is in work list");
         UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
+        const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
+        UASSERT_OBJ(!varp || !varp->hasPrev(), vtxp, "Deleting variable consumed via DfgPrev");
 
         // Invalidate cache entry
         m_cache.invalidate(vtxp);
@@ -293,7 +295,6 @@ class V3DfgPeephole final : public DfgVisitor {
         // This pass only removes variables that are either not driven in this graph,
         // or are not observable outside the graph. If there is also no external write
         // to the variable and no references in other graph then delete the Ast var too.
-        const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
         if (varp && !varp->isVolatile() && !varp->hasDfgRefs()) {
             m_ctx.m_deleteps.push_back(varp->vscp());
             VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
@@ -2548,7 +2549,13 @@ class V3DfgPeephole final : public DfgVisitor {
         if (DfgShiftL* const lShiftLp = lhsp->cast<DfgShiftL>()) {
             if (!lShiftLp->hasMultipleSinks() && rhsp->dtype() == lShiftLp->rhsp()->dtype()) {
                 APPLYING(REPLACE_SHIFTL_SHIFTL) {
-                    DfgAdd* const addp = make<DfgAdd>(rhsp, rhsp, lShiftLp->rhsp());
+                    // Fold '(a << b) << c' to 'a << (b + c)'.  Compute 'b + c'
+                    // one bit wider than the amounts so it cannot overflow.
+                    FileLine* const flp = vtxp->fileline();
+                    const DfgDataType& sumDType = DfgDataType::packed(rhsp->width() + 1);
+                    DfgVertex* const bp = make<DfgExtend>(flp, sumDType, lShiftLp->rhsp());
+                    DfgVertex* const cp = make<DfgExtend>(flp, sumDType, rhsp);
+                    DfgAdd* const addp = make<DfgAdd>(flp, sumDType, bp, cp);
                     replace(make<DfgShiftL>(vtxp, lShiftLp->lhsp(), addp));
                     return;
                 }
@@ -2637,7 +2644,13 @@ class V3DfgPeephole final : public DfgVisitor {
         if (DfgShiftR* const lShiftRp = lhsp->cast<DfgShiftR>()) {
             if (!lShiftRp->hasMultipleSinks() && rhsp->dtype() == lShiftRp->rhsp()->dtype()) {
                 APPLYING(REPLACE_SHIFTR_SHIFTR) {
-                    DfgAdd* const addp = make<DfgAdd>(rhsp, rhsp, lShiftRp->rhsp());
+                    // Fold '(a >> b) >> c' to 'a >> (b + c)'.  Compute 'b + c'
+                    // one bit wider than the amounts so it cannot overflow.
+                    FileLine* const flp = vtxp->fileline();
+                    const DfgDataType& sumDType = DfgDataType::packed(rhsp->width() + 1);
+                    DfgVertex* const bp = make<DfgExtend>(flp, sumDType, lShiftRp->rhsp());
+                    DfgVertex* const cp = make<DfgExtend>(flp, sumDType, rhsp);
+                    DfgAdd* const addp = make<DfgAdd>(flp, sumDType, bp, cp);
                     replace(make<DfgShiftR>(vtxp, lShiftRp->lhsp(), addp));
                     return;
                 }

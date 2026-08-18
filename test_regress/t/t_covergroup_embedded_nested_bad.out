@@ -1,0 +1,25 @@
+%Error-ENCAPSULATED: t/t_covergroup_embedded_nested_bad.v:44:20: 'local_value' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
+                                                               : ... note: In instance 't'
+   44 |     cp: coverpoint local_value;
+      |                    ^~~~~~~~~~~
+                     t/t_covergroup_embedded_nested_bad.v:44:20: ... Location of definition
+   39 |   local bit [3:0] local_value;
+      |                   ^~~~~~~~~~~
+                     ... For error description see https://verilator.org/warn/ENCAPSULATED?v=latest
+%Error-ENCAPSULATED: t/t_covergroup_embedded_nested_bad.v:57:27: 'local_event' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
+                                                               : ... note: In instance 't'
+   57 |   covergroup cg @(posedge local_event);
+      |                           ^~~~~~~~~~~
+                     t/t_covergroup_embedded_nested_bad.v:57:27: ... Location of definition
+   53 |   local bit local_event;
+      |             ^~~~~~~~~~~
+%Error: t/t_covergroup_embedded_nested_bad.v:15:22: Non-static member 'outer_value' of an outer class requires an explicit object handle (IEEE 1800-2023 8.23).
+                                                  : ... note: In instance 't'
+   15 |       cp: coverpoint outer_value;
+      |                      ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_embedded_nested_bad.v:27:39: Non-static member 'outer_value' of an outer class requires an explicit object handle (IEEE 1800-2023 8.23).
+                                                  : ... note: In instance 't'
+   27 |       cp: coverpoint inner_value iff (outer_value != 0);
+      |                                       ^~~~~~~~~~~
+%Error: Exiting due to

@@ -14,7 +14,7 @@ module t (
 );
   integer cyc = 0;
   logic [127:0] sig;
-  logic [127:0] publicSig /*verilator public_flat_rw*/;
+  logic [127:0] publicSig  /*verilator public_flat_rw*/;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
@@ -40,14 +40,14 @@ module t (
       `checkh(sig[100:5], (96'h1 << 26) | (96'h1 << 27));  // width > 64
       `checkh(sig[70:6], (65'h1 << 25) | (65'h1 << 26));
 
-      `checkh(publicSig[33:26], 8'h60);      // width <= 8
-      `checkh(publicSig[39:24], 16'h180);    // 8 < width <= 16
-      `checkh(publicSig[40:20], 21'h1800);   // 16 < width <= 32
+      `checkh(publicSig[33:26], 8'h60);  // width <= 8
+      `checkh(publicSig[39:24], 16'h180);  // 8 < width <= 16
+      `checkh(publicSig[40:20], 21'h1800);  // 16 < width <= 32
       `checkh(publicSig[51:20], 32'h1800);
       `checkh(publicSig[29:0], 30'h0);
-      `checkh(publicSig[50:10], 41'h600000); // 32 < width <= 64
+      `checkh(publicSig[50:10], 41'h600000);  // 32 < width <= 64
       `checkh(publicSig[73:10], 64'h600000);
-      `checkh(publicSig[100:5], (96'h1 << 26) | (96'h1 << 27)); // width > 64
+      `checkh(publicSig[100:5], (96'h1 << 26) | (96'h1 << 27));  // width > 64
       `checkh(publicSig[70:6], (65'h1 << 25) | (65'h1 << 26));
       $write("*-* All Finished *-*\n");
       $finish;

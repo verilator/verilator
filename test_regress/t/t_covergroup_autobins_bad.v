@@ -74,6 +74,48 @@ module t;
     }
   endgroup
 
+  // Malformed bins on a coverpoint that feeds a *cross*.  The cross path
+  // sizes the coverpoint's hit list (computeHitListBound/extractRangeIntervals)
+  // before the bin condition is built, so the malformed-bin guards there run gracefully and
+  // the user error is then diagnosed downstream by the bin-condition / array-value builders.
+  // (Without a cross the same errors fire via cg3/cg5 above; the cross also exercises the
+  // hit-list-sizing guard path.)
+  covergroup cgx_nc_value;  // non-constant value, non-array bin
+    cp_a: coverpoint cp_expr {bins x = {size_var};}
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+  covergroup cgx_nc_range_lo;  // non-constant low bound, non-array range
+    cp_a: coverpoint cp_expr {bins x = {[size_var : 1]};}
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+  covergroup cgx_nc_range_hi;  // non-constant high bound, non-array range
+    cp_a: coverpoint cp_expr {bins x = {[0 : size_var]};}
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+  covergroup cgx_arr_4state_lo;  // four-state low bound, array range
+    cp_a: coverpoint cp_expr {bins x[] = {[4'b000x : 4'hF]};}
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+  covergroup cgx_arr_4state_hi;  // four-state high bound, array range
+    cp_a: coverpoint cp_expr {bins x[] = {[4'h0 : 4'b000x]};}
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+  covergroup cgx_arr_ncval;  // non-constant value, array value list
+    cp_a: coverpoint cp_expr {bins x[] = {size_var};}
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+  covergroup cgx_arr_open;  // open-ended ('$') bounds, array range
+    cp_a: coverpoint cp_expr {bins x[] = {[2 : $], [$ : 1]};}
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
   cg2b cg2b_inst = new;
@@ -81,6 +123,13 @@ module t;
   cg4 cg4_inst = new;
   cg5 cg5_inst = new;
   cg6 cg6_inst = new;
+  cgx_nc_value cgx_nc_value_inst = new;
+  cgx_nc_range_lo cgx_nc_range_lo_inst = new;
+  cgx_nc_range_hi cgx_nc_range_hi_inst = new;
+  cgx_arr_4state_lo cgx_arr_4state_lo_inst = new;
+  cgx_arr_4state_hi cgx_arr_4state_hi_inst = new;
+  cgx_arr_ncval cgx_arr_ncval_inst = new;
+  cgx_arr_open cgx_arr_open_inst = new;
 
   initial $finish;
 endmodule

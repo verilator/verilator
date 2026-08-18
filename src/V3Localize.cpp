@@ -38,10 +38,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LocalizeVisitor final : public VNVisitor {
     // NODE STATE
-    //  AstVarScope::user1()    ->  Bool indicating VarScope is not optimizable.
-    //  AstCFunc::user1()       ->  Bool indicating CFunc is not a leaf function.
-    //  AstVarScope::user2()    ->  Bool indicating VarScope was fully assigned in the current
-    //                              function.
+    //  AstVarScope::user1()    ->  bool.  VarScope is not optimizable
+    //  AstCFunc::user1()       ->  bool.  CFunc is not a leaf function
+    //  AstVarScope::user2()    ->  bool.  VarScope was fully assigned in current function
     //  AstVarScope::user3p()   ->  Set of CFuncs referencing this VarScope. (via m_accessors)
     //  AstCFunc::user4p()      ->  Multimap of 'VarScope -> VarRefs that reference that VarScope'
     //                              in this function. (via m_references)

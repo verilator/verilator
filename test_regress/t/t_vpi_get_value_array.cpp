@@ -19,10 +19,13 @@
 #endif
 
 // These require the above. Comment prevents clang-format moving them
+#include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
 #include <vector>
+
+int errors = 0;
 
 //======================================================================
 
@@ -46,7 +49,7 @@ int test_vpiRawFourStateVal(char* name, PLI_BYTE8* test_data, int index, const u
     arrayvalue.flags = 0;
     arrayvalue.value.vectors = 0;
     vpi_get_value_array(arrayhandle, &arrayvalue, index_arr, num);
-    CHECK_RESULT_NZ(!vpi_chk_error(0));
+    TEST_CHECK_ERROR(false);
 
     // compare to test data
     index -= low;
@@ -87,7 +90,7 @@ int test_vpiRawTwoStateVal(char* name, PLI_BYTE8* test_data, int index, const un
     arrayvalue.flags = 0;
     arrayvalue.value.vectors = 0;
     vpi_get_value_array(arrayhandle, &arrayvalue, index_arr, num);
-    CHECK_RESULT_NZ(!vpi_chk_error(0));
+    TEST_CHECK_ERROR(false);
 
     // compare to test data
     index -= low;
@@ -142,7 +145,7 @@ int test_vpiVectorVal(char* name, PLI_BYTE8* test_data, int index, const unsigne
     arrayvalue.flags = 0;
     arrayvalue.value.vectors = 0;
     vpi_get_value_array(arrayhandle, &arrayvalue, index_arr, num);
-    CHECK_RESULT_NZ(!vpi_chk_error(0));
+    TEST_CHECK_ERROR(false);
 
 #ifdef TEST_VERBOSE
     for (unsigned i = 0; i < vec_size; i++) {
@@ -198,7 +201,7 @@ int test_vpiIntVal(char* name, PLI_BYTE8* test_data, int index, const unsigned l
     arrayvalue.flags = 0;
     arrayvalue.value.integers = 0;
     vpi_get_value_array(arrayhandle, &arrayvalue, index_arr, num);
-    CHECK_RESULT_NZ(!vpi_chk_error(0));
+    TEST_CHECK_ERROR(false);
 
 #ifdef TEST_VERBOSE
     for (unsigned i = 0; i < size; i++) {
@@ -250,7 +253,7 @@ int test_vpiShortIntVal(char* name, PLI_BYTE8* test_data, int index, const unsig
     arrayvalue.flags = 0;
     arrayvalue.value.shortints = 0;
     vpi_get_value_array(arrayhandle, &arrayvalue, index_arr, num);
-    CHECK_RESULT_NZ(!vpi_chk_error(0));
+    TEST_CHECK_ERROR(false);
 
 #ifdef TEST_VERBOSE
     for (unsigned i = 0; i < size; i++) {
@@ -301,7 +304,7 @@ int test_vpiLongIntVal(char* name, PLI_BYTE8* test_data, int index, const unsign
     arrayvalue.flags = 0;
     arrayvalue.value.longints = 0;
     vpi_get_value_array(arrayhandle, &arrayvalue, index_arr, num);
-    CHECK_RESULT_NZ(!vpi_chk_error(0));
+    TEST_CHECK_ERROR(false);
 
     // compare to test data
     index -= low;
@@ -492,7 +495,7 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -507,7 +510,7 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -521,7 +524,7 @@ int mon_check_props() {
         arrayvalue.value.integers = 0;
         PLI_INT32 indexp[1] = {0};
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -536,7 +539,7 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -551,7 +554,7 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -566,11 +569,11 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {4};
 
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
 
         indexp[0] = 0;
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -585,7 +588,7 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -600,7 +603,7 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayvalue, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -615,7 +618,7 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayvalue, indexp, 5);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -626,7 +629,7 @@ int mon_check_props() {
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, 0, indexp, 0);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
     {
@@ -640,10 +643,10 @@ int mon_check_props() {
         arrayvalue.value.integers = 0;
 
         vpi_get_value_array(object, &arrayvalue, 0, 0);
-        CHECK_RESULT_NZ(vpi_chk_error(0));
+        TEST_CHECK_ERROR(true);
     }
 
-    return 0;
+    return errors;
 }
 
 extern "C" int mon_check(void) { return mon_check_props(); }

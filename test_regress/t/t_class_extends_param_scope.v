@@ -5,7 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // A factory-like static method, as used by UVM's type_id::create().
-class registry #(type T = int);
+class registry #(
+    type T = int
+);
   static function T create();
     T r = new;
     return r;
@@ -20,7 +22,10 @@ class item;
   endfunction
 endclass
 
-class seq_base #(type REQ = int, type RSP = REQ);
+class seq_base #(
+    type REQ = int,
+    type RSP = REQ
+);
   REQ req;
 endclass
 

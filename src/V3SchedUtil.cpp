@@ -157,12 +157,49 @@ void splitCheckFinishSubFunc(AstCFunc* ofuncp, AstCFunc* subFuncp,
     }
 }
 
+// Compute, for each top level statement of 'ofuncp', whether a new sub-function may begin there.
+// Sub-functions are emitted as separate C++ functions, so they cannot see each other's automatic
+// storage. A function-local AstVar declared among the top level statements must therefore end up
+// in the same sub-function as every reference to it, otherwise the emitted C++ refers to an
+// undeclared identifier (and the AstVar can be deleted from under the still-live references).
+static std::vector<bool> splitCheckBreakable(const AstCFunc* ofuncp) {
+    // Gather the top level statements, and where each locally declared variable is declared
+    std::vector<const AstNode*> stmtps;
+    std::unordered_map<const AstVar*, size_t> declIdx;  // Local var -> index it is declared at
+    for (const AstNode* nodep = ofuncp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        if (const AstVar* const varp = VN_CAST(nodep, Var)) declIdx.emplace(varp, stmtps.size());
+        stmtps.push_back(nodep);
+    }
+
+    // Find the last statement referencing each locally declared variable
+    std::vector<size_t> lastUse(stmtps.size());
+    for (size_t i = 0; i < stmtps.size(); ++i) {
+        lastUse[i] = i;  // A declaration is live at least where it is declared
+        stmtps[i]->foreach([&](const AstNodeVarRef* refp) {
+            const auto it = declIdx.find(refp->varp());  // 'end()' if not one of our locals
+            if (it != declIdx.end()) lastUse[it->second] = std::max(lastUse[it->second], i);
+        });
+    }
+
+    // A break before statement 'i' is allowed only if no local declared before 'i' is still live
+    std::vector<bool> breakable(stmtps.size(), true);
+    size_t liveEnd = 0;  // Last index any so far declared local is referenced at
+    for (size_t i = 0; i < stmtps.size(); ++i) {
+        breakable[i] = liveEnd < i;
+        if (VN_IS(stmtps[i], Var)) liveEnd = std::max(liveEnd, lastUse[i]);
+    }
+    return breakable;
+}
+
 // Split large function according to --output-split-cfuncs
 void splitCheck(AstCFunc* const ofuncp) {
     if (!ofuncp) return;
     UASSERT_OBJ(!ofuncp->varsp(), ofuncp, "Can't split function with local variables");
     if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
     if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;
+
+    // Statement boundaries that would separate a local declaration from a reference to it
+    const std::vector<bool> breakable = splitCheckBreakable(ofuncp);
 
     // Need to find the AstVarScopes for the function arguments. They should be in the same Scope.
     std::unordered_map<const AstVar*, AstVarScope*> argVscps;
@@ -187,13 +224,13 @@ void splitCheck(AstCFunc* const ofuncp) {
 
     // Move statements one by one to the new sub-functions
     AstNode* stmtsp = ofuncp->stmtsp()->unlinkFrBackWithNext();
-    while (AstNode* const itemp = stmtsp) {
+    for (size_t index = 0; AstNode* const itemp = stmtsp; ++index) {
         stmtsp = stmtsp->nextp();
         if (stmtsp) stmtsp->unlinkFrBackWithNext();
         const size_t itemSize = static_cast<size_t>(itemp->nodeCount());
         size += itemSize;
 
-        if (size > static_cast<size_t>(v3Global.opt.outputSplitCFuncs())) {
+        if (size > static_cast<size_t>(v3Global.opt.outputSplitCFuncs()) && breakable[index]) {
             if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
             subFuncp = nullptr;
             size = itemSize;

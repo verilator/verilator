@@ -70,6 +70,7 @@ module t;
   initial begin
     // Scenario A: solomatnikov reproducer
     static p_c_seq seq = new();
+    int randomize_result;
     seq.req = new();
     repeat (5) begin
       seq.body();
@@ -81,9 +82,10 @@ module t;
     begin
       automatic q_derived qd = new();
       repeat (5) begin
-        `checkd(qd.randomize(), 1)
-        `checkd(qd.q.size(), 3)
-        foreach (qd.q[i]) `checkd(qd.q[i], i * 10)
+        randomize_result = qd.randomize();
+        `checkd(randomize_result, 1);
+        `checkd(qd.q.size(), 3);
+        foreach (qd.q[i]) `checkd(qd.q[i], i * 10);
       end
     end
 

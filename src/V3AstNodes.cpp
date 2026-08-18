@@ -108,15 +108,19 @@ int AstNodeSel::bitConst() const {
     return (constp ? constp->toSInt() : 0);
 }
 
-bool AstNode::isDisableQueuePushSelfStmt() const {
+bool AstNode::isDisableQueuePushSelfStmt() {
     // Detect LinkJump-generated registration:
     // __VprocessQueue_*.push_back(std::process::self())
-    const AstStmtExpr* const stmtExprp = VN_CAST(this, StmtExpr);
+    AstStmtExpr* const stmtExprp = VN_CAST(this, StmtExpr);
     if (!stmtExprp) return false;
-    const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
+    AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
     if (!methodp || methodp->name() != "push_back") return false;
-    const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
-    return queueRefp && queueRefp->varp()->processQueue();
+    AstNode* const basep = AstArraySel::baseFromp(methodp->fromp(), false);
+    if (AstVarRef* const refp = VN_CAST(basep, VarRef)) return refp->varp()->processQueue();
+    if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
+        return selp->varp() && selp->varp()->processQueue();
+    }
+    return false;
 }
 
 void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
@@ -479,6 +483,14 @@ void AstSConsRep::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, unbounded);
     dumpJsonGen(str);
 }  // LCOV_EXCL_STOP
+void AstSAnd::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (propertyControl()) str << " [PROPERTY_CONTROL]";
+}
+void AstSAnd::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, propertyControl);
+    dumpJsonGen(str);
+}
 void AstPropAlways::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (isStrong()) str << " [strong]";
@@ -1190,7 +1202,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type = "VlSampleQueue<" + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
-        info.m_type = "VlClassRef<" + EmitCUtil::prefixNameProtect(adtypep) + ">";
+        const string className = EmitCUtil::prefixNameProtect(adtypep);
+        info.m_type = adtypep->rawPointer() ? className + "*" : "VlClassRef<" + className + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = EmitCUtil::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
@@ -1411,6 +1424,9 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
             continue;
         } else if (VN_IS(nodep, WildcardSel)) {
             nodep = VN_AS(nodep, WildcardSel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, CMethodHard)) {
+            nodep = VN_AS(nodep, CMethodHard)->fromp();
             continue;
         } else if (overMembers && VN_IS(nodep, MemberSel)) {
             nodep = VN_AS(nodep, MemberSel)->fromp();
@@ -1988,6 +2004,18 @@ string AstBasicDType::prettyDTypeName(bool) const {
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
+void AstPropSpec::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (propStrength() != VPropStrength::DEFAULT) {
+        str << " [" << VString::upcase(propStrength().ascii()) << "]";
+    }
+}
+void AstPropSpec::dumpJson(std::ostream& str) const {
+    if (propStrength() != VPropStrength::DEFAULT)
+        dumpJsonStr(str, "strength", propStrength().ascii());
+    dumpJsonGen(str);
+}
+
 AstConst::~AstConst() {
     // Only rare constants carry originating parameter-name metadata. For all other AstConst nodes,
     // the V3Number bit keeps this destructor from touching AstNetlist's side table. When the bit
@@ -2033,6 +2061,8 @@ bool AstNodeExpr::isLValue() const {
         return varrefp->access().isWriteOrRW();
     } else if (const AstMemberSel* const memberselp = VN_CAST(this, MemberSel)) {
         return memberselp->access().isWriteOrRW();
+    } else if (const AstStructSel* const structselp = VN_CAST(this, StructSel)) {
+        return structselp->fromp()->isLValue();
     } else if (const AstSel* const selp = VN_CAST(this, Sel)) {
         return selp->fromp()->isLValue();
     } else if (const AstNodeSel* const nodeSelp = VN_CAST(this, NodeSel)) {
@@ -2192,8 +2222,22 @@ void AstClassRefDType::dump(std::ostream& str) const {
     } else {
         str << " -> UNLINKED";
     }
+    if (rawPointer()) str << " [RAWPTR]";
 }
-void AstClassRefDType::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstClassRefDType::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, rawPointer);
+    dumpJsonGen(str);
+}
+void AstClassRefDType::selfTest() {
+    FileLine* const fl = new FileLine{FileLine::commandLineFilename()};
+    AstClassRefDType* const owningp = new AstClassRefDType{fl, nullptr, nullptr};
+    AstClassRefDType* const rawp = new AstClassRefDType{fl, nullptr, nullptr};
+    rawp->rawPointer(true);
+    UASSERT_OBJ(!owningp->sameNode(rawp) && !rawp->sameNode(owningp) && rawp->sameNode(rawp), rawp,
+                "Raw class pointer must have distinct type identity");
+    VL_DO_DANGLING(owningp->deleteTree(), owningp);
+    VL_DO_DANGLING(rawp->deleteTree(), rawp);
+}
 void AstClassRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "class:" << name();
@@ -2499,12 +2543,14 @@ const char* AstLoopTest::broken() const {
 void AstMemberDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     if (isConstrainedRand()) str << " [CONSTRAINEDRAND]";
+    if (rand().isRandomizable()) str << " [" << rand() << "]";
     if (name() != "") str << " name=" << name();
     if (tag() != "") str << " tag=" << tag();
 }
 
 void AstMemberDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConstrainedRand);
+    if (rand().isRandomizable()) dumpJsonStr(str, "rand", rand().ascii());
     dumpJsonStrFunc(str, name);
     dumpJsonStrFunc(str, tag);
     dumpJsonGen(str);
@@ -3045,6 +3091,14 @@ void AstSFormatF::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, exprFormat);
     dumpJsonBoolFuncIf(str, optionalFormat);
 }
+void AstSampled::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (internal()) str << " [INTERNAL]";
+}
+void AstSampled::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, internal);
+    dumpJsonGen(str);
+}
 void AstSel::dump(std::ostream& str) const {
     this->AstNodeBiop::dump(str);
     str << " widthConst=" << this->widthConst();
@@ -3414,7 +3468,7 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
     }
 }
 void AstClassOrPackageRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
+AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp(const bool doRefs) const {
     AstNode* foundp = m_classOrPackageNodep;
     AstNode* lastp = nullptr;
     while (foundp != lastp) {
@@ -3422,11 +3476,12 @@ AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
         if (AstNodeDType* const anodep = VN_CAST(foundp, NodeDType)) {
             foundp = anodep->skipRefOrNullp();
         }
-        if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
-            foundp = anodep->subDTypep();
-        }
-        if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
-            foundp = anodep->classp();
+        if (doRefs) {
+            if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
+                foundp = anodep->subDTypep();
+            } else if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
+                foundp = anodep->classp();
+            }
         }
     }
     return VN_CAST(foundp, NodeModule);
@@ -3613,9 +3668,11 @@ void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstFork::dump(std::ostream& str) const {
     this->AstNodeBlock::dump(str);
     str << " [" << joinType() << "]";
+    if (immediateStart()) str << " [IMMEDIATE]";
 }
 void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "joinType", joinType().ascii());
+    dumpJsonBoolFuncIf(str, immediateStart);
     dumpJsonGen(str);
 }
 void AstStop::dump(std::ostream& str) const {
@@ -3806,7 +3863,7 @@ void AstDelay::dumpJson(std::ostream& str) const {
 }
 
 const char* AstDisable::broken() const {
-    BROKEN_RTN((m_targetp && targetRefp()) || ((!m_targetp && !targetRefp())));
+    BROKEN_RTN(!m_targetp && !targetRefp());
     return nullptr;
 }
 void AstDisable::dump(std::ostream& str) const {

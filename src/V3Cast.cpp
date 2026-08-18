@@ -49,7 +49,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class CastVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
-    //   AstNode::user1()               // bool.  Indicates node is of known size
+    //   AstNode::user1()               // bool.  Node is of known size
     const VNUser1InUse m_inuser1;
 
     // STATE

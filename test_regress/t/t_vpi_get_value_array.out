@@ -1,0 +1,13 @@
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiRealVal) as requested for 'test.read_longs'
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiShortRealVal) as requested for 'test.read_words'
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiTimeVal) as requested for 'test.read_longs'
+vpi_chk_error: vpi_get_value_array: Unsupported vpiHandle '0x#'
+vpi_chk_error: vpi_get_value_array: Unsupported type 'vpiReg' for 'read_scalar'
+vpi_chk_error: vpi_get_value_array: Index 4 for object 'test.read_bounds' is out of bounds [1,3]
+vpi_chk_error: vpi_get_value_array: Index 0 for object 'test.read_bounds' is out of bounds [1,3]
+vpi_chk_error: vpi_get_value_array: Unsupported vpiUserAllocFlag (2000)
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiShortIntVal) as requested for 'test.read_words'
+vpi_chk_error: vl_get_value_array: Requested elements (5) exceed array size (4)
+vpi_chk_error: Ignoring vpi_get_value_array with null value pointer
+vpi_chk_error: Ignoring vpi_get_value_array with null index pointer
+*-* All Finished *-*

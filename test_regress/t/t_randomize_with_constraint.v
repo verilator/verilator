@@ -10,11 +10,30 @@
 `define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
 // verilog_format: on
 
+class ArgCls;
+  rand int b;
+endclass
+
 class Cls;
   rand int m_x;
   rand int m_z;
   int y = -1;  // class member named 'y' intentionally shadows the caller arg
   int lo = -100;  // class member named 'lo' intentionally shadows the caller arg
+  rand int a[];
+
+  function new();
+    a = new [10];
+  endfunction
+
+  // Randomize array inside class that is argument
+  // with .size inside if
+  function automatic int randomize_subcls(ArgCls ac);
+    return ac.randomize() with {
+      if (a.size() > 0) {
+        ac.b == a.size();
+      }
+    };
+  endfunction
 endclass
 
 // 'y' is not in the list -> resolves to the caller arg (10), not class member (-1).
@@ -76,8 +95,10 @@ endfunction
 module t;
   initial begin
     Cls c;
+    ArgCls ac;
     int i;
     c = new;
+    ac = new;
     repeat (20) begin
       i = func_restricted(c, 10);
       `checkd(i, 1);
@@ -98,6 +119,11 @@ module t;
       `check_range(c.m_x, 1, 7);
       i = func_sequential(c, 6);
       `checkd(i, 1);
+      i = c.randomize_subcls(ac);
+      `checkd(i, 1);
+      if (c.a.size() > 0) begin
+        `checkd(ac.b, c.a.size());
+      end
       // Statement form: discards return value via void'.
       void'(c.randomize() with (m_x) { m_x > 0; m_x < 5; });
       `check_range(c.m_x, 1, 4);

@@ -37,7 +37,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class WidthCommitVisitor final : public VNVisitor {
     // NODE STATE
-    // AstVar::user1p           -> bool, processed
+    //  AstVar::user1p           -> bool.  Processed
     //  AstNodeFTask::user2()    -> int. Non-zero if ever referenced (called)
     //  AstNew::user2()          -> int. Count of number of references, minus references in
     //  functions never called
@@ -119,7 +119,11 @@ private:
             nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
         }
         if (local || prot) {
-            const auto refClassp = VN_CAST(m_modp, Class);
+            // In case of covergroup, the reference is to the enclosing class, not the covergroup
+            // itself
+            const AstClass* refClassp = VN_CAST(m_modp, Class);
+            if (refClassp && refClassp->isCovergroup())
+                refClassp = refClassp->covergroupEnclosingClassp();
             const char* how = nullptr;
             // Inner nested classes can access `local` or `protected` members of their outer class
             const auto nestedAccess = [refClassp](const AstClass*, const AstNode* memberp) {

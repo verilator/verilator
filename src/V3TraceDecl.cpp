@@ -106,8 +106,8 @@ public:
 
 class TraceDeclVisitor final : public VNVisitor {
     // NODE STATE
-    // AstCFunc::user1()                // code offset for current type
-    // AstCFunc::user2()                // VarScope for dtype functions
+    // AstCFunc::user1()                // uint32_t.  code offset for current type
+    // AstCFunc::user2()                // VarScope* for dtype functions
 
     // STATE
     AstTopScope* const m_topScopep;  // The singleton AstTopScope

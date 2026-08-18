@@ -243,20 +243,32 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_finish(filename, linenum, hier);
+        contextp->finishPendingDec();
     }});
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
+    // Classify now, so a queued request is pending from the moment it is posted
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    const bool stop = contextp->stopRequestReserve(maybe);
+    if (stop) contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_stop_maybe(filename, linenum, hier, maybe);
+        contextp->stopRequestRelease();
+        if (stop) contextp->finishPendingDec();
     }});
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_fatal(filename, linenum, hier, msg);
+        contextp->finishPendingDec();
     }});
 }
 
@@ -3080,6 +3092,7 @@ VerilatedContext::Serialized::Serialized() {
 
 bool VerilatedContext::assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
+    if (assertCtlsLocked()) return;
     // Set all assert and directive types when true, clear otherwise.
     m_s.m_assertOn = VL_MASK_I(ASSERT_ON_WIDTH) * flag;
 }
@@ -3098,16 +3111,22 @@ uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
 }
 void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
                                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    if (assertCtlsLocked()) return;
     m_s.m_assertOn |= assertOnMask(types, directives);
 }
 void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
                                      VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    if (assertCtlsLocked()) return;
     m_s.m_assertOn &= ~assertOnMask(types, directives);
 }
+bool VerilatedContext::assertCtlsLocked() const VL_MT_SAFE { return m_ns.m_assertCtlsLocked; }
+void VerilatedContext::assertCtlsLocked(bool flag) VL_MT_SAFE { m_ns.m_assertCtlsLocked = flag; }
 void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
     // IEEE 1800-2023 Table 20-5 control_type. Lock freezes the On/Off state of the
     // selected bits until Unlock; On/Off/Kill leave locked bits unchanged.
+    // +verilator+assert+lock freezes everything, including Lock/Unlock itself.
+    if (assertCtlsLocked()) return;
     const uint32_t mask = assertOnMask(types, directives);
     const uint32_t lockedMask = mask & ~m_s.m_assertLock;
     switch (controlType) {
@@ -3278,6 +3297,15 @@ void VerilatedContext::gotError(bool flag) VL_MT_SAFE {
 void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_gotFinish = flag;
+}
+bool VerilatedContext::stopRequestReserve(bool maybe) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    const int reserved = ++m_ns.m_stopReserved;
+    return !maybe || m_s.m_errorCount + reserved >= m_s.m_errorLimit;
+}
+void VerilatedContext::stopRequestRelease() VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    --m_ns.m_stopReserved;
 }
 bool VerilatedContext::executingFinal() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
@@ -3549,7 +3577,9 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
     if (0 == std::strncmp(arg.c_str(), "+verilator+", std::strlen("+verilator+"))) {
         std::string str;
         uint64_t u64;
-        if (commandArgVlString(arg, "+verilator+coverage+file+", str)) {
+        if (arg == "+verilator+assert+lock") {
+            assertCtlsLocked(true);
+        } else if (commandArgVlString(arg, "+verilator+coverage+file+", str)) {
             coverageFilename(str);
         } else if (arg == "+verilator+debug") {
             Verilated::debug(4);
@@ -3568,7 +3598,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             logFilename(str);
             logOutputToFile(false /* append */);
         } else if (arg == "+verilator+noassert") {
-            assertOn(false);
+            // Set directly on to avoid conflicts with +verilator+assert+lock
+            m_s.m_assertOn = 0;
         } else if (commandArgVlUint64(arg, "+verilator+prof+exec+start+", u64)) {
             profExecStart(u64);
         } else if (commandArgVlUint64(arg, "+verilator+prof+exec+window+", u64, 1)) {
@@ -3884,7 +3915,7 @@ void Verilated::runFlushCallbacks() VL_MT_SAFE {
     // When running internal code coverage (gcc --coverage, as opposed to
     // verilator --coverage), dump coverage data to properly cover failing
     // tests.
-    VL_GCOV_DUMP();
+    VL_GCOV_DUMP_RESET();
 }
 
 void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE { addCbExit(cb, datap); }

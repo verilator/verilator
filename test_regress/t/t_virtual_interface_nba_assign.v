@@ -9,7 +9,7 @@ interface clk_if;
   bit clk;
 endinterface
 
-interface inf;
+interface ifc;
   bit clk;
   bit v;
 
@@ -22,14 +22,15 @@ class Clocker;
   virtual clk_if clk;
 
   task clock();
-    fork forever #1 clk.clk = ~clk.clk;
+    fork
+      forever #1 clk.clk = ~clk.clk;
     join_none
   endtask
 endclass
 
 module t;
-  clk_if c();
-  inf i();
+  clk_if c ();
+  ifc i ();
   assign i.clk = c.clk;
   Clocker clocker;
   initial begin
@@ -41,8 +42,9 @@ module t;
     #5;
     $stop;
   end
-  initial @(posedge i.cb.v) begin
-    $write("*-* All Finished *-*\n");
-    $finish;
-  end
+  initial
+    @(posedge i.cb.v) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
 endmodule

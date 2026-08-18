@@ -165,7 +165,7 @@ enum VerilatedVarFlags : uint32_t {
 struct VlVarTableEntry final {
     static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
     const char* namep;  // VPI-facing (protected) variable name, string literal
-    uint32_t byteOffset;  // offsetof of storage member from module instance base
+    size_t byteOffset;  // offsetof of storage member from module instance base
     VerilatedVarType vltype;
     uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
     uint8_t udims;  // udims + pdims <= kMaxDims
@@ -387,6 +387,8 @@ private:
     static uint32_t assertOnMask(VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_PURE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
+    // No termination request has stamped m_finishPendingTime yet
+    static constexpr uint64_t TIME_UNSET = ~0ULL;
 
 protected:
     // TYPES
@@ -445,6 +447,12 @@ protected:
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        // A worker queues $finish before the main thread callback can set m_gotFinish.
+        std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
+        std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
+        std::atomic<bool> m_assertCtlsLocked{
+            false};  // When true, all assertion-control updates are ignored
+        int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
@@ -525,6 +533,12 @@ public:
     /// Clear enabled status for given assertion types
     void assertOnClear(VerilatedAssertType_t types,
                        VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Return if assertion-control updates are locked. When locked, RTL assert
+    // control statements ($asserton/$assertoff/$assertcontrol) are ignored, as
+    // are updates from the C++ API.
+    bool assertCtlsLocked() const VL_MT_SAFE;
+    /// Lock/unlock assertion-control updates.
+    void assertCtlsLocked(bool flag) VL_MT_SAFE;
     /// Apply assertion control for given control, assertion, and directive types
     void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
@@ -684,6 +698,27 @@ public:
 
     // METHODS - public but for internal use only
 
+    // Internal: Track $finish/$stop callbacks queued by worker threads
+    bool finishPending() const VL_MT_SAFE { return m_ns.m_finishPending.load() != 0; }
+    void finishPendingInc() VL_MT_SAFE {
+        ++m_ns.m_finishPending;
+        uint64_t unset = TIME_UNSET;
+        m_ns.m_finishPendingTime.compare_exchange_strong(unset, time());
+    }
+    void finishPendingDec() VL_MT_SAFE {
+        const uint32_t previous = m_ns.m_finishPending.fetch_sub(1);
+        assert(previous > 0);
+        if (previous == 1 && !gotFinish()) m_ns.m_finishPendingTime = TIME_UNSET;
+    }
+    // Internal: Time of the first termination request, else the current time
+    uint64_t finishPendingTime() const VL_MT_SAFE {
+        const uint64_t stamped = m_ns.m_finishPendingTime.load();
+        return stamped == TIME_UNSET ? time() : stamped;
+    }
+    // Internal: Reserve a posted $stop, returning true if it reaches the termination limit
+    bool stopRequestReserve(bool maybe) VL_MT_SAFE;
+    void stopRequestRelease() VL_MT_SAFE;
+
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
     const VerilatedContextImp* impp() const VL_MT_SAFE {
@@ -830,7 +865,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
 // One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
 // per-scope 'new VerilatedScope{...}' statements, which compiles faster at scale.
 struct VlScopeTableEntry final {
-    uint32_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
+    size_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
     const char* namep;  // Scope suffix name (protected), string literal
     const char* identp;  // Identifier with escapes removed (protected)
     const char* defnamep;  // Definition name (SCOPE_MODULE only), else "<null>"

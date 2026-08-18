@@ -51,8 +51,6 @@ AstCFunc* order(AstNetlist* netlistp,  //
                 bool slow,  //
                 const ExternalDomainsProvider& externalDomains) VL_MT_DISABLED;
 
-void selfTestParallel();
-
 };  // namespace V3Order
 
 #endif  // Guard

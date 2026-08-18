@@ -485,7 +485,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + ".at(" + cvtToStr(itr.first) + ")",
+                emitSetVarConstant(newPrefix + ".atWrite(" + cvtToStr(itr.first) + ")",
                                    VN_AS(valuep, Const));
             }
         } else if (VN_IS(dtypep, WildcardArrayDType)) {
@@ -496,7 +496,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + ".at(" + cvtToStr(itr.first) + ")",
+                emitSetVarConstant(newPrefix + ".atWrite(" + cvtToStr(itr.first) + ")",
                                    VN_AS(valuep, Const));
             }
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
@@ -541,8 +541,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                      depth + 1, suffix + ".atDefault()", nullptr);
     } else if (VN_IS(dtypep, CDType)) {
         return "";  // Constructor does it
-    } else if (VN_IS(dtypep, ClassRefDType)) {
-        return "";  // Constructor does it
+    } else if (const AstClassRefDType* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
+        return adtypep->rawPointer() ? varNameProtected + suffix + " = nullptr;\n" : "";
     } else if (VN_IS(dtypep, IfaceRefDType)) {
         return varNameProtected + suffix + " = nullptr;\n";
     } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {

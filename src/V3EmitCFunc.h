@@ -732,7 +732,8 @@ public:
     }
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
-        putnbs(nodep, ".at(");
+        const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
+        putnbs(nodep, atFunc);
         AstAssocArrayDType* const adtypep
             = VN_AS(nodep->fromp()->dtypep()->skipRefp(), AssocArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
@@ -741,7 +742,8 @@ public:
     }
     void visit(AstWildcardSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
-        putnbs(nodep, ".at(");
+        const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
+        putnbs(nodep, atFunc);
         AstWildcardArrayDType* const adtypep
             = VN_AS(nodep->fromp()->dtypep()->skipRefp(), WildcardArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Wildcard select on non-wildcard-associative type");
