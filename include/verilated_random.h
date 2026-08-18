@@ -256,7 +256,11 @@ class VlRandomizer VL_NOT_FINAL {
     bool m_checkOnly = false;  // Set for randomize(null)
 
     // PRIVATE METHODS
-    void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
+    // layerVarsp, if non-null, restricts bit sampling to just those
+    // variables (used by phased solve-before to scope diversity to the
+    // current layer); null samples from every rand var, as before.
+    void randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
+                          const std::vector<std::string>* layerVarsp = nullptr);
     bool parseSolution(std::iostream& os);
     bool checkSat(std::iostream& os);
     // Assert the maximal compatible soft-constraint set onto the open session.
