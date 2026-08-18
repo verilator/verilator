@@ -508,6 +508,7 @@ class AstCFunc final : public AstNode {
     // @astgen op1 := argsp : List[AstVar]  // Argument (and return value) variables
     // @astgen op2 := varsp : List[AstVar]  // Local variables
     // @astgen op3 := stmtsp : List[AstNode]
+    // @astgen op4 := scopeNamep : Optional[AstScopeName]  // Scoping context for DPI export
     //
     // @astgen ptr := m_scopep : Optional[AstScope]  // Scope that function is under
     string m_name;
@@ -658,7 +659,7 @@ public:
     void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
-        return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp() && !isVirtual()
+        return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp() && !scopeNamep() && !isVirtual()
                && !dpiImportPrototype();
     }
 };
