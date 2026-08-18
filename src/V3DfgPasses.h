@@ -43,10 +43,10 @@ void removeUnobservable(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 void synthesize(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 // Remove redundant selects
 void removeSelects(DfgGraph& dfg, V3DfgRemoveSelectsContext& ctx) VL_MT_DISABLED;
-// Attempt to make the given cyclic graph into an acyclic, or "less cyclic"
-// equivalent. Genuine combinational cycles can exist, so this might be
-// unsuccessful. Returns true if the graph became acyclic, false otherwise.
-bool breakCycles(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
+// Make the given cyclic graph into an acyclic one, by tracing drivers, and
+// if that is unsuccessful, by inserting Prev vertices. The given graph will
+// always become acyclic after this pass.
+void breakCycles(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 // Construct binary to oneHot decoders
 void binToOneHot(DfgGraph&, V3DfgBinToOneHotContext&) VL_MT_DISABLED;
 // Common subexpression elimination

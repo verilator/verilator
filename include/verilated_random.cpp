@@ -836,15 +836,20 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
         return false;
     }
 
-    os << "(get-value (";
+    std::stringstream getValueStr;
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
             auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
             var.second->setArrayInfo(arrVarsp);
         }
-        var.second->emitGetValue(os);
+        var.second->emitGetValue(getValueStr);
     }
-    os << "))\n";
+    if (getValueStr.str() == "") {
+        // Mark as m_checkOnly to skip generation of any subsequent solver calls
+        m_checkOnly = true;
+        return true;
+    }
+    os << "(get-value (" << getValueStr.str() << "))\n";
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
     char c;
     if (!(os >> c) || c != '(') {

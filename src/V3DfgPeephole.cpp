@@ -266,6 +266,8 @@ class V3DfgPeephole final : public DfgVisitor {
     void deleteVertex(DfgVertex* vtxp) {
         UASSERT_OBJ(!m_vInfo[vtxp].m_workListIndex, vtxp, "Deleted Vertex is in work list");
         UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
+        const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
+        UASSERT_OBJ(!varp || !varp->hasPrev(), vtxp, "Deleting variable consumed via DfgPrev");
 
         // Invalidate cache entry
         m_cache.invalidate(vtxp);
@@ -293,7 +295,6 @@ class V3DfgPeephole final : public DfgVisitor {
         // This pass only removes variables that are either not driven in this graph,
         // or are not observable outside the graph. If there is also no external write
         // to the variable and no references in other graph then delete the Ast var too.
-        const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
         if (varp && !varp->isVolatile() && !varp->hasDfgRefs()) {
             m_ctx.m_deleteps.push_back(varp->vscp());
             VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
