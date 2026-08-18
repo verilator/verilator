@@ -155,11 +155,12 @@ install(
 foreach(
     program
     verilator
-    verilator_gantt
     verilator_ccache_report
+    verilator_coverage
     verilator_difftree
-    verilator_profcfunc
+    verilator_gantt
     verilator_includer
+    verilator_profcfunc
 )
     install(PROGRAMS bin/${program} TYPE BIN)
 endforeach()

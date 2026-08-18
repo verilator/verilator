@@ -2204,11 +2204,13 @@ struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
         ;
 
 struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
-        //                      // UNSUP random_qualifer not propagated until have randomize support
                 random_qualifierE data_type_or_void
-        /*mid*/         { GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
+        /*mid*/         { GRAMMARP->m_memDTypep = $2;  // As a list follows, need to attach this dtype to each member.
+                          GRAMMARP->m_memRand = $1.randAttr(); }
         /*cont*/    list_of_member_decl_assignments ';'
-                        { $$ = $4; DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr; }
+                        { $$ = $4;
+                          DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr;
+                          GRAMMARP->m_memRand = VRandAttr::NONE; }
         |       vlTag                                   { $$ = nullptr; }
         ;
 
@@ -2226,6 +2228,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
                                                                          ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
                                                                         $2, false),
                                                   nullptr};
+                          $$->rand(GRAMMARP->m_memRand);
                           PARSEP->tagNodep($$);
                         }
         |       idAny variable_dimensionListE '=' variable_declExpr
@@ -2234,6 +2237,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
                                                                          ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
                                                                         $2, false),
                                                   $4};
+                          $$->rand(GRAMMARP->m_memRand);
                           PARSEP->tagNodep($$);
                         }
         |       idSVKwd                                 { $$ = nullptr; }
@@ -2772,7 +2776,7 @@ module_or_generate_item_declaration<nodep>:     // ==IEEE: module_or_generate_it
 
 modDefaultClocking<nodep>:  // IEEE: part of module_or_generate_item_declaration/checker_or_...
                 yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
+                        { $$ = new AstDefaultClocking{$<fl>2, *$3}; }
         ;
 
 defaultDisable<nodep>:  // IEEE: part of module_/checker_or_generate_item_declaration
@@ -4018,33 +4022,22 @@ patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
         ;
 
 patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
-        //                      // IEEE: structure_pattern_key
-        //                      // id/*member*/ is part of constExpr below
-        //UNSUP constExpr                               { $$ = $1; }
-        //                      // IEEE: assignment_pattern_key
+        //                      // IEEE: structure_pattern_key: member_identifier | assignment_pattern_key
+        //                      // IEEE: array_pattern_key: constant_expression | assignment_pattern_key
         //                      // Verilator:
-        //                      //   The above expressions cause problems because "foo" may be
-        //                      //   a constant identifier (if array) or a reference to the
-        //                      //   "foo"member (if structure)
-        //                      //   So for now we only allow a true constant number, or an
-        //                      //   identifier which we treat as a structure member name
-                yaINTNUM
-                        { $$ = new AstConst{$<fl>1, *$1}; }
-        |       '-' yaINTNUM
-                        { V3Number neg{*$2}; neg.opNegate(*$2); $$ = new AstConst{$<fl>2, neg}; }
-        |       yaFLOATNUM
-                        { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
-        |       id
-                        { $$ = new AstText{$<fl>1, *$1}; }
-        |       strAsInt
-                        { $$ = $1; }
+        //                      //   A bare "foo" is ambiguous here, as it may be a constant
+        //                      //   identifier (if array) or a reference to the "foo" member
+        //                      //   (if structure).  Both spell the same in expr, so the
+        //                      //   bare-identifier case becomes a Text node and V3LinkDot
+        //                      //   resolves which one it is.
+                expr
+                        { $$ = GRAMMARP->createPatternKey($1); }
+        //                      // IEEE: assignment_pattern_key
         |       simple_typeNoRef
                         { $$ = $1; }
         //                      // expanded from simple_type ps_type_identifier (part of simple_type)
         //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
-        |       packageClassScope id
-                        { $$ = AstDot::newIfPkg($<fl>1, $1,
-                                                new AstParseRef{$<fl>2, *$2, nullptr, nullptr}); }
+        //                      // (simple_type ps_parameter_identifier is part of expr above)
         |       packageClassScopeE idType
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
                           $$ = refp; }
@@ -4570,8 +4563,8 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         ;
 
 severity_system_task<nodep>: // IEEE: severity_system_task/elaboration_severity_system_task (1800-2009)
-        //                      // TODO: These currently just make initial statements, should instead give runtime error
-                severity_system_task_guts ';'           { $$ = new AstInitial{$<fl>1, $1}; }
+        //                      // Elaboration-time task; V3Width evaluates and removes it
+                severity_system_task_guts ';'           { $$ = $1; }
         ;
 
 severity_system_task_guts<nodep>:    // IEEE: part of severity_system_task (1800-2009)
@@ -6693,16 +6686,27 @@ sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
 property_spec<propSpecp>:               // IEEE: property_spec
         //UNSUP: This rule has been super-specialized to what is supported now
         //UNSUP remove below
-                '@' '(' senitem ')' yDISABLE yIFF '(' expr ')' pexpr
-                        { $$ = new AstPropSpec{$1, $3, $8, $10}; }
-        |       '@' '(' senitem ')' pexpr
-                        { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
-        |       '@' senitemVar pexpr
-                        { $$ = new AstPropSpec{$1, $2, nullptr, $3}; }
-        |       yDISABLE yIFF '(' expr ')' '@' '(' senitem ')' pexpr
-                        { $$ = new AstPropSpec{$1, $8, $4, $10}; }
-        |       yDISABLE yIFF '(' expr ')' pexpr        { $$ = new AstPropSpec{$4->fileline(), nullptr, $4, $6}; }
-        |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
+                '@' '(' senitem ')' yDISABLE yIFF '(' expr ')' property_exprSpec
+                        { $$ = $10; $$->fileline($1); $$->sensesp($3); $$->disablep($8); }
+        |       '@' '(' senitem ')' property_exprSpec
+                        { $$ = $5; $$->fileline($1); $$->sensesp($3); }
+        |       '@' senitemVar property_exprSpec
+                        { $$ = $3; $$->fileline($1); $$->sensesp($2); }
+        |       yDISABLE yIFF '(' expr ')' '@' '(' senitem ')' property_exprSpec
+                        { $$ = $10; $$->fileline($1); $$->sensesp($8); $$->disablep($4); }
+        //UNSUP remove above
+        |       yDISABLE yIFF '(' expr ')' property_exprSpec
+                        { $$ = $6; $$->fileline($4->fileline()); $$->disablep($4); }
+        |       property_exprSpec                       { $$ = $1; }
+        ;
+
+property_exprSpec<propSpecp>:  // A property expression plus explicit weak/strong strength
+                pexpr
+                        { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
+        |       ySTRONG '(' sexpr ')'
+                        { $$ = new AstPropSpec{$1, nullptr, nullptr, $3, VPropStrength::STRONG}; }
+        |       yWEAK '(' sexpr ')'
+                        { $$ = new AstPropSpec{$1, nullptr, nullptr, $3, VPropStrength::WEAK}; }
         ;
 
 property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
@@ -6715,7 +6719,8 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
                         { AstNodeExpr* const elseCondp = new AstLogNot{$1, $3->cloneTreePure(false)};
                           $$ = new AstSAnd{$1, new AstImplication{$1, $3, $5, true},
-                                           new AstImplication{$1, elseCondp, $7, true}}; }
+                                           new AstImplication{$1, elseCondp, $7, true},
+                                           /*propertyControl=*/true}; }
         ;
 
 property_case_itemList<caseItemp>:  // IEEE: {property_case_item}
@@ -6768,10 +6773,6 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //
                 yNOT pexpr
                         { $$ = new AstLogNot{$1, $2, /*fromProperty=*/true}; }
-        |       ySTRONG '(' sexpr ')'
-                        { $$ = $3; BBUNSUP($2, "Unsupported: strong (in property expression)"); }
-        |       yWEAK '(' sexpr ')'
-                        { $$ = $3; BBUNSUP($2, "Unsupported: weak (in property expression)"); }
         //                      // IEEE: pexpr yOR pexpr
         //                      // IEEE: pexpr yAND pexpr
         //                      // Under ~p~sexpr and/or ~p~sexpr
@@ -7321,24 +7322,16 @@ cover_cross<nodep>:  // ==IEEE: cover_cross
                 id/*cover_point_identifier*/ ':' yCROSS list_of_cross_items iffE cross_body
                         {
                           AstCoverCross* const nodep = new AstCoverCross{$<fl>3, *$1,
-                                                          VN_AS($4, CoverpointRef)};
+                                                          VN_AS($4, CoverpointRef), $5};
                           if ($6) nodep->addRawBodyp($6);
-                          if ($5) {
-                              $5->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
-                              VL_DO_DANGLING($5->deleteTree(), $5);
-                          }
                           $$ = nodep;
                         }
         |       yCROSS list_of_cross_items iffE cross_body
                         {
                           AstCoverCross* const nodep = new AstCoverCross{$<fl>1,
                                                           "__cross" + cvtToStr(GRAMMARP->s_typeImpNum++),
-                                                          VN_AS($2, CoverpointRef)};
+                                                          VN_AS($2, CoverpointRef), $3};
                           if ($4) nodep->addRawBodyp($4);
-                          if ($3) {
-                              $3->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
-                              VL_DO_DANGLING($3->deleteTree(), $3);
-                          }
                           $$ = nodep;
                         }
         ;

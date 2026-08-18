@@ -9,7 +9,7 @@
       |                  ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
-%Warning-SELRANGE: t/t_select_bad_range5.v:18:18: Selection index out of range: 3:2 outside 1:0
+%Warning-SELRANGE: t/t_select_bad_range5.v:18:18: Selection 3:2 performed on an object without declared range
                                                 : ... note: In instance 't'
    18 |   assign mi = unk[3:2];
       |                  ^

@@ -118,7 +118,7 @@ public:
 
 class SchedGraphBuilder final : public VNVisitor {
     // NODE STATE
-    // AstVarScope::user1() -> SchedVarVertex
+    // AstVarScope::user1p() -> SchedVarVertex
     // AstSenItem::user1p() -> SchedSenVertex
     // AstVarScope::user2() -> bool: Read of this AstVarScope triggers this logic.
     //                         Used only for hybrid logic.

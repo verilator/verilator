@@ -508,6 +508,7 @@ class AstCFunc final : public AstNode {
     // @astgen op1 := argsp : List[AstVar]  // Argument (and return value) variables
     // @astgen op2 := varsp : List[AstVar]  // Local variables
     // @astgen op3 := stmtsp : List[AstNode]
+    // @astgen op4 := scopeNamep : Optional[AstScopeName]  // Scoping context for DPI export
     //
     // @astgen ptr := m_scopep : Optional[AstScope]  // Scope that function is under
     string m_name;
@@ -658,19 +659,9 @@ public:
     void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
-        return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp() && !isVirtual()
+        return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp() && !scopeNamep() && !isVirtual()
                && !dpiImportPrototype();
     }
-};
-class AstCLocalScope final : public AstNode {
-    // Pack statements into an unnamed scope when generating C++
-    // @astgen op1 := stmtsp : List[AstNode]
-public:
-    AstCLocalScope(FileLine* fl, AstNode* stmtsp)
-        : ASTGEN_SUPER_CLocalScope(fl) {
-        addStmtsp(stmtsp);
-    }
-    ASTGEN_MEMBERS_AstCLocalScope;
 };
 class AstCUse final : public AstNode {
     // C++ use of a class or #include; indicates need of forward declaration
@@ -852,7 +843,7 @@ class AstClocking final : public AstNode {
     // @astgen op2 := itemsp : List[AstNode]
     // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
-    const bool m_isDefault;  // True if default clocking
+    bool m_isDefault;  // True if default clocking
     const bool m_isGlobal;  // True if global clocking
 
 public:
@@ -873,6 +864,7 @@ public:
     bool isDefault() const { return m_isDefault; }
     bool isGlobal() const { return m_isGlobal; }
     AstVar* ensureEventp(bool childDType = false);
+    void makeDefault() { m_isDefault = true; }
 };
 class AstClockingItem final : public AstNode {
     // Parents:  CLOCKING
@@ -1050,22 +1042,6 @@ public:
     void isStatic(bool flag) { m_isStatic = flag; }
     bool isStatic() const { return m_isStatic; }
 };
-class AstConstraintBefore final : public AstNode {
-    // Constraint solve before item
-    // @astgen op1 := lhssp : List[AstNodeExpr]
-    // @astgen op2 := rhssp : List[AstNodeExpr]
-public:
-    AstConstraintBefore(FileLine* fl, AstNodeExpr* lhssp, AstNodeExpr* rhssp)
-        : ASTGEN_SUPER_ConstraintBefore(fl) {
-        addLhssp(lhssp);
-        addRhssp(rhssp);
-    }
-    ASTGEN_MEMBERS_AstConstraintBefore;
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
-
 class AstCoverBin final : public AstNode {
     // Captures data for a coverpoint 'bins' declaration
     // @astgen op1 := rangesp : List[AstNode]
@@ -1229,6 +1205,16 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
+};
+class AstDefaultClocking final : public AstNode {
+    std::string m_name;  // Clocking block name
+
+public:
+    AstDefaultClocking(FileLine* fl, const std::string& name)
+        : ASTGEN_SUPER_DefaultClocking(fl)
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstDefaultClocking;
+    std::string name() const override VL_MT_STABLE { return m_name; }
 };
 class AstDefaultDisable final : public AstNode {
     // @astgen op1 := condp : AstNodeExpr
@@ -1687,17 +1673,24 @@ class AstPropSpec final : public AstNode {
     // @astgen op1 := sensesp : Optional[AstSenItem]
     // @astgen op2 := disablep : Optional[AstNodeExpr]
     // @astgen op3 := propp : AstNode
+    VPropStrength m_propStrength = VPropStrength::DEFAULT;
+
 public:
-    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNode* propp)
-        : ASTGEN_SUPER_PropSpec(fl) {
+    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNode* propp,
+                VPropStrength propStrength = VPropStrength::DEFAULT)
+        : ASTGEN_SUPER_PropSpec(fl)
+        , m_propStrength{propStrength} {
         this->sensesp(sensesp);
         this->disablep(disablep);
         this->propp(propp);
     }
     ASTGEN_MEMBERS_AstPropSpec;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool hasDType() const override VL_MT_SAFE {
         return true;
     }  // Used under Cover, which expects a bool child
+    VPropStrength propStrength() const { return m_propStrength; }
 };
 class AstPull final : public AstNode {
     // @astgen op1 := lhsp : AstNodeExpr
@@ -2792,11 +2785,14 @@ class AstCoverCross final : public AstNodeFuncCovItem {
     // @astgen op2 := optionsp : List[AstCoverOption]     // post-LinkParse only
     // @astgen op3 := rawBodyp : List[AstNode]  // Parse: raw cross_body items;
     //                                          // post-LinkParse: empty
+    // @astgen op4 := iffp     : Optional[AstNodeExpr]  // Conditional sampling guard
 public:
-    AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp)
+    AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp,
+                  AstNodeExpr* iffp = nullptr)
         : ASTGEN_SUPER_CoverCross(fl, name) {
         UASSERT(itemsp, "AstCoverCross requires at least one coverpoint reference");
         addItemsp(itemsp);
+        this->iffp(iffp);
     }
     ASTGEN_MEMBERS_AstCoverCross;
     void dump(std::ostream& str) const override;
@@ -2897,6 +2893,7 @@ class AstClass final : public AstNodeModule {
     // @astgen op4 := extendsp : List[AstClassExtends]
     // MEMBERS
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
+    // @astgen ptr := m_covergroupEnclosingClassp : Optional[AstClass]  // Lexical enclosing class
     uint32_t m_declTokenNum;  // Declaration token number
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     bool m_covergroup = false;  // Is covergroup (TODO perhaps make a new Ast node type for CG?)
@@ -2921,6 +2918,10 @@ public:
     bool timescaleMatters() const override { return false; }
     AstClassPackage* classOrPackagep() const VL_MT_STABLE { return m_classOrPackagep; }
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
+    AstClass* covergroupEnclosingClassp() const VL_MT_STABLE {
+        return m_covergroupEnclosingClassp;
+    }
+    void covergroupEnclosingClassp(AstClass* classp) { m_covergroupEnclosingClassp = classp; }
     AstNode* membersp() const VL_MT_STABLE { return stmtsp(); }
     void addMembersp(AstNode* nodep) { addStmtsp(nodep); }
     bool isCovergroup() const { return m_covergroup; }

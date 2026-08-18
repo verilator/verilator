@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-interface inf;
+interface ifc;
   int v;
   task setup();
     v = 3;
@@ -15,14 +15,16 @@ interface inf2;
   int k;
 endinterface
 
-module GenericModule (interface a);
+module GenericModule (
+    interface a
+);
   initial begin
     a.setup();
   end
 endmodule
 
 module t;
-  inf inf_inst();
+  ifc inf_inst ();
   GenericModule genericModule (inf_inst);
   initial begin
     #1;

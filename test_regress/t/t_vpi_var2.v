@@ -66,6 +66,12 @@ extern "C" int mon_check();
 
   // Signal with multiple packed dimensions
   reg [0:15][0:3][7:0] multi_packed[2:0];
+  reg [0:1][0:3][0:2]      multi_packed_bit /*verilator public_flat_rw */;
+  reg [1:-1][2:1]      multi_packed_endian /*verilator public_flat_rw */;
+  reg [-1:1][1:2]      multi_packed_little_endian /*verilator public_flat_rw */;
+  reg [0:1][0:7]      multi_packed_short /*verilator public_flat_rw */;
+  reg [0:1][0:127]      multi_packed_wide /*verilator public_flat_rw */;
+  reg multi_unpacked_bit[0:1][0:3][0:7]      /*verilator public_flat_rw */;
   reg [8:-7] [3:-4] negative_multi_packed[0:-2];
   // verilator lint_on ASCRANGE
   reg             unpacked_only[7:0];

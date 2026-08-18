@@ -48,8 +48,8 @@ module t;
 
   driver c;
   task automatic progress(input string label);
-    $display("DBG:t_disable_task_join:%s t=%0t x=%0d y=%0d z=%0d w=%0d m_time=%0d",
-             label, $time, x, y, z, w, (c == null) ? -1 : c.m_time);
+    $display("DBG:t_disable_task_join:%s t=%0t x=%0d y=%0d z=%0d w=%0d m_time=%0d", label, $time,
+             x, y, z, w, (c == null) ? -1 : c.m_time);
   endtask
 
   initial begin

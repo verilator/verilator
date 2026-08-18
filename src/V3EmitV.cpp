@@ -361,6 +361,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             if (itemp != nodep->itemsp()) puts(", ");
             iterateConst(itemp);
         }
+        if (nodep->iffp()) {
+            puts(" iff (");
+            iterateConst(nodep->iffp());
+            puts(")");
+        }
         puts(";\n");
     }
     void visit(AstCoverTransSet* nodep) override {
@@ -1130,7 +1135,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
 
         puts(" ");
+        if (nodep->propStrength() != VPropStrength::DEFAULT) {
+            puts(nodep->propStrength().ascii());
+            puts("(");
+        }
         iterateConstNull(nodep->propp());
+        if (nodep->propStrength() != VPropStrength::DEFAULT) puts(")");
         puts("\n");
     }
     void visit(AstPExpr* nodep) override { iterateConst(nodep->bodyp()); }

@@ -332,10 +332,19 @@
 
 #ifdef VL_GCOV
 extern "C" void __gcov_dump();
+extern "C" void __gcov_reset();
 // Dump internal code coverage data before e.g. std::abort()
 # define VL_GCOV_DUMP() __gcov_dump()
+// Dump, then re-arm dumping; dumping is one-shot, so without the reset a dump
+// on a nonfatal path would silently discard everything counted after it
+# define VL_GCOV_DUMP_RESET() \
+        do { \
+            __gcov_dump(); \
+            __gcov_reset(); \
+        } while (false)
 #else
 # define VL_GCOV_DUMP()
+# define VL_GCOV_DUMP_RESET()
 #endif
 
 //=========================================================================
@@ -461,6 +470,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Integer size macros
 
 #define VL_BYTESIZE 8  ///< Bits in a CData / byte
+#define VL_BYTESIZE_LOG2 3  ///< log2(VL_BYTESIZE)
 #define VL_SHORTSIZE 16  ///< Bits in a SData / short
 #define VL_IDATASIZE 32  ///< Bits in an IData / word
 #define VL_QUADSIZE 64  ///< Bits in a QData / quadword
@@ -473,9 +483,9 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #endif
 
 /// Return number of bytes argument-number of bits needs (1 bit=1 byte)
-#define VL_BYTES_I(nbits) (((nbits) + (VL_BYTESIZE - 1)) / VL_BYTESIZE)
+#define VL_BYTES_I(nbits) (((nbits) + (VL_BYTESIZE - 1)) >> VL_BYTESIZE_LOG2)
 /// Return Words/EDatas in argument-number of bits needs (1 bit=1 word)
-#define VL_WORDS_I(nbits) (((nbits) + (VL_EDATASIZE - 1)) / VL_EDATASIZE)
+#define VL_WORDS_I(nbits) (((nbits) + (VL_EDATASIZE - 1)) >> VL_EDATASIZE_LOG2)
 // Number of Words/EDatas a quad requires
 #define VL_WQ_WORDS_E VL_WORDS_I(VL_QUADSIZE)
 
@@ -537,10 +547,10 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // #defines, to avoid requiring math.h on all compile runs
 
 #ifdef _MSC_VER
-static inline double VL_TRUNC(double n) {
+inline double VL_TRUNC(double n) {
     return (n < 0) ? std::ceil(n) : std::floor(n);
 }
-static inline double VL_ROUND(double n) {
+inline double VL_ROUND(double n) {
     return (n < 0) ? std::ceil(n-0.5) : std::floor(n + 0.5);
 }
 #else

@@ -169,17 +169,19 @@ void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE {
     }
 #else
     // Highly unportable. Sorry
+    // Use VmHWM (peak resident), matching Windows PeakWorkingSetSize and macOS resident_size_max.
+    // VmHWM excludes pages swapped out before the peak; /proc has no peak-(RSS+Swap) counter.
     std::ifstream is{"/proc/self/status"};
     if (!is) return;
     std::string line;
-    uint64_t vmPeak = 0;
+    uint64_t vmHwm = 0;
     uint64_t vmRss = 0;
     uint64_t vmSwap = 0;
     std::string field;
     while (std::getline(is, line)) {
-        if (line.rfind("VmPeak:", 0) == 0) {
+        if (line.rfind("VmHWM:", 0) == 0) {
             std::stringstream ss{line};
-            ss >> field >> vmPeak;
+            ss >> field >> vmHwm;
         } else if (line.rfind("VmRSS:", 0) == 0) {
             std::stringstream ss{line};
             ss >> field >> vmRss;
@@ -188,7 +190,7 @@ void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE {
             ss >> field >> vmSwap;
         }
     }
-    peakr = vmPeak * 1024;
+    peakr = vmHwm * 1024;
     currentr = (vmRss + vmSwap) * 1024;
 #endif
 }

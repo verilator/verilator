@@ -27,19 +27,18 @@ module t (
 
   always @(negedge clk) begin
     assert property (disable iff (!rst_l) ((&req) |-> gnt))
-    else
-      assert_procedural <= 1'b1;
+    else assert_procedural <= 1'b1;
     cntneg <= cntneg + 1;  // To check unlink of above assert
   end
 
   assert property (@(negedge clk) disable iff (!rst_l) ((&req) |-> gnt))
-  else
-    assert_immediate <= 1'b1;
+  else assert_immediate <= 1'b1;
 
   // Test loop
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-    $write("[%0t] cyc==%0d req='b%b gnt=%b  exp=%x proc=%x imm=%x\n", $time, cyc, req, gnt, assert_exp, assert_procedural, assert_immediate);
+    $write("[%0t] cyc==%0d req='b%b gnt=%b  exp=%x proc=%x imm=%x\n", $time, cyc, req, gnt,
+           assert_exp, assert_procedural, assert_immediate);
 `endif
     cyc <= cyc + 1;
     assert_procedural <= 0;  // Careful, will race unless assert is on negedge

@@ -18,6 +18,6 @@ test.lint(
     # --Wno-COVERIGN: shares t_debug_emitv.v, whose cg_trans uses a goto-repetition transition
     # bin ([->N]); the count is unsupported (dropped) but the bin is still created with a
     # non-NONE VTransRepType.
-    v_flags=["--lint-only --dumpi-tree 9 --dump-tree-addrids --Wno-COVERIGN"])
+    v_flags=["--lint-only --dumpi-tree 9 --dump-tree-addrids --Wno-COVERIGN --timing"])
 
 test.passes()

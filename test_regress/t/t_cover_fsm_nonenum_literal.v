@@ -72,8 +72,7 @@ module t (
     end
     else begin
       case (body_symbol_state)
-        BODY_ID
-            : body_symbol_state <= BODY$ID;
+        BODY_ID: body_symbol_state <= BODY$ID;
         BODY$ID: body_symbol_state <= BODY_ID;
         default: body_symbol_state <= BODY_ID;
       endcase
@@ -86,8 +85,7 @@ module t (
     end
     else begin
       case (multiline_expr_state)
-        (2'h0
-         + 2'h0): multiline_expr_state <= 2'h1;
+        (2'h0 + 2'h0): multiline_expr_state <= 2'h1;
         2'h1: multiline_expr_state <= 2'h0;
         default: multiline_expr_state <= 2'h0;
       endcase
@@ -102,8 +100,7 @@ module t (
       /* verilator lint_off CASEOVERLAP */
       case (duplicate_expr_state)
         IDLE: duplicate_expr_state <= BUSY;
-        (2'h0
-         + 2'h0): duplicate_expr_state <= BUSY;
+        (2'h0 + 2'h0): duplicate_expr_state <= BUSY;
         BUSY: duplicate_expr_state <= IDLE;
         default: duplicate_expr_state <= IDLE;
       endcase
@@ -134,8 +131,7 @@ module t (
     else begin
       /* verilator lint_off CASEOVERLAP */
       case (duplicate_expr_first_state)
-        (2'h0
-         + 2'h0): duplicate_expr_first_state <= BUSY;
+        (2'h0 + 2'h0): duplicate_expr_first_state <= BUSY;
         IDLE: duplicate_expr_first_state <= BUSY;
         BUSY: duplicate_expr_first_state <= 2'h0;
         default: duplicate_expr_first_state <= 2'h0;

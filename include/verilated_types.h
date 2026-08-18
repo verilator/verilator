@@ -214,7 +214,7 @@ public:
 };
 static_assert(sizeof(WDataInP) == sizeof(EData*), "WDataInP should be a single pointer");
 
-static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
+inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
 
 template <std::size_t N_Words>
 bool VlWide<N_Words>::operator<(const VlWide<N_Words>& rhs) const VL_PURE {
@@ -1120,9 +1120,7 @@ public:
         return 1;
     }
     // Setting. Verilog: assoc[index] = v
-    // Can't just overload operator[] or provide a "at" reference to set,
-    // because we need to be able to insert only when the value is set
-    T_Value& at(const T_Key& index) {
+    T_Value& atWrite(const T_Key& index) {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
             std::pair<typename Map::iterator, bool> pit = m_map.emplace(index, m_defaultValue);
@@ -1138,7 +1136,7 @@ public:
     }
     // Setting as a chained operation
     VlAssocArray& set(const T_Key& index, const T_Value& value) {
-        at(index) = value;
+        atWrite(index) = value;
         return *this;
     }
     VlAssocArray& setDefault(const T_Value& value) {
@@ -1395,7 +1393,7 @@ void VL_READMEM_N(bool hex, int bits, const std::string& filename,
         QData addr;
         std::string data;
         if (rmem.get(addr /*ref*/, data /*ref*/)) {
-            rmem.setData(&(obj.at(addr)), data);
+            rmem.setData(&(obj.atWrite(addr)), data);
         } else {
             break;
         }
@@ -2240,7 +2238,7 @@ public:
 };
 
 template <typename T_Lhs, typename T_Out>
-static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr) {
+inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr) {
     if (!in) {
         outr = VlNull{};
         return true;
@@ -2254,7 +2252,7 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr
 }
 
 template <typename T_Lhs>
-static inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
+inline bool VL_CAST_DYNAMIC(VlNull, VlClassRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
 }

@@ -1,0 +1,660 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2026 by Wilson Snyder.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+// Embedded covergroups whose coverage constructs reference members of the
+// enclosing class.  IEEE 1800-2023 19.4 allows class members in coverpoint
+// expressions, conditional guards, option initialization, and other coverage
+// constructs; IEEE 1800-2023 8.11 also allows 'this' within embedded covergroups.
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while (0);
+// verilog_format: on
+
+bit [3:0] global_value;
+
+covergroup GlobalCg;
+  cp_global: coverpoint global_value;
+endgroup
+
+class GlobalCgHolder;
+  GlobalCg cg;
+
+  function new();
+    cg = new;
+  endfunction
+endclass
+
+class Inner;
+  bit [3:0] value;
+endclass
+
+class Transaction;
+  bit [7:0] operand_a;
+  bit [1:0] operand_b;
+  Inner inner;
+endclass
+
+class Monitor;
+  bit [3:0] addr;  // Direct member of the enclosing class
+  bit enable;
+  Transaction trx;  // Class-handle member of the enclosing class
+
+  covergroup mon_cg;
+    cp_addr: coverpoint addr {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_enabled: coverpoint addr iff (enable) {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_op_a: coverpoint trx.operand_a {bins lo = {[0 : 127]}; bins hi = {[128 : 255]};}
+    cp_op_b: coverpoint trx.operand_b;
+    cp_inner: coverpoint trx.inner.value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    addr_x_op_b: cross cp_addr, cp_op_b;
+  endgroup
+
+  function new();
+    trx = new;
+    trx.inner = new;
+    mon_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] a, bit [7:0] oa, bit [1:0] ob, bit [3:0] iv);
+    addr = a;
+    enable = a[3];
+    trx.operand_a = oa;
+    trx.operand_b = ob;
+    trx.inner.value = iv;
+    mon_cg.sample();
+  endfunction
+endclass
+
+class UbusTransfer;
+  bit [15:0] addr;
+  bit read_write;
+endclass
+
+class UbusMasterMonitor;
+  UbusTransfer trans_collected;
+
+  covergroup cov_trans;
+    trans_start_addr: coverpoint trans_collected.addr {option.auto_bin_max = 16;}
+    trans_dir: coverpoint trans_collected.read_write;
+    trans_addr_x_dir: cross trans_start_addr, trans_dir;
+  endgroup
+
+  function new();
+    trans_collected = new;
+    cov_trans = new;
+  endfunction
+
+  function void observe(bit [15:0] addr, bit read_write);
+    trans_collected.addr = addr;
+    trans_collected.read_write = read_write;
+    cov_trans.sample();
+  endfunction
+endclass
+
+class CoverageState;
+  bit [3:0] test;
+  bit [3:0] test2;
+endclass
+
+class ParameterizedMonitor;
+  CoverageState state;
+  bit clk;
+
+  covergroup cov_param(CoverageState st) @(posedge clk);
+    cp: coverpoint st.test;
+    cp2: coverpoint st.test2;
+  endgroup
+
+  function new();
+    state = new;
+    cov_param = new(state);
+  endfunction
+
+  function void observe(bit [3:0] test, bit [3:0] test2);
+    state.test = test;
+    state.test2 = test2;
+    clk = 0;
+    clk = 1;
+  endfunction
+endclass
+
+class MixedMonitor;
+  bit [3:0] local_value;
+  CoverageState state;
+
+  covergroup cov_mixed(CoverageState st);
+    cp: coverpoint local_value + st.test;
+  endgroup
+
+  function new();
+    state = new;
+    cov_mixed = new(state);
+  endfunction
+
+  function void observe(bit [3:0] local_value, bit [3:0] test);
+    this.local_value = local_value;
+    state.test = test;
+    cov_mixed.sample();
+  endfunction
+endclass
+
+class BranchMonitor;
+  bit [2:0] value;
+
+  covergroup branch_cg;
+    cp_branch: coverpoint value {bins lo = {[0 : 3]}; bins hi = {[4 : 7]};}
+  endgroup
+
+  function new(bit choose_first);
+    if (choose_first) begin
+      branch_cg = new;
+    end
+    else begin
+      branch_cg = new;
+    end
+  endfunction
+
+  function void observe(bit [2:0] v);
+    value = v;
+    branch_cg.sample();
+  endfunction
+endclass
+
+// IEEE 1800-2012 8.13 makes inherited members part of the derived class as if declared
+// there; 19.4 permits those class members in an embedded covergroup.
+class BaseMonitor;
+  protected bit [3:0] inherited_value;
+
+  covergroup base_cg;
+    cp_base: coverpoint inherited_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    base_cg = new;
+  endfunction
+endclass
+
+class DerivedMonitor extends BaseMonitor;
+  bit [3:0] derived_value;
+
+  covergroup derived_cg;
+    cp_inherited: coverpoint inherited_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_this_inherited: coverpoint this.inherited_value {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+    cp_derived: coverpoint derived_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_cross: cross cp_inherited, cp_derived;
+  endgroup
+
+  function new();
+    derived_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    inherited_value = v;
+    derived_value = 15 - v;
+    base_cg.sample();
+    derived_cg.sample();
+  endfunction
+endclass
+
+// IEEE 1800-2012 8.18 makes protected members visible to subclasses.  Combined with
+// 8.13 and 19.4, a leaf class covergroup may cover a protected root-class property.
+class RootMonitor;
+  protected bit [3:0] root_value;
+endclass
+
+class MiddleMonitor extends RootMonitor;
+endclass
+
+class LeafMonitor extends MiddleMonitor;
+  bit [3:0] leaf_value;
+
+  covergroup leaf_cg;
+    cp_root: coverpoint root_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_leaf: coverpoint leaf_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_cross: cross cp_root, cp_leaf;
+  endgroup
+
+  function new();
+    leaf_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    root_value = v;
+    leaf_value = 15 - v;
+    leaf_cg.sample();
+  endfunction
+endclass
+
+class ParameterizedBaseMonitor #(
+    int WIDTH = 4
+);
+  bit [WIDTH-1:0] parameterized_value;
+endclass
+
+class ParameterizedDerivedMonitor extends ParameterizedBaseMonitor #(4);
+  covergroup parameterized_cg;
+    cp_parameterized: coverpoint parameterized_value {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+  endgroup
+
+  function new();
+    parameterized_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    parameterized_value = v;
+    parameterized_cg.sample();
+  endfunction
+endclass
+
+class ThisMonitor;
+  bit [3:0] current;
+
+  covergroup this_cg with function sample(bit [3:0] sampled_current);
+    cp_this: coverpoint current iff (sampled_current == current) {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+  endgroup
+
+  function new();
+    this_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    current = v;
+    this_cg.sample(this.current);
+  endfunction
+endclass
+
+class ThisSampleMonitor;
+  bit [3:0] sampled_value;
+  localparam bit [3:0] local_value = 4'ha;
+
+  covergroup this_sample_cg with function sample(bit [3:0] sampled_value);
+    cp_this_member: coverpoint this.sampled_value {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+    cp_this_parameter: coverpoint this.local_value;
+    cp_this_sample: coverpoint sampled_value iff (sampled_value == this.sampled_value) {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+  endgroup
+
+  function new();
+    this_sample_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    this.sampled_value = v;
+    this_sample_cg.sample(this.sampled_value);
+  endfunction
+endclass
+
+`ifdef VERILATOR
+// IEEE 1800-2012 8.11 explicitly permits 'this' in covergroups embedded within classes.
+class ThisHandleMonitor;
+  bit [3:0] current;
+
+  covergroup this_handle_cg;
+    cp_this_handle: coverpoint current iff (this == this) {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+  endgroup
+
+  function new();
+    this_handle_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    current = v;
+    this_handle_cg.sample();
+  endfunction
+endclass
+`endif
+
+class ClockEvent;
+  bit clk;
+endclass
+
+class ClockMonitor;
+  ClockEvent ev;
+  bit [3:0] sampled;
+
+  covergroup clock_cg @(posedge ev.clk);
+    cp_clocked: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    ev = new;
+    ev.clk = 0;
+    clock_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    sampled = v;
+    ev.clk = 0;
+    ev.clk = 1;
+  endfunction
+endclass
+
+class VectorClockMonitor;
+  bit [2:0] clk_vec;
+  bit [3:0] sampled;
+
+  covergroup pos_cg @(posedge clk_vec);
+    cp_pos: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup neg_cg @(negedge clk_vec);
+    cp_neg: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup both_cg @(posedge clk_vec or negedge clk_vec);
+    cp_both: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup edge_cg @(edge clk_vec);
+    cp_edge: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup change_cg @(clk_vec);
+    cp_change: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    clk_vec = 3'b000;
+    pos_cg = new;
+    neg_cg = new;
+    both_cg = new;
+    edge_cg = new;
+    change_cg = new;
+  endfunction
+
+  function void observe(bit [2:0] next_clk, bit [3:0] value);
+    sampled = value;
+    clk_vec = next_clk;
+  endfunction
+
+  function void observe_bit(bit next_clk, bit [3:0] value);
+    sampled = value;
+    clk_vec[0] = next_clk;
+  endfunction
+endclass
+
+class CopyMonitor;
+  bit [3:0] value;
+
+  covergroup copy_cg;
+    cp_copy: coverpoint value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    copy_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    value = v;
+    copy_cg.sample();
+  endfunction
+endclass
+
+class CloneBaseMonitor;
+  bit [3:0] base_value;
+
+  covergroup cg;
+    cp_base: coverpoint base_value;
+  endgroup
+
+  function new();
+    cg = new;
+  endfunction
+endclass
+
+class CloneDerivedMonitor extends CloneBaseMonitor;
+  bit [3:0] derived_value;
+
+  covergroup cg;
+    cp_derived: coverpoint derived_value;
+  endgroup
+
+  function new();
+    cg = new;
+  endfunction
+endclass
+
+class StaticMonitor;
+  static bit [3:0] static_value;
+  bit [3:0] instance_value;
+
+  covergroup static_cg;
+    cp_static: coverpoint static_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    cp_instance: coverpoint instance_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    static_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    static_value = v;
+    instance_value = v;
+    static_cg.sample();
+  endfunction
+endclass
+
+class StaticOnlyMonitor;
+  static bit [3:0] static_value;
+
+  covergroup static_only_cg with function sample(bit [3:0] sampled_value);
+    cp_static_only: coverpoint static_value iff (sampled_value == static_value) {
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+  endgroup
+
+  function new();
+    static_only_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    static_value = v;
+    static_only_cg.sample(this.static_value);
+  endfunction
+endclass
+
+class MultipleMonitor;
+  bit [3:0] first_value;
+  bit [3:0] second_value;
+
+  covergroup first_cg;
+    cp_first: coverpoint first_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup second_cg;
+    cp_second: coverpoint second_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    first_cg = new;
+    second_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] first, bit [3:0] second);
+    first_value = first;
+    second_value = second;
+    first_cg.sample();
+    second_cg.sample();
+  endfunction
+endclass
+
+class NestedContainer;
+  protected static bit [3:0] static_value;
+  bit [3:0] value;
+
+  class NestedMonitor;
+    bit [3:0] local_value;
+    NestedContainer container;
+
+    covergroup nested_cg;
+      cp_local: coverpoint local_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+      cp_container: coverpoint container.value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+      // IEEE 1800-2012 8.23 permits implicit access to static outer-class members.
+      cp_static: coverpoint static_value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+    endgroup
+
+    function new(NestedContainer container_arg);
+      container = container_arg;
+      nested_cg = new;
+    endfunction
+
+    function void observe(bit [3:0] v);
+      local_value = v;
+      container.value = 15 - v;
+      static_value = v;
+      nested_cg.sample();
+    endfunction
+  endclass
+endclass
+
+class UnconstructedMonitor;
+  bit [3:0] local_value;
+
+  covergroup unconstructed_cg;
+    cp: coverpoint local_value;
+    cp2: coverpoint local_value[2:0];
+    cp_x_cp2: cross cp, cp2;
+  endgroup
+
+  function new();
+  endfunction
+endclass
+
+module t;
+  Monitor mon;
+  UbusMasterMonitor ubus_mon;
+  ParameterizedMonitor parameterized_arg_mon;
+  MixedMonitor mixed_arg_mon;
+  BranchMonitor branch_a;
+  BranchMonitor branch_b;
+  DerivedMonitor derived;
+  LeafMonitor leaf;
+  ParameterizedDerivedMonitor parameterized;
+  ThisMonitor this_mon;
+  ThisSampleMonitor this_sample_mon;
+`ifdef VERILATOR
+  ThisHandleMonitor this_handle_mon;
+`endif
+  ClockMonitor clock_mon;
+  VectorClockMonitor vector_clock_mon;
+  CopyMonitor copy_src;
+  CopyMonitor copy_dst;
+  GlobalCgHolder global_src;
+  GlobalCgHolder global_dst;
+  CloneDerivedMonitor clone_src;
+  CloneDerivedMonitor clone_dst;
+  CloneBaseMonitor clone_base_view;
+  StaticMonitor static_mon;
+  StaticOnlyMonitor static_only_mon;
+  MultipleMonitor multiple_mon;
+  NestedContainer nested_container;
+  NestedContainer::NestedMonitor nested_mon;
+  UnconstructedMonitor unconstructed_mon;
+  int i;
+
+  initial begin
+    mon = new;
+    ubus_mon = new;
+    parameterized_arg_mon = new;
+    mixed_arg_mon = new;
+    branch_a = new(1);
+    branch_b = new(0);
+    derived = new;
+    leaf = new;
+    parameterized = new;
+    this_mon = new;
+    this_sample_mon = new;
+`ifdef VERILATOR
+    this_handle_mon = new;
+`endif
+    clock_mon = new;
+    vector_clock_mon = new;
+    copy_src = new;
+    global_src = new;
+    clone_src = new;
+    static_mon = new;
+    static_only_mon = new;
+    multiple_mon = new;
+    nested_container = new;
+    nested_mon = new(nested_container);
+    unconstructed_mon = new;
+    `checkd(unconstructed_mon.unconstructed_cg == null, 1);
+
+    for (i = 0; i < 16; ++i) begin
+      mon.observe(i[3:0], i[7:0] * 17, i[1:0], i[3:0]);
+      ubus_mon.observe(i[15:0], i[0]);
+      parameterized_arg_mon.observe(i[3:0], 15 - i[3:0]);
+      mixed_arg_mon.observe(i[3:0], 15 - i[3:0]);
+      derived.observe(i[3:0]);
+      leaf.observe(i[3:0]);
+      parameterized.observe(i[3:0]);
+      this_mon.observe(i[3:0]);
+      this_sample_mon.observe(i[3:0]);
+`ifdef VERILATOR
+      this_handle_mon.observe(i[3:0]);
+`endif
+      clock_mon.observe(i[3:0]);
+      static_mon.observe(i[3:0]);
+      static_only_mon.observe(i[3:0]);
+      multiple_mon.observe(i[3:0], 15 - i[3:0]);
+      nested_mon.observe(i[3:0]);
+    end
+
+    vector_clock_mon.observe(3'b010, 4'hf);
+    vector_clock_mon.observe(3'b011, 4'h1);
+    vector_clock_mon.observe(3'b010, 4'h2);
+    vector_clock_mon.observe(3'b000, 4'he);
+    vector_clock_mon.observe_bit(1'b1, 4'h3);
+    vector_clock_mon.observe_bit(1'b0, 4'h4);
+
+    for (i = 0; i < 8; ++i) begin
+      branch_a.observe(i[2:0]);
+      branch_b.observe(i[2:0]);
+    end
+
+    copy_src.observe(4'h1);
+`ifdef VERILATOR
+    // IEEE 1800-2023 8.12 requires embedded covergroups to be null after a shallow copy.
+    // No new coverage object is created, so the copied object's properties are not covered.
+    // Questa instead aliases the source coverage object; Xcelium retains a non-null handle
+    // whose source and copied instances both report zero coverage.
+    copy_dst = new copy_src;
+    `checkd(copy_dst.copy_cg == null, 1);
+    clone_dst = new clone_src;
+    clone_base_view = clone_dst;
+    `checkd(clone_dst.cg == null, 1);
+    `checkd(clone_base_view.cg == null, 1);
+`endif
+
+    global_dst = new global_src;
+`ifndef NC
+    // Comparing a covergroup variable with a non-null value is unsupported in Xcelium.
+    `checkd(global_dst.cg == global_src.cg, 1);
+`endif
+
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+endmodule

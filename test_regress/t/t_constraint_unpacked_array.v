@@ -40,7 +40,8 @@ class con_rand_1d_array_test;
       `check_rand(this, data[i])
       if (data[i] inside {8'h10, 8'h20, 8'h30, 8'h40, 8'h50}) begin
         $display("data[%0d] = %h is valid", i, data[i]);
-      end else begin
+      end
+      else begin
         $display("Error: data[%0d] = %h is out of bounds", i, data[i]);
         $stop;
       end
@@ -70,7 +71,8 @@ class con_rand_2d_array_test;
       `check_rand(this, data[i][j])
       if (data[i][j] >= 8'h10 && data[i][j] <= 8'h50) begin
         $display("data[%0d][%0d] = %h is valid", i, j, data[i][j]);
-      end else begin
+      end
+      else begin
         $display("Error: data[%0d][%0d] = %h is out of bounds", i, j, data[i][j]);
         $stop;
       end
@@ -136,21 +138,21 @@ module t_constraint_unpacked_array;
     // Test 1: Randomization for 1D array
     $display("Test 1: Randomization for 1D array:");
     rand_test_1 = new();
-    repeat(2) begin
+    repeat (2) begin
       rand_test_1.check_randomization();
     end
 
     // Test 2: Randomization for 2D array
     $display("Test 2: Randomization for 2D array:");
     rand_test_2 = new();
-    repeat(2) begin
+    repeat (2) begin
       rand_test_2.check_randomization();
     end
 
     // Test 3: Randomization for 3D array
     $display("Test 3: Randomization for 3D array:");
     rand_test_3 = new();
-    repeat(2) begin
+    repeat (2) begin
       rand_test_3.check_randomization();
     end
 

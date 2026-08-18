@@ -1,0 +1,207 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: FSM coverage ignores empty reset branches
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module two_proc_empty_reset (
+            input logic clk,
+            input logic rst,
+            input logic go
+        );
+          typedef enum logic {
+            IDLE,
+            BUSY
+          } state_t;
+        
+%000001   state_t state = IDLE;
+          state_t state_next;
+        
+%000008   always_ff @(posedge clk) begin
+%000006     if (rst) begin
+            end
+%000006     else state <= state_next;
+          end
+        
+%000009   always_comb begin
+%000009     state_next = state;
+%000009     case (state)
+        // [FSM coverage]
+%000001        // [fsm_arc t.two_proc_u.state::IDLE->BUSY]
+%000006        // [fsm_arc t.two_proc_u.state::IDLE->IDLE]
+%000001        // [fsm_state t.two_proc_u.state::BUSY]
+%000001        // [fsm_state t.two_proc_u.state::IDLE]
+%000008       IDLE: state_next = go ? BUSY : IDLE;
+%000001       default: state_next = IDLE;
+            endcase
+          end
+        endmodule
+        
+        module oneblock_empty_reset (
+            input logic clk,
+            input logic rst,
+            input logic take_alt
+        );
+          typedef enum logic [1:0] {
+            WAITING,
+            COLLECTING,
+            SENDING
+          } state_t;
+        
+%000001   state_t state = WAITING;
+        
+%000008   always_ff @(posedge clk) begin
+%000006     if (rst) begin
+            end
+            else
+%000006       case (state)
+        // [FSM coverage]
+%000001        // [fsm_arc t.oneblock_u.state::COLLECTING->SENDING]
+%000002        // [fsm_arc t.oneblock_u.state::SENDING->WAITING]
+%000001        // [fsm_arc t.oneblock_u.state::WAITING->COLLECTING]
+%000002        // [fsm_arc t.oneblock_u.state::WAITING->SENDING]
+%000001        // [fsm_state t.oneblock_u.state::COLLECTING]
+%000003        // [fsm_state t.oneblock_u.state::SENDING]
+%000002        // [fsm_state t.oneblock_u.state::WAITING]
+%000003         WAITING: state <= take_alt ? SENDING : COLLECTING;
+%000001         COLLECTING: state <= SENDING;
+%000002         SENDING: state <= WAITING;
+%000000         default: state <= WAITING;
+              endcase
+          end
+        endmodule
+        
+        module inline_empty_reset (
+            input logic clk,
+            input logic rst,
+            input logic input_valid,
+            input logic input_last,
+            input logic output_ready,
+            input logic [6:0] input_data,
+            output logic [6:0] output_data,
+            output logic output_valid
+        );
+          typedef enum logic [1:0] {
+            WAITING,
+            COLLECTING,
+            SENDING
+          } state_t;
+        
+%000001   state_t state = WAITING;
+%000001   logic [6:0] saved_data = '0;
+        
+%000008   always_ff @(posedge clk) begin
+%000002     if (rst) begin
+            end
+%000004     else if (state == WAITING) begin
+%000003       if (input_valid) begin
+%000001         saved_data <= input_data;
+%000001         state <= input_last ? SENDING : COLLECTING;
+              end
+%000003       else begin
+%000003         state <= WAITING;
+              end
+            end
+%000001     else if (state == COLLECTING) begin
+%000001       if (input_valid && input_last) begin
+%000001         state <= SENDING;
+              end
+%000000       else begin
+%000000         state <= COLLECTING;
+              end
+            end
+%000001     else if (state == SENDING) begin
+%000001       if (output_ready) begin
+%000001         state <= WAITING;
+              end
+%000000       else begin
+%000000         state <= SENDING;
+              end
+            end
+          end
+        
+%000001   always_comb begin
+%000001     output_valid = state == SENDING;
+%000001     output_data = saved_data;
+          end
+        endmodule
+        
+        module t (
+            input logic clk
+        );
+          logic rst;
+          logic go;
+          logic take_alt;
+          logic input_valid;
+          logic input_last;
+          logic output_ready;
+          logic [6:0] input_data;
+          logic [6:0] output_data;
+          logic output_valid;
+          int cyc;
+        
+          two_proc_empty_reset two_proc_u (
+              .clk(clk),
+              .rst(rst),
+              .go(go)
+          );
+        
+          oneblock_empty_reset oneblock_u (
+              .clk(clk),
+              .rst(rst),
+              .take_alt(take_alt)
+          );
+        
+          inline_empty_reset inline_u (
+              .clk(clk),
+              .rst(rst),
+              .input_valid(input_valid),
+              .input_last(input_last),
+              .output_ready(output_ready),
+              .input_data(input_data),
+              .output_data(output_data),
+              .output_valid(output_valid)
+          );
+        
+%000001   initial begin
+%000001     rst = 1'b1;
+%000001     go = 1'b0;
+%000001     take_alt = 1'b0;
+%000001     input_valid = 1'b0;
+%000001     input_last = 1'b0;
+%000001     output_ready = 1'b0;
+%000001     input_data = 7'h12;
+%000001     cyc = 0;
+          end
+        
+%000008   always @(posedge clk) begin
+%000008     cyc <= cyc + 1;
+%000007     if (cyc == 1) begin
+%000001       rst <= 1'b0;
+%000001       go <= 1'b1;
+%000001       take_alt <= 1'b0;
+%000001       input_valid <= 1'b1;
+%000001       input_last <= 1'b0;
+            end
+%000007     if (cyc == 2) begin
+%000001       go <= 1'b0;
+%000001       input_valid <= 1'b1;
+%000001       input_last <= 1'b1;
+%000001       input_data <= 7'h35;
+            end
+%000007     if (cyc == 3) begin
+%000001       input_valid <= 1'b0;
+%000001       output_ready <= 1'b1;
+            end
+%000007     if (cyc == 4) begin
+%000001       output_ready <= 1'b0;
+%000001       take_alt <= 1'b1;
+            end
+%000007     if (cyc == 7) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        endmodule
+        

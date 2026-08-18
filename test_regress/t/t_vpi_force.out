@@ -1,0 +1,9 @@
+vpi_chk_error: vpi_put_value used with vpiForceFlag on non-forceable signal 't.test.str1'
+vpi_chk_error: vpi_put_value: Non octal character 'A' in '123A' as value vpiOctStrVal for 't.test.octString__VforceVal'
+vpi_chk_error: vpi_put_value: Parsing failed for 'A123' as value vpiDecStrVal for 't.test.decStringC__VforceVal'
+vpi_chk_error: vpi_put_value: Trailing garbage 'A' in '123A' as value vpiDecStrVal for 't.test.decStringC__VforceVal'
+vpi_chk_error: vpi_put_value: Non hex character 'G' in '12AG' as value vpiHexStrVal for 't.test.hexString__VforceVal'
+vpi_chk_error: vl_check_format: Unsupported format (vpiRawFourStateVal) for 't.test.onebit'
+vpi_chk_error: vpi_put_value: Unsupported format (vpiSuppressVal) as requested for 't.test.onebit__VforceVal'
+vpi_chk_error: vpi_put_value: Unsupported p_vpi_value as requested for 't.test.onebit' with vpiInertialDelay
+*-* All Finished *-*

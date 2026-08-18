@@ -38,14 +38,17 @@ module t (
 
   // Simultaneous negated-consequent failures behind a temporal antecedent
   bit ant = 0;
+  bit early_b = 0;
   bit b = 0;
   int temporal_small_fail = 0, temporal_ring_fail = 0, boolean_ant_fail = 0;
   int impossible_pass = 0, impossible_fail = 0;
 
-  assert property (@(posedge clk) (1'b1 ##1 ant) |-> not (1'b1 ##[1:2] b));
+  // Separate consequent pulses keep diagnostic order independent of
+  // multithreaded mtask numbering.
+  assert property (@(posedge clk) (1'b1 ##1 ant) |-> not (1'b1 ##[1:2] early_b));
   assert property (@(posedge clk) (1'b1 ##1 ant) |-> not (1'b1 ##[1:300] b));
 
-  assert property (@(posedge clk) (1'b1 ##1 ant) |-> not (1'b1 ##[1:2] b))
+  assert property (@(posedge clk) (1'b1 ##1 ant) |-> not (1'b1 ##[1:2] early_b))
   else temporal_small_fail++;
   assert property (@(posedge clk) (1'b1 ##1 ant) |-> not (1'b1 ##[1:300] b))
   else temporal_ring_fail++;
@@ -65,9 +68,13 @@ module t (
 
   initial begin
     @(negedge clk) ant = 1;
-    @(negedge clk) ant = 1;
+    @(negedge clk) begin
+      ant = 1;
+      early_b = 1;
+    end
     @(negedge clk) begin
       ant = 0;
+      early_b = 0;
       b = 1;
     end
     @(negedge clk) b = 0;

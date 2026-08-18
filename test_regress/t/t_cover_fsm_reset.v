@@ -60,7 +60,8 @@ module fsm_reset_other_assign_ok (
       start <= 1'b1;
       state_q <= S0;
       aux <= 1'b0;
-    end else begin
+    end
+    else begin
       state_q <= state_d;
     end
   end
@@ -90,7 +91,8 @@ module fsm_oneblock_reset_mismatch_ok (
   always_ff @(posedge clk) begin
     if (rst) begin
       other_q <= S0;
-    end else begin
+    end
+    else begin
       case (state_q)
         S0: state_q <= S1;
         default: state_q <= S2;
@@ -117,7 +119,8 @@ module fsm_oneblock_reset_nonconst_ok (
   always_ff @(posedge clk) begin
     if (rst) begin
       state_q <= other_q;
-    end else begin
+    end
+    else begin
       case (state_q)
         S0: state_q <= S1;
         default: state_q <= S2;
@@ -133,10 +136,22 @@ module t (
   logic rst;
   integer cyc;
 
-  fsm_reset_policy reset_policy_u (.clk(clk), .rst(rst));
-  fsm_reset_other_assign_ok reset_other_assign_ok_u (.clk(clk), .rst(rst));
-  fsm_oneblock_reset_mismatch_ok oneblock_reset_mismatch_ok_u (.clk(clk), .rst(rst));
-  fsm_oneblock_reset_nonconst_ok oneblock_reset_nonconst_ok_u (.clk(clk), .rst(rst));
+  fsm_reset_policy reset_policy_u (
+      .clk(clk),
+      .rst(rst)
+  );
+  fsm_reset_other_assign_ok reset_other_assign_ok_u (
+      .clk(clk),
+      .rst(rst)
+  );
+  fsm_oneblock_reset_mismatch_ok oneblock_reset_mismatch_ok_u (
+      .clk(clk),
+      .rst(rst)
+  );
+  fsm_oneblock_reset_nonconst_ok oneblock_reset_nonconst_ok_u (
+      .clk(clk),
+      .rst(rst)
+  );
 
   initial begin
     rst = 1'b1;

@@ -46,6 +46,8 @@ module t (
   int count_fail19 = 0;
   int count_fail20 = 0;
   int count_fail21 = 0;
+  int count_fail22 = 0;
+  int count_fail23 = 0;
 
   // Test 1: a[*3] |-> b
   assert property (@(posedge clk) a [* 3] |-> b)
@@ -126,6 +128,14 @@ module t (
   assert property (@(posedge clk) c |-> (a ##1 a [+]))
   else count_fail21 <= count_fail21 + 1;
 
+  // Test 22: Fail the middle required check of an exact repetition.
+  assert property (@(posedge clk) cyc == 1 |-> ##1 (cyc != 3) [*3])
+  else count_fail22 <= count_fail22 + 1;
+
+  // Test 23: A bounded range succeeds at its minimum, later repetitions are optional.
+  assert property (@(posedge clk) cyc == 1 |-> ##1 (cyc != 5) [*3:5])
+  else count_fail23 <= count_fail23 + 1;
+
   // Counter FSM with M>0: range > kChainLimit (256) forces counter vertex
   // creation; min>0 exercises the Gte/active gating path in resolveLinks and
   // emitNbaLogic. Cover-only so count_fail values above are undisturbed.
@@ -165,6 +175,8 @@ module t (
       `checkd(count_fail16, count_fail17);
       `checkd(count_fail18, count_fail19);
       `checkd(count_fail20, count_fail21);
+      `checkd(count_fail22, 1);
+      `checkd(count_fail23, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end

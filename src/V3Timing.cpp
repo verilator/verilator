@@ -482,6 +482,7 @@ class TimingControlVisitor final : public VNVisitor {
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
+    bool m_underIfaceCFunc = false;  // True if we are under a CFunc owned by an interface scope
     bool m_hasStaticZeroDelay = false;  // True if we have a static #0 delay
     std::vector<FileLine*> m_unknownDelayFlps;  // Locations of AstDelay with non-constant value
 
@@ -633,10 +634,10 @@ class TimingControlVisitor final : public VNVisitor {
                              new AstVarRef{flp, m_netlistp->nbaEventTriggerp(), VAccess::WRITE},
                              new AstConst{flp, AstConst::BitTrue{}}};
     }
-    // Returns true if we are under a class or the given tree has any references to locals. These
-    // are cases where static, globally-evaluated triggers are not suitable.
+    // Returns true if we are under a class or interface function, or the tree references locals.
+    // These are cases where static, globally-evaluated triggers are not suitable.
     bool needDynamicTrigger(AstNode* const nodep) const {
-        return m_classp || nodep->exists([](AstNode* const nodep) {
+        return m_classp || m_underIfaceCFunc || nodep->exists([](AstNode* const nodep) {
             if (AstNodeVarRef* varp = VN_CAST(nodep, NodeVarRef)) {
                 return varp->varp()->isFuncLocal();
             }
@@ -749,10 +750,21 @@ class TimingControlVisitor final : public VNVisitor {
         addDebugInfo(donep);
         beginp->addStmtsp(donep->makeStmt());
     }
-    static bool hasDisableQueuePushSelfPrefix(const AstBegin* const beginp) {
+    static bool hasDisableQueuePushSelfPrefix(AstBegin* const beginp) {
         // LinkJump prepends disable-by-name registration as:
         //   __VprocessQueue_*.push_back(std::process::self())
-        return beginp->stmtsp() && beginp->stmtsp()->isDisableQueuePushSelfStmt();
+        // V3LiftExpr lifts std::process::self() into an assignment to a temporary, then V3Task
+        // lowers that assignment's function call into a leading comment and AstStmtExpr. Thus the
+        // push_back is no longer necessarily the first statement. Scan across this generated
+        // prefix for it, stopping at the fork-start sentinel or the branch body. Registrations for
+        // nested forks live in sub-blocks and so are not in this statement list.
+        for (AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (VN_IS(stmtp, Comment)) continue;
+            AstStmtExpr* const stmtExprp = VN_CAST(stmtp, StmtExpr);
+            if (!stmtExprp) break;
+            if (stmtExprp->isDisableQueuePushSelfStmt()) return true;
+        }
+        return false;
     }
     // Register a callback so killing a process-backed fork branch decrements the join counter
     void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
@@ -948,8 +960,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
+        VL_RESTORER(m_underIfaceCFunc);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
+        m_underIfaceCFunc = VN_IS(m_scopep->modp(), Iface);
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;

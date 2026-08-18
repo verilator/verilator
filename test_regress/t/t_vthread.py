@@ -46,6 +46,6 @@ test.compile(
 
 test.execute()
 
-test.file_grep(test.stats, r'Verilate jobs: 2')
+test.file_grep(test.stats, r'Verilate jobs: (\d+)', 2)
 
 test.passes()

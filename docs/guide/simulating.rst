@@ -66,7 +66,7 @@ The information in this report is:
 
 .. describe:: "allocated 123 MB"
 
-   Total memory used during simulation in megabytes.
+   Peak resident memory used during simulation in megabytes.
 
 
 .. _benchmarking & optimization:

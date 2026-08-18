@@ -13,19 +13,38 @@ contributors that suggested or implemented a given issue are shown in []. Thanks
 Verilator 5.051 devel
 ==========================
 
+**Important:**
+
+* Verilator now supports UVM 2020-3.2; see (#1538) for limitations.
+
 **Other:**
 
 * Add comments as a branch description in coverage .info files (#7843). [Eryk Szpotanski]
 * Add --enable-light-debug configure option (#7886). [Geza Lore, Testorrent USA, Inc.]
 * Add user-provided DPI-C function declarations (#7626) (#7893). [Jakub Michalski]
 * Add error on static virtual functions (#7932). [Igor Zaworski, Antmicro Ltd.]
+* Add error when scalar is passed to array task argument (#7948). [Pawel Klopotek]
+* Add MULTIDRIVENPROC warning for signals driven by multiple plain always blocks (#7968). [Aisha]
+* Add FSM arc and state coverage to verilator_coverage .info output (#7972) (#7973). [Igor Zaworski, Antmicro Ltd.]
+* Add SIMILARNAME warning when variables have names that only differ in lexical case (#7992) (#8020). [Paul Campbell]
+* Add `+verilator+assert+lock` to ignore RTL assert control statements (#8086). [Sumanth Kadiyala]
+* Support embedded covergroup member references (#7749) (#8015). [Marco Bartoli]
 * Support a sequence used as an event control (#7797) (#7846). [Yilou Wang]
 * Support `[\*N:$]` consecutive repetition (#7940). [Artur Bieniek, Antmicro Ltd.]
 * Support dynamic containers in unique constraints (#7947). [Adam Kostrzewski, Antmicro Ltd.]
+* Support delayed tristate gates (#7960) (#7961). [Patrick Creighton]
+* Support `default clocking` (#7984). [Kamil Danecki, Antmicro Ltd.]
+* Support embedded covergroup clocking events (#8028). [Marco Bartoli]
+* Support `weak`/`strong` keywords in property expressions (#8054). [Artur Bieniek, Antmicro Ltd.]
+* Support class handle covergroup arguments (#8071). [Marco Bartoli]
 * Optimize random initialization. [Geza Lore, Testorrent USA, Inc.]
 * Optimize more always blocks in DFG (#7775). [Geza Lore, Testorrent USA, Inc.]
 * Optimize assertion NFAs using bit-vector ring buffers (#7885). [Artur Bieniek, Antmicro Ltd.]
 * Optimize VPI symbol registration and scope construction (#7936). [Nick Brereton]
+* Optimize bounded always properties using ring buffers (#8061) (#8092). [Artur Bieniek, Antmicro Ltd.]
+* Optimize VL_WORDS_I/VL_BYTES_I (#8095). [Geza Lore, Testorrent USA, Inc.]
+* Optimize temporary insertion for single bit replicates in DFG (#8110). [Geza Lore, Testorrent USA, Inc.]
+* Fix $finish continuing event loop (#7267) (#7950). [Artur Bieniek, Antmicro Ltd.]
 * Fix $display accepting streaming concat arguments (#7663) (#7890). [Jaeuk Lee]
 * Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
 * Fix unique0 case side effects (#7787). [Pawel Klopotek]
@@ -33,17 +52,21 @@ Verilator 5.051 devel
 * Fix cleaning purity cache after assertions. [Geza Lore, Testorrent USA, Inc.]
 * Fix uncaught type error leading to invalid C++ output (#7814). [Geza Lore, Testorrent USA, Inc.]
 * Fix internal error for coverpoints that reference a covergroup formal parameter (#7853 partial) (#7889). [Matthew Ballance]
+* Fix immediate disable of fork join branches (#7856) (#7931). [Marco Bartoli]
+* Fix self-disable of named blocks with forks (Part of #7857) (#7996) (#8006). [Marco Bartoli]
 * Fix clang++ ambiguous overload of '==' operator (#7863). [Pawel Kojma, Antmicro Ltd.]
 * Fix heap-use-after-free in `VlRNG::VlRNG()` (#7865). [Dragon-Git]
 * Fix mixed-width inside and dist range bounds failing randomization (#7875). [Yilou Wang]
 * Fix solve-before over array variables failing randomization (#7876). [Yilou Wang]
 * Fix scoped randomize with array members under rand_mode (#7877). [Yilou Wang]
+* Fix dist constraint on a frozen variable failing randomization (#7878). [Yilou Wang]
 * Fix range delays with parameter bounds (#7882). [Artur Bieniek, Antmicro Ltd.]
 * Fix --coverage on labeled inline assert/cover property (#7898) (#7904). [Patrick Creighton]
 * Fix memory leak in VerilatedFst::close() (#7899). [Jakub Michalski]
 * Fix spurious FSM COVERIGN on comparisons (#7900) (#7908). [Yogish Sekhar]
 * Fix independent force of multiply instantiated signals (#7905). [Artur Bieniek, Antmicro Ltd.]
 * Fix release of forced port nets (#7907) (#7901). [Artur Bieniek, Antmicro Ltd.]
+* Fix randomization of unreferenced rand members of unpacked structs (#7910) (#7911). [Philip Axer]
 * Fix VL_TO_STRING function for array of structs (#7912). [Kornel Uriasz, Antmicro Ltd.]
 * Fix queues falling into wrong template spec (#7914). [Adam Kostrzewski, Antmicro Ltd.]
 * Fix type resolution when a local name shadows a type name (#7915). [Pawel Klopotek]
@@ -52,9 +75,58 @@ Verilator 5.051 devel
 * Fix dropping variable writes across opaque calls (#7921) (#7933). [Philip Axer]
 * Fix dynamic array handling in solve...before (#7922). [Kornel Uriasz, Antmicro Ltd.]
 * Fix unlinked error with function call in derived class parameter (#7923). [Mateusz Gancarz, Antmicro Ltd.]
+* Fix scheduling of variables written in non-inlined functions in suspendable processes (#7924). [Igor Zaworski, Antmicro Ltd.]
 * Fix class parameter resolution (#7935).
 * Fix FSM detection of coverage-only branches (#7941) (#7942). [Patrick Creighton]
+* Fix use-after-free in V3LinkDotIfaceCapture (#7943). [Nick Brereton]
 * Fix sampled-value clocks in repeated assertions (#7944). [Artur Bieniek, Antmicro Ltd.]
+* Fix queued $finish/$stop request thread ordering (#7946 prep) (#7952). [Yilou Wang]
+* Fix DFG nested shifts with overflowing shift amount (#7955) (#7977).
+* Fix timing controls in interface tasks called via virtual interface (#7959). [Yilou Wang]
+* Fix lambda parameter types in queue min and max (#7962). [Bartosz Skorowski]
+* Fix solve-before dropping all soft constraints in randomize() (#7963). [Yilou Wang]
+* Fix generic interface param resolution in module/cell parameterization (#7970) (#7971). [David Garau]
+* Fix lost writes when select width exceeds variable width (#7975). [Bartosz Skorowski]
+* Fix $fgets being mis-optimized away (#7976). [G-A. Kamendje]
+* Fix SYNCASYNCNET false positive with changed non-edge logic (#7980). [Oron Port]
+* Fix variable scope in unique on dynamic array (#7981). [Kornel Uriasz, Antmicro Ltd.]
+* Fix table optimization causing not contextually convertible to bool error (#7983). [Jakub Michalski]
+* Fix wait fork trigger temporary split across generated functions (#7985) (#7986). [Marco Brambilla]
+* Fix randc cycling in a class that also uses solve...before (#7991 partial) (#8055). [Yilou Wang]
+* Fix randomize() with a user variable named 'item' (#7993) (#7994).
+* Fix UNSATCONSTR reporting constraint indices above 9 (#7995). [Yilou Wang]
+* Fix MULTIDRIVEN/PROC warning suppression via lint_off (#8000). [Gilberto Abram]
+* Fix force not substituted into an unpacked array index (#8002).
+* Fix dist weights ignored when an item is not a literal (#8003).
+* Fix error when forcing an array element read at a run-time index (#8004).
+* Fix FSM coverage on empty reset branches (#8005) (#8064). [Yogish Sekhar]
+* Fix missing verilator_coverage in cmake install (#8008) (#8011).
+* Fix dist inside a foreach nested in a constraint if (#8016).
+* Fix gcov dump on warnings discarding later coverage counts (#8017). [Yilou Wang]
+* Fix unique constraint crash, guards, and size (#8018).
+* Fix Linux peak memory stat to use VmHWM (#8022) (#8070). [Tyrone Marhguy]
+* Fix assignment pattern key constant expressions (#8029) (#8030). [Josep Sans]
+* Fix skipping optimization for unpacked data types (#8031). [Kornel Uriasz, Antmicro Ltd.]
+* Fix gate deduplication with function arguments (#8038). [JOTEGO]
+* Fix conditional expression with parameterized classes (#8039). [Pawel Klopotek, Antmicro Ltd.]
+* Fix array size references in constraints (#8040). [Kornel Uriasz, Antmicro Ltd.]
+* Fix mid-range consecutive repetition rejects (#8041). [Artur Bieniek, Antmicro Ltd.]
+* Fix write access to dynamic arrays (#8043). [Bartosz Skorowski, Antmicro Ltd.]
+* Fix nondeterminism in trace stage (#8046). [Sumanth Kadiyala]
+* Fix force helpers in multiply instantiated modules (#8047). [Artur Bieniek, Antmicro Ltd.]
+* Fix pin to non-existent port with PINNOTFOUND suppressed (#8051) (#8052). [Nikolai Kumar]
+* Fix wildcard equality against a 4-state constant in an assertion (#8056) (#8057). [Nikolai Kumar]
+* Fix untyped datatype error on sampling functions with property arguments (#8060). [Artur Bieniek, Antmicro Ltd.]
+* Fix VPI cbValueChange for 1-bit select (#8063). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix skipping non-constrained enum constraining when inside object of other class (#8075). [Kornel Uriasz, Antmicro Ltd.]
+* Fix unintended side-effect insertion on associative array read (#8077). [Adam Kostrzewski, Antmicro Ltd.]
+* Fix undefined symbol solver error (#8080). [Igor Zaworski, Antmicro Ltd.]
+* Fix unpacked array element force with procedural assign (#8084) (#8085). [Nikolai Kumar]
+* Fix hierarchical class scope resolution (#8094). [Artur Bieniek, Antmicro Ltd.]
+* Fix the clang compilation using precompiled headers (#8105). [Demin Han]
+* Fix invalid typedef (#8106). [Adam Kostrzewski, Antmicro Ltd.]
+* Fix R/W references to random builtin function seeds (#8112). [Geza Lore, Testorrent USA, Inc.]
+* Fix COVERIGN on SVA goto repetition (#8118). [Artur Bieniek, Antmicro Ltd.]
 
 
 Verilator 5.050 2026-07-01

@@ -42,13 +42,16 @@ module t;
   initial begin
     static solve_before_soft_c o1 = new();
     static conflicting_soft_c o2 = new();
+    int randomize_result;
     repeat (20) begin
-      `checkd(o1.randomize(), 1)
-      `checkd(o1.m, 32'd7)
+      randomize_result = o1.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(o1.m, 32'd7);
     end
     repeat (20) begin
-      `checkd(o2.randomize(), 1)
-      `checkd(o2.a, 32'd9)
+      randomize_result = o2.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(o2.a, 32'd9);
     end
     $write("*-* All Finished *-*\n");
     $finish;

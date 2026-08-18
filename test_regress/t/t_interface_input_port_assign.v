@@ -15,27 +15,27 @@
 
 // Scenario 1: bare input (defaults to net)
 interface bare_if (
-  input clk
+    input clk
 );
   logic data;
 endinterface
 
 // Scenario 2: input with explicit data type (still net for input)
 interface logic_if (
-  input logic clk
+    input logic clk
 );
   logic data;
 endinterface
 
 // Scenario 3: input with explicit net kind
 interface wire_if (
-  input wire clk
+    input wire clk
 );
   logic data;
 endinterface
 
 module consumer (
-  bare_if cif
+    bare_if cif
 );
   logic sampled;
   always @(posedge cif.clk) sampled <= cif.data;
@@ -43,22 +43,20 @@ endmodule
 
 // Scenario 4: port connection driving interface input (AstPin path)
 interface ifc_status (
-  input wire busy
+    input wire busy
 );
 endinterface
 
 module dut (
-  output logic sleep_o
+    output logic sleep_o
 );
   initial sleep_o = 1'b1;
 endmodule
 
 module dut_wrap (
-  ifc_status sif
+    ifc_status sif
 );
-  dut u_dut (
-    .sleep_o(sif.busy)
-  );
+  dut u_dut (.sleep_o(sif.busy));
 endmodule
 
 module t;
