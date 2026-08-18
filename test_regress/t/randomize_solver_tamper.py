@@ -117,15 +117,15 @@ def scan_depth(text, left, in_string):
 
 def read_full(first):
     """Return the complete S-expression reply that starts at first"""
-    parts = [first]
+    chunks = [first]
     left, in_string = scan_depth(first, 0, False)
     while left > 0:
         cont = proc.stdout.readline()
         if not cont:
             break
-        parts.append(cont.rstrip("\n"))
+        chunks.append(cont.rstrip("\n"))
         left, in_string = scan_depth(cont, left, in_string)
-    return parts
+    return chunks
 
 
 def swallow(first):
