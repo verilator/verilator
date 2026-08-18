@@ -249,6 +249,49 @@ public:
 //######################################################################
 // AssertVisitor
 
+class FinalPastCallGraphVisitor final : public VNVisitor {
+    // STATE
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task being iterated
+    std::unordered_set<const AstNodeFTask*> m_pastFTasksp;  // FTasks that reach a $past
+    std::unordered_map<const AstNodeFTask*, std::vector<const AstNodeFTask*>>
+        m_callees;  // Caller -> called FTasks, for the transitive closure
+
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstPast* nodep) override {
+        if (m_ftaskp) m_pastFTasksp.insert(m_ftaskp);
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (m_ftaskp && nodep->taskp()) m_callees[m_ftaskp].push_back(nodep->taskp());
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit FinalPastCallGraphVisitor(AstNetlist* nodep) {
+        iterate(nodep);
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (const auto& pair : m_callees) {
+                if (m_pastFTasksp.count(pair.first)) continue;
+                for (const AstNodeFTask* const calleep : pair.second) {
+                    if (m_pastFTasksp.count(calleep)) {
+                        m_pastFTasksp.insert(pair.first);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    const std::unordered_set<const AstNodeFTask*>& pastFTasksp() const { return m_pastFTasksp; }
+};
+
 class AssertVisitor final : public VNVisitor {
     // CONSTANTS
     static constexpr uint8_t ALL_ASSERT_TYPES
@@ -288,10 +331,13 @@ class AssertVisitor final : public VNVisitor {
     AstFinal* m_finalp = nullptr;  // Current final block
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    const std::unordered_set<const AstNodeFTask*>& m_finalPastFTasksp;  // Final-reachable $past
     V3UniqueNames m_caseTempNames{"__VCase"};
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
+    // Map from delayed-value AstAlways to its last-sampling-tick time variable
+    std::unordered_map<const AstAlways*, AstVar*> m_delayedAlways2TickTimep;
 
     // METHODS
     static string assertCtlGetCall(const char* query, VAssertType type,
@@ -537,23 +583,43 @@ class AssertVisitor final : public VNVisitor {
 
     AstNodeExpr* getPastValue(AstNodeExpr* exprp, AstSenTree* senTreep, uint32_t ticks) {
         UASSERT_OBJ(ticks > 0, exprp, "Delay must be > 0");
-        AstAlways* const alwaysp = getDelayedAlways(exprp, senTreep);
+        FileLine* const flp = exprp->fileline();
+        return pastValueRef(getDelayedAlways(exprp, senTreep), flp, ticks);
+    }
+
+    AstNodeExpr* pastValueRef(AstAlways* alwaysp, FileLine* flp, uint32_t ticks) {
         std::vector<AstVar*>& delayedr = m_delayed(alwaysp);
         // Ensure the required delay exists
         while (delayedr.size() < ticks) {
             AstVar* const firstp = delayedr.front();
-            FileLine* const flp = firstp->fileline();
+            FileLine* const varFlp = firstp->fileline();
             // Create once more delayed value
             std::string name = firstp->name();
             name.resize(name.size() - 1);
             name += std::to_string(delayedr.size() + 1);
-            AstNodeExpr* const prevp = new AstVarRef{flp, delayedr.back(), VAccess::READ};
+            AstNodeExpr* const prevp = new AstVarRef{varFlp, delayedr.back(), VAccess::READ};
             AstVar* const varp = createDelayedVar(name, alwaysp, prevp);
             // Add it to delayed variable vector
             delayedr.emplace_back(varp);
         }
         // Return a reference to the appropriately delayed variable
-        return new AstVarRef{exprp->fileline(), delayedr.at(ticks - 1), VAccess::READ};
+        return new AstVarRef{flp, delayedr.at(ticks - 1), VAccess::READ};
+    }
+
+    // Time of the pipeline's last sampling tick, for end-of-simulation readers
+    AstVar* getPastTickTimeVar(AstAlways* alwaysp) {
+        AstVar*& varpr = m_delayedAlways2TickTimep[alwaysp];
+        if (!varpr) {
+            FileLine* const flp = alwaysp->fileline();
+            varpr = new AstVar{flp, VVarType::MODULETEMP,
+                               "_Vpast_" + cvtToStr(m_modPastNum++) + "_t",
+                               m_modp->findUInt64DType()};
+            m_modp->addStmtsp(varpr);
+            AstNodeExpr* const timep = new AstCExpr{flp, "vlSymsp->_vm_contextp__->time()", 64};
+            alwaysp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, varpr, VAccess::WRITE}, timep});
+        }
+        return varpr;
     }
 
     void visitAssertionIterate(AstNodeCoverOrAssert* nodep, AstNode* failsp) {
@@ -975,10 +1041,36 @@ class AssertVisitor final : public VNVisitor {
         }
         UASSERT_OBJ(ticks >= 1, nodep, "0 tick should have been checked in V3Width");
         AstNodeExpr* const exprp = newSampledExpr(nodep->exprp()->unlinkFrBack());
-        AstNodeExpr* inp = getPastValue(exprp, nodep->sentreep()->unlinkFrBack(), ticks);
+        AstSenTree* const senTreep = nodep->sentreep()->unlinkFrBack();
+        AstNodeExpr* inp = nullptr;
+        if (VN_IS(m_procedurep, Final)) {
+            // A sampling-tick finish reads one stage deeper (IEEE 1800-2023 16.9.3).
+            FileLine* const flp = nodep->fileline();
+            AstAlways* const alwaysp = getDelayedAlways(exprp, senTreep);
+            AstNodeExpr* const betweenTicksp = pastValueRef(alwaysp, flp, ticks);
+            AstNodeExpr* const onTickp = pastValueRef(alwaysp, flp, ticks + 1);
+            AstNodeExpr* const onTickCondp
+                = new AstEq{flp, new AstVarRef{flp, getPastTickTimeVar(alwaysp), VAccess::READ},
+                            new AstCExpr{flp, "vlSymsp->_vm_contextp__->finishPendingTime()", 64}};
+            AstCond* const condp = new AstCond{flp, onTickCondp, onTickp, betweenTicksp};
+            condp->dtypeFrom(onTickp);
+            inp = condp;
+        } else {
+            inp = getPastValue(exprp, senTreep, ticks);
+        }
         nodep->replaceWith(inp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visitFinalFTaskRef(AstNodeFTaskRef* nodep) {
+        if (VN_IS(m_procedurep, Final) && nodep->taskp()
+            && m_finalPastFTasksp.count(nodep->taskp())) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: $past in a function or task called from a final block");
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstFuncRef* nodep) override { visitFinalFTaskRef(nodep); }
+    void visit(AstTaskRef* nodep) override { visitFinalFTaskRef(nodep); }
 
     //========== Move $sampled down to read-only variables
     void visit(AstSampled* nodep) override {
@@ -1213,6 +1305,7 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_modStrobeNum);
         VL_RESTORER(m_finalp);
         VL_RESTORER_CLEAR(m_modExpr2Sen2DelayedAlwaysp);
+        VL_RESTORER_CLEAR(m_delayedAlways2TickTimep);
         m_modp = nodep;
         m_modPastNum = 0;
         m_modStrobeNum = 0;
@@ -1254,7 +1347,11 @@ class AssertVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit AssertVisitor(AstNetlist* nodep) { iterate(nodep); }
+    AssertVisitor(AstNetlist* nodep,
+                  const std::unordered_set<const AstNodeFTask*>& finalPastFTasksp)
+        : m_finalPastFTasksp{finalPastFTasksp} {
+        iterate(nodep);
+    }
     ~AssertVisitor() override {
         V3Stats::addStat("Assertions, assert non-immediate statements", m_statAsNotImm);
         V3Stats::addStat("Assertions, assert immediate statements", m_statAsImm);
@@ -1274,6 +1371,7 @@ public:
 
 void V3Assert::assertAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { AssertVisitor{nodep}; }  // Destruct before checking
+    const FinalPastCallGraphVisitor callGraphVisitor{nodep};
+    { AssertVisitor{nodep, callGraphVisitor.pastFTasksp()}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assert", 0, dumpTreeEitherLevel() >= 3);
 }

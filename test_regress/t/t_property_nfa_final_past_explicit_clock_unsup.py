@@ -11,10 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing'])
-
-test.execute(all_run_flags=['+expect_past=1'])
-
-test.execute(all_run_flags=['+offedge', '+expect_past=0'])
+test.compile(verilator_flags2=['--assert', '--lint-only'],
+             fails=True,
+             expect_filename=test.golden_filename)
 
 test.passes()
