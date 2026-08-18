@@ -489,83 +489,162 @@ class ExpandVisitor final : public VNVisitor {
     void visit(AstSel* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
-        // Remember, Sel's may have non-integer rhs, so need to optimize for that!
-        UASSERT_OBJ(nodep->widthMin() == nodep->widthConst(), nodep, "Width mismatch");
-        if (VN_IS(nodep->backp(), NodeAssign)
-            && nodep == VN_AS(nodep->backp(), NodeAssign)->lhsp()) {
-            // Sel is an LHS assignment select
-        } else if (nodep->isWide()) {
-            // See under ASSIGN(WIDE)
-        } else if (VN_IS(nodep->fromp()->dtypep(), StreamDType)
-                   || VN_IS(nodep->fromp()->dtypep(), QueueDType)) {
-            //sel stream or queue
-        } else if (nodep->fromp()->isWide()) {
+
+        const uint32_t width = static_cast<uint32_t>(nodep->widthConst());
+        UASSERT_OBJ(nodep->widthMin() == static_cast<int>(width), nodep, "Width mismatch");
+
+        // Skip if Sel is an LHS assignment select
+        if (AstNodeAssign* const assignp = VN_CAST(nodep->backp(), NodeAssign)) {
+            if (nodep == assignp->lhsp()) return;
+        }
+
+        // Skip if wide: See under ASSIGN(WIDE)
+        if (nodep->isWide()) return;
+
+        // Skip Sel from stream or queue
+        if (VN_IS(nodep->fromp()->dtypep(), StreamDType)) return;
+        if (VN_IS(nodep->fromp()->dtypep(), QueueDType)) return;
+
+        // Result must be non-wide after skipping all the above
+        UASSERT_OBJ(width <= 64, nodep, "Inconsistent result width");
+
+        if (nodep->fromp()->isWide()) {  // Long/Quad from Wide
             if (isImpure(nodep)) return;
             UINFO(8, "    SEL(wide) " << nodep);
-            UASSERT_OBJ(nodep->widthConst() <= 64, nodep, "Inconsistent width");
-            // Selection amounts
-            // Check for constant shifts & save some constification work later.
-            // Grab lowest bit(s)
             FileLine* const nfl = nodep->fileline();
             FileLine* const lfl = nodep->lsbp()->fileline();
             FileLine* const ffl = nodep->fromp()->fileline();
-            AstNodeExpr* lowwordp = newWordSelBit(ffl, nodep->fromp(), nodep->lsbp());
-            if (nodep->isQuad() && !lowwordp->isQuad()) {
-                lowwordp = new AstCCast{nfl, lowwordp, nodep};
+            AstNodeExpr* const fromp = nodep->fromp();
+
+            // To extract an up-to-64-bit value from a wide source, up to 3 words might be needed
+            // from the source operand. Each word might need to be shifted by a different amount.
+            // All word indices and shift amounts are derived from the LSB expression, so it might
+            // be duplicated several times. The problem arises when the LSB expression itself is
+            // a similar select, which results in an exponential size expansion.
+            //
+            // To avoid this, if the required expressions derived from the LSB expression are
+            // large, and the LSB expression is required multiple times for the expansion, then
+            // the LSB expression is evaluated into a temporary variable. This bounds the size
+            // of the expansion on each Sel instance, hence the total expansion of nested Sels
+            // is bounded linearly with the number of nested Sels (instead of exponentially).
+
+            // Return simplified 'exprp' if it simplifies to a small tree, otherwise nullptr
+            const auto tryFold = [&](AstNodeExpr* exprp) -> AstNodeExpr* {
+                // Size limit for inlining expressions (any arbitrary value results in
+                // a bounded expansion. Picked a value to allow common simple forms.)
+                static constexpr int EXPAND_SEL_LSB_LIMIT = 8;
+                // Simplify
+                exprp = V3Const::constifyEditCpp(exprp);
+                // Accept if not larger than the limit
+                if (!exprp->isLargerThan(EXPAND_SEL_LSB_LIMIT)) return exprp;
+                // Delete if rejected
+                VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                return nullptr;
+            };
+
+            // Return the index of the word holding the bit 'offset' bits above the LSB
+            const auto wordIdx = [&](uint32_t offset) -> AstNodeExpr* {
+                AstNodeExpr* const msbp = new AstAdd{lfl, new AstConst{lfl, offset},
+                                                     nodep->lsbp()->cloneTreePure(false)};
+                AstNodeExpr* const idxp = newWordIndex(msbp);
+                if (!msbp->backp()) VL_DO_DANGLING(msbp->deleteTree(), msbp);
+                return idxp;
+            };
+
+            // Bit index of the selected LSB within its word
+            AstNodeExpr* lBitp = tryFold(newSelBitBit(nodep->lsbp()));
+            const bool aligned = lBitp && lBitp->isZero();
+
+            // Which of the other 2 words the expansion might need
+            const bool mNeeded = width > 1 && !aligned;
+            const bool hNeeded = width > VL_EDATASIZE;
+            UASSERT_OBJ(!hNeeded || nodep->isQuad(), nodep, "Width mismatch");
+
+            // Word indices
+            const uint32_t mMsbOffset = std::min<uint32_t>(width, VL_EDATASIZE) - 1;
+            const uint32_t hMsbOffset = width - 1;
+            AstNodeExpr* lIdxp = tryFold(newWordIndex(nodep->lsbp()));
+            AstNodeExpr* mIdxp = mNeeded ? tryFold(wordIdx(mMsbOffset)) : nullptr;
+            AstNodeExpr* hIdxp = hNeeded ? tryFold(wordIdx(hMsbOffset)) : nullptr;
+
+            // If the LSB expression is needed multiple times, evaluate it into a temporary
+            const int nCopies = !lBitp + !lIdxp + (mNeeded && !mIdxp) + (hNeeded && !hIdxp);
+            if (nCopies > 1 && m_funcp && m_stmtp && !isImpure(m_stmtp)) {
+                ++m_nTmps;  // Use fresh set of temporaries
+                AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
+                AstVar* const tmpp = addLocalTmp(m_stmtp, "ExpandSel_Lsb", lsbp);
+                nodep->lsbp(new AstVarRef{lfl, tmpp, VAccess::READ});
             }
-            AstNodeExpr* const lowp
-                = new AstShiftR{nfl, lowwordp, newSelBitBit(nodep->lsbp()), nodep->width()};
-            // If > 1 bit, we might be crossing the word boundary
-            AstNodeExpr* midp = nullptr;
-            if (nodep->widthConst() > 1) {
-                const uint32_t midMsbOffset
-                    = std::min<uint32_t>(nodep->widthConst(), VL_EDATASIZE) - 1;
-                AstNodeExpr* const midMsbp = new AstAdd{lfl, new AstConst{lfl, midMsbOffset},
-                                                        nodep->lsbp()->cloneTreePure(true)};
-                AstNodeExpr* midwordp = newWordSelBit(ffl, nodep->fromp(), midMsbp, 0);
-                if (!midMsbp->backp()) VL_DO_DANGLING(midMsbp->deleteTree(), midMsbp);
-                if (nodep->isQuad() && !midwordp->isQuad()) {
-                    midwordp = new AstCCast{nfl, midwordp, nodep};
-                }
-                AstNodeExpr* const midshiftp = new AstSub{lfl, new AstConst{lfl, VL_EDATASIZE},
-                                                          newSelBitBit(nodep->lsbp())};
+
+            // Rebuild remaining expressions derived from LSB if needed, now using the temporary
+            if (!lBitp) lBitp = newSelBitBit(nodep->lsbp());
+            if (!lIdxp) lIdxp = newWordIndex(nodep->lsbp());
+            if (!mIdxp) mIdxp = mNeeded ? wordIdx(mMsbOffset) : nullptr;
+            if (!hIdxp) hIdxp = hNeeded ? wordIdx(hMsbOffset) : nullptr;
+
+            // Return word 'idxp' of 'fromp', without consuming 'idxp'
+            const auto wordSel = [&](AstNodeExpr* idxp) -> AstNodeExpr* {
+                AstNodeExpr* const clonep = idxp->cloneTreePure(false);
+                AstNodeExpr* const wordp = newWordSelWord(ffl, fromp, clonep);
+                if (!clonep->backp()) VL_DO_DANGLING(clonep->deleteTree(), clonep);
+                return wordp;
+            };
+
+            // Construct term containing the bits of the low word - always needed
+            AstNodeExpr* const lTermp = [&]() -> AstNodeExpr* {
+                AstNodeExpr* lWordp = wordSel(lIdxp);
+                if (nodep->isQuad()) lWordp = new AstCCast{nfl, lWordp, nodep};
+                return new AstShiftR{nfl, lWordp, lBitp->cloneTreePure(false), nodep->width()};
+            }();
+
+            // Construct term containing the bits of the middle word - if needed
+            AstNodeExpr* const mTermp = [&]() -> AstNodeExpr* {
+                if (!mNeeded) return nullptr;
+
+                AstNodeExpr* mWordp = wordSel(mIdxp);
+                if (nodep->isQuad()) mWordp = new AstCCast{nfl, mWordp, nodep};
+                AstNodeExpr* const mShiftp = new AstSub{lfl, new AstConst{lfl, VL_EDATASIZE},
+                                                        lBitp->cloneTreePure(false)};
                 // If we're selecting bit zero, then all 32 bits in the mid word
                 // get shifted << by 32 bits, so ignore them.
                 const V3Number zero{nodep, longOrQuadWidth(nodep)};
-                midp = new AstCond{
+                return new AstCond{
                     nfl,
                     // lsb % VL_EDATASIZE == 0 ?
-                    new AstEq{nfl, new AstConst{nfl, 0}, newSelBitBit(nodep->lsbp())},
+                    new AstEq{nfl, new AstConst{nfl, 0}, lBitp->cloneTreePure(false)},
                     // 0 :
                     new AstConst{nfl, zero},
                     //  midword >> (VL_EDATASIZE - (lbs % VL_EDATASIZE))
-                    new AstShiftL{nfl, midwordp, midshiftp, nodep->width()}};
-            }
-            // If > 32 bits, we might be crossing the second word boundary
-            AstNodeExpr* hip = nullptr;
-            if (nodep->widthConst() > VL_EDATASIZE) {
-                const uint32_t hiMsbOffset = nodep->widthConst() - 1;
-                AstNodeExpr* const hiMsbp = new AstAdd{lfl, new AstConst{lfl, hiMsbOffset},
-                                                       nodep->lsbp()->cloneTreePure(true)};
-                AstNodeExpr* hiwordp = newWordSelBit(ffl, nodep->fromp(), hiMsbp);
-                if (!hiMsbp->backp()) VL_DO_DANGLING(hiMsbp->deleteTree(), hiMsbp);
-                if (nodep->isQuad() && !hiwordp->isQuad()) {
-                    hiwordp = new AstCCast{nfl, hiwordp, nodep};
-                }
-                AstNodeExpr* const hishiftp = new AstCond{
+                    new AstShiftL{nfl, mWordp, mShiftp, nodep->width()}};
+            }();
+
+            // Construct term containing the bits of the high word - if needed
+            AstNodeExpr* const hTermp = [&]() -> AstNodeExpr* {
+                if (!hNeeded) return nullptr;
+
+                AstNodeExpr* hWordp = wordSel(hIdxp);
+                hWordp = new AstCCast{nfl, hWordp, nodep};
+                AstNodeExpr* const hShiftp = new AstCond{
                     nfl,
                     // lsb % VL_EDATASIZE == 0 ?
-                    new AstEq{nfl, new AstConst{nfl, 0}, newSelBitBit(nodep->lsbp())},
+                    new AstEq{nfl, new AstConst{nfl, 0}, lBitp->cloneTreePure(false)},
                     // VL_EDATASIZE :
                     new AstConst{lfl, VL_EDATASIZE},
                     // 64 - (lbs % VL_EDATASIZE)
-                    new AstSub{lfl, new AstConst{lfl, 64}, newSelBitBit(nodep->lsbp())}};
-                hip = new AstShiftL{nfl, hiwordp, hishiftp, nodep->width()};
-            }
+                    new AstSub{lfl, new AstConst{lfl, 64}, lBitp->cloneTreePure(false)}};
+                return new AstShiftL{nfl, hWordp, hShiftp, nodep->width()};
+            }();
 
-            AstNodeExpr* newp = lowp;
-            if (midp) newp = new AstOr{nfl, midp, newp};
-            if (hip) newp = new AstOr{nfl, hip, newp};
+            // Delete parts not captured during construction
+            VL_DO_DANGLING(lBitp->deleteTree(), lBitp);
+            VL_DO_DANGLING(lIdxp->deleteTree(), lIdxp);
+            if (mIdxp) VL_DO_DANGLING(mIdxp->deleteTree(), mIdxp);
+            if (hIdxp) VL_DO_DANGLING(hIdxp->deleteTree(), hIdxp);
+
+            // Or reduce the terms
+            AstNodeExpr* newp = lTermp;
+            if (mTermp) newp = new AstOr{nfl, mTermp, newp};
+            if (hTermp) newp = new AstOr{nfl, hTermp, newp};
             newp->dtypeFrom(nodep);
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {  // Long/Quad from Long/Quad
