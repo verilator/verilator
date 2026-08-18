@@ -953,7 +953,7 @@ void VlRandomizer::reportUnsatCore(std::iostream& os) {
 
 bool VlRandomizer::applyModel(std::iostream& os) {
     size_t requested = 0;
-    os << "(get-value (";
+    std::stringstream getValueStr;
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
             auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
@@ -962,9 +962,14 @@ bool VlRandomizer::applyModel(std::iostream& os) {
         } else {
             ++requested;
         }
-        var.second->emitGetValue(os);
+        var.second->emitGetValue(getValueStr);
     }
-    os << "))\n";
+    if (getValueStr.str() == "") {
+        // Mark as m_checkOnly to skip generation of any subsequent solver calls
+        m_checkOnly = true;
+        return true;
+    }
+    os << "(get-value (" << getValueStr.str() << "))\n";
     std::string reply;
     if (!readSExpr(os, reply)) return false;
     if (isSolverError(reply)) {

@@ -165,7 +165,7 @@ enum VerilatedVarFlags : uint32_t {
 struct VlVarTableEntry final {
     static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
     const char* namep;  // VPI-facing (protected) variable name, string literal
-    uint32_t byteOffset;  // offsetof of storage member from module instance base
+    size_t byteOffset;  // offsetof of storage member from module instance base
     VerilatedVarType vltype;
     uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
     uint8_t udims;  // udims + pdims <= kMaxDims
@@ -865,7 +865,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
 // One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
 // per-scope 'new VerilatedScope{...}' statements, which compiles faster at scale.
 struct VlScopeTableEntry final {
-    uint32_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
+    size_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
     const char* namep;  // Scope suffix name (protected), string literal
     const char* identp;  // Identifier with escapes removed (protected)
     const char* defnamep;  // Definition name (SCOPE_MODULE only), else "<null>"

@@ -9,14 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('vltmt')
+test.scenarios('simulator')
 
-# Very hard to reliably trigger run-time race on small design,
-# use ThreadSanitizer to test
-test.enable_tsan()
-
-test.compile(verilator_flags2=['--binary', '-fno-dfg', '--no-threads-coarsen'], threads=2)
-
-test.execute()
+test.compile(verilator_flags2=["--public-flat-rw -CFLAGS -Werror"])
 
 test.passes()
