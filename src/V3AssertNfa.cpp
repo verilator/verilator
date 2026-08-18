@@ -21,6 +21,9 @@
 //  - Replace converted assertions with combinational match/reject checks
 //    so V3AssertPre sees no multi-cycle SExpr (unsupported ones fall through).
 //
+//  Members marked OWNED hold an AST tree this pass allocated and must delete;
+//  they are not linked into the netlist.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -55,7 +58,7 @@ struct SvaVertexData final {
     AstVar* delayRingWrappedVarp = nullptr;  // All slots written since the last clear
     AstVar* doneLVarp = nullptr;  // SAnd LHS done-latch
     AstVar* doneRVarp = nullptr;  // SAnd RHS done-latch
-    AstNodeExpr* stateSigp = nullptr;  // Combinational state signal (owned during lowering)
+    AstNodeExpr* stateSigp = nullptr;  // Combinational state signal; OWNED during lowering
     bool needsReg = false;  // True if vertex has incoming clocked edge
 };
 
@@ -65,7 +68,7 @@ class SvaStateVertex final : public V3GraphVertex {
 public:
     // True if this is the sequence-match terminal vertex
     bool m_isMatch = false;
-    // Owned throughout-guard condition clones; IEEE 1800-2023 16.9.9
+    // OWNED throughout-guard condition clones; IEEE 1800-2023 16.9.9
     std::vector<AstNodeExpr*> m_throughoutConds;
     // Nonzero for a bitset ring-buffer vertex for ## delays.
     bool m_isFixedDelayRing = false;
@@ -186,8 +189,8 @@ public:
     std::vector<const SvaTransEdge*> allEdges() const {
         std::vector<const SvaTransEdge*> result;
         for (const V3GraphVertex& vtxr : m_graph.vertices()) {
-            for (const V3GraphEdge& er : vtxr.outEdges()) {
-                result.push_back(static_cast<const SvaTransEdge*>(&er));
+            for (const V3GraphEdge& edger : vtxr.outEdges()) {
+                result.push_back(static_cast<const SvaTransEdge*>(&edger));
             }
         }
         return result;
@@ -974,13 +977,13 @@ class SvaNfaBuilder final {
         return {mergeVtxp, nullptr, {}};
     }
 
-    // Build merge vertex for SOr / LogOr: both branches feed into one vertex.
     // Free a dropped sub-result condition that is not linked into the AST
     // (abort folds synthesize unparented finalCondp trees).
     static void freeUnlinkedCondp(AstNodeExpr* condp) {
         if (condp && !condp->backp()) VL_DO_DANGLING(condp->deleteTree(), condp);
     }
 
+    // Build merge vertex for SOr / LogOr: both branches feed into one vertex.
     BuildResult buildOrMerge(AstNodeExpr* lhsp, AstNodeExpr* rhsp, SvaStateVertex* entryVtxp,
                              FileLine* flp) {
         const BuildResult lhs = buildExpr(lhsp, entryVtxp);
@@ -1460,12 +1463,12 @@ class SvaNfaBuilder final {
                                     const std::unordered_set<const V3GraphEdge*>& preEdges) {
         bool plainNonSink = false;
         bool markedSink = false;
-        for (const V3GraphEdge& er : srcp->outEdges()) {
-            if (preEdges.count(&er)) continue;
-            const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
-            if (te.m_consumesCycle) continue;
-            const bool sink = static_cast<const SvaStateVertex*>(te.toVtxp())->m_isRejectSink;
-            if (te.m_rejectOnFail) {
+        for (const V3GraphEdge& edger : srcp->outEdges()) {
+            if (preEdges.count(&edger)) continue;
+            const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+            if (tedger.m_consumesCycle) continue;
+            const bool sink = static_cast<const SvaStateVertex*>(tedger.toVtxp())->m_isRejectSink;
+            if (tedger.m_rejectOnFail) {
                 if (!sink) return true;
                 markedSink = true;
             } else if (!sink) {
@@ -1487,18 +1490,20 @@ class SvaNfaBuilder final {
     void gateBodyEdgesOnAbort(const std::unordered_set<const V3GraphEdge*>& preEdges,
                               AstNodeExpr* condp, VAbortKind kind, FileLine* flp) {
         for (V3GraphVertex& vtxr : m_graph.m_graph.vertices()) {
-            for (V3GraphEdge& er : vtxr.outEdges()) {
-                if (preEdges.count(&er)) continue;
-                SvaTransEdge* const tep = static_cast<SvaTransEdge*>(&er);
-                if (tep->m_rejectOnFail) {
+            for (V3GraphEdge& edger : vtxr.outEdges()) {
+                if (preEdges.count(&edger)) continue;
+                SvaTransEdge* const tedgep = static_cast<SvaTransEdge*>(&edger);
+                if (tedgep->m_rejectOnFail) {
                     if (!kind.isAccept()) continue;
                     AstNodeExpr* const firep = sampled(abortFireExpr(condp, flp));
-                    tep->m_condp = tep->m_condp ? new AstLogOr{flp, tep->m_condp, firep} : firep;
-                } else if (tep->m_consumesCycle) {
+                    tedgep->m_condp
+                        = tedgep->m_condp ? new AstLogOr{flp, tedgep->m_condp, firep} : firep;
+                } else if (tedgep->m_consumesCycle) {
                     AstNodeExpr* const notFirep
                         = new AstLogNot{flp, sampled(abortFireExpr(condp, flp))};
-                    tep->m_condp
-                        = tep->m_condp ? new AstLogAnd{flp, tep->m_condp, notFirep} : notFirep;
+                    tedgep->m_condp = tedgep->m_condp
+                                          ? new AstLogAnd{flp, tedgep->m_condp, notFirep}
+                                          : notFirep;
                 }
             }
         }
@@ -1511,7 +1516,7 @@ class SvaNfaBuilder final {
         std::unordered_set<const V3GraphEdge*> preEdges;
         for (V3GraphVertex& vtxr : m_graph.m_graph.vertices()) {
             preExisting.insert(&vtxr);
-            for (V3GraphEdge& er : vtxr.outEdges()) preEdges.insert(&er);
+            for (V3GraphEdge& edger : vtxr.outEdges()) preEdges.insert(&edger);
         }
 
         m_outerAbortStack.push_back(condp);
@@ -1854,15 +1859,15 @@ class SvaNfaLowering final {
             if (!c.vtx[i]->datap()->stateVarp) continue;
 
             AstNodeExpr* nextStatep = nullptr;
-            for (const V3GraphEdge& er : c.vtx[i]->inEdges()) {
-                const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
-                if (!te.m_consumesCycle) continue;
-                const int fromIdx = te.fromVtxp()->color();
-                UASSERT_OBJ(c.vtx[fromIdx]->datap()->stateSigp, te.fromVtxp(),
+            for (const V3GraphEdge& edger : c.vtx[i]->inEdges()) {
+                const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+                if (!tedger.m_consumesCycle) continue;
+                const int fromIdx = tedger.fromVtxp()->color();
+                UASSERT_OBJ(c.vtx[fromIdx]->datap()->stateSigp, tedger.fromVtxp(),
                             "Clocked-edge source missing stateSig");
 
                 AstNodeExpr* srcSigp = c.vtx[fromIdx]->datap()->stateSigp->cloneTreePure(false);
-                srcSigp = andCond(c.flp, srcSigp, te.m_condp);
+                srcSigp = andCond(c.flp, srcSigp, tedger.m_condp);
 
                 if (c.disableExprp) {
                     AstNodeExpr* const notDisp
@@ -1909,15 +1914,15 @@ class SvaNfaLowering final {
             const uint32_t size = static_cast<uint32_t>(vtxp->m_delayRingSize);
 
             AstNodeExpr* incomingp = nullptr;
-            for (const SvaTransEdge* const tep : c.edges) {
-                if (static_cast<int>(tep->toVtxp()->color()) != ri) continue;
-                UASSERT_OBJ(tep->m_consumesCycle == vtxp->m_isFixedDelayRing, vtxp,
+            for (const SvaTransEdge* const tedgep : c.edges) {
+                if (static_cast<int>(tedgep->toVtxp()->color()) != ri) continue;
+                UASSERT_OBJ(tedgep->m_consumesCycle == vtxp->m_isFixedDelayRing, vtxp,
                             "Delay-ring incoming edge kind mismatch");
-                const int fi = tep->fromVtxp()->color();
+                const int fi = tedgep->fromVtxp()->color();
                 UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp, c.vtx[fi],
                             "Delay-ring incoming source missing stateSig");
                 AstNodeExpr* contribp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
-                contribp = andCond(c.flp, contribp, tep->m_condp);
+                contribp = andCond(c.flp, contribp, tedgep->m_condp);
                 if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
@@ -2066,14 +2071,14 @@ class SvaNfaLowering final {
     // end-of-match fires the action independently, no OR-fold).
     void computeTerminalMatchAndReject(LowerCtx& c, AstNodeExpr* snapshotOkp, SignalSet& sigs,
                                        std::vector<AstNodeExpr*>* outPerMidSrcsp = nullptr) {
-        for (const SvaTransEdge* const tep : c.edges) {
-            if (tep->toVtxp() != c.graph.m_matchVertexp) continue;
-            const int fi = tep->fromVtxp()->color();
-            UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp, tep->fromVtxp(),
+        for (const SvaTransEdge* const tedgep : c.edges) {
+            if (tedgep->toVtxp() != c.graph.m_matchVertexp) continue;
+            const int fi = tedgep->fromVtxp()->color();
+            UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp, tedgep->fromVtxp(),
                         "Terminal-link source missing stateSig");
 
             AstNodeExpr* srcSigp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
-            srcSigp = andCond(c.flp, srcSigp, tep->m_condp);
+            srcSigp = andCond(c.flp, srcSigp, tedgep->m_condp);
             if (snapshotOkp) {
                 srcSigp = new AstLogAnd{c.flp, srcSigp, snapshotOkp->cloneTreePure(false)};
             }
@@ -2090,19 +2095,19 @@ class SvaNfaLowering final {
                 outPerMidSrcsp->push_back(perMidp);
             }
 
-            if (tep->fromVtxp()->m_delayRingSize && !tep->fromVtxp()->m_isFixedDelayRing) {
+            if (tedgep->fromVtxp()->m_delayRingSize && !tedgep->fromVtxp()->m_isFixedDelayRing) {
                 sigs.terminalActivep
                     = orExprs(c.flp, sigs.terminalActivep, srcSigp->cloneTreePure(false));
                 // reject |= ring[next_idx] && final_condition;
-                AstNodeExpr* expireContribp = delayRingOutput(c.flp, tep->fromVtxp());
-                expireContribp = andCond(c.flp, expireContribp, tep->m_condp);
+                AstNodeExpr* expireContribp = delayRingOutput(c.flp, tedgep->fromVtxp());
+                expireContribp = andCond(c.flp, expireContribp, tedgep->m_condp);
                 if (snapshotOkp) {
                     expireContribp
                         = new AstLogAnd{c.flp, expireContribp, snapshotOkp->cloneTreePure(false)};
                 }
                 sigs.rejectBasep = orExprs(c.flp, sigs.rejectBasep, expireContribp);
                 VL_DO_DANGLING(srcSigp->deleteTree(), srcSigp);
-            } else if (tep->fromVtxp()->m_isUnbounded || tep->fromVtxp()->m_isAndCombiner) {
+            } else if (tedgep->fromVtxp()->m_isUnbounded || tedgep->fromVtxp()->m_isAndCombiner) {
                 sigs.terminalActivep = orExprs(c.flp, sigs.terminalActivep, srcSigp);
             } else {
                 sigs.terminalActivep
@@ -2181,24 +2186,24 @@ class SvaNfaLowering final {
         // Phase 3a: required-step rejection.
         // Builder only sets m_rejectOnFail on non-clocked Links with m_condp
         // or m_condVtxp, and the source always has a resolved stateSig.
-        for (const SvaTransEdge* const tep : c.edges) {
-            if (!tep->m_rejectOnFail) continue;
-            const int fi = tep->fromVtxp()->color();
-            UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp && (tep->m_condp || tep->m_condVtxp),
-                        tep->fromVtxp(),
+        for (const SvaTransEdge* const tedgep : c.edges) {
+            if (!tedgep->m_rejectOnFail) continue;
+            const int fi = tedgep->fromVtxp()->color();
+            UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp && (tedgep->m_condp || tedgep->m_condVtxp),
+                        tedgep->fromVtxp(),
                         "rejectOnFail Link must have condp/condVtxp and source stateSig");
             AstNodeExpr* const srcSigp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
             AstNodeExpr* condp = nullptr;
-            if (tep->m_condVtxp) {
-                const int ci = tep->m_condVtxp->color();
-                UASSERT_OBJ(c.vtx[ci]->datap()->stateSigp, tep->m_condVtxp,
+            if (tedgep->m_condVtxp) {
+                const int ci = tedgep->m_condVtxp->color();
+                UASSERT_OBJ(c.vtx[ci]->datap()->stateSigp, tedgep->m_condVtxp,
                             "rejectOnFail condVtxp missing stateSig");
                 condp = c.vtx[ci]->datap()->stateSigp->cloneTreePure(false);
-                if (tep->m_condp) {
-                    condp = new AstLogOr{c.flp, condp, tep->m_condp->cloneTreePure(false)};
+                if (tedgep->m_condp) {
+                    condp = new AstLogOr{c.flp, condp, tedgep->m_condp->cloneTreePure(false)};
                 }
             } else {
-                condp = tep->m_condp->cloneTreePure(false);
+                condp = tedgep->m_condp->cloneTreePure(false);
             }
             AstNodeExpr* const notCondp = new AstLogNot{c.flp, condp};
             AstNodeExpr* const rawFailp = new AstLogAnd{c.flp, srcSigp, notCondp};
@@ -2313,13 +2318,14 @@ class SvaNfaLowering final {
             // Propagate Link edges
             for (int fi = 0; fi < c.N; ++fi) {
                 if (!c.vtx[fi]->datap()->stateSigp) continue;
-                for (const V3GraphEdge& er : c.vtx[fi]->outEdges()) {
-                    const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
-                    if (te.m_consumesCycle) continue;
-                    const int ti = te.toVtxp()->color();
-                    if (te.toVtxp()->m_isMatch || te.toVtxp()->m_isRejectSink) continue;
-                    AstNodeExpr* const contributionp = andCond(
-                        c.flp, c.vtx[fi]->datap()->stateSigp->cloneTreePure(false), te.m_condp);
+                for (const V3GraphEdge& edger : c.vtx[fi]->outEdges()) {
+                    const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+                    if (tedger.m_consumesCycle) continue;
+                    const int ti = tedger.toVtxp()->color();
+                    if (tedger.toVtxp()->m_isMatch || tedger.toVtxp()->m_isRejectSink) continue;
+                    AstNodeExpr* const contributionp
+                        = andCond(c.flp, c.vtx[fi]->datap()->stateSigp->cloneTreePure(false),
+                                  tedger.m_condp);
                     if (!c.vtx[ti]->datap()->stateSigp) {
                         c.vtx[ti]->datap()->stateSigp = contributionp;
                         changed = true;
@@ -2473,10 +2479,11 @@ public:
 
         // Identify registered vertices (targets of clocked edges).
         for (int i = 0; i < N; ++i) {
-            for (const V3GraphEdge& er : vtx[i]->outEdges()) {
-                const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
-                const int toIdx = te.toVtxp()->color();
-                if (te.m_consumesCycle && toIdx != matchIdx && !te.toVtxp()->m_isRejectSink) {
+            for (const V3GraphEdge& edger : vtx[i]->outEdges()) {
+                const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+                const int toIdx = tedger.toVtxp()->color();
+                if (tedger.m_consumesCycle && toIdx != matchIdx
+                    && !tedger.toVtxp()->m_isRejectSink) {
                     vtx[toIdx]->datap()->needsReg = true;
                 }
             }
