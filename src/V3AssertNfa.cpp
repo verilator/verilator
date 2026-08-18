@@ -1465,9 +1465,12 @@ class SvaNfaBuilder final {
             const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
             if (te.m_consumesCycle) continue;
             const bool sink = static_cast<const SvaStateVertex*>(te.toVtxp())->m_isRejectSink;
-            if (te.m_rejectOnFail && !sink) return true;
-            if (!te.m_rejectOnFail && !sink) plainNonSink = true;
-            if (te.m_rejectOnFail && sink) markedSink = true;
+            if (te.m_rejectOnFail) {
+                if (!sink) return true;
+                markedSink = true;
+            } else if (!sink) {
+                plainNonSink = true;
+            }
         }
         return plainNonSink && markedSink;
     }

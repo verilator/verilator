@@ -57,6 +57,7 @@ module t (
 
   // An 'and' operand carrying mid-window sources defers to later passes
   assert property (@(posedge clk) (1'b1 ##[1:2] b) and c);
+  assert property (@(posedge clk) c and (1'b1 ##[1:2] b));
 
   // A boolean 'and' operand of a rejected cover-sequence 'or' is freed
   cover sequence (@(posedge clk) ((a and b) or(c ##1 d)));

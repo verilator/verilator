@@ -30,8 +30,11 @@
 %Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:59:52: Unsupported: ranged cycle delay in an operand of property 'and'
    59 |   assert property (@(posedge clk) (1'b1 ##[1:2] b) and c);
       |                                                    ^~~
-%Warning-COVERIGN: t/t_property_nfa_msgs_unsup.v:62:45: Ignoring unsupported: cover sequence with a sequence operand of 'or'
-   62 |   cover sequence (@(posedge clk) ((a and b) or(c ##1 d)));
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:60:37: Unsupported: ranged cycle delay in an operand of property 'and'
+   60 |   assert property (@(posedge clk) c and (1'b1 ##[1:2] b));
+      |                                     ^~~
+%Warning-COVERIGN: t/t_property_nfa_msgs_unsup.v:63:45: Ignoring unsupported: cover sequence with a sequence operand of 'or'
+   63 |   cover sequence (@(posedge clk) ((a and b) or(c ##1 d)));
       |                                             ^~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
