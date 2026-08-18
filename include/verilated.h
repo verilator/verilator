@@ -109,6 +109,7 @@ class VerilatedVarNameMap;
 class VerilatedVcd;
 class VerilatedVcdC;
 class VerilatedVcdSc;
+class VlCovRegistry;
 
 //=========================================================================
 // Basic types
@@ -495,6 +496,9 @@ protected:
     std::unique_ptr<VerilatedVirtualBase> m_executionProfiler;
     // Coverage access
     std::unique_ptr<VerilatedVirtualBase> m_coveragep;  // Pointer for coveragep()
+    // Covergroup type/instance nodes. Covergroup data is always collected,
+    // independent of whether coverage data is recorded (--coverage).
+    std::unique_ptr<VerilatedVirtualBase> m_covergroupsp;  // Pointer for covergroupRegistryp()
 
     // File I/O
     // Not serialized
@@ -564,6 +568,8 @@ public:
     /// Return VerilatedCovContext, allocate if needed
     /// Note if get unresolved reference then likely forgot to link verilated_cov.cpp
     VerilatedCovContext* coveragep() VL_MT_SAFE;
+    /// Returns VlCovRegistry. Allocated on-demand
+    VlCovRegistry* covergroupRegistryp() VL_MT_SAFE;
     /// Return debug level
     static inline int debug() VL_MT_SAFE;  /// Set debug level
     /// Debug is currently global, but for forward compatibility have a per-context method

@@ -32,10 +32,13 @@
 
 #include "verilatedos.h"
 
+#include "verilated.h"
 #include "verilated_cov_model.h"
 
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class VerilatedCovContext;
@@ -223,10 +226,10 @@ class VlCoverCross final : public VlCoverpointIf {
     std::vector<uint32_t> m_cpBinCounts;  // [m_dims] Normal bin count per dimension
     std::vector<uint32_t> m_stride;  // [m_dims] Flat-index stride per dimension
     std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] Per-bin hit counts
-    std::vector<VlCoverpoint*> m_cps;  // Feeding coverpoints (the only name source)
+    std::vector<VlCoverpoint*> m_cps;  // Feeding coverpoints, set by init()
 
     // PRIVATE METHODS
-    void iterateProduct(VlCoverpoint* const* cps, uint32_t dim, uint32_t baseIdx);
+    void iterateProduct(uint32_t dim, uint32_t baseIdx);
     void incrementTuple(uint32_t idx) {
         if (m_flatCounts[idx]++ == 0) ++m_numCovered;
     }
@@ -242,7 +245,8 @@ public:
     void registerBins(VerilatedCovContext* covcontextp, const char* page);
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
-    void sample(VlCoverpoint* const* cps);
+    // Reads the feeding coverpoints from m_cps, so the caller passes nothing per sample.
+    void sample();
 
     // ---- VlCoverpointIf ----
     // A cross is a coverpoint whose bins are the auto cross bins (all Normal).
@@ -252,6 +256,104 @@ public:
         covered = m_numCovered;
         total = m_numAutoBins;
     }
+};
+
+//=============================================================================
+// VlCovergroupInst
+/// One covergroup instance: owns the coverpoint/cross runtimes created by one
+/// SV 'new'.  The generated class holds borrowed pointers to them, so the bins
+/// outlive the SV object -- the coverage database registers raw count pointers
+/// and reads them at write() time, long after the object may have been freed.
+
+class VlCovergroupInst final {
+    // MEMBERS
+    std::vector<std::unique_ptr<VlCoverpointIf>> m_items;  // Creation == declaration order
+
+public:
+    // CONSTRUCTORS
+    VlCovergroupInst() = default;
+    VL_UNCOPYABLE(VlCovergroupInst);
+
+    // METHODS
+    // ---- construction (from the generated covergroup constructor) ----
+    template <uint32_t MaxHits>
+    VlCoverpointT<MaxHits>* addCoverpoint() {
+        VlCoverpointT<MaxHits>* const cpp = new VlCoverpointT<MaxHits>{};
+        m_items.emplace_back(cpp);
+        return cpp;  // borrowed by the generated class
+    }
+    VlCoverCross* addCross() {
+        VlCoverCross* const cxp = new VlCoverCross{};
+        m_items.emplace_back(cxp);
+        return cxp;  // borrowed by the generated class
+    }
+};
+
+//=============================================================================
+// VlCovergroupType
+/// One covergroup type: owns its instances, in creation order.
+
+class VlCovergroupType final {
+    // MEMBERS
+    std::vector<std::unique_ptr<VlCovergroupInst>> m_insts;  // Creation order
+
+public:
+    // CONSTRUCTORS
+    VlCovergroupType() = default;
+    VL_UNCOPYABLE(VlCovergroupType);
+
+    // METHODS
+    VlCovergroupInst* newInstance();
+};
+
+//=============================================================================
+// VlCovRegistry
+/// Every covergroup type and instance in one VerilatedContext.  Owned by the
+/// VerilatedContext (not by the coverage database, which is only linked under
+/// --coverage and is a *consumer* of this data), reached through
+/// VerilatedContext::covergroupRegistryp().  Nodes are never freed before the
+/// registry itself is destroyed (see VlCovInstHandle).
+
+class VlCovRegistry final : public VerilatedVirtualBase {
+    // MEMBERS
+    std::vector<std::unique_ptr<VlCovergroupType>> m_types;  // Creation order
+    std::unordered_map<std::string, VlCovergroupType*> m_byName;  // Lookup, borrowed
+
+public:
+    // CONSTRUCTORS
+    VlCovRegistry() = default;
+    VL_UNCOPYABLE(VlCovRegistry);
+
+    // METHODS
+    // Find-or-create the type node, then add an instance to it.  typeName is the
+    // generated covergroup class name, already --protect-ids obfuscated, and is
+    // the same string that keys the coverage database's hier/page.
+    VlCovergroupInst* newCovergroupInst(const char* typeName);
+};
+
+//=============================================================================
+// VlCovInstHandle
+/// The generated covergroup class's link to its instance node.  Non-owning: the
+/// registry owns the node and outlives every SV object, so a handle never frees
+/// anything and copying one is safe.
+///
+/// It exists as a type now so that adding real ownership (attach counting,
+/// retirement) later is a runtime-only change with no generated-code churn.
+/// It must stay copyable: every generated class emits a clone() that
+/// copy-constructs, covergroups included.
+
+class VlCovInstHandle final {
+    // MEMBERS
+    VlCovergroupInst* m_p = nullptr;  // Borrowed; the registry owns the node
+
+public:
+    // CONSTRUCTORS
+    VlCovInstHandle() = default;
+    // Copy and destruction are deliberately implicit: nothing is owned.
+
+    // METHODS
+    void attach(VlCovergroupInst* p) { m_p = p; }
+    VlCovergroupInst* p() const { return m_p; }
 };
 
 #endif  // Guard
