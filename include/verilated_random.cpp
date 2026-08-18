@@ -285,7 +285,7 @@ static bool readLine(std::istream& is, std::string& liner) {
     return false;
 }
 
-static void scanParenDepth(const std::string& str, int& depthr, bool& inStringr) {
+static bool scanParenDepth(const std::string& str, int& depthr, bool& inStringr) {
     for (const char c : str) {
         if (inStringr) {
             if (c == '"') inStringr = false;
@@ -294,22 +294,24 @@ static void scanParenDepth(const std::string& str, int& depthr, bool& inStringr)
         } else if (c == '(') {
             ++depthr;
         } else if (c == ')') {
+            if (depthr == 0) return false;
             --depthr;
         }
     }
+    return true;
 }
 
 // Append lines until the error s-expression started in liner is paren-balanced
 static bool finishErrorReply(std::istream& is, std::string& liner) {
     int depth = 0;
     bool inString = false;
-    scanParenDepth(liner, depth, inString);
+    if (!scanParenDepth(liner, depth, inString)) return false;
     while (depth > 0) {
         std::string chunk;
         if (!readLine(is, chunk)) return false;
         liner += ' ';
         liner += chunk;
-        scanParenDepth(chunk, depth, inString);
+        if (!scanParenDepth(chunk, depth, inString)) return false;
     }
     return true;
 }
@@ -319,9 +321,7 @@ static void warnSolverReply(const std::string& reply) {
     if (s_warned) return;
     s_warned = true;
     const std::string msg
-        = "Solver did not answer with a status; this randomize() call fails, later calls "
-          "continue: "
-          + reply;
+        = "Solver did not answer with a status, so randomize() returns 0; warned once: " + reply;
     VL_WARN_MT(__FILE__, __LINE__, "randomize", msg.c_str());
 }
 
@@ -337,8 +337,8 @@ static VlSolverStatus readStatus(std::istream& is) {
             if (!s_warnedUnknown) {
                 s_warnedUnknown = true;
                 VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                           "Solver returned unknown (timed out or incomplete); this randomize() "
-                           "call may fail, later calls continue");
+                           "Solver returned unknown (timed out or incomplete), so randomize() "
+                           "may return 0; warned once");
             }
             return VlSolverStatus::UNKNOWN;
         }
@@ -378,8 +378,9 @@ static bool readSExpr(std::istream& is, std::string& outr) {
             inString = true;
         } else if (c == '(') {
             ++depth;
-        } else if (c == ')' && --depth == 0) {
-            return true;
+        } else if (c == ')') {
+            assert(depth > 0);
+            if (--depth == 0) return true;
         }
     }
     return false;
@@ -1085,11 +1086,9 @@ bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
         return false;
     }
     for (const auto& entry : staged) {
-        if (!std::get<0>(entry)->set(std::get<1>(entry), std::get<2>(entry))) {
-            VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                       "Internal: Unable to parse solver's response: invalid value");
-            return false;
-        }
+        const bool ok = std::get<0>(entry)->set(std::get<1>(entry), std::get<2>(entry));
+        assert(ok);  // Validated before staging
+        (void)ok;
     }
     return true;
 }

@@ -37,26 +37,49 @@ class Phased;
   constraint rel_c {y > x;}
 endclass
 
+// Array element replies, which arrive as (select ...) terms
+class Arr;
+  rand bit [7:0] q[3];
+  constraint ac {foreach (q[i]) q[i] > 8'd20;}
+endclass
+
+// Unsatisfiable, so the unsat core is queried
+class Unsat;
+  rand bit [7:0] u;
+  constraint uc {
+    u > 8'd200;
+    u < 8'd100;
+  }
+endclass
+
 module t;
   initial begin
     automatic Packet p = new;
     automatic Softy s = new;
     automatic Phased ph = new;
+    automatic Arr ar = new;
+    automatic Unsat un = new;
     automatic int npass = 0;
     automatic int rc;
     for (int i = 0; i < 4; ++i) begin
       // Below the constraint, so any model the runtime applies overwrites it
       p.a = 8'd5;
       rc = p.randomize();
+      // A randomize that failed must leave the variable alone
       if (rc != 0) npass++;
+      else `checkd(p.a, 8'd5);
       rc = s.randomize();
       if (rc != 0) npass++;
       rc = ph.randomize();
       if (rc != 0) npass++;
+      ar.q[0] = 8'd7;
+      rc = ar.randomize();
+      if (rc != 0) npass++;
+      else `checkd(ar.q[0], 8'd7);
+      rc = un.randomize();
+      `checkd(rc, 0);  // zero-ok: constraints are unsatisfiable
     end
     $write("NPASS=%0d\n", npass);
-    // A randomize that failed must leave the variable alone
-    `checkd(p.a, 8'd5);
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -13,7 +13,10 @@
 # TAMPER: none | die_at | die_status_at | mute_at | garbage_at | err_once
 #         | err_multiline | unknown_once | unsupported_once | garbage_status
 #         | err_reply | garbage_model | bad_value | bad_digits | short_model
-#         | dup_model | success | crlf | multiline
+#         | dup_model | octal | upper_hex | bad_base | unknown_var | bad_index
+#         | err_trunc | unknown_twice | binary | model_trunc | phase_model
+#         | success | crlf
+#         | multiline
 #   die_at           - kill the solver and exit, closing every pipe end
 #   die_status_at    - same, counting sat/unsat status lines instead of models
 #   mute_at          - close the reply pipe but keep this wrapper running
@@ -27,6 +30,16 @@
 #   garbage_model    - replace the Nth model reply with a partly valid one
 #   bad_value        - same, but well-formed with one value lacking a base
 #   bad_digits       - same, but with one value holding digits outside its base
+#   phase_model      - replace the final phased model reply with (error ...)
+#   binary           - same, but with binary values
+#   model_trunc      - answer with an unterminated model and close the pipe
+#   octal            - same, but with octal values
+#   upper_hex        - same, but with uppercase hex digits
+#   bad_base         - same, but with a base character that is not b, o, x or h
+#   unknown_var      - same, but naming a variable that was not requested
+#   bad_index        - replace the first array model reply with a bad select index
+#   err_trunc        - answer with an unterminated (error and close the pipe
+#   unknown_twice    - answer two statuses with unknown
 #   short_model      - same, but omitting a requested variable
 #   dup_model        - same, but answering one variable twice
 #   success          - echo a print-success line before every reply
@@ -46,10 +59,14 @@ mode = os.environ.get("TAMPER", "none")
 at = int(os.environ.get("TAMPER_AT", "3"))
 
 # Modes acting on the TAMPER_AT'th status line rather than the Nth model reply
-STATUS_MODES = ("die_status_at", "err_once", "err_multiline", "unknown_once", "unsupported_once",
-                "garbage_status")
+STATUS_MODES = ("die_status_at", "err_once", "err_multiline", "unknown_once", "unknown_twice",
+                "unsupported_once", "garbage_status", "err_trunc")
 # Modes acting on the TAMPER_AT'th S-expression reply of any kind
 REPLY_MODES = ("err_reply", )
+# Modes acting on the first array model reply, which arrives as (select ...) terms
+SELECT_MODES = ("bad_index", )
+# Acts on the final phased model, whose first line does not close the reply
+PHASE_MODES = ("phase_model", )
 # Modes rewriting every line, so they never consume the index
 STREAM_MODES = ("success", "crlf", "multiline")
 
@@ -98,14 +115,22 @@ def scan_depth(text, left, in_string):
     return left, in_string
 
 
-def swallow(first):
-    """Drop the rest of a real S-expression reply that was replaced"""
+def read_full(first):
+    """Return the complete S-expression reply that starts at first"""
+    parts = [first]
     left, in_string = scan_depth(first, 0, False)
     while left > 0:
         cont = proc.stdout.readline()
         if not cont:
             break
+        parts.append(cont.rstrip("\n"))
         left, in_string = scan_depth(cont, left, in_string)
+    return parts
+
+
+def swallow(first):
+    """Drop the rest of a real S-expression reply that was replaced"""
+    read_full(first)
 
 
 replies = 0
@@ -123,6 +148,10 @@ for line in proc.stdout:
     elif mode in REPLY_MODES:
         # Only a first line opens a reply; a wrapped continuation is not a new one
         counted = at_reply_start and line.startswith("(")
+    elif mode in SELECT_MODES:
+        counted = at_reply_start and line.startswith("(((select")
+    elif mode in PHASE_MODES:
+        counted = at_reply_start and line.startswith("((x")
     else:
         counted = at_reply_start and line.startswith("((")
     if counted:
@@ -145,6 +174,10 @@ for line in proc.stdout:
     if mode == "unknown_once":
         emit("unknown")
         continue
+    if mode == "unknown_twice":
+        emit("unknown")
+        done = replies >= at + 1
+        continue
     if mode == "err_reply":
         emit('(error "injected reply error")')
         swallow(line)
@@ -163,6 +196,52 @@ for line in proc.stdout:
         emit("((a #x0b) (b #xgg))")
         swallow(line)
         continue
+    # Only the final phase queries every variable, so only that reply names y
+    if mode == "phase_model":
+        replies = 0  # Re-arm until the final phase is seen
+        done = False
+        parts = read_full(line)
+        if "(y " in " ".join(parts):
+            emit('(error "injected phased model error")')
+        else:
+            for part in parts:
+                forward(part, part is parts[0])
+        continue
+    if mode == "binary":
+        emit("((a #b00001011) (b #b00010010))")
+        swallow(line)
+        continue
+    if mode == "model_trunc":
+        emit("((a #x0b)")
+        proc.kill()
+        proc.wait()
+        sys.exit(0)
+    if mode == "octal":
+        emit("((a #o13) (b #o12))")
+        swallow(line)
+        continue
+    if mode == "upper_hex":
+        emit("((a #xAB) (b #x12))")
+        swallow(line)
+        continue
+    if mode == "bad_base":
+        emit("((a #z01) (b #x12))")
+        swallow(line)
+        continue
+    if mode == "unknown_var":
+        emit("((zzz #x01) (b #x12))")
+        swallow(line)
+        continue
+    if mode == "bad_index":
+        emit("(((select q #xgg) #x15) ((select q #x00000001) #x15)"
+             " ((select q #x00000002) #x15))")
+        swallow(line)
+        continue
+    if mode == "err_trunc":
+        emit('(error "unterminated')
+        proc.kill()
+        proc.wait()
+        sys.exit(0)
     if mode == "short_model":
         emit("((a #x0b))")
         swallow(line)
