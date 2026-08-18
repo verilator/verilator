@@ -17,6 +17,6 @@ test.enable_tsan()
 
 test.compile(verilator_flags2=['--binary', '-fno-dfg', '--no-threads-coarsen'], threads=2)
 
-test.execute(fails='any')  # Now failing, fix pending
+test.execute()
 
 test.passes()

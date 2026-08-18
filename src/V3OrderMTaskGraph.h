@@ -349,9 +349,18 @@ public:
     // released any auxiliary data it attached to them via their user pointer.
     void mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp);
 
-    // Do an EXPENSIVE check that the maintained critical paths, including the ones cached in the
-    // edge heaps, match those implied by the current edges of the graph, and that the graph itself
-    // is consistent. Does nothing unless 'slowAsserts', so it is safe to call unconditionally.
+    // Remove all transitive edges. (This deliberately hides V3Graph::removeTransitiveEdges,
+    // which would leave the auxiliary data structures stale.)
+    // cppcheck-suppress duplInheritedMember
+    void removeTransitiveEdges();
+
+    // Remove all MTasks holding no logic (except for entry and exit, which are kept even if
+    // empty), connecting their predecessors directly to their successors.
+    void removeEmptyMTasks();
+
+    // Do an expensive check that the maintained critical paths, including the ones cached in the
+    // edge heaps, match those implied by the current edges of the graph, and that auxiliary data
+    // structures are consistent.
     void validate() const;
 
     // STATIC METHODS

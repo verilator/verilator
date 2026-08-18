@@ -261,6 +261,78 @@ void OrderMTaskGraph::mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp) {
     VL_DO_DANGLING(donorp->unlinkDelete(this), donorp);
 }
 
+void OrderMTaskGraph::removeTransitiveEdges() {
+    // Removing a transitive edge cannot change any critical path, so none need updating here.
+    // Only the edge heaps and the dependent sets need maintaining.
+    for (V3GraphVertex& vtx : vertices()) {
+        for (V3GraphEdge* const graphEdgep : vtx.outEdges().unlinkable()) {
+            MTaskEdge* const edgep = static_cast<MTaskEdge*>(graphEdgep);
+            LogicMTask* const fromp = edgep->fromMTaskp();
+            LogicMTask* const top = edgep->toMTaskp();
+            // If the MTasks are also connected by some other path, then this is a transitive edge
+            if (!pathExists(fromp, top, edgep)) continue;
+            // Maintain the additional data structures of the OrderMTaskGraph
+            fromp->removeDependent(top);
+            fromp->removeRelativeEdge<GraphWay::FORWARD>(edgep);
+            top->removeRelativeEdge<GraphWay::REVERSE>(edgep);
+            VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
+        }
+    }
+    // Confirm the above left the maintained state consistent
+    validate();
+}
+
+void OrderMTaskGraph::removeEmptyMTasks() {
+    // This transform preserves the critical paths as it connects every predecessor of the
+    // removed MTask to every successor, and the removed MTask itself has zero cost.
+    for (V3GraphVertex* const vtxp : vertices().unlinkable()) {
+        LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtxp);
+
+        // Keep the entry and exit vertices.
+        if (mtaskp == m_entryp || mtaskp == m_exitp) continue;
+
+        // Keep any MTask that holds logic
+        bool empty = true;
+        for (const OrderMoveVertex& mVtx : mtaskp->vertexList()) {
+            if (mVtx.logicp()) {
+                empty = false;
+                break;
+            }
+        }
+        if (!empty) continue;
+
+        // The MTask holding no logic should have zero cost
+        UASSERT_OBJ(!mtaskp->cost(), mtaskp, "MTask holding no logic should have 0 cost");
+
+        // Connect each predecessor directly to each successor.
+        for (V3GraphEdge& inEdge : mtaskp->inEdges()) {
+            LogicMTask* const fromp = static_cast<MTaskEdge&>(inEdge).fromMTaskp();
+            for (V3GraphEdge& outEdge : mtaskp->outEdges()) {
+                LogicMTask* const top = static_cast<MTaskEdge&>(outEdge).toMTaskp();
+                if (!fromp->hasEdgeTo(top)) addEdge(fromp, top);
+            }
+        }
+
+        // Remove incoming edges of 'mtaskp'
+        while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(mtaskp->inEdges().frontp())) {
+            LogicMTask* const relativep = edgep->fromMTaskp();
+            relativep->removeDependent(mtaskp);
+            relativep->removeRelativeEdge<GraphWay::FORWARD>(edgep);
+            VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
+        }
+        // Remove outgoing edges of 'mtaskp'
+        while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(mtaskp->outEdges().frontp())) {
+            LogicMTask* const relativep = edgep->toMTaskp();
+            relativep->removeRelativeEdge<GraphWay::REVERSE>(edgep);
+            VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
+        }
+        // Delete the empty MTask
+        VL_DO_DANGLING(mtaskp->unlinkDelete(this), mtaskp);
+    }
+    // Confirm the above left the maintained state consistent
+    validate();
+}
+
 // Check the critical paths in the given direction, and the critical paths cached in the edge heaps
 // in the opposite direction, against those implied by the edges. Note this deliberately iterates
 // the edge lists, rather than consulting the edge heaps, so the heaps are validated, not trusted.
