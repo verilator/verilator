@@ -2785,11 +2785,14 @@ class AstCoverCross final : public AstNodeFuncCovItem {
     // @astgen op2 := optionsp : List[AstCoverOption]     // post-LinkParse only
     // @astgen op3 := rawBodyp : List[AstNode]  // Parse: raw cross_body items;
     //                                          // post-LinkParse: empty
+    // @astgen op4 := iffp     : Optional[AstNodeExpr]  // Conditional sampling guard
 public:
-    AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp)
+    AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp,
+                  AstNodeExpr* iffp = nullptr)
         : ASTGEN_SUPER_CoverCross(fl, name) {
         UASSERT(itemsp, "AstCoverCross requires at least one coverpoint reference");
         addItemsp(itemsp);
+        this->iffp(iffp);
     }
     ASTGEN_MEMBERS_AstCoverCross;
     void dump(std::ostream& str) const override;

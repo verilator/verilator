@@ -410,6 +410,19 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return name;
     }
 
+    // Capture an iff guard in a function-local temporary so it is evaluated once per sample()
+    AstVarRef* captureIffToTemp(AstNodeExpr* iffp, const string& tempName) {
+        FileLine* const fl = iffp->fileline();
+        AstVar* const iffVarp
+            = new AstVar{fl, VVarType::BLOCKTEMP, tempName, iffp->findBitDType()};
+        iffVarp->funcLocal(true);
+        m_sampleFuncp->addStmtsp(iffVarp);
+        iffp->unlinkFrBack();
+        m_sampleFuncp->addStmtsp(
+            new AstAssign{fl, new AstVarRef{fl, iffVarp, VAccess::WRITE}, iffp});
+        return new AstVarRef{fl, iffVarp, VAccess::READ};
+    }
+
     AstNodeExpr* applyCoverpointIffCondition(AstCoverpoint* coverpointp, FileLine* fl,
                                              AstNodeExpr* condp) {
         if (AstNodeExpr* const iffp = coverpointp->iffp()) {
@@ -812,6 +825,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = coverpointp->fileline();
         UINFO(4, "  Generating VlCoverpoint member: " << coverpointp->name());
 
+        if (AstNodeExpr* const iffp = coverpointp->iffp()) {
+            coverpointp->iffp(
+                captureIffToTemp(iffp, "__VcpIff_" + sanitizeGeneratedName(coverpointp->name())));
+        }
+
         // Size the hit list to the gen-time max bin overlap (1 unless cross-fed with
         // overlapping ranges), so no cross hit is ever dropped and storage is minimal.
         const bool crossFed = m_crossedCpNames.count(coverpointp->name()) != 0;
@@ -1212,6 +1230,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = crossp->fileline();
         UINFO(4, "  Generating VlCoverCross member: " << crossp->name());
 
+        if (AstNodeExpr* const iffp = crossp->iffp()) {
+            crossp->iffp(
+                captureIffToTemp(iffp, "__VcrossIff_" + sanitizeGeneratedName(crossp->name())));
+        }
+
         // Resolve and unlink the coverpoint refs, in dimension order.  Every ref resolves to a
         // known coverpoint (a cross with an unresolvable item was dropped earlier).
         std::vector<AstVar*> cpVars;
@@ -1257,7 +1280,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         // sample(): after all coverpoints have sampled (cross loop runs after coverpoint loop).
         UASSERT_OBJ(m_sampleFuncp, crossp, "sample() CFunc not set for cross");
-        m_sampleFuncp->addStmtsp(makeCrossCpsCall(fl, cpVars, cxVarp, ".sample(__Vcx_cps);"));
+        AstNodeStmt* const samplep = makeCrossCpsCall(fl, cpVars, cxVarp, ".sample(__Vcx_cps);");
+        if (AstNodeExpr* const iffp = crossp->iffp()) {
+            m_sampleFuncp->addStmtsp(new AstIf{fl, iffp->cloneTree(false), samplep});
+        } else {
+            m_sampleFuncp->addStmtsp(samplep);
+        }
     }
 
     void generateCrossCode(AstCoverCross* crossp) {
@@ -1784,6 +1812,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             visitor.scan(cpp->exprp());
             visitor.scan(cpp->iffp());
         }
+        for (AstCoverCross* const crossp : m_coverCrosses) visitor.scan(crossp->iffp());
         return visitor.offenderp();
     }
 

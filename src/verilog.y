@@ -7321,24 +7321,16 @@ cover_cross<nodep>:  // ==IEEE: cover_cross
                 id/*cover_point_identifier*/ ':' yCROSS list_of_cross_items iffE cross_body
                         {
                           AstCoverCross* const nodep = new AstCoverCross{$<fl>3, *$1,
-                                                          VN_AS($4, CoverpointRef)};
+                                                          VN_AS($4, CoverpointRef), $5};
                           if ($6) nodep->addRawBodyp($6);
-                          if ($5) {
-                              $5->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
-                              VL_DO_DANGLING($5->deleteTree(), $5);
-                          }
                           $$ = nodep;
                         }
         |       yCROSS list_of_cross_items iffE cross_body
                         {
                           AstCoverCross* const nodep = new AstCoverCross{$<fl>1,
                                                           "__cross" + cvtToStr(GRAMMARP->s_typeImpNum++),
-                                                          VN_AS($2, CoverpointRef)};
+                                                          VN_AS($2, CoverpointRef), $3};
                           if ($4) nodep->addRawBodyp($4);
-                          if ($3) {
-                              $3->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
-                              VL_DO_DANGLING($3->deleteTree(), $3);
-                          }
                           $$ = nodep;
                         }
         ;

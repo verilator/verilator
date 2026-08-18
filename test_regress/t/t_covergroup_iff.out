@@ -1,3 +1,6 @@
+__vlAnonCG_cg.cp_a.one: 2
+__vlAnonCG_cg.cp_b.one: 2
+__vlAnonCG_cg.cross_ab.one_x_one [cross]: 1
 cg_and.cp_concat.b00: 0
 cg_and.cp_concat.b01: 1
 cg_and.cp_concat.b10: 0
@@ -6,6 +9,15 @@ cg_array_iff.cp.arr[0]: 1
 cg_array_iff.cp.arr[1]: 0
 cg_array_iff.cp.arr[2]: 0
 cg_bitw.cp.seven: 1
+cg_cross_coverpoint_iff.cp_a.one: 2
+cg_cross_coverpoint_iff.cp_b.one: 2
+cg_cross_coverpoint_iff.cross_ab.one_x_one [cross]: 1
+cg_cross_iff.cp_a.one: 3
+cg_cross_iff.cp_b.one: 3
+cg_cross_iff.cross_ab.one_x_one [cross]: 1
+cg_cross_iff_unnamed.__cross7.one_x_one [cross]: 1
+cg_cross_iff_unnamed.cp_a.one: 2
+cg_cross_iff_unnamed.cp_b.one: 2
 cg_default_iff.cp.def [default]: 1
 cg_default_iff.cp.known: 1
 cg_iff.cp_value.disabled_hi: 0
