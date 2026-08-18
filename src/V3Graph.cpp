@@ -79,31 +79,6 @@ void V3GraphVertex::rerouteEdges(V3Graph* graphp) {
     unlinkEdges(graphp);
 }
 
-template <GraphWay::en N_Way>
-V3GraphEdge* V3GraphVertex::findConnectingEdgep(V3GraphVertex* waywardp) {
-    // O(edges) linear search. Searches search both nodes' edge lists in
-    // parallel.  The lists probably aren't _both_ huge, so this is
-    // unlikely to blow up even on fairly nasty graphs.
-    constexpr GraphWay way{N_Way};
-    constexpr GraphWay inv = way.invert();
-    auto& aEdges = this->edges<way>();
-    auto aIt = aEdges.begin();
-    auto aEnd = aEdges.end();
-    auto& bEdges = waywardp->edges<inv>();
-    auto bIt = bEdges.begin();
-    auto bEnd = bEdges.end();
-    while (aIt != aEnd && bIt != bEnd) {
-        V3GraphEdge& aedge = *aIt++;
-        if (aedge.furtherp<way>() == waywardp) return &aedge;
-        V3GraphEdge& bedge = *bIt++;
-        if (bedge.furtherp<inv>() == this) return &bedge;
-    }
-    return nullptr;
-}
-
-template V3GraphEdge* V3GraphVertex::findConnectingEdgep<GraphWay::FORWARD>(V3GraphVertex*);
-template V3GraphEdge* V3GraphVertex::findConnectingEdgep<GraphWay::REVERSE>(V3GraphVertex*);
-
 // cppcheck-has-bug-suppress constParameter
 void V3GraphVertex::v3errorEnd(const std::ostringstream& str) const  // LCOV_EXCL_START
     VL_RELEASE(V3Error::s().m_mutex) {

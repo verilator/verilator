@@ -6,7 +6,9 @@
 
 typedef class Foo;
 
-virtual class Bar #(type T);
+virtual class Bar #(
+    type T
+);
   T m_val;
 endclass
 
@@ -14,7 +16,7 @@ class Baz;
   rand bit [3:0] m_sus;
 endclass
 
-class Foo extends Bar#(Baz);
+class Foo extends Bar #(Baz);
   function new();
     Baz baz;
     super.new();
@@ -27,7 +29,7 @@ class Foo extends Bar#(Baz);
   endtask
 endclass
 
-module test();
+module test ();
   initial begin
     automatic Foo foo = new;
 

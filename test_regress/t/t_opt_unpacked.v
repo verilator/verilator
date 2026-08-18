@@ -8,7 +8,7 @@
 // expression when trying to optimise bit operations.
 module t;
   class Cls;
-  endclass;
+  endclass
 
   class subCls;
     bit val = 1'b1;
@@ -20,7 +20,7 @@ module t;
         $stop();
       end
     endfunction
-  endclass;
+  endclass
 
   subCls sc;
 

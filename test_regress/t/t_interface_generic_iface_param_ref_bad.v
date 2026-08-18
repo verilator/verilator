@@ -9,12 +9,16 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-interface inf #(parameter int PARAM = 1);
+interface ifc #(
+    parameter int PARAM = 1
+);
   logic [PARAM-1:0] v;
-  modport mp (input v);
+  modport mp(input v);
 endinterface
 
-module GenericModule (interface.mp a);
+module GenericModule (
+    interface.mp a
+);
   // A member that does not exist on the (now concrete) interface
   localparam int LOC_PARAM = a.NONEXISTENT_PARAM;
   initial begin
@@ -24,7 +28,7 @@ module GenericModule (interface.mp a);
 endmodule
 
 module t;
-  inf #(.PARAM(13)) inf_inst();
+  ifc #(.PARAM(13)) inf_inst ();
   GenericModule genericModule (inf_inst);
   initial begin
     inf_inst.v = 7;

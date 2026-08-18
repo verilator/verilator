@@ -623,5 +623,5 @@ The information in this report is:
 
 .. describe:: "allocated 123 MB"
 
-   Total memory used during build by Verilator executable (excludes
-   :vlopt:`--build` compiler's usage) in megabytes.
+   Peak resident memory used by the Verilator executable during build
+   (excludes :vlopt:`--build` compiler's usage) in megabytes.

@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_constraint_arr_with_arrsize_unsup.v:27:14: Unsupported: Unsupported size constraint inside 'with' statement of type CLASSREFDTYPE 'Sub'
+                                                                 : ... note: In instance 't'
+   27 |       if (i.s[0].arr.size > 0) {
+      |              ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Internal Error: t/t_constraint_arr_with_arrsize_unsup.v:27:14: ../V3Randomize.cpp:#: Should be MemberSel or VarRef
+                                                                     : ... note: In instance 't'
+   27 |       if (i.s[0].arr.size > 0) {
+      |              ^
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

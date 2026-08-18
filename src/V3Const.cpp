@@ -1709,8 +1709,7 @@ class ConstVisitor final : public VNVisitor {
         const V3Number num{constp, subsize, constp->num()};
         nodep->lhsp(new AstConst{constp->fileline(), num});
         VL_DO_DANGLING(pushDeletep(constp), constp);
-        UINFOTREE(9, nodep, "", "BI(EXTEND)-ou");
-        return true;
+        return false;  // input node is still valid, keep going
     }
     bool operandBiExtendConstOver(const AstNodeBiop* nodep) {
         // EQ(const{width32}, EXTEND(xx{width3})) -> constant
@@ -2070,7 +2069,7 @@ class ConstVisitor final : public VNVisitor {
         rp->rhsp(bp);
         rp->dtypeFrom(nodep);  // Upper widthMin more likely correct
         if (VN_IS(rp->lhsp(), Const) && VN_IS(rp->rhsp(), Const)) replaceConst(rp);
-        // UINFOTREE(1, nodep, "", "repAsvConst_new");
+        iterate(nodep);  // Proceed to fixed point
     }
     void replaceAsvLUp(AstNodeBiop* nodep) {
         // BIASV(BIASV(CONSTll,lr),r) -> BIASV(CONSTll,BIASV(lr,r))
@@ -2083,7 +2082,7 @@ class ConstVisitor final : public VNVisitor {
         lp->lhsp(lrp);
         lp->rhsp(rp);
         lp->dtypeFrom(nodep);  // Upper widthMin more likely correct
-        // UINFOTREE(1, nodep, "", "repAsvLUp_new");
+        iterate(nodep);  // Proceed to fixed point
     }
     void replaceAsvRUp(AstNodeBiop* nodep) {
         // BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr))
@@ -2096,7 +2095,7 @@ class ConstVisitor final : public VNVisitor {
         rp->lhsp(lp);
         rp->rhsp(rrp);
         rp->dtypeFrom(nodep);  // Upper widthMin more likely correct
-        // UINFOTREE(1, nodep, "", "repAsvRUp_new");
+        iterate(nodep);  // Proceed to fixed point
     }
     void replaceAndOr(AstNodeBiop* nodep) {
         //  OR  (AND (CONSTll,lr), AND(CONSTrl==ll,rr))    -> AND (CONSTll, OR(lr,rr))
@@ -4585,6 +4584,10 @@ class ConstVisitor final : public VNVisitor {
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");
+    // Sampled value functions of a constant.
+    // $rose/$fell/$stable/$changed are lowered to $past by V3AssertPre, so they fold via AstPast
+    TREEOPV("AstSampled{$exprp.castConst}", "replaceWChild(nodep, VN_AS(nodep->exprp(), NodeExpr))");
+    TREEOPV("AstPast{$exprp.castConst, !$ticksp}", "replaceWChild(nodep, nodep->exprp())");
     // clang-format on
 
     // Possible futures:

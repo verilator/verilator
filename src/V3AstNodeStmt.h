@@ -297,6 +297,16 @@ public:
     AstSenTree* sentreep() const { return m_sentreep; }
     void clearSentreep() { m_sentreep = nullptr; }
 };
+class AstCLocalScope final : public AstNodeStmt {
+    // Pack statements into an unnamed scope when generating C++
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstCLocalScope(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_CLocalScope(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstCLocalScope;
+};
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
     // @astgen op1 := lhsp : AstNodeExpr
@@ -450,6 +460,21 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Text
     bool sameNode(const AstNode* samep) const override { return true; }  // Ignore name in comments
     virtual bool showAt() const { return m_showAt; }
+};
+class AstConstraintBefore final : public AstNodeStmt {
+    // Constraint solve before item
+    // @astgen op1 := lhssp : List[AstNodeExpr]
+    // @astgen op2 := rhssp : List[AstNodeExpr]
+public:
+    AstConstraintBefore(FileLine* fl, AstNodeExpr* lhssp, AstNodeExpr* rhssp)
+        : ASTGEN_SUPER_ConstraintBefore(fl) {
+        addLhssp(lhssp);
+        addRhssp(rhssp);
+    }
+    ASTGEN_MEMBERS_AstConstraintBefore;
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstConstraintExpr final : public AstNodeStmt {
     // Constraint expression
@@ -1568,15 +1593,23 @@ class AstFork final : public AstNodeBlock {
     //
     // @astgen op3 := forksp : List[AstBegin]
     const VJoinType m_joinType;  // Join keyword type
+    bool m_immediateStart = false;  // Fork starts before its parent blocks or exits
+
 public:
     AstFork(FileLine* fl, VJoinType joinType, const string& name = "")
         : ASTGEN_SUPER_Fork(fl, name)
         , m_joinType{joinType} {}
     ASTGEN_MEMBERS_AstFork;
+    bool sameNode(const AstNode* samep) const override {
+        const AstFork* const asamep = VN_DBG_AS(samep, Fork);
+        return joinType() == asamep->joinType() && immediateStart() == asamep->immediateStart();
+    }
     bool isTimingControl() const override { return !joinType().joinNone(); }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     VJoinType joinType() const { return m_joinType; }
+    bool immediateStart() const { return m_immediateStart; }
+    void immediateStart(bool flag) { m_immediateStart = flag; }
 };
 
 // === AstNodeCoverOrAssert ===

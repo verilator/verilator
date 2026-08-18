@@ -756,6 +756,18 @@ module Vt_debug_emitv_t;
         else begin
         end
     end
+    begin : assert_prop_weak
+        assert property (@(posedge clk) weak(in)
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : cover_prop_strong
+        cover property (@(posedge clk) strong(in)
+        ) begin
+        end
+    end
     int signed a;
     int signed ao;
     initial begin
@@ -941,7 +953,7 @@ module Vt_debug_emitv_t;
             bins y0 = {'sh0};
             bins y1 = {'sh1};
         };
-      cx: cross cp_x, cp_y;
+      cx: cross cp_x, cp_y iff ((cg_sig[0] == cg_sig2[0]));
     endfunction
     int signed __Vint;
     struct {
@@ -1216,12 +1228,13 @@ package Vt_debug_emitv_std;
 endpackage
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
+        bit cg_clk;
         int signed member;
         member = 'sh1;
         int signed rmember1;
         int signed rmember2;
         covergroup Vt_debug_emitv___vlAnonCG_cg_in_class;
-        function new;
+        @(posedge cg_clk)function new;
             cp_m: coverpoint member {
                 bins one = {'sh1};
                 bins two = {'sh2};
@@ -1271,13 +1284,14 @@ package Vt_debug_emitv___024unit;
         endfunction
         endcovergroup
         Vt_debug_emitv___vlAnonCG_cg_in_class cg_in_classVt_debug_emitv___vlAnonCG_cg_in_class;
+        function new;
+            cg_in_class = new();
+        endfunction
         task method;
             if ((this != this)) begin
                 $stop;
             end
         endtask
-        function new;
-        endfunction
         function randomize;
         endfunction
     endclass

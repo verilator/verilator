@@ -375,7 +375,8 @@ module fsm_seqmix_off (
     if (rst) begin
       side <= 1'b0;
       state_q <= S0;
-    end else begin
+    end
+    else begin
       side <= ~side;
       state_q <= state_d;
     end

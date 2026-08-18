@@ -13,7 +13,7 @@ interface class Icls2;
 endclass
 
 interface class IclsBoth extends Icls1, Icls2;
-  // Bad collision on icfboth
+// Bad collision on icfboth
 endclass
 
 class Cls implements IclsBoth;

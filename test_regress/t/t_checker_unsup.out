@@ -11,9 +11,6 @@
 %Error-UNSUPPORTED: t/t_checker_unsup.v:43:3: Unsupported: checker rand
    43 |   rand bit randed;   
       |   ^~~~
-%Error-UNSUPPORTED: t/t_checker_unsup.v:65:3: Unsupported: default clocking identifier
-   65 |   default clocking clk;   
-      |   ^~~~~~~
 %Error-UNSUPPORTED: t/t_checker_unsup.v:68:11: Unsupported: recursive 'checker'
    68 |   checker ChkChk;   
       |           ^~~~~~

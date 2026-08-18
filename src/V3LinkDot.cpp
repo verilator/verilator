@@ -356,10 +356,22 @@ public:
         //
         // Note we only check for conflicts at the same level; it's ok if one block hides another
         // We also wouldn't want to not insert it even though it's lower down
+
         const VSymEnt* const foundp = lookupSymp->findIdFlat(name);
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
+            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) {  // ignore typedefs etc
+                const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
+                if (alt) {
+                    nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
+                                                   << nodep->prettyNameQ() << '\n'
+                                                   << nodep->warnContextPrimary() << '\n'
+                                                   << alt->nodep()->warnOther()
+                                                   << "... Location of original declaration\n"
+                                                   << alt->nodep()->warnContextSecondary());
+                }
+            }
         } else if (nodep == fnodep) {  // Already inserted.
             // Good.
         } else if (foundp->imported()) {  // From package
@@ -3167,6 +3179,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_replaceWithAlias
         = true;  // Replace VarScope with an alias. Used in the handling of AstAlias
     bool m_isParam = false;  // Specifies whether currently visiting param variable
+    bool m_resolvingTypedef = false;  // Currently traversing a Typedef tree
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -3929,6 +3942,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                       << (suggest.empty() ? "" : nodep->warnMore() + suggest)
                                       << '\n'
                                       << nodep->warnContextPrimary() << decl);
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
                 }
             }
@@ -4143,6 +4157,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_unresolvedClass |= unresolvedClass;
         }
         UINFO(8, indent() << "done " << m_ds.ascii() << " " << nodep);
+    }
+    void visit(AstDefaultClocking* nodep) override {
+        if (VSymEnt* const foundp = m_curSymp->findIdFallback(nodep->name())) {
+            if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                clockingp->makeDefault();
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            } else {
+                nodep->v3error(nodep->prettyNameQ() << " is not a clocking identifier");
+            }
+        } else {
+            nodep->v3error("Can't find definition of clocking: " << nodep->prettyNameQ());
+        }
     }
     void visit(AstSenItem* nodep) override {
         LINKDOT_VISIT_START();
@@ -4616,9 +4642,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds.m_dotText = "";
             } else if (AstClass* const defp = VN_CAST(foundp->nodep(), Class)) {
                 if (allowVar) {
-                    AstRefDType* const newp = new AstRefDType{nodep->fileline(), nodep->name()};
-                    replaceWithCheckBreak(nodep, newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    if (m_ds.m_dotPos == DP_SCOPE && !staticAccess) {
+                        // Continue hierarchical lookup in the class scope.
+                        m_ds.m_dotSymp = foundp;
+                    } else {
+                        AstRefDType* const newp
+                            = new AstRefDType{nodep->fileline(), nodep->name()};
+                        replaceWithCheckBreak(nodep, newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
                     ok = true;
                     m_ds.m_dotText = "";
                 } else {
@@ -6073,12 +6105,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(cpackagep);
                     return;
                 }
-                if (!cpackagerefp->classOrPackageSkipp() && !cpackagerefp->classOrPackageNodep()) {
+
+                const bool doDefaultTypedef = !(m_resolvingTypedef && m_statep->forPrimary());
+                if (!cpackagerefp->classOrPackageSkipp(doDefaultTypedef)
+                    && !cpackagerefp->classOrPackageNodep()
+                    && !cpackagerefp->classOrPackageNodep()) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
                         m_ds.m_dotSymp, cpackagerefp, true, false, "class/package reference");
                     if (!foundp) return;
                 }
-                nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
+                nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp(doDefaultTypedef));
                 if (!VN_IS(nodep->classOrPackagep(), Class)
                     && !VN_IS(nodep->classOrPackagep(), Package)) {
                     if (m_statep->forPrimary()) {
@@ -6365,6 +6401,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         VL_RESTORER(m_replaceWithAlias);
         if (nodep->user2()) m_replaceWithAlias = false;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstTypedef* nodep) override {
+        VL_RESTORER(m_resolvingTypedef)
+        m_resolvingTypedef = true;
         iterateChildren(nodep);
     }
 

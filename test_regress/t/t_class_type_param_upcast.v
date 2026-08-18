@@ -6,7 +6,9 @@
 
 // Output arg of class type-parameter accepts a base handle (upcast).
 
-class Fifo #(type T = int);
+class Fifo #(
+    type T = int
+);
   T m_val;
   task get(output T t);
     t = m_val;

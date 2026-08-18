@@ -20,14 +20,6 @@ module t (
 `ifdef PARSING_TIME
   // NOTE this grammar hasn't been checked with other simulators,
   // is here just to avoid uncovered code lines in the grammar.
-  property p_strong;
-    strong(a);
-  endproperty
-
-  property p_weak;
-    weak(a);
-  endproperty
-
   property p_until;
     a until b;
   endproperty

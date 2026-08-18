@@ -40,6 +40,8 @@ public:
             m_simulators.vcs = true;
         } else if (0 == strcmp(m_info.product, "ModelSim for Questa-64")) {
             m_simulators.questa = true;
+        } else if (0 == strncmp(m_info.product, "xmsim", std::strlen("xmsim"))) {
+            m_simulators.ncsim = true;
         } else {
             printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n", __FILE__,
                    __LINE__, m_info.product);
@@ -68,11 +70,25 @@ public:
     static bool has_get_scalar() { return !simulators().icarus; }
     // return test level scope
     static const char* top() {
-        if (simulators().verilator || simulators().icarus || simulators().questa) {
-            return "t";
-        } else {
-            return "top.t";
+        // Tests built with make_top_shell=False have no "top" wrapper module,
+        // so probe the design rather than assuming one is present
+        static const char* s_topp = nullptr;
+        if (!s_topp) {
+            const char* const defaultTopp
+                = (simulators().verilator || simulators().icarus || simulators().questa) ? "t"
+                                                                                         : "top.t";
+            s_topp = defaultTopp;
+            if (vpiHandle h = vpi_handle_by_name(const_cast<PLI_BYTE8*>(defaultTopp), NULL)) {
+                vpi_release_handle(h);
+            } else {
+                const char* const other = (0 == std::strcmp(defaultTopp, "t")) ? "top.t" : "t";
+                if (vpiHandle oh = vpi_handle_by_name(const_cast<PLI_BYTE8*>(other), NULL)) {
+                    vpi_release_handle(oh);
+                    s_topp = other;
+                }
+            }
         }
+        return s_topp;
     }
     // return absolute scope of obj
     static const char* rooted(const char* obj) {

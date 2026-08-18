@@ -9,7 +9,9 @@ class Outer;
   bit [3:0] outer_value;
 
   class CoverpointInner;
-    covergroup cg;
+    bit clk;
+
+    covergroup cg @(posedge clk);
       cp: coverpoint outer_value;
     endgroup
 
@@ -47,14 +49,30 @@ class LocalDerived extends LocalBase;
   endfunction
 endclass
 
+class LocalEventBase;
+  local bit local_event;
+endclass
+
+class LocalEventDerived extends LocalEventBase;
+  covergroup cg @(posedge local_event);
+    cp: coverpoint 1'b1;
+  endgroup
+
+  function new();
+    cg = new;
+  endfunction
+endclass
+
 module t;
   Outer::CoverpointInner coverpoint_inner;
   Outer::IffInner iff_inner;
   LocalDerived local_derived;
+  LocalEventDerived local_event_derived;
 
   initial begin
     coverpoint_inner = new;
     iff_inner = new;
     local_derived = new;
+    local_event_derived = new;
   end
 endmodule
