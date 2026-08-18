@@ -464,8 +464,21 @@ public:
             const VVarType enValType = unpacked ? VVarType::WIRE : VVarType::VAR;
             AstNodeDType* const enDtypep
                 = unpacked || isBitwiseDType(varp) ? varp->dtypep() : varp->findBitDType();
+            // This variable is legitimately written by several separately generated
+            // update statements (after an ordinary write, after a force/release
+            // statement, and by the generic keep-in-sync block below); those all
+            // recompute the exact same formula from the same live inputs, so which one
+            // 'wins' on a given evaluation is immaterial to the result. V3Order's static
+            // analysis cannot see that and would flag this as multiply-driven / circular
+            // combinational logic, so suppress those two warnings via a private copy of
+            // the fileline (V3Undriven checks warnIsOff() on the *variable's* fileline,
+            // not the driving statement's), rather than mutating the shared one, so
+            // unrelated user code on the same source line still gets the warnings.
+            FileLine* const rdFlp = new FileLine{flp};
+            rdFlp->warnOff(V3ErrorCode::MULTIDRIVEN, true);
+            rdFlp->warnOff(V3ErrorCode::UNOPTFLAT, true);
             helperVars.m_rdVarp
-                = new AstVar{flp, VVarType::WIRE, varp->name() + "__VforceRd", varp->dtypep()};
+                = new AstVar{rdFlp, VVarType::WIRE, varp->name() + "__VforceRd", varp->dtypep()};
             helperVars.m_rdVarp->sigPublic(true);
             helperVars.m_enVarp
                 = new AstVar{flp, enValType, varp->name() + "__VforceEn", enDtypep};
@@ -485,7 +498,9 @@ public:
             UASSERT_OBJ(info.m_forceRdVscp && info.m_forceEnVscp && info.m_forceValVscp, vscp,
                         "Incomplete pre-existing force helper set");
         } else {
-            info.m_forceRdVscp = new AstVarScope{flp, info.m_scopep, helperVars.m_rdVarp};
+            info.m_forceRdVscp
+                = new AstVarScope{helperVars.m_rdVarp->fileline(), info.m_scopep,
+                                  helperVars.m_rdVarp};
             info.m_forceEnVscp = new AstVarScope{flp, info.m_scopep, helperVars.m_enVarp};
             info.m_forceValVscp = new AstVarScope{flp, info.m_scopep, helperVars.m_valVarp};
             info.m_scopep->addVarsp(info.m_forceRdVscp);
@@ -731,29 +746,21 @@ public:
                 activeInitp->addStmtsp(new AstInitial{flp, initStmtp});
                 scopep->addBlocksp(activeInitp);
 
-                AstSenItem* itemsp = nullptr;
-                auto addSenItem = [&](AstVarScope* vscp) {
-                    if (!vscp) return;
-                    AstSenItem* const nextp = new AstSenItem{
-                        flp, VEdgeType::ET_CHANGED, new AstVarRef{flp, vscp, VAccess::READ}};
-                    if (itemsp) {
-                        itemsp->addNext(nextp);
-                    } else {
-                        itemsp = nextp;
-                    }
-                };
-                addSenItem(info.m_forceEnVscp);
-                addSenItem(info.m_forceValVscp);
-                AstVarRef* const origSenRefp = new AstVarRef{flp, info.m_varVscp, VAccess::READ};
-                markNonReplaceable(origSenRefp);
-                AstSenItem* const origItemp
-                    = new AstSenItem{flp, VEdgeType::ET_CHANGED, origSenRefp};
-                if (!itemsp) varp->v3fatalSrc("force-rd-update missing force-enable sen item");
-                itemsp->addNext(origItemp);
-                for (ForceInfo* const finfop : forceps) addSenItem(finfop->m_rhsVarVscp);
-
-                AstActive* const activep
-                    = new AstActive{flp, "force-rd-update", new AstSenTree{flp, itemsp}};
+                // Use automatic combinational-dependency inference (like the RHS-capture
+                // block above) rather than an explicit 'ET_CHANGED' sensitivity list on
+                // the individual en/val/raw/RHS signals. The explicit-sensitivity form is
+                // scheduled through the same value-change trigger-vector machinery used
+                // for clocked logic, whose trigger vector for a given settle-loop
+                // iteration is computed before timing_resume() runs. A value change made
+                // by a just-resumed process within that same iteration (e.g. testbench
+                // stimulus applied on the same clock edge that also triggers a clocked
+                // consumer of this force-read value) is then only reflected one settle
+                // iteration later. Ordinary combinational logic re-evaluates every settle
+                // iteration regardless and is immune to this; using the same Combo
+                // domain here makes the force-read update immune to it too.
+                AstActive* const activep = new AstActive{
+                    flp, "force-rd-update",
+                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}}};
                 activep->senTreeStorep(activep->sentreep());
                 activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
                                                  createForceRdUpdateStmt(info)});
