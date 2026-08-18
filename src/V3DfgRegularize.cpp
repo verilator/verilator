@@ -56,16 +56,6 @@ class DfgRegularize final {
         }
     }
 
-    std::unordered_set<const DfgVertexVar*> gatherCyclicVariables() {
-        DfgUserMap<uint64_t> vtx2Scc = m_dfg.makeUserMap<uint64_t>();
-        V3DfgPasses::colorStronglyConnectedComponents(m_dfg, vtx2Scc);
-        std::unordered_set<const DfgVertexVar*> circularVariables;
-        for (const DfgVertexVar& vtx : m_dfg.varVertices()) {
-            if (vtx2Scc[vtx]) circularVariables.emplace(&vtx);
-        }
-        return circularVariables;
-    }
-
     static bool isUnused(const DfgVertex& vtx) {
         if (vtx.hasSinks()) return false;
         if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
@@ -73,6 +63,7 @@ class DfgRegularize final {
             UASSERT_OBJ(!varp->hasDfgRefs(), varp, "Should not have refs in other DfgGraph");
             if (varp->hasModWrRefs()) return false;
             if (varp->hasExtRefs()) return false;
+            if (varp->hasPrev()) return false;
         }
         return true;
     }
@@ -86,6 +77,9 @@ class DfgRegularize final {
         UASSERT_OBJ(&aVtx == &bVtx || aVtx.isCheaperThanLoad() || aVtx.singleSink() == &bVtx,
                     &aVtx, "Mismatched vertices");
         UASSERT_OBJ(!aVtx.is<DfgVertexVar>(), &aVtx, "Should be an operation vertex");
+
+        // Prev is just a variable reference
+        if (aVtx.is<DfgPrev>()) return false;
 
         if (bVtx.hasMultipleSinks()) {
             // Add a temporary if it's cheaper to store and load from memory than recompute
@@ -119,10 +113,6 @@ class DfgRegularize final {
     }
 
     void eliminateVars() {
-        // Although we could eliminate some circular variables, doing so would
-        // make UNOPTFLAT traces fairly usesless, so we will not do so.
-        const std::unordered_set<const DfgVertexVar*> circularVariables = gatherCyclicVariables();
-
         // Worklist based algoritm
         DfgWorklist workList{m_dfg};
 
@@ -141,7 +131,7 @@ class DfgRegularize final {
             });
             // Delete corresponsing Ast variable at the end
             if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
-                m_ctx.m_deleteps.push_back(varp->vscp());
+                if (!varp->hasPrev()) m_ctx.m_deleteps.push_back(varp->vscp());
             }
             // Remove the unused vertex
             vtx.unlinkDelete(m_dfg);
@@ -173,7 +163,7 @@ class DfgRegularize final {
             UASSERT_OBJ(!varp->hasDfgRefs(), varp, "Should not have refs in other DfgGraph");
 
             // Do not eliminate circular variables - need to preserve UNOPTFLAT traces
-            if (circularVariables.count(varp)) return;
+            if (varp->hasPrev()) return;
 
             // Do not inline if partially driven (the partial driver network can't be fed into
             // arbitrary logic. TODO: we should peeophole these away entirely)

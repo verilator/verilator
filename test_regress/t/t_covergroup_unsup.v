@@ -94,12 +94,6 @@ module t (
     signed id: coverpoint a iff (b);
   endgroup
 
-  covergroup cg_cross;
-    cross a, b iff (!rst);
-  endgroup
-  covergroup cg_cross2;
-    cross a, b iff (!rst) {}
-  endgroup
   covergroup cg_cross3;
     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
   endgroup
@@ -109,10 +103,6 @@ module t (
       bins one = crossfunc();
     }
   endgroup
-  covergroup cg_cross_id;
-    my_cg_id: cross a, b iff (!rst);
-  endgroup
-
   covergroup cg_binsoroptions_bk1;
     { bins ba = {a}; }
     { bins bar = {a} iff (!rst); }

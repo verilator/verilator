@@ -67,7 +67,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
 test.compile(verilator_flags2=[
     "--stats",
     "--build",
-    "-fno-dfg" if test.name == "t_dfg_break_cycles" else "-fno-dfg-break-cycles",
+    "-fno-dfg",
     "-fno-gate",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_ref",
@@ -76,9 +76,8 @@ test.compile(verilator_flags2=[
 ])  # yapf:disable
 
 # Check we got the expected number of circular logic warnings
-if test.name == "t_dfg_break_cycles":
-    test.file_grep(test.obj_dir + "/obj_ref/Vref__stats.txt",
-                   r'Warnings, Suppressed UNOPTFLAT\s+(\d+)', nExpectedCycles)
+test.file_grep(test.obj_dir + "/obj_ref/Vref__stats.txt",
+               r'Warnings, Suppressed UNOPTFLAT\s+(\d+)', nExpectedCycles)
 
 # Compile optimized - also builds executable
 test.compile(verilator_flags2=[

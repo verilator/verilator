@@ -142,6 +142,41 @@ class Test13_VeryLargeArray;
   }
 endclass
 
+// Test 14: Foreach on empty array
+class Test14_EmptyArray;
+  rand int empty[];
+
+  function new;
+    empty = new[0];
+  endfunction
+
+  constraint c {
+    foreach (empty[i]) {
+      empty[i] == 0;
+    }
+  }
+endclass
+
+// Test 15: Foreach on empty and not empty array
+class Test15_EmptyAndNotEmptyArray;
+  rand int empty[];
+  rand int notEmpty[];
+
+  function new;
+    empty = new[0];
+    notEmpty = new[10];
+  endfunction
+
+  constraint c {
+    foreach (empty[i]) {
+      empty[i] == 0;
+    }
+    foreach (notEmpty[i]) {
+      notEmpty[i] == 'hDEADBEEF;
+    }
+  }
+endclass
+
 module t;
   initial begin
     Test1_BasicIndex t1;
@@ -157,6 +192,8 @@ module t;
     Test11_LargerArray t11;
     Test12_LargeComplex t12;
     Test13_VeryLargeArray t13;
+    Test14_EmptyArray t14;
+    Test15_EmptyAndNotEmptyArray t15;
     int i;
 
     // Test 1: Basic index
@@ -223,6 +260,19 @@ module t;
     t13 = new;
     i = t13.randomize();
     `checkd(i, 1)
+
+    // Test 14: Foreach on empty array
+    t14 = new;
+    i = t14.randomize();
+    `checkd(i, 1)
+
+    // Test 15: Foreach on empty and not empty array
+    t15 = new;
+    i = t15.randomize();
+    `checkd(i, 1)
+    foreach (t15.notEmpty[i]) begin
+        `checkd(t15.notEmpty[i], 'hDEADBEEF);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;

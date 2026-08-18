@@ -12,6 +12,86 @@
 // SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
+// The fine-grained graph from V3Order may contain data hazards which are not a problem for
+// serial mode, but which would be a problem in parallel mode. There are two classes:
+// unordered pairs of writes, and unordered write-read pairs. This transform adds edges here
+// until no such unordered pair remains.
+//
+// ABOUT UNORDERED WRITE-WRITE PAIRS
+//
+//   The V3Order dependency graph treats these as unordered events:
+//
+//    a)  sig[15:8] = stuff;
+//          ...
+//    b)  sig[7:0]  = other_stuff;
+//
+//   They are writes to disjoint bits of the same signal. They can run in
+//   either order, in serial mode, and the result will be the same.
+//
+//   The resulting C code for each of this isn't a pure write, it's actually an R-M-W
+//   sequence:
+//
+//    a)  sig = (sig & 0xff)   | (0xff00 & (stuff << 8));
+//          ...
+//    b)  sig = (sig & 0xff00) | (0xff & other_stuff);
+//
+//   In serial mode, order doesn't matter as these run serially. In parallel mode,
+//   they must be serialized to avoid a race.
+//
+//   This pass does not check if each write would involve an R-M-W, it just assumes that
+//   it does. If this routine ever causes a drastic increase in critical path, it could be
+//   optimized to make a better prediction (with all the risk that word implies!) about
+//   whether a given write is likely to turn into an R-M-W.
+//
+// ABOUT UNORDERED WRITE-READ PAIRS
+//
+//   If we don't put unordered write-read pairs into some order at Verilation time, we risk
+//   a runtime race.
+//
+//   These arise because the OrderGraph deliberately does not model every access. A read of
+//   a variable that is in the reading block's own hybrid sensitivity list gets no edge, as
+//   does a read ignored due to a force/release, or an access to a variable marked
+//   'ignoreSchedWrite' and friends. For serial mode that is fine: whatever order the logic
+//   ends up in, it runs one block at a time. In parallel mode two such blocks can run
+//   concurrently, and if one of them writes what the other reads, that is an observable
+//   data race.
+//
+// HOW TO FIX THEM
+//
+//   An arbitrary ordering is prescribed by adding edges between MTasks. The new edges
+//   must not create a cycle, and should be added in a way that increases critical paths
+//   as little as possible.
+//
+//   Every MTask is given a unique sequence number, in a topological order of the graph, so
+//   that for every edge 'from -> to' we have seq(from) < seq(to). Adding a new edge that
+//   runs in increasing sequence order therefore cannot create a cycle, and the property is
+//   maintained by induction as more edges are added.
+//
+//   With that in hand, for each variable we take its accessors in sequence order, chain the
+//   writers together, and bracket each reader between the writers either side of it.
+//   Readers need no ordering with respect to one another.
+//
+//   The sequence numbers are assigned by a topological sort that emits the ready MTask with
+//   the smallest forward critical path first. As the forward critical path of an MTask is at
+//   least that of each of its predecessors, the smallest among the ready MTasks is also the
+//   smallest among all not yet emitted ones, so MTasks come out in globally non-decreasing
+//   forward critical path order. Chaining them in that order is what tends to grow the
+//   critical path least: the longest path through a chain starts at the head of its first
+//   MTask, so putting those with the shortest path to them first keeps that sum down.
+//
+//   The critical paths are also what makes finding the edges that are actually needed cheap.
+//   An edge is only added between a pair that is not ordered already, and a pair can be
+//   ruled ordered, or not, in constant time whenever their critical paths are inconsistent
+//   with a path between them, which avoids searching the graph for most pairs.
+//
+//   SystemC variables are handled similarly, except that all SystemC variables are treated as
+//   a single entity. Reasoning: writing a systemC var actually turns into a call to a var.write()
+//   method, which under the hood is accessing some data structure that's shared by many SC vars.
+//   It's not thread safe.
+//
+//   DPI calls are serialized similarly (they are assumed not thread safe), unless directed by
+//   options.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -19,12 +99,10 @@
 #include "V3Control.h"
 #include "V3Global.h"
 #include "V3Graph.h"
-#include "V3GraphStream.h"
 #include "V3OrderGraph.h"
 #include "V3OrderMTaskGraph.h"
 
 #include <algorithm>
-#include <map>
 #include <set>
 #include <vector>
 
@@ -72,182 +150,140 @@ public:
 // FixDataHazards
 
 class FixDataHazards final {
-    //
-    // Fix data hazards in the MTask graph.
-    //
-    // The fine-grained graph from V3Order may contain data hazards which are
-    // not a problem for serial mode, but which would be a problem in parallel
-    // mode.
-    //
-    // There are basically two classes: unordered pairs of writes, and
-    // unordered write-read pairs. We fix both here, with a combination of
-    // MTask-merges and new edges to ensure no such unordered pairs remain.
-    //
-    // ABOUT UNORDERED WRITE-WRITE PAIRS
-    //
-    //   The V3Order dependency graph treats these as unordered events:
-    //
-    //    a)  sig[15:8] = stuff;
-    //          ...
-    //    b)  sig[7:0]  = other_stuff;
-    //
-    //   Seems OK right? They are writes to disjoint bits of the same
-    //   signal. They can run in either order, in serial mode, and the result
-    //   will be the same.
-    //
-    //   The resulting C code for each of this isn't a pure write, it's
-    //   actually an R-M-W sequence:
-    //
-    //    a)  sig = (sig & 0xff)   | (0xff00 & (stuff << 8));
-    //          ...
-    //    b)  sig = (sig & 0xff00) | (0xff & other_stuff);
-    //
-    //   In serial mode, order doesn't matter so long as these run serially.
-    //   In parallel mode, we must serialize these RMW's to avoid a race.
-    //
-    //   We don't actually check here if each write would involve an R-M-W, we
-    //   just assume that it would. If this routine ever causes a drastic
-    //   increase in critical path, it could be optimized to make a better
-    //   prediction (with all the risk that word implies!) about whether a
-    //   given write is likely to turn into an R-M-W.
-    //
-    // ABOUT UNORDERED WRITE-READ PAIRS
-    //
-    //   If we don't put unordered write-read pairs into some order at Verilation
-    //   time, we risk a runtime race.
-    //
-    //   How do such unordered writer/reader pairs happen? Here's a partial list
-    //   of scenarios:
-    //
-    //   Case 1: Circular logic
-    //
-    //     If the design has circular logic, V3Order has by now generated some
-    //     dependency cycles, and also cut some of the edges to make it
-    //     acyclic.
-    //
-    //     For serial mode, that was fine. We can break logic circles at an
-    //     arbitrary point. At runtime, we'll repeat the _eval() until no
-    //     changes are detected, which papers over the discarded dependency.
-    //
-    //     For parallel mode, this situation can lead to unordered reads and
-    //     writes of the same variable, causing a data race. For example if the
-    //     original code is this:
-    //
-    //       assign b = b | a << 2;
-    //       assign out = b;
-    //
-    //     ... there's originally a dependency edge which records that 'b'
-    //     depends on the first assign. V3Order may cut this edge, making the
-    //     statements unordered. In serial mode that's fine, they can run in
-    //     either order. In parallel mode it's a reader/writer race.
-    //
-    //   Case 2: Race Condition in Verilog Sources
-    //
-    //     If the input has races, eg. blocking assignments in always blocks
-    //     that share variables, the graph at this point will contain unordered
-    //     writes and reads (or unordered write-write pairs) reflecting that.
-
     // TYPES
-    // Sort LogicMTask objects into deterministic order by calling id()
-    // which is a unique and stable serial number.
-    struct MTaskIdLessThan final {
-        bool operator()(const LogicMTask* lhsp, const LogicMTask* rhsp) const {
-            return *lhsp < *rhsp;
-        }
+
+    // Access to one variable, with the MTask performing it
+    struct Access final {
+        const AstVarScope* m_vscp;  // The variable accessed, its index is in 'user1'
+        LogicMTask* m_mtaskp;  // The accessing MTask
+        VAccess m_access;  // The kind of access
     };
-    using TasksByRank = std::map<uint32_t /*rank*/, std::set<LogicMTask*, MTaskIdLessThan>>;
+
+    // NODE STATE
+    //  AstVarScope::user1    -> int: Variable index for stable sorting
+    const VNUser1InUse m_user1InUse;
 
     // MEMBERS
     OrderMTaskGraph& m_mTaskGraph;  // The Mtask graph
+    std::vector<LogicMTask*> m_scratch;  // Scratch MTask list, reused to avoid reallocation
 
     // METHODS
 
-    // Redirect all edges of 'donorp' onto 'recipientp'
-    static void redirectEdgesFrom(LogicMTask* recipientp, LogicMTask* donorp) {
-        // Process outgoing edges
-        while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(donorp->outEdges().frontp())) {
-            LogicMTask* const top = edgep->toMTaskp();
-            top->removeRelativeEdge<GraphWay::REVERSE>(edgep);
-
-            // If an edge already exists between recipient and sink of donor, drop the duplicate.
-            if (recipientp->hasRelativeMTask(top)) {
-                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-                continue;
+    // Assign each MTask a unique sequence number, held in 'user()', such that for every edge
+    // 'from -> to' we have seq(from) < seq(to). See the note at top of file on why this matters.
+    // This is a topological sort using Kahn's algorithm with MTasks enumerated in a globally
+    // non-decreasing critical path order.
+    void assignSequenceNumbers() {
+        struct MTaskCmp final {
+            bool operator()(const LogicMTask* ap, const LogicMTask* bp) const {
+                // Order by critical path
+                const uint64_t aCp = ap->cpExclusive<GraphWay::FORWARD>();
+                const uint64_t bCp = bp->cpExclusive<GraphWay::FORWARD>();
+                if (aCp != bCp) return aCp < bCp;
+                // Break ties by stable id
+                return *ap < *bp;
             }
-
-            // Otherwise redirect the edge from donorp->top to recipientp->top.
-            edgep->relinkFromp(recipientp);
-            recipientp->addRelativeMTask(top);
-            recipientp->stealRelativeEdge<GraphWay::FORWARD>(edgep);
-            top->addRelativeEdge<GraphWay::REVERSE>(edgep);
+        };
+        // Set of ready vertices. Initialized to the entry MTask.
+        std::set<LogicMTask*, MTaskCmp> ready{m_mTaskGraph.entryp()};
+        // 'user' also used to count remaining dependencies of each MTask. Initialize it.
+        for (V3GraphVertex& vtx : m_mTaskGraph.vertices()) {
+            vtx.user(static_cast<uint32_t>(vtx.inEdges().size()));
         }
-
-        // Process incoming edges
-        while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(donorp->inEdges().frontp())) {
-            LogicMTask* const fromp = edgep->fromMTaskp();
-            fromp->removeRelativeMTask(donorp);
-            fromp->removeRelativeEdge<GraphWay::FORWARD>(edgep);
-
-            // If an edge already exists between recipient and source of donor, drop the duplicate.
-            if (fromp->hasRelativeMTask(recipientp)) {
-                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-                continue;
+        // Next sequence number to assign to each MTask.
+        uint32_t seq = 0;
+        // Process ready vertices in critical path order.
+        while (!ready.empty()) {
+            // Pick up and detach the ready MTask with the smallest critical path.
+            const auto it = ready.begin();
+            LogicMTask* const mtaskp = *it;
+            ready.erase(it);
+            // Assign the next sequence number to the MTask
+            mtaskp->user(++seq);
+            // Decrement edge count of successors and add to ready set if no dependencies left
+            for (V3GraphEdge& edge : mtaskp->outEdges()) {
+                LogicMTask* const top = static_cast<LogicMTask*>(edge.top());
+                const uint32_t nDeps = top->user() - 1;
+                top->user(nDeps);
+                if (!nDeps) ready.insert(top);
             }
-
-            // Otherwise redirect the edge from fromp->donorp to fromp->recipientp.
-            edgep->relinkTop(recipientp);
-            fromp->addRelativeMTask(recipientp);
-            fromp->addRelativeEdge<GraphWay::FORWARD>(edgep);
-            recipientp->stealRelativeEdge<GraphWay::REVERSE>(edgep);
         }
+        UASSERT(seq == m_mTaskGraph.vertices().size(), "MTask graph is cyclic");
     }
 
-    void findAdjacentTasks(const OrderVarStdVertex* varVtxp, TasksByRank& tasksByRank) {
-        // Find all writer tasks for this variable, group by rank.
-        for (const V3GraphEdge& edge : varVtxp->inEdges()) {
-            if (const auto* const logicVtxp = edge.fromp()->cast<OrderLogicVertex>()) {
-                LogicMTask* const writerMtaskp = static_cast<LogicMTask*>(logicVtxp->userp());
-                tasksByRank[writerMtaskp->rank()].insert(writerMtaskp);
-            }
-        }
-        // Note: Find all reader tasks for this variable, group by rank.
-        // There was "broken" code here to find readers, but fixing it to
-        // work properly harmed performance on some tests, see issue #3360.
-    }
-
-    void mergeSameRankTasks(const TasksByRank& tasksByRank) {
-        LogicMTask* lastRecipientp = nullptr;
-        for (const auto& pair : tasksByRank) {
-            // Find the largest node at this rank, merge into it.  (If we
-            // happen to find a huge node, this saves time in
-            // redirectEdgesFrom() versus merging into an arbitrary node.)
-            LogicMTask* recipientp = nullptr;
-            for (LogicMTask* const mtaskp : pair.second) {
-                if (!recipientp || (recipientp->cost() < mtaskp->cost())) recipientp = mtaskp;
-            }
-            UASSERT_OBJ(!lastRecipientp || (lastRecipientp->rank() < recipientp->rank()),
-                        recipientp, "Merging must be on lower rank");
-
-            for (LogicMTask* const donorp : pair.second) {
-                // Merge donor into recipient.
-                if (donorp == recipientp) continue;
-                // Fix up the map, so donor's OLVs map to recipientp
-                for (const OrderMoveVertex& vtx : donorp->vertexList()) {
-                    vtx.logicp()->userp(recipientp);
+    // Gather every variable access, resolved to the MTask performing it.
+    std::vector<Access> gatherAccesses() {
+        std::vector<Access> accesses;
+        int nVars = 0;
+        for (V3GraphVertex& vtx : m_mTaskGraph.vertices()) {
+            LogicMTask& mtask = static_cast<LogicMTask&>(vtx);
+            for (const OrderMoveVertex& mVtx : mtask.vertexList()) {
+                const OrderLogicVertex* const lVtxp = mVtx.logicp();
+                if (!lVtxp) continue;
+                for (const OrderLogicVertex::VarAccess& acc : lVtxp->varAccesses()) {
+                    AstVarScope* const vscp = acc.m_vscp;
+                    if (!vscp->user1()) vscp->user1(++nVars);
+                    accesses.push_back({vscp, &mtask, acc.m_access});
                 }
-                // Move all vertices from donorp to recipientp
-                recipientp->moveAllVerticesFrom(donorp);
-                // Redirect edges from donorp to recipientp
-                redirectEdgesFrom(recipientp, donorp);
-                // Remove donorp from the graph
-                VL_DO_DANGLING(donorp->unlinkDelete(&m_mTaskGraph), donorp);
             }
-
-            if (lastRecipientp && !lastRecipientp->hasRelativeMTask(recipientp)) {
-                new MTaskEdge{&m_mTaskGraph, lastRecipientp, recipientp, 1};
-            }
-            lastRecipientp = recipientp;
         }
+        return accesses;
+    }
+
+    // Add an edge ordering 'fromp' before 'top', unless they are already ordered
+    void addEdgeIfNeeded(LogicMTask* fromp, LogicMTask* top) {
+        // Nothing to order within a single MTask
+        if (fromp == top) return;
+        UASSERT_OBJ(fromp->user() < top->user(), fromp,
+                    "Edge must run in increasing sequence order");
+        // Already directly ordered. This is an O(1) set lookup, and catches the common case of
+        // a dependency the OrderGraph already provided.
+        if (fromp->hasEdgeTo(top)) return;
+        // Otherwise check if already ordered
+        if (m_mTaskGraph.pathExists(fromp, top, nullptr)) return;
+        // Unordered. Add an edge between them.
+        m_mTaskGraph.addEdge(fromp, top);
+    }
+
+    // Add the edges required to make the accesses of one variable race free. 'beginp'/'endp'
+    // delimit the accesses of a single variable, in sequence number order.
+    void serializeVariable(const Access* beginp, const Access* endp) {
+        // Nothing to order if at most one MTask accesses this variable. Each MTask appears at
+        // most once in the range, see the assertion below, so this is just the range size.
+        if (endp - beginp < 2) return;
+
+        std::vector<LogicMTask*>& pendingReaders = m_scratch;
+        pendingReaders.clear();
+        LogicMTask* prevWriterp = nullptr;
+        for (const Access* accp = beginp; accp != endp; ++accp) {
+            // The OrderLogicVertices record one access per variable, and at this point each MTask
+            // holds exactly one logic block, so an MTask cannot appear twice here.
+            UASSERT_OBJ(accp == beginp || accp[-1].m_mtaskp != accp->m_mtaskp, accp->m_mtaskp,
+                        "Multiple accesses of a variable in an MTask");
+            LogicMTask* const mtaskp = accp->m_mtaskp;
+            if (accp->m_access.isWriteOrRW()) {
+                // Reads since the previous write must complete before this write
+                for (LogicMTask* const readerp : pendingReaders) addEdgeIfNeeded(readerp, mtaskp);
+                // Consecutive writes must be ordered. If a read came between them, the edges to
+                // and from that read imply it already.
+                if (prevWriterp && pendingReaders.empty()) addEdgeIfNeeded(prevWriterp, mtaskp);
+                pendingReaders.clear();
+                prevWriterp = mtaskp;
+            } else {
+                // This read must happen after the preceding write
+                if (prevWriterp) addEdgeIfNeeded(prevWriterp, mtaskp);
+                pendingReaders.push_back(mtaskp);
+            }
+        }
+    }
+
+    // Serialize the given MTasks, in sequence number order
+    void serializeMTasks(std::vector<LogicMTask*>& mtaskps) {
+        std::sort(mtaskps.begin(), mtaskps.end(), [](const LogicMTask* ap, const LogicMTask* bp) {
+            return ap->user() < bp->user();
+        });
+        mtaskps.erase(std::unique(mtaskps.begin(), mtaskps.end()), mtaskps.end());
+        for (size_t i = 1; i < mtaskps.size(); ++i) addEdgeIfNeeded(mtaskps[i - 1], mtaskps[i]);
     }
 
     bool hasDpiHazard(LogicMTask* mtaskp) {
@@ -268,116 +304,47 @@ class FixDataHazards final {
     // CONSTRUCTOR
     FixDataHazards(OrderMTaskGraph& mTaskGraph)
         : m_mTaskGraph{mTaskGraph} {
-        // Rank the graph. DGS is faster than V3GraphAlg's recursive rank, and also allows us to
-        // set up the OrderLogicVertex -> LogicMTask map at the same time.
+        // Give the MTasks a total order consistent with their dependencies
+        assignSequenceNumbers();
+
+        // Gather variable accesses made by each MTask
+        std::vector<Access> accesses = gatherAccesses();
+        // Sort by variable (to group by variable), then by sequence number of the accessing MTask
+        std::sort(accesses.begin(), accesses.end(), [](const Access& a, const Access& b) {
+            if (a.m_vscp != b.m_vscp) return a.m_vscp->user1() < b.m_vscp->user1();
+            return a.m_mtaskp->user() < b.m_mtaskp->user();
+        });
+
+        // Serialize the accesses of each variable
+        for (size_t i = 0; i < accesses.size();) {
+            size_t end = i + 1;
+            while (end < accesses.size() && accesses[end].m_vscp == accesses[i].m_vscp) ++end;
+            serializeVariable(accesses.data() + i, accesses.data() + end);
+            i = end;
+        }
+
+        // Serialize all writes to SystemC vars. Note the reads of an individual SC var are already
+        // ordered against its writes by the per variable pass above, it is only the writes between
+        // different SC vars that need this extra serialization. Only top level ports are SC vars,
+        // so this should not hurt performance too much.
         {
-            GraphStreamUnordered serialize{&m_mTaskGraph};
-            while (LogicMTask* const mtaskp
-                   = const_cast<LogicMTask*>(static_cast<const LogicMTask*>(serialize.nextp()))) {
-                // Compute and assign rank
-                uint32_t rank = 0;
-                for (V3GraphEdge& edge : mtaskp->inEdges()) {
-                    rank = std::max(edge.fromp()->rank() + 1, rank);
-                }
-                mtaskp->rank(rank);
-
-                // Set up the OrderLogicVertex -> LogicMTask map
-                // Entry and exit MTasks have no MTaskMoveVertices under them, so move on
-                if (mtaskp->vertexList().empty()) continue;
-                // Otherwise there should be only one OrderMoveVertex in each MTask at this stage
-                const OrderMoveVertex::List& vertexList = mtaskp->vertexList();
-                UASSERT_OBJ(vertexList.hasSingleElement(), mtaskp, "Multiple OrderMoveVertex");
-                const OrderMoveVertex* const mVtxp = vertexList.frontp();
-                // Set up mapping back to the MTask from the OrderLogicVertex
-                if (OrderLogicVertex* const lvtxp = mVtxp->logicp()) lvtxp->userp(mtaskp);
+            m_scratch.clear();
+            for (const Access& access : accesses) {
+                if (!access.m_access.isWriteOrRW()) continue;
+                if (!access.m_vscp->varp()->isSc()) continue;
+                m_scratch.push_back(access.m_mtaskp);
             }
+            serializeMTasks(m_scratch);
         }
 
-        // Gather all variables. SystemC vars will be handled slightly specially, so keep separate.
-        const OrderGraph& orderGraph = m_mTaskGraph.moveGraph().orderGraph();
-        std::vector<const OrderVarStdVertex*> regularVars;
-        std::vector<const OrderVarStdVertex*> systemCVars;
-        for (const V3GraphVertex& vtx : orderGraph.vertices()) {
-            // Only consider OrderVarStdVertex which reflects
-            // an actual lvalue assignment; the others do not.
-            if (const OrderVarStdVertex* const vvtxp = vtx.cast<const OrderVarStdVertex>()) {
-                if (vvtxp->vscp()->varp()->isSc()) {
-                    systemCVars.push_back(vvtxp);
-                } else {
-                    regularVars.push_back(vvtxp);
-                }
-            }
-        }
-
-        // For each OrderVarVertex, look at its writer and reader MTasks.
-        //
-        // If there's a set of writers and readers at the same rank, we
-        // know these are unordered with respect to one another, so merge
-        // those MTasks all together.
-        //
-        // At this point, we have at most one merged mtask per rank (for a
-        // given OVV.) Create edges across these remaining MTasks to ensure
-        // they run in serial order (going along with the existing ranks.)
-        //
-        // NOTE: we don't update the CP's stored in the LogicMTasks to
-        // reflect the changes we make to the graph. That's OK, as we
-        // haven't yet initialized CPs when we call this routine.
-        for (const OrderVarStdVertex* const varVtxp : regularVars) {
-            // Build a set of MTasks, per rank, which access this var.
-            // Within a rank, sort by MTaskID to avoid nondeterminism.
-            TasksByRank tasksByRank;
-
-            // Find all reader and writer tasks for this variable, add to
-            // tasksByRank.
-            findAdjacentTasks(varVtxp, tasksByRank);
-
-            // Merge all writer and reader tasks from same rank together.
-            //
-            // NOTE: Strictly speaking, we don't need to merge all the
-            // readers together. That may lead to extra serialization. The
-            // least amount of ordering we could impose here would be to
-            // merge all writers at a given rank together; then make edges
-            // from the merged writer node to each reader node at the same
-            // rank; and then from each reader node to the merged writer at
-            // the next rank.
-            //
-            // Whereas, merging all readers and writers at the same rank
-            // together is "the simplest thing that could possibly work"
-            // and it seems to.  It also creates fairly few edges. We don't
-            // want to create tons of edges here, doing so is not nice to
-            // the main edge contraction pass.
-            mergeSameRankTasks(tasksByRank);
-        }
-
-        // Handle SystemC vars just a little differently. Instead of
-        // treating each var as an independent entity, and serializing
-        // writes to that one var, we treat ALL systemC vars as a single
-        // entity and serialize writes (and, conservatively, reads) across
-        // all of them.
-        //
-        // Reasoning: writing a systemC var actually turns into a call to a
-        // var.write() method, which under the hood is accessing some data
-        // structure that's shared by many SC vars. It's not thread safe.
-        //
-        // Hopefully we only have a few SC vars -- top level ports, probably.
-        {
-            TasksByRank tasksByRank;
-            for (const OrderVarStdVertex* const varVtxp : systemCVars) {
-                findAdjacentTasks(varVtxp, tasksByRank);
-            }
-            mergeSameRankTasks(tasksByRank);
-        }
-
-        // Handle nodes containing DPI calls, we want to serialize those
-        // by default unless user gave '--threads-dpi none'.
-        // Same basic strategy as above to serialize access to SC vars.
+        // Serialize DPI calls unless user gave '--threads-dpi none'.
         if (!v3Global.opt.threadsDpiPure() || !v3Global.opt.threadsDpiUnpure()) {
-            TasksByRank tasksByRank;
+            m_scratch.clear();
             for (V3GraphVertex& vtx : m_mTaskGraph.vertices()) {
                 LogicMTask& mtask = static_cast<LogicMTask&>(vtx);
-                if (hasDpiHazard(&mtask)) tasksByRank[mtask.rank()].insert(&mtask);
+                if (hasDpiHazard(&mtask)) m_scratch.push_back(&mtask);
             }
-            mergeSameRankTasks(tasksByRank);
+            serializeMTasks(m_scratch);
         }
     }
 
@@ -387,4 +354,6 @@ public:
 
 void OrderMTaskGraph::fixDataHazards(OrderMTaskGraph& mtaskGraph) {
     FixDataHazards::apply(mtaskGraph);
+    // The critical paths are maintained as the graph is mutated, check them
+    mtaskGraph.validate();
 }
