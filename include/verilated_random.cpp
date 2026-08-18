@@ -499,8 +499,8 @@ static bool validSMTNum(const std::string& val) {
     case 'x': base = 16; break;
     default: return false;
     }
-    size_t end = val.find_last_not_of(" \t\r");
-    if (end == std::string::npos || end < i) return false;
+    const size_t end = val.find_last_not_of(" \t\r");
+    if (end < i) return false;
     for (; i <= end; ++i) {
         const char c = val[i];
         int digit;
@@ -977,18 +977,13 @@ bool VlRandomizer::applyModel(std::iostream& os) {
 bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
     char c = 0;
-    is >> c;
-    if (c != '(') {
-        VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                   "Internal: Unable to parse solver's response: invalid S-expression");
-        return false;
-    }
+    is >> c;  // The '(' opening the readSExpr-balanced reply
     // Stage writes; commit only after the whole reply parses so failure keeps prior values
     std::vector<std::tuple<const VlRandomVar*, std::string, std::string>> staged;
     // Every requested term must come back exactly once, whether or not it is written
     std::set<std::string> answered;
     while (true) {
-        if (!(is >> c)) return false;
+        if (VL_UNCOVERABLE(!(is >> c))) return false;  // Balanced reply breaks at ')' first
         if (c == ')') break;
         if (c != '(') {
             VL_WARN_MT(__FILE__, __LINE__, "randomize",

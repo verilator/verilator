@@ -17,7 +17,7 @@
 #         | err_trunc | unknown_twice | binary | model_trunc | phase_model
 #         | err_phase | phase_trunc | err_assume | oor_assume | garbage_assume
 #         | err_core | core_junk | err_unbal | err_unbal_cont | bare_hash
-#         | no_digits | high_digit | success | crlf
+#         | no_digits | high_digit | low_digit | success | crlf
 #         | multiline | indent
 #   die_at           - kill the solver and exit, closing every pipe end
 #   die_status_at    - same, counting sat/unsat status lines instead of models
@@ -47,6 +47,7 @@
 #   bare_hash        - same, but with one value that is only "#"
 #   no_digits        - same, but with one value whose base has no digits
 #   high_digit       - same, but with one digit outside its stated base
+#   low_digit        - same, but with one character below any digit or letter
 #   err_phase        - replace the first phase value reply with (error ...)
 #   phase_trunc      - answer an unterminated phase value reply and close the pipe
 #   err_assume       - replace the first unsat-assumptions reply with (error ...)
@@ -118,7 +119,7 @@ def forward(text, at_start):
         for tok in text.split():
             emit(tok)
     elif mode == "indent":
-        emit("  " + text)
+        emit(" \t" + text)
     else:
         emit(text)
 
@@ -263,6 +264,10 @@ for line in proc.stdout:
         continue
     if mode == "high_digit":
         emit("((a #x0b) (b #b2))")
+        swallow(line)
+        continue
+    if mode == "low_digit":
+        emit("((a #x0b) (b #x!))")
         swallow(line)
         continue
     # Only the final phase queries every variable, so only that reply names y

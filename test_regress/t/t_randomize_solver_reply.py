@@ -40,6 +40,7 @@ runs = [
     ('bare_hash', 1, 15),  # a value that is only "#"
     ('no_digits', 1, 15),  # a base marker with no digits after it
     ('high_digit', 1, 15),  # a digit legal for some base but not the stated one
+    ('low_digit', 1, 15),  # a character below any digit or letter
     ('bad_base', 1, 15),  # a base character that is not b, o, x or h
     ('unknown_var', 1, 15),  # a variable that was never requested
     ('bad_index', 1, 15),  # a malformed array select index
