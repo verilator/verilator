@@ -79,7 +79,7 @@ public:
     virtual void* datap(int /*idx*/) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
-    bool set(const std::string& idx, const std::string& val) const;
+    void set(const std::string& idx, const std::string& val) const;
     virtual void emitGetValue(std::ostream& s) const;
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;

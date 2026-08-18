@@ -15,8 +15,10 @@
 #         | err_reply | garbage_model | bad_value | bad_digits | short_model
 #         | dup_model | octal | upper_hex | bad_base | unknown_var | bad_index
 #         | err_trunc | unknown_twice | binary | model_trunc | phase_model
-#         | success | crlf
-#         | multiline
+#         | err_phase | phase_trunc | err_assume | oor_assume | garbage_assume
+#         | err_core | core_junk | err_unbal | err_unbal_cont | bare_hash
+#         | no_digits | high_digit | success | crlf
+#         | multiline | indent
 #   die_at           - kill the solver and exit, closing every pipe end
 #   die_status_at    - same, counting sat/unsat status lines instead of models
 #   mute_at          - close the reply pipe but keep this wrapper running
@@ -42,14 +44,28 @@
 #   unknown_twice    - answer two statuses with unknown
 #   short_model      - same, but omitting a requested variable
 #   dup_model        - same, but answering one variable twice
+#   bare_hash        - same, but with one value that is only "#"
+#   no_digits        - same, but with one value whose base has no digits
+#   high_digit       - same, but with one digit outside its stated base
+#   err_phase        - replace the first phase value reply with (error ...)
+#   phase_trunc      - answer an unterminated phase value reply and close the pipe
+#   err_assume       - replace the first unsat-assumptions reply with (error ...)
+#   oor_assume       - answer the unsat assumptions with an out-of-range literal
+#   garbage_assume   - answer the unsat assumptions with a non-S-expression word
+#   err_core         - replace the first unsat-core reply with (error ...)
+#   core_junk        - prepend garbage to the core reply and close the pipe
+#   err_unbal        - answer the Nth status with an error closing an extra paren
+#   err_unbal_cont   - same, with the extra paren on a continuation line
 #   success          - echo a print-success line before every reply
 #   crlf             - end every line with CRLF
 #   multiline        - split every S-expression reply one token per line
+#   indent           - prepend whitespace to every reply line
 # TAMPER_AT: reply index to act on (default 3)
 
 # pylint: disable=C0103,C0114,consider-using-with
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -60,15 +76,19 @@ at = int(os.environ.get("TAMPER_AT", "3"))
 
 # Modes acting on the TAMPER_AT'th status line rather than the Nth model reply
 STATUS_MODES = ("die_status_at", "err_once", "err_multiline", "unknown_once", "unknown_twice",
-                "unsupported_once", "garbage_status", "err_trunc")
+                "unsupported_once", "garbage_status", "err_trunc", "err_unbal", "err_unbal_cont")
 # Modes acting on the TAMPER_AT'th S-expression reply of any kind
 REPLY_MODES = ("err_reply", )
 # Modes acting on the first array model reply, which arrives as (select ...) terms
 SELECT_MODES = ("bad_index", )
-# Acts on the final phased model, whose first line does not close the reply
-PHASE_MODES = ("phase_model", )
+# phase_model acts on the final phased model; the others on any phase value reply
+PHASE_MODES = ("phase_model", "err_phase", "phase_trunc")
+# Modes acting on an unsat-assumptions reply, which lists a<N> literals
+ASSUME_MODES = ("err_assume", "oor_assume", "garbage_assume")
+# Modes acting on an unsat-core reply, which lists cons<N> names
+CORE_MODES = ("err_core", "core_junk")
 # Modes rewriting every line, so they never consume the index
-STREAM_MODES = ("success", "crlf", "multiline")
+STREAM_MODES = ("success", "crlf", "multiline", "indent")
 
 
 def real_solver():
@@ -97,6 +117,8 @@ def forward(text, at_start):
     if mode == "multiline" and text.startswith("(") and not text.startswith("(error"):
         for tok in text.split():
             emit(tok)
+    elif mode == "indent":
+        emit("  " + text)
     else:
         emit(text)
 
@@ -152,6 +174,10 @@ for line in proc.stdout:
         counted = at_reply_start and line.startswith("(((select")
     elif mode in PHASE_MODES:
         counted = at_reply_start and line.startswith("((x")
+    elif mode in ASSUME_MODES:
+        counted = at_reply_start and re.match(r"\(a\d", line) is not None
+    elif mode in CORE_MODES:
+        counted = at_reply_start and line.startswith("(cons")
     else:
         counted = at_reply_start and line.startswith("((")
     if counted:
@@ -194,6 +220,49 @@ for line in proc.stdout:
         continue
     if mode == "bad_digits":
         emit("((a #x0b) (b #xgg))")
+        swallow(line)
+        continue
+    # The first phase value reply always precedes the final phased model
+    if mode == "err_phase":
+        emit('(error "injected phase value error")')
+        swallow(line)
+        continue
+    if mode == "phase_trunc":
+        emit("((x")
+        proc.kill()
+        proc.wait()
+        sys.exit(0)
+    if mode == "err_assume":
+        emit('(error "injected assumptions error")')
+        swallow(line)
+        continue
+    if mode == "oor_assume":
+        emit("(a99999999999999)")
+        swallow(line)
+        continue
+    if mode == "garbage_assume":
+        emit("junk")
+        swallow(line)
+        continue
+    if mode == "err_core":
+        emit('(error "injected core error")')
+        swallow(line)
+        continue
+    if mode == "core_junk":
+        emit("junk((cons0))")
+        proc.kill()
+        proc.wait()
+        sys.exit(0)
+    if mode == "bare_hash":
+        emit("((a #x0b) (b #))")
+        swallow(line)
+        continue
+    if mode == "no_digits":
+        emit("((a #x0b) (b #x))")
+        swallow(line)
+        continue
+    if mode == "high_digit":
+        emit("((a #x0b) (b #b2))")
         swallow(line)
         continue
     # Only the final phase queries every variable, so only that reply names y
@@ -259,6 +328,13 @@ for line in proc.stdout:
     if mode == "err_multiline":
         emit('(error "injected')
         emit('multiline error")')
+        continue
+    if mode == "err_unbal":
+        emit('(error "unbalanced"))')
+        continue
+    if mode == "err_unbal_cont":
+        emit('(error "unbalanced"')
+        emit('))')
         continue
     if mode == "unsupported_once":
         emit("unsupported")

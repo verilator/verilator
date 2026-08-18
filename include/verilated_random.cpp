@@ -518,31 +518,26 @@ static bool validSMTNum(const std::string& val) {
     return true;
 }
 
-static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
-    if (!validSMTNum(val)) {
-        VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                   "Internal: Unable to parse solver's randomized number");
-        return false;
-    }
+// val must have passed validSMTNum
+static void parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
     size_t i = val.find('#') + 1;
     switch (val[i++]) {
     case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
     case 'o': _vl_vsss_based(owp, obits, 3, &val[i], 0, val.size() - i); break;
     default: _vl_vsss_based(owp, obits, 4, &val[i], 0, val.size() - i); break;
     }
-    return true;
 }
-bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
+void VlRandomVar::set(const std::string& idx, const std::string& val) const {
     VlWide<VL_WQ_WORDS_E> qowp;
     VL_SET_WQ(qowp, 0ULL);
     WDataOutP owp = qowp;
     const int obits = width();
     VlWide<VL_WQ_WORDS_E> qiwp;
     VL_SET_WQ(qiwp, 0ULL);
-    if (!idx.empty() && !parseSMTNum(64, qiwp, idx)) return false;
+    if (!idx.empty()) parseSMTNum(64, qiwp, idx);
     const int nidx = qiwp[0];
     if (obits > VL_QUADSIZE) owp = WDataOutP::external(reinterpret_cast<EData*>(datap(nidx)));
-    if (!parseSMTNum(obits, owp, val)) return false;
+    parseSMTNum(obits, owp, val);
 
     if (obits <= VL_BYTESIZE) {
         CData* const p = static_cast<CData*>(datap(nidx));
@@ -559,7 +554,6 @@ bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
     } else {
         _vl_clean_inplace_w(obits, owp);
     }
-    return true;
 }
 
 void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
@@ -1078,7 +1072,7 @@ bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
         }
         // Reject before any commit, so a bad value later in the reply cannot
         // leave earlier ones written
-        if (!validSMTNum(value) || (!idx.empty() && !validSMTNum(idx))) {
+        if (!validSMTNum(value)) {
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
                        "Internal: Unable to parse solver's response: invalid value");
             return false;
@@ -1090,11 +1084,8 @@ bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
                    "Internal: Unable to parse solver's response: incomplete model");
         return false;
     }
-    for (const auto& entry : staged) {
-        const bool ok = std::get<0>(entry)->set(std::get<1>(entry), std::get<2>(entry));
-        assert(ok);  // Validated before staging
-        (void)ok;
-    }
+    for (const auto& entry : staged)
+        std::get<0>(entry)->set(std::get<1>(entry), std::get<2>(entry));
     return true;
 }
 
