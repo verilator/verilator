@@ -1,12 +1,21 @@
-%Error: t/t_class_lparam_struct_field_chain_bad.v:37:25: Malformed dotted select in parameter value
+%Error: t/t_class_lparam_struct_field_chain_bad.v:37:25: Unsupported: bit-select of parameter struct member
                                                        : ... note: In instance 't.u'
    37 |   Sub #(int'(CFG::cfg.jt.cam_type[0])) u_fieldref ();
       |                         ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_lparam_struct_field_chain_bad.v:39:26: Dotted member select on non-struct parameter value
-                                                       : ... note: In instance 't.u'
+%Error-UNSUPPORTED: t/t_class_lparam_struct_field_chain_bad.v:39:26: Unsupported: Member call on object 'SEL' which is a 'BASICDTYPE 'logic''
+                                                                   : ... note: In instance 't.u'
    39 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
       |                          ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_class_lparam_struct_field_chain_bad.v:39:12: Unsupported: static cast to 'int' from 'VOIDDTYPE'
+                                                                   : ... note: In instance 't.u'
+   39 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
+      |            ^
+%Error: t/t_class_lparam_struct_field_chain_bad.v:39:12: Can't convert defparam value to constant: Param '__paramNumber1' of 'u_nonstruct'
+                                                       : ... note: In instance 't.u'
+   39 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
+      |            ^
 %Error: t/t_class_lparam_struct_field_chain_bad.v:41:25: Member 'nosuchfield' not found in structure
                                                        : ... note: In instance 't.u'
    41 |   Sub #(int'(CFG::cfg.jt.nosuchfield)) u_nomember ();
