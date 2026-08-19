@@ -1727,7 +1727,7 @@ class VlTest:
         if VlTest._cached_aslr_off is None:
             out = VtOs.run_capture('setarch --addr-no-randomize echo OK 2>/dev/null', check=False)
             if re.search(r'OK', out):
-                VlTest._cached_aslr_off = "setarch --addr-no-randomize "
+                VlTest._cached_aslr_off = "setarch --addr-no-randomize env "
             else:
                 VlTest._cached_aslr_off = ""
         return VlTest._cached_aslr_off
