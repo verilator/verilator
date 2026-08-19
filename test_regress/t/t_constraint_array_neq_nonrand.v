@@ -130,6 +130,17 @@ class frame_contradiction;
   endfunction
 endclass
 
+// Both operands are member selects on array-indexed elements of the same
+// rand array (x[0].a vs x[1].a); the root-variable resolver must recurse
+// through the index to find 'x', not just the member select itself.
+typedef struct {
+  bit [7:0] a[2];
+} s_t;
+class member_of_rand_array;
+  rand s_t x[2];
+  constraint c { x[0].a != x[1].a; }
+endclass
+
 module t;
   initial begin
     frame_bothrand bothrand_obj;
@@ -141,6 +152,7 @@ module t;
     frame_swapped swapped_obj;
     frame_neq neq_obj;
     frame_contradiction bad_obj;
+    member_of_rand_array member_idx_obj;
     bit [7:0] prev[4][4];
     int randomize_result;
     bit any_diff;
@@ -235,6 +247,12 @@ module t;
     bad_obj = new;
     randomize_result = bad_obj.randomize();
     `checkd(randomize_result, 0);
+
+    // Still rand-vs-rand; must not get misrouted into the expansion path.
+    member_idx_obj = new;
+    randomize_result = member_idx_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(member_idx_obj.x[0].a != member_idx_obj.x[1].a, 1);
 
     $write("*-* All Finished *-*\n");
     $finish;

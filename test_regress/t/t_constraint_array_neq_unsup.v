@@ -32,6 +32,13 @@ class C4;
   constraint c { frame == target; }
 endclass
 
+// Same as C1, but with the queue as the outermost dimension.
+class C7;
+  rand bit frame[$][2];
+  bit target[$][2];
+  constraint c { frame == target; }
+endclass
+
 // A comparison operand that isn't a variable, member, or constant-indexed
 // slice (here, a function call) can't be cloned per array element either.
 typedef bit arr2d_t[2][2];
@@ -62,17 +69,20 @@ module t;
     C4 obj4;
     C5 obj5;
     C6 obj6;
+    C7 obj7;
     obj1 = new;
     obj2 = new;
     obj3 = new;
     obj4 = new;
     obj5 = new;
     obj6 = new;
+    obj7 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
     if (obj4.randomize() == 0) $stop;
     if (obj5.randomize() == 0) $stop;
     if (obj6.randomize() == 0) $stop;
+    if (obj7.randomize() == 0) $stop;
   end
 endmodule

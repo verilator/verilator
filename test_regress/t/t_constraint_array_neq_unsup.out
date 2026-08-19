@@ -15,12 +15,16 @@
                                                           : ... note: In instance 't'
    32 |   constraint c { frame == target; }
       |                        ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:44:24: Unsupported: array comparison in constraint with an operand that isn't a variable, member, or constant-indexed slice
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:39:24: Unsupported: array comparison in constraint on an array shape containing a queue, dynamic, or associative array
                                                           : ... note: In instance 't'
-   44 |   constraint c { frame == get_target(); }
+   39 |   constraint c { frame == target; }
       |                        ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:54:31: Unsupported: array comparison in constraint with an operand that isn't a variable, member, or constant-indexed slice
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:51:24: Unsupported: array comparison in constraint with an operand that isn't a variable, member, or constant-indexed slice
                                                           : ... note: In instance 't'
-   54 |   constraint c { get_target() == frame; }
+   51 |   constraint c { frame == get_target(); }
+      |                        ^~
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:61:31: Unsupported: array comparison in constraint with an operand that isn't a variable, member, or constant-indexed slice
+                                                          : ... note: In instance 't'
+   61 |   constraint c { get_target() == frame; }
       |                               ^~
 %Error: Exiting due to
