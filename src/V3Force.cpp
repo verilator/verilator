@@ -126,15 +126,6 @@ public:
         AstVar* m_rdVarp = nullptr;
         AstVar* m_enVarp = nullptr;
         AstVar* m_valVarp = nullptr;
-        // Whether finalizeRhsVars() already generated the 'force-init'/'force-rd-update'
-        // logic for this variable (during an earlier call, from the other of the force or
-        // assign/deassign pass). Those blocks read the raw variable via a reference that is
-        // marked non-replaceable only for the duration of the pass that created it (see
-        // ForceState's NODE STATE comment), so generating a second copy in the other pass
-        // would have that pass's own, unrelated ForceReplaceVisitor run over the first
-        // pass's copy and incorrectly re-substitute its protected raw-variable read into a
-        // self-referential read of its own shadow.
-        bool m_forceRdUpdateBuilt = false;
     };
 
     struct ArraySelInfo final {
@@ -159,6 +150,10 @@ private:
 
 public:
     using ForceHelperVarsByVar = AstUser3Allocator<AstVar, ForceHelperVars>;
+    // Raw-variable reads never to replace, even in the other pass (see markPermanentlyProtected)
+    using ProtectedVarRefSet = std::unordered_set<const AstVarRef*>;
+    // AstVarScopes with force-rd-update logic already generated, by either pass
+    using BuiltVarScopeSet = std::unordered_set<const AstVarScope*>;
 
 private:
     ForceHelperVarsByVar& m_forceHelperVarsByVar;
@@ -169,20 +164,16 @@ private:
     std::unordered_map<AstScope*, ScopeVarCache> m_scopeVarCaches;
     bool m_doingAssign = false;  // If true, we're processing procedural continuous assign
                                  // statements instead of force statements
-
-public:
-    // Raw-variable reads never to replace, even in the other pass (see markPermanentlyProtected)
-    using ProtectedVarRefSet = std::unordered_set<const AstVarRef*>;
-
-private:
     ProtectedVarRefSet& m_permanentlyProtected;
+    BuiltVarScopeSet& m_forceRdUpdateBuilt;
 
 public:
     ForceState(bool doingAssign, ForceHelperVarsByVar& forceHelperVarsByVar,
-               ProtectedVarRefSet& permanentlyProtected)
+               ProtectedVarRefSet& permanentlyProtected, BuiltVarScopeSet& forceRdUpdateBuilt)
         : m_forceHelperVarsByVar{forceHelperVarsByVar}
         , m_doingAssign{doingAssign}
-        , m_permanentlyProtected{permanentlyProtected} {}
+        , m_permanentlyProtected{permanentlyProtected}
+        , m_forceRdUpdateBuilt{forceRdUpdateBuilt} {}
     VL_UNCOPYABLE(ForceState);
 
     // STATIC METHODS
@@ -732,9 +723,7 @@ public:
             }
 
             if (info.m_forceRdVscp) {
-                ForceHelperVars& helperVars = m_forceHelperVarsByVar(varp);
-                if (helperVars.m_forceRdUpdateBuilt) continue;
-                helperVars.m_forceRdUpdateBuilt = true;
+                if (!m_forceRdUpdateBuilt.insert(info.m_varVscp).second) continue;
                 AstActive* const activeInitp = new AstActive{
                     flp, "force-init",
                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
@@ -1547,10 +1536,11 @@ public:
 // V3Force - Main entry point
 
 static void forceAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& helperVars,
-                         ForceState::ProtectedVarRefSet& permanentlyProtected) {
+                         ForceState::ProtectedVarRefSet& permanentlyProtected,
+                         ForceState::BuiltVarScopeSet& forceRdUpdateBuilt) {
     UINFO(2, __FUNCTION__ << ":\n");
     if (!v3Global.hasForceableSignals()) return;
-    ForceState state{false, helperVars, permanentlyProtected};
+    ForceState state{false, helperVars, permanentlyProtected, forceRdUpdateBuilt};
     { ForceDiscoveryVisitor{nodep, state}; }
     state.finalizeRhsVars();
     { ForceConvertVisitor{nodep, state}; }
@@ -1559,7 +1549,8 @@ static void forceAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& he
 }
 
 static void assignAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& helperVars,
-                          ForceState::ProtectedVarRefSet& permanentlyProtected) {
+                          ForceState::ProtectedVarRefSet& permanentlyProtected,
+                          ForceState::BuiltVarScopeSet& forceRdUpdateBuilt) {
     UINFO(2, __FUNCTION__ << ":\n");
     if (!v3Global.hasAssignDeassign()) return;
 
@@ -1588,7 +1579,7 @@ static void assignAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& h
             new AstRelease{deassignp->fileline(), deassignp->lhsp()->cloneTreePure(true)});
         deassignp->deleteTree();
     }
-    ForceState state{true, helperVars, permanentlyProtected};
+    ForceState state{true, helperVars, permanentlyProtected, forceRdUpdateBuilt};
     { ForceDiscoveryVisitor{nodep, state}; }
     state.finalizeRhsVars();
     { ForceConvertVisitor{nodep, state}; }
@@ -1600,6 +1591,7 @@ void V3Force::forceAndAssignAll(AstNetlist* nodep) {
     const VNUser3InUse user3InUse;
     ForceState::ForceHelperVarsByVar helperVars;
     ForceState::ProtectedVarRefSet permanentlyProtected;
-    forceAllImpl(nodep, helperVars, permanentlyProtected);
-    assignAllImpl(nodep, helperVars, permanentlyProtected);
+    ForceState::BuiltVarScopeSet forceRdUpdateBuilt;
+    forceAllImpl(nodep, helperVars, permanentlyProtected, forceRdUpdateBuilt);
+    assignAllImpl(nodep, helperVars, permanentlyProtected, forceRdUpdateBuilt);
 }
