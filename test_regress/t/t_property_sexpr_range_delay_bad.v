@@ -33,4 +33,7 @@ module t;
   localparam int NEG = -1;
   a6: assert property (@(posedge clk) a |-> ##[NEG:$] b);
 
+  a7: assert property (@(posedge clk) a |-> ##[1:32'h80000000] b);
+  a8: assert property (@(posedge clk) a |-> ##[32'h80000000:$] b);
+
 endmodule

@@ -32,7 +32,74 @@
 #include "V3Const.h"
 #include "V3Stats.h"
 
+#include <algorithm>
+#include <array>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+//######################################################################
+// The distinct expansion patterns, for statistics. One entry for each
+// unique transformation ExpandVisitor applies. Keep sorted.
+
+// clang-format off
+#define FOR_EACH_EXPAND_PATTERN(macro) \
+    macro(ASSIGN_AND) \
+    macro(ASSIGN_ARRAYSEL) \
+    macro(ASSIGN_CONCAT) \
+    macro(ASSIGN_COND) \
+    macro(ASSIGN_CONST) \
+    macro(ASSIGN_EXTEND) \
+    macro(ASSIGN_NOT) \
+    macro(ASSIGN_OR) \
+    macro(ASSIGN_REPLICATE) \
+    macro(ASSIGN_SEL_ALIGNED) \
+    macro(ASSIGN_SEL_UNALIGNED) \
+    macro(ASSIGN_SHIFTL) \
+    macro(ASSIGN_SHIFTR) \
+    macro(ASSIGN_TO_SEL_CONST_NARROW) \
+    macro(ASSIGN_TO_SEL_CONST_WIDE) \
+    macro(ASSIGN_TO_SEL_VAR_NARROW) \
+    macro(ASSIGN_TO_SEL_VAR_WIDE_ONE_BIT) \
+    macro(ASSIGN_VARREF) \
+    macro(ASSIGN_XOR) \
+    macro(CONCAT) \
+    macro(REDAND_TO_EQ) \
+    macro(REDOR_TO_NEQ) \
+    macro(REPLICATE) \
+    macro(REPLICATE_ONE_BIT) \
+    macro(SEL_FROM_NARROW) \
+    macro(SEL_FROM_WIDE) \
+    macro(WORDIZE_EQ) \
+    macro(WORDIZE_NEQ) \
+    macro(WORDIZE_REDAND) \
+    macro(WORDIZE_REDOR) \
+    macro(WORDIZE_REDXOR)
+// clang-format on
+
+class VExpandPattern final {
+public:
+    enum en : uint8_t {
+#define EXPAND_PATTERN_ID(id) id,
+        FOR_EACH_EXPAND_PATTERN(EXPAND_PATTERN_ID)
+#undef EXPAND_PATTERN_ID
+            _ENUM_END
+    };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {
+#define EXPAND_PATTERN_NAME(id) #id,
+            FOR_EACH_EXPAND_PATTERN(EXPAND_PATTERN_NAME)
+#undef EXPAND_PATTERN_NAME
+                "_ENUM_END"  //
+        };
+        return names[m_e];
+    }
+
+    // cppcheck-suppress noExplicitConstructor
+    VExpandPattern(en _e)
+        : m_e{_e} {}
+    operator en() const { return m_e; }
+};
 
 //######################################################################
 // Find nodes with side effects, to mark as non-expandable
@@ -81,14 +148,24 @@ class ExpandVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     AstCFunc* m_funcp = nullptr;  // Current function
+    VDouble0 m_statImpure;  // Statistic tracking
     VDouble0 m_statWides;  // Statistic tracking
     VDouble0 m_statWideWords;  // Statistic tracking
     VDouble0 m_statWideLimited;  // Statistic tracking
+    VDouble0 m_statTemps;  // Statistic tracking
+    // Number of applications of each expansion pattern for statistics
+    std::array<VDouble0, VExpandPattern::_ENUM_END> m_statPatterns;
 
     // STATE - for current function
     size_t m_nTmps = 0;  // Sequence numbers for temopraries
 
     // METHODS
+    // Note the application of the given expansion pattern to 'nodep'
+    void didPattern(VExpandPattern pattern, AstNode* nodep) {
+        UINFO(8, "    " << pattern.ascii() << " " << nodep);
+        ++m_statPatterns[pattern];
+    }
+
     // Use state that ExpandOkVisitor calculated
     static bool isImpure(AstNode* nodep) {
         const bool impure = nodep->user2();
@@ -97,7 +174,10 @@ class ExpandVisitor final : public VNVisitor {
     }
 
     bool doExpandWide(AstNode* nodep) {
-        if (isImpure(nodep)) return false;
+        if (isImpure(nodep)) {
+            ++m_statImpure;
+            return false;
+        }
         if (nodep->widthWords() <= v3Global.opt.expandLimit()) {
             ++m_statWides;
             m_statWideWords += nodep->widthWords();
@@ -164,6 +244,7 @@ class ExpandVisitor final : public VNVisitor {
         tmpp->substConstOnly(true);
         m_funcp->addVarsp(tmpp);
         insertBefore(placep, new AstAssign{flp, new AstVarRef{flp, tmpp, VAccess::WRITE}, valuep});
+        ++m_statTemps;
         return tmpp;
     }
 
@@ -287,8 +368,8 @@ class ExpandVisitor final : public VNVisitor {
     //====================
 
     bool expandWide(AstNodeAssign* nodep, AstConst* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(CONST) " << nodep);
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_CONST, nodep);
         // -> {for each_word{ ASSIGN(WORDSEL(wide,#),WORDSEL(CONST,#))}}
         if (rhsp->num().isFourState()) {
             rhsp->v3warn(E_UNSUPPORTED,  // LCOV_EXCL_LINE  // impossible?
@@ -303,30 +384,30 @@ class ExpandVisitor final : public VNVisitor {
     }
     //-------- Uniops
     bool expandWide(AstNodeAssign* nodep, AstVarRef* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(VARREF) " << nodep);
         // Special case: do not expand assignment of constant pool variables.
         // V3Subst undestands these directly.
         if (rhsp->varp()->user3()) return false;
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_VARREF, nodep);
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
         }
         return true;
     }
     bool expandWide(AstNodeAssign* nodep, AstArraySel* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(ARRAYSEL) " << nodep);
         UASSERT_OBJ(!VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType), nodep,
                     "ArraySel with unpacked arrays should have been removed in V3Slice");
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_ARRAYSEL, nodep);
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
         }
         return true;
     }
     bool expandWide(AstNodeAssign* nodep, AstNot* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(NOT) " << nodep);
         // -> {for each_word{ ASSIGN(WORDSEL(wide,#),NOT(WORDSEL(lhs,#))) }}
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_NOT, nodep);
         FileLine* const fl = rhsp->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, new AstNot{fl, newAstWordSelClone(rhsp->lhsp(), w)});
@@ -335,8 +416,8 @@ class ExpandVisitor final : public VNVisitor {
     }
     //-------- Biops
     bool expandWide(AstNodeAssign* nodep, AstAnd* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(AND) " << nodep);
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_AND, nodep);
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
@@ -346,8 +427,8 @@ class ExpandVisitor final : public VNVisitor {
         return true;
     }
     bool expandWide(AstNodeAssign* nodep, AstOr* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(OR) " << nodep);
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_OR, nodep);
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
@@ -357,8 +438,8 @@ class ExpandVisitor final : public VNVisitor {
         return true;
     }
     bool expandWide(AstNodeAssign* nodep, AstXor* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(XOR) " << nodep);
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_XOR, nodep);
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
@@ -381,7 +462,7 @@ class ExpandVisitor final : public VNVisitor {
                 const int shiftWords = std::min<int>(VL_BITWORD_E(shiftBits), widthWords);
                 FileLine* const flp = rhsp->fileline();
                 if (isLeftShift) {
-                    UINFO(8, "    Wordize ASSIGN(SHIFTL,words) " << nodep);
+                    didPattern(VExpandPattern::ASSIGN_SHIFTL, nodep);
                     // Low words of the result are zero
                     for (int w = 0; w < shiftWords; ++w) {
                         addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
@@ -391,7 +472,7 @@ class ExpandVisitor final : public VNVisitor {
                         addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w - shiftWords));
                     }
                 } else {
-                    UINFO(8, "    Wordize ASSIGN(SHIFTR,words) " << nodep);
+                    didPattern(VExpandPattern::ASSIGN_SHIFTR, nodep);
                     // Low words of the result are copied from higher words of the source
                     for (int w = 0; w < widthWords - shiftWords; ++w) {
                         addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w + shiftWords));
@@ -410,8 +491,8 @@ class ExpandVisitor final : public VNVisitor {
 
     //-------- Triops
     bool expandWide(AstNodeAssign* nodep, AstCond* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(COND) " << nodep);
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_COND, nodep);
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
@@ -462,7 +543,6 @@ class ExpandVisitor final : public VNVisitor {
                 } else if (lhsp->isWide()) {
                     nodep->v3fatalSrc("extending larger thing into smaller?");
                 } else {
-                    UINFO(8, "    EXTEND(q<-l) " << nodep);
                     newp = new AstCCast{nodep->fileline(), lhsp, nodep};
                 }
             } else {  // Long
@@ -474,8 +554,8 @@ class ExpandVisitor final : public VNVisitor {
         }
     }
     bool expandWide(AstNodeAssign* nodep, AstExtend* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(EXTEND) " << nodep);
         if (!doExpandWide(nodep)) return false;
+        didPattern(VExpandPattern::ASSIGN_EXTEND, nodep);
         AstNodeExpr* const rlhsp = rhsp->lhsp();
         for (int w = 0; w < rlhsp->widthWords(); ++w) {
             addWordAssign(nodep, w, newAstWordSelClone(rlhsp, w));
@@ -489,88 +569,167 @@ class ExpandVisitor final : public VNVisitor {
     void visit(AstSel* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
-        // Remember, Sel's may have non-integer rhs, so need to optimize for that!
-        UASSERT_OBJ(nodep->widthMin() == nodep->widthConst(), nodep, "Width mismatch");
-        if (VN_IS(nodep->backp(), NodeAssign)
-            && nodep == VN_AS(nodep->backp(), NodeAssign)->lhsp()) {
-            // Sel is an LHS assignment select
-        } else if (nodep->isWide()) {
-            // See under ASSIGN(WIDE)
-        } else if (VN_IS(nodep->fromp()->dtypep(), StreamDType)
-                   || VN_IS(nodep->fromp()->dtypep(), QueueDType)) {
-            //sel stream or queue
-        } else if (nodep->fromp()->isWide()) {
+
+        const uint32_t width = static_cast<uint32_t>(nodep->widthConst());
+        UASSERT_OBJ(nodep->widthMin() == static_cast<int>(width), nodep, "Width mismatch");
+
+        // Skip if Sel is an LHS assignment select
+        if (AstNodeAssign* const assignp = VN_CAST(nodep->backp(), NodeAssign)) {
+            if (nodep == assignp->lhsp()) return;
+        }
+
+        // Skip if wide: See under ASSIGN(WIDE)
+        if (nodep->isWide()) return;
+
+        // Skip Sel from stream or queue
+        if (VN_IS(nodep->fromp()->dtypep(), StreamDType)) return;
+        if (VN_IS(nodep->fromp()->dtypep(), QueueDType)) return;
+
+        // Result must be non-wide after skipping all the above
+        UASSERT_OBJ(width <= 64, nodep, "Inconsistent result width");
+
+        if (nodep->fromp()->isWide()) {  // Long/Quad from Wide
             if (isImpure(nodep)) return;
-            UINFO(8, "    SEL(wide) " << nodep);
-            UASSERT_OBJ(nodep->widthConst() <= 64, nodep, "Inconsistent width");
-            // Selection amounts
-            // Check for constant shifts & save some constification work later.
-            // Grab lowest bit(s)
+            didPattern(VExpandPattern::SEL_FROM_WIDE, nodep);
             FileLine* const nfl = nodep->fileline();
             FileLine* const lfl = nodep->lsbp()->fileline();
             FileLine* const ffl = nodep->fromp()->fileline();
-            AstNodeExpr* lowwordp = newWordSelBit(ffl, nodep->fromp(), nodep->lsbp());
-            if (nodep->isQuad() && !lowwordp->isQuad()) {
-                lowwordp = new AstCCast{nfl, lowwordp, nodep};
+            AstNodeExpr* const fromp = nodep->fromp();
+
+            // To extract an up-to-64-bit value from a wide source, up to 3 words might be needed
+            // from the source operand. Each word might need to be shifted by a different amount.
+            // All word indices and shift amounts are derived from the LSB expression, so it might
+            // be duplicated several times. The problem arises when the LSB expression itself is
+            // a similar select, which results in an exponential size expansion.
+            //
+            // To avoid this, if the required expressions derived from the LSB expression are
+            // large, and the LSB expression is required multiple times for the expansion, then
+            // the LSB expression is evaluated into a temporary variable. This bounds the size
+            // of the expansion on each Sel instance, hence the total expansion of nested Sels
+            // is bounded linearly with the number of nested Sels (instead of exponentially).
+
+            // Return simplified 'exprp' if it simplifies to a small tree, otherwise nullptr
+            const auto tryFold = [&](AstNodeExpr* exprp) -> AstNodeExpr* {
+                // Size limit for inlining expressions (any arbitrary value results in
+                // a bounded expansion. Picked a value to allow common simple forms.)
+                static constexpr int EXPAND_SEL_LSB_LIMIT = 8;
+                // Simplify
+                exprp = V3Const::constifyEditCpp(exprp);
+                // Accept if not larger than the limit
+                if (!exprp->isLargerThan(EXPAND_SEL_LSB_LIMIT)) return exprp;
+                // Delete if rejected
+                VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                return nullptr;
+            };
+
+            // Return the index of the word holding the bit 'offset' bits above the LSB
+            const auto wordIdx = [&](uint32_t offset) -> AstNodeExpr* {
+                AstNodeExpr* const msbp = new AstAdd{lfl, new AstConst{lfl, offset},
+                                                     nodep->lsbp()->cloneTreePure(false)};
+                AstNodeExpr* const idxp = newWordIndex(msbp);
+                if (!msbp->backp()) VL_DO_DANGLING(msbp->deleteTree(), msbp);
+                return idxp;
+            };
+
+            // Bit index of the selected LSB within its word
+            AstNodeExpr* lBitp = tryFold(newSelBitBit(nodep->lsbp()));
+            const bool aligned = lBitp && lBitp->isZero();
+
+            // Which of the other 2 words the expansion might need
+            const bool mNeeded = width > 1 && !aligned;
+            const bool hNeeded = width > VL_EDATASIZE;
+            UASSERT_OBJ(!hNeeded || nodep->isQuad(), nodep, "Width mismatch");
+
+            // Word indices
+            const uint32_t mMsbOffset = std::min<uint32_t>(width, VL_EDATASIZE) - 1;
+            const uint32_t hMsbOffset = width - 1;
+            AstNodeExpr* lIdxp = tryFold(newWordIndex(nodep->lsbp()));
+            AstNodeExpr* mIdxp = mNeeded ? tryFold(wordIdx(mMsbOffset)) : nullptr;
+            AstNodeExpr* hIdxp = hNeeded ? tryFold(wordIdx(hMsbOffset)) : nullptr;
+
+            // If the LSB expression is needed multiple times, evaluate it into a temporary
+            const int nCopies = !lBitp + !lIdxp + (mNeeded && !mIdxp) + (hNeeded && !hIdxp);
+            if (nCopies > 1 && m_funcp && m_stmtp && !isImpure(m_stmtp)) {
+                ++m_nTmps;  // Use fresh set of temporaries
+                AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
+                AstVar* const tmpp = addLocalTmp(m_stmtp, "ExpandSel_Lsb", lsbp);
+                nodep->lsbp(new AstVarRef{lfl, tmpp, VAccess::READ});
             }
-            AstNodeExpr* const lowp
-                = new AstShiftR{nfl, lowwordp, newSelBitBit(nodep->lsbp()), nodep->width()};
-            // If > 1 bit, we might be crossing the word boundary
-            AstNodeExpr* midp = nullptr;
-            if (nodep->widthConst() > 1) {
-                const uint32_t midMsbOffset
-                    = std::min<uint32_t>(nodep->widthConst(), VL_EDATASIZE) - 1;
-                AstNodeExpr* const midMsbp = new AstAdd{lfl, new AstConst{lfl, midMsbOffset},
-                                                        nodep->lsbp()->cloneTreePure(true)};
-                AstNodeExpr* midwordp = newWordSelBit(ffl, nodep->fromp(), midMsbp, 0);
-                if (!midMsbp->backp()) VL_DO_DANGLING(midMsbp->deleteTree(), midMsbp);
-                if (nodep->isQuad() && !midwordp->isQuad()) {
-                    midwordp = new AstCCast{nfl, midwordp, nodep};
-                }
-                AstNodeExpr* const midshiftp = new AstSub{lfl, new AstConst{lfl, VL_EDATASIZE},
-                                                          newSelBitBit(nodep->lsbp())};
+
+            // Rebuild remaining expressions derived from LSB if needed, now using the temporary
+            if (!lBitp) lBitp = newSelBitBit(nodep->lsbp());
+            if (!lIdxp) lIdxp = newWordIndex(nodep->lsbp());
+            if (!mIdxp) mIdxp = mNeeded ? wordIdx(mMsbOffset) : nullptr;
+            if (!hIdxp) hIdxp = hNeeded ? wordIdx(hMsbOffset) : nullptr;
+
+            // Return word 'idxp' of 'fromp', without consuming 'idxp'
+            const auto wordSel = [&](AstNodeExpr* idxp) -> AstNodeExpr* {
+                AstNodeExpr* const clonep = idxp->cloneTreePure(false);
+                AstNodeExpr* const wordp = newWordSelWord(ffl, fromp, clonep);
+                if (!clonep->backp()) VL_DO_DANGLING(clonep->deleteTree(), clonep);
+                return wordp;
+            };
+
+            // Construct term containing the bits of the low word - always needed
+            AstNodeExpr* const lTermp = [&]() -> AstNodeExpr* {
+                AstNodeExpr* lWordp = wordSel(lIdxp);
+                if (nodep->isQuad()) lWordp = new AstCCast{nfl, lWordp, nodep};
+                return new AstShiftR{nfl, lWordp, lBitp->cloneTreePure(false), nodep->width()};
+            }();
+
+            // Construct term containing the bits of the middle word - if needed
+            AstNodeExpr* const mTermp = [&]() -> AstNodeExpr* {
+                if (!mNeeded) return nullptr;
+
+                AstNodeExpr* mWordp = wordSel(mIdxp);
+                if (nodep->isQuad()) mWordp = new AstCCast{nfl, mWordp, nodep};
+                AstNodeExpr* const mShiftp = new AstSub{lfl, new AstConst{lfl, VL_EDATASIZE},
+                                                        lBitp->cloneTreePure(false)};
                 // If we're selecting bit zero, then all 32 bits in the mid word
                 // get shifted << by 32 bits, so ignore them.
                 const V3Number zero{nodep, longOrQuadWidth(nodep)};
-                midp = new AstCond{
+                return new AstCond{
                     nfl,
                     // lsb % VL_EDATASIZE == 0 ?
-                    new AstEq{nfl, new AstConst{nfl, 0}, newSelBitBit(nodep->lsbp())},
+                    new AstEq{nfl, new AstConst{nfl, 0}, lBitp->cloneTreePure(false)},
                     // 0 :
                     new AstConst{nfl, zero},
                     //  midword >> (VL_EDATASIZE - (lbs % VL_EDATASIZE))
-                    new AstShiftL{nfl, midwordp, midshiftp, nodep->width()}};
-            }
-            // If > 32 bits, we might be crossing the second word boundary
-            AstNodeExpr* hip = nullptr;
-            if (nodep->widthConst() > VL_EDATASIZE) {
-                const uint32_t hiMsbOffset = nodep->widthConst() - 1;
-                AstNodeExpr* const hiMsbp = new AstAdd{lfl, new AstConst{lfl, hiMsbOffset},
-                                                       nodep->lsbp()->cloneTreePure(true)};
-                AstNodeExpr* hiwordp = newWordSelBit(ffl, nodep->fromp(), hiMsbp);
-                if (!hiMsbp->backp()) VL_DO_DANGLING(hiMsbp->deleteTree(), hiMsbp);
-                if (nodep->isQuad() && !hiwordp->isQuad()) {
-                    hiwordp = new AstCCast{nfl, hiwordp, nodep};
-                }
-                AstNodeExpr* const hishiftp = new AstCond{
+                    new AstShiftL{nfl, mWordp, mShiftp, nodep->width()}};
+            }();
+
+            // Construct term containing the bits of the high word - if needed
+            AstNodeExpr* const hTermp = [&]() -> AstNodeExpr* {
+                if (!hNeeded) return nullptr;
+
+                AstNodeExpr* hWordp = wordSel(hIdxp);
+                hWordp = new AstCCast{nfl, hWordp, nodep};
+                AstNodeExpr* const hShiftp = new AstCond{
                     nfl,
                     // lsb % VL_EDATASIZE == 0 ?
-                    new AstEq{nfl, new AstConst{nfl, 0}, newSelBitBit(nodep->lsbp())},
+                    new AstEq{nfl, new AstConst{nfl, 0}, lBitp->cloneTreePure(false)},
                     // VL_EDATASIZE :
                     new AstConst{lfl, VL_EDATASIZE},
                     // 64 - (lbs % VL_EDATASIZE)
-                    new AstSub{lfl, new AstConst{lfl, 64}, newSelBitBit(nodep->lsbp())}};
-                hip = new AstShiftL{nfl, hiwordp, hishiftp, nodep->width()};
-            }
+                    new AstSub{lfl, new AstConst{lfl, 64}, lBitp->cloneTreePure(false)}};
+                return new AstShiftL{nfl, hWordp, hShiftp, nodep->width()};
+            }();
 
-            AstNodeExpr* newp = lowp;
-            if (midp) newp = new AstOr{nfl, midp, newp};
-            if (hip) newp = new AstOr{nfl, hip, newp};
+            // Delete parts not captured during construction
+            VL_DO_DANGLING(lBitp->deleteTree(), lBitp);
+            VL_DO_DANGLING(lIdxp->deleteTree(), lIdxp);
+            if (mIdxp) VL_DO_DANGLING(mIdxp->deleteTree(), mIdxp);
+            if (hIdxp) VL_DO_DANGLING(hIdxp->deleteTree(), hIdxp);
+
+            // Or reduce the terms
+            AstNodeExpr* newp = lTermp;
+            if (mTermp) newp = new AstOr{nfl, mTermp, newp};
+            if (hTermp) newp = new AstOr{nfl, hTermp, newp};
             newp->dtypeFrom(nodep);
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {  // Long/Quad from Long/Quad
             // No isImpure() check - can handle side effects in below
-            UINFO(8, "    SEL->SHIFT " << nodep);
+            didPattern(VExpandPattern::SEL_FROM_NARROW, nodep);
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* fromp = nodep->fromp()->unlinkFrBack();
             AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
@@ -595,7 +754,7 @@ class ExpandVisitor final : public VNVisitor {
         if (const AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
             const uint32_t lsb = lsbConstp->toUInt();
             if (VL_BITBIT_E(lsb) == 0) {
-                UINFO(8, "    Wordize ASSIGN(SEL,align) " << nodep);
+                didPattern(VExpandPattern::ASSIGN_SEL_ALIGNED, nodep);
                 const uint32_t word = VL_BITWORD_E(lsb);
                 for (int w = 0; w < nodep->widthWords(); ++w) {
                     addWordAssign(nodep, w, newAstWordSelClone(rhsp->fromp(), w + word));
@@ -604,7 +763,7 @@ class ExpandVisitor final : public VNVisitor {
             }
         }
 
-        UINFO(8, "    Wordize ASSIGN(EXTRACT,misalign) " << nodep);
+        didPattern(VExpandPattern::ASSIGN_SEL_UNALIGNED, nodep);
         FileLine* const flp = rhsp->fileline();
 
         // Use fresh set of temporaries
@@ -718,7 +877,7 @@ class ExpandVisitor final : public VNVisitor {
             V3Number maskold{nodep, destp->widthMin()};
             maskold.opNot(maskset);
             if (destwide) {
-                UINFO(8, "    ASSIGNSEL(const,wide) " << nodep);
+                didPattern(VExpandPattern::ASSIGN_TO_SEL_CONST_WIDE, nodep);
                 for (int w = 0; w < destp->widthWords(); ++w) {
                     if (w >= VL_BITWORD_E(lsb) && w <= VL_BITWORD_E(msb)) {
                         // else we would just be setting it to the same exact value
@@ -750,7 +909,7 @@ class ExpandVisitor final : public VNVisitor {
                 VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
                 VL_DO_DANGLING(destp->deleteTree(), destp);
             } else {
-                UINFO(8, "    ASSIGNSEL(const,narrow) " << nodep);
+                didPattern(VExpandPattern::ASSIGN_TO_SEL_CONST_NARROW, nodep);
                 if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast{nfl, rhsp, nodep};
                 AstNodeExpr* oldvalp = destp->cloneTreePure(true);
                 fixCloneLvalue(oldvalp);
@@ -772,7 +931,7 @@ class ExpandVisitor final : public VNVisitor {
             return true;
         } else {  // non-const select offset
             if (destwide && lhsp->widthConst() == 1) {
-                UINFO(8, "    ASSIGNSEL(varlsb,wide,1bit) " << nodep);
+                didPattern(VExpandPattern::ASSIGN_TO_SEL_VAR_WIDE_ONE_BIT, nodep);
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 AstNodeExpr* const destp = lhsp->fromp()->unlinkFrBack();
                 AstNodeExpr* oldvalp
@@ -810,7 +969,7 @@ class ExpandVisitor final : public VNVisitor {
                 // Reconsider if we get subexpression elimination.
                 return false;
             } else {
-                UINFO(8, "    ASSIGNSEL(varlsb,narrow) " << nodep);
+                didPattern(VExpandPattern::ASSIGN_TO_SEL_VAR_NARROW, nodep);
                 // nodep->dumpTree("-  old: ");
                 AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
                 AstNodeExpr* const destp = lhsp->fromp()->unlinkFrBack();
@@ -854,7 +1013,7 @@ class ExpandVisitor final : public VNVisitor {
             // See under ASSIGN(WIDE)
         } else {
             // No isImpure() check - can handle side effects in below
-            UINFO(8, "    CONCAT " << nodep);
+            didPattern(VExpandPattern::CONCAT, nodep);
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
@@ -868,8 +1027,8 @@ class ExpandVisitor final : public VNVisitor {
         }
     }
     bool expandWide(AstNodeAssign* nodep, AstConcat* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(CONCAT) " << nodep);
         if (!doExpandWide(rhsp)) return false;
+        didPattern(VExpandPattern::ASSIGN_CONCAT, nodep);
         FileLine* const fl = rhsp->fileline();
         // Lhs or Rhs may be word, long, or quad.
         // newAstWordSelClone nicely abstracts the difference.
@@ -897,10 +1056,10 @@ class ExpandVisitor final : public VNVisitor {
             AstNodeExpr* newp;
             const int lhswidth = lhsp->widthMin();
             if (lhswidth == 1) {
-                UINFO(8, "    REPLICATE(w1) " << nodep);
+                didPattern(VExpandPattern::REPLICATE_ONE_BIT, nodep);
                 newp = new AstNegate{fl, lhsp};
             } else {
-                UINFO(8, "    REPLICATE " << nodep);
+                didPattern(VExpandPattern::REPLICATE, nodep);
                 const AstConst* const constp = VN_AS(nodep->countp(), Const);
                 UASSERT_OBJ(constp, nodep,
                             "Replication value isn't a constant.  Checked earlier!");
@@ -924,8 +1083,8 @@ class ExpandVisitor final : public VNVisitor {
         }
     }
     bool expandWide(AstNodeAssign* nodep, AstReplicate* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(REPLICATE) " << nodep);
         if (!doExpandWide(rhsp)) return false;
+        didPattern(VExpandPattern::ASSIGN_REPLICATE, nodep);
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const lhsp = rhsp->srcp();
         const int lhswidth = lhsp->widthMin();
@@ -959,7 +1118,9 @@ class ExpandVisitor final : public VNVisitor {
             if (isImpure(nodep)) return;
             if (!doExpandWide(nodep->lhsp())) return;
             if (!doExpandWide(nodep->rhsp())) return;
-            UINFO(8, "    Wordize EQ/NEQ " << nodep);
+            didPattern(VN_IS(nodep, Neq) ? VExpandPattern::WORDIZE_NEQ
+                                         : VExpandPattern::WORDIZE_EQ,
+                       nodep);
             // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* newp = nullptr;
@@ -986,7 +1147,7 @@ class ExpandVisitor final : public VNVisitor {
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
             if (!doExpandWide(nodep->lhsp())) return;
-            UINFO(8, "    Wordize REDOR " << nodep);
+            didPattern(VExpandPattern::WORDIZE_REDOR, nodep);
             // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
             AstNodeExpr* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); ++w) {
@@ -997,7 +1158,7 @@ class ExpandVisitor final : public VNVisitor {
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
             // No isImpure() check - can handle side effects in below
-            UINFO(8, "    REDOR->EQ " << nodep);
+            didPattern(VExpandPattern::REDOR_TO_NEQ, nodep);
             AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* const newp = new AstNeq{
                 fl, new AstConst{fl, AstConst::WidthedValue{}, longOrQuadWidth(nodep), 0}, lhsp};
@@ -1011,7 +1172,7 @@ class ExpandVisitor final : public VNVisitor {
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
             if (!doExpandWide(nodep->lhsp())) return;
-            UINFO(8, "    Wordize REDAND " << nodep);
+            didPattern(VExpandPattern::WORDIZE_REDAND, nodep);
             // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
             AstNodeExpr* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); ++w) {
@@ -1031,7 +1192,7 @@ class ExpandVisitor final : public VNVisitor {
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
             // No isImpure() check - can handle side effects in below
-            UINFO(8, "    REDAND->EQ " << nodep);
+            didPattern(VExpandPattern::REDAND_TO_EQ, nodep);
             AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* const newp = new AstEq{fl, new AstConst{fl, wordMask(lhsp)}, lhsp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
@@ -1043,7 +1204,7 @@ class ExpandVisitor final : public VNVisitor {
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
             if (!doExpandWide(nodep->lhsp())) return;
-            UINFO(8, "    Wordize REDXOR " << nodep);
+            didPattern(VExpandPattern::WORDIZE_REDXOR, nodep);
             // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* newp = nullptr;
@@ -1123,9 +1284,21 @@ public:
     // CONSTRUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~ExpandVisitor() override {
-        V3Stats::addStat("Optimizations, expand wides", m_statWides);
-        V3Stats::addStat("Optimizations, expand wide words", m_statWideWords);
-        V3Stats::addStat("Optimizations, expand limited", m_statWideLimited);
+        V3Stats::addStat("Optimizations, Expand, expanded wides", m_statWides);
+        V3Stats::addStat("Optimizations, Expand, expanded wide words", m_statWideWords);
+        V3Stats::addStat("Optimizations, Expand, not expanded impure", m_statImpure);
+        V3Stats::addStat("Optimizations, Expand, not expanded limit", m_statWideLimited);
+        V3Stats::addStat("Optimizations, Expand, temporaries created", m_statTemps);
+        const auto emitStat = [this](VExpandPattern pattern) {
+            std::string str{pattern.ascii()};
+            std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
+                return c == '_' ? ' ' : std::tolower(c);
+            });
+            V3Stats::addStat("Optimizations, Expand, pattern " + str, m_statPatterns[pattern]);
+        };
+#define EXPAND_PATTERN_EMIT_STAT(id) emitStat(VExpandPattern::id);
+        FOR_EACH_EXPAND_PATTERN(EXPAND_PATTERN_EMIT_STAT)
+#undef EXPAND_PATTERN_EMIT_STAT
     }
 };
 
