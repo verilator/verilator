@@ -42,9 +42,9 @@ fi
 # Run 'sudo apt-get', with timeout, retrying if failed
 apt-get-retry() {
   local _attempt
-  for _attempt in 1 2; do
+  for _attempt in 1 2 3; do
     [ "$_attempt" -eq 1 ] || sleep $((15 * _attempt))
-    sudo timeout --kill-after=30s 3m env DEBIAN_FRONTEND=noninteractive \
+    sudo timeout --kill-after=30s 5m env DEBIAN_FRONTEND=noninteractive \
       apt-get -o DPkg::Lock::Timeout=60 "$@" && return 0
   done
   fatal "'apt-get $*' failed on all attempts"
@@ -53,7 +53,7 @@ apt-get-retry() {
 # Run 'brew', retrying if failed
 brew-retry() {
   local _attempt
-  for _attempt in 1 2; do
+  for _attempt in 1 2 3; do
     [ "$_attempt" -eq 1 ] || sleep $((15 * _attempt))
     brew "$@" && return 0
   done
