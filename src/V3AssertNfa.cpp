@@ -33,6 +33,7 @@
 #include "V3Assert.h"
 #include "V3Const.h"
 #include "V3Graph.h"
+#include "V3Stats.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
@@ -1706,6 +1707,7 @@ class SvaNfaLowering final {
     AstNodeModule* const m_modp;  // Module to add state vars and always blocks to
     AstNodeDType* const m_u32DTypep;  // Shared unsigned counter dtype
     V3UniqueNames m_names{"__Vnfa"};
+    size_t m_statDelayRingEdgeVisits = 0;  // Delay-ring incoming edges visited
 
     // Per-lowering shared context (passed to phase sub-functions)
     // Per-vertex lowering state is stored in SvaVertexData and accessed via
@@ -1883,15 +1885,16 @@ class SvaNfaLowering final {
             const uint32_t size = static_cast<uint32_t>(vtxp->m_delayRingSize);
 
             AstNodeExpr* incomingp = nullptr;
-            for (const SvaTransEdge* const tedgep : c.edges) {
-                if (static_cast<int>(tedgep->toVtxp()->color()) != ri) continue;
-                UASSERT_OBJ(tedgep->m_consumesCycle == vtxp->m_isFixedDelayRing, vtxp,
+            for (const V3GraphEdge& edger : vtxp->inEdges()) {
+                ++m_statDelayRingEdgeVisits;
+                const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+                UASSERT_OBJ(tedger.m_consumesCycle == vtxp->m_isFixedDelayRing, vtxp,
                             "Delay-ring incoming edge kind mismatch");
-                const int fi = tedgep->fromVtxp()->color();
+                const int fi = tedger.fromVtxp()->color();
                 UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp, c.vtx[fi],
                             "Delay-ring incoming source missing stateSig");
                 AstNodeExpr* contribp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
-                contribp = andCond(c.flp, contribp, tedgep->m_condp);
+                contribp = andCond(c.flp, contribp, tedger.m_condp);
                 if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
@@ -2409,6 +2412,9 @@ public:
     explicit SvaNfaLowering(AstNodeModule* modp)
         : m_modp{modp}
         , m_u32DTypep{modp->findBasicDType(VBasicDTypeKwd::UINT32)} {}
+    ~SvaNfaLowering() {
+        V3Stats::addStatSum("Assertions, NFA delay ring edge visits", m_statDelayRingEdgeVisits);
+    }
 
     // Lower NFA graph to synthesizable AstAlways blocks and raw result signals.
     // Links are combinational; Edges are registered (NBA).
