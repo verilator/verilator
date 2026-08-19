@@ -27,9 +27,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install packages for build
+        run: ./ci/ci-install.bash format
+
+      - name: Configure git identity
         run: |
-          sudo apt install clang-format-18 || \
-          sudo apt install clang-format-18
           git config --global user.email "action@example.com"
           git config --global user.name "github action"
 

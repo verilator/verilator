@@ -26,27 +26,39 @@ source "$(dirname "$0")/ci-common.bash"
 ################################################################################
 # Parse arguments
 
-# Which stage to install dependencies for: 'build' or 'test'
+# Which stage to install dependencies for
 STAGE="$1"
 
 ################################################################################
 # Install dependencies
 
-# Avoid occasional cpan failures "Issued certificate has expired."
-export PERL_LWP_SSL_VERIFY_HOSTNAME=0
-echo "check_certificate = off" >> ~/.wgetrc
-
-if [ "$HOST_OS" = "linux" ]; then
-  # Avoid slow "processing triggers for man db"
-  echo "path-exclude /usr/share/doc/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-  echo "path-exclude /usr/share/man/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-  echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-elif [ "$HOST_OS" = "macOS" ]; then
+if [ "$HOST_OS" = "macOS" ]; then
   # The macos runner image ships an untrusted third-party tap we don't use;
   # untap it so brew stops emitting a tap-trust warning. Force + '|| true' since
   # untap fails if a formula was installed from it, which is harmless here.
   brew untap --force aws/tap || true
 fi
+
+# Run 'sudo apt-get', with timeout, retrying if failed
+apt-get-retry() {
+  local _attempt
+  for _attempt in 1 2; do
+    [ "$_attempt" -eq 1 ] || sleep $((15 * _attempt))
+    sudo timeout --kill-after=30s 3m env DEBIAN_FRONTEND=noninteractive \
+      apt-get -o DPkg::Lock::Timeout=60 "$@" && return 0
+  done
+  fatal "'apt-get $*' failed on all attempts"
+}
+
+# Run 'brew', retrying if failed
+brew-retry() {
+  local _attempt
+  for _attempt in 1 2; do
+    [ "$_attempt" -eq 1 ] || sleep $((15 * _attempt))
+    brew "$@" && return 0
+  done
+  fatal "'brew $*' failed on all attempts"
+}
 
 install-wavediff() {
   source ci/docker/buildenv/wavetools.conf
@@ -88,10 +100,8 @@ if [ "$STAGE" = "build" ]; then
       if [ "$DISTRO_VERSION" != "22.04" ]; then
         PACKAGES+=(libjemalloc-dev)
       fi
-      sudo apt-get update ||
-      sudo apt-get update
-      sudo apt-get install --yes "${PACKAGES[@]}" ||
-      sudo apt-get install --yes "${PACKAGES[@]}"
+      apt-get-retry update
+      apt-get-retry install --yes "${PACKAGES[@]}"
     fi
   elif [ "$HOST_OS" = "macOS" ]; then
     PACKAGES=(
@@ -103,10 +113,8 @@ if [ "$STAGE" = "build" ]; then
       help2man
       perl
     )
-    brew update ||
-    brew update
-    brew install "${PACKAGES[@]}" ||
-    brew install "${PACKAGES[@]}"
+    brew-retry update
+    brew-retry install "${PACKAGES[@]}"
   else
     fatal "Unknown HOST_OS: '$HOST_OS'"
   fi
@@ -128,10 +136,8 @@ elif [ "$STAGE" = "test" ]; then
         python3-clang
         z3
       )
-      sudo apt-get update ||
-      sudo apt-get update
-      sudo apt-get install --yes "${PACKAGES[@]}" ||
-      sudo apt-get install --yes "${PACKAGES[@]}"
+      apt-get-retry update
+      apt-get-retry install --yes "${PACKAGES[@]}"
     fi
   elif [ "$HOST_OS" = "macOS" ]; then
     PACKAGES=(
@@ -140,10 +146,8 @@ elif [ "$STAGE" = "test" ]; then
       perl
       z3
     )
-    brew update ||
-    brew update
-    brew install "${PACKAGES[@]}" ||
-    brew install "${PACKAGES[@]}"
+    brew-retry update
+    brew-retry install "${PACKAGES[@]}"
   else
     fatal "Unknown HOST_OS: '$HOST_OS'"
   fi
@@ -152,20 +156,59 @@ elif [ "$STAGE" = "test" ]; then
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
 elif [ "$STAGE" = "lint-py" ]; then
-  # nodist/clang_check_attributes.
+  ##############################################################################
+  # Dependencies for nodist/clang_check_attributes
+
   if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
     PACKAGES=(
       python3-clang  # Not run, but importers are linted
     )
-    sudo apt-get update ||
-    sudo apt-get update
-    sudo apt-get install --yes "${PACKAGES[@]}" ||
-    sudo apt-get install --yes "${PACKAGES[@]}"
+    apt-get-retry update
+    apt-get-retry install --yes "${PACKAGES[@]}"
+  fi
+elif [ "$STAGE" = "format" ]; then
+  ##############################################################################
+  # Dependencies of 'make format'
+
+  if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
+    PACKAGES=(
+      clang-format-18  # Version pinned, so all of CI formats alike
+    )
+    apt-get-retry update
+    apt-get-retry install --yes "${PACKAGES[@]}"
+  fi
+elif [ "$STAGE" = "coverage" ]; then
+  ##############################################################################
+  # Dependencies of the coverage report job, which only collates what the
+  # 'test' stage jobs measured
+
+  if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
+    PACKAGES=(
+      lcov
+    )
+    apt-get-retry update
+    apt-get-retry install --yes "${PACKAGES[@]}"
+  fi
+elif [ "$STAGE" = "rtlmeter-run" ]; then
+  ##############################################################################
+  # Dependencies of the RTLMeter jobs, which compile and run designs with an
+  # already built Verilator, so they need its runtime prerequisites only
+
+  if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
+    PACKAGES=(
+      ccache
+      libfl-dev
+      libjemalloc-dev
+      libsystemc-dev
+      mold
+    )
+    apt-get-retry update
+    apt-get-retry install --yes "${PACKAGES[@]}"
   fi
 else
   ##############################################################################
   # Unknown build stage
-  fatal "Unknown stage '$STAGE' (expected 'build', 'test' or 'lint-py')"
+  fatal "Unknown stage '$STAGE'"
 fi
 
 # Report where the tools we may have installed live (ok if some are missing)
