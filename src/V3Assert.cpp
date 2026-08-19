@@ -249,49 +249,6 @@ public:
 //######################################################################
 // AssertVisitor
 
-class FinalPastCallGraphVisitor final : public VNVisitor {
-    // STATE
-    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task being iterated
-    std::unordered_set<const AstNodeFTask*> m_pastFTasksp;  // FTasks that reach a $past
-    std::unordered_map<const AstNodeFTask*, std::vector<const AstNodeFTask*>>
-        m_callees;  // Caller -> called FTasks, for the transitive closure
-
-    void visit(AstNodeFTask* nodep) override {
-        VL_RESTORER(m_ftaskp);
-        m_ftaskp = nodep;
-        iterateChildren(nodep);
-    }
-    void visit(AstPast* nodep) override {
-        if (m_ftaskp) m_pastFTasksp.insert(m_ftaskp);
-        iterateChildren(nodep);
-    }
-    void visit(AstNodeFTaskRef* nodep) override {
-        if (m_ftaskp && nodep->taskp()) m_callees[m_ftaskp].push_back(nodep->taskp());
-        iterateChildren(nodep);
-    }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    explicit FinalPastCallGraphVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (const auto& pair : m_callees) {
-                if (m_pastFTasksp.count(pair.first)) continue;
-                for (const AstNodeFTask* const calleep : pair.second) {
-                    if (m_pastFTasksp.count(calleep)) {
-                        m_pastFTasksp.insert(pair.first);
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    const std::unordered_set<const AstNodeFTask*>& pastFTasksp() const { return m_pastFTasksp; }
-};
-
 class AssertVisitor final : public VNVisitor {
     // CONSTANTS
     static constexpr uint8_t ALL_ASSERT_TYPES
@@ -331,7 +288,10 @@ class AssertVisitor final : public VNVisitor {
     AstFinal* m_finalp = nullptr;  // Current final block
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    const std::unordered_set<const AstNodeFTask*>& m_finalPastFTasksp;  // Final-reachable $past
+    std::unordered_set<const AstNodeFTask*> m_pastFTasksp;  // FTasks that reach a $past
+    std::unordered_map<const AstNodeFTask*, std::vector<const AstNodeFTask*>>
+        m_callees;  // Caller -> called FTasks, for the transitive closure
+    std::vector<AstNodeFTaskRef*> m_finalFTaskRefsp;  // FTask calls inside final blocks
     V3UniqueNames m_caseTempNames{"__VCase"};
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
@@ -1032,6 +992,7 @@ class AssertVisitor final : public VNVisitor {
 
     //========== Past
     void visit(AstPast* nodep) override {
+        if (m_ftaskp) m_pastFTasksp.insert(m_ftaskp);
         iterateChildren(nodep);
         uint32_t ticks = 1;
         if (nodep->ticksp()) {
@@ -1061,16 +1022,36 @@ class AssertVisitor final : public VNVisitor {
         nodep->replaceWith(inp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visitFinalFTaskRef(AstNodeFTaskRef* nodep) {
-        if (VN_IS(m_procedurep, Final) && nodep->taskp()
-            && m_finalPastFTasksp.count(nodep->taskp())) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: $past in a function or task called from a final block");
-        }
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (m_ftaskp) m_callees[m_ftaskp].push_back(nodep->taskp());
+        if (VN_IS(m_procedurep, Final)) m_finalFTaskRefsp.push_back(nodep);
         iterateChildren(nodep);
     }
-    void visit(AstFuncRef* nodep) override { visitFinalFTaskRef(nodep); }
-    void visit(AstTaskRef* nodep) override { visitFinalFTaskRef(nodep); }
+    // A final-block $past in a function body cannot get the sampling-tick correction, as the
+    // body is lowered once for all call sites; reject after the call graph is complete
+    void reportFinalPastCalls() {
+        if (m_finalFTaskRefsp.empty()) return;
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (const auto& pair : m_callees) {
+                if (m_pastFTasksp.count(pair.first)) continue;
+                for (const AstNodeFTask* const calleep : pair.second) {
+                    if (m_pastFTasksp.count(calleep)) {
+                        m_pastFTasksp.insert(pair.first);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+        for (AstNodeFTaskRef* const refp : m_finalFTaskRefsp) {
+            if (m_pastFTasksp.count(refp->taskp())) {
+                refp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: $past in a function or task called from a final block");
+            }
+        }
+    }
 
     //========== Move $sampled down to read-only variables
     void visit(AstSampled* nodep) override {
@@ -1317,6 +1298,11 @@ class AssertVisitor final : public VNVisitor {
         m_procedurep = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstGenBlock* nodep) override {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
@@ -1347,10 +1333,9 @@ class AssertVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    AssertVisitor(AstNetlist* nodep,
-                  const std::unordered_set<const AstNodeFTask*>& finalPastFTasksp)
-        : m_finalPastFTasksp{finalPastFTasksp} {
+    explicit AssertVisitor(AstNetlist* nodep) {
         iterate(nodep);
+        reportFinalPastCalls();
     }
     ~AssertVisitor() override {
         V3Stats::addStat("Assertions, assert non-immediate statements", m_statAsNotImm);
@@ -1371,7 +1356,6 @@ public:
 
 void V3Assert::assertAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    const FinalPastCallGraphVisitor callGraphVisitor{nodep};
-    { AssertVisitor{nodep, callGraphVisitor.pastFTasksp()}; }  // Destruct before checking
+    { AssertVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assert", 0, dumpTreeEitherLevel() >= 3);
 }

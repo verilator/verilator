@@ -26,8 +26,17 @@ module t (
     result = $past(data);
   endtask
 
+  function automatic bit fclean();
+    return data;
+  endfunction
+
+  function automatic bit fclean_wrapper();
+    return fclean();
+  endfunction
+
   final begin
     value = $past(data);  // Direct final use remains supported.
+    value = fclean_wrapper();  // No $past anywhere below: not rejected.
     value = fpast_wrapper();
     tpast(value);
   end
