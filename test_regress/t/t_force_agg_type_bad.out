@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_force_agg_type_bad.v:28:5: Unsupported: Force of an unpacked aggregate from an expression of a different type
+   28 |     force s = '0;
+      |     ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_force_agg_type_bad.v:29:5: Unsupported: Force of an unpacked aggregate from an expression of a different type
+   29 |     force s.sub = '0;
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_force_agg_type_bad.v:30:5: Unsupported: Force of an unpacked aggregate from an expression of a different type
+   30 |     force one = '0;
+      |     ^~~~~
+%Error: Exiting due to
