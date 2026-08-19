@@ -2499,7 +2499,8 @@ class ParamVisitor final : public VNVisitor {
     bool m_iterateModule = false;  // Iterating module body
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
-    std::unordered_map<const AstNode*, std::string> m_genHierNames; // Maps ast nodes to generated hierarchy names
+    std::unordered_map<const AstNode*, std::string>
+        m_genHierNames;  // Maps ast nodes to generated hierarchy names
     std::map<const AstRefDType*, bool>
         m_isCircular;  // Stores information whether `AstRefDType` is circular
     using VarsByName = std::unordered_map<std::string, AstVar*>;
