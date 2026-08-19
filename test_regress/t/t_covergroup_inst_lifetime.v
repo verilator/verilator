@@ -12,11 +12,9 @@
 // deleted at the start of the *next* eval_step, so a single-eval test would
 // never actually free them and would not exercise this at all.
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
 
   int cyc = 0;
   logic [1:0] v;

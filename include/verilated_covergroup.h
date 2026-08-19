@@ -267,7 +267,8 @@ public:
 
 class VlCovergroupInst final {
     // MEMBERS
-    std::vector<std::unique_ptr<VlCoverpointIf>> m_items;  // Creation == declaration order
+    // Coverpoint and cross runtimes of this instance; creation == declaration order
+    std::vector<std::unique_ptr<VlCoverpointIf>> m_items;
 
 public:
     // CONSTRUCTORS
