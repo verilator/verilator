@@ -418,14 +418,9 @@ bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
 
 void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
                                     const std::vector<std::string>* layerVarsp) {
-    // Sample bits only from the variables actually being solved this call.
-    // Without this, a phased solve (solve x before y) would still sample
-    // from every rand var in the class, not just the current phase's layer,
-    // so a diversity constraint meant to randomize a narrow "before"
-    // variable could end up entirely built out of a wider "after"
-    // variable's bits, leaving the "before" variable untouched and stuck at
-    // whatever value the solver's first, non-randomized check-sat happened
-    // to assign it.
+    // layerVarsp scopes sampling to the current phase's own layer, so a
+    // phased solve's diversity constraint can't be built entirely out of a
+    // later phase's (still-unsolved) variable instead of this one's.
     std::vector<const VlRandomVar*> vars;
     if (layerVarsp) {
         for (const auto& name : *layerVarsp) {
@@ -440,11 +435,9 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
     int varBits = 0;
     for (const auto& varp : vars) varBits += varp->totalWidth();
     if (varBits == 0) {
-        // Nothing to sample from: e.g. a phase layer consisting only of a
-        // still-unsized dynamic array/queue, whose element count (and so
-        // totalWidth()) isn't known until this very phase resolves it. Emit
-        // a tautology instead of the degenerate, malformed `(= #b1)` that
-        // falls out of the loop below with an empty operand list.
+        // Nothing to sample (e.g. a still-unsized queue/dynamic array in
+        // this layer) -- tautology instead of the degenerate empty-operand
+        // expression the loop below would otherwise build.
         os << "(= #b1 #b1)";
         return;
     }
