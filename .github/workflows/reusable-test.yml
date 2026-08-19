@@ -85,8 +85,9 @@ jobs:
           key: ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.suite }}
 
       - name: Install test dependencies
-        run: |
-          ./ci/ci-install.bash test
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: test
 
       - name: Set up Python venv
         uses: ./repo/.github/actions/setup-venv

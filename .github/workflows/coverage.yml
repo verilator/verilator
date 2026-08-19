@@ -116,8 +116,9 @@ jobs:
           ls -lsha
 
       - name: Install dependencies
-        working-directory: repo
-        run: ./ci/ci-install.bash coverage
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: coverage
 
       - name: Download code coverage data
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8

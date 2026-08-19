@@ -27,7 +27,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install packages for build
-        run: ./ci/ci-install.bash format
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: format
 
       - name: Configure git identity
         run: |
