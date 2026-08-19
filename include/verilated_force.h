@@ -47,31 +47,6 @@ struct VlForceTypeInfo final {
     using Type = VlForceBaseType<T>;
     static constexpr bool bitwise
         = std::is_integral<Type>::value || std::is_enum<Type>::value || VlIsVlWide<Type>::value;
-    static constexpr bool unpackedArray = false;
-};
-
-template <typename T>
-struct VlForceArrayIndexer final {
-    static constexpr std::size_t size = 1;
-
-    static T& elem(T& value, std::size_t) { return value; }
-};
-
-template <typename T, std::size_t N>
-struct VlForceArrayIndexer<VlUnpacked<T, N>> final {
-    static constexpr std::size_t size = N * VlForceArrayIndexer<T>::size;
-
-    static auto& elem(VlUnpacked<T, N>& array, std::size_t index) {
-        constexpr std::size_t subSize = VlForceArrayIndexer<T>::size;
-        return VlForceArrayIndexer<T>::elem(array[index / subSize], index % subSize);
-    }
-};
-
-template <typename T, std::size_t N>
-struct VlForceTypeInfo<VlUnpacked<T, N>> final {
-    using Type = VlUnpacked<T, N>;
-    static constexpr bool bitwise = false;
-    static constexpr bool unpackedArray = true;
 };
 
 template <typename T, bool = std::is_enum<T>::value>
@@ -101,13 +76,14 @@ using VlForceStorageType = typename VlForceStorageTypeOf<VlForceBaseType<T>>::ty
 class VlForceVec final {
 private:
     struct Entry final {
-        int m_lsb;  // Inclusive lower bit for scalar path or element index for unpacked
-        int m_msb;  // Inclusive upper bit for scalar path or element index for unpacked
+        int m_lsb;  // Inclusive lower bit for scalar path or slot index for slot-tracked
+        int m_msb;  // Inclusive upper bit for scalar path or slot index for slot-tracked
         int m_rhsLsb;  // Destination index that maps to RHS index 0
-        const void* m_rhsDatap;  // Pointer to RHS storage
+        const void* m_rhsDatap;  // Pointer to RHS storage (bitwise variables only)
         int m_bitLsb = 0;
         int m_bitMsb = 0;
         int m_elemWidth = 0;
+        int m_id = -1;  // Force statement id for slot-tracked variables, else -1
     };
 
     std::vector<Entry> m_entries;  // Sorted by msb, non-overlapping
@@ -117,7 +93,8 @@ private:
                                    [](const Entry& e, int bit) { return e.m_msb < bit; });
         while (it != m_entries.end() && it->m_lsb <= msb) {
             if (it->m_lsb < lsb && it->m_msb > msb) {
-                const Entry right{msb + 1, it->m_msb, it->m_rhsLsb, it->m_rhsDatap};
+                Entry right = *it;  // Splits keep the owning force's identity on both halves
+                right.m_lsb = msb + 1;
                 it->m_msb = lsb - 1;
                 return m_entries.insert(++it, right);
             }
@@ -135,11 +112,48 @@ private:
         return it;
     }
 
-    std::size_t trimElementBitRange(int elem, int bitLsb, int bitMsb) {
+    // Split any entry spanning more slots than [elem, elem] so that per-bit trimming below
+    // never leaves the vector unsorted, and so the split-off slot can carry a bit range
+    void isolateSlot(int elem, int elemWidth) {
+        auto it = std::lower_bound(m_entries.begin(), m_entries.end(), elem,
+                                   [](const Entry& e, int idx) { return e.m_msb < idx; });
+        if (it == m_entries.end() || it->m_lsb > elem) return;
+        if (it->m_lsb == elem && it->m_msb == elem) {
+            if (it->m_elemWidth == 0) {  // Owned whole; make that an explicit full bit range
+                it->m_bitLsb = 0;
+                it->m_bitMsb = elemWidth - 1;
+                it->m_elemWidth = elemWidth;
+            }
+            return;
+        }
+        Entry mid = *it;
+        mid.m_lsb = mid.m_msb = elem;
+        if (mid.m_elemWidth == 0) {  // Owned whole; make that an explicit full bit range
+            mid.m_bitLsb = 0;
+            mid.m_bitMsb = elemWidth - 1;
+            mid.m_elemWidth = elemWidth;
+        }
+        const Entry orig = *it;
+        auto at = m_entries.erase(it);
+        if (orig.m_msb > elem) {
+            Entry right = orig;
+            right.m_lsb = elem + 1;
+            at = m_entries.insert(at, right);
+        }
+        at = m_entries.insert(at, mid);
+        if (orig.m_lsb < elem) {
+            Entry left = orig;
+            left.m_msb = elem - 1;
+            m_entries.insert(at, left);
+        }
+    }
+
+    std::size_t trimElementBitRange(int elem, int bitLsb, int bitMsb, int elemWidth) {
+        isolateSlot(elem, elemWidth);
         auto it = std::lower_bound(m_entries.begin(), m_entries.end(), elem,
                                    [](const Entry& e, int idx) { return e.m_msb < idx; });
         while (it != m_entries.end() && it->m_lsb <= elem) {
-            if (it->m_elemWidth == 0 || it->m_bitMsb < bitLsb || it->m_bitLsb > bitMsb) {
+            if (it->m_bitMsb < bitLsb || it->m_bitLsb > bitMsb) {
                 ++it;
                 continue;
             }
@@ -161,12 +175,8 @@ private:
             }
             it = m_entries.erase(it);
         }
-        auto ins = std::lower_bound(m_entries.begin(), m_entries.end(), elem,
-                                    [](const Entry& e, int idx) { return e.m_msb < idx; });
-        while (ins != m_entries.end() && ins->m_lsb <= elem
-               && (ins->m_elemWidth == 0 || ins->m_bitLsb <= bitLsb)) {
-            ++ins;
-        }
+        const auto ins = std::lower_bound(m_entries.begin(), m_entries.end(), elem,
+                                          [](const Entry& e, int idx) { return e.m_msb < idx; });
         return static_cast<std::size_t>(ins - m_entries.begin());
     }
 
@@ -231,22 +241,6 @@ private:
         return *static_cast<const VlForceBaseType<T>*>(entry.m_rhsDatap);
     }
 
-    template <typename Elem>
-    static typename std::enable_if<!VlIsVlWide<Elem>::value, Elem>::type
-    blendElem(Elem cur, const Entry& e) {
-        const Entry bitEntry{e.m_bitLsb, e.m_bitMsb, e.m_rhsLsb, e.m_rhsDatap, 0, 0, 0};
-        return applyEntry(cur, bitEntry);
-    }
-
-    template <typename Elem>
-    static typename std::enable_if<VlIsVlWide<Elem>::value, Elem>::type blendElem(Elem cur,
-                                                                                  const Entry& e) {
-        Elem res = cur;
-        const Entry bitEntry{e.m_bitLsb, e.m_bitMsb, e.m_rhsLsb, e.m_rhsDatap, 0, 0, 0};
-        applyEntry(res, bitEntry, e.m_bitLsb, e.m_bitMsb, 0);
-        return res;
-    }
-
     template <typename T>
     typename std::enable_if<VlIsVlWide<T>::value>::type applyEntries(T& val) const {
         for (const auto& entry : m_entries) {
@@ -276,47 +270,7 @@ public:
     template <typename T>
     T read(const T& val) const {
         T result = val;
-        if VL_CONSTEXPR_CXX17 (VlForceTypeInfo<T>::unpackedArray) {
-            // Handling the case of a nested flattened array using recursion
-            using ElemRef
-                = decltype(VlForceArrayIndexer<T>::elem(result, static_cast<std::size_t>(0)));
-            using Elem = VlForceBaseType<ElemRef>;
-            for (const auto& entry : m_entries) {
-                const int startIdx = entry.m_lsb;
-                const int endIdx = entry.m_msb;
-                for (int idx = startIdx; idx <= endIdx; idx++) {
-                    const std::size_t uidx = static_cast<std::size_t>(idx);
-                    Elem& dst = VlForceArrayIndexer<T>::elem(result, uidx);
-                    if (entry.m_elemWidth == 0) {
-                        const Elem* const rhsBasep = static_cast<const Elem*>(entry.m_rhsDatap);
-                        const int rhsIndex = idx - entry.m_rhsLsb;
-                        dst = rhsBasep[rhsIndex];
-                    } else {
-                        dst = blendElem<Elem>(dst, entry);
-                    }
-                }
-            }
-            return result;
-        }
         applyEntries(result);
-        return result;
-    }
-
-    template <typename T>
-    T readIndex(T origVal, int index) const {
-        if (m_entries.empty()) return origVal;
-
-        T result = origVal;
-        for (auto it = std::lower_bound(m_entries.begin(), m_entries.end(), index,
-                                        [](const Entry& e, int idx) { return e.m_msb < idx; });
-             it != m_entries.end() && it->m_lsb <= index; ++it) {
-            if (it->m_elemWidth == 0) {
-                const int rhsIndex = index - it->m_rhsLsb;
-                result = static_cast<const T*>(it->m_rhsDatap)[rhsIndex];
-            } else {
-                result = blendElem<T>(result, *it);
-            }
-        }
         return result;
     }
 
@@ -342,35 +296,87 @@ public:
         return result;
     }
 
+    // Preconditions (lsb <= msb, rhsDatap non-null, rhsLsb <= lsb) are checked in V3Force
+    // where the call is generated and a source location is available.
     void addForce(int lsb, int msb, const void* rhsDatap, int rhsLsb) {
-        assert(lsb <= msb);
-        assert(rhsDatap);
-        assert(rhsLsb <= lsb);
-
         auto it = trimEntries(lsb, msb);
         m_entries.insert(it, {lsb, msb, rhsLsb, rhsDatap});
     }
 
-    void addForce(int lsb, int msb, const void* rhsDatap, int rhsLsb, int bitLsb, int bitMsb,
-                  int elemWidth) {
-        assert(lsb == msb);
-        assert(rhsDatap);
-        assert(elemWidth > 0);
-        assert(0 <= bitLsb && bitLsb <= bitMsb && bitMsb < elemWidth);
-        const std::size_t at = trimElementBitRange(lsb, bitLsb, bitMsb);
-        m_entries.insert(m_entries.begin() + at,
-                         Entry{lsb, msb, rhsLsb, rhsDatap, bitLsb, bitMsb, elemWidth});
+    // Register a force on a slot-tracked variable.  The value lives in the force's own
+    // typed shadow variable; entries only record which force owns which slots.
+    void addForceAt(int id, int lsb, int msb) {
+        auto it = trimEntries(lsb, msb);
+        Entry entry{lsb, msb, 0, nullptr};
+        entry.m_id = id;
+        m_entries.insert(it, entry);
     }
 
-    void release(int lsb, int msb) {
-        assert(lsb <= msb);
-        trimEntries(lsb, msb);
+    // Register a force of a bit range within one slot of a slot-tracked variable
+    void addForceAt(int id, int slot, int bitLsb, int bitMsb, int elemWidth) {
+        const std::size_t at = trimElementBitRange(slot, bitLsb, bitMsb, elemWidth);
+        Entry entry{slot, slot, 0, nullptr, bitLsb, bitMsb, elemWidth};
+        entry.m_id = id;
+        m_entries.insert(m_entries.begin() + at, entry);
     }
 
-    void release(int lsb, int msb, int bitLsb, int bitMsb) {
-        assert(lsb == msb);
-        assert(bitLsb <= bitMsb);
-        trimElementBitRange(lsb, bitLsb, bitMsb);
+    void release(int lsb, int msb) { trimEntries(lsb, msb); }
+
+    void release(int lsb, int msb, int bitLsb, int bitMsb, int elemWidth) {
+        trimElementBitRange(lsb, bitLsb, bitMsb, elemWidth);
+    }
+
+    // True when force 'id' owns anything in the slot range
+    bool ownsAny(int id, int lsb, int msb) const {
+        auto it = std::lower_bound(m_entries.begin(), m_entries.end(), lsb,
+                                   [](const Entry& e, int bit) { return e.m_msb < bit; });
+        for (; it != m_entries.end() && it->m_lsb <= msb; ++it) {
+            if (it->m_id == id) return true;
+        }
+        return false;
+    }
+
+    bool ownsSlot(int id, int slot) const { return ownsAny(id, slot, slot); }
+
+    // Blend the bits of 'rhsVal' that force 'id' currently owns at 'slot' into 'cur'.
+    // Yields 'cur' unchanged when the force owns nothing there.
+    template <typename T>
+    typename std::enable_if<!VlIsVlWide<T>::value, T>::type blendOwned(T cur, QData rhsVal, int id,
+                                                                       int slot) const {
+        using U = VlForceStorageType<T>;
+        U result = static_cast<U>(cur);
+        auto it = std::lower_bound(m_entries.begin(), m_entries.end(), slot,
+                                   [](const Entry& e, int idx) { return e.m_msb < idx; });
+        for (; it != m_entries.end() && it->m_lsb <= slot; ++it) {
+            if (it->m_id != id) continue;
+            if (it->m_elemWidth == 0) return static_cast<T>(rhsVal);  // Owns the whole slot
+            const int width = it->m_bitMsb - it->m_bitLsb + 1;
+            const U mask = static_cast<U>(static_cast<U>(VL_MASK_Q(width)) << it->m_bitLsb);
+            result = static_cast<U>((result & ~mask) | (static_cast<U>(rhsVal) & mask));
+        }
+        return static_cast<T>(result);
+    }
+
+    template <typename T>
+    typename std::enable_if<VlIsVlWide<T>::value, T>::type blendOwned(T cur, const T& rhsVal,
+                                                                      int id, int slot) const {
+        T result = cur;
+        auto it = std::lower_bound(m_entries.begin(), m_entries.end(), slot,
+                                   [](const Entry& e, int idx) { return e.m_msb < idx; });
+        for (; it != m_entries.end() && it->m_lsb <= slot; ++it) {
+            if (it->m_id != id) continue;
+            if (it->m_elemWidth == 0) return rhsVal;  // Owns the whole slot
+            for (int word = VL_BITWORD_E(it->m_bitLsb); word <= VL_BITWORD_E(it->m_bitMsb);
+                 ++word) {
+                const int wordLsb = word * VL_EDATASIZE;
+                const int segLsb = std::max(it->m_bitLsb, wordLsb);
+                const int segMsb = std::min(it->m_bitMsb, wordLsb + VL_EDATASIZE - 1);
+                const int width = segMsb - segLsb + 1;
+                const EData mask = static_cast<EData>(VL_MASK_Q(width)) << (segLsb - wordLsb);
+                result[word] = (result[word] & ~mask) | (rhsVal[word] & mask);
+            }
+        }
+        return result;
     }
 
     void touch() {}
