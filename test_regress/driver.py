@@ -1547,6 +1547,9 @@ class VlTest:
         if run_env:
             run_env = run_env + ' '
         if self.tsan:
+            # ThreadSanitizer's fixed shadow mapping is incompatible with
+            # high-entropy ASLR, so disable with TSAN
+            param['aslr_off'] = True
             # Use default suppressions; environment TSAN_OPTIONS may override
             run_env = ('TSAN_OPTIONS="suppressions=' + os.environ['TEST_REGRESS'] +
                        '/tsan.supp $TSAN_OPTIONS" ' + run_env)
