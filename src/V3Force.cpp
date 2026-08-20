@@ -109,6 +109,9 @@ public:
         // side) share its ForceInfo: each execution re-establishes the same ownership
         // and value, so one id, one shadow and one read arm serve them all
         std::unordered_map<AstAssignForce*, AstAssignForce*> m_forceAliases;
+        // Cloned release target paths, owned here; a release can punch a hole in an
+        // enclosing aggregate force just as another force can
+        std::vector<AstNodeExpr*> m_releasePaths;
         // Shared per-variable shadow rebuild functions, created on first use, so each
         // procedural refresh site is one call however many forces the variable has
         mutable AstCFunc* m_slotRdRefreshFuncp = nullptr;
@@ -171,6 +174,9 @@ public:
                 if (AstNodeExpr* const pathp = pair.second.m_lhsPathp) {
                     VL_DO_DANGLING(pathp->deleteTree(), pathp);
                 }
+            }
+            for (AstNodeExpr* pathp : info.m_releasePaths) {
+                VL_DO_DANGLING(pathp->deleteTree(), pathp);
             }
         }
     }
@@ -831,6 +837,10 @@ public:
 
     static bool isBitSelForce(const ForceInfo* finfop) { return VN_IS(finfop->m_lhsPathp, Sel); }
 
+    static bool isAggregateForce(const ForceInfo* finfop) {
+        return forceSlots(forceLeafPath(finfop)->dtypep()) > 1;
+    }
+
     // The leaf's structural identity within its variable: member selections by name,
     // element selections position-blind.  Two paths with different signatures can never
     // address the same slot, whatever their indices.  Callers pass a leaf reached through
@@ -1222,6 +1232,96 @@ public:
                 flp, buildOwnsExpr(varInfo, flp, finfop->m_forceId, guardLo, guardHi), armp};
             tailp->addNextHere(ifp);
             tailp = ifp;
+
+            // An aggregate arm writes its whole path, including anything another force or
+            // a release has punched out of it.  Repair each such candidate: those are
+            // statically enumerable, as only a recorded force or release target can trim
+            // ownership.  A single-slot candidate is recomposed bit-exactly, raw below the
+            // bits this aggregate still owns; a multi-slot candidate is restored to raw
+            // wherever this aggregate owns none of it, widest candidate first, and an inner
+            // force that owns any of it writes afterwards, its arm being ordered later.
+            if (isAggregateForce(finfop)) {
+                AstNode* armTailp = armp;
+                std::vector<AstNodeExpr*> holePathps;
+                for (const ForceInfo* const otherp : overlappingForces(varInfo, region)) {
+                    if (otherp == finfop) continue;
+                    holePathps.push_back(forceLeafPath(otherp));
+                }
+                for (AstNodeExpr* const relPathp : varInfo.m_releasePaths) {
+                    holePathps.push_back(stripToLeaf(relPathp));
+                }
+                std::stable_sort(holePathps.begin(), holePathps.end(),
+                                 [](AstNodeExpr* ap, AstNodeExpr* bp) {
+                                     const SlotRange ar = staticSlotRange(ap);
+                                     const SlotRange br = staticSlotRange(bp);
+                                     return (ar.m_hi - ar.m_lo) > (br.m_hi - br.m_lo);
+                                 });
+                std::set<std::pair<int, int>> seen;
+                for (AstNodeExpr* const holePathp : holePathps) {
+                    const SlotRange hole = staticSlotRange(holePathp);
+                    if (hole.m_lo < finfop->m_rangeLsb || hole.m_hi > finfop->m_rangeMsb) {
+                        continue;
+                    }
+                    if (hole.m_lo == finfop->m_rangeLsb && hole.m_hi == finfop->m_rangeMsb) {
+                        continue;
+                    }
+                    // The arm writes only within the region, so only a hole strictly inside
+                    // it needs repair: one covering the whole region duplicates the arm's
+                    // own guard, and subtree ranges never partially overlap
+                    if (hole.m_lo < region.m_lo || hole.m_hi > region.m_hi) continue;
+                    if (hole.m_lo == region.m_lo && hole.m_hi == region.m_hi) continue;
+                    if (!seen.emplace(hole.m_lo, hole.m_hi).second) continue;
+                    UASSERT_OBJ(pathDepth(holePathp) >= pathDepth(forceLeafPath(finfop))
+                                    && pathDepth(holePathp) > regionDepth,
+                                holePathp, "Candidate inside an aggregate must be deeper");
+                    AstNodeExpr* const holeDstp
+                        = rebaseSuffixOnto(holePathp, regionDepth, dstBasep->cloneTreePure(false));
+                    AstNodeExpr* const holeRawp = holePathp->cloneTreePure(false);
+                    markRawRead(holeRawp);
+                    if (hole.m_lo == hole.m_hi && isBitwiseDType(holePathp)) {
+                        // dst.H = blendOwned(raw.H, aggShadow.<H suffix>, aggId, slot)
+                        const int stripDepth = pathDepth(forceLeafPath(finfop));
+                        AstNodeExpr* const suffixp = rebaseSuffixOnto(
+                            holePathp, stripDepth,
+                            new AstVarRef{flp, finfop->m_rhsVarVscp, VAccess::READ});
+                        AstCMethodHard* const blendp = new AstCMethodHard{
+                            flp, new AstVarRef{flp, varInfo.m_forceVecVscp, VAccess::READ},
+                            VCMethod::FORCE_BLEND_OWNED, holeRawp};
+                        blendp->addPinsp(suffixp);
+                        blendp->addPinsp(makeConst32(flp, finfop->m_forceId));
+                        blendp->addPinsp(makeConst32(flp, hole.m_lo));
+                        blendp->dtypeFrom(holePathp);
+                        AstAssign* const recomposep = new AstAssign{flp, holeDstp, blendp};
+                        armTailp->addNextHere(recomposep);
+                        armTailp = recomposep;
+                    } else if (hole.m_lo == hole.m_hi) {
+                        // Non-bitwise leaf has no bit residue: owned or raw
+                        const int stripDepth = pathDepth(forceLeafPath(finfop));
+                        AstNodeExpr* const suffixp = rebaseSuffixOnto(
+                            holePathp, stripDepth,
+                            new AstVarRef{flp, finfop->m_rhsVarVscp, VAccess::READ});
+                        AstNodeExpr* const ownsp
+                            = buildOwnsExpr(varInfo, flp, finfop->m_forceId, hole.m_lo, hole.m_hi);
+                        AstCond* const condp = new AstCond{flp, ownsp, suffixp, holeRawp};
+                        condp->dtypeFrom(holePathp);
+                        AstAssign* const recomposep = new AstAssign{flp, holeDstp, condp};
+                        armTailp->addNextHere(recomposep);
+                        armTailp = recomposep;
+                    } else {
+                        // Multi-slot candidate: raw wherever this aggregate owns none of it
+                        AstCMethodHard* const ownsp = new AstCMethodHard{
+                            flp, new AstVarRef{flp, varInfo.m_forceVecVscp, VAccess::READ},
+                            VCMethod::FORCE_OWNS_ANY, makeConst32(flp, finfop->m_forceId)};
+                        ownsp->addPinsp(makeConst32(flp, hole.m_lo));
+                        ownsp->addPinsp(makeConst32(flp, hole.m_hi));
+                        ownsp->dtypeSetBit();
+                        AstIf* const holeIfp = new AstIf{flp, new AstLogNot{flp, ownsp},
+                                                         new AstAssign{flp, holeDstp, holeRawp}};
+                        armTailp->addNextHere(holeIfp);
+                        armTailp = holeIfp;
+                    }
+                }
+            }
         }
         // Reads and writes of the source variable in here are the raw storage by design
         for (AstNode* stmtp = headp; stmtp; stmtp = stmtp->nextp()) {
@@ -1524,6 +1624,10 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                           "Unsupported: Release of a variable with 2^31 or more elements");
             return;
         }
+        ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(lhsVarRefp->varScopep());
+        AstNodeExpr* const pathp = nodep->lhsp()->cloneTreePure(false);
+        pathp->foreach([](AstVarRef* const refp) { refp->access(VAccess::READ); });
+        info.m_releasePaths.push_back(pathp);
     }
 
     void visit(AstAssign* nodep) override {
