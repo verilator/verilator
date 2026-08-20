@@ -22,6 +22,8 @@ def run(test, *, cmake=False, verilator_flags2=()):
         f"--{mode}",
         f"--trace-{fmt}",
     ]
+    if mode == "cc" and fmt == "vcd":
+        flags.append("+define+TRACE_VCD")
     if mode == "sc":
         flags.append("+define+SYSTEMC")
     flags.extend(verilator_flags2)
