@@ -37,17 +37,20 @@ module t;
   Cls1 cls1;
   Cls2 cls2;
   Cls3 cls3;
+  int ok;
 
   initial begin
     cls1 = new;
     cls2 = new;
     cls3 = new;
-    if (cls1.randomize() != 1) $stop;
+    ok = cls1.randomize();
+    `checkd(ok, 1);
     foreach(cls1.arr[i]) begin
       if (cls1.arr[i] != i) $stop;
     end
 
-    if (cls2.randomize() != 1) $stop;
+    ok = cls2.randomize();
+    `checkd(ok, 1);
     foreach(cls2.arr[i]) begin
       if (i != 1)
         if (cls2.arr[i] != i) $stop;
@@ -55,7 +58,8 @@ module t;
     if (cls2.arr[1] != 10) $stop;
 
     repeat (10) begin
-      if (cls3.randomize() != 1) $stop;
+      ok = cls3.randomize();
+      `checkd(ok, 1);
       foreach(cls3.arr[i]) begin
         if (cls3.arr[i] >= i) $stop;
       end
