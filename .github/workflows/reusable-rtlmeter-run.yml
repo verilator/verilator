@@ -66,11 +66,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           path: repo
-          sparse-checkout: ci
+          sparse-checkout: |
+            .github/actions
+            ci
 
       - name: Install dependencies
-        working-directory: repo
-        run: ./ci/ci-install.bash rtlmeter-run
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: rtlmeter-run
 
       - name: Checkout RTLMeter
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
