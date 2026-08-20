@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_constraint_disable_soft_index_unsup.v:15:26: Unsupported: 'disable soft' of an array element; use the whole array instead
+                                                                   : ... note: In instance 't'
+   15 |   constraint c_disable { disable soft a[0]; }
+      |                          ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

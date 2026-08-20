@@ -894,6 +894,7 @@ public:
         RANDOMIZER_CLEARCONSTRAINTS,
         RANDOMIZER_CLEARALL,
         RANDOMIZER_DISABLE_SOFT,
+        RANDOMIZER_DIST_PICK,
         RANDOMIZER_HARD,
         RANDOMIZER_SOFT,
         RANDOMIZER_UNIQUE,
@@ -1048,6 +1049,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
            {RANDOMIZER_CLEARALL, "clearAll", false}, \
            {RANDOMIZER_DISABLE_SOFT, "disable_soft", false}, \
+           {RANDOMIZER_DIST_PICK, "dist_pick", false}, \
            {RANDOMIZER_HARD, "hard", false}, \
            {RANDOMIZER_SOFT, "soft", false}, \
            {RANDOMIZER_UNIQUE, "rand_unique", false}, \
