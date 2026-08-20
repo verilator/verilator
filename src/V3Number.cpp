@@ -966,7 +966,7 @@ string V3Number::emitC() const VL_MT_STABLE {
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,
         // and the second starts the initializer of m_storage within the VlWide.
         // Alternative is to have constructor with std::initializer_list
-        result = "VlWide<" + std::to_string(words()) + ">{{";
+        result = "VlWide4AB<" + std::to_string(words()) + ">{{";
         if (words() > 4) result += '\n';
         for (int n = 0; n < words(); ++n) {
             if (n) result += ((n % 4) ? ", " : ",\n");
