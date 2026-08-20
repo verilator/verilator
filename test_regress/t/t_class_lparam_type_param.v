@@ -15,6 +15,7 @@ module type_scope #(
     parameter type C = types_c#(8)
 ) ();
   C::t value;
+  child #(.T(C::t)) u_child (.a_i('0));
   initial assert ($bits(value) == 8);
 endmodule
 

@@ -2224,6 +2224,70 @@ class ParamProcessor final {
         return newClassp;
     }
 
+    // Resolve deferred class-scoped references in post-order. Resolution may
+    // deparameterize a class and delete its parameter pins, so no pointer to a
+    // child may remain pending when its parent is resolved.
+    class DeferredResolverVisitor final : public VNVisitor {
+        ParamProcessor& m_processor;
+        std::set<const AstNode*> m_reachedDecls;
+
+        bool firstReach(const AstNode* const declp) {
+            return m_reachedDecls.insert(declp).second;
+        }
+
+        void iterateParamType(AstParamTypeDType* const paramTypep) {
+            if (firstReach(paramTypep)) iterate(paramTypep);
+        }
+        void iterateTypedef(AstTypedef* const tdefp) {
+            if (firstReach(tdefp)) iterate(tdefp->subDTypep());
+        }
+
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+        void visit(AstClassOrPackageRef* nodep) override {
+            iterateChildren(nodep);
+            AstNode* const targetp = nodep->classOrPackageNodep();
+            if (AstTypedef* const tdefp = VN_CAST(targetp, Typedef)) {
+                iterateTypedef(tdefp);
+            } else if (AstParamTypeDType* const paramTypep
+                       = VN_CAST(targetp, ParamTypeDType)) {
+                iterateParamType(paramTypep);
+            }
+        }
+        void visit(AstDot* nodep) override {
+            iterateChildren(nodep);
+            m_processor.resolveDotToTypedef(nodep);
+        }
+        void visit(AstRefDType* nodep) override {
+            iterateChildren(nodep);
+            AstTypedef* const tdefp = nodep->typedefp();
+            if (tdefp) {
+                iterateTypedef(tdefp);
+            } else if (AstParamTypeDType* const paramTypep
+                       = VN_CAST(nodep->refDTypep(), ParamTypeDType)) {
+                iterateParamType(paramTypep);
+            }
+            m_processor.resolveParamClassRefDType(nodep);
+        }
+        void visit(AstVarRef* nodep) override {
+            iterateChildren(nodep);
+            AstVar* const varp = nodep->varp();
+            if (firstReach(varp)) {
+                iterate(varp->subDTypep());
+                const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
+                if (varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)) {
+                    UASSERT_OBJ(varp->valuep(), varp, "VarRef should have non-null valuep");
+                    iterate(varp->valuep());
+                }
+            }
+        }
+
+    public:
+        DeferredResolverVisitor(ParamProcessor& processor, AstNode* rootp)
+            : m_processor{processor} {
+            iterate(rootp);
+        }
+    };
+
 public:
     // After an interface cell inside parentModp has been deparameterized
     // (rewired from template to clone), retarget REFDTYPEs that still
@@ -2255,56 +2319,9 @@ public:
     // localparam values, and referenced-variable dtypes. This makes the walk
     // independent of the particular dtype wrappers around a RefDType.
     void resolveDeferredDotsReachableFrom(AstNode* rootp, const AstNodeModule* modp) {
-        std::vector<AstDot*> dotps;
-        std::vector<AstRefDType*> refps;
-        const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
-        std::set<AstVar*> reachedDeferred;
-        std::set<const AstVar*> reachedVars;
-        std::set<const AstTypedef*> reachedTypedefs;
-        std::set<const AstParamTypeDType*> reachedParamTypes;
-        std::vector<AstNode*> worklist{rootp};
-        while (!worklist.empty()) {
-            AstNode* const curDotp = worklist.back();
-            worklist.pop_back();
-            if (!curDotp) continue;
-            curDotp->foreach([&](AstNode* const np) {
-                if (AstDot* const dotp = VN_CAST(np, Dot)) {
-                    dotps.push_back(dotp);
-                } else if (AstRefDType* const refp = VN_CAST(np, RefDType)) {
-                    refps.push_back(refp);
-                    AstTypedef* const tdefp = refp->typedefp();
-                    if (tdefp && reachedTypedefs.insert(tdefp).second) {
-                        worklist.push_back(tdefp->subDTypep());
-                    }
-                    // A `localparam type t = cls#(W)::t` is a ParamTypeDType whose
-                    // value Dot is still deferred.  Referencing `t` (e.g. as a
-                    // child's type-parameter pin) must reach that Dot, as the
-                    // RefDType has no typedefp() to follow.
-                    if (!tdefp) {
-                        if (AstParamTypeDType* const ptp
-                            = VN_CAST(refp->refDTypep(), ParamTypeDType)) {
-                            if (reachedParamTypes.insert(ptp).second) worklist.push_back(ptp);
-                        }
-                    }
-                } else if (const AstVarRef* const refp = VN_CAST(np, VarRef)) {
-                    AstVar* const varp = refp->varp();
-                    if (varp && reachedVars.insert(varp).second) {
-                        worklist.push_back(varp->subDTypep());
-                    }
-                    if (varp && varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)
-                        && reachedDeferred.insert(varp).second) {
-                        UASSERT_OBJ(varp->valuep(), varp, "VarRef should have non-null valuep");
-                        worklist.push_back(varp->valuep());
-                    }
-                }
-            });
-        }
-        if (dotps.empty() && refps.empty()) return;
         VL_RESTORER(m_modp);
         m_modp = modp;
-        for (AstRefDType* const refp : refps) resolveParamClassRefDType(refp);
-        // Reverse-iterate so inner Dots resolve before outer.
-        for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
+        DeferredResolverVisitor{*this, rootp};
     }
 
     AstNodeModule* nodeDeparam(AstNode* nodep, AstNodeModule* srcModp, AstNodeModule* modp,
