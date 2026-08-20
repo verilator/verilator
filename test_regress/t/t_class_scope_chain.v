@@ -31,6 +31,12 @@ package P;
     localparam int n = W;
   endclass
 
+  class Outer;
+    class Inner;
+      typedef logic [6:0] t;
+    endclass
+  endclass
+
   // Traits-class shape: types derived from a struct config parameter
   typedef struct packed {
     int depth;
@@ -78,7 +84,9 @@ module t;
   // (3) through a typedef
   typedef P::Par#(5)::t c_t;
   c_t c;
-  // (4) value position (already worked; guards against regressing it)
+  // (4) an arbitrarily deep class scope
+  P::Outer::Inner::t d;
+  // (5) value position (already worked; guards against regressing it)
   localparam int na = P::Plain::n;
   localparam int nb = P::Par#(12)::n;
 
@@ -97,10 +105,12 @@ module t;
     a = '0;
     b = '0;
     c = '0;
+    d = '0;
     din = '0;
     `checkh($bits(a), 8);
     `checkh($bits(b), 12);
     `checkh($bits(c), 5);
+    `checkh($bits(d), 7);
     `checkh($bits(dout), 12);
     `checkh(na, 32'd8);
     `checkh(nb, 32'd12);

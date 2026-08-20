@@ -55,9 +55,18 @@ module Sub #(
 ) ();
   typedef pkg::cfg #(cfg) CFG;
   CFG::data_t src, dst;
+  typedef CFG::data_t unpacked_t[3:1];
+  typedef CFG::data_t dynamic_t[];
+  typedef CFG::data_t queue_t[$];
+  typedef CFG::data_t associative_t[int];
+  unpacked_t unpacked_data;
+  dynamic_t dynamic_data;
+  queue_t queue_data;
+  associative_t associative_data;
 
   // (1) $bits() of a class-scoped-typed signal, in a localparam
   localparam int Bits = $bits(src);
+  localparam int UnpackedBits = $bits(unpacked_data);
 
   // (2) $bits() of a class-scoped-typed signal, as a cell parameter pin
   Holder #(.width($bits(src))) holder (
@@ -77,9 +86,18 @@ module Sub #(
 
   initial begin
     src = '0;
+    unpacked_data = '{default: '1};
+    dynamic_data = new[1];
+    dynamic_data[0] = '1;
+    queue_data.push_back('1);
+    associative_data[3] = '1;
     `checkh(Bits, 32'd9);
+    `checkh(UnpackedBits, 32'd27);
     `checkh($bits(src), 32'd9);
     `checkh($bits(dst), 32'd9);
+    `checkh($bits(dynamic_data[0]), 32'd9);
+    `checkh($bits(queue_data[0]), 32'd9);
+    `checkh($bits(associative_data[3]), 32'd9);
   end
 endmodule
 

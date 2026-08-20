@@ -11,6 +11,13 @@ class types_c #(
   typedef type1_t [W-1:0] type2_t;
 endclass
 
+module type_scope #(
+    parameter type C = types_c#(8)
+) ();
+  C::t value;
+  initial assert ($bits(value) == 8);
+endmodule
+
 module child #(
     parameter type T = logic
 ) (
@@ -24,6 +31,7 @@ module t;
   // Class-scoped type via a localparam type, passed to a child type parameter.
   localparam type t_param = types_c#(W)::t;
   child #(.T(t_param)) u (.a_i('0));
+  type_scope u_type_scope ();
 
   // Class-scoped type via a module-body typedef alias of a nested typedef.
   typedef types_c#(W)::type2_t t_alias;

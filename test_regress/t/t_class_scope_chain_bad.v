@@ -4,8 +4,9 @@
 // of `pkg::cls::t` can fail to resolve; the diagnostic should name the segment
 // that actually failed, and should not also emit the "Multiple '::'" message.
 //
-// One level of nesting (`pkg::cls::t`) is supported; deeper chains are not,
-// and still report "Multiple '::' package/class reference".
+// Arbitrarily deep nesting is supported; if an intermediate segment is not a
+// class or package, it should receive the same lookup diagnostic as any other
+// unresolved scope.
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder

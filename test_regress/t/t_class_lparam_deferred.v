@@ -34,6 +34,10 @@ typedef struct packed {
   logic [7:0] tag;
 } cfg_t;
 
+typedef struct packed {
+  inner_t [1:0] entries;
+} table_t;
+
 package pkg;
   virtual class C #(parameter int W = 1);
     typedef logic [W-1:0] data_t;
@@ -45,6 +49,11 @@ endpackage
 class SC #(parameter int W = 1);
   localparam cfg_t cfg = '{jt: '{cam_type: W[7:0], depth: W[7:0] + 8'd1},
                            tag: W[7:0] + 8'd2};
+  localparam logic [7:0] bits = W[7:0];
+  localparam inner_t [1:0] entries = '{default: '{cam_type: W[7:0],
+                                                    depth: W[7:0] + 8'd1}};
+  localparam table_t tbl = '{entries: '{default: '{cam_type: W[7:0],
+                                                     depth: W[7:0] + 8'd1}}};
 endclass
 
 class SD #(parameter int W = 1);
@@ -90,6 +99,12 @@ module Mid #(parameter int W = 8) ();
   Sub #(int'(CFG::cfg.tag)) u_tag ();
   Sub #(int'(CFG::cfg.jt.cam_type)) u_cam ();
   Sub #(int'(CFG::cfg.jt.depth)) u_depth ();
+  Sub #(int'(CFG::bits[0])) u_bit ();
+  Sub #(int'(CFG::bits[3:1])) u_part ();
+  Sub #(int'(CFG::cfg.jt.cam_type[3])) u_field_bit ();
+  Sub #(int'(CFG::cfg.jt.cam_type[3:1])) u_field_part ();
+  Sub #(int'(CFG::entries[1].cam_type[3:1])) u_array_field_part ();
+  Sub #(int'(CFG::tbl.entries[1].cam_type[3:1])) u_member_array_field_part ();
   // nested struct-field Dot buried in a wrapper class's lparam value
   typedef SD#(W) DD;
   Sub #(int'(DD::q)) u_q ();
@@ -259,6 +274,12 @@ module t;
     `checkh(u_mid.u_tag.WIDTH, 32'd10);
     `checkh(u_mid.u_cam.WIDTH, 32'd8);
     `checkh(u_mid.u_depth.WIDTH, 32'd9);
+    `checkh(u_mid.u_bit.WIDTH, 32'd0);
+    `checkh(u_mid.u_part.WIDTH, 32'd4);
+    `checkh(u_mid.u_field_bit.WIDTH, 32'd1);
+    `checkh(u_mid.u_field_part.WIDTH, 32'd4);
+    `checkh(u_mid.u_array_field_part.WIDTH, 32'd4);
+    `checkh(u_mid.u_member_array_field_part.WIDTH, 32'd4);
     `checkh(u_mid.u_q.WIDTH, 32'd110);
     `checkh(u_ph.tag_val, 8'd11);
     `checkh(u_ph.cam_val, 8'd7);

@@ -12,9 +12,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// The cycle is broken by replacing the value with a 1-bit Const, which then
-// width-mismatches the declared int; that is incidental to what is tested.
-// verilator lint_off WIDTHEXPAND
+class Self #(parameter int W = 1);
+  localparam int a = a;
+endclass
 
 class Direct #(parameter int W = 1);
   // Two-step cycle: a -> b -> a
@@ -33,9 +33,11 @@ module Sub #(parameter int P = 0) ();
 endmodule
 
 module t;
+  typedef Self#(4) SCFG;
   typedef Direct#(4) DCFG;
   typedef Indirect#(4) ICFG;
 
+  Sub #(SCFG::a) u_self ();
   Sub #(DCFG::a) u_direct ();
   Sub #(ICFG::p) u_indirect ();
 endmodule
