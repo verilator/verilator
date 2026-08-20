@@ -9,6 +9,9 @@
 # Get the current repo URL - might differ on a fork
 readonly REPO_URL=$(gh repo view --json url --jq .url)
 
+# Login of the account used to post these notification comments
+readonly BOT_LOGIN="verilator-ci[bot]"
+
 # Create artifacts root directory
 ARTIFACTS_ROOT=artifacts
 mkdir -p ${ARTIFACTS_ROOT}
@@ -32,7 +35,24 @@ for RUN_ID in ${PR_RUN_IDS//,/ }; do
   echo "Posting notification found"
 
   cat ${ARTIFACTS_DIR}/body.txt
-  gh pr comment $(cat ${ARTIFACTS_DIR}/pr-number.txt) --body-file ${ARTIFACTS_DIR}/body.txt
+
+  PR_NUMBER=$(cat ${ARTIFACTS_DIR}/pr-number.txt)
+
+  # Identify the fixed opening phrase of this notification (e.g. "Patch
+  # coverage from PR workflow", "Performance metrics for PR workflow")
+  MARKER=$(head -n1 ${ARTIFACTS_DIR}/body.txt | sed -E 's/ \[#.*//')
+
+  # Delete this bot's earlier comments of this report type on this PR
+  if [[ -n "${MARKER}" ]]; then
+    OLD_COMMENT_IDS=$(gh api "repos/{owner}/{repo}/issues/${PR_NUMBER}/comments" --paginate \
+      --jq ".[] | select(.user.login == \"${BOT_LOGIN}\") | select(.body | startswith(\"${MARKER}\")) | .id")
+    for COMMENT_ID in ${OLD_COMMENT_IDS}; do
+      echo "Deleting old notification comment ${COMMENT_ID}"
+      gh api --method DELETE "repos/{owner}/{repo}/issues/comments/${COMMENT_ID}"
+    done
+  fi
+
+  gh pr comment ${PR_NUMBER} --body-file ${ARTIFACTS_DIR}/body.txt
 
   # Get the artifact IDs. Note there can be more than one artifact named
   # 'pr-notification' for a single run, as the artifacts endpoint lists
