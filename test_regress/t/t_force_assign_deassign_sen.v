@@ -9,10 +9,6 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
-// Regression for V3Force: the force-rd-update block's sensitivity-list read
-// of the raw variable wasn't cross-pass protected like the formula's own
-// read, so after a deassign it could get re-substituted into a read of its
-// own shadow - freezing __VforceRd against further writes of the raw var.
 module t;
   logic c /* verilator forceable */;
 
