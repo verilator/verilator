@@ -1087,12 +1087,7 @@ class SvaNfaBuilder final {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: within with ranged cycle-delay operand");
             return BuildResult::failWithError();
         }
-        if (innerLen > outerLen) {
-            nodep->v3error("'within' inner sequence " + std::to_string(innerLen)
-                           + " cycles exceeds outer sequence " + std::to_string(outerLen)
-                           + " cycles (IEEE 1800-2023 16.9.10)");
-            return BuildResult::failWithError();
-        }
+        if (innerLen > outerLen) return buildNeverMatchIntersect(nodep, entryVtxp, isTopLevelStep);
         FileLine* const flp = nodep->fileline();
         const int slack = outerLen - innerLen;
         AstNodeExpr* innerOrp = nullptr;
