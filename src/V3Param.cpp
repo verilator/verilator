@@ -1342,6 +1342,14 @@ class ParamProcessor final {
             }
             return;
         }
+        // A type-parameter default (`parameter type t = C#(Cfg)::u`) is parked
+        // under a RequireDType. Resolve its class-scoped Dot so the default does
+        // not survive unlinked into the pin/width machinery.
+        if (AstRequireDType* const reqp = VN_CAST(dtypep, RequireDType)) {
+            resolveDotToTypedef(reqp->lhsp());
+            if (AstNodeDType* const subp = reqp->subDTypep()) resolveParamClassRefDType(subp);
+            return;
+        }
         AstRefDType* const refp = dtypep ? VN_CAST(dtypep, RefDType) : nullptr;
         if (!refp) return;
         if (refp->typedefp() || refp->refDTypep()) return;
@@ -3014,6 +3022,12 @@ class ParamVisitor final : public VNVisitor {
     }
 
     void visit(AstRefDType* nodep) override {
+        // A module-body `typedef C#(Cfg)::t alias` the deferred pin/param walk
+        // never reached would survive to V3Width unlinked. If its alias chain is
+        // broken, run the same deferred resolution here.
+        if (nodep->typedefp() && !nodep->skipRefOrNullp()) {
+            m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
+        }
         if (isCircularType(nodep)) {
             nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
         } else if (nodep->typedefp() && nodep->subDTypep()
