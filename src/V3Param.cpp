@@ -1258,8 +1258,7 @@ class ParamProcessor final {
                 = fromDTypep ? VN_CAST(fromDTypep->skipRefOrNullp(), NodeArrayDType) : nullptr;
             if (arrayDTypep) {
                 const AstNodeDType* const elemDTypep = arrayDTypep->subDTypep();
-                return elemDTypep
-                       && VN_IS(elemDTypep->skipRefOrNullp(), NodeUOrStructDType);
+                return elemDTypep && VN_IS(elemDTypep->skipRefOrNullp(), NodeUOrStructDType);
             }
             return isDeferredMemberBase(selp->fromp());
         }
@@ -1272,8 +1271,7 @@ class ParamProcessor final {
         AstNodeExpr* const lhsp = VN_CAST(dotp->lhsp(), NodeExpr);
         AstParseRef* const memberRefp = memberParseRef(dotp->rhsp());
         if (!lhsp || !memberRefp || !isDeferredMemberBase(lhsp)) return;
-        AstMemberSel* const newp = new AstMemberSel{memberRefp->fileline(),
-                                                    lhsp->unlinkFrBack(),
+        AstMemberSel* const newp = new AstMemberSel{memberRefp->fileline(), lhsp->unlinkFrBack(),
                                                     VFlagChildDType{}, memberRefp->name()};
         replaceMemberDot(dotp, memberRefp, newp);
     }
@@ -2282,9 +2280,11 @@ public:
                     // value Dot is still deferred.  Referencing `t` (e.g. as a
                     // child's type-parameter pin) must reach that Dot, as the
                     // RefDType has no typedefp() to follow.
-                    if (AstParamTypeDType* const ptp
-                        = VN_CAST(refp->refDTypep(), ParamTypeDType)) {
-                        if (reachedParamTypes.insert(ptp).second) worklist.push_back(ptp);
+                    if (!tdefp) {
+                        if (AstParamTypeDType* const ptp
+                            = VN_CAST(refp->refDTypep(), ParamTypeDType)) {
+                            if (reachedParamTypes.insert(ptp).second) worklist.push_back(ptp);
+                        }
                     }
                 } else if (const AstVarRef* const refp = VN_CAST(np, VarRef)) {
                     AstVar* const varp = refp->varp();
@@ -3021,13 +3021,14 @@ class ParamVisitor final : public VNVisitor {
     }
 
     void visit(AstRefDType* nodep) override {
+        const bool isCircular = isCircularType(nodep);
         // A module-body `typedef C#(Cfg)::t alias` the deferred pin/param walk
         // never reached would survive to V3Width unlinked. If its alias chain is
         // broken, run the same deferred resolution here.
-        if (nodep->typedefp() && !nodep->skipRefOrNullp()) {
+        if (!isCircular && nodep->typedefp() && !nodep->skipRefOrNullp()) {
             m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
         }
-        if (isCircularType(nodep)) {
+        if (isCircular) {
             nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
         } else if (nodep->typedefp() && nodep->subDTypep()
                    && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
