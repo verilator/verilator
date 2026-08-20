@@ -33,6 +33,7 @@
 #include "V3Assert.h"
 #include "V3Const.h"
 #include "V3Graph.h"
+#include "V3Stats.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
@@ -72,7 +73,7 @@ public:
     std::vector<AstNodeExpr*> m_throughoutConds;
     // Nonzero for a bitset ring-buffer vertex for ## delays.
     bool m_isFixedDelayRing = false;
-    int m_delayRingSize = 0;  // Fixed delay cycles. Range: max-min+1.
+    unsigned m_delayRingSize = 0;  // Fixed delay cycles. Range: max-min+1.
     AstNodeExpr* m_delayRingClearCondp = nullptr;  // local RHS for pure-boolean range
     // OWNED; enclosing-abort fire condition clearing in-flight ring bits
     AstNodeExpr* m_abortClearp = nullptr;
@@ -324,7 +325,7 @@ class SvaNfaBuilder final {
 
     struct RangeDelayRejectInfo final {
         SvaStateVertex* startp = nullptr;
-        int range = 0;
+        unsigned range = 0;
         int rhsLen = 0;
     };
 
@@ -354,10 +355,10 @@ class SvaNfaBuilder final {
         return guardp;
     }
 
-    static int getConstInt(AstNodeExpr* exprp) {
+    static unsigned getConstUInt(AstNodeExpr* exprp) {
         AstNodeExpr* const constp = V3Const::constifyEdit(exprp->cloneTreePure(false));
         const AstConst* const cp = VN_CAST(constp, Const);
-        const int val = cp ? cp->toSInt() : -1;
+        const unsigned val = cp ? cp->toUInt() : 0;
         VL_DO_DANGLING(constp->deleteTree(), constp);
         return val;
     }
@@ -379,16 +380,15 @@ class SvaNfaBuilder final {
         if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
             AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
             if (!delayp || !delayp->isCycleDelay()) return -1;
-            int delayCycles = -1;
+            unsigned delayCycles;
             if (delayp->isRangeDelay()) {
                 if (delayp->isUnbounded()) return -1;  // LCOV_EXCL_LINE
-                const int minD = getConstInt(delayp->lhsp());
-                const int maxD = getConstInt(delayp->rhsp());
-                if (minD < 0 || maxD < 0 || minD != maxD) return -1;
+                const unsigned minD = getConstUInt(delayp->lhsp());
+                const unsigned maxD = getConstUInt(delayp->rhsp());
+                if (minD != maxD) return -1;
                 delayCycles = minD;
             } else {
-                delayCycles = getConstInt(delayp->lhsp());
-                if (delayCycles < 0) return -1;  // LCOV_EXCL_LINE
+                delayCycles = getConstUInt(delayp->lhsp());
             }
             int preLen = 0;
             if (AstNodeExpr* const prep = sexprp->preExprp()) {
@@ -439,13 +439,11 @@ class SvaNfaBuilder final {
             std::pair<int, int> delayRange;
             if (delayp->isRangeDelay()) {
                 if (delayp->isUnbounded()) return {-1, -1};
-                const int minD = getConstInt(delayp->lhsp());
-                const int maxD = getConstInt(delayp->rhsp());
-                if (minD < 0 || maxD < 0 || maxD < minD) return {-1, -1};
+                const unsigned minD = getConstUInt(delayp->lhsp());
+                const unsigned maxD = getConstUInt(delayp->rhsp());
                 delayRange = {minD, maxD};
             } else {
-                const int d = getConstInt(delayp->lhsp());
-                if (d < 0) return {-1, -1};
+                const unsigned d = getConstUInt(delayp->lhsp());
                 delayRange = {d, d};
             }
             std::pair<int, int> preRange{0, 0};
@@ -478,15 +476,15 @@ class SvaNfaBuilder final {
         AstDelay* rangeDelayp = nullptr;
         clonep->foreach([&](AstDelay* dp) {
             if (!rangeDelayp && dp->isRangeDelay() && !dp->isUnbounded()
-                && getConstInt(dp->lhsp()) != getConstInt(dp->rhsp())) {
+                && getConstUInt(dp->lhsp()) != getConstUInt(dp->rhsp())) {
                 rangeDelayp = dp;
             }
         });
         if (rangeDelayp) {
             FileLine* const flp = rangeDelayp->fileline();
-            const int pinned = getConstInt(rangeDelayp->lhsp()) + (len - lo);
+            const unsigned pinned = getConstUInt(rangeDelayp->lhsp()) + (len - lo);
             AstNodeExpr* const oldMinp = rangeDelayp->lhsp();
-            oldMinp->replaceWith(new AstConst{flp, static_cast<uint32_t>(pinned)});
+            oldMinp->replaceWith(new AstConst{flp, pinned});
             VL_DO_DANGLING(oldMinp->deleteTree(), oldMinp);
             // Drop the max bound so it lowers as a fixed `##d`, not `##[d:d]`.
             AstNode* const oldMaxp = rangeDelayp->rhsp()->unlinkFrBack();
@@ -501,8 +499,8 @@ class SvaNfaBuilder final {
     // any exprp -- even an impure one would now evaluate exactly once per
     // clock instead of N times. Orphan temps from failed builds are unused
     // MODULETEMPs and are removed by V3Dead.
-    AstVar* tryHoistSampled(AstNodeExpr* exprp, FileLine* flp, int cloneCount) {
-        constexpr int kHoistThreshold = 2;
+    AstVar* tryHoistSampled(AstNodeExpr* exprp, FileLine* flp, unsigned cloneCount) {
+        constexpr unsigned kHoistThreshold = 2;
         if (cloneCount < kHoistThreshold) return nullptr;
         AstVar* const tempVarp
             = new AstVar{flp, VVarType::MODULETEMP, m_propTempNames.get(exprp), exprp->dtypep()};
@@ -520,9 +518,9 @@ class SvaNfaBuilder final {
 
     // Reject concurrent assertions whose unrolled vertex count would exceed
     // --assert-unroll-limit, so a pathological count cannot blow up compile time.
-    static bool exceedsAssertUnrollLimit(AstNode* nodep, int requested) {
+    static bool exceedsAssertUnrollLimit(AstNode* nodep, unsigned requested) {
         const int limit = v3Global.opt.assertUnrollLimit();
-        if (requested <= limit) return false;
+        if (limit >= 0 && requested <= static_cast<unsigned>(limit)) return false;
         nodep->v3error("Concurrent assertion repetition count "
                        << requested << " exceeds --assert-unroll-limit (" << limit
                        << "); raise '--assert-unroll-limit' to compile");
@@ -556,7 +554,7 @@ class SvaNfaBuilder final {
         return m_graph.addClockedEdge(fromp, top, throughoutCond(nullptr, flp));
     }
 
-    SvaStateVertex* addDelayChain(SvaStateVertex* startp, int size, FileLine* flp,
+    SvaStateVertex* addDelayChain(SvaStateVertex* startp, unsigned size, FileLine* flp,
                                   bool isFixed = true, AstNodeExpr* clearCondp = nullptr) {
         if (isFixed && size == 0) return startp;
         UASSERT_OBJ(size > 0, startp, "Delay chain needs at least one slot");
@@ -587,13 +585,7 @@ class SvaNfaBuilder final {
     bool applyRangeDelay(AstDelay* delayp, AstNodeExpr* rhsExprp, SvaStateVertex*& currentp,
                          std::vector<SvaStateVertex*>& midSources, FileLine* flp,
                          bool& outErrorEmitted, RangeDelayRejectInfo* rangeRejectInfop = nullptr) {
-        const int minDelay = getConstInt(delayp->lhsp());
-        if (minDelay < 0) {
-            delayp->v3error("Range delay minimum is not a non-negative elaboration-time constant"
-                            " (IEEE 1800-2023 16.7)");
-            outErrorEmitted = true;
-            return false;
-        }
+        const unsigned minDelay = getConstUInt(delayp->lhsp());
         if (delayp->isUnbounded()) {
             // `##[M:$]`: wait M cycles, then self-loop waiting for the match
             // condition. Unbounded = liveness, so no reject.
@@ -603,29 +595,18 @@ class SvaNfaBuilder final {
             m_inUnboundedScope = true;
             return true;
         }
-        const int maxDelay = getConstInt(delayp->rhsp());
-        if (maxDelay < 0) {
-            delayp->v3error("Range delay maximum is not a non-negative elaboration-time constant"
-                            " (IEEE 1800-2023 16.7)");
-            outErrorEmitted = true;
-            return false;
-        }
-        if (maxDelay < minDelay) {
-            delayp->v3error("Range delay maximum must be >= minimum (IEEE 1800-2023 16.7)");
-            outErrorEmitted = true;
-            return false;
-        }
+        const unsigned maxDelay = getConstUInt(delayp->rhsp());
         if (minDelay == maxDelay) {
             currentp = addDelayChain(currentp, minDelay, flp);
             return true;
         }
-        const int range = maxDelay - minDelay;
+        const unsigned range = maxDelay - minDelay;
         currentp = addDelayChain(currentp, minDelay, flp);
         // kChainLimit bounds per-attempt unrolled vertices. Above this, a
         // ring buffer (constant-size state) is used instead, so the vertex
         // count is O(1) in range regardless of user input; no adversarial N
         // blowup is possible.
-        constexpr int kChainLimit = 256;
+        constexpr unsigned kChainLimit = 256;
         // IEEE 1800-2023 16.14.3: only a small bounded range before a plain
         // boolean enumerates every end-of-match below. The counter FSM drops
         // overlapping ends and the nested-sequence merge collapses them, so
@@ -636,7 +617,7 @@ class SvaNfaBuilder final {
             return false;
         }
         if (range > kChainLimit) {
-            currentp = addDelayChain(currentp, range + 1, flp, false,
+            currentp = addDelayChain(currentp, range + 1U, flp, false,
                                      rhsExprp->isMultiCycleSva() ? nullptr : rhsExprp);
         } else if (VN_IS(rhsExprp, SExpr)) {
             // Nested-SExpr RHS: merge all [M,N] positions. Candidate-local misses
@@ -648,7 +629,7 @@ class SvaNfaBuilder final {
             SvaStateVertex* const mergeVtxp = scopedCreateVertex();
             mergeVtxp->m_isUnbounded = true;
             guardedLink(currentp, mergeVtxp, flp);
-            for (int i = 0; i < range; ++i) {
+            for (unsigned i = 0; i < range; ++i) {
                 SvaStateVertex* const nextVtxp = scopedCreateVertex();
                 guardedEdge(currentp, nextVtxp, flp);
                 guardedLink(nextVtxp, mergeVtxp, flp);
@@ -665,7 +646,7 @@ class SvaNfaBuilder final {
             AstVar* const hoistVarp
                 = m_isCoverSeq ? nullptr : tryHoistSampled(rhsExprp, flp, range);
             midSources.push_back(currentp);
-            for (int i = 0; i < range; ++i) {
+            for (unsigned i = 0; i < range; ++i) {
                 SvaStateVertex* const nextVtxp = scopedCreateVertex();
                 if (m_isCoverSeq) {
                     guardedEdge(currentp, nextVtxp, flp);
@@ -697,7 +678,7 @@ class SvaNfaBuilder final {
             guardedLink(srcp, successNowp, condp, flp);
             SvaStateVertex* stagep = successNowp;
             guardedLink(stagep, expiryMatchp, flp);
-            for (int i = 0; i < info.range; ++i) {
+            for (unsigned i = 0; i < info.range; ++i) {
                 SvaStateVertex* const nextp = scopedCreateVertex();
                 guardedEdge(stagep, nextp, flp);
                 stagep = nextp;
@@ -751,13 +732,7 @@ class SvaNfaBuilder final {
                 return BuildResult::fail(errorEmitted);
             }
         } else {
-            const int delayCycles = getConstInt(delayp->lhsp());
-            if (delayCycles < 0) {
-                delayp->v3error("Delay value is not a non-negative"
-                                " elaboration-time constant"
-                                " (IEEE 1800-2023 16.7)");
-                return BuildResult::failWithError();
-            }
+            const unsigned delayCycles = getConstUInt(delayp->lhsp());
             currentp = addDelayChain(currentp, delayCycles, flp);
         }
 
@@ -780,16 +755,15 @@ class SvaNfaBuilder final {
                                         " consecutive repetition (IEEE 1800-2023 16.9.2)");
             return BuildResult::failWithError();
         }
-        const int minN = getConstInt(repp->countp());
-        UASSERT_OBJ(minN >= 0, repp, "ConsRep count must be non-negative (V3Width invariant)");
+        const unsigned minN = getConstUInt(repp->countp());
 
         // Sum sites across prefix + unbounded/range tail so one hoist covers
         // every check edge of this repetition.
-        int totalSites = minN;
+        unsigned totalSites = minN;
         if (repp->unbounded()) {
             totalSites += 1;
         } else if (repp->maxCountp()) {
-            totalSites += getConstInt(repp->maxCountp()) - minN;
+            totalSites += getConstUInt(repp->maxCountp()) - minN;
         }
         if (exceedsAssertUnrollLimit(repp, totalSites)) return BuildResult::failWithError();
         AstVar* const hoistVarp = tryHoistSampled(exprp, flp, totalSites);
@@ -799,7 +773,7 @@ class SvaNfaBuilder final {
         std::vector<SvaStateVertex*> consMidSources;
 
         SvaStateVertex* currentp = entryVtxp;
-        for (int i = 0; i < minN; ++i) {
+        for (unsigned i = 0; i < minN; ++i) {
             if (i > 0) {
                 SvaStateVertex* const nextp = scopedCreateVertex();
                 guardedEdge(currentp, nextp, flp);
@@ -838,11 +812,10 @@ class SvaNfaBuilder final {
             currentp->m_isUnbounded = true;
             m_inUnboundedScope = true;
         } else if (repp->maxCountp()) {
-            const int maxN = getConstInt(repp->maxCountp());
-            UASSERT_OBJ(maxN >= minN, repp, "ConsRep range max < min (V3Width invariant)");
+            const unsigned maxN = getConstUInt(repp->maxCountp());
             SvaStateVertex* const mergeVtxp = scopedCreateVertex();
             guardedLink(currentp, mergeVtxp, flp);
-            for (int i = minN; i < maxN; ++i) {
+            for (unsigned i = minN; i < maxN; ++i) {
                 SvaStateVertex* const nextVtxp = scopedCreateVertex();
                 guardedEdge(currentp, nextVtxp, flp);
                 SvaStateVertex* const checkVtxp = scopedCreateVertex();
@@ -869,7 +842,7 @@ class SvaNfaBuilder final {
                                 bool isTopLevelStep = false) {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const propp = nodep->propp();
-        const int lo = getConstInt(nodep->loBoundp());
+        const unsigned lo = getConstUInt(nodep->loBoundp());
         if (VN_IS(nodep->hiBoundp(), Unbounded)) {
             // Weak always [lo:$]: unbounded upper bound (IEEE 1800-2023 16.12.11).
             // p must hold at every clock tick at least lo cycles after the attempt
@@ -877,8 +850,7 @@ class SvaNfaBuilder final {
             // end-of-trace obligation (weak). The self-loop keeps the attempt live
             // every cycle; each observed cycle is a safety obligation, so a false p
             // rejects immediately.
-            UASSERT_OBJ(!nodep->isStrong() && lo >= 0, nodep,
-                        "Unbounded always must be weak with non-negative lo (V3Width)");
+            UASSERT_OBJ(!nodep->isStrong(), nodep, "Unbounded always must be weak (V3Width)");
             SvaStateVertex* const livep = addDelayChain(entryVtxp, lo, flp);
             livep->m_isUnbounded = true;
             guardedEdge(livep, livep, flp);  // stay active every subsequent cycle
@@ -889,8 +861,7 @@ class SvaNfaBuilder final {
             if (isTopLevelStep) rejEdgep->m_rejectOnFail = true;
             return {livep, nullptr, {}};
         }
-        const int hi = getConstInt(nodep->hiBoundp());
-        UASSERT_OBJ(lo >= 0 && hi >= lo, nodep, "PropAlways bounds invariant (V3Width)");
+        const unsigned hi = getConstUInt(nodep->hiBoundp());
         // Strong s_always[m:n]: mark every in-window registered vertex so an
         // attempt still mid-window at end-of-simulation is reported as a liveness
         // failure (IEEE strong: the n+1 ticks must exist). An attempt that has
@@ -917,11 +888,10 @@ class SvaNfaBuilder final {
     BuildResult buildGotoRep(AstSGotoRep* repp, SvaStateVertex* entryVtxp) {
         FileLine* const flp = repp->fileline();
         AstNodeExpr* const exprp = repp->exprp();
-        const int minN = getConstInt(repp->countp());
-        if (minN <= 0) return BuildResult::fail();
+        const unsigned minN = getConstUInt(repp->countp());
+        if (minN == 0) return BuildResult::fail();
         const bool hasMax = repp->maxCountp() != nullptr;
-        const int maxN = hasMax ? getConstInt(repp->maxCountp()) : minN;
-        UASSERT_OBJ(maxN >= minN, repp, "GotoRep range max < min (V3Width invariant)");
+        const unsigned maxN = hasMax ? getConstUInt(repp->maxCountp()) : minN;
         if (exceedsAssertUnrollLimit(repp, maxN)) return BuildResult::failWithError();
 
         if (m_isCoverSeq) {
@@ -935,10 +905,10 @@ class SvaNfaBuilder final {
         // sites for every iteration in [0..maxN). NOT($sampled(x)) matches
         // $sampled(NOT(x)) at the value level (IEEE 1800-2023 16.9.9);
         // purity is enforced uniformly via cloneTreePure inside sampledRefOrClone.
-        AstVar* const hoistVarp = tryHoistSampled(exprp, flp, 2 * maxN);
+        AstVar* const hoistVarp = tryHoistSampled(exprp, flp, 2U * maxN);
         SvaStateVertex* currentp = entryVtxp;
         // Build minN match-wait chains to reach the first accept point.
-        for (int i = 0; i < minN; ++i) {
+        for (unsigned i = 0; i < minN; ++i) {
             SvaStateVertex* const waitVtxp = scopedCreateVertex();
             // Edge (not Link) for all iterations: IEEE expansion ##1 before each
             // match. A Link at i==0 was wrong -- it allowed same-cycle matching
@@ -961,7 +931,7 @@ class SvaNfaBuilder final {
         // buildConsRep's range fan-out.
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
         guardedLink(currentp, mergeVtxp, flp);  // accept at match_M
-        for (int i = minN; i < maxN; ++i) {
+        for (unsigned i = minN; i < maxN; ++i) {
             SvaStateVertex* const waitVtxp = scopedCreateVertex();
             guardedEdge(currentp, waitVtxp, flp);
             AstNodeExpr* const waitCondp
@@ -1172,9 +1142,9 @@ class SvaNfaBuilder final {
         if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
             AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
             if (!delayp || !delayp->isCycleDelay() || delayp->isUnbounded()) return false;
-            const int delayCycles = getConstInt(delayp->lhsp());
-            if (delayCycles < 0) return false;
-            if (delayp->isRangeDelay() && getConstInt(delayp->rhsp()) != delayCycles) return false;
+            const unsigned delayCycles = getConstUInt(delayp->lhsp());
+            if (delayp->isRangeDelay() && getConstUInt(delayp->rhsp()) != delayCycles)
+                return false;
             int preLen = 0;
             if (AstNodeExpr* const prep = sexprp->preExprp()) {
                 if (!flattenFixedSeq(prep, baseOffset, out)) return false;
@@ -1246,7 +1216,7 @@ class SvaNfaBuilder final {
         AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
         if (!delayp || !delayp->isCycleDelay() || !delayp->isRangeDelay() || delayp->isUnbounded())
             return {};
-        if (getConstInt(delayp->lhsp()) == getConstInt(delayp->rhsp())) return {};
+        if (getConstUInt(delayp->lhsp()) == getConstUInt(delayp->rhsp())) return {};
         AstNodeExpr* const prep = sexprp->preExprp();
         if (prep && fixedLength(prep) != 0) return {};
         if (fixedLength(sexprp->exprp()) != 0) return {};
@@ -1737,6 +1707,7 @@ class SvaNfaLowering final {
     AstNodeModule* const m_modp;  // Module to add state vars and always blocks to
     AstNodeDType* const m_u32DTypep;  // Shared unsigned counter dtype
     V3UniqueNames m_names{"__Vnfa"};
+    size_t m_statDelayRingEdgeVisits = 0;  // Delay-ring incoming edges visited
 
     // Per-lowering shared context (passed to phase sub-functions)
     // Per-vertex lowering state is stored in SvaVertexData and accessed via
@@ -1914,15 +1885,16 @@ class SvaNfaLowering final {
             const uint32_t size = static_cast<uint32_t>(vtxp->m_delayRingSize);
 
             AstNodeExpr* incomingp = nullptr;
-            for (const SvaTransEdge* const tedgep : c.edges) {
-                if (static_cast<int>(tedgep->toVtxp()->color()) != ri) continue;
-                UASSERT_OBJ(tedgep->m_consumesCycle == vtxp->m_isFixedDelayRing, vtxp,
+            for (const V3GraphEdge& edger : vtxp->inEdges()) {
+                ++m_statDelayRingEdgeVisits;
+                const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+                UASSERT_OBJ(tedger.m_consumesCycle == vtxp->m_isFixedDelayRing, vtxp,
                             "Delay-ring incoming edge kind mismatch");
-                const int fi = tedgep->fromVtxp()->color();
+                const int fi = tedger.fromVtxp()->color();
                 UASSERT_OBJ(c.vtx[fi]->datap()->stateSigp, c.vtx[fi],
                             "Delay-ring incoming source missing stateSig");
                 AstNodeExpr* contribp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
-                contribp = andCond(c.flp, contribp, tedgep->m_condp);
+                contribp = andCond(c.flp, contribp, tedger.m_condp);
                 if (c.disableExprp) {
                     AstNodeExpr* const notDisp
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
@@ -2440,6 +2412,9 @@ public:
     explicit SvaNfaLowering(AstNodeModule* modp)
         : m_modp{modp}
         , m_u32DTypep{modp->findBasicDType(VBasicDTypeKwd::UINT32)} {}
+    ~SvaNfaLowering() {
+        V3Stats::addStatSum("Assertions, NFA delay ring edge visits", m_statDelayRingEdgeVisits);
+    }
 
     // Lower NFA graph to synthesizable AstAlways blocks and raw result signals.
     // Links are combinational; Edges are registered (NBA).
@@ -3036,7 +3011,7 @@ class AssertNfaVisitor final : public VNVisitor {
 
     // Replace one VarRef to a captured local var with $past(rhs, K)
     // (or rhs inline when K == 0). No-op if refp is not in matchMap.
-    void substituteMatchItemRef(AstVarRef* refp, int K,
+    void substituteMatchItemRef(AstVarRef* refp, unsigned K,
                                 const std::unordered_map<const AstVar*, AstNodeExpr*>& matchMap) {
         const auto it = matchMap.find(refp->varp());
         if (it == matchMap.end()) return;
@@ -3057,7 +3032,7 @@ class AssertNfaVisitor final : public VNVisitor {
     // substitutes each VarRef to a captured local var with $past(rhs, K)
     // (or rhs inline when K == 0). Reports E_UNSUPPORTED on non-constant
     // delays or composite sequence operators.
-    int walkSubstituteMatchItems(AstNodeExpr* nodep, int K,
+    int walkSubstituteMatchItems(AstNodeExpr* nodep, unsigned K,
                                  const std::unordered_map<const AstVar*, AstNodeExpr*>& matchItems,
                                  bool& errorEmitted) {
         if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
@@ -3075,7 +3050,7 @@ class AssertNfaVisitor final : public VNVisitor {
                 errorEmitted = true;
                 return -1;
             }
-            const int delayCycles = VN_AS(delayp->lhsp(), Const)->toSInt();
+            const unsigned delayCycles = VN_AS(delayp->lhsp(), Const)->toUInt();
             int preLen = 0;
             if (AstNodeExpr* const prep = sexprp->preExprp()) {
                 preLen = walkSubstituteMatchItems(prep, K, matchItems, errorEmitted);
@@ -3121,7 +3096,7 @@ class AssertNfaVisitor final : public VNVisitor {
             AstVarRef* const lhsRefp = VN_AS(assignp->lhsp(), VarRef);
             matchItems[lhsRefp->varp()] = assignp->rhsp();
         }
-        const int startK = parts.isOverlapped ? 0 : 1;
+        const unsigned startK = parts.isOverlapped ? 0 : 1;
         bool errorEmitted = false;
         walkSubstituteMatchItems(seqBodyp, startK, matchItems, errorEmitted);
         // Match-item substitution / strip mutates ancestor purity. Release
