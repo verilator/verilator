@@ -330,6 +330,10 @@ module t;
     }
   endgroup
 
+  covergroup cg_null_interface(input virtual BasicCoverageIf vif);
+    cp: coverpoint 0;
+  endgroup
+
 `ifdef VERILATOR
   // Commercial simulator support is mixed, some report virtual-interface array covergroup
   // arguments as not yet implemented and Questa crashes.
@@ -435,6 +439,7 @@ module t;
 `endif
   cg_interfaces cov_interfaces;
   cg_interfaces_unqualified cov_interfaces_unqualified;
+  cg_null_interface cov_null_interface = new(null);
   cg_sample_inputs cov_sample_inputs = new;
   cg_sample_param_class cov_sample_param_class = new;
   cg_sample_interfaces cov_sample_interfaces = new;
