@@ -435,9 +435,9 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
     int varBits = 0;
     for (const auto& varp : vars) varBits += varp->totalWidth();
     if (varBits == 0) {
-        // Nothing to sample (e.g. a still-unsized queue/dynamic array in
-        // this layer) -- tautology instead of the degenerate empty-operand
-        // expression the loop below would otherwise build.
+        // Nothing to sample (e.g. a still-unsized queue/dynamic array, in a
+        // layer or the whole class) -- tautology instead of the degenerate
+        // empty-operand expression the loop below would otherwise build.
         os << "(= #b1 #b1)";
         return;
     }

@@ -10,19 +10,8 @@
 `define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
 // verilog_format: on
 
-// solve...before phased solving (IEEE 1800-2023 18.5.9) is only checked
-// elsewhere for feasibility (does a valid solution exist), never for the
-// LRM's own distribution guarantee on the "before" variable. The LRM's own
-// worked example for this exact shape (18.5.9): "the order constraint
-// instructs the solver to solve for s before solving for d. The effect is
-// that s is now chosen 0 or 1 with 50%/50% probability." Prior to the fix
-// this targets, the diversity constraint built for a phase sampled bits
-// from every rand var in the class rather than just that phase's own layer,
-// so a narrow "before" variable sharing a constraint with a wider "after"
-// variable could end up with a diversity constraint built entirely out of
-// the "after" variable's bits -- leaving the "before" variable stuck at
-// whatever the solver's first, non-randomized check-sat happened to assign
-// it (0/20000 "before" draws landed on 1, instead of the expected ~50%).
+// IEEE 1800-2023 18.5.9's worked example for solve...before: s should land
+// on 0/1 with ~50/50 probability, even though d shares a constraint with it.
 class SolveBeforeDiversity;
   rand bit s;
   rand bit [7:0] d;
