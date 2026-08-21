@@ -698,9 +698,7 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
 
     const auto pinRefAsExpr = [&](VAccess access) -> AstNodeExpr* {
         if (const AstVarRef* const vrp = VN_CAST(pinRefp, VarRef)) {
-            AstVarRef* const newp = new AstVarRef{vrp->fileline(), vrp->varp(), access};
-            newp->classOrPackagep(vrp->classOrPackagep());
-            return newp;
+            return pinRefAsVarRef(access);
         } else {
             const AstVarXRef* const xrp = VN_AS(pinRefp, VarXRef);
             AstVarXRef* const newp
