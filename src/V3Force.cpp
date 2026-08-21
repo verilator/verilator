@@ -203,7 +203,7 @@ public:
         return VN_IS(dtypep->skipRefp(), UnpackArrayDType);
     }
 
-    static bool isBitwiseDType(AstNode* nodep) {
+    static bool isBitwiseDType(const AstNode* nodep) {
         const AstBasicDType* const basicp = nodep->dtypep()->skipRefp()->basicp();
         return basicp && !basicp->isDouble() && !basicp->isString() && !basicp->isOpaque();
     }
@@ -863,9 +863,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                     "buildForceableUnpackedArray called with non-unpacked dtype");
         const AstNodeDType* const leafDtypep = dims.back()->subDTypep()->skipRefp();
         const AstBasicDType* const innerBasicp = leafDtypep->basicp();
-        const bool innerBitwise = innerBasicp && !innerBasicp->isDouble()
-                                  && !innerBasicp->isString() && !innerBasicp->isOpaque();
-        if (!innerBitwise) {
+        if (!ForceState::isBitwiseDType(innerBasicp)) {
             varp->v3warn(E_UNSUPPORTED,
                          "Unsupported: Forcing unpacked arrays of non-bitwise inner type: "
                              << varp->name());  // (#4735)
