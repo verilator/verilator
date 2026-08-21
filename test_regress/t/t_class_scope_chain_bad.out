@@ -1,0 +1,23 @@
+%Error: t/t_class_scope_chain_bad.v:23:9: Can't find typedef/interface: 'nosuch'
+   23 |   P::K::nosuch a;
+      |         ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_scope_chain_bad.v:25:6: Package/class for 'class/package reference' not found: 'NoSuchClass'
+   25 |   P::NoSuchClass::t b;
+      |      ^~~~~~~~~~~
+%Error: t/t_class_scope_chain_bad.v:25:19: Can't find typedef/interface: 't'
+   25 |   P::NoSuchClass::t b;
+      |                   ^
+%Error: t/t_class_scope_chain_bad.v:27:3: Package/class for 'class/package reference' not found: 'NoSuchPkg'
+   27 |   NoSuchPkg::K::t c;
+      |   ^~~~~~~~~
+%Error: t/t_class_scope_chain_bad.v:27:17: Can't find typedef/interface: 't'
+   27 |   NoSuchPkg::K::t c;
+      |                 ^
+%Error: t/t_class_scope_chain_bad.v:29:9: Package/class for 'class/package reference' not found: 't'
+   29 |   P::K::t::deeper d;
+      |         ^
+%Error: t/t_class_scope_chain_bad.v:29:12: Can't find typedef/interface: 'deeper'
+   29 |   P::K::t::deeper d;
+      |            ^~~~~~
+%Error: Exiting due to

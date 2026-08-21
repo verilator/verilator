@@ -387,6 +387,15 @@ class ParamProcessor final {
                 key += ",";
             }
             key += "}";
+        } else if (const AstConsPackUOrStruct* const structp
+                   = VN_CAST(nodep, ConsPackUOrStruct)) {
+            key += "{";
+            for (const AstConsPackMember* memberp = structp->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+                key += paramValueString(memberp->rhsp());
+                key += ",";
+            }
+            key += "}";
         } else if (const AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             // For parameterized class types, use the original class name (without specialization
             // suffix) plus the actual type parameter values. This ensures equivalent class types
@@ -1190,15 +1199,105 @@ class ParamProcessor final {
         }
     }
 
+    // Fold a param/lparam member's value to a Const in place.  Resolves any
+    // class::member Dots in the value first (including those buried behind
+    // VarRefs to sibling lparams that are not yet const, e.g. `one = base`
+    // where `base = inner_a::v`), resolving siblings deepest-first so the
+    // whole chain constifies.  `inProgress` guards against reference cycles.
+    void constifyMemberValue(AstVar* varp, std::set<AstVar*>& inProgress) {
+        if (!varp->valuep() || VN_IS(varp->valuep(), Const)) return;
+        if (!inProgress.insert(varp).second) {
+            // Re-entered while still resolving varp: its value transitively
+            // references itself.  Report and replace the value with a Const, as
+            // otherwise the unresolved Dot reaches V3Width as an untyped node.
+            varp->v3error("Variable's initial value is circular: " << varp->prettyNameQ());
+            varp->valuep()->unlinkFrBack()->deleteTree();
+            varp->valuep(new AstConst{varp->fileline(), AstConst::Signed32{}, 0});
+            return;
+        }
+        // First resolve sibling lparams this value references, so their Dots
+        // are folded before we inline them here.
+        std::set<AstVar*> siblings;
+        varp->valuep()->foreach([&](const AstVarRef* refp) {
+            AstVar* const refVarp = refp->varp();
+            if (refVarp && refVarp->isParam() && refVarp->valuep()
+                && !VN_IS(refVarp->valuep(), Const)) {
+                siblings.insert(refVarp);
+            }
+        });
+        for (AstVar* const sibp : siblings) constifyMemberValue(sibp, inProgress);
+        // Resolve class-scoped references and any member selections they expose.
+        resolveDeferredDotsReachableFrom(varp->valuep(), m_modp);
+        V3Const::constifyParamsEdit(varp);
+        inProgress.erase(varp);
+    }
+
+    // Return the member name on a deferred Dot RHS, including a selected member.
+    static AstParseRef* memberParseRef(AstNode* nodep) {
+        if (AstParseRef* const refp = VN_CAST(nodep, ParseRef)) return refp;
+        AstNodePreSel* const selp = VN_CAST(nodep, NodePreSel);
+        return selp ? VN_CAST(selp->fromp(), ParseRef) : nullptr;
+    }
+
+    // Replace a deferred Dot with valuep, preserving any select on the member name.
+    static void replaceMemberDot(AstDot* dotp, AstParseRef* memberRefp, AstNodeExpr* valuep) {
+        if (memberRefp == dotp->rhsp()) {
+            dotp->replaceWith(valuep);
+        } else {
+            AstNodePreSel* const selp = VN_AS(dotp->rhsp(), NodePreSel);
+            if (AstAttrOf* const attrp = selp->attrp()) {
+                if (AstNode* const oldFromp = attrp->fromp()) {
+                    oldFromp->replaceWith(valuep->cloneTree(false));
+                    VL_DO_DANGLING(oldFromp->deleteTree(), oldFromp);
+                }
+            }
+            memberRefp->replaceWith(valuep);
+            VL_DO_DANGLING(memberRefp->deleteTree(), memberRefp);
+            dotp->replaceWith(dotp->rhsp()->unlinkFrBack());
+        }
+        VL_DO_DANGLING(dotp->deleteTree(), dotp);
+    }
+
+    // True for an expression produced while lowering a deferred struct-member chain.
+    static bool isDeferredMemberBase(const AstNodeExpr* nodep) {
+        if (VN_IS(nodep, MemberSel)) return true;
+        if (const AstNodePreSel* const selp = VN_CAST(nodep, NodePreSel)) {
+            const AstNodeDType* const fromDTypep = selp->fromp()->dtypep();
+            const AstNodeArrayDType* const arrayDTypep
+                = fromDTypep ? VN_CAST(fromDTypep->skipRefOrNullp(), NodeArrayDType) : nullptr;
+            if (arrayDTypep) {
+                const AstNodeDType* const elemDTypep = arrayDTypep->subDTypep();
+                return elemDTypep && VN_IS(elemDTypep->skipRefOrNullp(), NodeUOrStructDType);
+            }
+            return isDeferredMemberBase(selp->fromp());
+        }
+        const AstNodeDType* const dtypep = nodep->dtypep();
+        return dtypep && VN_IS(dtypep->skipRefOrNullp(), NodeUOrStructDType);
+    }
+
+    // Lower a Dot exposed after its inner class::member reference was substituted.
+    static void resolveMemberDot(AstDot* dotp) {
+        AstNodeExpr* const lhsp = VN_CAST(dotp->lhsp(), NodeExpr);
+        AstParseRef* const memberRefp = memberParseRef(dotp->rhsp());
+        if (!lhsp || !memberRefp || !isDeferredMemberBase(lhsp)) return;
+        AstMemberSel* const newp = new AstMemberSel{memberRefp->fileline(), lhsp->unlinkFrBack(),
+                                                    VFlagChildDType{}, memberRefp->name()};
+        replaceMemberDot(dotp, memberRefp, newp);
+    }
+
     // Helper to resolve DOT to RefDType for class type references.
     // If the class is parameterized and not yet specialized, specialize it first.
     // This handles cases like: iface #(param_class#(value)::typedef_name)
     void resolveDotToTypedef(AstNode* exprp) {
         AstDot* const dotp = VN_CAST(exprp, Dot);
         if (!dotp) return;
+        UINFO(9, "Resolve deferred Dot: " << dotp);
         AstClassOrPackageRef* const classRefp = VN_CAST(dotp->lhsp(), ClassOrPackageRef);
-        if (!classRefp) return;
-        AstParseRef* const parseRefp = VN_CAST(dotp->rhsp(), ParseRef);
+        if (!classRefp) {
+            resolveMemberDot(dotp);
+            return;
+        }
+        AstParseRef* const parseRefp = memberParseRef(dotp->rhsp());
         if (!parseRefp) return;
 
         const AstClass* lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
@@ -1242,37 +1341,37 @@ class ParamProcessor final {
         if (!lhsClassp) return;
 
         AstNode* const memberp = m_memberMap.findMember(lhsClassp, parseRefp->name());
+        UINFO(9, "Resolve deferred class member: " << parseRefp->name() << " -> " << memberp);
         if (AstTypedef* const tdefp = VN_CAST(memberp, Typedef)) {
+            if (parseRefp != dotp->rhsp()) return;
             AstRefDType* const refp = new AstRefDType{dotp->fileline(), tdefp->name()};
             refp->typedefp(tdefp);
             dotp->replaceWith(refp);
             VL_DO_DANGLING(dotp->deleteTree(), dotp);
         } else if (AstVar* const varp = VN_CAST(memberp, Var)) {
-            // Param/lparam member: substitute its constant value so the caller's constify can
-            // succeed.
-            if (varp->isParam() && varp->valuep()) {
-                if (!VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
-                if (AstConst* const constp = VN_CAST(varp->valuep(), Const)) {
-                    dotp->replaceWith(constp->cloneTree(false));
-                    VL_DO_DANGLING(dotp->deleteTree(), dotp);
-                }
-            }
+            substituteParamMember(dotp, parseRefp, varp);
         }
     }
 
-    // Resolve an unresolved RefDType whose classOrPackageOp targets a parameterized
-    // class or a typedef alias of one. Specializes the class and links the typedef.
-    void resolveParamClassRefDType(AstNodeDType* dtypep) {
-        // Recurse into struct/union members for buried RefDTypes
-        if (AstNodeUOrStructDType* const sup = VN_CAST(dtypep, NodeUOrStructDType)) {
-            for (AstMemberDType* memp = sup->membersp(); memp;
-                 memp = VN_AS(memp->nextp(), MemberDType)) {
-                resolveParamClassRefDType(memp->subDTypep());
-            }
-            return;
+    // Substitute a class param/lparam member's constant value for dotp. The
+    // reverse-order deferred-Dot walk lowers any outer fields to MemberSels.
+    void substituteParamMember(AstDot* const dotp, AstParseRef* const memberRefp,
+                               AstVar* const varp) {
+        if (!varp->isParam() || !varp->valuep()) return;
+        if (!VN_IS(varp->valuep(), Const)) {
+            std::set<AstVar*> inProgress;
+            constifyMemberValue(varp, inProgress);
         }
-        AstRefDType* const refp = dtypep ? VN_CAST(dtypep, RefDType) : nullptr;
-        if (!refp) return;
+        AstConst* const constp = VN_CAST(varp->valuep(), Const);
+        if (!constp) return;
+        AstConst* const newp = constp->cloneTree(false);
+        newp->dtypep(varp->subDTypep());
+        replaceMemberDot(dotp, memberRefp, newp);
+    }
+
+    // Resolve one class-scoped RefDType. The generic deferred walk finds these
+    // through every dtype wrapper and follows out-of-tree typedef references.
+    void resolveParamClassRefDType(AstRefDType* refp) {
         if (refp->typedefp() || refp->refDTypep()) return;
 
         AstClassOrPackageRef* const classRefp
@@ -1420,7 +1519,7 @@ class ParamProcessor final {
                         string& longnamer, bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
-            resolveParamClassRefDType(modvarp->subDTypep());
+            resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
             if (!modvarp->isGParam()) {
                 pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
                                  << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
@@ -1429,10 +1528,10 @@ class ParamProcessor final {
                 AstNode* const exprp = pinp->exprp();
                 longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                 any_overridesr = true;
-            } else if (VN_IS(pinp->exprp(), InitArray)) {
-                // Array assigned to scalar parameter.  Treat the InitArray as a constant
-                // integer array and include it in the module name.  Constantify nested
-                // expressions before mangling the value number.
+            } else if (VN_IS(pinp->exprp(), InitArray)
+                       || VN_IS(pinp->exprp(), ConsPackUOrStruct)) {
+                // Treat constant aggregate parameters as values and include them in the module
+                // name. Constantify nested expressions before mangling the value number.
                 V3Const::constifyParamsEdit(pinp->exprp());
                 longnamer
                     += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(pinp->exprp());
@@ -1600,15 +1699,10 @@ class ParamProcessor final {
                 if (normedNamep) VL_DO_DANGLING(normedNamep->deleteTree(), normedNamep);
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
-            // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
-            // by this point ClassOrPackageRef should be updated to point to the specialized class.
-            resolveDotToTypedef(pinp->exprp());
-            resolveParamClassRefDType(modvarp->subDTypep());
-            // Also resolve through the pin expression's typedef chain
-            if (const AstRefDType* const pinRefp = VN_CAST(pinp->exprp(), RefDType)) {
-                if (const AstTypedef* const tdefp = pinRefp->typedefp())
-                    resolveParamClassRefDType(tdefp->subDTypep());
-            }
+            // Resolve the pin and declared type through arbitrary dtype wrappers
+            // and typedef chains before widthing either one.
+            resolveDeferredDotsReachableFrom(pinp->exprp(), m_modp);
+            resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
 
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
             // Guard against widthing a struct/union still owned by a
@@ -2139,6 +2233,70 @@ class ParamProcessor final {
         return newClassp;
     }
 
+    // Resolve deferred class-scoped references in post-order. Resolution may
+    // deparameterize a class and delete its parameter pins, so no pointer to a
+    // child may remain pending when its parent is resolved.
+    class DeferredResolverVisitor final : public VNVisitor {
+        ParamProcessor& m_processor;
+        std::set<const AstNode*> m_reachedDecls;
+
+        bool firstReach(const AstNode* const declp) {
+            return m_reachedDecls.insert(declp).second;
+        }
+
+        void iterateParamType(AstParamTypeDType* const paramTypep) {
+            if (firstReach(paramTypep)) iterate(paramTypep);
+        }
+        void iterateTypedef(AstTypedef* const tdefp) {
+            if (firstReach(tdefp)) iterate(tdefp->subDTypep());
+        }
+
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+        void visit(AstClassOrPackageRef* nodep) override {
+            iterateChildren(nodep);
+            AstNode* const targetp = nodep->classOrPackageNodep();
+            if (AstTypedef* const tdefp = VN_CAST(targetp, Typedef)) {
+                iterateTypedef(tdefp);
+            } else if (AstParamTypeDType* const paramTypep
+                       = VN_CAST(targetp, ParamTypeDType)) {
+                iterateParamType(paramTypep);
+            }
+        }
+        void visit(AstDot* nodep) override {
+            iterateChildren(nodep);
+            m_processor.resolveDotToTypedef(nodep);
+        }
+        void visit(AstRefDType* nodep) override {
+            iterateChildren(nodep);
+            AstTypedef* const tdefp = nodep->typedefp();
+            if (tdefp) {
+                iterateTypedef(tdefp);
+            } else if (AstParamTypeDType* const paramTypep
+                       = VN_CAST(nodep->refDTypep(), ParamTypeDType)) {
+                iterateParamType(paramTypep);
+            }
+            m_processor.resolveParamClassRefDType(nodep);
+        }
+        void visit(AstVarRef* nodep) override {
+            iterateChildren(nodep);
+            AstVar* const varp = nodep->varp();
+            if (firstReach(varp)) {
+                iterate(varp->subDTypep());
+                const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
+                if (varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)) {
+                    UASSERT_OBJ(varp->valuep(), varp, "VarRef should have non-null valuep");
+                    iterate(varp->valuep());
+                }
+            }
+        }
+
+    public:
+        DeferredResolverVisitor(ParamProcessor& processor, AstNode* rootp)
+            : m_processor{processor} {
+            iterate(rootp);
+        }
+    };
+
 public:
     // After an interface cell inside parentModp has been deparameterized
     // (rewired from template to clone), retarget REFDTYPEs that still
@@ -2163,6 +2321,16 @@ public:
                       "retargetIfaceRefs: " << entry.refp << " -> " << correctModp->prettyNameQ());
             }
         });
+    }
+
+    // Resolve deferred class-scoped values and types reachable from rootp. In
+    // addition to AST children, follow typedefs, parameter types, deferred
+    // localparam values, and referenced-variable dtypes. This makes the walk
+    // independent of the particular dtype wrappers around a RefDType.
+    void resolveDeferredDotsReachableFrom(AstNode* rootp, const AstNodeModule* modp) {
+        VL_RESTORER(m_modp);
+        m_modp = modp;
+        DeferredResolverVisitor{*this, rootp};
     }
 
     AstNodeModule* nodeDeparam(AstNode* nodep, AstNodeModule* srcModp, AstNodeModule* modp,
@@ -2205,14 +2373,9 @@ public:
         }
         // Create new module name with _'s between the constants
         UINFOTREE(10, nodep, "", "cell");
-        // Resolve `class::member` Dots in pin values so constify sees Consts.
-        // Single-pass: filter-collect class-scoped Dots, then reverse-iterate so inner
-        // Dots resolve before outer (vector stays empty for cells with no class Dots).
-        std::vector<AstDot*> dotps;
-        nodep->foreach([&](AstDot* dotp) {
-            if (VN_IS(dotp->lhsp(), ClassOrPackageRef)) dotps.push_back(dotp);
-        });
-        for (auto it = dotps.rbegin(); it != dotps.rend(); ++it) resolveDotToTypedef(*it);
+        // Resolve `class::member` Dots in pin values, and in any deferred
+        // lparam reachable from the pin tree, so constify sees Consts.
+        resolveDeferredDotsReachableFrom(nodep, modp);
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         // Set name for warnings for when we param propagate the module
@@ -2515,6 +2678,7 @@ class ParamVisitor final : public VNVisitor {
     VarsByName m_modIfaceRefs;  // Interface-ref Vars in current module, keyed by name
     bool m_modIfaceRefsDone = false;  // m_modIfaceRefs has been gathered for m_modp
     string m_generateHierName;  // Generate portion of hierarchy name
+    bool m_inGenerateCond = false;  // Traversing a generate condition; see iterateGenerateCond
 
     // METHODS
 
@@ -2827,7 +2991,9 @@ class ParamVisitor final : public VNVisitor {
 
         // Visit parameters in the instantiation.
         iterateChildren(nodep);
-        m_cellps.emplace(!isIface, nodep);
+        // A generate condition is folded and deleted before the drain loop runs, so
+        // queueing from one only leaves a dangling pointer.  See iterateGenerateCond.
+        if (!m_inGenerateCond) m_cellps.emplace(!isIface, nodep);
     }
 
     // VISITORS
@@ -2881,7 +3047,14 @@ class ParamVisitor final : public VNVisitor {
     }
 
     void visit(AstRefDType* nodep) override {
-        if (isCircularType(nodep)) {
+        const bool isCircular = isCircularType(nodep);
+        // A module-body `typedef C#(Cfg)::t alias` the deferred pin/param walk
+        // never reached would survive to V3Width unlinked. If its alias chain is
+        // broken, run the same deferred resolution here.
+        if (!isCircular && nodep->typedefp() && !nodep->skipRefOrNullp()) {
+            m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
+        }
+        if (isCircular) {
             nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
         } else if (nodep->typedefp() && nodep->subDTypep()
                    && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
@@ -3032,6 +3205,7 @@ class ParamVisitor final : public VNVisitor {
                     v3Global.rootp()->pushDeferredParamVarp(nodep);
                     return;
                 }
+                m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
                 V3Const::constifyParamsEdit(nodep);
             }
         }
@@ -3243,9 +3417,24 @@ class ParamVisitor final : public VNVisitor {
     }
 
     // Generate Statements
+
+    // Traverse a generate condition (if/case expression, for init/cond/inc).
+    //
+    // m_cellps assumes a queued ref outlives the drain loop, which holds elsewhere
+    // because deletion is deferred.  A generate condition doesn't defer and folds
+    // immediately, so we can't queue. Anything queued here would be left dangling.
+    // Refs in the surviving arm are queued when it is recursed.
+    void iterateGenerateCond(AstNode* nodep) {
+        VL_RESTORER(m_inGenerateCond);
+        m_inGenerateCond = true;
+        iterateAndNextNull(nodep);
+        // The condition may reference deferred lparams whose Dots are still pending.
+        m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
+    }
+
     void visit(AstGenIf* nodep) override {
         UINFO(9, "  GENIF " << nodep);
-        iterateAndNextNull(nodep->condp());
+        iterateGenerateCond(nodep->condp());
         // We suppress errors when widthing params since short-circuiting in
         // the conditional evaluation may mean these error can never occur. We
         // then make sure that short-circuiting is used by constifyParamsEdit.
@@ -3278,9 +3467,9 @@ class ParamVisitor final : public VNVisitor {
             UINFO(9, "  BEGIN " << nodep);
             UINFO(9, "  GENFOR " << forp);
             // Visit child nodes before unrolling
-            iterateAndNextNull(forp->initsp());
-            iterateAndNextNull(forp->condp());
-            iterateAndNextNull(forp->incsp());
+            iterateGenerateCond(forp->initsp());
+            iterateGenerateCond(forp->condp());
+            iterateGenerateCond(forp->incsp());
             V3Width::widthParamsEdit(forp);  // Param typed widthing will NOT recurse the body
             // Outer wrapper around generate used to hold genvar, and to ensure genvar
             // doesn't conflict in V3LinkDot resolution with other genvars
@@ -3312,8 +3501,15 @@ class ParamVisitor final : public VNVisitor {
         UINFO(9, "  GENCASE " << nodep);
         bool hit = false;
         AstNode* keepp = nullptr;
-        iterateAndNextNull(nodep->exprp());
+        iterateGenerateCond(nodep->exprp());
         V3Case::caseLint(nodep);
+        // Case-item expressions must also be linked before widthing the case.
+        for (AstGenCaseItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
+            for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
+                m_processor.resolveDeferredDotsReachableFrom(ep, m_modp);
+            }
+        }
         V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the
                                           // body, don't trigger errors yet.
         V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
@@ -3323,7 +3519,7 @@ class ParamVisitor final : public VNVisitor {
              itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
             for (AstNode* ep = itemp->condsp(); ep;) {
                 AstNode* const nextp = ep->nextp();  // May edit list
-                iterateAndNextNull(ep);
+                iterateGenerateCond(ep);
                 VL_DO_DANGLING(V3Const::constifyParamsEdit(ep), ep);  // ep may change
                 ep = nextp;
             }

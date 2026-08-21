@@ -1030,9 +1030,11 @@ public:
     static bool checkIfClassOrPackage(const VSymEnt* const symp) {
         if (VN_IS(symp->nodep(), Class) || VN_IS(symp->nodep(), Package)) return true;
 
-        // Helper: check if a RefDType might resolve to a class later
-        const auto checkUnresolvedRef = [](const AstRefDType* refp) -> bool {
-            return refp && !refp->typeofp() && !refp->classOrPackageOpp();
+        // Helper: check if a RefDType might resolve to a class later.
+        const auto isPotentialClassRef = [](const AstRefDType* refp) -> bool {
+            return refp && !refp->typeofp()
+                   && (!refp->classOrPackageOpp()
+                       || VN_IS(refp->classOrPackageOpp(), ClassOrPackageRef));
         };
 
         // Helper: allow types that can represent a class/package handle or an unresolved ref.
@@ -1046,7 +1048,7 @@ public:
             const AstNodeDType* dtypep = typedefp->subDTypep();
             if (!dtypep) dtypep = typedefp->childDTypep();
             if (VN_IS(dtypep, ClassRefDType)) return true;
-            if (checkUnresolvedRef(VN_CAST(dtypep, RefDType))) return true;
+            if (isPotentialClassRef(VN_CAST(dtypep, RefDType))) return true;
         } else if (const AstParamTypeDType* const paramTypep
                    = VN_CAST(symp->nodep(), ParamTypeDType)) {
             // Before V3Param the declared default is in childDTypep (possibly
@@ -1058,8 +1060,9 @@ public:
                 childp = reqp->lhsp();
             }
             const AstNode* const checkp = childp ? childp : paramTypep->skipRefp();
-            if (isValidTypeNode(checkp)) return true;
-            if (checkUnresolvedRef(VN_CAST(checkp, RefDType))) return true;
+            if (isValidTypeNode(checkp) || isPotentialClassRef(VN_CAST(checkp, RefDType))) {
+                return true;
+            }
         }
         return false;
     }
@@ -4833,7 +4836,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_RESTORER_COPY(m_ds);
             VL_RESTORER(m_pinSymp);
 
-            if (!nodep->classOrPackageSkipp() && nodep->name() != "local::") {
+            if (!nodep->classOrPackageSkipp() && !nodep->classOrPackageNodep()
+                && nodep->name() != "local::") {
                 const bool deferIfUnresolved = m_statep->forPrimary() && m_insideClassExtParam;
                 m_statep->resolveClassOrPackage(m_ds.m_dotSymp, nodep, m_ds.m_dotPos != DP_PACKAGE,
                                                 false, ":: reference", deferIfUnresolved);
@@ -5981,6 +5985,44 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
+
+    // Collect the ClassOrPackageRefs in a chained scope operand in source order.
+    static bool collectScopeRefs(AstNode* nodep, std::vector<AstClassOrPackageRef*>& refps) {
+        if (AstClassOrPackageRef* const refp = VN_CAST(nodep, ClassOrPackageRef)) {
+            refps.push_back(refp);
+            return true;
+        }
+        AstDot* const dotp = VN_CAST(nodep, Dot);
+        return dotp && collectScopeRefs(dotp->lhsp(), refps)
+               && collectScopeRefs(dotp->rhsp(), refps);
+    }
+
+    // Resolve a chained class-scope operand (`pkg::outer::inner` in
+    // `pkg::outer::inner::t`) and reduce it to its innermost ClassOrPackageRef.
+    bool reduceScopeDot(AstRefDType* nodep, AstDot* scopeDotp) {
+        std::vector<AstClassOrPackageRef*> refps;
+        if (!collectScopeRefs(scopeDotp, refps)) return false;
+
+        VSymEnt* scopeSymp = m_ds.m_dotSymp;
+        for (size_t i = 0; i < refps.size(); ++i) {
+            AstClassOrPackageRef* const refp = refps[i];
+            if (!refp->classOrPackageSkipp() && !refp->classOrPackageNodep()
+                && !m_statep->resolveClassOrPackage(scopeSymp, refp, i == 0, false,
+                                                    "class/package reference")) {
+                return true;  // Error already reported
+            }
+            if (i + 1 == refps.size()) break;
+            AstNodeModule* const modp = refp->classOrPackageSkipp();
+            if (!modp) return false;
+            scopeSymp = m_statep->getNodeSym(modp);
+        }
+        AstClassOrPackageRef* const innerp = refps.back();
+        innerp->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(scopeDotp->unlinkFrBack()), scopeDotp);
+        nodep->classOrPackageOpp(innerp);
+        return true;
+    }
+
     void visit(AstRefDType* nodep) override {
 
         if (auto* const typeOfp = nodep->typeofp()) {
@@ -6047,7 +6089,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
-        if (AstNode* const cpackagep = nodep->classOrPackageOpp()) {
+        if (nodep->classOrPackageOpp()) {
+            // Resolve a chained scope (`pkg::cls::t`, `pkg::cls#(P)::t`) from outside in.
+            bool scopeDotHandled = false;
+            if (AstDot* const scopeDotp = VN_CAST(nodep->classOrPackageOpp(), Dot)) {
+                scopeDotHandled = reduceScopeDot(nodep, scopeDotp);
+            }
+            // Re-read: reduceScopeDot may have replaced the operand
+            AstNode* const cpackagep = nodep->classOrPackageOpp();
             if (AstClassOrPackageRef* const cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
                 iterate(cpackagerefp);
                 const AstClass* const clsp = VN_CAST(cpackagerefp->classOrPackageNodep(), Class);
@@ -6066,7 +6115,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
 
                 const bool doDefaultTypedef = !(m_resolvingTypedef && m_statep->forPrimary());
-                if (!cpackagerefp->classOrPackageSkipp(doDefaultTypedef)) {
+                if (!cpackagerefp->classOrPackageSkipp(doDefaultTypedef)
+                    && !cpackagerefp->classOrPackageNodep()) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
                         m_ds.m_dotSymp, cpackagerefp, true, false, "class/package reference");
                     if (!foundp) return;
@@ -6089,8 +6139,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
                 }
             } else {
-                cpackagep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Multiple '::' package/class reference");
+                UASSERT_OBJ(scopeDotHandled, cpackagep,
+                            "Unexpected package/class scope operand");
             }
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }

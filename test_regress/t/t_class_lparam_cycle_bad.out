@@ -1,0 +1,6 @@
+%Error: t/t_class_lparam_cycle_bad.v:25:20: Variable's initial value is circular: 'a'
+                                          : ... note: In instance 't'
+   25 |     localparam int a = inner_a::v + b;
+      |                    ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
