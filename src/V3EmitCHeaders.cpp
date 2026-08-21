@@ -75,7 +75,7 @@ class EmitCHeader final : public EmitCConstInit {
         std::vector<const AstVar*> varList;
         bool lastAnon = false;  // initial value is not important, but is used
 
-        const auto emitCurrentList = [this, &first, &varList, &lastAnon]() {
+        const auto emitCurrentList = [this, modp, &first, &varList, &lastAnon]() {
             if (varList.empty()) return;
 
             decorateFirst(first, "\n// DESIGN SPECIFIC STATE\n");
@@ -106,7 +106,7 @@ class EmitCHeader final : public EmitCConstInit {
                         for (int l1 = 0; l1 < anonL1s && it != varList.cend(); ++l1) {
                             if (anonL1s != 1) puts("struct {\n");
                             for (int l0 = 0; l0 < lim && it != varList.cend(); ++l0) {
-                                emitVarDecl(*it);
+                                emitVarDecl(*it, false, modp);
                                 ++it;
                             }
                             if (anonL1s != 1) puts("};\n");
@@ -116,9 +116,9 @@ class EmitCHeader final : public EmitCConstInit {
                     if (anonL3s != 1) puts("};\n");
                 }
                 // Leftovers, just in case off by one error somewhere above
-                for (; it != varList.cend(); ++it) emitVarDecl(*it);
+                for (; it != varList.cend(); ++it) emitVarDecl(*it, false, modp);
             } else {  // Output as nonanons
-                for (const auto& pair : varList) emitVarDecl(pair);
+                for (const AstVar* const varp : varList) emitVarDecl(varp, false, modp);
             }
 
             varList.clear();

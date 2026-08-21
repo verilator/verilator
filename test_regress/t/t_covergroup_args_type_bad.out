@@ -1,0 +1,22 @@
+%Error: t/t_covergroup_args_type_bad.v:40:27: Assigning to const ref variable: 'value'
+                                            : ... note: In instance 't'
+   40 |     cp: coverpoint mutate(value);
+      |                           ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_args_type_bad.v:43:45: Ref argument requires matching types; port 'state' requires 'class{}BaseState' but connection is 'class{}DerivedState'.
+                                            : ... note: In instance 't'
+   43 |   cg_const_ref_type const_ref_type_cg = new(derived_state);
+      |                                             ^~~~~~~~~~~~~
+%Error: t/t_covergroup_args_type_bad.v:44:47: Virtual interface argument 'input_vif' requires a compatible interface type, parameters, and modport.
+                                            : ... note: In instance 't'
+   44 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
+      |                                               ^~~~
+%Error: t/t_covergroup_args_type_bad.v:44:53: Ref virtual interface argument 'ref_vif' requires the same interface type, parameters, and modport.
+                                            : ... note: In instance 't'
+   44 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
+      |                                                     ^~~~
+%Error: t/t_covergroup_args_type_bad.v:44:59: Ref virtual interface argument 'const_ref_vif' requires the same interface type, parameters, and modport.
+                                            : ... note: In instance 't'
+   44 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
+      |                                                           ^~~~
+%Error: Exiting due to

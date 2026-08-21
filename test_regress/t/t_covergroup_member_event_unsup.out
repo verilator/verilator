@@ -1,10 +1,21 @@
-%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:15:29: Unsupported: 'covergroup' clocking event signal has no assignment within the enclosing class; no coverage sampled. Use --timing for full support.
-   15 |     covergroup cov_extclk @(posedge clk);
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:25:29: Unsupported: 'covergroup' clocking event signal has no assignment within the enclosing class; no coverage sampled. Use --timing for full support.
+   25 |     covergroup cov_extclk @(posedge clk);
       |                             ^~~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:37:5: Unsupported: 'covergroup' clocking event on complex member expression; use --timing for full support.
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:47:5: Unsupported: 'covergroup' clocking event on complex member expression; use --timing for full support.
                                                            : ... note: In instance 't'
-   37 |     covergroup cov_cplx @(posedge a or posedge mid.lvl.ev);
+   47 |     covergroup cov_cplx @(posedge a or posedge mid.lvl.ev);
       |     ^~~~~~~~~~
-%Error: Exiting due to
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:67:3: Unsupported: 'covergroup' clocking event on member variable
+                                                           : ... note: In instance 't'
+   67 |   covergroup cov_ref(ref logic event_ref) @(posedge event_ref);
+      |   ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:71:3: Unsupported: 'covergroup' clocking event on member variable
+                                                           : ... note: In instance 't'
+   71 |   covergroup cov_ref_select(ref logic [1:0] event_refs) @(posedge event_refs[0]);
+      |   ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:75:3: Unsupported: 'covergroup' clocking event on member variable
+                                                           : ... note: In instance 't'
+   75 |   covergroup cov_ref_vif(ref virtual EventIf event_ref_vif) @(posedge event_ref_vif.clk);
+      |   ^~~~~~~~~~

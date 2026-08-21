@@ -717,12 +717,16 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 
     asRef = asRef || isDpiOpenArray() || (forFunc && (isWritable() || isRef() || isConstRef()));
 
-    if (forFunc && (isReadOnly() || constRef) && asRef) ostatic = ostatic + "const ";
-
     string oname;
     if (named) {
         if (!namespc.empty()) oname += namespc + "::";
         oname += VIdProtect::protectIf(name(), protect());
+    }
+    if (forFunc && (isReadOnly() || constRef) && asRef) {
+        if (VN_IS(dtypep()->skipRefp(), IfaceRefDType)) {
+            return ostatic + dtypep()->cType("", forFunc, false) + " const &" + oname;
+        }
+        ostatic += "const ";
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }

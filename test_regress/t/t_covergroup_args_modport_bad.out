@@ -1,0 +1,18 @@
+%Error: t/t_covergroup_args_modport_bad.v:24:16: Virtual interface argument 'vif' requires a compatible interface type, parameters, and modport.
+                                               : ... note: In instance 't.port_type_mismatch'
+   24 |   cg cov = new(intf);
+      |                ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_args_modport_bad.v:39:16: Virtual interface argument 'input_vif' requires a compatible interface type, parameters, and modport.
+                                               : ... note: In instance 't'
+   39 |   cg cov = new(monitor_vif, monitor_vif, monitor_vif);
+      |                ^~~~~~~~~~~
+%Error: t/t_covergroup_args_modport_bad.v:39:29: Ref virtual interface argument 'ref_vif' requires the same interface type, parameters, and modport.
+                                               : ... note: In instance 't'
+   39 |   cg cov = new(monitor_vif, monitor_vif, monitor_vif);
+      |                             ^~~~~~~~~~~
+%Error: t/t_covergroup_args_modport_bad.v:39:42: Ref virtual interface argument 'const_ref_vif' requires the same interface type, parameters, and modport.
+                                               : ... note: In instance 't'
+   39 |   cg cov = new(monitor_vif, monitor_vif, monitor_vif);
+      |                                          ^~~~~~~~~~~
+%Error: Exiting due to
