@@ -35,11 +35,19 @@ module m;
     snapshot = st2;
     `checkh(snapshot.inner.val, 32'h21);
     `checkh(snapshot.inner.val[0], 1'b1);
+    // Direct member-path reads see the whole-struct force too
+    `checkh(st2.inner.val, 32'h21);
+    `checkh(st2.tail, 32'h23);
+    // A force on a range overlapping an earlier force replaces the earlier one over that
+    // range, and IEEE 1800-2023 10.6.2 then keeps the released value until the next
+    // procedural assignment.  The rest of the earlier force stays in effect.
     force st2.inner.val = 32'h30;
+    snapshot = st2;
+    `checkh(snapshot.inner.val, 32'h30);
     release st2.inner.val;
     snapshot = st2;
-    `checkh(snapshot.inner.val, 32'h21);
-    `checkh(snapshot.inner.val[0], 1'b1);
+    `checkh(snapshot.inner.val, 32'h30);
+    `checkh(snapshot.inner.val[0], 1'b0);
     `checkh(snapshot.inner.other, 32'h22);
     `checkh(snapshot.tail, 32'h23);
     $write("*-* All Finished *-*\n");

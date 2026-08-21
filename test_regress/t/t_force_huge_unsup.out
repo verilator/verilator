@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_force_huge_unsup.v:15:5: Unsupported: Force of a variable with 2^31 or more elements
+   15 |     force x[0][0] = 1'b1;
+      |     ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_force_huge_unsup.v:16:5: Unsupported: Release of a variable with 2^31 or more elements
+   16 |     release x[0][0];
+      |     ^~~~~~~
+%Error: Exiting due to
