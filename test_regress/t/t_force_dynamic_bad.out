@@ -1,0 +1,37 @@
+%Error: t/t_force_dynamic_bad.v:26:5: Force left-hand-side may not be automatically allocated storage: a class property, or an associative, dynamic, or queue element (IEEE 1800-2023 6.21)
+                                    : ... note: In instance 't'
+   26 |     force c.a = 2;
+      |     ^~~~~
+        t/t_force_dynamic_bad.v:26:13: ... Location of dynamic selection
+   26 |     force c.a = 2;
+      |             ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_force_dynamic_bad.v:27:5: Force left-hand-side may not be automatically allocated storage: a class property, or an associative, dynamic, or queue element (IEEE 1800-2023 6.21)
+                                    : ... note: In instance 't'
+   27 |     force aa[0] = 1;
+      |     ^~~~~
+        t/t_force_dynamic_bad.v:27:13: ... Location of dynamic selection
+   27 |     force aa[0] = 1;
+      |             ^
+%Error: t/t_force_dynamic_bad.v:28:5: Force left-hand-side may not be automatically allocated storage: a class property, or an associative, dynamic, or queue element (IEEE 1800-2023 6.21)
+                                    : ... note: In instance 't'
+   28 |     force dyn[0] = 1;
+      |     ^~~~~
+        t/t_force_dynamic_bad.v:28:14: ... Location of dynamic selection
+   28 |     force dyn[0] = 1;
+      |              ^
+%Error: t/t_force_dynamic_bad.v:29:5: Force left-hand-side may not be automatically allocated storage: a class property, or an associative, dynamic, or queue element (IEEE 1800-2023 6.21)
+                                    : ... note: In instance 't'
+   29 |     force q[0] = 1;
+      |     ^~~~~
+        t/t_force_dynamic_bad.v:29:12: ... Location of dynamic selection
+   29 |     force q[0] = 1;
+      |            ^
+%Error: t/t_force_dynamic_bad.v:30:5: Release left-hand-side may not be automatically allocated storage: a class property, or an associative, dynamic, or queue element (IEEE 1800-2023 6.21)
+                                    : ... note: In instance 't'
+   30 |     release c.a;
+      |     ^~~~~~~
+        t/t_force_dynamic_bad.v:30:15: ... Location of dynamic selection
+   30 |     release c.a;
+      |               ^
+%Error: Exiting due to
