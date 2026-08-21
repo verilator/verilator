@@ -106,7 +106,7 @@ class EmitCHeader final : public EmitCConstInit {
                         for (int l1 = 0; l1 < anonL1s && it != varList.cend(); ++l1) {
                             if (anonL1s != 1) puts("struct {\n");
                             for (int l0 = 0; l0 < lim && it != varList.cend(); ++l0) {
-                                emitVarDecl(*it, false, modp);
+                                emitVarDecl(*it);
                                 ++it;
                             }
                             if (anonL1s != 1) puts("};\n");
@@ -116,9 +116,9 @@ class EmitCHeader final : public EmitCConstInit {
                     if (anonL3s != 1) puts("};\n");
                 }
                 // Leftovers, just in case off by one error somewhere above
-                for (; it != varList.cend(); ++it) emitVarDecl(*it, false, modp);
+                for (; it != varList.cend(); ++it) emitVarDecl(*it);
             } else {  // Output as nonanons
-                for (const AstVar* const varp : varList) emitVarDecl(varp, false, modp);
+                for (const AstVar* const varp : varList) emitVarDecl(varp);
             }
 
             varList.clear();

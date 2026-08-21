@@ -345,6 +345,11 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         cleanFileline(nodep);
         UINFO(9, "VAR " << nodep);
+        const AstClass* const classp = VN_CAST(m_modp, Class);
+        if (classp && classp->isCovergroup() && nodep->isClassMember() && !nodep->isFuncLocal()
+            && (nodep->declDirection().isRef() || nodep->declDirection().isConstRef())) {
+            nodep->setCovergroupRefMember();
+        }
         if (nodep->valuep()) nodep->hasUserInit(true);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
         // responsible for marking those.

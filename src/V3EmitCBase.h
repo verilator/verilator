@@ -81,16 +81,6 @@ public:
     static bool isConstPoolMod(const AstNode* modp) {
         return modp == v3Global.rootp()->constPoolp()->modp();
     }
-    static bool isCovergroupRefMember(const AstVar* varp,
-                                      const AstNodeModule* ownerp) VL_MT_STABLE {
-        if (!varp->isClassMember() || varp->isFuncLocal()) return false;
-        if (varp->declDirection() != VDirection::REF
-            && varp->declDirection() != VDirection::CONSTREF) {
-            return false;
-        }
-        const AstClass* const classp = VN_CAST(ownerp, Class);
-        return classp && classp->isCovergroup();
-    }
 };
 
 //######################################################################
@@ -198,8 +188,7 @@ public:
     void emitCDefaultConstructor(const AstNodeModule* modp);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
-    void emitVarDecl(const AstVar* nodep, bool asRef = false,
-                     const AstNodeModule* ownerp = nullptr);
+    void emitVarDecl(const AstVar* nodep, bool asRef = false);
     void emitVarAccessors(const AstVar* nodep);
     template <typename T_Callable>
     static void forModCUse(const AstNodeModule* modp, VUseType useType, T_Callable action) {
