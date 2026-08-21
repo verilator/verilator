@@ -75,7 +75,7 @@ class EmitCHeader final : public EmitCConstInit {
         std::vector<const AstVar*> varList;
         bool lastAnon = false;  // initial value is not important, but is used
 
-        const auto emitCurrentList = [this, modp, &first, &varList, &lastAnon]() {
+        const auto emitCurrentList = [this, &first, &varList, &lastAnon]() {
             if (varList.empty()) return;
 
             decorateFirst(first, "\n// DESIGN SPECIFIC STATE\n");
