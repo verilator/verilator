@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # A valid library loaded with a :<bootstrap> entry that does not exist must
 # fail with a clear error (the missing-named-bootstrap branch of the loader).

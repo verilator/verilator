@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_trace_ub_misaligned_address.v"
 
 test.compile(verilator_flags2=["--binary --trace-vcd", "--runtime-debug"])

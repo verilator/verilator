@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.priority(30)
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 test.cycles = (int(test.benchmark) if test.benchmark else 100000)
 test.sim_time = test.cycles * 10 + 1000

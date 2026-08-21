@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 # Dynamic per-instance event waits require --timing. Without it, simple events use
 # best-effort in-class assignment instrumentation and unsupported cases warn.

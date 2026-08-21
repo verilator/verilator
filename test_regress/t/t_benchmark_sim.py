@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_gen_alw.v"  # Use any top file
 
 # As an example, compile and simulate the top file with varying optimization level
