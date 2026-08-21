@@ -6,6 +6,7 @@
 
 # Notify PRs via comment that their workflow reports are available
 
+set -x
 # Get the current repo URL - might differ on a fork
 readonly REPO_URL=$(gh repo view --json url --jq .url)
 
