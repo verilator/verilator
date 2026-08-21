@@ -2738,7 +2738,14 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override {
-        // Not a union
+        // A packed union member can carry dirty upper bits.  An unpacked-typed member
+        // has no pad bits at all, so there is nothing to clean, and masking it would
+        // apply a bitwise operation to an unpacked value.
+        if (VN_IS(dtypep()->skipRefp(), UnpackArrayDType)) return true;
+        if (const AstNodeUOrStructDType* const sdtypep
+            = VN_CAST(dtypep()->skipRefp(), NodeUOrStructDType)) {
+            if (!sdtypep->packed()) return true;
+        }
         return VN_IS(fromp()->dtypep()->skipRefp(), StructDType);
     }
     bool sameNode(const AstNode* samep) const override {

@@ -30,6 +30,9 @@ module t (
 
   struct_t s_array[3];
   struct_t my_struct;
+  int o_arr;
+
+  assign o_arr = my_struct.arr[2];
 
   // Test loop
   always @(posedge clk) begin
@@ -37,48 +40,58 @@ module t (
     if (cyc == 0) begin
       s_array[1].x = 1;
       s_array[1].arr[2] = 1;
+      my_struct.arr[2] = 1;
       my_struct.x <= 1;
       my_struct.pt.b <= 1;
     end
     else if (cyc == 1) begin
       `checkh(s_array[1].x, 1);
       `checkh(s_array[1].arr[2], 1);
+      `checkh(my_struct.arr[2], 1);
       `checkh(my_struct.x, 1);
       `checkh(my_struct.pt.b, 1);
     end
     else if (cyc == 2) begin
-      force s_array[1].x = 0;
+      force s_array[1].x = 7;
       force s_array[1].arr[2] = 2;
+      force my_struct.arr[2] = 5;
       force my_struct.x = 0;
       force my_struct.pt.b = 0;
     end
     else if (cyc == 3) begin
-      `checkh(s_array[1].x, 0);
+      `checkh(s_array[1].x, 7);
       s_array[1].x = 1;
       `checkh(s_array[1].arr[2], 2);
       s_array[1].arr[2] = 3;
+      `checkh(my_struct.arr[2], 5);
+      `checkh(o_arr, 5);
+      my_struct.arr[2] = 3;
       `checkh(my_struct.x, 0);
       my_struct.x <= 1;
       `checkh(my_struct.pt.b, 0);
       my_struct.pt.b <= 1;
     end
     else if (cyc == 4) begin
-      `checkh(s_array[1].x, 0);
+      `checkh(s_array[1].x, 7);
       `checkh(s_array[1].arr[2], 2);
+      `checkh(my_struct.arr[2], 5);
       `checkh(my_struct.x, 0);
       `checkh(my_struct.pt.b, 0);
     end
     else if (cyc == 5) begin
+      release my_struct.arr[2];
       release s_array[1].x;
       release s_array[1].arr[2];
       release my_struct.x;
       release my_struct.pt.b;
     end
     else if (cyc == 6) begin
-      `checkh(s_array[1].x, 0);
+      `checkh(s_array[1].x, 7);
       s_array[1].x = 1;
       `checkh(s_array[1].arr[2], 2);
       s_array[1].arr[2] = 4;
+      `checkh(my_struct.arr[2], 5);
+      my_struct.arr[2] = 6;
       `checkh(my_struct.x, 0);
       my_struct.x <= 1;
       `checkh(my_struct.pt.b, 0);
@@ -87,6 +100,8 @@ module t (
     else if (cyc == 7) begin
       `checkh(s_array[1].x, 1);
       `checkh(s_array[1].arr[2], 4);
+      `checkh(my_struct.arr[2], 6);
+      `checkh(o_arr, 6);
       `checkh(my_struct.x, 1);
       `checkh(my_struct.pt.b, 1);
     end
