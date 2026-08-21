@@ -11,11 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# Dynamic per-instance event waits require --timing. Without it, simple events use
-# best-effort in-class assignment instrumentation and unsupported cases warn.
+# Some cases specifically exercise the no-timing fallback: simple per-instance events use
+# best-effort in-class assignment instrumentation, and unsupported cases warn.
+test.lint(verilator_flags2=['--no-timing'], expect_filename=test.golden_filename, fails=True)
+
 test.compile(
-    verilator_flags2=['--Wno-fatal', '--no-skip-identical', '--no-timing'],
-    expect_filename=test.golden_filename)
+    verilator_flags2=['--Wno-COVERIGN', '--no-skip-identical', '--no-timing'])
 
 test.execute()
 

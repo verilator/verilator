@@ -2370,8 +2370,8 @@ public:
     void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
     bool constPoolEntry() const { return m_constPoolEntry; }
     void setConstPoolEntry() { m_constPoolEntry = true; }
-    bool isCovergroupRefMember() const { return m_covergroupRefMember; }
-    void setCovergroupRefMember() { m_covergroupRefMember = true; }
+    bool covergroupRefMember() const { return m_covergroupRefMember; }
+    void covergroupRefMember() { m_covergroupRefMember = true; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }

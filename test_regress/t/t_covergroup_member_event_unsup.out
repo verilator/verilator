@@ -19,3 +19,4 @@
                                                            : ... note: In instance 't'
    75 |   covergroup cov_ref_vif(ref virtual EventIf event_ref_vif) @(posedge event_ref_vif.clk);
       |   ^~~~~~~~~~
+%Error: Exiting due to

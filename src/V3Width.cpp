@@ -7566,7 +7566,8 @@ class WidthVisitor final : public VNVisitor {
                 if (!pinp) continue;  // Argument error we'll find later
                 AstNodeDType* const portDTypep = portp->dtypep()->skipRefToEnump();
                 const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefToEnump();
-                const AstIfaceRefDType* const portIfacep = ifaceRefDTypep(portDTypep);
+                const AstIfaceRefDType* const portIfacep
+                    = VN_CAST(portDTypep->elemDTypep(true), IfaceRefDType);
                 const bool matchingVirtualInterfaceRefs
                     = virtualIfaceDTypesCompatible(portDTypep, pinDTypep, true);
                 const bool compatibleVirtualInterfaceInput
@@ -9069,13 +9070,6 @@ class WidthVisitor final : public VNVisitor {
     static bool similarDTypeRecurse(const AstNodeDType* const node1p,
                                     const AstNodeDType* const node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
-    }
-    static const AstIfaceRefDType* ifaceRefDTypep(const AstNodeDType* dtypep) {
-        dtypep = dtypep->skipRefp();
-        while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
-            dtypep = arrayp->subDTypep()->skipRefp();
-        }
-        return VN_CAST(dtypep, IfaceRefDType);
     }
     static bool virtualIfaceDTypesCompatible(const AstNodeDType* portDTypep,
                                              const AstNodeDType* pinDTypep, const bool isRef) {

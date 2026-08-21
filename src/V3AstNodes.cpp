@@ -3327,7 +3327,7 @@ int AstVarRef::instrCount() const {
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (constPoolEntry()) str << " [CONSTPOOL]";
-    if (isCovergroupRefMember()) str << " [CGREF]";
+    if (covergroupRefMember()) str << " [CGREF]";
     if (isSc()) str << " [SC]";
     if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
     if (isPrimaryClock()) str << " [PCLK]";
@@ -3370,7 +3370,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, constPoolEntry);
-    dumpJsonBoolFuncIf(str, isCovergroupRefMember);
+    dumpJsonBoolFuncIf(str, covergroupRefMember);
     dumpJsonBoolFuncIf(str, isSc);
     dumpJsonBoolFuncIf(str, isPrimaryIO);
     dumpJsonBoolFuncIf(str, isPrimaryClock);

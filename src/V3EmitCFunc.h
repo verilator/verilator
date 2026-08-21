@@ -1769,7 +1769,7 @@ public:
         const AstVar* const varp = nodep->varp();
         const AstNodeModule* const varModp = EmitCParentModule::get(varp);
         const bool dereferenceCovergroupRef
-            = varp->isCovergroupRefMember() && nodep->access().isReadOrRW();
+            = varp->covergroupRefMember() && nodep->access().isReadOrRW();
         if (dereferenceCovergroupRef) putns(nodep, "(*");
         if (EmitCUtil::isConstPoolMod(varModp)) {
             // Reference to constant pool variable

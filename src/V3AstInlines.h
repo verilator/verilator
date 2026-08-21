@@ -161,7 +161,7 @@ AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr*
 bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return m_name == asamep->m_name && varType() == asamep->varType()
-           && isCovergroupRefMember() == asamep->isCovergroupRefMember();
+           && covergroupRefMember() == asamep->covergroupRefMember();
 }
 
 AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp)
