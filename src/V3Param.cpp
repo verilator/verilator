@@ -1886,8 +1886,10 @@ class ParamProcessor final {
         std::vector<AstPin*> pinsByIndex;
         pinsByIndex.resize(m_classTypeParams.size(), nullptr);
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            if (AstParamTypeDType* typep = pinp->modPTypep()) {
-                pinsByIndex[m_paramIndex[typep]] = pinp;
+            AstParamTypeDType* const typep = pinp->modPTypep();
+            const auto it = typep ? m_paramIndex.find(typep) : m_paramIndex.end();
+            if (it != m_paramIndex.end()) {
+                pinsByIndex[it->second] = pinp;
             } else {
                 pinsByIndex.push_back(pinp);
             }
