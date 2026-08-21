@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_fourstate_expr_not_handled_unsup.v:10:9: This four-state expression has not been handled
+                                                               : ... note: In instance 't'
+   10 |   alias y = x;
+      |         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_fourstate_expr_not_handled_unsup.v:10:13: This four-state expression has not been handled
+                                                                : ... note: In instance 't'
+   10 |   alias y = x;
+      |             ^
+%Error: Exiting due to
