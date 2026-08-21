@@ -3050,6 +3050,14 @@ void AstPackageImport::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstPackageImport::pkgNameFrom() {
     if (packagep()) m_pkgName = packagep()->name();
 }
+void AstPast::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (propertyTiming()) str << " [PROPERTY_TIMING]";
+}
+void AstPast::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, propertyTiming);
+    dumpJsonGen(str);
+}
 void AstPatMember::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (isConcat()) str << " [CONCAT]";

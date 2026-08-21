@@ -246,6 +246,60 @@ public:
     ~AssertDeFutureVisitor() = default;
 };
 
+// Prepare default sampled expressions for source $past nodes.
+class DefaultSampledValueVisitor final : public VNVisitor {
+    // STATE
+    bool m_inDefault = false;  // Transforming a default sampled expression
+
+    // METHODS
+    static AstConst* newTypeDefault(AstNodeExpr* nodep) {
+        AstConst* const constp
+            = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
+        if (nodep->dtypep()->isFourstate()) constp->num().setAllBitsX();
+        constp->dtypeFrom(nodep);
+        return constp;
+    }
+
+    // VISITORS
+    void visit(AstCMethodHard* nodep) override {
+        if (m_inDefault && nodep->method() == VCMethod::EVENT_IS_TRIGGERED) {
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+    void visit(AstNodeVarRef* nodep) override {
+        if (!m_inDefault) return;
+        AstVar* const varp = nodep->varp();
+        if (varp->isParam()
+            || (!varp->isNet() && varp->lifetime().isStatic() && varp->hasUserInit())) {
+            return;
+        }
+        nodep->replaceWith(newTypeDefault(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstPast* nodep) override {
+        if (m_inDefault) {
+            iterateChildren(nodep);
+            return;
+        }
+        if (!nodep->propertyTiming()) nodep->initp(nodep->exprp()->cloneTreePure(false));
+        iterateAndNextNull(nodep->exprp());
+        iterateAndNextNull(nodep->ticksp());
+        iterateAndNextNull(nodep->sentreep());
+        if (nodep->initp()) {
+            VL_RESTORER(m_inDefault);
+            m_inDefault = true;
+            iterateAndNextNull(nodep->initp());
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit DefaultSampledValueVisitor(AstNode* nodep) { iterate(nodep); }
+};
+
 //######################################################################
 // AssertVisitor
 
@@ -289,9 +343,12 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     V3UniqueNames m_caseTempNames{"__VCase"};
-    // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
+    // Maps from (expression, senTree) to the AstAlways that computes its delayed values.
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
+    // Source sampled-value history is initialized, unlike internal property-lowering history.
+    std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
+        m_modExpr2Sen2DefaultDelayedAlwaysp;
 
     // METHODS
     static string assertCtlGetCall(const char* query, VAssertType type,
@@ -497,12 +554,18 @@ class AssertVisitor final : public VNVisitor {
         return bodysp;
     }
 
-    AstVar* createDelayedVar(const std::string& name, AstAlways* alwaysp, AstNodeExpr* exprp) {
+    AstVar* createDelayedVar(const std::string& name, AstAlways* alwaysp, AstNodeExpr* exprp,
+                             AstNodeExpr* initp) {
         FileLine* const flp = exprp->fileline();
         AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, exprp->dtypep()};
         // TODO: this lifetime seems nonsene (can't have NBAs to automatics), but is as before
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         m_modp->addStmtsp(varp);
+        // Before enough clock ticks, $past returns the expression's default sampled value.
+        if (initp) {
+            m_modp->addStmtsp(new AstInitialStatic{
+                flp, new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, initp}});
+        }
         ++m_statPastVars;
         // Actually set the delayed value
         AstNodeExpr* const lhsp = new AstVarRef{flp, varp, VAccess::WRITE};
@@ -515,8 +578,10 @@ class AssertVisitor final : public VNVisitor {
         return varp;
     }
 
-    AstAlways* getDelayedAlways(AstNodeExpr* exprp, AstSenTree* senTreep) {
-        AstAlways*& alwayspr = m_modExpr2Sen2DelayedAlwaysp[*exprp][*senTreep];
+    AstAlways* getDelayedAlways(AstNodeExpr* exprp, AstNodeExpr* initp, AstSenTree* senTreep) {
+        auto& expr2Sen2Alwaysr
+            = initp ? m_modExpr2Sen2DefaultDelayedAlwaysp : m_modExpr2Sen2DelayedAlwaysp;
+        AstAlways*& alwayspr = expr2Sen2Alwaysr[*exprp][*senTreep];
         if (!alwayspr) {
             FileLine* const flp = exprp->fileline();
             // Create the always block that computes the delayed values
@@ -524,20 +589,23 @@ class AssertVisitor final : public VNVisitor {
             m_modp->addStmtsp(alwayspr);
             // Create the once-delayed variable
             const std::string name = "_Vpast_" + cvtToStr(m_modPastNum++) + "_1";
-            AstVar* const varp = createDelayedVar(name, alwayspr, exprp);
+            AstVar* const varp = createDelayedVar(name, alwayspr, exprp, initp);
             // Add it to delayed variable vector
             m_delayed(alwayspr).emplace_back(varp);
         } else {
             // Reusing exiting, not needed
             VL_DO_DANGLING(pushDeletep(exprp), exprp);
+            if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
             VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
         }
         return alwayspr;
     }
 
-    AstNodeExpr* getPastValue(AstNodeExpr* exprp, AstSenTree* senTreep, uint32_t ticks) {
+    AstNodeExpr* getPastValue(AstNodeExpr* exprp, AstNodeExpr* initp, AstSenTree* senTreep,
+                              uint32_t ticks) {
         UASSERT_OBJ(ticks > 0, exprp, "Delay must be > 0");
-        AstAlways* const alwaysp = getDelayedAlways(exprp, senTreep);
+        AstAlways* const alwaysp
+            = getDelayedAlways(exprp, initp ? initp->cloneTreePure(false) : nullptr, senTreep);
         std::vector<AstVar*>& delayedr = m_delayed(alwaysp);
         // Ensure the required delay exists
         while (delayedr.size() < ticks) {
@@ -548,10 +616,12 @@ class AssertVisitor final : public VNVisitor {
             name.resize(name.size() - 1);
             name += std::to_string(delayedr.size() + 1);
             AstNodeExpr* const prevp = new AstVarRef{flp, delayedr.back(), VAccess::READ};
-            AstVar* const varp = createDelayedVar(name, alwaysp, prevp);
+            AstVar* const varp = createDelayedVar(name, alwaysp, prevp,
+                                                  initp ? initp->cloneTreePure(false) : nullptr);
             // Add it to delayed variable vector
             delayedr.emplace_back(varp);
         }
+        if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
         // Return a reference to the appropriately delayed variable
         return new AstVarRef{exprp->fileline(), delayedr.at(ticks - 1), VAccess::READ};
     }
@@ -966,6 +1036,7 @@ class AssertVisitor final : public VNVisitor {
 
     //========== Past
     void visit(AstPast* nodep) override {
+        AstNodeExpr* const initp = nodep->initp() ? nodep->initp()->unlinkFrBack() : nullptr;
         iterateChildren(nodep);
         uint32_t ticks = 1;
         if (nodep->ticksp()) {
@@ -975,7 +1046,7 @@ class AssertVisitor final : public VNVisitor {
         }
         UASSERT_OBJ(ticks >= 1, nodep, "0 tick should have been checked in V3Width");
         AstNodeExpr* const exprp = newSampledExpr(nodep->exprp()->unlinkFrBack());
-        AstNodeExpr* inp = getPastValue(exprp, nodep->sentreep()->unlinkFrBack(), ticks);
+        AstNodeExpr* inp = getPastValue(exprp, initp, nodep->sentreep()->unlinkFrBack(), ticks);
         nodep->replaceWith(inp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -1213,6 +1284,7 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_modStrobeNum);
         VL_RESTORER(m_finalp);
         VL_RESTORER_CLEAR(m_modExpr2Sen2DelayedAlwaysp);
+        VL_RESTORER_CLEAR(m_modExpr2Sen2DefaultDelayedAlwaysp);
         m_modp = nodep;
         m_modPastNum = 0;
         m_modStrobeNum = 0;
@@ -1274,6 +1346,7 @@ public:
 
 void V3Assert::assertAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    { DefaultSampledValueVisitor{nodep}; }
     { AssertVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assert", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -2022,21 +2022,29 @@ class AstPast final : public AstNodeExpr {
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := ticksp : Optional[AstNodeExpr]
     // @astgen op3 := sentreep : Optional[AstSenTree]
+    // @astgen op4 := initp : Optional[AstNodeExpr]  // Default sampled expression
+    bool m_propertyTiming : 1;  // History used to lower property timing
 public:
     AstPast(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* ticksp = nullptr,
-            AstSenTree* sentreep = nullptr)
-        : ASTGEN_SUPER_Past(fl) {
+            AstSenTree* sentreep = nullptr, bool propertyTiming = false)
+        : ASTGEN_SUPER_Past(fl)
+        , m_propertyTiming{propertyTiming} {
         this->exprp(exprp);
         this->ticksp(ticksp);
         this->sentreep(sentreep);
     }
     ASTGEN_MEMBERS_AstPast;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_propertyTiming == VN_DBG_AS(samep, Past)->m_propertyTiming;
+    }
+    bool propertyTiming() const { return m_propertyTiming; }
     bool isSystemFunc() const override { return true; }
 };
 class AstPatMember final : public AstNodeExpr {
