@@ -39,7 +39,8 @@ class DataflowOptimize final {
     // - bit2: Read by logic in same module/netlist not represented in DFG
     // - bit3: Written by logic in same module/netlist not represented in DFG
     // - bit4: Has READWRITE references
-    // - bit31-5: Reference count, how many DfgVertexVar represent this variable
+    // - bit5: Has DfgPrev instance
+    // - bit31-6: Reference count, how many DfgVertexVar represent this variable
     //
     // AstNode::user2/user3/user4 can be used by various DFG algorithms
     const VNUser1InUse m_user1InUse;
@@ -116,65 +117,44 @@ class DataflowOptimize final {
         V3DfgPasses::synthesize(dfg, m_ctx);
         endOfStage("synthesize", dfg, {});
 
-        // Extract the cyclic sub-graphs. We do this because a lot of the optimizations assume a
-        // DAG, and large, mostly acyclic graphs could not be optimized due to the presence of
-        // small cycles.
-        std::vector<std::unique_ptr<DfgGraph>> cyclicComps = dfg.extractCyclicComponents("cyclic");
-        endOfStage("extractCyclic", dfg, cyclicComps);
-
-        // Attempt to convert cyclic components into acyclic ones
-        std::vector<std::unique_ptr<DfgGraph>> madeAcyclicComponents;
-        if (v3Global.opt.fDfgBreakCycles()) {
-            for (auto it = cyclicComps.begin(); it != cyclicComps.end();) {
-                const bool madeAcyclic = V3DfgPasses::breakCycles(**it, m_ctx);
-                // If not made acyclic, keep it in 'cyclicComps'
-                if (!madeAcyclic) {
-                    ++it;
-                    continue;
-                }
-                // Otherwise move to 'madeAcyclicComponents'
-                madeAcyclicComponents.emplace_back(std::move(*it));
-                it = cyclicComps.erase(it);
-            }
+        // Extract the cyclic sub-graphs, so breakCycles can operate on small graphs,
+        // make all of them acyclic, then merge them back to the main graph
+        {
+            std::vector<std::unique_ptr<DfgGraph>> comps = dfg.extractCyclicComponents("cyclic");
+            for (const auto& cp : comps) V3DfgPasses::breakCycles(*cp, m_ctx);
+            dfg.mergeGraphs(std::move(comps));
+            endOfStage("breakCycles", dfg, {});
         }
-        // Merge those that were made acyclic back to the graph, this enables optimizing more
-        dfg.mergeGraphs(std::move(madeAcyclicComponents));
-        endOfStage("breakCycles", dfg, cyclicComps);
 
-        // Remove redundant selects
-        V3DfgPasses::removeSelects(dfg, m_ctx.m_removeSelectsContext);
-        for (std::unique_ptr<DfgGraph>& compp : cyclicComps) {
-            V3DfgPasses::removeSelects(*compp, m_ctx.m_removeSelectsContext);
-        }
-        endOfStage("removeSelects", dfg, cyclicComps);
-
-        // Split the acyclic DFG into [weakly] connected components
-        std::vector<std::unique_ptr<DfgGraph>> acyclicComps = dfg.splitIntoComponents("acyclic");
+        // Split the now entirely acyclic DFG into [weakly] connected components
+        std::vector<std::unique_ptr<DfgGraph>> comps = dfg.splitIntoComponents("acyclic");
         UASSERT(dfg.size() == 0, "DfgGraph should have become empty");
-        endOfStage("splitAcyclic", dfg, acyclicComps);
+        endOfStage("splitAcyclic", dfg, comps);
 
-        // Optimize each acyclic component
-        for (auto& cp : acyclicComps) V3DfgPasses::inlineVars(*cp);
-        endOfStage("inlineVars", dfg, acyclicComps);
-        for (auto& cp : acyclicComps) V3DfgPasses::cse(*cp, m_ctx.m_cseContext0);
-        endOfStage("cse0", dfg, acyclicComps);
-        for (auto& cp : acyclicComps) V3DfgPasses::binToOneHot(*cp, m_ctx.m_binToOneHotContext);
-        endOfStage("binToOneHot", dfg, acyclicComps);
-        for (auto& cp : acyclicComps) V3DfgPasses::peephole(*cp, m_ctx.m_peepholeContext);
-        endOfStage("peephole", dfg, acyclicComps);
-        // Accumulate patterns for reporting
-        if (v3Global.opt.dumpDfgPatterns()) {
-            V3DfgPasses::dumpPatterns(acyclicComps);
-            endOfStage("dumpPatterns");
+        // Main pass pipeline - optimize each acyclic component
+        {
+            for (auto& cp : comps) V3DfgPasses::removeSelects(*cp, m_ctx.m_removeSelectsContext);
+            endOfStage("removeSelects", dfg, comps);
+            for (const auto& cp : comps) V3DfgPasses::inlineVars(*cp);
+            endOfStage("inlineVars", dfg, comps);
+            for (auto& cp : comps) V3DfgPasses::cse(*cp, m_ctx.m_cseContext0);
+            endOfStage("cse0", dfg, comps);
+            for (auto& cp : comps) V3DfgPasses::binToOneHot(*cp, m_ctx.m_binToOneHotContext);
+            endOfStage("binToOneHot", dfg, comps);
+            for (auto& cp : comps) V3DfgPasses::peephole(*cp, m_ctx.m_peepholeContext);
+            endOfStage("peephole", dfg, comps);
+
+            // Accumulate patterns for reporting
+            if (v3Global.opt.dumpDfgPatterns()) V3DfgPasses::dumpPatterns(comps);
+
+            for (auto& cp : comps) V3DfgPasses::pushDownSels(*cp, m_ctx.m_pushDownSelsContext);
+            endOfStage("pushDownSels", dfg, comps);
+            for (auto& cp : comps) V3DfgPasses::cse(*cp, m_ctx.m_cseContext1);
+            endOfStage("cse1", dfg, comps);
         }
-        for (auto& cp : acyclicComps) V3DfgPasses::pushDownSels(*cp, m_ctx.m_pushDownSelsContext);
-        endOfStage("pushDownSels", dfg, acyclicComps);
-        for (auto& cp : acyclicComps) V3DfgPasses::cse(*cp, m_ctx.m_cseContext1);
-        endOfStage("cse1", dfg, acyclicComps);
 
-        // Merge everything back under the main DFG
-        dfg.mergeGraphs(std::move(acyclicComps));
-        dfg.mergeGraphs(std::move(cyclicComps));
+        // Merge everything back under the main graph
+        dfg.mergeGraphs(std::move(comps));
         endOfStage("optimized", dfg, {});
 
         // Regularize the graph after merging it all back together so all

@@ -1261,6 +1261,14 @@ public:
         this->foreach([&count](const AstNode*) { ++count; });
         return count;
     }
+
+    // Return true if and only if the tree rooted at this node has more than 'limit' nodes.
+    // Traversal terminates as soon as the result is known, so unlike comparing 'nodeCount',
+    // this is cheap on a large tree.
+    bool isLargerThan(int limit) const {
+        int count = 0;
+        return this->exists([&count, limit](const AstNode*) { return ++count > limit; });
+    }
 };
 
 // Forward declarations of specializations defined in V3Ast.cpp

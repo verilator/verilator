@@ -19,4 +19,13 @@
                                                   : ... note: In instance 't'
    34 |   a6: assert property (@(posedge clk) a |-> ##[NEG:$] b);
       |                                             ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:36:45: Unsupported: SVA cycle delay exceeds implementation limit of 2147483647
+                                                              : ... note: In instance 't'
+   36 |   a7: assert property (@(posedge clk) a |-> ##[1:32'h80000000] b);
+      |                                             ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:37:45: Unsupported: SVA cycle delay exceeds implementation limit of 2147483647
+                                                              : ... note: In instance 't'
+   37 |   a8: assert property (@(posedge clk) a |-> ##[32'h80000000:$] b);
+      |                                             ^~
 %Error: Exiting due to

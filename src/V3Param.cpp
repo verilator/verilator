@@ -252,7 +252,8 @@ class ParamProcessor final {
     //   AstNodeModule::user2() // bool   True if processed
     //   AstGenFor::user2()     // bool   True if processed
     //   AstVar::user2()        // bool   True if constant propagated
-    //   AstCell::user2p()      // string* Generate portion of hierarchical name
+    //   AstIfaceRefDType::user2()      // bool   True if visited
+    //   AstClassRefDType::user2()      // bool   True if visited
     //   AstNodeModule:user4p() // AstNodeModule* Parametrized copy with default parameters
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
@@ -2498,7 +2499,8 @@ class ParamVisitor final : public VNVisitor {
     bool m_iterateModule = false;  // Iterating module body
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
-    std::deque<std::string> m_strings;  // Allocator for temporary strings
+    std::unordered_map<const AstNode*, std::string>
+        m_genHierNames;  // Maps ast nodes to generated hierarchy names
     std::map<const AstRefDType*, bool>
         m_isCircular;  // Stores information whether `AstRefDType` is circular
     using VarsByName = std::unordered_map<std::string, AstVar*>;
@@ -2565,6 +2567,14 @@ class ParamVisitor final : public VNVisitor {
                 AstNode* const cellp = itim->second;
                 m_cellps.erase(itim);
 
+                // Consume the generated hierarchy name for the node
+                string genHierName;
+                const auto genHierIt = m_genHierNames.find(cellp);
+                if (genHierIt != m_genHierNames.end()) {
+                    genHierName = std::move(genHierIt->second);
+                    m_genHierNames.erase(genHierIt);
+                }
+
                 AstNodeModule* srcModp = nullptr;
                 if (const AstCell* modCellp = VN_CAST(cellp, Cell)) {
                     srcModp = modCellp->modp();
@@ -2582,11 +2592,7 @@ class ParamVisitor final : public VNVisitor {
                 if (!srcModp) continue;
 
                 // Update path
-                string someInstanceName = modp->someInstanceName();
-                if (const string* const genHierNamep = cellp->user2u().to<string*>()) {
-                    someInstanceName += *genHierNamep;
-                    cellp->user2p(nullptr);
-                }
+                const string someInstanceName = modp->someInstanceName() + genHierName;
 
                 // Apply parameter specialization
                 if (AstNodeModule* const newModp
@@ -2801,8 +2807,7 @@ class ParamVisitor final : public VNVisitor {
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
-        m_strings.emplace_back(m_generateHierName);
-        nodep->user2p(&m_strings.back());
+        m_genHierNames.emplace(nodep, m_generateHierName);
 
         // Deparameterize iface cells early so types are available for lparams.
         if (isIface && VN_CAST(nodep, Cell) && VN_CAST(nodep, Cell)->paramsp()) {
@@ -2882,6 +2887,9 @@ class ParamVisitor final : public VNVisitor {
                    && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
                        || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))
                    && !nodep->skipRefp()->user2SetOnce()) {
+            // The visit() function for every valid nodep->skipRefp() type below
+            // must include a `user2SetOnce()` check to avoid adding duplicate
+            // nodes to m_cellps
             iterate(nodep->skipRefp());
         }
         iterateChildren(nodep);
@@ -2892,9 +2900,11 @@ class ParamVisitor final : public VNVisitor {
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
     void visit(AstIfaceRefDType* nodep) override {
+        nodep->skipRefp()->user2SetOnce();
         if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
     }
     void visit(AstClassRefDType* nodep) override {
+        nodep->skipRefp()->user2SetOnce();
         checkParamNotHierRecurse(nodep->paramsp());
         visitCellOrClassRef(nodep, false);
     }

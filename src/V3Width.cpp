@@ -744,15 +744,39 @@ class WidthVisitor final : public VNVisitor {
         // it's like an if() condition.
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
+    static const AstConst* widthCheckSvaDelayBound(AstDelay* nodep, AstNodeExpr* boundp,
+                                                   const char* what) {
+        const AstConst* const constp = VN_CAST(boundp, Const);
+        if (!constp || (constp->dtypep()->isSigned() && constp->num().isNegative())) {
+            nodep->v3error(what << " is not a non-negative elaboration-time constant"
+                                   " (IEEE 1800-2023 16.7)");
+            return nullptr;
+        }
+        if (constp->num().mostSetBitP1() > 31) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: SVA cycle delay exceeds implementation limit of 2147483647");
+            return nullptr;
+        }
+        return constp;
+    }
     void visit(AstDelay* nodep) override {
         if (nodep->isCycleDelay() && m_underSExpr) {
             // Fold parameterized SVA cycle-delay bounds
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             V3Const::constifyParamsNoWarnEdit(nodep->lhsp());
+            const AstConst* const minConstp = widthCheckSvaDelayBound(
+                nodep, nodep->lhsp(),
+                nodep->isRangeDelay() ? "Range delay minimum" : "Delay value");
             if (nodep->rhsp() && !nodep->isUnbounded()) {
                 // Fold parametrized SVA cycle-delay max bound
                 userIterateAndNext(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
                 V3Const::constifyParamsNoWarnEdit(nodep->rhsp());
+                const AstConst* const maxConstp
+                    = widthCheckSvaDelayBound(nodep, nodep->rhsp(), "Range delay maximum");
+                if (minConstp && maxConstp && maxConstp->toUInt() < minConstp->toUInt()) {
+                    nodep->v3error("Range delay maximum must be >= minimum (IEEE 1800-2023 16.7)");
+                }
             }
             return;
         }
@@ -1832,7 +1856,11 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
-            if (nodep->maxCountp()) widthCheckGotoRepRange(nodep, "Goto");
+            if (nodep->maxCountp()) {
+                widthCheckGotoRepRange(nodep, "Goto");
+            } else {
+                widthCheckRepCount(nodep);
+            }
             nodep->dtypeSetBit();
         }
     }
@@ -1841,8 +1869,31 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
-            if (nodep->maxCountp()) widthCheckGotoRepRange(nodep, "Nonconsecutive");
+            if (nodep->maxCountp()) {
+                widthCheckGotoRepRange(nodep, "Nonconsecutive");
+            } else {
+                widthCheckRepCount(nodep);
+            }
             nodep->dtypeSetBit();
+        }
+    }
+    template <typename T_Rep>
+    void widthCheckRepCount(T_Rep* nodep) {
+        V3Const::constifyParamsNoWarnEdit(nodep->countp());
+        const AstConst* const constp = VN_CAST(nodep->countp(), Const);
+        if (!constp) {
+            nodep->v3error("Repetition count is not an elaboration-time constant"
+                           " (IEEE 1800-2023 16.9.2)");
+        } else if (constp->dtypep()->isSigned() && constp->num().isNegative()) {
+            nodep->v3error("Repetition count must be non-negative"
+                           " (IEEE 1800-2023 16.9.2)");
+        } else if (constp->num().mostSetBitP1() > 31) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: SVA repetition count exceeds implementation limit of 2147483647");
+        } else if (constp->isZero()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: zero repetition count"
+                                         " (IEEE 1800-2023 16.9.2)");
         }
     }
     // IEEE 1800-2023 16.9.2 range-form bound validation for goto/nonconsec.
@@ -2007,6 +2058,12 @@ class WidthVisitor final : public VNVisitor {
 
         // Delete the assignment node (we've extracted the value)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    void visit(AstCoverCross* nodep) override {
+        userIterateAndNext(nodep->itemsp(), nullptr);
+        if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
+        userIterateAndNext(nodep->optionsp(), nullptr);
+        userIterateAndNext(nodep->rawBodyp(), nullptr);
     }
     void visit(AstCoverpoint* nodep) override {
         // The coverpoint expression is self-determined (IEEE 1800-2023 19.5).  Width it
@@ -5603,10 +5660,8 @@ class WidthVisitor final : public VNVisitor {
                 patternAssoc(nodep, vdtypep, defaultp);
             } else if (auto* const vdtypep = VN_CAST(dtypep, WildcardArrayDType)) {
                 patternWildcard(nodep, vdtypep, defaultp);
-            } else if (auto* const vdtypep = VN_CAST(dtypep, DynArrayDType)) {
-                patternDynArray(nodep, vdtypep, defaultp);
-            } else if (auto* const vdtypep = VN_CAST(dtypep, QueueDType)) {
-                patternQueue(nodep, vdtypep, defaultp);
+            } else if (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)) {
+                patternDynArrayOrQueue(nodep, dtypep);
             } else if (VN_IS(dtypep, BasicDType) && VN_AS(dtypep, BasicDType)->isRanged()) {
                 patternBasic(nodep, dtypep, defaultp);
             } else {
@@ -5982,38 +6037,28 @@ class WidthVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
     }
-    void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember* defaultp) {
-        AstNodeExpr* newp = new AstConsDynArray{nodep->fileline()};
-        newp->dtypeFrom(arrayp);
-        for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
-             patp = VN_AS(patp->nextp(), PatMember)) {
-            patp->dtypep(arrayp->subDTypep());
-            AstNodeExpr* const rhsp = patternMemberValueIterate(patp);
-            const bool rhsIsValue
-                = AstNode::computeCastable(rhsp->dtypep(), arrayp->subDTypep(), nullptr)
-                      .isAssignable();
-            AstConsDynArray* const newap
-                = new AstConsDynArray{nodep->fileline(), rhsIsValue, rhsp, false, newp};
-            newap->dtypeFrom(arrayp);
-            newp = newap;
+    void patternDynArrayOrQueue(AstPattern* nodep, AstNodeDType* arrayp) {
+        AstNodeExpr* newp = nullptr;
+        const bool isDynArray = VN_IS(arrayp, DynArrayDType);
+        if (isDynArray) {
+            newp = new AstConsDynArray{nodep->fileline()};
+        } else {
+            newp = new AstConsQueue{nodep->fileline()};
         }
-        nodep->replaceWith(newp);
-        // UINFOTREE(9, newp, "", "apat-out");
-    }
-    void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember* defaultp) {
-        AstNodeExpr* newp = new AstConsQueue{nodep->fileline()};
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
             AstNodeExpr* const rhsp = patternMemberValueIterate(patp);
-            const bool rhsIsDirect
-                = AstNode::computeCastable(rhsp->dtypep(), arrayp, nullptr).isAssignable();
             const bool rhsIsValue
-                = AstNode::computeCastable(rhsp->dtypep(), arrayp->subDTypep(), nullptr)
+                = AstNode::computeCastable(arrayp->subDTypep(), rhsp->dtypep(), nullptr)
                       .isAssignable();
-            AstConsQueue* const newap = new AstConsQueue{
-                nodep->fileline(), !rhsIsDirect && rhsIsValue, rhsp, false, newp};
+            AstNodeExpr* newap = nullptr;
+            if (isDynArray) {
+                newap = new AstConsDynArray{nodep->fileline(), rhsIsValue, rhsp, false, newp};
+            } else {
+                newap = new AstConsQueue{nodep->fileline(), rhsIsValue, rhsp, false, newp};
+            }
             newap->dtypeFrom(arrayp);
             newp = newap;
         }
@@ -7539,9 +7584,11 @@ class WidthVisitor final : public VNVisitor {
                     relinkHandle.relink(newp);
                 }
                 if (portp->isWritable()) V3LinkLValue::linkLValueSet(pinp);
-                if (VN_IS(pinDTypep, BasicDType) && portp->direction() != VDirection::REF
-                    && (VN_IS(portDTypep, UnpackArrayDType) || VN_IS(portDTypep, DynArrayDType)
-                        || VN_IS(portDTypep, QueueDType) || VN_IS(portDTypep, AssocArrayDType))) {
+                if (portp->direction() != VDirection::REF
+                    && !(portp->basicp()
+                         && portp->basicp()->untyped())  // for properties, handled in V3AssertPre
+                    && ((VN_IS(portDTypep, BasicDType) && pinDTypep->isNonPackedArray())
+                        || (VN_IS(pinDTypep, BasicDType) && portDTypep->isNonPackedArray()))) {
                     pinp->v3error("Function Argument expects " << portDTypep->prettyDTypeNameQ()
                                                                << ", got "
                                                                << pinDTypep->prettyDTypeNameQ());

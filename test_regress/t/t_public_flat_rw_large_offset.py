@@ -9,10 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
+test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--assert', '--timing', '--lint-only'],
-             fails=True,
-             expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["--public-flat-rw -CFLAGS -Werror"])
 
 test.passes()

@@ -534,6 +534,11 @@ class TaskVisitor final : public VNVisitor {
             }
             postRhsp->dtypeFrom(outPinp);
         }
+        if (VN_IS(outPinp, IToRD) || VN_IS(outPinp, ISToRD)) {
+            outPinp = VN_AS(outPinp, NodeUniop)->lhsp();
+            postRhsp = new AstRToIRoundS{pinp->fileline(), postRhsp};
+            postRhsp->dtypeFrom(outPinp);
+        }
         // Put output assignment AFTER function call
         AstNodeExpr* const outPinClonep
             = pureCheck ? outPinp->cloneTreePure(true) : outPinp->cloneTree(true);
@@ -1388,10 +1393,9 @@ class TaskVisitor final : public VNVisitor {
         if (nodep->dpiExport()) {
             AstScopeName* const snp = nodep->scopeNamep();
             UASSERT_OBJ(snp, nodep, "Missing scoping context");
-            // The AstScopeName is really a statement(ish) for tracking, not a function
             snp->dpiExport(true);
             snp->unlinkFrBack();
-            cfuncp->addStmtsp(snp);
+            cfuncp->scopeNamep(snp);
         }
 
         // Create list of arguments and move to function
