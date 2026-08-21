@@ -37,16 +37,20 @@ package P;
     endclass
   endclass
 
-  // Traits-class shape: types derived from a struct config parameter
-  typedef struct packed {
+  // Traits-class shape: types derived from a nested unpacked struct config parameter
+  typedef struct {
     int depth;
+  } memory_config_t;
+
+  typedef struct {
+    memory_config_t memory;
     int counters;
   } config_t;
 
   virtual class cfg #(
-      parameter config_t c
+      config_t c
   );
-    localparam int width = $clog2(c.depth);
+    localparam int width = $clog2(c.memory.depth);
     localparam int counters = c.counters;
     typedef logic [width-1:0] data_t;
   endclass
@@ -90,9 +94,11 @@ module t;
   localparam int na = P::Plain::n;
   localparam int nb = P::Par#(12)::n;
 
-  localparam P::config_t CFG = '{depth: 4096, counters: 4};
+  localparam P::config_t CFG = '{memory: '{depth: 4096}, counters: 4};
+  localparam P::config_t CFG2 = '{memory: '{depth: 32768}, counters: 7};
   typedef struct packed { logic [7:0] hi; } stk_t;
   P::cfg#(CFG)::data_t din, dout;
+  P::cfg#(CFG2)::data_t din2;
 
   Sub #(.cfg(CFG), .stk_t(stk_t)) sub (
       .din  (din),
@@ -107,11 +113,13 @@ module t;
     c = '0;
     d = '0;
     din = '0;
+    din2 = '0;
     `checkh($bits(a), 8);
     `checkh($bits(b), 12);
     `checkh($bits(c), 5);
     `checkh($bits(d), 7);
     `checkh($bits(dout), 12);
+    `checkh($bits(din2), 15);
     `checkh(na, 32'd8);
     `checkh(nb, 32'd12);
     $write("*-* All Finished *-*\n");
