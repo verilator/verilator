@@ -1370,10 +1370,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     } else if (!boundp) {
                         irp->v3error("Non-constant expression in bin range; "
                                      "range bounds must be constants");
+                        if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                         return nullptr;
                     } else if (boundp->num().isFourState()) {
                         irp->v3error("Four-state (x/z) value in bin range bound; "
                                      "range bounds must be two-state constants");
+                        if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                         return nullptr;
                     } else {
                         rangeCondp = makeOpenRangeCondition(irp->fileline(), exprp, boundp,
@@ -1382,10 +1384,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 } else if (!minConstp || !maxConstp) {
                     irp->v3error("Non-constant expression in bin range; "
                                  "range bounds must be constants");
+                    if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                     return nullptr;
                 } else if (minConstp->num().isFourState() || maxConstp->num().isFourState()) {
                     irp->v3error("Four-state (x/z) value in bin range bound; "
                                  "range bounds must be two-state constants");
+                    if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                     return nullptr;
                 } else if (minConstp->toUQuad() == maxConstp->toUQuad()) {
                     // Single value
@@ -1411,6 +1415,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             } else {
                 currRangep->v3error(
                     "Non-constant expression in bin range; values must be constants");
+                if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                 return nullptr;
             }
 
