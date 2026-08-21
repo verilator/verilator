@@ -81,6 +81,7 @@ module t;
   parameter int TOL_PCT = 30;  // +-% tolerance on expected counts
 
   initial begin
+    int randomize_result;
 
     // --- T1: scalar uniform [0:9] ---
     // 10 values, expected N/10 each
@@ -89,7 +90,8 @@ module t;
       int cnt[10];
       foreach (cnt[v]) cnt[v] = 0;
       repeat (N) begin
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         if (obj.x > 4'd9) begin
           $write("%%Error: x=%0d outside valid range [0:9]\n", obj.x);
           `stop;
@@ -106,7 +108,8 @@ module t;
       int cnt[5];
       foreach (cnt[v]) cnt[v] = 0;
       repeat (N) begin
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           if (obj.a[i] > 3'd4) begin
             $write("%%Error: a[%0d]=%0d outside valid range [0:4]\n", i, obj.a[i]);
@@ -127,7 +130,8 @@ module t;
       int cnt[10];
       foreach (cnt[v]) cnt[v] = 0;
       repeat (N) begin
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           if (obj.a[i] > 4'd9) begin
             $write("%%Error: a[%0d]=%0d outside valid range [0:9]\n", i, obj.a[i]);
@@ -148,7 +152,8 @@ module t;
       int cnt[10];
       foreach (cnt[v]) cnt[v] = 0;
       repeat (N) begin
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         if (obj.x < -9 || obj.x > 0) begin
           $write("%%Error: x=%0d outside valid range [-9:0]\n", obj.x);
           `stop;
@@ -165,7 +170,8 @@ module t;
       int cnt[16];
       foreach (cnt[v]) cnt[v] = 0;
       repeat (N) begin
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         if (obj.x < 4'd2 || obj.x > 4'd7) begin
           $write("%%Error: x=%0d outside valid range [2:7]\n", obj.x);
           `stop;
@@ -182,7 +188,8 @@ module t;
       int cnt[16];
       foreach (cnt[v]) cnt[v] = 0;
       repeat (N) begin
-        `checkd(obj.randomize(), 1)
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         if (obj.x < 4'd1 || obj.x > 4'd7) begin
           $write("%%Error: x=%0d outside valid range [1:7]\n", obj.x);
           `stop;

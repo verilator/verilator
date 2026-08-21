@@ -9,10 +9,12 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-interface inf #(parameter int PARAM = 1);
+interface ifc #(
+    parameter int PARAM = 1
+);
   logic [PARAM-1:0] v;
   // A non-Var/non-GenBlock item the member gather must skip past
-  modport mp (input v);
+  modport mp(input v);
   if (1) begin : blk_decoy
     // Same name as the real parameter below, but not a parameter
     logic PARAM_IF;
@@ -25,7 +27,9 @@ interface inf #(parameter int PARAM = 1);
   end
 endinterface
 
-module GenericModule (interface.mp a);
+module GenericModule (
+    interface.mp a
+);
   // Two references to the same member, so the second reuses the gathered members
   localparam int LOC_PARAM1 = a.PARAM;
   localparam int LOC_PARAM2 = a.PARAM;
@@ -43,7 +47,7 @@ module GenericModule (interface.mp a);
 endmodule
 
 module t;
-  inf #(.PARAM(13)) inf_inst();
+  ifc #(.PARAM(13)) inf_inst ();
   GenericModule genericModule (inf_inst);
   initial begin
     inf_inst.v = 7;

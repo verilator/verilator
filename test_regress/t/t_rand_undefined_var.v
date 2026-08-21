@@ -34,12 +34,14 @@ endclass
 module t;
   initial begin
     static Foo foo = new;
+    int randomize_result;
     `checkd(foo.bar0.size(), 1);
     `checkd(foo.bar1.size(), 1);
     `checkd(foo.bar0[0].x, 0);
     `checkd(foo.bar1[0].x, 0);
     repeat (100) begin
-      `checkd(foo.randomize(), 1);
+      randomize_result = foo.randomize();
+      `checkd(randomize_result, 1);
       `checkd(foo.bar0.size(), 1);
       `checkd(foo.bar1.size(), 1);
       // Noting prevents x == 0 but it is pretty safe to assume that it won't be a zero (1/2^32)

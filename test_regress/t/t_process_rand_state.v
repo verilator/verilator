@@ -24,6 +24,7 @@ class test;
   task run_phase;
     process p;
     uint8_t result;
+    int randomize_result;
     string randstate;
 
     // Pass 1: seed process, create object, randomize, record result
@@ -32,14 +33,16 @@ class test;
     d = new;
     // Save randstate AFTER d=new (d=new advances process RNG per IEEE 18.14.1)
     randstate = p.get_randstate();
-    `checkd(d.randomize(), 1);
+    randomize_result = d.randomize();
+    `checkd(randomize_result, 1);
     result = d.x;
 
     // Pass 2: same seed -> same sequence -> same result
     p.srandom(100);
     d = new;
     `checks(p.get_randstate(), randstate);
-    `checkd(d.randomize(), 1);
+    randomize_result = d.randomize();
+    `checkd(randomize_result, 1);
     `checkd(d.x, result);
 
     // Pass 3: same seed, with intervening task call -> same result
@@ -47,7 +50,8 @@ class test;
     other_task();
     d = new;
     `checks(p.get_randstate(), randstate);
-    `checkd(d.randomize(), 1);
+    randomize_result = d.randomize();
+    `checkd(randomize_result, 1);
     `checkd(d.x, result);
   endtask
 

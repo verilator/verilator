@@ -9,11 +9,15 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-interface inf #(parameter int PARAM = 1);
+interface ifc #(
+    parameter int PARAM = 1
+);
   logic [PARAM-1:0] v;
 endinterface
 
-module leaf (interface d);
+module leaf (
+    interface d
+);
   initial begin
     #1;
     `checkd(d.v, 13);
@@ -21,17 +25,21 @@ module leaf (interface d);
   end
 endmodule
 
-module mid2 (interface c);
-  leaf leaf_i(.d(c));
+module mid2 (
+    interface c
+);
+  leaf leaf_i (.d(c));
 endmodule
 
-module mid1 (interface b);
-  mid2 mid2_i(.c(b));
+module mid1 (
+    interface b
+);
+  mid2 mid2_i (.c(b));
 endmodule
 
 module t;
-  inf #(.PARAM(5)) a();
-  mid1 mid1_i(.b(a));
+  ifc #(.PARAM(5)) a ();
+  mid1 mid1_i (.b(a));
   initial begin
     a.v = 13;
     $write("*-* All Finished *-*\n");

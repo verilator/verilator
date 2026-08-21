@@ -5,6 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `ifdef T_V2020_3_1
+`define T_NEED_REPORT_ERROR
+`endif
+`ifdef T_V2020_3_2
+`define T_NEED_REPORT_ERROR
+`endif
+
+`ifdef T_NEED_REPORT_ERROR
 function void uvm_report_error(string a, string b);
   $display("uvm_report_error(\"%s\", \"%s\")", a, b);
 endfunction

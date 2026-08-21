@@ -226,6 +226,7 @@ endclass
 
 module t;
   initial begin
+    int randomize_result;
     // dist inside if + foreach stays in range and reaches both buckets
     begin
       static ClsIf obj = new();
@@ -234,7 +235,8 @@ module t;
       seen_zero = 0;
       seen_nonzero = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           `checkd((obj.a[i] inside {[4'd0 : 4'd4]}), 1'b1);
           if (obj.a[i] == 0) seen_zero++;
@@ -253,7 +255,8 @@ module t;
       seen_zero = 0;
       seen_nonzero = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           `checkd((obj.a[i] inside {[4'd0 : 4'd4]}), 1'b1);
           if (obj.a[i] == 0) seen_zero++;
@@ -265,7 +268,8 @@ module t;
       obj.gate = 1'b0;
       seen_else = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           `checkd((obj.a[i] inside {[4'd8 : 4'd11]}), 1'b1);
           seen_else++;
@@ -283,7 +287,8 @@ module t;
       seen_zero = 0;
       seen_nonzero = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           `checkd((obj.a[i] inside {[4'd0 : 4'd4]}), 1'b1);
           if (obj.a[i] == 0) seen_zero++;
@@ -302,7 +307,8 @@ module t;
       seen_low = 0;
       seen_high = 0;
       repeat (100) begin
-        `checkd(obj.randomize() with {sel == 1'b1;}, 1);
+        randomize_result = obj.randomize() with {sel == 1'b1;};
+        `checkd(randomize_result, 1);
         `checkd(obj.sel, 1'b1);
         foreach (obj.a[i]) begin
           `checkd((obj.a[i] inside {[3'd0 : 3'd5]}), 1'b1);
@@ -323,7 +329,8 @@ module t;
       seen_low = 0;
       seen_high = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           `checkd((obj.a[i] inside {[3'd0 : 3'd5]}), 1'b1);
           `checkd(obj.b[i], 3'd7);
@@ -344,7 +351,8 @@ module t;
       seen_low = 0;
       seen_high = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.m[i]) begin
           foreach (obj.m[i][j]) begin
             `checkd((obj.m[i][j] inside {[3'd0 : 3'd5]}), 1'b1);
@@ -367,7 +375,8 @@ module t;
       seen_mixed = 0;
       repeat (100) begin
         int seen_lo, seen_hi;
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         seen_lo = 0;
         seen_hi = 0;
         foreach (obj.a[i]) begin
@@ -388,7 +397,8 @@ module t;
       seen_low = 0;
       seen_high = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         `checkd(obj.q.size(), 4);
         foreach (obj.q[i]) begin
           `checkd((obj.q[i] inside {[3'd0 : 3'd5]}), 1'b1);
@@ -409,7 +419,8 @@ module t;
       seen_low = 0;
       seen_high = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         `checkd(obj.d.size(), 4);
         foreach (obj.d[i]) begin
           `checkd((obj.d[i] inside {[3'd0 : 3'd5]}), 1'b1);
@@ -432,7 +443,8 @@ module t;
       seen_low = 0;
       seen_high = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           `checkd((obj.a[i] inside {[3'd0 : 3'd5]}), 1'b1);
           if (obj.a[i] <= 1) seen_low++;
@@ -452,7 +464,8 @@ module t;
       seen_low = 0;
       seen_high = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.m[i]) begin
           foreach (obj.m[i][j]) begin
             `checkd((obj.m[i][j] inside {[3'd0 : 3'd5]}), 1'b1);
@@ -475,7 +488,8 @@ module t;
       seen_low = 0;
       seen_high = 0;
       repeat (100) begin
-        `checkd(obj.randomize(), 1);
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
         foreach (obj.a[i]) begin
           `checkd((obj.a[i] inside {[3'd0 : 3'd5]}), 1'b1);
           if (obj.a[i] <= 1) seen_low++;

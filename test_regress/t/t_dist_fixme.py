@@ -14,6 +14,8 @@ test.scenarios('dist')
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
+Exempt_Re = r'(test_regress/t/uvm/.*/dpi/uvm_hdl_xcelium.c)'
+
 ### Must trim output before and after our file list
 files = test.run_capture("cd " + test.root + " && git ls-files --exclude-standard")
 if test.verbose:
@@ -24,6 +26,8 @@ files = re.sub(r'\s+', ' ', files)
 
 regex = r'(FIX[M]E|BO[Z]O)'
 for filename in files.split():
+    if re.search(Exempt_Re, filename):
+        continue
     if re.search(regex, filename):
         names[filename] = True
     filename = os.path.join(test.root, filename)

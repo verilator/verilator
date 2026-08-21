@@ -816,6 +816,7 @@ bool DfgVertex::isCheaperThanLoad() const {
     if (is<DfgConst>()) return true;
     // Variables
     if (is<DfgVertexVar>()) return true;
+    if (is<DfgPrev>()) return true;
     // Array sels are just address computation, but the address itself can be expensive
     if (const DfgArraySel* aselp = cast<DfgArraySel>()) {
         if (aselp->bitp()->is<DfgMatchMasked>()) return false;
@@ -828,6 +829,13 @@ bool DfgVertex::isCheaperThanLoad() const {
         const uint32_t lsb = selp->lsb();
         const uint32_t msb = lsb + selp->width() - 1;
         return VL_BITWORD_E(msb) == VL_BITWORD_E(lsb);
+    }
+    // Replication of a single cheap bit. Each word of the result is the same
+    // mask computed by negating that bit, so recomputing it at each use costs
+    // no more than the load it replaces.
+    if (const DfgRep* const repp = cast<DfgRep>()) {
+        const DfgVertex* const srcp = repp->srcp();
+        return srcp->width() == 1 && srcp->isCheaperThanLoad();
     }
     // Zero extend of a cheap vertex - Extend(_) was converted to Concat(0, _)
     if (const DfgConcat* const catp = cast<DfgConcat>()) {

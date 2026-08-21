@@ -8,6 +8,7 @@
 // Test iff (enable) guard: sampling is gated by the enable condition.
 // Covers iff on explicit value bins, default bin, array bins,
 // simple 2-step transition, and 3-step transition.
+// Also covers coverpoint iff propagation into crosses and cross-level iff guards.
 //
 // Also covers compound iff expressions (&&, ||, unary !, bit/part-select,
 // relational compare, parenthesized bitwise, and a concatenation-valued
@@ -20,6 +21,30 @@
 `define stop $stop
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
+
+class CrossIffEmbedded;
+  bit a;
+  bit b;
+  bit enabled;
+
+  // cross-level iff using an enclosing class member
+  covergroup cg;
+    cp_a: coverpoint a {bins one = {1};}
+    cp_b: coverpoint b {bins one = {1};}
+    cross_ab: cross cp_a, cp_b iff (this.enabled);
+  endgroup
+
+  function new();
+    cg = new;
+  endfunction
+
+  function void observe(bit next_a, bit next_b, bit next_enabled);
+    a = next_a;
+    b = next_b;
+    enabled = next_enabled;
+    cg.sample();
+  endfunction
+endclass
 
 module t;
   logic enable;
@@ -96,6 +121,29 @@ module t;
     cp: coverpoint count iff ((m_a & m_b) == 2'b10) {bins seven = {7};}
   endgroup
 
+  // coverpoint-level iff only; the cross has no guard
+  covergroup cg_cross_coverpoint_iff with function sample(
+      bit a, bit b, bit enable_a, bit enable_b);
+    cp_a: coverpoint a iff (enable_a) {bins one = {1};}
+    cp_b: coverpoint b iff (enable_b) {bins one = {1};}
+    cross_ab: cross cp_a, cp_b;
+  endgroup
+
+  // coverpoint-level and cross-level iff together
+  covergroup cg_cross_iff with function sample(
+      bit a, bit b, bit enable_a, bit enable_b, bit enable_cross);
+    cp_a: coverpoint a iff (enable_a) {bins one = {1};}
+    cp_b: coverpoint b iff (enable_b) {bins one = {1};}
+    cross_ab: cross cp_a, cp_b iff (enable_cross && (a == b));
+  endgroup
+
+  // cross-level iff only; also exercise an unnamed cross
+  covergroup cg_cross_iff_unnamed with function sample(bit a, bit b, bit disable_cross);
+    cp_a: coverpoint a {bins one = {1};}
+    cp_b: coverpoint b {bins one = {1};}
+    cross cp_a, cp_b iff (!disable_cross) {}
+  endgroup
+
   cg_iff cg1 = new;
   cg_default_iff cg2 = new;
   cg_array_iff cg3 = new;
@@ -106,8 +154,24 @@ module t;
   cg_part cpp = new;
   cg_rel cr = new;
   cg_bitw cb = new;
+  cg_cross_coverpoint_iff cxc = new;
+  cg_cross_iff cx = new;
+  cg_cross_iff_unnamed cxu = new;
+  CrossIffEmbedded cxe = new;
 
   initial begin
+    cxc.sample(1, 1, 0, 1);
+    cxc.sample(1, 1, 1, 0);
+    cxc.sample(1, 1, 1, 1);
+    cx.sample(1, 1, 0, 1, 1);
+    cx.sample(1, 1, 1, 0, 1);
+    cx.sample(1, 1, 1, 1, 0);
+    cx.sample(1, 1, 1, 1, 1);
+    cxu.sample(1, 1, 1);
+    cxu.sample(1, 1, 0);
+    cxe.observe(1, 1, 0);
+    cxe.observe(1, 1, 1);
+
     // Sample disabled_lo and disabled_hi with enable=0 -- must not be recorded
     enable = 0;
     value = 1;

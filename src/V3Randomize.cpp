@@ -1218,6 +1218,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         return preamblep;
     }
 
+    // Create SFormatF for array dereference inside solver
+    AstSFormatF* createSolverArrDerefp(FileLine* const fl, AstNodeExpr* const arrExprp,
+                                       AstNodeExpr* const idxExprp) {
+        AstNodeExpr* const argsp = AstNode::addNext(arrExprp, idxExprp);
+        AstSFormatF* const formatp = new AstSFormatF{fl, "(select %s %s)", false, argsp};
+        return formatp;
+    }
+
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         AstVar* varp = nodep->varp();
@@ -2658,9 +2666,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             iterateChildren(nodep);
             AstNodeExpr* const pinp = nodep->pinsp()->unlinkFrBack();
             if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%x");
-            AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
             AstSFormatF* newp;
             if (m_structSel) {
+                AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
                 sizep->dtypeSetInt();
                 AstLogAnd* const condp = new AstLogAnd{
                     fl,
@@ -2671,7 +2679,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 m_conditionp = m_conditionp ? new AstLogAnd{fl, m_conditionp, condp} : condp;
                 newp = new AstSFormatF{fl, "%s.%s", false, argsp};
             } else {
-                newp = new AstSFormatF{fl, "(select %s %s)", false, argsp};
+                newp = createSolverArrDerefp(fl, nodep->fromp()->unlinkFrBack(), pinp);
             }
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2746,6 +2754,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 nodep->user1(false);
                 if (editFormat(nodep)) return;
                 nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
+                return;
+            }
+            if (!VN_IS(nodep->fromp(), VarRef)) {
+                // Non-dynamic subarrays and member arrays are handled in other parts of code
+                nodep->v3warn(CONSTRAINTIGN, "Unsupported: Array reduction constraint on dynamic "
+                                             "array inside array or struct");
                 return;
             }
 
@@ -2876,34 +2890,40 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeModule* const genModulep = VN_AS(m_genp->user2p(), NodeModule);
                 arrVarp->user3(true);
 
-                // Create variable name using AstSFormatF
-                AstSFormatF* const varNamep = new AstSFormatF{
-                    fl, smtArrayName + "_%x", false, new AstVarRef{fl, loopVarp, VAccess::READ}};
+                // Add write_var call to init task
+                AstNodeExpr* const arrVarNamep
+                    = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + smtArrayName + "\"", elemWidth};
+                AstCMethodHard* const writeVarCallp
+                    = new AstCMethodHard{fl, new AstVarRef{fl, genModulep, m_genp, VAccess::READ},
+                                         VCMethod::RANDOMIZER_WRITE_VAR};
+                writeVarCallp->addPinsp(new AstVarRef{fl, arrModulep, arrVarp, VAccess::READ});
+                writeVarCallp->addPinsp(
+                    new AstConst{fl, AstConst::Unsized64{}, static_cast<uint64_t>(elemWidth)});
+                writeVarCallp->addPinsp(arrVarNamep);
+                const uint32_t unpackedDims = arrVarp->dtypep()->dimensions(false).second;
+                UASSERT_OBJ(unpackedDims == 1, arrVarp, "Array isn't 1-D");
+                writeVarCallp->addPinsp(new AstConst{fl, 1});  // Dimension
 
-                // Create array element reference: array.atWrite(index)
-                AstCMethodHard* const atWritep = new AstCMethodHard{
-                    fl, new AstVarRef{fl, arrModulep, arrVarp, VAccess::READWRITE},
-                    VCMethod::ARRAY_AT_WRITE, new AstVarRef{fl, loopVarp, VAccess::READ}};
-                atWritep->dtypeFrom(elemDtp);
+                const RandomizeMode randMode = {.asInt = arrVarp->user1()};
+                if (randMode.usesMode) {
+                    writeVarCallp->addPinsp(
+                        new AstConst{fl, AstConst::Unsized64{}, randMode.index});
+                }
+                writeVarCallp->dtypeSetVoid();
+                AstNodeFTask* initTaskp = m_inlineInitTaskp;
+                if (!initTaskp) {
+                    initTaskp = VN_AS(m_memberMap.findMember(arrModulep, "new"), NodeFTask);
+                    UASSERT_OBJ(initTaskp, arrModulep, "No new() in class");
+                }
+                initTaskp->addStmtsp(writeVarCallp->makeStmt());
 
-                // Convert std::string to const char* for write_var
-                AstCExpr* const varNameCStrp = new AstCExpr{fl, AstCExpr::Pure{}};
-                varNameCStrp->dtypeSetString();
-                varNameCStrp->add("(");
-                varNameCStrp->add(varNamep->cloneTree(false));
-                varNameCStrp->add(").c_str()");
+                // Create solver constraints
+                AstSFormatF* const idxFormatp = new AstSFormatF{
+                    fl, "#x%08x", false, new AstVarRef{fl, loopVarp, VAccess::READ}};
+                iterateChildren(nodep);
+                AstSFormatF* const varNamep
+                    = createSolverArrDerefp(fl, nodep->fromp()->unlinkFrBack(), idxFormatp);
 
-                // Create write_var method call: gen.write_var(arrElement, width, name, 0)
-                AstCMethodHard* const writeVarp = new AstCMethodHard{
-                    fl, new AstVarRef{fl, genModulep, m_genp, VAccess::READWRITE},
-                    VCMethod::RANDOMIZER_WRITE_VAR, atWritep};
-                writeVarp->addPinsp(new AstConst{fl, AstConst::WidthedValue{}, 64,
-                                                 static_cast<uint32_t>(elemWidth)});
-                writeVarp->addPinsp(varNameCStrp);
-                writeVarp->addPinsp(new AstConst{fl, AstConst::WidthedValue{}, 64, 0});
-                writeVarp->dtypeSetVoid();
-
-                cstmtp->add(writeVarp->makeStmt());
                 cstmtp->add("ret += \" \";\n");
                 cstmtp->add("ret += ");
                 cstmtp->add(varNamep);

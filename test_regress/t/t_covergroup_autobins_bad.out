@@ -85,4 +85,28 @@
                                                       : ... note: In instance 't'
    73 |       bins b_huge[] = {[0:$]};   
       |            ^~~~~~
+%Error: t/t_covergroup_autobins_bad.v:84:41: Non-constant expression in bin range; values must be constants
+                                           : ... note: In instance 't'
+   84 |     cp_a: coverpoint cp_expr {bins x = {size_var};}
+      |                                         ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:89:41: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   89 |     cp_a: coverpoint cp_expr {bins x = {[size_var : 1]};}
+      |                                         ^
+%Error: t/t_covergroup_autobins_bad.v:94:41: Non-constant expression in bin range; range bounds must be constants
+                                           : ... note: In instance 't'
+   94 |     cp_a: coverpoint cp_expr {bins x = {[0 : size_var]};}
+      |                                         ^
+%Error: t/t_covergroup_autobins_bad.v:99:36: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+                                           : ... note: In instance 't'
+   99 |     cp_a: coverpoint cp_expr {bins x[] = {[4'b000x : 4'hF]};}
+      |                                    ^
+%Error: t/t_covergroup_autobins_bad.v:104:36: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+                                            : ... note: In instance 't'
+  104 |     cp_a: coverpoint cp_expr {bins x[] = {[4'h0 : 4'b000x]};}
+      |                                    ^
+%Error: t/t_covergroup_autobins_bad.v:109:36: Non-constant expression in array bins value list; values must be constants
+                                            : ... note: In instance 't'
+  109 |     cp_a: coverpoint cp_expr {bins x[] = {size_var};}
+      |                                    ^
 %Error: Exiting due to

@@ -5,10 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  input clk
-  );
+    input clk
+);
 
-  integer cyc; initial cyc=1;
+  integer cyc;
+  initial cyc = 1;
 
   logic [31:0] a;
 
@@ -28,13 +29,13 @@ module t (
   assign (weak0, weak1) nt15 = a[0];
   // verilator lint_on IMPLICIT
 
-  always @ (posedge clk) begin
-    if (cyc!=0) begin
+  always @(posedge clk) begin
+    if (cyc != 0) begin
       cyc <= cyc + 1;
-      if (cyc==1) begin
+      if (cyc == 1) begin
         a <= 32'h18f6b030;
       end
-      if (cyc==2) begin
+      if (cyc == 2) begin
         a <= 32'h18f6b03f;
         if (nt00 !== 1'b0) $stop;
         if (nt01 !== 1'b0) $stop;
@@ -49,7 +50,7 @@ module t (
         if (nt14 !== 1'b0) $stop;
         if (nt15 !== 1'b0) $stop;
       end
-      if (cyc==3) begin
+      if (cyc == 3) begin
         if (nt00 !== 1'b1) $stop;
         if (nt01 !== 1'b1) $stop;
         if (nt02 !== 1'b1) $stop;
@@ -63,7 +64,7 @@ module t (
         if (nt14 !== 1'b1) $stop;
         if (nt15 !== 1'b1) $stop;
       end
-      if (cyc==4) begin
+      if (cyc == 4) begin
         $write("*-* All Finished *-*\n");
         $finish;
       end

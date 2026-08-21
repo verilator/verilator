@@ -536,6 +536,7 @@ PY_PROGRAMS = \
   src/vlcovgen \
   test_regress/*.py \
   test_regress/t/*.pf \
+  test_regress/t/randomize_solver_tamper.py \
 
 # Python files, subject to format but not lint
 PY_FILES = \

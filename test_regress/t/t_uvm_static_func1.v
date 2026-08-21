@@ -14,7 +14,7 @@
 package uvm_pkg;
 
   class uvm_tlm_extension #(
-    type T = int
+      type T = int
   );
     static function int ID();
       return 42;

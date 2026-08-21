@@ -104,13 +104,6 @@ jobs:
     if: ${{ contains(needs.*.result, 'success') && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
-      - name: Install dependencies
-        run: |
-          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
-          sudo dpkg-reconfigure man-db
-          sudo apt install lcov || \
-          sudo apt install lcov
-
       - name: Download repository archive
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
@@ -121,6 +114,11 @@ jobs:
         run: |
           tar --zstd -x -f ${{ needs.build.outputs.archive }}
           ls -lsha
+
+      - name: Install dependencies
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: coverage
 
       - name: Download code coverage data
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8

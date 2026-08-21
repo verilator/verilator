@@ -1,0 +1,5 @@
+vpi_chk_error: vpi_put_value: Unsupported p_vpi_value as requested for 't.delayed' with vpiInertialDelay
+vpi_chk_error: vpi_put_value: Unsupported p_vpi_value as requested for 't.delayed' with vpiInertialDelay
+vpi_chk_error: Ignoring vpi_put_value with nullptr value pointer
+%Info: Checking results
+*-* All Finished *-*

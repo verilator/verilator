@@ -25,6 +25,9 @@ test.compile(
     ],
     v_flags2=["+define+USE_VPI_NOT_DPI"])
 
-test.execute(xrun_flags2=["+define+USE_VPI_NOT_DPI"], use_libvpi=True, check_finished=True)
+test.execute(xrun_flags2=["+define+USE_VPI_NOT_DPI"],
+             use_libvpi=True,
+             check_finished=True,
+             expect_filename=test.golden_filename)
 
 test.passes()

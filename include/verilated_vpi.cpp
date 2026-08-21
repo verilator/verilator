@@ -2489,7 +2489,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
         return vop->castVpiHandle();
     }
     default:
-        VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Unsupported callback type %s", __func__,
+        VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Unsupported callback type '%s'", __func__,
                         VerilatedVpiError::strFromVpiCallbackReason(reason));
         return nullptr;
     }
@@ -2935,7 +2935,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
             return (new VerilatedVpioConst{vop->rangep()->left()})->castVpiHandle();
         }
         VL_VPI_WARNING_(__FILE__, __LINE__,
-                        "%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned",
+                        "%s: Unsupported vpiHandle '%p' for type '%s', nothing will be returned",
                         __func__, object, VerilatedVpiError::strFromVpiMethod(type));
         return nullptr;
     }
@@ -2949,7 +2949,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
             return (new VerilatedVpioConst{vop->rangep()->right()})->castVpiHandle();
         }
         VL_VPI_WARNING_(__FILE__, __LINE__,
-                        "%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned",
+                        "%s: Unsupported vpiHandle '%p' for type '%s', nothing will be returned",
                         __func__, object, VerilatedVpiError::strFromVpiMethod(type));
         return nullptr;
     }
@@ -3110,8 +3110,9 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         [[fallthrough]];
     }
     default:
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property %s, nothing will be returned",
-                      __func__, VerilatedVpiError::strFromVpiProp(property));
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: Unsupported property '%s', nothing will be returned", __func__,
+                      VerilatedVpiError::strFromVpiProp(property));
         return vpiUndefined;
     }
 }
@@ -3577,7 +3578,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
                       VerilatedVpiError::strFromVpiVal(valuep->format), vop->fullname());
         return;
     }
-    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
 }
 
 vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_p*/,
@@ -3918,7 +3919,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                         __func__, vop->fullname());
         return nullptr;
     }
-    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
     return nullptr;
 }
 
@@ -4313,13 +4314,13 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(!vop)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
         return;
     }
 
     if (vop->type() != vpiRegArray) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %s)", __func__, object,
-                      VerilatedVpiError::strFromVpiObjType(vop->type()));
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type '%s' for '%s'", __func__,
+                      VerilatedVpiError::strFromVpiObjType(vop->type()), vop->name());
         return;
     }
 
@@ -4495,13 +4496,13 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(!vop)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
         return;
     }
 
     if (vop->type() != vpiRegArray) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %s)", __func__, object,
-                      VerilatedVpiError::strFromVpiObjType(vop->type()));
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle type '%s' for '%s'", __func__,
+                      VerilatedVpiError::strFromVpiObjType(vop->type()), vop->name());
         return;
     }
 
