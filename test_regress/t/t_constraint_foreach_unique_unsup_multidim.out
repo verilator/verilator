@@ -1,23 +1,39 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:13:36: Unsupported: Unique constraint on other than a 1-D array slice
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:15:36: Unsupported: Unique constraint on other than a 1-D array slice
                                                                             : ... note: In instance 't'
-   13 |   constraint c1 {foreach (cube[i]) unique {cube[i]};}
+   15 |   constraint c1 {foreach (cube[i]) unique {cube[i]};}
       |                                    ^~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:21:42: Unsupported: Unique constraint on other than a 1-D array slice
-                                                                            : ... note: In instance 't'
-   21 |   constraint c1 {foreach (queue_rows[i]) unique {queue_rows[i]};}
-      |                                          ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:22:43: Unsupported: Unique constraint on other than a 1-D array slice
-                                                                            : ... note: In instance 't'
-   22 |   constraint c2 {foreach (dynarr_rows[i]) unique {dynarr_rows[i]};}
-      |                                           ^~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:23:42: Unsupported: Unique constraint on other than a 1-D array slice
                                                                             : ... note: In instance 't'
-   23 |   constraint c3 {foreach (assoc_rows[i]) unique {assoc_rows[i]};}
+   23 |   constraint c1 {foreach (queue_rows[i]) unique {queue_rows[i]};}
       |                                          ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:24:41: Unsupported: Unique constraint on other than a 1-D array slice
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:24:43: Unsupported: Unique constraint on other than a 1-D array slice
                                                                             : ... note: In instance 't'
-   24 |   constraint c4 {foreach (wild_rows[i]) unique {wild_rows[i]};}
+   24 |   constraint c2 {foreach (dynarr_rows[i]) unique {dynarr_rows[i]};}
+      |                                           ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:25:42: Unsupported: Unique constraint on other than a 1-D array slice
+                                                                            : ... note: In instance 't'
+   25 |   constraint c3 {foreach (assoc_rows[i]) unique {assoc_rows[i]};}
+      |                                          ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:26:41: Unsupported: Unique constraint on other than a 1-D array slice
+                                                                            : ... note: In instance 't'
+   26 |   constraint c4 {foreach (wild_rows[i]) unique {wild_rows[i]};}
       |                                         ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:34:41: Unsupported: Unique constraint on other than a 1-D array slice
+                                                                            : ... note: In instance 't'
+   34 |   constraint c1 {foreach (queue_row[i]) unique {queue_row[i]};}
+      |                                         ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:35:42: Unsupported: Unique constraint on other than a 1-D array slice
+                                                                            : ... note: In instance 't'
+   35 |   constraint c2 {foreach (dynarr_row[i]) unique {dynarr_row[i]};}
+      |                                          ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:36:41: Unsupported: Unique constraint on other than a 1-D array slice
+                                                                            : ... note: In instance 't'
+   36 |   constraint c3 {foreach (assoc_row[i]) unique {assoc_row[i]};}
+      |                                         ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_multidim.v:37:40: Unsupported: Unique constraint on other than a 1-D array slice
+                                                                            : ... note: In instance 't'
+   37 |   constraint c4 {foreach (wild_row[i]) unique {wild_row[i]};}
+      |                                        ^~~~~~
 %Error: Exiting due to

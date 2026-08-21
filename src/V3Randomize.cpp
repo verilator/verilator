@@ -2467,6 +2467,16 @@ class ConstraintExprVisitor final : public VNVisitor {
                 UASSERT_OBJ(varModp, nodep, "varp has no NodeModule set");
                 AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
 
+                // A sole plain-scalar item is trivially unique; a scalar
+                // alongside others (unique{x, arr}) still needs the warning
+                // below, so only skip when it's genuinely the only item.
+                const bool soleItem = itemp == nodep->rangesp() && !itemp->nextp();
+                if (soleItem && !VN_IS(dtypep, UnpackArrayDType) && !VN_IS(dtypep, DynArrayDType)
+                    && !VN_IS(dtypep, QueueDType) && !VN_IS(dtypep, AssocArrayDType)
+                    && !VN_IS(dtypep, WildcardArrayDType)) {
+                    continue;
+                }
+
                 const static auto dynDTypeSupported
                     = [](const AstNodeDType* const dtypep) -> bool {
                     return VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)
@@ -3500,6 +3510,33 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return false;
     }
+    // Total leaf-element count of dtp, recursing through nested fixed-size
+    // arrays. 1 for a non-array (scalar) type; 0 if any dimension along the
+    // way is dynamically sized (queue/dynamic/associative/wildcard array),
+    // since that count isn't known until runtime.
+    static uint64_t totalLeafElementsIfStatic(const AstNodeDType* dtp) {
+        if (const AstUnpackArrayDType* const up = VN_CAST(dtp, UnpackArrayDType)) {
+            const uint64_t sub = totalLeafElementsIfStatic(up->subDTypep()->skipRefp());
+            return sub == 0 ? 0 : static_cast<uint64_t>(up->elementsConst()) * sub;
+        }
+        if (VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType) || VN_IS(dtp, AssocArrayDType)
+            || VN_IS(dtp, WildcardArrayDType)) {
+            return 0;
+        }
+        return 1;
+    }
+    // The variable a unique{} array-slice expression actually selects
+    // elements from, e.g. grid behind grid[i]. Peels through ArraySel so a
+    // foreach index expression (which can itself reference an unrelated
+    // randc variable, e.g. grid[index]) is never mistaken for content of
+    // the group being made unique.
+    static AstVar* uniqueSliceRootVarp(AstNodeExpr* exprp) {
+        if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) return refp->varp();
+        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            return uniqueSliceRootVarp(selp->fromp());
+        }
+        return nullptr;
+    }
     // Expand unique{a,b,c} with explicit elements into pairwise != constraints.
     // Whole-array unique{arr} is left for ConstraintExprVisitor's rand_unique handling.
     // Recurses into conditional and foreach bodies, so that the pairwise
@@ -3558,61 +3595,70 @@ class RandomizeVisitor final : public VNVisitor {
                     VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
                 }
             } else if (exprItems.size() == 1 && !hasArrayVarRef) {
-                // A single array-typed item (e.g. a foreach-indexed row) has
-                // multiple leaf elements, so it's not automatically vacuous
-                // the way a single scalar is.
+                // An array-typed item isn't automatically vacuous like a
+                // scalar, but may still resolve to exactly one leaf (e.g. a
+                // multi-dimensional slice that's 1x1x...), which is.
                 AstNodeExpr* const soleItemp = exprItems[0];
                 AstNodeDType* const dtypep = soleItemp->dtypep()->skipRefp();
-                const AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType);
-                bool hasRandc = false;
-                soleItemp->foreach([&](const AstNodeVarRef* vrefp) {
-                    if (vrefp->varp()->isRandC()) hasRandc = true;
-                });
-                if (up && hasRandc) {
+                AstVar* const rootVarp = uniqueSliceRootVarp(soleItemp);
+                if (rootVarp && rootVarp->isRandC()) {
+                    // IEEE 1800-2023 18.5.4: checked before the leaf-count
+                    // gate below so a single-leaf randc slice isn't waved
+                    // through as trivially unique.
                     uniquep->v3error("No randc variable shall appear in a unique group (IEEE "
                                      "1800-2023 18.5.4)");
-                } else if (up) {
-                    const AstNodeDType* const subp = up->subDTypep()->skipRefp();
-                    if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType)
-                        || VN_IS(subp, DynArrayDType) || VN_IS(subp, AssocArrayDType)
-                        || VN_IS(subp, WildcardArrayDType)) {
+                } else if (totalLeafElementsIfStatic(dtypep) != 1) {
+                    const AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType);
+                    if (!up) {
+                        // The slice itself is a dynamically-sized container
+                        // (e.g. q[i] where q is an array of queues), not a
+                        // static array -- same "not a 1-D array slice"
+                        // limitation as one nested a level deeper below.
                         uniquep->v3warn(CONSTRAINTIGN,
                                         "Unsupported: Unique constraint on other than a "
                                         "1-D array slice");
-                    } else if (up->elementsConst() > 100) {
-                        uniquep->v3warn(
-                            CONSTRAINTIGN,
-                            "Unsupported: Unique constraint on array slices of size > 100");
-                    } else if (up->elementsConst() >= 2) {
-                        const uint32_t sliceSize = up->elementsConst();
-                        FileLine* const fl = uniquep->fileline();
-                        for (uint32_t k1 = 0; k1 < sliceSize; ++k1) {
-                            for (uint32_t k2 = k1 + 1; k2 < sliceSize; ++k2) {
-                                AstNodeExpr* const lhsp = soleItemp->cloneTree(false);
-                                AstNodeExpr* const rhsp = soleItemp->cloneTree(false);
-                                lhsp->user1(true);
-                                rhsp->user1(true);
-                                AstArraySel* const lhsElemp
-                                    = new AstArraySel{fl, lhsp, static_cast<int>(k1)};
-                                AstArraySel* const rhsElemp
-                                    = new AstArraySel{fl, rhsp, static_cast<int>(k2)};
-                                lhsElemp->user1(true);
-                                rhsElemp->user1(true);
-                                AstNeq* const neqp = new AstNeq{fl, lhsElemp, rhsElemp};
-                                neqp->user1(true);
-                                AstConstraintExpr* const cexprp = new AstConstraintExpr{fl, neqp};
-                                uniquep->addNextHere(cexprp);
+                    } else {
+                        const AstNodeDType* const subp = up->subDTypep()->skipRefp();
+                        if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType)
+                            || VN_IS(subp, DynArrayDType) || VN_IS(subp, AssocArrayDType)
+                            || VN_IS(subp, WildcardArrayDType)) {
+                            uniquep->v3warn(CONSTRAINTIGN,
+                                            "Unsupported: Unique constraint on other than a "
+                                            "1-D array slice");
+                        } else if (up->elementsConst() > 100) {
+                            uniquep->v3warn(
+                                CONSTRAINTIGN,
+                                "Unsupported: Unique constraint on array slices of size > 100");
+                        } else {
+                            const uint32_t sliceSize = up->elementsConst();
+                            FileLine* const fl = uniquep->fileline();
+                            for (uint32_t k1 = 0; k1 < sliceSize; ++k1) {
+                                for (uint32_t k2 = k1 + 1; k2 < sliceSize; ++k2) {
+                                    AstNodeExpr* const lhsp = soleItemp->cloneTree(false);
+                                    AstNodeExpr* const rhsp = soleItemp->cloneTree(false);
+                                    lhsp->user1(true);
+                                    rhsp->user1(true);
+                                    AstArraySel* const lhsElemp
+                                        = new AstArraySel{fl, lhsp, static_cast<int>(k1)};
+                                    AstArraySel* const rhsElemp
+                                        = new AstArraySel{fl, rhsp, static_cast<int>(k2)};
+                                    lhsElemp->user1(true);
+                                    rhsElemp->user1(true);
+                                    AstNeq* const neqp = new AstNeq{fl, lhsElemp, rhsElemp};
+                                    neqp->user1(true);
+                                    AstConstraintExpr* const cexprp
+                                        = new AstConstraintExpr{fl, neqp};
+                                    uniquep->addNextHere(cexprp);
+                                }
                             }
+                            uniquep->unlinkFrBack();
+                            VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
                         }
-                        uniquep->unlinkFrBack();
-                        VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
                     }
                 }
-                // Scalar, randc, unsupported dtype, or size <2: nothing to expand.
-                // uniquep is left in the tree rather than unlinked here -- deleting
-                // it with nothing put back would leave an enclosing foreach body
-                // empty, and ConstraintExprVisitor's own unique{} handling already
-                // no-ops safely on a leftover node like this.
+                // Single leaf, randc, or unsupported shape: nothing to expand.
+                // uniquep stays in the tree -- unlinking with nothing put back
+                // would leave an enclosing foreach body empty.
             }
             itemp = nextp;
         }

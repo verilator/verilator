@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-FileCopyrightText: 2026 Aditya Shevade
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
@@ -23,15 +23,27 @@ class WideRows;
   constraint c1 {foreach (wide[i]) unique {wide[i]};}
 endclass
 
+// A scalar alongside an array in the same group still needs its own
+// unsupported warning -- distinct from unique{x} alone (a sole item,
+// trivially unique, no warning at all).
+class ScalarAndArray;
+  rand bit [3:0] x;
+  rand bit [3:0] arr[4];
+  constraint c1 {unique {x, arr};}
+endclass
+
 module t;
   initial begin
     automatic Cube cb = new;
     automatic WideRows wr = new;
+    automatic ScalarAndArray sa = new;
     int ok;
     repeat (20) begin
       ok = cb.randomize();
       `checkd(ok, 1)
       ok = wr.randomize();
+      `checkd(ok, 1)
+      ok = sa.randomize();
       `checkd(ok, 1)
     end
 

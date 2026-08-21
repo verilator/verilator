@@ -1,6 +1,6 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_toobig.v:11:36: Unsupported: Unique constraint on array slices of size > 100
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_toobig.v:13:36: Unsupported: Unique constraint on array slices of size > 100
                                                                           : ... note: In instance 't'
-   11 |   constraint c1 {foreach (wide[i]) unique {wide[i]};}
+   13 |   constraint c1 {foreach (wide[i]) unique {wide[i]};}
       |                                    ^~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.

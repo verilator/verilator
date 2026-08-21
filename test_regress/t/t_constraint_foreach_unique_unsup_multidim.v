@@ -1,12 +1,14 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-FileCopyrightText: 2026 Aditya Shevade
 // SPDX-License-Identifier: CC0-1.0
 
 // A row of a 3-D array is itself a 2-D slice, not the 1-D slice this
 // unique{} path supports. A row that is itself a queue, dynamic array,
-// associative array, or wildcard array is unsupported for the same reason.
+// associative array, or wildcard array is unsupported for the same reason
+// -- whether that dynamic container is nested a level deeper (RowKinds) or
+// is what the foreach index selects directly (DirectDynRow).
 
 class Cube;
   rand bit [4:0] cube[2][3][3];
@@ -24,11 +26,24 @@ class RowKinds;
   constraint c4 {foreach (wild_rows[i]) unique {wild_rows[i]};}
 endclass
 
+class DirectDynRow;
+  rand bit [4:0] queue_row[3][$];
+  rand bit [4:0] dynarr_row[3][];
+  rand bit [4:0] assoc_row[3][int];
+  rand bit [4:0] wild_row[3][*];
+  constraint c1 {foreach (queue_row[i]) unique {queue_row[i]};}
+  constraint c2 {foreach (dynarr_row[i]) unique {dynarr_row[i]};}
+  constraint c3 {foreach (assoc_row[i]) unique {assoc_row[i]};}
+  constraint c4 {foreach (wild_row[i]) unique {wild_row[i]};}
+endclass
+
 module t;
   initial begin
     automatic Cube cb = new;
     automatic RowKinds rk = new;
+    automatic DirectDynRow ddr = new;
     void'(cb.randomize());
     void'(rk.randomize());
+    void'(ddr.randomize());
   end
 endmodule

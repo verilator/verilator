@@ -1,6 +1,0 @@
-%Error: t/t_constraint_foreach_unique_unsup_randc.v:12:36: No randc variable shall appear in a unique group (IEEE 1800-2023 18.5.4)
-                                                         : ... note: In instance 't'
-   12 |   constraint c2 {foreach (grid[i]) unique {grid[i]};}
-      |                                    ^~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Exiting due to
