@@ -21,6 +21,8 @@
 ///
 //=========================================================================
 
+#include "verilatedos.h"
+
 #include "verilated_random.h"
 
 #include <cassert>
@@ -304,6 +306,14 @@ static VlRProcess& getSolver() {
     return s_solver;
 }
 
+// False once the solver is gone
+static bool readNonBlankLine(std::istream& is, std::string& liner) {
+    do {
+        if (!std::getline(is, liner)) return false;
+    } while (liner.empty());
+    return true;
+}
+
 static std::string readUntilBalanced(std::istream& stream) {
     std::string result;
     std::string token;
@@ -345,6 +355,8 @@ void VlRandomVar::emitExtract(std::ostream& s, int i) const {
     s << " ((_ extract " << i << ' ' << i << ") " << m_name << ')';
 }
 void VlRandomVar::emitType(std::ostream& s) const { s << "(_ BitVec " << width() << ')'; }
+// A scalar var IS its only element, so "element j" is just the whole var.
+void VlRandomVar::emitElement(std::ostream& s, int /*j*/) const { s << ' ' << m_name; }
 // Serialize the current runtime value as an SMT-LIB binary literal. Used by
 // randomize(null) to pin a var via `(assert (= var #b...))`. Binary (#b)
 // rather than hex (#x) sidesteps SMT-LIB's hex-width-multiple-of-4 rule.
@@ -451,6 +463,15 @@ size_t VlRandomizer::hashConstraints(const std::vector<std::string>& extras) con
     for (const auto& c : extras) {
         h ^= std::hash<std::string>{}(c) + 0x9e3779b9 + (h << 6) + (h >> 2);
     }
+    for (const auto& var : m_vars) {
+        h ^= std::hash<std::string>{}(var.first) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<int>{}(var.second->width()) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<int>{}(var.second->dimension()) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    }
+    // Keys are one per array element, so a resized queue gets a different hash.
+    for (const auto& elem : m_arr_vars) {
+        h ^= std::hash<std::string>{}(elem.first) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    }
     return h;
 }
 
@@ -483,6 +504,30 @@ void VlRandomizer::recordRandcValues() {
     }
 }
 
+bool VlRandomizer::isFrozenVar(const std::string& name, const VlRandomVar& var) const {
+    if (!var.randModeIdxNone()) {
+        const VlQueue<CData>* const modep
+            = m_staticVars.count(name) ? m_static_randmodep : m_randmodep;
+        // modep is never null in practice, the fallthrough matches the return below
+        if (VL_UNCOVERABLE(!modep)) return m_disabledVars.count(name) != 0;
+        if (!modep->at(var.randModeIdx())) return true;
+    }
+    // Struct/nested members are disabled via m_disabledVars.
+    // They have no randModeIdx of their own.
+    return m_disabledVars.count(name) != 0;
+}
+
+bool VlRandomizer::hasFrozenVar() const {
+    bool mayBeFrozen = m_randmodep || m_static_randmodep;
+    // A disabled var means the class uses rand_mode, so it never shows up without one
+    if (VL_UNCOVERABLE(!mayBeFrozen && !m_disabledVars.empty())) mayBeFrozen = true;
+    if (!mayBeFrozen) return false;
+    for (const auto& var : m_vars) {
+        if (isFrozenVar(var.first, *var.second)) return true;
+    }
+    return false;
+}
+
 bool VlRandomizer::next_check_only(VlRNG& rngr) { return nextRandomize(rngr, true); }
 
 bool VlRandomizer::next(VlRNG& rngr) { return nextRandomize(rngr, false); }
@@ -504,6 +549,9 @@ bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
         }
     }
 
+    // Reseeded from outside, so everything cached came from the old seed.
+    if (m_ug2.rngReseeds != rngr.reseeds()) m_ug2 = Unigen2State{};
+
     // Pinned vars make phase ordering moot; skip phased path in check-only.
     bool result;
     if (!m_checkOnly && !m_solveBefore.empty()) {
@@ -511,6 +559,7 @@ bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
     } else {
         result = nextFlat(rngr, uniqueExprs);
     }
+    m_ug2.rngReseeds = rngr.reseeds();
     m_checkOnly = false;
     return result;
 }
@@ -581,55 +630,397 @@ void VlRandomizer::emitAsserts(std::ostream& os, const std::vector<std::string>&
 }
 
 bool VlRandomizer::nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs) {
-    // Randc retry: if unsat due to randc exhaustion, clear history and retry once
     const bool hasRandc = !m_randcVarNames.empty();
-    for (int attempt = 0; attempt < (hasRandc ? 2 : 1); ++attempt) {
-        std::iostream& os = getSolver();
-        if (!os) return false;
+    if (!hasRandc && !m_checkOnly && !hasFrozenVar() && Unigen2(rngr, uniqueExprs)) return true;
 
-        os << "(set-option :produce-models true)\n";
-        // Lets the scalar pin path learn which free-bit assumptions conflict.
-        os << "(set-option :produce-unsat-assumptions true)\n";
-        os << "(set-logic QF_ABV)\n";
-        emitDefines(os);
-        emitDeclares(os, m_checkOnly);
-        emitAsserts(os, uniqueExprs, false);
+    std::iostream& os = getSolver();
+    if (!os) return false;
+    os << "(reset)\n";
 
-        // randc exclusions vs. a pinned current value would make every check
-        // trivially UNSAT after the first cycle.
-        if (!m_checkOnly) emitRandcExclusions(os);
+    os << "(set-option :produce-models true)\n";
+    // Lets the scalar pin path learn which free-bit assumptions conflict.
+    os << "(set-option :produce-unsat-assumptions true)\n";
+    os << "(set-logic QF_ABV)\n";
+    emitDefines(os);
+    emitDeclares(os, m_checkOnly);
+    emitAsserts(os, uniqueExprs, false);
 
-        relaxSoftConstraints(os);
+    relaxSoftConstraints(os);
+
+    // randc exclusions vs. a pinned current value would make every check
+    // trivially UNSAT after the first cycle.
+    os << "(push 1)\n";
+    if (!m_checkOnly) emitRandcExclusions(os);
+    os << "(check-sat)\n";
+    bool sat = parseSolution(os);
+
+    // If randc vars have used values, this may be cycle exhaustion - retry without exclusions
+    if (!sat && hasRandc && !m_randcUsedValues.empty()) {
+        m_randcUsedValues.clear();
+        os << "(pop 1)\n";
         os << "(check-sat)\n";
-        const bool sat = parseSolution(os);
+        sat = parseSolution(os);
+    }
 
-        if (!sat) {
-            os << "(reset)\n";
-            // If randc vars have used values, this may be cycle exhaustion - retry
-            if (hasRandc && !m_randcUsedValues.empty() && attempt == 0) {
-                m_randcUsedValues.clear();
-                continue;  // Retry without exclusions
-            }
-            // Skip the unsat-core path in check-only: it re-declares vars
-            // without pinning, so parseSolution would clobber user state with
-            // the solver's free assignment.
-            if (m_checkOnly) return false;
-            // Genuine unsat: report via unsat-core
-            reportUnsatSetup(os, uniqueExprs);
-            os << "(reset)\n";
-            return false;
-        }
-
-        if (!m_checkOnly) {
-            solveDiversity(rngr, os);
-            // Check-only must not advance randc cycle state.
-            recordRandcValues();
-        }
-
+    if (!sat) {
         os << "(reset)\n";
+        // Skip the unsat-core path in check-only: it re-declares vars
+        // without pinning, so parseSolution would clobber user state with
+        // the solver's free assignment.
+        if (m_checkOnly) return false;
+        // Genuine unsat: report via unsat-core
+        reportUnsatSetup(os, uniqueExprs);
+        os << "(reset)\n";
+        return false;
+    }
+
+    if (!m_checkOnly) {
+        solveDiversity(rngr, os);
+        // Check-only must not advance randc cycle state.
+        recordRandcValues();
+    }
+
+    os << "(reset)\n";
+    return true;
+}
+
+// Enumerate one cell of the solution space, and cache the solutions in m_ug2.loTreshWitnesses.
+// The next call with the same constraint set will drain the cache before running the full
+// mechanism again.
+bool VlRandomizer::Unigen2(VlRNG& rngr, const std::vector<std::string>& uniqueExprs) {
+    if (!m_softConstraints.empty()) return false;
+
+    const size_t currentHash = hashConstraints(uniqueExprs);
+    // Params and batch are computed for specific constraint set, so drop them
+    // once it changes.
+    if (m_ug2.paramHash != currentHash) {
+        m_ug2.loTreshWitnesses.clear();
+        m_ug2.paramsValid = false;
+        m_ug2.isLargeSpace = false;
+        m_ug2.paramHash = currentHash;
+        // First sighting of this constraint set.
+        // Decline now and let the next call with the same set run UG2.
+        return false;
+    }
+
+    // Drain cached solutions from previous UG2 run if available.
+    if (!m_ug2.loTreshWitnesses.empty()) {
+        Witness witness = std::move(m_ug2.loTreshWitnesses.back());
+        m_ug2.loTreshWitnesses.pop_back();
+        if (VL_UNCOVERABLE(!writeBackWitness(witness))) return false;
         return true;
     }
-    return false;  // Should not reach here
+
+    std::iostream& solver = getSolver();
+    if (!solver) return false;
+
+    solver << "(reset)\n";
+    solver << "(set-option :produce-models true)\n";
+    solver << "(set-logic QF_ABV)\n";
+    emitDefines(solver);
+    emitDeclares(solver, false);
+    emitAsserts(solver, uniqueExprs, false);
+
+    if (!m_ug2.paramsValid) {
+        // Searches once per constraint set for how finely to cut the space, and
+        // caches parameters
+        if (!estimateParameters(solver, rngr)) {
+            solver << "(reset)\n";
+            return false;
+        }
+        m_ug2.paramsValid = true;
+        m_ug2.lastSuccessI = -1;  // new params, so the old hint no longer applies
+    }
+
+    if (VL_UNCOVERABLE(generateSamples(solver, rngr))) {  // Always true in practice
+        Witness witness = std::move(m_ug2.loTreshWitnesses.back());
+        m_ug2.loTreshWitnesses.pop_back();
+        const bool written = writeBackWitness(witness);
+        solver << "(reset)\n";
+        return written;
+    }
+    solver << "(reset)\n";  // LCOV_EXCL_LINE
+    return false;  // LCOV_EXCL_LINE
+}
+
+// parseSMTNum only rejects a missing '#' or an unknown base, so this tells us
+// upfront whether set() would take the value.
+static bool isParsableSMTNum(const std::string& val) {
+    const size_t pos = val.find('#');
+    if (VL_UNCOVERABLE(pos == std::string::npos || pos + 1 >= val.size())) return false;
+    const char base = val[pos + 1];
+    return base == 'b' || base == 'o' || base == 'h' || base == 'x';  // LCOV_EXCL_LINE
+}
+
+bool VlRandomizer::writeBackWitness(const Witness& witness) {
+    // A failed randomize() must leave the variables alone (IEEE 18.6.3), so check
+    // every value before writing any of them.
+    for (const auto& varEntry : witness) {
+        for (const auto& elemEntry : varEntry.second) {
+            if (VL_UNCOVERABLE(!isParsableSMTNum(elemEntry.second))) {
+                // LCOV_EXCL_START
+                VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                           "Internal: Solver returned a value that could not be parsed");
+                return false;
+                // LCOV_EXCL_STOP
+            }
+        }
+    }
+    for (const auto& varEntry : witness) {
+        const auto& varp = m_vars.at(varEntry.first);
+        if (VL_UNCOVERABLE(isFrozenVar(varEntry.first, *varp))) continue;  // Sanity check
+        for (const auto& elemEntry : varEntry.second) {
+            if (varp->dimension() > 0) {
+                // set() needs current array info, and a witness from the
+                // cached batch skips the solver, so nothing else sets it.
+                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                varp->setArrayInfo(arrVarsp);
+                std::ostringstream idxStream;
+                idxStream << "#x" << std::hex << std::setw(8) << std::setfill('0')
+                          << elemEntry.first;
+                varp->set(idxStream.str(), elemEntry.second);
+            } else {
+                varp->set("", elemEntry.second);
+            }
+        }
+    }
+    return true;
+}
+
+static std::vector<std::pair<std::string, int>> s_bsatOrder;
+// Ask for a solution, block it, ask again - so every answer is a new one.
+int VlRandomizer::bsat(std::iostream& solver, size_t bound, std::vector<Witness>& witnesses,
+                       VlRNG* diversifyRngp) {
+    witnesses.clear();
+    witnesses.reserve(bound);
+    // get-value responses preserve request order, so build the (var,
+    // element) order once and read results back positionally.
+    std::vector<std::pair<std::string, int>>& order = s_bsatOrder;
+    order.clear();
+    for (const auto& var : m_vars) {
+        const int elementCount = var.second->totalWidth() / var.second->width();
+        for (int j = 0; j < elementCount; ++j) order.emplace_back(var.first, j);
+    }
+
+    int assumeNum = 0;
+    while (witnesses.size() < bound) {
+        std::string result;
+        if (diversifyRngp && !witnesses.empty()) {
+            // To increase the randomization, add an assumption for one var in one specific call
+            const Witness& prev = witnesses.back();
+            const std::pair<std::string, int>& pick
+                = order[VL_RANDOM_RNG_I(*diversifyRngp) % order.size()];
+            solver << "(declare-fun d" << assumeNum << " () Bool)\n";
+            solver << "(assert (= d" << assumeNum << " (not (=";
+            m_vars.at(pick.first)->emitElement(solver, pick.second);
+            solver << ' ' << prev.at(pick.first).at(pick.second) << "))))\n";
+            solver << "(check-sat-assuming (d" << assumeNum << "))\n";
+            ++assumeNum;
+            readNonBlankLine(solver, result);
+        }
+        if (result != "sat") {
+            solver << "(check-sat)\n";
+            readNonBlankLine(solver, result);
+        }
+        if (result != "sat") {
+            // "unsat" is the cell running out; anything else is the solver giving up
+            if (VL_UNLIKELY(result != "unsat")) return -1;
+            break;
+        }
+
+        solver << "(get-value (";
+        for (const auto& entry : order) m_vars.at(entry.first)->emitElement(solver, entry.second);
+        solver << "))\n";
+
+        const auto expectChar = [&solver](char want) {
+            char got = '\0';
+            solver >> got;
+            return got == want;
+        };
+
+        Witness witness;
+        bool badReply = !expectChar('(');  // opening '(' of the whole get-value response
+        for (const auto& entry : order) {
+            if (VL_UNLIKELY(badReply)) break;
+            // opening '(' of this (expr value) pair
+            if (VL_UNCOVERABLE(!expectChar('('))) {
+                badReply = true;  // LCOV_EXCL_LINE
+                break;  //  LCOV_EXCL_LINE
+            }
+            std::string exprHead;
+            solver >> exprHead;  // bare var name, or literally "(select" if an array element
+            if (exprHead == "(select") {
+                readUntilBalanced(solver);  // discard rest of expr
+                // reading positionally needs the requested order back
+            } else if (VL_UNCOVERABLE(exprHead != entry.first)) {
+                badReply = true;  // LCOV_EXCL_LINE
+                break;  // LCOV_EXCL_LINE
+            }
+            std::string value;
+            std::getline(solver, value, ')');
+            if (VL_UNCOVERABLE(!solver || value.empty())) {
+                badReply = true;  // LCOV_EXCL_LINE
+                break;  // LCOV_EXCL_LINE
+            }
+            witness[entry.first][entry.second] = value;
+        }  // LCOV_EXCL_BR_LINE
+        // closing ')' of the whole get-value response
+        if (VL_UNCOVERABLE(badReply || !expectChar(')'))) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unexpected solver response to (get-value ...)");
+            return -1;
+        }
+
+        // Forbid this exact assignment so the next
+        // (check-sat) is forced to find a genuinely different witness.
+        solver << "(assert (not (and";
+        for (const auto& varEntry : witness) {
+            for (const auto& elemEntry : varEntry.second) {
+                solver << " (=";
+                m_vars.at(varEntry.first)->emitElement(solver, elemEntry.first);
+                solver << ' ' << elemEntry.second << ")";
+            }
+        }
+        solver << ")))\n";
+        witnesses.push_back(std::move(witness));
+    }
+    return static_cast<int>(witnesses.size());
+}
+
+// Each equation selects a random subset of bits by a coin-flip for each bit, and then sets the XOR
+// of those bits to a random value.
+void VlRandomizer::unigenXors(std::iostream& solver, VlRNG& rngr, int bits) {
+    if (bits <= 0) return;  // 0 hash constraints == no extra assertion needed at all
+    std::vector<bool> target(bits);
+    for (int k = 0; k < bits; ++k) target[k] = VL_RANDOM_RNG_I(rngr) & 1;
+
+    solver << "(assert ";
+    solver << "(= #b";
+    for (int k = 0; k < bits; ++k) solver << (target[k] ? '1' : '0');
+    if (bits > 1) solver << " (concat";
+    for (int k = 0; k < bits; ++k) {
+        // #b0 seeds the bvxor chain so it's always >=2 operands (valid even
+        // if this equation's coin flips happen to select zero/one bits).
+        // 0 xor 0 == 0, 0 xor 1
+        solver << " (bvxor #b0";
+        for (const auto& var : m_vars) {
+            for (int j = 0; j < var.second->totalWidth(); ++j) {
+                if (VL_RANDOM_RNG_I(rngr) & 1) var.second->emitExtract(solver, j);
+            }
+        }
+        solver << ')';
+    }
+    if (bits > 1) solver << ')';
+    solver << "))\n";
+}
+
+// --- UniGen2 constants ---
+static constexpr double ug2Kappa = 0.638;  // Parameter controling the tolerance of the uniformity
+                                           // guarantee. Set at the paper's default value.
+// Values used in the large space mode:
+static constexpr int ug2HiTreshLargeSpace = 16;  // Num of solutions to enumerate
+static constexpr int ug2BatchLargeSpace = 16;  // Num of solutions to cache
+static constexpr int ug2HashBitsLargeSpace
+    = 10;  // Num of XORs to add to the solver, also cap of the bsat() search
+
+bool VlRandomizer::estimateParameters(std::iostream& solver, VlRNG& rngr) {
+    // Below formulas are taken from the UniGen2 paper, Sec. 4, Algorithm 1
+    const double pivot = ceil(4.03 * pow((1 + 1 / ug2Kappa), 2));
+    m_ug2.hiTresh = static_cast<int>(ceil(1 + sqrt(2) * (1 + ug2Kappa) * pivot));
+    m_ug2.loTresh = static_cast<int>(floor(pivot / (sqrt(2) * (1 + ug2Kappa))));
+
+    // A space so small can never reach loTresh, so enumerate it whole instead.
+    // push/pop keeps bsat() blocking clauses out of that search.
+    solver << "(push 1)\n";
+    std::vector<Witness> tinyWitnesses;
+    const int tinyCellSize = bsat(solver, 61, tinyWitnesses);
+    solver << "(pop 1)\n";
+    if (tinyCellSize < 0) return false;
+    if (tinyCellSize >= 1 && tinyCellSize <= 60) {
+        m_ug2.hashBits = 0;
+        m_ug2.loTresh = tinyCellSize;  // batch = the whole enumerated set
+        m_ug2.hiTresh = tinyCellSize + 1;
+        return true;
+    }
+
+    int totalBits = 0;
+    for (const auto& var : m_vars) totalBits += var.second->totalWidth();
+    int solCount = 0;
+    // Cap the search with ug2HashBitsLargeSpace: Larger spaces cannot be hashed in useful
+    // time, so stop and just use fixed number of XORs. Limit set empirically from measured solve
+    // times.
+    const int iMax = totalBits < ug2HashBitsLargeSpace ? totalBits : ug2HashBitsLargeSpace;
+    std::vector<Witness> witnesses;  // Reused across trials; bsat() clears it
+    for (int i = 1; i <= iMax; ++i) {
+        solver << "(push 1)\n";
+        unigenXors(solver, rngr, i);
+        const int bound = 61;
+        solCount = bsat(solver, bound, witnesses);
+        if (solCount < 0) {
+            solver << "(pop 1)\n";
+            return false;
+        }
+        if (solCount >= 1 && solCount < bound) {
+            m_ug2.hashBits
+                = static_cast<int>(round(log2(solCount) + i + log2(1.8)
+                                         - log2(pivot)));  // formula taken from the Unigen2 paper
+            solver << "(pop 1)\n";
+            return true;
+        }
+        solver << "(pop 1)\n";
+    }
+    m_ug2.isLargeSpace = true;
+    m_ug2.hashBits = ug2HashBitsLargeSpace;
+    m_ug2.hiTresh = ug2HiTreshLargeSpace;
+    return true;
+}
+
+bool VlRandomizer::generateSamples(std::iostream& solver, VlRNG& rngr) {
+    // Try whichever of hashBits number worked last call first
+    // (UniGen2 Sec. 4, "leapfrogging" in spirit but without weakening guarantees).
+    // On a large space no cell was ever enumerable, so just try most hash bits first for the
+    // smallest cell.
+    const int lowestCount = m_ug2.hashBits - 2;
+    int candidates[3] = {lowestCount, lowestCount + 1, lowestCount + 2};
+    if (m_ug2.isLargeSpace) {
+        candidates[0] = m_ug2.hashBits;
+        candidates[1] = m_ug2.hashBits - 1;
+        candidates[2] = m_ug2.hashBits - 2;
+    } else if (m_ug2.lastSuccessI >= 0) {
+        std::swap(candidates[0], candidates[m_ug2.lastSuccessI - lowestCount]);
+    }
+
+    std::vector<Witness> witnesses;  // Reused across candidates; bsat() clears it
+    for (int t = 0; t < 3; ++t) {  // LCOV_EXCL_BR_LINE - Always finds a candidate in practice
+        const int i = candidates[t];
+        if (i < 0) continue;  // hashBits below 2 leaves fewer than three counts to try
+
+        solver << "(push 1)\n";
+        unigenXors(solver, rngr, i);
+        const int solCount
+            = bsat(solver, m_ug2.hiTresh, witnesses, m_ug2.isLargeSpace ? &rngr : nullptr);
+        if (m_ug2.loTresh <= solCount && (solCount < m_ug2.hiTresh || m_ug2.isLargeSpace)) {
+            m_ug2.lastSuccessI = i;
+            const int take
+                = m_ug2.isLargeSpace ? std::min(ug2BatchLargeSpace, solCount) : m_ug2.loTresh;
+            // Pick them at random rather than the first ones enumerated -
+            // partial Fisher-Yates, so the picks stay distinct.
+            m_ug2.loTreshWitnesses.clear();
+            std::vector<int> indices(witnesses.size());
+            for (size_t k = 0; k < indices.size(); ++k) indices[k] = static_cast<int>(k);
+            for (int k = 0; k < take; ++k) {
+                const size_t pick
+                    = static_cast<size_t>(k) + (VL_RANDOM_RNG_I(rngr) % (indices.size() - k));
+                std::swap(indices[k], indices[pick]);
+                m_ug2.loTreshWitnesses.push_back(std::move(witnesses[indices[k]]));
+            }
+            solver << "(pop 1)\n";
+            return true;
+        }
+        solver << "(pop 1)\n";
+    }
+    m_ug2.lastSuccessI = -1;  // LCOV_EXCL_LINE
+    return false;  // LCOV_EXCL_LINE
 }
 
 void VlRandomizer::solveDiversity(VlRNG& rngr, std::iostream& os) {
@@ -691,14 +1082,6 @@ void VlRandomizer::solveDiversityXor(VlRNG& rngr, std::iostream& os) {
         os << "\n(check-sat)\n";
         sat = parseSolution(os);
     }
-}
-
-// False once the solver is gone, so no reply loop can spin forever
-static bool readNonBlankLine(std::istream& is, std::string& liner) {
-    do {
-        if (!std::getline(is, liner)) return false;
-    } while (liner.empty());
-    return true;
 }
 
 bool VlRandomizer::checkSat(std::iostream& os) {
@@ -1011,8 +1394,8 @@ bool VlRandomizer::nextPhased(VlRNG& rngr, const std::vector<std::string>& uniqu
     std::vector<std::vector<std::string>> layers;
     if (!buildSolveLayers(layers)) return false;
 
-    // One layer: all solve_before vars are independent, no ordering required
-    if (layers.size() <= 1) return nextFlat(rngr, uniqueExprs);
+    // No layers means no solve_before pair survived
+    if (layers.empty()) return nextFlat(rngr, uniqueExprs);
 
     if (solvePhases(rngr, layers, uniqueExprs)) return true;
     // Retry once with the randc cycle cleared, as nextFlat does
@@ -1025,6 +1408,14 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
                                const std::vector<std::string>& uniqueExprs) {
     std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
     const char* const logicp = phasedLogic();
+
+    // Unigen2() may leave a prior call's declarations/assertions open on the
+    // shared solver on success
+    {
+        std::iostream& initOs = getSolver();
+        if (!initOs) return false;
+        initOs << "(reset)\n";
+    }
 
     for (size_t phase = 0; phase < layers.size(); phase++) {
         const bool isFinalPhase = (phase == layers.size() - 1);

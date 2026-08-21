@@ -478,7 +478,10 @@ VlRNG::VlRNG() VL_MT_SAFE {
 }
 
 VlRNG::VlRNG(uint64_t seed) VL_PURE { m_state = vl_rng_state_from_seed(seed); }
-void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE { m_state = vl_rng_state_from_seed(n); }
+void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE {
+    m_state = vl_rng_state_from_seed(n);
+    ++m_reseeds;
+}
 
 uint64_t VlRNG::rand64() VL_MT_UNSAFE {
     const uint64_t result = vl_rng_result(m_state);
@@ -519,6 +522,7 @@ void VlRNG::set_randstate(const std::string& state) VL_MT_UNSAFE {
         stateCharsp[i]
             = (((state[1 + i * 2] - 'a') & 15) << 4) | ((state[1 + i * 2 + 1] - 'a') & 15);
     }
+    ++m_reseeds;
 }
 
 static uint32_t vl_sys_rand32() VL_MT_SAFE {
