@@ -38,6 +38,17 @@ class C5;
   constraint c { id inside {[0:3]}; a[id] != a[id]; }
 endclass
 
+// A fixed 1-D array is otherwise an expandable shape, but a struct element
+// can't be formatted as an SMT hex literal the way a plain bit vector can.
+typedef struct {
+  bit [3:0] tag;
+} entry_t;
+class C6;
+  rand int id;
+  entry_t pool[4];
+  constraint c { id inside {[0:3]}; pool[id].tag == 4'hA; }
+endclass
+
 module t;
   initial begin
     C1 obj1;
@@ -45,15 +56,18 @@ module t;
     C3 obj3;
     C4 obj4;
     C5 obj5;
+    C6 obj6;
     obj1 = new;
     obj2 = new;
     obj3 = new;
     obj4 = new;
     obj5 = new;
+    obj6 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
     if (obj4.randomize() == 0) $stop;
     if (obj5.randomize() == 0) $stop;
+    if (obj6.randomize() == 0) $stop;
   end
 endmodule
