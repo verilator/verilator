@@ -744,6 +744,22 @@ class WidthVisitor final : public VNVisitor {
         // it's like an if() condition.
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
+    static bool widthCheckSvaValueLimit(AstNode* nodep, const AstConst* constp, const char* what) {
+        // Temporal values can materialize as O(N) AST or state in later passes.
+        // Leave headroom for a range ring's extra slot and V3Number's signed
+        // `(bits + 31) / 32` word count.
+        static constexpr unsigned SVA_VALUE_HARD_LIMIT
+            = static_cast<unsigned>(std::numeric_limits<int>::max()) - 32U;
+        const unsigned configuredLimit = static_cast<unsigned>(v3Global.opt.maxNumWidth());
+        const unsigned limit = std::min(configuredLimit, SVA_VALUE_HARD_LIMIT);
+        if (constp->num().fitsInUInt() && constp->toUInt() <= limit) return true;
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << what << " exceeds implementation limit of "
+                                                     << limit
+                                                     << (configuredLimit <= SVA_VALUE_HARD_LIMIT
+                                                             ? " (--max-num-width)"
+                                                             : " (host arithmetic limit)"));
+        return false;
+    }
     static const AstConst* widthCheckSvaDelayBound(AstDelay* nodep, AstNodeExpr* boundp,
                                                    const char* what) {
         const AstConst* const constp = VN_CAST(boundp, Const);
@@ -752,12 +768,7 @@ class WidthVisitor final : public VNVisitor {
                                    " (IEEE 1800-2023 16.7)");
             return nullptr;
         }
-        if (constp->num().mostSetBitP1() > 31) {
-            nodep->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: SVA cycle delay exceeds implementation limit of 2147483647");
-            return nullptr;
-        }
+        if (!widthCheckSvaValueLimit(nodep, constp, "SVA cycle delay")) return nullptr;
         return constp;
     }
     void visit(AstDelay* nodep) override {
@@ -1583,7 +1594,7 @@ class WidthVisitor final : public VNVisitor {
                 } else if (constp->toSInt() < 1) {
                     constp->v3error("$past tick value must be >= 1 (IEEE 1800-2023 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
-                } else {
+                } else if (widthCheckSvaValueLimit(nodep, constp, "$past tick value")) {
                     if (constp->toSInt() > 10) {
                         constp->v3warn(TICKCOUNT, "$past tick value of "
                                                       << constp->toSInt()
@@ -1674,6 +1685,11 @@ class WidthVisitor final : public VNVisitor {
             if (loConstp && loConstp->toSInt() < 0) {
                 nodep->loBoundp()->v3error("always range low bound must be non-negative"
                                            " (IEEE 1800-2023 16.12.11)");
+            } else if (loConstp) {
+                widthCheckSvaValueLimit(nodep->loBoundp(), loConstp, "always range bound");
+            }
+            if (!hiUnbounded && hiConstp) {
+                widthCheckSvaValueLimit(nodep->hiBoundp(), hiConstp, "always range bound");
             }
             if (!hiUnbounded && loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
                 nodep->hiBoundp()->v3error("always range high bound must be >= low bound"

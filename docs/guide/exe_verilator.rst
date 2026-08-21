@@ -1223,6 +1223,7 @@ Summary:
 .. option:: --max-num-width <value>
 
    Set the maximum number literal width (e.g., in 1024'd22 the 1024).
+   This also limits SVA cycle delay and temporal bound values.
    Defaults to 64K.
 
 .. option:: --Mdir <directory>
