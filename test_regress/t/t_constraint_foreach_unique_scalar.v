@@ -42,12 +42,26 @@ class BareScalar;
   constraint c1 {unique {x};}
 endclass
 
+// unique{} on a scalar reached through a class handle (AstMemberSel),
+// neither a bare VarRef (BareScalar) nor an ArraySel (Grid.c2) --
+// uniqueSliceRootVarp() falls through both its cast checks and returns
+// null, so this must still resolve to trivially-unique, not a crash.
+class Inner;
+  rand bit [4:0] val;
+endclass
+
+class MemberScalar;
+  rand Inner obj = new;
+  constraint c1 {unique {obj.val};}
+endclass
+
 module t;
   initial begin
     automatic Grid g = new;
     automatic Row1 r = new;
     automatic Row1x1 r11 = new;
     automatic BareScalar bs = new;
+    automatic MemberScalar ms = new;
     int ok;
     repeat (20) begin
       ok = g.randomize();
@@ -57,6 +71,8 @@ module t;
       ok = r11.randomize();
       `checkd(ok, 1)
       ok = bs.randomize();
+      `checkd(ok, 1)
+      ok = ms.randomize();
       `checkd(ok, 1)
     end
 
