@@ -2043,10 +2043,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
-        // fromp() can fail to lower to an SFormatF when it's an unsupported
-        // rand-dependent expression that already warned (e.g. a rand index
-        // into a non-rand array of struct elements) -- leave nodep alone
-        // rather than casting a still-raw node and crashing.
+        // fromp() may not have lowered to an SFormatF if it already warned
+        // as unsupported -- leave nodep alone rather than crash on it.
         AstSFormatF* const fromFmtp = VN_CAST(nodep->fromp(), SFormatF);
         if (!fromFmtp) return;
         AstSFormatF* newp = nullptr;
@@ -2120,40 +2118,27 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
-    void visit(AstArraySel* nodep) override {
-        if (editFormat(nodep)) return;
-        FileLine* const fl = nodep->fileline();
-        VNRelinker handle;
-        // Check if index actually references a rand variable (not just user1,
-        // which can be over-marked in sum/with expansion contexts)
-        bool indexIsRand = false;
-        nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
-            if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
-        });
-        // Non-rand arrays aren't declared as SMT symbols, so a rand-dependent
-        // index into one can't use the '(select arr idx)' path below.
+    // Handles a rand-dependent index into a non-rand array: expands to a
+    // per-element AstArraySel/AstCond chain, or warns E_UNSUPPORTED.
+    // Returns false only when the array itself is rand.
+    bool handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl) {
         AstVar* arrVarp = nullptr;
         if (const AstVarRef* const refp = VN_CAST(nodep->fromp(), VarRef)) {
             arrVarp = refp->varp();
         } else if (const AstMemberSel* const mselp = VN_CAST(nodep->fromp(), MemberSel)) {
             arrVarp = mselp->varp();
         }
+        if (arrVarp && arrVarp->rand().isRandomizable()) return false;
+
+        // arrVarp null (e.g. nested indexing like used[id1][id2]) is
+        // diagnosed here too, not deferred to a recursive visit. When
+        // non-null its dtype is always a fixed array.
         const AstUnpackArrayDType* const arrDtp
-            = arrVarp ? VN_CAST(arrVarp->dtypep()->skipRefp(), UnpackArrayDType) : nullptr;
-        const bool arrIsKnownRand = arrVarp && arrVarp->rand().isRandomizable();
-        // Only a 1-D array can be expanded below; each element must be a
-        // scalar leaf, not another array (same check unique{} uses), and
-        // not a struct/union -- editSMT()'s per-element hex formatting
-        // assumes a plain bit vector and mis-formats anything else (RRozak,
-        // PR #8114: a struct element hit a garbled SMT format string and
-        // crashed downstream in V3Width's $display-arg check). Class-handle
-        // elements are NOT excluded here: array-of-class-handle indexing
-        // never reaches this AstArraySel visitor at all (it lowers through
-        // AstCMethodHard/ARRAY_AT instead), and that path has its own
-        // pre-existing, unrelated bug -- even a constant index into
-        // pool[1].field silently returns the wrong value. Out of scope for
-        // this fix; adding an untestable exclusion here would just be dead
-        // code.
+            = arrVarp ? VN_AS(arrVarp->dtypep()->skipRefp(), UnpackArrayDType) : nullptr;
+
+        // 1-D only; element must be a scalar, not another array or a
+        // struct/union -- editSMT()'s hex formatting assumes a bit vector.
+        // (Class-handle elements don't reach this function at all.)
         bool arrIsSupported1D = false;
         if (arrDtp) {
             const AstNodeDType* const subp = arrDtp->subDTypep()->skipRefp();
@@ -2165,55 +2150,55 @@ class ConstraintExprVisitor final : public VNVisitor {
                                && !VN_IS(subp, WildcardArrayDType)  // LCOV_EXCL_BR_LINE
                                && !VN_IS(subp, NodeUOrStructDType);
         }
-        if (indexIsRand && !arrIsKnownRand && !(arrDtp && arrIsSupported1D)) {
-            // Can't expand (not a supported 1-D shape) or treat as state
-            // (nodep may still be array-typed, so no safe scalar fallback).
+        if (!arrIsSupported1D) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: rand-dependent index into this array shape in "
                           "constraint (multidimensional, queue, dynamic, or associative array)");
-            return;
+            return true;
         }
-        if (indexIsRand && arrIsSupported1D && !arrIsKnownRand) {
-            // arrDtp null here (a queue/dynamic/associative/wildcard/packed
-            // array as the indexed variable itself, not nested) is
-            // unreachable: each routes through an earlier lowering pass
-            // first, confirmed by direct testing of all five shapes
-            // (RRozak, PR #8114: asserted rather than left as a silent
-            // untested conditional).
-            UASSERT_OBJ(arrDtp, nodep,
-                        "1-D array-sel index expansion reached with a "
-                        "non-UnpackArrayDType array operand");
-            AstNodeExpr* const idxp = nodep->bitp()->unlinkFrBack();
-            const int elements = arrDtp->elementsConst();
-            AstNodeExpr* chainp = nullptr;
-            // Use 0-based k, not arrDtp->lo()+k: idxp is already bias-
-            // adjusted for a non-zero-based array (e.g. 'id - 1' for
-            // [1:16]), and a freshly built AstArraySel needs that too.
-            for (int k = elements - 1; k >= 0; --k) {
-                AstArraySel* const elemp = new AstArraySel{
-                    fl, nodep->fromp()->cloneTreePure(false),
-                    new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
-                if (!chainp) {
-                    chainp = elemp;
-                } else {
-                    AstEq* const eqp
-                        = new AstEq{fl, idxp->cloneTreePure(false),
-                                    new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
-                                                 static_cast<uint32_t>(k)}};
-                    // Mark symbolic, else editFormat() would fold this
-                    // using idxp's stale pre-solve value (same as
-                    // AstExtend above).
-                    eqp->user1(true);
-                    chainp = new AstCond{fl, eqp, elemp, chainp};
-                    chainp->user1(true);
-                }
+
+        AstNodeExpr* const idxp = nodep->bitp()->unlinkFrBack();
+        const int elements = arrDtp->elementsConst();
+        AstNodeExpr* chainp = nullptr;
+        // Use 0-based k, not arrDtp->lo()+k: idxp is already bias-
+        // adjusted for a non-zero-based array (e.g. 'id - 1' for
+        // [1:16]), and a freshly built AstArraySel needs that too.
+        for (int k = elements - 1; k >= 0; --k) {
+            AstArraySel* const elemp = new AstArraySel{
+                fl, nodep->fromp()->cloneTreePure(false),
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
+            if (!chainp) {
+                chainp = elemp;
+            } else {
+                AstEq* const eqp
+                    = new AstEq{fl, idxp->cloneTreePure(false),
+                                new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
+                                             static_cast<uint32_t>(k)}};
+                // Mark symbolic, else editFormat() would fold this
+                // using idxp's stale pre-solve value (same as
+                // AstExtend above).
+                eqp->user1(true);
+                chainp = new AstCond{fl, eqp, elemp, chainp};
+                chainp->user1(true);
             }
-            VL_DO_DANGLING(idxp->deleteTree(), idxp);
-            nodep->replaceWith(chainp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            iterate(chainp);
-            return;
         }
+        VL_DO_DANGLING(idxp->deleteTree(), idxp);
+        nodep->replaceWith(chainp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterate(chainp);
+        return true;
+    }
+    void visit(AstArraySel* nodep) override {
+        if (editFormat(nodep)) return;
+        FileLine* const fl = nodep->fileline();
+        VNRelinker handle;
+        // Check if index actually references a rand variable (not just user1,
+        // which can be over-marked in sum/with expansion contexts)
+        bool indexIsRand = false;
+        nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
+            if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
+        });
+        if (indexIsRand && handleRandIndexIntoNonrandArray(nodep, fl)) return;
         if (indexIsRand) {
             // Index depends on rand variable -- keep as SMT symbol.
             // Array index sort is 32-bit, so zero-extend narrower indices.
