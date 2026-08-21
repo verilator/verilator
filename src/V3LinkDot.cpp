@@ -3918,6 +3918,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Primitive parameter is really a delay2 we can just ignore
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
+                } else if (nodep->param() && !nodep->exprp() && !nodep->svDotName()) {
+                    // Placeholder pin the parser makes for an empty '#()', to signal
+                    // the user did type the '#()'. No further use, deleting.
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
                 } else {
                     const std::string suggest
                         = (nodep->param() ? m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
