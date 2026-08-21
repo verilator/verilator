@@ -36,6 +36,89 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
+// Covergroup expression validation visitor
+
+class CovergroupExpressionValidationVisitor final : public VNVisitor {
+    const std::set<const AstVar*>& m_sampleMembers;
+    const std::set<const AstVar*>& m_constructorRefMembers;
+    bool m_inCoverageExpression = false;
+    bool m_sampleFormalAllowed = false;
+
+    void scanSampleExpression(AstNode* nodep) {
+        if (!nodep) return;
+        VL_RESTORER(m_sampleFormalAllowed);
+        m_sampleFormalAllowed = true;
+        iterateAndNextNull(nodep);
+    }
+
+    void scanCoverageExpression(AstNode* nodep) {
+        if (!nodep) return;
+        VL_RESTORER(m_inCoverageExpression);
+        m_inCoverageExpression = true;
+        iterateAndNextNull(nodep);
+    }
+
+    void visit(AstCoverpoint* nodep) override {
+        scanSampleExpression(nodep->exprp());
+        scanSampleExpression(nodep->iffp());
+        iterateAndNextNull(nodep->binsp());
+        iterateAndNextNull(nodep->optionsp());
+    }
+    void visit(AstCoverCross* nodep) override {
+        iterateAndNextNull(nodep->itemsp());
+        iterateAndNextNull(nodep->optionsp());
+        iterateAndNextNull(nodep->rawBodyp());
+    }
+    void visit(AstCoverBin* nodep) override {
+        scanCoverageExpression(nodep->rangesp());
+        scanSampleExpression(nodep->iffp());
+        scanCoverageExpression(nodep->arraySizep());
+        scanCoverageExpression(nodep->transp());
+    }
+    void visit(AstVarRef* nodep) override {
+        if (!m_sampleFormalAllowed && m_sampleMembers.count(nodep->varp())) {
+            nodep->v3error("Covergroup sample formal argument "
+                           << nodep->varp()->prettyNameQ()
+                           << " may only be used in a coverpoint or conditional guard "
+                              "expression (IEEE 1800-2012 19.8.1).");
+        }
+        if (m_inCoverageExpression && m_constructorRefMembers.count(nodep->varp())) {
+            nodep->v3error("Ref covergroup constructor formal argument "
+                           << nodep->varp()->prettyNameQ()
+                           << " may not be used in a covergroup expression "
+                              "(IEEE 1800-2012 19.5).");
+        }
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (m_inCoverageExpression && nodep->taskp()) {
+            bool invalidDirection = false;
+            for (AstNode* stmtp = nodep->taskp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                const AstVar* const varp = VN_CAST(stmtp, Var);
+                if (varp && varp->isIO() && varp->isWritable()) {
+                    invalidDirection = true;
+                    break;
+                }
+            }
+            if (invalidDirection) {
+                nodep->v3error("Function " << nodep->taskp()->prettyNameQ()
+                                           << " called in a covergroup expression has an "
+                                              "output, inout, or non-const ref argument "
+                                              "(IEEE 1800-2012 19.5).");
+            }
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    CovergroupExpressionValidationVisitor(const std::set<const AstVar*>& sampleMembers,
+                                          const std::set<const AstVar*>& constructorRefMembers)
+        : m_sampleMembers{sampleMembers}
+        , m_constructorRefMembers{constructorRefMembers} {}
+    void scan(AstNode* nodep) { iterate(nodep); }
+};
+
+//######################################################################
 // Functional coverage visitor
 
 class FunctionalCoverageVisitor final : public VNVisitor {
@@ -1795,86 +1878,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         void scan(AstNode* nodep) { iterate(nodep); }
     };
 
-    class CovergroupExpressionValidator final : public VNVisitor {
-        const std::set<const AstVar*>& m_sampleMembers;
-        const std::set<const AstVar*>& m_constructorRefMembers;
-        bool m_inCoverageExpression = false;
-        bool m_sampleFormalAllowed = false;
-
-        void scanSampleExpression(AstNode* nodep) {
-            if (!nodep) return;
-            VL_RESTORER(m_sampleFormalAllowed);
-            m_sampleFormalAllowed = true;
-            iterateAndNextNull(nodep);
-        }
-
-        void scanCoverageExpression(AstNode* nodep) {
-            if (!nodep) return;
-            VL_RESTORER(m_inCoverageExpression);
-            m_inCoverageExpression = true;
-            iterateAndNextNull(nodep);
-        }
-
-        void visit(AstCoverpoint* nodep) override {
-            scanSampleExpression(nodep->exprp());
-            scanSampleExpression(nodep->iffp());
-            iterateAndNextNull(nodep->binsp());
-            iterateAndNextNull(nodep->optionsp());
-        }
-        void visit(AstCoverCross* nodep) override {
-            iterateAndNextNull(nodep->itemsp());
-            iterateAndNextNull(nodep->optionsp());
-            iterateAndNextNull(nodep->rawBodyp());
-        }
-        void visit(AstCoverBin* nodep) override {
-            scanCoverageExpression(nodep->rangesp());
-            scanSampleExpression(nodep->iffp());
-            scanCoverageExpression(nodep->arraySizep());
-            scanCoverageExpression(nodep->transp());
-        }
-        void visit(AstVarRef* nodep) override {
-            if (!m_sampleFormalAllowed && m_sampleMembers.count(nodep->varp())) {
-                nodep->v3error("Covergroup sample formal argument "
-                               << nodep->varp()->prettyNameQ()
-                               << " may only be used in a coverpoint or conditional guard "
-                                  "expression (IEEE 1800-2012 19.8.1).");
-            }
-            if (m_inCoverageExpression && m_constructorRefMembers.count(nodep->varp())) {
-                nodep->v3error("Ref covergroup constructor formal argument "
-                               << nodep->varp()->prettyNameQ()
-                               << " may not be used in a covergroup expression "
-                                  "(IEEE 1800-2012 19.5).");
-            }
-        }
-        void visit(AstNodeFTaskRef* nodep) override {
-            if (m_inCoverageExpression && nodep->taskp()) {
-                bool invalidDirection = false;
-                for (AstNode* stmtp = nodep->taskp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                    const AstVar* const varp = VN_CAST(stmtp, Var);
-                    if (varp && varp->isIO() && varp->isWritable()) {
-                        invalidDirection = true;
-                        break;
-                    }
-                }
-                if (invalidDirection) {
-                    nodep->v3error("Function " << nodep->taskp()->prettyNameQ()
-                                               << " called in a covergroup expression has an "
-                                                  "output, inout, or non-const ref argument "
-                                                  "(IEEE 1800-2012 19.5).");
-                }
-            }
-            iterateChildren(nodep);
-        }
-        void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-    public:
-        CovergroupExpressionValidator(const std::set<const AstVar*>& sampleMembers,
-                                      const std::set<const AstVar*>& constructorRefMembers)
-            : m_sampleMembers{sampleMembers}
-            , m_constructorRefMembers{constructorRefMembers} {}
-        void scan(AstNode* nodep) { iterate(nodep); }
-    };
-
     void validateCovergroupExpressions() {
         std::set<const AstVar*> sampleMembers;
         std::set<const AstVar*> constructorRefMembers;
@@ -1897,7 +1900,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                         "Covergroup sample argument missing persistent member");
             sampleMembers.insert(memberp);
         }
-        CovergroupExpressionValidator{sampleMembers, constructorRefMembers}.scan(m_constructorp);
+        CovergroupExpressionValidationVisitor{sampleMembers, constructorRefMembers}.scan(
+            m_constructorp);
     }
 
     void rebindFormalRefs() {
