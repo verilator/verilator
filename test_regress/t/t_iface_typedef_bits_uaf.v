@@ -11,18 +11,22 @@
 
 typedef struct packed {int unsigned W;} cfg_t;
 
-interface types_if #(parameter cfg_t cfg = '{default: 0});
+interface types_if #(
+    parameter cfg_t cfg = '{default: 0}
+);
   typedef logic [cfg.W-1:0] rq_t;
 endinterface
 
-module body #(parameter cfg_t cfg = '{default: 0});
-  types_if #(cfg) types();
+module body #(
+    parameter cfg_t cfg = '{default: 0}
+);
+  types_if #(cfg) types ();
   localparam int DW = $bits(types.rq_t);  // AstAttrOf(DIM_BITS) over captured ref
   logic [DW-1:0] v;
   initial v = '0;
 endmodule
 
 module t;
-  body #('{W: 8})  b0();
-  body #('{W: 16}) b1();
+  body #('{W: 8}) b0 ();
+  body #('{W: 16}) b1 ();
 endmodule

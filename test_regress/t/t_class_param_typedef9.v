@@ -9,7 +9,9 @@
 // A typedef of a parameterized class produces an AstRefDType whose skipRefp()
 // is the AstClassRefDType, which V3Param also reaches directly.  This validates
 // that the AstClassRefDType is not enqueued to mcell_ps twice
-class Wrap #(type T = int);
+class Wrap #(
+    type T = int
+);
   int m_v;
 endclass
 

@@ -1113,8 +1113,12 @@ package Vt_debug_emitv_std;
                 int signed __Vrepeat0;
                 __Vrepeat0 = processQueue.size();
                 while ((__Vrepeat0 > 32'h0)) begin
-                    begin
-                        kill();
+                    begin : unnamedblk1
+                        Vt_debug_emitv_process pVt_debug_emitv_process;
+                        p = processQueue.pop_front();
+                        if ((null != p)) begin
+                            kill();
+                        end
                     end
                     __Vrepeat0 = (__Vrepeat0 - 32'h1);
                 end

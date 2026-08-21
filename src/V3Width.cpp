@@ -5660,10 +5660,8 @@ class WidthVisitor final : public VNVisitor {
                 patternAssoc(nodep, vdtypep, defaultp);
             } else if (auto* const vdtypep = VN_CAST(dtypep, WildcardArrayDType)) {
                 patternWildcard(nodep, vdtypep, defaultp);
-            } else if (auto* const vdtypep = VN_CAST(dtypep, DynArrayDType)) {
-                patternDynArray(nodep, vdtypep, defaultp);
-            } else if (auto* const vdtypep = VN_CAST(dtypep, QueueDType)) {
-                patternQueue(nodep, vdtypep, defaultp);
+            } else if (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)) {
+                patternDynArrayOrQueue(nodep, dtypep);
             } else if (VN_IS(dtypep, BasicDType) && VN_AS(dtypep, BasicDType)->isRanged()) {
                 patternBasic(nodep, dtypep, defaultp);
             } else {
@@ -6039,38 +6037,28 @@ class WidthVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
     }
-    void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember* defaultp) {
-        AstNodeExpr* newp = new AstConsDynArray{nodep->fileline()};
-        newp->dtypeFrom(arrayp);
-        for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
-             patp = VN_AS(patp->nextp(), PatMember)) {
-            patp->dtypep(arrayp->subDTypep());
-            AstNodeExpr* const rhsp = patternMemberValueIterate(patp);
-            const bool rhsIsValue
-                = AstNode::computeCastable(rhsp->dtypep(), arrayp->subDTypep(), nullptr)
-                      .isAssignable();
-            AstConsDynArray* const newap
-                = new AstConsDynArray{nodep->fileline(), rhsIsValue, rhsp, false, newp};
-            newap->dtypeFrom(arrayp);
-            newp = newap;
+    void patternDynArrayOrQueue(AstPattern* nodep, AstNodeDType* arrayp) {
+        AstNodeExpr* newp = nullptr;
+        const bool isDynArray = VN_IS(arrayp, DynArrayDType);
+        if (isDynArray) {
+            newp = new AstConsDynArray{nodep->fileline()};
+        } else {
+            newp = new AstConsQueue{nodep->fileline()};
         }
-        nodep->replaceWith(newp);
-        // UINFOTREE(9, newp, "", "apat-out");
-    }
-    void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember* defaultp) {
-        AstNodeExpr* newp = new AstConsQueue{nodep->fileline()};
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
             AstNodeExpr* const rhsp = patternMemberValueIterate(patp);
-            const bool rhsIsDirect
-                = AstNode::computeCastable(rhsp->dtypep(), arrayp, nullptr).isAssignable();
             const bool rhsIsValue
-                = AstNode::computeCastable(rhsp->dtypep(), arrayp->subDTypep(), nullptr)
+                = AstNode::computeCastable(arrayp->subDTypep(), rhsp->dtypep(), nullptr)
                       .isAssignable();
-            AstConsQueue* const newap = new AstConsQueue{
-                nodep->fileline(), !rhsIsDirect && rhsIsValue, rhsp, false, newp};
+            AstNodeExpr* newap = nullptr;
+            if (isDynArray) {
+                newap = new AstConsDynArray{nodep->fileline(), rhsIsValue, rhsp, false, newp};
+            } else {
+                newap = new AstConsQueue{nodep->fileline(), rhsIsValue, rhsp, false, newp};
+            }
             newap->dtypeFrom(arrayp);
             newp = newap;
         }

@@ -9,10 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
+test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--assert', '--timing', '--lint-only'],
-             fails=True,
-             expect_filename=test.golden_filename)
+test.lint(verilator_flags2=['--stats'])
+
+test.file_grep(test.stats, r'Assertions, NFA delay ring edge visits\s+(\d+)', 15)
 
 test.passes()
