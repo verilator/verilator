@@ -15,8 +15,7 @@ test.scenarios('vlt')
 # best-effort in-class assignment instrumentation, and unsupported cases warn.
 test.lint(verilator_flags2=['--no-timing'], expect_filename=test.golden_filename, fails=True)
 
-test.compile(
-    verilator_flags2=['--Wno-COVERIGN', '--no-skip-identical', '--no-timing'])
+test.compile(verilator_flags2=['--Wno-COVERIGN', '--no-skip-identical', '--no-timing'])
 
 test.execute()
 
