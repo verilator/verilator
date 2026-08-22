@@ -1,0 +1,43 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Nested non-arrayed instances
+public_flat -path "top.i_mid_0.mid_tmp"
+public_flat -path "top.i_mid_1.i_leaf.leaf"
+
+// Sibling instances: sub_a and sub_b share a clone (same marking), sub_c gets
+// its own (different attribute), sub_d stays private.
+public_flat    -path "top.sub_a.leaf"
+public_flat    -path "top.sub_b.leaf"
+public_flat_rd -path "top.sub_c.leaf"
+
+// Undriven signal: marking it public must suppress the UNUSEDSIGNAL warning
+public_flat    -path "top.i_orph_a.orphan"
+
+// Escaped identifiers
+public_flat -path "top.\\inst.with.dot .\\var.with.dot "
+public_flat -path "top.\\foo[abc] .\\var.with.dot "
+
+// Cell arrays
+// Naming one iteration marks all iterations of that array
+public_flat -path "top.i_arr1[1].leaf"
+public_flat -path "top.i_arr2[1][0].leaf"
+public_flat -path "top.i_narr[-1].leaf"
+public_flat -path "top.\\foo] [2].leaf"
+
+// Interfaces
+public_flat -path "top.i_single.data"
+public_flat -path "top.i_iarr[1].data"
+public_flat -path "top.i_md[1][0].data"
+
+// Generate-for and generate-if
+public_flat -path "top.gen_loop[0].i_sub.leaf"
+public_flat -path "top.gen_loop[1].loop_local"
+public_flat -path "top.gen_neg[-1].neg_local"
+public_flat -path "top.gen_if.i_sub.leaf"
+public_flat -path "top.gen_if.if_local"

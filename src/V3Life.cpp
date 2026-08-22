@@ -145,7 +145,7 @@ public:
     void checkRemoveAssign(const AstVarScope* vscp, LifeVarEntry& entr) {
         const AstVar* const varp = vscp->varp();
         // We don't optimize any public sigs
-        if (varp->isSigPublic()) return;
+        if (varp->isOrMaySigPublic()) return;
         if (varp->isReadByDpi()) return;
         if (varp->sensIfacep()) return;
         // Check the var entry, and remove if appropriate
@@ -189,7 +189,7 @@ public:
             entr.init(false);
         } else {
             if (AstConst* const constp = entr.constNodep()) {
-                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->isWrittenByDpi()
+                if (!varrefp->varp()->isOrMaySigPublic() && !varrefp->varp()->isWrittenByDpi()
                     && !varrefp->varp()->isVirtIface()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate

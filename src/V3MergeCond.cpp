@@ -253,7 +253,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
         // Gather read and written variables
         if (access.isReadOrRW()) m_propsp->m_rdVars.insert(varp);
         if (access.isWriteOrRW()) m_propsp->m_wrVars.insert(varp);
-        if (varp->isSigPublic() || varp->isWrittenByDpi() || varp->isReadByDpi()) {
+        if (varp->isOrMaySigPublic() || varp->isWrittenByDpi() || varp->isReadByDpi()) {
             m_propsp->m_explPubRef = true;
         }
     }
@@ -810,7 +810,7 @@ class MergeCondVisitor final : public VNVisitor {
             condp->foreach([&](const AstVarRef* nodep) {
                 AstVar* const varp = nodep->varp();
                 varp->user1(1);
-                if (varp->isSigPublic() || varp->isWrittenByDpi()) m_mgCondPubWritable = true;
+                if (varp->isOrMaySigPublic() || varp->isWrittenByDpi()) m_mgCondPubWritable = true;
             });
             // Now check again if mergeable. We need this to pick up assignments to conditions,
             // e.g.: 'c = c ? a : b' at the beginning of the list, which is in fact not mergeable
