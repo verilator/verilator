@@ -63,24 +63,38 @@ RUN_URL=$(gh run view ${RUN_ID} --json url    --jq ".url")
 PAGES_OWNER=$(gh repo view --json owner --jq '.owner.login' | tr '[:upper:]' '[:lower:]')
 PAGES_NAME=$(gh repo view --json name --jq '.name')
 
-# Create notification comment content
-NOTIFICATION=${COVERAGE_DIR}/notification.txt
-cat > ${NOTIFICATION} <<NOTIFICATION_TEMPLATE
+REPORT_URL=https://${PAGES_OWNER}.github.io/${PAGES_NAME}/coverage-reports/${RUN_ID}/index.html
+
+###############################################################################
+# Create the PR notification
+###############################################################################
+
+NOTIFICATION_DIR=notification
+mkdir -p ${NOTIFICATION_DIR}
+
+cat > ${NOTIFICATION_DIR}/body.txt <<NOTIFICATION_TEMPLATE
 Patch coverage from PR workflow [#${RUN_NUM}](${RUN_URL}) (code coverage of lines changed relative to ${COVERAGE_BASE}):
 NOTIFICATION_TEMPLATE
 
 if [ -f ${COVERAGE_DIR}/empty-patch ]; then
-  echo "Patch contains no code changes" >> ${NOTIFICATION}
+  # Patch is empty
+  cat >> ${NOTIFICATION_DIR}/body.txt <<SUMMARY_TEMPLATE
+Patch contains no code changes
+SUMMARY_TEMPLATE
+
+  echo "Workflow [#${RUN_NUM}](${RUN_URL}): patch contains no code changes" > ${NOTIFICATION_DIR}/hist.txt
+
 else
-  cat >> ${NOTIFICATION} <<SUMMARY_TEMPLATE
+  # Patch contains code changes
+
+  cat >> ${NOTIFICATION_DIR}/body.txt <<SUMMARY_TEMPLATE
 <pre>
 $(grep -E "(lines|branches)\.*:" ${MAKE_LOG} | sed "s/\.*:/:/" || true)
 </pre>
-Report: [${RUN_ID}](https://${PAGES_OWNER}.github.io/${PAGES_NAME}/coverage-reports/${RUN_ID}/index.html)
+Report: [${RUN_ID}](${REPORT_URL})
 
-Please get to 100% line coverage, and understand all branches; see https://github.com/verilator/verilator/blob/master/docs/internals.rst#code-coverage-results
+Please get to 100% line coverage, and understand all branches; see the [developer docs](https://github.com/verilator/verilator/blob/master/docs/internals.rst#code-coverage-results)
 SUMMARY_TEMPLATE
-fi
 
-# Print it
-cat ${NOTIFICATION}
+  echo "Workflow [#${RUN_NUM}](${RUN_URL}) report: [${RUN_ID}](${REPORT_URL})" > ${NOTIFICATION_DIR}/hist.txt
+fi

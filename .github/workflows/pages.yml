@@ -97,5 +97,7 @@ jobs:
       - name: Comment on PR
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          # Slug of the app the above token belongs to, see 'ci-pages-notify.bash'
+          GH_AUTHOR: ${{ steps.generate-token.outputs.app-slug }}
           PR_RUN_IDS: ${{ needs.build.outputs.pr-run-ids }}
         run: ./ci/ci-pages-notify.bash
