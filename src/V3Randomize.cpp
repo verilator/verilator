@@ -36,6 +36,7 @@
 #include "V3Randomize.h"
 
 #include "V3Ast.h"
+#include "V3Const.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
@@ -2851,6 +2852,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                     });
                 }
                 VL_DO_DANGLING(elemSelp->deleteTree(), elemSelp);
+
+                // This body is a fresh clone, instantiated after V3Const's usual
+                // enum-literal folding pass already ran -- re-fold just the literal,
+                // leaving the still-symbolic `item` comparison alone.
+                perElemExprp = V3Const::constifyEdit(perElemExprp);
 
                 perElemExprp->foreach([&](AstNode* nodep) {
                     // Don't mark loop variable references as randomizable
