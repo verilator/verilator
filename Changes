@@ -149,6 +149,7 @@ Verilator 5.051 devel
 * Fix crash on forward-referencing parameters (#8175). [Geza Lore, Testorrent USA, Inc.]
 * Fix crash on empty `#()` parameter list on class instance (#8182). [Geza Lore, Testorrent USA, Inc.]
 * Fix crash on multiple missing type parameters (#8184). [Geza Lore, Testorrent USA, Inc.]
+* Fix internal on backslash quoted strings (#8198). [Henry Hsieh]
 
 
 Verilator 5.050 2026-07-01
