@@ -47,6 +47,7 @@ Verilator 5.051 devel
 * Optimize temporary insertion for single bit replicates in DFG (#8110). [Geza Lore, Testorrent USA, Inc.]
 * Optimize mtask coarsening in multi-threaded scheduling (#8120). [Geza Lore, Testorrent USA, Inc.]
 * Optimize NFA delay-ring edge traversal, drop complexity to linear (#8145). [Artur Bieniek, Antmicro Ltd.]
+* Optimize consecutive and goto repetitions using ring buffers, deprecate --assert-unroll-limit. [Artur Bieniek, Antmicro Ltd.]
 * Fix $finish continuing event loop (#7267) (#7950). [Artur Bieniek, Antmicro Ltd.]
 * Fix $display accepting streaming concat arguments (#7663) (#7890). [Jaeuk Lee]
 * Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
