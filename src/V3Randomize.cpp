@@ -1964,6 +1964,134 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftL* nodep) override { handleShift(nodep); }
     void visit(AstShiftR* nodep) override { handleShift(nodep); }
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
+    // Root var behind a VarRef/MemberSel/StructSel/ArraySel chain, e.g.
+    // cube[0] or x[0].a. Class members lower to AstMemberSel, struct/union
+    // members to the distinct AstStructSel. Both recurse into fromp().
+    static AstVar* arrayCompareRootVarp(AstNodeExpr* exprp) {
+        if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) return refp->varp();
+        if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+            return arrayCompareRootVarp(mselp->fromp());
+        }
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return arrayCompareRootVarp(sselp->fromp());
+        }
+        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            return arrayCompareRootVarp(selp->fromp());
+        }
+        return nullptr;
+    }
+    // True iff exprp's array can't be an SMT symbol (non-rand or unresolved).
+    static bool arrayCompareOperandNeedsExpansion(AstNodeExpr* exprp) {
+        AstVar* const varp = arrayCompareRootVarp(exprp);
+        return !varp || !varp->rand().isRandomizable();
+    }
+    // True iff exprp isn't a variable, member select, or constant-indexed
+    // slice of either -- buildElementwiseEqp can't safely clone anything
+    // else (e.g. a function call would run once per array element).
+    static bool arrayCompareOperandUnsupported(AstNodeExpr* exprp) {
+        return !arrayCompareRootVarp(exprp);
+    }
+    // True iff dtp is a queue, dynamic, associative, or wildcard associative
+    // array. buildElementwiseEqp can't expand these, whether they appear at
+    // the top level of a comparison's type or nested in a fixed-size array.
+    static bool isDynamicArrayDType(const AstNodeDType* dtp) {
+        return VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType) || VN_IS(dtp, AssocArrayDType)
+               || VN_IS(dtp, WildcardArrayDType);
+    }
+    // True iff every array dimension of dtp bottoms out in a scalar leaf
+    // (no queue/dynamic/associative array anywhere in the shape).
+    static bool arrayShapeFullySupported(const AstNodeDType* dtp) {
+        if (const AstUnpackArrayDType* const arrp = VN_CAST(dtp, UnpackArrayDType)) {
+            return arrayShapeFullySupported(arrp->subDTypep()->skipRefp());
+        }
+        return !isDynamicArrayDType(dtp);
+    }
+    // Builds lhs[0]==rhs[0] && lhs[1]==rhs[1] && ..., recursing into
+    // sub-arrays. Takes ownership of lhsp/rhsp. markLhs/markRhs: mark that
+    // side's element accesses symbolic (only for genuinely-rand arrays).
+    AstNodeExpr* buildElementwiseEqp(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+                                     const AstUnpackArrayDType* arrDtp, bool markLhs,
+                                     bool markRhs) {
+        const AstNodeDType* const subDtp = arrDtp->subDTypep()->skipRefp();
+        const AstUnpackArrayDType* const subArrDtp = VN_CAST(subDtp, UnpackArrayDType);
+        AstNodeExpr* resultp = nullptr;
+        // Index each synthesized AstArraySel with 0-based k, not
+        // arrDtp->lo()+k: a real source-level constant index gets bias-
+        // adjusted to 0-based by an earlier pass before elaboration, but
+        // one built fresh here skips that pass, so it needs k directly.
+        for (int k = 0; k < arrDtp->elementsConst(); ++k) {
+            // cloneTreePure() doesn't preserve user1(), so re-mark the clone.
+            AstNodeExpr* const lhsBasep = lhsp->cloneTreePure(false);
+            AstNodeExpr* const rhsBasep = rhsp->cloneTreePure(false);
+            if (markLhs) lhsBasep->foreach([](AstNode* np) { np->user1(true); });
+            if (markRhs) rhsBasep->foreach([](AstNode* np) { np->user1(true); });
+            AstArraySel* const lhsElemp = new AstArraySel{
+                fl, lhsBasep,
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
+            AstArraySel* const rhsElemp = new AstArraySel{
+                fl, rhsBasep,
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
+            if (markLhs) lhsElemp->user1(true);
+            if (markRhs) rhsElemp->user1(true);
+            AstNodeExpr* const elemEqp
+                = subArrDtp
+                      ? buildElementwiseEqp(fl, lhsElemp, rhsElemp, subArrDtp, markLhs, markRhs)
+                      : static_cast<AstNodeExpr*>(new AstEq{fl, lhsElemp, rhsElemp});
+            elemEqp->user1(true);
+            if (resultp) {
+                resultp = new AstLogAnd{fl, resultp, elemEqp};
+                resultp->user1(true);
+            } else {
+                resultp = elemEqp;
+            }
+        }
+        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+        return resultp;
+    }
+    // Shared visit(AstEq*)/visit(AstNeq*) target; non-array compares fall
+    // through to editSMT() below.
+    void handleEqNeq(AstNodeBiop* nodep, bool isNeq) {
+        if (editFormat(nodep)) return;
+        AstNodeDType* const lhsDtp = nodep->lhsp()->dtypep()->skipRefp();
+        const bool isArrayShaped = VN_IS(lhsDtp, UnpackArrayDType) || isDynamicArrayDType(lhsDtp);
+        if (isArrayShaped
+            && (arrayCompareOperandNeedsExpansion(nodep->lhsp())
+                || arrayCompareOperandNeedsExpansion(nodep->rhsp()))) {
+            FileLine* const fl = nodep->fileline();
+            const AstUnpackArrayDType* const arrDtp = VN_CAST(lhsDtp, UnpackArrayDType);
+            if (!arrDtp || !arrayShapeFullySupported(arrDtp)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint on an array "
+                              "shape containing a queue, dynamic, or associative array");
+                return;
+            }
+            if (arrayCompareOperandUnsupported(nodep->lhsp())
+                || arrayCompareOperandUnsupported(nodep->rhsp())) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint with an operand "
+                              "that isn't a variable, member, or constant-indexed slice");
+                return;
+            }
+            const bool lhsIsRand = !arrayCompareOperandNeedsExpansion(nodep->lhsp());
+            const bool rhsIsRand = !arrayCompareOperandNeedsExpansion(nodep->rhsp());
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* resultp
+                = buildElementwiseEqp(fl, lhsp, rhsp, arrDtp, lhsIsRand, rhsIsRand);
+            if (isNeq) {
+                resultp = new AstLogNot{fl, resultp};
+                resultp->user1(true);
+            }
+            nodep->replaceWith(resultp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            iterate(resultp);
+            return;
+        }
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstEq* nodep) override { handleEqNeq(nodep, false); }
+    void visit(AstNeq* nodep) override { handleEqNeq(nodep, true); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
