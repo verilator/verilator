@@ -32,17 +32,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 OrderMoveDomScope::DomScopeMap OrderMoveDomScope::s_dsMap;
 
 //======================================================================
-// OrderMoveVertex implementation
-
-OrderMoveVertex::OrderMoveVertex(OrderMoveGraph& graph, OrderLogicVertex* lVtxp,
-                                 const AstSenTree* domainp) VL_MT_DISABLED
-    : V3GraphVertex{&graph},
-      m_logicp{lVtxp},
-      m_domScope{OrderMoveDomScope::getOrCreate(domainp, lVtxp ? lVtxp->scopep() : nullptr)} {
-    UASSERT_OBJ(!lVtxp || lVtxp->domainp() == domainp, lVtxp, "Wrong domain for Move vertex");
-}
-
-//======================================================================
 // OrderMoveGraphBuilder - for OrderMoveGraph::build
 
 class OrderMoveGraphBuilder final {
@@ -227,4 +216,15 @@ public:
 std::unique_ptr<OrderMoveGraph> OrderMoveGraph::build(OrderGraph& orderGraph,
                                                       const V3Order::TrigToSenMap& trigToSen) {
     return OrderMoveGraphBuilder::apply(orderGraph, trigToSen);
+}
+
+//======================================================================
+// OrderMoveVertex implementation
+
+OrderMoveVertex::OrderMoveVertex(OrderMoveGraph& graph, OrderLogicVertex* lVtxp,
+                                 const AstSenTree* domainp) VL_MT_DISABLED
+    : V3GraphVertex{&graph},
+      m_logicp{lVtxp},
+      m_domScope{OrderMoveDomScope::getOrCreate(domainp, lVtxp ? lVtxp->scopep() : nullptr)} {
+    UASSERT_OBJ(!lVtxp || lVtxp->domainp() == domainp, lVtxp, "Wrong domain for Move vertex");
 }
