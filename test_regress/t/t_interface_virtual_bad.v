@@ -46,4 +46,37 @@ module t;
     $write("*-* All Finished *-*\n");
     $finish;
   end
+
+  PBus p8_array[2] ();
+  QBus q8_array[2] ();
+  virtual PBus v8_array[2];
+
+  function automatic void take_vif(input virtual PBus.phy vif);
+  endfunction
+
+  function automatic void take_ref_vif(ref virtual PBus.phy vif);
+  endfunction
+
+  function automatic void take_const_ref_vif(const ref virtual PBus.phy vif);
+  endfunction
+
+  function automatic void take_vif_array(input virtual PBus.phy vifs[2]);
+  endfunction
+
+  function automatic void take_ref_vif_array(ref virtual PBus.phy vifs[2]);
+  endfunction
+
+  function automatic void take_const_ref_vif_array(const ref virtual PBus.phy vifs[2]);
+  endfunction
+
+  initial begin
+    take_vif(q8);
+    take_ref_vif(v8);
+    take_ref_vif(p8);
+    take_const_ref_vif(v8);
+    take_vif_array(q8_array);
+    take_ref_vif_array(v8_array);
+    take_ref_vif_array(p8_array);
+    take_const_ref_vif_array(v8_array);
+  end
 endmodule
