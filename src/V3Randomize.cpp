@@ -2853,9 +2853,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
                 VL_DO_DANGLING(elemSelp->deleteTree(), elemSelp);
 
-                // This body is a fresh clone, instantiated after V3Const's usual
-                // enum-literal folding pass already ran -- re-fold just the literal,
-                // leaving the still-symbolic `item` comparison alone.
+                // enum-literal folding pass already ran -- re-fold the literals.
                 perElemExprp = V3Const::constifyEdit(perElemExprp);
 
                 perElemExprp->foreach([&](AstNode* nodep) {
