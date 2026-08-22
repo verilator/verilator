@@ -1707,11 +1707,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return found;
     }
 
-    static bool hasInstanceMemberEventRef(const AstCovergroup* cgp) {
-        return cgp->eventp()->exists(
-            [](const AstVarRef* refp) { return isEnclosingInstanceVar(refp->varp()); });
-    }
-
     static bool parseEmbeddedEventExpr(AstNodeExpr* exprp, AstVar*& baseVarp,
                                        AstVar*& memberVarp) {
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
@@ -2081,14 +2076,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                 hasUnsupportedEvent = true;
                             }
                         }
-                        VL_DO_DANGLING(pushDeletep(cgp->unlinkFrBack()), cgp);
-                        itemp = nextp;
-                        continue;
-                    }
-                    if (hasInstanceMemberEventRef(cgp)) {
-                        cgp->v3warn(COVERIGN, "Unsupported: 'covergroup' clocking event "
-                                              "on member variable");
-                        hasUnsupportedEvent = true;
                         VL_DO_DANGLING(pushDeletep(cgp->unlinkFrBack()), cgp);
                         itemp = nextp;
                         continue;
