@@ -7568,14 +7568,15 @@ class WidthVisitor final : public VNVisitor {
                 const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefToEnump();
                 const AstIfaceRefDType* const portIfacep
                     = VN_CAST(portDTypep->elemDTypep(true), IfaceRefDType);
-                const bool matchingVirtualInterfaceRefs
-                    = virtualIfaceDTypesCompatible(portDTypep, pinDTypep, true);
-                const bool compatibleVirtualInterfaceInput
-                    = virtualIfaceDTypesCompatible(portDTypep, pinDTypep, false);
+                const VCastable ifaceCastable
+                    = portIfacep ? AstNode::computeCastable(portDTypep, pinDTypep, pinp,
+                                                            /* checkIfaceArgCompat */ true)
+                                 : VCastable{VCastable::UNSUPPORTED};
+                const bool matchingRefDTypes = portIfacep
+                                                   ? ifaceCastable == VCastable::SAMEISH
+                                                   : similarDTypeRecurse(portDTypep, pinDTypep);
                 const bool pinIsNull = VN_IS(pinp, Const) && VN_AS(pinp, Const)->num().isNull();
-                if ((portp->isRef() || portp->isConstRef())
-                    && !similarDTypeRecurse(portDTypep, pinDTypep)
-                    && !matchingVirtualInterfaceRefs) {
+                if ((portp->isRef() || portp->isConstRef()) && !matchingRefDTypes) {
                     if (portIfacep) {
                         pinp->v3error("Ref virtual interface argument "
                                       << portp->prettyNameQ()
@@ -7588,7 +7589,7 @@ class WidthVisitor final : public VNVisitor {
                                       << pinDTypep->prettyDTypeNameQ() << ".");
                     }
                 } else if (portIfacep && portIfacep->isVirtual() && portp->isInput() && !pinIsNull
-                           && !compatibleVirtualInterfaceInput) {
+                           && !ifaceCastable.isAssignable()) {
                     pinp->v3error("Virtual interface argument "
                                   << portp->prettyNameQ()
                                   << " requires a compatible interface type, parameters, and "
@@ -9070,26 +9071,6 @@ class WidthVisitor final : public VNVisitor {
     static bool similarDTypeRecurse(const AstNodeDType* const node1p,
                                     const AstNodeDType* const node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
-    }
-    static bool virtualIfaceDTypesCompatible(const AstNodeDType* portDTypep,
-                                             const AstNodeDType* pinDTypep, const bool isRef) {
-        portDTypep = portDTypep->skipRefp();
-        pinDTypep = pinDTypep->skipRefp();
-        if (const AstUnpackArrayDType* const portArrayp = VN_CAST(portDTypep, UnpackArrayDType)) {
-            const AstUnpackArrayDType* const pinArrayp = VN_CAST(pinDTypep, UnpackArrayDType);
-            // IEEE 1800-2023 6.22.2: Equal-sized fixed arrays have equivalent types.
-            return pinArrayp && portArrayp->elementsConst() == pinArrayp->elementsConst()
-                   && virtualIfaceDTypesCompatible(portArrayp->subDTypep(), pinArrayp->subDTypep(),
-                                                   isRef);
-        }
-        const AstIfaceRefDType* const portIfacep = VN_CAST(portDTypep, IfaceRefDType);
-        const AstIfaceRefDType* const pinIfacep = VN_CAST(pinDTypep, IfaceRefDType);
-        if (!portIfacep || !portIfacep->isVirtual() || !pinIfacep) return false;
-        if (isRef && !pinIfacep->isVirtual()) return false;
-        if (portIfacep->ifaceViaCellp() != pinIfacep->ifaceViaCellp()) return false;
-        // An unqualified actual may bind to a modport-qualified input.
-        return portIfacep->modportp() == pinIfacep->modportp()
-               || (!isRef && !pinIfacep->modportp());
     }
     void iterateCheckFileDesc(AstNode* parentp, AstNode* underp, Stage stage) {
         UASSERT_OBJ(stage == BOTH, parentp, "Bad call");
