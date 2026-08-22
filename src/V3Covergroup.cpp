@@ -36,6 +36,89 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
+// Covergroup expression validation visitor
+
+class CovergroupExprValidVisitor final : public VNVisitor {
+    const std::set<const AstVar*>& m_sampleMembers;
+    const std::set<const AstVar*>& m_constructorRefMembers;
+    bool m_inCoverageExpression = false;
+    bool m_sampleFormalAllowed = false;
+
+    void scanSampleExpression(AstNode* nodep) {
+        if (!nodep) return;
+        VL_RESTORER(m_sampleFormalAllowed);
+        m_sampleFormalAllowed = true;
+        iterateAndNextNull(nodep);
+    }
+
+    void scanCoverageExpression(AstNode* nodep) {
+        if (!nodep) return;
+        VL_RESTORER(m_inCoverageExpression);
+        m_inCoverageExpression = true;
+        iterateAndNextNull(nodep);
+    }
+
+    void visit(AstCoverpoint* nodep) override {
+        scanSampleExpression(nodep->exprp());
+        scanSampleExpression(nodep->iffp());
+        iterateAndNextNull(nodep->binsp());
+        iterateAndNextNull(nodep->optionsp());
+    }
+    void visit(AstCoverCross* nodep) override {
+        iterateAndNextNull(nodep->itemsp());
+        iterateAndNextNull(nodep->optionsp());
+        iterateAndNextNull(nodep->rawBodyp());
+    }
+    void visit(AstCoverBin* nodep) override {
+        scanCoverageExpression(nodep->rangesp());
+        scanSampleExpression(nodep->iffp());
+        scanCoverageExpression(nodep->arraySizep());
+        scanCoverageExpression(nodep->transp());
+    }
+    void visit(AstVarRef* nodep) override {
+        if (!m_sampleFormalAllowed && m_sampleMembers.count(nodep->varp())) {
+            nodep->v3error("Covergroup sample formal argument "
+                           << nodep->varp()->prettyNameQ()
+                           << " may only be used in a coverpoint or conditional guard "
+                              "expression (IEEE 1800-2012 19.8.1).");
+        }
+        if (m_inCoverageExpression && m_constructorRefMembers.count(nodep->varp())) {
+            nodep->v3error("Ref covergroup constructor formal argument "
+                           << nodep->varp()->prettyNameQ()
+                           << " may not be used in a covergroup expression "
+                              "(IEEE 1800-2012 19.5).");
+        }
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (m_inCoverageExpression && nodep->taskp()) {
+            bool invalidDirection = false;
+            for (AstNode* stmtp = nodep->taskp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                const AstVar* const varp = VN_CAST(stmtp, Var);
+                if (varp && varp->isIO() && varp->isWritable()) {
+                    invalidDirection = true;
+                    break;
+                }
+            }
+            if (invalidDirection) {
+                nodep->v3error("Function " << nodep->taskp()->prettyNameQ()
+                                           << " called in a covergroup expression has an "
+                                              "output, inout, or non-const ref argument "
+                                              "(IEEE 1800-2012 19.5).");
+            }
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    CovergroupExprValidVisitor(const std::set<const AstVar*>& sampleMembers,
+                               const std::set<const AstVar*>& constructorRefMembers)
+        : m_sampleMembers{sampleMembers}
+        , m_constructorRefMembers{constructorRefMembers} {}
+    void scan(AstNode* nodep) { iterate(nodep); }
+};
+
+//######################################################################
 // Functional coverage visitor
 
 class FunctionalCoverageVisitor final : public VNVisitor {
@@ -484,7 +567,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         UINFO(4, "  Generating code for coverpoint: " << coverpointp->name());
 
         // Get the coverpoint expression
-        AstNodeExpr* const exprp = coverpointp->exprp();
+        AstNodeExpr* exprp = coverpointp->exprp();
 
         // Expand automatic bins before processing
         expandAutomaticBins(coverpointp, exprp);
@@ -497,6 +580,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         // Create implicit automatic bins if no regular bins exist
         createImplicitAutoBins(coverpointp, exprp, autoBinMax);
+
+        AstVar* const valueVarp = new AstVar{
+            coverpointp->fileline(), VVarType::BLOCKTEMP,
+            "__VcpValue_" + sanitizeGeneratedName(coverpointp->name()), exprp->dtypep()};
+        valueVarp->funcLocal(true);
+        m_sampleFuncp->addStmtsp(valueVarp);
+        exprp->unlinkFrBack();
+        m_sampleFuncp->addStmtsp(new AstAssign{
+            coverpointp->fileline(),
+            new AstVarRef{coverpointp->fileline(), valueVarp, VAccess::WRITE}, exprp});
+        coverpointp->exprp(new AstVarRef{coverpointp->fileline(), valueVarp, VAccess::READ});
+        exprp = coverpointp->exprp();
 
         // Every coverpoint routes through the VlCoverpoint runtime.  Transition coverpoints are
         // included: their per-value matching is still generated as a state machine in sample()
@@ -1358,10 +1453,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     } else if (!boundp) {
                         irp->v3error("Non-constant expression in bin range; "
                                      "range bounds must be constants");
+                        if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                         return nullptr;
                     } else if (boundp->num().isFourState()) {
                         irp->v3error("Four-state (x/z) value in bin range bound; "
                                      "range bounds must be two-state constants");
+                        if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                         return nullptr;
                     } else {
                         rangeCondp = makeOpenRangeCondition(irp->fileline(), exprp, boundp,
@@ -1370,10 +1467,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 } else if (!minConstp || !maxConstp) {
                     irp->v3error("Non-constant expression in bin range; "
                                  "range bounds must be constants");
+                    if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                     return nullptr;
                 } else if (minConstp->num().isFourState() || maxConstp->num().isFourState()) {
                     irp->v3error("Four-state (x/z) value in bin range bound; "
                                  "range bounds must be two-state constants");
+                    if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                     return nullptr;
                 } else if (minConstp->toUQuad() == maxConstp->toUQuad()) {
                     // Single value
@@ -1399,6 +1498,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             } else {
                 currRangep->v3error(
                     "Non-constant expression in bin range; values must be constants");
+                if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                 return nullptr;
             }
 
@@ -1607,6 +1707,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return found;
     }
 
+    static bool hasInstanceMemberEventRef(const AstCovergroup* cgp) {
+        return cgp->eventp()->exists(
+            [](const AstVarRef* refp) { return isEnclosingInstanceVar(refp->varp()); });
+    }
+
     static bool parseEmbeddedEventExpr(AstNodeExpr* exprp, AstVar*& baseVarp,
                                        AstVar*& memberVarp) {
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
@@ -1758,62 +1863,90 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     class FormalRefVisitor final : public VNVisitor {
-        const std::set<const AstVar*>& m_constructorArgs;
         const std::map<const AstVar*, AstVar*>& m_replacements;
-        AstMemberSel* m_memberSelp = nullptr;
-        AstNode* m_offenderp = nullptr;
 
-        void visit(AstMemberSel* nodep) override {
-            if (m_offenderp) return;
-            VL_RESTORER(m_memberSelp);
-            if (!m_memberSelp) m_memberSelp = nodep;
-            iterateChildren(nodep);
-        }
         void visit(AstVarRef* nodep) override {
-            if (!m_memberSelp) return;
             const auto it = m_replacements.find(nodep->varp());
-            if (it != m_replacements.end()) {
-                nodep->varp(it->second);
-            } else if (m_constructorArgs.count(nodep->varp())) {
-                m_offenderp = m_memberSelp;
-            }
+            if (it == m_replacements.end()) return;
+            nodep->varp(it->second);
         }
-        void visit(AstNode* nodep) override {
-            if (!m_offenderp) iterateChildren(nodep);
-        }
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:
-        FormalRefVisitor(const std::set<const AstVar*>& constructorArgs,
-                         const std::map<const AstVar*, AstVar*>& replacements)
-            : m_constructorArgs{constructorArgs}
-            , m_replacements{replacements} {}
-        void scan(AstNode* nodep) {
-            if (nodep && !m_offenderp) iterate(nodep);
-        }
-        AstNode* offenderp() const { return m_offenderp; }
+        explicit FormalRefVisitor(const std::map<const AstVar*, AstVar*>& replacements)
+            : m_replacements{replacements} {}
+        void scan(AstNode* nodep) { iterate(nodep); }
     };
 
-    AstNode* findUnsupportedFormalRef() {
-        std::set<const AstVar*> constructorArgs;
-        std::map<const AstVar*, AstVar*> replacements;
+    void validateCovergroupExpressions() {
+        std::set<const AstVar*> sampleMembers;
+        std::set<const AstVar*> constructorRefMembers;
         for (AstNode* stmtp = m_constructorp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstVar* const varp = VN_CAST(stmtp, Var);
-            if (!varp || !varp->isIO()) continue;
-            constructorArgs.insert(varp);
-            if (!VN_IS(varp->dtypep()->skipRefp(), ClassRefDType)) continue;
-            AstVar* const memberp
+            const AstVar* const varp = VN_CAST(stmtp, Var);
+            if (!varp || !varp->isIO() || (!varp->isRef() && !varp->isConstRef())) continue;
+            const AstVar* const memberp
                 = VN_CAST(m_memberMap.findMember(m_covergroupp, varp->name()), Var);
             UASSERT_OBJ(memberp && memberp->isClassMember(), varp,
                         "Covergroup constructor argument missing persistent member");
-            replacements.emplace(varp, memberp);
+            constructorRefMembers.insert(varp);
+            constructorRefMembers.insert(memberp);
         }
-        FormalRefVisitor visitor{constructorArgs, replacements};
-        for (AstCoverpoint* const cpp : m_coverpoints) {
-            visitor.scan(cpp->exprp());
-            visitor.scan(cpp->iffp());
+        for (AstNode* stmtp = m_sampleFuncp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            const AstVar* const varp = VN_CAST(stmtp, Var);
+            if (!varp || !varp->isIO()) continue;
+            const AstVar* const memberp
+                = VN_CAST(m_memberMap.findMember(m_covergroupp, varp->name()), Var);
+            UASSERT_OBJ(memberp && memberp->isClassMember(), varp,
+                        "Covergroup sample argument missing persistent member");
+            sampleMembers.insert(memberp);
         }
-        for (AstCoverCross* const crossp : m_coverCrosses) visitor.scan(crossp->iffp());
-        return visitor.offenderp();
+        CovergroupExprValidVisitor{sampleMembers, constructorRefMembers}.scan(m_constructorp);
+    }
+
+    void rebindFormalRefs() {
+        std::map<const AstVar*, AstVar*> replacements;
+        for (AstNode* stmtp = m_constructorp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (!varp->isIO()) continue;
+                AstVar* const memberp
+                    = VN_CAST(m_memberMap.findMember(m_covergroupp, varp->name()), Var);
+                UASSERT_OBJ(memberp && memberp->isClassMember(), varp,
+                            "Covergroup constructor argument missing persistent member");
+                replacements.emplace(varp, memberp);
+            }
+        }
+        size_t expectedBindings = 0;
+        for (const auto& pair : replacements) {
+            if (pair.first->isRef() || pair.first->isConstRef()) ++expectedBindings;
+        }
+        size_t rewrittenBindings = 0;
+        for (AstNode* stmtp = m_constructorp->stmtsp(); stmtp;) {
+            AstNode* const nextp = stmtp->nextp();
+            if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
+                AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
+                AstVarRef* const rhsp = VN_CAST(assignp->rhsp(), VarRef);
+                if (lhsp && rhsp
+                    && (lhsp->varp()->declDirection() == VDirection::REF
+                        || lhsp->varp()->declDirection() == VDirection::CONSTREF)) {
+                    const auto it = replacements.find(rhsp->varp());
+                    UASSERT_OBJ(it != replacements.end() && it->second == lhsp->varp(), assignp,
+                                "Unexpected covergroup reference binding assignment");
+                    AstCExpr* const bindp = new AstCExpr{assignp->fileline(), ""};
+                    bindp->add(lhsp->unlinkFrBack());
+                    bindp->add(" = &");
+                    bindp->add(rhsp->unlinkFrBack());
+                    assignp->replaceWith(bindp->makeStmt());
+                    pushDeletep(assignp);
+                    ++rewrittenBindings;
+                }
+            }
+            stmtp = nextp;
+        }
+        UASSERT_OBJ(rewrittenBindings == expectedBindings, m_constructorp,
+                    "Covergroup reference argument missing binding");
+        FormalRefVisitor visitor{replacements};
+        for (AstCoverpoint* const cpp : m_coverpoints) visitor.scan(cpp);
+        for (AstCoverCross* const crossp : m_coverCrosses) visitor.scan(crossp);
     }
 
     AstVarRef* installEnclosingBackPointer(const std::vector<AstNodeAssign*>& constructps) {
@@ -1952,20 +2085,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                         itemp = nextp;
                         continue;
                     }
+                    if (hasInstanceMemberEventRef(cgp)) {
+                        cgp->v3warn(COVERIGN, "Unsupported: 'covergroup' clocking event "
+                                              "on member variable");
+                        hasUnsupportedEvent = true;
+                        VL_DO_DANGLING(pushDeletep(cgp->unlinkFrBack()), cgp);
+                        itemp = nextp;
+                        continue;
+                    }
                     // V3Active handles events that do not depend on an enclosing instance.
                     UINFO(4, "Keeping covergroup event node for V3Active: " << nodep->name());
                     itemp = nextp;
                     continue;
                 }
                 itemp = nextp;
-            }
-
-            // If covergroup has unsupported clocking event, skip processing it
-            // but still clean up coverpoints so they don't reach downstream passes
-            if (hasUnsupportedEvent) {
-                iterateChildren(nodep);
-                deleteCoverageItems();
-                return;
             }
 
             // Find the sample() method and constructor
@@ -1978,12 +2111,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             UINFO(9, "Found sample() method: " << (m_sampleFuncp ? "yes" : "no"));
             UINFO(9, "Found constructor: " << (m_constructorp ? "yes" : "no"));
 
-            iterateChildren(nodep);
-
-            if (AstNode* const offenderp = findUnsupportedFormalRef()) {
-                offenderp->v3warn(COVERIGN, "Unsupported: 'covergroup' coverpoint dereferencing a "
-                                            "non-class constructor argument; ignoring covergroup "
-                                                << nodep->prettyNameQ());
+            // If covergroup has unsupported clocking event, skip processing it
+            // but still clean up coverpoints so they don't reach downstream passes
+            if (hasUnsupportedEvent) {
+                iterateChildren(nodep);
+                validateCovergroupExpressions();
+                rebindFormalRefs();
                 deleteCoverageItems();
                 if (embeddedEventForkp) {
                     VL_DO_DANGLING(pushDeletep(embeddedEventForkp), embeddedEventForkp);
@@ -1991,6 +2124,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 return;
             }
 
+            iterateChildren(nodep);
+            validateCovergroupExpressions();
+            rebindFormalRefs();
             const std::vector<AstNodeAssign*> constructps = findCovergroupConstructions();
 
             // Embedded covergroups (IEEE 1800-2023 19.4): coverpoints, iff expressions, and

@@ -2811,6 +2811,10 @@ private:
         // Remember the alias - can't do it yet because we may have additional symbols to be added,
         // or maybe an alias of an alias
         m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, lhsSymp, rhsSymp);
+        AstVarScope* const lhsVscp = VN_CAST(lhsSymp->nodep(), VarScope);
+        AstVarScope* const rhsVscp = VN_CAST(rhsSymp->nodep(), VarScope);
+        UASSERT_OBJ(lhsVscp && rhsVscp, nodep, "Interface alias missing variable scope");
+        setAliasVarScope(lhsVscp, rhsVscp);
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -5186,7 +5190,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         iterateChildren(nodep);
         AstVarScope* aliasp = LinkDotScopeVisitor::getAliasVarScopep(nodep);
-        if (aliasp && aliasp != nodep) {
+        if (aliasp && aliasp != nodep && !nodep->varp()->isIfaceRef()) {
             // Aliased variable might still be references from outside,
             // eg through the VPI, and is traced, so we need the value to propagate.
             // TODO: this means external writes to the LHS (e.g.: through the VPI) don't work

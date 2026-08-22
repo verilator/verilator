@@ -7566,12 +7566,34 @@ class WidthVisitor final : public VNVisitor {
                 if (!pinp) continue;  // Argument error we'll find later
                 AstNodeDType* const portDTypep = portp->dtypep()->skipRefToEnump();
                 const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefToEnump();
-                if (portp->direction() == VDirection::REF
-                    && !similarDTypeRecurse(portDTypep, pinDTypep)) {
-                    pinp->v3error("Ref argument requires matching types;"
-                                  << " port " << portp->prettyNameQ() << " requires "
-                                  << portDTypep->prettyDTypeNameQ() << " but connection is "
-                                  << pinDTypep->prettyDTypeNameQ() << ".");
+                const AstIfaceRefDType* const portIfacep
+                    = VN_CAST(portDTypep->elemDTypep(true), IfaceRefDType);
+                const VCastable ifaceCastable
+                    = portIfacep ? AstNode::computeCastable(portDTypep, pinDTypep, pinp,
+                                                            /* checkIfaceArgCompat */ true)
+                                 : VCastable{VCastable::UNSUPPORTED};
+                const bool matchingRefDTypes = portIfacep
+                                                   ? ifaceCastable == VCastable::SAMEISH
+                                                   : similarDTypeRecurse(portDTypep, pinDTypep);
+                const bool pinIsNull = VN_IS(pinp, Const) && VN_AS(pinp, Const)->num().isNull();
+                if ((portp->isRef() || portp->isConstRef()) && !matchingRefDTypes) {
+                    if (portIfacep) {
+                        pinp->v3error("Ref virtual interface argument "
+                                      << portp->prettyNameQ()
+                                      << " requires the same interface type, parameters, and "
+                                         "modport.");
+                    } else {
+                        pinp->v3error("Ref argument requires matching types;"
+                                      << " port " << portp->prettyNameQ() << " requires "
+                                      << portDTypep->prettyDTypeNameQ() << " but connection is "
+                                      << pinDTypep->prettyDTypeNameQ() << ".");
+                    }
+                } else if (portIfacep && portIfacep->isVirtual() && portp->isInput() && !pinIsNull
+                           && !ifaceCastable.isAssignable()) {
+                    pinp->v3error("Virtual interface argument "
+                                  << portp->prettyNameQ()
+                                  << " requires a compatible interface type, parameters, and "
+                                     "modport.");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
                     pinp->v3widthWarn(portp->width(), pinp->width(),
                                       "Function output argument "

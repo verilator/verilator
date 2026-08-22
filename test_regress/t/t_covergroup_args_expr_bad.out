@@ -1,0 +1,48 @@
+%Error: t/t_covergroup_args_expr_bad.v:19:26: Function 'function_ref' called in a covergroup expression has an output, inout, or non-const ref argument (IEEE 1800-2012 19.5).
+                                            : ... note: In instance 't'
+   19 |       bins ref_bin = {0, function_ref(value)};
+      |                          ^~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_args_expr_bad.v:19:39: Covergroup sample formal argument 'value' may only be used in a coverpoint or conditional guard expression (IEEE 1800-2012 19.8.1).
+                                            : ... note: In instance 't'
+   19 |       bins ref_bin = {0, function_ref(value)};
+      |                                       ^~~~~
+%Error: t/t_covergroup_args_expr_bad.v:20:26: Function 'function_output' called in a covergroup expression has an output, inout, or non-const ref argument (IEEE 1800-2012 19.5).
+                                            : ... note: In instance 't'
+   20 |       bins output_bin = {function_output(value)};
+      |                          ^~~~~~~~~~~~~~~
+%Error: t/t_covergroup_args_expr_bad.v:20:42: Covergroup sample formal argument 'value' may only be used in a coverpoint or conditional guard expression (IEEE 1800-2012 19.8.1).
+                                            : ... note: In instance 't'
+   20 |       bins output_bin = {function_output(value)};
+      |                                          ^~~~~
+%Error: t/t_covergroup_args_expr_bad.v:21:25: Covergroup sample formal argument 'value' may only be used in a coverpoint or conditional guard expression (IEEE 1800-2012 19.8.1).
+                                            : ... note: In instance 't'
+   21 |       option.at_least = value;
+      |                         ^~~~~
+%Warning-COVERIGN: t/t_covergroup_args_expr_bad.v:21:25: Ignoring unsupported: non-constant 'option.at_least'; using default value
+                                                       : ... note: In instance 't'
+   21 |       option.at_least = value;
+      |                         ^~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_args_expr_bad.v:19:26: Non-constant expression in bin range; values must be constants
+                                            : ... note: In instance 't'
+   19 |       bins ref_bin = {0, function_ref(value)};
+      |                          ^~~~~~~~~~~~
+%Error: t/t_covergroup_args_expr_bad.v:20:26: Non-constant expression in bin range; values must be constants
+                                            : ... note: In instance 't'
+   20 |       bins output_bin = {function_output(value)};
+      |                          ^~~~~~~~~~~~~~~
+%Error: t/t_covergroup_args_expr_bad.v:27:19: Ref covergroup constructor formal argument 'value' may not be used in a covergroup expression (IEEE 1800-2012 19.5).
+                                            : ... note: In instance 't'
+   27 |       bins bad = {value};
+      |                   ^~~~~
+%Error: t/t_covergroup_args_expr_bad.v:27:19: Non-constant expression in bin range; values must be constants
+                                            : ... note: In instance 't'
+   27 |       bins bad = {value};
+      |                   ^~~~~
+%Error: t/t_covergroup_args_expr_bad.v:34:19: Non-constant expression in bin range; range bounds must be constants
+                                            : ... note: In instance 't'
+   34 |       bins bad = {[0:nonconstant_bound]};
+      |                   ^
+%Error: Exiting due to

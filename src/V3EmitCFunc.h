@@ -1768,6 +1768,9 @@ public:
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
         const AstNodeModule* const varModp = EmitCParentModule::get(varp);
+        const bool dereferenceCovergroupRef
+            = varp->covergroupRefMember() && nodep->access().isReadOrRW();
+        if (dereferenceCovergroupRef) putns(nodep, "(*");
         if (EmitCUtil::isConstPoolMod(varModp)) {
             // Reference to constant pool variable
             putns(nodep, EmitCUtil::topClassName() + "__ConstPool__");
@@ -1784,6 +1787,7 @@ public:
             emitDereference(nodep, nodep->selfPointerProtect(m_useSelfForThis));
         }
         putns(nodep, nodep->varp()->nameProtect());
+        if (dereferenceCovergroupRef) puts(")");
     }
     void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now
