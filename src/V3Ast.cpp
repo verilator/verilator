@@ -1666,18 +1666,6 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     fromDtp = fromDtp->skipRefToEnump();
     if (toDtp == fromDtp) return VCastable::SAMEISH;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
-    // Check interface-array compatibility for argument passing.
-    if (checkIfaceArgCompat) {
-        if (const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType)) {
-            const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
-            // IEEE 1800-2023 6.22.2: Equal-sized fixed arrays have equivalent types.
-            if (!fromArrayp || toArrayp->elementsConst() != fromArrayp->elementsConst()) {
-                return VCastable::INCOMPATIBLE;
-            }
-            return computeCastableImp(toArrayp->subDTypep(), fromArrayp->subDTypep(), nullptr,
-                                      checkIfaceArgCompat);
-        }
-    }
     // UNSUP unpacked struct/unions (treated like BasicDType)
     const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
 
@@ -1710,13 +1698,27 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         if (upcast) return VCastable::COMPATIBLE;
         if (downcast) return VCastable::DYNAMIC_CLASS;
         return VCastable::INCOMPATIBLE;
-    } else if (const AstIfaceRefDType* const toIfp = VN_CAST(toDtp, IfaceRefDType)) {
+    } else if (const AstIfaceRefDType* const toIfp
+               = VN_CAST(checkIfaceArgCompat ? toDtp->elemDTypep(true) : toDtp, IfaceRefDType)) {
         // Two interface refs are compatible if they point at the same interface
         // module (and modport, if any). Pointer-equality on the dtype isn't
         // enough since every cell binding clones the dtype.
         // Argument compatibility also requires matching virtualness for ref arguments, while
         // input arguments may bind an unqualified or same-modport source to a virtual target.
-        const AstIfaceRefDType* const fromIfp = VN_CAST(fromDtp, IfaceRefDType);
+        // Argument compatibility also supports fixed-size arrays of interface references.
+        const AstIfaceRefDType* const fromIfp
+            = VN_CAST(checkIfaceArgCompat ? fromDtp->elemDTypep(true) : fromDtp, IfaceRefDType);
+        if (checkIfaceArgCompat && fromIfp && (toDtp != toIfp || fromDtp != fromIfp)) {
+            const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType);
+            const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
+            // IEEE 1800-2023 6.22.2: Equal-sized fixed arrays have equivalent types.
+            if (!toArrayp || !fromArrayp
+                || toArrayp->elementsConst() != fromArrayp->elementsConst()) {
+                return VCastable::INCOMPATIBLE;
+            }
+            return computeCastableImp(toArrayp->subDTypep(), fromArrayp->subDTypep(), nullptr,
+                                      checkIfaceArgCompat);
+        }
         if (!fromIfp || toIfp->ifaceViaCellp() != fromIfp->ifaceViaCellp()) {
             if (!checkIfaceArgCompat) return castable;
             return VCastable::INCOMPATIBLE;

@@ -38,7 +38,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Covergroup expression validation visitor
 
-class CovergroupExpressionValidationVisitor final : public VNVisitor {
+class CovergroupExprValidVisitor final : public VNVisitor {
     const std::set<const AstVar*>& m_sampleMembers;
     const std::set<const AstVar*>& m_constructorRefMembers;
     bool m_inCoverageExpression = false;
@@ -111,8 +111,8 @@ class CovergroupExpressionValidationVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    CovergroupExpressionValidationVisitor(const std::set<const AstVar*>& sampleMembers,
-                                          const std::set<const AstVar*>& constructorRefMembers)
+    CovergroupExprValidVisitor(const std::set<const AstVar*>& sampleMembers,
+                               const std::set<const AstVar*>& constructorRefMembers)
         : m_sampleMembers{sampleMembers}
         , m_constructorRefMembers{constructorRefMembers} {}
     void scan(AstNode* nodep) { iterate(nodep); }
@@ -1900,8 +1900,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                         "Covergroup sample argument missing persistent member");
             sampleMembers.insert(memberp);
         }
-        CovergroupExpressionValidationVisitor{sampleMembers, constructorRefMembers}.scan(
-            m_constructorp);
+        CovergroupExprValidVisitor{sampleMembers, constructorRefMembers}.scan(m_constructorp);
     }
 
     void rebindFormalRefs() {
