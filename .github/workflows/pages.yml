@@ -52,8 +52,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ./ci/ci-pages.bash
-          ls -lsha
-          tree -L 3 pages
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5
         with:

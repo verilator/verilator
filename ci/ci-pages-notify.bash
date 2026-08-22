@@ -33,24 +33,20 @@ ARTIFACTS_ROOT=artifacts
 mkdir -p ${ARTIFACTS_ROOT}
 
 for RUN_ID in ${PR_RUN_IDS//,/ }; do
-  echo "@@@ Processing run ${RUN_ID}"
-
   # Create workflow artifacts directory
   ARTIFACTS_DIR=${ARTIFACTS_ROOT}/${RUN_ID}
   mkdir -p ${ARTIFACTS_DIR}
 
   # Download artifact of this run, if exists
-  gh run download ${RUN_ID} --name pr-notification --dir ${ARTIFACTS_DIR} || true
-  ls -lsha ${ARTIFACTS_DIR}
+  gh run download ${RUN_ID} --name pr-notification --dir ${ARTIFACTS_DIR} &> /dev/null || true
 
   # Move on if no notification is required
   if [ ! -f ${ARTIFACTS_DIR}/pr-number.txt ]; then
-    echo "No notification found"
     continue
   fi
-  echo "Posting notification found"
 
   PR_NUMBER=$(cat ${ARTIFACTS_DIR}/pr-number.txt)
+  echo "@@@ Run ${RUN_ID}: notifying PR #${PR_NUMBER}"
 
   # Everything below is created and validated by the 'upload-pr-notification'
   # action. Move on if this artifact was not made by it, e.g. it is left over
@@ -141,14 +137,13 @@ $(cat ${ARTIFACTS_DIR}/hist.txt)
 -->
 NEXTHIST_TEMPLATE
 
-  cat ${COMMENT}
-
   # Post it. Move on if this failed, without deleting anything below, otherwise
   # the history held by the stale notifications would be lost.
   if ! jq -Rs '{body: .}' ${COMMENT} \
       | gh api --method POST "repos/{owner}/{repo}/issues/${PR_NUMBER}/comments" \
           --input - > ${ARTIFACTS_DIR}/posted.json; then
-    echo "Failed to post the notification on PR #${PR_NUMBER}" >&2
+    echo "Failed to post this notification on PR #${PR_NUMBER}:" >&2
+    cat ${COMMENT} >&2
     continue
   fi
   echo "Posted $(jq -r '.html_url' ${ARTIFACTS_DIR}/posted.json)"

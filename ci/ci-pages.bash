@@ -35,13 +35,10 @@ compile_coverage_reports() {
 
   # Gather all coverage workflow runs within the time window
   gh run list -w coverage.yml --limit 1000 --created ">=${OLDEST}" --json "databaseId,event,status,conclusion,createdAt,number" > recentRuns.json
-  echo @@@ Recent runs:
-  jq "." recentRuns.json
 
   # Select completd runs that were not cancelled or skipped, sort by descending run number
   jq 'sort_by(-.number) | map(select(.status == "completed" and (.conclusion == "success" or .conclusion == "failure")))' recentRuns.json > completedRuns.json
-  echo @@@ Completed with success or failure:
-  jq "." completedRuns.json
+  echo "@@@ $(jq length completedRuns.json) of $(jq length recentRuns.json) runs since ${OLDEST} completed with success or failure"
 
   # Create artifacts root directory
   local ARTIFACTS_ROOT=artifacts-coverage
@@ -64,11 +61,8 @@ compile_coverage_reports() {
 
     # For each worfklow run that was triggered by this event type
     for RUN_ID in $(jq ".[] | select(.event == \"${EVENT}\") |.databaseId" completedRuns.json); do
-      echo "@@@ Processing run ${RUN_ID}"
-
       # Extract the info of this run
       jq ".[] | select(.databaseId == $RUN_ID)" completedRuns.json > workflow.json
-      jq "." workflow.json
 
       # Record run ID of PR job
       [[ $EVENT != "pull_request" ]] || PR_RUN_IDS="$PR_RUN_IDS $RUN_ID"
@@ -78,15 +72,13 @@ compile_coverage_reports() {
       mkdir -p ${ARTIFACTS_DIR}
 
       # Download artifacts of this run, if exists
-      gh run download ${RUN_ID} --name coverage-report --dir ${ARTIFACTS_DIR} || true
-      ls -lsha ${ARTIFACTS_DIR}
+      gh run download ${RUN_ID} --name coverage-report --dir ${ARTIFACTS_DIR} &> /dev/null || true
 
       # Move on if no coverage report is available
       if [ ! -d ${ARTIFACTS_DIR}/report ]; then
-        echo "No coverage report found"
         continue
       fi
-      echo "Coverage report found"
+      echo "@@@ Run ${RUN_ID}: coverage report found"
 
       # Emit section header
       if [[ -n $EMIT_SECTION_HEADER ]]; then
@@ -159,13 +151,10 @@ compile_rtlmeter_reports() {
 
   # Gather all RTLMeter workflow runs within the time window
   gh run list -w rtlmeter.yml --limit 1000 --created ">=${OLDEST}" --json "databaseId,event,status,conclusion,createdAt,number" > recentRuns.json
-  echo @@@ Recent runs:
-  jq "." recentRuns.json
 
   # Select completd runs that were not cancelled or skipped, sort by descending run number
   jq 'sort_by(-.number) | map(select(.status == "completed" and (.conclusion == "success" or .conclusion == "failure")))' recentRuns.json > completedRuns.json
-  echo @@@ Completed with success or failure:
-  jq "." completedRuns.json
+  echo "@@@ $(jq length completedRuns.json) of $(jq length recentRuns.json) runs since ${OLDEST} completed with success or failure"
 
   # Create artifacts root directory
   local ARTIFACTS_ROOT=artifacts-rtlmeter
@@ -188,11 +177,8 @@ compile_rtlmeter_reports() {
 
     # For each worfklow run that was triggered by this event type
     for RUN_ID in $(jq ".[] | select(.event == \"${EVENT}\") |.databaseId" completedRuns.json); do
-      echo "@@@ Processing run ${RUN_ID}"
-
       # Extract the info of this run
       jq ".[] | select(.databaseId == $RUN_ID)" completedRuns.json > workflow.json
-      jq "." workflow.json
 
       # Record run ID of PR job
       [[ $EVENT != "pull_request" ]] || PR_RUN_IDS="$PR_RUN_IDS $RUN_ID"
@@ -202,15 +188,13 @@ compile_rtlmeter_reports() {
       mkdir -p ${ARTIFACTS_DIR}
 
       # Download artifacts of this run, if exists
-      gh run download ${RUN_ID} --name rtlmeter-report --dir ${ARTIFACTS_DIR} || true
-      ls -lsha ${ARTIFACTS_DIR}
+      gh run download ${RUN_ID} --name rtlmeter-report --dir ${ARTIFACTS_DIR} &> /dev/null || true
 
       # Move on if no RTLMeter report is available
       if [ ! -d ${ARTIFACTS_DIR}/report ]; then
-        echo "No RTLMeter report found"
         continue
       fi
-      echo "RTLMeter report found"
+      echo "@@@ Run ${RUN_ID}: RTLMeter report found"
 
       # Emit section header
       if [[ -n $EMIT_SECTION_HEADER ]]; then
