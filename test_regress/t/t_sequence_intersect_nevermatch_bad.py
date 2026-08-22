@@ -9,10 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+test.top_filename = 't/t_sequence_intersect_nevermatch.v'
 
-test.compile(verilator_flags2=['--assert --timing -Wno-NEVERMATCH'])
-
-test.execute()
+test.compile(verilator_flags2=['--assert --timing'],
+             fails=True,
+             expect_filename=test.golden_filename)
 
 test.passes()
