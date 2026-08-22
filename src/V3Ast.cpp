@@ -1711,6 +1711,11 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         if (downcast) return VCastable::DYNAMIC_CLASS;
         return VCastable::INCOMPATIBLE;
     } else if (const AstIfaceRefDType* const toIfp = VN_CAST(toDtp, IfaceRefDType)) {
+        // Two interface refs are compatible if they point at the same interface
+        // module (and modport, if any). Pointer-equality on the dtype isn't
+        // enough since every cell binding clones the dtype.
+        // Argument compatibility also requires matching virtualness for ref arguments, while
+        // input arguments may bind an unqualified or same-modport source to a virtual target.
         const AstIfaceRefDType* const fromIfp = VN_CAST(fromDtp, IfaceRefDType);
         if (!fromIfp || toIfp->ifaceViaCellp() != fromIfp->ifaceViaCellp()) {
             if (!checkIfaceArgCompat) return castable;
