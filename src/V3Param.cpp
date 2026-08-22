@@ -2542,6 +2542,8 @@ class ParamVisitor final : public VNVisitor {
             const auto itm = workQueue.cbegin();
             AstNodeModule* const modp = itm->second;
             workQueue.erase(itm);
+            // Starting a new module, so what was learned about the last one no longer holds.
+            V3LinkDotIfaceCapture::clearContainingModuleCache();
 
             // Process once; note user2 will be cleared on specialization, so we will do the
             // specialized module if needed

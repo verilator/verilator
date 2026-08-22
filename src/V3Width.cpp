@@ -2294,6 +2294,20 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_SIZE: {
             AstNodeDType* const dtypep = fromDTypep(nodep->fromp());
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
+            // Only worth asking while parameters are still being worked out.
+            if (m_paramsOnly) {
+                // A module that is still being copied does not have its final sizes.
+                const AstNodeModule* const ownModp
+                    = V3LinkDotIfaceCapture::containingModule(dtypep);
+                if (ownModp && ownModp->parameterizedTemplate() && !ownModp->dead()) {
+                    UINFO(9, "size deferred, type still on template " << ownModp->name());
+                    // These queries always give an int, so set that now and let the
+                    // value be worked out once the copy exists.
+                    nodep->dtypeSetInt();
+                    return;
+                }
+            }
+
             if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)) {
                 switch (nodep->attrType()) {
                 case VAttrType::DIM_SIZE: {
