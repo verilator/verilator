@@ -15,7 +15,6 @@ module t (
   endfunction
 
   final begin
-    // Explicit-clock $past is rejected globally before final-call lowering.
     data = fpast_explicit_clock();
   end
 

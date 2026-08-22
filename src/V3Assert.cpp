@@ -288,10 +288,6 @@ class AssertVisitor final : public VNVisitor {
     AstFinal* m_finalp = nullptr;  // Current final block
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    std::unordered_set<const AstNodeFTask*> m_pastFTasksp;  // FTasks that reach a $past
-    std::unordered_map<const AstNodeFTask*, std::vector<const AstNodeFTask*>>
-        m_callees;  // Caller -> called FTasks, for the transitive closure
-    std::vector<AstNodeFTaskRef*> m_finalFTaskRefsp;  // FTask calls inside final blocks
     V3UniqueNames m_caseTempNames{"__VCase"};
     // Map from (expression, senTree) to AstAlways that computes delayed values of the expression
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
@@ -992,7 +988,6 @@ class AssertVisitor final : public VNVisitor {
 
     //========== Past
     void visit(AstPast* nodep) override {
-        if (m_ftaskp) m_pastFTasksp.insert(m_ftaskp);
         iterateChildren(nodep);
         uint32_t ticks = 1;
         if (nodep->ticksp()) {
@@ -1004,15 +999,16 @@ class AssertVisitor final : public VNVisitor {
         AstNodeExpr* const exprp = newSampledExpr(nodep->exprp()->unlinkFrBack());
         AstSenTree* const senTreep = nodep->sentreep()->unlinkFrBack();
         AstNodeExpr* inp = nullptr;
-        if (VN_IS(m_procedurep, Final)) {
+        if (VN_IS(m_procedurep, Final) || m_ftaskp) {
             // A sampling-tick finish reads one stage deeper (IEEE 1800-2023 16.9.3).
             FileLine* const flp = nodep->fileline();
             AstAlways* const alwaysp = getDelayedAlways(exprp, senTreep);
             AstNodeExpr* const betweenTicksp = pastValueRef(alwaysp, flp, ticks);
             AstNodeExpr* const onTickp = pastValueRef(alwaysp, flp, ticks + 1);
-            AstNodeExpr* const onTickCondp
-                = new AstEq{flp, new AstVarRef{flp, getPastTickTimeVar(alwaysp), VAccess::READ},
-                            new AstCExpr{flp, "vlSymsp->_vm_contextp__->finishPendingTime()", 64}};
+            AstNodeExpr* const onTickCondp = new AstLogAnd{
+                flp, new AstCExpr{flp, "vlSymsp->_vm_contextp__->executingFinal()", 1},
+                new AstEq{flp, new AstVarRef{flp, getPastTickTimeVar(alwaysp), VAccess::READ},
+                          new AstCExpr{flp, "vlSymsp->_vm_contextp__->finishPendingTime()", 64}}};
             AstCond* const condp = new AstCond{flp, onTickCondp, onTickp, betweenTicksp};
             condp->dtypeFrom(onTickp);
             inp = condp;
@@ -1021,36 +1017,6 @@ class AssertVisitor final : public VNVisitor {
         }
         nodep->replaceWith(inp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
-    void visit(AstNodeFTaskRef* nodep) override {
-        if (m_ftaskp) m_callees[m_ftaskp].push_back(nodep->taskp());
-        if (VN_IS(m_procedurep, Final)) m_finalFTaskRefsp.push_back(nodep);
-        iterateChildren(nodep);
-    }
-    // A final-block $past in a function body cannot get the sampling-tick correction, as the
-    // body is lowered once for all call sites; reject after the call graph is complete
-    void reportFinalPastCalls() {
-        if (m_finalFTaskRefsp.empty()) return;
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (const auto& pair : m_callees) {
-                if (m_pastFTasksp.count(pair.first)) continue;
-                for (const AstNodeFTask* const calleep : pair.second) {
-                    if (m_pastFTasksp.count(calleep)) {
-                        m_pastFTasksp.insert(pair.first);
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-        }
-        for (AstNodeFTaskRef* const refp : m_finalFTaskRefsp) {
-            if (m_pastFTasksp.count(refp->taskp())) {
-                refp->v3warn(E_UNSUPPORTED,
-                             "Unsupported: $past in a function or task called from a final block");
-            }
-        }
     }
 
     //========== Move $sampled down to read-only variables
@@ -1333,10 +1299,7 @@ class AssertVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit AssertVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-        reportFinalPastCalls();
-    }
+    explicit AssertVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~AssertVisitor() override {
         V3Stats::addStat("Assertions, assert non-immediate statements", m_statAsNotImm);
         V3Stats::addStat("Assertions, assert immediate statements", m_statAsImm);
