@@ -32,36 +32,48 @@
                                          : ... Suggested alternative: 'grant'
    44 |     $display("q8.grant=", p8.grant, " v8.grant=", v8.grant, v8_phy.addr, v8.gran);
       |                                                                             ^~~~
-%Error: t/t_interface_virtual_bad.v:73:14: Virtual interface argument 'vif' requires a compatible interface type, parameters, and modport.
+%Error: t/t_interface_virtual_bad.v:74:14: Virtual interface argument 'vif' requires a compatible interface type, parameters, and modport.
                                          : ... note: In instance 't'
-   73 |     take_vif(q8);
+   74 |     take_vif(q8);
       |              ^~
-%Error: t/t_interface_virtual_bad.v:74:18: Ref virtual interface argument 'vif' requires the same interface type, parameters, and modport.
-                                         : ... note: In instance 't'
-   74 |     take_ref_vif(v8);
-      |                  ^~
 %Error: t/t_interface_virtual_bad.v:75:18: Ref virtual interface argument 'vif' requires the same interface type, parameters, and modport.
                                          : ... note: In instance 't'
-   75 |     take_ref_vif(p8);
+   75 |     take_ref_vif(v8);
       |                  ^~
-%Error: t/t_interface_virtual_bad.v:76:24: Ref virtual interface argument 'vif' requires the same interface type, parameters, and modport.
+%Error: t/t_interface_virtual_bad.v:76:18: Ref virtual interface argument 'vif' requires the same interface type, parameters, and modport.
                                          : ... note: In instance 't'
-   76 |     take_const_ref_vif(v8);
+   76 |     take_ref_vif(p8);
+      |                  ^~
+%Error: t/t_interface_virtual_bad.v:77:24: Ref virtual interface argument 'vif' requires the same interface type, parameters, and modport.
+                                         : ... note: In instance 't'
+   77 |     take_const_ref_vif(v8);
       |                        ^~
-%Error: t/t_interface_virtual_bad.v:77:20: Virtual interface argument 'vifs' requires a compatible interface type, parameters, and modport.
+%Error: t/t_interface_virtual_bad.v:78:20: Virtual interface argument 'vifs' requires a compatible interface type, parameters, and modport.
                                          : ... note: In instance 't'
-   77 |     take_vif_array(q8_array);
+   78 |     take_vif_array(q8_array);
       |                    ^~~~~~~~
-%Error: t/t_interface_virtual_bad.v:78:24: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
-                                         : ... note: In instance 't'
-   78 |     take_ref_vif_array(v8_array);
-      |                        ^~~~~~~~
 %Error: t/t_interface_virtual_bad.v:79:24: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
                                          : ... note: In instance 't'
-   79 |     take_ref_vif_array(p8_array);
+   79 |     take_ref_vif_array(v8_array);
       |                        ^~~~~~~~
-%Error: t/t_interface_virtual_bad.v:80:30: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
+%Error: t/t_interface_virtual_bad.v:80:24: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
                                          : ... note: In instance 't'
-   80 |     take_const_ref_vif_array(v8_array);
+   80 |     take_ref_vif_array(p8_array);
+      |                        ^~~~~~~~
+%Error: t/t_interface_virtual_bad.v:81:30: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
+                                         : ... note: In instance 't'
+   81 |     take_const_ref_vif_array(v8_array);
       |                              ^~~~~~~~
+%Error: t/t_interface_virtual_bad.v:82:14: Virtual interface argument 'vif' requires a compatible interface type, parameters, and modport.
+                                         : ... note: In instance 't'
+   82 |     take_vif(v8_array);
+      |              ^~~~~~~~
+%Error: t/t_interface_virtual_bad.v:83:20: Virtual interface argument 'vifs' requires a compatible interface type, parameters, and modport.
+                                         : ... note: In instance 't'
+   83 |     take_vif_array(v8);
+      |                    ^~
+%Error: t/t_interface_virtual_bad.v:84:20: Virtual interface argument 'vifs' requires a compatible interface type, parameters, and modport.
+                                         : ... note: In instance 't'
+   84 |     take_vif_array(v8_array3);
+      |                    ^~~~~~~~~
 %Error: Exiting due to

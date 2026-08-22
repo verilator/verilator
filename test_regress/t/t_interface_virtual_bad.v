@@ -50,6 +50,7 @@ module t;
   PBus p8_array[2] ();
   QBus q8_array[2] ();
   virtual PBus v8_array[2];
+  virtual PBus v8_array3[3];
 
   function automatic void take_vif(input virtual PBus.phy vif);
   endfunction
@@ -78,5 +79,8 @@ module t;
     take_ref_vif_array(v8_array);
     take_ref_vif_array(p8_array);
     take_const_ref_vif_array(v8_array);
+    take_vif(v8_array);
+    take_vif_array(v8);
+    take_vif_array(v8_array3);
   end
 endmodule
