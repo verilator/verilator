@@ -143,12 +143,6 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo ${{ github.event.number }} > ../report-artifact/pr-number.txt
           fi
-          # Create the notification artifact, for pull requests only
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            mkdir ../notification-artifact
-            mv obj_coverage/notification.txt ../notification-artifact/body.txt
-            echo ${{ github.event.number }} > ../notification-artifact/pr-number.txt
-          fi
 
       - name: Upload report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
@@ -156,12 +150,12 @@ jobs:
           path: report-artifact
           name: coverage-report
 
-      - name: Upload notification
+      - name: Upload PR notification
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        uses: ./repo/.github/actions/upload-pr-notification
         with:
-          path: notification-artifact
-          name: pr-notification
+          path: repo/notification
+          key: coverage
 
   # Create GitHub issue for failed scheduled jobs
   # This should always be the last job (we want an issue if anything breaks)
