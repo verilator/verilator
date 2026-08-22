@@ -372,6 +372,7 @@ set(COMMON_SOURCES
     V3Unroll.cpp
     V3UnrollGen.cpp
     V3VariableOrder.cpp
+    V3Virtual.cpp
     V3Waiver.cpp
     V3Width.cpp
     V3WidthCommit.cpp
