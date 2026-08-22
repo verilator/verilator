@@ -2501,6 +2501,17 @@ AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
     return valuep;
 }
 
+void AstIntfRef::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (baseName() != "") str << " base=" << baseName();
+    if (modportName() != "") str << " mp=" << modportName();
+}
+void AstIntfRef::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, baseName);
+    dumpJsonStrFunc(str, modportName);
+    dumpJsonGen(str);
+}
+
 void AstJumpGo::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " -> ";

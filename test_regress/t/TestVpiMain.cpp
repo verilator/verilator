@@ -72,9 +72,17 @@ int main(int argc, char** argv) {
 #ifdef VERILATOR_SIM_DEBUG
     contextp->debug(99);
 #endif
+#ifdef TEST_MODEL_NAME
+// Construct under an instance name, so all VPI paths gain that prefix
+#define TEST_MODEL_NAME_STRINGIFY_(x) #x
+#define TEST_MODEL_NAME_STRINGIFY(x) TEST_MODEL_NAME_STRINGIFY_(x)
+    const std::unique_ptr<VM_PREFIX> top{
+        new VM_PREFIX{contextp.get(), TEST_MODEL_NAME_STRINGIFY(TEST_MODEL_NAME)}};
+#else
     const std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{contextp.get(),
                                                        // Note null name - we're flattening it out
                                                        ""}};
+#endif
     contextp->fatalOnVpiError(false);  // otherwise it will fail on systemtf
 
 #ifdef VERILATOR_SIM_DEBUG
