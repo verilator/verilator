@@ -11,13 +11,12 @@ class Cls;
   endtask
 endclass
 
-module top ();
-  event e;
+module top;
   initial begin
     Cls c;
     c = new;
     c.trig_e();
-    wait (e.triggered);
+    wait (c.e.triggered);
     $write("*-* All Finished *-*\n");
     $finish;
   end
