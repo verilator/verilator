@@ -197,9 +197,11 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
 // VlCovergroupType / VlCovRegistry
 
 VlCovergroupInst* VlCovergroupType::newInstance() {
-    const uint32_t slot = static_cast<uint32_t>(m_insts.size());
-    VlCovergroupInst* const instp = new VlCovergroupInst{this, slot, m_nextInstId++};
+    VlCovergroupInst* const instp = new VlCovergroupInst{this, m_nextInstId++};
     m_insts.emplace_back(instp);
+#if !VM_COVERAGE
+    instp->m_slot = static_cast<uint32_t>(m_insts.size() - 1);
+#endif
     ++m_createdInsts;
     return instp;
 }

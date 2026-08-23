@@ -276,21 +276,22 @@ class VlCovergroupInst final {
     std::vector<std::unique_ptr<VlCoverpointIf>> m_items;
     VlCovergroupType* const m_typep;  // Owning type; outlives this node
     const uint32_t m_instId;  // Stable identity across churn; NOT the slot
-    // VL_ATTR_UNUSED: under VM_COVERAGE retire() only marks m_retained, so
-    // nothing reads the slot until the coverage-writer rework lets it free.
-    uint32_t m_slot VL_ATTR_UNUSED;  // Index into m_typep->m_insts; unlink-by-swap rewrites
+#if !VM_COVERAGE
+    // Only retire()'s free path uses this; under VM_COVERAGE the node is never
+    // unlinked, so the slot would be dead.  VlCovergroupType sets it.
+    uint32_t m_slot = 0;  // Index into m_typep->m_insts; unlink-by-swap rewrites
+#endif
     uint32_t m_attachCount = 1;  // SV handles bound here; 1 from construction
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
-    // Reads m_items to fold the residue; rewrites m_slot/m_retained on unlink.
+    // Reads m_items to fold the residue; owns m_slot and m_retained.
     friend class VlCovergroupType;
 
 public:
     // CONSTRUCTORS
-    VlCovergroupInst(VlCovergroupType* typep, uint32_t slot, uint32_t instId)
+    VlCovergroupInst(VlCovergroupType* typep, uint32_t instId)
         : m_typep{typep}
-        , m_instId{instId}
-        , m_slot{slot} {}
+        , m_instId{instId} {}
     VL_UNCOPYABLE(VlCovergroupInst);
 
     // METHODS
