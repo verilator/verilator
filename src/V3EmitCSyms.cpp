@@ -489,18 +489,19 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 + "__VforceRd" + '"';
         stmt += ", {";
 
-        // Find __VforceEn
-        {
-            const std::string enableSignalKey = getKeyName(scopep, varp->name() + "__VforceEn");
+        for (const std::string forceControlSuffix : {"__VforceEn", "__VforceVal"}) {
+            const std::string enableSignalKey
+                = getKeyName(scopep, varp->name() + forceControlSuffix);
             const std::map<const std::string, ScopeVarData>::const_iterator itpair
                 = m_scopeVars.find(enableSignalKey);
 
             if (itpair == m_scopeVars.end()) {
-                varp->v3fatalSrc("Signal " << varp->prettyNameQ()
-                                           << " is marked forceable, but the force enable signal '"
-                                           << varp->name() << "__VforceEn"
-                                           << "' can not be found in m_scopeVars with key '"
-                                           << enableSignalKey << "'.");
+                varp->v3fatalSrc("Signal "
+                                 << varp->prettyNameQ()
+                                 << " is marked forceable, but the force control signal '"
+                                 << varp->name() << forceControlSuffix
+                                 << "' can not be found in m_scopeVars with key '"
+                                 << enableSignalKey << "'.");
             }
 
             const ScopeVarData& svd = itpair->second;
@@ -509,28 +510,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const VarDims dims = dimsFor(svd);
             stmt
                 += insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, boundsString(dims));
-        }
-        stmt += ",";
-        // Find __VforceVal
-        {
-            const std::string valueSignalKey = getKeyName(scopep, varp->name() + "__VforceVal");
-            const std::map<const std::string, ScopeVarData>::const_iterator itpair
-                = m_scopeVars.find(valueSignalKey);
-
-            if (itpair == m_scopeVars.end()) {
-                varp->v3fatalSrc("Signal " << varp->prettyNameQ()
-                                           << " is marked forceable, but the force value signal '"
-                                           << varp->name() << "__VforceVal"
-                                           << "' can not be found in m_scopeVars with key '"
-                                           << valueSignalKey << "'.");
-            }
-
-            const ScopeVarData& svd = itpair->second;
-            const AstScope* const scopep = svd.m_scopep;
-            const AstVar* const varp = svd.m_varp;
-            const VarDims dims = dimsFor(svd);
-            stmt
-                += insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, boundsString(dims));
+            if (forceControlSuffix == "__VforceEn") stmt += ",";
         }
 
         stmt += "}";

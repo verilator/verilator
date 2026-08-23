@@ -6293,24 +6293,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstPackageImport* nodep) override {
+    void visitPackageImportOrExport(AstNode* nodep) {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
         if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
-    void visit(AstPackageExport* nodep) override {
-        // No longer needed
-        LINKDOT_VISIT_START();
-        checkNoDot(nodep);
-        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-    }
-    void visit(AstPackageExportStarStar* nodep) override {
-        // No longer needed
-        LINKDOT_VISIT_START();
-        checkNoDot(nodep);
-        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-    }
+    void visit(AstPackageImport* nodep) override { visitPackageImportOrExport(nodep); }
+    void visit(AstPackageExport* nodep) override { visitPackageImportOrExport(nodep); }
+    void visit(AstPackageExportStarStar* nodep) override { visitPackageImportOrExport(nodep); }
     void visit(AstCellRef* nodep) override {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);

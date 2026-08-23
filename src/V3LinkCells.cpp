@@ -377,6 +377,13 @@ class LinkCellsVisitor final : public VNVisitor {
         return finalEdgep->cellp();
     }
 
+    void assignParamNumbers(AstPin* const firstPinp) {
+        for (AstPin* pinp = firstPinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            pinp->param(true);
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
+        }
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {
         readModNames();
@@ -520,10 +527,7 @@ class LinkCellsVisitor final : public VNVisitor {
             }
         }
         iterateChildren(nodep);
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            pinp->param(true);
-            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
-        }
+        assignParamNumbers(nodep->paramsp());
         // Parser didn't know what was interface, resolve now
         // For historical reasons virtual interface reference variables remain VARs
         if (m_varp && !nodep->isVirtual()) m_varp->setIfaceRef();
@@ -669,10 +673,7 @@ class LinkCellsVisitor final : public VNVisitor {
         for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (pinp->name() == "") pinp->name("__pinNumber" + cvtToStr(pinp->pinNum()));
         }
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            pinp->param(true);
-            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
-        }
+        assignParamNumbers(nodep->paramsp());
         if (nodep->modp()) {
             nodep->modName(nodep->modp()->name());
             // Note what pins exist
@@ -807,10 +808,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     void visit(AstRefDType* nodep) override {
         iterateChildren(nodep);
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            pinp->param(true);
-            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
-        }
+        assignParamNumbers(nodep->paramsp());
         if (m_varp) {  // Parser didn't know what was interface, resolve now
             AstNodeModule* const varModp = findModuleSym(nodep->name(), m_modp->libname());
             if (AstIface* const ifacep = VN_CAST(varModp, Iface)) {
@@ -824,14 +822,11 @@ class LinkCellsVisitor final : public VNVisitor {
     }
     void visit(AstClassOrPackageRef* nodep) override {
         iterateChildren(nodep);
+        assignParamNumbers(nodep->paramsp());
         // Inside a class, an extends or reference to another class
         // Note we don't add a V3GraphEdge{vertex(m_modp), vertex(nodep->classOrPackagep()}
         // We could for an extends, but for another reference we cannot, as
         // it is legal to have classes both with parameters that link to each other
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            pinp->param(true);
-            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
-        }
     }
 
     void visit(AstVar* nodep) override {
