@@ -276,7 +276,9 @@ class VlCovergroupInst final {
     std::vector<std::unique_ptr<VlCoverpointIf>> m_items;
     VlCovergroupType* const m_typep;  // Owning type; outlives this node
     const uint32_t m_instId;  // Stable identity across churn; NOT the slot
-    uint32_t m_slot;  // Index into m_typep->m_insts; rewritten by unlink-by-swap
+    // VL_ATTR_UNUSED: under VM_COVERAGE retire() only marks m_retained, so
+    // nothing reads the slot until the coverage-writer rework lets it free.
+    uint32_t m_slot VL_ATTR_UNUSED;  // Index into m_typep->m_insts; unlink-by-swap rewrites
     uint32_t m_attachCount = 1;  // SV handles bound here; 1 from construction
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
