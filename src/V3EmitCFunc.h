@@ -1596,15 +1596,20 @@ public:
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->matchp(), nullptr);
     }
     void visit(AstMemberSel* nodep) override {
+        const AstVar* const varp = nodep->varp();
+        const bool dereferenceCovergroupRef
+            = varp->covergroupRefMember() && nodep->access().isReadOrRW();
+        if (dereferenceCovergroupRef) putnbs(nodep, "(*");
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, "->");
-        if (nodep->varp()->isIfaceRef()) {
+        if (varp->isIfaceRef()) {
             // varp is the __Viftop companion (e.g. "tx__Viftop"); use the
             // MemberSel name which matches the cell's C++ member (e.g. "tx").
             puts(nodep->nameProtect());
         } else {
-            puts(nodep->varp()->nameProtect());
+            puts(varp->nameProtect());
         }
+        if (dereferenceCovergroupRef) puts(")");
     }
     void visit(AstStructSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
