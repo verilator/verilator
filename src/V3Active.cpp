@@ -672,8 +672,8 @@ public:
 // Pass 2: inject automatic sample() calls for covergroup instances
 
 class CovergroupEventBindVisitor final : public VNVisitor {
-    AstVarScope* const m_instancep;
-    std::unordered_set<const AstVar*> m_memberps;
+    AstVarScope* const m_instancep;  // Variable scope for the covergroup instance being sampled
+    std::unordered_set<const AstVar*> m_memberps;  // Non-static variables in the covergroup class
 
     void visit(AstVarRef* nodep) override {
         if (!m_memberps.count(nodep->varp())) return;
