@@ -849,28 +849,22 @@ class WidthVisitor final : public VNVisitor {
                           "Use --timing or --no-timing to specify how forks should be handled");
         }
     }
-    void visit(AstDisableFork* nodep) override {
+    void visitWaitOrDisableFork(AstNode* nodep) {
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetFalse()) {
-                nodep->v3warn(E_NOTIMING, "Support for disable fork statement requires --timing");
+                nodep->v3warn(E_NOTIMING, "Support for '" << nodep->verilogKwd()
+                                                          << "' statement requires --timing");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                return;
             } else if (!v3Global.opt.timing().isSetTrue()) {
                 nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
                                                    << "disable fork should be handled");
             }
         }
+        iterateChildren(nodep);
     }
-    void visit(AstWaitFork* nodep) override {
-        if (nodep->fileline()->timingOn()) {
-            if (v3Global.opt.timing().isSetFalse()) {
-                nodep->v3warn(E_NOTIMING, "Support for disable fork statement requires --timing");
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            } else if (!v3Global.opt.timing().isSetTrue()) {
-                nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
-                                                   << "disable fork should be handled");
-            }
-        }
-    }
+    void visit(AstDisableFork* nodep) override { visitWaitOrDisableFork(nodep); }
+    void visit(AstWaitFork* nodep) override { visitWaitOrDisableFork(nodep); }
     void visit(AstToLowerN* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -4967,7 +4961,7 @@ class WidthVisitor final : public VNVisitor {
     void methodCallWarnTiming(AstNodeFTaskRef* const nodep, const std::string& className) {
         if (v3Global.opt.timing().isSetFalse()) {
             nodep->v3warn(E_NOTIMING,
-                          className << "::" << nodep->name() << "() requires --timing");
+                          className << "::" << nodep->prettyName() << "() requires --timing");
         } else if (!v3Global.opt.timing().isSetTrue()) {
             nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
                                                << className << "::" << nodep->name()
