@@ -10,7 +10,9 @@ endclass
 class DerivedState extends BaseState;
 endclass
 
-interface ParameterizedIf #(int WIDTH = 5);
+interface ParameterizedIf #(
+    int WIDTH = 5
+);
   logic [WIDTH-1:0] value;
   modport monitor(input value);
   modport driver(output value);
@@ -22,7 +24,9 @@ interface ModportIf;
   modport driver(output value);
 endinterface
 
-module CovergroupPortTypeMismatch(ModportIf.monitor intf);
+module CovergroupPortTypeMismatch (
+    ModportIf.monitor intf
+);
   covergroup cg(input virtual ModportIf.driver vif);
     cp: coverpoint vif.value;
   endgroup
@@ -31,10 +35,10 @@ module CovergroupPortTypeMismatch(ModportIf.monitor intf);
 endmodule
 
 module t;
-  ParameterizedIf #(5) if5();
-  ParameterizedIf #(6) if6();
-  ModportIf modport_if();
-  CovergroupPortTypeMismatch port_type_mismatch(modport_if);
+  ParameterizedIf #(5) if5 ();
+  ParameterizedIf #(6) if6 ();
+  ModportIf modport_if ();
+  CovergroupPortTypeMismatch port_type_mismatch (modport_if);
 
   DerivedState derived_state = new;
   virtual ParameterizedIf #(5).monitor monitor_vif = if5;
@@ -52,9 +56,11 @@ module t;
     cp: coverpoint (state == null);
   endgroup
 
-  covergroup cg_interface_types(input virtual ParameterizedIf #(5) input_vif,
-                                ref virtual ParameterizedIf #(5) ref_vif,
-                                const ref virtual ParameterizedIf #(5) const_ref_vif);
+  covergroup cg_interface_types(
+      input virtual ParameterizedIf #(5) input_vif,
+      ref virtual ParameterizedIf #(5) ref_vif,
+      const ref virtual ParameterizedIf #(5) const_ref_vif
+  );
     cp: coverpoint input_vif.value;
   endgroup
 
@@ -76,8 +82,7 @@ module t;
 
   cg_const_ref_type const_ref_type_cg = new(derived_state);
   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
-  cg_interface_types interface_modport_types_cg
-      = new(monitor_vif, monitor_vif, monitor_vif);
+  cg_interface_types interface_modport_types_cg = new(monitor_vif, monitor_vif, monitor_vif);
   cg_read_only_ref read_only_ref_cg = new(mutable_value);
   cg_array_input bad_input_modport = new(driver5);
   cg_array_input bad_input_parameter = new(monitor6);

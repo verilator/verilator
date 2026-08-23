@@ -12,7 +12,7 @@ interface EventIf;
 endinterface
 
 module t;
-  EventIf event_if();
+  EventIf event_if ();
 
   logic ref_clock;
   logic [1:0] ref_clocks;

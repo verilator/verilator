@@ -1,54 +1,54 @@
-%Error: t/t_covergroup_args_type_bad.v:30:16: Virtual interface argument 'vif' requires a compatible interface type, parameters, and modport.
+%Error: t/t_covergroup_args_type_bad.v:34:16: Virtual interface argument 'vif' requires a compatible interface type, parameters, and modport.
                                             : ... note: In instance 't.port_type_mismatch'
-   30 |   cg cov = new(intf);
+   34 |   cg cov = new(intf);
       |                ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_covergroup_args_type_bad.v:62:27: Assigning to const ref variable: 'value'
+%Error: t/t_covergroup_args_type_bad.v:68:27: Assigning to const ref variable: 'value'
                                             : ... note: In instance 't'
-   62 |     cp: coverpoint mutate(value);
+   68 |     cp: coverpoint mutate(value);
       |                           ^~~~~
-%Error: t/t_covergroup_args_type_bad.v:77:45: Ref argument requires matching types; port 'state' requires 'class{}BaseState' but connection is 'class{}DerivedState'.
+%Error: t/t_covergroup_args_type_bad.v:83:45: Ref argument requires matching types; port 'state' requires 'class{}BaseState' but connection is 'class{}DerivedState'.
                                             : ... note: In instance 't'
-   77 |   cg_const_ref_type const_ref_type_cg = new(derived_state);
+   83 |   cg_const_ref_type const_ref_type_cg = new(derived_state);
       |                                             ^~~~~~~~~~~~~
-%Error: t/t_covergroup_args_type_bad.v:78:47: Virtual interface argument 'input_vif' requires a compatible interface type, parameters, and modport.
+%Error: t/t_covergroup_args_type_bad.v:84:47: Virtual interface argument 'input_vif' requires a compatible interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   78 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
+   84 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
       |                                               ^~~~
-%Error: t/t_covergroup_args_type_bad.v:78:53: Ref virtual interface argument 'ref_vif' requires the same interface type, parameters, and modport.
+%Error: t/t_covergroup_args_type_bad.v:84:53: Ref virtual interface argument 'ref_vif' requires the same interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   78 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
+   84 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
       |                                                     ^~~~
-%Error: t/t_covergroup_args_type_bad.v:78:59: Ref virtual interface argument 'const_ref_vif' requires the same interface type, parameters, and modport.
+%Error: t/t_covergroup_args_type_bad.v:84:59: Ref virtual interface argument 'const_ref_vif' requires the same interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   78 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
+   84 |   cg_interface_types interface_types_cg = new(vif6, vif6, vif6);
       |                                                           ^~~~
-%Error: t/t_covergroup_args_type_bad.v:80:13: Virtual interface argument 'input_vif' requires a compatible interface type, parameters, and modport.
+%Error: t/t_covergroup_args_type_bad.v:85:55: Virtual interface argument 'input_vif' requires a compatible interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   80 |       = new(monitor_vif, monitor_vif, monitor_vif);
-      |             ^~~~~~~~~~~
-%Error: t/t_covergroup_args_type_bad.v:80:26: Ref virtual interface argument 'ref_vif' requires the same interface type, parameters, and modport.
+   85 |   cg_interface_types interface_modport_types_cg = new(monitor_vif, monitor_vif, monitor_vif);
+      |                                                       ^~~~~~~~~~~
+%Error: t/t_covergroup_args_type_bad.v:85:68: Ref virtual interface argument 'ref_vif' requires the same interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   80 |       = new(monitor_vif, monitor_vif, monitor_vif);
-      |                          ^~~~~~~~~~~
-%Error: t/t_covergroup_args_type_bad.v:80:39: Ref virtual interface argument 'const_ref_vif' requires the same interface type, parameters, and modport.
+   85 |   cg_interface_types interface_modport_types_cg = new(monitor_vif, monitor_vif, monitor_vif);
+      |                                                                    ^~~~~~~~~~~
+%Error: t/t_covergroup_args_type_bad.v:85:81: Ref virtual interface argument 'const_ref_vif' requires the same interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   80 |       = new(monitor_vif, monitor_vif, monitor_vif);
-      |                                       ^~~~~~~~~~~
-%Error: t/t_covergroup_args_type_bad.v:82:42: Virtual interface argument 'vifs' requires a compatible interface type, parameters, and modport.
+   85 |   cg_interface_types interface_modport_types_cg = new(monitor_vif, monitor_vif, monitor_vif);
+      |                                                                                 ^~~~~~~~~~~
+%Error: t/t_covergroup_args_type_bad.v:87:42: Virtual interface argument 'vifs' requires a compatible interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   82 |   cg_array_input bad_input_modport = new(driver5);
+   87 |   cg_array_input bad_input_modport = new(driver5);
       |                                          ^~~~~~~
-%Error: t/t_covergroup_args_type_bad.v:83:44: Virtual interface argument 'vifs' requires a compatible interface type, parameters, and modport.
+%Error: t/t_covergroup_args_type_bad.v:88:44: Virtual interface argument 'vifs' requires a compatible interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   83 |   cg_array_input bad_input_parameter = new(monitor6);
+   88 |   cg_array_input bad_input_parameter = new(monitor6);
       |                                            ^~~~~~~~
-%Error: t/t_covergroup_args_type_bad.v:84:38: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
+%Error: t/t_covergroup_args_type_bad.v:89:38: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   84 |   cg_array_ref bad_ref_modport = new(driver5);
+   89 |   cg_array_ref bad_ref_modport = new(driver5);
       |                                      ^~~~~~~
-%Error: t/t_covergroup_args_type_bad.v:85:52: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
+%Error: t/t_covergroup_args_type_bad.v:90:52: Ref virtual interface argument 'vifs' requires the same interface type, parameters, and modport.
                                             : ... note: In instance 't'
-   85 |   cg_array_const_ref bad_const_ref_parameter = new(monitor6);
+   90 |   cg_array_const_ref bad_const_ref_parameter = new(monitor6);
       |                                                    ^~~~~~~~
 %Error: Exiting due to

@@ -15,23 +15,23 @@ module t;
     cp: coverpoint arg;
   endgroup
 
-  covergroup cg_sample_output with function sample(output bit arg);
+  covergroup cg_sample_output with function sample (output bit arg);
     cp: coverpoint arg;
   endgroup
 
-  covergroup cg_sample_inout with function sample(inout bit arg);
+  covergroup cg_sample_inout with function sample (inout bit arg);
     cp: coverpoint arg;
   endgroup
 
-  covergroup cg_sample_ref with function sample(ref bit arg);
+  covergroup cg_sample_ref with function sample (ref bit arg);
     cp: coverpoint arg;
   endgroup
 
-  covergroup cg_sample_const_ref with function sample(const ref bit arg);
+  covergroup cg_sample_const_ref with function sample (const ref bit arg);
     cp: coverpoint arg;
   endgroup
 
-  covergroup cg_duplicate(bit arg) with function sample(bit arg);
+  covergroup cg_duplicate(bit arg) with function sample (bit arg);
     cp: coverpoint arg;
   endgroup
 

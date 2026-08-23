@@ -18,16 +18,12 @@ typedef enum bit [1:0] {
 
 class EnumLambdaArg;
   rand cmd_e items[8];
-  constraint c_count {
-    items.sum() with (item == WRITE ? 1 : 0) == 3;
-  }
+  constraint c_count {items.sum() with (item == WRITE ? 1 : 0) == 3;}
 endclass
 
 // Same shape, but the enum lives in a struct field reached via the lambda
 // argument (item.kind), not the array element itself.
-typedef struct {
-  cmd_e kind;
-} entry_t;
+typedef struct {cmd_e kind;} entry_t;
 class StructFieldEnumLambdaArg;
   rand entry_t items[8];
   constraint c_find {

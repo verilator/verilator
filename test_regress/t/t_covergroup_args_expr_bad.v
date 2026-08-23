@@ -14,7 +14,7 @@ module t;
     return value;
   endfunction
 
-  covergroup cg with function sample(bit value);
+  covergroup cg with function sample (bit value);
     cp_option: coverpoint value {
       bins ref_bin = {0, function_ref(value)};
       bins output_bin = {function_output(value)};
@@ -23,17 +23,13 @@ module t;
   endgroup
 
   covergroup cg_constructor_ref(ref bit value);
-    cp_constructor_ref: coverpoint value {
-      bins bad = {value};
-    }
+    cp_constructor_ref: coverpoint value {bins bad = {value};}
   endgroup
 
   bit nonconstant_bound;
   covergroup cg_cross_bad;
-    cp_bad: coverpoint 0 iff (1) {
-      bins bad = {[0:nonconstant_bound]};
-    }
-    cp_ok: coverpoint 0 { bins zero = {0}; }
+    cp_bad: coverpoint 0 iff (1) {bins bad = {[0 : nonconstant_bound]};}
+    cp_ok: coverpoint 0 {bins zero = {0};}
     cross_bad: cross cp_bad, cp_ok;
   endgroup
 

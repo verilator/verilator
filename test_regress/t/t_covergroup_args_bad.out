@@ -5,22 +5,22 @@
 %Error: t/t_covergroup_args_bad.v:14:33: Covergroup formal arguments cannot be output or inout (IEEE 1800-2012 19.3)
    14 |   covergroup cg_inout(inout bit arg);
       |                                 ^~~
-%Error: t/t_covergroup_args_bad.v:18:63: Covergroup sample formal argument must have input direction (IEEE 1800-2012 19.8.1).
-   18 |   covergroup cg_sample_output with function sample(output bit arg);
-      |                                                               ^~~
-%Error: t/t_covergroup_args_bad.v:22:61: Covergroup sample formal argument must have input direction (IEEE 1800-2012 19.8.1).
-   22 |   covergroup cg_sample_inout with function sample(inout bit arg);
-      |                                                             ^~~
-%Error: t/t_covergroup_args_bad.v:26:57: Covergroup sample formal argument must have input direction (IEEE 1800-2012 19.8.1).
-   26 |   covergroup cg_sample_ref with function sample(ref bit arg);
-      |                                                         ^~~
-%Error: t/t_covergroup_args_bad.v:30:69: Covergroup sample formal argument must have input direction (IEEE 1800-2012 19.8.1).
-   30 |   covergroup cg_sample_const_ref with function sample(const ref bit arg);
-      |                                                                     ^~~
-%Error: t/t_covergroup_args_bad.v:34:61: Duplicate declaration of signal: 'arg'
-   34 |   covergroup cg_duplicate(bit arg) with function sample(bit arg);
-      |                                                             ^~~
+%Error: t/t_covergroup_args_bad.v:18:64: Covergroup sample formal argument must have input direction (IEEE 1800-2012 19.8.1).
+   18 |   covergroup cg_sample_output with function sample (output bit arg);
+      |                                                                ^~~
+%Error: t/t_covergroup_args_bad.v:22:62: Covergroup sample formal argument must have input direction (IEEE 1800-2012 19.8.1).
+   22 |   covergroup cg_sample_inout with function sample (inout bit arg);
+      |                                                              ^~~
+%Error: t/t_covergroup_args_bad.v:26:58: Covergroup sample formal argument must have input direction (IEEE 1800-2012 19.8.1).
+   26 |   covergroup cg_sample_ref with function sample (ref bit arg);
+      |                                                          ^~~
+%Error: t/t_covergroup_args_bad.v:30:70: Covergroup sample formal argument must have input direction (IEEE 1800-2012 19.8.1).
+   30 |   covergroup cg_sample_const_ref with function sample (const ref bit arg);
+      |                                                                      ^~~
+%Error: t/t_covergroup_args_bad.v:34:62: Duplicate declaration of signal: 'arg'
+   34 |   covergroup cg_duplicate(bit arg) with function sample (bit arg);
+      |                                                              ^~~
         t/t_covergroup_args_bad.v:34:31: ... Location of original declaration
-   34 |   covergroup cg_duplicate(bit arg) with function sample(bit arg);
+   34 |   covergroup cg_duplicate(bit arg) with function sample (bit arg);
       |                               ^~~
 %Error: Exiting due to

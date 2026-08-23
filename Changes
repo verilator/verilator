@@ -39,6 +39,8 @@ Verilator 5.051 devel
 * Support `weak`/`strong` keywords in property expressions (#8054). [Artur Bieniek, Antmicro Ltd.]
 * Support class handle covergroup arguments (#8071). [Marco Bartoli]
 * Support overlong `within` sequences as never-matching (#8177). [Artur Bieniek, Antmicro Ltd.]
+* Support covergroup/function/task (ref/virtual/array) interface arguments (#8180). [Marco Bartoli]
+* Support covergroup events with reference members or ref arguments (#8201). [Marco Bartoli]
 * Optimize random initialization. [Geza Lore, Testorrent USA, Inc.]
 * Optimize more always blocks in DFG (#7775). [Geza Lore, Testorrent USA, Inc.]
 * Optimize assertion NFAs using bit-vector ring buffers (#7885). [Artur Bieniek, Antmicro Ltd.]
@@ -51,6 +53,7 @@ Verilator 5.051 devel
 * Optimize NFA delay-ring edge traversal, drop complexity to linear (#8145). [Artur Bieniek, Antmicro Ltd.]
 * Fix $finish continuing event loop (#7267) (#7950). [Artur Bieniek, Antmicro Ltd.]
 * Fix $display accepting streaming concat arguments (#7663) (#7890). [Jaeuk Lee]
+* Fix typedef clocking input sampling (#7688 partial) (#8204). [Marco Bartoli]
 * Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
 * Fix unique0 case side effects (#7787). [Pawel Klopotek]
 * Fix mid-window disable iff (#7792) (#7869). [Yilou Wang]
@@ -149,7 +152,8 @@ Verilator 5.051 devel
 * Fix crash on forward-referencing parameters (#8175). [Geza Lore, Testorrent USA, Inc.]
 * Fix crash on empty `#()` parameter list on class instance (#8182). [Geza Lore, Testorrent USA, Inc.]
 * Fix crash on multiple missing type parameters (#8184). [Geza Lore, Testorrent USA, Inc.]
-* Fix internal on backslash quoted strings (#8198). [Henry Hsieh]
+* Fix internal error on an enum literal inside a `with` lambda body (#8190) (#8193). [Aditya Shevade]
+* Fix internal error on backslash-quoted strings (#8198). [Henry Hsieh]
 
 
 Verilator 5.050 2026-07-01
