@@ -1749,10 +1749,12 @@ public:
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
     AstCell* aboveCellp() const { return m_aboveCellp; }
     bool isTop() const VL_MT_SAFE { return aboveScopep() == nullptr; }  // At top of hierarchy
-    // Create new MODULETEMP variable under this scope
+    // Create new temporary variable under this scope, MODULETEMP unless told otherwise
     AstVarScope* createTemp(const string& name, unsigned width);
-    AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
-    AstVarScope* createTempLike(const string& name, const AstVarScope* vscp);
+    AstVarScope* createTemp(const string& name, AstNodeDType* dtypep,
+                            VVarType type = VVarType::MODULETEMP);
+    AstVarScope* createTempLike(const string& name, const AstVarScope* vscp,
+                                VVarType type = VVarType::MODULETEMP);
 };
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE

@@ -1486,17 +1486,18 @@ AstVarScope* AstScope::createTemp(const string& name, unsigned width) {
     return vscp;
 }
 
-AstVarScope* AstScope::createTemp(const string& name, AstNodeDType* dtypep) {
+AstVarScope* AstScope::createTemp(const string& name, AstNodeDType* dtypep, VVarType type) {
     FileLine* const flp = fileline();
-    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+    AstVar* const varp = new AstVar{flp, type, name, dtypep};
     modp()->addStmtsp(varp);
     AstVarScope* const vscp = new AstVarScope{flp, this, varp};
     addVarsp(vscp);
     return vscp;
 }
 
-AstVarScope* AstScope::createTempLike(const string& name, const AstVarScope* vscp) {
-    return createTemp(name, vscp->dtypep());
+AstVarScope* AstScope::createTempLike(const string& name, const AstVarScope* vscp,
+                                      VVarType type) {
+    return createTemp(name, vscp->dtypep(), type);
 }
 
 std::string AstScopeName::scopePrettyNameFormatter(const std::string& text) {

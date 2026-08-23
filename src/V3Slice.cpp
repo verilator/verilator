@@ -40,6 +40,9 @@
 #include "V3Slice.h"
 
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
+
+#include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -62,8 +65,10 @@ class SliceVisitor final : public VNVisitor {
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_assignp = nullptr;  // Assignment we are under
+    AstScope* m_scopep = nullptr;  // Scope we are under, for temporaries
     bool m_assignError = false;  // True if the current assign already has an error
     bool m_okInitArray = false;  // Allow InitArray children
+    V3UniqueNames m_tempNames{"__Vslicetmp"};  // Names for temporaries
 
     // METHODS
     AstNodeExpr* cloneAndSel(AstNodeExpr* const nodep, int elements, int elemIdx,
@@ -240,6 +245,35 @@ class SliceVisitor final : public VNVisitor {
         return newp;
     }
 
+    // Assignment's right-hand side reads a variable its left-hand side writes.
+    // Writes within the right-hand side, from statements under an EXPRSTMT, do not
+    // count: they are not what element-by-element expansion can read too early.
+    static bool isReadWrite(const AstNodeAssign* nodep) {
+        std::unordered_set<const AstVarScope*> wrps;
+        nodep->lhsp()->foreach([&](const AstVarRef* refp) {
+            if (refp->access().isWriteOrRW()) wrps.insert(refp->varScopep());
+        });
+        return nodep->rhsp()->exists([&](const AstVarRef* refp) {
+            return refp->access().isReadOrRW() && wrps.count(refp->varScopep());
+        });
+    }
+
+    void insertTemp(AstNodeAssign* nodep) {
+        FileLine* const flp = nodep->fileline();
+        // A BLOCKTEMP, so V3Localize can make it a function local
+        AstVarScope* const vscp = m_scopep->createTemp(
+            m_tempNames.get(""), nodep->lhsp()->dtypep(), VVarType::BLOCKTEMP);
+        vscp->varp()->noReset(true);  // Written whole before it is read
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+        AstAssign* const fillp
+            = new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, rhsp};
+        AstAssign* const usep = new AstAssign{flp, lhsp, new AstVarRef{flp, vscp, VAccess::READ}};
+        fillp->addNext(usep);
+        nodep->replaceWith(fillp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+
     bool assignOptimize(AstNodeAssign* nodep) {
         // Return true if did optimization
         AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
@@ -274,6 +308,15 @@ class SliceVisitor final : public VNVisitor {
                     return false;
                 }
             }
+        }
+
+        // IEEE 1800-2023 10.7 evaluates the whole right-hand side before assigning any of
+        // it, which expanding element by element does not, so assign via a temporary and
+        // expand that instead. Blocking assignments only; a delayed one already assigns
+        // after evaluating.
+        if (m_scopep && VN_IS(nodep, Assign) && isReadWrite(nodep)) {
+            insertTemp(nodep);
+            return true;
         }
 
         UINFO(4, "Slice optimizing " << nodep);
@@ -382,6 +425,11 @@ class SliceVisitor final : public VNVisitor {
     void visit(AstEqCase* nodep) override { expandBiOp(nodep); }
     void visit(AstNeqCase* nodep) override { expandBiOp(nodep); }
 
+    void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
