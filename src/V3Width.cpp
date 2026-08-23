@@ -3946,7 +3946,7 @@ class WidthVisitor final : public VNVisitor {
                 nodep->varp(varp);
                 if (nodep->access().isWriteOrRW()) V3LinkLValue::linkLValueSet(nodep);
                 if (AstIfaceRefDType* const adtypep
-                    = VN_CAST(nodep->fromp()->dtypep(), IfaceRefDType)) {
+                    = VN_CAST(nodep->fromp()->dtypep()->skipRefToEnump(), IfaceRefDType)) {
                     nodep->varp()->sensIfacep(adtypep->ifacep());
                 }
                 UINFO(9, "     done clocking msel " << nodep);
