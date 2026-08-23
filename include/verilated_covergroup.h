@@ -258,21 +258,37 @@ public:
     }
 };
 
+class VlCovergroupType;
+
 //=============================================================================
 // VlCovergroupInst
 /// One covergroup instance: owns the coverpoint/cross runtimes created by one
 /// SV 'new'.  The generated class holds borrowed pointers to them, so the bins
 /// outlive the SV object -- the coverage database registers raw count pointers
 /// and reads them at write() time, long after the object may have been freed.
+///
+/// Attach-counted: every VlCovInstHandle bound here holds one count, and the
+/// node is retired (see VlCovergroupType::retire) when the last one drops.
 
 class VlCovergroupInst final {
     // MEMBERS
     // Coverpoint and cross runtimes of this instance; creation == declaration order
     std::vector<std::unique_ptr<VlCoverpointIf>> m_items;
+    VlCovergroupType* const m_typep;  // Owning type; outlives this node
+    const uint32_t m_instId;  // Stable identity across churn; NOT the slot
+    uint32_t m_slot;  // Index into m_typep->m_insts; rewritten by unlink-by-swap
+    uint32_t m_attachCount = 1;  // SV handles bound here; 1 from construction
+    bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
+
+    // Reads m_items to fold the residue; rewrites m_slot/m_retained on unlink.
+    friend class VlCovergroupType;
 
 public:
     // CONSTRUCTORS
-    VlCovergroupInst() = default;
+    VlCovergroupInst(VlCovergroupType* typep, uint32_t slot, uint32_t instId)
+        : m_typep{typep}
+        , m_instId{instId}
+        , m_slot{slot} {}
     VL_UNCOPYABLE(VlCovergroupInst);
 
     // METHODS
@@ -288,15 +304,63 @@ public:
         m_items.emplace_back(cxp);
         return cxp;  // borrowed by the generated class
     }
+
+    // ---- attach counting (from VlCovInstHandle) ----
+    void attachInc() { ++m_attachCount; }
+    // Drops one handle; true if it was the last and the caller must retire the
+    // node.  Retiring is the caller's job because VlCovergroupType is incomplete
+    // here, and because it frees 'this'.
+    bool attachDec() { return --m_attachCount == 0; }
+
+    // ---- introspection ----
+    VlCovergroupType* typep() const { return m_typep; }
+    uint32_t instId() const { return m_instId; }
+    // True once retired but kept alive because the coverage database holds raw
+    // pointers into this node's bin counts (VM_COVERAGE); see retire().
+    bool retained() const { return m_retained; }
+    // Sum of the instance's items' covered/total bin counts.  Matches what the
+    // generated get_inst_coverage() computes; see foldResidue().
+    void coverageParts(double& covered, double& total) const {
+        covered = 0.0;
+        total = 0.0;
+        for (const auto& itemp : m_items) {
+            double c = 0.0;
+            double t = 0.0;
+            itemp->coverageParts(c, t);
+            covered += c;
+            total += t;
+        }
+    }
+};
+
+//=============================================================================
+// VlCovRetiredAvg
+/// Per-type residue: what survives an instance's death.  Fixed size, so it does
+/// not grow with churn.  Weight is 1 everywhere until option.weight is plumbed.
+
+struct VlCovRetiredAvg final {
+    uint64_t count = 0;  // Retired instances that contributed (nonzero denominator)
+    double sumCoverage = 0.0;  // Sigma of per-instance coverage, each in 0..100
 };
 
 //=============================================================================
 // VlCovergroupType
-/// One covergroup type: owns its instances, in creation order.
+/// One covergroup type: owns its live instances, in creation order, plus the
+/// residue of the ones that have died.
 
 class VlCovergroupType final {
     // MEMBERS
-    std::vector<std::unique_ptr<VlCovergroupInst>> m_insts;  // Creation order
+    // Live nodes, and -- under VM_COVERAGE -- retired-but-retained ones.  Slot
+    // order is creation order only until the first unlink-by-swap.
+    std::vector<std::unique_ptr<VlCovergroupInst>> m_insts;
+    uint32_t m_createdInsts = 0;  // Instances ever created; never decremented
+    uint32_t m_nextInstId = 0;  // Monotonic; slots are reused, ids never are
+    VlCovRetiredAvg m_retired;  // Contribution of every instance that has died
+
+    // PRIVATE METHODS
+    // Harvest instp's contribution into m_retired.  Must run before instp is
+    // unlinked: it reads the instance's items.
+    void foldResidue(const VlCovergroupInst* instp);
 
 public:
     // CONSTRUCTORS
@@ -305,6 +369,29 @@ public:
 
     // METHODS
     VlCovergroupInst* newInstance();
+    // Called when the last handle to instp drops.  Folds the residue, then
+    // unlinks and frees the node -- except under VM_COVERAGE, where the coverage
+    // database still holds raw pointers into it and it is only marked retained.
+    void retire(VlCovergroupInst* instp);
+    // True if any node here still has an SV handle bound to it, and so can be
+    // retired again after the registry is destroyed.  See ~VlCovRegistry.
+    bool anyAttached() const;
+
+    // ---- introspection ----
+    // Test and debug only; generated code never calls these, and SV reaches them
+    // only via explicit $c.  They let a regression test pin node accumulation
+    // (otherwise visible only as memory growth) and the residue fold.
+    //
+    // Instance nodes still reachable from SV.  Under VM_COVERAGE this is smaller
+    // than m_insts.size(), which also holds retained (dead) nodes.
+    uint32_t liveInstanceCount() const;
+    // Instances ever created, live or not.  Wraps after 4G instances, which no
+    // introspection use cares about.
+    uint32_t createdInstanceCount() const { return m_createdInsts; }
+    // Instances that have died and contributed to the residue.
+    uint32_t retiredInstanceCount() const { return static_cast<uint32_t>(m_retired.count); }
+    // Mean coverage over the retired instances only, in 0..100; -1.0 if none.
+    double retiredCoverage() const;
 };
 
 //=============================================================================
@@ -312,17 +399,20 @@ public:
 /// Every covergroup type and instance in one VerilatedContext.  Owned by the
 /// VerilatedContext (not by the coverage database, which is only linked under
 /// --coverage and is a *consumer* of this data), reached through
-/// VerilatedContext::covergroupRegistryp().  Nodes are never freed before the
-/// registry itself is destroyed (see VlCovInstHandle).
+/// VerilatedContext::covergroupRegistryp().
 
 class VlCovRegistry final : public VerilatedVirtualBase {
     // MEMBERS
     std::vector<std::unique_ptr<VlCovergroupType>> m_types;  // Creation order
     std::unordered_map<std::string, VlCovergroupType*> m_byName;  // Lookup, borrowed
 
+    // PRIVATE METHODS
+    VlCovergroupType* findType(const char* typeName) const;  // nullptr if unknown
+
 public:
     // CONSTRUCTORS
     VlCovRegistry() = default;
+    ~VlCovRegistry() override;
     VL_UNCOPYABLE(VlCovRegistry);
 
     // METHODS
@@ -330,29 +420,56 @@ public:
     // generated covergroup class name, already --protect-ids obfuscated, and is
     // the same string that keys the coverage database's hier/page.
     VlCovergroupInst* newCovergroupInst(const char* typeName);
+
+    // ---- introspection (see VlCovergroupType) ----
+    // typeName is the obfuscated generated name, so a test using these under
+    // --protect-ids must pass the obfuscated string; the no-argument form does not.
+    uint32_t liveInstanceCount() const;  // Summed over every type
+    uint32_t createdInstanceCount() const;  // Summed over every type
+    uint32_t liveInstanceCount(const char* typeName) const;  // 0 if type unknown
+    uint32_t createdInstanceCount(const char* typeName) const;  // 0 if type unknown
+    uint32_t retiredInstanceCount(const char* typeName) const;  // 0 if type unknown
+    double retiredCoverage(const char* typeName) const;  // -1.0 if type unknown or none
 };
 
 //=============================================================================
 // VlCovInstHandle
-/// The generated covergroup class's link to its instance node.  Non-owning: the
-/// registry owns the node and outlives every SV object, so a handle never frees
-/// anything and copying one is safe.
+/// The generated covergroup class's link to its instance node.  Attach-counting:
+/// the registry owns the node, but the handles are what keep it reachable, and
+/// the last one to go retires it.
 ///
-/// It exists as a type now so that adding real ownership (attach counting,
-/// retirement) later is a runtime-only change with no generated-code churn.
-/// It must stay copyable: every generated class emits a clone() that
-/// copy-constructs, covergroups included.
+/// Must stay copyable: every generated clone() copy-constructs.  A copy shares
+/// the node, and so the bin counts -- pre-existing covergroup-copy aliasing.
+/// Attach counting makes that lifetime-safe, not correct.
 
 class VlCovInstHandle final {
     // MEMBERS
-    VlCovergroupInst* m_p = nullptr;  // Borrowed; the registry owns the node
+    VlCovergroupInst* m_p = nullptr;  // Attach-counted; the registry owns the node
+
+    // PRIVATE METHODS
+    // Drop one attach count, retiring the node if that was the last handle.
+    // Nothing may touch instp afterwards: retire() may have freed it.
+    static void release(VlCovergroupInst* instp) {
+        if (VL_UNCOVERABLE(!instp)) return;  // Never attach()ed; codegen always does
+        if (instp->attachDec()) instp->typep()->retire(instp);
+    }
 
 public:
     // CONSTRUCTORS
     VlCovInstHandle() = default;
-    // Copy and destruction are deliberately implicit: nothing is owned.
+    VlCovInstHandle(const VlCovInstHandle& o)
+        : m_p{o.m_p} {
+        if (VL_UNCOVERABLE(!m_p)) return;  // Unbound source; see release above
+        m_p->attachInc();
+    }
+    // Deleted, not implemented: nothing generates an assignment, and the
+    // implicit one would copy m_p raw -- no attachInc, no release.
+    VlCovInstHandle& operator=(const VlCovInstHandle&) = delete;
+    ~VlCovInstHandle() { release(m_p); }
 
     // METHODS
+    // Bind to a freshly created node, taking over the attach count of 1 it was
+    // created with.  Called once, from the generated covergroup constructor.
     void attach(VlCovergroupInst* p) { m_p = p; }
     VlCovergroupInst* p() const { return m_p; }
 };

@@ -197,9 +197,73 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
 // VlCovergroupType / VlCovRegistry
 
 VlCovergroupInst* VlCovergroupType::newInstance() {
-    VlCovergroupInst* const instp = new VlCovergroupInst{};
+    const uint32_t slot = static_cast<uint32_t>(m_insts.size());
+    VlCovergroupInst* const instp = new VlCovergroupInst{this, slot, m_nextInstId++};
     m_insts.emplace_back(instp);
+    ++m_createdInsts;
     return instp;
+}
+
+void VlCovergroupType::foldResidue(const VlCovergroupInst* instp) {
+    double covered = 0.0;
+    double total = 0.0;
+    instp->coverageParts(covered, total);
+    // Nothing coverable: excluded from both sums, so it moves neither the mean
+    // nor the denominator.  Never-sampled is different: it has bins, none hit,
+    // and folds as 0%.
+    if (total == 0.0) return;
+    // TODO(P5): IEEE 1800-2023 19.5 defines covergroup coverage as the weighted
+    // mean of the per-item ratios, not the ratio of the summed parts.  This
+    // matches what the generated get_inst_coverage() computes today, so that a
+    // live instance and the same instance one delta after death never disagree.
+    m_retired.sumCoverage += 100.0 * covered / total;
+    ++m_retired.count;
+}
+
+// Runs when the last handle to instp drops, possibly after ~VlCovRegistry, on a
+// type teardown leaked to keep this valid (see ~VlCovRegistry).  That late case
+// needs no special handling: the leaked type is self-consistent.
+void VlCovergroupType::retire(VlCovergroupInst* instp) {
+    foldResidue(instp);  // Before unlink: reads instp's items, freed below
+
+#if VM_COVERAGE
+    // registerBins() gave the coverage database raw &m_counts[i], read at
+    // write() time.  Keep the node alive, marked dead so it counts as neither
+    // live nor residue.  Freeing here needs the coverage-writer rework.
+    instp->m_retained = true;
+#else
+    // Move out first, so the node destructs at end of scope with m_insts
+    // already consistent rather than mid-swap.
+    const uint32_t slot = instp->m_slot;
+    const std::unique_ptr<VlCovergroupInst> dying = std::move(m_insts[slot]);
+    if (slot != m_insts.size() - 1) {
+        m_insts[slot] = std::move(m_insts.back());
+        m_insts[slot]->m_slot = slot;  // Moved node's slot is now stale
+    }
+    m_insts.pop_back();
+#endif
+}
+
+uint32_t VlCovergroupType::liveInstanceCount() const {
+    uint32_t live = 0;
+    // Under VM_COVERAGE m_insts also holds retained (dead) nodes; otherwise
+    // retained() is never set and this equals m_insts.size().
+    for (const auto& instp : m_insts) {
+        if (!instp->retained()) ++live;
+    }
+    return live;
+}
+
+bool VlCovergroupType::anyAttached() const {
+    for (const auto& instp : m_insts) {
+        if (instp->m_attachCount > 0) return true;
+    }
+    return false;
+}
+
+double VlCovergroupType::retiredCoverage() const {
+    if (m_retired.count == 0) return -1.0;
+    return m_retired.sumCoverage / static_cast<double>(m_retired.count);
 }
 
 // Defined here, not in verilated.cpp, so that the registry costs nothing in a model with no
@@ -225,4 +289,60 @@ VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
         typep = m_types.back().get();
     }
     return typep->newInstance();
+}
+
+// A covergroup object can outlive the registry: models must be destroyed before
+// their context, and a user who gets that backwards drops covergroup handles
+// after ~VerilatedContext.  Those handle destructors call attachDec(), which
+// reads the instance node and its type -- so freeing the nodes here is itself
+// what would make the wrong ordering a use-after-free, and a "retirement
+// disarmed" flag could not help.  Instead, leak any type that still has an
+// attached node, keeping the type, its nodes and their items valid; the late
+// retire() then frees the nodes itself, so only the type object leaks.
+VlCovRegistry::~VlCovRegistry() {
+    for (auto& typep : m_types) {
+        // Normally nothing is still attached; if something is, the model
+        // outlived its context and those handles still reach this type.
+        if (VL_UNLIKELY(typep->anyAttached())) {
+            VlCovergroupType* const leakedp = typep.release();
+            static_cast<void>(leakedp);  // Deliberate leak
+        }
+    }
+}
+
+VlCovergroupType* VlCovRegistry::findType(const char* typeName) const {
+    const auto it = m_byName.find(typeName);
+    return it == m_byName.end() ? nullptr : it->second;
+}
+
+uint32_t VlCovRegistry::liveInstanceCount() const {
+    uint32_t total = 0;
+    for (const auto& typep : m_types) total += typep->liveInstanceCount();
+    return total;
+}
+
+uint32_t VlCovRegistry::createdInstanceCount() const {
+    uint32_t total = 0;
+    for (const auto& typep : m_types) total += typep->createdInstanceCount();
+    return total;
+}
+
+uint32_t VlCovRegistry::liveInstanceCount(const char* typeName) const {
+    const VlCovergroupType* const typep = findType(typeName);
+    return typep ? typep->liveInstanceCount() : 0;
+}
+
+uint32_t VlCovRegistry::createdInstanceCount(const char* typeName) const {
+    const VlCovergroupType* const typep = findType(typeName);
+    return typep ? typep->createdInstanceCount() : 0;
+}
+
+uint32_t VlCovRegistry::retiredInstanceCount(const char* typeName) const {
+    const VlCovergroupType* const typep = findType(typeName);
+    return typep ? typep->retiredInstanceCount() : 0;
+}
+
+double VlCovRegistry::retiredCoverage(const char* typeName) const {
+    const VlCovergroupType* const typep = findType(typeName);
+    return typep ? typep->retiredCoverage() : -1.0;
 }
