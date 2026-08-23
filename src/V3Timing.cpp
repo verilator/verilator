@@ -264,6 +264,10 @@ class TimingSuspendableVisitor final : public VNVisitor {
         m_procp = nodep;
         getNeedsProcDepVtx(nodep);
         addFlags(nodep, T_ALLOCS_PROC);
+        if (nodep->inProgram() && VN_IS(nodep, Initial)) {
+            v3Global.setUsesTiming();
+            addFlags(nodep, T_SUSPENDEE | T_SUSPENDER | T_NEEDS_PROC);
+        }
         if (VN_IS(nodep, Always)) {
             UINFO(9, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process");
         }
@@ -477,6 +481,7 @@ class TimingControlVisitor final : public VNVisitor {
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     bool m_hasProcess = false;  // True if current scope has a VlProcess handle available
+    bool m_inProgram = false;  // Current procedure is declared in a program block
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
@@ -656,6 +661,30 @@ class TimingControlVisitor final : public VNVisitor {
             sentreep->user1p(trigSchedp);
         }
         return VN_AS(sentreep->user1p(), VarScope);
+    }
+    AstVarScope* getCreateReactiveSchedulerp() {
+        if (m_netlistp->reactiveSchedulerp()) return m_netlistp->reactiveSchedulerp();
+        if (!m_trigSchedDtp) {
+            m_trigSchedDtp = new AstBasicDType{
+                m_scopeTopp->fileline(), VBasicDTypeKwd::TRIGGER_SCHEDULER, VSigning::UNSIGNED};
+            m_netlistp->typeTablep()->addTypesp(m_trigSchedDtp);
+        }
+        AstVarScope* const schedulerp = m_scopeTopp->createTemp("__VreactSched", m_trigSchedDtp);
+        m_netlistp->reactiveSchedulerp(schedulerp);
+        return schedulerp;
+    }
+    AstCAwait* createReactiveHop(FileLine* const flp, bool hasProcess) {
+        AstCMethodHard* const triggerp = new AstCMethodHard{
+            flp, new AstVarRef{flp, getCreateReactiveSchedulerp(), VAccess::WRITE},
+            VCMethod::SCHED_TRIGGER, new AstConst{flp, AstConst::BitFalse{}}};
+        triggerp->dtypeSetVoid();
+        AstCExpr* const processp = new AstCExpr{flp, hasProcess ? "vlProcess" : "nullptr"};
+        triggerp->addPinsp(processp);
+        AstCExpr* const descriptionp = new AstCExpr{flp, "\"program initialization\""};
+        descriptionp->dtypeSetString();
+        triggerp->addPinsp(descriptionp);
+        addDebugInfo(triggerp);
+        return new AstCAwait{flp, triggerp};
     }
     // Creates a string describing the sentree
     AstCExpr* createEventDescription(AstSenTree* const sentreep) const {
@@ -900,8 +929,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
+        VL_RESTORER(m_inProgram);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
+        m_inProgram = nodep->inProgram();
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
         iterateChildren(nodep);
@@ -910,6 +941,13 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstInitial* nodep) override {
         visit(static_cast<AstNodeProcedure*>(nodep));
+        if (nodep->inProgram() && nodep->isSuspendable()) {
+            AstCAwait* const awaitp = createReactiveHop(nodep->fileline(), nodep->needProcess());
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
+                awaitp->addNextHere(stmtsp->unlinkFrBackWithNext());
+            }
+            nodep->addStmtsp(awaitp);
+        }
         if (nodep->needProcess() && !nodep->user1SetOnce()) {
             nodep->addStmtsp(
                 new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
@@ -1193,8 +1231,8 @@ class TimingControlVisitor final : public VNVisitor {
         // Handle the intra assignment timing control
         // Transform if:
         // * there's a timing control in the assignment
-        // * the assignment is an AssignDly and it's in a non-inlined function
-        if (!controlp && (!inAssignDly || m_underProcedure)) {
+        // * the assignment is an AssignDly in a non-inlined function or program
+        if (!controlp && (!inAssignDly || (m_underProcedure && !m_inProgram))) {
             iterateChildren(nodep);
             return;
         }
@@ -1207,9 +1245,8 @@ class TimingControlVisitor final : public VNVisitor {
             // Could already be the only thing directly under a fork, reuse that if possible
             AstFork* forkp = !nodep->nextp() ? VN_CAST(nodep->firstAbovep(), Fork) : nullptr;
             if (!forkp) forkp = new AstFork{flp, VJoinType::JOIN_NONE};
-            if (!m_underProcedure) {
-                // If it's in a function, it won't be handled by V3Delayed
-                // Put it behind an additional named event that gets triggered in the NBA region
+            if (!m_underProcedure || m_inProgram) {
+                // Resume in NBA or Re-NBA according to the calling thread's region set.
                 AstEventControl* const nbaEventControlp = createNbaEventControl(flp);
                 AstAssign* const trigAssignp = createNbaEventTriggerAssignment(flp);
                 nodep->replaceWith(trigAssignp);
@@ -1256,6 +1293,12 @@ class TimingControlVisitor final : public VNVisitor {
         }
         // Replace the RHS with an intermediate value var
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
+        if (inAssignDly && m_underProcedure && m_inProgram) {
+            // Do not schedule this program update a second time in V3Delayed.
+            nodep->replaceWith(
+                new AstAssign{flp, nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
     }
     void visit(AstAssignW* nodep) override {
         FileLine* const flp = nodep->fileline();

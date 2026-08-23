@@ -1975,6 +1975,7 @@ void AstNetlist::deleteContents() {
     m_stdPackagep = nullptr;
     m_dpiExportTriggerp = nullptr;
     m_delaySchedulerp = nullptr;
+    m_reactiveSchedulerp = nullptr;
     m_nbaEventp = nullptr;
     m_nbaEventTriggerp = nullptr;
     m_topScopep = nullptr;
@@ -1988,6 +1989,7 @@ void AstNetlist::deleteContents() {
 }
 void AstNetlist::dump(std::ostream& str) const {
     Super::dump(str);
+    if (reactiveSchedulerp()) str << " [REACTSCHED]";
     if (timescaleSpecified()) str << " [TIMESCALES]";
     str << " [" << timeunit() << "/" << timeprecision() << "]";
     if (resolvedTopModuleName() != "") str << " top=" << resolvedTopModuleName();
@@ -2806,10 +2808,12 @@ bool AstNodePreSel::isPure() {
 }
 void AstNodeProcedure::dump(std::ostream& str) const {
     Super::dump(str);
+    if (inProgram()) str << " [PROGRAM]";
     if (isSuspendable()) str << " [SUSP]";
     if (needProcess()) str << " [NPRC]";
 }
 void AstNodeProcedure::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, inProgram);
     dumpJsonBoolFuncIf(str, isSuspendable);
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonGen(str);

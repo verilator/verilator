@@ -371,6 +371,7 @@ public:
 // Everything needed for combining timing with static scheduling.
 class TimingKit final {
     AstCFunc* m_resumeFuncp = nullptr;  // Global timing resume function
+    AstCFunc* m_reactiveResumeFuncp = nullptr;  // Reactive timing resume function
     AstCFunc* m_readyFuncp = nullptr;  // Global timing ready function
 
     // Additional var sensitivities for V3Order
@@ -379,23 +380,29 @@ class TimingKit final {
 public:
     LogicByScope m_lbs;  // Actives that resume timing schedulers
     AstNodeStmt* m_postUpdates = nullptr;  // Post updates for the trigger eval function
+    AstVarScope* m_reactiveTriggeredp = nullptr;  // Reactive writes need combinational evaluation
 
     // Remaps external domains using the specified trigger map
-    std::map<const AstVarScope*, std::vector<AstSenTree*>> remapDomains(
-        const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const VL_MT_DISABLED;
+    std::map<const AstVarScope*, std::vector<AstSenTree*>>
+    remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap,
+                 AstSenTree* reactiveTriggerp = nullptr) const VL_MT_DISABLED;
     // Get the delay scheduler variable
     AstVarScope* getDelayScheduler(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing resume call (if needed, else returns null)
     AstCCall* createResume(AstNetlist* const netlistp) VL_MT_DISABLED;
+    // Creates a call returning whether any reactive timing coroutines resumed
+    AstCCall* createReactiveResume(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing ready call (if needed, else returns null)
     AstCCall* createReady(AstNetlist* const netlistp) VL_MT_DISABLED;
 
     TimingKit() = default;
     TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
-              std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains)
+              std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains,
+              AstVarScope* reactiveTriggeredp)
         : m_externalDomains{externalDomains}
         , m_lbs{lbs}
-        , m_postUpdates{postUpdates} {}
+        , m_postUpdates{postUpdates}
+        , m_reactiveTriggeredp{reactiveTriggeredp} {}
     VL_UNCOPYABLE(TimingKit);
     TimingKit(TimingKit&&) = default;
     TimingKit& operator=(TimingKit&&) = default;

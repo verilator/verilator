@@ -49,6 +49,8 @@
 -V{t#,#}+    Vt_timing_eval_act___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_obs
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_react
+-V{t#,#}+    Vt_timing_eval_act___024root___eval_reinact
+-V{t#,#}+    Vt_timing_eval_act___024root___eval_renba
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_postponed
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_eval_act::eval_step
@@ -130,7 +132,7 @@
 -V{t#,#}         Suspending process waiting for @([event] t.e) at t/t_timing_eval_act.v:28
 -V{t#,#}         No process to resume waiting for @([event] t.e)
 -V{t#,#}         Triggered processes waiting for @([event] t.e):
--V{t#,#}           - Process waiting at t/t_timing_eval_act.v:28
+-V{t#,#}           - Process waiting at t/t_timing_eval_act.v:34
 -V{t#,#}         Not triggered processes waiting for @([event] t.e):
 -V{t#,#}           - Process waiting at t/t_timing_eval_act.v:28
 -V{t#,#}         Resuming processes waiting for @([event] t.e)
@@ -191,6 +193,8 @@
 -V{t#,#}+    Vt_timing_eval_act___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_obs
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_react
+-V{t#,#}+    Vt_timing_eval_act___024root___eval_reinact
+-V{t#,#}+    Vt_timing_eval_act___024root___eval_renba
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_postponed
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_final

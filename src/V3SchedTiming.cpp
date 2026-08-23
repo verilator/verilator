@@ -42,7 +42,8 @@ namespace V3Sched {
 // Remaps external domains using the specified trigger map
 
 std::map<const AstVarScope*, std::vector<AstSenTree*>>
-TimingKit::remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const {
+TimingKit::remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap,
+                        AstSenTree* reactiveTriggerp) const {
     std::map<const AstVarScope*, std::vector<AstSenTree*>> remappedDomainMap;
     for (const auto& vscpDomains : m_externalDomains) {
         const AstVarScope* const vscp = vscpDomains.first;
@@ -52,6 +53,7 @@ TimingKit::remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>
         for (AstSenTree* const domainp : domains) {
             remappedDomains.push_back(trigMap.at(domainp));
         }
+        if (reactiveTriggerp) remappedDomains.push_back(reactiveTriggerp);
     }
     return remappedDomainMap;
 }
@@ -100,7 +102,14 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 
             AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
-                dlyShedIfp = V3Sched::util::createIfFromSenTree(activep->sentreep());
+                AstCMethodHard* const pendingp = new AstCMethodHard{
+                    schedrefp->fileline(),
+                    new AstVarRef{schedrefp->fileline(), schedrefp->varScopep(), VAccess::READ},
+                    VCMethod::SCHED_AWAITING_CURRENT_TIME};
+                pendingp->dtypeSetBit();
+                dlyShedIfp = util::createIfFromSenTree(activep->sentreep());
+                AstNodeExpr* const triggeredp = dlyShedIfp->condp()->unlinkFrBack();
+                dlyShedIfp->condp(new AstLogAnd{schedrefp->fileline(), triggeredp, pendingp});
                 dlyShedIfp->addThensp(actionp);
             } else {
                 m_resumeFuncp->addStmtsp(actionp);
@@ -113,6 +122,50 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
     }
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();
+    return callp;
+}
+
+AstCCall* TimingKit::createReactiveResume(AstNetlist* const netlistp) {
+    if (!m_reactiveResumeFuncp) {
+        if (!m_reactiveTriggeredp || m_lbs.empty()) return nullptr;
+        FileLine* const flp = netlistp->fileline();
+        AstScope* const scopep = netlistp->topScopep()->scopep();
+        m_reactiveResumeFuncp = util::makeSubFunction(netlistp, "_timing_resume_react", false);
+        m_reactiveResumeFuncp->rtnType("bool");
+        AstVarScope* const resumedp = scopep->createTemp("__VreactResumed", 1);
+        resumedp->varp()->noReset(true);
+        m_reactiveResumeFuncp->addStmtsp(util::setVar(resumedp, 0));
+        AstNodeStmt* resumesp = nullptr;
+        for (const auto& p : m_lbs) {
+            AstCMethodHard* const resumep
+                = VN_AS(VN_AS(p.second->stmtsp(), StmtExpr)->exprp(), CMethodHard)
+                      ->cloneTree(false);
+            const AstBasicDType* const dtypep = resumep->fromp()->dtypep()->basicp();
+            if (dtypep->isTriggerScheduler()) {
+                AstNode* const regionp = resumep->pinsp()->nextp();
+                regionp->replaceWith(new AstConst{flp, AstConst::BitTrue{}});
+                regionp->deleteTree();
+                AstCMethodHard* const movep = resumep->cloneTree(false);
+                movep->method(VCMethod::SCHED_MOVE_TO_RESUME_QUEUE);
+                m_reactiveResumeFuncp->addStmtsp(movep->makeStmt());
+            }
+            const AstVarRef* const schedrefp = VN_AS(resumep->fromp(), VarRef);
+            AstCMethodHard* const pendingp = new AstCMethodHard{
+                flp, new AstVarRef{flp, schedrefp->varScopep(), VAccess::READ},
+                dtypep->isDelayScheduler() ? VCMethod::SCHED_AWAITING_CURRENT_TIME
+                                           : VCMethod::SCHED_AWAITING_RESUMPTION};
+            pendingp->dtypeSetBit();
+            AstIf* const ifp = new AstIf{flp, pendingp};
+            ifp->addThensp(util::setVar(resumedp, 1));
+            ifp->addThensp(resumep->makeStmt());
+            resumesp = AstNode::addNext(resumesp, ifp);
+        }  // LCOV_EXCL_LINE
+        m_reactiveResumeFuncp->addStmtsp(resumesp);
+        m_reactiveResumeFuncp->addStmtsp(
+            new AstCReturn{flp, new AstVarRef{flp, resumedp, VAccess::READ}});
+    }
+    AstCCall* const callp = new AstCCall{m_reactiveResumeFuncp->fileline(), m_reactiveResumeFuncp};
+    callp->dtypeSetBit();
     return callp;
 }
 
@@ -192,6 +245,7 @@ class AwaitVisitor final : public VNVisitor {
     AstScope* const m_scopeTopp;  // Scope at the top
     LogicByScope& m_lbs;  // Timing resume actives
     AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
+    bool& m_hasReactive;  // Design contains reactive processes
     // Additional var sensitivities
     std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
     std::unique_ptr<V3ClassGraph>
@@ -272,6 +326,7 @@ class AwaitVisitor final : public VNVisitor {
             if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
                 if (methodp->pinsp()) addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
             }
+            resumep->addPinsp(new AstConst{flp, AstConst::BitFalse{}});
         } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
             auto* const postp = resumep->cloneTree(false);
             postp->method(VCMethod::SCHED_DO_POST_UPDATES);
@@ -322,6 +377,7 @@ class AwaitVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_inProcess && !m_gatherVars && m_processDomains.empty()
                         && m_writtenBySuspendable.empty(),
                     nodep, "Process in process?");
+        if (VN_IS(nodep, AlwaysReactive)) m_hasReactive = true;
         m_inProcess = true;
         m_gatherVars = nodep->isSuspendable();  // Only gather vars in a suspendable
         iterateChildren(nodep);
@@ -379,10 +435,12 @@ class AwaitVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit AwaitVisitor(AstNetlist* nodep, LogicByScope& lbs, AstNodeStmt*& postUpdatesr,
-                          std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains)
+                          std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains,
+                          bool& hasReactive)
         : m_scopeTopp{nodep->topScopep()->scopep()}
         , m_lbs{lbs}
         , m_postUpdatesr{postUpdatesr}
+        , m_hasReactive{hasReactive}
         , m_externalDomains{externalDomains}
         , m_classGraphp{V3ClassGraph::build(nodep)} {
         iterate(nodep);
@@ -397,9 +455,12 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
     if (!v3Global.usesTiming()) return {};
     LogicByScope lbs;
     AstNodeStmt* postUpdates = nullptr;
+    bool hasReactive = netlistp->reactiveSchedulerp();
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
-    { AwaitVisitor{netlistp, lbs, postUpdates, externalDomains}; }
-    return {std::move(lbs), postUpdates, std::move(externalDomains)};
+    { AwaitVisitor{netlistp, lbs, postUpdates, externalDomains, hasReactive}; }
+    AstVarScope* const reactiveTriggeredp
+        = hasReactive ? netlistp->topScopep()->scopep()->createTemp("__VreactUpdate", 1) : nullptr;
+    return {std::move(lbs), postUpdates, std::move(externalDomains), reactiveTriggeredp};
 }
 
 //============================================================================

@@ -403,11 +403,13 @@ public:
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
+    bool m_inProgram : 1;  // Procedure originates in a program block
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
     bool m_needProcess : 1;  // Uses VlProcess
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
+        m_inProgram = false;
         m_needProcess = false;
         m_suspendable = false;
         addStmtsp(stmtsp);
@@ -418,6 +420,11 @@ public:
     // METHODS
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
+        return m_inProgram == VN_DBG_AS(samep, NodeProcedure)->m_inProgram;
+    }  // LCOV_EXCL_STOP
+    bool inProgram() const { return m_inProgram; }
+    void inProgram(bool flag) { m_inProgram = flag; }
     bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
     bool isSuspendable() const { return m_suspendable; }
     void setSuspendable() { m_suspendable = true; }
@@ -1556,6 +1563,8 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_stdPackageProcessp : Optional[AstClass]  // SystemVerilog std process class
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
     // @astgen ptr := m_delaySchedulerp : Optional[AstVar]  // Delay scheduler variable
+    // @astgen ptr := m_reactiveSchedulerp : Optional[AstVarScope]  // Program initialization
+    // scheduler
     // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
     // @astgen ptr := m_nbaEventTriggerp : Optional[AstVarScope]  // NBA event trigger
     // @astgen ptr := m_topScopep : Optional[AstTopScope]  // Singleton AstTopScope
@@ -1606,6 +1615,8 @@ public:
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
+    AstVarScope* reactiveSchedulerp() const { return m_reactiveSchedulerp; }
+    void reactiveSchedulerp(AstVarScope* const varScopep) { m_reactiveSchedulerp = varScopep; }
     AstVarScope* nbaEventp() const { return m_nbaEventp; }
     void nbaEventp(AstVarScope* const varScopep) { m_nbaEventp = varScopep; }
     AstVarScope* nbaEventTriggerp() const { return m_nbaEventTriggerp; }

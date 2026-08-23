@@ -61,17 +61,20 @@ void VlDelayScheduler::resume() {
 #ifdef VL_DEBUG
     VL_DEBUG_IF(dump(); VL_DBG_MSGF("         Resuming delayed processes\n"););
 #endif
-    if (VL_UNLIKELY(m_context.gotFinish())) {
-        m_queue.clear();
-        m_zeroDelayed.clear();
+    if (VL_UNLIKELY(m_context.gotFinish())) {  // LCOV_EXCL_START: Direct calls after finish only
+        for (Queue& queue : m_queues) {
+            queue.m_delayed.clear();
+            queue.m_zeroDelayed.clear();
+        }
         m_zeroDelayesSwap.clear();
         return;
-    }
+    }  // LCOV_EXCL_STOP
     bool resumed = false;
+    VlDelayedCoroutineQueue& queue = m_queues[m_context.inReactive()].m_delayed;
 
-    while (!m_queue.empty() && (m_queue.cbegin()->first == m_context.time())) {
-        VlCoroutineHandle handle = std::move(m_queue.begin()->second);
-        m_queue.erase(m_queue.begin());
+    while (!queue.empty() && (queue.cbegin()->first == m_context.time())) {
+        VlCoroutineHandle handle = std::move(queue.begin()->second);
+        queue.erase(queue.begin());
         handle.resume();
         resumed = true;
     }
@@ -89,36 +92,46 @@ void VlDelayScheduler::resume() {
 }
 
 void VlDelayScheduler::resumeZeroDelay() {
-    if (VL_UNLIKELY(m_context.gotFinish())) {
-        m_zeroDelayed.clear();
+    std::vector<VlCoroutineHandle>& zeroDelayed = m_queues[m_context.inReactive()].m_zeroDelayed;
+    if (VL_UNLIKELY(m_context.gotFinish())) {  // LCOV_EXCL_START: Direct calls after finish only
+        zeroDelayed.clear();
         m_zeroDelayesSwap.clear();
         return;
-    }
-    m_zeroDelayesSwap.swap(m_zeroDelayed);
+    }  // LCOV_EXCL_STOP
+    m_zeroDelayesSwap.swap(zeroDelayed);
     for (VlCoroutineHandle& handle : m_zeroDelayesSwap) handle.resume();
     m_zeroDelayesSwap.clear();
 }
 
 uint64_t VlDelayScheduler::nextTimeSlot() const {
-    if (!m_queue.empty()) return m_queue.cbegin()->first;
-    if (m_zeroDelayed.empty())
-        VL_FATAL_MT(__FILE__, __LINE__, "", "There is no next time slot scheduled");
-    return m_context.time();
+    if (!m_queues[0].m_zeroDelayed.empty() || !m_queues[1].m_zeroDelayed.empty()) {
+        return m_context.time();  // LCOV_EXCL_LINE: Eval drains #0 queues before returning
+    }
+    const VlDelayedCoroutineQueue& active = m_queues[0].m_delayed;
+    const VlDelayedCoroutineQueue& reactive = m_queues[1].m_delayed;
+    if (!active.empty() && !reactive.empty()) {
+        return std::min(active.cbegin()->first, reactive.cbegin()->first);
+    }
+    if (!active.empty()) return active.cbegin()->first;
+    if (!reactive.empty()) return reactive.cbegin()->first;
+    VL_FATAL_MT(__FILE__, __LINE__, "", "There is no next time slot scheduled");
+    VL_UNREACHABLE;
 }
 
 #ifdef VL_DEBUG
 void VlDelayScheduler::dump() const {
-    if (m_queue.empty() && m_zeroDelayed.empty()) {
+    const Queue& queue = m_queues[m_context.inReactive()];
+    if (queue.m_delayed.empty() && queue.m_zeroDelayed.empty()) {
         VL_DBG_MSGF("         No delayed processes:\n");
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");
-        for (const auto& susp : m_zeroDelayed) {
+        for (const auto& susp : queue.m_zeroDelayed) {
             VL_DBG_MSGF("             Awaiting #0-delayed resumption, "
                         "time () %" PRIu64 ": ",
                         m_context.time());
             susp.dump();
         }
-        for (const auto& susp : m_queue) {
+        for (const auto& susp : queue.m_delayed) {
             VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", susp.first);
             susp.second.dump();
         }
@@ -129,86 +142,92 @@ void VlDelayScheduler::dump() const {
 //======================================================================
 // VlTriggerScheduler:: Methods
 
-void VlTriggerScheduler::resume(const char* eventDescription) {
+void VlTriggerScheduler::resume(const char* eventDescription, bool reactive) {
 #ifdef VL_DEBUG
-    VL_DEBUG_IF(dump(eventDescription);
+    VL_DEBUG_IF(dump(eventDescription, reactive);
                 VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
 #endif
+    Queue& queue = m_queues[reactive];
     if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
-        m_toResume.clear();
-        m_fired.clear();
-        m_awaiting.clear();
+        queue.m_toResume.clear();
+        queue.m_fired.clear();
+        queue.m_awaiting.clear();
         return;
     }
-    for (VlCoroutineHandle& coro : m_toResume) coro.resume();
-    m_toResume.clear();
+    for (VlCoroutineHandle& coro : queue.m_toResume) coro.resume();
+    queue.m_toResume.clear();
 }
 
-void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription) {
+void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription, bool reactive) {
+    Queue& queue = m_queues[reactive];
 #ifdef VL_DEBUG
-    if (!m_fired.empty()) {
+    if (!queue.m_fired.empty()) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Moving to resume queue processes waiting for %s:\n",
                                 eventDescription);
                     for (const auto& susp
-                         : m_fired) {
+                         : queue.m_fired) {
                         VL_DBG_MSGF("           - ");
                         susp.dump();
                     });
     }
 #endif
     if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
-        m_toResume.clear();
-        m_fired.clear();
+        queue.m_toResume.clear();
+        queue.m_fired.clear();
         return;
     }
-    std::swap(m_fired, m_toResume);
+    std::swap(queue.m_fired, queue.m_toResume);
 }
 
 void VlTriggerScheduler::ready(const char* eventDescription) {
+    for (Queue& queue : m_queues) {
 #ifdef VL_DEBUG
-    if (!m_awaiting.empty()) {
-        VL_DEBUG_IF(
-            VL_DBG_MSGF("         Committing processes waiting for %s:\n", eventDescription);
-            for (const auto& susp
-                 : m_awaiting) {
-                VL_DBG_MSGF("           - ");
-                susp.dump();
-            });
-    }
+        if (!queue.m_awaiting.empty()) {
+            VL_DEBUG_IF(
+                VL_DBG_MSGF("         Committing processes waiting for %s:\n", eventDescription);
+                for (const auto& susp
+                     : queue.m_awaiting) {
+                    VL_DBG_MSGF("           - ");
+                    susp.dump();
+                });
+        }
 #endif
-    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
-        m_fired.clear();
-        m_awaiting.clear();
-        return;
+        if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
+            queue.m_fired.clear();
+            queue.m_awaiting.clear();
+            continue;
+        }
+        const size_t expectedSize = queue.m_fired.size() + queue.m_awaiting.size();
+        if (queue.m_fired.capacity() < expectedSize) queue.m_fired.reserve(expectedSize * 2);
+        queue.m_fired.insert(queue.m_fired.end(),
+                             std::make_move_iterator(queue.m_awaiting.begin()),
+                             std::make_move_iterator(queue.m_awaiting.end()));
+        queue.m_awaiting.clear();
     }
-    const size_t expectedSize = m_fired.size() + m_awaiting.size();
-    if (m_fired.capacity() < expectedSize) m_fired.reserve(expectedSize * 2);
-    m_fired.insert(m_fired.end(), std::make_move_iterator(m_awaiting.begin()),
-                   std::make_move_iterator(m_awaiting.end()));
-    m_awaiting.clear();
 }
 
 #ifdef VL_DEBUG
-void VlTriggerScheduler::dump(const char* eventDescription) const {
-    if (m_toResume.empty()) {
+void VlTriggerScheduler::dump(const char* eventDescription, bool reactive) const {
+    const Queue& queue = m_queues[reactive];
+    if (queue.m_toResume.empty()) {
         VL_DBG_MSGF("         No process to resume waiting for %s\n", eventDescription);
     } else {
-        for (const auto& susp : m_toResume) {
+        for (const auto& susp : queue.m_toResume) {
             VL_DBG_MSGF("         Processes to resume waiting for %s:\n", eventDescription);
             VL_DBG_MSGF("           - ");
             susp.dump();
         }
     }
-    if (!m_fired.empty()) {
+    if (!queue.m_fired.empty()) {
         VL_DBG_MSGF("         Triggered processes waiting for %s:\n", eventDescription);
-        for (const auto& susp : m_awaiting) {
+        for (const auto& susp : queue.m_fired) {
             VL_DBG_MSGF("           - ");
             susp.dump();
         }
     }
-    if (!m_awaiting.empty()) {
+    if (!queue.m_awaiting.empty()) {
         VL_DBG_MSGF("         Not triggered processes waiting for %s:\n", eventDescription);
-        for (const auto& susp : m_awaiting) {
+        for (const auto& susp : queue.m_awaiting) {
             VL_DBG_MSGF("           - ");
             susp.dump();
         }
@@ -220,59 +239,75 @@ void VlTriggerScheduler::dump(const char* eventDescription) const {
 // VlDynamicTriggerScheduler:: Methods
 
 bool VlDynamicTriggerScheduler::evaluate() {
-    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    if (VL_UNLIKELY(contextp->gotFinish())) {
         m_anyTriggered = false;
-        m_suspended.clear();
+        for (VlCoroutineVec& queue : m_suspended) queue.clear();
         m_evaluated.clear();
-        m_triggered.clear();
-        m_post.clear();
+        for (VlCoroutineVec& queue : m_triggered) queue.clear();
+        for (VlCoroutineVec& queue : m_post) queue.clear();
         return false;
     }
     m_anyTriggered = false;
     VL_DEBUG_IF(dump(););
-    std::swap(m_suspended, m_evaluated);
-    for (auto& coro : m_evaluated) coro.resume();
-    m_evaluated.clear();
+    const bool inReactive = contextp->inReactive();
+    for (unsigned region = 0; region < m_suspended.size(); ++region) {
+        // Trigger evaluation must retain the waiting thread's region across its synthetic awaits.
+        contextp->inReactive(region != 0);
+        std::swap(m_suspended[region], m_evaluated);
+        for (VlCoroutineHandle& coro : m_evaluated) coro.resume();
+        m_evaluated.clear();
+    }
+    contextp->inReactive(inReactive);
     return m_anyTriggered;
 }
 
 void VlDynamicTriggerScheduler::doPostUpdates() {
-    VL_DEBUG_IF(if (!m_post.empty())
-                    VL_DBG_MSGF("         Doing post updates for processes:\n");  //
-                for (const auto& susp
-                     : m_post) {
-                    VL_DBG_MSGF("           - ");
-                    susp.dump();
-                });
-    if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
-        m_post.clear();
-        return;
+    VerilatedContext* const contextp = Verilated::threadContextp();
+    const bool inReactive = contextp->inReactive();
+    for (unsigned region = 0; region < m_post.size(); ++region) {
+        VlCoroutineVec& post = m_post[region];
+        contextp->inReactive(region != 0);
+        VL_DEBUG_IF(if (!post.empty())
+                        VL_DBG_MSGF("         Doing post updates for processes:\n");  //
+                    for (const auto& susp
+                         : post) {
+                        VL_DBG_MSGF("           - ");
+                        susp.dump();
+                    });
+        if (VL_UNLIKELY(contextp->gotFinish())) {
+            post.clear();
+            continue;
+        }
+        for (VlCoroutineHandle& coro : post) coro.resume();
+        post.clear();
     }
-    for (auto& coro : m_post) coro.resume();
-    m_post.clear();
+    contextp->inReactive(inReactive);
 }
 
 void VlDynamicTriggerScheduler::resume() {
-    VL_DEBUG_IF(if (!m_triggered.empty()) VL_DBG_MSGF("         Resuming processes:\n");  //
+    VlCoroutineVec& triggered = m_triggered[Verilated::threadContextp()->inReactive()];
+    VL_DEBUG_IF(if (!triggered.empty()) VL_DBG_MSGF("         Resuming processes:\n");  //
                 for (const auto& susp
-                     : m_triggered) {
+                     : triggered) {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
     if (VL_UNLIKELY(Verilated::threadContextp()->gotFinish())) {
-        m_triggered.clear();
+        triggered.clear();
         return;
     }
-    for (auto& coro : m_triggered) coro.resume();
-    m_triggered.clear();
+    for (VlCoroutineHandle& coro : triggered) coro.resume();
+    triggered.clear();
 }
 
 #ifdef VL_DEBUG
 void VlDynamicTriggerScheduler::dump() const {
-    if (m_suspended.empty()) {
+    const VlCoroutineVec& suspended = m_suspended[Verilated::threadContextp()->inReactive()];
+    if (suspended.empty()) {
         VL_DBG_MSGF("         No suspended processes waiting for dynamic trigger evaluation\n");
     } else {
-        for (const auto& susp : m_suspended) {
+        for (const auto& susp : suspended) {
             VL_DBG_MSGF("         Suspended processes waiting for dynamic trigger evaluation:\n");
             VL_DBG_MSGF("           - ");
             susp.dump();
