@@ -910,15 +910,17 @@ public:
         SCHED_ANY_TRIGGERED,
         SCHED_AWAITING_CURRENT_TIME,
         SCHED_AWAITING_ZERO_DELAY,
-        SCHED_READY,
         SCHED_COMMIT,
-        SCHED_MOVE_TO_RESUME_QUEUE,
         SCHED_DELAY,
         SCHED_DO_POST_UPDATES,
+        SCHED_EMPTY,
         SCHED_ENQUEUE,
         SCHED_EVALUATE,
         SCHED_EVALUATION,
+        SCHED_MOVE_TO_RESUME_QUEUE,
         SCHED_POST_UPDATE,
+        SCHED_REACT_TRIGGER,
+        SCHED_READY,
         SCHED_RESUME,
         SCHED_RESUME_ZERO_DELAY,
         SCHED_RESUMPTION,
@@ -1064,15 +1066,17 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
            {SCHED_AWAITING_CURRENT_TIME, "awaitingCurrentTime", true}, \
            {SCHED_AWAITING_ZERO_DELAY, "awaitingZeroDelay", true}, \
-           {SCHED_READY, "ready", false}, \
            {SCHED_COMMIT, "commit", false}, \
-           {SCHED_MOVE_TO_RESUME_QUEUE, "moveToResumeQueue", false}, \
            {SCHED_DELAY, "delay", false}, \
            {SCHED_DO_POST_UPDATES, "doPostUpdates", false}, \
+           {SCHED_EMPTY, "empty", true}, \
            {SCHED_ENQUEUE, "enqueue", false}, \
            {SCHED_EVALUATE, "evaluate", false}, \
            {SCHED_EVALUATION, "evaluation", false}, \
+           {SCHED_MOVE_TO_RESUME_QUEUE, "moveToResumeQueue", false}, \
            {SCHED_POST_UPDATE, "postUpdate", false}, \
+           {SCHED_REACT_TRIGGER, "trigger", false}, \
+           {SCHED_READY, "ready", false}, \
            {SCHED_RESUME, "resume", false}, \
            {SCHED_RESUME_ZERO_DELAY, "resumeZeroDelay", false}, \
            {SCHED_RESUMPTION, "resumption", false}, \

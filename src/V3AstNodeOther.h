@@ -398,11 +398,13 @@ public:
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
+    bool m_inProgram : 1;  // Procedure originates in a program block
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
     bool m_needProcess : 1;  // Uses VlProcess
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
+        m_inProgram = false;
         m_needProcess = false;
         m_suspendable = false;
         addStmtsp(stmtsp);
@@ -413,6 +415,11 @@ public:
     // METHODS
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        return m_inProgram == VN_DBG_AS(samep, NodeProcedure)->m_inProgram;
+    }
+    bool inProgram() const { return m_inProgram; }
+    void inProgram(bool flag) { m_inProgram = flag; }
     bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
     bool isSuspendable() const { return m_suspendable; }
     void setSuspendable() { m_suspendable = true; }

@@ -374,6 +374,7 @@ class TimingKit final {
 public:
     LogicByScope m_lbs;  // Actives that resume timing schedulers
     AstNodeStmt* m_postUpdates = nullptr;  // Post updates for the trigger eval function
+    AstVarScope* m_reactiveSchedulerp = nullptr;  // Program Reactive-region scheduler
 
     // Remaps external domains using the specified trigger map
     std::map<const AstVarScope*, std::vector<AstSenTree*>> remapDomains(
@@ -387,10 +388,12 @@ public:
 
     TimingKit() = default;
     TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
-              std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains)
+              std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains,
+              AstVarScope* reactiveSchedulerp)
         : m_externalDomains{externalDomains}
         , m_lbs{lbs}
-        , m_postUpdates{postUpdates} {}
+        , m_postUpdates{postUpdates}
+        , m_reactiveSchedulerp{reactiveSchedulerp} {}
     VL_UNCOPYABLE(TimingKit);
     TimingKit(TimingKit&&) = default;
     TimingKit& operator=(TimingKit&&) = default;
