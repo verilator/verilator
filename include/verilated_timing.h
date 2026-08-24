@@ -173,6 +173,11 @@ class VlDelayScheduler final {
     std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
     // Coroutines that waited for #0 and are being resumed now. As member to avoid reallocations
     std::vector<VlCoroutineHandle> m_zeroDelayesSwap;
+    // Set when resumeZeroDelay() resumed a process. A process resumed in the
+    // Inactive region may have scheduled a non-blocking assignment, and IEEE
+    // 1800-2023 4.5 puts the NBA region after the Inactive region of the same
+    // time slot, so the regions that follow must still run in this time slot.
+    bool m_resumedZeroDelay = false;
 
 public:
     // CONSTRUCTORS
@@ -191,7 +196,8 @@ public:
     // Are there coroutines to resume at the current simulation time?
     bool awaitingCurrentTime() const {
         return !m_context.gotFinish()
-               && (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()));
+               && (m_resumedZeroDelay
+                   || (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time())));
     }
     // Are there coroutines to resume in the inactive region after a #0 delay?
     bool awaitingZeroDelay() const { return !m_context.gotFinish() && !m_zeroDelayed.empty(); }

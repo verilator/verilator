@@ -68,6 +68,11 @@ void VlDelayScheduler::resume() {
         return;
     }
     bool resumed = false;
+    // A zero-delay resume in this time slot makes this region run once more,
+    // so that whatever those processes scheduled takes effect now. There may
+    // be nothing of our own to resume, and that is not an error.
+    const bool afterZeroDelay = m_resumedZeroDelay;
+    m_resumedZeroDelay = false;
 
     while (!m_queue.empty() && (m_queue.cbegin()->first == m_context.time())) {
         VlCoroutineHandle handle = std::move(m_queue.begin()->second);
@@ -77,6 +82,7 @@ void VlDelayScheduler::resume() {
     }
 
     if (!resumed) {
+        if (afterZeroDelay) return;  // Ran only to let the later regions run
         if (m_context.time() == 0) {
             // Nothing was scheduled at time 0, but resume() got called due to --x-initial-edge
             return;
@@ -95,6 +101,7 @@ void VlDelayScheduler::resumeZeroDelay() {
         return;
     }
     m_zeroDelayesSwap.swap(m_zeroDelayed);
+    if (!m_zeroDelayesSwap.empty()) m_resumedZeroDelay = true;
     for (VlCoroutineHandle& handle : m_zeroDelayesSwap) handle.resume();
     m_zeroDelayesSwap.clear();
 }
