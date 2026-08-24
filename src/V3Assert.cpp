@@ -281,6 +281,7 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statAssertOnCombined;  // Statistic tracking
     VDouble0 m_statAssertOnHoisted;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
+    bool m_inFTask = false;  // True inside a function/task body
     bool m_inRestrict = false;  // True inside restrict assertion
     AstNode* m_passsp = nullptr;  // Current pass statement
     AstNode* m_failsp = nullptr;  // Current fail statement
@@ -999,7 +1000,8 @@ class AssertVisitor final : public VNVisitor {
         AstNodeExpr* const exprp = newSampledExpr(nodep->exprp()->unlinkFrBack());
         AstSenTree* const senTreep = nodep->sentreep()->unlinkFrBack();
         AstNodeExpr* inp = nullptr;
-        if (VN_IS(m_procedurep, Final) || m_ftaskp) {
+        // Deliberately emitted for every ftask $past; calls outside final take the normal stage
+        if (VN_IS(m_procedurep, Final) || m_inFTask) {
             // A sampling-tick finish reads one stage deeper (IEEE 1800-2023 16.9.3).
             FileLine* const flp = nodep->fileline();
             AstAlways* const alwaysp = getDelayedAlways(exprp, senTreep);
@@ -1265,8 +1267,8 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
-        VL_RESTORER(m_ftaskp);
-        m_ftaskp = nodep;
+        VL_RESTORER(m_inFTask);
+        m_inFTask = true;
         iterateChildren(nodep);
     }
     void visit(AstGenBlock* nodep) override {
