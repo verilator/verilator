@@ -3711,7 +3711,7 @@ std::vector<AstUnpackArrayDType*> AstUnpackArrayDType::unpackDimensions() {
     for (AstUnpackArrayDType* unpackp = this; unpackp;) {
         dims.push_back(unpackp);
         if (AstNodeDType* const subp = unpackp->subDTypep()) {
-            unpackp = VN_CAST(subp, UnpackArrayDType);
+            unpackp = VN_CAST(subp->skipRefp(), UnpackArrayDType);
         } else {
             unpackp = nullptr;
         }

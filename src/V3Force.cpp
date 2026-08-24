@@ -55,6 +55,7 @@ public:
         // MEMBERS
         int m_forceId = 0;  // Unique (per signal) variable of this force assignment
         bool m_hasArraySel = false;  // If this has an array select on LHS
+        bool m_isExternal = false;  // Synthetic force for the public force controls
         AstVarScope* m_rhsVarVscp = nullptr;  // Scope of the var containing RHSID
         AstNodeExpr* m_rhsExprp = nullptr;  // Expression on RHS of this force assignment
 
@@ -407,29 +408,41 @@ public:
         return callp;
     }
 
-    AstNodeStmt* createForceRdUpdateStmt(const VarForceInfo& varInfo) const {
-        UASSERT(varInfo.m_forceRdVscp, "No forceRd for forced variable");
+    AstNodeExpr* createForceRdExpression(const VarForceInfo& varInfo, FileLine* flp) const {
         UASSERT(varInfo.m_varVscp, "No base var scope for forced variable");
-        FileLine* const flp = varInfo.m_varVscp->fileline();
         AstVar* const varp = varInfo.m_varVscp->varp();
         if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-            return createForceRdUpdateStmtUnpacked(varInfo);
+            // Array element forces live in the force vector, including partial-element forces.
+            // The assign pass reuses the force-read shadow, as for an array element read.
+            if (doingAssign()) { return new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::READ}; }
+            // Whole-array force reads introduce artificial scheduling cycles.
+            varp->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);
+            AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
+            markPermanentlyProtected(baseRefp);
+            return createForceReadCall(varInfo, flp, VCMethod::FORCE_READ, baseRefp, varp,
+                                       nullptr);
         }
-        AstNodeExpr* readExprp = nullptr;
         AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
         markPermanentlyProtected(baseRefp);
         AstNodeExpr* const enRefp = new AstVarRef{flp, varInfo.m_forceEnVscp, VAccess::READ};
         AstNodeExpr* const valRefp = new AstVarRef{flp, varInfo.m_forceValVscp, VAccess::READ};
         if (isBitwiseDType(varp)) {
-            readExprp = new AstOr{
+            return new AstOr{
                 flp, new AstAnd{flp, enRefp, valRefp},
                 new AstAnd{flp, new AstNot{flp, enRefp->cloneTreePure(false)}, baseRefp}};
-        } else {
-            readExprp = new AstCond{flp, enRefp, valRefp, baseRefp};
         }
+        return new AstCond{flp, enRefp, valRefp, baseRefp};
+    }
 
+    AstNodeStmt* createForceRdUpdateStmt(const VarForceInfo& varInfo) const {
+        UASSERT(varInfo.m_forceRdVscp, "No forceRd for forced variable");
+        AstVar* const varp = varInfo.m_varVscp->varp();
+        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+            return createForceRdUpdateStmtUnpacked(varInfo);
+        }
+        FileLine* const flp = varInfo.m_varVscp->fileline();
         return new AstAssign{flp, new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::WRITE},
-                             readExprp};
+                             createForceRdExpression(varInfo, flp)};
     }
 
     AstNodeStmt* createForceRdUpdateStmtUnpacked(const VarForceInfo& varInfo) const {
@@ -437,7 +450,7 @@ public:
         AstVar* const varp = varInfo.m_varVscp->varp();
         AstUnpackArrayDType* const arrDtypep = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType);
         const std::vector<AstUnpackArrayDType*> dims = arrDtypep->unpackDimensions();
-        return foreachUnpackedLeaf(
+        AstNodeStmt* const stmtsp = foreachUnpackedLeaf(
             dims, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
                 AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
                 markPermanentlyProtected(baseRefp);
@@ -453,6 +466,16 @@ public:
                     flp, new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::WRITE}, idx);
                 return new AstAssign{flp, rdLhsSelp, readExprp};
             });
+        // Whole-array reads use the force vector, whose external-force entries point to
+        // RHS shadows. Refresh those alongside forceRd so blocking writes are visible
+        // before the next statement. Only synthetic expressions are safe to reevaluate here.
+        for (const ForceInfo* const finfop : forceInfosInIdOrder(varInfo)) {
+            if (!finfop->m_isExternal) continue;
+            stmtsp->addNext(new AstAssign{flp,
+                                          new AstVarRef{flp, finfop->m_rhsVarVscp, VAccess::WRITE},
+                                          finfop->m_rhsExprp->cloneTreePure(false)});
+        }
+        return stmtsp;
     }
 
     VarForceInfo& getOrCreateVarInfo(AstVarScope* vscp) {
@@ -564,6 +587,7 @@ public:
                                           ForceInfo{rangeLsb, rangeMsb, padLsb, padMsb, forceId,
                                                     hasArraySel, nullptr, rhsExprp});
         ForceInfo& finfo = pair.first->second;
+        finfo.m_isExternal = forceStmtp->user2();
         if (doingAssign()) {
             std::vector<AstVar*> depVarps;
             finfo.m_rhsExprp->foreach([&](AstVarRef* const refp) {
@@ -689,17 +713,16 @@ public:
                 finfo.m_rhsVarVscp = new AstVarScope{flp, scopep, rhsVarp};
                 scopep->addVarsp(finfo.m_rhsVarVscp);
 
-                // Build assignments for RHS capture. Public/forceable signals with __VforceRd
-                // already have an explicit force-read update path, so they do not need the
-                // forceVec.touch() ordering edge here.
+                // Array reads use the force vector even when a public read shadow exists.
+                // Keep their consumers ordered after RHS capture through forceVec.touch().
                 // always_comb begin
                 //   forceRHS[id] = rhsExpr;
-                //   forceVec.touch();  // Only without __VforceRd
+                //   forceVec.touch();  // When reads use the force vector
                 // end
                 AstAssign* const rhsAssignp = new AstAssign{
                     flp, new AstVarRef{flp, finfo.m_rhsVarVscp, VAccess::WRITE}, finfo.m_rhsExprp};
 
-                if (!info.m_forceRdVscp) {
+                if (!info.m_forceRdVscp || isUnpackedArrayDType(varp->dtypep())) {
                     // touch() is intentionally a semantic no-op at runtime: it creates an
                     // explicit use/ordering edge from the RHS-capture logic to the force vector
                     // so later optimization/scheduling passes keep this update path connected.
@@ -1461,8 +1484,12 @@ class ForceReplaceVisitor final : public VNVisitor {
                 return;
             }
             if (nodep->access().isReadOnly()) {
-                nodep->varp(varInfo->m_forceRdVscp->varp());
-                nodep->varScopep(varInfo->m_forceRdVscp);
+                // Inline the effective value so a blocking update to a continuous driver is
+                // visible immediately. The __VforceRd shadow is updated only on the next event.
+                AstNodeExpr* const readp
+                    = m_state.createForceRdExpression(*varInfo, nodep->fileline());
+                nodep->replaceWith(readp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
             if (m_inLogic && m_stmtp) {
