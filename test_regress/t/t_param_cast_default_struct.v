@@ -15,15 +15,18 @@
 typedef struct packed {int unsigned CAP;} cfg_t;
 
 module m #(
-  parameter cfg_t cfg = '{CAP: 0},
-  parameter int unsigned p_cap = int'(cfg.CAP)
+    parameter cfg_t cfg = '{CAP: 0},
+    parameter int unsigned p_cap = int'(cfg.CAP)
 );
 endmodule
 
 module t;
   localparam cfg_t c = '{CAP: 32};
 
-  m #(.cfg(c), .p_cap(64)) u_over ();  // explicit override, elaborated first
+  m #(
+      .cfg(c),
+      .p_cap(64)
+  ) u_over ();  // explicit override, elaborated first
   m #(.cfg(c)) u_dflt ();  // takes the default: int'(cfg.CAP) == 32
 
   initial begin

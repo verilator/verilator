@@ -1547,6 +1547,9 @@ class VlTest:
         if run_env:
             run_env = run_env + ' '
         if self.tsan:
+            # ThreadSanitizer's fixed shadow mapping is incompatible with
+            # high-entropy ASLR, so disable with TSAN
+            param['aslr_off'] = True
             # Use default suppressions; environment TSAN_OPTIONS may override
             run_env = ('TSAN_OPTIONS="suppressions=' + os.environ['TEST_REGRESS'] +
                        '/tsan.supp $TSAN_OPTIONS" ' + run_env)
@@ -1724,7 +1727,7 @@ class VlTest:
         if VlTest._cached_aslr_off is None:
             out = VtOs.run_capture('setarch --addr-no-randomize echo OK 2>/dev/null', check=False)
             if re.search(r'OK', out):
-                VlTest._cached_aslr_off = "setarch --addr-no-randomize "
+                VlTest._cached_aslr_off = "setarch --addr-no-randomize env "
             else:
                 VlTest._cached_aslr_off = ""
         return VlTest._cached_aslr_off

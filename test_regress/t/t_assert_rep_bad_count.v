@@ -36,4 +36,10 @@ module t (input clk);
   assert property (@(posedge clk) a[=-1] |-> b)
     else $error("FAIL");
 
+  assert property (@(posedge clk) a[->32'h80000000] |-> b)
+    else $error("FAIL");
+
+  assert property (@(posedge clk) a[=32'h80000000] |-> b)
+    else $error("FAIL");
+
 endmodule

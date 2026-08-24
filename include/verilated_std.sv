@@ -196,7 +196,8 @@ package std;
     static task killQueue(ref process processQueue[$]);
 `ifdef VERILATOR_TIMING
       repeat (processQueue.size()) begin
-        processQueue.pop_front().kill();
+        process p = processQueue.pop_front();
+        if (p) p.kill();
       end
 `endif
     endtask

@@ -623,6 +623,7 @@ public:
     explicit AstDisableFork(FileLine* fl)
         : ASTGEN_SUPER_DisableFork(fl) {}
     ASTGEN_MEMBERS_AstDisableFork;
+    string verilogKwd() const override { return "disable fork"; }
 };
 class AstDisplay final : public AstNodeStmt {
     // Parents: stmtlist
@@ -1456,6 +1457,7 @@ public:
         : ASTGEN_SUPER_WaitFork(fl) {}
     ASTGEN_MEMBERS_AstWaitFork;
     bool isTimingControl() const override { return true; }
+    string verilogKwd() const override { return "wait fork"; }
 };
 
 // === AstNodeAssign ===

@@ -34,6 +34,7 @@
 #include "V3Graph.h"
 
 #include <unordered_map>
+#include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -670,6 +671,32 @@ public:
 //######################################################################
 // Pass 2: inject automatic sample() calls for covergroup instances
 
+class CovergroupEventBindVisitor final : public VNVisitor {
+    AstVarScope* const m_instancep;  // Variable scope for the covergroup instance being sampled
+    std::unordered_set<const AstVar*> m_memberps;  // Non-static variables in the covergroup class
+
+    void visit(AstVarRef* nodep) override {
+        if (!m_memberps.count(nodep->varp())) return;
+        FileLine* const fl = nodep->fileline();
+        AstMemberSel* const selp
+            = new AstMemberSel{fl, new AstVarRef{fl, m_instancep, VAccess::READ}, nodep->varp()};
+        selp->access(nodep->access());
+        nodep->replaceWith(selp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    CovergroupEventBindVisitor(AstSenTree* eventp, AstClass* classp, AstVarScope* instancep)
+        : m_instancep{instancep} {
+        classp->foreachMember([&](AstClass* const, AstVar* const varp) {
+            if (!varp->isStatic()) m_memberps.emplace(varp);
+        });
+        iterate(eventp);
+    }
+    ~CovergroupEventBindVisitor() override = default;
+};
+
 class CovergroupInjectVisitor final : public VNVisitor {
     // NODE STATE  (set by CovergroupCollectVisitor, consumed here)
     //  AstClass::user1p()  -> AstCFunc*.    The sample() CFunc for this covergroup class
@@ -719,10 +746,11 @@ class CovergroupInjectVisitor final : public VNVisitor {
         cmethodCallp->dtypeSetVoid();
         cmethodCallp->argTypes("vlSymsp");
 
-        // Clone the sensitivity for this active block.
-        // V3Scope has already resolved all VarRefs in eventp, so the clone
-        // inherits correct varScopep values with no fixup needed.
+        // Clone the sensitivity for this active block. References to covergroup members need
+        // to select through this particular instance; all other VarRefs retain the VarScopes
+        // resolved by V3Scope.
         AstSenTree* senTreep = eventp->cloneTree(false);
+        CovergroupEventBindVisitor{senTreep, classp, nodep};
 
         // Get or create the AstActive node for this sensitivity
         // senTreep is a template used by getActive() which clones it into the AstActive;
