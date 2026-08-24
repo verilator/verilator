@@ -316,6 +316,7 @@ class SvaNfaBuilder final {
     std::vector<AstNodeExpr*> m_outerAbortStack;
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
     bool m_markStrongPending = false;  // Mark new vertices as strong s_always in-window
+    bool m_isCover = false;  // Cover directives do not fail at end-of-simulation
     // IEEE 1800-2023 16.14.3 cover sequence: each end-of-match fires the action,
     // not just the first. Builder builds parallel-branch (no first-match-wins)
     // topology when true. Default false preserves cover_property semantics.
@@ -1327,7 +1328,7 @@ class SvaNfaBuilder final {
         return result;
     }
 
-    // until / until_with (weak forms only) per IEEE 1800-2023 16.12.12.
+    // until / until_with per IEEE 1800-2023 16.12.12.
     // Topology: combinational wait vertex with self-feeding state register.
     //   entry  --link[T]--> waitC
     //   waitR  --link[T]--> waitC                          (back-loop)
@@ -1340,21 +1341,17 @@ class SvaNfaBuilder final {
     // every cycle q is false). Per-cycle reject comes from the explicit
     // rejectOnFail link to the sink vertex.
     //
-    // Weak non-overlapping (p until q):
+    // Non-overlapping (p until q):
     //   REQUIRE = sampled(p) || sampled(q)   accept = sampled(q)
-    // Weak overlapping (p until_with q):
+    // Overlapping (p until_with q):
     //   REQUIRE = sampled(p)                 accept = sampled(p) && sampled(q)
+    // Strong forms use the same checks and mark the registered wait state as
+    // an end-of-simulation liveness obligation.
     BuildResult buildUntil(AstUntil* nodep, SvaStateVertex* entryVtxp, bool isTopLevelStep) {
         FileLine* const flp = nodep->fileline();
         if (!isTopLevelStep) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: '" << nodep->verilogKwd()
                                                           << "' in complex property expression");
-            return BuildResult::failWithError();
-        }
-        if (nodep->isStrong()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_until"
-                                             << (nodep->isOverlapping() ? "_with" : "")
-                                             << " (in property expression)");
             return BuildResult::failWithError();
         }
         AstNodeExpr* const lhsp = nodep->lhsp();
@@ -1379,6 +1376,7 @@ class SvaNfaBuilder final {
         SvaStateVertex* const waitCp = scopedCreateVertex();
         SvaStateVertex* const waitRp = scopedCreateVertex();
         waitCp->m_isUnbounded = true;
+        waitRp->m_strongPending = nodep->isStrong() && !m_isCover;
 
         // Entry and back-loop Links carry no condition; throughout-folding still applies.
         guardedLink(entryVtxp, waitCp, flp);
@@ -1552,10 +1550,11 @@ class SvaNfaBuilder final {
 
 public:
     SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames,
-                  bool isCoverSeq = false, bool isSeqEvent = false)
+                  bool isCoverSeq = false, bool isSeqEvent = false, bool isCover = false)
         : m_graph{graph}
         , m_modp{modp}
         , m_propTempNames{propTempNames}
+        , m_isCover{isCover}
         , m_isCoverSeq{isCoverSeq}
         , m_isSeqEvent{isSeqEvent} {}
 
@@ -3220,7 +3219,8 @@ class AssertNfaVisitor final : public VNVisitor {
         FileLine* const flp = assertp->fileline();
 
         SvaGraph graph;
-        SvaNfaBuilder builder{graph, m_modp, m_propTempNames, isCoverSeq, isSeqEvent};
+        SvaNfaBuilder builder{graph,      m_modp,     m_propTempNames,
+                              isCoverSeq, isSeqEvent, coverp != nullptr};
 
         const BuildResult result = buildAssertionGraph(builder, graph, seqBodyp, parts, flp);
         if (result.valid()) wireMatchAndMidSources(graph, result, flp);
