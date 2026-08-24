@@ -467,9 +467,11 @@ analyzer-include:
 
 # Bash/sh files
 BASH_FILES = \
+  ci/ci-coverage-report.bash \
   ci/ci-install.bash \
   ci/ci-pages-notify.bash \
   ci/ci-pages.bash \
+  ci/ci-rtlmeter-report.bash \
   ci/ci-script.bash \
   ci/docker/run/hooks/post_push \
   ci/docker/run/verilator-docker \

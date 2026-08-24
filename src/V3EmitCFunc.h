@@ -1596,15 +1596,20 @@ public:
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->matchp(), nullptr);
     }
     void visit(AstMemberSel* nodep) override {
+        const AstVar* const varp = nodep->varp();
+        const bool dereferenceCovergroupRef
+            = varp->covergroupRefMember() && nodep->access().isReadOrRW();
+        if (dereferenceCovergroupRef) putnbs(nodep, "(*");
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, "->");
-        if (nodep->varp()->isIfaceRef()) {
+        if (varp->isIfaceRef()) {
             // varp is the __Viftop companion (e.g. "tx__Viftop"); use the
             // MemberSel name which matches the cell's C++ member (e.g. "tx").
             puts(nodep->nameProtect());
         } else {
-            puts(nodep->varp()->nameProtect());
+            puts(varp->nameProtect());
         }
+        if (dereferenceCovergroupRef) puts(")");
     }
     void visit(AstStructSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
@@ -1768,6 +1773,9 @@ public:
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
         const AstNodeModule* const varModp = EmitCParentModule::get(varp);
+        const bool dereferenceCovergroupRef
+            = varp->covergroupRefMember() && nodep->access().isReadOrRW();
+        if (dereferenceCovergroupRef) putns(nodep, "(*");
         if (EmitCUtil::isConstPoolMod(varModp)) {
             // Reference to constant pool variable
             putns(nodep, EmitCUtil::topClassName() + "__ConstPool__");
@@ -1784,6 +1792,7 @@ public:
             emitDereference(nodep, nodep->selfPointerProtect(m_useSelfForThis));
         }
         putns(nodep, nodep->varp()->nameProtect());
+        if (dereferenceCovergroupRef) puts(")");
     }
     void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now

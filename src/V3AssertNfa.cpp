@@ -1087,7 +1087,11 @@ class SvaNfaBuilder final {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: within with ranged cycle-delay operand");
             return BuildResult::failWithError();
         }
-        if (innerLen > outerLen) return buildNeverMatchIntersect(nodep, entryVtxp, isTopLevelStep);
+        if (innerLen > outerLen) {
+            return buildNeverMatchIntersect(
+                nodep, entryVtxp, isTopLevelStep,
+                "the inner sequence is longer than the outer sequence");
+        }
         FileLine* const flp = nodep->fileline();
         const int slack = outerLen - innerLen;
         AstNodeExpr* innerOrp = nullptr;
@@ -1238,7 +1242,8 @@ class SvaNfaBuilder final {
     // simply never matches. This is legal (matching nothing), not an error, so
     // lower to a constant false rather than rejecting legal code.
     BuildResult buildNeverMatchIntersect(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
-                                         bool isTopLevelStep) {
+                                         bool isTopLevelStep, const char* reason) {
+        nodep->v3warn(NEVERMATCH, "Sequence can never match because " << reason << ".");
         AstNodeExpr* const falsep = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         return buildFromLoweringTree(falsep, entryVtxp, isTopLevelStep);
     }
@@ -1269,7 +1274,8 @@ class SvaNfaBuilder final {
         const int hi = std::min(lhsRange.second, rhsRange.second);
         if (lo > hi) {
             // Disjoint length ranges share no common length -> never matches.
-            return buildNeverMatchIntersect(nodep, entryVtxp, isTopLevelStep);
+            return buildNeverMatchIntersect(nodep, entryVtxp, isTopLevelStep,
+                                            "intersect operands have no common length");
         }
         FileLine* const flp = nodep->fileline();
         if (lo == hi) {
@@ -1599,7 +1605,8 @@ public:
             if (lhsLen >= 0 && rhsLen >= 0) {
                 if (lhsLen != rhsLen) {
                     // Unequal fixed lengths share no common length -> never matches.
-                    return buildNeverMatchIntersect(intp, entryVtxp, isTopLevelStep);
+                    return buildNeverMatchIntersect(intp, entryVtxp, isTopLevelStep,
+                                                    "intersect operands have no common length");
                 }
                 if (AstNodeExpr* const conjp
                     = conjoinFixedSeqs(intp->lhsp(), intp->rhsp(), intp->fileline())) {
