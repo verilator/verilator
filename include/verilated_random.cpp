@@ -302,18 +302,17 @@ static bool scanParenDepth(const std::string& str, int& depthr, bool& inStringr)
 }
 
 // Append lines until the error s-expression started in liner is paren-balanced
-static bool finishErrorReply(std::istream& is, std::string& liner) {
+static void finishErrorReply(std::istream& is, std::string& liner) {
     int depth = 0;
     bool inString = false;
-    if (!scanParenDepth(liner, depth, inString)) return false;
+    if (!scanParenDepth(liner, depth, inString)) return;
     while (depth > 0) {
         std::string chunk;
-        if (!readLine(is, chunk)) return false;
+        if (!readLine(is, chunk)) return;
         liner += ' ';
         liner += chunk;
-        if (!scanParenDepth(chunk, depth, inString)) return false;
+        if (!scanParenDepth(chunk, depth, inString)) return;
     }
-    return true;
 }
 
 static void warnSolverReply(const std::string& reply) {
@@ -343,7 +342,7 @@ static VlSolverStatus readStatus(std::istream& is) {
             return VlSolverStatus::UNKNOWN;
         }
         // Consume the whole error, so the next read starts on a reply boundary
-        if (isSolverError(line) && !finishErrorReply(is, line)) break;
+        if (isSolverError(line)) finishErrorReply(is, line);
         warnSolverReply(line);
         return VlSolverStatus::FAIL;
     }

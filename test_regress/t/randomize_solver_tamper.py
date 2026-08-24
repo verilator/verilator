@@ -10,57 +10,58 @@
 # Forwards the SMT-LIB conversation to a real solver, tampering the replies.
 #
 # Input arguments from environment variables:
-# TAMPER: none | die_at | die_status_at | mute_at | garbage_at | err_once
-#         | err_multiline | unknown_once | unsupported_once | garbage_status
-#         | err_reply | garbage_model | bad_value | bad_digits | short_model
-#         | dup_model | octal | upper_hex | bad_base | unknown_var | bad_index
-#         | err_trunc | unknown_twice | binary | model_trunc | phase_model
-#         | err_phase | phase_trunc | err_assume | oor_assume | garbage_assume
-#         | err_core | core_junk | err_unbal | err_unbal_cont | bare_hash
-#         | no_digits | high_digit | low_digit | success | crlf
-#         | multiline | indent
-#   die_at           - kill the solver and exit, closing every pipe end
-#   die_status_at    - same, counting sat/unsat status lines instead of models
-#   mute_at          - close the reply pipe but keep this wrapper running
-#   garbage_at       - replace every Nth model reply with a non-S-expression line
-#   err_once         - answer the Nth status with one (error ...) line
-#   err_multiline    - same, with the error split over two lines
-#   unknown_once     - answer the Nth status with unknown
-#   unsupported_once - answer the Nth status with unsupported
-#   garbage_status   - replace the Nth status with a word that is not a status
-#   err_reply        - replace the Nth S-expression reply with (error ...)
-#   garbage_model    - replace the Nth model reply with a partly valid one
-#   bad_value        - same, but well-formed with one value lacking a base
-#   bad_digits       - same, but with one value holding digits outside its base
-#   phase_model      - replace the final phased model reply with (error ...)
-#   binary           - same, but with binary values
-#   model_trunc      - answer with an unterminated model and close the pipe
-#   octal            - same, but with octal values
-#   upper_hex        - same, but with uppercase hex digits
-#   bad_base         - same, but with a base character that is not b, o, x or h
-#   unknown_var      - same, but naming a variable that was not requested
+# TAMPER: bad_base | bad_digits | bad_index | bad_value | bare_hash | binary
+#         | core_junk | crlf | die_at | die_status_at | dup_model | err_assume
+#         | err_core | err_multiline | err_once | err_phase | err_reply
+#         | err_trunc | err_unbal | err_unbal_cont | garbage_assume | garbage_at
+#         | garbage_model | garbage_status | high_digit | indent | low_digit
+#         | model_trunc | multiline | mute_at | no_digits | none | octal
+#         | oor_assume | phase_model | phase_trunc | short_model | success
+#         | unknown_once | unknown_twice | unknown_var | unsupported_once
+#         | upper_hex
+#   bad_base         - replace the Nth model reply with a base character that is not b, o, x or h
+#   bad_digits       - replace the Nth model reply with one value holding digits outside its base
 #   bad_index        - replace the first array model reply with a bad select index
-#   err_trunc        - answer with an unterminated (error and close the pipe
-#   unknown_twice    - answer two statuses with unknown
-#   short_model      - same, but omitting a requested variable
-#   dup_model        - same, but answering one variable twice
-#   bare_hash        - same, but with one value that is only "#"
-#   no_digits        - same, but with one value whose base has no digits
-#   high_digit       - same, but with one digit outside its stated base
-#   low_digit        - same, but with one character below any digit or letter
-#   err_phase        - replace the first phase value reply with (error ...)
-#   phase_trunc      - answer an unterminated phase value reply and close the pipe
-#   err_assume       - replace the first unsat-assumptions reply with (error ...)
-#   oor_assume       - answer the unsat assumptions with an out-of-range literal
-#   garbage_assume   - answer the unsat assumptions with a non-S-expression word
-#   err_core         - replace the first unsat-core reply with (error ...)
+#   bad_value        - replace the Nth model reply with one well-formed value lacking a base
+#   bare_hash        - replace the Nth model reply with one value that is only "#"
+#   binary           - replace the Nth model reply with binary values
 #   core_junk        - prepend garbage to the core reply and close the pipe
-#   err_unbal        - answer the Nth status with an error closing an extra paren
-#   err_unbal_cont   - same, with the extra paren on a continuation line
-#   success          - echo a print-success line before every reply
 #   crlf             - end every line with CRLF
-#   multiline        - split every S-expression reply one token per line
+#   die_at           - kill the solver at the Nth model reply and exit, closing every pipe end
+#   die_status_at    - kill the solver at the Nth status line and exit, closing every pipe end
+#   dup_model        - replace the Nth model reply with one answering a variable twice
+#   err_assume       - replace the first unsat-assumptions reply with (error ...)
+#   err_core         - replace the first unsat-core reply with (error ...)
+#   err_multiline    - answer the Nth status with an (error ...) split over two lines
+#   err_once         - answer the Nth status with one (error ...) line
+#   err_phase        - replace the first phase value reply with (error ...)
+#   err_reply        - replace the Nth S-expression reply with (error ...)
+#   err_trunc        - answer the Nth status with an unterminated (error and close the pipe
+#   err_unbal        - answer the Nth status with an error closing an extra paren
+#   err_unbal_cont   - answer the Nth status with an error, the extra paren on a continuation line
+#   garbage_assume   - answer the unsat assumptions with a non-S-expression word
+#   garbage_at       - replace every Nth model reply with a non-S-expression line
+#   garbage_model    - replace the Nth model reply with a partly valid one
+#   garbage_status   - replace the Nth status with a word that is not a status
+#   high_digit       - replace the Nth model reply with a digit valid only in a wider base
 #   indent           - prepend whitespace to every reply line
+#   low_digit        - replace the Nth model reply with a character below any digit or letter
+#   model_trunc      - answer the Nth model with an unterminated reply and close the pipe
+#   multiline        - split every S-expression reply one token per line
+#   mute_at          - close the reply pipe at the Nth model reply but keep this wrapper running
+#   no_digits        - replace the Nth model reply with a value whose base has no digits
+#   none             - forward every reply unchanged
+#   octal            - replace the Nth model reply with octal values
+#   oor_assume       - answer the unsat assumptions with an out-of-range literal
+#   phase_model      - replace the final phased model reply with (error ...)
+#   phase_trunc      - answer an unterminated phase value reply and close the pipe
+#   short_model      - replace the Nth model reply with one omitting a requested variable
+#   success          - echo a print-success line before every reply
+#   unknown_once     - answer the Nth status with unknown
+#   unknown_twice    - answer two statuses with unknown
+#   unknown_var      - replace the Nth model reply with one naming a variable never requested
+#   unsupported_once - answer the Nth status with unsupported
+#   upper_hex        - replace the Nth model reply with uppercase hex digits
 # TAMPER_AT: reply index to act on (default 3)
 
 # pylint: disable=C0103,C0114,consider-using-with
@@ -76,20 +77,21 @@ mode = os.environ.get("TAMPER", "none")
 at = int(os.environ.get("TAMPER_AT", "3"))
 
 # Modes acting on the TAMPER_AT'th status line rather than the Nth model reply
-STATUS_MODES = ("die_status_at", "err_once", "err_multiline", "unknown_once", "unknown_twice",
-                "unsupported_once", "garbage_status", "err_trunc", "err_unbal", "err_unbal_cont")
+STATUS_MODES = ("die_status_at", "err_multiline", "err_once", "err_trunc", "err_unbal",
+                "err_unbal_cont", "garbage_status", "unknown_once", "unknown_twice",
+                "unsupported_once")
 # Modes acting on the TAMPER_AT'th S-expression reply of any kind
 REPLY_MODES = ("err_reply", )
 # Modes acting on the first array model reply, which arrives as (select ...) terms
 SELECT_MODES = ("bad_index", )
 # phase_model acts on the final phased model; the others on any phase value reply
-PHASE_MODES = ("phase_model", "err_phase", "phase_trunc")
+PHASE_MODES = ("err_phase", "phase_model", "phase_trunc")
 # Modes acting on an unsat-assumptions reply, which lists a<N> literals
-ASSUME_MODES = ("err_assume", "oor_assume", "garbage_assume")
+ASSUME_MODES = ("err_assume", "garbage_assume", "oor_assume")
 # Modes acting on an unsat-core reply, which lists cons<N> names
-CORE_MODES = ("err_core", "core_junk")
+CORE_MODES = ("core_junk", "err_core")
 # Modes rewriting every line, so they never consume the index
-STREAM_MODES = ("success", "crlf", "multiline", "indent")
+STREAM_MODES = ("crlf", "indent", "multiline", "success")
 
 
 def real_solver():
@@ -188,29 +190,19 @@ for line in proc.stdout:
         forward(line, at_reply_start)
         continue
 
-    # garbage_at repeats, so it re-arms instead of latching
-    if mode == "garbage_at":
-        replies = 0
-        emit("junk")
-        continue
     done = True
 
-    if mode == "garbage_status":
-        emit("flurble")
-        continue
-    if mode == "unknown_once":
-        emit("unknown")
-        continue
-    if mode == "unknown_twice":
-        emit("unknown")
-        done = replies >= at + 1
-        continue
-    if mode == "err_reply":
-        emit('(error "injected reply error")')
+    if mode == "bad_base":
+        emit("((a #z01) (b #x12))")
         swallow(line)
         continue
-    if mode == "garbage_model":
-        emit("((a #x0b) junk)")
+    if mode == "bad_digits":
+        emit("((a #x0b) (b #xgg))")
+        swallow(line)
+        continue
+    if mode == "bad_index":
+        emit("(((select q #xgg) #x15) ((select q #x00000001) #x15)"
+             " ((select q #x00000002) #x15))")
         swallow(line)
         continue
     # A well-formed reply whose second value is unusable: the first must not
@@ -219,34 +211,12 @@ for line in proc.stdout:
         emit("((a #x0b) (b bogus))")
         swallow(line)
         continue
-    if mode == "bad_digits":
-        emit("((a #x0b) (b #xgg))")
+    if mode == "bare_hash":
+        emit("((a #x0b) (b #))")
         swallow(line)
         continue
-    # The first phase value reply always precedes the final phased model
-    if mode == "err_phase":
-        emit('(error "injected phase value error")')
-        swallow(line)
-        continue
-    if mode == "phase_trunc":
-        emit("((x")
-        proc.kill()
-        proc.wait()
-        sys.exit(0)
-    if mode == "err_assume":
-        emit('(error "injected assumptions error")')
-        swallow(line)
-        continue
-    if mode == "oor_assume":
-        emit("(a99999999999999)")
-        swallow(line)
-        continue
-    if mode == "garbage_assume":
-        emit("junk")
-        swallow(line)
-        continue
-    if mode == "err_core":
-        emit('(error "injected core error")')
+    if mode == "binary":
+        emit("((a #b00001011) (b #b00010010))")
         swallow(line)
         continue
     if mode == "core_junk":
@@ -254,13 +224,62 @@ for line in proc.stdout:
         proc.kill()
         proc.wait()
         sys.exit(0)
-    if mode == "bare_hash":
-        emit("((a #x0b) (b #))")
+    if mode == "dup_model":
+        emit("((a #x0b) (a #x0c) (b #x05))")
         swallow(line)
         continue
-    if mode == "no_digits":
-        emit("((a #x0b) (b #x))")
+    if mode == "err_assume":
+        emit('(error "injected assumptions error")')
         swallow(line)
+        continue
+    if mode == "err_core":
+        emit('(error "injected core error")')
+        swallow(line)
+        continue
+    if mode == "err_multiline":
+        emit('(error "injected')
+        emit('multiline error")')
+        continue
+    if mode == "err_once":
+        emit('(error "injected command rejected")')
+        continue
+    # The first phase value reply always precedes the final phased model
+    if mode == "err_phase":
+        emit('(error "injected phase value error")')
+        swallow(line)
+        continue
+    if mode == "err_reply":
+        emit('(error "injected reply error")')
+        swallow(line)
+        continue
+    if mode == "err_trunc":
+        emit('(error "unterminated')
+        proc.kill()
+        proc.wait()
+        sys.exit(0)
+    if mode == "err_unbal":
+        emit('(error "unbalanced"))')
+        continue
+    if mode == "err_unbal_cont":
+        emit('(error "unbalanced"')
+        emit('))')
+        continue
+    if mode == "garbage_assume":
+        emit("junk")
+        swallow(line)
+        continue
+    # garbage_at repeats, so it re-arms instead of latching
+    if mode == "garbage_at":
+        replies = 0
+        done = False
+        emit("junk")
+        continue
+    if mode == "garbage_model":
+        emit("((a #x0b) junk)")
+        swallow(line)
+        continue
+    if mode == "garbage_status":
+        emit("flurble")
         continue
     if mode == "high_digit":
         emit("((a #x0b) (b #b2))")
@@ -268,6 +287,23 @@ for line in proc.stdout:
         continue
     if mode == "low_digit":
         emit("((a #x0b) (b #x!))")
+        swallow(line)
+        continue
+    if mode == "model_trunc":
+        emit("((a #x0b)")
+        proc.kill()
+        proc.wait()
+        sys.exit(0)
+    if mode == "no_digits":
+        emit("((a #x0b) (b #x))")
+        swallow(line)
+        continue
+    if mode == "octal":
+        emit("((a #o13) (b #o12))")
+        swallow(line)
+        continue
+    if mode == "oor_assume":
+        emit("(a99999999999999)")
         swallow(line)
         continue
     # Only the final phase queries every variable, so only that reply names y
@@ -281,38 +317,8 @@ for line in proc.stdout:
             for part in parts:
                 forward(part, part is parts[0])
         continue
-    if mode == "binary":
-        emit("((a #b00001011) (b #b00010010))")
-        swallow(line)
-        continue
-    if mode == "model_trunc":
-        emit("((a #x0b)")
-        proc.kill()
-        proc.wait()
-        sys.exit(0)
-    if mode == "octal":
-        emit("((a #o13) (b #o12))")
-        swallow(line)
-        continue
-    if mode == "upper_hex":
-        emit("((a #xAB) (b #x12))")
-        swallow(line)
-        continue
-    if mode == "bad_base":
-        emit("((a #z01) (b #x12))")
-        swallow(line)
-        continue
-    if mode == "unknown_var":
-        emit("((zzz #x01) (b #x12))")
-        swallow(line)
-        continue
-    if mode == "bad_index":
-        emit("(((select q #xgg) #x15) ((select q #x00000001) #x15)"
-             " ((select q #x00000002) #x15))")
-        swallow(line)
-        continue
-    if mode == "err_trunc":
-        emit('(error "unterminated')
+    if mode == "phase_trunc":
+        emit("((x")
         proc.kill()
         proc.wait()
         sys.exit(0)
@@ -320,29 +326,23 @@ for line in proc.stdout:
         emit("((a #x0b))")
         swallow(line)
         continue
-    if mode == "dup_model":
-        emit("((a #x0b) (a #x0c) (b #x05))")
+    if mode == "unknown_once":
+        emit("unknown")
+        continue
+    if mode == "unknown_twice":
+        emit("unknown")
+        done = replies >= at + 1
+        continue
+    if mode == "unknown_var":
+        emit("((zzz #x01) (b #x12))")
         swallow(line)
-        continue
-
-    # These replace the awaited status, which is how a real solver answers a
-    # command it rejected: no status follows, so nothing is forwarded
-    if mode == "err_once":
-        emit('(error "injected command rejected")')
-        continue
-    if mode == "err_multiline":
-        emit('(error "injected')
-        emit('multiline error")')
-        continue
-    if mode == "err_unbal":
-        emit('(error "unbalanced"))')
-        continue
-    if mode == "err_unbal_cont":
-        emit('(error "unbalanced"')
-        emit('))')
         continue
     if mode == "unsupported_once":
         emit("unsupported")
+        continue
+    if mode == "upper_hex":
+        emit("((a #xAB) (b #x12))")
+        swallow(line)
         continue
     forward(line, at_reply_start)
 
