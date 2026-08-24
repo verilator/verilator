@@ -231,13 +231,53 @@ public:
 };
 
 //=============================================================================
+// One registered soft constraint.  'vars' is the space-separated list of
+// resolved variable names the expression references, so 'disable soft v' can
+// match by whole name instead of by substring of the SMT text (a substring
+// match also hits every "#x..." hex literal).
+struct VlSoftConstraint final {
+    std::string m_expr;  // SMT expression
+    std::string m_vars;  // Space-separated referenced variable names
+};
+
+// One 'dist' weighted bucket pick.  The weighted draw already happened in C++
+// (VL_RANDOM_Q) before the solver ran, so this is a preference for a value the
+// dist's hard membership already permits -- never a constraint.  It is applied
+// as a solver assumption and dropped individually if it conflicts, so it can
+// never displace a soft constraint nor make randomize() fail.
+struct VlDistPick final {
+    std::string m_expr;  // SMT expression
+    std::string m_vars;  // Space-separated referenced variable names
+    bool m_softOwned = false;  // Belongs to a 'soft dist', so 'disable soft' removes it
+    uint64_t m_weight = 0;  // Share of the draw, when the group draws at solve time
+};
+
+// One 'dist' instance whose weighted draw is made at solve time rather than
+// baked in beforehand.  Holding every bucket lets a bucket the other constraints
+// exclude be dropped and the draw repeated over those that remain, which is what
+// keeps the surviving buckets in their declared proportion.  A group with a
+// single alternative is one already-drawn pick and simply drops on conflict.
+struct VlDistGroup final {
+    std::vector<VlDistPick> m_buckets;
+    size_t m_chosen = 0;  // Index into m_buckets
+    std::vector<bool> m_excluded;  // Buckets ruled out by the constraints
+    bool m_live = true;  // False once every bucket has been excluded
+    bool softOwned() const { return !m_buckets.empty() && m_buckets[0].m_softOwned; }
+    const std::string& vars() const { return m_buckets[0].m_vars; }
+    const std::string& chosenExpr() const { return m_buckets[m_chosen].m_expr; }
+    // Pick a bucket in proportion to the weights of those not excluded.
+    bool draw();
+};
+
+//=============================================================================
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
-    std::vector<std::string> m_softConstraints;  // Soft constraints
+    std::vector<VlSoftConstraint> m_softConstraints;  // Soft constraints, in declaration order
+    std::vector<VlDistGroup> m_distPicks;  // Dist weight picks (preferences, below every soft)
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
     std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
                                            // variables
@@ -261,7 +301,10 @@ class VlRandomizer VL_NOT_FINAL {
     bool checkSat(std::iostream& os);
     // Assert the maximal compatible soft-constraint set onto the open session.
     void relaxSoftConstraints(std::iostream& os);
-    // Indices of the "a<N>" literals named by (get-unsat-assumptions).
+    // check-sat with the dist weight picks applied, re-drawing or dropping any
+    // that conflict.  readModel selects parseSolution() over checkSat().
+    bool checkSatWithPicks(VlRNG& rngr, std::iostream& os, bool readModel);
+    // Indices of the "a<N>" / "p<N>" literals named by (get-unsat-assumptions).
     std::vector<int> readUnsatAssumptions(std::iostream& os);
     void reportUnsatSetup(std::iostream& os, const std::vector<std::string>& uniqueExprs);
     void reportUnsatCore(std::iostream& os);
@@ -688,7 +731,11 @@ public:
     void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
     void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
-              const char* source = "");
+              const char* source = "", const char* vars = "");
+    // bucketIdx 0 opens a new dist group; a later index appends to it.  Pass -1
+    // for a preference that is a single already-drawn alternative.
+    void dist_pick(std::string&& constraint, const char* vars = "", bool softOwned = false,
+                   int bucketIdx = -1, uint64_t weight = 0);
     void pin_var(const char* name, int width, uint64_t value) {
         std::string constraint = "(__Vbv (= "s + name + " (_ bv" + std::to_string(value) + " "
                                  + std::to_string(width) + ")))";
