@@ -803,9 +803,9 @@ current thread by calling an exported task with SystemVerilog timing
 constructs.
 
 Verilator supports DPI exported tasks with timing constructs by spawning a
-`fiber <https://en.wikipedia.org/wiki/Fiber_(computer_science)>`__ with a
-new call stack. Fibers allow context switching so simulation can progress
-while the fiber waits for an event to occur.
+fiber (userspace thread) with a new call stack. Fibers allow context
+switching so simulation can progress while the fiber waits for an event to
+occur.
 
 The fiber implementation is present in ``verilated_fiber.cpp`` and
 ``verilated_fiber.h``.
