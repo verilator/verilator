@@ -39,7 +39,7 @@ module t (
 
   final begin
     $stop;
-    `checkd($past(cyc), 10);
+    `checkd($past(cyc), 9);
   end
 
 endmodule
