@@ -1447,8 +1447,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         // sample(): after all coverpoints have sampled (cross loop runs after coverpoint loop).
         UASSERT_OBJ(m_sampleFuncp, crossp, "sample() CFunc not set for cross");
-        AstNodeStmt* const samplep
-            = itemCall(fl, cxVarp, VCMethod::COVERGROUP_SAMPLE)->makeStmt();
+        AstNodeStmt* const samplep = itemCall(fl, cxVarp, VCMethod::COVERGROUP_SAMPLE)->makeStmt();
         if (AstNodeExpr* const iffp = crossp->iffp()) {
             m_sampleFuncp->addStmtsp(new AstIf{fl, iffp->cloneTree(false), samplep});
         } else {
