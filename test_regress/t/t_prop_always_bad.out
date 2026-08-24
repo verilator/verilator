@@ -31,4 +31,17 @@
                                    : ... note: In instance 't'
    18 |   assert property (s_always [1:$] a);
       |                                ^
+%Error-UNSUPPORTED: t/t_prop_always_bad.v:23:30: Unsupported: always range bound exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                               : ... note: In instance 't'
+   23 |   assert property (always [0:MAX] a);
+      |                              ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_prop_always_bad.v:24:28: Unsupported: always range bound exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                               : ... note: In instance 't'
+   24 |   assert property (always [MAX_M1:$] a);
+      |                            ^~~~~~
+%Error-UNSUPPORTED: t/t_prop_always_bad.v:25:32: Unsupported: always range bound exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                               : ... note: In instance 't'
+   25 |   assert property (s_always [0:MAX_M3] a);
+      |                                ^~~~~~
 %Error: Exiting due to

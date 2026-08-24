@@ -30,7 +30,9 @@ module t;
 
   // Range-bin cross (cross bin names are built at runtime from the range-bin names)
   covergroup cgsecret_cg_rng;
-    cgsecret_cp_addr: coverpoint cgsecret_addr {bins cgsecret_lo = {[0 : 1]}; bins cgsecret_hi = {[2 : 3]};}
+    cgsecret_cp_addr: coverpoint cgsecret_addr {
+      bins cgsecret_lo = {[0 : 1]}; bins cgsecret_hi = {[2 : 3]};
+    }
     cgsecret_cp_cmd: coverpoint cgsecret_cmd {bins cgsecret_rd = {0}; bins cgsecret_wr = {1};}
     cgsecret_rc: cross cgsecret_cp_addr, cgsecret_cp_cmd;
   endgroup
@@ -40,17 +42,33 @@ module t;
 
   initial begin
     // cg_inst: 2 + 2 + 4 = 8 bins; hit all four cross combinations
-    cgsecret_addr = 0; cgsecret_cmd = 0; cg_inst.sample();  // a0 x rd
-    cgsecret_addr = 1; cgsecret_cmd = 1; cg_inst.sample();  // a1 x wr
-    cgsecret_addr = 0; cgsecret_cmd = 1; cg_inst.sample();  // a0 x wr
-    cgsecret_addr = 1; cgsecret_cmd = 0; cg_inst.sample();  // a1 x rd
+    cgsecret_addr = 0;
+    cgsecret_cmd = 0;
+    cg_inst.sample();  // a0 x rd
+    cgsecret_addr = 1;
+    cgsecret_cmd = 1;
+    cg_inst.sample();  // a1 x wr
+    cgsecret_addr = 0;
+    cgsecret_cmd = 1;
+    cg_inst.sample();  // a0 x wr
+    cgsecret_addr = 1;
+    cgsecret_cmd = 0;
+    cg_inst.sample();  // a1 x rd
     `checkr(cg_inst.get_inst_coverage(), 100.0);  // 8/8
 
     // cg_rng_inst: 2 + 2 + 4 = 8 bins; hit all four cross combinations
-    cgsecret_addr = 0; cgsecret_cmd = 0; cg_rng_inst.sample();  // lo x rd
-    cgsecret_addr = 2; cgsecret_cmd = 1; cg_rng_inst.sample();  // hi x wr
-    cgsecret_addr = 1; cgsecret_cmd = 1; cg_rng_inst.sample();  // lo x wr
-    cgsecret_addr = 3; cgsecret_cmd = 0; cg_rng_inst.sample();  // hi x rd
+    cgsecret_addr = 0;
+    cgsecret_cmd = 0;
+    cg_rng_inst.sample();  // lo x rd
+    cgsecret_addr = 2;
+    cgsecret_cmd = 1;
+    cg_rng_inst.sample();  // hi x wr
+    cgsecret_addr = 1;
+    cgsecret_cmd = 1;
+    cg_rng_inst.sample();  // lo x wr
+    cgsecret_addr = 3;
+    cgsecret_cmd = 0;
+    cg_rng_inst.sample();  // hi x rd
     `checkr(cg_rng_inst.get_inst_coverage(), 100.0);  // 8/8
 
     $write("*-* All Finished *-*\n");

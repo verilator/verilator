@@ -118,7 +118,7 @@ class EmitCHeader final : public EmitCConstInit {
                 // Leftovers, just in case off by one error somewhere above
                 for (; it != varList.cend(); ++it) emitVarDecl(*it);
             } else {  // Output as nonanons
-                for (const auto& pair : varList) emitVarDecl(pair);
+                for (const AstVar* const varp : varList) emitVarDecl(varp);
             }
 
             varList.clear();

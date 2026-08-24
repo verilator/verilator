@@ -1709,7 +1709,8 @@ class ConstVisitor final : public VNVisitor {
         const V3Number num{constp, subsize, constp->num()};
         nodep->lhsp(new AstConst{constp->fileline(), num});
         VL_DO_DANGLING(pushDeletep(constp), constp);
-        return false;  // input node is still valid, keep going
+        UINFOTREE(9, nodep, "", "BI(EXTEND)-ou");
+        return true;
     }
     bool operandBiExtendConstOver(const AstNodeBiop* nodep) {
         // EQ(const{width32}, EXTEND(xx{width3})) -> constant
@@ -2069,7 +2070,7 @@ class ConstVisitor final : public VNVisitor {
         rp->rhsp(bp);
         rp->dtypeFrom(nodep);  // Upper widthMin more likely correct
         if (VN_IS(rp->lhsp(), Const) && VN_IS(rp->rhsp(), Const)) replaceConst(rp);
-        iterate(nodep);  // Proceed to fixed point
+        // UINFOTREE(1, nodep, "", "repAsvConst_new");
     }
     void replaceAsvLUp(AstNodeBiop* nodep) {
         // BIASV(BIASV(CONSTll,lr),r) -> BIASV(CONSTll,BIASV(lr,r))
@@ -2082,7 +2083,7 @@ class ConstVisitor final : public VNVisitor {
         lp->lhsp(lrp);
         lp->rhsp(rp);
         lp->dtypeFrom(nodep);  // Upper widthMin more likely correct
-        iterate(nodep);  // Proceed to fixed point
+        // UINFOTREE(1, nodep, "", "repAsvLUp_new");
     }
     void replaceAsvRUp(AstNodeBiop* nodep) {
         // BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr))
@@ -2095,7 +2096,7 @@ class ConstVisitor final : public VNVisitor {
         rp->lhsp(lp);
         rp->rhsp(rrp);
         rp->dtypeFrom(nodep);  // Upper widthMin more likely correct
-        iterate(nodep);  // Proceed to fixed point
+        // UINFOTREE(1, nodep, "", "repAsvRUp_new");
     }
     void replaceAndOr(AstNodeBiop* nodep) {
         //  OR  (AND (CONSTll,lr), AND(CONSTrl==ll,rr))    -> AND (CONSTll, OR(lr,rr))

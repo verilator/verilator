@@ -4,7 +4,9 @@
    SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
    SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-|badge1| |badge2| |badge3| |badge4| |badge5| |badge7| |badge8|
+|badge1| |badge2| |badge3| |badge4| |badge5|
+
+|badge7| |badge8|
 
 .. |badge1| image:: https://img.shields.io/badge/Website-Verilator.org-181717.svg
    :target: https://verilator.org
@@ -21,8 +23,8 @@
 .. |badge5| image:: https://img.shields.io/docker/pulls/verilator/verilator
    :target: https://hub.docker.com/r/verilator/verilator
 
-.. |badge7| image:: https://github.com/verilator/verilator/workflows/build/badge.svg
-   :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
+.. |badge7| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/build-test.yml?branch=master&label=regressions
+   :target: https://github.com/verilator/verilator/actions/workflows/build-test.yml
 
 .. |badge8| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/rtlmeter.yml?branch=master&event=schedule&label=benchmarks
    :target: https://verilator.github.io/verilator-rtlmeter-results

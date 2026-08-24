@@ -268,26 +268,55 @@ void Writer::emitValueChange(Handle handle, const char *val) {
 
 	// For normal integer handles, const char* is "01xz..." (1B per bit)
 	const uint32_t bitwidth{var_info.bitwidth()};
+	const bool hasXZ =  // Detects A-Z and a-z but not 0-9 and NOT `-` `?`
+		(std::accumulate(val, val + bitwidth, 0, [](int a, char b) { return a | b; }) & (1 << 6)) !=
+		0;
 	FST_DCHECK_NE(bitwidth, 0);
 
 	val += bitwidth;
 	const unsigned num_words{(bitwidth + 63) / 64};
-	m_packed_value_buffer_.assign(num_words, 0);
+	m_packed_value_buffer_.assign(num_words << (hasXZ ? 1 : 0), 0);
 	for (unsigned i = 0; i < num_words; ++i) {
 		const char *start{val - std::min((i + 1) * 64, bitwidth)};
 		const char *end{val - 64 * i};
 		m_packed_value_buffer_[i] = 0;
 		for (const char *p = start; p < end; ++p) {
 			// No checking for invalid characters, follow original C implementation
-			m_packed_value_buffer_[i] <<= 1;
-			m_packed_value_buffer_[i] |= static_cast<uint64_t>(*p - '0');
+			if (hasXZ) {
+				const size_t j = i << 1;
+				m_packed_value_buffer_[j] <<= 1;
+				m_packed_value_buffer_[j | 1] <<= 1;
+				switch (*p) {
+				case '0':
+					break;
+				case '1': {
+					m_packed_value_buffer_[i] |= 1;
+				} break;
+				case 'X':
+				case 'x': {
+					m_packed_value_buffer_[i] |= 1;
+				}  // FALLTHROUGH
+				case 'Z':
+				case 'z': {
+					m_packed_value_buffer_[j | 1] |= 1;
+				} break;
+				[[unlikely]] default: { FST_FAIL_STRING("Unexpected char"); } break;
+				}
+			} else {
+				m_packed_value_buffer_[i] <<= 1;
+				m_packed_value_buffer_[i] |= static_cast<uint64_t>(*p - '0');
+			}
 		}
 	}
 
-	if (bitwidth <= 64) {
+	if (bitwidth <= 64 && !hasXZ) {
 		emitValueChange(handle, m_packed_value_buffer_.front());
 	} else {
-		emitValueChange(handle, m_packed_value_buffer_.data(), EncodingType::BINARY);
+		emitValueChange(
+			handle,
+			m_packed_value_buffer_.data(),
+			hasXZ ? EncodingType::VERILOG : EncodingType::BINARY
+		);
 	}
 }
 
@@ -605,7 +634,7 @@ void detail::ValueChangeData::writeEncodedPositions(
 			}
 
 			// encode as signed (value << 1) | 1 and write as signed LEB128
-			h.writeLEB128Signed((value_to_encode << 1) | 1);
+			h.writeLEB128Signed((static_cast<uint64_t>(value_to_encode) << 1) | 1);
 
 			++i;
 		}
@@ -695,7 +724,7 @@ void Writer::flushValueChangeDataConstPart_(
 		(void)count;
 		return std::make_pair(positions, memory_usage);
 	}();
-	const std::vector<int64_t> positions{p_tmp2.first};
+	const std::vector<int64_t> positions{std::move(p_tmp2.first)};
 	const size_t memory_usage{p_tmp2.second};
 
 	// 4. Position Section
