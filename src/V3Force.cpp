@@ -407,29 +407,30 @@ public:
         return callp;
     }
 
-    AstNodeStmt* createForceRdUpdateStmt(const VarForceInfo& varInfo) const {
-        UASSERT(varInfo.m_forceRdVscp, "No forceRd for forced variable");
+    AstNodeExpr* createForceRdExpression(const VarForceInfo& varInfo, FileLine* flp) const {
         UASSERT(varInfo.m_varVscp, "No base var scope for forced variable");
-        FileLine* const flp = varInfo.m_varVscp->fileline();
         AstVar* const varp = varInfo.m_varVscp->varp();
-        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-            return createForceRdUpdateStmtUnpacked(varInfo);
-        }
-        AstNodeExpr* readExprp = nullptr;
         AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
         markPermanentlyProtected(baseRefp);
         AstNodeExpr* const enRefp = new AstVarRef{flp, varInfo.m_forceEnVscp, VAccess::READ};
         AstNodeExpr* const valRefp = new AstVarRef{flp, varInfo.m_forceValVscp, VAccess::READ};
         if (isBitwiseDType(varp)) {
-            readExprp = new AstOr{
+            return new AstOr{
                 flp, new AstAnd{flp, enRefp, valRefp},
                 new AstAnd{flp, new AstNot{flp, enRefp->cloneTreePure(false)}, baseRefp}};
-        } else {
-            readExprp = new AstCond{flp, enRefp, valRefp, baseRefp};
         }
+        return new AstCond{flp, enRefp, valRefp, baseRefp};
+    }
 
+    AstNodeStmt* createForceRdUpdateStmt(const VarForceInfo& varInfo) const {
+        UASSERT(varInfo.m_forceRdVscp, "No forceRd for forced variable");
+        AstVar* const varp = varInfo.m_varVscp->varp();
+        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+            return createForceRdUpdateStmtUnpacked(varInfo);
+        }
+        FileLine* const flp = varInfo.m_varVscp->fileline();
         return new AstAssign{flp, new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::WRITE},
-                             readExprp};
+                             createForceRdExpression(varInfo, flp)};
     }
 
     AstNodeStmt* createForceRdUpdateStmtUnpacked(const VarForceInfo& varInfo) const {
@@ -1457,8 +1458,12 @@ class ForceReplaceVisitor final : public VNVisitor {
                 return;
             }
             if (nodep->access().isReadOnly()) {
-                nodep->varp(varInfo->m_forceRdVscp->varp());
-                nodep->varScopep(varInfo->m_forceRdVscp);
+                // Inline the effective value so a blocking update to a continuous driver is
+                // visible immediately. The __VforceRd shadow is updated only on the next event.
+                AstNodeExpr* const readp
+                    = m_state.createForceRdExpression(*varInfo, nodep->fileline());
+                nodep->replaceWith(readp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
             if (m_inLogic && m_stmtp) {
