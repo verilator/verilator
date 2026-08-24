@@ -212,18 +212,6 @@ string AstNode::nameNoArray(const string& namein) {
     return namein.substr(0, namein.find("__BRA__"));
 }
 
-string AstNode::vcdName(const string& namein) {
-    // VCD tracing expects space to separate hierarchy
-    // Dots are reserved for dots the user put in the name
-    // We earlier hashed all symbols, dehash them so user sees real name
-    string pretty{VName::dehash(namein)};
-    string::size_type pos;
-    while ((pos = pretty.find("__DOT__")) != string::npos) pretty.replace(pos, 7, " ");
-    while ((pos = pretty.find('.')) != string::npos) pretty.replace(pos, 1, " ");
-    // Now convert escaped special characters, etc
-    return prettyName(pretty);
-}
-
 string AstNode::prettyName(const string& namein) VL_PURE {
     // This function is somewhat hot, so we short-circuit some compares
     string pretty;

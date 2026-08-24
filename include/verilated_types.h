@@ -32,6 +32,7 @@
 #include <array>
 #include <atomic>
 #include <deque>
+#include <functional>
 #include <initializer_list>
 #include <map>
 #include <memory>
