@@ -82,7 +82,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 # endif
 #else
 # include <sys/time.h>
-# include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
+# ifndef __wasi__
+#  include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
+# endif
 # include <unistd.h>  // usleep
 #endif
 // clang-format on
@@ -492,6 +494,11 @@ void V3Os::u_sleep(int64_t usec) {
 // METHODS (sub command)
 
 int V3Os::system(const string& command) {
+#ifdef __wasi__
+    // WASI has no process spawning
+    v3fatal("Running subcommands is not supported on this platform: " << command);
+    return -1;
+#else
     UINFO(1, "Running system: " << command);
     const int ret = ::system(command.c_str());
     if (VL_UNCOVERABLE(ret == -1)) {
@@ -504,6 +511,7 @@ int V3Os::system(const string& command) {
     UINFO(1, command << " returned exit code of " << exit_code);
     UASSERT(exit_code >= 0, "exit code must not be negative");
     return exit_code;
+#endif
 }
 
 void V3Os::selfTest() {
