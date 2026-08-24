@@ -301,6 +301,8 @@ public:
 #endif
 };
 
+class VlExecutionProfilerBase;
+
 //=========================================================================
 /// Base class of a Verilator generated (Verilated) model.
 ///
@@ -313,6 +315,8 @@ class VerilatedModel VL_NOT_FINAL {
     VerilatedContext& m_context;  // The VerilatedContext this model is instantiated under
 
 protected:
+    bool m_didInit = false;  // Time 0 initialization has run
+
     explicit VerilatedModel(VerilatedContext& context);
     virtual ~VerilatedModel() = default;
 
@@ -331,8 +335,82 @@ private:
     // The following are for use by Verilator internals only
     template <typename, typename>
     friend class VerilatedTrace;
+    friend class VerilatedEvalLoop;
+
     // Run-time trace configuration requested by this model
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
+
+    // Entry points called by VerilatedEvalLoop
+    virtual void evalBegin() = 0;
+    virtual void evalEnd() = 0;
+    virtual void evalStatic() = 0;
+    virtual void evalInitial() = 0;
+    virtual void evalSample() = 0;
+    virtual bool evalStl(bool firstIteration) = 0;
+    virtual bool evalIco(bool firstIteration) = 0;
+    virtual bool evalAct() = 0;
+    virtual bool evalInact() = 0;
+    virtual bool evalNba() = 0;
+    virtual bool evalObs() = 0;
+    virtual bool evalReact() = 0;
+    virtual void evalPostponed() = 0;
+    virtual void dumpTriggersStl() = 0;
+    virtual void dumpTriggersIco() = 0;
+    virtual void dumpTriggersAct() = 0;
+    virtual void dumpTriggersNba() = 0;
+    virtual void dumpTriggersObs() = 0;
+    virtual void dumpTriggersReact() = 0;
+
+    // Runs 'final' blocks at the end of the simulation
+    virtual void evalFinal() = 0;
+};
+
+//=========================================================================
+/// Evaluation loop calling a VerilatedModel's entry points
+
+class VerilatedEvalLoop final {
+    VL_UNCOPYABLE(VerilatedEvalLoop);
+
+    // MEMBERS
+    VerilatedModel& m_model;  // The model this loop evaluates
+    const uint32_t m_convergeLimit;  // --converge-limit from compiler command line
+    // Where to record --prof-exec sections, or null if not profiling
+    VlExecutionProfilerBase* m_profilerp = nullptr;
+    // Whether this is the top level model during profiling
+    bool m_profTopLevel = false;
+
+public:
+    // CONSTRUCTORS
+    VerilatedEvalLoop(VerilatedModel& model, uint32_t convergeLimit)
+        : m_model{model}
+        , m_convergeLimit{convergeLimit} {}
+
+    // METHODS
+    // Evaluate a single time step of the SV scheduling model
+    void eval() {
+        if (VL_UNLIKELY(m_profilerp)) {
+            evalImpl<true>();
+        } else {
+            evalImpl<false>();
+        }
+    }
+    // Set --prof-exec profiler
+    void profiler(VlExecutionProfilerBase* profilerp, bool topLevel) {
+        m_profilerp = profilerp;
+        m_profTopLevel = topLevel;
+    }
+
+private:
+    // Evaluate a time step, recording --prof-exec sections iff 'Profiling'.
+    template <bool Profiling>
+    void evalImpl();
+    // Check the iteration convergence
+    void checkConvergence(uint32_t iterCount, const char* namep,
+                          void (VerilatedModel::*dumpTriggersp)() = nullptr) {
+        if (VL_UNLIKELY(iterCount > m_convergeLimit)) didNotConverge(namep, dumpTriggersp);
+    }
+    // Dump the region's triggers, if it has any, then report non-convergence and abort
+    void didNotConverge(const char* namep, void (VerilatedModel::*dumpTriggersp)());
 };
 
 //=========================================================================
@@ -355,6 +433,23 @@ class VerilatedVirtualBase VL_NOT_FINAL {
 public:
     VerilatedVirtualBase() = default;
     virtual ~VerilatedVirtualBase() = default;
+};
+
+//===========================================================================
+// Internal: Base of the '--prof-exec' execution profiler
+//
+// Implemented by VlExecutionProfiler, see verilated_profiler.h. Declared here
+// so the evaluation loop can drive the profiler without naming it, as it is
+// only linked when Verilated with --prof-exec.
+
+class VlExecutionProfilerBase VL_NOT_FINAL : public VerilatedVirtualBase {
+public:
+    // Mark the beginning of a section of execution
+    virtual void sectionPush(const char* namep) = 0;
+    // Mark the end of the innermost open section
+    virtual void sectionPop() = 0;
+    // Advance the profiling window at the start of a time step
+    virtual void configure() = 0;
 };
 
 //===========================================================================

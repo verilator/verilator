@@ -30,6 +30,7 @@
 
 #include "V3Ast__gen_forward_class_decls.h"  // From ./astgen
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <functional>

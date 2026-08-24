@@ -425,8 +425,9 @@ logic.
 
 To achieve this, we invoke ``V3Order::order`` on all of the combinational
 and hybrid logic, and iterate the resulting evaluation function until no
-more hybrid logic is triggered. This yields the `_eval_settle` function,
-which is invoked at the beginning of simulation after the `_eval_initial`.
+more hybrid logic is triggered. This yields the `_eval_stl` function, which
+the runtime event loop iterates at the beginning of simulation, after the
+`_eval_initial`.
 
 
 Partitioning logic for correct NBA updates
@@ -500,51 +501,66 @@ and clock signals on separate evaluations, as was necessary with earlier
 versions of Verilator).
 
 
-Constructing the top level `_eval` function
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Constructing the region evaluation functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To construct the top level `_eval` function, which updates the state of the
-circuit to the end of the current time step, we invoke ``V3Order::order``
-separately on the 'ico', 'act' and 'nba' logic, which yields the
-`_eval_ico`, `_eval_act`, and `_eval_nba` functions. We then put these all
-together with the corresponding functions that compute the respective
-trigger expressions into the top level `_eval` function, which on the high
-level has the form:
+To update the state of the circuit to the end of the current time step, we
+invoke ``V3Order::order`` separately on the 'ico', 'act' and 'nba' logic,
+which yields the `_eval_body__ico`, `_eval_body__act`, and
+`_eval_body__nba` functions. Each of these is then combined with the
+function computing the respective trigger expressions into a single entry
+point per region, `_eval_ico`, `_eval_act` and `_eval_nba`. A region entry
+point evaluates one iteration of its region, and returns whether it did any
+work, meaning the region has not converged yet and must be evaluated again.
+On the high level, `_eval_act` has the form:
 
 .. code-block:: C++
 
-   void _eval() {
-      // Update combinational logic dependent on top level inputs ('ico' region)
-      while (true) {
-        _eval__triggers__ico();
-        // If no 'ico' region trigger is active
-        if (!ico_triggers.any()) break;
-        _eval_ico();
-      }
-
-      // Iterate 'act' and 'nba' regions together
-      while (true) {
-
-        // Iterate 'act' region, this computes all derived clocks updaed in the
-        // Active scheduling region, but does not commit any NBAs that executed
-        // in 'act' region logic.
-        while (true) {
-          _eval__triggers__act();
-          // If no 'act' region trigger is active
-          if (!act_triggers.any()) break;
-          // Remember what 'act' triggers were active, 'nba' uses the same
-          latch_act_triggers_for_nba();
-          _eval_act();
-        }
-
-        // If no 'nba' region trigger is active
-        if (!nba_triggers.any()) break;
-
-        // Evaluate all other Active region logic, and commit NBAs
-        _eval_nba();
-      }
+   bool _eval_act() {
+      _eval_triggers_vec__act();
+      // Remember what 'act' triggers were active, 'nba' uses the same
+      latch_act_triggers_for_nba();
+      const bool execute = act_triggers.any();
+      // Compute all derived clocks updated in the Active scheduling region,
+      // but do not commit any NBAs that executed in 'act' region logic.
+      if (execute) _eval_body__act();
+      return execute;
    }
 
+The loops iterating these regions are not generated. They live in the
+runtime library, in ``VerilatedEvalLoop``, and the model exposes its region
+entry points to it as virtual methods of ``VerilatedModel``. The generated
+model holds a ``VerilatedEvalLoop`` as a member, which its ``eval_step``
+runs, and which on the high level has the form:
+
+.. code-block:: C++
+
+   void VerilatedEvalLoop::evalImpl() {
+      // Update combinational logic dependent on top level inputs ('ico' region)
+      uint32_t icoIterCount = 0;
+      do {
+        if (++icoIterCount > m_convergeLimit) didNotConverge("Input combinational");
+      } while (m_model.evalIco(icoIterCount == 1));
+
+      // Iterate 'act' and 'nba' regions together
+      uint32_t nbaIterCount = 0;
+      do {
+        if (++nbaIterCount > m_convergeLimit) didNotConverge("NBA");
+        // Iterate the 'act' region to convergence
+        uint32_t actIterCount = 0;
+        do {
+          if (++actIterCount > m_convergeLimit) didNotConverge("Active");
+        } while (m_model.evalAct());
+        // Evaluate all other Active region logic, and commit NBAs
+      } while (m_model.evalNba());
+   }
+
+The remaining regions ('inact', 'obs' and 'react') nest around these in the
+same manner, each iterating the loops of all regions that precede it in the
+SystemVerilog scheduling order. The runtime event loop calls every region
+unconditionally, so scheduling emits an entry point for each one even when
+the design has no logic in it. Such an entry point immediately returns
+false, ending its loop after a single iteration.
 
 Timing
 ------
@@ -730,7 +746,8 @@ they wouldn't be evaluated and next coroutine after resumption would fire
 the event `a` then it is impossible to get to know whether await or fire on
 event `a` was called first - which is necessary to know.
 
-There are two functions for managing timing logic called by ``_eval()``:
+There are two functions for managing timing logic called by the 'act'
+region:
 
 - ``_timing_ready()``, which commits all coroutines whose triggers were not
   set in the current iteration,
@@ -751,36 +768,27 @@ Thanks to this separation a coroutine:
   (``test_regress/t/t_event_control_double_lost.v``) - which is possible
   when triggers are not evaluated right before awaiting.
 
-All coroutines are committed and resumed in the 'act' eval loop. With
-timing features enabled, the ``_eval()`` function takes this form:
+All coroutines are committed and resumed in the 'act' region. With timing
+features enabled, the 'act' region entry point takes this form:
 
 ::
 
-   void _eval() {
-     while (true) {
-       _eval__triggers__ico();
-       if (!ico_triggers.any()) break;
-       _eval_ico();
+   bool _eval_act() {
+     _eval_triggers_vec__act();
+
+     // Commit all non-triggered coroutines
+     _timing_commit();
+
+     const bool execute = act_triggers.any();
+     if (execute) {
+       latch_act_triggers_for_nba();
+
+       // Resume all triggered coroutines
+       _timing_resume();
+
+       _eval_body__act();
      }
-
-     while (true) {
-       while (true) {
-         _eval__triggers__act();
-
-         // Commit all non-triggered coroutines
-         _timing_commit();
-
-         if (!act_triggers.any()) break;
-         latch_act_triggers_for_nba();
-
-         // Resume all triggered coroutines
-         _timing_resume();
-
-         _eval_act();
-       }
-       if (!nba_triggers.any()) break;
-       _eval_nba();
-     }
+     return execute;
    }
 
 Forks
