@@ -64,6 +64,6 @@ for mode, at, npass in runs:
     test.execute(logfile=logfile,
                  run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
                  'TAMPER=' + mode + ' TAMPER_AT=' + str(at))
-    test.file_grep(logfile, r'NPASS=' + str(npass) + r'\n')
+    test.file_grep(logfile, r'NPASS=(\d+)', npass)
 
 test.passes()
