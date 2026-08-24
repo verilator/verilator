@@ -1846,10 +1846,16 @@ void AstNode::dump(std::ostream& str) const {
 #endif
         << " {" << fileline()->filenameLetters() << std::dec << fileline()->lastLineno()
         << fileline()->firstColumnLetters() << "}";
-    if (user1p()) str << " u1=" << nodeAddr(user1p());
-    if (user2p()) str << " u2=" << nodeAddr(user2p());
-    if (user3p()) str << " u3=" << nodeAddr(user3p());
-    if (user4p()) str << " u4=" << nodeAddr(user4p());
+    const auto dumpUser = [&str](const char* prefix, const VNUser& user) {
+        const std::string s = user.dumpStr([](const void* p) -> std::string {
+            return nodeAddr(reinterpret_cast<const AstNode*>(p));
+        });
+        if (!s.empty()) str << prefix << s;
+    };
+    dumpUser(" u1=", user1u());
+    dumpUser(" u2=", user2u());
+    dumpUser(" u3=", user3u());
+    dumpUser(" u4=", user4u());
     if (hasDType()) {
         // Final @ so less likely to by accident read it as a nodep
         if (dtypep() == this) {

@@ -69,6 +69,9 @@ fi
 if [ "$OPT_ASAN" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-dev-asan"
   CXX="$CXX -DVL_LEAK_CHECKS"
+  # Replaces VNUser's union with a std::variant to validate type usage.
+  # Only takes effect when the build is C++17 or newer.
+  CXX="$CXX -DVL_USER_TYPE_CHECKS"
 fi
 if [ "$OPT_GCOV" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-dev-gcov"
