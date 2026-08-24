@@ -7,4 +7,9 @@
                                        : ... note: In instance 't'
    21 |   assert property (@(posedge clk) ##(1+clk) val);
       |                                   ^~
+%Error-UNSUPPORTED: t/t_property_sexpr2_bad.v:23:35: Unsupported: SVA cycle delay exceeds implementation limit of 65536 (--max-num-width)
+                                                   : ... note: In instance 't'
+   23 |   assert property (@(posedge clk) ##32'h80000000 val);
+      |                                   ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

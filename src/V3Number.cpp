@@ -438,20 +438,20 @@ V3Number& V3Number::setZero() {
     return *this;
 }
 V3Number& V3Number::setQuad(uint64_t value) {
-    for (int i = 0; i < words(); ++i) m_data.num()[i] = {0, 0};
+    setZero();
     m_data.num()[0].m_value = value & 0xffffffffULL;
     if (width() > 32) m_data.num()[1].m_value = (value >> 32ULL) & 0xffffffffULL;
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setLong(uint32_t value) {
-    for (int i = 0; i < words(); ++i) m_data.num()[i] = {0, 0};
+    setZero();
     m_data.num()[0].m_value = value;
     opCleanThis();
     return *this;
 }
 V3Number& V3Number::setLongS(int32_t value) {
-    for (int i = 0; i < words(); ++i) m_data.num()[i] = {0, 0};
+    setZero();
     union {
         uint32_t u;
         int32_t s;
@@ -484,7 +484,7 @@ V3Number& V3Number::setSingleBits(char value) {
 }
 
 V3Number& V3Number::setAllBits0() {
-    for (int i = 0; i < words(); ++i) m_data.num()[i] = {0, 0};
+    setZero();
     return *this;
 }
 V3Number& V3Number::setAllBits1() {

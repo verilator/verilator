@@ -9,8 +9,20 @@ class Cls #(
 );
 endclass
 
+class ClsTT #(type A, type B);
+endclass
+
+class ClsVT #(int N, type T);
+endclass
+
+class ClsTV #(type T, int N);
+endclass
+
 module t;
 
   Cls c;  // Missing type param
+  ClsTT tt;
+  ClsVT vt;
+  ClsTV tv;
 
 endmodule

@@ -809,7 +809,7 @@ public:
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                     const AstNode* fromConstp);
+                                     const AstNode* fromConstp, bool checkIfaceArgCompat = false);
     static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
 
     // METHODS - dump and error
@@ -1260,6 +1260,14 @@ public:
         int count = 0;
         this->foreach([&count](const AstNode*) { ++count; });
         return count;
+    }
+
+    // Return true if and only if the tree rooted at this node has more than 'limit' nodes.
+    // Traversal terminates as soon as the result is known, so unlike comparing 'nodeCount',
+    // this is cheap on a large tree.
+    bool isLargerThan(int limit) const {
+        int count = 0;
+        return this->exists([&count, limit](const AstNode*) { return ++count > limit; });
     }
 };
 

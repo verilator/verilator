@@ -297,6 +297,16 @@ public:
     AstSenTree* sentreep() const { return m_sentreep; }
     void clearSentreep() { m_sentreep = nullptr; }
 };
+class AstCLocalScope final : public AstNodeStmt {
+    // Pack statements into an unnamed scope when generating C++
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstCLocalScope(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_CLocalScope(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstCLocalScope;
+};
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
     // @astgen op1 := lhsp : AstNodeExpr
@@ -451,6 +461,21 @@ public:
     bool sameNode(const AstNode* samep) const override { return true; }  // Ignore name in comments
     virtual bool showAt() const { return m_showAt; }
 };
+class AstConstraintBefore final : public AstNodeStmt {
+    // Constraint solve before item
+    // @astgen op1 := lhssp : List[AstNodeExpr]
+    // @astgen op2 := rhssp : List[AstNodeExpr]
+public:
+    AstConstraintBefore(FileLine* fl, AstNodeExpr* lhssp, AstNodeExpr* rhssp)
+        : ASTGEN_SUPER_ConstraintBefore(fl) {
+        addLhssp(lhssp);
+        addRhssp(rhssp);
+    }
+    ASTGEN_MEMBERS_AstConstraintBefore;
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstConstraintExpr final : public AstNodeStmt {
     // Constraint expression
     // @astgen op1 := exprp : AstNodeExpr
@@ -598,6 +623,7 @@ public:
     explicit AstDisableFork(FileLine* fl)
         : ASTGEN_SUPER_DisableFork(fl) {}
     ASTGEN_MEMBERS_AstDisableFork;
+    string verilogKwd() const override { return "disable fork"; }
 };
 class AstDisplay final : public AstNodeStmt {
     // Parents: stmtlist
@@ -1431,6 +1457,7 @@ public:
         : ASTGEN_SUPER_WaitFork(fl) {}
     ASTGEN_MEMBERS_AstWaitFork;
     bool isTimingControl() const override { return true; }
+    string verilogKwd() const override { return "wait fork"; }
 };
 
 // === AstNodeAssign ===
