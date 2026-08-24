@@ -1357,17 +1357,57 @@ public:
 // ForceReplaceVisitor - Replace variable reads with force-aware reads
 
 class ForceReplaceVisitor final : public VNVisitor {
+    // NODE STATE
+    //  AstVar::user4p       -> AstVar*.  The __VforceRemat variable holding its forced value
+    //  AstVarScope::user4p  -> AstVarScope*.  The __VforceRemat variable holding its forced value
+    const VNUser4InUse m_user4InUse;
+
     const ForceState& m_state;  // Force state shared across passes
     VDouble0 m_nonOverlappingForceSels;  // Statistic tracking
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
     bool m_inLogic = false;  // Under logic
 
+    // METHODS
     void iterateLogic(AstNode* nodep) {
         VL_RESTORER(m_inLogic);
         m_inLogic = true;
         iterateChildren(nodep);
     }
 
+    // Return the __VforceRemat variable of the given variable
+    static AstVar* getRematVarp(AstVar* varp) {
+        if (AstVar* const rematVarp = VN_AS(varp->user4p(), Var)) return rematVarp;
+        FileLine* const flp = varp->fileline();
+        const std::string name = varp->name() + "__VforceRemat";
+        AstVar* const rematVarp = new AstVar{flp, VVarType::VAR, name, varp->dtypep()};
+        varp->addNextHere(rematVarp);
+        varp->user4p(rematVarp);
+        return rematVarp;
+    }
+
+    // Return the __VforceRemat variable of the given variable, which is computed by 'readp'
+    AstVarScope* getRematVscp(AstVarScope* vscp, AstNodeExpr* readp) {
+        if (AstVarScope* const rematVscp = VN_AS(vscp->user4p(), VarScope)) {
+            VL_DO_DANGLING(pushDeletep(readp), readp);
+            return rematVscp;
+        }
+        FileLine* const flp = readp->fileline();
+        AstScope* const scopep = vscp->scopep();
+        AstVarScope* const rematVscp = new AstVarScope{flp, scopep, getRematVarp(vscp->varp())};
+        scopep->addVarsp(rematVscp);
+        vscp->user4p(rematVscp);
+        // always_comb <name>__VforceRemat = <force aware read>;
+        AstVarRef* const lhsp = new AstVarRef{flp, rematVscp, VAccess::WRITE};
+        AstAssign* const assignp = new AstAssign{flp, lhsp, readp};
+        AstSenTree* const senTreep = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}};
+        AstActive* const activep = new AstActive{flp, "force-remat-update", senTreep};
+        activep->senTreeStorep(senTreep);
+        activep->addProcsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, assignp});
+        scopep->addBlocksp(activep);
+        return rematVscp;
+    }
+
+    // VISITORS
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_stmtp);
         m_stmtp = nodep;
@@ -1489,6 +1529,18 @@ class ForceReplaceVisitor final : public VNVisitor {
             = m_state.createForceReadIndexExpression(*varInfop, nodep, indexExprp);
         nodep->replaceWith(readExprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
+    void visit(AstRtmdSignal* nodep) override {
+        if (!nodep->refp()) return;
+        AstVarScope* const vscp = nodep->vscp();
+        // A read of a forced variable is replaced with the force aware read expression
+        AstNode* const newp = iterateSubtreeReturnEdits(nodep->refp());
+        if (VN_IS(newp, VarRef)) return;
+        // Descriptors read values from variables, so rematerialize it into one
+        AstNodeExpr* const readp = VN_AS(newp->unlinkFrBack(), NodeExpr);
+        AstVarScope* const rematVscp = getRematVscp(vscp, readp);
+        nodep->refp(new AstVarRef{nodep->fileline(), rematVscp, VAccess::READ});
     }
 
     void visit(AstVarRef* nodep) override {

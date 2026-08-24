@@ -77,7 +77,7 @@ class DataflowOptimize final {
             // Check variable flags
             if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
                 const AstVar* const varp = vscp->varp();
-                // Force and trace have already been processed
+                // Force has already been processed
                 const bool hasExtRd =  //
                     varp->isPrimaryIO()  // Top level port - readable
                     || varp->isSigUserRdPublic()  // Readable by user
@@ -90,6 +90,11 @@ class DataflowOptimize final {
                     ;
                 if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
                 if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
+                return;
+            }
+            // Variables read by descriptors are read externally
+            if (const AstRtmdSignal* const sigp = VN_CAST(nodep, RtmdSignal)) {
+                if (sigp->refp()) DfgVertexVar::setHasExtRdRefs(sigp->vscp());
                 return;
             }
             // Check references

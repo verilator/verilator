@@ -1635,8 +1635,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstParseRef* nodep) override { puts(nodep->prettyName()); }
     void visit(AstVarScope*) override {}
-    void visit(AstTraceDecl*) override {}
-    void visit(AstTraceInc*) override {}
+    // The RTMD is not Verilog
+    void visit(AstNodeRtmdItem*) override {}
     // NOPs
     void visit(AstPragma*) override {}
     void visit(AstStmtPragma*) override {}

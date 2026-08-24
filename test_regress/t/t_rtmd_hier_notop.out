@@ -1,0 +1,133 @@
+ : $root
+  $rootio : rootio
+    input wire clk : logic (no address)
+  endrootio : $rootio
+  t : module t
+    input wire clk : logic (no address)
+    i : interface ifc
+      var data : logic [7:0] (no address)
+    endinterface : i
+    u_sub : module sub
+      parameter WIDTH : int (no address)
+      input wire clk : logic (no address)
+      i : interface reference ifc
+        var data : logic [7:0] (no address)
+      endinterface reference : i
+      localparam MAGIC : logic [7:0] (no address)
+      var state : enum logic [1:0] (no address)
+      var color : enum bit [2:0] (no address)
+      var level : enum int (no address)
+      var pair : struct packed (no address)
+      var word : union packed signed (no address)
+      var info : struct (no address)
+      var mem : logic [7:0] _ [0:3] (no address)
+      var pairs : struct packed _ [0:1] (no address)
+      var sbit : logic signed (no address)
+      var sbyte : byte (no address)
+      var uint : int unsigned (no address)
+      var svec : logic signed [7:0] (no address)
+      var sarr : logic signed [3:0][7:0] (no address)
+      var smem : logic signed [7:0] _ [0:1] (no address)
+      var rval : real (no address)
+      var tval : time (no address)
+      var ev : event (no address)
+      var ch : chandle (no address)
+      var pmd : logic [1:3][4:1] (no address)
+      var asc : bit [0:7] (no address)
+      var umd : logic [3:2] _ [1:2][5:3] (no address)
+      var mix : logic [2:1][0:1] _ [4:3] (no address)
+      var cnt3 : int _ [0:2] (no address)
+      var untraced : logic [7:0] (no address)
+      var cnt : int (no address)
+      blk : begin
+        var nxt : int (no address)
+      end : blk
+      wire wsum : logic [7:0] (no address)
+    endmodule : u_sub
+    u_late : module sub
+      parameter WIDTH : int (no address)
+      input wire clk : logic (no address)
+      i : interface reference ifc
+        var data : logic [7:0] (no address)
+      endinterface reference : i
+      localparam MAGIC : logic [7:0] (no address)
+      var state : enum logic [1:0] (no address)
+      var color : enum bit [2:0] (no address)
+      var level : enum int (no address)
+      var pair : struct packed (no address)
+      var word : union packed signed (no address)
+      var info : struct (no address)
+      var mem : logic [7:0] _ [0:3] (no address)
+      var pairs : struct packed _ [0:1] (no address)
+      var sbit : logic signed (no address)
+      var sbyte : byte (no address)
+      var uint : int unsigned (no address)
+      var svec : logic signed [7:0] (no address)
+      var sarr : logic signed [3:0][7:0] (no address)
+      var smem : logic signed [7:0] _ [0:1] (no address)
+      var rval : real (no address)
+      var tval : time (no address)
+      var ev : event (no address)
+      var ch : chandle (no address)
+      var pmd : logic [1:3][4:1] (no address)
+      var asc : bit [0:7] (no address)
+      var umd : logic [3:2] _ [1:2][5:3] (no address)
+      var mix : logic [2:1][0:1] _ [4:3] (no address)
+      var cnt3 : int _ [0:2] (no address)
+      var untraced : logic [7:0] (no address)
+      var cnt : int (no address)
+      blk : begin
+        var nxt : int (no address)
+      end : blk
+      wire wsum : logic [7:0] (no address)
+    endmodule : u_late
+    late_i : interface ifc
+      var data : logic [7:0] (no address)
+    endinterface : late_i
+    var q0 : logic [7:0] (no address)
+    u_part : module part
+      input wire clk : logic (no address)
+      input wire in : logic [7:0] (no address)
+      output wire out : logic [7:0] (no address)
+      var part_q : logic [7:0] (no address)
+    endmodule : u_part
+    genvar g : integer (no address)
+    gen[0] : generate
+      localparam OFFSET : int (no address)
+      var q : logic [7:0] (no address)
+      wire qoff : logic [7:0] (no address)
+      u_part : module part
+        input wire clk : logic (no address)
+        input wire in : logic [7:0] (no address)
+        output wire out : logic [7:0] (no address)
+        var part_q : logic [7:0] (no address)
+      endmodule : u_part
+    endgenerate : gen[0]
+    gen[1] : generate
+      localparam OFFSET : int (no address)
+      var q : logic [7:0] (no address)
+      wire qoff : logic [7:0] (no address)
+      u_part : module part
+        input wire clk : logic (no address)
+        input wire in : logic [7:0] (no address)
+        output wire out : logic [7:0] (no address)
+        var part_q : logic [7:0] (no address)
+      endmodule : u_part
+    endgenerate : gen[1]
+    tick : task
+      var ticks : int (no address)
+    endtask : tick
+    init : begin
+      var ivar : int (no address)
+      frk : fork
+        var fvar : int (no address)
+      join : frk
+    end : init
+  endmodule : t
+  $unit : package $unit (no signals)
+  endpackage : $unit
+  pkg : package pkg
+    var pkg_var : int (no address)
+  endpackage : pkg
+end$root : 
+*-* All Finished *-*

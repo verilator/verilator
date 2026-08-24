@@ -169,13 +169,6 @@ class InlineCFuncsVisitor final : public VNVisitor {
         if (maxFile <= 0) maxFile = std::numeric_limits<int>::max();
         return std::min(maxCFunc, maxFile);
     }();
-    const size_t m_maxSizeTrace = []() -> size_t {  // Maximum size of trace function to inline
-        int maxTrace = v3Global.opt.outputSplitCTrace();
-        int maxFile = v3Global.opt.outputSplit();
-        if (maxTrace <= 0) maxTrace = std::numeric_limits<int>::max();
-        if (maxFile <= 0) maxFile = std::numeric_limits<int>::max();
-        return std::min(maxTrace, maxFile);
-    }();
     InlineCFuncsFunctionVertex* m_cfuncVtxp = nullptr;  // Vertex of currently iterated function
     bool m_inExecGraph = false;  // True while inside an AstExecGraph subtree
 
@@ -301,8 +294,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
                 AstCFunc* const callerp = callerVtxp->cfuncp();
 
                 // Don't make a function bigger than the limit
-                const size_t limit = callerp->isTrace() ? m_maxSizeTrace : m_maxSizeCFunc;
-                if (callerVtxp->size() + calleeVtxp->size() > limit) continue;
+                if (callerVtxp->size() + calleeVtxp->size() > m_maxSizeCFunc) continue;
 
                 // Can't do it if it's in a different scope, self pointers differ
                 if (callerp->scopep() != calleep->scopep()) continue;
@@ -407,11 +399,6 @@ class InlineCFuncsVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
 
-    void visit(AstAddrOfCFunc* nodep) override {
-        if (m_cfuncVtxp) m_cfuncVtxp->sizeInc();
-        getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Referenced by AddressOfCFunc");
-        iterateChildrenConst(nodep);
-    }
     void visit(AstNbaEnqueue* nodep) override {
         if (m_cfuncVtxp) m_cfuncVtxp->sizeInc();
         getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Referenced by NbaEnqueue");
@@ -419,15 +406,6 @@ class InlineCFuncsVisitor final : public VNVisitor {
     }
 
     // Nodes preventing inlining
-    void visit(AstTraceDecl* nodep) override {
-        // Referenced by TraceInc
-        if (m_cfuncVtxp) m_cfuncVtxp->setNoInline("Contains TraceDecl");
-
-        if (AstCCall* const callp = nodep->dtypeCallp()) {
-            getInlineCFuncsCallSiteVertexp(callp)->setNoInline("Referenced by TraceDecl");
-        }
-        iterateChildrenConst(nodep);
-    }
     void visit(AstExecGraph* nodep) override {
         // AstExecGraph is not cloneable, so can't inline the containing function
         if (m_cfuncVtxp) m_cfuncVtxp->setNoInline("Contains ExecGraph");

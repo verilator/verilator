@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Waves Tracing
+// DESCRIPTION: Verilator: Activity analysis for waveform tracing
 //
 // Code available from: https://verilator.org
 //

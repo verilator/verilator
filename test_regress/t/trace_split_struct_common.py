@@ -17,11 +17,6 @@ def run(test):
 
     test.compile(verilator_flags2=flags)
 
-    # When struct fields are driven from different clocks, the dtype
-    # optimization cannot be applied -- no trace_chg_dtype functions should exist
-    trace_cpp = test.obj_dir + "/" + test.vm_prefix + "__Trace__0.cpp"
-    test.file_grep_count(trace_cpp, r"^ *Vt_.*trace_chg_dtype", 0)
-
     test.execute()
 
     test.trace_identical(test.trace_filename, test.golden_filename)

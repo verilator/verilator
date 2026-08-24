@@ -224,7 +224,8 @@ class CombineVisitor final : VNVisitor {
         if (nodep->funcp()->dontCombine()) return;
         // LCOV_EXCL_START
         // We cannot yet handle references via AstAddrOfCFunc, but currently those are
-        // only used in tracing functions, which are not combined. Blow up in case this changes.
+        // only taken of DPI import prototypes, which are not combined, and created by
+        // V3ExecGraph, which runs later. Blow up in case this changes.
         nodep->v3fatalSrc(
             "Don't know how to combine functions that are referenced via AstAddrOfCFunc");
         // LCOV_EXCL_STOP

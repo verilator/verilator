@@ -1,0 +1,5 @@
+%Warning-INSECURE: Using --protect-ids with --rtmd may expose private design details
+                   ... Suggest remove --rtmd.
+                   ... For warning description see https://verilator.org/warn/INSECURE?v=latest
+                   ... Use "/* verilator lint_off INSECURE */" and lint_on around source to disable this message.
+%Error: Exiting due to

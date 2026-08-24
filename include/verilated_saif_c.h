@@ -45,6 +45,7 @@ public:
 
 private:
     friend VerilatedSaifBuffer;  // Give the buffer access to the private bits
+    friend Super;  // Calls 'declareSignal' and 'declareEnum' through 'self()'
 
     //=========================================================================
     // SAIF-specific internals
@@ -63,13 +64,13 @@ private:
     // Array of declared scopes
     std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_scopes;
     // Activity accumulators used to store variables statistics over simulation time
-    std::vector<std::unique_ptr<VerilatedSaifActivityAccumulator>> m_activityAccumulators;
+    std::unique_ptr<VerilatedSaifActivityAccumulator> m_activityAccumulatorp;
     // Total time of the currently traced simulation
     uint64_t m_time = 0;
 
-    // Stack of declared scopes combined names
-    std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
-        {"", VerilatedTracePrefixType::SCOPE_MODULE}};
+    // For each open level, the prefix of the names declared in it: the names of the arrays
+    // enclosing it within the innermost scope, as arrays are not scopes, e.g. 'mem[3]'
+    std::vector<std::string> m_namePrefixes{""};
 
     // METHODS
     VL_ATTR_ALWINLINE uint64_t currentTime() const { return m_time; }
@@ -80,10 +81,7 @@ private:
     void openInstanceScope(const std::string& instanceName);
     void closeInstanceScope();
     void printScopeActivities(const VerilatedSaifActivityScope& scope);
-    bool
-    printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath,
-                                                 VerilatedSaifActivityAccumulator& accumulator,
-                                                 bool anyNetWritten);
+    bool printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath);
     void openNetScope();
     void closeNetScope();
     bool printActivityStats(VerilatedSaifActivityVar& activity, const std::string& activityName,
@@ -99,8 +97,12 @@ private:
 
     void clearCurrentlyCollectedData();
 
-    void declare(uint32_t code, uint32_t fidx, const char* name, const char* wirep, bool array,
-                 int arraynum, bool bussed, int msb, int lsb);
+    // Open and close a scope
+    void beginScope(const char* namep);
+    void endScope();
+    // Open and close an array, whose name prefixes the names within it
+    void beginArray(const char* namep) { m_namePrefixes.push_back(m_namePrefixes.back() + namep); }
+    void endArray() { m_namePrefixes.pop_back(); }
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedSaif);
@@ -117,11 +119,38 @@ protected:
     bool preChangeDump() override { return isOpen(); }
 
     // Trace buffer management
-    Buffer* getTraceBuffer(uint32_t fidx) override;
+    Buffer* getTraceBuffer() override;
     void commitTraceBuffer(Buffer*) override;
 
-    // Configure sub-class
-    void configure(const VerilatedTraceConfig&) override {}
+    //=========================================================================
+    // Implementation of VerilatedTrace interface - declarations
+
+    void openRoot(const char* namep) override final { beginScope(namep); }
+    void closeRoot() override final { endScope(); }
+    void openInstance(InstanceKind, const char* namep, const char*) override final {
+        beginScope(namep);
+    }
+    void closeInstance() override final { endScope(); }
+    void openIfaceRef(const char* namep, const char*) override final { beginScope(namep); }
+    void closeIfaceRef() override final { endScope(); }
+    void openScope(ScopeKind, const char* namep) override final { beginScope(namep); }
+    void closeScope() override final { endScope(); }
+    void openUnpackedArray(const char* namep, int, int) override final { beginArray(namep); }
+    void closeUnpackedArray() override final { endArray(); }
+    void openUnpackedStruct(const char* namep, uint32_t) override final { beginScope(namep); }
+    void closeUnpackedStruct() override final { endScope(); }
+    void openPackedArray(const char* namep, int, int) override final { beginArray(namep); }
+    void closePackedArray() override final { endArray(); }
+    void openPackedStruct(const char* namep, uint32_t) override final { beginScope(namep); }
+    void closePackedStruct() override final { endScope(); }
+    void openPackedUnion(const char* namep, uint32_t) override final { beginScope(namep); }
+    void closePackedUnion() override final { endScope(); }
+
+    void declareSignal(uint32_t code, const char* namep, const VlRtmdSignalType& sigType,
+                       const VlRtmdDataType& dtype) override final;
+
+    // This format does not show enums
+    void declareEnum(const VlRtmdDataType&) override final {}
 
 public:
     //=========================================================================
@@ -140,65 +169,7 @@ public:
     void flush() VL_MT_SAFE_EXCLUDES(m_mutex);
     // Return if file is open
     bool isOpen() const VL_MT_SAFE { return m_isOpen; }
-
-    //=========================================================================
-    // Internal interface to Verilator generated code
-
-    void pushPrefix(const char*, VerilatedTracePrefixType);
-    void popPrefix();
-
-    // versions to call when the sig is not array member
-    void declEvent(uint32_t code, uint32_t fidx, const char* name);
-    void declBit(uint32_t code, uint32_t fidx, const char* name);
-    void declBus(uint32_t code, uint32_t fidx, const char* name, int msb, int lsb);
-    void declQuad(uint32_t code, uint32_t fidx, const char* name, int msb, int lsb);
-    void declWide(uint32_t code, uint32_t fidx, const char* name, int msb, int lsb);
-    void declDouble(uint32_t code, uint32_t fidx, const char* name);
-
-    // versions to call when the sig is array member
-    void declEventArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
-    void declBitArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
-    void declBusArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
-                      int lsb);
-    void declQuadArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
-                       int lsb);
-    void declWideArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
-                       int lsb);
-    void declDoubleArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
 };
-
-// We use macros to drop unused arguments at compile time. This saves code size.
-#define VL_TRACE_PUSH_PREFIX(tracep, name, type, left, right) tracep->pushPrefix(name, type);
-#define VL_TRACE_POP_PREFIX(tracep) tracep->popPrefix();
-
-#define VL_TRACE_DECL_EVENT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
-    tracep->declEvent(code, fidx, name)
-#define VL_TRACE_DECL_BIT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
-    tracep->declBit(code, fidx, name)
-#define VL_TRACE_DECL_BUS(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
-    tracep->declBus(code, fidx, name, msb, lsb)
-#define VL_TRACE_DECL_QUAD(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
-    tracep->declQuad(code, fidx, name, msb, lsb)
-#define VL_TRACE_DECL_WIDE(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
-    tracep->declWide(code, fidx, name, msb, lsb)
-#define VL_TRACE_DECL_DOUBLE(tracep, code, fidx, name, dtypenum, dir, kind, type) \
-    tracep->declDouble(code, fidx, name)
-
-#define VL_TRACE_DECL_EVENT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
-    tracep->declEventArray(code, fidx, name, arraynum)
-#define VL_TRACE_DECL_BIT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
-    tracep->declBitArray(code, fidx, name, arraynum)
-#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
-                                msb, lsb) \
-    tracep->declBusArray(code, fidx, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
-                                 msb, lsb) \
-    tracep->declQuadArray(code, fidx, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
-                                 msb, lsb) \
-    tracep->declWideArray(code, fidx, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_DOUBLE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
-    tracep->declDoubleArray(code, fidx, name, arraynum)
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedSaifC just below
@@ -226,15 +197,10 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     friend VerilatedSaif::Buffer;
 
     VerilatedSaif& m_owner;  // Trace file owning this buffer. Required by subclasses.
-    uint32_t m_fidx;  // Index of target activity accumulator
 
     // CONSTRUCTORS
     explicit VerilatedSaifBuffer(VerilatedSaif& owner)
-        : m_owner{owner}
-        , m_fidx{0} {}
-    explicit VerilatedSaifBuffer(VerilatedSaif& owner, uint32_t fidx)
-        : m_owner{owner}
-        , m_fidx{fidx} {}
+        : m_owner{owner} {}
     virtual ~VerilatedSaifBuffer() = default;
 
     //=========================================================================
@@ -273,6 +239,9 @@ public:
 
     // Return if file is open
     bool isOpen() const override VL_MT_SAFE { return m_sptrace.isOpen(); }
+    // The context being traced
+    VerilatedContext* contextp() const override { return m_sptrace.contextp(); }
+    void contextp(VerilatedContext* contextp) override { m_sptrace.contextp(contextp); }
     // Open a new SAIF file
     // This includes a complete header dump each time it is called,
     // just as if this object was deleted and reconstructed.
@@ -281,10 +250,7 @@ public:
     void rolloverSize(size_t size) VL_MT_SAFE {}  // NOP
 
     // Close dump
-    void close() VL_MT_SAFE {
-        m_sptrace.close();
-        modelConnected(false);
-    }
+    void close() VL_MT_SAFE { m_sptrace.close(); }
     // Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
     // Write one cycle of dump data

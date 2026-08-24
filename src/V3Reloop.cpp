@@ -102,10 +102,6 @@ class ReloopAnalysis final : public VNVisitorConst {
         }
         iterateChildrenConst(nodep);
     }
-    void visit(AstTraceDecl*) override {
-        // Pointed to by AstTraceInc, and sameNode ignores what it declares
-        m_ok = false;
-    }
     void visit(AstNode* nodep) override {
         if (enter(nodep)) iterateChildrenConst(nodep);
     }
@@ -319,6 +315,9 @@ class ReloopVisitor final : public VNVisitor {
     //--------------------
     void visit(AstVar*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate
+    void visit(AstNodeRtmdDataType*) override {}  // Accelerate
+    void visit(AstRtmdSignalType*) override {}  // Accelerate
+    void visit(AstNodeRtmdItem*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

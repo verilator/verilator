@@ -191,6 +191,7 @@ class LocalizeVisitor final : public VNVisitor {
             && !nodep->varp()->sensIfacep()  // Not sensitive to an interface
             && !nodep->varp()->isVirtIface()  // Not interface pointer
             && !nodep->varp()->constPoolEntry()  // Not a const pool entry
+            && nodep->varp() != v3Global.rootp()->activityp()  // Not read by the runtime
             && !nodep->varp()->valuep()  // Does not have an initializer
         ) {
             UINFO(4, "Consider for localization: " << nodep);
@@ -199,6 +200,12 @@ class LocalizeVisitor final : public VNVisitor {
         // No iterate; Don't want varrefs under it (e.g.: in child dtype?)
     }
 
+    void visit(AstRtmdSignal* nodep) override {
+        // Descriptors read variables by address, so they cannot be localized
+        if (!nodep->refp()) return;
+        UINFO(4, "Not optimizable (rtmd): " << nodep);
+        nodep->vscp()->user1(1);
+    }
     void visit(AstVarRef* nodep) override {
         UASSERT_OBJ(m_cfuncp, nodep, "AstVarRef not under function");
 

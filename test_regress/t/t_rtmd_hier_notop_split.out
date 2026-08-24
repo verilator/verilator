@@ -1,0 +1,285 @@
+ : $root
+  $rootio : rootio
+    input wire clk : logic (no address)
+  endrootio : $rootio
+  t : module t
+    input wire clk : logic (no address)
+    i : interface ifc
+      var data : logic [7:0] (no address)
+    endinterface : i
+    u_sub : module sub
+      parameter WIDTH : int (no address)
+      input wire clk : logic (no address)
+      i : interface reference ifc
+        var data : logic [7:0] (no address)
+      endinterface reference : i
+      localparam MAGIC : logic [7:0] (no address)
+      var state : enum logic [1:0] (no address)
+      var color : enum bit [2:0] (no address)
+      var level : enum int (no address)
+      var pair : struct packed (no address)
+      enter packed struct, 2 members
+        hi @4 : logic [3:0] (no address)
+        lo @0 : logic [3:0] (no address)
+      exit packed struct
+      var word : union packed signed (no address)
+      enter packed union, 2 members
+        s @0 : logic [7:0] (no address)
+        u @0 : logic [7:0] (no address)
+      exit packed union
+      var info : struct (no address)
+      enter unpacked struct, 2 members
+        count : int (no address)
+        flag : logic (no address)
+      exit unpacked struct
+      var mem : logic [7:0] _ [0:3] (no address)
+      enter unpacked array [0:3]
+        [0] : logic [7:0] (no address)
+        [1] : logic [7:0] (no address)
+        [2] : logic [7:0] (no address)
+        [3] : logic [7:0] (no address)
+      exit unpacked array
+      var pairs : struct packed _ [0:1] (no address)
+      enter unpacked array [0:1]
+        [0] : struct packed (no address)
+        enter packed struct, 2 members
+          hi @4 : logic [3:0] (no address)
+          lo @0 : logic [3:0] (no address)
+        exit packed struct
+        [1] : struct packed (no address)
+        enter packed struct, 2 members
+          hi @4 : logic [3:0] (no address)
+          lo @0 : logic [3:0] (no address)
+        exit packed struct
+      exit unpacked array
+      var sbit : logic signed (no address)
+      var sbyte : byte (no address)
+      var uint : int unsigned (no address)
+      var svec : logic signed [7:0] (no address)
+      var sarr : logic signed [3:0][7:0] (no address)
+      enter packed array [3:0]
+        [3] @24 : logic signed [7:0] (no address)
+        [2] @16 : logic signed [7:0] (no address)
+        [1] @8 : logic signed [7:0] (no address)
+        [0] @0 : logic signed [7:0] (no address)
+      exit packed array
+      var smem : logic signed [7:0] _ [0:1] (no address)
+      enter unpacked array [0:1]
+        [0] : logic signed [7:0] (no address)
+        [1] : logic signed [7:0] (no address)
+      exit unpacked array
+      var rval : real (no address)
+      var tval : time (no address)
+      var ev : event (no address)
+      var ch : chandle (no address)
+      var pmd : logic [1:3][4:1] (no address)
+      enter packed array [1:3]
+        [1] @8 : logic [4:1] (no address)
+        [2] @4 : logic [4:1] (no address)
+        [3] @0 : logic [4:1] (no address)
+      exit packed array
+      var asc : bit [0:7] (no address)
+      var umd : logic [3:2] _ [1:2][5:3] (no address)
+      enter unpacked array [1:2]
+        [1] : logic [3:2] _ [5:3] (no address)
+        enter unpacked array [5:3]
+          [5] : logic [3:2] (no address)
+          [4] : logic [3:2] (no address)
+          [3] : logic [3:2] (no address)
+        exit unpacked array
+        [2] : logic [3:2] _ [5:3] (no address)
+        enter unpacked array [5:3]
+          [5] : logic [3:2] (no address)
+          [4] : logic [3:2] (no address)
+          [3] : logic [3:2] (no address)
+        exit unpacked array
+      exit unpacked array
+      var mix : logic [2:1][0:1] _ [4:3] (no address)
+      enter unpacked array [4:3]
+        [4] : logic [2:1][0:1] (no address)
+        enter packed array [2:1]
+          [2] @2 : logic [0:1] (no address)
+          [1] @0 : logic [0:1] (no address)
+        exit packed array
+        [3] : logic [2:1][0:1] (no address)
+        enter packed array [2:1]
+          [2] @2 : logic [0:1] (no address)
+          [1] @0 : logic [0:1] (no address)
+        exit packed array
+      exit unpacked array
+      var cnt3 : int _ [0:2] (no address)
+      enter unpacked array [0:2]
+        [0] : int (no address)
+        [1] : int (no address)
+        [2] : int (no address)
+      exit unpacked array
+      var untraced : logic [7:0] (no address)
+      var cnt : int (no address)
+      blk : begin
+        var nxt : int (no address)
+      end : blk
+      wire wsum : logic [7:0] (no address)
+    endmodule : u_sub
+    u_late : module sub
+      parameter WIDTH : int (no address)
+      input wire clk : logic (no address)
+      i : interface reference ifc
+        var data : logic [7:0] (no address)
+      endinterface reference : i
+      localparam MAGIC : logic [7:0] (no address)
+      var state : enum logic [1:0] (no address)
+      var color : enum bit [2:0] (no address)
+      var level : enum int (no address)
+      var pair : struct packed (no address)
+      enter packed struct, 2 members
+        hi @4 : logic [3:0] (no address)
+        lo @0 : logic [3:0] (no address)
+      exit packed struct
+      var word : union packed signed (no address)
+      enter packed union, 2 members
+        s @0 : logic [7:0] (no address)
+        u @0 : logic [7:0] (no address)
+      exit packed union
+      var info : struct (no address)
+      enter unpacked struct, 2 members
+        count : int (no address)
+        flag : logic (no address)
+      exit unpacked struct
+      var mem : logic [7:0] _ [0:3] (no address)
+      enter unpacked array [0:3]
+        [0] : logic [7:0] (no address)
+        [1] : logic [7:0] (no address)
+        [2] : logic [7:0] (no address)
+        [3] : logic [7:0] (no address)
+      exit unpacked array
+      var pairs : struct packed _ [0:1] (no address)
+      enter unpacked array [0:1]
+        [0] : struct packed (no address)
+        enter packed struct, 2 members
+          hi @4 : logic [3:0] (no address)
+          lo @0 : logic [3:0] (no address)
+        exit packed struct
+        [1] : struct packed (no address)
+        enter packed struct, 2 members
+          hi @4 : logic [3:0] (no address)
+          lo @0 : logic [3:0] (no address)
+        exit packed struct
+      exit unpacked array
+      var sbit : logic signed (no address)
+      var sbyte : byte (no address)
+      var uint : int unsigned (no address)
+      var svec : logic signed [7:0] (no address)
+      var sarr : logic signed [3:0][7:0] (no address)
+      enter packed array [3:0]
+        [3] @24 : logic signed [7:0] (no address)
+        [2] @16 : logic signed [7:0] (no address)
+        [1] @8 : logic signed [7:0] (no address)
+        [0] @0 : logic signed [7:0] (no address)
+      exit packed array
+      var smem : logic signed [7:0] _ [0:1] (no address)
+      enter unpacked array [0:1]
+        [0] : logic signed [7:0] (no address)
+        [1] : logic signed [7:0] (no address)
+      exit unpacked array
+      var rval : real (no address)
+      var tval : time (no address)
+      var ev : event (no address)
+      var ch : chandle (no address)
+      var pmd : logic [1:3][4:1] (no address)
+      enter packed array [1:3]
+        [1] @8 : logic [4:1] (no address)
+        [2] @4 : logic [4:1] (no address)
+        [3] @0 : logic [4:1] (no address)
+      exit packed array
+      var asc : bit [0:7] (no address)
+      var umd : logic [3:2] _ [1:2][5:3] (no address)
+      enter unpacked array [1:2]
+        [1] : logic [3:2] _ [5:3] (no address)
+        enter unpacked array [5:3]
+          [5] : logic [3:2] (no address)
+          [4] : logic [3:2] (no address)
+          [3] : logic [3:2] (no address)
+        exit unpacked array
+        [2] : logic [3:2] _ [5:3] (no address)
+        enter unpacked array [5:3]
+          [5] : logic [3:2] (no address)
+          [4] : logic [3:2] (no address)
+          [3] : logic [3:2] (no address)
+        exit unpacked array
+      exit unpacked array
+      var mix : logic [2:1][0:1] _ [4:3] (no address)
+      enter unpacked array [4:3]
+        [4] : logic [2:1][0:1] (no address)
+        enter packed array [2:1]
+          [2] @2 : logic [0:1] (no address)
+          [1] @0 : logic [0:1] (no address)
+        exit packed array
+        [3] : logic [2:1][0:1] (no address)
+        enter packed array [2:1]
+          [2] @2 : logic [0:1] (no address)
+          [1] @0 : logic [0:1] (no address)
+        exit packed array
+      exit unpacked array
+      var cnt3 : int _ [0:2] (no address)
+      enter unpacked array [0:2]
+        [0] : int (no address)
+        [1] : int (no address)
+        [2] : int (no address)
+      exit unpacked array
+      var untraced : logic [7:0] (no address)
+      var cnt : int (no address)
+      blk : begin
+        var nxt : int (no address)
+      end : blk
+      wire wsum : logic [7:0] (no address)
+    endmodule : u_late
+    late_i : interface ifc
+      var data : logic [7:0] (no address)
+    endinterface : late_i
+    var q0 : logic [7:0] (no address)
+    u_part : module part
+      input wire clk : logic (no address)
+      input wire in : logic [7:0] (no address)
+      output wire out : logic [7:0] (no address)
+      var part_q : logic [7:0] (no address)
+    endmodule : u_part
+    genvar g : integer (no address)
+    gen[0] : generate
+      localparam OFFSET : int (no address)
+      var q : logic [7:0] (no address)
+      wire qoff : logic [7:0] (no address)
+      u_part : module part
+        input wire clk : logic (no address)
+        input wire in : logic [7:0] (no address)
+        output wire out : logic [7:0] (no address)
+        var part_q : logic [7:0] (no address)
+      endmodule : u_part
+    endgenerate : gen[0]
+    gen[1] : generate
+      localparam OFFSET : int (no address)
+      var q : logic [7:0] (no address)
+      wire qoff : logic [7:0] (no address)
+      u_part : module part
+        input wire clk : logic (no address)
+        input wire in : logic [7:0] (no address)
+        output wire out : logic [7:0] (no address)
+        var part_q : logic [7:0] (no address)
+      endmodule : u_part
+    endgenerate : gen[1]
+    tick : task
+      var ticks : int (no address)
+    endtask : tick
+    init : begin
+      var ivar : int (no address)
+      frk : fork
+        var fvar : int (no address)
+      join : frk
+    end : init
+  endmodule : t
+  $unit : package $unit (no signals)
+  endpackage : $unit
+  pkg : package pkg
+    var pkg_var : int (no address)
+  endpackage : pkg
+end$root : 
+*-* All Finished *-*

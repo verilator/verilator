@@ -535,7 +535,7 @@ detailed descriptions of these arguments.
     --output-groups-size <bytes>     Limit size of grouped .cpp files
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
-    --output-split-ctrace <statements>   Split tracing functions
+    --output-split-rtmd <log2>           Split run time model descriptor tables
      -P                         Disable line numbers and blanks with -E
     --pins-bv <bits>            Specify types for top-level ports
     --pins-inout-enables        Specify that __en and __out signals be created for inouts
@@ -573,6 +573,7 @@ detailed descriptions of these arguments.
     --replication-limit <value> Replication concatenation limit (default: 8k)
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr
+    --rtmd                      Create run time model descriptors
     --runtime-debug             Enable model runtime debugging
     --savable                   Enable model save-restore
     --sc                        Create SystemC output

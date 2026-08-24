@@ -12,7 +12,9 @@ $end
   $var wire 1 ! clk $end
  $upscope $end
  $scope module foo_pkg $end
-  $var int 32 " foo_func__Vstatic__b_current [31:0] $end
+  $scope module foo_func $end
+   $var int 32 " b_current [31:0] $end
+  $upscope $end
  $upscope $end
  $scope module t $end
   $var wire 1 ! clk $end

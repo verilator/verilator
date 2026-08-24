@@ -101,8 +101,10 @@ $timescale 1ps $end
     $var wire 32 m pstruct [31:0] $end
     $var wire 32 % vlCoverageLineTrace_t_cover_line__323_block [31:0] $end
     $var wire 32 n vlCoverageLineTrace_t_cover_line__328_block [31:0] $end
-    $var wire 8 & get_arr__Vstatic__arr[1] [7:0] $end
-    $var wire 8 ' get_arr__Vstatic__arr[0] [7:0] $end
+    $scope module get_arr $end
+     $var wire 8 & arr[1] [7:0] $end
+     $var wire 8 ' arr[0] [7:0] $end
+    $upscope $end
     $var wire 32 : vlCoverageLineTrace_t_cover_line__333_cond_else [31:0] $end
     $var wire 32 ; vlCoverageLineTrace_t_cover_line__333_cond_then [31:0] $end
     $var wire 32 < vlCoverageLineTrace_t_cover_line__334_cond_else [31:0] $end

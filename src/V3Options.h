@@ -332,6 +332,7 @@ private:
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
+    bool m_rtmd = false;            // main switch: --rtmd
     bool m_savable = false;         // main switch: --savable
     VOptionBool m_schedZeroDelay;  // main switch: --sched-zero-delay
     bool m_stdPackage = true;       // main switch: --std-package
@@ -387,7 +388,7 @@ private:
     int64_t     m_outputGroupsSize = 512 * 1024 * 1024;  // main switch: --output-groups-size
     int         m_outputSplit = 20000;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
-    int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
+    int         m_outputSplitRtmd = 14;  // main switch: --output-split-rtmd
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_preprocTokenLimit = 40000; // main switch: --preproc-token-limit
     int         m_publicDepth = 0;   // main switch: --public-depth
@@ -670,6 +671,7 @@ public:
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
+    bool rtmd() const { return m_rtmd; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi.isTrue(); }
     bool waiverMultiline() const { return m_waiverMultiline; }
@@ -701,7 +703,7 @@ public:
     int moduleRecursionDepth() const { return m_moduleRecursion; }
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
-    int outputSplitCTrace() const { return m_outputSplitCTrace; }
+    uint32_t outputSplitRtmd() const { return m_outputSplitRtmd; }
     int outputGroups() const { return m_outputGroups; }
     int64_t outputGroupsSize() const { return m_outputGroupsSize; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
@@ -847,12 +849,7 @@ public:
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
 
-    std::string traceClassBase() const VL_MT_SAFE;  // Deprecated
-    std::string traceClassLang() const VL_MT_SAFE;  // Deprecated
-    std::vector<std::string> traceClassBases() const VL_MT_SAFE;
-    std::vector<std::string> traceClassLangs() const VL_MT_SAFE;
     std::vector<std::string> traceSourceBases() const VL_MT_SAFE;
-    std::vector<std::string> traceSourceLangs() const VL_MT_SAFE;
 
     bool hierarchical() const { return m_hierarchical; }
     int hierChild() const VL_MT_SAFE { return m_hierChild; }

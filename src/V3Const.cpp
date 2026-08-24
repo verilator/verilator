@@ -3450,6 +3450,7 @@ class ConstVisitor final : public VNVisitor {
         m_hasJumpDelay = true;
         iterateChildren(nodep);
     }
+    void visit(AstRtmdSignal*) override {}  // Descriptors reference the variable, even parameters
     void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Not linked");

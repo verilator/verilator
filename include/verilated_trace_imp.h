@@ -25,11 +25,18 @@
 #endif
 
 #include "verilated_intrinsics.h"
-#include "verilated_trace.h"
 #include "verilated_threads.h"
+#include "verilated_trace.h"
+#include <algorithm>
+#include <cstring>
 #include <list>
 
 // clang-format on
+
+// Values, and slices of packed values, are located assuming a little endian host
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__)
+static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Tracing requires a little endian host");
+#endif
 
 //=============================================================================
 // Static utility functions
@@ -53,157 +60,232 @@ static double timescaleToDouble(const char* unitp) VL_PURE {
     return value;
 }
 
-//=============================================================================
-// Life cycle
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::closeBase() {}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::flushBase() {}
-
-//=============================================================================
-// Callbacks to run on global events
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush(void* selfp) {
-    // This calls 'flush' on the derived class (which must then get any mutex)
-    reinterpret_cast<VL_SUB_T*>(selfp)->flush();
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
-    // This calls 'close' on the derived class (which must then get any mutex)
-    reinterpret_cast<VL_SUB_T*>(selfp)->close();
-}
-
-//=============================================================================
-// VerilatedTrace
-
-template <>
-VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace() {
-    set_time_resolution(Verilated::threadContextp()->timeprecisionString());
-}
-
-template <>
-VerilatedTrace<VL_SUB_T, VL_BUF_T>::~VerilatedTrace() {
-    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = nullptr);
-    if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
-    Verilated::removeFlushCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush, this);
-    Verilated::removeExitCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit, this);
-}
-
 //=========================================================================
-// Internals available to format-specific implementations
+// Hierarchy building
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runInitCallback(size_t index,
-                                                         bool rootInit) VL_MT_UNSAFE {
-    if (m_initCbsCalled[index]) return;
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addSignal(const char* namep,
+                                                   const VlRtmdSignalType& sigType,
+                                                   const VlRtmdDataType& dtype,
+                                                   const VlRtmdActSet& actSet, const void* datap,
+                                                   uint32_t lsb) VL_MT_UNSAFE {
+    const uint32_t bits = dtype.width();
 
-    const CallbackRecord& cbr = m_initCbs[index];
-    const uint32_t baseCode = nextCode();
-    m_nextCode += cbr.m_nTraceCodes;
+    // Aliases of the same value share the same code
+    const auto pair = m_codes.emplace(std::make_tuple(datap, lsb, bits), m_nextCode);
+    const uint32_t code = pair.first->second;
 
-    void* const prevInitUserp = m_initUserp;
-    const bool prevRootInit = m_rootInit;
-    m_initUserp = cbr.m_userp;
-    m_rootInit = rootInit;
-    cbr.m_initCb(cbr.m_userp, self(), baseCode);
-    m_initUserp = prevInitUserp;
-    m_rootInit = prevRootInit;
-    m_initCbsCalled[index] = true;
+    // If the value is not already in the map, it is a new signal, allocate it
+    if (pair.second) {
+        // Need one code per word
+        m_nextCode += VL_WORDS_I(bits);
+        // Need to know max bits for buffer sizing
+        m_maxBits = std::max(m_maxBits, bits);
+        // Record the value to dump, with the others of the same activity set, stored the same
+        // way. A slice also with the others of packed values stored the same way.
+        const StorageKind storage = dtype.storageKind();
+        const auto groupOf = [&](StorageKind valueStorage) -> Group& {
+            return m_groupMap[actSet][{storage, valueStorage}];
+        };
+        // If a slice exactly fills its storage, which is aligned, then extraction is pointer math
+        const auto sliceIsWhole = [bits, lsb]() {
+            // A wide slice of whole words, starting on a word
+            if (bits > VL_QUADSIZE) return (bits % VL_EDATASIZE == 0) && (lsb % VL_EDATASIZE == 0);
+            // A narrow slice exactly filling its storage, starting on a byte. Loaded unaligned.
+            const bool fills = bits == VL_BYTESIZE || bits == VL_SHORTSIZE || bits == VL_IDATASIZE
+                               || bits == VL_QUADSIZE;
+            return fills && lsb % VL_BYTESIZE == 0;
+        };
+        if (lsb == NOLSB) {
+            groupOf(storage).m_wholes.push_back({datap, code, bits});
+        } else if (sliceIsWhole()) {
+            // Dumped as the whole value at the byte holding its lowest bit (little endian)
+            const uint8_t* const bytep = static_cast<const uint8_t*>(datap) + lsb / VL_BYTESIZE;
+            groupOf(storage).m_wholes.push_back({bytep, code, bits});
+        } else {
+            const StorageKind valueStorage = VlRtmdDataType::storageKind(m_packedBits);
+            groupOf(valueStorage).m_slices.push_back({datap, code, bits, lsb, m_packedBits});
+        }
+    }
+
+    self()->declareSignal(code, namep, sigType, dtype);
+}
+
+template <>
+bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsSelected(const char* namep) const {
+    if (m_dumpvars.empty()) return true;  // Everything is selected
+    const std::string path = pathName();
+    const std::string name = path.empty() ? namep : path + '.' + namep;
+    // To keep it simple, this is O(dumpvars * signals), but we expect few dumpvars
+    for (const auto& item : m_dumpvars) {
+        const int dumpvarsLevel = item.first;
+        const std::string& hier = item.second;
+        // Must match a whole prefix of hierarchy levels, e.g. "t" does not match "top"
+        if (name.compare(0, hier.size(), hier) != 0) continue;
+        if (name.size() > hier.size() && name[hier.size()] != '.') continue;
+        // Must not be too deep below it
+        const int levels = std::count(name.begin() + hier.size(), name.end(), '.');
+        if (levels > dumpvarsLevel) continue;
+        return true;
+    }
+    return false;
 }
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
+    // Without VerilatedContext::trace, trace the context of the opening thread
+    if (!m_contextp) m_contextp = Verilated::threadContextp();
+
+    // Context needs to be set to calculate unused signals
+    if (!m_contextp->calcUnusedSigs()) {
+        VL_FATAL_MT("", 0, "",
+                    "Turning on wave traces requires VerilatedContext::traceEverOn(true) call "
+                    "before time 0.");
+    }
+
     // Note: It is possible to re-open a trace file (VCD in particular),
     // so we must reset the next code here, but it must have the same number
     // of codes on re-open
-    const uint32_t expectedCodes = nextCode();
+    const uint32_t expectedCodes = m_nextCode;
     m_nextCode = 1;
-    m_numSignals = 0;
     m_maxBits = 0;
-    m_sigs_enabledVec.clear();
-    m_initCbsCalled.assign(m_initCbs.size(), false);
 
-    // Call all initialize callbacks for root instances, which will:
-    // - Call decl* for each signal (these eventually call ::declCode)
-    // - Call the initialize callbacks of library instances underneath
-    // - Store the base code
-    // Library instances are created by their parents, so register before them, but are only
-    // roots if not under a traced instance, so call the callbacks of the others first.
-    for (size_t i = 0; i < m_initCbs.size(); ++i) {
-        if (!m_initCbs[i].m_isLibInstance) runInitCallback(i, true);
+    m_groupVec.clear();
+    m_modelps.clear();
+
+    // Declare all enum types, in all models, before the signals that reference them
+    bool anyTraced = false;
+    bool anyParallel = false;
+    for (const std::pair<const std::string, VerilatedModel*>& pair : m_contextp->models()) {
+        const VlRtmd* const rtmdp = pair.second->rtmd();
+        if (!rtmdp) continue;
+        anyTraced |= rtmdp->m_opt.m_trace;
+        anyParallel |= rtmdp->m_opt.m_traceParallel;
+        m_modelps.push_back(pair.second);
+        for (uint32_t i = 0;; ++i) {
+            const VlRtmdDataTypeRow& typeRow = rtmdp->dataTypeRow(i);
+            if (typeRow.isEnd()) break;
+            if (typeRow.enump()) self()->declareEnum(rtmdp->dataType(i));
+        }
     }
-    for (size_t i = 0; i < m_initCbs.size(); ++i) runInitCallback(i, true);
+    // At least one model must be Verilated for tracing (though technically could still trace
+    // whatever is available via the RTMD at this point, if present). If at least one model
+    // requests parallel tracing, then use it, if the format can.
+    if (!anyTraced) {
+        VL_FATAL_MT("", 0, "",
+                    "Testbench C call to 'VerilatedContext::trace()' requires model(s) "
+                    "Verilated with --trace option");
+    }
 
-    if (expectedCodes && nextCode() != expectedCodes) {
+    // Declare the hierarchy of all models, see the VlRtmdHierListener methods in verilated_trace.h
+    walkContext(*m_contextp);
+    m_codes.clear();
+
+    // If reopen, check that the number of codes is the same as the previous dump
+    if (expectedCodes && m_nextCode != expectedCodes) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "Reopening trace file with different number of signals");
     }
 
-    // Now that we know the number of codes, allocate space for the buffer
-    // holding previous signal values.
-    if (!m_sigs_oldvalp) m_sigs_oldvalp = new uint32_t[nextCode()];
-
-    // Apply enables
-    if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
-    if (!m_sigs_enabledVec.empty()) {
-        // Else if was empty, m_sigs_enabledp = nullptr to short circuit tests
-        // But it isn't, so alloc one bit for each code to indicate enablement
-        // We don't want to still use m_signs_enabledVec as std::vector<bool> is not
-        // guaranteed to be fast
-        m_sigs_enabledp = new uint32_t[1 + VL_WORDS_I(nextCode())]{0};
-        m_sigs_enabledVec.resize(nextCode(), false);
-        for (size_t code = 0; code < nextCode(); ++code) {
-            if (m_sigs_enabledVec[code]) {
-                m_sigs_enabledp[VL_BITWORD_I(code)] |= 1U << VL_BITBIT_I(code);
-            }
+    // Keep the groups in the order of their activity sets, then how they are dumped
+    for (auto& actSetPair : m_groupMap) {
+        for (auto& storagePair : actSetPair.second) {
+            Group& group = storagePair.second;
+            group.m_storage = storagePair.first.first;
+            group.m_valueStorage = storagePair.first.second;
+            m_groupVec.emplace_back(actSetPair.first, std::move(group));
         }
-        m_sigs_enabledVec.clear();
     }
+    m_groupMap.clear();
+
+    // Dump the values of a group in address order, for better locality
+    for (auto& group : m_groupVec) {
+        std::vector<Whole>& wholes = group.second.m_wholes;
+        std::sort(wholes.begin(), wholes.end(), [](const Whole& a, const Whole& b) {  //
+            return a.m_datap < b.m_datap;
+        });
+        std::vector<Slice>& slices = group.second.m_slices;
+        std::sort(slices.begin(), slices.end(), [](const Slice& a, const Slice& b) {
+            if (a.m_datap != b.m_datap) return a.m_datap < b.m_datap;
+            return a.m_lsb < b.m_lsb;
+        });
+    }
+
+    // Dump in parallel using each thread of the context, one shard each
+    const uint32_t nShards
+        = anyParallel && parallelCapable()
+              ? static_cast<uint32_t>(
+                    static_cast<VlThreadPool*>(m_contextp->threadPoolp())->numThreads())
+                    + 1
+              : 1;
+
+    // Split the groups into contiguous shards of about the same number of codes, splitting
+    // groups at shard boundaries. Committing the shards in order gives the same output as
+    // dumping serially. Codes start from 1.
+    const uint32_t maxCodes = std::max((m_nextCode - 1 + nShards - 1) / nShards, 1U);
+    // Codes of the value 'i' of a group, the whole values first, then the slices
+    const auto valueCodes = [](const Group& group, size_t i) -> uint32_t {
+        const size_t nWholes = group.m_wholes.size();
+        return VL_WORDS_I(i < nWholes ? group.m_wholes[i].m_bits
+                                      : group.m_slices[i - nWholes].m_bits);
+    };
+    std::vector<std::pair<VlRtmdActSet, Group>> groupVec;
+    m_shards.clear();
+    m_shards.emplace_back();
+    uint32_t shardCodes = 0;  // Codes in the last shard
+    for (std::pair<VlRtmdActSet, Group>& pair : m_groupVec) {
+        Group& group = pair.second;
+        while (true) {
+            // The number of values of the group that fit in the last shard, which holds at
+            // least one value, or all of them if no more shards can be added
+            const size_t nValues = group.m_wholes.size() + group.m_slices.size();
+            size_t n = 0;
+            if (m_shards.size() == nShards) {
+                n = nValues;
+            } else {
+                for (; n < nValues; ++n) {
+                    const uint32_t codes = valueCodes(group, n);
+                    if (shardCodes && shardCodes + codes > maxCodes) break;
+                    shardCodes += codes;
+                }
+            }
+            // All fit, continue with the next group
+            if (n == nValues) {
+                groupVec.emplace_back(pair.first, std::move(group));
+                break;
+            }
+            // Move the values that fit to a group of their own, in the last shard
+            if (n) {
+                const size_t nWholes = std::min(n, group.m_wholes.size());
+                const auto wholesEnd = group.m_wholes.begin() + nWholes;
+                const auto slicesEnd = group.m_slices.begin() + (n - nWholes);
+                Group first{group.m_storage, group.m_valueStorage, {}, {}};
+                first.m_wholes.assign(group.m_wholes.begin(), wholesEnd);
+                first.m_slices.assign(group.m_slices.begin(), slicesEnd);
+                groupVec.emplace_back(pair.first, std::move(first));
+                group.m_wholes.erase(group.m_wholes.begin(), wholesEnd);
+                group.m_slices.erase(group.m_slices.begin(), slicesEnd);
+            }
+            // Start the next shard
+            m_shards.back().m_end = groupVec.size();
+            m_shards.emplace_back();
+            m_shards.back().m_begin = groupVec.size();
+            shardCodes = 0;
+        }
+    }
+    m_shards.back().m_end = groupVec.size();
+    m_groupVec = std::move(groupVec);
+
+    // Room in each shard for extracting a wide slice, no wider than the widest signal
+    for (Shard& shard : m_shards) shard.m_wideSlice.resize(VL_WORDS_I(m_maxBits));
+
+    // Now that we know the number of codes, allocate space for the buffer holding
+    // previous signal values.
+    if (!m_sigs_oldvalp) m_sigs_oldvalp = new uint32_t[m_nextCode];
 
     // Set callback so flush/abort will flush this file
-    Verilated::addFlushCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush, this);
-    Verilated::addExitCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit, this);
-}
-
-template <>
-bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::string& declName,
-                                                  uint32_t bits) {
-    if (VL_UNCOVERABLE(!code)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
-    }
-    // To keep it simple, this is O(enables * signals), but we expect few enables
-    bool enabled = false;
-    if (m_dumpvars.empty()) enabled = true;
-    for (const auto& item : m_dumpvars) {
-        const int dumpvarsLevel = item.first;
-        const char* dvp = item.second.c_str();
-        const char* np = declName.c_str();
-        while (*dvp && *dvp == *np) {
-            ++dvp;
-            ++np;
-        }
-        if (*dvp) continue;  // Didn't match dumpvar item
-        if (*np && *np != ' ') continue;  // e.g. "t" isn't a match for "top"
-        int levels = 0;
-        while (*np) {
-            if (*np++ == ' ') ++levels;
-        }
-        if (levels > dumpvarsLevel) continue;  // Too deep
-        // We only need to set first code word if it's a multicode signal
-        // as that's all we'll check for later
-        if (m_sigs_enabledVec.size() <= code) m_sigs_enabledVec.resize((code + 1024) * 2);
-        m_sigs_enabledVec[code] = true;
-        enabled = true;
-        break;
-    }
-
-    ++m_numSignals;
-    m_maxBits = std::max(m_maxBits, bits);
-    return enabled;
+    Verilated::addFlushCb(onFlush, this);
+    Verilated::addExitCb(onExit, this);
 }
 
 //=========================================================================
@@ -234,210 +316,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
     if (level == 0) {
         m_dumpvars.clear();  // empty = everything on
     } else {
-        // Convert Verilog . separators to trace space separators
-        std::string hierSpaced = hier;
-        for (auto& i : hierSpaced) {
-            if (i == '.') i = ' ';
-        }
-        m_dumpvars.emplace_back(level, hierSpaced);
-    }
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap) {
-    ParallelWorkerData* const wdp = reinterpret_cast<ParallelWorkerData*>(datap);
-    // Run the task
-    wdp->m_cb(wdp->m_userp, wdp->m_bufp);
-    // Mark buffer as ready
-    const VerilatedLockGuard lock{wdp->m_mutex};
-    wdp->m_ready.store(true);
-    if (wdp->m_waiting) wdp->m_cv.notify_one();
-}
-
-template <>
-VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWorkerData::wait() {
-    // Spin for a while, waiting for the buffer to become ready
-    for (int i = 0; i < VL_LOCK_SPINS; ++i) {
-        if (VL_LIKELY(m_ready.load(std::memory_order_relaxed))) return;
-        VL_CPU_RELAX();
-    }
-    // We have been spinning for a while, so yield the thread
-    VerilatedLockGuard lock{m_mutex};
-    m_waiting = true;
-    m_cv.wait(m_mutex, [this] { return m_ready.load(std::memory_order_relaxed); });
-    m_waiting = false;
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<CallbackRecord>& cbVec) {
-    if (parallel()) {
-        // If tracing in parallel, dispatch to the thread pool
-        VlThreadPool* threadPoolp = static_cast<VlThreadPool*>(m_contextp->threadPoolp());
-        // List of work items for thread (std::list, as ParallelWorkerData is not movable)
-        std::list<ParallelWorkerData> workerData;
-        // We use the whole pool + the main thread
-        const unsigned threads = threadPoolp->numThreads() + 1;
-        // Main thread executes all jobs with index % threads == 0
-        std::vector<ParallelWorkerData*> mainThreadWorkerData;
-        // Enqueue all the jobs
-        for (const CallbackRecord& cbr : cbVec) {
-            // Always get the trace buffer on the main thread
-            Buffer* const bufp = getTraceBuffer(cbr.m_fidx);
-            // Create new work item
-            workerData.emplace_back(cbr.m_dumpCb, cbr.m_userp, bufp);
-            // Grab the new work item
-            ParallelWorkerData* const itemp = &workerData.back();
-            // Enqueue task to thread pool, or main thread
-            if (unsigned rem = cbr.m_fidx % threads) {
-                threadPoolp->workerp(rem - 1)->addTask(parallelWorkerTask, itemp);
-            } else {
-                mainThreadWorkerData.push_back(itemp);
-            }
-        }
-        // Execute main thread jobs
-        for (ParallelWorkerData* const itemp : mainThreadWorkerData) parallelWorkerTask(itemp);
-        // Commit all trace buffers in order
-        for (ParallelWorkerData& item : workerData) {
-            // Wait until ready
-            item.wait();
-            // Commit the buffer
-            commitTraceBuffer(item.m_bufp);
-        }
-
-        // Done
-        return;
-    }
-    // Fall back on sequential execution
-    for (const CallbackRecord& cbr : cbVec) {
-        Buffer* const traceBufferp = getTraceBuffer(cbr.m_fidx);
-        cbr.m_dumpCb(cbr.m_userp, traceBufferp);
-        commitTraceBuffer(traceBufferp);
-    }
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex) {
-    // Not really VL_MT_SAFE but more VL_MT_UNSAFE_ONE.
-    // This does get the mutex, but if multiple threads are trying to dump
-    // chances are the data being dumped will have other problems
-    const VerilatedLockGuard lock{m_mutex};
-    if (VL_UNCOVERABLE(m_didSomeDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
-        VL_PRINTF_MT("%%Warning: previous dump at t=%" PRIu64 ", requesting t=%" PRIu64
-                     ", dump call ignored\n",
-                     m_timeLastDump, timeui);
-        return;
-    }  // LCOV_EXCL_STOP
-    m_timeLastDump = timeui;
-    m_didSomeDump = true;
-
-    Verilated::quiesce();
-
-    // Call hook for format-specific behaviour
-    if (VL_UNLIKELY(m_fullDump)) {
-        if (!preFullDump()) return;
-    } else {
-        if (!preChangeDump()) return;
-    }
-
-    // Update time point
-    emitTimeChange(timeui);
-
-    // Run the callbacks
-    if (VL_UNLIKELY(m_fullDump)) {
-        m_fullDump = false;  // No more need for next dump to be full
-        runCallbacks(m_fullCbs);
-    } else {
-        runCallbacks(m_chgCbs);
-    }
-
-    if (VL_UNLIKELY(m_constDump)) {
-        m_constDump = false;
-        runCallbacks(m_constCbs);
-    }
-
-    for (const CallbackRecord& cbr : m_cleanupCbs) cbr.m_cleanupCb(cbr.m_userp, self());
-}
-
-//=============================================================================
-// Non-hot path internal interface to Verilator generated code
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
-    VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock{m_mutex};
-
-    const bool newModel = m_models.insert(modelp).second;
-    VerilatedContext* const contextp = modelp->contextp();
-
-    // Validate
-    if (!newModel) {  // LCOV_EXCL_START
-        VL_FATAL_MT(
-            __FILE__, __LINE__, "",
-            "The same model has already been added to this trace file or VerilatedContext");
-    }
-    if (VL_UNCOVERABLE(m_contextp && contextp != m_contextp)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "A trace file instance can only handle models from the same VerilatedContext");
-    }
-    if (VL_UNCOVERABLE(m_didSomeDump)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "Cannot add models to a trace file if 'dump' has already been called");
-    }  // LCOV_EXCL_STOP
-
-    // Keep hold of the context
-    m_contextp = contextp;
-
-    // Get the desired trace config from the model
-    const std::unique_ptr<VerilatedTraceConfig> configp = modelp->traceConfig();
-
-    // Configure trace base class
-    // If at least one model requests parallel tracing, then use it
-    m_parallel |= configp->m_useParallel;
-
-    // Configure format-specific sub class
-    configure(*(configp.get()));
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackRecord>& cbVec,
-                                                           CallbackRecord&& cbRec)
-    VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock{m_mutex};
-    cbVec.push_back(cbRec);
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp,
-                                                   const std::string& name, bool isLibInstance,
-                                                   uint32_t nTraceCodes) VL_MT_SAFE {
-    addCallbackRecord(m_initCbs, CallbackRecord{cb, userp, isLibInstance, name, nTraceCodes});
-}
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addConstCb(dumpCb_t cb, uint32_t fidx,
-                                                    void* userp) VL_MT_SAFE {
-    addCallbackRecord(m_constCbs, CallbackRecord{cb, fidx, userp});
-}
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, uint32_t fidx,
-                                                   void* userp) VL_MT_SAFE {
-    addCallbackRecord(m_fullCbs, CallbackRecord{cb, fidx, userp});
-}
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpCb_t cb, uint32_t fidx,
-                                                  void* userp) VL_MT_SAFE {
-    addCallbackRecord(m_chgCbs, CallbackRecord{cb, fidx, userp});
-}
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE {
-    addCallbackRecord(m_cleanupCbs, CallbackRecord{cb, userp});
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::initLib(const std::string& name) VL_MT_SAFE {
-    // Note it's possible the instance doesn't exist if the lib was compiled without tracing
-    for (size_t i = 0; i < m_initCbs.size(); ++i) {
-        if (m_initCbs[i].m_name != name) continue;
-        runInitCallback(i, false);
+        m_dumpvars.emplace_back(level, hier);
     }
 }
 
@@ -537,8 +416,7 @@ inline void cvtQDataToStr(char* dstp, QData value) {
 template <>
 VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner)
     : VL_BUF_T{owner}
-    , m_sigs_oldvalp{owner.m_sigs_oldvalp}
-    , m_sigs_enabledp{owner.m_sigs_enabledp} {}
+    , m_sigs_oldvalp{owner.m_sigs_oldvalp} {}
 
 // These functions must write the new value back into the old value store,
 // and subsequently call the format-specific emit* implementations. Note
@@ -546,68 +424,371 @@ VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner)
 // the emit* functions can be inlined for performance.
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullBit(uint32_t* oldp, CData newval) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
-    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+void VerilatedTraceBuffer<VL_BUF_T>::fullBit(uint32_t code, CData newval) {
+    m_sigs_oldvalp[code] = newval;  // Still copy even if not tracing so chg doesn't call full
     emitBit(code, newval);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase* newvalp) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    // No need to update *oldp
-    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t code, const VlEventBase* newvalp) {
+    // No need to update the previous value
     if (newvalp->isTriggered()) emitEvent(code);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullCData(uint32_t* oldp, CData newval, int bits) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
-    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+void VerilatedTraceBuffer<VL_BUF_T>::fullCData(uint32_t code, CData newval, int bits) {
+    m_sigs_oldvalp[code] = newval;  // Still copy even if not tracing so chg doesn't call full
     emitCData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullSData(uint32_t* oldp, SData newval, int bits) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
-    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+void VerilatedTraceBuffer<VL_BUF_T>::fullSData(uint32_t code, SData newval, int bits) {
+    m_sigs_oldvalp[code] = newval;  // Still copy even if not tracing so chg doesn't call full
     emitSData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullIData(uint32_t* oldp, IData newval, int bits) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    *oldp = newval;  // Still copy even if not tracing so chg doesn't call full
-    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+void VerilatedTraceBuffer<VL_BUF_T>::fullIData(uint32_t code, IData newval, int bits) {
+    m_sigs_oldvalp[code] = newval;  // Still copy even if not tracing so chg doesn't call full
     emitIData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullQData(uint32_t* oldp, QData newval, int bits) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    std::memcpy(oldp, &newval, sizeof(newval));
-    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+void VerilatedTraceBuffer<VL_BUF_T>::fullQData(uint32_t code, QData newval, int bits) {
+    std::memcpy(m_sigs_oldvalp + code, &newval, sizeof(newval));
     emitQData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t* oldp, WDataInP newval, int bits) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
+void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t code, WDataInP newval, int bits) {
+    uint32_t* const oldp = m_sigs_oldvalp + code;
     for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newval[i];
-    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     emitWData(code, newval, bits);
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    std::memcpy(oldp, &newval, sizeof(newval));
-    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t code, double newval) {
+    std::memcpy(m_sigs_oldvalp + code, &newval, sizeof(newval));
     // cppcheck-suppress invalidPointerCast
     emitDouble(code, newval);
+}
+
+//=========================================================================
+// Dumping
+
+template <>
+template <bool T_Full, VlRtmdDataType::StorageKind T_Storage>
+VL_ATTR_ALWINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpValue(Buffer* bufp, uint32_t code,
+                                                                     const void* datap,
+                                                                     int bits) VL_MT_UNSAFE {
+    switch (T_Storage) {
+    case StorageKind::CDATA: {
+        const CData val = *static_cast<const CData*>(datap);
+        // Single bits are dumped as scalars
+        if (bits == 1) {
+            if VL_CONSTEXPR_CXX17 (T_Full) {
+                bufp->fullBit(code, val);
+            } else {
+                bufp->chgBit(code, val);
+            }
+        } else {
+            if VL_CONSTEXPR_CXX17 (T_Full) {
+                bufp->fullCData(code, val, bits);
+            } else {
+                bufp->chgCData(code, val, bits);
+            }
+        }
+        break;
+    }
+    case StorageKind::SDATA: {
+        SData val;
+        std::memcpy(&val, datap, sizeof(val));  // Might be unaligned, see addSignal
+        if VL_CONSTEXPR_CXX17 (T_Full) {
+            bufp->fullSData(code, val, bits);
+        } else {
+            bufp->chgSData(code, val, bits);
+        }
+        break;
+    }
+    case StorageKind::IDATA: {
+        IData val;
+        std::memcpy(&val, datap, sizeof(val));  // Might be unaligned, see addSignal
+        if VL_CONSTEXPR_CXX17 (T_Full) {
+            bufp->fullIData(code, val, bits);
+        } else {
+            bufp->chgIData(code, val, bits);
+        }
+        break;
+    }
+    case StorageKind::QDATA: {
+        QData val;
+        std::memcpy(&val, datap, sizeof(val));  // Might be unaligned, see addSignal
+        if VL_CONSTEXPR_CXX17 (T_Full) {
+            bufp->fullQData(code, val, bits);
+        } else {
+            bufp->chgQData(code, val, bits);
+        }
+        break;
+    }
+    case StorageKind::WDATA: {
+        const WDataInP valp = WDataInP::external(static_cast<const EData*>(datap));
+        if VL_CONSTEXPR_CXX17 (T_Full) {
+            bufp->fullWData(code, valp, bits);
+        } else {
+            bufp->chgWData(code, valp, bits);
+        }
+        break;
+    }
+    case StorageKind::DOUBLE: {
+        const double val = *static_cast<const double*>(datap);
+        if VL_CONSTEXPR_CXX17 (T_Full) {
+            bufp->fullDouble(code, val);
+        } else {
+            bufp->chgDouble(code, val);
+        }
+        break;
+    }
+    case StorageKind::EVENT: {
+        const VlEventBase* const valp = static_cast<const VlEventBase*>(datap);
+        if VL_CONSTEXPR_CXX17 (T_Full) {
+            bufp->fullEvent(code, valp);
+        } else {
+            bufp->chgEvent(code, valp);
+        }
+        break;
+    }
+    }
+}
+
+template <>
+template <bool T_Full, VlRtmdDataType::StorageKind T_Storage, VlRtmdDataType::StorageKind T_Value>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpSlices(Buffer* bufp, const Group& group,
+                                                    EData* wideSlicep) VL_MT_UNSAFE {
+    // Only the packed value is read: whole by its own type if it fits in a quadword, otherwise
+    // the words holding the slice. A narrow slice is extracted into a quadword, which is read
+    // back as a value of its width, so the low bytes, as the host is little endian.
+    for (const Slice& slice : group.m_slices) {
+        const int bits = static_cast<int>(slice.m_bits);
+        if VL_CONSTEXPR_CXX17 (T_Storage == StorageKind::WDATA) {
+            // A wide slice is of a wide value
+            const WDataInP valuep = WDataInP::external(static_cast<const EData*>(slice.m_datap));
+            VL_SEL_WWII(bits, static_cast<int>(slice.m_valueBits), WDataOutP::external(wideSlicep),
+                        valuep, slice.m_lsb, slice.m_bits);
+            // Clear the bits above the slice
+            if (VL_BITBIT_E(bits)) wideSlicep[VL_WORDS_I(bits) - 1] &= VL_MASK_E(bits);
+            dumpValue<T_Full, T_Storage>(bufp, slice.m_code, wideSlicep, bits);
+        } else {
+            QData value;
+            if VL_CONSTEXPR_CXX17 (T_Value == StorageKind::CDATA) {
+                value = *static_cast<const CData*>(slice.m_datap) >> slice.m_lsb;
+            } else if VL_CONSTEXPR_CXX17 (T_Value == StorageKind::SDATA) {
+                value = *static_cast<const SData*>(slice.m_datap) >> slice.m_lsb;
+            } else if VL_CONSTEXPR_CXX17 (T_Value == StorageKind::IDATA) {
+                value = *static_cast<const IData*>(slice.m_datap) >> slice.m_lsb;
+            } else if VL_CONSTEXPR_CXX17 (T_Value == StorageKind::QDATA) {
+                value = *static_cast<const QData*>(slice.m_datap) >> slice.m_lsb;
+            } else {
+                const WDataInP valuep
+                    = WDataInP::external(static_cast<const EData*>(slice.m_datap));
+                value = VL_SEL_QWII(static_cast<int>(slice.m_valueBits), valuep, slice.m_lsb,
+                                    slice.m_bits);
+            }
+            value &= VL_MASK_Q(bits);
+            dumpValue<T_Full, T_Storage>(bufp, slice.m_code, &value, bits);
+        }
+    }
+}
+
+template <>
+template <bool T_Full, VlRtmdDataType::StorageKind T_Storage>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpGroupSlices(Buffer* bufp, const Group& group,
+                                                         EData* wideSlicep) VL_MT_UNSAFE {
+    // Dispatch on how the packed values are stored once for the whole group
+    switch (group.m_valueStorage) {
+    case StorageKind::CDATA:
+        dumpSlices<T_Full, T_Storage, wider(T_Storage, StorageKind::CDATA)>(bufp, group,
+                                                                            wideSlicep);
+        break;
+    case StorageKind::SDATA:
+        dumpSlices<T_Full, T_Storage, wider(T_Storage, StorageKind::SDATA)>(bufp, group,
+                                                                            wideSlicep);
+        break;
+    case StorageKind::IDATA:
+        dumpSlices<T_Full, T_Storage, wider(T_Storage, StorageKind::IDATA)>(bufp, group,
+                                                                            wideSlicep);
+        break;
+    case StorageKind::QDATA:
+        dumpSlices<T_Full, T_Storage, wider(T_Storage, StorageKind::QDATA)>(bufp, group,
+                                                                            wideSlicep);
+        break;
+    case StorageKind::WDATA:
+        dumpSlices<T_Full, T_Storage, StorageKind::WDATA>(bufp, group, wideSlicep);
+        break;
+    case StorageKind::DOUBLE:
+    case StorageKind::EVENT: break;  // LCOV_EXCL_LINE
+    }
+}
+
+template <>
+template <bool T_Full, VlRtmdDataType::StorageKind T_Storage>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpGroupWholes(Buffer* bufp,
+                                                         const Group& group) VL_MT_UNSAFE {
+    for (const Whole& whole : group.m_wholes) {
+        dumpValue<T_Full, T_Storage>(bufp, whole.m_code, whole.m_datap,
+                                     static_cast<int>(whole.m_bits));
+    }
+}
+
+template <>
+template <bool T_Full>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpGroupDispatch(Buffer* bufp, const Group& group,
+                                                           EData* wideSlicep) VL_MT_UNSAFE {
+    // Dispatch on how the values are stored once for the whole group. Events and reals have no
+    // slices.
+    switch (group.m_storage) {
+    case StorageKind::CDATA:
+        dumpGroupWholes<T_Full, StorageKind::CDATA>(bufp, group);
+        dumpGroupSlices<T_Full, StorageKind::CDATA>(bufp, group, wideSlicep);
+        break;
+    case StorageKind::SDATA:
+        dumpGroupWholes<T_Full, StorageKind::SDATA>(bufp, group);
+        dumpGroupSlices<T_Full, StorageKind::SDATA>(bufp, group, wideSlicep);
+        break;
+    case StorageKind::IDATA:
+        dumpGroupWholes<T_Full, StorageKind::IDATA>(bufp, group);
+        dumpGroupSlices<T_Full, StorageKind::IDATA>(bufp, group, wideSlicep);
+        break;
+    case StorageKind::QDATA:
+        dumpGroupWholes<T_Full, StorageKind::QDATA>(bufp, group);
+        dumpGroupSlices<T_Full, StorageKind::QDATA>(bufp, group, wideSlicep);
+        break;
+    case StorageKind::WDATA:
+        dumpGroupWholes<T_Full, StorageKind::WDATA>(bufp, group);
+        dumpGroupSlices<T_Full, StorageKind::WDATA>(bufp, group, wideSlicep);
+        break;
+    case StorageKind::DOUBLE: dumpGroupWholes<T_Full, StorageKind::DOUBLE>(bufp, group); break;
+    case StorageKind::EVENT: dumpGroupWholes<T_Full, StorageKind::EVENT>(bufp, group); break;
+    }
+}
+
+template <>
+template <bool T_Full>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpShard(Buffer* bufp, Shard& shard) VL_MT_UNSAFE {
+    EData* const wideSlicep = shard.m_wideSlice.data();
+    if VL_CONSTEXPR_CXX17 (T_Full) {
+        // Dump all values
+        for (size_t i = shard.m_begin; i < shard.m_end; ++i) {
+            dumpGroupDispatch<true>(bufp, m_groupVec[i].second, wideSlicep);
+        }
+        return;
+    }
+    // Dump the changed values, skipping those that have not changed since the last dump.
+    // The groups of an activity set are adjacent, so check each set only once.
+    const VlRtmdActSet* lastActSetp = nullptr;
+    bool active = false;
+    for (size_t i = shard.m_begin; i < shard.m_end; ++i) {
+        const VlRtmdActSet& actSet = m_groupVec[i].first;
+        if (!lastActSetp || !(actSet == *lastActSetp)) {
+            lastActSetp = &actSet;
+            active = actSet.active();
+        }
+        if (!active) continue;
+        dumpGroupDispatch<false>(bufp, m_groupVec[i].second, wideSlicep);
+    }
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap) {
+    ParallelWorkerData* const wdp = reinterpret_cast<ParallelWorkerData*>(datap);
+    // Dump the shard
+    if (wdp->m_full) {
+        wdp->m_trace.dumpShard<true>(wdp->m_bufp, wdp->m_shard);
+    } else {
+        wdp->m_trace.dumpShard<false>(wdp->m_bufp, wdp->m_shard);
+    }
+    // Mark buffer as ready
+    const VerilatedLockGuard lock{wdp->m_mutex};
+    wdp->m_ready.store(true);
+    if (wdp->m_waiting) wdp->m_cv.notify_one();
+}
+
+template <>
+VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWorkerData::wait() {
+    // Spin for a while, waiting for the buffer to become ready
+    for (int i = 0; i < VL_LOCK_SPINS; ++i) {
+        if (VL_LIKELY(m_ready.load(std::memory_order_relaxed))) return;
+        VL_CPU_RELAX();
+    }
+    // We have been spinning for a while, so yield the thread
+    VerilatedLockGuard lock{m_mutex};
+    m_waiting = true;
+    m_cv.wait(m_mutex, [this] { return m_ready.load(std::memory_order_relaxed); });
+    m_waiting = false;
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    // Not really VL_MT_SAFE but more VL_MT_UNSAFE_ONE.
+    // This does get the mutex, but if multiple threads are trying to dump
+    // chances are the data being dumped will have other problems
+    const VerilatedLockGuard lock{m_mutex};
+    if (VL_UNCOVERABLE(m_didSomeDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
+        VL_PRINTF_MT("%%Warning: previous dump at t=%" PRIu64 ", requesting t=%" PRIu64
+                     ", dump call ignored\n",
+                     m_timeLastDump, timeui);
+        return;
+    }  // LCOV_EXCL_STOP
+    m_timeLastDump = timeui;
+    m_didSomeDump = true;
+
+    Verilated::quiesce();
+
+    // Call hook for format-specific behaviour
+    if (VL_UNLIKELY(m_fullDump)) {
+        if (!preFullDump()) return;
+    } else {
+        if (!preChangeDump()) return;
+    }
+
+    // Update time point
+    emitTimeChange(timeui);
+
+    // Dump the described models
+    const bool full = m_fullDump;
+    m_fullDump = false;
+    if (!parallel()) {
+        Buffer* const bufp = getTraceBuffer();
+        if (VL_UNLIKELY(full)) {
+            dumpShard<true>(bufp, m_shards.front());
+        } else {
+            dumpShard<false>(bufp, m_shards.front());
+        }
+        commitTraceBuffer(bufp);
+    } else {
+        // Dump each shard on its own thread, the first on this one
+        VlThreadPool* const threadPoolp = static_cast<VlThreadPool*>(m_contextp->threadPoolp());
+        // List of work items for threads (std::list, as ParallelWorkerData is not movable)
+        std::list<ParallelWorkerData> workerData;
+        for (size_t i = 0; i < m_shards.size(); ++i) {
+            // Always get the trace buffer on the main thread
+            workerData.emplace_back(*this, m_shards[i], getTraceBuffer(), full);
+            if (i) {
+                threadPoolp->workerp(static_cast<int>(i - 1))
+                    ->addTask(parallelWorkerTask, &workerData.back());
+            }
+        }
+        parallelWorkerTask(&workerData.front());
+        // Commit all trace buffers in order
+        for (ParallelWorkerData& item : workerData) {
+            // Wait until ready
+            item.wait();
+            // Commit the buffer
+            commitTraceBuffer(item.m_bufp);
+        }
+    }
+
+    // The models clear their activity flags at their next evaluation
+    for (VerilatedModel* const modelp : m_modelps) modelp->m_didDump = true;
 }
 
 #endif  // VL_CPPCHECK
