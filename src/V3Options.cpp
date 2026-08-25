@@ -1303,7 +1303,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_assertCase = flag;
     });
     DECL_OPTION("-assert-case", OnOff, &m_assertCase);
-    DECL_OPTION("-assert-unroll-limit", Set, &m_assertUnrollLimit);
+    DECL_OPTION("-assert-unroll-limit", CbVal, [fl](const char*) {
+        fl->v3warn(DEPRECATED, "Option '--assert-unroll-limit' is deprecated and has no effect.");
+    }).notForRerun();
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
 
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);

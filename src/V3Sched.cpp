@@ -404,7 +404,7 @@ void createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) {
 
 AstCFunc* createPostponed(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     if (logicClasses.m_postponed.empty()) return nullptr;
-    AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_postponed", /* slow: */ true);
+    AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_postponed", /* slow: */ false);
     orderSequentially(funcp, logicClasses.m_postponed);
     util::splitCheck(funcp);
     return funcp;
