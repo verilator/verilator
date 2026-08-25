@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(fails=False)
+test.lint()
 
 test.compile(verilator_flags2=['--binary'])
 

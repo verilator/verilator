@@ -30,6 +30,9 @@ class Cls;
       bins two = {2};
     }
   endgroup
+  covergroup cg_ref(ref int value);
+    cp_ref: coverpoint value;
+  endgroup
   function new;
     cg_in_class = new;
   endfunction
@@ -430,7 +433,7 @@ module t (/*AUTOARG*/
       bins y0 = {0};
       bins y1 = {1};
     }
-    cx: cross cp_x, cp_y;
+    cx: cross cp_x, cp_y iff (cg_sig[0] == cg_sig2[0]);
   endgroup
 
   cg_basic   cg_basic_inst   = new;

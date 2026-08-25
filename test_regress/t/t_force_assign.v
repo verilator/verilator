@@ -7,11 +7,18 @@
 // verilog_format: off
 `define stop $stop
 `define checkb(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='b%x exp='b%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define IMPURE_ONE |($random | $random)
 // verilog_format: on
 
 module t;
   reg [1:0] a = 0, b = 1;
   reg [1:0] r;
+
+  logic [7:0] fa /* verilator forceable */;
+  assign fa = 8'hA5;
+  logic fb;
+  logic fc /* verilator forceable */;
+
   initial begin
     r = 2'b00;
     assign r = 2'b01;
@@ -45,6 +52,20 @@ module t;
     `checkb(r, 2'b01)
     b = 2'b00;
     `checkb(r, 2'b00)
+
+    if (`IMPURE_ONE == 0) force fa = 8'h00;
+    else release fa;
+    assign fb = 1'b1;
+    `checkb(fa, 8'hA5);
+    `checkb(fb, 1'b1);
+
+    assign fc = 1'b1;
+    #1 deassign fc;
+    #1;
+    fc <= 1'b0;
+    #1;
+    `checkb(fc, 1'b0);
+
     $finish;
   end
 endmodule

@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_covergroup_ref_default_unsup.v:10:29: Unsupported: default value on ref or const ref covergroup formal argument
+   10 |   covergroup cg_ref(ref bit arg = value);
+      |                             ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_covergroup_ref_default_unsup.v:14:41: Unsupported: default value on ref or const ref covergroup formal argument
+   14 |   covergroup cg_const_ref(const ref bit arg = value);
+      |                                         ^~~
+%Error: Exiting due to
