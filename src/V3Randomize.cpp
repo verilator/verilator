@@ -1329,7 +1329,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         return formatp;
     }
 
-    void setRandMode(AstVar* varp, AstMemberSel* memberselp, std::string& smtName, const RandomizeMode& randMode,AstNodeFTask* initTaskp) {
+    void setRandMode(AstVar* varp, AstMemberSel* memberselp, std::string& smtName,
+                     const RandomizeMode& randMode, AstNodeFTask* initTaskp) {
         AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
         AstVar* const subRandModeVarp = getRandModeVarFromClass(varClassp);
         if (subRandModeVarp) {
@@ -1344,29 +1345,28 @@ class ConstraintExprVisitor final : public VNVisitor {
             // rand_mode ON: clear disabled state
             AstCMethodHard* const enablep = new AstCMethodHard{
                 varp->fileline(),
-                new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule),
-                              m_genp, VAccess::READWRITE},
+                new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                              VAccess::READWRITE},
                 VCMethod::RANDOMIZER_CLEAR_VAR_DISABLED};
             enablep->dtypeSetVoid();
             AstNodeExpr* const nameExprp
-                = m_nestedAccess
-                      ? m_nestedAccess->cloneName()
-                      : new AstSFormatF{varp->fileline(), smtName, false, nullptr};
+                = m_nestedAccess ? m_nestedAccess->cloneName()
+                                 : new AstSFormatF{varp->fileline(), smtName, false, nullptr};
             AstNodeExpr* const ennp = nameExprp;
             ennp->dtypep(varp->dtypep());
             enablep->addPinsp(ennp);
             // rand_mode OFF: set disabled state
             AstCMethodHard* const disablep = new AstCMethodHard{
                 varp->fileline(),
-                new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule),
-                              m_genp, VAccess::READWRITE},
+                new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                              VAccess::READWRITE},
                 VCMethod::RANDOMIZER_SET_VAR_DISABLED};
             disablep->dtypeSetVoid();
             AstNodeExpr* const disnp = nameExprp->cloneTree(false);
             disnp->dtypep(varp->dtypep());
             disablep->addPinsp(disnp);
-            AstIf* const ifp = new AstIf{varp->fileline(), atp, enablep->makeStmt(),
-                                         disablep->makeStmt()};
+            AstIf* const ifp
+                = new AstIf{varp->fileline(), atp, enablep->makeStmt(), disablep->makeStmt()};
             initTaskp->addStmtsp(ifp);
         }
     }
@@ -1770,9 +1770,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 setRandMode(varp, memberselp, smtName, randMode, initTaskp);
             }
             // If randc, also emit markRandc() for cyclic tracking
-            if (varp->isRandC()) {
-                markRandc(varp, smtName, initTaskp);
-            }
+            if (varp->isRandC()) { markRandc(varp, smtName, initTaskp); }
         } else {
             // Variable already written, clean up cloned memberselp if any
             if (memberselp) VL_DO_DANGLING(memberselp->deleteTree(), memberselp);
