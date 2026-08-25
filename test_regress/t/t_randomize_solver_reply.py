@@ -26,6 +26,7 @@ runs = [
     ('binary', 1, 16),  # binary values
     ('core_junk', 1, 16),  # garbage opens the core reply, then the pipe closes
     ('crlf', 1, 16),  # CRLF line endings
+    ('diversity_model', 2, 16),  # a diversity round answers with an unusable value
     ('dup_model', 1, 15),  # the same variable answered twice
     ('err_assume', 1, 16),  # error in place of the unsat assumptions
     ('err_core', 1, 16),  # error in place of the unsat core

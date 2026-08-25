@@ -77,6 +77,7 @@ class VlRProcess final : private std::streambuf, public std::iostream {
     char m_readBuf[BUFFER_SIZE];
     char m_writeBuf[BUFFER_SIZE];
 
+    bool m_logTried = false;  // Log file name looked up, at the first start
     std::unique_ptr<std::ofstream> m_logfp;  // Log file stream
     uint64_t m_logLastTime = ~0ULL;  // Last timestamp for logfile
 
@@ -124,16 +125,13 @@ public:
         : std::streambuf{}
         , std::iostream{this}
         , m_cmd{cmd} {
-        logOpen();
         open(cmd);
     }
-
-    bool alive() const { return !m_pidExited; }
 
     // Kill and reap a solver that is still running, so no child is left behind
     void terminate() {
 #ifdef _VL_SOLVER_PIPE
-        if (!m_pidExited && m_pid) {
+        if (!m_pidExited) {
             ::kill(m_pid, SIGKILL);
             waitpid(m_pid, &m_pidStatus, 0);
         }
@@ -189,6 +187,10 @@ public:
 #ifdef _VL_SOLVER_PIPE
         if (!cmd || !cmd[0]) return false;
         m_cmd = cmd;
+        if (!m_logTried) {
+            m_logTried = true;
+            logOpen();
+        }
         int fd_stdin[2];  // Can't use std::array
         int fd_stdout[2];  // Can't use std::array
         constexpr int P_RD = 0;
@@ -425,15 +427,9 @@ class VlSolverSession final {
     bool m_dirty VL_GUARDED_BY(m_mutex) = false;  // Transaction left the pipe out of step
     std::string m_program VL_GUARDED_BY(m_mutex);  // Storage backing m_argv
     std::vector<const char*> m_argv VL_GUARDED_BY(m_mutex);  // Solver argv
-    bool m_warnedRespawn VL_GUARDED_BY(m_mutex) = false;
-    bool m_warnedSpawnFail VL_GUARDED_BY(m_mutex) = false;
-    bool m_warnedDisabled VL_GUARDED_BY(m_mutex) = false;
+    bool m_warnedRestart VL_GUARDED_BY(m_mutex) = false;
 
 public:
-    static VlSolverSession& s() VL_MT_SAFE {
-        static VlSolverSession s_session;
-        return s_session;
-    }
     std::iostream& os() VL_REQUIRES(m_mutex) { return m_proc; }
     // The pipe may hold bytes of an abandoned reply, so replace the solver
     void abandon() VL_REQUIRES(m_mutex) { m_dirty = true; }
@@ -452,13 +448,16 @@ public:
     // Start a transaction, spawning or respawning the solver as needed
     bool begin() VL_REQUIRES(m_mutex) {
         m_dirty = false;
-        if (m_state == State::BROKEN && m_consecFails >= MAX_CONSEC_FAILS) {
-            m_state = State::DISABLED;
-            if (!m_warnedDisabled) {
-                m_warnedDisabled = true;
+        if (m_state == State::BROKEN) {
+            if (m_consecFails >= MAX_CONSEC_FAILS) {
+                m_state = State::DISABLED;
                 VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                           "Solver failed repeatedly, so randomize() returns 0 from now on; "
-                           "warned once");
+                           "Solver failed repeatedly, so randomize() returns 0 from now on");
+            } else if (!m_warnedRestart) {
+                m_warnedRestart = true;
+                VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                           "Solver died or replied unreadably, so this randomize() returned 0; "
+                           "restarting it, warned once");
             }
         }
         if (m_state == State::UNSTARTED || m_state == State::BROKEN) spawn();
@@ -467,11 +466,11 @@ public:
 
     // End a transaction; a solver left out of step or dead is replaced next time
     void end() VL_REQUIRES(m_mutex) {
-        bool healthy = !m_dirty && m_proc.alive() && !m_proc.fail();
+        bool healthy = !m_dirty && !m_proc.fail();
         if (healthy) {
             m_proc << "(reset)\n";
             m_proc.flush();
-            healthy = m_proc.alive() && !m_proc.fail();
+            healthy = !m_proc.fail();
         }
         if (healthy) {
             m_consecFails = 0;
@@ -484,6 +483,7 @@ public:
     }
 
 private:
+    // A solver that will not start is not started again
     void spawn() VL_REQUIRES(m_mutex) {
         if (m_argv.empty()) {
             m_program = Verilated::threadContextp()->solverProgram();
@@ -496,25 +496,17 @@ private:
             }
             m_argv.emplace_back(nullptr);
         }
-        if (m_state == State::BROKEN && !m_warnedRespawn) {
-            m_warnedRespawn = true;
-            VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                       "Solver died, so that randomize() returned 0; restarting it, warned once");
-        }
         m_proc.open(m_argv.data());
         m_proc << "(set-logic QF_ABV)\n";
         m_proc << "(check-sat)\n";
         m_proc << "(reset)\n";
-        if (::readStatus(m_proc) == VlSolverStatus::SAT) {
+        if (readStatus() == VlSolverStatus::SAT) {
             m_state = State::LIVE;
             m_dirty = false;
             return;
         }
         m_proc.terminate();
-        m_state = State::BROKEN;
-        ++m_consecFails;
-        if (m_warnedSpawnFail) return;
-        m_warnedSpawnFail = true;
+        m_state = State::DISABLED;
         std::stringstream msg;
         msg << "Unable to communicate with SAT solver, please check its installation or specify a "
                "different one in VERILATOR_SOLVER environment variable.\n";
@@ -525,6 +517,9 @@ private:
         VL_WARN_MT("", 0, "randomize", str.c_str());
     }
 };
+
+// Constructed before main(), so nothing here may touch the thread context
+static VlSolverSession s_solverSession;
 
 // One solver transaction; the caller holds the session mutex
 class VlSolverTxn final {
@@ -751,7 +746,7 @@ bool VlRandomizer::next(VlRNG& rngr) { return nextRandomize(rngr, false); }
 bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
     if (!checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
     if (checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
-    VlSolverSession& sess = VlSolverSession::s();
+    VlSolverSession& sess = s_solverSession;
     const VerilatedLockGuard lock{sess.m_mutex};
     m_checkOnly = checkOnly;
     const std::vector<std::string> uniqueExprs = buildUniqueExprs();

@@ -4,22 +4,25 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
+// Each class pins one value, so a reply delivered to the wrong transaction
+// shows up as a wrong value rather than as a rare miscount
 class PktLo;
   rand bit [7:0] a;
-  constraint c {
-    a >= 8'd20;
-    a <= 8'd30;
-  }
+  constraint c {a == 8'd25;}
 endclass
 
 class PktHi;
   rand bit [7:0] b;
-  constraint c {
-    b >= 8'd100;
-    b <= 8'd110;
-  }
+  constraint c {b == 8'd105;}
 endclass
 
+// Two modules randomize on the same edge, so the runtime has to serialize the
+// solver transactions of the threads running them
 module sub_lo (
     input logic clk,
     output int npass
@@ -30,10 +33,10 @@ module sub_lo (
     npass = 0;
   end
   always @(posedge clk) begin
-    if (p.randomize() != 0) begin
-      if (p.a >= 20 && p.a <= 30) npass <= npass + 1;
-      else $stop;
-    end
+    automatic int rc = p.randomize();
+    `checkd(rc, 1);
+    `checkd(p.a, 8'd25);
+    npass <= npass + 1;
   end
 endmodule
 
@@ -48,13 +51,14 @@ module sub_hi (
     npass = 0;
     phase = 0;
   end
+  // Randomizes every other edge, so the two modules also collide unevenly
   always @(posedge clk) begin
     phase <= phase + 1;
     if (phase[0] == 1'b0) begin
-      if (p.randomize() != 0) begin
-        if (p.b >= 100 && p.b <= 110) npass <= npass + 1;
-        else $stop;
-      end
+      automatic int rc = p.randomize();
+      `checkd(rc, 1);
+      `checkd(p.b, 8'd105);
+      npass <= npass + 1;
     end
   end
 endmodule
@@ -78,7 +82,8 @@ module t (  /*AUTOARG*/
     cyc <= cyc + 1;
     if (cyc == 99) begin
       $display("NLO=%0d NHI=%0d", nlo, nhi);
-      if (nlo != 99 || nhi != 50) $stop;
+      `checkd(nlo, 99);
+      `checkd(nhi, 50);
       $write("*-* All Finished *-*\n");
       $finish;
     end

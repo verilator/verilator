@@ -11,14 +11,14 @@
 #
 # Input arguments from environment variables:
 # TAMPER: bad_base | bad_digits | bad_index | bad_value | bare_hash | binary
-#         | core_junk | crlf | die_at | die_status_at | dup_model | err_assume
-#         | err_core | err_multiline | err_once | err_phase | err_reply
-#         | err_trunc | err_unbal | err_unbal_cont | garbage_assume | garbage_at
-#         | garbage_model | garbage_status | high_digit | indent | low_digit
-#         | model_trunc | multiline | mute_at | no_digits | none | octal
-#         | oor_assume | phase_model | phase_trunc | short_model | success
-#         | unknown_once | unknown_twice | unknown_var | unsupported_once
-#         | upper_hex
+#         | core_junk | crlf | die_at | die_status_at | diversity_model
+#         | dup_model | err_assume | err_core | err_multiline | err_once
+#         | err_phase | err_reply | err_trunc | err_unbal | err_unbal_cont
+#         | garbage_assume | garbage_at | garbage_model | garbage_status
+#         | high_digit | indent | low_digit | model_trunc | multiline | mute_at
+#         | no_digits | none | octal | oor_assume | phase_model | phase_trunc
+#         | short_model | success | unknown_once | unknown_twice | unknown_var
+#         | unsat_recheck | unsupported_once | upper_hex
 #   bad_base         - replace the Nth model reply with a base character that is not b, o, x or h
 #   bad_digits       - replace the Nth model reply with one value holding digits outside its base
 #   bad_index        - replace the first array model reply with a bad select index
@@ -29,6 +29,7 @@
 #   crlf             - end every line with CRLF
 #   die_at           - kill the solver at the Nth model reply and exit, closing every pipe end
 #   die_status_at    - kill the solver at the Nth status line and exit, closing every pipe end
+#   diversity_model  - replace the Nth array model reply with one holding an unusable value
 #   dup_model        - replace the Nth model reply with one answering a variable twice
 #   err_assume       - replace the first unsat-assumptions reply with (error ...)
 #   err_core         - replace the first unsat-core reply with (error ...)
@@ -60,6 +61,7 @@
 #   unknown_once     - answer the Nth status with unknown
 #   unknown_twice    - answer two statuses with unknown
 #   unknown_var      - replace the Nth model reply with one naming a variable never requested
+#   unsat_recheck    - answer the status that follows an unsat with sat
 #   unsupported_once - answer the Nth status with unsupported
 #   upper_hex        - replace the Nth model reply with uppercase hex digits
 # TAMPER_AT: reply index to act on (default 3)
@@ -86,8 +88,10 @@ STATUS_MODES = ("die_status_at", "err_multiline", "err_once", "err_trunc", "err_
                 "unsupported_once")
 # Modes acting on the TAMPER_AT'th S-expression reply of any kind
 REPLY_MODES = ("err_reply", )
-# Modes acting on the first array model reply, which arrives as (select ...) terms
-SELECT_MODES = ("bad_index", )
+# Modes acting on an array model reply, which arrives as (select ...) terms
+SELECT_MODES = ("bad_index", "diversity_model")
+# Modes acting on the status the solver sends after answering unsat
+RECHECK_MODES = ("unsat_recheck", )
 # phase_model acts on the final phased model; the others on any phase value reply
 PHASE_MODES = ("err_phase", "phase_model", "phase_trunc")
 # Modes acting on an unsat-assumptions reply, which lists a<N> literals
@@ -163,6 +167,7 @@ def swallow(first):
 
 
 replies = 0
+seen_unsat = False
 done = bool(once) and os.path.exists(once)
 depth = 0  # Paren depth of the reply being forwarded, so wrapped ones stay intact
 inside = False  # Inside an SMT string literal, where parens do not nest
@@ -179,6 +184,8 @@ for line in proc.stdout:
         counted = at_reply_start and line.startswith("(")
     elif mode in SELECT_MODES:
         counted = at_reply_start and line.startswith("(((select")
+    elif mode in RECHECK_MODES:
+        counted = is_status and seen_unsat
     elif mode in PHASE_MODES:
         counted = at_reply_start and line.startswith("((x")
     elif mode in ASSUME_MODES:
@@ -187,6 +194,8 @@ for line in proc.stdout:
         counted = at_reply_start and line.startswith("(cons")
     else:
         counted = at_reply_start and line.startswith("((")
+    if line == "unsat":
+        seen_unsat = True
     if counted:
         replies += 1
     acting = counted and replies >= at and not done and mode not in STREAM_MODES
@@ -231,6 +240,11 @@ for line in proc.stdout:
         proc.kill()
         proc.wait()
         sys.exit(0)
+    # The base model comes first, so a later one belongs to a diversity round
+    if mode == "diversity_model":
+        emit("(((select q #x00000000) bogus))")
+        swallow(line)
+        continue
     if mode == "dup_model":
         emit("((a #x0b) (a #x0c) (b #x05))")
         swallow(line)
@@ -343,6 +357,13 @@ for line in proc.stdout:
     if mode == "unknown_var":
         emit("((zzz #x01) (b #x12))")
         swallow(line)
+        continue
+    # Every re-solve answers the same way, so this re-arms instead of latching
+    if mode == "unsat_recheck":
+        replies = 0
+        seen_unsat = False
+        done = False
+        emit("sat")
         continue
     if mode == "unsupported_once":
         emit("unsupported")

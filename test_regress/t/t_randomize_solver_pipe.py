@@ -43,8 +43,28 @@ for mode, once, npass in runs:
                  'TAMPER=' + mode + ' TAMPER_AT=1 ' +
                  ('TAMPER_ONCE="' + latch + '" ' if once else ''))
     test.file_grep(logfile, r'NPASS=(\d+)', npass)
-    test.file_grep(logfile, r'Solver died')
+    test.file_grep(logfile, r'Solver died or replied unreadably')
 
 test.file_grep(test.obj_dir + '/sim_garbage_at_always.log', r'Solver failed repeatedly')
+
+# A solver that never starts is not restarted, so it is never reported as dead
+logfile = test.obj_dir + '/sim_nosolver.log'
+test.execute(logfile=logfile, run_env='VERILATOR_SOLVER=someimaginarysolver ')
+test.file_grep(logfile, r'NPASS=(\d+)', 0)
+test.file_grep(logfile, r'Unable to communicate with SAT solver')
+test.file_grep_not(logfile, r'Solver died')
+
+# One rejected command must not count against the solver: the reply was
+# complete, so the session stays and later calls keep working
+logfile = test.obj_dir + '/sim_err_once.log'
+latch = test.obj_dir + '/err_once.latch'
+if os.path.exists(latch):
+    os.unlink(latch)
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=err_once TAMPER_AT=2 TAMPER_ONCE="' + latch + '" ')
+test.file_grep(logfile, r'NPASS=(\d+)', 11)
+test.file_grep_not(logfile, r'Solver failed repeatedly')
+test.file_grep_not(logfile, r'Solver died')
 
 test.passes()
