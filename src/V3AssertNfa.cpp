@@ -16,10 +16,12 @@
 // V3AssertNfa's Transformations:
 //
 //  - Convert multi-cycle SVA sequences/properties into NFA graphs.
-//  - Commit state in Observed; materialize outcome counts for Reactive
-//    actions, exact per-attempt for supported bounded-depth shapes.
-//  - Replace converted assertions with the materialized verdict so
-//    V3AssertPre sees no multi-cycle SExpr (unsupported ones fall through).
+//  - Lower each graph into one AlwaysObserved process: latch the Preponed
+//    samples, derive the verdict, commit the registered NFA state.
+//  - Materialize per-attempt pass/fail/match, abort, and strong pending
+//    counts (a state bit per start depth, a shift ring per ranged window);
+//    V3Assert runs the actions in Reactive once per counted attempt.
+//  - Reject shapes whose overlapping attempts cannot keep their identity.
 //
 //  Members marked OWNED hold an AST tree this pass allocated and must delete;
 //  they are not linked into the netlist.
@@ -981,6 +983,17 @@ class SvaNfaBuilder final {
         return {mergeVtxp, nullptr, {}};
     }
 
+    void linkBranchSuccess(const BuildResult& branch, SvaStateVertex* sourcep,
+                           SvaStateVertex* mergeVtxp, FileLine* flp, bool rejectOnMiss,
+                           bool isTopLevelStep) {
+        AstNodeExpr* const condp
+            = branch.finalCondp ? sampled(branch.finalCondp->cloneTreePure(false)) : nullptr;
+        SvaTransEdge* const edgep = guardedLink(sourcep, mergeVtxp, condp, flp);
+        if (rejectOnMiss && condp && mayEmitLocalReject(isTopLevelStep)) {
+            edgep->m_rejectOnFail = true;
+        }
+    }
+
     void linkOrBranch(const BuildResult& branch, SvaStateVertex* mergeVtxp, FileLine* flp) {
         if (branch.finalCondp) {
             guardedLink(branch.termVertexp, mergeVtxp,
@@ -990,21 +1003,22 @@ class SvaNfaBuilder final {
         }
     }
 
+    // Constant truth of an operand: 1 true, 0 false, -1 not a two-state constant
+    static int constTruth(AstNodeExpr* exprp) {
+        bool strong = false;
+        if (const AstPropAlways* const alwaysp = VN_CAST(exprp, PropAlways)) {
+            strong = alwaysp->isStrong();
+            exprp = alwaysp->propp();
+        }
+        const AstConst* const constp = VN_CAST(exprp, Const);
+        if (!constp || constp->num().isFourState()) return -1;
+        if (constp->num().isEqZero()) return 0;
+        return strong ? -1 : 1;
+    }
+
     // Build merge vertex for SOr / LogOr: both branches feed into one vertex.
     BuildResult buildOrMerge(AstNodeExpr* lhsp, AstNodeExpr* rhsp, SvaStateVertex* entryVtxp,
                              FileLine* flp, bool isTopLevelStep) {
-        // Constant truth of an operand: 1 true, 0 false, -1 not a two-state constant
-        const auto constTruth = [](AstNodeExpr* exprp) -> int {
-            bool strong = false;
-            if (const AstPropAlways* const alwaysp = VN_CAST(exprp, PropAlways)) {
-                strong = alwaysp->isStrong();
-                exprp = alwaysp->propp();
-            }
-            const AstConst* const constp = VN_CAST(exprp, Const);
-            if (!constp || constp->num().isFourState()) return -1;
-            if (constp->num().isEqZero()) return 0;
-            return strong ? -1 : 1;
-        };
         const int lhsConst = constTruth(lhsp);
         const int rhsConst = constTruth(rhsp);
         if (m_isSeqEvent && (containsMultiCycleSva(lhsp) || containsMultiCycleSva(rhsp))) {
@@ -1459,21 +1473,12 @@ class SvaNfaBuilder final {
             m_inUnboundedScope = savedScope;
             if (!branch.valid()) return BuildResult::fail(branch.errorEmitted);
 
-            const auto addSuccess = [&](SvaStateVertex* sourcep, bool rejectOnMiss) {
-                AstNodeExpr* condp = branch.finalCondp
-                                         ? sampled(branch.finalCondp->cloneTreePure(false))
-                                         : nullptr;
-                SvaTransEdge* const edgep
-                    = guardedLink(sourcep, mergeVtxp, condp, branchp->fileline());
-                if (rejectOnMiss && condp && mayEmitLocalReject(isTopLevelStep)) {
-                    edgep->m_rejectOnFail = true;
-                }
-            };
             for (SvaStateVertex* const sourcep : branch.midSources) {
-                addSuccess(sourcep, /*rejectOnMiss=*/false);
+                linkBranchSuccess(branch, sourcep, mergeVtxp, branchp->fileline(), false,
+                                  isTopLevelStep);
             }
-            addSuccess(branch.termVertexp,
-                       /*rejectOnMiss=*/!branch.termVertexp->m_isUnbounded);
+            linkBranchSuccess(branch, branch.termVertexp, mergeVtxp, branchp->fileline(),
+                              !branch.termVertexp->m_isUnbounded, isTopLevelStep);
             if (branch.finalCondp && !branch.finalCondp->backp()) branch.finalCondp->deleteTree();
             branch.finalCondp = nullptr;
         }
@@ -1874,6 +1879,7 @@ public:
         m_temporalGuardStack.clear();
     }
 
+    // Build the NFA for one operator; fixed-length operands conjoin, others combine.
     BuildResult buildExpr(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
                           bool isTopLevelStep = false) {
         if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
@@ -2204,16 +2210,9 @@ private:
                        new AstAssign{c.flp, new AstVarRef{c.flp, varp, VAccess::WRITE}, valuep});
         }
 
-        const auto newAbortVar = [&](const std::string& suffix) {
-            AstVar* const varp = new AstVar{c.flp, VVarType::MODULETEMP, baseName + suffix,
-                                            m_modp->findBitDType()};
-            varp->lifetime(VLifetime::STATIC_EXPLICIT);
-            m_modp->addStmtsp(varp);
-            return varp;
-        };
-        c.abortAnyVarp = newAbortVar("__abortAny");
-        c.abortAcceptVarp = newAbortVar("__abortAccept");
-        c.abortRejectVarp = newAbortVar("__abortReject");
+        c.abortAnyVarp = newAbortVar(c, baseName + "__abortAny");
+        c.abortAcceptVarp = newAbortVar(c, baseName + "__abortAccept");
+        c.abortRejectVarp = newAbortVar(c, baseName + "__abortReject");
 
         AstNodeExpr* anyp = nullptr;
         AstNodeExpr* acceptp = nullptr;
@@ -2245,22 +2244,29 @@ private:
                                  rejectp});
     }
 
+    AstVar* newAbortVar(LowerCtx& c, const std::string& name) {
+        AstVar* const varp = new AstVar{c.flp, VVarType::MODULETEMP, name, m_modp->findBitDType()};
+        varp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(varp);
+        return varp;
+    }
+    static void addSnapshot(LowerCtx& c, AstNode*& bodyp, AstVar* evalp, AstVar* livep) {
+        if (!evalp) return;
+        UASSERT_OBJ(livep, evalp, "Evaluation snapshot missing live state");
+        AstAssign* const assignp
+            = new AstAssign{c.flp, new AstVarRef{c.flp, evalp, VAccess::WRITE},
+                            new AstVarRef{c.flp, livep, VAccess::READ}};
+        appendStmt(bodyp, assignp);
+    }
+    // Latch the sampled operands, abort conditions, and control state the verdict reads.
     void emitEvaluationSnapshots(LowerCtx& c) {
         AstNode* bodyp = c.snapshotBodyp;
-        const auto addSnapshot = [&](AstVar* const evalp, AstVar* const livep) {
-            if (!evalp) return;
-            UASSERT_OBJ(livep, evalp, "Evaluation snapshot missing live state");
-            AstAssign* const assignp
-                = new AstAssign{c.flp, new AstVarRef{c.flp, evalp, VAccess::WRITE},
-                                new AstVarRef{c.flp, livep, VAccess::READ}};
-            appendStmt(bodyp, assignp);
-        };
-        addSnapshot(c.evalKillVarp, c.killVarp);
+        addSnapshot(c, bodyp, c.evalKillVarp, c.killVarp);
         for (int i = 0; i < c.N; ++i) {
             SvaVertexData* const datap = c.vtx[i]->datap();
-            addSnapshot(datap->evalStateVarp, datap->stateVarp);
-            addSnapshot(datap->evalDelayRingVarp, datap->delayRingVarp);
-            addSnapshot(datap->evalDelayRingIdxVarp, datap->delayRingIdxVarp);
+            addSnapshot(c, bodyp, datap->evalStateVarp, datap->stateVarp);
+            addSnapshot(c, bodyp, datap->evalDelayRingVarp, datap->delayRingVarp);
+            addSnapshot(c, bodyp, datap->evalDelayRingIdxVarp, datap->delayRingIdxVarp);
         }
         c.snapshotBodyp = bodyp;
     }
@@ -2301,6 +2307,7 @@ private:
         return resultp;
     }
 
+    // Start depth of the attempt reaching each vertex, or -1 when ambiguous.
     static std::vector<int> computeAttemptDepths(const LowerCtx& c) {
         std::vector<int> depths(c.N, kDepthUnreachable);
         depths[c.startIdx] = 0;
@@ -2350,6 +2357,7 @@ private:
         return countp;
     }
 
+    // Bucket strong pending state by attempt depth.
     OutcomeBuckets bucketStrongByDepth(LowerCtx& c, const std::vector<int>& depths) {
         OutcomeBuckets depthBuckets;
         for (int i = 0; i < c.N; ++i) {
@@ -2439,6 +2447,7 @@ private:
         return countp;
     }
 
+    // Count the attempts alive this tick.
     static AstNodeExpr* computeActiveAttemptCount(LowerCtx& c) {
         const std::vector<int> depths = computeAttemptDepths(c);
         // Abort priority starts the current attempt before implication filters it.
@@ -3200,6 +3209,7 @@ private:
         res.failAttemptSrcs.clear();
     }
 
+    // Turn the requested counts and sources into Observed module temporaries.
     void materializeLoweringOutputs(LowerCtx& c, const std::string& baseName, SignalSet& sigs,
                                     const LowerOutputs& o, AstNodeExpr* abortPassCountp,
                                     AstNodeExpr* abortFailCountp, AstNode*& captureBodyp) {
@@ -3828,6 +3838,7 @@ class AssertNfaVisitor final : public VNVisitor {
         assertp->addNextHere(handlerp);
     }
 
+    // Split an implication's pass action into vacuous and per-attempt branches.
     void splitImplicationPassActions(AstAssert* assertp, AstPropSpec* propSpecp,
                                      const PropertyParts& parts, AstNodeExpr* nonvacuousCountp,
                                      AstNodeExpr* abortAnyp = nullptr) {
@@ -4449,6 +4460,19 @@ class AssertNfaVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(oldDisablep), oldDisablep);
     }
 
+    static void bindLowerResult(ProcState& s, SvaNfaLowering::LowerResult& res) {
+        s.outputExprp = res.outputExprp;
+        s.abortAnyp = res.abortAnyp;
+        s.additionalFailCountp = res.failCountp;
+        s.matchCountp = res.matchCountp;
+        s.abortPassCountp = res.abortPassCountp;
+        s.abortFailCountp = res.abortFailCountp;
+        s.strongPendingCountp = res.strongPendingCountp;
+        s.failAttemptSrcs = std::move(res.failAttemptSrcs);
+        s.matchAttemptSrcs = std::move(res.matchAttemptSrcs);
+        s.perMidSrcs = std::move(res.perMidSrcs);
+    }
+
     bool lowerConcurrentAssertion(ProcState& s) {
         AstNodeCoverOrAssert* const assertp = s.assertp;
         AstPropSpec* const propSpecp = s.propSpecp;
@@ -4522,16 +4546,7 @@ class AssertNfaVisitor final : public VNVisitor {
         req.wantStrongPending = assertWithFailp != nullptr;
         req.wantPerMid = isCoverSeq;
         SvaNfaLowering::LowerResult res = m_loweringp->lower(flp, graph, req);
-        s.outputExprp = res.outputExprp;
-        s.abortAnyp = res.abortAnyp;
-        s.additionalFailCountp = res.failCountp;
-        s.matchCountp = res.matchCountp;
-        s.abortPassCountp = res.abortPassCountp;
-        s.abortFailCountp = res.abortFailCountp;
-        s.strongPendingCountp = res.strongPendingCountp;
-        s.failAttemptSrcs = std::move(res.failAttemptSrcs);
-        s.matchAttemptSrcs = std::move(res.matchAttemptSrcs);
-        s.perMidSrcs = std::move(res.perMidSrcs);
+        bindLowerResult(s, res);
         AstNodeExpr* const disableObservedp = res.disableRefp;
 
         if (assertWithFailp) {
@@ -4577,29 +4592,24 @@ class AssertNfaVisitor final : public VNVisitor {
 
         if (countNegatedOutcomes) std::swap(passCountp, failCountp);
 
-        const auto addOutcomeCounts = [&](AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
-            if (!lhsp) return rhsp;
-            if (!rhsp) return lhsp;
-            AstAdd* const addp = new AstAdd{flp, lhsp, rhsp};
-            addp->dtypeFrom(m_modp->findBasicDType(VBasicDTypeKwd::UINT32));
-            return static_cast<AstNodeExpr*>(addp);
-        };
-        failCountp = addOutcomeCounts(failCountp, abortFailCountp);
+        failCountp = addOutcomeCounts(flp, failCountp, abortFailCountp);
         abortFailCountp = nullptr;
         if (s.isCover) {
-            passCountp = addOutcomeCounts(passCountp, abortPassCountp);
+            passCountp = addOutcomeCounts(flp, passCountp, abortPassCountp);
             abortPassCountp = nullptr;
         }
 
-        if (countNegatedOutcomes) {
-            const auto zeroCount = [&]() {
-                return static_cast<AstNodeExpr*>(
-                    new AstConst{flp, AstConst::WidthedValue{}, 32, 0});
-            };
-            if ((countNegatedPasssp || countNegatedCover) && !passCountp) {
-                passCountp = zeroCount();
-            }
+        if (countNegatedOutcomes && (countNegatedPasssp || countNegatedCover) && !passCountp) {
+            passCountp = new AstConst{flp, AstConst::WidthedValue{}, 32, 0};
         }
+    }
+
+    AstNodeExpr* addOutcomeCounts(FileLine* flp, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+        if (!lhsp) return rhsp;
+        if (!rhsp) return lhsp;
+        AstAdd* const addp = new AstAdd{flp, lhsp, rhsp};
+        addp->dtypeFrom(m_modp->findBasicDType(VBasicDTypeKwd::UINT32));
+        return addp;
     }
 
     void installActionHandlers(ProcState& s) {
@@ -4738,6 +4748,7 @@ class AssertNfaVisitor final : public VNVisitor {
         return propp;
     }
 
+    // Entry point: prepare, build the NFA, lower, and install the action handlers.
     void processAssertion(AstNodeCoverOrAssert* assertp) {
         if (assertp->immediate()) return;
         if (!prepareAssertionProp(assertp)) return;

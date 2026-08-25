@@ -87,14 +87,14 @@ module t (
       b = 0;
       abort_cond = 0;
       `checkd(large_accept_pass, 3);
-      `checkd(large_accept_fail, 0);
-      `checkd(large_reject_pass, 0);  // Other simulator: 1
+      `checkd(large_accept_fail, 0);  // zero-ok: an accept never fails
+      `checkd(large_reject_pass, 0);  // Other simulator: 1; zero-ok: a reject never passes
       `checkd(large_reject_fail, 3);  // Other simulator: 2
       `checkd(large_disable_accept_pass, 3);
-      `checkd(large_disable_accept_fail, 0);
+      `checkd(large_disable_accept_fail, 0);  // zero-ok: an accept never fails
       `checkd(accept_pass_at_abort, 3);
-      `checkd(accept_fail_at_abort, 0);
-      `checkd(reject_pass_at_abort, 0);
+      `checkd(accept_fail_at_abort, 0);  // zero-ok: an accept never fails
+      `checkd(reject_pass_at_abort, 0);  // zero-ok: a reject never passes
       `checkd(reject_fail_at_abort, 3);
       `checkd(plain_vacuous_pass, 4);
       `checkd(wrapped_vacuous_pass, 4);
