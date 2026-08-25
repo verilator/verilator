@@ -2830,9 +2830,7 @@ private:
         return gateCount(c, firedp->cloneTreePure(false), onesp);
     }
 
-    // wireMatchAndMidSources. When outPerMidSrcsp is non-null, also collect
-    // the per-edge match signal (IEEE 1800-2023 16.14.3 cover sequence: each
-    // end-of-match fires the action independently, no OR-fold).
+    // Terminal match/reject signals from the Links into matchVertex; per-end sources for covers.
     void computeTerminalMatchAndReject(LowerCtx& c, SignalSet& sigs, OutcomeBuckets* failBucketsp,
                                        OutcomeBuckets* matchBucketsp,
                                        const std::vector<int>& depths,
