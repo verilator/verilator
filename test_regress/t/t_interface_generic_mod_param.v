@@ -4,11 +4,16 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-interface inf;
+interface ifc;
   int v;
 endinterface
 
-module GenericModule#(type T, type Y = int) (interface a);
+module GenericModule #(
+    type T,
+    type Y = int
+) (
+    interface a
+);
   initial begin
     #1;
     if (a.v != 7) $stop;
@@ -16,7 +21,7 @@ module GenericModule#(type T, type Y = int) (interface a);
 endmodule
 
 module t;
-  inf inf_inst();
+  ifc inf_inst ();
   GenericModule #(string) genericModule (inf_inst);
   initial begin
     inf_inst.v = 7;

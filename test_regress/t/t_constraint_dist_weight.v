@@ -53,6 +53,7 @@ module t;
     int count_high;
     int count_range_high;
     int total;
+    int randomize_result;
 
     total = 2000;
 
@@ -60,7 +61,8 @@ module t;
     sc = new;
     count_high = 0;
     repeat (total) begin
-      `checkd(sc.randomize(), 1);
+      randomize_result = sc.randomize();
+      `checkd(randomize_result, 1);
       if (sc.x == 8'd255) count_high++;
       else `checkd(sc.x, 0);
     end
@@ -70,7 +72,8 @@ module t;
     rg = new;
     count_range_high = 0;
     repeat (total) begin
-      `checkd(rg.randomize(), 1);
+      randomize_result = rg.randomize();
+      `checkd(randomize_result, 1);
       if (rg.x >= 8'd10 && rg.x <= 8'd19) count_range_high++;
       else if (rg.x > 8'd9) begin
         $write("%%Error: x=%0d outside valid range [0:19]\n", rg.x);
@@ -82,7 +85,8 @@ module t;
     // Zero weight: value 0 must never appear
     zw = new;
     repeat (total) begin
-      `checkd(zw.randomize(), 1);
+      randomize_result = zw.randomize();
+      `checkd(randomize_result, 1);
       if (zw.x == 8'd0) begin
         $write("%%Error: zero-weight value 0 was selected\n");
         `stop;
@@ -93,7 +97,8 @@ module t;
     // All-zero weights: dist constraint is effectively unconstrained, randomize succeeds
     azw = new;
     repeat (20) begin
-      `checkd(azw.randomize(), 1);
+      randomize_result = azw.randomize();
+      `checkd(randomize_result, 1);
     end
 
     // Variable := scalar weights: w1=1, w2=3 => expect ~75% for value 255
@@ -102,7 +107,8 @@ module t;
     vw.w2 = 3;
     count_high = 0;
     repeat (total) begin
-      `checkd(vw.randomize(), 1);
+      randomize_result = vw.randomize();
+      `checkd(randomize_result, 1);
       if (vw.x == 8'd255) count_high++;
       else `checkd(vw.x, 0);
     end
@@ -114,7 +120,8 @@ module t;
     vwr.w2 = 3;
     count_range_high = 0;
     repeat (total) begin
-      `checkd(vwr.randomize(), 1);
+      randomize_result = vwr.randomize();
+      `checkd(randomize_result, 1);
       if (vwr.x >= 8'd10 && vwr.x <= 8'd19) count_range_high++;
       else if (vwr.x > 8'd9) begin
         $write("%%Error: x=%0d outside valid range [0:19]\n", vwr.x);

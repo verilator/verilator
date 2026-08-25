@@ -165,7 +165,7 @@ enum VerilatedVarFlags : uint32_t {
 struct VlVarTableEntry final {
     static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
     const char* namep;  // VPI-facing (protected) variable name, string literal
-    uint32_t byteOffset;  // offsetof of storage member from module instance base
+    size_t byteOffset;  // offsetof of storage member from module instance base
     VerilatedVarType vltype;
     uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
     uint8_t udims;  // udims + pdims <= kMaxDims
@@ -450,6 +450,8 @@ protected:
         // A worker queues $finish before the main thread callback can set m_gotFinish.
         std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
         std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
+        std::atomic<bool> m_assertCtlsLocked{
+            false};  // When true, all assertion-control updates are ignored
         int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
@@ -531,6 +533,12 @@ public:
     /// Clear enabled status for given assertion types
     void assertOnClear(VerilatedAssertType_t types,
                        VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Return if assertion-control updates are locked. When locked, RTL assert
+    // control statements ($asserton/$assertoff/$assertcontrol) are ignored, as
+    // are updates from the C++ API.
+    bool assertCtlsLocked() const VL_MT_SAFE;
+    /// Lock/unlock assertion-control updates.
+    void assertCtlsLocked(bool flag) VL_MT_SAFE;
     /// Apply assertion control for given control, assertion, and directive types
     void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
@@ -857,7 +865,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
 // One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
 // per-scope 'new VerilatedScope{...}' statements, which compiles faster at scale.
 struct VlScopeTableEntry final {
-    uint32_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
+    size_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
     const char* namep;  // Scope suffix name (protected), string literal
     const char* identp;  // Identifier with escapes removed (protected)
     const char* defnamep;  // Definition name (SCOPE_MODULE only), else "<null>"

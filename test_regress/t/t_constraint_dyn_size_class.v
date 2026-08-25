@@ -4,25 +4,26 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-/*verilator lint_off*/
+// verilator lint_off
+// verilog_format: off
 `define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%d exp=%d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
-/*verilator lint_on*/
+`define check_range(gotv, minv, maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
+// verilog_format: on
+// verilator lint_on
 
 class SubSubClass;
   rand int subVal;
   rand int subArr[];
 
-  constraint c{
-    subArr.size < 10;
-  }
+  constraint c {subArr.size < 10;}
 endclass
 
 class SubClass;
   rand int subVal;
   rand int subArr[];
-  rand int assocArr[string] = '{ "test": 1, "test2" : 2 };
+  rand int assocArr[string] = '{"test": 1, "test2" : 2};
   SubSubClass ssc;
 
   function new();
@@ -48,7 +49,8 @@ class BaseClass;
   constraint bc {
     arr.size < 10;
     arr.size > 5;
-  };
+  }
+  ;
 endclass
 
 class ExtClass0 extends BaseClass;
@@ -56,24 +58,18 @@ class ExtClass0 extends BaseClass;
     return (cls.randomize() with {
       // If with arr.size on array, that's a field of class
       // calling randomize() with
-      if (arr.size > 0) {
-        val0 inside {arr};
-      }
+      if (arr.size > 0) {val0 inside {arr};}
 
       // If with arr.size on array thats a field inside subclass
       // chain
-      if (cls.sc.ssc.subArr.size > 0 ) {
-        val1 == 'hDEADBEEF;
-      }
+      if (cls.sc.ssc.subArr.size > 0) {val1 == 'hDEADBEEF;}
 
       // Randomizable array size
       sc.subArr.size > 25;
       sc.subArr.size < 50;
 
       // If with associative array size
-      if (sc.assocArr.size > 0) {
-        val2 == 'hCAFEBABE;
-      }
+      if (sc.assocArr.size > 0) {val2 == 'hCAFEBABE;}
     });
   endfunction
 endclass
@@ -81,10 +77,8 @@ endclass
 class ExtClass1 extends BaseClass;
   // Class that extends BaseClass and uses arr.size variable
   constraint c {
-    unique{arr};
-    foreach(arr[i]) {
-      arr[i] != 0;
-    }
+    unique {arr};
+    foreach (arr[i]) {arr[i] != 0;}
   }
 endclass
 
@@ -94,13 +88,17 @@ module t;
   IndepClass indep;
 
   initial begin
+    int randomize_result;
     indep = new;
     ext0 = new;
     ext1 = new;
-    repeat(10) begin
-      `checkh(ext0.randomize(), 1);
-      `checkh(ext0.randomize(), 1);
-      `checkh(ext0.randomize_gpr(indep), 1);
+    repeat (10) begin
+      randomize_result = ext0.randomize();
+      `checkd(randomize_result, 1);
+      randomize_result = ext0.randomize();
+      `checkd(randomize_result, 1);
+      randomize_result = ext0.randomize_gpr(indep);
+      `checkd(randomize_result, 1);
 
       `checkh(indep.val0 inside {ext0.arr}, 1);
       `checkh(indep.val1, 'hDEADBEEF);
@@ -122,7 +120,7 @@ module t;
       end
     end
 
-  $write("*-* All Finished *-*\n");
-  $finish();
+    $write("*-* All Finished *-*\n");
+    $finish();
   end
 endmodule

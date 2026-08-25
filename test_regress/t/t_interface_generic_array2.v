@@ -4,11 +4,13 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-interface inf;
+interface ifc;
   int v;
 endinterface
 
-module GenericModule1D (interface a[4]);
+module GenericModule1D (
+    interface a[4]
+);
   initial begin
     #1;
     if (a[0].v != 'hdead) $stop;
@@ -18,7 +20,9 @@ module GenericModule1D (interface a[4]);
   end
 endmodule
 
-module GenericModule2D (interface a[2][2]);
+module GenericModule2D (
+    interface a[2][2]
+);
   initial begin
     #3;
     if (a[0][0].v != 'hdead) $stop;
@@ -28,7 +32,9 @@ module GenericModule2D (interface a[2][2]);
   end
 endmodule
 
-module GenericModuleRng (interface a[5:3]);
+module GenericModuleRng (
+    interface a[5:3]
+);
   initial begin
     #5;
     if (a[3].v != 'hdead) $stop;
@@ -38,12 +44,12 @@ module GenericModuleRng (interface a[5:3]);
 endmodule
 
 module t;
-  inf inf1d[4]();
-  inf inf2d[2][2]();
-  inf infrng[5:3]();
-  GenericModule1D mod1d(inf1d);
-  GenericModule2D mod2d(inf2d);
-  GenericModuleRng modrng(infrng);
+  ifc inf1d[4] ();
+  ifc inf2d[2][2] ();
+  ifc infrng[5:3] ();
+  GenericModule1D mod1d (inf1d);
+  GenericModule2D mod2d (inf2d);
+  GenericModuleRng modrng (infrng);
   initial begin
     inf1d[0].v = 'hdead;
     inf1d[1].v = 'hbeef;

@@ -9,18 +9,20 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-interface inf #(int PARAM = 0);
-  logic[PARAM-1:0] v;
+interface ifc #(
+    int PARAM = 0
+);
+  logic [PARAM-1:0] v;
 
-  modport port_in (
-    input v
-  );
-  modport port_out (
-    output v
-  );
+  modport port_in(input v);
+  modport port_out(output v);
 endinterface
 
-module GenericModule #(PARAM=0) (interface.port_in a);
+module GenericModule #(
+    PARAM = 0
+) (
+    interface.port_in a
+);
   localparam int LOC_PARAM = a.PARAM;
   initial begin
     #1;
@@ -31,7 +33,7 @@ module GenericModule #(PARAM=0) (interface.port_in a);
 endmodule
 
 module t;
-  inf  #(.PARAM(13)) inf_inst();
+  ifc #(.PARAM(13)) inf_inst ();
   GenericModule genericModule (inf_inst);
   initial begin
     inf_inst.v = 7;

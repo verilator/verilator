@@ -2776,7 +2776,7 @@ module_or_generate_item_declaration<nodep>:     // ==IEEE: module_or_generate_it
 
 modDefaultClocking<nodep>:  // IEEE: part of module_or_generate_item_declaration/checker_or_...
                 yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
+                        { $$ = new AstDefaultClocking{$<fl>2, *$3}; }
         ;
 
 defaultDisable<nodep>:  // IEEE: part of module_/checker_or_generate_item_declaration
@@ -4563,8 +4563,8 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         ;
 
 severity_system_task<nodep>: // IEEE: severity_system_task/elaboration_severity_system_task (1800-2009)
-        //                      // TODO: These currently just make initial statements, should instead give runtime error
-                severity_system_task_guts ';'           { $$ = new AstInitial{$<fl>1, $1}; }
+        //                      // Elaboration-time task; V3Width evaluates and removes it
+                severity_system_task_guts ';'           { $$ = $1; }
         ;
 
 severity_system_task_guts<nodep>:    // IEEE: part of severity_system_task (1800-2009)
@@ -7322,24 +7322,16 @@ cover_cross<nodep>:  // ==IEEE: cover_cross
                 id/*cover_point_identifier*/ ':' yCROSS list_of_cross_items iffE cross_body
                         {
                           AstCoverCross* const nodep = new AstCoverCross{$<fl>3, *$1,
-                                                          VN_AS($4, CoverpointRef)};
+                                                          VN_AS($4, CoverpointRef), $5};
                           if ($6) nodep->addRawBodyp($6);
-                          if ($5) {
-                              $5->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
-                              VL_DO_DANGLING($5->deleteTree(), $5);
-                          }
                           $$ = nodep;
                         }
         |       yCROSS list_of_cross_items iffE cross_body
                         {
                           AstCoverCross* const nodep = new AstCoverCross{$<fl>1,
                                                           "__cross" + cvtToStr(GRAMMARP->s_typeImpNum++),
-                                                          VN_AS($2, CoverpointRef)};
+                                                          VN_AS($2, CoverpointRef), $3};
                           if ($4) nodep->addRawBodyp($4);
-                          if ($3) {
-                              $3->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
-                              VL_DO_DANGLING($3->deleteTree(), $3);
-                          }
                           $$ = nodep;
                         }
         ;

@@ -267,10 +267,10 @@ private:
 
 class DynScopeVisitor final : public VNVisitor {
     // NODE STATE
-    // AstVar::user1()          -> int, timing-control fork nesting level of that variable
-    // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
+    // AstVar::user1()          -> int.  timing-control fork nesting level of that variable
+    // AstVarRef::user2()       -> bool. Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
-    // AstAssignDly::user2()    -> bool, true if already visited
+    // AstAssignDly::user2()    -> bool.  Already visited
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
@@ -658,8 +658,10 @@ class ForkVisitor final : public VNVisitor {
         // join_any block the parent process, deferring branch start with a synthetic #0 delay is
         // normally only needed for join_none. A fork that can be disabled by name needs the same
         // deferral for every join type so all branches register their processes before any branch
-        // body can disable the block.
-        if (nodep->joinType().joinNone() || forkIsDisableable(nodep)) {
+        // body can disable the block. Compiler-generated immediate-start forks already have the
+        // required ordering and must arm their event controls before the parent continues.
+        if ((nodep->joinType().joinNone() && !nodep->immediateStart())
+            || forkIsDisableable(nodep)) {
             UINFO(9, "Adding fork branch start sentinels " << nodep);
             FileLine* fl = nodep->fileline();
             // We use a sentinel value of UINT64_MAX to mark this delay so that it goes to the

@@ -356,10 +356,22 @@ public:
         //
         // Note we only check for conflicts at the same level; it's ok if one block hides another
         // We also wouldn't want to not insert it even though it's lower down
+
         const VSymEnt* const foundp = lookupSymp->findIdFlat(name);
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
+            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) {  // ignore typedefs etc
+                const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
+                if (alt) {
+                    nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
+                                                   << nodep->prettyNameQ() << '\n'
+                                                   << nodep->warnContextPrimary() << '\n'
+                                                   << alt->nodep()->warnOther()
+                                                   << "... Location of original declaration\n"
+                                                   << alt->nodep()->warnContextSecondary());
+                }
+            }
         } else if (nodep == fnodep) {  // Already inserted.
             // Good.
         } else if (foundp->imported()) {  // From package
@@ -2799,6 +2811,10 @@ private:
         // Remember the alias - can't do it yet because we may have additional symbols to be added,
         // or maybe an alias of an alias
         m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, lhsSymp, rhsSymp);
+        AstVarScope* const lhsVscp = VN_CAST(lhsSymp->nodep(), VarScope);
+        AstVarScope* const rhsVscp = VN_CAST(rhsSymp->nodep(), VarScope);
+        UASSERT_OBJ(lhsVscp && rhsVscp, nodep, "Interface alias missing variable scope");
+        setAliasVarScope(lhsVscp, rhsVscp);
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -3161,6 +3177,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_replaceWithAlias
         = true;  // Replace VarScope with an alias. Used in the handling of AstAlias
     bool m_isParam = false;  // Specifies whether currently visiting param variable
+    bool m_resolvingTypedef = false;  // Currently traversing a Typedef tree
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -3905,6 +3922,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Primitive parameter is really a delay2 we can just ignore
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
+                } else if (nodep->param() && !nodep->exprp() && !nodep->svDotName()) {
+                    // Placeholder pin the parser makes for an empty '#()', to signal
+                    // the user did type the '#()'. No further use, deleting.
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
                 } else {
                     const std::string suggest
                         = (nodep->param() ? m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
@@ -4138,6 +4160,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_unresolvedClass |= unresolvedClass;
         }
         UINFO(8, indent() << "done " << m_ds.ascii() << " " << nodep);
+    }
+    void visit(AstDefaultClocking* nodep) override {
+        if (VSymEnt* const foundp = m_curSymp->findIdFallback(nodep->name())) {
+            if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                clockingp->makeDefault();
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            } else {
+                nodep->v3error(nodep->prettyNameQ() << " is not a clocking identifier");
+            }
+        } else {
+            nodep->v3error("Can't find definition of clocking: " << nodep->prettyNameQ());
+        }
     }
     void visit(AstSenItem* nodep) override {
         LINKDOT_VISIT_START();
@@ -4611,9 +4645,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds.m_dotText = "";
             } else if (AstClass* const defp = VN_CAST(foundp->nodep(), Class)) {
                 if (allowVar) {
-                    AstRefDType* const newp = new AstRefDType{nodep->fileline(), nodep->name()};
-                    replaceWithCheckBreak(nodep, newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    if (m_ds.m_dotPos == DP_SCOPE && !staticAccess) {
+                        // Continue hierarchical lookup in the class scope.
+                        m_ds.m_dotSymp = foundp;
+                    } else {
+                        AstRefDType* const newp
+                            = new AstRefDType{nodep->fileline(), nodep->name()};
+                        replaceWithCheckBreak(nodep, newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
                     ok = true;
                     m_ds.m_dotText = "";
                 } else {
@@ -5150,7 +5190,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         iterateChildren(nodep);
         AstVarScope* aliasp = LinkDotScopeVisitor::getAliasVarScopep(nodep);
-        if (aliasp && aliasp != nodep) {
+        if (aliasp && aliasp != nodep && !nodep->varp()->isIfaceRef()) {
             // Aliased variable might still be references from outside,
             // eg through the VPI, and is traced, so we need the value to propagate.
             // TODO: this means external writes to the LHS (e.g.: through the VPI) don't work
@@ -6033,12 +6073,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(cpackagep);
                     return;
                 }
-                if (!cpackagerefp->classOrPackageSkipp()) {
+
+                const bool doDefaultTypedef = !(m_resolvingTypedef && m_statep->forPrimary());
+                if (!cpackagerefp->classOrPackageSkipp(doDefaultTypedef)) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
                         m_ds.m_dotSymp, cpackagerefp, true, false, "class/package reference");
                     if (!foundp) return;
                 }
-                nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
+                nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp(doDefaultTypedef));
                 if (!VN_IS(nodep->classOrPackagep(), Class)
                     && !VN_IS(nodep->classOrPackagep(), Package)) {
                     if (m_statep->forPrimary()) {
@@ -6251,24 +6293,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstPackageImport* nodep) override {
+    void visitPackageImportOrExport(AstNode* nodep) {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
         if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
-    void visit(AstPackageExport* nodep) override {
-        // No longer needed
-        LINKDOT_VISIT_START();
-        checkNoDot(nodep);
-        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-    }
-    void visit(AstPackageExportStarStar* nodep) override {
-        // No longer needed
-        LINKDOT_VISIT_START();
-        checkNoDot(nodep);
-        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-    }
+    void visit(AstPackageImport* nodep) override { visitPackageImportOrExport(nodep); }
+    void visit(AstPackageExport* nodep) override { visitPackageImportOrExport(nodep); }
+    void visit(AstPackageExportStarStar* nodep) override { visitPackageImportOrExport(nodep); }
     void visit(AstCellRef* nodep) override {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
@@ -6325,6 +6358,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         VL_RESTORER(m_replaceWithAlias);
         if (nodep->user2()) m_replaceWithAlias = false;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstTypedef* nodep) override {
+        VL_RESTORER(m_resolvingTypedef)
+        m_resolvingTypedef = true;
         iterateChildren(nodep);
     }
 

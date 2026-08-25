@@ -14,7 +14,8 @@ test.scenarios('vlt')
 
 test.top_filename = "t/t_covergroup_cross.v"
 
-test.compile(verilator_flags2=['--coverage', '--Wno-COVERIGN'])
+# --Wno-ASCRANGE: cg_be / cg_be_arr in the shared top intentionally declare ascending [0:N]
+test.compile(verilator_flags2=['--coverage', '--Wno-COVERIGN', '--Wno-ASCRANGE'])
 
 test.execute()
 

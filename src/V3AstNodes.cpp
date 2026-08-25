@@ -717,12 +717,16 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 
     asRef = asRef || isDpiOpenArray() || (forFunc && (isWritable() || isRef() || isConstRef()));
 
-    if (forFunc && (isReadOnly() || constRef) && asRef) ostatic = ostatic + "const ";
-
     string oname;
     if (named) {
         if (!namespc.empty()) oname += namespc + "::";
         oname += VIdProtect::protectIf(name(), protect());
+    }
+    if (forFunc && (isReadOnly() || constRef) && asRef) {
+        if (VN_IS(dtypep()->skipRefp(), IfaceRefDType)) {
+            return ostatic + dtypep()->cType("", forFunc, false) + " const &" + oname;
+        }
+        ostatic += "const ";
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
@@ -2061,6 +2065,8 @@ bool AstNodeExpr::isLValue() const {
         return varrefp->access().isWriteOrRW();
     } else if (const AstMemberSel* const memberselp = VN_CAST(this, MemberSel)) {
         return memberselp->access().isWriteOrRW();
+    } else if (const AstStructSel* const structselp = VN_CAST(this, StructSel)) {
+        return structselp->fromp()->isLValue();
     } else if (const AstSel* const selp = VN_CAST(this, Sel)) {
         return selp->fromp()->isLValue();
     } else if (const AstNodeSel* const nodeSelp = VN_CAST(this, NodeSel)) {
@@ -3091,6 +3097,14 @@ void AstSFormatF::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, exprFormat);
     dumpJsonBoolFuncIf(str, optionalFormat);
 }
+void AstSampled::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (internal()) str << " [INTERNAL]";
+}
+void AstSampled::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, internal);
+    dumpJsonGen(str);
+}
 void AstSel::dump(std::ostream& str) const {
     this->AstNodeBiop::dump(str);
     str << " widthConst=" << this->widthConst();
@@ -3315,6 +3329,7 @@ int AstVarRef::instrCount() const {
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (constPoolEntry()) str << " [CONSTPOOL]";
+    if (covergroupRefMember()) str << " [CGREF]";
     if (isSc()) str << " [SC]";
     if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
     if (isPrimaryClock()) str << " [PCLK]";
@@ -3357,6 +3372,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, constPoolEntry);
+    dumpJsonBoolFuncIf(str, covergroupRefMember);
     dumpJsonBoolFuncIf(str, isSc);
     dumpJsonBoolFuncIf(str, isPrimaryIO);
     dumpJsonBoolFuncIf(str, isPrimaryClock);
@@ -3460,7 +3476,7 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
     }
 }
 void AstClassOrPackageRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
+AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp(const bool doRefs) const {
     AstNode* foundp = m_classOrPackageNodep;
     AstNode* lastp = nullptr;
     while (foundp != lastp) {
@@ -3468,11 +3484,12 @@ AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
         if (AstNodeDType* const anodep = VN_CAST(foundp, NodeDType)) {
             foundp = anodep->skipRefOrNullp();
         }
-        if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
-            foundp = anodep->subDTypep();
-        }
-        if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
-            foundp = anodep->classp();
+        if (doRefs) {
+            if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
+                foundp = anodep->subDTypep();
+            } else if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
+                foundp = anodep->classp();
+            }
         }
     }
     return VN_CAST(foundp, NodeModule);
@@ -3659,9 +3676,11 @@ void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstFork::dump(std::ostream& str) const {
     this->AstNodeBlock::dump(str);
     str << " [" << joinType() << "]";
+    if (immediateStart()) str << " [IMMEDIATE]";
 }
 void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "joinType", joinType().ascii());
+    dumpJsonBoolFuncIf(str, immediateStart);
     dumpJsonGen(str);
 }
 void AstStop::dump(std::ostream& str) const {

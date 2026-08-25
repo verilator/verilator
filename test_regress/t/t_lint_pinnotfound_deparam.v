@@ -10,7 +10,5 @@ module child ();
 endmodule
 
 module t;
-  child u_child (
-    .missing_port (1'b0)
-  );
+  child u_child (.missing_port(1'b0));
 endmodule

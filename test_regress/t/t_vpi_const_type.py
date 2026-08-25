@@ -16,6 +16,6 @@ test.compile(make_top_shell=False,
              make_pli=True,
              verilator_flags2=["--exe --vpi --no-l2name", test.pli_filename])
 
-test.execute(use_libvpi=True)
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.passes()

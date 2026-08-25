@@ -198,6 +198,7 @@ Holme
 Homebrew
 Hornung
 Hossell
+Hsieh
 Hsu
 Huggett
 Hutt
@@ -646,6 +647,7 @@ casez
 casted
 castro
 cb
+cbValueChange
 ccache
 ccall
 cdc
@@ -709,6 +711,7 @@ de
 dearray
 deassign
 debugi
+deduplication
 defenv
 defname
 defparam
@@ -1177,6 +1180,7 @@ tcmalloc
 tcmalloc
 tenghtt
 testbench
+testbenches
 threadsafe
 threashold
 timeInc

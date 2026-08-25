@@ -229,7 +229,7 @@ class LinkLValueVisitor final : public VNVisitor {
     }
     void visit(AstRand* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        if (!nodep->urandom()) m_setRefLvalue = VAccess::WRITE;
+        if (!nodep->urandom()) m_setRefLvalue = VAccess::READWRITE;
         iterateAndNextNull(nodep->seedp());
     }
     void visit(AstReadMem* nodep) override {
@@ -262,14 +262,14 @@ class LinkLValueVisitor final : public VNVisitor {
     }
     void visit(AstNodeDistBiop* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        m_setRefLvalue = VAccess::WRITE;
+        m_setRefLvalue = VAccess::READWRITE;
         iterateAndNextNull(nodep->lhsp());
         m_setRefLvalue = VAccess::NOCHANGE;
         iterateAndNextNull(nodep->rhsp());
     }
     void visit(AstNodeDistTriop* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        m_setRefLvalue = VAccess::WRITE;
+        m_setRefLvalue = VAccess::READWRITE;
         iterateAndNextNull(nodep->lhsp());
         m_setRefLvalue = VAccess::NOCHANGE;
         iterateAndNextNull(nodep->rhsp());

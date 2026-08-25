@@ -27,19 +27,23 @@ module t;
       begin
         process p;
         D d;
+        int randomize_result;
         p = process::self();
         p.srandom(42);
         d = new;
-        `checkd(d.randomize(), 1);
+        randomize_result = d.randomize();
+        `checkd(randomize_result, 1);
         result_a = d.x;
       end
       begin
         process p;
         D d;
+        int randomize_result;
         p = process::self();
         p.srandom(42);
         d = new;
-        `checkd(d.randomize(), 1);
+        randomize_result = d.randomize();
+        `checkd(randomize_result, 1);
         result_b = d.x;
       end
     join

@@ -51,16 +51,18 @@ endclass
 module t;
   initial begin
     static top_test_c obj = new();
+    int randomize_result;
     repeat (10) begin
-      `checkd(obj.randomize(), 1)
+      randomize_result = obj.randomize();
+      `checkd(randomize_result, 1);
       // Two-level cross-object soft: parent's soft overrides child's
-      `checkd(obj.cfg.sub_a.timeout, 32'd5000)
+      `checkd(obj.cfg.sub_a.timeout, 32'd5000);
       // One-level cross-object soft: parent's soft overrides child's
-      `checkd(obj.extra_cfg.timeout, 32'd9999)
-      `checkd(obj.extra_cfg.enabled, 1'b1)
+      `checkd(obj.extra_cfg.timeout, 32'd9999);
+      `checkd(obj.extra_cfg.enabled, 1'b1);
       // Hard constraint propagation still works
-      `checkd(obj.cfg.enabled, 1'b1)
-      `checkd(obj.cfg.sub_a.enabled, 1'b1)
+      `checkd(obj.cfg.enabled, 1'b1);
+      `checkd(obj.cfg.sub_a.enabled, 1'b1);
     end
     $write("*-* All Finished *-*\n");
     $finish;

@@ -10,14 +10,18 @@ endclass
 
 typedef Base Base_t;
 
-class SubA #(type T = int) extends Base_t;
+class SubA #(
+    type T = int
+) extends Base_t;
 endclass
 
-class SubB #(type T = int) extends Base_t;
+class SubB #(
+    type T = int
+) extends Base_t;
 endclass
 
-typedef SubA #(int) SubAInt_t;
-typedef SubB #(int) SubBInt_t;
+typedef SubA#(int) SubAInt_t;
+typedef SubB#(int) SubBInt_t;
 
 class Container;
   local SubAInt_t a;

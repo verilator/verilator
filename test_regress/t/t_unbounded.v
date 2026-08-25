@@ -6,7 +6,7 @@
 
 module t;
 
-  parameter int UNB /*verilator public*/ = $;
+  parameter int UNB  /*verilator public*/ = $;
   localparam int UNB2 = $;
   localparam SIX = 6;
 

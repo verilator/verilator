@@ -1556,6 +1556,19 @@ List Of Warnings
    (neither :vlopt:`--timing` nor :vlopt:`--no-timing` option was provided).
 
 
+.. option:: NEVERMATCH
+
+   Warns that an SVA sequence is statically known to never match. Such a
+   sequence is legal SystemVerilog and is fully supported, the warning
+   only highlights a potential problem. For example, using the sequence as
+   the antecedent of an implication causes the implication to pass
+   vacuously. For an intersect sequence, ensure its operands can match
+   over a common length (IEEE 1800-2023 16.9.6).
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: NEWERSTD
 
    Warns that a feature requires a newer standard of Verilog or SystemVerilog
@@ -2126,6 +2139,25 @@ List Of Warnings
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
+
+
+.. option:: SIMILARNAME
+
+   Warns that a variable name only differs from another in lexical case.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_SIMILARNAME_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_SIMILARNAME_msg.rst
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   This is a warning as some downstream VLSI tools do
+   not distinguish net and gate names with the same case.
 
 
 .. option:: SPECIFYIGN

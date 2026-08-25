@@ -36,11 +36,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Active class functions
 
 class ActiveTopVisitor final : public VNVisitor {
+    // NODE STATE
+    // AstVarScope::user1()  // bool.  Processed
+
     // STATE
     SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope
 
     // METHODS
-
     static bool isInitial(AstNode* nodep) {
         const VNUser1InUse user1InUse;
         // Return true if no variables that read.

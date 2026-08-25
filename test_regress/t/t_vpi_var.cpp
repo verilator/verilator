@@ -66,6 +66,8 @@ unsigned int callback_count_half = 0;
 unsigned int callback_count_quad = 0;
 unsigned int callback_count_strs = 0;
 unsigned int callback_count_strs_max = 500;
+unsigned int callback_count_3d = 0;
+unsigned int callback_count_endian = 0;
 
 //======================================================================
 
@@ -237,6 +239,242 @@ int _mon_check_value_callbacks() {
     return 0;
 }
 
+int _value_callback_3d(p_cb_data cb_data) {
+    ++callback_count_3d;
+    return 0;
+}
+
+int _value_callback_big_endian(p_cb_data cb_data) {
+    static bool called = false;
+    if (called) {
+        printf("%%Error: callback should be called only once\n");
+        exit(-1);
+    }
+    called = true;
+    ++callback_count_endian;
+    return 0;
+}
+
+int _value_callback_little_endian(p_cb_data cb_data) {
+    static bool called = false;
+    if (called) {
+        printf("%%Error: callback should be called only once\n");
+        exit(-1);
+    }
+    called = true;
+    ++callback_count_endian;
+    return 0;
+}
+
+int _mon_check_value_callbacks_array() {
+    t_cb_data cb_data{};
+    cb_data.reason = cbValueChange;
+    cb_data.time = nullptr;
+
+    {
+        TestVpiHandle vh = VPI_HANDLE("multi_packed_bit");
+        CHECK_RESULT_NZ(vh);
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0x123456;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh, &put_val, &time_s, vpiNoDelay);
+    }
+
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[1][2][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        // Put value between other values and check if value change applies only here
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[1][2][1]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_3d;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh1, &put_val, &time_s, vpiNoDelay);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[1][2][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[1][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[0][0][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_bit[0][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {  // Set a single bit and hit it with value change, big endian
+        TestVpiHandle vh = VPI_HANDLE("multi_packed_endian");
+        CHECK_RESULT_NZ(vh);
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0b000100;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh, &put_val, &time_s, vpiNoDelay);
+
+        for (int i = -1; i <= 1; ++i) {
+            TestVpiHandle i_handle = vpi_handle_by_index(vh, i);
+            CHECK_RESULT_NZ(i_handle);
+            for (int j = 1; j <= 2; ++j) {
+                TestVpiHandle i_j_handle = vpi_handle_by_index(i_handle, j);
+                CHECK_RESULT_NZ(i_j_handle);
+                cb_data.obj = i_j_handle;
+                if (i == 0 && j == 1) {
+                    cb_data.cb_rtn = _value_callback_big_endian;
+                } else {
+                    cb_data.cb_rtn = _value_callback_never;
+                }
+                TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+                CHECK_RESULT_NZ(callback_h);
+
+                s_vpi_value put_val;
+                put_val.format = vpiIntVal;
+                put_val.value.integer = 0;
+                s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+                vpi_put_value(i_j_handle, &put_val, &time_s, vpiNoDelay);
+            }
+        }
+    }
+    {  // Set a single bit and hit it with value change, little endian
+        TestVpiHandle vh = VPI_HANDLE("multi_packed_little_endian");
+        CHECK_RESULT_NZ(vh);
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 0b001000;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh, &put_val, &time_s, vpiNoDelay);
+
+        for (int i = -1; i <= 1; ++i) {
+            TestVpiHandle i_handle = vpi_handle_by_index(vh, i);
+            CHECK_RESULT_NZ(i_handle);
+            for (int j = 1; j <= 2; ++j) {
+                TestVpiHandle i_j_handle = vpi_handle_by_index(i_handle, j);
+                CHECK_RESULT_NZ(i_j_handle);
+                cb_data.obj = i_j_handle;
+                if (i == 0 && j == 1) {
+                    cb_data.cb_rtn = _value_callback_little_endian;
+                } else {
+                    cb_data.cb_rtn = _value_callback_never;
+                }
+                TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+                CHECK_RESULT_NZ(callback_h);
+
+                s_vpi_value put_val;
+                put_val.format = vpiIntVal;
+                put_val.value.integer = 0;
+                s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+                vpi_put_value(i_j_handle, &put_val, &time_s, vpiNoDelay);
+            }
+        }
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_unpacked_bit[1][2][3]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_unpacked_bit[1][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_short[1][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_short[1][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_3d;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 1;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh1, &put_val, &time_s, vpiNoDelay);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_wide[1][2]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_never;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("multi_packed_wide[1][0]");
+        CHECK_RESULT_NZ(vh1);
+        cb_data.obj = vh1;
+        cb_data.cb_rtn = _value_callback_3d;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+
+        s_vpi_value put_val;
+        put_val.format = vpiIntVal;
+        put_val.value.integer = 1;
+        s_vpi_time time_s = {vpiSimTime, 0, 0, 0.0};
+        vpi_put_value(vh1, &put_val, &time_s, vpiNoDelay);
+    }
+    return 0;
+}
+
 int _mon_check_big() {
 #ifdef VERILATOR
     s_vpi_value v;
@@ -248,12 +486,11 @@ int _mon_check_big() {
     Verilated::fatalOnVpiError(false);
     vpi_get_value(h, &v);
     Verilated::fatalOnVpiError(true);
-    s_vpi_error_info info;
-    CHECK_RESULT_Z(vpi_chk_error(&info));
+    TEST_CHECK_ERROR(false);
 
     v.format = vpiStringVal;
     vpi_get_value(h, &v);
-    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(false);
     CHECK_RESULT_CSTR_STRIP(v.value.str, "some text");
 #endif
 
@@ -1472,7 +1709,7 @@ int _mon_check_delayed() {
     v.format = vpiIntVal;
     v.value.integer = 123;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(false);
     vpi_get_value(vh, &v);
     CHECK_RESULT(v.value.integer, 0);
 
@@ -1482,19 +1719,24 @@ int _mon_check_delayed() {
     CHECK_RESULT_NZ(vhMemWord);
     v.value.integer = 456;
     vpi_put_value(vhMemWord, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(false);
 
     // test unsupported vpiInertialDelay cases
     // - should these also throw vpi errors?
     v.format = vpiStringVal;
     v.value.str = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(true);
 
     v.format = vpiVectorVal;
     v.value.vector = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    TEST_CHECK_ERROR(true);
+
+    // Test null value in put
+    v.format = vpiVectorVal;
+    vpi_put_value(vh, nullptr, &t, 0);
+    TEST_CHECK_ERROR(true);
 
     // This format throws an error now
 #ifdef VERILATOR
@@ -2209,6 +2451,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_mcd()) return status;
     if (int status = _mon_check_callbacks()) return status;
     if (int status = _mon_check_value_callbacks()) return status;
+    if (int status = _mon_check_value_callbacks_array()) return status;
     if (int status = _mon_check_var()) return status;
     if (int status = _mon_check_rev()) return status;
     if (int status = _mon_check_varlist()) return status;
@@ -2311,6 +2554,8 @@ int main(int argc, char** argv) {
     CHECK_RESULT(callback_count_half, 250);
     CHECK_RESULT(callback_count_quad, 2);
     CHECK_RESULT(callback_count_strs, callback_count_strs_max);
+    CHECK_RESULT(callback_count_3d, 3);
+    CHECK_RESULT(callback_count_endian, 2);
     VerilatedVpi::clearEvalNeeded();
     if (VerilatedVpi::evalNeeded()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Unexpected VPI dirty state");

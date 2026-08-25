@@ -485,7 +485,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + ".at(" + cvtToStr(itr.first) + ")",
+                emitSetVarConstant(newPrefix + ".atWrite(" + cvtToStr(itr.first) + ")",
                                    VN_AS(valuep, Const));
             }
         } else if (VN_IS(dtypep, WildcardArrayDType)) {
@@ -496,7 +496,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + ".at(" + cvtToStr(itr.first) + ")",
+                emitSetVarConstant(newPrefix + ".atWrite(" + cvtToStr(itr.first) + ")",
                                    VN_AS(valuep, Const));
             }
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {

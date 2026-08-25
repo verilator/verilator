@@ -35,7 +35,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class CleanVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
-    //  AstNode::user()         -> CleanState.  For this node, 0==UNKNOWN
+    //  AstNode::user1()        -> CleanState.  For this node, 0==UNKNOWN
     //  AstNode::user2()        -> bool.  True indicates widthMin has been propagated
     //  AstNodeDType::user3()   -> AstNodeDType*.  Alternative node with C size
     const VNUser1InUse m_inuser1;

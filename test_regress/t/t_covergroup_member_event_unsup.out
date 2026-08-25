@@ -1,7 +1,10 @@
-%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:13:5: Unsupported: 'covergroup' clocking event on member variable
-                                                           : ... note: In instance 't'
-   13 |     covergroup cov1 @m_z;
-      |     ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:15:29: Unsupported: 'covergroup' clocking event signal has no assignment within the enclosing class; no coverage sampled. Use --timing for full support.
+   15 |     covergroup cov_extclk @(posedge clk);
+      |                             ^~~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:37:5: Unsupported: 'covergroup' clocking event on complex member expression; use --timing for full support.
+                                                           : ... note: In instance 't'
+   37 |     covergroup cov_cplx @(posedge a or posedge mid.lvl.ev);
+      |     ^~~~~~~~~~
 %Error: Exiting due to

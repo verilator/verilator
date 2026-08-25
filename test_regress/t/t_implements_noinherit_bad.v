@@ -11,7 +11,7 @@ endclass
 
 class Cls implements Icls;
   function void f;
-    $display(IP); // Bad
+    $display(IP);  // Bad
   endfunction
 endclass
 

@@ -214,14 +214,13 @@ void _arr_access_format_check(TestVpiHandle& reg_h, int wordSize, const int* low
     assert(spanSize <= MAX_SPANSIZE);
     s_vpi_value value_in;
     s_vpi_value value_out;
-    s_vpi_error_info e;
     char zero_s[2] = "0";
 
     // zero out the vector
     value_in.format = vpiOctStrVal;
     value_in.value.str = zero_s;
     vpi_put_value(reg_h, &value_in, NULL, vpiNoDelay);
-    TEST_CHECK_Z(vpi_chk_error(&e));
+    TEST_CHECK_ERROR(false);
 
     value_in.format = format;
     value_out.format = format;
@@ -272,7 +271,7 @@ void _arr_access_format_check(TestVpiHandle& reg_h, int wordSize, const int* low
         }
 
         vpi_put_value(subreg_h, &value_in, NULL, vpiNoDelay);
-        TEST_CHECK_Z(vpi_chk_error(&e));
+        TEST_CHECK_ERROR(false);
 
         vpi_get_value(subreg_h, &value_out);
         switch (format) {
@@ -324,13 +323,12 @@ void _arr_access_check(const char* name, int wordSize, const int* lows) {
         while (TestVpiHandle reg_h = vpi_scan(arr_iter_h)) {
             s_vpi_value value_in;
             s_vpi_value value_out;
-            s_vpi_error_info e;
 
             value_out.format = vpiOctStrVal;
             value_in.format = vpiOctStrVal;
             value_in.value.str = octVal_s;
             vpi_put_value(reg_h, &value_in, NULL, vpiNoDelay);
-            TEST_CHECK_Z(vpi_chk_error(&e));
+            TEST_CHECK_ERROR(false);
             vpi_get_value(reg_h, &value_out);
             TEST_CHECK_CSTR(value_out.value.str, octVal_s);
 

@@ -345,6 +345,11 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         cleanFileline(nodep);
         UINFO(9, "VAR " << nodep);
+        const AstClass* const classp = VN_CAST(m_modp, Class);
+        if (classp && classp->isCovergroup() && nodep->isClassMember() && !nodep->isFuncLocal()
+            && (nodep->declDirection().isRef() || nodep->declDirection().isConstRef())) {
+            nodep->covergroupRefMember();
+        }
         if (nodep->valuep()) nodep->hasUserInit(true);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
         // responsible for marking those.
@@ -1145,17 +1150,18 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Append, for each arg in argsp, an INPUT parameter plus a "this.<member> = <param>"
+    // Append, for each arg in argsp, a parameter plus a "this.<member> = <param>"
     // assignment to funcp.  The parameter is a clone of the covergroup member and so shares its
     // name; 'this.' on the LHS targets the member, otherwise the same-named local parameter
     // shadows it and the assignment self-assigns the parameter, leaving the member unwritten.
     // argsp may be null (no args appended).
-    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp) {
+    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp, bool readOnlyRefs) {
         for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
             paramp->funcLocal(true);
-            paramp->direction(VDirection::INPUT);
+            paramp->direction(origVarp->direction());
+            if (readOnlyRefs && origVarp->isRef()) paramp->direction(VDirection::CONSTREF);
             funcp->addStmtsp(paramp);
             AstNodeExpr* const lhsp = new AstDot{
                 origVarp->fileline(), false, new AstParseRef{origVarp->fileline(), "this"},
@@ -1184,7 +1190,7 @@ class LinkParseVisitor final : public VNVisitor {
             // before the coverage body, then re-append the body.
             AstNode* const existingBodyp = newFuncp->stmtsp();
             if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
-            addArgMemberCopies(newFuncp, argsp);
+            addArgMemberCopies(newFuncp, argsp, true);
             if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
         }
 
@@ -1213,7 +1219,7 @@ class LinkParseVisitor final : public VNVisitor {
         // IEEE: function void sample([arguments])
         {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            addArgMemberCopies(funcp, sampleArgsp);
+            addArgMemberCopies(funcp, sampleArgsp, false);
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
@@ -1299,16 +1305,33 @@ class LinkParseVisitor final : public VNVisitor {
         // Convert constructor args to member variables
         for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
+            if (origVarp->direction() == VDirection::OUTPUT
+                || origVarp->direction() == VDirection::INOUT) {
+                origVarp->v3error("Covergroup formal arguments cannot be output or inout"
+                                  " (IEEE 1800-2012 19.3)");
+                origVarp->direction(VDirection::INPUT);
+            }
+            if ((origVarp->isRef() || origVarp->isConstRef()) && origVarp->valuep()) {
+                origVarp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: default value on ref or const ref covergroup "
+                                 "formal argument");
+            }
             AstVar* const memberp = origVarp->cloneTree(false);
             memberp->varType(VVarType::MEMBER);
             memberp->funcLocal(false);
             memberp->direction(VDirection::NONE);
+            if (origVarp->isRef() || origVarp->isConstRef()) memberp->noReset(true);
             cgClassp->addMembersp(memberp);
         }
 
         // Convert sample args to member variables
         for (AstNode* argp = nodep->sampleArgsp(); argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
+            if (!origVarp->isInput()) {
+                origVarp->v3error("Covergroup sample formal argument must have input direction "
+                                  "(IEEE 1800-2012 19.8.1).");
+                origVarp->direction(VDirection::INPUT);
+            }
             AstVar* const memberp = origVarp->cloneTree(false);
             memberp->varType(VVarType::MEMBER);
             memberp->funcLocal(false);

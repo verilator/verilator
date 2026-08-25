@@ -10,13 +10,19 @@ module t (
     input clk
 );
 
-  bit a = 0, b = 0, c = 0, d = 0, e = 0, abort_cond = 0;
+  bit a = 0, b = 0, c = 0, d = 0, e = 0;
   int cnt = 0;
   int impure_count = 0;
 
   property p_nested;
     a ##1 b;
   endproperty
+
+  sequence s_nested; a ##1 b; endsequence
+
+  function automatic bit fbool();
+    return a;
+  endfunction
 
   function automatic bit fimp();
     impure_count++;
@@ -43,8 +49,7 @@ module t (
   // Unsupported: impure expression in a flattened temporal composite
   assert property (@(posedge clk) (fimp() ##1 a) and(b ##1 c));
 
-  // Fixed-trace expansion diagnostics from the always and throughout paths
-  assert property (@(posedge clk) s_always[0: 2000] a);
+  // Fixed-trace expansion diagnostic from the throughout path
   assert property (@(posedge clk) (a throughout (b ##1024 c)) and(d ##1024 e));
 
   // Unsupported: property if/case inside a variable-end temporal window
@@ -68,9 +73,6 @@ module t (
   // Unsupported strong pass multiplicity when temporal OR loses resolved attempts
   assert property (@(posedge clk) a |-> (((a ##1 b) or(c ##1 d)) |-> s_always[1: 2] e)) cnt++;
 
-  // Unsupported: abort operator around a branching or unbounded property
-  assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) or(d ##2 e)));
-
   // Composite sequence operators the count engine cannot lower
   // verilog_format: off
   assert property (@(posedge clk) (a ##1 b) or (c ##2 d));
@@ -92,10 +94,14 @@ module t (
   assert property (@(posedge clk) ##[1:$] (a until b));
   // verilog_format: on
 
-  // Property if/else control forms the fail-only count engine cannot lower
+  // Property if/else control the fail-only count engine cannot lower
   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c) $display("pass");
   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
   assert property (@(posedge clk) not (if (a) 1'b1 ##1 b else 1'b1 ##2 c));
+
+  assert property (@(posedge clk) case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d;
+  endcase)
+    $display("pass");
 
   assert property (@(posedge clk) if (a) s_always[1:2] b else 1'b1 ##1 c);
 
@@ -103,10 +109,11 @@ module t (
                    if ($random == 0) 1'b1 ##1 b
                    else 1'b1 ##1 c);
 
-  // Huge finite delay bounds are rejected before graph construction
-  assert property (@(posedge clk) a ##2147483647 b);
-  assert property (@(posedge clk) a ##[0:2147483647] b);
-  assert property (@(posedge clk) a ##[1000000000:$] b);
+  // An unsupported body under an abort reports itself, not an internal error
+  assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) [* 2]));
+
+  // A body the builder rejects wins over the property if/case message
+  assert property (@(posedge clk) if (a) ((b ##1 c)[*2]) else d) $display("pass");
 
   // Fixed-trace conjunction rejects each non-flattenable operand form
   assert property (@(posedge clk) (a [* 1: $]) and(b ##1 c));
@@ -114,26 +121,10 @@ module t (
   assert property (@(posedge clk) ((a ##[1:2] b) and(c ##1 d)) and(e ##1 a));
   assert property (@(posedge clk) (a throughout ((b ##1 c) or(d ##1 e))) and(c ##2 a));
 
-  // Abort bodies that are not a linear delay chain
-  assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) |-> d));
-  assert property (@(posedge clk) sync_accept_on (a) (b ##[1:2] (c ##1 d)));
-  assert property (@(posedge clk) sync_accept_on (a) (b ##[1:$] c));
-  assert property (@(posedge clk) sync_accept_on (a) (always[0: $] b));
-  assert property (@(posedge clk) sync_accept_on (a) (accept_on (b) (c ##1 d)));
-
   // Variable/unbounded 'and' rejection in a cover context
   cover property (@(posedge clk) (a [-> 1]) and(b [* 2]));
 
-  // Negated delay rings past the ring-bit limit
-  assert property (@(posedge clk) not (a ##[1:1200000] b));
-  assert property (@(posedge clk) not (a ##[1:66'd9000000000] b));
-
-  // A constant-false always operand still rejects before the shared endpoint
-  assert property (@(posedge clk) (always[1: 2] 1'b0) or(c ##2 d));
-
   // Per-operand rejection inside temporal 'or'
-  assert property (@(posedge clk) (a ##2000000 b) or c);
-  assert property (@(posedge clk) a or(b ##2000000 c));
   assert property (@(posedge clk) (a ##1 b) or(fimp() ##1 c));
   assert property (@(posedge clk) (b throughout (1'b1 ##2 1'b1)) or(c ##2 d));
   assert property (@(posedge clk) (c ##2 d) or(b throughout (1'b1 ##2 1'b1)));
@@ -141,15 +132,26 @@ module t (
   // A named property instance nested in a composite is rejected, not dropped
   assert property (@(posedge clk) p_nested or e);
 
-  // Equal-end operands past the shape checks still reject an oversized delay
-  assert property (@(posedge clk) (a ##2000000 b) or(c ##2000000 d));
-  assert property (@(posedge clk) ((a ##2000000 b) or(c ##2000000 d)) intersect (e ##2000000 a));
+  // A named sequence instance is inlined, not rejected
+  assert property (@(posedge clk) s_nested or(c ##1 d));
 
-  // Abort operators in a multi-cycle property that the count engine rejects
-  assert property (@(posedge clk) accept_on (abort_cond) (a ##1 b));
+  // A function call is not a property instance
+  assert property (@(posedge clk) fbool() ##1 b);
 
-  assert property (@(posedge clk) not (sync_accept_on (abort_cond) (a ##1 b)));
+  // A user-written 'and' of implications is not a property if/case
+  assert property (@(posedge clk) (a |-> 1'b1 ##1 b) and(c |-> 1'b1 ##2 d));
 
-  cover property (@(posedge clk) sync_accept_on (abort_cond) (a ##1 b));
+  // Property if/else without an action is lowered, not rejected
+  assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
+
+  // A multi-cycle property with no clocking event is left to later passes
+  assert property (a [* 2]);
+
+  // An 'and' operand carrying mid-window sources defers to later passes
+  assert property (@(posedge clk) (1'b1 ##[1:2] b) and c);
+  assert property (@(posedge clk) c and(1'b1 ##[1:2] b));
+
+  // A boolean 'and' operand of a rejected cover-sequence 'or' is freed
+  cover sequence (@(posedge clk) ((a and b) or(c ##1 d)));
 
 endmodule

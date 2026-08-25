@@ -20,15 +20,22 @@ package PkgImp;
 endpackage
 
 class Cls;
+  bit cg_clk;
   int member = 1;
   rand int rmember1;
   rand int rmember2;
-  covergroup cg_in_class;
+  covergroup cg_in_class @(posedge cg_clk);
     cp_m: coverpoint member {
       bins one = {1};
       bins two = {2};
     }
   endgroup
+  covergroup cg_ref(ref int value);
+    cp_ref: coverpoint value;
+  endgroup
+  function new;
+    cg_in_class = new;
+  endfunction
   function void method;
     if (this != this) $stop;
   endfunction
@@ -426,7 +433,7 @@ module t (/*AUTOARG*/
       bins y0 = {0};
       bins y1 = {1};
     }
-    cx: cross cp_x, cp_y;
+    cx: cross cp_x, cp_y iff (cg_sig[0] == cg_sig2[0]);
   endgroup
 
   cg_basic   cg_basic_inst   = new;

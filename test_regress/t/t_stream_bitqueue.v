@@ -62,6 +62,12 @@ module t (  /*AUTOARG*/
       `checkh(bit_qq[2], 1'b1);
       `checkh(bit_qq[3], 1'b0);
 
+      bit_q = {bit_q_t'(4'ha)};
+      `checkh(bit_q[0], 1'b1);
+      `checkh(bit_q[1], 1'b0);
+      `checkh(bit_q[2], 1'b1);
+      `checkh(bit_q[3], 1'b0);
+
       bit_q = bit_q_t'({>>{4'hd}});
       `checkh(bit_q[0], 1'b1);
       `checkh(bit_q[1], 1'b1);
@@ -72,6 +78,18 @@ module t (  /*AUTOARG*/
       `checkh(bit_q[0], 1'b0);
       `checkh(bit_q[1], 1'b0);
       `checkh(bit_q[2], 1'b1);
+      `checkh(bit_q[3], 1'b1);
+
+      bit_q = {bit_q_t'({>>{4'hf}})};
+      `checkh(bit_q[0], 1'b1);
+      `checkh(bit_q[1], 1'b1);
+      `checkh(bit_q[2], 1'b1);
+      `checkh(bit_q[3], 1'b1);
+
+      bit_q = {bit_q_t'({<<{4'hb}})};
+      `checkh(bit_q[0], 1'b1);
+      `checkh(bit_q[1], 1'b1);
+      `checkh(bit_q[2], 1'b0);
       `checkh(bit_q[3], 1'b1);
 
       bit_q = {>>{bit_q_t'(4'he)}};
@@ -514,6 +532,51 @@ module t (  /*AUTOARG*/
       wide_stream = {>>bit{wide_bits}};
       `checkh(wide_stream,
               1024'hab3156d4b752f843537d68dfbf48f1f78af787ff8df2c257cd6fa7c795d300000000000000000000000000000000ffffffffa5bbf5cc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000);
+    end
+
+    // Streaming a queue into a packed destination wider than the source must assign the whole
+    // of the destination, including the bits below the left aligned source data. Each case
+    // first streams a source that is as wide as the destination, so all of the destination is
+    // set to a non-zero value, then streams a narrower source into the same destination.
+    begin
+      cdata_q_t cdata_q;
+      qdata_logic_q_t qdata_q;
+      wide_q_t wide_q;
+      logic [255:0] p256;
+      logic [383:0] p384;
+
+      // 8-bit elements
+      cdata_q = cdata_q_t'(
+          256'h00010203_04050607_08090a0b_0c0d0e0f_10111213_14151617_18191a1b_1c1d1e1f);
+      p256 = {>>{cdata_q}};
+      `checkh(p256,
+              256'h00010203_04050607_08090a0b_0c0d0e0f_10111213_14151617_18191a1b_1c1d1e1f);
+      cdata_q = cdata_q_t'(64'h00010203_04050607);
+      p256 = {>>{cdata_q}};
+      `checkh(p256,
+              256'h00010203_04050607_00000000_00000000_00000000_00000000_00000000_00000000);
+
+      // 64-bit elements
+      qdata_q = qdata_logic_q_t'(
+          256'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888);
+      p256 = {>>{qdata_q}};
+      `checkh(p256,
+              256'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888);
+      qdata_q = qdata_logic_q_t'(128'hdeadbeef_cafebabe_feedface_12345678);
+      p256 = {>>{qdata_q}};
+      `checkh(p256,
+              256'hdeadbeef_cafebabe_feedface_12345678_00000000_00000000_00000000_00000000);
+
+      // 128-bit (VlWide) elements
+      wide_q = wide_q_t'(
+          384'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888_aaaabbbb_ccccdddd_eeeeffff_00001111);
+      p384 = {>>{wide_q}};
+      `checkh(p384,
+              384'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888_aaaabbbb_ccccdddd_eeeeffff_00001111);
+      wide_q = wide_q_t'(128'hdeadbeef_cafebabe_feedface_12345678);
+      p384 = {>>{wide_q}};
+      `checkh(p384,
+              384'hdeadbeef_cafebabe_feedface_12345678_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000);
     end
 
     $write("*-* All Finished *-*\n");

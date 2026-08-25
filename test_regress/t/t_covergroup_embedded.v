@@ -69,6 +69,79 @@ class Monitor;
   endfunction
 endclass
 
+class UbusTransfer;
+  bit [15:0] addr;
+  bit read_write;
+endclass
+
+class UbusMasterMonitor;
+  UbusTransfer trans_collected;
+
+  covergroup cov_trans;
+    trans_start_addr: coverpoint trans_collected.addr {option.auto_bin_max = 16;}
+    trans_dir: coverpoint trans_collected.read_write;
+    trans_addr_x_dir: cross trans_start_addr, trans_dir;
+  endgroup
+
+  function new();
+    trans_collected = new;
+    cov_trans = new;
+  endfunction
+
+  function void observe(bit [15:0] addr, bit read_write);
+    trans_collected.addr = addr;
+    trans_collected.read_write = read_write;
+    cov_trans.sample();
+  endfunction
+endclass
+
+class CoverageState;
+  bit [3:0] test;
+  bit [3:0] test2;
+endclass
+
+class ParameterizedMonitor;
+  CoverageState state;
+  bit clk;
+
+  covergroup cov_param(CoverageState st) @(posedge clk);
+    cp: coverpoint st.test;
+    cp2: coverpoint st.test2;
+  endgroup
+
+  function new();
+    state = new;
+    cov_param = new(state);
+  endfunction
+
+  function void observe(bit [3:0] test, bit [3:0] test2);
+    state.test = test;
+    state.test2 = test2;
+    clk = 0;
+    clk = 1;
+  endfunction
+endclass
+
+class MixedMonitor;
+  bit [3:0] local_value;
+  CoverageState state;
+
+  covergroup cov_mixed(CoverageState st);
+    cp: coverpoint local_value + st.test;
+  endgroup
+
+  function new();
+    state = new;
+    cov_mixed = new(state);
+  endfunction
+
+  function void observe(bit [3:0] local_value, bit [3:0] test);
+    this.local_value = local_value;
+    state.test = test;
+    cov_mixed.sample();
+  endfunction
+endclass
+
 class BranchMonitor;
   bit [2:0] value;
 
@@ -252,6 +325,75 @@ class ThisHandleMonitor;
 endclass
 `endif
 
+class ClockEvent;
+  bit clk;
+endclass
+
+class ClockMonitor;
+  ClockEvent ev;
+  bit [3:0] sampled;
+
+  covergroup clock_cg @(posedge ev.clk);
+    cp_clocked: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    ev = new;
+    ev.clk = 0;
+    clock_cg = new;
+  endfunction
+
+  function void observe(bit [3:0] v);
+    sampled = v;
+    ev.clk = 0;
+    ev.clk = 1;
+  endfunction
+endclass
+
+class VectorClockMonitor;
+  bit [2:0] clk_vec;
+  bit [3:0] sampled;
+
+  covergroup pos_cg @(posedge clk_vec);
+    cp_pos: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup neg_cg @(negedge clk_vec);
+    cp_neg: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup both_cg @(posedge clk_vec or negedge clk_vec);
+    cp_both: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup edge_cg @(edge clk_vec);
+    cp_edge: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  covergroup change_cg @(clk_vec);
+    cp_change: coverpoint sampled {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
+  endgroup
+
+  function new();
+    clk_vec = 3'b000;
+    pos_cg = new;
+    neg_cg = new;
+    both_cg = new;
+    edge_cg = new;
+    change_cg = new;
+  endfunction
+
+  function void observe(bit [2:0] next_clk, bit [3:0] value);
+    sampled = value;
+    clk_vec = next_clk;
+  endfunction
+
+  function void observe_bit(bit next_clk, bit [3:0] value);
+    sampled = value;
+    clk_vec[0] = next_clk;
+  endfunction
+endclass
+
 class CopyMonitor;
   bit [3:0] value;
 
@@ -402,6 +544,9 @@ endclass
 
 module t;
   Monitor mon;
+  UbusMasterMonitor ubus_mon;
+  ParameterizedMonitor parameterized_arg_mon;
+  MixedMonitor mixed_arg_mon;
   BranchMonitor branch_a;
   BranchMonitor branch_b;
   DerivedMonitor derived;
@@ -412,6 +557,8 @@ module t;
 `ifdef VERILATOR
   ThisHandleMonitor this_handle_mon;
 `endif
+  ClockMonitor clock_mon;
+  VectorClockMonitor vector_clock_mon;
   CopyMonitor copy_src;
   CopyMonitor copy_dst;
   GlobalCgHolder global_src;
@@ -429,6 +576,9 @@ module t;
 
   initial begin
     mon = new;
+    ubus_mon = new;
+    parameterized_arg_mon = new;
+    mixed_arg_mon = new;
     branch_a = new(1);
     branch_b = new(0);
     derived = new;
@@ -439,6 +589,8 @@ module t;
 `ifdef VERILATOR
     this_handle_mon = new;
 `endif
+    clock_mon = new;
+    vector_clock_mon = new;
     copy_src = new;
     global_src = new;
     clone_src = new;
@@ -452,6 +604,9 @@ module t;
 
     for (i = 0; i < 16; ++i) begin
       mon.observe(i[3:0], i[7:0] * 17, i[1:0], i[3:0]);
+      ubus_mon.observe(i[15:0], i[0]);
+      parameterized_arg_mon.observe(i[3:0], 15 - i[3:0]);
+      mixed_arg_mon.observe(i[3:0], 15 - i[3:0]);
       derived.observe(i[3:0]);
       leaf.observe(i[3:0]);
       parameterized.observe(i[3:0]);
@@ -460,11 +615,19 @@ module t;
 `ifdef VERILATOR
       this_handle_mon.observe(i[3:0]);
 `endif
+      clock_mon.observe(i[3:0]);
       static_mon.observe(i[3:0]);
       static_only_mon.observe(i[3:0]);
       multiple_mon.observe(i[3:0], 15 - i[3:0]);
       nested_mon.observe(i[3:0]);
     end
+
+    vector_clock_mon.observe(3'b010, 4'hf);
+    vector_clock_mon.observe(3'b011, 4'h1);
+    vector_clock_mon.observe(3'b010, 4'h2);
+    vector_clock_mon.observe(3'b000, 4'he);
+    vector_clock_mon.observe_bit(1'b1, 4'h3);
+    vector_clock_mon.observe_bit(1'b0, 4'h4);
 
     for (i = 0; i < 8; ++i) begin
       branch_a.observe(i[2:0]);
@@ -472,14 +635,24 @@ module t;
     end
 
     copy_src.observe(4'h1);
+`ifdef VERILATOR
+    // IEEE 1800-2023 8.12 requires embedded covergroups to be null after a shallow copy.
+    // No new coverage object is created, so the copied object's properties are not covered.
+    // Questa instead aliases the source coverage object; Xcelium retains a non-null handle
+    // whose source and copied instances both report zero coverage.
     copy_dst = new copy_src;
     `checkd(copy_dst.copy_cg == null, 1);
-    global_dst = new global_src;
-    `checkd(global_dst.cg == global_src.cg, 1);
     clone_dst = new clone_src;
     clone_base_view = clone_dst;
     `checkd(clone_dst.cg == null, 1);
     `checkd(clone_base_view.cg == null, 1);
+`endif
+
+    global_dst = new global_src;
+`ifndef NC
+    // Comparing a covergroup variable with a non-null value is unsupported in Xcelium.
+    `checkd(global_dst.cg == global_src.cg, 1);
+`endif
 
     $write("*-* All Finished *-*\n");
     $finish;

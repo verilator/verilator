@@ -67,6 +67,7 @@ module t;
   endclass
 
   initial begin
+    int randomize_result;
     OuterObj obj;
     TopObj top;
     obj = new();
@@ -74,14 +75,16 @@ module t;
 
     // Test direct sub-object enum (one level deep)
     repeat (20) begin
-      `checkd(obj.randomize(), 1)
+      randomize_result = obj.randomize();
+      `checkd(randomize_result, 1);
       `check_enum_color(obj.inner.color)
       `check_enum_state(obj.inner.state)
     end
 
     // Test nested sub-object enum (two levels deep)
     repeat (20) begin
-      `checkd(top.randomize(), 1)
+      randomize_result = top.randomize();
+      `checkd(randomize_result, 1);
       `check_enum_color(top.mid.inner.color)
       `check_enum_state(top.mid.inner.state)
     end

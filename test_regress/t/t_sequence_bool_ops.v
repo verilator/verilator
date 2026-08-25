@@ -27,8 +27,7 @@ module t (
 
   always_ff @(posedge clk) begin
 `ifdef TEST_VERBOSE
-    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n",
-           $time, cyc, crc, a, b, c, d);
+    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n", $time, cyc, crc, a, b, c, d);
 `endif
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
@@ -37,9 +36,11 @@ module t (
     if (cyc == 0) begin
       crc <= 64'h5aef0c8d_d70a4497;
       sum <= '0;
-    end else if (cyc < 10) begin
+    end
+    else if (cyc < 10) begin
       sum <= '0;
-    end else if (cyc == 99) begin
+    end
+    else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkh(sum, 64'hdb7bc8bfe61f987e);
       `checkh(dc_pass, 'h62);

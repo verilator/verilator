@@ -39,8 +39,11 @@
 #include <iostream>
 
 // These require the above. Comment prevents clang-format moving them
+#include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
+
+int errors = 0;
 
 int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verbose) {
     int vpi_type;
@@ -48,7 +51,6 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     s_vpi_value value;
     value.format = format;
     value.value.integer = 0;
-    s_vpi_error_info e;
     const char* p;
 
     vpi_printf((PLI_BYTE8*)"Check parameter %s vpi ...\n", name.c_str());
@@ -68,32 +70,23 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     p = vpi_get_str(vpiType, param_h);
     CHECK_RESULT_CSTR(p, "vpiParameter");
     vpi_type = vpi_get(vpiLocalParam, param_h);
-    CHECK_RESULT_NZ(vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {
-        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
-    }
+    TEST_CHECK_ERROR(true);
 
     // values
     if (verbose) vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str());
     value.value.integer = exp_value;
     vpi_put_value(param_h, &value, NULL, vpiNoDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {
-        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
-    }
+    TEST_CHECK_ERROR(true);
 
     if (verbose) vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str());
     vpi_get_value(param_h, &value);
-    CHECK_RESULT_NZ(!vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {
-        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
-    }
+    TEST_CHECK_ERROR(false);
     if (verbose) {
         vpi_printf((PLI_BYTE8*)"    value of %s: %d\n", name.c_str(), value.value.integer);
     }
     CHECK_RESULT(value.value.integer, exp_value);
 
-    return 0;
+    return errors;
 }
 
 int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, bool verbose) {
@@ -102,7 +95,6 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     s_vpi_value value;
     value.format = format;
     value.value.integer = 0;
-    s_vpi_error_info e;
     const char* p;
 
     vpi_printf((PLI_BYTE8*)"Check parameter %s vpi ...\n", name.c_str());
@@ -122,32 +114,23 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     p = vpi_get_str(vpiType, param_h);
     CHECK_RESULT_CSTR(p, "vpiParameter");
     vpi_type = vpi_get(vpiLocalParam, param_h);
-    CHECK_RESULT_NZ(vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {
-        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
-    }
+    TEST_CHECK_ERROR(true);
 
     // values
     if (verbose) vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str());
     value.value.str = (PLI_BYTE8*)exp_value.c_str();
     vpi_put_value(param_h, &value, NULL, vpiNoDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {
-        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
-    }
+    TEST_CHECK_ERROR(true);
 
     if (verbose) vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str());
     vpi_get_value(param_h, &value);
-    CHECK_RESULT_NZ(!vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {
-        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
-    }
+    TEST_CHECK_ERROR(false);
     if (verbose) {
         vpi_printf((PLI_BYTE8*)"    value of %s: %s\n", name.c_str(), value.value.str);
     }
     CHECK_RESULT_CSTR(value.value.str, exp_value.c_str());
 
-    return 0;
+    return errors;
 }
 
 int _mon_check_param() {

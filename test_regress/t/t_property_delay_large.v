@@ -35,9 +35,10 @@ module t (
                       || (cyc == 680) || (cyc == 720);
   wire range_fail_a = (cyc >= 250 && cyc <= 257) || (cyc >= 820 && cyc <= 827);
   wire range_a = range_pass_a || range_fail_a;
+  // The pulse at 559 must not match after all preceding attempts have expired.
   wire range_b = (cyc == 20) || (cyc == 50) || (cyc == 80) || (cyc == 110)
-                 || (cyc == 140) || (cyc == 610) || (cyc == 650) || (cyc == 690)
-                 || (cyc == 730);
+                 || (cyc == 140) || (cyc == 559)
+                 || (cyc == 610) || (cyc == 650) || (cyc == 690) || (cyc == 730);
 
   // Questa action blocks observe the cycle after the sampled property cycle.
   cover property (@(posedge clk) fixed_a ##1024 fixed_b) fixed_pass_q.push_back($sampled(cyc) + 1);

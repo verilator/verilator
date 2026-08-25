@@ -143,6 +143,7 @@ endclass
 
 module t_constraint_struct_unref;
   initial begin
+    int randomize_result;
     C c;
     D d;
     E e;
@@ -205,37 +206,44 @@ module t_constraint_struct_unref;
     plain2.inr.b = 4'hA;
     plain2.x = 4'hB;
     for (int i = 0; i < 300; i++) begin
-      `checkd(c.randomize(), 1);
+      randomize_result = c.randomize();
+      `checkd(randomize_result, 1);
       `checkd((c.u.size inside {[0 : 2]}), 1'b1);
       `checkd((c.p.size inside {[0 : 2]}), 1'b1);
       `checkd(c.u.fixed, 4'hA);
       uid[c.u.id]++;
       pid[c.p.id]++;
       iid[c.u.inner.inner_id]++;
-      `checkd(d.randomize(), 1);
+      randomize_result = d.randomize();
+      `checkd(randomize_result, 1);
       `checkd((d.z < 5), 1'b1);
       `checkd(d.m.id, 4'h1);
       `checkd(d.m.size, 3'h2);
       `checkd(d.m.inner.inner_id, 4'h3);
       `checkd(d.m.fixed, 4'h4);
       zid[d.z]++;
-      `checkd(e.randomize(), 1);
+      randomize_result = e.randomize();
+      `checkd(randomize_result, 1);
       `checkd((e.o.inr.a < 3), 1'b1);
       bid[e.o.inr.b]++;  // unreferenced nested member
       xid[e.o.x]++;  // unreferenced outer member
-      `checkd(f.randomize(), 1);
+      randomize_result = f.randomize();
+      `checkd(randomize_result, 1);
       `checkd((f.s.r < 5), 1'b1);
       wid[f.s.wi]++;  // unreferenced rand member with initializer
       cid[f.s.cyc]++;  // unreferenced randc member
-      `checkd(g.randomize(), 1);
+      randomize_result = g.randomize();
+      `checkd(randomize_result, 1);
       `checkd((g.o.g < 5), 1'b1);
       e0id[g.o.es[0].f]++;  // unreferenced array-of-struct element
       e1id[g.o.es[1].f]++;
-      `checkd(h.randomize(), 1);
+      randomize_result = h.randomize();
+      `checkd(randomize_result, 1);
       `checkd((h.o.sub.rv < 5), 1'b1);
       `checkd(h.o.sub.kv, 4'hC);
       hid[h.o.hv]++;
-      `checkd(iarr.randomize(), 1);
+      randomize_result = iarr.randomize();
+      `checkd(randomize_result, 1);
       foreach (iarr.cfgs[k]) begin
         `checkd((iarr.cfgs[k].subs[0].ed[0] != iarr.flip), 1'b1);
         `checkd(iarr.cfgs[k].subs[0].ec, 1'b1);

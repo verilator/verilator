@@ -9,5 +9,5 @@ module t (
 );
   logic a = 1'b1;
 
-  assume property (@(posedge clk) strong(a ##1 a));
+  assume property (@(posedge clk) strong (a ##1 a));
 endmodule

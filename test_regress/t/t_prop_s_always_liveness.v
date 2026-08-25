@@ -24,6 +24,8 @@ module t (
   // The youngest [2:5] windows are still open at $finish, so strong s_always
   // reports a liveness failure even with a_high always 1; weak always does not.
   assert property (@(posedge clk) s_always [2:5] a_high);
+  assert property (@(posedge clk) s_always [2:1026] a_high);
+  assert property (@(posedge clk) s_always [2:3] a_high);
   assert property (@(posedge clk) always [2:5] a_high);
 
   assert property (@(posedge clk) s_always [2:5] a_low)

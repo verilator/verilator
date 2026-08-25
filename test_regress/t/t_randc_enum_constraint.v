@@ -38,12 +38,14 @@ module t;
     AllColorsClass ac;
     int color_seen[5];
     int first_seq, all_same, this_seq;
+    int randomize_result;
 
     // Test 1: randc enum with exclusion constraint
     // Values must be valid enum members (0-4) and not BLACK (4)
     c = new;
     repeat (40) begin
-      `checkd(c.randomize(), 1);
+      randomize_result = c.randomize();
+      `checkd(randomize_result, 1);
       `checkd(c.color <= BLACK, 1);
       `checkd(c.color == BLACK, 0);
     end
@@ -57,13 +59,15 @@ module t;
       this_seq = 0;
       for (int j = 0; j < 4; j++) color_seen[j] = 0;
       repeat (40) begin
-        `checkd(ac.randomize(), 1);
+        randomize_result = ac.randomize();
+        `checkd(randomize_result, 1);
         `checkd(ac.color <= WHITE, 1);
         color_seen[ac.color] = 1;
       end
       // Record first 4 values for sequence comparison
       repeat (4) begin
-        `checkd(ac.randomize(), 1);
+        randomize_result = ac.randomize();
+        `checkd(randomize_result, 1);
         this_seq = this_seq * 8 + int'(ac.color);
       end
       `checkd(color_seen[0], 1);

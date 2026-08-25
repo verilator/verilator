@@ -270,37 +270,37 @@
 -000000  point: type=branch comment=else hier=top.t
 ~000010     if (($dist_erlang(result, 2, 3) != 0) && foo) bump <= bump + 1;
 -000000  point: type=expr comment=(($dist_erlang(result, 32'sh2, 32'sh3) != 32'sh0)==0) => 0 hier=top.t
-+000010  point: type=expr comment=(($dist_erlang(result, 32'sh2, 32'sh3) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000009  point: type=expr comment=(($dist_erlang(result, 32'sh2, 32'sh3) != 32'sh0)==1 && foo==1) => 1 hier=top.t
 -000000  point: type=expr comment=(foo==0) => 0 hier=top.t
 +000010  point: type=branch comment=if hier=top.t
 -000000  point: type=branch comment=else hier=top.t
 ~000010     if (($dist_normal(result, 2, 3) != 0) && foo) bump <= bump + 1;
--000000  point: type=expr comment=(($dist_normal(result, 32'sh2, 32'sh3) != 32'sh0)==0) => 0 hier=top.t
-+000010  point: type=expr comment=(($dist_normal(result, 32'sh2, 32'sh3) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000002  point: type=expr comment=(($dist_normal(result, 32'sh2, 32'sh3) != 32'sh0)==0) => 0 hier=top.t
+-000009  point: type=expr comment=(($dist_normal(result, 32'sh2, 32'sh3) != 32'sh0)==1 && foo==1) => 1 hier=top.t
 -000000  point: type=expr comment=(foo==0) => 0 hier=top.t
 +000010  point: type=branch comment=if hier=top.t
 -000000  point: type=branch comment=else hier=top.t
-~000010     if (($dist_t(result, 2) != 0) && foo) bump <= bump + 1;
--000000  point: type=expr comment=(($dist_t(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
--000000  point: type=expr comment=(($dist_t(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+%000007     if (($dist_t(result, 2) != 0) && foo) bump <= bump + 1;
+-000005  point: type=expr comment=(($dist_t(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
+-000007  point: type=expr comment=(($dist_t(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
 -000000  point: type=expr comment=(foo==0) => 0 hier=top.t
--000000  point: type=branch comment=if hier=top.t
-+000010  point: type=branch comment=else hier=top.t
-~000010     if (($dist_chi_square(result, 2) != 0) && foo) bump <= bump + 1;
+-000007  point: type=branch comment=if hier=top.t
+-000003  point: type=branch comment=else hier=top.t
+%000009     if (($dist_chi_square(result, 2) != 0) && foo) bump <= bump + 1;
 -000000  point: type=expr comment=(($dist_chi_square(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
-+000010  point: type=expr comment=(($dist_chi_square(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000009  point: type=expr comment=(($dist_chi_square(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
 -000000  point: type=expr comment=(foo==0) => 0 hier=top.t
-+000010  point: type=branch comment=if hier=top.t
--000000  point: type=branch comment=else hier=top.t
-~000010     if (($dist_exponential(result, 2) != 0) && foo) bump <= bump + 1;
--000000  point: type=expr comment=(($dist_exponential(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
--000000  point: type=expr comment=(($dist_exponential(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000006  point: type=branch comment=if hier=top.t
+-000004  point: type=branch comment=else hier=top.t
+%000008     if (($dist_exponential(result, 2) != 0) && foo) bump <= bump + 1;
+-000002  point: type=expr comment=(($dist_exponential(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
+-000006  point: type=expr comment=(($dist_exponential(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
 -000000  point: type=expr comment=(foo==0) => 0 hier=top.t
-+000010  point: type=branch comment=if hier=top.t
--000000  point: type=branch comment=else hier=top.t
+-000008  point: type=branch comment=if hier=top.t
+-000002  point: type=branch comment=else hier=top.t
 ~000010     if (($dist_poisson(result, 2) != 0) && foo) bump <= bump + 1;
-+000010  point: type=expr comment=(($dist_poisson(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
-+000010  point: type=expr comment=(($dist_poisson(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000002  point: type=expr comment=(($dist_poisson(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
+-000009  point: type=expr comment=(($dist_poisson(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
 -000000  point: type=expr comment=(foo==0) => 0 hier=top.t
 +000010  point: type=branch comment=if hier=top.t
 -000000  point: type=branch comment=else hier=top.t
