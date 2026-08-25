@@ -447,6 +447,12 @@ string V3Os::trueRandom(size_t size) VL_MT_SAFE {
     if (VL_UNCOVERABLE(!BCRYPT_SUCCESS(hr))) {
         v3fatal("Could not acquire random data. Try specifying a key instead.");  // LCOV_EXCL_LINE
     }
+#elif defined(__wasi__)
+    // WASI has no /dev/urandom. getentropy() rejects sizes over 256 bytes,
+    // which is more than any caller asks for, and errors rather than truncates.
+    if (VL_UNCOVERABLE(getentropy(data, size))) {
+        v3fatal("Could not acquire random data. Try specifying a key instead.");  // LCOV_EXCL_LINE
+    }
 #else
     std::ifstream is{"/dev/urandom", std::ios::in | std::ios::binary};
     // This read uses the size of the buffer.
