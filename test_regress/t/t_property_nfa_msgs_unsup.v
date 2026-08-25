@@ -179,6 +179,9 @@ module t (
   // A constant strong 'or' operand is not folded
   assert property (@(posedge clk) (s_always [1:2] 1'b1) or(a ##2 b));
 
+  // A ranged repetition in a cover sequence counts ring occupants per end
+  cover sequence (@(posedge clk) a [* 1: 3]);
+
   // A constant-true 'or' operand of a cover sequence folds away
   cover sequence (@(posedge clk) (1'b1 or c) ##1 d);
   cover sequence (@(posedge clk) (c or 1'b1) ##1 d);

@@ -79,7 +79,7 @@ public:
     virtual void* datap(int /*idx*/) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
-    bool set(const std::string& idx, const std::string& val) const;
+    void set(const std::string& idx, const std::string& val) const;
     virtual void emitGetValue(std::ostream& s) const;
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
@@ -257,8 +257,9 @@ class VlRandomizer VL_NOT_FINAL {
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& os);
-    bool checkSat(std::iostream& os);
+    // Fetch the model and write it into the registered variables.
+    bool applyModel(std::iostream& os);
+    bool parseModel(std::istream& is, size_t requested);
     // Assert the maximal compatible soft-constraint set onto the open session.
     void relaxSoftConstraints(std::iostream& os);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).
@@ -287,6 +288,7 @@ class VlRandomizer VL_NOT_FINAL {
     bool solvePhaseValues(std::iostream& os, VlRNG& rngr,
                           const std::vector<std::string>& layerVars,
                           std::map<std::string, std::string>& solvedValuesr);
+    bool readPhaseValues(std::iostream& os, std::map<std::string, std::string>& solvedValuesr);
     bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
 
 public:

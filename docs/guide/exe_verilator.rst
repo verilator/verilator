@@ -116,6 +116,10 @@ Summary:
 
 .. option:: --assert-unroll-limit <iterations>
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.052:
+
    Rarely needed. Specifies the maximum repetition or range count Verilator
    will unroll inside an SVA concurrent assertion (e.g. ``[*N]``, ``[->M:N]``,
    ``always[lo:hi]``). Beyond this, the assertion is rejected with an error
