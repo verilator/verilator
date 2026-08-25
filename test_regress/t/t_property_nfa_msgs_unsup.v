@@ -85,6 +85,7 @@ module t (
   assert property (@(posedge clk) (a ##1 b) |-> not (c ##[1:2] d)) $display("pass");
 
   assert property (@(posedge clk) ((|($random | $random))[*2]) and (1'b1 ##1 1'b1));
+  assert property (@(posedge clk) ((|($urandom | $urandom))[*2]) and (1'b1 ##1 1'b1));
 
   assert property (@(posedge clk) (a[*2000]) and (1'b1 ##1 1'b1));
 
@@ -129,6 +130,27 @@ module t (
   assert property (@(posedge clk) (b throughout (1'b1 ##2 1'b1)) or(c ##2 d));
   assert property (@(posedge clk) (c ##2 d) or(b throughout (1'b1 ##2 1'b1)));
 
+  // Nested fixed-trace conjunctions reject through the enclosing operator
+  assert property (@(posedge clk) (((a ##1 b) or(c ##1 d)) and(e ##1 a)) and(b ##1 c));
+  assert property (@(posedge clk) ((fimp() ##1 a) and(b ##1 c)) and(d ##1 e));
+  assert property (@(posedge clk) (a ##1 b) and(fimp() ##1 c));
+  assert property (@(posedge clk) (##1 fimp()) and(b ##1 c));
+  assert property (@(posedge clk) (((a ##1 b) or(c ##1 d)) and(e ##1 a)) or(b ##1 c));
+  assert property (@(posedge clk) (b ##1 c) or(((a ##1 b) or(c ##1 d)) and(e ##1 a)));
+  assert property (@(posedge clk) (a ##2 b) intersect ((fimp() ##2 c) or(d ##2 e)));
+  assert property (@(posedge clk) (a ##[1:2] b) and((fimp() ##1 c) or(d ##1 e)));
+  assert property (@(posedge clk) ((fimp() ##1 c) or(d ##1 e)) and(a ##[1:2] b));
+
+  // Variable-length repetition operands of a temporal 'or'
+  assert property (@(posedge clk) ((a [* 1: 2]) and(b ##1 c)) or(d ##1 e));
+  assert property (@(posedge clk) ((a ##1 b) and(c [* 1: 2])) or(d ##1 e));
+
+  // A sequence operand of 'until', a throughout body the builder rejects, if/case under an abort
+  assert property (@(posedge clk) (a ##1 b) until c);
+  assert property (@(posedge clk) a throughout ((b ##1 c) [* 2]));
+  assert property (@(posedge clk) sync_accept_on (a) (if (b) 1'b1 ##1 c else 1'b1 ##2 d));
+  cover property (@(posedge clk) (a ##1 b) |-> not (c ##[1:2] d));
+
   // A named property instance nested in a composite is rejected, not dropped
   assert property (@(posedge clk) p_nested or e);
 
@@ -153,5 +175,37 @@ module t (
 
   // A boolean 'and' operand of a rejected cover-sequence 'or' is freed
   cover sequence (@(posedge clk) ((a and b) or(c ##1 d)));
+
+  // A constant strong 'or' operand is not folded
+  assert property (@(posedge clk) (s_always [1:2] 1'b1) or(a ##2 b));
+
+  // A constant-true 'or' operand of a cover sequence folds away
+  cover sequence (@(posedge clk) (1'b1 or c) ##1 d);
+  cover sequence (@(posedge clk) (c or 1'b1) ##1 d);
+
+  // A nonconsecutive repetition operand of 'or' is diagnosed at the 'or'
+  assert property (@(posedge clk) (a [= 1] ##1 b) or(c ##2 d));
+  assert property (@(posedge clk) (c ##2 d) or(a [= 1] ##1 b));
+
+  // An 'or' under intersect in a cover property is lowered
+  cover property (@(posedge clk) (a ##2 b) intersect ((c ##2 d) or(e ##2 a)));
+
+  // An unbounded 'and' operand is lowered through the combiner
+  assert property (@(posedge clk) (a ##[1:$] b) and(c ##1 d));
+
+  // A nested 'and' whose right operand cannot be flattened
+  assert property (@(posedge clk) ((a ##1 b) and((c ##1 d) or(e ##1 a))) and(b ##1 c));
+  assert property (@(posedge clk) ((a ##1 b) and(fimp() ##1 c)) and(d ##1 e));
+
+  // Property if/else with a boolean else branch is lowered
+  assert property (@(posedge clk) if (a) 1'b1 ##1 b else c);
+
+  // A fixed-count repetition range and a four-state constant operand are lowered
+  assert property (@(posedge clk) (a [* 2: 2]) and(b ##1 c));
+  assert property (@(posedge clk) (always [1:2] 1'bx) or(a ##2 b));
+
+  // Left-operand mirrors of the intersect rejections
+  assert property (@(posedge clk) (a throughout ((b ##2 c) or(d ##2 e))) intersect (c ##2 a));
+  assert property (@(posedge clk) ((fimp() ##2 c) or(d ##2 e)) intersect (a ##2 b));
 
 endmodule

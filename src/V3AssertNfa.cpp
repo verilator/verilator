@@ -221,18 +221,8 @@ struct BuildResult final {
 };
 
 // Parser-marked SAnd of overlapped implications: a property if/else/case.
-static bool isPropertyControlConjunction(const AstNodeExpr* nodep) {
-    if (const AstSAnd* const andp = VN_CAST(nodep, SAnd)) {
-        if (!andp->propertyControl()) return false;
-        return isPropertyControlConjunction(andp->lhsp())
-               && isPropertyControlConjunction(andp->rhsp());
-    }
-    const AstImplication* const implicationp = VN_CAST(nodep, Implication);
-    return implicationp && implicationp->isOverlapped() && !implicationp->isFollowedBy();
-}
-
 static bool hasPropertyControlConjunction(const AstNodeExpr* nodep) {
-    return nodep->exists([](const AstSAnd* andp) { return isPropertyControlConjunction(andp); });
+    return nodep->exists([](const AstSAnd* andp) { return andp->propertyControl(); });
 }
 
 // A peeled top-level abort expression remains owned by its source AstAbortOn.
@@ -413,12 +403,11 @@ class SvaNfaBuilder final {
             return fixedLength(throughp->rhsp());
         }
         if (AstPropAlways* const alwaysp = VN_CAST(nodep, PropAlways)) {
-            if (VN_IS(alwaysp->hiBoundp(), Unbounded) || alwaysp->propp()->isMultiCycleSva()) {
-                return -1;
-            }
+            if (VN_IS(alwaysp->hiBoundp(), Unbounded)) return -1;
             return static_cast<int>(getConstUInt(alwaysp->hiBoundp()));
         }
-        if (AstAbortOn* const abortp = VN_CAST(nodep, AbortOn)) return fixedLength(abortp->propp());
+        if (AstAbortOn* const abortp = VN_CAST(nodep, AbortOn))
+            return fixedLength(abortp->propp());
         if (AstSConsRep* const repp = VN_CAST(nodep, SConsRep)) {
             if (repp->unbounded() || repp->exprp()->isMultiCycleSva()) return -1;
             const unsigned minN = getConstUInt(repp->countp());
@@ -460,17 +449,15 @@ class SvaNfaBuilder final {
     static bool mayRejectBeforeEnd(AstNodeExpr* nodep) {
         return nodep->exists([](const AstSThroughout*) { return true; })
                || nodep->exists([](const AstAbortOn*) { return true; })
-               || nodep->exists([](const AstUntil*) { return true; })
                || nodep->exists([](const AstPropAlways* const alwaysp) {
-                      const AstConst* const constp = VN_CAST(alwaysp->propp(), Const);
-                      return !constp || constp->num().isFourState() || constp->num().isEqZero();
+                      return !VN_IS(alwaysp->propp(), Const);
                   });
     }
 
     static bool containsImpureExpr(AstNode* nodep) {
         return nodep->exists([](AstNode* const np) {
             // $random reports pure but advances RNG state; must not be duplicated.
-            return VN_IS(np, Rand) || VN_IS(np, RandRNG) || !np->isPure();
+            return VN_IS(np, Rand) || !np->isPure();
         });
     }
 
@@ -1062,7 +1049,7 @@ class SvaNfaBuilder final {
                         "Unsupported: impure expression in a temporal 'or' composite");
             return BuildResult::failWithError();
         }
-        if (sameFixedEnd && mayEmitLocalReject(isTopLevelStep)
+        if (mayEmitLocalReject(isTopLevelStep)
             && (mayRejectBeforeEnd(lhsp) || mayRejectBeforeEnd(rhsp))) {
             flp->v3warn(E_UNSUPPORTED,
                         "Unsupported: temporal 'or' endpoint deadline after an operand that can "
@@ -1091,7 +1078,7 @@ class SvaNfaBuilder final {
         cleanupProbeResult(rhs);
 
         // One endpoint verdict: reject once only if neither branch reached the merge.
-        if (sameFixedEnd && mayEmitLocalReject(isTopLevelStep)) {
+        if (mayEmitLocalReject(isTopLevelStep)) {
             SvaStateVertex* const deadlineVtxp = addDelayChain(entryVtxp, lhsLen, flp);
             SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
             sinkVtxp->m_isRejectSink = true;
@@ -1195,11 +1182,9 @@ class SvaNfaBuilder final {
         // Snapshot-restore scope so LHS liveness does not leak into RHS.
         const bool savedScope = m_inUnboundedScope;
         const BuildResult lhs = buildExpr(lhsExprp, entryVtxp);
-        const bool lhsScope = m_inUnboundedScope;
         m_inUnboundedScope = savedScope;
         const BuildResult rhs = buildExpr(rhsExprp, entryVtxp);
-        const bool rhsScope = m_inUnboundedScope;
-        m_inUnboundedScope = savedScope || lhsScope || rhsScope;
+        m_inUnboundedScope = savedScope;
         if (!lhs.valid() || !rhs.valid()) {
             cleanupProbeResult(lhs);
             cleanupProbeResult(rhs);
@@ -1287,7 +1272,7 @@ class SvaNfaBuilder final {
 
     static bool reserveFixedTraceSites(AstNode* nodep, uint64_t& sites, uint64_t increment) {
         const uint64_t limit = static_cast<uint64_t>(v3Global.opt.assertUnrollLimit());
-        if (sites <= limit && increment <= limit - sites) {
+        if (increment <= limit - sites) {
             sites += increment;
             return true;
         }
@@ -1321,7 +1306,7 @@ class SvaNfaBuilder final {
         }
         if (AstSThroughout* const throughoutp = VN_CAST(nodep, SThroughout)) {
             const int rhsLen = fixedLength(throughoutp->rhsp());
-            if (rhsLen < 0) return true;
+            UASSERT_OBJ(rhsLen >= 0, throughoutp, "Fixed-trace throughout has a fixed body");
             if (containsImpureExpr(throughoutp->lhsp())) {
                 throughoutp->v3warn(
                     E_UNSUPPORTED,
@@ -1361,13 +1346,11 @@ class SvaNfaBuilder final {
             return flattenFixedSeq(sexprp->exprp(), baseOffset + preLen + delayCycles, out);
         }
         if (AstSConsRep* const repp = VN_CAST(nodep, SConsRep)) {
-            if (repp->unbounded() || repp->exprp()->isMultiCycleSva()) return false;
+            UASSERT_OBJ(!repp->unbounded() && !repp->exprp()->isMultiCycleSva(), repp,
+                        "Fixed-trace repetition is a bounded boolean");
             const unsigned minN = getConstUInt(repp->countp());
-            if (repp->maxCountp() && getConstUInt(repp->maxCountp()) != minN) return false;
             for (unsigned i = 0; i < minN; ++i) {
-                if (!flattenFixedSeq(repp->exprp(), baseOffset + static_cast<int>(i), out)) {
-                    return false;
-                }
+                out[baseOffset + static_cast<int>(i)].push_back(repp->exprp());
             }
             return true;
         }
@@ -1377,7 +1360,8 @@ class SvaNfaBuilder final {
         }
         if (AstSThroughout* const throughoutp = VN_CAST(nodep, SThroughout)) {
             const int rhsLen = fixedLength(throughoutp->rhsp());
-            if (rhsLen < 0 || !flattenFixedSeq(throughoutp->rhsp(), baseOffset, out)) return false;
+            UASSERT_OBJ(rhsLen >= 0, throughoutp, "Fixed-trace throughout has a fixed body");
+            if (!flattenFixedSeq(throughoutp->rhsp(), baseOffset, out)) return false;
             // IEEE 16.9.9 covers the start tick, the end tick, and every gap tick between.
             for (int offset = 0; offset <= rhsLen; ++offset) {
                 out[baseOffset + offset].push_back(throughoutp->lhsp());
@@ -1497,7 +1481,7 @@ class SvaNfaBuilder final {
     }
 
     BuildResult buildSAnd(AstSAnd* nodep, SvaStateVertex* entryVtxp, bool isTopLevelStep) {
-        if (isPropertyControlConjunction(nodep)) {
+        if (nodep->propertyControl()) {
             return buildPropertyControlAnd(nodep, entryVtxp, isTopLevelStep);
         }
         const int lhsLen = fixedLength(nodep->lhsp());
@@ -2138,9 +2122,7 @@ private:
         return new AstLogAnd{c.flp, exprp, notKillActive(c)};
     }
     static AstNodeExpr* abortActive(LowerCtx& c) {
-        return c.abortAnyVarp
-                   ? static_cast<AstNodeExpr*>(new AstVarRef{c.flp, c.abortAnyVarp, VAccess::READ})
-                   : static_cast<AstNodeExpr*>(new AstConst{c.flp, AstConst::BitFalse{}});
+        return new AstVarRef{c.flp, c.abortAnyVarp, VAccess::READ};
     }
     static AstNodeExpr* gateNotAbort(LowerCtx& c, AstNodeExpr* exprp) {
         if (!exprp || !c.abortAnyVarp) return exprp;
@@ -2181,16 +2163,13 @@ private:
         return new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
     }
     static AstNodeExpr* oldAttemptAlive(LowerCtx& c) {
-        AstNodeExpr* gatep = currentEntryAlive(c);
-        if (!gatep && !c.snapshotVarp) return nullptr;
-        if (c.snapshotVarp) {
-            AstNodeExpr* const epochOkp
-                = new AstEq{c.flp, new AstVarRef{c.flp, c.snapshotVarp, VAccess::READ},
-                            new AstVarRef{c.flp, c.disableCntVarp, VAccess::READ}};
-            gatep = gatep ? static_cast<AstNodeExpr*>(new AstLogAnd{c.flp, gatep, epochOkp})
-                          : epochOkp;
-        }
-        return gatep;
+        if (!c.snapshotVarp) return nullptr;
+        AstNodeExpr* const epochOkp
+            = new AstEq{c.flp, new AstVarRef{c.flp, c.snapshotVarp, VAccess::READ},
+                        new AstVarRef{c.flp, c.disableCntVarp, VAccess::READ}};
+        AstNodeExpr* const gatep = currentEntryAlive(c);
+        if (!gatep) return epochOkp;
+        return new AstLogAnd{c.flp, gatep, epochOkp};
     }
     static AstNodeExpr* gateOldAttempt(LowerCtx& c, AstNodeExpr* exprp) {
         AstNodeExpr* const gatep = oldAttemptAlive(c);
@@ -2207,7 +2186,7 @@ private:
 
     void emitAbortCapture(LowerCtx& c, const std::string& baseName,
                           const std::vector<AbortSpec>* abortSpecsp) {
-        if (!abortSpecsp || abortSpecsp->empty()) return;
+        if (!abortSpecsp) return;
 
         std::vector<AstVar*> condVars;
         condVars.reserve(abortSpecsp->size());
@@ -2316,7 +2295,6 @@ private:
     }
 
     static AstNodeExpr* gateCount(LowerCtx& c, AstNodeExpr* gatep, AstNodeExpr* countp) {
-        if (!gatep) return countp;
         AstCond* const resultp = new AstCond{c.flp, gatep, countp,
                                              new AstConst{c.flp, AstConst::WidthedValue{}, 32, 0}};
         resultp->dtypeFrom(c.killVarp);
@@ -2326,8 +2304,9 @@ private:
     static std::vector<int> computeAttemptDepths(const LowerCtx& c) {
         std::vector<int> depths(c.N, kDepthUnreachable);
         depths[c.startIdx] = 0;
-        bool converged = false;
-        for (int pass = 0; pass < 2 * c.N + 2; ++pass) {
+        for (int pass = 0;; ++pass) {
+            UASSERT_OBJ(pass < 2 * c.N + 2, c.graph.m_startVertexp,
+                        "Attempt depth propagation did not converge");
             bool changed = false;
             for (const SvaTransEdge* const tep : c.edges) {
                 const int fi = tep->fromVtxp()->color();
@@ -2347,13 +2326,8 @@ private:
                     changed = true;
                 }
             }
-            if (!changed) {
-                converged = true;
-                break;
-            }
+            if (!changed) break;
         }
-        UASSERT_OBJ(converged, c.graph.m_startVertexp,
-                    "Attempt depth propagation did not converge");
         return depths;
     }
 
@@ -2640,8 +2614,8 @@ private:
                                  sampled(vtxp->m_delayRingClearCondp->cloneTreePure(false)));
             }
             if (vtxp->m_abortClearp) {
-                clearp = orExprs(c.flp, clearp,
-                                 sampled(vtxp->m_abortClearp->cloneTreePure(false)));
+                clearp
+                    = orExprs(c.flp, clearp, sampled(vtxp->m_abortClearp->cloneTreePure(false)));
             }
             if (AstNodeExpr* const alivep = oldAttemptAlive(c)) {
                 clearp = orExprs(c.flp, clearp, new AstLogNot{c.flp, alivep});
@@ -2653,14 +2627,11 @@ private:
                                 : sampledp;
             }
             if (guardp) clearp = orExprs(c.flp, clearp, new AstLogNot{c.flp, guardp});
-            if (clearp) {
-                AstConst* const zerop = new AstConst{c.flp, AstConst::DTyped{}, ringp->dtypep()};
-                zerop->num().setAllBits0();
-                updatep = new AstIf{
-                    c.flp, clearp,
-                    new AstAssign{c.flp, new AstVarRef{c.flp, ringp, VAccess::WRITE}, zerop},
-                    updatep};
-            }
+            AstConst* const zerop = new AstConst{c.flp, AstConst::DTyped{}, ringp->dtypep()};
+            zerop->num().setAllBits0();
+            updatep = new AstIf{
+                c.flp, clearp,
+                new AstAssign{c.flp, new AstVarRef{c.flp, ringp, VAccess::WRITE}, zerop}, updatep};
             appendStmt(c.updateBodyp, updatep);
             appendStmt(c.updateBodyp,
                        new AstAssign{c.flp, new AstVarRef{c.flp, idxp, VAccess::WRITE},
@@ -2711,7 +2682,6 @@ private:
 
             AstNodeExpr* clearp
                 = orExprs(c.flp, killActive(c), vtxp->datap()->stateSigp->cloneTreePure(false));
-            if (c.abortAnyVarp) clearp = orExprs(c.flp, clearp, abortActive(c));
             if (AstNodeExpr* const alivep = oldAttemptAlive(c)) {
                 clearp = orExprs(c.flp, clearp, new AstLogNot{c.flp, alivep});
             }
@@ -2747,7 +2717,7 @@ private:
         AstNodeExpr* incomingp = nullptr;
         for (const V3GraphEdge& er : tep->fromVtxp()->inEdges()) {
             const SvaTransEdge& inp = static_cast<const SvaTransEdge&>(er);
-            if (inp.m_consumesCycle) continue;
+            UASSERT_OBJ(!inp.m_consumesCycle, tep->fromVtxp(), "Range ring in-edge is a link");
             const int incomingFrom = inp.fromVtxp()->color();
             UASSERT_OBJ(c.vtx[incomingFrom]->datap()->stateSigp, inp.fromVtxp(),
                         "Range-ring incoming source missing stateSig");
@@ -2760,10 +2730,9 @@ private:
         AstNodeExpr* countp = addCounts(c, oldMatchCountp, boolToCount(c, incomingp));
 
         AstNodeExpr* gatep = notKillActive(c);
-        UASSERT_OBJ(!tep->m_condp, tep->fromVtxp(), "Range terminal condition rides matchCondp");
-        if (c.matchCondp) {
-            gatep = new AstLogAnd{c.flp, gatep, sampled(c.matchCondp->cloneTreePure(false))};
-        }
+        UASSERT_OBJ(!tep->m_condp && c.matchCondp, tep->fromVtxp(),
+                    "Range terminal condition rides matchCondp");
+        gatep = new AstLogAnd{c.flp, gatep, sampled(c.matchCondp->cloneTreePure(false))};
         if (c.disableExprp) {
             gatep = new AstLogAnd{c.flp, gatep,
                                   new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)}};
@@ -2824,13 +2793,12 @@ private:
                 AstNodeExpr* expirep = gateOldAttempt(
                     c, delayRingBit(c.flp, ringp, nextRingIndex(c.flp, idxp, size)));
                 expirep = andCond(c.flp, expirep, tedgep->m_condp);
-                if (c.matchCondp) {
-                    AstNodeExpr* const failp = new AstLogAnd{
-                        c.flp, expirep->cloneTreePure(false),
-                        new AstLogNot{c.flp, sampled(c.matchCondp->cloneTreePure(false))}};
-                    addAttemptOutcome(c, failBucketsp, depths, fi, failp,
-                                      tedgep->fromVtxp()->m_delayRingSize - 1);
-                }
+                UASSERT_OBJ(c.matchCondp, tedgep->fromVtxp(), "Range ring terminal has a boolean");
+                AstNodeExpr* const failp = new AstLogAnd{
+                    c.flp, expirep->cloneTreePure(false),
+                    new AstLogNot{c.flp, sampled(c.matchCondp->cloneTreePure(false))}};
+                addAttemptOutcome(c, failBucketsp, depths, fi, failp,
+                                  tedgep->fromVtxp()->m_delayRingSize - 1);
                 sigs.rejectBasep = orExprs(c.flp, sigs.rejectBasep, expirep);
                 VL_DO_DANGLING(srcSigp->deleteTree(), srcSigp);
             } else if (tedgep->fromVtxp()->m_isUnbounded || tedgep->fromVtxp()->m_isAndCombiner) {
@@ -2896,7 +2864,7 @@ private:
     }
 
     SignalSet computeSignals(LowerCtx& c, std::vector<AstNodeExpr*>* outFailAttemptSrcsp,
-                             std::vector<AstNodeExpr*>* outMatchAttemptSrcsp, bool needMatchCount,
+                             std::vector<AstNodeExpr*>* outMatchAttemptSrcsp,
                              bool* outAmbiguousResolvedDepthp = nullptr,
                              std::vector<AstNodeExpr*>* outPerMidSrcsp = nullptr) {
         SignalSet sigs;
@@ -2905,9 +2873,7 @@ private:
         OutcomeBuckets matchBuckets;
         OutcomeBuckets* const failBucketsp = outFailAttemptSrcsp ? &failBuckets : nullptr;
         OutcomeBuckets* const matchBucketsp
-            = (outMatchAttemptSrcsp || needMatchCount || outAmbiguousResolvedDepthp)
-                  ? &matchBuckets
-                  : nullptr;
+            = (outMatchAttemptSrcsp || outAmbiguousResolvedDepthp) ? &matchBuckets : nullptr;
 
         computeTerminalMatchAndReject(c, sigs, failBucketsp, matchBucketsp, depths,
                                       outPerMidSrcsp);
@@ -3021,7 +2987,9 @@ private:
         if (vtxp->m_isAndCombiner) {
             const int l = vtxp->m_andLhsTermp->color();
             const int r = vtxp->m_andRhsTermp->color();
-            if (c.vtx[l]->datap()->stateSigp && c.vtx[r]->datap()->stateSigp) {
+            UASSERT_OBJ(c.vtx[l]->datap()->stateSigp && c.vtx[r]->datap()->stateSigp, vtxp,
+                        "Combiner terminals resolve before the combiner");
+            {
                 AstNodeExpr* const matchLp
                     = buildMatchNow(c.flp, c.vtx[l]->datap()->stateSigp, vtxp->m_andLhsCondp);
                 AstNodeExpr* const matchRp
@@ -3048,9 +3016,9 @@ private:
         }
         for (const V3GraphEdge& er : vtxp->inEdges()) {
             const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
-            if (te.m_consumesCycle) continue;
+            UASSERT_OBJ(!te.m_consumesCycle, vtxp, "Link target has no clocked in-edge");
             AstNodeExpr* const srcSigp = te.fromVtxp()->datap()->stateSigp;
-            if (!srcSigp) continue;
+            UASSERT_OBJ(srcSigp, te.fromVtxp(), "Link source resolves before its target");
             sigp = orExprs(c.flp, sigp, andCond(c.flp, srcSigp->cloneTreePure(false), te.m_condp));
         }
         vtxp->datap()->stateSigp = sigp;
@@ -3203,7 +3171,7 @@ private:
     };
     static LowerOutputs bindLowerOutputs(const LowerRequest& req, LowerResult& res) {
         LowerOutputs o;
-        o.abortAnypp = req.abortSpecsp && !req.abortSpecsp->empty() ? &res.abortAnyp : nullptr;
+        o.abortAnypp = req.abortSpecsp ? &res.abortAnyp : nullptr;
         o.disablepp = req.disableExprp ? &res.disableRefp : nullptr;
         o.failAttemptSrcsp = req.wantPerSrcFail ? &res.failAttemptSrcs : nullptr;
         o.matchAttemptSrcsp = req.wantPerSrcMatch ? &res.matchAttemptSrcs : nullptr;
@@ -3224,7 +3192,7 @@ private:
 
     static void pruneSingleFailSource(const LowerRequest& req, const LowerOutputs& o,
                                       const SignalSet& sigs, LowerResult& res) {
-        if (!req.pruneSingleFailSource || !o.failAttemptSrcsp) return;
+        if (!req.pruneSingleFailSource) return;
         if (res.failAttemptSrcs.size() > 1 || sigs.failCountp) return;
         for (AstNodeExpr* const srcp : res.failAttemptSrcs) {
             VL_DO_DANGLING(srcp->deleteTree(), srcp);
@@ -3234,12 +3202,10 @@ private:
 
     void materializeLoweringOutputs(LowerCtx& c, const std::string& baseName, SignalSet& sigs,
                                     const LowerOutputs& o, AstNodeExpr* abortPassCountp,
-                                    AstNodeExpr* abortFailCountp,
-                                    AstNode*& captureBodyp) {
+                                    AstNodeExpr* abortFailCountp, AstNode*& captureBodyp) {
         if (o.abortAnypp) {
-            *o.abortAnypp = c.abortAnyVarp ? materializeObserved(c, baseName + "__abortAnyOutcome",
-                                                                 abortActive(c), captureBodyp)
-                                           : nullptr;
+            *o.abortAnypp = materializeObserved(c, baseName + "__abortAnyOutcome", abortActive(c),
+                                                captureBodyp);
         }
         if (o.failAttemptSrcsp) {
             for (size_t i = 0; i < o.failAttemptSrcsp->size(); ++i) {
@@ -3293,7 +3259,7 @@ private:
         std::vector<SvaStateVertex*> vtx;  // Color-indexed vertex lookup
         std::vector<std::unique_ptr<SvaVertexData>> vertexData;  // Per-vertex lowering data
         int startIdx = 0;  // Start vertex color index
-        int matchIdx = -1;  // Match vertex color index (-1 if none)
+        int matchIdx = -1;  // Match vertex color index
         std::vector<const SvaTransEdge*> edges;  // All edges (flat)
         AstVar* killVarp = nullptr;  // Last observed kill generation
         AstVar* evalKillVarp = nullptr;  // Pre-update kill generation used for the verdict
@@ -3343,7 +3309,7 @@ private:
                 continue;
             }
             if (!vtx[i]->datap()->needsReg) continue;
-            if (i == lv.startIdx || vtx[i]->m_isMatch) continue;
+            if (i == lv.startIdx) continue;
             const std::string varName = baseName + "__s" + std::to_string(i);
             AstVar* const varp
                 = new AstVar{flp, VVarType::MODULETEMP, varName, m_modp->findBitDType()};
@@ -3358,8 +3324,7 @@ private:
         }
     }
     LowerVars allocateLoweringVars(FileLine* flp, SvaGraph& graph, const std::string& baseName,
-                                   AstNodeExpr*& disableExprp,
-                                   AstNodeExpr** outDisablepp) {
+                                   AstNodeExpr*& disableExprp, AstNodeExpr** outDisablepp) {
         LowerVars lv;
         int& N = lv.N;
         for (V3GraphVertex& vtxr : graph.m_graph.vertices()) { vtxr.color(N++); }
@@ -3369,7 +3334,7 @@ private:
             vtx[vtxr.color()] = static_cast<SvaStateVertex*>(&vtxr);
         }
         lv.startIdx = graph.m_startVertexp->color();
-        lv.matchIdx = graph.m_matchVertexp ? graph.m_matchVertexp->color() : -1;
+        lv.matchIdx = graph.m_matchVertexp->color();
         lv.edges = graph.allEdges();
 
         lv.vertexData.resize(N);
@@ -3382,7 +3347,9 @@ private:
             for (const V3GraphEdge& er : vtx[i]->outEdges()) {
                 const SvaTransEdge& te = static_cast<const SvaTransEdge&>(er);
                 const int toIdx = te.toVtxp()->color();
-                if (te.m_consumesCycle && toIdx != lv.matchIdx && !te.toVtxp()->m_isRejectSink) {
+                if (te.m_consumesCycle) {
+                    UASSERT_OBJ(toIdx != lv.matchIdx && !te.toVtxp()->m_isRejectSink, te.toVtxp(),
+                                "Clocked edge into a terminal vertex");
                     vtx[toIdx]->datap()->needsReg = true;
                 }
             }
@@ -3405,9 +3372,7 @@ private:
             lv.disableCapturep = new AstAssign{
                 flp, new AstVarRef{flp, disableObservedp, VAccess::WRITE}, disableExprp};
             disableExprp = new AstVarRef{flp, disableObservedp, VAccess::READ};
-            if (outDisablepp) {
-                *outDisablepp = new AstVarRef{flp, disableObservedp, VAccess::READ};
-            }
+            *outDisablepp = new AstVarRef{flp, disableObservedp, VAccess::READ};
         }
         return lv;
     }
@@ -3488,8 +3453,7 @@ public:
         AstNodeExpr* disableExprp = req.disableExprp;
 
         const std::string baseName = m_names.get("");
-        LowerVars lv
-            = allocateLoweringVars(flp, graph, baseName, disableExprp, o.disablepp);
+        LowerVars lv = allocateLoweringVars(flp, graph, baseName, disableExprp, o.disablepp);
         const int N = lv.N;
         std::vector<SvaStateVertex*>& vtx = lv.vtx;
 
@@ -3542,9 +3506,9 @@ public:
         bool ambiguousResolvedDepth = false;
 
         // Phase 3/3a/3b: Compute terminal match/reject signals (cleans up stateSig).
-        SignalSet sigs = computeSignals(
-            c, o.failAttemptSrcsp, o.matchAttemptSrcsp, o.matchCountpp != nullptr,
-            trackStrongResolved ? &ambiguousResolvedDepth : nullptr, o.perMidSrcsp);
+        SignalSet sigs = computeSignals(c, o.failAttemptSrcsp, o.matchAttemptSrcsp,
+                                        trackStrongResolved ? &ambiguousResolvedDepth : nullptr,
+                                        o.perMidSrcsp);
 
         pruneSingleFailSource(req, o, sigs, res);
 
@@ -3833,19 +3797,18 @@ class AssertNfaVisitor final : public VNVisitor {
             return !hasMultiCycleExpr(implp->lhsp()) && isLinearAbortBody(implp->rhsp());
         }
         if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
-            AstDelay* const delayp = VN_CAST(sexprp->delayp(), Delay);
-            if (!delayp || !delayp->isCycleDelay() || delayp->isUnbounded()) return false;
+            AstDelay* const delayp = VN_AS(sexprp->delayp(), Delay);
+            if (delayp->isUnbounded()) return false;
             if (delayp->isRangeDelay() && sexprp->exprp()->isMultiCycleSva()) return false;
             return (!sexprp->preExprp() || isLinearAbortBody(sexprp->preExprp()))
                    && isLinearAbortBody(sexprp->exprp());
         }
         if (AstPropAlways* const alwaysp = VN_CAST(nodep, PropAlways)) {
-            return !VN_IS(alwaysp->hiBoundp(), Unbounded) && !hasMultiCycleExpr(alwaysp->propp());
+            return !VN_IS(alwaysp->hiBoundp(), Unbounded);
         }
         if (AstLogNot* const notp = VN_CAST(nodep, LogNot)) {
             return isLinearAbortBody(notp->lhsp());
         }
-        if (VN_IS(nodep, AbortOn)) return false;
         return !nodep->isMultiCycleSva();
     }
 
@@ -3858,15 +3821,22 @@ class AssertNfaVisitor final : public VNVisitor {
         return !hasMultiCycleExpr(parts.triggerExprp);
     }
 
+    static void addNfaHandler(AstAssert* assertp, AstAssert* handlerp) {
+        UASSERT_OBJ(!assertp->sentreep(), assertp, "Assertion clock resolves in V3AssertPre");
+        handlerp->senFromAlways(assertp->senFromAlways());
+        handlerp->nfaLowered(true);
+        assertp->addNextHere(handlerp);
+    }
+
     void splitImplicationPassActions(AstAssert* assertp, AstPropSpec* propSpecp,
                                      const PropertyParts& parts, AstNodeExpr* nonvacuousCountp,
-                                     bool includeVacuous, AstNodeExpr* abortAnyp = nullptr) {
+                                     AstNodeExpr* abortAnyp = nullptr) {
         FileLine* const flp = assertp->fileline();
 
         AstNode* const passsp = assertp->passsp()->unlinkFrBackWithNext();
         AstNode* splitsp = nullptr;
 
-        if (!parts.isFollowedBy && includeVacuous) {
+        if (!parts.isFollowedBy) {
             AstNodeExpr* vacuousp
                 = new AstLogNot{flp, sampled(parts.triggerExprp->cloneTreePure(false))};
             // IEEE 1800-2023 16.12.14 gives abort priority over same-step completion.
@@ -3896,10 +3866,7 @@ class AssertNfaVisitor final : public VNVisitor {
             assertp->userType(),
             assertp->directive(),
             assertp->name()};
-        if (assertp->sentreep()) handlerp->sentreep(assertp->sentreep()->cloneTree(false));
-        handlerp->senFromAlways(assertp->senFromAlways());
-        handlerp->nfaLowered(true);
-        assertp->addNextHere(handlerp);
+        addNfaHandler(assertp, handlerp);
     }
 
     // Allocate disable-iff counter + snapshot vars. Returns {cntp, snapp} or
@@ -3944,7 +3911,7 @@ class AssertNfaVisitor final : public VNVisitor {
     }
 
     DisableVars createDisableCounterMechanism(FileLine* flp, AstNodeExpr* disableExprp) {
-        if (!disableExprp || VN_IS(disableExprp, Const)) return {};
+        if (!disableExprp) return {};
 
         AstNodeDType* const u32DTypep = m_modp->findBasicDType(VBasicDTypeKwd::UINT32);
         const std::string cntName = m_disableCntNames.get("");
@@ -4032,8 +3999,7 @@ class AssertNfaVisitor final : public VNVisitor {
     AstPropSpec* clonePropSpecWithBody(AstPropSpec* propSpecp, AstNodeExpr* bodyp) {
         // Build a fresh PropSpec; a temporal body is not cloneTreePure-able.
         AstPropSpec* const clonep = new AstPropSpec{
-            propSpecp->fileline(),
-            propSpecp->sensesp() ? propSpecp->sensesp()->cloneTree(true) : nullptr,
+            propSpecp->fileline(), propSpecp->sensesp()->cloneTree(true),
             propSpecp->disablep() ? propSpecp->disablep()->cloneTreePure(false) : nullptr, bodyp};
         clonep->dtypeFrom(propSpecp);
         return clonep;
@@ -4087,9 +4053,8 @@ class AssertNfaVisitor final : public VNVisitor {
         AstNode* actionp = nullptr;
         if (assertp->failsp() && !defaultSynthesized) {
             actionp = assertp->failsp()->cloneTree(true);
-            actionp->foreachAndNext([senTreep](AstPast* const pastp) {
-                if (!pastp->sentreep()) pastp->sentreep(senTreep->cloneTree(false));
-            });
+            actionp->foreachAndNext(
+                [senTreep](AstPast* const pastp) { pastp->sentreep(senTreep->cloneTree(false)); });
         } else if (!assertp->passsp()) {
             AstDisplay* const dispp
                 = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
@@ -4130,10 +4095,7 @@ class AssertNfaVisitor final : public VNVisitor {
             assertp->userType(),
             assertp->directive(),
             assertp->name()};
-        if (assertp->sentreep()) handlerp->sentreep(assertp->sentreep()->cloneTree(false));
-        handlerp->senFromAlways(assertp->senFromAlways());
-        handlerp->nfaLowered(true);
-        assertp->addNextHere(handlerp);
+        addNfaHandler(assertp, handlerp);
         VL_DO_DANGLING(pushDeletep(countp), countp);
     }
 
@@ -4155,10 +4117,7 @@ class AssertNfaVisitor final : public VNVisitor {
             assertp->userType(),
             assertp->directive(),
             assertp->name()};
-        if (assertp->sentreep()) handlerp->sentreep(assertp->sentreep()->cloneTree(false));
-        handlerp->senFromAlways(assertp->senFromAlways());
-        handlerp->nfaLowered(true);
-        assertp->addNextHere(handlerp);
+        addNfaHandler(assertp, handlerp);
     }
 
     void addCountFailHandler(AstAssert* assertp, AstPropSpec* propSpecp, AstNodeExpr* countp) {
@@ -4176,10 +4135,7 @@ class AssertNfaVisitor final : public VNVisitor {
             assertp->userType(),
             assertp->directive(),
             assertp->name()};
-        if (assertp->sentreep()) handlerp->sentreep(assertp->sentreep()->cloneTree(false));
-        handlerp->senFromAlways(assertp->senFromAlways());
-        handlerp->nfaLowered(true);
-        assertp->addNextHere(handlerp);
+        addNfaHandler(assertp, handlerp);
         VL_DO_DANGLING(pushDeletep(countp), countp);
     }
 
@@ -4363,27 +4319,26 @@ class AssertNfaVisitor final : public VNVisitor {
     static bool canPeelAborts(const AstNodeCoverOrAssert* assertp, const AstNodeExpr* bodyp,
                               const std::vector<AbortSpec>& abortSpecs) {
         if (abortSpecs.empty()) return true;
-        const bool liveWindow = hasMultiCycleExpr(bodyp);
-        for (const AbortSpec& spec : abortSpecs) {
-            if (liveWindow && spec.kind.isAsync()) return false;
+        if (hasMultiCycleExpr(bodyp)) {
+            if (VN_IS(assertp, Cover)) return false;
+            if (bodyp->exists([](const AstAbortOn*) { return true; })) return false;
+            if (std::any_of(abortSpecs.begin(), abortSpecs.end(),
+                            [](const AbortSpec& spec) { return spec.kind.isAsync(); })) {
+                return false;
+            }
         }
-        if (liveWindow && bodyp->exists([](const AstAbortOn*) { return true; })) return false;
-        if (liveWindow && VN_IS(assertp, Cover)) return false;
         return isLinearAbortBody(const_cast<AstNodeExpr*>(bodyp));
     }
 
     // Outcome counts for a property if/case are wrong in an outcome-multiplying
     // context. Returns that context, or nullptr when the shape is supported.
     static const char* unsupportedPropertyControl(const AstNodeCoverOrAssert* assertp,
-                                                  const AstNodeExpr* seqBodyp, bool negated,
-                                                  bool hasAbort) {
+                                                  const AstNodeExpr* seqBodyp, bool negated) {
         if (!hasPropertyControlConjunction(seqBodyp)) return nullptr;
         if (negated) return "negation";
         if (VN_IS(assertp, Cover)) return "cover";
         if (VN_AS(assertp, Assert)->passsp()) return "a pass action";
-        if (hasAbort || seqBodyp->exists([](const AstAbortOn*) { return true; })) {
-            return "an abort operator";
-        }
+        if (seqBodyp->exists([](const AstAbortOn*) { return true; })) return "an abort operator";
         if (seqBodyp->exists([](const AstPropAlways* alwaysp) { return alwaysp->isStrong(); })) {
             return "a strong end-of-trace obligation";
         }
@@ -4421,8 +4376,7 @@ class AssertNfaVisitor final : public VNVisitor {
             seqBodyp = notp->lhsp();
         }
         if (negated && parts.hasImplication && !canSplitImplicationPassActions(parts)) {
-            const AstAssert* const actionAssertp = VN_CAST(s.assertp, Assert);
-            if (s.isCover || (actionAssertp && actionAssertp->passsp())) {
+            if (s.isCover || VN_AS(s.assertp, Assert)->passsp()) {
                 seqBodyp->v3warn(
                     E_UNSUPPORTED,
                     "Unsupported: temporal implication antecedent with a negated consequent "
@@ -4432,8 +4386,7 @@ class AssertNfaVisitor final : public VNVisitor {
                 return false;
             }
         }
-        s.propertyControlp
-            = unsupportedPropertyControl(assertp, seqBodyp, negated, !abortSpecs.empty());
+        s.propertyControlp = unsupportedPropertyControl(assertp, seqBodyp, negated);
         if (liftMatchItemSubstitutions(parts, seqBodyp)) {
             replaceBodyOnBuildError(assertp->fileline(), propSpecp, /*errorEmitted=*/true);
             return false;
@@ -4470,23 +4423,22 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool isCover = s.isCover;
         const bool isCoverSeq = s.isCoverSeq;
         const std::vector<AbortSpec>& abortSpecs = s.abortSpecs;
-        AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
+        const AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
+        const bool hasPass = assertAssertp && assertAssertp->passsp();
+        const bool hasFail = assertAssertp && assertAssertp->failsp();
         // Negated-consequent failure multiplicity is independent of vacuous-pass splitting.
         s.countNegatedOutcomes = negated;
-        s.countNegatedPasssp = s.countNegatedOutcomes && assertAssertp && assertAssertp->passsp();
-        s.countNegatedFailsp = s.countNegatedOutcomes && assertAssertp && assertAssertp->failsp();
-        s.countNegatedCover = s.countNegatedOutcomes && isCover && !isCoverSeq;
-        s.splitImplicationPasssp = assertAssertp && assertAssertp->passsp() && parts.hasImplication
-                                   && !negated && canSplitImplicationPassActions(parts);
-        s.perAttemptPasssp
-            = assertAssertp && assertAssertp->passsp() && !parts.hasImplication && !negated;
-        s.needPerSrcFail = (!isCover && !negated && assertAssertp && assertAssertp->failsp())
-                           || s.countNegatedPasssp || s.countNegatedCover;
+        s.countNegatedPasssp = negated && hasPass;
+        s.countNegatedFailsp = negated && hasFail;
+        s.countNegatedCover = negated && isCover;
+        s.splitImplicationPasssp
+            = hasPass && parts.hasImplication && !negated && canSplitImplicationPassActions(parts);
+        s.perAttemptPasssp = hasPass && !parts.hasImplication && !negated;
+        s.needPerSrcFail = (!negated && hasFail) || s.countNegatedPasssp || s.countNegatedCover;
         s.needPerSrcMatch = s.perAttemptPasssp || s.splitImplicationPasssp
                             || (isCover && !isCoverSeq && !negated) || s.countNegatedFailsp;
-        s.needAbortPassCount
-            = !abortSpecs.empty() && ((assertAssertp && assertAssertp->passsp()) || isCover);
-        s.needAbortFailCount = !abortSpecs.empty() && assertAssertp && assertAssertp->failsp();
+        s.needAbortPassCount = !abortSpecs.empty() && (hasPass || isCover);
+        s.needAbortFailCount = !abortSpecs.empty() && hasFail;
     }
 
     void replaceObservedDisable(AstPropSpec* propSpecp, AstNodeExpr* disableObservedp) {
@@ -4528,6 +4480,7 @@ class AssertNfaVisitor final : public VNVisitor {
                              "Unsupported: temporal property if/case with " << s.propertyControlp);
             replaceBodyOnBuildError(flp, propSpecp, /*errorEmitted=*/true);
             VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
+            if (result.finalCondp && !result.finalCondp->backp()) pushDeletep(result.finalCondp);
             return false;
         }
 
@@ -4646,7 +4599,6 @@ class AssertNfaVisitor final : public VNVisitor {
             if ((countNegatedPasssp || countNegatedCover) && !passCountp) {
                 passCountp = zeroCount();
             }
-            if (countNegatedFailsp && !failCountp) failCountp = zeroCount();
         }
     }
 
@@ -4659,8 +4611,6 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool countNegatedFailsp = s.countNegatedFailsp;
         const bool perAttemptPasssp = s.perAttemptPasssp;
         const bool splitImplicationPasssp = s.splitImplicationPasssp;
-        std::vector<AstNodeExpr*>& failAttemptSrcs = s.failAttemptSrcs;
-        std::vector<AstNodeExpr*>& matchAttemptSrcs = s.matchAttemptSrcs;
         AstNodeExpr*& passCountp = s.passCountp;
         AstNodeExpr*& failCountp = s.failCountp;
         AstNodeExpr*& abortAnyp = s.abortAnyp;
@@ -4673,7 +4623,7 @@ class AssertNfaVisitor final : public VNVisitor {
                             "Negated pass action requested without a reject count");
                 if (parts.hasImplication) {
                     splitImplicationPassActions(assertAssertp, propSpecp, parts, passCountp,
-                                                /*includeVacuous=*/true, abortAnyp);
+                                                abortAnyp);
                 } else {
                     addCountPassHandler(assertAssertp, propSpecp, passCountp);
                 }
@@ -4685,8 +4635,6 @@ class AssertNfaVisitor final : public VNVisitor {
                 addCountFailHandler(assertWithFailp, propSpecp, failCountp);
                 failCountp = nullptr;
             }
-            for (AstNodeExpr* const srcp : failAttemptSrcs) pushDeletep(srcp);
-            for (AstNodeExpr* const srcp : matchAttemptSrcs) pushDeletep(srcp);
         } else if (perAttemptPasssp) {
             UASSERT_OBJ(passCountp, assertAssertp, "Pass action requested without a match count");
             addCountPassHandler(assertAssertp, propSpecp, passCountp);
@@ -4698,8 +4646,7 @@ class AssertNfaVisitor final : public VNVisitor {
         } else if (splitImplicationPasssp) {
             UASSERT_OBJ(passCountp, assertAssertp,
                         "Implication pass action requested without a match count");
-            splitImplicationPassActions(assertAssertp, propSpecp, parts, passCountp,
-                                        /*includeVacuous=*/true, abortAnyp);
+            splitImplicationPassActions(assertAssertp, propSpecp, parts, passCountp, abortAnyp);
             passCountp = nullptr;
             if (failCountp) {
                 addCountFailHandler(assertWithFailp, propSpecp, failCountp);
@@ -4718,8 +4665,6 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool isCoverSeq = s.isCoverSeq;
         AstCover* const coverp = s.coverp;
         AstNodeExpr* const outputExprp = s.outputExprp;
-        const bool needPerSrcMatch = s.needPerSrcMatch;
-        const bool countNegatedCover = s.countNegatedCover;
         std::vector<AstNodeExpr*>& perMidSrcs = s.perMidSrcs;
         AstNodeExpr*& passCountp = s.passCountp;
         AstNodeExpr*& failCountp = s.failCountp;
@@ -4730,9 +4675,9 @@ class AssertNfaVisitor final : public VNVisitor {
         AstNodeExpr*& abortAnyp = s.abortAnyp;
         AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
 
-        if (isCoverSeq && !perMidSrcs.empty()) {
+        if (isCoverSeq) {
             splitCoverOutcomes(coverp, outputExprp, perMidSrcs);
-        } else if (isCover && (needPerSrcMatch || countNegatedCover)) {
+        } else if (isCover) {
             UASSERT_OBJ(passCountp, coverp, "Cover requested without a match count");
             setCoverCount(coverp, propSpecp, outputExprp, passCountp);
             passCountp = nullptr;
@@ -4743,38 +4688,33 @@ class AssertNfaVisitor final : public VNVisitor {
             for (AstNodeExpr* const sp : perMidSrcs) pushDeletep(sp);
         }
 
-        if (abortPassCountp && assertAssertp && assertAssertp->passsp()) {
+        if (abortPassCountp) {
+            UASSERT_OBJ(assertAssertp, assertp, "Forced-accept pass count without an assert");
             addCountVacuousPassHandler(assertAssertp, propSpecp, abortPassCountp);
             abortPassCountp = nullptr;
         }
 
         installActionHandlers(s);
 
-        if (passCountp) VL_DO_DANGLING(pushDeletep(passCountp), passCountp);
-        if (failCountp) VL_DO_DANGLING(pushDeletep(failCountp), failCountp);
-        if (matchCountp) VL_DO_DANGLING(pushDeletep(matchCountp), matchCountp);
-        UASSERT_OBJ(!additionalFailCountp, assertp, "Fail count not consumed by outcome counts");
-        if (abortPassCountp) VL_DO_DANGLING(pushDeletep(abortPassCountp), abortPassCountp);
-        if (abortFailCountp) VL_DO_DANGLING(pushDeletep(abortFailCountp), abortFailCountp);
+        UASSERT_OBJ(!passCountp && !failCountp && !matchCountp && !additionalFailCountp
+                        && !abortPassCountp && !abortFailCountp,
+                    assertp, "Outcome counts not consumed by the action handlers");
         if (abortAnyp) VL_DO_DANGLING(pushDeletep(abortAnyp), abortAnyp);
     }
 
     // Inline property/sequence refs and reject unsupported shapes.
     // Returns the PropSpec to lower, or nullptr when fully handled here.
     AstPropSpec* prepareAssertionProp(AstNodeCoverOrAssert* assertp) {
-        if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
-            if (AstFuncRef* const funcrefp = VN_CAST(specp->propp(), FuncRef)) {
-                if (const AstProperty* const propyp = VN_CAST(funcrefp->taskp(), Property)) {
-                    inlineNamedProperty(specp, funcrefp, propyp);
-                }
+        AstPropSpec* const specp = VN_AS(assertp->propp(), PropSpec);
+        if (AstFuncRef* const funcrefp = VN_CAST(specp->propp(), FuncRef)) {
+            if (const AstProperty* const propyp = VN_CAST(funcrefp->taskp(), Property)) {
+                inlineNamedProperty(specp, funcrefp, propyp);
             }
         }
 
         inlineAllSequenceRefs(assertp->propp());
 
-        if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
-            if (hoistClockedSeq(specp)) return nullptr;
-        }
+        if (hoistClockedSeq(VN_AS(assertp->propp(), PropSpec))) return nullptr;
 
         AstPropSpec* const propp = VN_AS(assertp->propp(), PropSpec);
         if (!VN_IS(assertp, Cover)

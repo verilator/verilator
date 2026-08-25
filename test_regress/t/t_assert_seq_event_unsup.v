@@ -39,6 +39,10 @@ module t (
   sequence s_or_booll;
     @(posedge clk) a or (a ##1 b);
   endsequence
+
+  sequence s_or_bool;
+    @(posedge clk) a or b;
+  endsequence
   // verilog_format: on
 
   // Legal: p is never asserted, so s_ref stays referenced outside any
@@ -53,5 +57,6 @@ module t (
     @s_and_range;
     @s_or_boolr;
     @s_or_booll;
+    @s_or_bool;
   end
 endmodule

@@ -36,6 +36,9 @@ module t (
 
   assert property (@(posedge clk) sync_reject_on (abrt) always[0: 1] (!zz));
 
+  // A guard drop fails every attempt in the delay ring with the default action
+  assert property (@(posedge clk) (!nb) throughout (1'b1 ##3 1'b1));
+
   // Simultaneous negated-consequent failures behind a temporal antecedent
   bit ant = 0;
   bit early_b = 0;

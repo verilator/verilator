@@ -39,6 +39,11 @@ module t (
   // Targets for Reactive-NBA lowering schemes
   logic [15:0] masked_parts = 16'h0000;
   logic [7:0] unique_flag = 8'h00;
+  typedef struct {
+    logic [7:0] lo;
+    logic [7:0] hi;
+  } pair_t;
+  pair_t unique_pair = '{lo: 8'h0a, hi: 8'h90};
   /* verilator lint_off MULTIDRIVEN */
   logic [7:0] mixed_nba = 8'h90;
   logic [15:0] queued_parts[0:1] = '{default: 16'hf000};
@@ -76,6 +81,7 @@ module t (
 
     fork
       unique_flag <= 8'h50 + action_ordinal[7:0];
+      unique_pair.hi[3:0] <= action_ordinal[3:0];
     join
   end
 
@@ -166,6 +172,8 @@ module t (
     `checkd(masked_parts, 16'h6202);
     `checkd(unique_event_seen, 1);
     `checkd(unique_flag, 8'h52);
+    `checkd(unique_pair.lo, 8'h0a);
+    `checkd(unique_pair.hi, 8'h92);
     `checkd(mixed_nba, 8'ha2);
     `checkd(queue_event_seen, 1);
     `checkd(queued_parts[0], 16'hf071);
@@ -185,6 +193,7 @@ module t (
     `checkd(unpacked_elements[3], 8'h43);
     `checkd(masked_parts, 16'h6303);
     `checkd(unique_flag, 8'h53);
+    `checkd(unique_pair.hi, 8'h93);
     `checkd(mixed_nba, 8'ha3);
     `checkd(queued_parts[0], 16'hf073);
     `checkd(queued_parts[1], 16'h3072);

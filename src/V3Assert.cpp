@@ -1067,9 +1067,7 @@ class AssertVisitor final : public VNVisitor {
             inp = condp;
         } else {
             // Post-NBA readers use the pipeline's next stage after this tick's shift.
-            const bool procedureRunsPostNba
-                = m_procedurep
-                  && (VN_IS(m_procedurep, AlwaysObserved) || VN_IS(m_procedurep, AlwaysReactive));
+            const bool procedureRunsPostNba = VN_IS(m_procedurep, AlwaysObserved);
             const uint32_t pipelineTicks
                 = ticks + (procedureRunsPostNba || m_inReactiveAssertionAction ? 1 : 0);
             inp = getPastValue(exprp, senTreep, pipelineTicks);

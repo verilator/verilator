@@ -438,10 +438,8 @@ class DelayedVisitor final : public VNVisitor {
             }
             // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
             if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
-            // Reactive packed/basic arrays need a flag that survives the Re-NBA event.
-            if (basicp) {
-                return vscpInfo.m_hasReactiveNba ? Scheme::FlagUnique : Scheme::FlagShared;
-            }
+            // Otherwise if an array of packed/basic elements, use the shared flag scheme
+            if (basicp) return Scheme::FlagShared;
             // Finally fall back on the shadow variable scheme, e.g. for
             // arrays of unpacked structs. This will be slow.
             // TODO: generic LHS scheme as discussed in #5092
@@ -1100,10 +1098,7 @@ class DelayedVisitor final : public VNVisitor {
         for (AstVarScope* const vscp : m_vscps) {
             VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
             vscpInfo.m_scheme = chooseScheme(vscp, vscpInfo);
-            if (vscpInfo.m_hasReactiveNba
-                && vscpInfo.m_scheme != Scheme::UnsupportedCompoundArrayInLoop) {
-                prepareReactiveNbaEvent(nodep, vscp, vscpInfo);
-            }
+            if (vscpInfo.m_hasReactiveNba) prepareReactiveNbaEvent(nodep, vscp, vscpInfo);
             // Run 'prepare' step
             switch (vscpInfo.m_scheme) {
             case Scheme::Undecided:  // LCOV_EXCL_START

@@ -1,11 +1,15 @@
-[5] %Error: t_property_nfa_error_limit.v:48: Assertion failed in top.t: 'assert' failed.
--Info: t/t_property_nfa_error_limit.v:48: Verilog $stop, ignored due to +verilator+error+limit
-[7] %Error: t_property_nfa_error_limit.v:49: Assertion failed in top.t: 'assert' failed.
-[7] %Error: t_property_nfa_error_limit.v:49: Assertion failed in top.t: 'assert' failed.
+[5] %Error: t_property_nfa_error_limit.v:51: Assertion failed in top.t: 'assert' failed.
+-Info: t/t_property_nfa_error_limit.v:51: Verilog $stop, ignored due to +verilator+error+limit
+[7] %Error: t_property_nfa_error_limit.v:52: Assertion failed in top.t: 'assert' failed.
+[7] %Error: t_property_nfa_error_limit.v:52: Assertion failed in top.t: 'assert' failed.
 [9] %Error: t_property_nfa_error_limit.v:32: Assertion failed in top.t: 'assert' failed.
 [9] %Error: t_property_nfa_error_limit.v:32: Assertion failed in top.t: 'assert' failed.
 [11] %Error: t_property_nfa_error_limit.v:35: Assertion failed in top.t: 'assert' failed.
 [11] %Error: t_property_nfa_error_limit.v:35: Assertion failed in top.t: 'assert' failed.
+[11] %Error: t_property_nfa_error_limit.v:40: Assertion failed in top.t: 'assert' failed.
+[11] %Error: t_property_nfa_error_limit.v:40: Assertion failed in top.t: 'assert' failed.
+[11] %Error: t_property_nfa_error_limit.v:40: Assertion failed in top.t: 'assert' failed.
+[11] %Error: t_property_nfa_error_limit.v:40: Assertion failed in top.t: 'assert' failed.
 [13] %Error: t_property_nfa_error_limit.v:37: Assertion failed in top.t: 'assert' failed.
 [13] %Error: t_property_nfa_error_limit.v:37: Assertion failed in top.t: 'assert' failed.
 *-* All Finished *-*
