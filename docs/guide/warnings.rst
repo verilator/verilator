@@ -2153,6 +2153,9 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_SIMILARNAME_msg.rst
 
+   Parameters and localparams are not checked, as they are elaborated away
+   and so cannot reach a downstream tool as a name.
+
    Disabled by default as this is a code-style warning; it will simulate
    correctly.
 
