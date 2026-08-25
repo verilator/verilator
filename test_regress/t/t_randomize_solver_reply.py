@@ -24,8 +24,9 @@ runs = [
     ('bad_value', 1, 15),  # a value with no base must not commit the earlier one
     ('bare_hash', 1, 15),  # a value that is only "#"
     ('binary', 1, 16),  # binary values
-    ('core_junk', 1, 4),  # garbage opens the core reply, then the pipe closes
+    ('core_junk', 1, 16),  # garbage opens the core reply, then the pipe closes
     ('crlf', 1, 16),  # CRLF line endings
+    ('diversity_model', 2, 16),  # a diversity round answers with an unusable value
     ('dup_model', 1, 15),  # the same variable answered twice
     ('err_assume', 1, 16),  # error in place of the unsat assumptions
     ('err_core', 1, 16),  # error in place of the unsat core
@@ -49,7 +50,7 @@ runs = [
     ('octal', 1, 16),  # octal values
     ('oor_assume', 1, 16),  # unsat assumptions naming only an out-of-range literal
     ('phase_model', 1, 15),  # error in place of the final phased model
-    ('phase_trunc', 1, 2),  # unterminated phase value reply, then the pipe closes
+    ('phase_trunc', 1, 12),  # unterminated phase value reply, then the pipe closes
     ('short_model', 1, 15),  # a model missing a requested variable is not a model
     ('success', 1, 16),  # print-success echo ahead of every reply
     ('unknown_once', 2, 15),  # unknown answers one check-sat

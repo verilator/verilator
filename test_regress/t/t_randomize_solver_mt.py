@@ -9,11 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.sim_time = 21000
+test.scenarios('vltmt')
 
-test.compile(verilator_flags2=['--assert', '--timing', '--coverage-user'])
+if not test.have_solver:
+    test.skip("No constraint solver installed")
+
+test.compile()
 
 test.execute()
+
+test.file_grep(test.run_log_filename, r'NLO=99 NHI=50')
 
 test.passes()

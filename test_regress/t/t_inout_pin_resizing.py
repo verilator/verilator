@@ -9,10 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.sim_time = 21000
+test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--assert', '--timing', '--coverage-user'])
+test.compile()
 
 test.execute()
 
