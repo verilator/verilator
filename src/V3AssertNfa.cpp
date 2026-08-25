@@ -4371,8 +4371,6 @@ class AssertNfaVisitor final : public VNVisitor {
             s.abortSpecs.clear();
             decompositionRootp = VN_AS(propSpecp->propp(), NodeExpr);
         }
-        const std::vector<AbortSpec>& abortSpecs = s.abortSpecs;
-
         s.parts = decomposeProperty(decompositionRootp);
         PropertyParts& parts = s.parts;
         UASSERT_OBJ(parts.seqExprp, propp, "Property body must be an expression");
@@ -4572,7 +4570,6 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool needPerSrcFail = s.needPerSrcFail;
         const bool countNegatedOutcomes = s.countNegatedOutcomes;
         const bool countNegatedPasssp = s.countNegatedPasssp;
-        const bool countNegatedFailsp = s.countNegatedFailsp;
         const bool countNegatedCover = s.countNegatedCover;
         std::vector<AstNodeExpr*>& matchAttemptSrcs = s.matchAttemptSrcs;
         std::vector<AstNodeExpr*>& failAttemptSrcs = s.failAttemptSrcs;

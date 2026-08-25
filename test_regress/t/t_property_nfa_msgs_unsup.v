@@ -204,6 +204,10 @@ module t (
   assert property (@(posedge clk) (a [* 2: 2]) and(b ##1 c));
   assert property (@(posedge clk) (always [1:2] 1'bx) or(a ##2 b));
 
+  // A boolean operand of a bounded variable-length 'and' is lowered
+  assert property (@(posedge clk) a and(b [* 1: 2]));
+  assert property (@(posedge clk) (b [* 1: 2]) and a);
+
   // Left-operand mirrors of the intersect rejections
   assert property (@(posedge clk) (a throughout ((b ##2 c) or(d ##2 e))) intersect (c ##2 a));
   assert property (@(posedge clk) ((fimp() ##2 c) or(d ##2 e)) intersect (a ##2 b));
