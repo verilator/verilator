@@ -146,7 +146,7 @@ class UnknownVisitor final : public VNVisitor {
     // Returns true if it is known at compile time that `msbConstp` is greater than or equal
     // `exprp`
     static bool isStaticlyGte(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
-        if (msbConstp->width() >= exprp->width()
+        if (msbConstp->width() >= exprp->width() && exprp->width() < 32
             && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1) {
             return true;
         }
