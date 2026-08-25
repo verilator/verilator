@@ -1674,9 +1674,12 @@ public:
 class AstConstraintForeach final : public AstNodeForeach {
     // Constraint foreach statement
     bool m_soft;
+
 public:
-    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp, bool soft = false)
-        : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp), m_soft(soft) {}
+    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp,
+                         bool soft = false)
+        : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp)
+        , m_soft(soft) {}
     ASTGEN_MEMBERS_AstConstraintForeach;
     bool soft() const { return m_soft; }
 };
