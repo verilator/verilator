@@ -1,0 +1,6 @@
+%Warning-NONSTD: t/t_randomize_soft_foreach_bad.v:10:10: Non-standard soft foreach
+   10 |     soft foreach(arr[i]) arr[i] == i;
+      |          ^~~~~~~
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Error: Exiting due to

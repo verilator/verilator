@@ -9,13 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
-if not test.have_solver:
-    test.skip("No constraint solver installed")
-
-test.compile(verilator_flags2=["--Wno-NONSTD"])
-
-test.execute()
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

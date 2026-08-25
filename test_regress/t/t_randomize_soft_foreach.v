@@ -33,29 +33,42 @@ class Cls3;
   }
 endclass
 
+class Cls4;
+  rand int arr[10][20];
+  rand bit a;
+  constraint c_cls {
+    soft foreach(arr[i])
+        foreach (arr[i][j])
+          soft arr[i][j] == i + j;
+    arr[5][10] == 2;
+  }
+endclass
+
 module t;
   Cls1 cls1;
   Cls2 cls2;
   Cls3 cls3;
+  Cls4 cls4;
   int ok;
 
   initial begin
     cls1 = new;
     cls2 = new;
     cls3 = new;
+    cls4 = new;
     ok = cls1.randomize();
     `checkd(ok, 1);
     foreach(cls1.arr[i]) begin
-      if (cls1.arr[i] != i) $stop;
+      `checkd(cls1.arr[i], i);
     end
 
     ok = cls2.randomize();
     `checkd(ok, 1);
     foreach(cls2.arr[i]) begin
       if (i != 1)
-        if (cls2.arr[i] != i) $stop;
+        `checkd(cls2.arr[i], i);
     end
-    if (cls2.arr[1] != 10) $stop;
+    `checkd(cls2.arr[1], 10);
 
     repeat (10) begin
       ok = cls3.randomize();
@@ -63,8 +76,17 @@ module t;
       foreach(cls3.arr[i]) begin
         if (cls3.arr[i] >= i) $stop;
       end
-      if (cls3.arr[5] != 3) $stop;
+      `checkd(cls3.arr[5], 3);
     end
+
+    ok = cls4.randomize();
+    `checkd(ok, 1);
+    foreach(cls4.arr[i, j]) begin
+      if (i != 5 || j != 10) begin
+        `checkd(cls4.arr[i][j], i+j);
+      end
+    end
+    `checkd(cls4.arr[5][10], 2);
 
     $write("*-* All Finished *-*\n");
     $finish;
