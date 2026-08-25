@@ -4,7 +4,9 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module sub #(parameter P);
+module sub #(
+    parameter P
+);
 endmodule
 
 package pkg;
@@ -15,21 +17,23 @@ class B;
   int x;
 endclass
 
-module Gm (interface a);
+module Gm (
+    interface a
+);
   B b;
-  sub#(.P(pkg::A + $bits(b.x))) s();
+  sub #(.P(pkg::A + $bits(b.x))) s ();
   initial begin
     a.v = s.P;
   end
 endmodule
 
-interface inf;
+interface ifc;
   int v;
 endinterface
 
 module t;
-  inf i();
-  Gm g(.a(i));
+  ifc i ();
+  Gm g (.a(i));
   initial begin
     #1;
     if (i.v != 35) $stop;

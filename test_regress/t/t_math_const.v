@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  input clk
-  );
+    input clk
+);
 
-  reg [39:0] con1,con2, con3;
+  reg [39:0] con1, con2, con3;
   reg [31:0] w32;
-  reg [31:0] v32 [2];
+  reg [31:0] v32[2];
 
   // surefire lint_off UDDSCN
   reg [200:0] conw3, conw4;

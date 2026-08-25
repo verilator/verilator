@@ -6,16 +6,15 @@
 // SPDX-FileCopyrightText: 2022 Geza Lore
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module top(
-  clk
+module top (
+    clk
 );
 
   input clk;
 
   // Generate half speed 'clk_half', via blocking assignment
   reg clk_half = 0;
-  always @(posedge clk)
-    clk_half = ~clk_half;
+  always @(posedge clk) clk_half = ~clk_half;
 
   // Cycle count (+ stop condition)
   reg [31:0] cyc = 0;
@@ -29,13 +28,11 @@ module top(
 
   // Flop cycle count via `clk`
   reg [31:0] a = 0;
-  always @(posedge clk)
-    a <= cyc;
+  always @(posedge clk) a <= cyc;
 
   // Flop cycle count via `clk_half`, on both edges
   reg [31:0] b = 0;
-  always @(posedge clk_half or negedge clk_half)
-    b <= cyc;
+  always @(posedge clk_half or negedge clk_half) b <= cyc;
 
   // `a` should always equal `b`, no mater which value they actually capture
   always @(posedge clk) begin

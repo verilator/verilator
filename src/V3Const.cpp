@@ -438,6 +438,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
     // Traverse down to see AstConst or AstVarRef
     LeafInfo findLeaf(AstNode* nodep, bool expectConst) {
+        if (!nodep->dtypep()->skipRefp()->isIntegralOrPacked()) return LeafInfo{};
         LeafInfo info{m_lsb};
         {
             VL_RESTORER(m_leafp);
@@ -4584,6 +4585,10 @@ class ConstVisitor final : public VNVisitor {
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");
+    // Sampled value functions of a constant.
+    // $rose/$fell/$stable/$changed are lowered to $past by V3AssertPre, so they fold via AstPast
+    TREEOPV("AstSampled{$exprp.castConst}", "replaceWChild(nodep, VN_AS(nodep->exprp(), NodeExpr))");
+    TREEOPV("AstPast{$exprp.castConst, !$ticksp}", "replaceWChild(nodep, nodep->exprp())");
     // clang-format on
 
     // Possible futures:

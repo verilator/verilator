@@ -905,7 +905,7 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     // There's no classOrPackagep(); use classOrPackageNodep() to get Node,
     // or iterating to package with classOrPackageSkipp()
-    AstNodeModule* classOrPackageSkipp() const;
+    AstNodeModule* classOrPackageSkipp(const bool doRefs = true) const;
     AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
     void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
     void classOrPackagep(AstNodeModule* nodep) {
@@ -2555,19 +2555,26 @@ public:
 class AstSampled final : public AstNodeExpr {
     // Verilog $sampled
     // @astgen op1 := exprp : AstNode<AstNodeExpr|AstPropSpec>
+    bool m_internal : 1;  // Internally created, not from a source $sampled
 public:
-    AstSampled(FileLine* fl, AstNode* exprp, AstNodeDType* dtypep)
-        : ASTGEN_SUPER_Sampled(fl) {
+    AstSampled(FileLine* fl, AstNode* exprp, AstNodeDType* dtypep, bool internal = false)
+        : ASTGEN_SUPER_Sampled(fl)
+        , m_internal{internal} {
         this->exprp(exprp);
         this->dtypep(dtypep);
     }
     ASTGEN_MEMBERS_AstSampled;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { return "$sampled(%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return 0; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_internal == VN_DBG_AS(samep, Sampled)->m_internal;
+    }
+    bool internal() const { return m_internal; }
     bool isSystemFunc() const override { return true; }
 };
 class AstScopeName final : public AstNodeExpr {
@@ -3980,12 +3987,16 @@ public:
 class AstSAnd final : public AstNodeBiop {
     // Sequence 'and' (IEEE 1800-2023 16.9.5): both operand sequences must match.
     // Operates on match sets, not values. For boolean operands, lowered to AstLogAnd.
+    const bool m_propertyControl;  // Parser-generated property if/case branch conjunction
 public:
-    AstSAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_SAnd(fl, lhsp, rhsp) {
+    AstSAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool propertyControl = false)
+        : ASTGEN_SUPER_SAnd(fl, lhsp, rhsp)
+        , m_propertyControl{propertyControl} {
         dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstSAnd;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLogAnd(lhs, rhs);
     }
@@ -3999,6 +4010,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isMultiCycleSva() const override { return true; }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_LINE
+        return m_propertyControl == VN_DBG_AS(samep, SAnd)->m_propertyControl;  // LCOV_EXCL_LINE
+    }
+    bool propertyControl() const { return m_propertyControl; }
 };
 class AstSIntersect final : public AstNodeBiop {
     // Sequence 'intersect' (IEEE 1800-2023 16.9.6): both operands match with equal length.
@@ -4888,9 +4903,11 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    bool isGateOptimizable() const override { return false; }  // AssocSel creates on miss
+    bool isGateOptimizable() const override {
+        return !isLValue();  // AssocSel creates on miss
+    }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return false; }  // AssocSel creates on miss
+    bool isPure() override { return !isLValue(); }  // AssocSel creates on miss
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
 };

@@ -437,7 +437,8 @@
 %000007     if (rst) begin
 %000002       side <= 1'b0;
 %000002       state_q <= S0;
-%000007     end else begin
+            end
+%000007     else begin
 %000007       side <= ~side;
 %000007       state_q <= state_d;
             end

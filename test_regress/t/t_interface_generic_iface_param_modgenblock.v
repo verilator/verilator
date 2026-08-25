@@ -9,18 +9,22 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-interface inf #(parameter int PARAM = 1);
+interface ifc #(
+    parameter int PARAM = 1
+);
   logic [PARAM-1:0] v;
-  modport mp (input v);
+  modport mp(input v);
 endinterface
 
-module GenericModule (interface.mp a);
+module GenericModule (
+    interface.mp a
+);
   // Dotted localparam inside a generate block, feeding a sibling cell in the same block.
   // The interface-ref gather must recurse in here yet still find port 'a' at module level.
   // Generate blocks on the interface side are covered by t_interface_generic_iface_param_genblock.
   if (1) begin : blk
     localparam int LOC_PARAM = a.PARAM;
-    inf #(.PARAM(LOC_PARAM)) inner();
+    ifc #(.PARAM(LOC_PARAM)) inner ();
   end
   initial begin
     #1;
@@ -31,7 +35,7 @@ module GenericModule (interface.mp a);
 endmodule
 
 module t;
-  inf #(.PARAM(13)) inf_inst();
+  ifc #(.PARAM(13)) inf_inst ();
   GenericModule genericModule (inf_inst);
   initial begin
     inf_inst.v = 7;

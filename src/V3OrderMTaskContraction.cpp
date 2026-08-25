@@ -14,11 +14,9 @@
 //
 //*************************************************************************
 //
-//  Coarsens the fine-grained MTask graph produced by the partitioner by
-//  repeatedly contracting MTasks (merging along an edge, or merging two
-//  "sibling" MTasks) until a critical-path score limit is reached. Driven by
-//  the partitioner in V3OrderParallel.cpp via OrderMTaskGraph::contract,
-//  declared in V3OrderMTaskGraph.h.
+//  Coarsens the fine-grained MTask graph by repeatedly contracting MTasks,
+//  merging along an edge, or merging two "sibling" MTasks until a
+//  critical-path limit is reached.
 //
 //*************************************************************************
 
@@ -26,9 +24,9 @@
 
 #include "V3Global.h"
 #include "V3Graph.h"
-#include "V3GraphStream.h"
 #include "V3OrderMTaskGraph.h"
 #include "V3PairingHeap.h"
+#include "V3PoolAllocator.h"
 
 #include <algorithm>
 #include <array>
@@ -37,7 +35,6 @@
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
-#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -45,66 +42,38 @@ class MergeCandidate;
 class SiblingMC;
 class EdgeMC;
 
-// ######################################################################
-// Partitioner tunable settings:
-//
-// Before describing these settings, a bit of background:
-//
-// Early during the development of the partitioner, V3Split was failing to
-// split large always blocks (with ~100K assignments) so we had to handle
-// very large vertices with ~100K incoming and outgoing edges.
-//
-// The partitioner attempts to deal with such densely connected
-// graphs. Some of the tuning parameters below reference "huge vertices",
-// that's what they're talking about, vertices with tens of thousands of
-// edges in and out. Whereas most graphs have only tens of edges in and out
-// of most vertices.
-//
-// V3Split has since been fixed to more reliably split large always
-// blocks. It's kind of an open question whether the partitioner must
-// handle huge nodes gracefully. Maybe not!  But it still can, given
-// appropriate tuning.
+//######################################################################
+// Tunable settings
 
-//   PART_SIBLING_EDGE_LIMIT (integer)
-//
 // Arbitrarily limit the number of edges on a single vertex that will be
 // considered when enumerating siblings, to the given value.  This protects
-// the partitioner runtime in the presence of huge vertices.
+// the runtime in the presence of huge vertices.
 //
-// The sibling-merge is less important than the edge merge.  (You can
-// totally disable the sibling merge and get halfway decent partitions; you
-// can't disable edge merges, those are fundamental to the process.) So,
-// skipping the enumeration of some siblings on a few vertices does not
-// have a large impact on the result of the partitioner.
+// The sibling-merge is less important than the edge merge. Sibling merges
+// can be disabled and result in halfway decent coarsening. Edge merges
+// cannot be disabled, those are fundamental to the process. So, skipping
+// the enumeration of some siblings on a few vertices does not have a large
+// impact on the result of the partitioner.
 //
-// If your vertices are small, the limit (at 26) approaches a no-op.  Hence
-// there's basically no cost to applying this limit even when we don't
-// expect huge vertices.
+// If vertices are small, the limit (at 26) approaches a no-op. Hence
+// there's basically no cost to applying this limit even when no huge
+// vertices are expected.
 //
-// If you don't care about partitioner runtime and you want the most
-// aggressive partition, set the limit very high.  If you have huge
-// vertices, leave this as is.
+// If runtime is not a concern and the most precise result is desired,
+// set the limit very high.
 constexpr unsigned PART_SIBLING_EDGE_LIMIT = 26;
 
-// Don't produce more than a certain maximum number of MTasks.  This helps
-// the TSP variable sort not to blow up (a concern for some of the tests)
-// and we probably don't want a huge number of MTasks in practice anyway
-// (50 to 100 is typical.)
-//
 // If the user doesn't give one with '--threads-max-mtasks', we'll set the
-// maximum # of MTasks to
-//  (# of threads * PART_DEFAULT_MAX_MTASKS_PER_THREAD)
+// maximum # of MTasks to (# of threads * PART_DEFAULT_MAX_MTASKS_PER_THREAD)
 constexpr unsigned PART_DEFAULT_MAX_MTASKS_PER_THREAD = 50;
-
-//   end tunables.
 
 //######################################################################
 // MTask utility classes
 
 struct MergeCandidateKey final {
     // Note: Structure layout chosen to minimize padding in PairingHeap<*>::Node
-    uint64_t m_id;  // Unique ID part of edge score
-    uint64_t m_score;  // Score part of ID
+    uint64_t m_id;  // Unique ID part of the key
+    uint64_t m_score;  // Score part of the key
     bool operator<(const MergeCandidateKey& other) const {
         // First by Score then by ID, but notice that we want minimums using a max-heap, so reverse
         return m_score > other.m_score || (m_score == other.m_score && m_id > other.m_id);
@@ -121,11 +90,10 @@ class MergeCandidate VL_NOT_FINAL : public MergeCandidateHeapNode {
     friend class SiblingMC;
     friend class EdgeMC;
 
-    // This structure is extremely hot. To save 8 bytes we pack
-    // one bit indicating removedFromSb with the id. To save another
-    // 8 bytes by not having a virtual function table, we implement the
-    // few polymorphic methods over the two known subclasses explicitly,
-    // using another bit of the id to denote the actual subtype.
+    // This structure is extremely hot. To save 8 bytes by not having a virtual
+    // function table, we implement the few polymorphic methods over the two
+    // known subclasses explicitly, using a bit of the id to denote the actual
+    // subtype.
 
     // By using the bottom bits for flags, we can still use < to compare IDs without masking.
     // <63:1> Serial number for ordering, <0> subtype (SiblingMC)
@@ -146,10 +114,14 @@ public:
     // METHODS
     SiblingMC* toSiblingMC();  // Instead of cast<>/as<>
     EdgeMC* toEdgeMC();  // Instead of cast<>/as<>
-    bool mergeWouldCreateCycle() const;  // Instead of virtual method
+    bool mergeWouldCreateCycle(OrderMTaskGraph& graph);
 
-    inline void rescore();
+    // The current score of this candidate, which changes as the graph is contracted
+    inline uint64_t currentScore();
+    // The score this candidate was last given, which is its key in the scoreboard heap
     uint64_t score() const { return m_key.m_score; }
+    // Set the score of this candidate to its current value. Only valid while it is not in a heap.
+    void updateScore() { m_key.m_score = currentScore(); }
 
     static MergeCandidate* heapNodeToElem(MergeCandidateHeapNode* nodep) {
         return static_cast<MergeCandidate*>(nodep);
@@ -186,7 +158,6 @@ public:
 
     LogicMTask* ap() const { return m_ap; }
     LogicMTask* bp() const { return m_bp; }
-    bool mergeWouldCreateCycle() const;
 };
 
 static_assert(!std::is_polymorphic<SiblingMC>::value, "Should not have a vtable");
@@ -204,7 +175,6 @@ public:
 
     // METHODS
     MTaskEdge* edgep() const { return m_edgep; }
-    bool mergeWouldCreateCycle() const;
 };
 
 static_assert(!std::is_polymorphic<EdgeMC>::value, "Should not have a vtable");
@@ -237,44 +207,46 @@ SiblingMC* MergeCandidate::toSiblingMC() {
 
 EdgeMC* MergeCandidate::toEdgeMC() { return isSiblingMC() ? nullptr : static_cast<EdgeMC*>(this); }
 
-// Normally this would be a virtual function, but we save space by not having a vtable,
-// and we know we only have 2 possible subclasses.
-bool MergeCandidate::mergeWouldCreateCycle() const {
-    return isSiblingMC() ? static_cast<const SiblingMC*>(this)->mergeWouldCreateCycle()
-                         : static_cast<const EdgeMC*>(this)->mergeWouldCreateCycle();
-}
-
-static uint64_t siblingScore(const SiblingMC* sibsp) {
-    const LogicMTask* const ap = sibsp->ap();
-    const LogicMTask* const bp = sibsp->bp();
-    const uint64_t mergedCpCostFwd
-        = std::max(ap->critPathCost(GraphWay::FORWARD), bp->critPathCost(GraphWay::FORWARD));
-    const uint64_t mergedCpCostRev
-        = std::max(ap->critPathCost(GraphWay::REVERSE), bp->critPathCost(GraphWay::REVERSE));
-    return mergedCpCostRev + mergedCpCostFwd + LogicMTask::stepCost(ap->cost() + bp->cost());
-}
-
-static uint64_t edgeScore(const MTaskEdge* edgep) {
-    // Score this edge. Lower is better. The score is the new local CP
-    // length if we merge these MTasks.  ("Local" means the longest
-    // critical path running through the merged node.)
-    const LogicMTask* const top = edgep->toMTaskp();
-    const LogicMTask* const fromp = edgep->fromMTaskp();
-    const uint64_t mergedCpCostFwd = std::max(fromp->critPathCost(GraphWay::FORWARD),
-                                              top->critPathCostWithout<GraphWay::FORWARD>(edgep));
-    const uint64_t mergedCpCostRev = std::max(fromp->critPathCostWithout<GraphWay::REVERSE>(edgep),
-                                              top->critPathCost(GraphWay::REVERSE));
-    return mergedCpCostRev + mergedCpCostFwd + LogicMTask::stepCost(fromp->cost() + top->cost());
-}
-
-void MergeCandidate::rescore() {
+bool MergeCandidate::mergeWouldCreateCycle(OrderMTaskGraph& graph) {
+    // Sibling merge: merging creates a cycle if either sibling is reachable from the other
     if (const SiblingMC* const sibp = toSiblingMC()) {
-        m_key.m_score = siblingScore(sibp);
-    } else {
+        return graph.pathExists(sibp->ap(), sibp->bp(), nullptr)
+               || graph.pathExists(sibp->bp(), sibp->ap(), nullptr);
+    }
+
+    // Edge merge: merging creates a cycle if there is another path between the two MTasks
+    MTaskEdge* const edgep = toEdgeMC()->edgep();
+    return graph.pathExists(edgep->fromMTaskp(), edgep->toMTaskp(), edgep);
+}
+
+uint64_t MergeCandidate::currentScore() {
+    // Score this candidate. The score is the new local CP length if we merge this candidate.
+    // ("Local" means the longest critical path running through the merged node.)
+
+    // Sibling merge
+    if (const SiblingMC* const sibp = toSiblingMC()) {
+        const LogicMTask* const ap = sibp->ap();
+        const LogicMTask* const bp = sibp->bp();
+        const uint64_t mergedCpFwd
+            = std::max(ap->cpExclusive<GraphWay::FORWARD>(), bp->cpExclusive<GraphWay::FORWARD>());
+        const uint64_t mergedCpRev
+            = std::max(ap->cpExclusive<GraphWay::REVERSE>(), bp->cpExclusive<GraphWay::REVERSE>());
+        return mergedCpRev + mergedCpFwd + ap->cost() + bp->cost();
+    }
+
+    // Edge merge
+    {
+        MTaskEdge* const edgep = toEdgeMC()->edgep();
+        const LogicMTask* const fromp = edgep->fromMTaskp();
+        const LogicMTask* const top = edgep->toMTaskp();
+        const uint64_t mergedCpFwd = std::max(fromp->cpExclusive<GraphWay::FORWARD>(),
+                                              top->cpExclusiveWithout<GraphWay::FORWARD>(edgep));
+        const uint64_t mergedCpRev = std::max(fromp->cpExclusiveWithout<GraphWay::REVERSE>(edgep),
+                                              top->cpExclusive<GraphWay::REVERSE>());
         // Give a slight preference to sibling merges by increasing the cost of edge merges.
         // This biases towards sibling merges in case they are equal score with edge merges.
         // This avoid a central node growing while many leaves remain due to edge merges.
-        m_key.m_score = 1 + edgeScore(static_cast<const EdgeMC*>(this)->edgep());
+        return 1 + mergedCpRev + mergedCpFwd + fromp->cost() + top->cost();
     }
 }
 
@@ -297,59 +269,43 @@ void SiblingMC::unlinkA() {
 
 void SiblingMC::unlinkB() { mtaskData(m_bp).bSiblingMCs.unlink(this); }
 
-// cppcheck-suppress duplInheritedMember
-bool SiblingMC::mergeWouldCreateCycle() const {
-    return (LogicMTask::pathExistsFrom(m_ap, m_bp, nullptr)
-            || LogicMTask::pathExistsFrom(m_bp, m_ap, nullptr));
-}
-
-// cppcheck-suppress duplInheritedMember
-bool EdgeMC::mergeWouldCreateCycle() const {
-    return LogicMTask::pathExistsFrom(m_edgep->fromMTaskp(), m_edgep->toMTaskp(), m_edgep);
-}
-
-// Scoreboard of MTask merge candidates. Owns the lifetime of the merge candidate objects: callers
-// add/remove candidates via the methods below and never allocate or free them directly. For edges
-// this maintains the invariant that an MTaskEdge has an associated EdgeMC (held in its userp()),
-// if and only if it is currently on the scoreboard.
+// Scoreboard of MTask merge candidates.
 //
-// This is essentially a heap that can be hinted that some elements have changed keys, at which
-// point those elements are deferred as 'unknown' until the next 'rescore' call. We use the
-// generic PairingHeap, relying on its internal structure. For efficiency, the merge candidates are
-// themselves the heap nodes (MergeCandidate derives from PairingHeap<MergeCandidateKey>::Node), so
-// a candidate can be on at most one scoreboard.
+// This is a heap, sorted by the local critical path that would result from merging the candidate,
+// that is: the longest critical path running through the merged MTask. Merges proceed by picking
+// the candidate yielding the lowest such critical path, which is the merge that does the least
+// damage: a merge can only ever lengthen paths, and one whose local critical path is no longer
+// than the current global critical path cannot lengthen that at all.
+//
+// A candidate's score changes as the graph is contracted, so the score a candidate is in the heap
+// with is only the score it was last given, which is a lower bound on its current score. This
+// makes the top of the heap a lower bound on the score of every candidate, so the caller can pick
+// the best candidate by checking whether the top still has the score it was given, and
+// rescoring it if not (see the contraction loop).
+//
+// The scoreboard owns the lifetime of the merge candidate objects: callers add/remove candidates
+// via the methods below and never allocate or free them directly. For edges this maintains the
+// invariant that an MTaskEdge has an associated EdgeMC (held in its userp()), if and only if it is
+// currently on the scoreboard.
 class MergeCandidateScoreboard final {
     // TYPES
     using Heap = PairingHeap<MergeCandidateKey>;
-    using Node = Heap::Node;
-    using Link = Heap::Link;
 
     // MEMBERS
-    Heap m_known;  // The heap of candidates with known scores
-    Link m_unknown;  // List of candidates with unknown scores
+    Heap m_heap;  // The heap of candidates, keyed on their score (see class comment above)
+    PoolAllocator<EdgeMC> m_edgeMCPool;  // Allocator for the edge merge candidates
+    PoolAllocator<SiblingMC> m_siblingMCPool;  // Allocator for the sibling merge candidates
 
     // METHODS
-    void addUnknown(MergeCandidate* nodep) {
-        // Just prepend it to the list of unknown entries
-        nodep->m_next.link(m_unknown.unlink());
-        m_unknown.linkNonNull(nodep);
-        // We mark nodes on the unknown list by making their child pointer point to themselves
-        nodep->m_kids.m_ptr = nodep;
+    // Set the score of a candidate and add it to the heap. The score is computed from the critical
+    // paths of the MTasks, which are up to date while the graph is being contracted.
+    void insert(MergeCandidate* nodep) {
+        nodep->updateScore();
+        m_heap.insert(nodep);
     }
-
-    // Add a freshly created candidate. Not returned by 'best' before the next 'rescore' call.
-    void add(MergeCandidate* nodep) { addUnknown(nodep); }
 
     // Remove a candidate from the scoreboard.
-    void remove(MergeCandidate* nodep) {
-        if (nodep->m_kids.m_ptr == nodep) {
-            // Node is on the unknown list, replace with next
-            nodep->replaceWith(nodep->m_next.unlink());
-            return;
-        }
-        // Node is in the known heap, remove it
-        m_known.remove(nodep);
-    }
+    void remove(MergeCandidate* nodep) { m_heap.remove(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -357,658 +313,94 @@ public:
     ~MergeCandidateScoreboard() = default;
     VL_UNCOPYABLE(MergeCandidateScoreboard);
 
-    // The candidate with the best (lowest) known score, or nullptr if none have a known score.
-    // This does not automatically 'rescore'; the caller must 'rescore' to reflect all candidates.
-    MergeCandidate* best() const { return MergeCandidate::heapNodeToElem(m_known.max()); }
+    // The candidate with the lowest score it was given, or nullptr if the scoreboard is empty.
+    // Note this is only a lower bound on the best current score, see the class comment above.
+    MergeCandidate* best() const { return MergeCandidate::heapNodeToElem(m_heap.max()); }
 
-    // Tell the scoreboard a candidate's score may have changed. Its score becomes 'unknown' and it
-    // will not be returned by 'best' until the next 'rescore'.
-    void hintScoreChanged(MergeCandidate* nodep) {
-        // If it's already in the unknown list, then nothing to do
-        if (nodep->m_kids.m_ptr == nodep) return;
-        // Otherwise it was in the heap, remove it
-        m_known.remove(nodep);
-        // Prepend it to the unknown list
-        addUnknown(nodep);
+    // Update the score of a candidate to its current value, and reposition it in the heap
+    void rescore(MergeCandidate* nodep) {
+        remove(nodep);
+        insert(nodep);
     }
 
-    // True if there are candidates with an unknown score
-    bool needsRescore() const { return m_unknown; }
-    // True if the given candidate's score is unknown
-    static bool needsRescore(const MergeCandidate* nodep) { return nodep->m_kids.m_ptr == nodep; }
-
-    // For each candidate whose score is unknown, recompute the score and add to the known heap
-    void rescore() {
-        for (Node *nodep = m_unknown.unlink(), *nextp; nodep; nodep = nextp) {
-            // Pick up next
-            nextp = nodep->m_next.ptr();
-            // Reset pointers
-            nodep->m_next.m_ptr = nullptr;
-            nodep->m_kids.m_ptr = nullptr;
-            nodep->m_ownerpp = nullptr;
-            // Re-compute the score of the candidate
-            MergeCandidate::heapNodeToElem(nodep)->rescore();
-            // Re-insert into the heap
-            m_known.insert(nodep);
-        }
-    }
-
-    // Create the merge candidate for 'edgep' and add it to the scoreboard (out-of-line below)
-    void addEdge(MTaskEdge* edgep) {
+    // Create a merge candidate for 'edgep' and add it to the scoreboard
+    void addEdgeMC(MTaskEdge* edgep) {
         UDEBUGONLY(UASSERT(!edgep->userp(), "Edge already has a merge candidate"););
-        EdgeMC* const edgeMCp = new EdgeMC{edgep};
+        EdgeMC* const edgeMCp = m_edgeMCPool.alloc(edgep);
         edgep->userp(edgeMCp);
-        add(edgeMCp);
+        insert(edgeMCp);
     }
-    // Remove 'edgep's merge candidate from the scoreboard and delete it (out-of-line below)
-    void removeEdge(MTaskEdge* edgep) {
+    // Remove 'edgep's merge candidate from the scoreboard and release it
+    void removeEdgeMC(MTaskEdge* edgep) {
         EdgeMC* const edgeMCp = edgeMC(edgep);
         UDEBUGONLY(UASSERT(edgeMCp, "Edge has no merge candidate"););
         edgep->userp(nullptr);
         remove(edgeMCp);
-        VL_DO_DANGLING(delete edgeMCp, edgeMCp);
+        VL_DO_DANGLING(m_edgeMCPool.free(edgeMCp), edgeMCp);
     }
 
     // Create a sibling merge candidate for 'ap' and 'bp' and add it to the scoreboard
-    void addSibling(LogicMTask* ap, LogicMTask* bp) { add(new SiblingMC{ap, bp}); }
-    // Remove sibling merge candidate 'smcp' from the scoreboard and delete it
-    void removeSibling(SiblingMC* smcp) {
+    void addSiblingMC(LogicMTask* ap, LogicMTask* bp) { insert(m_siblingMCPool.alloc(ap, bp)); }
+    // Remove sibling merge candidate 'smcp' from the scoreboard and release it
+    void removeSiblingMC(SiblingMC* smcp) {
         remove(smcp);
         smcp->unlinkA();
         smcp->unlinkB();
-        VL_DO_DANGLING(delete smcp, smcp);
+        VL_DO_DANGLING(m_siblingMCPool.free(smcp), smcp);
     }
-};
 
-//######################################################################
-
-// Look at vertex costs (in one way) to form critical paths for each
-// vertex.
-template <GraphWay::en N_Way>
-static void partInitHalfCriticalPaths(V3Graph& mTaskGraph, bool checkOnly) {
-    constexpr GraphWay way{N_Way};
-    constexpr GraphWay rev = way.invert();
-    GraphStreamUnordered order{&mTaskGraph, way};
-    for (const V3GraphVertex* vertexp; (vertexp = order.nextp());) {
-        const LogicMTask* const mtaskcp = static_cast<const LogicMTask*>(vertexp);
-        LogicMTask* const mtaskp = const_cast<LogicMTask*>(mtaskcp);
-        uint64_t cpCost = 0;
-#if VL_DEBUG
-        std::unordered_set<V3GraphVertex*> relatives;
-#endif
-        for (const V3GraphEdge& edge : vertexp->edges<rev>()) {
-#if VL_DEBUG
-            // Run a few asserts on the initial mtask graph,
-            // while we're iterating through...
-            UASSERT_OBJ(edge.weight() != 0, mtaskp, "Should be no cut edges in MTask graph");
-            UASSERT_OBJ(relatives.find(edge.furtherp<rev>()) == relatives.end(), mtaskp,
-                        "Should be no redundant edges in MTask graph");
-            relatives.insert(edge.furtherp<rev>());
-#endif
-            const LogicMTask* const relativep = static_cast<LogicMTask*>(edge.furtherp<rev>());
-            cpCost = std::max(cpCost, (relativep->critPathCost(way)
-                                       + static_cast<uint64_t>(relativep->stepCost())));
-        }
-        if (checkOnly) {
-            partCheckCachedScoreVsActual(mtaskp->critPathCost(way), cpCost);
+    // Remove the given merge candidate, whichever kind it is, from the scoreboard and release it
+    void removeMC(MergeCandidate* nodep) {
+        if (SiblingMC* const smcp = nodep->toSiblingMC()) {
+            removeSiblingMC(smcp);
         } else {
-            mtaskp->setCritPathCost(way, cpCost);
+            removeEdgeMC(nodep->toEdgeMC()->edgep());
         }
     }
-}
-
-// Look at vertex costs to form critical paths for each vertex.
-static void partInitCriticalPaths(V3Graph& mTaskGraph) {
-    partInitHalfCriticalPaths<GraphWay::FORWARD>(mTaskGraph, false);
-    partInitHalfCriticalPaths<GraphWay::REVERSE>(mTaskGraph, false);
-
-    // Reset all MTaskEdges so that 'm_edges' will show correct CP numbers.
-    // They would have been all zeroes on initial creation of the MTaskEdges.
-    for (V3GraphVertex& vtx : mTaskGraph.vertices()) {
-        for (V3GraphEdge& edge : vtx.outEdges()) edge.as<MTaskEdge>()->resetCriticalPaths();
-    }
-}
-
-// Do an EXPENSIVE check to make sure that all incremental CP updates have
-// gone correctly.
-static void partCheckCriticalPaths(V3Graph& mTaskGraph) {
-    partInitHalfCriticalPaths<GraphWay::FORWARD>(mTaskGraph, true);
-    partInitHalfCriticalPaths<GraphWay::REVERSE>(mTaskGraph, true);
-    for (const V3GraphVertex& vtx : mTaskGraph.vertices()) {
-        const LogicMTask& mtask = static_cast<const LogicMTask&>(vtx);
-        mtask.checkRelativesCp<GraphWay::FORWARD>();
-        mtask.checkRelativesCp<GraphWay::REVERSE>();
-    }
-}
-
-// ######################################################################
-//  PropagateCp
-
-template <GraphWay::en N_Way>
-class PropagateCp final {
-    // Propagate increasing critical path (CP) costs through a graph.
-    //
-    // Usage:
-    //  * Client increases the cost and/or CP at a node or small set of nodes
-    //    (often a pair in practice, eg. edge contraction.)
-    //  * Client calls PropagateCp::cpHasIncreased() one or more times.
-    //    Each call indicates that the inclusive CP of some "seed" vertex
-    //    has increased to a given value.
-    //    * NOTE: PropagateCp will neither read nor modify the cost
-    //      or CPs at the seed vertices, it only accesses and modifies
-    //      vertices wayward from the seeds.
-    //  * Client calls PropagateCp::go(). Internally, this iteratively
-    //    propagates the new CPs wayward through the graph.
-    //
-
-    // TYPES
-
-    // We keep pending vertices in a heap during critical path propagation
-    struct PendingKey final {
-        LogicMTask* m_mtaskp;  // The vertex in the heap
-        uint64_t m_score;  // The score of this entry
-        void increase(uint64_t score) {
-            UDEBUGONLY(UASSERT(score >= m_score, "Must increase"););
-            m_score = score;
-        }
-        bool operator<(const PendingKey& other) const {
-            if (m_score != other.m_score) return m_score < other.m_score;
-            return *m_mtaskp < *other.m_mtaskp;
-        }
-    };
-
-    using PendingHeap = PairingHeap<PendingKey>;
-    using PendingHeapNode = typename PendingHeap::Node;
-
-    // MEMBERS
-    PendingHeap m_pendingHeap;  // Heap of pending rescores
-
-    // We allocate this many heap nodes at once
-    static constexpr size_t ALLOC_CHUNK_SIZE = 128;
-    PendingHeapNode* m_freep = nullptr;  // List of free heap nodes
-    std::vector<std::unique_ptr<PendingHeapNode[]>> m_allocated;  // Allocated heap nodes
-
-    const bool m_slowAsserts;  // Enable nontrivial asserts
-    // Used only with slow asserts to check MTasks visited only once
-    std::unordered_set<LogicMTask*> m_seen;
-
-public:
-    // CONSTRUCTORS
-    explicit PropagateCp(bool slowAsserts)
-        : m_slowAsserts{slowAsserts} {}
-
-    // METHODS
-private:
-    // Allocate a HeapNode for the given element
-    PendingHeapNode* allocNode() {
-        // If no free nodes available, then make some
-        if (!m_freep) {
-            // Allocate in chunks for efficiency
-            m_allocated.emplace_back(new PendingHeapNode[ALLOC_CHUNK_SIZE]);
-            // Set up free list pointer
-            m_freep = m_allocated.back().get();
-            // Set up free list chain
-            for (size_t i = 1; i < ALLOC_CHUNK_SIZE; ++i) {
-                m_freep[i - 1].m_next.m_ptr = &m_freep[i];
-            }
-            // Clear the next pointer of the last entry
-            m_freep[ALLOC_CHUNK_SIZE - 1].m_next.m_ptr = nullptr;
-        }
-        // Free nodes are available, pick up the first one
-        PendingHeapNode* const resultp = m_freep;
-        m_freep = resultp->m_next.m_ptr;
-        resultp->m_next.m_ptr = nullptr;
-        return resultp;
-    }
-
-    // Release a heap node (make it available for future allocation)
-    void freeNode(PendingHeapNode* nodep) {
-        // Re-use the existing link pointers and simply prepend it to the free list
-        nodep->m_next.m_ptr = m_freep;
-        m_freep = nodep;
-    }
-
-public:
-    void cpHasIncreased(V3GraphVertex* vxp, uint64_t newInclusiveCp) {
-        constexpr GraphWay way{N_Way};
-        constexpr GraphWay inv{way.invert()};
-
-        // For *vxp, whose CP-inclusive has just increased to
-        // newInclusiveCp, iterate to all wayward nodes, update the edges
-        // of each, and add each to m_pending if its overall CP has grown.
-        for (V3GraphEdge& graphEdge : vxp->edges<way>()) {
-            MTaskEdge& edge = static_cast<MTaskEdge&>(graphEdge);
-
-            LogicMTask* const relativep = edge.furtherMTaskp<N_Way>();
-            EdgeHeap::Node& edgeHeapNode = edge.m_edgeHeapNode[inv];
-            if (newInclusiveCp > edgeHeapNode.key().m_score) {
-                relativep->m_edgeHeap[inv].increaseKey(&edgeHeapNode, newInclusiveCp);
-            }
-
-            const uint64_t critPathCost = relativep->critPathCost(way);
-
-            if (critPathCost >= newInclusiveCp) continue;
-
-            // relativep's critPathCost() is out of step with its longest !wayward edge.
-            // Schedule that to be resolved.
-            const uint64_t newVal = newInclusiveCp - critPathCost;
-
-            void*& pendingNodepRef = relativep->m_propagateHeapNodep;
-            if (PendingHeapNode* const nodep = static_cast<PendingHeapNode*>(pendingNodepRef)) {
-                // Already in heap. Increase score if needed.
-                if (newVal > nodep->key().m_score) m_pendingHeap.increaseKey(nodep, newVal);
-                continue;
-            }
-
-            // Add to heap
-            PendingHeapNode* const nodep = allocNode();
-            pendingNodepRef = nodep;
-            m_pendingHeap.insert(nodep, {relativep, newVal});
-        }
-    }
-
-    void go() {
-        constexpr GraphWay way{N_Way};
-        constexpr GraphWay inv{way.invert()};
-
-        // m_pending maps each pending vertex to the amount that it wayward
-        // CP will grow.
-        //
-        // We can iterate over the pending set in reverse order, always
-        // choosing the nodes with the largest pending CP-growth.
-        //
-        // The intuition is: if the original seed node had its CP grow by
-        // 50, the most any wayward node can possibly grow is also 50.  So
-        // for anything pending to grow by 50, we know we can process it
-        // once and we won't have to grow its CP again on the current pass.
-        // After we're done with all the grow-by-50s, nothing else will
-        // grow by 50 again on the current pass, and we can process the
-        // grow-by-49s and we know we'll only have to process each one
-        // once.  And so on.
-        //
-        // This generalizes to multiple seed nodes also.
-        while (!m_pendingHeap.empty()) {
-            // Pop max element from heap
-            PendingHeapNode* const maxp = m_pendingHeap.max();
-            m_pendingHeap.remove(maxp);
-            // Pick up values
-            LogicMTask* const mtaskp = maxp->key().m_mtaskp;
-            const uint64_t cpGrowBy = maxp->key().m_score;
-            // Free the heap node, we are done with it
-            freeNode(maxp);
-            mtaskp->m_propagateHeapNodep = nullptr;
-            // Update the critPathCost of mtaskp, that was out-of-date with respect to its edges
-            const uint64_t startCp = mtaskp->critPathCost(way);
-            const uint64_t newCp = startCp + cpGrowBy;
-            if (VL_UNLIKELY(m_slowAsserts)) {
-                // Check that CP matches that of the longest edge wayward of vxp.
-                const uint64_t edgeCp = mtaskp->m_edgeHeap[inv].max()->key().m_score;
-                UASSERT_OBJ(edgeCp == newCp, mtaskp, "CP doesn't match longest wayward edge");
-                // Confirm that we only set each node's CP once.  That's an
-                // important property of PropagateCp which allows it to be far
-                // faster than a recursive algorithm on some graphs.
-                const bool first = m_seen.insert(mtaskp).second;
-                UASSERT_OBJ(first, mtaskp, "Set CP on node twice");
-            }
-            mtaskp->setCritPathCost(way, newCp);
-            cpHasIncreased(mtaskp, newCp + mtaskp->stepCost());
-        }
-
-        if (VL_UNLIKELY(m_slowAsserts)) m_seen.clear();
-    }
-
-private:
-    VL_UNCOPYABLE(PropagateCp);
 };
 
 //######################################################################
-// Contraction
-
-// Perform edge or sibling contraction on the partition graph
+// Contraction - Perform greedy edge or sibling merges on the MTask graph
 class Contraction final {
-    // TYPES
-    // New CP information for mtaskp reflecting an upcoming merge
-    struct NewCp final {
-        uint64_t cp;
-        uint64_t propagateCp;
-        bool propagate;
-    };
-
     // MEMBERS
     OrderMTaskGraph& m_mTaskGraph;  // The Mtask graph
-    uint64_t m_scoreLimit;  // Sloppy score allowed when picking merges
-    // Next score rescore at
-    uint64_t m_scoreLimitBeforeRescore = std::numeric_limits<uint64_t>::max();
-    unsigned m_mergesSinceRescore = 0;  // Merges since last rescore
-    const bool m_slowAsserts{v3Global.opt.debugPartition()};  // Take extra time to validate steps
+    uint64_t m_scoreLimit;  // Critical path limit for merges
     MergeCandidateScoreboard m_sb;  // Scoreboard
     // Auxiliary per-MTask data (the SiblingMC lists) attached to each MTask via its user pointer.
-    // Owned here for the lifetime of this Contraction. A single array, as the number of MTasks is
-    // fixed for that lifetime: merging only ever deletes vertices, never creates them.
+    // Owned here for the lifetime of this Contraction. A single array, as the number of MTasks
+    // can only decrease during contraction.
     std::unique_ptr<MTaskContractionData[]> m_mtaskDatap;
 
-    PropagateCp<GraphWay::FORWARD> m_forwardPropagator{m_slowAsserts};  // Forward propagator
-    PropagateCp<GraphWay::REVERSE> m_reversePropagator{m_slowAsserts};  // Reverse propagator
-
-    // Singular source vertex of the OrderMTaskGraph
-    LogicMTask* const m_entryMTaskp = m_mTaskGraph.entryp();
-    // Singular sink vertex of the dependency graph
-    LogicMTask* const m_exitMTaskp = m_mTaskGraph.exitp();
-
-    // Merge edges from a LogicMtask, keeping the merge candidate scoreboard in sync.
-    static void partRedirectEdgesFrom(V3Graph& graph, LogicMTask* recipientp, LogicMTask* donorp,
-                                      MergeCandidateScoreboard& sb) {
-        // This code removes adjacent edges. When this occurs, mark it in need
-        // of a rescore, in case its score has fallen and we need to move it up
-        // toward the front of the scoreboard.
-        //
-        // Wait, what? Shouldn't the scores only increase as we merge nodes? Well
-        // that's almost true. But there is one exception.
-        //
-        // Suppose we have A->B, B->C, and A->C.
-        //
-        // The A->C edge is a "transitive" edge. It's ineligible to be merged, as
-        // the merge would create a cycle. We score it on the scoreboard like any
-        // other edge.
-        //
-        // However, our "score" estimate for A->C is bogus, because the forward
-        // critical path to C and the reverse critical path to A both contain the
-        // same node (B) so we overestimate the score of A->C. At first this
-        // doesn't matter, since transitive edges aren't eligible to merge anyway.
-        //
-        // Later, suppose the edge contractor decides to merge the B->C edge, with
-        // B donating all its incoming edges into C, say.  (So we reach this
-        // function.)
-        //
-        // With B going away, the A->C edge will no longer be transitive and it
-        // will become eligible to merge. But if we don't mark it for rescore,
-        // it'll stay in the scoreboard with its old (overestimate) score. We'll
-        // merge it too late due to the bogus score. When we finally merge it, we
-        // fail the assert in the main edge contraction loop which checks that the
-        // actual score did not fall below the scoreboard's score.
-        //
-        // Another way of stating this: this code ensures that scores of
-        // non-transitive edges only ever increase.
-
-        // Process outgoing edges
-        while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(donorp->outEdges().frontp())) {
-            LogicMTask* const relativep = edgep->toMTaskp();
-
-            relativep->removeRelativeEdge<GraphWay::REVERSE>(edgep);
-
-            if (recipientp->hasRelativeMTask(relativep)) {
-                // An edge already exists between recipient and relative of donor.
-                // Mark it in need of a rescore
-                // The donor edge is going away, so remove it from the scoreboard
-                if (edgep->userp()) sb.removeEdge(edgep);
-                MTaskEdge* const existMTaskEdgep = static_cast<MTaskEdge*>(
-                    recipientp->findConnectingEdgep<GraphWay::FORWARD>(relativep));
-                UDEBUGONLY(UASSERT(existMTaskEdgep, "findConnectingEdge didn't find edge"););
-                // The existing edge is no longer transitive, so may need a rescore
-                if (EdgeMC* const existEdgeMCp = edgeMC(existMTaskEdgep)) {
-                    sb.hintScoreChanged(existEdgeMCp);
-                }
-                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-            } else {
-                // No existing edge between recipient and relative of donor.
-                // Redirect the edge from donor<->relative to recipient<->relative.
-                edgep->relinkFromp(recipientp);
-                recipientp->addRelativeMTask(relativep);
-                recipientp->stealRelativeEdge<GraphWay::FORWARD>(edgep);
-                relativep->addRelativeEdge<GraphWay::REVERSE>(edgep);
-                // The redirected edge is a merge candidate again
-                if (EdgeMC* const edgeMCp = edgeMC(edgep)) {
-                    sb.hintScoreChanged(edgeMCp);
-                } else {
-                    sb.addEdge(edgep);
-                }
-            }
-        }
-
-        // Process incoming edges
-        while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(donorp->inEdges().frontp())) {
-            LogicMTask* const relativep = edgep->fromMTaskp();
-
-            relativep->removeRelativeMTask(donorp);
-            relativep->removeRelativeEdge<GraphWay::FORWARD>(edgep);
-
-            if (relativep->hasRelativeMTask(recipientp)) {
-                // An edge already exists between recipient and relative of donor.
-                // Mark it in need of a rescore
-                // The donor edge is going away, so remove it from the scoreboard
-                if (edgep->userp()) sb.removeEdge(edgep);
-                MTaskEdge* const existMTaskEdgep = static_cast<MTaskEdge*>(
-                    recipientp->findConnectingEdgep<GraphWay::REVERSE>(relativep));
-                UDEBUGONLY(UASSERT(existMTaskEdgep, "findConnectingEdge didn't find edge"););
-                // The existing edge is no longer transitive, so may need a rescore
-                if (EdgeMC* const existEdgeMCp = edgeMC(existMTaskEdgep)) {
-                    sb.hintScoreChanged(existEdgeMCp);
-                }
-                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-            } else {
-                // No existing edge between recipient and relative of donor.
-                // Redirect the edge from donor<->relative to recipient<->relative.
-                edgep->relinkTop(recipientp);
-                relativep->addRelativeMTask(recipientp);
-                relativep->addRelativeEdge<GraphWay::FORWARD>(edgep);
-                recipientp->stealRelativeEdge<GraphWay::REVERSE>(edgep);
-                // The redirected edge is a merge candidate again
-                if (EdgeMC* const edgeMCp = edgeMC(edgep)) {
-                    sb.hintScoreChanged(edgeMCp);
-                } else {
-                    sb.addEdge(edgep);
-                }
-            }
-        }
-
-        // Remove donorp from the graph
-        VL_DO_DANGLING(donorp->unlinkDelete(&graph), donorp);
+    // Add merge candidates for all edges of 'mtaskp' to the scoreboard
+    void addEdgeMCs(LogicMTask* mtaskp) {
+        for (V3GraphEdge& e : mtaskp->outEdges()) m_sb.addEdgeMC(static_cast<MTaskEdge*>(&e));
+        for (V3GraphEdge& e : mtaskp->inEdges()) m_sb.addEdgeMC(static_cast<MTaskEdge*>(&e));
     }
 
-    template <GraphWay::en N_Way>
-    NewCp newCp(const LogicMTask* mtaskp, const LogicMTask* otherp, const MTaskEdge* mergeEdgep) {
-        constexpr GraphWay way{N_Way};
-        // Return new wayward-CP for mtaskp reflecting its upcoming merge
-        // with otherp. Set 'result.propagate' if mtaskp's wayward
-        // relatives will see a new wayward CP from this merge.
-        uint64_t newCp;
-        if (mergeEdgep) {
-            if (mtaskp == mergeEdgep->furtherp<way>()) {
-                newCp = std::max(otherp->critPathCost(way),
-                                 mtaskp->critPathCostWithout<way>(mergeEdgep));
-            } else {
-                newCp = std::max(mtaskp->critPathCost(way),
-                                 otherp->critPathCostWithout<way>(mergeEdgep));
-            }
-        } else {
-            newCp = std::max(otherp->critPathCost(way), mtaskp->critPathCost(way));
+    // Remove the merge candidates of all edges of 'mtaskp' from the scoreboard.
+    void removeEdgeMCs(LogicMTask* mtaskp) {
+        // Note not all edges have a merge candidate:
+        // those rejected by the main contraction loop had theirs removed there.
+        for (V3GraphEdge& edge : mtaskp->outEdges()) {
+            MTaskEdge* const edgep = static_cast<MTaskEdge*>(&edge);
+            if (edgeMC(edgep)) m_sb.removeEdgeMC(edgep);
         }
-
-        const uint64_t origRelativesCp = mtaskp->critPathCost(way) + mtaskp->stepCost();
-        const uint64_t newRelativesCp
-            = newCp + LogicMTask::stepCost(mtaskp->cost() + otherp->cost());
-
-        NewCp result;
-        result.cp = newCp;
-        result.propagate = (newRelativesCp > origRelativesCp);
-        result.propagateCp = newRelativesCp;
-        return result;
-    }
-
-    void removeSiblingMCsWith(LogicMTask* mtaskp) {
-        // Note: 'removeSibling' unlinks the candidate from both of its MTasks' lists, so taking
-        // the front element repeatedly does terminate. It also erases the candidate from the
-        // owning (higher id) MTask's sibling set as it goes, so both the sets and the lists are
-        // left consistent, whichever side of the candidate 'mtaskp' happens to be on.
-        while (SiblingMC* const smcp = mtaskData(mtaskp).aSiblingMCs.frontp()) {
-            m_sb.removeSibling(smcp);
+        for (V3GraphEdge& edge : mtaskp->inEdges()) {
+            MTaskEdge* const edgep = static_cast<MTaskEdge*>(&edge);
+            if (edgeMC(edgep)) m_sb.removeEdgeMC(edgep);
         }
-        while (SiblingMC* const smcp = mtaskData(mtaskp).bSiblingMCs.frontp()) {
-            m_sb.removeSibling(smcp);
-        }
-    }
-
-    void removeSiblingMCs(LogicMTask* recipientp, LogicMTask* donorp) {
-        // These two can share a SiblingMC (an edge between them does not preclude one). That is
-        // fine: 'removeSiblingMCsWith' unlinks each candidate from both sides, so the shared one
-        // is gone by the time we get to the donor.
-        //
-        // This also leaves both sibling sets empty, so they need no separate clearing: each entry
-        // in an MTask's sibling set is added by 'makeSiblingMC' together with a SiblingMC on that
-        // same MTask's 'aSiblingMCs' list, and draining that list erases the matching entry (see
-        // 'SiblingMC::unlinkA'). The slow assert in 'makeSiblingMC' catches it if that ever
-        // diverges, as a stale set entry there suppresses creating the SiblingMC it stands for.
-        removeSiblingMCsWith(recipientp);
-        removeSiblingMCsWith(donorp);
-    }
-
-    void contract(MergeCandidate* mergeCanp) {
-        LogicMTask* top = nullptr;
-        LogicMTask* fromp = nullptr;
-        EdgeMC* const mergeEdgeMCp = mergeCanp->toEdgeMC();
-        MTaskEdge* const mergeEdgep = mergeEdgeMCp ? mergeEdgeMCp->edgep() : nullptr;
-        SiblingMC* const mergeSibsp = mergeCanp->toSiblingMC();
-        if (mergeEdgep) {
-            top = mergeEdgep->toMTaskp();
-            fromp = mergeEdgep->fromMTaskp();
-        } else {
-            top = mergeSibsp->ap();
-            fromp = mergeSibsp->bp();
-        }
-
-        // Merge the smaller mtask into the larger mtask.  If one of them
-        // is much larger, this will save time in partRedirectEdgesFrom().
-        // Assume the more costly mtask has more edges.
-        //
-        // [TODO: now that we have edge maps, we could count the edges
-        //  exactly without a linear search.]
-        LogicMTask* recipientp;
-        LogicMTask* donorp;
-        if (fromp->cost() > top->cost()) {
-            recipientp = fromp;
-            donorp = top;
-        } else {
-            donorp = fromp;
-            recipientp = top;
-        }
-        VL_DANGLING(fromp);
-        VL_DANGLING(top);  // Use donorp and recipientp now instead
-
-        // Recursively update forward and reverse CP numbers.
-        //
-        // Doing this before merging the MTasks lets us often avoid
-        // recursing through either incoming or outgoing edges on one or
-        // both MTasks.
-        //
-        // These 'NewCp' objects carry a bit indicating whether we must
-        // propagate CP for each of the four cases:
-        const NewCp recipientNewCpFwd = newCp<GraphWay::FORWARD>(recipientp, donorp, mergeEdgep);
-        const NewCp donorNewCpFwd = newCp<GraphWay::FORWARD>(donorp, recipientp, mergeEdgep);
-        const NewCp recipientNewCpRev = newCp<GraphWay::REVERSE>(recipientp, donorp, mergeEdgep);
-        const NewCp donorNewCpRev = newCp<GraphWay::REVERSE>(donorp, recipientp, mergeEdgep);
-
-        if (mergeEdgep) {
-            // Remove and free the connecting edge. Must do this before propagating CP's below.
-            m_sb.removeEdge(mergeEdgep);
-            mergeEdgep->fromMTaskp()->removeRelativeMTask(mergeEdgep->toMTaskp());
-            mergeEdgep->fromMTaskp()->removeRelativeEdge<GraphWay::FORWARD>(mergeEdgep);
-            mergeEdgep->toMTaskp()->removeRelativeEdge<GraphWay::REVERSE>(mergeEdgep);
-            VL_DO_DANGLING(mergeEdgep->unlinkDelete(), mergeEdgep);
-        } else {
-            // Remove the siblingMC
-            m_sb.removeSibling(mergeSibsp);
-        }
-
-        // This also updates cost and stepCost on recipientp
-        recipientp->moveAllVerticesFrom(donorp);
-
-        UINFO(9, "recipient = " << recipientp->id() << ", donor = " << donorp->id()
-                                << ", mergeEdgep = " << mergeEdgep << "\n"
-                                << "recipientNewCpFwd = " << recipientNewCpFwd.cp
-                                << (recipientNewCpFwd.propagate ? " true " : " false ")
-                                << recipientNewCpFwd.propagateCp << "\n"
-                                << "donorNewCpFwd = " << donorNewCpFwd.cp
-                                << (donorNewCpFwd.propagate ? " true " : " false ")
-                                << donorNewCpFwd.propagateCp);
-
-        recipientp->setCritPathCost(GraphWay::FORWARD, recipientNewCpFwd.cp);
-        if (recipientNewCpFwd.propagate) {
-            m_forwardPropagator.cpHasIncreased(recipientp, recipientNewCpFwd.propagateCp);
-        }
-        recipientp->setCritPathCost(GraphWay::REVERSE, recipientNewCpRev.cp);
-        if (recipientNewCpRev.propagate) {
-            m_reversePropagator.cpHasIncreased(recipientp, recipientNewCpRev.propagateCp);
-        }
-        if (donorNewCpFwd.propagate) {
-            m_forwardPropagator.cpHasIncreased(donorp, donorNewCpFwd.propagateCp);
-        }
-        if (donorNewCpRev.propagate) {
-            m_reversePropagator.cpHasIncreased(donorp, donorNewCpRev.propagateCp);
-        }
-        m_forwardPropagator.go();
-        m_reversePropagator.go();
-
-        // Remove all other SiblingMCs that include recipientp or donorp. We remove all siblingMCs
-        // of recipientp so we do not get huge numbers of SiblingMCs. We'll recreate them below, up
-        // to a bounded number.
-        removeSiblingMCs(recipientp, donorp);
-
-        // Redirect all edges, delete donorp
-        partRedirectEdgesFrom(m_mTaskGraph, recipientp, donorp, m_sb);
-
-        ++m_mergesSinceRescore;
-
-        // Do an expensive check, confirm we haven't botched the CP
-        // updates.
-        if (m_slowAsserts) partCheckCriticalPaths(m_mTaskGraph);
-
-        // Finally, make new sibling pairs as needed:
-        //  - prereqs and postreqs of recipientp
-        //  - prereqs of recipientp's postreqs
-        //  - postreqs of recipientp's prereqs
-        // Note that this depends on the updated critical paths (above).
-        siblingPairFromRelatives<GraphWay::REVERSE, true>(recipientp);
-        siblingPairFromRelatives<GraphWay::FORWARD, true>(recipientp);
-        unsigned edges = 0;
-        for (V3GraphEdge& edge : recipientp->outEdges()) {
-            LogicMTask* const postreqp = static_cast<LogicMTask*>(edge.top());
-            siblingPairFromRelatives<GraphWay::REVERSE, false>(postreqp);
-            ++edges;
-            if (edges >= PART_SIBLING_EDGE_LIMIT) break;
-        }
-        edges = 0;
-        for (V3GraphEdge& edge : recipientp->inEdges()) {
-            LogicMTask* const prereqp = static_cast<LogicMTask*>(edge.fromp());
-            siblingPairFromRelatives<GraphWay::FORWARD, false>(prereqp);
-            ++edges;
-            if (edges >= PART_SIBLING_EDGE_LIMIT) break;
-        }
-    }
-
-    void doRescore() {
-        // During rescore, we know that graph isn't changing, so allow
-        // the critPathCost*Without() routines to cache some data in
-        // each LogicMTask. This is just an optimization, things should
-        // behave identically without the caching (just slower)
-
-        m_sb.rescore();
-        UINFO(6, "Did rescore. Merges since previous = " << m_mergesSinceRescore);
-
-        m_mergesSinceRescore = 0;
-        m_scoreLimitBeforeRescore
-            = std::numeric_limits<decltype(m_scoreLimitBeforeRescore)>::max();
     }
 
     void makeSiblingMC(LogicMTask* ap, LogicMTask* bp) {
         if (ap->id() < bp->id()) std::swap(ap, bp);
         // The higher id vertex owns the association set
-        const auto first = mtaskData(ap).siblings.insert(bp).second;
+        const bool first = mtaskData(ap).siblings.insert(bp).second;
         if (first) {
-            m_sb.addSibling(ap, bp);
+            m_sb.addSiblingMC(ap, bp);
             return;
         }
 
-        if (VL_UNLIKELY(m_slowAsserts)) {
+        if (VL_UNLIKELY(m_mTaskGraph.slowAsserts())) {
             // It's fine if we already have this SiblingMC, we may have
             // created it earlier. Just confirm that we have associated data.
             bool found = false;
@@ -1021,7 +413,7 @@ class Contraction final {
     }
 
     template <GraphWay::en N_Way, bool N_Exhaustive>
-    void siblingPairFromRelatives(V3GraphVertex* mtaskp) {
+    void addSiblingMCsFromRelatives(LogicMTask* mtaskp) {
         constexpr GraphWay way{N_Way};
         // Need at least 2 edges
         auto& edges = mtaskp->edges<way>();
@@ -1056,7 +448,7 @@ class Contraction final {
             LogicMTask* const otherp = static_cast<LogicMTask*>(edge.furtherp<way>());
             neighbors[n] = otherp;
             sortRecs[n].m_id = otherp->id();
-            sortRecs[n].m_cp = otherp->critPathCost(way) + otherp->cost();
+            sortRecs[n].m_cp = otherp->cpInclusive<way>();
             sortRecs[n].m_idx = n;
             ++n;
             // Prevent nodes with huge numbers of edges from massively slowing down us down
@@ -1082,25 +474,98 @@ class Contraction final {
         }
     }
 
-    // CONSTRUCTORS
-    Contraction(OrderMTaskGraph& mTaskGraph, uint64_t scoreLimit)
-        : m_mTaskGraph{mTaskGraph}
-        , m_scoreLimit{scoreLimit} {
+    void removeSiblingMCs(LogicMTask* mtaskp) {
+        // Note: 'removeSiblingMC' unlinks the candidate from both of its MTasks' lists, so taking
+        // the front element repeatedly does terminate. It also erases the candidate from the
+        // owning (higher id) MTask's sibling set as it goes, so both the sets and the lists are
+        // left consistent, whichever side of the candidate 'mtaskp' happens to be on.
+        while (SiblingMC* const smcp = mtaskData(mtaskp).aSiblingMCs.frontp()) {
+            m_sb.removeSiblingMC(smcp);
+        }
+        while (SiblingMC* const smcp = mtaskData(mtaskp).bSiblingMCs.frontp()) {
+            m_sb.removeSiblingMC(smcp);
+        }
+    }
 
-        if (m_slowAsserts) {
-            // Check there are no redundant edges
-            for (V3GraphVertex& vtx : m_mTaskGraph.vertices()) {
-                std::unordered_set<const V3GraphVertex*> neighbors;
-                for (V3GraphEdge& edge : vtx.outEdges()) {
-                    const bool first = neighbors.insert(edge.top()).second;
-                    UASSERT_OBJ(first, &vtx, "Redundant edge found in input to Contraction()");
-                }
-            }
+    // Merge the two MTasks of 'mergeCanp'
+    void contract(MergeCandidate* mergeCanp) {
+        // The two MTasks to merge. Note the order of the two decides which of them becomes the
+        // recipient below when their costs are equal, so keep it stable.
+        LogicMTask* fromp;
+        LogicMTask* top;
+        if (const EdgeMC* const edgeMCp = mergeCanp->toEdgeMC()) {
+            fromp = edgeMCp->edgep()->fromMTaskp();
+            top = edgeMCp->edgep()->toMTaskp();
+        } else {
+            const SiblingMC* const sibMCp = mergeCanp->toSiblingMC();
+            fromp = sibMCp->bp();
+            top = sibMCp->ap();
         }
 
-        // Set up the critical path into and out of each node, then coarsen the graph.
-        partInitCriticalPaths(mTaskGraph);
+        // Merge the smaller mtask into the larger mtask.
+        LogicMTask* recipientp;
+        LogicMTask* donorp;
+        if (fromp->cost() > top->cost()) {
+            recipientp = fromp;
+            donorp = top;
+        } else {
+            donorp = fromp;
+            recipientp = top;
+        }
+        VL_DANGLING(fromp);
+        VL_DANGLING(top);  // Use donorp and recipientp now instead
 
+        // Remove all SiblingMCs that include either MTask
+        removeSiblingMCs(recipientp);
+        removeSiblingMCs(donorp);
+
+        // Remove the EdgeMCs of both MTasks
+        removeEdgeMCs(recipientp);
+        removeEdgeMCs(donorp);
+
+        // Merge the MTasks. This redirects all edges, updates critical paths, and deletes donorp
+        m_mTaskGraph.mergeMTasks(recipientp, donorp);
+        VL_DANGLING(donorp);
+
+        // Confirm we haven't botched the CP updates. This is a whole graph walk after every single
+        // merge, so it is quadratic in the size of the graph, hence only under '--debug 9'.
+        if (VL_UNLIKELY(debug() >= 9)) m_mTaskGraph.validate();
+
+        // Add the EdgeMCs of the merged MTask
+        addEdgeMCs(recipientp);
+
+        // Finally, make new sibling pairs as needed:
+        //  - prereqs and postreqs of recipientp
+        //  - prereqs of recipientp's postreqs
+        //  - postreqs of recipientp's prereqs
+        // Note that this depends on the updated critical paths (above).
+        addSiblingMCsFromRelatives<GraphWay::REVERSE, true>(recipientp);
+        addSiblingMCsFromRelatives<GraphWay::FORWARD, true>(recipientp);
+        unsigned edges = 0;
+        for (V3GraphEdge& edge : recipientp->outEdges()) {
+            LogicMTask* const postreqp = static_cast<LogicMTask*>(edge.top());
+            addSiblingMCsFromRelatives<GraphWay::REVERSE, false>(postreqp);
+            ++edges;
+            if (edges >= PART_SIBLING_EDGE_LIMIT) break;
+        }
+        edges = 0;
+        for (V3GraphEdge& edge : recipientp->inEdges()) {
+            LogicMTask* const prereqp = static_cast<LogicMTask*>(edge.fromp());
+            addSiblingMCsFromRelatives<GraphWay::FORWARD, false>(prereqp);
+            ++edges;
+            if (edges >= PART_SIBLING_EDGE_LIMIT) break;
+        }
+    }
+
+    // CONSTRUCTORS
+    Contraction(OrderMTaskGraph& mTaskGraph, uint64_t cpLimit)
+        : m_mTaskGraph{mTaskGraph}
+        , m_scoreLimit{cpLimit} {
+
+        // Check the graph we were given is consistent.
+        m_mTaskGraph.validate();
+
+        // Figure out maximum number of MTasks
         const uint32_t maxMTasks = []() -> uint32_t {
             // If specified, use the given value
             const int given = v3Global.opt.threadsMaxMTasks();
@@ -1108,15 +573,6 @@ class Contraction final {
             // Unspecified so estimate
             return PART_DEFAULT_MAX_MTASKS_PER_THREAD * v3Global.opt.threads();
         }();
-
-        // OPTIMIZATION PASS: Edge contraction and sibling contraction.
-        //  - Score pairs of LogicMTask which are a candidate to merge.
-        //    * Each edge defines such a candidate pair
-        //    * Two LogicMTask that are prereqs or postreqs of a common third
-        //      vertex are "siblings", these are also a candidate pair.
-        //  - Build a list of MergeCandidates, sorted by score.
-        //  - Merge the best pair.
-        //  - Incrementally recompute critical paths near the merged mtask.
 
         // Allocate and assign the auxiliary data for every LogicMTask.
         {
@@ -1129,56 +585,33 @@ class Contraction final {
 
         // Add initial candidates
         for (V3GraphVertex& vtx : m_mTaskGraph.vertices()) {
-            for (V3GraphEdge& edge : vtx.outEdges()) m_sb.addEdge(static_cast<MTaskEdge*>(&edge));
-            siblingPairFromRelatives<GraphWay::REVERSE, true>(&vtx);
-            siblingPairFromRelatives<GraphWay::FORWARD, true>(&vtx);
+            for (V3GraphEdge& edge : vtx.outEdges())
+                m_sb.addEdgeMC(static_cast<MTaskEdge*>(&edge));
+            LogicMTask* const mtaskp = static_cast<LogicMTask*>(&vtx);
+            addSiblingMCsFromRelatives<GraphWay::REVERSE, true>(mtaskp);
+            addSiblingMCsFromRelatives<GraphWay::FORWARD, true>(mtaskp);
         }
 
-        // Set initial scores in scoreboard
-        doRescore();
-
         while (true) {
-            // This is the best edge to merge, with the lowest score (shortest local critical path)
+            // Pick the candidate yielding the lowest local critical path.
             MergeCandidate* const mergeCanp = m_sb.best();
-            if (!mergeCanp) {
-                if (!m_sb.needsRescore()) break;  // No more eligible candidates
-                // Rescore the scoreboard and try again
-                doRescore();
+            if (!mergeCanp) break;  // No more candidates
+
+            // If the score has changed since it was inserted into the scoreboard, rescore it and
+            // pick again. (The real scores can differ from the one used to insert it into the
+            // scoreboard, due to merges between insertion and retrieval.)
+            const uint64_t score = mergeCanp->currentScore();
+            if (score != mergeCanp->score()) {
+                m_sb.rescore(mergeCanp);
                 continue;
             }
 
-            UASSERT(!m_sb.needsRescore(mergeCanp),
-                    "Need-rescore items should not be returned by bestp");
+            // Check if the critical path limit is reached.
+            if (score > m_scoreLimit) {
 
-            const uint64_t cachedScore = mergeCanp->score();
-            mergeCanp->rescore();
-            const uint64_t actualScore = mergeCanp->score();
-
-            // If cached score is out-of-date, mark this elem as in need of a rescore and continue.
-            // cppcheck-suppress knownConditionTrueFalse // they are in fact different
-            if (actualScore > cachedScore) {
-                m_sb.hintScoreChanged(mergeCanp);
-                continue;
-            }
-
-            // ... we'll also confirm that actualScore hasn't shrunk relative
-            // to cached score, after the mergeWouldCreateCycle() check.
-
-            if (actualScore > m_scoreLimit) {
-                // Our best option isn't good enough
-                if (m_sb.needsRescore()) {
-                    // Some pairs need a rescore, maybe those will be
-                    // eligible to merge afterward.
-                    doRescore();
-                    continue;
-                }
-
-                // We've exhausted everything below m_scoreLimit; stop.
-
-                // Except, if we have too many LogicMTasks, raise the score limit and keep going...
+                // If there are still too many MTasks, raise the limit and keep going
                 const unsigned mtaskCount = m_mTaskGraph.vertices().size();
                 if (mtaskCount > maxMTasks) {
-                    const uint64_t oldLimit = m_scoreLimit;
                     m_scoreLimit = (m_scoreLimit * 120) / 100;
                     FileLine* const flp = v3Global.rootp()->fileline();
                     if (!flp->warnIsOff(V3ErrorCode::UNOPTTHREADS)) {
@@ -1187,19 +620,11 @@ class Contraction final {
                                     "parallelism; suggest asking for fewer threads.");
                         flp->modifyWarnOff(V3ErrorCode::UNOPTTHREADS, true);
                     }
-                    UINFO(6, "Critical path limit was=" << oldLimit << " now=" << m_scoreLimit);
                     continue;
                 }
 
-                // Really stop
+                // MTasks limit and CP limit reached. Stop.
                 break;
-            }
-
-            // If time to rescore, that will result in a higher scoreLimitBeforeRescore, and
-            // possibly lower-scoring elements returned from bestp().
-            if (actualScore > m_scoreLimitBeforeRescore) {
-                doRescore();
-                continue;
             }
 
             // Avoid merging the entry/exit nodes. This would create serialization, by forcing the
@@ -1207,60 +632,26 @@ class Contraction final {
             // in a modest way by allowing other MTasks to start earlier.
             if (EdgeMC* const edgeMCp = mergeCanp->toEdgeMC()) {
                 MTaskEdge* const edgep = edgeMCp->edgep();
-                if (edgep->fromp() == m_entryMTaskp || edgep->top() == m_exitMTaskp) {
-                    m_sb.removeEdge(edgep);
+                if (edgep->fromp() == m_mTaskGraph.entryp()
+                    || edgep->top() == m_mTaskGraph.exitp()) {
+                    m_sb.removeEdgeMC(edgep);
                     continue;
                 }
             }
 
-            // Avoid merging any edge that would create a cycle.
-            //
-            // For example suppose we begin with vertices A, B, C and edges
-            // A->B, B->C, A->C.
-            //
-            // Suppose we want to merge A->C into a single vertex.
-            // New edges would be AC->B and B->AC which is not a DAG.
-            // Do not allow this.
-            if (mergeCanp->mergeWouldCreateCycle()) {
-                // Remove this candidate from scoreboard so we don't keep
-                // reconsidering it on every loop.
-                if (SiblingMC* const smcp = mergeCanp->toSiblingMC()) {
-                    m_sb.removeSibling(smcp);
-                } else {
-                    m_sb.removeEdge(mergeCanp->toEdgeMC()->edgep());
-                }
+            // Avoid merging any edge that would create a cycle. For example suppose we begin with
+            // vertices A, B, C and edges A->B, B->C, A->C. Merging A->C would create a cycle.
+            if (mergeCanp->mergeWouldCreateCycle(m_mTaskGraph)) {
+                m_sb.removeMC(mergeCanp);
                 continue;
             }
 
-            partCheckCachedScoreVsActual(cachedScore, actualScore);
-
-            // Finally there's no cycle risk, no need to rescore, we're
-            // within m_scoreLimit and m_scoreLimitBeforeRescore.
-            // This is the edge to merge.
-
-            // Bookkeeping: if this is the first edge we'll merge since
-            // the last rescore, compute the new m_scoreLimitBeforeRescore
-            // to be somewhat higher than this edge's score.
-            if (!m_mergesSinceRescore) m_scoreLimitBeforeRescore = actualScore;
-
-            // Finally merge this candidate.
+            // Merge this candidate
             contract(mergeCanp);
         }
 
-        // Free all remaining merge candidates. As an EdgeMC exists exactly while its edge is on
-        // the scoreboard, draining the scoreboard here frees every remaining EdgeMC; edges removed
-        // from the scoreboard earlier already had theirs freed. Note 'best' only ever returns
-        // candidates with a known score, so this only drains the scoreboard completely if nothing
-        // is left with an unknown score. Every 'break' out of the loop above is guarded on that,
-        // but assert it here, as otherwise we would leak candidates.
-        UASSERT(!m_sb.needsRescore(), "Should have no unknown score candidates at this point");
-        while (MergeCandidate* const mergeCanp = m_sb.best()) {
-            if (SiblingMC* const smcp = mergeCanp->toSiblingMC()) {
-                m_sb.removeSibling(smcp);
-            } else {
-                m_sb.removeEdge(mergeCanp->toEdgeMC()->edgep());
-            }
-        }
+        // Free all remaining merge candidates.
+        while (MergeCandidate* const mergeCanp = m_sb.best()) m_sb.removeMC(mergeCanp);
     }
 
 public:

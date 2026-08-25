@@ -55,19 +55,22 @@ module t;
   initial begin
     automatic derived_c d = new();
     automatic grandchild_c g = new();
+    int randomize_result;
 
     // Test derived class this.randomize()
     repeat (20) begin
-      `checkd(d.do_randomize(), 1)
-      `checkd(d.cfg.enabled, 1)
-      `checkd(d.watchdog >= 32'd50 && d.watchdog <= 32'd200, 1)
+      randomize_result = d.do_randomize();
+      `checkd(randomize_result, 1);
+      `checkd(d.cfg.enabled, 1);
+      `checkd(d.watchdog >= 32'd50 && d.watchdog <= 32'd200, 1);
     end
 
     // Test deep inheritance this.randomize()
     repeat (20) begin
-      `checkd(g.do_rand_deep(), 1)
-      `checkd(g.cfg.enabled, 1)
-      `checkd(g.watchdog >= 32'd50 && g.watchdog <= 32'd200, 1)
+      randomize_result = g.do_rand_deep();
+      `checkd(randomize_result, 1);
+      `checkd(g.cfg.enabled, 1);
+      `checkd(g.watchdog >= 32'd50 && g.watchdog <= 32'd200, 1);
     end
 
     $write("*-* All Finished *-*\n");

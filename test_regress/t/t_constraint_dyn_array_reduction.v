@@ -72,37 +72,43 @@ module t;
     static AndTest t_and = new();
     static OrTest t_or = new();
     static ProductTest t_prod = new();
+    int randomize_result;
 
     repeat (10) begin
       bit [7:0] exp;
       int i;
 
       // Test xor
-      `checkd(t_xor.randomize(), 1)
+      randomize_result = t_xor.randomize();
+      `checkd(randomize_result, 1);
       exp = 0;
       foreach (t_xor.data[i]) exp ^= t_xor.data[i];
       `checkh(t_xor.result, exp)
 
       // Test sum
-      `checkd(t_sum.randomize(), 1)
+      randomize_result = t_sum.randomize();
+      `checkd(randomize_result, 1);
       exp = 0;
       foreach (t_sum.data[i]) exp += t_sum.data[i];
       `checkh(t_sum.result, exp)
 
       // Test and
-      `checkd(t_and.randomize(), 1)
+      randomize_result = t_and.randomize();
+      `checkd(randomize_result, 1);
       exp = 8'hff;
       foreach (t_and.data[i]) exp &= t_and.data[i];
       `checkh(t_and.result, exp)
 
       // Test or
-      `checkd(t_or.randomize(), 1)
+      randomize_result = t_or.randomize();
+      `checkd(randomize_result, 1);
       exp = 0;
       foreach (t_or.data[i]) exp |= t_or.data[i];
       `checkh(t_or.result, exp)
 
       // Test product
-      `checkd(t_prod.randomize(), 1)
+      randomize_result = t_prod.randomize();
+      `checkd(randomize_result, 1);
       exp = 8'd1;
       foreach (t_prod.data[i]) exp *= t_prod.data[i];
       `checkh(t_prod.result, exp)

@@ -23,8 +23,7 @@ for prog in [
 ]:
     n += 1
     log_filename = test.obj_dir + "/vlt_" + str(n) + ".log"
-    test.run(fails=False,
-             cmd=["perl", prog, "--version"],
+    test.run(cmd=["perl", prog, "--version"],
              tee=test.verbose,
              logfile=log_filename,
              verilator_run=True)
@@ -32,11 +31,7 @@ for prog in [
 
     n += 1
     log_filename = test.obj_dir + "/vlt_" + str(n) + ".log"
-    test.run(fails=False,
-             cmd=["perl", prog, "-V"],
-             tee=test.verbose,
-             logfile=log_filename,
-             verilator_run=True)
+    test.run(cmd=["perl", prog, "-V"], tee=test.verbose, logfile=log_filename, verilator_run=True)
     test.file_grep(log_filename, r'Verilator')
 
 test.passes()

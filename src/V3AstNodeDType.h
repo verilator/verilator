@@ -923,7 +923,8 @@ public:
         : ASTGEN_SUPER_IfaceRefDType(fl)
         , m_modportFileline{modportFl}
         , m_cellName{cellName}
-        , m_ifaceName{ifaceName} {
+        , m_ifaceName{ifaceName}
+        , m_modportName{modport} {
         addParamsp(paramsp);
     }
     ASTGEN_MEMBERS_AstIfaceRefDType;

@@ -79,7 +79,7 @@ public:
     virtual void* datap(int /*idx*/) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
-    bool set(const std::string& idx, const std::string& val) const;
+    void set(const std::string& idx, const std::string& val) const;
     virtual void emitGetValue(std::ostream& s) const;
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
@@ -234,7 +234,6 @@ class VlSolverSession;
 
 //=============================================================================
 // Object holding constraints and variable references.
-
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
@@ -260,40 +259,41 @@ class VlRandomizer VL_NOT_FINAL {
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool nextRandomize(VlRNG& rngr, bool checkOnly);
-    bool nextFlat(VlRNG& rngr, VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
-    // Phased solving for solve...before
-    bool nextPhased(VlRNG& rngr, VlSolverSession& sess,
-                    const std::vector<std::string>& uniqueExprs);
-    bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
-    bool solvePhases(VlRNG& rngr, VlSolverSession& sess,
-                     const std::vector<std::vector<std::string>>& layers,
-                     const std::vector<std::string>& uniqueExprs, bool& exhaustedr);
-    const char* phasedLogic() const;
-    bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
-                          const std::vector<std::string>& layerVars,
-                          std::map<std::string, std::string>& solvedValuesr);
-    bool readPhaseValues(VlSolverSession& sess, std::map<std::string, std::string>& solvedValuesr);
-    bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
     // Fetch the model and write it into the registered variables.
     bool applyModel(VlSolverSession& sess);
-    bool parseModel(std::istream& is);
+    bool parseModel(std::istream& is, size_t requested);
     // Assert the maximal compatible soft-constraint set onto the open session.
     void relaxSoftConstraints(VlSolverSession& sess);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).
     std::vector<int> readUnsatAssumptions(VlSolverSession& sess);
     void reportUnsatSetup(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
     void reportUnsatCore(VlSolverSession& sess);
-    void solveDiversity(VlRNG& rngr, VlSolverSession& sess);
-    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess);
-    void solveDiversityXor(VlRNG& rngr, VlSolverSession& sess);
+    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
+    void recordRandcValues();  // Record solved randc values for future exclusion
+    size_t hashConstraints(const std::vector<std::string>& extras) const;
+    bool nextRandomize(VlRNG& rngr, bool checkOnly);
+    // "(distinct ...)" expression per unique-constrained array
     std::vector<std::string> buildUniqueExprs() const;
     void emitDefines(std::ostream& os) const;
     void emitDeclares(std::ostream& os, bool pinCurrent) const;
     void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
-    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
-    void recordRandcValues();  // Record solved randc values for future exclusion
-    size_t hashConstraints(const std::vector<std::string>& extras) const;
+    bool nextFlat(VlRNG& rngr, VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
+    void solveDiversity(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversityXor(VlRNG& rngr, VlSolverSession& sess);
+    // Layers of solve...before variables in dependency order
+    bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
+    const char* phasedLogic() const;
+    bool nextPhased(VlRNG& rngr, VlSolverSession& sess,
+                    const std::vector<std::string>& uniqueExprs);
+    bool solvePhases(VlRNG& rngr, VlSolverSession& sess,
+                     const std::vector<std::vector<std::string>>& layers,
+                     const std::vector<std::string>& uniqueExprs, bool& exhaustedr);
+    bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
+                          const std::vector<std::string>& layerVars,
+                          std::map<std::string, std::string>& solvedValuesr);
+    bool readPhaseValues(VlSolverSession& sess, std::map<std::string, std::string>& solvedValuesr);
+    bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
 
 public:
     // CONSTRUCTORS
@@ -576,7 +576,8 @@ public:
                 idxWidths.push_back(idx_width);
                 indices.insert(indices.end(), integral_index.begin(), integral_index.end());
 
-                record_arr_table(var.at(key), indexed_name, dimension - 1, indices, idxWidths);
+                record_arr_table(var.atWrite(key), indexed_name, dimension - 1, indices,
+                                 idxWidths);
 
                 // Cleanup indices and widths
                 idxWidths.pop_back();
@@ -650,7 +651,7 @@ public:
 
                 std::string result = oss.str();
                 result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
-                record_struct_arr(var.at(key), name + "." + result, dimension - 1, indices,
+                record_struct_arr(var.atWrite(key), name + "." + result, dimension - 1, indices,
                                   idxWidths);
             }
         }
@@ -778,7 +779,7 @@ public:
     bool basicStdRandomization(VlAssocArray<T_Key, T_Value>& value, size_t width) {
         T_Key key;
         for (int exists = value.first(key); exists; exists = value.next(key)) {
-            basicStdRandomization(value.at(key), width);
+            basicStdRandomization(value.atWrite(key), width);
         }
         return true;
     }

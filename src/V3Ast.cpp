@@ -1660,7 +1660,7 @@ static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
 }
 
 static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                    const AstNode* fromConstp) {
+                                    const AstNode* fromConstp, const bool checkIfaceArgCompat) {
     const VCastable castable = VCastable::UNSUPPORTED;
     toDtp = toDtp->skipRefToEnump();
     fromDtp = fromDtp->skipRefToEnump();
@@ -1698,22 +1698,52 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         if (upcast) return VCastable::COMPATIBLE;
         if (downcast) return VCastable::DYNAMIC_CLASS;
         return VCastable::INCOMPATIBLE;
-    } else if (const AstIfaceRefDType* const toIfp = VN_CAST(toDtp, IfaceRefDType)) {
+    } else if (const AstIfaceRefDType* const toIfp
+               = VN_CAST(checkIfaceArgCompat ? toDtp->elemDTypep(true) : toDtp, IfaceRefDType)) {
         // Two interface refs are compatible if they point at the same interface
         // module (and modport, if any). Pointer-equality on the dtype isn't
         // enough since every cell binding clones the dtype.
-        const AstIfaceRefDType* const fromIfp = VN_CAST(fromDtp, IfaceRefDType);
-        if (fromIfp && toIfp->ifaceViaCellp() == fromIfp->ifaceViaCellp()
-            && (!toIfp->modportp() || toIfp->modportp() == fromIfp->modportp())) {
+        // Argument compatibility also requires matching virtualness for ref arguments, while
+        // input arguments may bind an unqualified or same-modport source to a virtual target.
+        // Argument compatibility also supports fixed-size arrays of interface references.
+        const AstIfaceRefDType* const fromIfp
+            = VN_CAST(checkIfaceArgCompat ? fromDtp->elemDTypep(true) : fromDtp, IfaceRefDType);
+        if (checkIfaceArgCompat && fromIfp && (toDtp != toIfp || fromDtp != fromIfp)) {
+            const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType);
+            const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
+            // IEEE 1800-2023 6.22.2: Equal-sized fixed arrays have equivalent types.
+            if (!toArrayp || !fromArrayp
+                || toArrayp->elementsConst() != fromArrayp->elementsConst()) {
+                return VCastable::INCOMPATIBLE;
+            }
+            return computeCastableImp(toArrayp->subDTypep(), fromArrayp->subDTypep(), nullptr,
+                                      checkIfaceArgCompat);
+        }
+        if (!fromIfp || toIfp->ifaceViaCellp() != fromIfp->ifaceViaCellp()) {
+            if (!checkIfaceArgCompat) return castable;
+            return VCastable::INCOMPATIBLE;
+        }
+        const bool sameModport = toIfp->modportp() == fromIfp->modportp();
+        if (!checkIfaceArgCompat) {
+            if (!toIfp->modportp() || sameModport) return VCastable::COMPATIBLE;
+            return castable;
+        }
+        if (toIfp->isVirtual() == fromIfp->isVirtual() && sameModport) {
+            return VCastable::SAMEISH;
+        }
+        // An unqualified interface or virtual interface may bind to a modport-qualified
+        // virtual interface.
+        if (toIfp->isVirtual() && (!fromIfp->modportp() || sameModport)) {
             return VCastable::COMPATIBLE;
         }
+        return VCastable::INCOMPATIBLE;
     }
     return castable;
 }
 
 VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                   const AstNode* fromConstp) {
-    const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
+                                   const AstNode* fromConstp, const bool checkIfaceArgCompat) {
+    const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp, checkIfaceArgCompat);
     UINFO(9, "  castable=" << castable << "  for " << toDtp);
     UINFO(9, "     =?= " << fromDtp);
     if (fromConstp) UINFO(9, "     const= " << fromConstp);
@@ -1735,12 +1765,15 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
         if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
     }
 
-    AstClassRefDType* classDtypep1 = VN_CAST(node1p->dtypep(), ClassRefDType);
+    AstClassRefDType* classDtypep1 = VN_CAST(node1p->dtypep()->skipRefp(), ClassRefDType);
     while (classDtypep1) {
         const VCastable castable = computeCastable(classDtypep1, node2p->dtypep(), node2p);
         if (castable == VCastable::COMPATIBLE) return classDtypep1;
-        const AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
-        classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
+        AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
+        if (!extendsp) break;
+        AstNodeDType* const edtp
+            = extendsp->dtypep() ? extendsp->dtypep() : extendsp->childDTypep();
+        classDtypep1 = VN_AS(edtp->skipRefp(), ClassRefDType);
     }
     return nullptr;
 }

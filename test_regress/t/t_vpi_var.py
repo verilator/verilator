@@ -19,6 +19,8 @@ test.compile(make_top_shell=False,
              v_flags2=["+define+USE_VPI_NOT_DPI"],
              verilator_flags2=["-Wno-SYMRSVDWORD --exe --vpi --no-l2name", test.pli_filename])
 
-test.execute(use_libvpi=True, all_run_flags=['+PLUS +INT=1234 +STRSTR'])
+test.execute(use_libvpi=True,
+             all_run_flags=['+PLUS +INT=1234 +STRSTR'],
+             expect_filename=test.golden_filename)
 
 test.passes()

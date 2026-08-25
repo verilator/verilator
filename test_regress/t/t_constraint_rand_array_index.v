@@ -29,10 +29,12 @@ endclass
 
 module t;
   initial begin
+    int randomize_result;
     static RandArrayIndexTest obj = new();
     repeat (20) begin
-      `checkd(obj.randomize(), 1)
-      `checkd(obj.selected_value, obj.data[obj.idx])
+      randomize_result = obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(obj.selected_value, obj.data[obj.idx]);
       `check_range(obj.selected_value, 8'd10, 8'd50)
     end
     $write("*-* All Finished *-*\n");

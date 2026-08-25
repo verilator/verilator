@@ -4,28 +4,13 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
+// Model and diversity assumption replies
 class Packet;
-`ifdef T_UNSAT
-  rand bit [7:0] a;
-  constraint c {
-    a > 8'd200;
-    a < 8'd100;
-  }
-`elsif T_PINNED
-  rand bit [15:0] a;
-  constraint c {a == 16'h5a5a;}
-`elsif T_SOFT
-  rand bit [7:0] a;
-  constraint c {
-    soft a == 8'd42;
-    soft a == 8'd57;
-  }
-`elsif T_PHASED
-  rand bit [3:0] x;
-  rand bit [3:0] y;
-  constraint order_c {solve x before y;}
-  constraint rel_c {y > x;}
-`else
   rand bit [7:0] a;
   rand bit [7:0] b;
   constraint c {
@@ -33,65 +18,45 @@ class Packet;
     b < 8'd200;
     a != b;
   }
-`endif
+endclass
+
+// Soft constraint relaxation replies
+class Softy;
+  rand bit [7:0] s;
+  constraint sc {
+    soft s == 8'd42;
+    s > 8'd100;
+  }
+endclass
+
+// Phased solve...before replies
+class Phased;
+  rand bit [3:0] x;
+  rand bit [3:0] y;
+  constraint order_c {solve x before y;}
+  constraint rel_c {y > x;}
 endclass
 
 module t;
   initial begin
     automatic Packet p = new;
-`ifdef T_MODEL
+    automatic Softy s = new;
+    automatic Phased ph = new;
+    automatic int npass = 0;
     automatic int rc;
-    p.a = 8'd77;
-    rc = p.randomize();
-    if (rc != 0) $stop;
-    if (p.a != 8'd77) $stop;
-    rc = p.randomize();
-    if (rc == 0) $stop;
-    if (!(p.a > 8'd10)) $stop;
-`elsif T_UNSAT
-    automatic int nfail = 0;
-    for (int i = 0; i < 5; i++) begin
-      if (p.randomize() == 0) nfail++;
+    for (int i = 0; i < 4; ++i) begin
+      // Below the constraint, so any model the runtime applies overwrites it
+      p.a = 8'd5;
+      rc = p.randomize();
+      // A randomize that failed must leave the variable alone
+      if (rc != 0) npass++;
+      else `checkd(p.a, 8'd5);
+      rc = s.randomize();
+      if (rc != 0) npass++;
+      rc = ph.randomize();
+      if (rc != 0) npass++;
     end
-    $display("NFAIL=%0d", nfail);
-`elsif T_PINNED
-    automatic int npass = 0;
-    for (int i = 0; i < 5; i++) begin
-      if (p.randomize() != 0) begin
-        if (p.a == 16'h5a5a) npass++;
-        else $stop;
-      end
-    end
-    $display("NPASS=%0d", npass);
-`elsif T_SOFT
-    automatic int npass = 0;
-    automatic int nsoft = 0;
-    for (int i = 0; i < 5; i++) begin
-      if (p.randomize() != 0) begin
-        npass++;
-        if (p.a == 8'd42 || p.a == 8'd57) nsoft++;
-      end
-    end
-    $display("NPASS=%0d NSOFT=%0d", npass, nsoft);
-`elsif T_PHASED
-    automatic int npass = 0;
-    for (int i = 0; i < 5; i++) begin
-      if (p.randomize() != 0) begin
-        if (p.y > p.x) npass++;
-        else $stop;
-      end
-    end
-    $display("NPASS=%0d", npass);
-`else
-    automatic int npass = 0;
-    for (int i = 0; i < 5; i++) begin
-      if (p.randomize() != 0) begin
-        if (p.a > 10 && p.b < 200 && p.a != p.b) npass++;
-        else $stop;
-      end
-    end
-    $display("NPASS=%0d", npass);
-`endif
+    $write("NPASS=%0d\n", npass);
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -62,15 +62,18 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     name: Run
     steps:
+      - name: Checkout Verilator CI scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          path: repo
+          sparse-checkout: |
+            .github/actions
+            ci
+
       - name: Install dependencies
-        run: |
-          echo "path-exclude /usr/share/doc/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-          echo "path-exclude /usr/share/man/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-          echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
-          sudo apt update || \
-          sudo apt update
-          sudo apt install ccache mold libfl-dev libjemalloc-dev libsystemc-dev || \
-          sudo apt install ccache mold libfl-dev libjemalloc-dev libsystemc-dev
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: rtlmeter-run
 
       - name: Checkout RTLMeter
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7

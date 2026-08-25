@@ -447,7 +447,7 @@ class BeginRelinkVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     //  Input:
-    //   AstNodeFTask::user1p           // Node replaced, rename it
+    //   AstNodeFTask::user1p           // bool.  Node replaced, rename it
 
     // VISITORS
     void visit(AstNodeFTaskRef* nodep) override {

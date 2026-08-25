@@ -1,0 +1,15 @@
+%Warning-NEVERMATCH: t/t_sequence_intersect_nevermatch.v:47:53: Sequence can never match because intersect operands have no common length.
+                                                              : ... note: In instance 't'
+   47 |   assert property (disable iff (cyc < 2) ((a ##2 b) intersect (c ##3 d)) |-> 1'b0)
+      |                                                     ^~~~~~~~~
+                     ... For warning description see https://verilator.org/warn/NEVERMATCH?v=latest
+                     ... Use "/* verilator lint_off NEVERMATCH */" and lint_on around source to disable this message.
+%Warning-NEVERMATCH: t/t_sequence_intersect_nevermatch.v:52:57: Sequence can never match because intersect operands have no common length.
+                                                              : ... note: In instance 't'
+   52 |   assert property (disable iff (cyc < 2) ((a ##[1:2] b) intersect (c ##[4:5] d)) |-> 1'b0)
+      |                                                         ^~~~~~~~~
+%Warning-NEVERMATCH: t/t_sequence_intersect_nevermatch.v:57:53: Sequence can never match because the inner sequence is longer than the outer sequence.
+                                                              : ... note: In instance 't'
+   57 |   assert property (disable iff (cyc < 2) ((a ##3 b) within (c ##1 d)) |-> 1'b0)
+      |                                                     ^~~~~~
+%Error: Exiting due to
