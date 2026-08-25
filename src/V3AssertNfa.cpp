@@ -745,7 +745,10 @@ class SvaNfaBuilder final {
                 SvaStateVertex* const condVtxp = scopedCreateVertex();
                 SvaTransEdge* const edgep = guardedLink(
                     pre.termVertexp, condVtxp, sampled(pre.finalCondp->cloneTreePure(false)), flp);
-                if (mayEmitLocalReject(isTopLevelStep) && !pre.termVertexp->m_isUnbounded) {
+                if (mayEmitLocalReject(isTopLevelStep)) {
+                    UASSERT_OBJ(
+                        !pre.termVertexp->m_isUnbounded, preExprp,
+                        "Deferred boolean after an unbounded terminal at a top-level step");
                     // Do not mark liveness sources: first boolean check is deferred.
                     edgep->m_rejectOnFail = true;
                 }
@@ -1202,7 +1205,9 @@ class SvaNfaBuilder final {
         if (!lhs.valid() || !rhs.valid()) {
             cleanupProbeResult(lhs);
             cleanupProbeResult(rhs);
-            return BuildResult::fail(lhs.errorEmitted || rhs.errorEmitted);
+            UASSERT_OBJ(lhs.errorEmitted || rhs.errorEmitted, lhsExprp,
+                        "Same-end intersect operand failed without a diagnostic");
+            return BuildResult::failWithError();
         }
         // Both-boolean operands have fixed length 0 and never route here (conjoined instead).
         UASSERT_OBJ(lhs.termVertexp != entryVtxp || rhs.termVertexp != entryVtxp, lhsExprp,
@@ -1464,25 +1469,39 @@ class SvaNfaBuilder final {
 
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
         m_graph.m_hasOrMerge = true;
-        for (AstImplication* const branchp : branches) {
-            const bool savedScope = m_inUnboundedScope;
-            m_inUnboundedScope = false;
-            BuildResult branch = buildImplicationEdges(
-                branchp->lhsp(), branchp->rhsp(), entryVtxp, /*isOverlapped=*/true,
-                /*isFollowedBy=*/false, branchp->lhsp(), branchp->fileline());
-            m_inUnboundedScope = savedScope;
-            if (!branch.valid()) return BuildResult::fail(branch.errorEmitted);
-
-            for (SvaStateVertex* const sourcep : branch.midSources) {
-                linkBranchSuccess(branch, sourcep, mergeVtxp, branchp->fileline(), false,
-                                  isTopLevelStep);
-            }
-            linkBranchSuccess(branch, branch.termVertexp, mergeVtxp, branchp->fileline(),
-                              !branch.termVertexp->m_isUnbounded, isTopLevelStep);
-            if (branch.finalCondp && !branch.finalCondp->backp()) branch.finalCondp->deleteTree();
-            branch.finalCondp = nullptr;
-        }
+        bool errorEmitted = false;
+        const bool linked
+            = std::all_of(branches.begin(), branches.end(), [&](AstImplication* const branchp) {
+                  return linkPropertyControlBranch(branchp, entryVtxp, mergeVtxp, isTopLevelStep,
+                                                   errorEmitted);
+              });
+        if (!linked) return BuildResult::fail(errorEmitted);
         return {mergeVtxp, nullptr, {}};
+    }
+
+    // Build one if/case branch and link its endpoints into the merge vertex.
+    bool linkPropertyControlBranch(AstImplication* branchp, SvaStateVertex* entryVtxp,
+                                   SvaStateVertex* mergeVtxp, bool isTopLevelStep,
+                                   bool& errorEmittedr) {
+        const bool savedScope = m_inUnboundedScope;
+        m_inUnboundedScope = false;
+        BuildResult branch = buildImplicationEdges(
+            branchp->lhsp(), branchp->rhsp(), entryVtxp, /*isOverlapped=*/true,
+            /*isFollowedBy=*/false, branchp->lhsp(), branchp->fileline());
+        m_inUnboundedScope = savedScope;
+        if (!branch.valid()) {
+            errorEmittedr = branch.errorEmitted;
+            return false;
+        }
+        for (SvaStateVertex* const sourcep : branch.midSources) {
+            linkBranchSuccess(branch, sourcep, mergeVtxp, branchp->fileline(), false,
+                              isTopLevelStep);
+        }
+        linkBranchSuccess(branch, branch.termVertexp, mergeVtxp, branchp->fileline(),
+                          !branch.termVertexp->m_isUnbounded, isTopLevelStep);
+        if (branch.finalCondp && !branch.finalCondp->backp()) branch.finalCondp->deleteTree();
+        branch.finalCondp = nullptr;
+        return true;
     }
 
     BuildResult buildSAnd(AstSAnd* nodep, SvaStateVertex* entryVtxp, bool isTopLevelStep) {
@@ -3202,7 +3221,9 @@ private:
     static void pruneSingleFailSource(const LowerRequest& req, const LowerOutputs& o,
                                       const SignalSet& sigs, LowerResult& res) {
         if (!req.pruneSingleFailSource) return;
-        if (res.failAttemptSrcs.size() > 1 || sigs.failCountp) return;
+        if (res.failAttemptSrcs.size() > 1) return;
+        UASSERT_OBJ(!sigs.failCountp, req.senTreep,
+                    "Single-source prune with a counted fail channel");
         for (AstNodeExpr* const srcp : res.failAttemptSrcs) {
             VL_DO_DANGLING(srcp->deleteTree(), srcp);
         }
@@ -3337,12 +3358,13 @@ private:
                                    AstNodeExpr*& disableExprp, AstNodeExpr** outDisablepp) {
         LowerVars lv;
         int& N = lv.N;
-        for (V3GraphVertex& vtxr : graph.m_graph.vertices()) { vtxr.color(N++); }
         std::vector<SvaStateVertex*>& vtx = lv.vtx;
-        vtx.assign(N, nullptr);
         for (V3GraphVertex& vtxr : graph.m_graph.vertices()) {
-            vtx[vtxr.color()] = static_cast<SvaStateVertex*>(&vtxr);
+            SvaStateVertex* const svtxp = static_cast<SvaStateVertex*>(&vtxr);
+            svtxp->color(vtx.size());
+            vtx.push_back(svtxp);
         }
+        N = static_cast<int>(vtx.size());
         lv.startIdx = graph.m_startVertexp->color();
         lv.matchIdx = graph.m_matchVertexp->color();
         lv.edges = graph.allEdges();

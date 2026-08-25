@@ -208,6 +208,9 @@ module t (
   assert property (@(posedge clk) a and(b [* 1: 2]));
   assert property (@(posedge clk) (b [* 1: 2]) and a);
 
+  // A property if/else branch ending in throughout is lowered
+  assert property (@(posedge clk) if (a) (b throughout (1'b1 ##1 c)) else d);
+
   // Left-operand mirrors of the intersect rejections
   assert property (@(posedge clk) (a throughout ((b ##2 c) or(d ##2 e))) intersect (c ##2 a));
   assert property (@(posedge clk) ((fimp() ##2 c) or(d ##2 e)) intersect (a ##2 b));

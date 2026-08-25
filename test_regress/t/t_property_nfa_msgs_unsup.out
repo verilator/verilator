@@ -226,11 +226,11 @@
                                                         : ... note: In instance 't'
   198 |   assert property (@(posedge clk) ((a ##1 b) and(fimp() ##1 c)) and(d ##1 e));
       |                                                  ^~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:212:74: Unsupported: intersect/within endpoint deadline after an operand that can reject earlier
-  212 |   assert property (@(posedge clk) (a throughout ((b ##2 c) or(d ##2 e))) intersect (c ##2 a));
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:215:74: Unsupported: intersect/within endpoint deadline after an operand that can reject earlier
+  215 |   assert property (@(posedge clk) (a throughout ((b ##2 c) or(d ##2 e))) intersect (c ##2 a));
       |                                                                          ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:213:51: Unsupported: impure expression in a temporal 'or' composite
-  213 |   assert property (@(posedge clk) ((fimp() ##2 c) or(d ##2 e)) intersect (a ##2 b));
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:216:51: Unsupported: impure expression in a temporal 'or' composite
+  216 |   assert property (@(posedge clk) ((fimp() ##2 c) or(d ##2 e)) intersect (a ##2 b));
       |                                                   ^~
 %Error: t/t_property_nfa_msgs_unsup.v:170:22: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                             : ... note: In instance 't'
