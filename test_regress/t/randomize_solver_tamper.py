@@ -63,6 +63,9 @@
 #   unsupported_once - answer the Nth status with unsupported
 #   upper_hex        - replace the Nth model reply with uppercase hex digits
 # TAMPER_AT: reply index to act on (default 3)
+# TAMPER_ONCE: file marking that the tamper already acted. The runtime restarts
+#   a solver that died, which starts this wrapper again, so without the file a
+#   mode acts once per solver rather than once per simulation.
 
 # pylint: disable=C0103,C0114,consider-using-with
 
@@ -75,6 +78,7 @@ import time
 
 mode = os.environ.get("TAMPER", "none")
 at = int(os.environ.get("TAMPER_AT", "3"))
+once = os.environ.get("TAMPER_ONCE", "")
 
 # Modes acting on the TAMPER_AT'th status line rather than the Nth model reply
 STATUS_MODES = ("die_status_at", "err_multiline", "err_once", "err_trunc", "err_unbal",
@@ -159,7 +163,7 @@ def swallow(first):
 
 
 replies = 0
-done = False
+done = bool(once) and os.path.exists(once)
 depth = 0  # Paren depth of the reply being forwarded, so wrapped ones stay intact
 inside = False  # Inside an SMT string literal, where parens do not nest
 
@@ -189,6 +193,9 @@ for line in proc.stdout:
     if not acting:
         forward(line, at_reply_start)
         continue
+    if once:
+        with open(once, "w", encoding="utf-8"):
+            pass
 
     done = True
 
