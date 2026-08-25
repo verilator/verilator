@@ -43,9 +43,9 @@ class BareScalar;
 endclass
 
 // unique{} on a scalar reached through a class handle (AstMemberSel),
-// neither a bare VarRef (BareScalar) nor an ArraySel (Grid.c2) --
-// uniqueSliceRootVarp() falls through both its cast checks and returns
-// null, so this must still resolve to trivially-unique, not a crash.
+// neither a bare VarRef (BareScalar) nor an ArraySel (Grid.c2). Not randc,
+// so this resolves to trivially-unique; the randc case is
+// RandcMemberScalar in t_constraint_foreach_unique_bad_randc.v.
 class Inner;
   rand bit [4:0] val;
 endclass

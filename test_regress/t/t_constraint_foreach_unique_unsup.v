@@ -32,11 +32,24 @@ class ScalarAndArray;
   constraint c1 {unique {x, arr};}
 endclass
 
+// A sole item that isn't a variable, member, or constant-indexed slice at
+// all (here, a function call) can't be safely cloned per element -- must
+// be diagnosed directly rather than silently accepted.
+typedef bit [4:0] row3_t[3];
+class FuncItem;
+  rand bit [4:0] grid[3][3];
+  function row3_t get_row();
+    return grid[0];
+  endfunction
+  constraint c1 {unique {get_row()};}
+endclass
+
 module t;
   initial begin
     automatic Cube cb = new;
     automatic WideRows wr = new;
     automatic ScalarAndArray sa = new;
+    automatic FuncItem fi = new;
     int ok;
     repeat (20) begin
       ok = cb.randomize();
@@ -44,6 +57,8 @@ module t;
       ok = wr.randomize();
       `checkd(ok, 1)
       ok = sa.randomize();
+      `checkd(ok, 1)
+      ok = fi.randomize();
       `checkd(ok, 1)
     end
 

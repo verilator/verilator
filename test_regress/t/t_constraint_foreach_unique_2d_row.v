@@ -52,14 +52,36 @@ class RandcSelIndex;
   endfunction
 endclass
 
+// unique{} on a SliceSel (a[2:1]), alongside a whole-array unique{} on the
+// same variable. A SliceSel's own base must be indexed at its absolute
+// declared position, not wrapped in an ArraySel around the SliceSel itself.
+class SliceRange;
+  rand bit [1:0] a[3:0];
+  constraint all_unique {unique {a};}
+  constraint uniq {unique {a[2:1]};}
+endclass
+
+// Same, but the array's own declared range is ascending ([1:4], not the
+// descending [3:0] above) -- elemOffset's absolute-position math takes a
+// different branch depending on declared direction.
+class SliceRangeAscending;
+  rand bit [1:0] a[1:4];
+  constraint all_unique {unique {a};}
+  constraint uniq {unique {a[2:3]};}
+endclass
+
 module t;
   initial begin
     Grid g;
     RandcSelIndex rsi;
+    SliceRange sr;
+    SliceRangeAscending sra;
     int i;
     g = new();
     rsi = new();
-    repeat (500) begin
+    sr = new();
+    sra = new();
+    repeat (20) begin
       i = g.randomize();
       `checkd(i, 1)
       g.rows_are_unique();
@@ -67,6 +89,14 @@ module t;
       i = rsi.randomize();
       `checkd(i, 1)
       rsi.sel_row_is_unique();
+
+      i = sr.randomize();
+      `checkd(i, 1)
+      `checkd(sr.a[2] == sr.a[1], 0)
+
+      i = sra.randomize();
+      `checkd(i, 1)
+      `checkd(sra.a[2] == sra.a[3], 0)
     end
 
     $write("*-* All Finished *-*\n");

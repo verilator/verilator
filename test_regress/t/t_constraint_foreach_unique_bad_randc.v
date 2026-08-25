@@ -20,11 +20,34 @@ class RandcOneLeaf;
   constraint c1 {foreach (grid[i]) unique {grid[i]};}
 endclass
 
+// A randc scalar reached through a class handle (AstMemberSel). Its own
+// randc-ness must still be caught, not skipped because the root resolver
+// can't see through the class handle.
+class Inner;
+  randc bit [4:0] val;
+endclass
+
+class RandcMemberScalar;
+  rand Inner obj = new;
+  constraint c1 {unique {obj.val};}
+endclass
+
+// A bare randc scalar, no array or class handle involved -- the randc
+// counterpart of BareScalar in t_constraint_foreach_unique_scalar.v.
+class RandcBareScalar;
+  randc bit [4:0] x;
+  constraint c1 {unique {x};}
+endclass
+
 module t;
   initial begin
     automatic RandcGrid rg = new;
     automatic RandcOneLeaf rol = new;
+    automatic RandcMemberScalar rms = new;
+    automatic RandcBareScalar rbs = new;
     void'(rg.randomize());
     void'(rol.randomize());
+    void'(rms.randomize());
+    void'(rbs.randomize());
   end
 endmodule
