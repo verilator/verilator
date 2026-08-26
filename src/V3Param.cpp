@@ -387,8 +387,7 @@ class ParamProcessor final {
                 key += ",";
             }
             key += "}";
-        } else if (const AstConsPackUOrStruct* const structp
-                   = VN_CAST(nodep, ConsPackUOrStruct)) {
+        } else if (const AstConsPackUOrStruct* const structp = VN_CAST(nodep, ConsPackUOrStruct)) {
             key += "{";
             for (const AstConsPackMember* memberp = structp->membersp(); memberp;
                  memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
@@ -2250,9 +2249,7 @@ class ParamProcessor final {
         ParamProcessor& m_processor;
         std::set<const AstNode*> m_reachedDecls;
 
-        bool firstReach(const AstNode* const declp) {
-            return m_reachedDecls.insert(declp).second;
-        }
+        bool firstReach(const AstNode* const declp) { return m_reachedDecls.insert(declp).second; }
 
         void iterateParamType(AstParamTypeDType* const paramTypep) {
             if (firstReach(paramTypep)) iterate(paramTypep);
@@ -2267,8 +2264,7 @@ class ParamProcessor final {
             AstNode* const targetp = nodep->classOrPackageNodep();
             if (AstTypedef* const tdefp = VN_CAST(targetp, Typedef)) {
                 iterateTypedef(tdefp);
-            } else if (AstParamTypeDType* const paramTypep
-                       = VN_CAST(targetp, ParamTypeDType)) {
+            } else if (AstParamTypeDType* const paramTypep = VN_CAST(targetp, ParamTypeDType)) {
                 iterateParamType(paramTypep);
             }
         }

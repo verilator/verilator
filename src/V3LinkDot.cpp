@@ -6148,8 +6148,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
                 }
             } else {
-                UASSERT_OBJ(scopeDotHandled, cpackagep,
-                            "Unexpected package/class scope operand");
+                UASSERT_OBJ(scopeDotHandled, cpackagep, "Unexpected package/class scope operand");
             }
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
