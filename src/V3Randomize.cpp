@@ -80,6 +80,13 @@ static AstVar* getRandModeVarFromClass(AstNodeModule* classp) {
     return nullptr;
 }
 
+// Walk extends chain to find random generator variable (stored in AstClass::user3p).
+static AstVar* getRandomGenerator(AstClass* const classp) {
+    if (classp->user3p()) return VN_AS(classp->user3p(), Var);
+    if (classp->extendsp()) return getRandomGenerator(classp->extendsp()->classp());
+    return nullptr;
+}
+
 // ######################################################################
 // Establishes the target of a rand_mode() call
 
@@ -2416,22 +2423,18 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
-        if (!m_classp) {
-            nodep->v3warn(CONSTRAINTIGN,
-                          "Unsupported: Unique constraint in std::randomize() with {}");
-            pushDeletep(nodep->unlinkFrBack());
-            return;
-        }
-
+        AstNodeFTask* initTaskp;
+        AstVar* genVarp = m_genp;
         FileLine* const fl = nodep->fileline();
+        AstNodeModule* genModp = nullptr;
 
-        AstNodeFTask* const initTaskp = VN_AS(m_memberMap.findMember(m_classp, "new"), NodeFTask);
-        UASSERT_OBJ(initTaskp, nodep, "Class has no init Task");
-
-        AstVar* const genVarp = [](const AstClass* classp) {
-            while (classp->extendsp()) classp = classp->extendsp()->classp();
-            return VN_AS(classp->user3p(), Var);
-        }(m_classp);
+        if (m_classp) {
+            initTaskp = VN_AS(m_memberMap.findMember(m_classp, "new"), NodeFTask);
+            genVarp = getRandomGenerator(m_classp);
+        } else {
+            initTaskp = m_inlineInitTaskp;
+        }
+        UASSERT_OBJ(initTaskp, nodep, "No init Task for unique constraint");
 
         // UASSERT_OBJ(genVarp, nodep, "No generator variable");
         if (!genVarp) {
@@ -2440,9 +2443,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             pushDeletep(nodep->unlinkFrBack());
             return;
         }
-
-        AstNodeModule* const genModp = VN_AS(genVarp->user2p(), NodeModule);
-        UASSERT_OBJ(genModp, nodep, "genVarp has no NodeModule set");
+        if (m_classp) {
+            genModp = VN_AS(genVarp->user2p(), NodeModule);
+            UASSERT_OBJ(genModp, nodep, "genVarp inside m_classp has no NodeModule set");
+        }
 
         // Registration calls emitted where the unique statement stood, so they end up
         // in the constraint setup task and re-run on every randomize()
@@ -2513,7 +2517,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                     AstCMethodHard* const writeVarCallp = new AstCMethodHard{
                         fl, new AstVarRef{fl, genModp, genVarp, VAccess::READ},
                         VCMethod::RANDOMIZER_WRITE_VAR};
-                    writeVarCallp->addPinsp(new AstVarRef{fl, varModp, varp, VAccess::READ});
+                    AstVarRef* const argVarRefp = new AstVarRef{fl, varp, VAccess::READ};
+                    if (m_classp) argVarRefp->classOrPackagep(varModp);
+                    writeVarCallp->addPinsp(argVarRefp);
                     writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, elemWidth});
                     writeVarCallp->addPinsp(varnamep);
                     writeVarCallp->addPinsp(new AstConst{fl, 1});  // Dimension
@@ -3582,11 +3588,6 @@ class RandomizeVisitor final : public VNVisitor {
             return stdgenp;
         }
         return it->second;
-    }
-    AstVar* getRandomGenerator(AstClass* const classp) {
-        if (classp->user3p()) return VN_AS(classp->user3p(), Var);
-        if (classp->extendsp()) return getRandomGenerator(classp->extendsp()->classp());
-        return nullptr;
     }
     AstTask* getCreateConstraintSetupFunc(AstClass* classp) {
         static const char* const name = "__Vsetup_constraints";
