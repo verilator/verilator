@@ -1673,6 +1673,7 @@ class AstPropSpec final : public AstNode {
     // @astgen op1 := sensesp : Optional[AstSenItem]
     // @astgen op2 := disablep : Optional[AstNodeExpr]
     // @astgen op3 := propp : AstNode
+    // @astgen op4 := matchCountp : Optional[AstNodeExpr] // Cover sequence matches this tick
     VPropStrength m_propStrength = VPropStrength::DEFAULT;
 
 public:
@@ -2153,6 +2154,7 @@ class AstVar final : public AstNode {
     bool m_attrFsmResetArc : 1;  // declared with fsm_reset_arc metacomment
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_constPoolEntry : 1;  // Constant pool variable
+    bool m_covergroupRefMember : 1;  // Persistent covergroup ref/const ref argument
     bool m_fileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
@@ -2217,6 +2219,7 @@ class AstVar final : public AstNode {
         m_attrFsmResetArc = false;
         m_attrFsmArcInclCond = false;
         m_constPoolEntry = false;
+        m_covergroupRefMember = false;
         m_fileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
@@ -2368,6 +2371,8 @@ public:
     void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
     bool constPoolEntry() const { return m_constPoolEntry; }
     void setConstPoolEntry() { m_constPoolEntry = true; }
+    bool covergroupRefMember() const { return m_covergroupRefMember; }
+    void covergroupRefMember() { m_covergroupRefMember = true; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }

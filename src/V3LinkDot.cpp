@@ -361,7 +361,7 @@ public:
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
-            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) {  // ignore typedefs etc
+            if (!lookupSymp->ignoreForSimilarTest(nodep)) {  // ignore typedefs, params, etc
                 const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
                 if (alt) {
                     nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
@@ -2814,6 +2814,10 @@ private:
         // Remember the alias - can't do it yet because we may have additional symbols to be added,
         // or maybe an alias of an alias
         m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, lhsSymp, rhsSymp);
+        AstVarScope* const lhsVscp = VN_CAST(lhsSymp->nodep(), VarScope);
+        AstVarScope* const rhsVscp = VN_CAST(rhsSymp->nodep(), VarScope);
+        UASSERT_OBJ(lhsVscp && rhsVscp, nodep, "Interface alias missing variable scope");
+        setAliasVarScope(lhsVscp, rhsVscp);
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -3919,6 +3923,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (m_cellp && VN_IS(m_cellp->modp(), Primitive)
                     && (nodep->name() == "__paramNumber1" || nodep->name() == "__paramNumber2")) {
                     // Primitive parameter is really a delay2 we can just ignore
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
+                } else if (nodep->param() && !nodep->exprp() && !nodep->svDotName()) {
+                    // Placeholder pin the parser makes for an empty '#()', to signal
+                    // the user did type the '#()'. No further use, deleting.
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
                 } else {
@@ -5185,7 +5194,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         iterateChildren(nodep);
         AstVarScope* aliasp = LinkDotScopeVisitor::getAliasVarScopep(nodep);
-        if (aliasp && aliasp != nodep) {
+        if (aliasp && aliasp != nodep && !nodep->varp()->isIfaceRef()) {
             // Aliased variable might still be references from outside,
             // eg through the VPI, and is traced, so we need the value to propagate.
             // TODO: this means external writes to the LHS (e.g.: through the VPI) don't work
@@ -6334,24 +6343,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstPackageImport* nodep) override {
+    void visitPackageImportOrExport(AstNode* nodep) {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
         if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
-    void visit(AstPackageExport* nodep) override {
-        // No longer needed
-        LINKDOT_VISIT_START();
-        checkNoDot(nodep);
-        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-    }
-    void visit(AstPackageExportStarStar* nodep) override {
-        // No longer needed
-        LINKDOT_VISIT_START();
-        checkNoDot(nodep);
-        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-    }
+    void visit(AstPackageImport* nodep) override { visitPackageImportOrExport(nodep); }
+    void visit(AstPackageExport* nodep) override { visitPackageImportOrExport(nodep); }
+    void visit(AstPackageExportStarStar* nodep) override { visitPackageImportOrExport(nodep); }
     void visit(AstCellRef* nodep) override {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);

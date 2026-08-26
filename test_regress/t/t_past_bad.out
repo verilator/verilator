@@ -17,4 +17,17 @@
       |                  ^~~~~
                     ... For warning description see https://verilator.org/warn/TICKCOUNT?v=latest
                     ... Use "/* verilator lint_off TICKCOUNT */" and lint_on around source to disable this message.
+%Error-UNSUPPORTED: t/t_past_bad.v:19:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                       : ... note: In instance 't'
+   19 |     if ($past(d, 32'h7fffffff)) $stop;
+      |         ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_past_bad.v:20:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                       : ... note: In instance 't'
+   20 |     if ($past(d, 32'h7ffffffe)) $stop;
+      |         ^~~~~
+%Error-UNSUPPORTED: t/t_past_bad.v:21:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                       : ... note: In instance 't'
+   21 |     if ($past(d, 32'h7ffffffc)) $stop;
+      |         ^~~~~
 %Error: Exiting due to

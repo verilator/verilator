@@ -2344,6 +2344,9 @@ class VlTest:
                 fh.write("    tfp.reset();\n")
                 fh.write("#endif  // VM_TRACE\n")
 
+            if self.benchmark:
+                fh.write("    contextp->statsPrintSummary();\n")
+
             fh.write("    topp.reset();\n")
             fh.write("    return 0;\n")
             fh.write("}\n")

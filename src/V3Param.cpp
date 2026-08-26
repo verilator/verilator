@@ -1980,43 +1980,54 @@ class ParamProcessor final {
         std::vector<AstPin*> pinsByIndex;
         pinsByIndex.resize(m_classTypeParams.size(), nullptr);
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            if (AstParamTypeDType* typep = pinp->modPTypep()) {
-                pinsByIndex[m_paramIndex[typep]] = pinp;
+            AstParamTypeDType* const typep = pinp->modPTypep();
+            const auto it = typep ? m_paramIndex.find(typep) : m_paramIndex.end();
+            if (it != m_paramIndex.end()) {
+                pinsByIndex[it->second] = pinp;
             } else {
                 pinsByIndex.push_back(pinp);
             }
         }
 
-        // For each missing parameter, get its pin from dependency or direct default
-        for (size_t paramIdx = 0; paramIdx < m_classTypeParams.size(); paramIdx++) {
-            if (pinsByIndex[paramIdx]) continue;
-            const int sourceParamIdx = m_classTypeParams[paramIdx].second;
+        // For each missing parameter, get its pin from dependency or direct default.
+        // A dependent default can reference a parameter declared later (not IEEE, but
+        // we support it here), so repeat until no further parameter can be resolved.
+        for (bool resolvedSome = true; resolvedSome;) {
+            resolvedSome = false;
+            for (size_t paramIdx = 0; paramIdx < m_classTypeParams.size(); paramIdx++) {
+                if (pinsByIndex[paramIdx]) continue;
+                const int sourceParamIdx = m_classTypeParams[paramIdx].second;
 
-            AstPin* newPinp = nullptr;
+                AstPin* newPinp = nullptr;
 
-            // Case 1: Dependent default -> clone the source pin's type
-            if (sourceParamIdx >= 0) newPinp = pinsByIndex[sourceParamIdx]->cloneTree(false);
-
-            // Case 2: Direct default type (e.g., int), create a new pin with that dtype
-            if (!newPinp && defaultTypeNodes[paramIdx]) {
-                AstNodeDType* const dtypep = defaultTypeNodes[paramIdx];
-                newPinp = new AstPin{dtypep->fileline(), static_cast<int>(paramIdx) + 1,
-                                     "__paramNumber" + cvtToStr(paramIdx + 1),
-                                     dtypep->cloneTree(false)};
-            }
-
-            if (newPinp) {
-                newPinp->name("__paramNumber" + cvtToStr(paramIdx + 1));
-                newPinp->param(true);
-                newPinp->modPTypep(m_classTypeParams[paramIdx].first);
-                if (classOrPackageRef) {
-                    classOrPackageRef->addParamsp(newPinp);
-                } else if (classRefDType) {
-                    classRefDType->addParamsp(newPinp);
+                // Case 1: Dependent default -> clone the source pin's type, but only once
+                // the source parameter itself has been resolved (it might be listed later)
+                if (sourceParamIdx >= 0 && pinsByIndex[sourceParamIdx]) {
+                    newPinp = pinsByIndex[sourceParamIdx]->cloneTree(false);
                 }
-                // Update local tracking so future dependent defaults can find it
-                pinsByIndex[paramIdx] = newPinp;
-                if (!paramsp) paramsp = newPinp;
+
+                // Case 2: Direct default type (e.g., int), create a new pin with that dtype
+                if (!newPinp && defaultTypeNodes[paramIdx]) {
+                    AstNodeDType* const dtypep = defaultTypeNodes[paramIdx];
+                    newPinp = new AstPin{dtypep->fileline(), static_cast<int>(paramIdx) + 1,
+                                         "__paramNumber" + cvtToStr(paramIdx + 1),
+                                         dtypep->cloneTree(false)};
+                }
+
+                if (newPinp) {
+                    newPinp->name("__paramNumber" + cvtToStr(paramIdx + 1));
+                    newPinp->param(true);
+                    newPinp->modPTypep(m_classTypeParams[paramIdx].first);
+                    if (classOrPackageRef) {
+                        classOrPackageRef->addParamsp(newPinp);
+                    } else if (classRefDType) {
+                        classRefDType->addParamsp(newPinp);
+                    }
+                    // Update local tracking so future dependent defaults can find it
+                    pinsByIndex[paramIdx] = newPinp;
+                    if (!paramsp) paramsp = newPinp;
+                    resolvedSome = true;
+                }
             }
         }
     }
@@ -2115,7 +2126,6 @@ class ParamProcessor final {
                     nodep->v3error(
                         "Class parameter type without default value is never given value"
                         << " (IEEE 1800-2023 6.20.1): " << dtypep->prettyNameQ());
-                    VL_DO_DANGLING(m_deleter.pushDeletep(nodep->unlinkFrBack()), nodep);
                 }
             }
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {

@@ -36,6 +36,7 @@
 #include "V3Randomize.h"
 
 #include "V3Ast.h"
+#include "V3Const.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
@@ -1504,17 +1505,14 @@ class ConstraintExprVisitor final : public VNVisitor {
                     new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                                   VAccess::READWRITE},
                     VCMethod::RANDOMIZER_WRITE_VAR};
-                uint32_t dimension = 0;
+                uint32_t unpackedDims = 0;
                 if (varp->dtypep()->isNonPackedArray()) {
-                    const std::pair<uint32_t, uint32_t> dims
-                        = varp->dtypep()->dimensions(/*includeBasic=*/true);
-                    const uint32_t unpackedDimensions = dims.second;
-                    dimension = unpackedDimensions;
+                    unpackedDims = varp->dtypep()->dimensions(false).second;
                 }
                 if (VN_IS(varp->dtypeSkipRefp(), StructDType)
                     && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
                     markStructConstrainedRandRecurse(varp->dtypeSkipRefp());
-                    dimension = 1;
+                    unpackedDims = 1;
                 }
                 methodp->dtypeSetVoid();
                 AstNodeModule* classp;
@@ -1545,7 +1543,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 varnamep->dtypep(varp->dtypep());
                 methodp->addPinsp(varnamep);
                 methodp->addPinsp(
-                    new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
+                    new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, unpackedDims});
                 if (randMode.usesMode && !(isGlobalConstrained && memberselp)) {
                     methodp->addPinsp(
                         new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
@@ -2854,6 +2852,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                     });
                 }
                 VL_DO_DANGLING(elemSelp->deleteTree(), elemSelp);
+
+                // enum-literal folding pass already ran -- re-fold the literals.
+                perElemExprp = V3Const::constifyEdit(perElemExprp);
 
                 perElemExprp->foreach([&](AstNode* nodep) {
                     // Don't mark loop variable references as randomizable
@@ -5600,8 +5601,8 @@ class RandomizeVisitor final : public VNVisitor {
                     // Array elements of class data type are passed to the solver as separate
                     // variables, so passing the original array variable is redundant, because it
                     // won't be referenced
+                    const uint32_t unpackedDims = arrVarp->dtypep()->dimensions(false).second;
                     if (isDynArrOfClassTypeRecurse(arrVarp->dtypep())) {
-                        const uint32_t unpackedDims = arrVarp->dtypep()->dimensions(false).second;
                         if (unpackedDims > 1) {
                             arrVarp->v3warn(
                                 E_UNSUPPORTED,
@@ -5619,16 +5620,6 @@ class RandomizeVisitor final : public VNVisitor {
                     varRefp->classOrPackagep(classp);
                     methodp->addPinsp(varRefp);
 
-                    uint32_t dimension = 0;
-                    if (VN_IS(arrVarp->dtypep(), UnpackArrayDType)
-                        || VN_IS(arrVarp->dtypep(), DynArrayDType)
-                        || VN_IS(arrVarp->dtypep(), QueueDType)
-                        || VN_IS(arrVarp->dtypep(), AssocArrayDType)) {
-                        const std::pair<uint32_t, uint32_t> dims
-                            = arrVarp->dtypep()->dimensions(/*includeBasic=*/true);
-                        dimension = dims.second;
-                    }
-
                     const size_t width = arrayElementDTypep(arrVarp->dtypep())->width();
 
                     methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});
@@ -5636,7 +5627,7 @@ class RandomizeVisitor final : public VNVisitor {
                         fl, AstCExpr::Pure{}, "\"" + arrVarp->name() + "\"", arrVarp->width()};
                     varnamep->dtypep(arrVarp->dtypep());
                     methodp->addPinsp(varnamep);
-                    methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, dimension});
+                    methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, unpackedDims});
 
                     randomizep->addStmtsp(methodp->makeStmt());
                 }

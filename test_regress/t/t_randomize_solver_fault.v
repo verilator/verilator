@@ -48,15 +48,15 @@ module t;
       // Below the constraint, so any model the runtime applies overwrites it
       p.a = 8'd5;
       rc = p.randomize();
+      // A randomize that failed must leave the variable alone
       if (rc != 0) npass++;
+      else `checkd(p.a, 8'd5);
       rc = s.randomize();
       if (rc != 0) npass++;
       rc = ph.randomize();
       if (rc != 0) npass++;
     end
     $write("NPASS=%0d\n", npass);
-    // A randomize that failed must leave the variable alone
-    `checkd(p.a, 8'd5);
     $write("*-* All Finished *-*\n");
     $finish;
   end

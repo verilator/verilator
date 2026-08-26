@@ -11,8 +11,8 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
-test.top_filename = "t/t_incorrect_multi_driven.v"
+test.top_filename = "t/t_lint_multidriven_ok.v"
 
-test.lint(fails=False)
+test.lint()
 
 test.passes()

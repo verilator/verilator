@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(expect_filename=test.golden_filename, fails=True)
+test.lint(expect_filename=test.golden_filename,
+          verilator_flags2=['--max-num-width 2147483647'],
+          fails=True)
 
 test.passes()
