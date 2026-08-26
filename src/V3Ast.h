@@ -42,10 +42,10 @@
 
 // VL_USER_TYPE_CHECKS requires C++17 for std::variant. Ignore on older standards
 #if defined(VL_USER_TYPE_CHECKS) && __cplusplus < 201703L
-# undef VL_USER_TYPE_CHECKS
+#undef VL_USER_TYPE_CHECKS
 #endif
 #ifdef VL_USER_TYPE_CHECKS
-# include <variant>
+#include <variant>
 #endif
 
 // clang-format off
@@ -144,7 +144,6 @@ class WidthVP;
 class V3GraphVertex;
 class VSymEnt;
 
-
 class VNUser final {
 // Defining VL_USER_TYPE_CHECKS replaces the VNUser union with a std::variant
 // which remembers which form of VNUser is being stored to catch mismatched reads.
@@ -176,7 +175,7 @@ public:
     // Casters
     template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
-        if (std::holds_alternative<std::monostate>(m_u)) return nullptr;  
+        if (std::holds_alternative<std::monostate>(m_u)) return nullptr;
         void* const* const upp = std::get_if<void*>(&m_u);
         UASSERT_STATIC(upp, "AstNode user() slot written as int, read as pointer");
         return reinterpret_cast<T>(*upp);
