@@ -35,15 +35,16 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 1) begin
-      v  = 2'd0;
+      v = 2'd0;
       r0 = rd.getv();
-      v  = 2'd1;
+      v = 2'd1;
       r1 = rd.getv();
-      v  = 2'd2;
+      v = 2'd2;
       r2 = rd.getv();
-      v  = 2'd3;
+      v = 2'd3;
       r3 = rd.getv();
-    end else if (cyc == 2) begin
+    end
+    else if (cyc == 2) begin
       $write("r0=%0d r1=%0d r2=%0d r3=%0d\n", r0, r1, r2, r3);
       $write("*-* All Finished *-*\n");
       $finish;
