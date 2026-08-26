@@ -25,11 +25,11 @@
       |                         ^~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Error: t/t_covergroup_args_expr_bad.v:19:26: Non-constant expression in bin range; values must be constants
+%Error: t/t_covergroup_args_expr_bad.v:19:26: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
                                             : ... note: In instance 't'
    19 |       bins ref_bin = {0, function_ref(value)};
       |                          ^~~~~~~~~~~~
-%Error: t/t_covergroup_args_expr_bad.v:20:26: Non-constant expression in bin range; values must be constants
+%Error: t/t_covergroup_args_expr_bad.v:20:26: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
                                             : ... note: In instance 't'
    20 |       bins output_bin = {function_output(value)};
       |                          ^~~~~~~~~~~~~~~
@@ -37,11 +37,11 @@
                                             : ... note: In instance 't'
    26 |     cp_constructor_ref: coverpoint value {bins bad = {value};}
       |                                                       ^~~~~
-%Error: t/t_covergroup_args_expr_bad.v:26:55: Non-constant expression in bin range; values must be constants
+%Error: t/t_covergroup_args_expr_bad.v:26:55: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
                                             : ... note: In instance 't'
    26 |     cp_constructor_ref: coverpoint value {bins bad = {value};}
       |                                                       ^~~~~
-%Error: t/t_covergroup_args_expr_bad.v:31:47: Non-constant expression in bin range; range bounds must be constants
+%Error: t/t_covergroup_args_expr_bad.v:31:47: Non-constant expression in bin range; range bounds must be constants (IEEE 1800-2023 19.5)
                                             : ... note: In instance 't'
    31 |     cp_bad: coverpoint 0 iff (1) {bins bad = {[0 : nonconstant_bound]};}
       |                                               ^

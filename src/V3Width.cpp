@@ -2092,12 +2092,15 @@ class WidthVisitor final : public VNVisitor {
                 userIterate(itemp, nullptr);
             } else {
                 userIterate(itemp, WidthVP{SELF, BOTH}.p());
-                V3Const::constifyEdit(itemp);  // itemp may change
             }
         }
         userIterateAndNext(nodep->iffp(), nullptr);
         userIterateAndNext(nodep->arraySizep(), nullptr);
         userIterateAndNext(nodep->transp(), nullptr);
+    }
+    void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), nullptr); }
+    void visit(AstCoverTransItem* nodep) override {
+        userIterateAndNext(nodep->valuesp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
