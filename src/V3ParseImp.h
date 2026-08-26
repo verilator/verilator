@@ -173,6 +173,7 @@ class V3ParseImp final {
     std::deque<string*> m_stringps;  // Created strings for later cleanup
     std::deque<V3Number*> m_numberps;  // Created numbers for later cleanup
     std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
+    std::string m_lexString;  // Text of the quoted or triple-quoted string currently being lexed
     std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
     size_t m_ppBytes = 0;  // Preprocessor->lex bytes transferred
 
@@ -200,6 +201,7 @@ public:
 
     void lexFileline(FileLine* fl) { m_lexFileline = fl; }
     FileLine* lexFileline() const { return m_lexFileline; }
+    std::string& lexString() { return m_lexString; }
     static void lexErrorPreprocDirective(FileLine* fl, const char* textp) VL_MT_DISABLED;
     static string lexParseTag(const char* textp) VL_MT_DISABLED;
     static double lexParseTimenum(const char* text) VL_MT_DISABLED;
