@@ -3105,7 +3105,8 @@ class AssertNfaVisitor final : public VNVisitor {
         if (K > 0) {
             AstConst* const ticksp = new AstConst{refp->fileline(), AstConst::WidthedValue{}, 32,
                                                   static_cast<uint32_t>(K)};
-            AstPast* const pastp = new AstPast{refp->fileline(), newp, ticksp};
+            AstPast* const pastp = new AstPast{refp->fileline(), newp, ticksp, nullptr,
+                                               /* propertyTiming */ true};
             pastp->dtypeFrom(newp);
             newp = pastp;
         }
