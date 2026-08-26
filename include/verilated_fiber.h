@@ -103,7 +103,6 @@ struct VlFiberMemoryChunk final {
 class VlFiberMemoryPool final {
     // MEMBERS
     std::vector<std::unique_ptr<VlFiberMemoryChunk>> m_chunks;
-    std::size_t m_freed;
 
 public:
     // CONSTRUCTORS
