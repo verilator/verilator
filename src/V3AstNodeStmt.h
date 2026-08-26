@@ -1678,7 +1678,7 @@ public:
     AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp,
                          bool soft = false)
         : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp)
-        , m_soft(soft) {}
+        , m_soft{soft} {}
     ASTGEN_MEMBERS_AstConstraintForeach;
     bool isSoft() const { return m_soft; }
     void dump(std::ostream& str) const override;
