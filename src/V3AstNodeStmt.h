@@ -1673,15 +1673,16 @@ public:
 // === AstNodeForeach ===
 class AstConstraintForeach final : public AstNodeForeach {
     // Constraint foreach statement
-    bool m_soft;
-
+    bool m_soft;  // is soft foreach, non-standard extension
 public:
     AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp,
                          bool soft = false)
         : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp)
         , m_soft(soft) {}
     ASTGEN_MEMBERS_AstConstraintForeach;
-    bool soft() const { return m_soft; }
+    bool isSoft() const { return m_soft; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstForeach final : public AstNodeForeach {
 public:

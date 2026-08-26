@@ -299,7 +299,7 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstConstraintForeach* nodep) override {
-        if (nodep->soft()) {
+        if (nodep->isSoft()) {
             nodep->v3warn(NONSTD, "Non-standard soft foreach");
             nodep->foreach([](AstConstraintExpr* exprp) { exprp->isSoft(true); });
         }

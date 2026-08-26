@@ -2303,6 +2303,14 @@ void AstCover::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isSeqEvent);
     this->AstNodeCoverOrAssert::dumpJson(str);
 }
+void AstConstraintForeach::dump(std::ostream& str) const {
+    this->AstNodeForeach::dump(str);
+    if (isSoft()) str << "[SOFT]";
+}
+void AstConstraintForeach::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isSoft);
+    dumpJsonGen(str);
+}
 void AstClocking::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isDefault()) str << " [DEFAULT]";
