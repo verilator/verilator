@@ -70,6 +70,8 @@
 #include "V3Ast.h"
 #include "V3Graph.h"
 
+#include <vector>
+
 class OrderLogicVertex;
 class OrderVarVertex;
 
@@ -139,9 +141,21 @@ public:
 
 class OrderLogicVertex final : public OrderEitherVertex {
     VL_RTTI_IMPL(OrderLogicVertex, OrderEitherVertex)
+
+public:
+    // Variable access record
+    struct VarAccess final {
+        AstVarScope* m_vscp;  // The variable accessed
+        VAccess m_access;  // The kind of access, as in the AST
+    };
+
+private:
     AstNode* const m_nodep;  // The logic this vertex represents
     AstScope* const m_scopep;  // Scope the logic is under
     AstSenTree* const m_hybridp;  // Additional sensitivities for hybrid combinational logic
+    // Every variable accessed by this logic, in order of first access, at most one record per
+    // variable. Only populated for multi-threaded ordering.
+    std::vector<VarAccess> m_varAccesses;
 
 public:
     // CONSTRUCTOR
@@ -163,6 +177,10 @@ public:
     AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
     AstScope* scopep() const VL_MT_STABLE { return m_scopep; }
     AstSenTree* hybridp() const { return m_hybridp; }
+    const std::vector<VarAccess>& varAccesses() const { return m_varAccesses; }
+    void addVarAccess(AstVarScope* vscp, VAccess access) {
+        m_varAccesses.push_back({vscp, access});
+    }
 
     // LCOV_EXCL_START // Debug code
     string name() const override VL_MT_STABLE {

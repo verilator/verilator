@@ -79,7 +79,7 @@ public:
     virtual void* datap(int /*idx*/) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
-    bool set(const std::string& idx, const std::string& val) const;
+    void set(const std::string& idx, const std::string& val) const;
     virtual void emitGetValue(std::ostream& s) const;
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
@@ -230,6 +230,8 @@ public:
     }
 };
 
+class VlSolverSession;
+
 //=============================================================================
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
@@ -257,14 +259,15 @@ class VlRandomizer VL_NOT_FINAL {
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& os);
-    bool checkSat(std::iostream& os);
+    // Fetch the model and write it into the registered variables.
+    bool applyModel(VlSolverSession& sess);
+    bool parseModel(std::istream& is, size_t requested);
     // Assert the maximal compatible soft-constraint set onto the open session.
-    void relaxSoftConstraints(std::iostream& os);
+    void relaxSoftConstraints(VlSolverSession& sess);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).
-    std::vector<int> readUnsatAssumptions(std::iostream& os);
-    void reportUnsatSetup(std::iostream& os, const std::vector<std::string>& uniqueExprs);
-    void reportUnsatCore(std::iostream& os);
+    std::vector<int> readUnsatAssumptions(VlSolverSession& sess);
+    void reportUnsatSetup(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
+    void reportUnsatCore(VlSolverSession& sess);
     void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
     void recordRandcValues();  // Record solved randc values for future exclusion
     size_t hashConstraints(const std::vector<std::string>& extras) const;
@@ -274,19 +277,22 @@ class VlRandomizer VL_NOT_FINAL {
     void emitDefines(std::ostream& os) const;
     void emitDeclares(std::ostream& os, bool pinCurrent) const;
     void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
-    bool nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
-    void solveDiversity(VlRNG& rngr, std::iostream& os);
-    void solveDiversityPins(VlRNG& rngr, std::iostream& os);
-    void solveDiversityXor(VlRNG& rngr, std::iostream& os);
+    bool nextFlat(VlRNG& rngr, VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
+    void solveDiversity(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversityXor(VlRNG& rngr, VlSolverSession& sess);
     // Layers of solve...before variables in dependency order
     bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
     const char* phasedLogic() const;
-    bool nextPhased(VlRNG& rngr, const std::vector<std::string>& uniqueExprs);
-    bool solvePhases(VlRNG& rngr, const std::vector<std::vector<std::string>>& layers,
-                     const std::vector<std::string>& uniqueExprs);
-    bool solvePhaseValues(std::iostream& os, VlRNG& rngr,
+    bool nextPhased(VlRNG& rngr, VlSolverSession& sess,
+                    const std::vector<std::string>& uniqueExprs);
+    bool solvePhases(VlRNG& rngr, VlSolverSession& sess,
+                     const std::vector<std::vector<std::string>>& layers,
+                     const std::vector<std::string>& uniqueExprs, bool& exhaustedr);
+    bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
                           const std::vector<std::string>& layerVars,
                           std::map<std::string, std::string>& solvedValuesr);
+    bool readPhaseValues(VlSolverSession& sess, std::map<std::string, std::string>& solvedValuesr);
     bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
 
 public:

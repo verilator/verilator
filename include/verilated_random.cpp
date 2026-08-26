@@ -29,6 +29,7 @@
 #include <iostream>
 #include <sstream>
 #include <streambuf>
+#include <tuple>
 
 // Diversity (scalar rand vars): tie each free bit to a random target via a
 //   boolean assumption literal, then force the bits with (check-sat-assuming).
@@ -52,6 +53,7 @@
 
 #ifdef _VL_SOLVER_PIPE
 # include <sys/wait.h>
+# include <csignal>
 # include <fcntl.h>
 #endif
 
@@ -75,6 +77,7 @@ class VlRProcess final : private std::streambuf, public std::iostream {
     char m_readBuf[BUFFER_SIZE];
     char m_writeBuf[BUFFER_SIZE];
 
+    bool m_logTried = false;  // Log file name looked up, at the first start
     std::unique_ptr<std::ofstream> m_logfp;  // Log file stream
     uint64_t m_logLastTime = ~0ULL;  // Last timestamp for logfile
 
@@ -122,14 +125,29 @@ public:
         : std::streambuf{}
         , std::iostream{this}
         , m_cmd{cmd} {
-        logOpen();
         open(cmd);
+    }
+
+    // Kill and reap a solver that is still running, so no child is left behind
+    void terminate() {
+#ifdef _VL_SOLVER_PIPE
+        if (!m_pidExited) {
+            ::kill(m_pid, SIGKILL);
+            waitpid(m_pid, &m_pidStatus, 0);
+        }
+#endif
+        m_pidExited = true;
+        m_pid = 0;
+        closeFds();
     }
 
     void wait_report() {
         if (m_pidExited) return;
+        bool reaped = true;
 #ifdef _VL_SOLVER_PIPE
-        if (waitpid(m_pid, &m_pidStatus, 0) != m_pid) return;
+        const pid_t rc = waitpid(m_pid, &m_pidStatus, WNOHANG);
+        if (rc != m_pid) m_pidStatus = 0;
+        reaped = rc != 0;  // Zero means still running, so terminate() reaps it
         if (m_pidStatus) {
             std::stringstream msg;
             msg << "Subprocess command `" << m_cmd[0];
@@ -144,8 +162,10 @@ public:
             VL_WARN_MT("", 0, "VlRProcess", str.c_str());
         }
 #endif
-        m_pidExited = true;
-        m_pid = 0;
+        if (reaped) {
+            m_pidExited = true;
+            m_pid = 0;
+        }
         closeFds();
     }
 
@@ -161,11 +181,16 @@ public:
     }
 
     bool open(const char* const* const cmd) {
+        clear();
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
 #ifdef _VL_SOLVER_PIPE
         if (!cmd || !cmd[0]) return false;
         m_cmd = cmd;
+        if (!m_logTried) {
+            m_logTried = true;
+            logOpen();
+        }
         int fd_stdin[2];  // Can't use std::array
         int fd_stdout[2];  // Can't use std::array
         constexpr int P_RD = 0;
@@ -208,8 +233,10 @@ public:
             // Child
             close(fd_stdin[P_WR]);
             dup2(fd_stdin[P_RD], STDIN_FILENO);
+            close(fd_stdin[P_RD]);
             close(fd_stdout[P_RD]);
             dup2(fd_stdout[P_WR], STDOUT_FILENO);
+            close(fd_stdout[P_WR]);
             execvp(cmd[0], const_cast<char* const*>(cmd));
             std::stringstream msg;
             msg << "VlRProcess::open: execvp(" << cmd[0] << ")";
@@ -263,44 +290,252 @@ private:
     }
 };
 
-static VlRProcess& getSolver() {
-    static VlRProcess s_solver;
-    static bool s_done = false;
-    if (s_done) return s_solver;
-    s_done = true;
+//======================================================================
+// Solver reply protocol
 
-    static std::vector<const char*> s_argv;
-    static std::string s_program = Verilated::threadContextp()->solverProgram();
-    s_argv.emplace_back(&s_program[0]);
-    for (char* arg = &s_program[0]; *arg; ++arg) {
-        if (*arg == ' ') {
-            *arg = '\0';
-            s_argv.emplace_back(arg + 1);
+enum class VlSolverStatus : uint8_t { SAT, UNSAT, UNKNOWN, FAIL };
+
+static bool isSolverError(const std::string& reply) { return reply.compare(0, 6, "(error") == 0; }
+
+// One non-blank reply line, trimmed; false once the solver stops answering
+static bool readLine(std::istream& is, std::string& liner) {
+    while (std::getline(is, liner)) {
+        const size_t first = liner.find_first_not_of(" \t\r");
+        if (first == std::string::npos) continue;
+        const size_t last = liner.find_last_not_of(" \t\r");
+        liner = liner.substr(first, last - first + 1);
+        return true;
+    }
+    return false;
+}
+
+static bool scanParenDepth(const std::string& str, int& depthr, bool& inStringr) {
+    for (const char c : str) {
+        if (inStringr) {
+            if (c == '"') inStringr = false;
+        } else if (c == '"') {
+            inStringr = true;
+        } else if (c == '(') {
+            ++depthr;
+        } else if (c == ')') {
+            if (depthr == 0) return false;
+            --depthr;
         }
     }
-    s_argv.emplace_back(nullptr);
-
-    const char* const* const cmd = &s_argv[0];
-    s_solver.open(cmd);
-    s_solver << "(set-logic QF_ABV)\n";
-    s_solver << "(check-sat)\n";
-    s_solver << "(reset)\n";
-    std::string s;
-    getline(s_solver, s);
-    if (s == "sat") return s_solver;
-
-    std::stringstream msg;
-    msg << "Unable to communicate with SAT solver, please check its installation or specify a "
-           "different one in VERILATOR_SOLVER environment variable.\n";
-    msg << " ... Tried: $";
-    for (const char* const* arg = cmd; *arg; ++arg) msg << ' ' << *arg;
-    msg << '\n';
-    const std::string str = msg.str();
-    VL_WARN_MT("", 0, "randomize", str.c_str());
-
-    while (getline(s_solver, s)) {}
-    return s_solver;
+    return true;
 }
+
+// Append lines until the error s-expression started in liner is paren-balanced
+static void finishErrorReply(std::istream& is, std::string& liner) {
+    int depth = 0;
+    bool inString = false;
+    if (!scanParenDepth(liner, depth, inString)) return;
+    while (depth > 0) {
+        std::string chunk;
+        if (!readLine(is, chunk)) return;
+        liner += ' ';
+        liner += chunk;
+        if (!scanParenDepth(chunk, depth, inString)) return;
+    }
+}
+
+static void warnSolverReply(const std::string& reply) {
+    static bool s_warned = false;
+    if (s_warned) return;
+    s_warned = true;
+    const std::string msg
+        = "Solver did not answer with a status, so randomize() returns 0; warned once: " + reply;
+    VL_WARN_MT(__FILE__, __LINE__, "randomize", msg.c_str());
+}
+
+// Read one solver status; only a print-success echo may precede it
+static VlSolverStatus readStatus(std::istream& is) {
+    std::string line;
+    while (readLine(is, line)) {
+        if (line == "success") continue;
+        if (line == "sat") return VlSolverStatus::SAT;
+        if (line == "unsat") return VlSolverStatus::UNSAT;
+        if (line == "unknown") {
+            static bool s_warnedUnknown = false;
+            if (!s_warnedUnknown) {
+                s_warnedUnknown = true;
+                VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                           "Solver returned unknown (timed out or incomplete), so randomize() "
+                           "may return 0; warned once");
+            }
+            return VlSolverStatus::UNKNOWN;
+        }
+        // Consume the whole error, so the next read starts on a reply boundary
+        if (isSolverError(line)) finishErrorReply(is, line);
+        warnSolverReply(line);
+        return VlSolverStatus::FAIL;
+    }
+    return VlSolverStatus::FAIL;
+}
+
+// Read one complete paren-balanced s-expression, which may span lines
+static bool readSExpr(std::istream& is, std::string& outr) {
+    outr.clear();
+    std::string pre;
+    int depth = 0;
+    bool inString = false;
+    char c = 0;
+    while (is.get(c)) {
+        if (depth == 0) {
+            if (c == '(') {
+                if (!pre.empty()) break;
+                outr += c;
+                depth = 1;
+            } else if (c == '\n') {
+                if (pre == "success") pre.clear();
+                if (!pre.empty()) break;
+            } else if (c != ' ' && c != '\t' && c != '\r') {
+                pre += c;
+            }
+            continue;
+        }
+        outr += c;
+        if (inString) {
+            if (c == '"') inString = false;
+        } else if (c == '"') {
+            inString = true;
+        } else if (c == '(') {
+            ++depth;
+        } else if (c == ')') {
+            assert(depth > 0);
+            if (--depth == 0) return true;
+        }
+    }
+    return false;
+}
+
+//======================================================================
+// Solver session lifecycle
+
+// Owns the solver process; serializes transactions and replaces a solver that
+// died or was left out of step with the reply stream
+class VlSolverSession final {
+    friend class VlRandomizer;
+    friend class VlSolverTxn;
+    enum class State : uint8_t { UNSTARTED, LIVE, BROKEN, DISABLED };
+    static constexpr int MAX_CONSEC_FAILS = 3;
+
+    VerilatedMutex m_mutex;  // Serializes whole solver transactions
+    VlRProcess m_proc VL_GUARDED_BY(m_mutex);  // Solver subprocess and its pipes
+    State m_state VL_GUARDED_BY(m_mutex) = State::UNSTARTED;
+    int m_consecFails VL_GUARDED_BY(m_mutex) = 0;  // Failed transactions in a row
+    bool m_dirty VL_GUARDED_BY(m_mutex) = false;  // Transaction left the pipe out of step
+    std::string m_program VL_GUARDED_BY(m_mutex);  // Storage backing m_argv
+    std::vector<const char*> m_argv VL_GUARDED_BY(m_mutex);  // Solver argv
+    bool m_warnedRestart VL_GUARDED_BY(m_mutex) = false;
+
+public:
+    std::iostream& os() VL_REQUIRES(m_mutex) { return m_proc; }
+    // The pipe may hold bytes of an abandoned reply, so replace the solver
+    void abandon() VL_REQUIRES(m_mutex) { m_dirty = true; }
+
+    // A status the runtime cannot use fails the call, but the reply itself was
+    // complete, so the solver is left alone
+    VlSolverStatus readStatus() VL_REQUIRES(m_mutex) { return ::readStatus(m_proc); }
+    // An unreadable reply means text of it may still be queued, so it is not
+    // safe to read anything more from this solver
+    bool readSExpr(std::string& outr) VL_REQUIRES(m_mutex) {
+        if (::readSExpr(m_proc, outr)) return true;
+        abandon();
+        return false;
+    }
+
+    // Start a transaction, spawning or respawning the solver as needed
+    bool begin() VL_REQUIRES(m_mutex) {
+        m_dirty = false;
+        if (m_state == State::BROKEN) {
+            if (m_consecFails >= MAX_CONSEC_FAILS) {
+                m_state = State::DISABLED;
+                VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                           "Solver failed repeatedly, so randomize() returns 0 from now on");
+            } else if (!m_warnedRestart) {
+                m_warnedRestart = true;
+                VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                           "Solver died or replied unreadably, so this randomize() returned 0; "
+                           "restarting it, warned once");
+            }
+        }
+        if (m_state == State::UNSTARTED || m_state == State::BROKEN) spawn();
+        return m_state == State::LIVE;
+    }
+
+    // End a transaction; a solver left out of step or dead is replaced next time
+    void end() VL_REQUIRES(m_mutex) {
+        bool healthy = !m_dirty && !m_proc.fail();
+        if (healthy) {
+            m_proc << "(reset)\n";
+            m_proc.flush();
+            healthy = !m_proc.fail();
+        }
+        if (healthy) {
+            m_consecFails = 0;
+        } else {
+            m_proc.terminate();
+            m_state = State::BROKEN;
+            ++m_consecFails;
+        }
+        m_dirty = false;
+    }
+
+private:
+    // A solver that will not start is not started again
+    void spawn() VL_REQUIRES(m_mutex) {
+        if (m_argv.empty()) {
+            m_program = Verilated::threadContextp()->solverProgram();
+            m_argv.emplace_back(&m_program[0]);
+            for (char* argp = &m_program[0]; *argp; ++argp) {
+                if (*argp == ' ') {
+                    *argp = '\0';
+                    m_argv.emplace_back(argp + 1);
+                }
+            }
+            m_argv.emplace_back(nullptr);
+        }
+        m_proc.open(m_argv.data());
+        m_proc << "(set-logic QF_ABV)\n";
+        m_proc << "(check-sat)\n";
+        m_proc << "(reset)\n";
+        if (readStatus() == VlSolverStatus::SAT) {
+            m_state = State::LIVE;
+            m_dirty = false;
+            return;
+        }
+        m_proc.terminate();
+        m_state = State::DISABLED;
+        std::stringstream msg;
+        msg << "Unable to communicate with SAT solver, please check its installation or specify a "
+               "different one in VERILATOR_SOLVER environment variable.\n";
+        msg << " ... Tried: $";
+        for (const char* const* argp = m_argv.data(); *argp; ++argp) msg << ' ' << *argp;
+        msg << '\n';
+        const std::string str = msg.str();
+        VL_WARN_MT("", 0, "randomize", str.c_str());
+    }
+};
+
+// Constructed before main(), so nothing here may touch the thread context
+static VlSolverSession s_solverSession;
+
+// One solver transaction; the caller holds the session mutex
+class VlSolverTxn final {
+    VlSolverSession& m_sess;
+    const bool m_ok;
+
+public:
+    explicit VlSolverTxn(VlSolverSession& sess) VL_REQUIRES(sess.m_mutex)
+        : m_sess{sess}
+        , m_ok{sess.begin()} {}
+    // Analysis cannot see through the reference member back to the caller's lock
+    ~VlSolverTxn() VL_NO_THREAD_SAFETY_ANALYSIS {
+        if (m_ok) m_sess.end();
+    }
+    bool ok() const { return m_ok; }
+};
 
 static std::string readUntilBalanced(std::istream& stream) {
     std::string result;
@@ -368,33 +603,57 @@ void VlRandomVar::emitConcreteValue(std::ostream& s) const {
     }
 }
 int VlRandomVar::totalWidth() const { return m_width; }
-static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
-    int i;
-    for (i = 0; val[i] && val[i] != '#'; ++i) {}
-    if (val[i++] != '#') return false;
+// True if val is "#b/#o/#x/#h" followed by digits legal for that base
+static bool validSMTNum(const std::string& val) {
+    size_t i = val.find('#');
+    if (i == std::string::npos || ++i >= val.size()) return false;
+    int base;
     switch (val[i++]) {
-    case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
-    case 'o': _vl_vsss_based(owp, obits, 3, &val[i], 0, val.size() - i); break;
+    case 'b': base = 2; break;
+    case 'o': base = 8; break;
     case 'h':  // FALLTHRU
-    case 'x': _vl_vsss_based(owp, obits, 4, &val[i], 0, val.size() - i); break;
-    default:
-        VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                   "Internal: Unable to parse solver's randomized number");
-        return false;
+    case 'x': base = 16; break;
+    default: return false;
+    }
+    const size_t end = val.find_last_not_of(" \t\r");
+    if (end < i) return false;
+    for (; i <= end; ++i) {
+        const char c = val[i];
+        int digit;
+        if (c >= '0' && c <= '9') {
+            digit = c - '0';
+        } else if (c >= 'a' && c <= 'f') {
+            digit = c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'F') {
+            digit = c - 'A' + 10;
+        } else {
+            return false;
+        }
+        if (digit >= base) return false;
     }
     return true;
 }
-bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
+
+// val must have passed validSMTNum
+static void parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
+    size_t i = val.find('#') + 1;
+    switch (val[i++]) {
+    case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
+    case 'o': _vl_vsss_based(owp, obits, 3, &val[i], 0, val.size() - i); break;
+    default: _vl_vsss_based(owp, obits, 4, &val[i], 0, val.size() - i); break;
+    }
+}
+void VlRandomVar::set(const std::string& idx, const std::string& val) const {
     VlWide<VL_WQ_WORDS_E> qowp;
     VL_SET_WQ(qowp, 0ULL);
     WDataOutP owp = qowp;
     const int obits = width();
     VlWide<VL_WQ_WORDS_E> qiwp;
     VL_SET_WQ(qiwp, 0ULL);
-    if (!idx.empty() && !parseSMTNum(64, qiwp, idx)) return false;
+    if (!idx.empty()) parseSMTNum(64, qiwp, idx);
     const int nidx = qiwp[0];
     if (obits > VL_QUADSIZE) owp = WDataOutP::external(reinterpret_cast<EData*>(datap(nidx)));
-    if (!parseSMTNum(obits, owp, val)) return false;
+    parseSMTNum(obits, owp, val);
 
     if (obits <= VL_BYTESIZE) {
         CData* const p = static_cast<CData*>(datap(nidx));
@@ -411,7 +670,6 @@ bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
     } else {
         _vl_clean_inplace_w(obits, owp);
     }
-    return true;
 }
 
 void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
@@ -488,6 +746,8 @@ bool VlRandomizer::next(VlRNG& rngr) { return nextRandomize(rngr, false); }
 bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
     if (!checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
     if (checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
+    VlSolverSession& sess = s_solverSession;
+    const VerilatedLockGuard lock{sess.m_mutex};
     m_checkOnly = checkOnly;
     const std::vector<std::string> uniqueExprs = buildUniqueExprs();
 
@@ -505,9 +765,9 @@ bool VlRandomizer::nextRandomize(VlRNG& rngr, bool checkOnly) {
     // Pinned vars make phase ordering moot; skip phased path in check-only.
     bool result;
     if (!m_checkOnly && !m_solveBefore.empty()) {
-        result = nextPhased(rngr, uniqueExprs);
+        result = nextPhased(rngr, sess, uniqueExprs);
     } else {
-        result = nextFlat(rngr, uniqueExprs);
+        result = nextFlat(rngr, sess, uniqueExprs);
     }
     m_checkOnly = false;
     return result;
@@ -578,13 +838,15 @@ void VlRandomizer::emitAsserts(std::ostream& os, const std::vector<std::string>&
     }
 }
 
-bool VlRandomizer::nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueExprs) {
+bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
+                            const std::vector<std::string>& uniqueExprs)
+    VL_REQUIRES(sess.m_mutex) {
+    VlSolverTxn txn{sess};
+    if (!txn.ok()) return false;
+    std::iostream& os = sess.os();
     // Randc retry: if unsat due to randc exhaustion, clear history and retry once
     const bool hasRandc = !m_randcVarNames.empty();
     for (int attempt = 0; attempt < (hasRandc ? 2 : 1); ++attempt) {
-        std::iostream& os = getSolver();
-        if (!os) return false;
-
         os << "(set-option :produce-models true)\n";
         // Lets the scalar pin path learn which free-bit assumptions conflict.
         os << "(set-option :produce-unsat-assumptions true)\n";
@@ -597,11 +859,12 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueE
         // trivially UNSAT after the first cycle.
         if (!m_checkOnly) emitRandcExclusions(os);
 
-        relaxSoftConstraints(os);
+        relaxSoftConstraints(sess);
         os << "(check-sat)\n";
-        const bool sat = parseSolution(os);
+        const VlSolverStatus status = sess.readStatus();
 
-        if (!sat) {
+        if (status != VlSolverStatus::SAT) {
+            if (status != VlSolverStatus::UNSAT) return false;
             os << "(reset)\n";
             // If randc vars have used values, this may be cycle exhaustion - retry
             if (hasRandc && !m_randcUsedValues.empty() && attempt == 0) {
@@ -609,28 +872,26 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, const std::vector<std::string>& uniqueE
                 continue;  // Retry without exclusions
             }
             // Skip the unsat-core path in check-only: it re-declares vars
-            // without pinning, so parseSolution would clobber user state with
-            // the solver's free assignment.
+            // without pinning, so the solver's free assignment would clobber
+            // user state.
             if (m_checkOnly) return false;
             // Genuine unsat: report via unsat-core
-            reportUnsatSetup(os, uniqueExprs);
-            os << "(reset)\n";
+            reportUnsatSetup(sess, uniqueExprs);
             return false;
         }
+        if (!applyModel(sess)) return false;
 
         if (!m_checkOnly) {
-            solveDiversity(rngr, os);
+            solveDiversity(rngr, sess);
             // Check-only must not advance randc cycle state.
             recordRandcValues();
         }
-
-        os << "(reset)\n";
         return true;
     }
     return false;  // Should not reach here
 }
 
-void VlRandomizer::solveDiversity(VlRNG& rngr, std::iostream& os) {
+void VlRandomizer::solveDiversity(VlRNG& rngr, VlSolverSession& sess) VL_REQUIRES(sess.m_mutex) {
     bool hasArray = false;
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
@@ -639,13 +900,15 @@ void VlRandomizer::solveDiversity(VlRNG& rngr, std::iostream& os) {
         }
     }
     if (hasArray) {
-        solveDiversityXor(rngr, os);
+        solveDiversityXor(rngr, sess);
     } else {
-        solveDiversityPins(rngr, os);
+        solveDiversityPins(rngr, sess);
     }
 }
 
-void VlRandomizer::solveDiversityPins(VlRNG& rngr, std::iostream& os) {
+void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess)
+    VL_REQUIRES(sess.m_mutex) {
+    std::iostream& os = sess.os();
     // Tie each free bit to a random target via an assumption literal;
     // drop one conflicting literal per round until compatible
     int npins = 0;
@@ -667,50 +930,58 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, std::iostream& os) {
             if (!dropped[k]) os << " a" << k;
         }
         os << "))\n";
-        if (parseSolution(os)) return;
+        const VlSolverStatus status = sess.readStatus();
+        if (status == VlSolverStatus::SAT) {
+            applyModel(sess);
+            return;
+        }
+        // Unknown or failure: the base solution already written stands
+        if (status != VlSolverStatus::UNSAT) return;
         // get-unsat-assumptions only echoes still-active literals,
         // so the first in-range index is a live conflicting bit.
-        const std::vector<int> core = readUnsatAssumptions(os);
+        const std::vector<int> core = readUnsatAssumptions(sess);
+        bool droppedOne = false;
         for (const int idx : core) {
             if (idx < npins) {
                 dropped[idx] = true;
+                droppedOne = true;
                 break;
             }
         }
+        if (!droppedOne) return;
     }
 }
 
-void VlRandomizer::solveDiversityXor(VlRNG& rngr, std::iostream& os) {
-    bool sat = true;
-    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+void VlRandomizer::solveDiversityXor(VlRNG& rngr, VlSolverSession& sess)
+    VL_REQUIRES(sess.m_mutex) {
+    std::iostream& os = sess.os();
+    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL; ++i) {
         os << "(assert ";
         randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
         os << ")\n";
         os << "\n(check-sat)\n";
-        sat = parseSolution(os);
+        if (sess.readStatus() != VlSolverStatus::SAT) break;
+        if (!applyModel(sess)) break;
     }
 }
 
-bool VlRandomizer::checkSat(std::iostream& os) {
-    std::string result;
-    do { std::getline(os, result); } while (result.empty());
-    return result == "sat";
-}
-
-void VlRandomizer::relaxSoftConstraints(std::iostream& os) {
-    // Re-add softs highest-priority first, dropping incompatible ones.
-    const size_t nSoft = m_softConstraints.size();
-    if (nSoft == 0) return;
+// Re-add softs highest-priority first, dropping incompatible ones.
+void VlRandomizer::relaxSoftConstraints(VlSolverSession& sess) VL_REQUIRES(sess.m_mutex) {
+    if (m_softConstraints.empty()) return;
+    std::iostream& os = sess.os();
     os << "(push 1)\n";
     for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
     os << "(check-sat)\n";
-    if (checkSat(os)) return;
+    const VlSolverStatus status = sess.readStatus();
+    if (status == VlSolverStatus::SAT || status == VlSolverStatus::FAIL) return;
     os << "(pop 1)\n";
     for (auto it = m_softConstraints.rbegin(); it != m_softConstraints.rend(); ++it) {
         os << "(push 1)\n";
         os << "(assert (= #b1 " << *it << "))\n";
         os << "(check-sat)\n";
-        if (!checkSat(os)) os << "(pop 1)\n";
+        const VlSolverStatus probe = sess.readStatus();
+        if (probe == VlSolverStatus::FAIL) return;
+        if (probe != VlSolverStatus::SAT) os << "(pop 1)\n";
     }
 }
 
@@ -719,7 +990,8 @@ static std::vector<int> scanIntRuns(const std::string& reply) {
     std::vector<int> idxs;
     std::string num;
     for (const char c : reply) {
-        if (std::isdigit(static_cast<unsigned char>(c))) {
+        // Cap the run so a garbled reply cannot overflow std::stoi
+        if (std::isdigit(static_cast<unsigned char>(c)) && num.size() < 9) {
             num += c;
         } else if (!num.empty()) {
             idxs.push_back(std::stoi(num));
@@ -730,32 +1002,41 @@ static std::vector<int> scanIntRuns(const std::string& reply) {
     return idxs;
 }
 
-std::vector<int> VlRandomizer::readUnsatAssumptions(std::iostream& os) {
-    os << "(get-unsat-assumptions)\n";
-    std::string line;
-    do { std::getline(os, line); } while (line.empty());
+std::vector<int> VlRandomizer::readUnsatAssumptions(VlSolverSession& sess)
+    VL_REQUIRES(sess.m_mutex) {
+    sess.os() << "(get-unsat-assumptions)\n";
+    std::string reply;
+    if (!sess.readSExpr(reply)) return {};
+    if (isSolverError(reply)) {
+        warnSolverReply(reply);
+        return {};
+    }
     // The response lists only "a<N>" literals; collect each full integer run.
-    return scanIntRuns(line);
+    return scanIntRuns(reply);
 }
 
 // Re-solve with named asserts so an unsat core can name the failing constraints
-void VlRandomizer::reportUnsatSetup(std::iostream& os,
-                                    const std::vector<std::string>& uniqueExprs) {
+void VlRandomizer::reportUnsatSetup(VlSolverSession& sess,
+                                    const std::vector<std::string>& uniqueExprs)
+    VL_REQUIRES(sess.m_mutex) {
+    std::iostream& os = sess.os();
     os << "(set-option :produce-unsat-cores true)\n";
     os << "(set-logic QF_ABV)\n";
     emitDefines(os);
     emitDeclares(os, false);
     emitAsserts(os, uniqueExprs, true);
     os << "(check-sat)\n";
-    std::string status;
-    do { std::getline(os, status); } while (status.empty());
-    if (status == "unsat") reportUnsatCore(os);
+    if (sess.readStatus() == VlSolverStatus::UNSAT) reportUnsatCore(sess);
 }
 
-void VlRandomizer::reportUnsatCore(std::iostream& os) {
-    os << "(get-unsat-core)\n";
+void VlRandomizer::reportUnsatCore(VlSolverSession& sess) VL_REQUIRES(sess.m_mutex) {
+    sess.os() << "(get-unsat-core)\n";
     std::string reply;
-    std::getline(os, reply);
+    if (!sess.readSExpr(reply)) return;
+    if (isSolverError(reply)) {
+        warnSolverReply(reply);
+        return;
+    }
     const std::vector<int> numbers = scanIntRuns(reply);
     if (Verilated::threadContextp()->warnUnsatConstr()) {
         for (const int n : numbers) {
@@ -786,37 +1067,46 @@ void VlRandomizer::reportUnsatCore(std::iostream& os) {
     }
 }
 
-bool VlRandomizer::parseSolution(std::iostream& os) {
-    std::string sat;
-    do { std::getline(os, sat); } while (sat == "");
-    if (sat == "unsat") return false;
-    if (sat != "sat") {
-        std::stringstream msg;
-        msg << "Internal: Solver error: " << sat;
-        const std::string str = msg.str();
-        VL_WARN_MT(__FILE__, __LINE__, "randomize", str.c_str());
-        return false;
-    }
-
-    os << "(get-value (";
+bool VlRandomizer::applyModel(VlSolverSession& sess) VL_REQUIRES(sess.m_mutex) {
+    std::iostream& os = sess.os();
+    size_t requested = 0;
+    std::stringstream getValueStr;
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
             auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
             var.second->setArrayInfo(arrVarsp);
+            requested += var.second->countMatchingElements(m_arr_vars, var.second->name());
+        } else {
+            ++requested;
         }
-        var.second->emitGetValue(os);
+        var.second->emitGetValue(getValueStr);
     }
-    os << "))\n";
-    // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
-    char c;
-    os >> c;
-    if (c != '(') {
-        VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                   "Internal: Unable to parse solver's response: invalid S-expression");
+    if (getValueStr.str() == "") {
+        // Mark as m_checkOnly to skip generation of any subsequent solver calls
+        m_checkOnly = true;
+        return true;
+    }
+    os << "(get-value (" << getValueStr.str() << "))\n";
+    std::string reply;
+    if (!sess.readSExpr(reply)) return false;
+    if (isSolverError(reply)) {
+        warnSolverReply(reply);
         return false;
     }
+    std::istringstream is{reply};
+    return parseModel(is, requested);
+}
+
+bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
+    // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
+    char c = 0;
+    is >> c;  // The '(' opening the readSExpr-balanced reply
+    // Stage writes; commit only after the whole reply parses so failure keeps prior values
+    std::vector<std::tuple<const VlRandomVar*, std::string, std::string>> staged;
+    // Every requested term must come back exactly once, whether or not it is written
+    std::set<std::string> answered;
     while (true) {
-        os >> c;
+        if (VL_UNCOVERABLE(!(is >> c))) return false;  // Balanced reply breaks at ')' first
         if (c == ')') break;
         if (c != '(') {
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
@@ -827,16 +1117,27 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
         std::string idx;
         std::string value;
         std::vector<std::string> indices;
-        os >> name;
+        is >> name;
         indices.clear();
         if (name == "(select") {
-            const std::string selectExpr = readUntilBalanced(os);
+            const std::string selectExpr = readUntilBalanced(is);
             name = parseNestedSelect(selectExpr, indices);
         }
-        std::getline(os, value, ')');
+        std::getline(is, value, ')');
         const auto it = m_vars.find(name);
-        if (it == m_vars.end()) continue;
+        if (it == m_vars.end()) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unable to parse solver's response: unknown variable");
+            return false;
+        }
         const VlRandomVar& varr = *it->second;
+        std::string key = name;
+        for (const auto& index : indices) key += index;
+        if (!answered.insert(key).second) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unable to parse solver's response: repeated variable");
+            return false;
+        }
         if (!varr.randModeIdxNone()) {
             // Static rand vars have their rand_mode in a class-package shared queue,
             // not the per-instance one.
@@ -856,6 +1157,11 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
                     continue;
                 }
                 std::string trimmed_hex = hex_index.substr(start + 2);
+                if (!validSMTNum(hex_index)) {
+                    VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                               "Internal: Unable to parse solver's response: invalid array index");
+                    return false;
+                }
 
                 if (trimmed_hex.size() <= 8) {  // Small numbers: <= 32 bits
                     // Convert to decimal and output directly
@@ -882,8 +1188,22 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
                             "indexed_name not found in m_arr_vars");
             }
         }
-        varr.set(idx, value);
+        // Reject before any commit, so a bad value later in the reply cannot
+        // leave earlier ones written
+        if (!validSMTNum(value)) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unable to parse solver's response: invalid value");
+            return false;
+        }
+        staged.emplace_back(&varr, idx, value);
     }
+    if (answered.size() != requested) {
+        VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                   "Internal: Unable to parse solver's response: incomplete model");
+        return false;
+    }
+    for (const auto& entry : staged)
+        std::get<0>(entry)->set(std::get<1>(entry), std::get<2>(entry));
     return true;
 }
 
@@ -992,31 +1312,37 @@ const char* VlRandomizer::phasedLogic() const {
     return "QF_ABV";
 }
 
-bool VlRandomizer::nextPhased(VlRNG& rngr, const std::vector<std::string>& uniqueExprs) {
+bool VlRandomizer::nextPhased(VlRNG& rngr, VlSolverSession& sess,
+                              const std::vector<std::string>& uniqueExprs)
+    VL_REQUIRES(sess.m_mutex) {
     // Solve layer by layer with ALL constraints, pinning earlier layers
     std::vector<std::vector<std::string>> layers;
     if (!buildSolveLayers(layers)) return false;
 
     // One layer: all solve_before vars are independent, no ordering required
-    if (layers.size() <= 1) return nextFlat(rngr, uniqueExprs);
+    if (layers.size() <= 1) return nextFlat(rngr, sess, uniqueExprs);
 
-    if (solvePhases(rngr, layers, uniqueExprs)) return true;
+    VlSolverTxn txn{sess};
+    if (!txn.ok()) return false;
     // Retry once with the randc cycle cleared, as nextFlat does
-    if (m_randcUsedValues.empty()) return false;
+    bool exhausted = false;
+    if (solvePhases(rngr, sess, layers, uniqueExprs, exhausted)) return true;
+    if (!exhausted) return false;
     m_randcUsedValues.clear();
-    return solvePhases(rngr, layers, uniqueExprs);
+    sess.os() << "(reset)\n";
+    return solvePhases(rngr, sess, layers, uniqueExprs, exhausted);
 }
 
-bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::string>>& layers,
-                               const std::vector<std::string>& uniqueExprs) {
+bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
+                               const std::vector<std::vector<std::string>>& layers,
+                               const std::vector<std::string>& uniqueExprs, bool& exhaustedr)
+    VL_REQUIRES(sess.m_mutex) {
+    std::iostream& os = sess.os();
     std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
     const char* const logicp = phasedLogic();
 
     for (size_t phase = 0; phase < layers.size(); phase++) {
         const bool isFinalPhase = (phase == layers.size() - 1);
-
-        std::iostream& os = getSolver();
-        if (!os) return false;
 
         os << "(set-option :produce-models true)\n";
         os << "(set-logic " << logicp << ")\n";
@@ -1032,31 +1358,24 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
         emitRandcExclusions(os);
 
         // Soft constraints participate in every phase, priority-ordered.
-        relaxSoftConstraints(os);
+        relaxSoftConstraints(sess);
 
         // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
         os << "(check-sat)\n";
+        const VlSolverStatus status = sess.readStatus();
+        if (status != VlSolverStatus::SAT) {
+            // Only exhausted randc values are worth a retry; a lost solver is not
+            if (status == VlSolverStatus::UNSAT) exhaustedr = !m_randcUsedValues.empty();
+            return false;
+        }
 
         if (isFinalPhase) {
-            // Final phase: use parseSolution to write ALL values to memory
-            const bool sat = parseSolution(os);
-            if (!sat) {
-                os << "(reset)\n";
-                return false;
-            }
-            solveDiversityXor(rngr, os);
+            if (!applyModel(sess)) return false;
+            solveDiversityXor(rngr, sess);
             // Record solved randc values for future exclusion
             recordRandcValues();
-            os << "(reset)\n";
         } else {
-            if (!checkSat(os)) {
-                os << "(reset)\n";
-                return false;
-            }
-            if (!solvePhaseValues(os, rngr, layers[phase], solvedValues)) {
-                os << "(reset)\n";
-                return false;
-            }
+            if (!solvePhaseValues(sess, rngr, layers[phase], solvedValues)) return false;
             os << "(reset)\n";
         }
     }
@@ -1065,9 +1384,11 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, const std::vector<std::vector<std::s
 }
 
 // Intermediate phase: extract this layer's values, then try one diversity round
-bool VlRandomizer::solvePhaseValues(std::iostream& os, VlRNG& rngr,
+bool VlRandomizer::solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
                                     const std::vector<std::string>& layerVars,
-                                    std::map<std::string, std::string>& solvedValuesr) {
+                                    std::map<std::string, std::string>& solvedValuesr)
+    VL_REQUIRES(sess.m_mutex) {
+    std::iostream& os = sess.os();
     const auto emitGetValueCmd = [&]() {
         os << "(get-value (";
         for (const auto& varName : layerVars) {
@@ -1087,7 +1408,7 @@ bool VlRandomizer::solvePhaseValues(std::iostream& os, VlRNG& rngr,
     };
     // Get baseline values (deterministic, always valid)
     emitGetValueCmd();
-    if (!parsePhaseValues(os, solvedValuesr)) return false;
+    if (!readPhaseValues(sess, solvedValuesr)) return false;
 
     // Try diversity: add random constraint, re-check. If sat, get
     // updated (more diverse) values. If unsat, keep baseline values.
@@ -1095,11 +1416,24 @@ bool VlRandomizer::solvePhaseValues(std::iostream& os, VlRNG& rngr,
     randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
     os << ")\n";
     os << "(check-sat)\n";
-    if (checkSat(os)) {
+    if (sess.readStatus() == VlSolverStatus::SAT) {
         emitGetValueCmd();
-        (void)parsePhaseValues(os, solvedValuesr);
+        (void)readPhaseValues(sess, solvedValuesr);
     }
     return true;
+}
+
+bool VlRandomizer::readPhaseValues(VlSolverSession& sess,
+                                   std::map<std::string, std::string>& solvedValuesr)
+    VL_REQUIRES(sess.m_mutex) {
+    std::string reply;
+    if (!sess.readSExpr(reply)) return false;
+    if (isSolverError(reply)) {
+        warnSolverReply(reply);
+        return false;
+    }
+    std::istringstream is{reply};
+    return parsePhaseValues(is, solvedValuesr);
 }
 
 bool VlRandomizer::parsePhaseValues(std::istream& is,

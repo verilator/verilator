@@ -118,7 +118,8 @@ private:
     int m_sourceLastLineno = 0;
     int m_sourceLastFilenameno = 0;
     bool m_prependIndent = true;
-    bool m_inStringLiteral = false;
+    bool m_inStringLiteral = false;  // Inside a quote
+    bool m_inBackslash = false;  // Inside a backslash
     int m_indentLevel = 0;  // Current {} indentation
     std::stack<int> m_parenVec;  // Stack of columns where last ( was
     int m_bracketLevel = 0;  // Indenting = { block, indicates number of {'s seen.

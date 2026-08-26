@@ -92,11 +92,7 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     if (dumpCallp) ifp->addThensp(dumpCallp);
     AstCStmt* const stmtp = new AstCStmt{flp};
     ifp->addThensp(stmtp);
-    const FileLine* const locp = netlistp->topModulep()->fileline();
-    const std::string& file = VIdProtect::protect(locp->filename());
-    const std::string& line = std::to_string(locp->lineno());
-    stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-               + ", \"\", \"DIDNOTCONVERGE: " + name
+    stmtp->add("VL_FATAL_MT(\"\", 0, \"\", \"DIDNOTCONVERGE: " + name
                + " region did not converge after '--converge-limit' of " + std::to_string(limit)
                + " tries\");");
     return ifp;

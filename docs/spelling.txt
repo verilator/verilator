@@ -198,6 +198,7 @@ Holme
 Homebrew
 Hornung
 Hossell
+Hsieh
 Hsu
 Huggett
 Hutt
@@ -1000,6 +1001,7 @@ noprivate
 noreturn
 notif
 nullptr
+num
 numactl
 onehot
 ooo

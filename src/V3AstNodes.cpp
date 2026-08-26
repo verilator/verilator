@@ -483,6 +483,14 @@ void AstSConsRep::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, unbounded);
     dumpJsonGen(str);
 }  // LCOV_EXCL_STOP
+void AstSAnd::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (propertyControl()) str << " [PROPERTY_CONTROL]";
+}
+void AstSAnd::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, propertyControl);
+    dumpJsonGen(str);
+}
 void AstPropAlways::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (isStrong()) str << " [strong]";
@@ -709,12 +717,16 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 
     asRef = asRef || isDpiOpenArray() || (forFunc && (isWritable() || isRef() || isConstRef()));
 
-    if (forFunc && (isReadOnly() || constRef) && asRef) ostatic = ostatic + "const ";
-
     string oname;
     if (named) {
         if (!namespc.empty()) oname += namespc + "::";
         oname += VIdProtect::protectIf(name(), protect());
+    }
+    if (forFunc && (isReadOnly() || constRef) && asRef) {
+        if (VN_IS(dtypep()->skipRefp(), IfaceRefDType)) {
+            return ostatic + dtypep()->cType("", forFunc, false) + " const &" + oname;
+        }
+        ostatic += "const ";
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
@@ -2295,6 +2307,14 @@ void AstCover::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isSeqEvent);
     this->AstNodeCoverOrAssert::dumpJson(str);
 }
+void AstConstraintForeach::dump(std::ostream& str) const {
+    this->AstNodeForeach::dump(str);
+    if (isSoft()) str << "[SOFT]";
+}
+void AstConstraintForeach::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isSoft);
+    dumpJsonGen(str);
+}
 void AstClocking::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isDefault()) str << " [DEFAULT]";
@@ -3042,6 +3062,14 @@ void AstPackageImport::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstPackageImport::pkgNameFrom() {
     if (packagep()) m_pkgName = packagep()->name();
 }
+void AstPast::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (propertyTiming()) str << " [PROPERTY_TIMING]";
+}
+void AstPast::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, propertyTiming);
+    dumpJsonGen(str);
+}
 void AstPatMember::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (isConcat()) str << " [CONCAT]";
@@ -3315,6 +3343,7 @@ int AstVarRef::instrCount() const {
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (constPoolEntry()) str << " [CONSTPOOL]";
+    if (covergroupRefMember()) str << " [CGREF]";
     if (isSc()) str << " [SC]";
     if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
     if (isPrimaryClock()) str << " [PCLK]";
@@ -3357,6 +3386,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, constPoolEntry);
+    dumpJsonBoolFuncIf(str, covergroupRefMember);
     dumpJsonBoolFuncIf(str, isSc);
     dumpJsonBoolFuncIf(str, isPrimaryIO);
     dumpJsonBoolFuncIf(str, isPrimaryClock);

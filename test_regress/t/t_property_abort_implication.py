@@ -9,10 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('simulator')
 
-test.lint(fails=True,
-          verilator_flags2=['--assert-unroll-limit 1024'],
-          expect_filename=test.golden_filename)
+test.sim_time = 16000
+
+test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing'])
+
+test.execute()
 
 test.passes()
