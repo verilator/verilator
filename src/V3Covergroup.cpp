@@ -684,7 +684,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_ATTACH,
                      {ctext(fl, "vlSymsp->_vm_contextp__->covergroupRegistryp()"
                                 "->newCovergroupInst("
-                                + quoted(typeName) + ")")},
+                                    + quoted(typeName) + ")")},
                      /*usePtr=*/false)
                 ->makeStmt());
     }
@@ -863,7 +863,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // A literal C++ argument with no AST equivalent: a 'const char*' string literal (an SV
     // string AstConst emits '"..."s', a std::string temporary the runtime cannot borrow), a
     // VlCovBinKind enum token, or a '__V' temporary declared by the enclosing AstCStmt.
-    static AstCExpr* ctext(FileLine* fl, const std::string& text) { return new AstCExpr{fl, text}; }
+    static AstCExpr* ctext(FileLine* fl, const std::string& text) {
+        return new AstCExpr{fl, text};
+    }
 
     // A C++ string literal.  Escapes control characters as the emitter does elsewhere -- bin
     // names and filenames reach the generated code verbatim when --protect-ids is off, and an
@@ -1022,16 +1024,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const bool crossFed = m_crossedCpNames.count(coverpointp->name()) != 0;
         const int hitBound = computeHitListBound(coverpointp, exprp, crossFed);
         UINFO(6, "    Hit-list bound (max bin overlap) = " << hitBound);
-        AstVar* const cpVarp
-            = new AstVar{fl, VVarType::MEMBER, "__Vcp_" + coverpointp->name(),
-                         coverpointDType(fl, static_cast<uint32_t>(hitBound))};
+        AstVar* const cpVarp = new AstVar{fl, VVarType::MEMBER, "__Vcp_" + coverpointp->name(),
+                                          coverpointDType(fl, static_cast<uint32_t>(hitBound))};
         m_covergroupp->addMembersp(cpVarp);
         m_cpVars.push_back(cpVarp);
         m_cpVarMap[coverpointp->name()] = cpVarp;
         m_cpBins.emplace(cpVarp, CoverpointBins{});
         // Create the runtime in the instance node first; everything below configures it.
-        m_constructorp->addStmtsp(
-            makeItemCreate(fl, cpVarp, VCMethod::COVERGROUP_ADD_COVERPOINT));
+        m_constructorp->addStmtsp(makeItemCreate(fl, cpVarp, VCMethod::COVERGROUP_ADD_COVERPOINT));
 
         // A cross reads this coverpoint's hit list, so clear it at the start of the
         // coverpoint's sample() contribution (before any incrementBin appends to it).
@@ -1121,11 +1121,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (v3Global.opt.coverage()) {
             const std::string page
                 = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
-            m_constructorp->addStmtsp(
-                itemCall(fl, cpVarp, VCMethod::COVERGROUP_REGISTER_BINS,
-                         {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
-                          ctext(fl, quoted(page))})
-                    ->makeStmt());
+            m_constructorp->addStmtsp(itemCall(fl, cpVarp, VCMethod::COVERGROUP_REGISTER_BINS,
+                                               {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
+                                                ctext(fl, quoted(page))})
+                                          ->makeStmt());
         }
     }
 
@@ -1534,9 +1533,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
         const int dims = static_cast<int>(cpVars.size());
 
-        AstVar* const cxVarp
-            = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(),
-                         basicDType(fl, VBasicDTypeKwd::COVERGROUP_CROSS)};
+        AstVar* const cxVarp = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(),
+                                          basicDType(fl, VBasicDTypeKwd::COVERGROUP_CROSS)};
         m_covergroupp->addMembersp(cxVarp);
         m_crossVars.push_back(cxVarp);
         m_constructorp->addStmtsp(makeItemCreate(fl, cxVarp, VCMethod::COVERGROUP_ADD_CROSS));
@@ -1559,11 +1557,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (v3Global.opt.coverage()) {
             const std::string page
                 = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
-            m_constructorp->addStmtsp(
-                itemCall(fl, cxVarp, VCMethod::COVERGROUP_REGISTER_BINS,
-                         {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
-                          ctext(fl, quoted(page))})
-                    ->makeStmt());
+            m_constructorp->addStmtsp(itemCall(fl, cxVarp, VCMethod::COVERGROUP_REGISTER_BINS,
+                                               {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
+                                                ctext(fl, quoted(page))})
+                                          ->makeStmt());
         }
 
         // sample(): after all coverpoints have sampled (cross loop runs after coverpoint loop).

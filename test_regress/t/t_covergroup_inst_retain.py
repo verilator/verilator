@@ -25,8 +25,5 @@ test.scenarios('vlt')
 if test.tsan:
     test.skip("ThreadSanitizer not compatible with AddressSanitizer\n")
 
-coverage_covergroup_common.run(test,
-                               verilator_flags2=[
-                                   "-CFLAGS -fsanitize=address -CFLAGS -ggdb"
-                                   " -LDFLAGS -fsanitize=address -LDFLAGS -ggdb"
-                               ])
+coverage_covergroup_common.run(
+    test, verilator_flags2=["-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address"])
