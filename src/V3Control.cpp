@@ -859,11 +859,18 @@ public:
         if (uint64_t cost = V3Control::getProfileData(v3Global.opt.prefix())) {
             UINFO(9, "Fetching cost from profile info: " << cost);
             return cost;
-        } else {
-            cost = V3InstrCount::count(v3Global.rootp()->evalp(), false);
-            UINFO(9, "Evaluating cost: " << cost);
-            return cost;
         }
+
+        // Without profiling data, sum the regions evaluated on each time step
+        const AstNetlist* const netlistp = v3Global.rootp();
+        uint64_t cost = 0;
+        for (int i = 0; i < VEval::_ENUM_END; ++i) {
+            const VEval eval{i};
+            if (eval.slow()) continue;
+            cost += V3InstrCount::count(netlistp->evalFuncp(eval), false);
+        }
+        UINFO(9, "Evaluating cost: " << cost);
+        return cost;
     }
 };
 
