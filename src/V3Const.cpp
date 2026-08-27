@@ -944,6 +944,7 @@ class ConstVisitor final : public VNVisitor {
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
     std::map<const AstNode*, bool> m_containsMemberAccess;  // Caches results of matchBiopToBitwise
+    uint64_t m_containsMemberAccessEditCount = 0;  // Edit count since last invalidation of above
     std::unordered_set<AstJumpBlock*> m_usedJumpBlocks;  // JumpBlocks used by some JumpGo
 
     // METHODS
@@ -2964,12 +2965,23 @@ class ConstVisitor final : public VNVisitor {
         return result;
     }
 
+    bool containsMemberAccess(const AstNode* const nodep) {
+        // containsMemberAccessRecurse caches by node pointer, and V3Const deletes nodes
+        // eagerly, so a new node can be allocated at the address of a deleted one. Any edit
+        // therefore invalidates the whole cache.
+        if (m_containsMemberAccessEditCount != AstNode::editCountGbl()) {
+            m_containsMemberAccess.clear();
+            m_containsMemberAccessEditCount = AstNode::editCountGbl();
+        }
+        return containsMemberAccessRecurse(nodep);
+    }
+
     bool matchBiopToBitwise(AstNodeBiop* const nodep) {
         if (!m_convertLogicToBit) return false;
         if (!nodep->lhsp()->width1()) return false;
         if (!nodep->rhsp()->width1()) return false;
         if (!nodep->isPure()) return false;
-        if (containsMemberAccessRecurse(nodep)) return false;
+        if (containsMemberAccess(nodep)) return false;
         return true;
     }
     bool matchConcatRand(AstConcat* nodep) {
