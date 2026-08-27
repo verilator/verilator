@@ -3126,7 +3126,7 @@ class WidthVisitor final : public VNVisitor {
                     } else {
                         issigned = bdtypep->isSigned();
                     }
-                    if (valueBdtypep->isString()) {
+                    if (valueBdtypep && valueBdtypep->isString()) {
                         // parameter X = "str", per IEEE is a number, not a string
                         if (const auto* const constp = VN_CAST(nodep->valuep(), Const)) {
                             if (constp->num().isString()) {
