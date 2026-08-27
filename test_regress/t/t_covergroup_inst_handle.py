@@ -19,6 +19,8 @@ test.scenarios('vlt')
 # Built WITHOUT --coverage, so retirement is on the free path, and with
 # AddressSanitizer: freeing a node under a live handle is a use-after-free that
 # without a sanitizer is a segfault or a silent pass depending on the allocator.
+# -fsanitize=address is needed on both CFLAGS (to instrument) and LDFLAGS (to
+# link the runtime).
 # Not --runtime-debug: its extra checks add nothing here and triple the runtime
 # recompile.  ASAN is incompatible with TSAN, which --runtime-debug would have
 # made driver.py notice for us.
@@ -28,8 +30,8 @@ if test.tsan:
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
-                 "--exe", "-CFLAGS -fsanitize=address -CFLAGS -ggdb"
-                 " -LDFLAGS -fsanitize=address -LDFLAGS -ggdb", test.pli_filename
+                 "--exe", "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address",
+                 test.pli_filename
              ])
 
 # LeakSanitizer off: this test leaks on purpose -- the registry leaks the type it
