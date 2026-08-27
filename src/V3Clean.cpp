@@ -91,6 +91,7 @@ class CleanVisitor final : public VNVisitor {
                 || VN_IS(nodep->dtypep()->skipRefp(), QueueDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), StreamDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
+                || VN_IS(nodep->dtypep()->skipRefp(), CoverpointDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
             } else {
                 const AstNodeUOrStructDType* const dtypep
