@@ -12,6 +12,6 @@ import randomize_uniform_common
 
 test.scenarios('simulator')
 
-SOLUTIONS = list(range(1 << 6))  # value < (1 << m_size), m_size set to 6 at run time
+SOLUTIONS = [i for i in range(256) if bin(i).count('1') == 4]  # C(8,4) = 70
 
 randomize_uniform_common.run(test, SOLUTIONS, r'\d+', key=int)
