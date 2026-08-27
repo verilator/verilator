@@ -509,6 +509,8 @@ public:
         PROCESS_REFERENCE,
         RANDOM_GENERATOR,
         RANDOM_STDGENERATOR,
+        COVERGROUP_INSTHANDLE,
+        COVERGROUP_CROSS,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -544,6 +546,8 @@ public:
                                             "VlProcessRef",
                                             "VlRandomizer",
                                             "VlStdRandomizer",
+                                            "VlCovInstHandle",
+                                            "VlCoverCross*",
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
@@ -576,6 +580,8 @@ public:
                                             "%E-proc-ref",
                                             "%E-rand-gen",
                                             "%E-stdrand-gen",
+                                            "%E-cg-insthandle",
+                                            "%E-cover-cross",
                                             "IData",
                                             "QData",
                                             "%E-logic-implct",
@@ -620,6 +626,8 @@ public:
         case PROCESS_REFERENCE: return 0;  // opaque
         case RANDOM_GENERATOR: return 0;  // opaque
         case RANDOM_STDGENERATOR: return 0;  // opaque
+        case COVERGROUP_INSTHANDLE: return 0;  // opaque
+        case COVERGROUP_CROSS: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -660,7 +668,8 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
-                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE
+                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
+                || m_e == COVERGROUP_INSTHANDLE || m_e == COVERGROUP_CROSS || m_e == DOUBLE
                 || m_e == UNTYPED);
     }
     bool isCHandle() const VL_MT_SAFE { return m_e == CHANDLE; }
@@ -716,6 +725,8 @@ public:
             /* PROCESS_REFERENCE:         */ "",  // Should not be traced
             /* RANDOM_GENERATOR:          */ "",  // Should not be traced
             /* RANDOM_STD_GENERATOR:      */ "",  // Should not be traced
+            /* COVERGROUP_INSTHANDLE:     */ "",  // Should not be traced
+            /* COVERGROUP_CROSS:          */ "",  // Should not be traced
             /* UINT32:                    */ "BIT",
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
@@ -867,6 +878,8 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(CLASS_SET_RANDMODE,                 "set_randmode",           false,  "r") \
     macro(COVERGROUP_ADD_ARRAY_NAMER,         "addArrayNamer",          false,  "r+") \
     macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  "r+") \
+    macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  "") \
+    macro(COVERGROUP_ADD_CROSS,               "addCross",               false,  "") \
     macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  "r+") \
     macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
     macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
@@ -874,6 +887,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  "") \
     macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  "r") \
     macro(COVERGROUP_INIT,                    "init",                   false,  "r+") \
+    macro(COVERGROUP_INST_P,                  "p",                      PURE,   "") \
     macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  "r") \
     macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rr") \
     macro(COVERGROUP_SAMPLE,                  "sample",                 false,  "") \

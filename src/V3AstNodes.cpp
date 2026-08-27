@@ -1245,6 +1245,10 @@ void AstCoverOtherDecl::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, fsmTag);
     dumpJsonNumFunc(str, offset);
 }
+void AstCoverpointDType::dumpSmall(std::ostream& str) const {
+    Super::dumpSmall(str);
+    str << "coverpoint[" << m_hitBound << "]";
+}
 void AstCoverToggleDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (range().ranged()) str << " range=[" << range().left() << ":" << range().right() << "]";
@@ -2132,6 +2136,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, CoverpointDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        info.m_type = "VlCoverpointT<" + cvtToStr(adtypep->hitBound()) + ">*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, SampleQueueDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true, false);
@@ -2207,6 +2214,12 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlRandomizer";
         } else if (bdtypep->isStdRandomGenerator()) {
             info.m_type = "VlStdRandomizer";
+        } else if (bdtypep->isCovergroupInstHandle()) {
+            info.m_type = "VlCovInstHandle";
+        } else if (bdtypep->isCovergroupCross()) {
+            // Borrowed pointer: VlCovergroupInst owns the cross runtime, so its bins outlive the
+            // SV covergroup object (the coverage DB holds raw count pointers read at write() time)
+            info.m_type = "VlCoverCross*";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
