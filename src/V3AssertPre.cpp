@@ -1290,7 +1290,8 @@ private:
                     lhsp
                         = new AstAnd{flp, new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
                 }
-                AstPast* const pastp = new AstPast{flp, lhsp};
+                AstPast* const pastp
+                    = new AstPast{flp, lhsp, nullptr, nullptr, /* propertyTiming */ true};
                 pastp->dtypeFrom(lhsp);
                 pastp->sentreep(newSenTree(nodep));
                 condp = pastp;
@@ -1314,7 +1315,8 @@ private:
                 lhsp = new AstAnd{flp, new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
             }
 
-            AstPast* const pastp = new AstPast{flp, lhsp};
+            AstPast* const pastp
+                = new AstPast{flp, lhsp, nullptr, nullptr, /* propertyTiming */ true};
             pastp->dtypeFrom(lhsp);
             pastp->sentreep(newSenTree(nodep));
             AstNodeExpr* const exprp

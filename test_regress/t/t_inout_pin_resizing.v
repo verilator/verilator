@@ -14,11 +14,11 @@
 // verilator lint_off REALCVT
 
 module t;
-  real               src_r;
+  real src_r;
 
   bit unsigned [7:0] src_u2;
-  bit signed   [7:0] src_s2;
-  real               dst_r;
+  bit signed [7:0] src_s2;
+  real dst_r;
 
   task cp_u2(output bit unsigned [7:0] dst, input bit unsigned [7:0] src);
     dst = src;
@@ -46,12 +46,12 @@ module t;
     `checkr(dst_r, -7.0);
 
     src_u2 = 7;
-    dst_r  = 5.0;
+    dst_r = 5.0;
     cp_io_u2(dst_r, src_u2);
     `checkr(dst_r, 12.0);
 
     src_s2 = -7;
-    dst_r  = -3.0;
+    dst_r = -3.0;
     cp_io_s2(dst_r, src_s2);
     `checkr(dst_r, -10.0);
 

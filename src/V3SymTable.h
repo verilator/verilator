@@ -137,7 +137,7 @@ public:
             m_idNameMap.emplace(name, entp);
         }
         if (name.find("__DOT__") == std::string::npos
-            && !ignoreForSimilarTest(entp->nodep()->type())) {  // ignore hierarchical equivalents
+            && !ignoreForSimilarTest(entp->nodep())) {  // ignore hierarchical equivalents
             string lc = name;
             for (auto& c : lc) c = (char)tolower(c);
             if (m_idNameSimilarMap.find(lc) == m_idNameSimilarMap.end())
@@ -168,8 +168,12 @@ public:
         if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
-    bool ignoreForSimilarTest(VNType t) {  // node types that don't affect final net types
-        switch (t) {
+    static bool ignoreForSimilarTest(const AstNode* nodep) {
+        // Nodes that don't affect final net types
+        // Parameters and localparams are elaborated away, so they can't
+        // collide with a net downstream
+        if (const AstVar* const varp = VN_CAST(nodep, Var)) return varp->isParam();
+        switch (nodep->type()) {
         case VNType::TypedefFwd:
         case VNType::Typedef:
         case VNType::ParamTypeDType:
