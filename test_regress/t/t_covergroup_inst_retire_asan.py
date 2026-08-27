@@ -23,10 +23,7 @@ test.top_filename = 't/t_covergroup_inst_retire.v'
 if test.tsan:
     test.skip("ThreadSanitizer not compatible with AddressSanitizer\n")
 
-test.compile(verilator_flags2=[
-    "-CFLAGS -fsanitize=address -CFLAGS -ggdb"
-    " -LDFLAGS -fsanitize=address -LDFLAGS -ggdb"
-])
+test.compile(verilator_flags2=["-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address"])
 
 test.execute()
 
