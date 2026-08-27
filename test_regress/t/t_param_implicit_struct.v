@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   typedef struct { int unsigned F; } t_s;
-   localparam t_s S = '{F: 32'd7};
-   localparam W = S;
+  typedef struct { int unsigned F; } t_s;
+  localparam t_s S = '{F: 32'd7};
+  localparam W = S;
 endmodule
