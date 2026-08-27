@@ -24,9 +24,6 @@
                     t/t_constraint_global_arr_unsup.v:58:16: ... Location of second expression
    58 |     m_mid.m_arr[m_base + 1].m_x == 321;
       |                ^
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:64:24: Unsupported: Array element access in global constraint
-   64 |       m_mid.m_assoc[i].m_x == 1;
-      |                        ^~~
 %Error: t/t_constraint_global_arr_unsup.v:64:21: Illegal non-integral expression or subexpression in random constraint. (IEEE 1800-2023 18.3)
    64 |       m_mid.m_assoc[i].m_x == 1;
       |                     ^
