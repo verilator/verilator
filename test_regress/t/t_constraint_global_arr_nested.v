@@ -132,7 +132,22 @@ class Outer;
     m_mid_arr2[m_idx + 1].m_obj.m_y == 501;
   }
 
-  // Case 6: randmode
+  // Case 6: Associative array element member access
+  constraint c_assoc {
+    m_assoc[0].m_x == 500;
+    m_assoc[m_idx].m_x == 502;
+  }
+
+  constraint c_string_assoc {
+    m_holder.m_string_assoc[m_key].m_x == 43;
+    m_holder.m_string_assoc[m_key].m_y < 43;
+  }
+
+  constraint c_assoc_nested {
+    m_assoc_nested[123][1].m_x == 501;
+  }
+
+  // Case 7: randmode
   constraint c_mode {
     m_holder.mode[0].x == 42;
   }
@@ -174,6 +189,11 @@ module t_constraint_global_arr_nested;
     `checkd(o.m_mid_arr[0].m_obj.m_y, 301);
     `checkd(o.m_mid_arr[1].m_arr[2].m_y, 400);
 
+    `checkd(o.m_assoc[0].m_x, 500);
+    `checkd(o.m_assoc[1].m_x, 502);
+    `checkd(o.m_holder.m_string_assoc["abc"].m_x, 43);
+    `checkd(o.m_assoc_nested[123][1].m_x, 501);
+
     `checkd(o.m_holder.mode[0].x, 42);
 
     `checkd(o.m_mid_arr2[2].m_obj.m_x, 500);
@@ -186,6 +206,8 @@ module t_constraint_global_arr_nested;
     `check_rand(o, o.m_mid2.m_arr[1].m_y, o.m_mid2.m_arr[1].m_y < 203);
 
     `check_rand(o, o.m_mid_arr[2].m_arr[2].m_y, o.m_mid_arr[2].m_arr[2].m_y < 400);
+
+    `check_rand(o, o.m_holder.m_string_assoc["abc"].m_y, o.m_holder.m_string_assoc["abc"].m_y < 43);
 
     repeat (4) begin
       rand_res = randc_o.randomize();
