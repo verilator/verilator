@@ -191,6 +191,7 @@ class AwaitVisitor final : public VNVisitor {
     AstScope* const m_scopeTopp;  // Scope at the top
     LogicByScope& m_lbs;  // Timing resume actives
     AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
+    AstVarScope*& m_reactiveSchedulerpr;  // Program Reactive-region scheduler
     // Additional var sensitivities
     std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
     std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
@@ -338,6 +339,14 @@ class AwaitVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCAwait* nodep) override {
+        if (AstCMethodHard* const methodp = VN_CAST(nodep->exprp(), CMethodHard)) {
+            if (methodp->method() == VCMethod::SCHED_REACT_TRIGGER) {
+                AstVarScope* const schedulerp = VN_AS(methodp->fromp(), VarRef)->varScopep();
+                UASSERT_OBJ(!m_reactiveSchedulerpr || m_reactiveSchedulerpr == schedulerp, nodep,
+                            "Multiple program Reactive-region schedulers");
+                m_reactiveSchedulerpr = schedulerp;
+            }
+        }
         if (AstSenTree* const sentreep = nodep->sentreep()) {
             if (!sentreep->user1SetOnce()) createResumeActive(nodep);
             if (m_inProcess) m_processDomains.insert(sentreep);
@@ -371,10 +380,12 @@ class AwaitVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit AwaitVisitor(AstNetlist* nodep, LogicByScope& lbs, AstNodeStmt*& postUpdatesr,
-                          std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains)
+                          std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains,
+                          AstVarScope*& reactiveSchedulerpr)
         : m_scopeTopp{nodep->topScopep()->scopep()}
         , m_lbs{lbs}
         , m_postUpdatesr{postUpdatesr}
+        , m_reactiveSchedulerpr{reactiveSchedulerpr}
         , m_externalDomains{externalDomains} {
         iterate(nodep);
     }
@@ -388,9 +399,10 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
     if (!v3Global.usesTiming()) return {};
     LogicByScope lbs;
     AstNodeStmt* postUpdates = nullptr;
+    AstVarScope* reactiveSchedulerp = nullptr;
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
-    { AwaitVisitor{netlistp, lbs, postUpdates, externalDomains}; }
-    return {std::move(lbs), postUpdates, std::move(externalDomains)};
+    { AwaitVisitor{netlistp, lbs, postUpdates, externalDomains, reactiveSchedulerp}; }
+    return {std::move(lbs), postUpdates, std::move(externalDomains), reactiveSchedulerp};
 }
 
 //============================================================================

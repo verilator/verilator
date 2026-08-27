@@ -1922,11 +1922,13 @@ void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
 
 void AstNodeProcedure::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (inProgram()) str << " [PROGRAM]";
     if (isSuspendable()) str << " [SUSP]";
     if (needProcess()) str << " [NPRC]";
 }
 
 void AstNodeProcedure::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, inProgram);
     dumpJsonBoolFuncIf(str, isSuspendable);
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonGen(str);

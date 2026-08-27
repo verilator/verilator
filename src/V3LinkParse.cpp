@@ -823,6 +823,8 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
+        const AstModule* const modulep = VN_CAST(m_modp, Module);
+        if (modulep && modulep->isProgram()) nodep->inProgram(true);
         VL_RESTORER(m_lifetimeAllowed);
         m_lifetimeAllowed = true;
         VL_RESTORER(m_procedurep);

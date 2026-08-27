@@ -479,6 +479,7 @@ class TimingControlVisitor final : public VNVisitor {
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     bool m_hasProcess = false;  // True if current scope has a VlProcess handle available
+    bool m_inProgram = false;  // True if current thread originates in a program block
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
@@ -504,6 +505,7 @@ class TimingControlVisitor final : public VNVisitor {
     // Timing-related globals
     AstVarScope* m_delaySchedp = nullptr;  // Global delay scheduler
     AstVarScope* m_dynamicSchedp = nullptr;  // Global dynamic trigger scheduler
+    AstVarScope* m_reactiveSchedp = nullptr;  // Global program Reactive-region scheduler
     AstSenTree* m_delaySensesp = nullptr;  // Domain to trigger if a delayed coroutine is resumed
     AstSenTree* m_dynamicSensesp = nullptr;  // Domain to trigger if a dynamic trigger is set
 
@@ -658,6 +660,25 @@ class TimingControlVisitor final : public VNVisitor {
             sentreep->user1p(trigSchedp);
         }
         return VN_AS(sentreep->user1p(), VarScope);
+    }
+    AstVarScope* getCreateReactiveSchedulerp() {
+        if (m_reactiveSchedp) return m_reactiveSchedp;
+        if (!m_trigSchedDtp) {
+            m_trigSchedDtp = new AstBasicDType{
+                m_scopeTopp->fileline(), VBasicDTypeKwd::TRIGGER_SCHEDULER, VSigning::UNSIGNED};
+            m_netlistp->typeTablep()->addTypesp(m_trigSchedDtp);
+        }
+        m_reactiveSchedp = m_scopeTopp->createTemp("__VreactSched", m_trigSchedDtp);
+        return m_reactiveSchedp;
+    }
+    AstCAwait* createReactiveHop(FileLine* const flp, bool hasProcess) {
+        AstCMethodHard* const triggerp = new AstCMethodHard{
+            flp, new AstVarRef{flp, getCreateReactiveSchedulerp(), VAccess::WRITE},
+            VCMethod::SCHED_REACT_TRIGGER, new AstConst{flp, AstConst::BitFalse{}}};
+        triggerp->dtypeSetVoid();
+        AstCExpr* const processp = new AstCExpr{flp, hasProcess ? "vlProcess" : "nullptr"};
+        triggerp->addPinsp(processp);
+        return new AstCAwait{flp, triggerp};
     }
     // Creates a string describing the sentree
     AstCExpr* createEventDescription(AstSenTree* const sentreep) const {
@@ -902,8 +923,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
+        VL_RESTORER(m_inProgram);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
+        m_inProgram = nodep->inProgram();
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
         iterateChildren(nodep);
@@ -912,6 +935,13 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstInitial* nodep) override {
         visit(static_cast<AstNodeProcedure*>(nodep));
+        if (nodep->inProgram() && nodep->isSuspendable()) {
+            AstCAwait* const awaitp = createReactiveHop(nodep->fileline(), nodep->needProcess());
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
+                awaitp->addNextHere(stmtsp->unlinkFrBackWithNext());
+            }
+            nodep->addStmtsp(awaitp);
+        }
         if (nodep->needProcess() && !nodep->user1SetOnce()) {
             nodep->addStmtsp(
                 new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
@@ -1070,10 +1100,16 @@ class TimingControlVisitor final : public VNVisitor {
         addProcessInfo(delayMethodp);
         addDebugInfo(delayMethodp);
         // Create the co_await
-        AstNode* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
+        AstCAwait* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
+        AstNode* tailp = awaitp;
+        if (m_inProgram) {
+            AstCAwait* const reactivep = createReactiveHop(flp, m_hasProcess);
+            awaitp->addNextHere(reactivep);
+            tailp = reactivep;
+        }
         // Relink child statements after the co_await
         if (AstNode* const stmtsp = nodep->stmtsp()) {
-            awaitp->addNext(stmtsp->unlinkFrBackWithNext());
+            tailp->addNext(stmtsp->unlinkFrBackWithNext());
         }
         nodep->replaceWith(awaitp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1151,6 +1187,7 @@ class TimingControlVisitor final : public VNVisitor {
             AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->method(VCMethod::SCHED_RESUMPTION);
             AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep);
+            if (m_inProgram) { awaitResumep->addNextHere(createReactiveHop(flp, m_hasProcess)); }
             // Replace the event control with one explicit stmt chain:
             //   init -> [inits] -> [optional destructive pre-clears] -> loop -> awaitResumption
             AstNodeStmt* chainp = nullptr;
@@ -1182,6 +1219,7 @@ class TimingControlVisitor final : public VNVisitor {
             // Create the co_await
             AstCAwait* const awaitp = new AstCAwait{flp, triggerMethodp, sentreep};
             nodep->replaceWith(awaitp);
+            if (m_inProgram) awaitp->addNextHere(createReactiveHop(flp, m_hasProcess));
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

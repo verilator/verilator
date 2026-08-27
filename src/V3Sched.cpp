@@ -845,22 +845,49 @@ void createEval(AstNetlist* netlistp,  //
             }());
     }
 
-    if (!reactKit.empty()) {
+    if (!reactKit.empty() || timingKit.m_reactiveSchedulerp) {
+        AstVarScope* const schedulerp = timingKit.m_reactiveSchedulerp;
+        const auto newSchedulerNotEmpty = [flp, schedulerp]() -> AstNodeExpr* {
+            AstCMethodHard* const emptyp = new AstCMethodHard{
+                flp, new AstVarRef{flp, schedulerp, VAccess::READ}, VCMethod::SCHED_EMPTY};
+            emptyp->dtypeSetBit();
+            return new AstLogNot{flp, emptyp};
+        };
+        AstNodeExpr* condp = reactKit.empty() ? nullptr : trigKit.newAnySetCall(reactKit.m_vscp);
+        if (schedulerp) {
+            AstNodeExpr* const notEmptyp = newSchedulerNotEmpty();
+            condp = condp ? new AstLogOr{flp, condp, notEmptyp} : notEmptyp;
+        }
         // Create the Reactive eval loop, which becomes the top level loop.
         topLoop = createEvalLoop(  //
             netlistp, "react", "Reactive", /* slow: */ false, trigKit,
-            // Use trigger
-            reactKit.m_vscp, nullptr,
+            // Use explicit condition
+            nullptr, condp,
             // Inner loop statements
             topLoop.stmtsp,
             // Prep statements
             nullptr,
             // Work statements
             [&]() {
-                // Invoke the 'react' function
-                AstNodeStmt* workp = util::callVoidFunc(reactKit.m_funcp);
-                // Clear the 'react' triggers
-                workp = AstNode::addNext(workp, trigKit.newClearCall(reactKit.m_vscp));
+                AstNodeStmt* workp = nullptr;
+                if (!reactKit.empty()) {
+                    AstIf* const ifp = new AstIf{flp, trigKit.newAnySetCall(reactKit.m_vscp)};
+                    ifp->addThensp(util::callVoidFunc(reactKit.m_funcp));
+                    ifp->addThensp(trigKit.newClearCall(reactKit.m_vscp));
+                    workp = ifp;
+                }
+                if (schedulerp) {
+                    AstIf* const ifp = new AstIf{flp, newSchedulerNotEmpty()};
+                    for (const VCMethod method :
+                         {VCMethod::SCHED_READY, VCMethod::SCHED_MOVE_TO_RESUME_QUEUE,
+                          VCMethod::SCHED_RESUME}) {
+                        AstCMethodHard* const callp = new AstCMethodHard{
+                            flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, method};
+                        callp->dtypeSetVoid();
+                        ifp->addThensp(callp->makeStmt());
+                    }
+                    workp = AstNode::addNext(workp, ifp);
+                }
                 return workp;
             }());
     }
