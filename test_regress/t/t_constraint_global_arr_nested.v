@@ -157,6 +157,29 @@ class Outer;
     m_assoc_nested[123][1].m_x == 501;
   }
 
+  // Case 6: foreach
+  constraint c_foreach {
+    foreach (m_mid_arr2[i, j])
+      m_mid_arr2[i][j].m_obj.m_x == i + j;
+  }
+  constraint c_foreach2 {
+    foreach (m_mid_arr3[i])
+      foreach (m_mid_arr3[i][j])
+        m_mid_arr3[i][j].m_obj.m_x == i - j;
+  }
+
+  constraint c_foreach3 {
+    foreach (m_mid_arr4[i])
+        m_mid_arr4[i][m_idx].m_obj.m_x == i;
+  }
+
+  constraint c_foreach_multiple {
+    foreach(m_holder.items[i]) {
+      m_holder.items[i].x == i;
+      m_holder.items[i].y == i + 10;
+    }
+  }
+
   // Case 7: randmode
   constraint c_mode {
     m_holder.mode[0].x == 42;
@@ -184,6 +207,14 @@ module t_constraint_global_arr_nested;
 
     if (o.randomize() != 1) $stop;
 
+    foreach (o.m_mid_arr2[i])
+      foreach (o.m_mid_arr2[i][j])
+        if (o.m_mid_arr2[i][j].m_obj.m_x != i + j) $stop;
+    foreach (o.m_mid_arr3[i])
+      foreach (o.m_mid_arr3[i][j])
+        if (o.m_mid_arr3[i][j].m_obj.m_x != i - j) $stop;
+    foreach (o.m_mid_arr4[i])
+      if (o.m_mid_arr4[i][1].m_obj.m_x != i) $stop;
     `checkd(o.m_mid.m_obj.m_x, 100);
     `checkd(o.m_mid.m_obj.m_y, 101);
     `checkd(o.m_mid.m_arr[0].m_x, 200);
@@ -198,6 +229,10 @@ module t_constraint_global_arr_nested;
     `checkd(o.m_holder.m_string_assoc["abc"].m_x, 43);
     `checkd(o.m_assoc_nested[123][1].m_x, 501);
     `checkd(o.m_holder.mode[0].x, 42);
+    foreach (o.m_holder.items[i]) begin
+      `checkd(o.m_holder.items[i].x, i);
+      `checkd(o.m_holder.items[i].y, i + 10);
+    end
     `check_rand(o, o.m_mid2.m_arr[0].m_x, o.m_mid2.m_arr[0].m_x < 200);
     `check_rand(o, o.m_mid2.m_arr[0].m_y, o.m_mid2.m_arr[0].m_y < 201);
 

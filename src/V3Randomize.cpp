@@ -780,6 +780,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
                                           // (nullptr == always defined)
     AstNode* m_firstExpressionInsideIndexp = nullptr;
+    std::map<AstVar*, AstVar*>
+        m_varMap;  // Variable map to relink AstNodeVarRefs under foreach in nested array access
 
     class NestedAccessPath final {
         AstMemberSel* m_topNestedArrayMemberSelp
@@ -823,7 +825,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstMemberSel* accessTree() { return m_topNestedArrayMemberSelp; }
         const std::string& smtName() { return m_smtName; }
 
-        void write_var(AstNodeFTask* initTaskp, AstVar* varp, AstVar* genp) {
+        void write_var(AstNodeFTask* initTaskp, AstVar* varp, AstVar* genp,
+                       AstNode* nestedArrayForeach, std::map<AstVar*, AstVar*>& m_varMap) {
+            m_topNestedArrayMemberSelp->foreach([&](AstNodeVarRef* nodep) {
+                const auto newVarp = m_varMap.find(nodep->varp());
+                if (newVarp != m_varMap.end()) { nodep->varp(newVarp->second); }
+            });
             AstCMethodHard* const methodp = new AstCMethodHard{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(genp->user2p(), NodeModule), genp,
@@ -847,7 +854,16 @@ class ConstraintExprVisitor final : public VNVisitor {
             methodp->addPinsp(new AstConst{dtypep->fileline(), AstConst::Unsized64{}, 0});
 
             m_topNestedArrayMemberSelp = nullptr;
-            initTaskp->addStmtsp(methodp->makeStmt());
+            if (nestedArrayForeach) {
+                AstNode* lastp = nestedArrayForeach;
+                while (VN_IS(lastp->op2p(), Begin) || VN_IS(lastp->op2p(), Foreach)) {
+                    lastp = lastp->op2p();
+                }
+                VN_AS(lastp, Foreach)->addBodyp(methodp->makeStmt());
+                if (!nestedArrayForeach->backp()) initTaskp->addStmtsp(nestedArrayForeach);
+            } else {
+                initTaskp->addStmtsp(methodp->makeStmt());
+            }
         }
 
         AstNodeExpr* cloneName() { return m_nestedNameFormatTopp->cloneTree(false); }
@@ -867,6 +883,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     };
     NestedAccessPath* m_nestedAccess = nullptr;  // Indicates state of nested access
+    AstNode* m_nestedArrayForeachp = nullptr;  // Foreach loops before nested access
 
     // Routes nested sub-objects with static rand vars when the outer class has none.
     AstVar* findStaticRandModeVarMember(AstClass* classp) const {
@@ -1561,7 +1578,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
 
             if (m_nestedAccess) {
-                m_nestedAccess->write_var(initTaskp, varp, m_genp);
+                m_nestedAccess->write_var(initTaskp, varp, m_genp, m_nestedArrayForeachp,
+                                          m_varMap);
             } else if (isClassRefArray && !memberselp) {
                 FileLine* const fl = varp->fileline();
                 AstClass* const elemClassp = elemClassRefDtp->classp();
@@ -2259,6 +2277,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         });
         if (m_nestedAccess) {
             AstNodeExpr* const bitp = nodep->bitp()->cloneTreePure(false);
+            if (m_varMap.size()) {
+                bitp->foreach([&](AstNodeVarRef* nodep) {
+                    const auto it = m_varMap.find(nodep->varp());
+                    if (it != m_varMap.end()) { nodep->varp(it->second); }
+                });
+            }
             AstNodeExpr* const bitFormatp
                 = indexIsRand ? new AstSFormatF{bitp->fileline(), bitp->name(), false, nullptr}
                               : new AstSFormatF{bitp->fileline(), "%x", false, bitp};
@@ -2510,9 +2534,35 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstBegin* nodep) override {}
     void visit(AstConstraintForeach* nodep) override {
-        // Convert to plain foreach
+        VL_RESTORER_COPY(m_varMap);
         FileLine* const fl = nodep->fileline();
 
+        AstForeach* const foreachp
+            = new AstForeach{fl, nodep->headerp()->cloneTree(false), nullptr};
+        AstNode* clonedElementp = foreachp->headerp()->elementsp();
+        for (AstNode* elementp = nodep->headerp()->elementsp(); elementp;
+             elementp = elementp->nextp()) {
+            // Because we clone the header we only need to check one
+            if (VN_IS(elementp, Var)) {
+                AstVar* oldVarp = VN_AS(elementp, Var);
+                AstVar* newVarp = VN_AS(clonedElementp, Var);
+                m_varMap[oldVarp] = newVarp;
+            }
+            clonedElementp = clonedElementp->nextp();
+        }
+        VL_RESTORER(m_nestedArrayForeachp);
+
+        bool shouldClear = false;
+        if (!m_nestedArrayForeachp) {
+            m_nestedArrayForeachp = new AstBegin{fl, "", foreachp, false};
+            shouldClear = true;
+        } else {
+            AstNode* lastp = m_nestedArrayForeachp;
+            while (lastp->op2p()) { lastp = lastp->op2p(); }
+            VN_AS(lastp, Foreach)->addBodyp(new AstBegin{fl, "", foreachp, false});
+        }
+
+        // Convert to plain foreach
         if (!nodep->bodyp()) {
             nodep->unlinkFrBack();
         } else if (m_wantSingle) {
@@ -2539,6 +2589,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         UASSERT_OBJ(!nodep->user3p(), nodep, "Dist bucket preamble not injected into foreach");
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        if (shouldClear && !m_nestedArrayForeachp->backp())
+            VL_DO_DANGLING(m_nestedArrayForeachp->deleteTree(), m_nestedArrayForeachp);
     }
     void visit(AstConstraintBefore* nodep) override {
         // Generate solveBefore() calls for each (lhs, rhs) variable pair.
