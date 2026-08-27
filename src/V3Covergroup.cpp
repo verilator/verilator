@@ -529,7 +529,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const string varName = "__Vprev_" + coverpointp->name();
         AstVar* prevVarp
             = new AstVar{coverpointp->fileline(), VVarType::MEMBER, varName, exprp->dtypep()};
-        prevVarp->isStatic(false);
         m_covergroupp->addMembersp(prevVarp);
 
         UINFO(4, "    Created previous value variable: " << varName);
@@ -554,7 +553,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Use 8-bit integer for state position (sequences rarely > 255 items)
         AstVar* stateVarp
             = new AstVar{binp->fileline(), VVarType::MEMBER, varName, VFlagLogicPacked{}, 8};
-        stateVarp->isStatic(false);
         m_covergroupp->addMembersp(stateVarp);
 
         UINFO(4, "    Created sequence state variable: " << varName);
@@ -662,7 +660,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         UASSERT_OBJ(m_constructorp, m_covergroupp, "Covergroup missing synthesized constructor");
         m_cgInstVarp = new AstVar{fl, VVarType::MEMBER, "__Vcg_inst",
                                   basicDType(fl, VBasicDTypeKwd::COVERGROUP_INSTHANDLE)};
-        m_cgInstVarp->isStatic(false);
         m_covergroupp->addMembersp(m_cgInstVarp);
 
         // The type node is keyed by the covergroup type name -- the same string that keys this
@@ -1010,7 +1007,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const cpVarp
             = new AstVar{fl, VVarType::MEMBER, "__Vcp_" + coverpointp->name(),
                          coverpointDType(fl, static_cast<uint32_t>(hitBound))};
-        cpVarp->isStatic(false);
         m_covergroupp->addMembersp(cpVarp);
         m_cpVars.push_back(cpVarp);
         m_cpVarMap[coverpointp->name()] = cpVarp;
@@ -1441,7 +1437,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const cxVarp
             = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(),
                          basicDType(fl, VBasicDTypeKwd::COVERGROUP_CROSS)};
-        cxVarp->isStatic(false);
         m_covergroupp->addMembersp(cxVarp);
         m_crossVars.push_back(cxVarp);
         m_constructorp->addStmtsp(makeItemCreate(fl, cxVarp, VCMethod::COVERGROUP_ADD_CROSS));
@@ -1921,7 +1916,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 = trigger.memberVarp ? trigger.memberVarp->dtypep() : trigger.baseVarp->dtypep();
             AstVar* const prevVarp = new AstVar{trigger.eventFl, VVarType::MEMBER,
                                                 eventPrevName(trigger, triggerIndex), dtypep};
-            prevVarp->isStatic(false);
             m_enclosingClassp->addMembersp(prevVarp);
             trigger.prevVarp = prevVarp;
             for (AstNodeAssign* const asgnp : assignps) {
@@ -2087,7 +2081,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         v3Global.rootp()->typeTablep()->addTypesp(enclDTypep);
         AstVar* const handleVarp
             = new AstVar{fl, VVarType::MEMBER, "__Vcg_enclosingp", enclDTypep};
-        handleVarp->isStatic(false);
         m_covergroupp->addMembersp(handleVarp);
 
         // Route each enclosing-member reference through the back-pointer: 'm' -> 'h.m'.
