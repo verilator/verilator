@@ -4037,6 +4037,106 @@ void VerilatedImp::versionDump() VL_MT_SAFE {
 }
 
 //===========================================================================
+// VerilatedEvalLoop:: Methods
+
+void VerilatedEvalLoop::didNotConverge(const char* namep,
+                                       void (VerilatedModel::*dumpTriggersp)()) {
+    if (dumpTriggersp) (m_model.*dumpTriggersp)();
+    const std::string msg = "DIDNOTCONVERGE: "s + namep
+                            + " region did not converge after '--converge-limit' of "
+                            + std::to_string(m_convergeLimit) + " tries";
+    VL_FATAL_MT("", 0, "", msg.c_str());
+    VL_UNREACHABLE;  // VL_FATAL_MT does not return
+}
+
+template <bool Profiling>
+void VerilatedEvalLoop::evalImpl() {
+    VL_DEBUG_IF(VL_DBG_MSGF("+ Eval\n"););
+
+    if VL_CONSTEXPR_CXX17 (Profiling) {
+        // Advance the profiling window
+        if (VL_UNLIKELY(m_profTopLevel)) m_profilerp->configure();
+        m_profilerp->sectionPush("eval");
+    }
+
+    m_model.evalBegin();
+
+    // Initialization on first time step only
+    if (VL_UNLIKELY(!m_model.m_didInit)) {
+        VL_DEBUG_IF(VL_DBG_MSGF("+ Initial\n"););
+        // Static initializers
+        m_model.evalStatic();
+        // Initial blocks
+        m_model.evalInitial();
+        // The 'Settle' region, iterated until it converges
+        uint32_t stlIterCount = 0;
+        do {
+            checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
+        } while (m_model.evalStl(stlIterCount == 1));
+        m_model.m_didInit = true;
+    }
+
+    // Sampled values are collected before anything can read them
+    m_model.evalSample();
+
+    // The 'Input combinational' region updates combinational logic driven from primary inputs
+    {
+        if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop ico");
+        uint32_t icoIterCount = 0;
+        do {
+            checkConvergence(++icoIterCount, "Input combinational",
+                             &VerilatedModel::dumpTriggersIco);
+        } while (m_model.evalIco(icoIterCount == 1));
+        if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop ico
+    }
+
+    // The remaining regions are nested: each iteration of a region's loop
+    // re-runs the loops of all regions that precede it in the scheduling order.
+    if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop react");
+    uint32_t reactIterCount = 0;
+    do {
+        checkConvergence(++reactIterCount, "Reactive", &VerilatedModel::dumpTriggersReact);
+        if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop obs");
+        uint32_t obsIterCount = 0;
+        do {
+            checkConvergence(++obsIterCount, "Observed", &VerilatedModel::dumpTriggersObs);
+            if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop nba");
+            uint32_t nbaIterCount = 0;
+            do {
+                checkConvergence(++nbaIterCount, "NBA", &VerilatedModel::dumpTriggersNba);
+                if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop inact");
+                uint32_t inactIterCount = 0;
+                do {
+                    checkConvergence(++inactIterCount, "Inactive");
+                    if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop act");
+                    uint32_t actIterCount = 0;
+                    do {
+                        checkConvergence(++actIterCount, "Active",
+                                         &VerilatedModel::dumpTriggersAct);
+                    } while (m_model.evalAct());
+                    if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop act
+                } while (m_model.evalInact());
+                if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop inact
+            } while (m_model.evalNba());
+            if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop nba
+        } while (m_model.evalObs());
+        if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop obs
+    } while (m_model.evalReact());
+    if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop react
+
+    // The 'Postponed' region runs once, at the end of the time step
+    m_model.evalPostponed();
+
+    m_model.evalEnd();
+
+    if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // eval
+}
+
+// Template instantiations
+template void VerilatedEvalLoop::evalImpl<false>();
+template void VerilatedEvalLoop::evalImpl<true>();
+
+//===========================================================================
 // VerilatedModel:: Methods
 
 VerilatedModel::VerilatedModel(VerilatedContext& context)

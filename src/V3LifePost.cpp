@@ -130,8 +130,8 @@ class LifePostDlyVisitor final : public VNVisitorConst {
     LocMap m_writes;  // VarScope write locations
     std::vector<Location<AstNodeAssign>> m_assigns;  // Assignments considered for removal
     std::vector<std::unique_ptr<GraphPathChecker>> m_checkers;  // Storage for exec graph checkers
-    const AstCFunc* const m_evalNbap;  // The _eval__nba function
-    bool m_inEvalNba = false;  // Traversing under _eval__nba
+    const AstCFunc* const m_nbaFuncp;  // The 'nba' region entry point
+    bool m_inEvalNba = false;  // Traversing under the 'nba' region entry point
 
     // METHODS
     void squashAssignposts() {
@@ -187,7 +187,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
     // Trace code in the given function
     void trace(AstCFunc* nodep) {
         VL_RESTORER(m_inEvalNba);
-        if (nodep == m_evalNbap) m_inEvalNba = true;
+        if (nodep == m_nbaFuncp) m_inEvalNba = true;
         iterateChildrenConst(nodep);
     }
 
@@ -232,7 +232,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
         // We only try to optimize NBA shadow variables
         if (!nodep->varScopep()->optimizeLifePost()) return;
 
-        // Mark variables referenced outside _eval__nba
+        // Mark variables referenced outside the 'nba' region
         if (!m_inEvalNba) {
             nodep->varScopep()->user1(true);
             return;
@@ -303,7 +303,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
 public:
     // CONSTRUCTORS
     explicit LifePostDlyVisitor(AstNetlist* netlistp)
-        : m_evalNbap{netlistp->evalNbap()} {
+        : m_nbaFuncp{netlistp->evalFuncp(VEval::NBA)} {
         iterateConst(netlistp);
     }
     ~LifePostDlyVisitor() override {

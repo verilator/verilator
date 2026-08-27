@@ -1537,6 +1537,110 @@ constexpr bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs 
 
 // ######################################################################
 
+// Enumeration of the model's evaluation entry points. Fields:
+// is iterated, has triggers, takes 'firstIteration' flag, is slow
+// clang-format off
+#define FOR_EACH_EVAL(macro) \
+    /*    id,        iterated,  hasTrigs, firstIt, slow */ \
+    macro(STATIC,    false,     false,    false,   true) \
+    macro(INITIAL,   false,     false,    false,   true) \
+    macro(STL,       true,      true,     true,    true) \
+    macro(SAMPLE,    false,     false,    false,   false) \
+    macro(ICO,       true,      true,     true,    false) \
+    macro(ACT,       true,      true,     false,   false) \
+    macro(INACT,     true,      false,    false,   false) \
+    macro(NBA,       true,      true,     false,   false) \
+    macro(OBS,       true,      true,     false,   false) \
+    macro(REACT,     true,      true,     false,   false) \
+    macro(POSTPONED, false,     false,    false,   false) \
+    macro(FINAL,     false,     false,    false,   true)
+// clang-format on
+
+class VEval final {
+public:
+    enum en : uint8_t {
+#define VL_EVAL_ID(id, iterated, triggers, first, slow) id,
+        FOR_EACH_EVAL(VL_EVAL_ID)
+#undef VL_EVAL_ID
+            _ENUM_END
+    };
+    enum en m_e;
+
+    const char* ascii() const {
+        static const char* const values[] = {
+#define VL_EVAL_NAME(id, iterated, triggers, first, slow) #id,
+            FOR_EACH_EVAL(VL_EVAL_NAME)
+#undef VL_EVAL_NAME
+                "_ENUM_END"  //
+        };
+        return values[m_e];
+    }
+    bool isIterated() const {
+        static const bool values[] = {
+#define VL_EVAL_IS_ITERATED(id, iterated, triggers, first, slow) iterated,
+            FOR_EACH_EVAL(VL_EVAL_IS_ITERATED)
+#undef VL_EVAL_IS_ITERATED
+                false  //
+        };
+        return values[m_e];
+    }
+    bool hasTriggers() const {
+        static const bool values[] = {
+#define VL_EVAL_HAS_TRIGGERS(id, iterated, triggers, first, slow) triggers,
+            FOR_EACH_EVAL(VL_EVAL_HAS_TRIGGERS)
+#undef VL_EVAL_HAS_TRIGGERS
+                false  //
+        };
+        return values[m_e];
+    }
+    bool firstIteration() const {
+        static const bool values[] = {
+#define VL_EVAL_FIRST(id, iterated, triggers, first, slow) first,
+            FOR_EACH_EVAL(VL_EVAL_FIRST)
+#undef VL_EVAL_FIRST
+                false  //
+        };
+        return values[m_e];
+    }
+    bool slow() const {
+        static const bool values[] = {
+#define VL_EVAL_SLOW(id, iterated, triggers, first, slow) slow,
+            FOR_EACH_EVAL(VL_EVAL_SLOW)
+#undef VL_EVAL_SLOW
+                false  //
+        };
+        return values[m_e];
+    }
+
+    // Short name
+    std::string tag() const { return VString::downcase(ascii()); }
+    // Name of the generated entry point function
+    std::string funcName() const { return "_eval_" + tag(); }
+    // Name of the VerilatedModel virtual method invoking the entry point
+    std::string evalMethod() const { return "eval" + capitalizedTag(); }
+    // Name of the function dumping the triggers of this region
+    std::string dumpTriggersFuncName() const { return "_eval_dump_triggers__" + tag(); }
+    // Name of the VerilatedModel virtual method dumping this region's triggers
+    std::string dumpTriggersMethod() const { return "dumpTriggers" + capitalizedTag(); }
+
+    // cppcheck-suppress noExplicitConstructor
+    VEval(en _e)
+        : m_e{_e} {}
+    explicit VEval(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+
+private:
+    std::string capitalizedTag() const {
+        const std::string name = ascii();
+        return name.substr(0, 1) + VString::downcase(name.substr(1));
+    }
+};
+
+#undef FOR_EACH_EVAL
+
+// ######################################################################
+
 class VFwdType final {
 public:
     enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS, GENERIC_INTERFACE };

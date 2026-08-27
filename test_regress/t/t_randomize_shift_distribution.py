@@ -8,14 +8,10 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import randomize_uniform_common
 
 test.scenarios('simulator')
 
-if not test.have_solver:
-    test.skip("No constraint solver installed")
+SOLUTIONS = list(range(1 << 6))  # value < (1 << m_size), m_size set to 6 at run time
 
-test.compile()
-
-test.execute(all_run_flags=["+verilator+seed+1"])
-
-test.passes()
+randomize_uniform_common.run(test, SOLUTIONS, r'\d+', key=int)
