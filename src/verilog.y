@@ -8166,6 +8166,9 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
         //                      // IEEE says array_identifier here, but dotted accepted in VMM + 1800-2009
         |       yFOREACH '(' idClassSelForeach ')' constraint_set
                         { $$ = new AstConstraintForeach{$1, $3, $5}; }
+        //                      // Non-IEEE extension, soft foreach
+        |       ySOFT yFOREACH '(' idClassSelForeach ')' constraint_set
+                        { $$ = new AstConstraintForeach{$2, $4, $6, true}; }
         //                      // soft is 1800-2012
         |       yDISABLE ySOFT constraint_primary ';'
                         { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $3};

@@ -298,6 +298,12 @@ class LinkParseVisitor final : public VNVisitor {
         v3Global.useRandomizeMethods(true);
         iterateChildren(nodep);
     }
+    void visit(AstConstraintForeach* nodep) override {
+        if (nodep->isSoft()) {
+            nodep->v3warn(NONSTD, "Non-standard soft foreach");
+            nodep->foreach([](AstConstraintExpr* exprp) { exprp->isSoft(true); });
+        }
+    }
     void visit(AstEnumDType* nodep) override {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""

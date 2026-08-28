@@ -1512,6 +1512,10 @@ List Of Warnings
    ``always_ff``/``always_comb`` if the intent is a single specialized
    process.
 
+   Does not warn for static variables used as loop induction variables:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_loopidx.rst
+
 
 .. option:: MULTITOP
 
@@ -2152,6 +2156,9 @@ List Of Warnings
    Results in:
 
    .. include:: ../../docs/gen/ex_SIMILARNAME_msg.rst
+
+   Parameters and localparams are not checked, as they are elaborated away
+   and so cannot reach a downstream tool as a name.
 
    Disabled by default as this is a code-style warning; it will simulate
    correctly.

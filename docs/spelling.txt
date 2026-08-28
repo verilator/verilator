@@ -1001,6 +1001,7 @@ noprivate
 noreturn
 notif
 nullptr
+num
 numactl
 onehot
 ooo

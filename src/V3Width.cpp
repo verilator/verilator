@@ -744,6 +744,22 @@ class WidthVisitor final : public VNVisitor {
         // it's like an if() condition.
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
+    static bool widthCheckSvaValueLimit(AstNode* nodep, const AstConst* constp, const char* what) {
+        // Temporal values can materialize as O(N) AST or state in later passes.
+        // Leave headroom for a range ring's extra slot and V3Number's signed
+        // `(bits + 31) / 32` word count.
+        static constexpr unsigned SVA_VALUE_HARD_LIMIT
+            = static_cast<unsigned>(std::numeric_limits<int>::max()) - 32U;
+        const unsigned configuredLimit = static_cast<unsigned>(v3Global.opt.maxNumWidth());
+        const unsigned limit = std::min(configuredLimit, SVA_VALUE_HARD_LIMIT);
+        if (constp->num().fitsInUInt() && constp->toUInt() <= limit) return true;
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << what << " exceeds implementation limit of "
+                                                     << limit
+                                                     << (configuredLimit <= SVA_VALUE_HARD_LIMIT
+                                                             ? " (--max-num-width)"
+                                                             : " (host arithmetic limit)"));
+        return false;
+    }
     static const AstConst* widthCheckSvaDelayBound(AstDelay* nodep, AstNodeExpr* boundp,
                                                    const char* what) {
         const AstConst* const constp = VN_CAST(boundp, Const);
@@ -752,12 +768,7 @@ class WidthVisitor final : public VNVisitor {
                                    " (IEEE 1800-2023 16.7)");
             return nullptr;
         }
-        if (constp->num().mostSetBitP1() > 31) {
-            nodep->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: SVA cycle delay exceeds implementation limit of 2147483647");
-            return nullptr;
-        }
+        if (!widthCheckSvaValueLimit(nodep, constp, "SVA cycle delay")) return nullptr;
         return constp;
     }
     void visit(AstDelay* nodep) override {
@@ -1046,7 +1057,7 @@ class WidthVisitor final : public VNVisitor {
             if (!streamImplicitUseAllowed(nodep)) {
                 nodep->v3error(
                     "Streaming concatenation cannot be used in an implicitly cast context "
-                    "(IEEE 1800-2023 11.4.17)\n"
+                    "(IEEE 1800-2023 11.4.14)\n"
                     << nodep->warnMore() << "... Suggest use a cast");
             }
             if (!nodep->dtypep()->widthSized()) {
@@ -1577,7 +1588,7 @@ class WidthVisitor final : public VNVisitor {
                 } else if (constp->toSInt() < 1) {
                     constp->v3error("$past tick value must be >= 1 (IEEE 1800-2023 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
-                } else {
+                } else if (widthCheckSvaValueLimit(nodep, constp, "$past tick value")) {
                     if (constp->toSInt() > 10) {
                         constp->v3warn(TICKCOUNT, "$past tick value of "
                                                       << constp->toSInt()
@@ -1668,6 +1679,11 @@ class WidthVisitor final : public VNVisitor {
             if (loConstp && loConstp->toSInt() < 0) {
                 nodep->loBoundp()->v3error("always range low bound must be non-negative"
                                            " (IEEE 1800-2023 16.12.11)");
+            } else if (loConstp) {
+                widthCheckSvaValueLimit(nodep->loBoundp(), loConstp, "always range bound");
+            }
+            if (!hiUnbounded && hiConstp) {
+                widthCheckSvaValueLimit(nodep->hiBoundp(), hiConstp, "always range bound");
             }
             if (!hiUnbounded && loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
                 nodep->hiBoundp()->v3error("always range high bound must be >= low bound"
@@ -1800,13 +1816,6 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstUntil* nodep) override {
-        if (nodep->isStrong()
-            && (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue())) {
-            nodep->v3warn(E_NOTIMING, nodep->verilogKwd() << " requires --timing");
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            return;
-        }
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
@@ -6202,6 +6211,17 @@ class WidthVisitor final : public VNVisitor {
         VL_RESTORER(m_hasSExpr);
         assertAtExpr(nodep);
         if (m_vup->prelim()) {  // First stage evaluation
+            // Only bare strong until uses V3AssertPre's timing-based lowering. Embedded forms
+            // are lowered without timing by V3AssertNfa.
+            AstNode* propp = nodep->propp();
+            while (AstLogNot* const notp = VN_CAST(propp, LogNot)) propp = notp->lhsp();
+            AstUntil* const untilp = VN_CAST(propp, Until);
+            if (untilp && VN_IS(nodep->backp(), NodeCoverOrAssert) && untilp->isStrong()
+                && (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue())) {
+                untilp->v3warn(E_NOTIMING, untilp->verilogKwd() << " requires --timing");
+                untilp->replaceWith(new AstConst{untilp->fileline(), AstConst::BitFalse{}});
+                VL_DO_DANGLING(pushDeletep(untilp), untilp);
+            }
             iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);
             userIterateAndNext(nodep->sensesp(), nullptr);
             if (nodep->disablep()) {
@@ -7009,6 +7029,12 @@ class WidthVisitor final : public VNVisitor {
             }
             // Very much like like an assignment, but which side is LH/RHS
             // depends on pin being a in/output/inout.
+            const VDirection pinDirection = nodep->modVarp()->direction();
+            if (VN_IS(nodep->exprp(), NodeStream) && pinDirection.isInoutOrRef()) {
+                nodep->exprp()->v3error("Streaming concatenation cannot be connected to '"
+                                        << pinDirection.prettyName()
+                                        << "' port (IEEE 1800-2023 11.4.14)");
+            }
             userIterateAndNext(nodep->exprp(), WidthVP{nodep->modVarp()->dtypep(), PRELIM}.p());
             AstNodeDType* modDTypep = nodep->modVarp()->dtypep();
             AstNodeDType* conDTypep = nodep->exprp()->dtypep();
@@ -7021,7 +7047,8 @@ class WidthVisitor final : public VNVisitor {
             const int conwidth = conDTypep->width();
             if (conDTypep == modDTypep  // If match, we're golden
                 || similarDTypeRecurse(conDTypep, modDTypep)) {
-                userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
+                userIterateAndNext(nodep->exprp(),
+                                   WidthVP{subDTypep, FINAL, STREAM_USE_ASSIGN}.p());
             } else if (m_cellp->rangep()) {
                 const int numInsts = m_cellp->rangep()->elementsConst();
                 if (conwidth == modwidth) {
@@ -7042,7 +7069,8 @@ class WidthVisitor final : public VNVisitor {
                                    << " bits. (IEEE 1800-2023 23.3.3)");
                     subDTypep = conDTypep;  // = same expr dtype
                 }
-                userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
+                userIterateAndNext(nodep->exprp(),
+                                   WidthVP{subDTypep, FINAL, STREAM_USE_ASSIGN}.p());
             } else {
                 if (nodep->modVarp()->direction() == VDirection::REF) {
                     nodep->v3error("Ref connection "
