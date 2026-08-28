@@ -3000,8 +3000,21 @@ class ConstraintExprVisitor final : public VNVisitor {
                     continue;
                 }
 
-                if (!varp->user3()) {
+                // A with{}-block's own registration must use the per-instance
+                // m_inlineWrittenVars (fresh for each ConstraintExprVisitor pass), not
+                // the permanent, compile-time-once AstVar::user3() -- otherwise a
+                // unique{} target that isn't itself size-constrained (so the two-phase
+                // solve's manual refresh loop doesn't cover it) never gets write_var'd
+                // again on the second pass, once the class generator copy in between
+                // has dropped its first-pass registration. This mirrors the general
+                // (non-unique) write_var dedup a few hundred lines up, which already
+                // makes exactly this distinction.
+                const bool alreadyWritten
+                    = m_inlineInitTaskp ? m_inlineWrittenVars.count(varp->name()) > 0
+                                        : varp->user3();
+                if (!alreadyWritten) {
                     varp->user3(true);  // Solver owns it; __VBasicRand must not overwrite
+                    if (m_inlineInitTaskp) m_inlineWrittenVars.insert(varp->name());
                     // Convert to C string
                     AstNodeExpr* const varnamep = new AstCExpr{
                         fl, AstCExpr::Pure{}, "\"" + varp->name() + "\"", varp->width()};
