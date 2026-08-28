@@ -20,6 +20,10 @@ test.extract(in_filename=test.top_filename,
              out_filename=test.root + "/docs/gen/ex_MULTIDRIVENPROC_faulty.rst",
              lines="53-54")
 
+test.extract(in_filename=test.top_filename,
+             out_filename=test.root + "/docs/gen/ex_MULTIDRIVENPROC_loopidx.rst",
+             lines="81-89")
+
 test.extract(in_filename=test.golden_filename,
              out_filename=test.root + "/docs/gen/ex_MULTIDRIVENPROC_msg.rst",
              lines="1-5")

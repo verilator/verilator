@@ -1512,6 +1512,10 @@ List Of Warnings
    ``always_ff``/``always_comb`` if the intent is a single specialized
    process.
 
+   Does not warn for static variables used as loop induction variables:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_loopidx.rst
+
 
 .. option:: MULTITOP
 
