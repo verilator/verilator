@@ -109,14 +109,23 @@ class PhasedAllUnsat;
   constraint dep {y > {2'b00, x};}
 endclass
 
-// Two cycling variables share one call, so the draw stays out and the joint
-// solve keeps picking a pair both permutations still allow
+// Two cycling variables keep the joint solve, so this class still shows the
+// unfixed behaviour: no call ever fails
 class TwoRandc;
   randc bit a;
   randc bit b;
   rand bit x;
   constraint pin_x {x == 1;}
   constraint rel {x == (a ^ b);}
+endclass
+
+// A randc member with no constraint never reaches the solver, so the draw still
+// applies to the one that does
+class OneCycling;
+  randc bit [1:0] c;
+  randc bit [1:0] d;
+  rand bit [1:0] x;
+  constraint rel {c < x;}
 endclass
 
 // rand_mode off leaves the randc variable fixed and out of the draw
@@ -139,6 +148,7 @@ module t;
   PhasedUnsat pu;
   PhasedAllUnsat pa;
   TwoRandc two;
+  OneCycling one;
   ModeOff mo;
   int ok;
   int good;
@@ -337,7 +347,7 @@ module t;
     `checkd(fails, 3);
     `checkd(pa.c, 3);
 
-    // TwoRandc: both cycles are honoured by the joint solve, so nothing fails
+    // TwoRandc: the joint solve keeps every call succeeding, as before the fix
     two = new;
     two.srandom(155);
     good = 0;
@@ -352,6 +362,23 @@ module t;
     end
     `checkd(good, 12);
     `checkd(fails, 0);  // zero-ok: the joint solve never picks an infeasible pair
+
+    // OneCycling: an unconstrained randc member is not one the solver cycles,
+    // so c is still drawn ahead of x
+    one = new;
+    one.srandom(11);
+    good = 0;
+    fails = 0;
+    for (int i = 0; i < 12; ++i) begin
+      ok = one.randomize();
+      if (ok == 0)++fails;
+      else begin
+        ++good;
+        `checkd(one.c < one.x, 1'b1);
+      end
+    end
+    `checkd(good, 10);
+    `checkd(fails, 2);
 
     // ModeOff: the randc variable stays fixed and still constrains x
     mo = new;

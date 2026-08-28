@@ -271,7 +271,7 @@ class VlRandomizer VL_NOT_FINAL {
     // Used-value exclusions for the randc variables this call may write,
     // skipping any whose value is already drawn and pinned
     void emitRandcExclusions(std::ostream& os,
-                             const std::map<std::string, std::string>& drawn) const;
+                             const std::map<std::string, std::string>& drawn = {}) const;
     // Record the solved value of every randc variable that was not drawn
     void recordUndrawnValues(const std::map<std::string, std::string>& drawn);
     // True if rand_mode leaves the variable out of this randomize()

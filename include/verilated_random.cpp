@@ -817,7 +817,7 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
         for (const std::string& constraint : m_constraints) {
             if (constraintIsRandcOnly(constraint)) os << "(assert (= #b1 " << constraint << "))\n";
         }
-        emitRandcExclusions(os, {});
+        emitRandcExclusions(os);
         os << "(check-sat)\n";
         const VlSolverStatus status = sess.readStatus();
         if (status != VlSolverStatus::SAT) {
@@ -851,7 +851,7 @@ bool VlRandomizer::tailFeasible(VlSolverSession& sess, const std::vector<std::st
     emitDefines(os);
     emitDeclares(os, false);
     emitAsserts(os, uniqueExprs, false);
-    emitRandcExclusions(os, {});
+    emitRandcExclusions(os);
     // The draw is consumed whatever this answers, so it is not part of the tail
     for (const auto& entry : drawn) {
         os << "(assert (not (= " << entry.first << " " << entry.second << ")))\n";
