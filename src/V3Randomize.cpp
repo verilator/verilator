@@ -82,7 +82,12 @@ static AstVar* getRandModeVarFromClass(AstNodeModule* classp) {
     return nullptr;
 }
 
-// Walk extends chain to find random generator variable (stored in AstClass::user3p).
+// Walk up the extends chain from classp to find the nearest ancestor (starting
+// with classp itself) that has its own persistent VlRandomizer generator
+// variable (stored in AstClass::user3p()). That is normally classp itself, or
+// otherwise the base-most class, since createRandomGenerator() only creates
+// one on a class that owns class-level constraints; a purely-derived class
+// with no constraints of its own has no user3p() and defers to its base.
 static AstVar* getRandomGenerator(AstClass* const classp) {
     if (classp->user3p()) return VN_AS(classp->user3p(), Var);
     if (classp->extendsp()) return getRandomGenerator(classp->extendsp()->classp());
@@ -2903,38 +2908,33 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstConstraintUnique* nodep) override {
         FileLine* const fl = nodep->fileline();
 
-        // For a randomize() with {} inline block (including a class-less
-        // std::randomize() with {}, where m_classp is null), m_inlineInitTaskp/m_genp
-        // point at the call's own per-invocation function/generator, as every other
-        // write_var call site in this visitor already does. Registering there instead
-        // of unconditionally into the class's constructor/persistent generator lets the
-        // registration re-run on every call, seeing the array's current (possibly
-        // just-resolved-this-call) size, rather than freezing it at construction time.
         AstNodeFTask* initTaskp;
         AstVar* genVarp;
+        AstNodeModule* genModp = nullptr;
         if (m_inlineInitTaskp) {
+            // A randomize() with {} inline block's own per-invocation
+            // function/generator, as every other write_var call site in this
+            // visitor already uses. Registering there instead of unconditionally
+            // into the class's constructor/persistent generator lets the
+            // registration re-run on every call, seeing the array's current
+            // (possibly just-resolved-this-call) size, rather than freezing it at
+            // construction time. Its generator is a function-local var referenced
+            // directly, with no module qualifier (genModp stays null).
             initTaskp = m_inlineInitTaskp;
             genVarp = m_genp;
         } else {
             initTaskp = VN_AS(m_memberMap.findMember(m_classp, "new"), NodeFTask);
             genVarp = getRandomGenerator(m_classp);
+            UASSERT_OBJ(genVarp, nodep, "No generator variable");
+            genModp = VN_AS(genVarp->user2p(), NodeModule);
+            UASSERT_OBJ(genModp, nodep, "genVarp has no NodeModule set");
         }
-        UASSERT_OBJ(initTaskp, nodep, "No init Task for unique constraint");
-
+        UASSERT_OBJ(initTaskp, nodep, "Class has no init Task");
         // Every remaining ConstraintExprVisitor construction site passes a non-null
         // genp whenever m_classp is set (class-level: only reached inside
         // `if (genp) {...}` in visit(AstClass*); with{}-block: always a freshly
-        // created local generator var), so genVarp (== m_genp, or the class's
-        // persistent generator as a defensive fallback) can no longer be null here.
+        // created local generator var), so genVarp can no longer be null here.
         UASSERT_OBJ(genVarp, nodep, "No generator variable");
-
-        // genVarp's containing module is only meaningful for a class member (the
-        // persistent, class-level generator). A with{}-block's local generator is a
-        // function-local var referenced directly, with no module qualifier, same as
-        // every other reference to a function-local generator elsewhere in this file.
-        AstNodeModule* const genModp
-            = m_inlineInitTaskp ? nullptr : VN_AS(genVarp->user2p(), NodeModule);
-        UASSERT_OBJ(m_inlineInitTaskp || genModp, nodep, "genVarp has no NodeModule set");
         const auto genVarRefp = [&](VAccess access) -> AstVarRef* {
             return genModp ? new AstVarRef{fl, genModp, genVarp, access}
                            : new AstVarRef{fl, genVarp, access};
@@ -6811,13 +6811,14 @@ class RandomizeVisitor final : public VNVisitor {
         // Arrays that gain a size var from THIS with-block's own inline .size()==expr
         // constraint (as opposed to a class-level one) and are also referenced by a
         // unique{} constraint here; see the m_sizeConstrainedArraysp comment in
-        // ConstraintExprVisitor::visit(AstConstraintUnique).
-        VInsertionSet<AstVar*> inlineSizeArrays;
+        // ConstraintExprVisitor::visit(AstConstraintUnique). Merged below with any
+        // class-level size-constrained arrays.
+        VInsertionSet<AstVar*> allSizeArrays;
         expandUniqueElementList(capturedTreep);
         ConstraintExprVisitor{classp,        m_memberMap,   capturedTreep,
                               randomizeFuncp, localGenp,     randModeVarp,
                               m_writtenVars,  &m_uniqueConstraintId, m_uniqueNames,
-                              nullptr,        &inlineSizeArrays};
+                              nullptr,        &allSizeArrays};
 
         // A with-block touching a size-constrained array (class-level, or made so by
         // its own inline .size()==expr above) needs the same two-phase solve as the
@@ -6826,7 +6827,6 @@ class RandomizeVisitor final : public VNVisitor {
         // final (post-resize) length rather than their pre-solve (usually empty) one.
         FileLine* const fl = nodep->fileline();
         const auto sizeArraysIt = m_sizeConstrainedArrays.find(classp);
-        VInsertionSet<AstVar*> allSizeArrays = inlineSizeArrays;
         if (sizeArraysIt != m_sizeConstrainedArrays.end()) {
             allSizeArrays.insert(sizeArraysIt->second.begin(), sizeArraysIt->second.end());
         }
