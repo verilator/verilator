@@ -84,7 +84,7 @@ class VNIdAllocator final {
     // NODE STATE
     // AstNode::user4p -> size_t. Unique id of the node (0/nullptr if not allocated yet)
 
-    // MEMBE
+    // MEMBERS
     // Claimed lazily on first use TODO: fix conflict with V3Param user4 slot
     std::unique_ptr<VNUser4InUse> m_inuser4p;
     size_t m_nextId = 0;  // Id allocated most recently
