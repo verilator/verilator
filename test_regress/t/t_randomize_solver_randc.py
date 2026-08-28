@@ -26,11 +26,12 @@ test.file_grep(logfile, r'NFAIL=(\d+)', 1)
 # An unreadable answer to that query is not evidence of an exhausted cycle:
 # the call fails and the permutation is left alone.
 logfile = test.obj_dir + '/sim_tail_unknown.log'
-test.execute(logfile=logfile,
-             all_run_flags=['+verilator+wno+unsatconstr+1'],
-             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
-             # Status 15 is the tail query of the third call
-             'TAMPER=unknown_once TAMPER_AT=15 ')
+test.execute(
+    logfile=logfile,
+    all_run_flags=['+verilator+wno+unsatconstr+1'],
+    run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+    # Status 15 is the tail query of the third call
+    'TAMPER=unknown_once TAMPER_AT=15 ')
 test.file_grep(logfile, r'NPASS=(\d+)', 4)
 test.file_grep(logfile, r'NFAIL=(\d+)', 2)
 
