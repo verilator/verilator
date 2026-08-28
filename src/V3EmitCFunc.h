@@ -849,6 +849,27 @@ public:
         }
         puts(")");
     }
+    void visit(AstCFuncHard* nodep) override {
+        putns(nodep, nodep->name());
+        bool comma = false;
+        if (nodep->paramsp()) {
+            puts("<");
+            for (AstNode* subnodep = nodep->paramsp(); subnodep; subnodep = subnodep->nextp()) {
+                if (comma) puts(", ");
+                iterateConst(subnodep);
+                comma = true;
+            }
+            puts(">");
+        }
+        comma = false;
+        puts("(");
+        for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (comma) puts(", ");
+            iterateConst(subnodep);
+            comma = true;
+        }
+        puts(")");
+    }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
     void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
@@ -1797,9 +1818,13 @@ public:
     void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now
         const AstCFunc* const funcp = nodep->funcp();
-        UASSERT_OBJ(funcp->isLoose(), nodep, "Cannot take address of non-loose method");
-        putns(nodep, "&");
-        puts(funcNameProtect(funcp));
+        if (funcp->dpiImportPrototype()) {
+            puts(funcNameProtect(funcp));
+        } else {
+            UASSERT_OBJ(funcp->isLoose(), nodep, "Cannot take address of non-loose method");
+            putns(nodep, "&");
+            puts(funcNameProtect(funcp));
+        }
     }
     void visit(AstConst* nodep) override {  //
         if (m_wideTempRefp && nodep->isWide()) {

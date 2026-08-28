@@ -1,0 +1,4 @@
+                   0: calling dpi_import
+Calling dpi_export
+%Error: t/t_timing_dpi_func_bad.v:22: DPI exported task called from function context
+Aborting...

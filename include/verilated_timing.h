@@ -497,6 +497,8 @@ public:
     // Set the awaiting coroutine as the continuation of the current coroutine
     void await_suspend(std::coroutine_handle<> coro) { m_promisep->m_continuation = coro; }
     void await_resume() const noexcept {}
+    // Set fiber to be resumed when this coroutine completes (for DPI export timing support)
+    void setFiberContinuation(VlCoroutine* coro);
 };
 
 #endif  // Guard

@@ -361,3 +361,14 @@ std::suspend_never VlCoroutine::VlPromise::final_suspend() noexcept {
     }
     return {};
 }
+
+void VlCoroutine::setFiberContinuation(VlCoroutine* coro) {
+    std::coroutine_handle<VlPromise> handle
+        = std::coroutine_handle<VlPromise>::from_promise(*coro->m_promisep);
+    if (VL_UNLIKELY(!m_promisep)) {
+        // Coroutine already completed, continue immediately
+        handle.resume();
+        return;
+    }
+    m_promisep->m_continuation = handle;
+}

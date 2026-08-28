@@ -807,6 +807,65 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
 
 // ######################################################################
 
+class VCFunction final {
+public:
+    // Entries in this table need to match below VCFunction::s_itemData[] table
+    enum en : uint8_t {
+        _NONE,  // Unknown
+        CALL_IMPORT_IN_FIBER,
+        AWAIT_EXPORT_IN_FIBER,
+        CALL_IMPORT_FUNCTION,
+        CALL_IMPORT_TASK,
+        AWAIT_EXPORT_FUNCTION,
+        AWAIT_EXPORT_TASK,
+        _ENUM_MAX  // Leave last
+    };
+
+private:
+    struct Item final {
+        enum en m_e;  // Method's enum mnemonic, for checking
+        const char* m_name;  // Method name, printed into C++
+        bool m_pure;  // Method being called is pure
+    };
+    static Item s_itemData[];
+
+public:
+    enum en m_e;
+    VCFunction()
+        : m_e{_NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCFunction(en _e)
+        : m_e{_e} {}
+    explicit VCFunction(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE { return s_itemData[m_e].m_name; }
+    bool isPure() const VL_PURE { return s_itemData[m_e].m_pure; }
+    static void selfTest();
+};
+constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCFunction& lhs, VCFunction::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCFunction::en lhs, const VCFunction& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
+    return os << rhs.ascii();
+}
+
+// Entries in this table need to match above VCFunction enum table
+//
+// {Mnemonic, C++ function, pure}
+#define V3AST_VCFUNCTION_ITEMDATA_DECL \
+    VCFunction::Item VCFunction::s_itemData[] \
+        = {{_NONE, "_none", false}, \
+           {CALL_IMPORT_IN_FIBER, "VerilatedDpi::callImportFiber", false}, \
+           {AWAIT_EXPORT_IN_FIBER, "VerilatedDpi::awaitExportFiber", false}, \
+           {CALL_IMPORT_FUNCTION, "VerilatedDpi::callImportFunction", false}, \
+           {CALL_IMPORT_TASK, "VerilatedDpi::callImportTask", false}, \
+           {AWAIT_EXPORT_FUNCTION, "VerilatedDpi::awaitExportFunction", false}, \
+           {AWAIT_EXPORT_TASK, "VerilatedDpi::awaitExportTask", false}, \
+           {_ENUM_MAX, "_ENUM_MAX", false}};
+
 class VCMethod final {
 public:
     // Entries in this table need to match below VCMethod::s_itemData[] table
@@ -1960,6 +2019,11 @@ public:
     class VlSyms {};  // for creator type-overload selection
     VSelfPointerText(VlSyms, const string& field)
         : m_strp{std::make_shared<const string>("(&vlSymsp->" + field + ')')} {}
+    class VlSymsDpi {};
+    VSelfPointerText(VlSymsDpi, const string& symClassName, const string& field)
+        : m_strp{std::make_shared<const string>("(&((" + symClassName + "*)"
+                                                + "(Verilated::dpiScope()->symsp()))" + "->"
+                                                + field + ")")} {}
 
     // METHODS
     bool isEmpty() const { return m_strp == s_emptyp; }

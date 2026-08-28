@@ -803,6 +803,89 @@ In forked processes, references to local variables are only allowed in
 ``fork..join``, as this is the only case that ensures the lifetime of these
 locals are at least as long as the execution of the forked processes.
 
+DPI with timing
+~~~~~~~~~~~~~~~
+
+IEEE 1800-2023 section 35.5.1.5 states that imported tasks can suspend the
+current thread by calling an exported task with SystemVerilog timing
+constructs.
+
+Verilator supports DPI exported tasks with timing constructs by spawning a
+fiber (userspace thread) with a new call stack. Fibers allow context
+switching so simulation can progress while the fiber waits for an event to
+occur.
+
+The fiber implementation is present in ``verilated_fiber.cpp`` and
+``verilated_fiber.h``.
+
+Below is an explanation of the introduced classes and structures.
+
+``VlFiber``
++++++++++++
+
+Main class encapsulating the fiber state. It should be constructed using
+``VlFiber::create()`` by passing a function to be executed inside a fiber.
+
+It implements the following key functions:
+
+- ``resume()`` - Resumes execution of the function passed during
+  ``VlFiber::create()``. Resuming the same fiber restores the context at
+  the callsite of the last ``yield()`` call and jumps there.
+- ``yield()`` - Returns execution to the previous call of ``resume()``.
+
+Calling ``yield()`` before ``resume()`` is undefined.
+
+``VlFiberContext``
+++++++++++++++++++
+
+This class represents the abstracted context for the ``VlFiber`` class. It
+implements the following operations using platform-dependent APIs:
+
+- ``start()`` - Bootstraps the fiber, called only once.
+- ``resume()`` - Continues where the previous ``yield()`` occurred.
+- ``yield()`` - Returns execution back to the previous ``resume()``
+  invocation.
+- ``end()`` - Similar to ``resume()``, but intended to finalize fiber
+  execution.
+
+No operations shall be performed on the fiber after ``end()`` is called.
+
+Currently, **only** \*nix systems with an implementation of ``ucontext.h``
+are supported.
+
+``VlFiberMemoryPool``
++++++++++++++++++++++
+
+Manages a memory pool for stack allocation for fibers. It is used to
+optimize the number of memory map/unmap syscalls. It implements the
+following functions:
+
+- ``get()`` - Gets the base of an allocated stack with predefined size
+  ``allocationSize``.
+- ``free(void* ptr)`` - Frees the stack back into the pool.
+
+``VlFiberMemoryChunk``
+++++++++++++++++++++++
+
+Represents a single contiguous memory chunk from which the memory pool
+allocator allocates stacks.
+
+Calling and awaiting tasks with fibers
+++++++++++++++++++++++++++++++++++++++
+
+Functions ``callImportFiber()`` and ``awaitExportFiber()`` implemented
+inside ``verilated_dpi.h`` are emitted by Verilator to call an imported DPI
+task and await an exported task that might suspend. Those functions utilize
+fibers to save the call stack of a foreign function call and jump back to
+the simulation event loop when a timing control is encountered.
+
+The ``callImportFiber()`` function creates a new fiber and calls the DPI
+imported function, forwarding all of the arguments. If the DPI import
+called an exported task with timing constructs, the call goes through
+``awaitExportFiber()``, which calls the exported task and yields on the
+first delay or event that occurs. Control is then passed back to the most
+recent ``callImportFiber()``, which allows the event loop to continue by
+calling ``co_await`` on ``FiberAwaitable``.
 
 Multithreaded Mode
 ------------------
