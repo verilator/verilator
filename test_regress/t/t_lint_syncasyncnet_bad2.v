@@ -6,7 +6,8 @@
 
 module t (
   input clk_i,
-  input rst_ni
+  input rst_ni,
+  output reg out
 );
 /* verilator no_inline_module */
 // no-inline to root module
@@ -17,4 +18,7 @@ module t (
     end
   end
   NextStateCheck: assert property (@(posedge clk_i) rst_ni);
+  always_ff @(posedge clk_i) begin
+    out <= (rst_ni) ? 0 : 1;
+  end
 endmodule
