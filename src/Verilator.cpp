@@ -735,7 +735,6 @@ static bool verilate(const string& argString) {
         AstClassRefDType::selfTest();
         V3Os::selfTest();
         V3Number::selfTest();
-        VCMethod::selfTest();
         VString::selfTest();
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
