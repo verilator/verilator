@@ -926,7 +926,7 @@ void EmitCSyms::emitSymHdr() {
         }
     }
     if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
-    puts("bool __Vm_didInit = false;\n");
+    puts("bool& __Vm_didInit;\n");
 
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
@@ -1481,6 +1481,7 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
     puts("    : VerilatedSyms{contextp}\n");
     puts("    // Setup internal state of the Syms class\n");
     puts("    , __Vm_modelp{modelp}\n");
+    puts("    , __Vm_didInit{modelp->m_didInit}\n");
     if (v3Global.opt.mtasks()) {
         puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp())}\n");
     }

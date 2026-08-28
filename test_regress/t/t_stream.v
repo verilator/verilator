@@ -212,6 +212,19 @@ module t (
     dout_rhs_ls_q_37_4 = {<<4{din_q[36:0]}};  // FAST
   end
 
+  // Stream operator in module port connections (input and output pins)
+  logic [31:0] dout_pin_lr;  // Left-stream on input pin, right-stream on output pin
+  logic [31:0] dout_pin_rl;  // Right-stream on input pin, left-stream on output pin
+
+  t_stream_pass pin_lr (
+      .din ({<<{din_i}}),
+      .dout({>>{dout_pin_lr}})
+  );
+  t_stream_pass pin_rl (
+      .din ({>>{din_i}}),
+      .dout({<<{dout_pin_rl}})
+  );
+
   always @(posedge clk) begin
     if (cyc != 0) begin
       cyc <= cyc + 1;
@@ -257,6 +270,9 @@ module t (
 
         if (dout_rhs_ls_q_37_3 != 37'h04_00_00_00_00) $stop;
         if (dout_rhs_ls_q_37_4 != 37'h02_00_00_00_00) $stop;
+
+        if (dout_pin_lr != 32'h80_00_00_00) $stop;
+        if (dout_pin_rl != 32'h80_00_00_00) $stop;
       end
       if (cyc == 3) begin
         // The values below test the strange shift-merge done at the end of
@@ -292,6 +308,9 @@ module t (
 
         if (dout_rhs_ls_q_37_3 != 37'h04_02_30_10_44) $stop;
         if (dout_rhs_ls_q_37_4 != 37'h02_04_06_08_0a) $stop;
+
+        if (dout_pin_lr != 32'h80_40_c0_20) $stop;
+        if (dout_pin_rl != 32'h80_40_c0_20) $stop;
       end
       if (cyc == 4) begin
         if (dout_rhs_ls_i_23_3 != 23'h7f_ff_ff) $stop;
@@ -307,4 +326,11 @@ module t (
     end
   end
 
+endmodule
+
+module t_stream_pass (
+    input  logic [31:0] din,
+    output logic [31:0] dout
+);
+  assign dout = din;
 endmodule

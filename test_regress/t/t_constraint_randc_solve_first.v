@@ -187,7 +187,6 @@ module t;
         end
       end
     end
-    `checkd(good + fails, 12);
     `checkd(count[3], 0);  // zero-ok: c == 3 satisfies no x
     `checkd(good, 10);
     `checkd(fails, 2);
@@ -206,7 +205,6 @@ module t;
         `checkd(ob.x, 1);
       end
     end
-    `checkd(good + fails, 10);
     `checkd(good, 7);
     `checkd(fails, 3);
 
@@ -239,7 +237,6 @@ module t;
         `checkd(en.color < en.limit, 1'b1);
       end
     end
-    `checkd(good + fails, 15);
     `checkd(good, 7);
     `checkd(fails, 8);
 
@@ -271,7 +268,6 @@ module t;
         `checkd(ph.y > {2'b00, ph.x}, 1'b1);
       end
     end
-    `checkd(good + fails, 12);
     `checkd(good, 10);
     `checkd(fails, 2);
 
@@ -288,7 +284,6 @@ module t;
         `checkd(tp.s.c < tp.x, 1'b1);
       end
     end
-    `checkd(good + fails, 12);
     `checkd(good, 9);
     `checkd(fails, 3);
 

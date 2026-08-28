@@ -8,9 +8,10 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import randomize_uniform_common
 
-test.scenarios('linter')
+test.scenarios('simulator')
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+SOLUTIONS = [i for i in range(256) if bin(i).count('1') == 4]  # C(8,4) = 70
 
-test.passes()
+randomize_uniform_common.run(test, SOLUTIONS, r'\d+', key=int)

@@ -1057,7 +1057,7 @@ class WidthVisitor final : public VNVisitor {
             if (!streamImplicitUseAllowed(nodep)) {
                 nodep->v3error(
                     "Streaming concatenation cannot be used in an implicitly cast context "
-                    "(IEEE 1800-2023 11.4.17)\n"
+                    "(IEEE 1800-2023 11.4.14)\n"
                     << nodep->warnMore() << "... Suggest use a cast");
             }
             if (!nodep->dtypep()->widthSized()) {
@@ -7029,6 +7029,12 @@ class WidthVisitor final : public VNVisitor {
             }
             // Very much like like an assignment, but which side is LH/RHS
             // depends on pin being a in/output/inout.
+            const VDirection pinDirection = nodep->modVarp()->direction();
+            if (VN_IS(nodep->exprp(), NodeStream) && pinDirection.isInoutOrRef()) {
+                nodep->exprp()->v3error("Streaming concatenation cannot be connected to '"
+                                        << pinDirection.prettyName()
+                                        << "' port (IEEE 1800-2023 11.4.14)");
+            }
             userIterateAndNext(nodep->exprp(), WidthVP{nodep->modVarp()->dtypep(), PRELIM}.p());
             AstNodeDType* modDTypep = nodep->modVarp()->dtypep();
             AstNodeDType* conDTypep = nodep->exprp()->dtypep();
@@ -7041,7 +7047,8 @@ class WidthVisitor final : public VNVisitor {
             const int conwidth = conDTypep->width();
             if (conDTypep == modDTypep  // If match, we're golden
                 || similarDTypeRecurse(conDTypep, modDTypep)) {
-                userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
+                userIterateAndNext(nodep->exprp(),
+                                   WidthVP{subDTypep, FINAL, STREAM_USE_ASSIGN}.p());
             } else if (m_cellp->rangep()) {
                 const int numInsts = m_cellp->rangep()->elementsConst();
                 if (conwidth == modwidth) {
@@ -7062,7 +7069,8 @@ class WidthVisitor final : public VNVisitor {
                                    << " bits. (IEEE 1800-2023 23.3.3)");
                     subDTypep = conDTypep;  // = same expr dtype
                 }
-                userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
+                userIterateAndNext(nodep->exprp(),
+                                   WidthVP{subDTypep, FINAL, STREAM_USE_ASSIGN}.p());
             } else {
                 if (nodep->modVarp()->direction() == VDirection::REF) {
                     nodep->v3error("Ref connection "
