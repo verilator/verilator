@@ -9,8 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt_all')
 
+# Verilator only: the pinned counts are one permutation order out of many that
+# the semantics allow, so another simulator legitimately produces different ones.
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
