@@ -15,7 +15,7 @@ module top;
 
   always @(posedge clk) begin
     cyc <= cyc + 10'd1;  // Intentional width warning
-    $display("%8t %1d", $time, cyc);
+    $display("[%0t] %1d", $time, cyc);
     if (cyc == 3'd7) begin  // Intentional width warning
       $write("*-* All Finished *-*\n");
       $finish;

@@ -41,7 +41,7 @@ module t;
     $assertcontrol(5, 1, 1);
     $asserton;
 
-    $display("%t: finish", $time);
+    $display("[%0t] finish", $time);
     $write("*-* All Finished *-*\n");
     $finish;
   end
