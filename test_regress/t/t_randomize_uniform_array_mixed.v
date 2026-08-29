@@ -20,8 +20,11 @@ module t;
     rand bit [2:0] arr[2];
     rand bit sel;
     constraint c {
-      if (sel) { arr[0] > arr[1]; }
-      else { arr[0] <= arr[1]; }
+      if (sel) {
+        arr[0] > arr[1];
+      } else {
+        arr[0] <= arr[1];
+      }
     }
   endclass
 
