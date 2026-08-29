@@ -837,8 +837,8 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
         os << "(get-value (";
         for (const auto& name : names) os << name << " ";
         os << "))\n";
-        // A short reply would leave a randc variable unpinned and solved jointly
-        const bool got = readPhaseValues(sess, drawnr) && drawnr.size() == names.size();
+        // A reply not naming the drawn variable would leave it unpinned and solved jointly
+        const bool got = readPhaseValues(sess, drawnr) && drawnr.count(names.front());
         os << "(reset)\n";
         return got;
     }

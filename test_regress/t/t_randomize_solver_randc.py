@@ -16,23 +16,33 @@ if not test.have_solver:
 
 test.compile()
 
-# The third call draws a value admitting no x; the fifteenth status answers the
-# query asking whether any value left in the cycle still does.
-logfile = test.obj_dir + '/sim_plain.log'
-test.execute(logfile=logfile, all_run_flags=['+verilator+wno+unsatconstr+1'])
-test.file_grep(logfile, r'NPASS=(\d+)', 5)
-test.file_grep(logfile, r'NFAIL=(\d+)', 1)
+SOLVER = 'VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" '
 
-# An unreadable answer to that query is not evidence of an exhausted cycle:
-# the call fails and the permutation is left alone.
-logfile = test.obj_dir + '/sim_tail_unknown.log'
-test.execute(
-    logfile=logfile,
-    all_run_flags=['+verilator+wno+unsatconstr+1'],
-    run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
-    # Status 15 is the tail query of the third call
-    'TAMPER=unknown_once TAMPER_AT=15 ')
-test.file_grep(logfile, r'NPASS=(\d+)', 4)
-test.file_grep(logfile, r'NFAIL=(\d+)', 2)
+
+def run(name, npass, nfail, tamper=None, phased=False):
+    logfile = test.obj_dir + '/sim_' + name + '.log'
+    flags = ['+verilator+wno+unsatconstr+1']
+    if phased:
+        flags.append('+PHASED')
+    test.execute(logfile=logfile,
+                 all_run_flags=flags,
+                 run_env=(SOLVER + tamper + ' ') if tamper else '')
+    test.file_grep(logfile, r'NPASS=(\d+)', npass)
+    test.file_grep(logfile, r'NFAIL=(\d+)', nfail)
+
+
+# A cyclic value that no x admits fails the call; the rest of the cycle recovers
+run('plain', 5, 1)
+
+# Every reply the draw and the tail depend on, answered unusably. None may be
+# read as an exhausted cycle: the call fails and the permutation is left alone.
+run('draw_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=2')  # draw check-sat
+run('draw_error', 4, 2, 'TAMPER=err_reply TAMPER_AT=1')  # draw get-value
+run('draw_short', 4, 2, 'TAMPER=short_model TAMPER_AT=1')  # reply names another var
+run('tail_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=15')  # flat tail check-sat
+
+# Same through the solve...before layers
+run('phased_plain', 10, 2, phased=True)
+run('phased_tail_unknown', 9, 3, 'TAMPER=unknown_once TAMPER_AT=34', phased=True)
 
 test.passes()
