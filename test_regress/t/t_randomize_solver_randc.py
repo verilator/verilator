@@ -19,11 +19,11 @@ test.compile()
 SOLVER = 'VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" '
 
 
-def run(name, npass, nfail, tamper=None, phased=False):
+def run_case(name, npass, nfail, tamper=None, mode=None):
     logfile = test.obj_dir + '/sim_' + name + '.log'
     flags = ['+verilator+wno+unsatconstr+1']
-    if phased:
-        flags.append('+PHASED')
+    if mode:
+        flags.append('+MODE=' + mode)
     test.execute(logfile=logfile,
                  all_run_flags=flags,
                  run_env=(SOLVER + tamper + ' ') if tamper else '')
@@ -32,17 +32,20 @@ def run(name, npass, nfail, tamper=None, phased=False):
 
 
 # A cyclic value that no x admits fails the call; the rest of the cycle recovers
-run('plain', 5, 1)
+run_case('plain', 5, 1)
 
 # Every reply the draw and the tail depend on, answered unusably. None may be
 # read as an exhausted cycle: the call fails and the permutation is left alone.
-run('draw_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=2')  # draw check-sat
-run('draw_error', 4, 2, 'TAMPER=err_reply TAMPER_AT=1')  # draw get-value
-run('draw_short', 4, 2, 'TAMPER=short_model TAMPER_AT=1')  # reply names another var
-run('tail_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=15')  # flat tail check-sat
+run_case('draw_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=2')  # draw check-sat
+run_case('draw_error', 4, 2, 'TAMPER=err_reply TAMPER_AT=1')  # draw get-value
+run_case('draw_short', 4, 2, 'TAMPER=short_model TAMPER_AT=1')  # reply names another var
+run_case('tail_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=15')  # flat tail check-sat
 
 # Same through the solve...before layers
-run('phased_plain', 10, 2, phased=True)
-run('phased_tail_unknown', 9, 3, 'TAMPER=unknown_once TAMPER_AT=34', phased=True)
+run_case('phased_plain', 10, 2, mode='phased')
+run_case('phased_tail_unknown', 9, 3, 'TAMPER=unknown_once TAMPER_AT=34', mode='phased')
+
+# Two cycling variables keep the joint solve, so no call fails
+run_case('two_randc', 12, 0, mode='two')
 
 test.passes()

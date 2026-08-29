@@ -754,20 +754,12 @@ void VlRandomizer::activeRandcVars(std::vector<std::string>& namesr) const {
     }
 }
 
-static bool isSmtDelim(char c) { return c == ' ' || c == '(' || c == ')'; }
-
-bool VlRandomizer::constraintIsRandcOnly(const std::string& constraint) const {
-    size_t i = 0;
-    const size_t n = constraint.size();
-    while (i < n) {
-        while (i < n && isSmtDelim(constraint[i])) ++i;
-        size_t j = i;
-        while (j < n && !isSmtDelim(constraint[j])) ++j;
-        if (j > i) {
-            const std::string tok = constraint.substr(i, j - i);
-            if (m_vars.count(tok) && !m_randcVarNames.count(tok)) return false;
-        }
-        i = j;
+bool VlRandomizer::constraintIsRandcOnly(const std::vector<std::string>& varNames) const {
+    if (varNames.empty()) return false;
+    for (const std::string& name : varNames) {
+        if (m_randcVarNames.count(name)) continue;
+        const auto it = m_vars.find(name);
+        if (it == m_vars.end() || !isFrozenVar(name, *it->second)) return false;
     }
     return true;
 }
@@ -815,8 +807,9 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
             os << ")\n";
         }
         // Only constraints evaluable at randc-solve time filter the cycle domain
-        for (const std::string& constraint : m_constraints) {
-            if (constraintIsRandcOnly(constraint)) os << "(assert (= #b1 " << constraint << "))\n";
+        for (size_t n = 0; n < m_constraints.size(); ++n) {
+            if (!constraintIsRandcOnly(m_constraintVars[n])) continue;
+            os << "(assert (= #b1 " << m_constraints[n] << "))\n";
         }
         emitRandcExclusions(os);
         os << "(check-sat)\n";
@@ -833,7 +826,9 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
             reportUnsatSetup(sess, uniqueExprs);
             return false;
         }
-        solveAssumingPins(sess, emitDiversityPins(os, rngr, names), false);
+        int npins = 0;
+        emitDiversityPins(os, rngr, *m_vars.at(names.front()), npins);
+        solveAssumingPins(sess, npins, false);
         os << "(get-value (";
         for (const auto& name : names) os << name << " ";
         os << "))\n";
@@ -1375,23 +1370,18 @@ void VlRandomizer::solveDiversity(VlRNG& rngr, VlSolverSession& sess,
     }
 }
 
-int VlRandomizer::emitDiversityPins(std::ostream& os, VlRNG& rngr,
-                                    const std::vector<std::string>& names) const {
+void VlRandomizer::emitDiversityPins(std::ostream& os, VlRNG& rngr, const VlRandomVar& var,
+                                     int& npinsr) const {
     // Tie each free bit to a random target via an assumption literal
-    int npins = 0;
-    for (const auto& name : names) {
-        const VlRandomVar& var = *m_vars.at(name);
-        const int w = var.totalWidth();
-        for (int b = 0; b < w; ++b) {
-            const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
-            os << "(declare-fun a" << npins << " () Bool)\n";
-            os << "(assert (= a" << npins << " (=";
-            var.emitExtract(os, b);
-            os << " #b" << (target ? '1' : '0') << ")))\n";
-            ++npins;
-        }
+    const int w = var.totalWidth();
+    for (int b = 0; b < w; ++b) {
+        const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
+        os << "(declare-fun a" << npinsr << " () Bool)\n";
+        os << "(assert (= a" << npinsr << " (=";
+        var.emitExtract(os, b);
+        os << " #b" << (target ? '1' : '0') << ")))\n";
+        ++npinsr;
     }
-    return npins;
 }
 
 void VlRandomizer::solveAssumingPins(VlSolverSession& sess, int npins, bool applyToVars)
@@ -1430,11 +1420,10 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess,
                                       const std::map<std::string, std::string>& pinned)
     VL_REQUIRES(sess.m_mutex) {
     // A pinned variable has no free bit left to steer
-    std::vector<std::string> names;
+    int npins = 0;
     for (const auto& var : m_vars) {
-        if (!pinned.count(var.first)) names.push_back(var.first);
+        if (!pinned.count(var.first)) emitDiversityPins(sess.os(), rngr, *var.second, npins);
     }
-    const int npins = emitDiversityPins(sess.os(), rngr, names);
     if (npins) solveAssumingPins(sess, npins, true);
 }
 
@@ -1686,9 +1675,15 @@ bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
     return true;
 }
 
-void VlRandomizer::hard(std::string&& constraint, const char* filename, uint32_t linenum,
-                        const char* source) {
+void VlRandomizer::hard(std::string&& constraint, std::initializer_list<const char*> varNames,
+                        const char* filename, uint32_t linenum, const char* source) {
     m_constraints.emplace_back(std::move(constraint));
+    // The names only serve the randc draw
+    if (m_randcVarNames.empty()) {
+        m_constraintVars.emplace_back();
+    } else {
+        m_constraintVars.emplace_back(varNames.begin(), varNames.end());
+    }
     // Format constraint location: "filename:linenum   source"
     if (filename[0] != '\0' || source[0] != '\0') {
         std::string line;
@@ -1717,6 +1712,7 @@ void VlRandomizer::disable_soft(const std::string& varName) {
 
 void VlRandomizer::clearConstraints() {
     m_constraints.clear();
+    m_constraintVars.clear();
     m_constraints_line.clear();
     m_solveBefore.clear();
     m_softConstraints.clear();
@@ -1726,6 +1722,7 @@ void VlRandomizer::clearConstraints() {
 
 void VlRandomizer::clearAll() {
     m_constraints.clear();
+    m_constraintVars.clear();
     m_softConstraints.clear();
     m_vars.clear();
     m_randcVarNames.clear();

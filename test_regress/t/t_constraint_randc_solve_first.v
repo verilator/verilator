@@ -16,7 +16,7 @@ class Flat;
   constraint rel_c {c < x;}
 endclass
 
-// Two-value domain, one feasible: the failing draw is consumed
+// Two-value domain, one feasible
 class OneBit;
   randc bit c;
   rand bit x;
@@ -109,18 +109,7 @@ class PhasedAllUnsat;
   constraint dep {y > {2'b00, x};}
 endclass
 
-// Two cycling variables keep the joint solve, so this class still shows the
-// unfixed behaviour: no call ever fails
-class TwoRandc;
-  randc bit a;
-  randc bit b;
-  rand bit x;
-  constraint pin_x {x == 1;}
-  constraint rel {x == (a ^ b);}
-endclass
-
-// A randc member with no constraint never reaches the solver, so the draw still
-// applies to the one that does
+// A randc member with no constraint leaves the constrained one cycling as before
 class OneCycling;
   randc bit [1:0] c;
   randc bit [1:0] d;
@@ -135,6 +124,35 @@ class ModeOff;
   constraint rel {c < x;}
 endclass
 
+// rand_mode off on the rand side turns the relation into a filter on the randc domain
+class ModeOffRand;
+  randc bit [1:0] c;
+  rand bit [1:0] x;
+  constraint rel {c < x;}
+endclass
+
+// A state variable in the relation only bounds the randc domain
+class StateBound;
+  randc bit [1:0] c;
+  bit [1:0] lim;
+  constraint rel {c < lim;}
+  constraint guard {lim != 0;}
+endclass
+
+// A class handle array element in the relation: the same cycles through a dynamic path
+class Item;
+  rand bit [1:0] v;
+endclass
+
+class ArrayRel;
+  randc bit [1:0] c;
+  rand Item items[2];
+  constraint rel {c < items[0].v;}
+  function new;
+    foreach (items[i]) items[i] = new;
+  endfunction
+endclass
+
 module t;
   Flat f;
   OneBit ob;
@@ -147,32 +165,37 @@ module t;
   RandcUnsat ru;
   PhasedUnsat pu;
   PhasedAllUnsat pa;
-  TwoRandc two;
   OneCycling one;
   ModeOff mo;
+  ModeOffRand mr;
+  StateBound sb;
+  ArrayRel ar;
   int ok;
   int good;
   int fails;
   bit [3:0] seen;
   bit [15:0] seenHex;
-  int count[4];
+  int fcount[4];
+  int ecount[5];
+  int pcount[4];
+  int tcount[4];
+  int ocount[4];
+  int acount[4];
   bit [1:0] prevc;
   bit [1:0] prevx;
 
   initial begin
-    // Flat: successes satisfy the relation, c == 3 never succeeds, and a
-    // failed call leaves both variables at their previous values
+    // Flat: three cycles of the three feasible values; c == 3 never succeeds
+    // and a failed call leaves both variables at their previous values
     f = new;
     f.srandom(11);
     good = 0;
-    fails = 0;
     seen = 4'b0;
-    for (int i = 0; i < 12; ++i) begin
+    for (int i = 0; i < 16 && good < 9; ++i) begin
       prevc = f.c;
       prevx = f.x;
       ok = f.randomize();
       if (ok == 0) begin
-        ++fails;
         `checkd(f.c, prevc);
         `checkd(f.x, prevx);
       end
@@ -180,33 +203,30 @@ module t;
         ++good;
         `checkd(f.c < f.x, 1'b1);
         seen[f.c] = 1'b1;
-        ++count[f.c];
+        ++fcount[f.c];
         if (good % 3 == 0) begin
           `checkd(seen, 4'b0111);
           seen = 4'b0;
         end
       end
     end
-    `checkd(count[3], 0);  // zero-ok: c == 3 satisfies no x
-    `checkd(good, 10);
-    `checkd(fails, 2);
+    `checkd(good, 9);
+    for (int v = 0; v < 3; ++v) `checkd(fcount[v], 3);
+    `checkd(fcount[3], 0);  // zero-ok: c == 3 satisfies no x
 
     // OneBit: only c == 0 admits x
     ob = new;
     ob.srandom(22);
     good = 0;
-    fails = 0;
-    for (int i = 0; i < 10; ++i) begin
+    for (int i = 0; i < 12 && good < 4; ++i) begin
       ok = ob.randomize();
-      if (ok == 0)++fails;
-      else begin
+      if (ok == 1) begin
         ++good;
         `checkd(ob.c, 0);  // zero-ok: sole feasible randc value
         `checkd(ob.x, 1);
       end
     end
-    `checkd(good, 7);
-    `checkd(fails, 3);
+    `checkd(good, 4);
 
     // RandcOnly: filtered three-value cycles, every call succeeds
     ro = new;
@@ -224,21 +244,22 @@ module t;
       end
     end
 
-    // Enumc: members only; BLUE/WHITE/BLACK admit no limit
+    // Enumc: members only; BLUE, WHITE and BLACK admit no limit
     en = new;
     en.srandom(44);
     good = 0;
-    fails = 0;
-    for (int i = 0; i < 15; ++i) begin
+    for (int i = 0; i < 24 && good < 6; ++i) begin
       ok = en.randomize();
-      if (ok == 0)++fails;
-      else begin
+      if (ok == 1) begin
         ++good;
         `checkd(en.color < en.limit, 1'b1);
+        ++ecount[int'(en.color)];
       end
     end
-    `checkd(good, 7);
-    `checkd(fails, 8);
+    `checkd(good, 6);
+    `checkd(ecount[0], 3);
+    `checkd(ecount[1], 3);
+    for (int v = 2; v < 5; ++v) `checkd(ecount[v], 0);  // zero-ok: no limit above them
 
     // AllUnsat: every call fails and reports; values are retained
     au = new;
@@ -254,38 +275,38 @@ module t;
     `checkd(au.c, 2);
     `checkd(au.x, 1);
 
-    // Phased: the same failure semantics through solve...before layers
+    // Phased: the same cycles through solve...before layers
     ph = new;
     ph.srandom(60);
     good = 0;
-    fails = 0;
-    for (int i = 0; i < 12; ++i) begin
+    for (int i = 0; i < 16 && good < 9; ++i) begin
       ok = ph.randomize();
-      if (ok == 0)++fails;
-      else begin
+      if (ok == 1) begin
         ++good;
         `checkd(ph.c < ph.x, 1'b1);
         `checkd(ph.y > {2'b00, ph.x}, 1'b1);
-      end
-    end
-    `checkd(good, 10);
-    `checkd(fails, 2);
-
-    // Top: dotted-path randc drawn first, same rule through a global constraint
-    tp = new;
-    tp.srandom(77);
-    good = 0;
-    fails = 0;
-    for (int i = 0; i < 12; ++i) begin
-      ok = tp.randomize();
-      if (ok == 0)++fails;
-      else begin
-        ++good;
-        `checkd(tp.s.c < tp.x, 1'b1);
+        ++pcount[ph.c];
       end
     end
     `checkd(good, 9);
-    `checkd(fails, 3);
+    for (int v = 0; v < 3; ++v) `checkd(pcount[v], 3);
+    `checkd(pcount[3], 0);  // zero-ok: c == 3 satisfies no x
+
+    // Top: dotted-path randc, the same cycles through a global constraint
+    tp = new;
+    tp.srandom(77);
+    good = 0;
+    for (int i = 0; i < 16 && good < 9; ++i) begin
+      ok = tp.randomize();
+      if (ok == 1) begin
+        ++good;
+        `checkd(tp.s.c < tp.x, 1'b1);
+        ++tcount[tp.s.c];
+      end
+    end
+    `checkd(good, 9);
+    for (int v = 0; v < 3; ++v) `checkd(tcount[v], 3);
+    `checkd(tcount[3], 0);  // zero-ok: s.c == 3 satisfies no x
 
     // RandcHex: 12-value domain, one full cycle, every call succeeds
     rh = new;
@@ -342,38 +363,21 @@ module t;
     `checkd(fails, 3);
     `checkd(pa.c, 3);
 
-    // TwoRandc: the joint solve keeps every call succeeding, as before the fix
-    two = new;
-    two.srandom(155);
-    good = 0;
-    fails = 0;
-    for (int i = 0; i < 12; ++i) begin
-      ok = two.randomize();
-      if (ok == 0)++fails;
-      else begin
-        ++good;
-        `checkd(two.a ^ two.b, 1'b1);
-      end
-    end
-    `checkd(good, 12);
-    `checkd(fails, 0);  // zero-ok: the joint solve never picks an infeasible pair
-
-    // OneCycling: an unconstrained randc member is not one the solver cycles,
-    // so c is still drawn ahead of x
+    // OneCycling: the unconstrained randc member does not disturb c's cycles
     one = new;
     one.srandom(11);
     good = 0;
-    fails = 0;
-    for (int i = 0; i < 12; ++i) begin
+    for (int i = 0; i < 16 && good < 9; ++i) begin
       ok = one.randomize();
-      if (ok == 0)++fails;
-      else begin
+      if (ok == 1) begin
         ++good;
         `checkd(one.c < one.x, 1'b1);
+        ++ocount[one.c];
       end
     end
-    `checkd(good, 10);
-    `checkd(fails, 2);
+    `checkd(good, 9);
+    for (int v = 0; v < 3; ++v) `checkd(ocount[v], 3);
+    `checkd(ocount[3], 0);  // zero-ok: c == 3 satisfies no x
 
     // ModeOff: the randc variable stays fixed and still constrains x
     mo = new;
@@ -393,6 +397,55 @@ module t;
     end
     `checkd(good, 6);
     `checkd(fails, 0);  // zero-ok: the drawn set is empty, nothing can fail cyclically
+
+    // ModeOffRand: x fixed at 2 makes the relation a filter on c, so c cycles
+    // through the two values below it and no call fails
+    mr = new;
+    mr.srandom(144);
+    mr.x = 2;
+    void'(mr.x.rand_mode(0));
+    seen = 4'b0;
+    for (int i = 0; i < 6; ++i) begin
+      ok = mr.randomize();
+      `checkd(ok, 1);
+      `checkd(mr.x, 2);
+      seen[mr.c] = 1'b1;
+      if (i % 2 == 1) begin
+        `checkd(seen, 4'b0011);
+        seen = 4'b0;
+      end
+    end
+
+    // StateBound: the same two-value cycles under a state variable bound
+    sb = new;
+    sb.srandom(166);
+    sb.lim = 2;
+    seen = 4'b0;
+    for (int i = 0; i < 6; ++i) begin
+      ok = sb.randomize();
+      `checkd(ok, 1);
+      seen[sb.c] = 1'b1;
+      if (i % 2 == 1) begin
+        `checkd(seen, 4'b0011);
+        seen = 4'b0;
+      end
+    end
+
+    // ArrayRel: the element's value bounds c the way x does in Flat
+    ar = new;
+    ar.srandom(177);
+    good = 0;
+    for (int i = 0; i < 16 && good < 9; ++i) begin
+      ok = ar.randomize();
+      if (ok == 1) begin
+        ++good;
+        `checkd(ar.c < ar.items[0].v, 1'b1);
+        ++acount[ar.c];
+      end
+    end
+    `checkd(good, 9);
+    for (int v = 0; v < 3; ++v) `checkd(acount[v], 3);
+    `checkd(acount[3], 0);  // zero-ok: c == 3 satisfies no element value
 
     $write("*-* All Finished *-*\n");
     $finish;

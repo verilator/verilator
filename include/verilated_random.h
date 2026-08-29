@@ -28,6 +28,7 @@
 
 #include "verilated.h"
 
+#include <initializer_list>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
@@ -255,6 +256,8 @@ class VlSolverSession;
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
+    std::vector<std::vector<std::string>>
+        m_constraintVars;  // Solver variables each hard constraint names, same order
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::vector<std::string> m_softConstraints;  // Soft constraints
@@ -297,8 +300,8 @@ class VlRandomizer VL_NOT_FINAL {
     void recordUndrawnValues(const std::map<std::string, std::string>& drawn);
     // Registered randc variables this randomize() may write
     void activeRandcVars(std::vector<std::string>& namesr) const;
-    // True if the constraint names no registered non-randc variable
-    bool constraintIsRandcOnly(const std::string& constraint) const;
+    // True if every solver variable a constraint names is randc or frozen
+    bool constraintIsRandcOnly(const std::vector<std::string>& varNames) const;
     // Draw the next cyclic value per randc variable, blind to rand feasibility
     // (IEEE 1800-2023 18.4.2: randc variables are solved before rand ones)
     bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
@@ -363,9 +366,9 @@ class VlRandomizer VL_NOT_FINAL {
     void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess,
                             const std::map<std::string, std::string>& pinned);
     void solveDiversityXor(VlRNG& rngr, VlSolverSession& sess);
-    // One random per-bit assumption literal per bit of each named variable
-    int emitDiversityPins(std::ostream& os, VlRNG& rngr,
-                          const std::vector<std::string>& names) const;
+    // One random per-bit assumption literal per bit of the variable, numbered from npinsr
+    void emitDiversityPins(std::ostream& os, VlRNG& rngr, const VlRandomVar& var,
+                           int& npinsr) const;
     // Drop one conflicting assumption per round until compatible
     void solveAssumingPins(VlSolverSession& sess, int npins, bool applyToVars);
     // Layers of solve...before variables in dependency order
@@ -779,14 +782,14 @@ public:
         }
     }
 
-    void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
-              const char* source = "");
+    void hard(std::string&& constraint, std::initializer_list<const char*> varNames = {},
+              const char* filename = "", uint32_t linenum = 0, const char* source = "");
     void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
     void pin_var(const char* name, int width, uint64_t value) {
         std::string constraint = "(__Vbv (= "s + name + " (_ bv" + std::to_string(value) + " "
                                  + std::to_string(width) + ")))";
-        hard(std::move(constraint));
+        hard(std::move(constraint), {name});
     }
     void disable_soft(const std::string& varName);
     void clearConstraints();

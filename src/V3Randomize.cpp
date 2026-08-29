@@ -779,6 +779,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
     AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
                                           // (nullptr == always defined)
+    std::set<std::string> m_constraintVars;  // Solver variables the constraint being lowered names
 
     // Routes nested sub-objects with static rand vars when the outer class has none.
     AstVar* findStaticRandModeVarMember(AstClass* classp) const {
@@ -852,6 +853,30 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         memberSelp->v3fatalSrc("Unexpected node type in MemberSel chain");
         return "";
+    }
+    // Solver symbol of a variable reference: its name, extended by the members selected from it
+    static std::string solverName(const AstNodeVarRef* refp) {
+        std::string name = refp->name();
+        for (const AstNode* selp = refp->backp(); VN_IS(selp, MemberSel) || VN_IS(selp, StructSel);
+             selp = selp->backp()) {
+            name += "." + selp->name();
+        }
+        return name;
+    }
+    // Record the solver symbols an expression names, for the runtime's randc draw
+    void collectConstraintVars(AstNode* nodep) {
+        nodep->foreach([this](const AstNodeVarRef* refp) {
+            if (refp->user1()) m_constraintVars.insert(solverName(refp));
+        });
+    }
+    // C++ initializer list of the recorded symbols
+    std::string constraintVarsList() const {
+        std::string list = "{";
+        for (const std::string& name : m_constraintVars) {
+            if (list.size() > 1) list += ", ";
+            list += "\"" + name + "\"";
+        }
+        return list + "}";
     }
 
     static AstNodeExpr* getFromp(const AstNodeExpr* const nodep) {
@@ -2573,6 +2598,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
+        collectConstraintVars(nodep->exprp());
         // IEEE 1800-2023 18.5.1: A bare expression used as a constraint is
         // implicitly treated as "expr != 0" when wider than 1 bit.
         // Must wrap before iterateChildren, which converts to SMT format.
@@ -2602,6 +2628,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                           VAccess::READWRITE},
             method, nodep->exprp()->unlinkFrBack()};
         callp->dtypeSetVoid();
+        if (method == VCMethod::RANDOMIZER_HARD) {
+            callp->addPinsp(
+                new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, constraintVarsList()});
+        }
+        m_constraintVars.clear();
         // Pass filename, lineno, and source as separate arguments
         // This allows EmitC to call protect() on filename, similar to VL_STOP
         // Add filename parameter
@@ -5507,6 +5538,7 @@ class RandomizeVisitor final : public VNVisitor {
                         fl, new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
                         VCMethod::RANDOMIZER_HARD,
                         new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
+                    callp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{}, "{\"" + smtName + "\"}"});
                     callp->dtypeSetVoid();
                     randomizep->addStmtsp(callp->makeStmt());
                 };
