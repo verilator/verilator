@@ -15,4 +15,12 @@
                               : ... note: In instance 't'
    15 |     packed_data_32 = {<<x{byte_in}};
       |                       ^~
+%Error: t/t_stream_bad.v:20:31: Streaming concatenation cannot be connected to 'inout' port (IEEE 1800-2023 11.4.14)
+                              : ... note: In instance 't'
+   20 |   sub_inout i_sub_inout (.io({>>{io_bus}}));
+      |                               ^~
+%Error: t/t_stream_bad.v:25:26: Streaming concatenation cannot be connected to 'ref' port (IEEE 1800-2023 11.4.14)
+                              : ... note: In instance 't'
+   25 |   sub_ref i_sub_ref (.r({>>{ref_var}}));
+      |                          ^~
 %Error: Exiting due to

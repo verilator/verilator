@@ -430,6 +430,15 @@ class ReorderVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstNodeCCall* nodep) override {
+        if (!m_graphp || m_noReorderWhy) return;
+        // The callee is not inlined, so the variables it reads and writes carry no VarRef at
+        // the call site, and the scoreboard would let assignments to them move across the
+        // call. Treat any such call as a barrier.
+        m_noReorderWhy = "CCall";
+        iterateChildren(nodep);
+    }
+
     void visit(AstExprStmt* nodep) override {
         if (!m_graphp || m_noReorderWhy) return;
         VL_RESTORER(m_inDly);

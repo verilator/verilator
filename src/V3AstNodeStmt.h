@@ -623,6 +623,7 @@ public:
     explicit AstDisableFork(FileLine* fl)
         : ASTGEN_SUPER_DisableFork(fl) {}
     ASTGEN_MEMBERS_AstDisableFork;
+    string verilogKwd() const override { return "disable fork"; }
 };
 class AstDisplay final : public AstNodeStmt {
     // Parents: stmtlist
@@ -1456,6 +1457,7 @@ public:
         : ASTGEN_SUPER_WaitFork(fl) {}
     ASTGEN_MEMBERS_AstWaitFork;
     bool isTimingControl() const override { return true; }
+    string verilogKwd() const override { return "wait fork"; }
 };
 
 // === AstNodeAssign ===
@@ -1673,10 +1675,16 @@ public:
 // === AstNodeForeach ===
 class AstConstraintForeach final : public AstNodeForeach {
     // Constraint foreach statement
+    bool m_soft;  // is soft foreach, non-standard extension
 public:
-    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp)
-        : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp) {}
+    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp,
+                         bool soft = false)
+        : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp)
+        , m_soft{soft} {}
     ASTGEN_MEMBERS_AstConstraintForeach;
+    bool isSoft() const { return m_soft; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstForeach final : public AstNodeForeach {
 public:

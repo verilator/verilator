@@ -17,4 +17,11 @@ module t (input clk);
   assert property (s_always a);
   assert property (s_always [1:$] a);
 
+  localparam int unsigned MAX = 32'h7fffffff;
+  localparam int unsigned MAX_M1 = 32'h7ffffffe;
+  localparam int unsigned MAX_M3 = 32'h7ffffffc;
+  assert property (always [0:MAX] a);
+  assert property (always [MAX_M1:$] a);
+  assert property (s_always [0:MAX_M3] a);
+
 endmodule

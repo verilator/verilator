@@ -369,10 +369,6 @@ jobs:
           mkdir ../report-artifact
           mv rtlmeter-report/report ../report-artifact/
           echo ${{ github.event.number }} > ../report-artifact/pr-number.txt
-          # Create the notification artifact
-          mkdir ../notification-artifact
-          mv rtlmeter-report/notification.txt ../notification-artifact/body.txt
-          echo ${{ github.event.number }} > ../notification-artifact/pr-number.txt
 
       - name: Upload report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
@@ -380,11 +376,11 @@ jobs:
           path: report-artifact
           name: rtlmeter-report
 
-      - name: Upload notification
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+      - name: Upload PR notification
+        uses: ./verilator/.github/actions/upload-pr-notification
         with:
-          path: notification-artifact
-          name: pr-notification
+          path: verilator/rtlmeter-report/notification
+          key: rtlmeter
 
       - name: Report status
         run: exit ${{ steps.report.outputs.status }}
