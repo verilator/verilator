@@ -587,10 +587,6 @@ static void process() {
             }
         }
 
-        // These are no longer needed, remove references before CFunc inlining
-        v3Global.rootp()->evalp(nullptr);
-        v3Global.rootp()->evalNbap(nullptr);
-
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()) {
             if (v3Global.opt.fInlineCFuncs()) {
                 // Inline small CFuncs to reduce function call overhead
@@ -739,7 +735,6 @@ static bool verilate(const string& argString) {
         AstClassRefDType::selfTest();
         V3Os::selfTest();
         V3Number::selfTest();
-        VCMethod::selfTest();
         VString::selfTest();
         VHashSha256::selfTest();
         VSpellCheck::selfTest();

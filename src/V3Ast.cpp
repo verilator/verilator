@@ -49,26 +49,31 @@ bool VNUser4InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
-V3AST_VCMETHOD_ITEMDATA_DECL;
-
 //======================================================================
 // VCMethod information
 
 VCMethod VCMethod::arrayMethod(const string& name) {
-    for (const auto& it : s_itemData)
-        if (it.m_name == name) return it.m_e;
-    v3fatalSrc("Not a method name known to VCMethod::s_itemData: '" << name << '\'');
+    for (int i = 0; i < _ENUM_MAX; ++i) {
+        const VCMethod method{i};
+        if (name == method.ascii()) return method;
+    }
+    v3fatalSrc("Not a method name known to VCMethod: '" << name << '\'');
     return VCMethod{};
 }
-void VCMethod::selfTest() {
-    int i = 0;
-    for (const auto& it : s_itemData) {
-        const VCMethod exp{i};
-        UASSERT_STATIC(it.m_e == exp,
-                       "VCMethod::s_itemData table rows are out-of-order, starting at row "s
-                           + cvtToStr(i) + " '" + +it.m_name + '\'');
-        ++i;
-    }
+
+//######################################################################
+// VNUser
+
+std::string VNUser::dumpStr(std::string (*fmtAddrp)(const void*)) const {
+#ifdef VL_USER_TYPE_CHECKS
+    if (const int* const uip = std::get_if<int>(&m_u)) return "#"s + cvtToStr(*uip);
+    if (void* const* const upp = std::get_if<void*>(&m_u)) return fmtAddrp(*upp);
+    return "";
+#else
+    // Dumps void* representation
+    if (!m_u.up) return "";
+    return fmtAddrp(m_u.up);
+#endif
 }
 
 //######################################################################
@@ -1384,10 +1389,15 @@ void AstNode::dumpPtrs(std::ostream& os) const {
     if (op2p()) os << " op2p=" << cvtToHex(op2p());
     if (op3p()) os << " op3p=" << cvtToHex(op3p());
     if (op4p()) os << " op4p=" << cvtToHex(op4p());
-    if (user1p()) os << " user1p=" << cvtToHex(user1p());
-    if (user2p()) os << " user2p=" << cvtToHex(user2p());
-    if (user3p()) os << " user3p=" << cvtToHex(user3p());
-    if (user4p()) os << " user4p=" << cvtToHex(user4p());
+    const auto dumpUser = [&os](const char* prefix, const VNUser& user) {
+        const std::string s
+            = user.dumpStr([](const void* p) -> std::string { return cvtToHex(p); });
+        if (!s.empty()) os << prefix << s;
+    };
+    dumpUser(" user1p=", user1u());
+    dumpUser(" user2p=", user2u());
+    dumpUser(" user3p=", user3u());
+    dumpUser(" user4p=", user4u());
     if (m_iterpp) {
         os << " iterpp=" << cvtToHex(m_iterpp);
         // This may cause address sanitizer failures as iterpp can be stale

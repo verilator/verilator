@@ -1441,8 +1441,6 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_dollarUnitPkgp : Optional[AstPackage]  // $unit
     // @astgen ptr := m_stdPackagep : Optional[AstPackage]  // SystemVerilog std package
     // @astgen ptr := m_stdPackageProcessp : Optional[AstClass]  // SystemVerilog std process class
-    // @astgen ptr := m_evalp : Optional[AstCFunc]  // The '_eval' function
-    // @astgen ptr := m_evalNbap : Optional[AstCFunc]  // The '_eval__nba' function
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
     // @astgen ptr := m_delaySchedulerp : Optional[AstVar]  // Delay scheduler variable
     // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
@@ -1460,6 +1458,10 @@ class AstNetlist final : public AstNode {
     // AstConst itself, as AstConst is a very common node and only a small fraction carry this
     // name.
     std::unordered_map<const AstConst*, string> m_constOrigParamNames;
+    // The model's evaluation entry point functions
+    std::array<AstCFunc*, VEval::_ENUM_END> m_evalFuncps{};
+    // The trigger dump function of each region if exists, otherwise nullptr
+    std::array<AstCFunc*, VEval::_ENUM_END> m_dumpTriggersFuncps{};
 
 public:
     AstNetlist();
@@ -1483,10 +1485,10 @@ public:
     void astConstOrigParamNameErase(const AstConst* nodep);
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp();
-    AstCFunc* evalp() const { return m_evalp; }
-    void evalp(AstCFunc* funcp) { m_evalp = funcp; }
-    AstCFunc* evalNbap() const { return m_evalNbap; }
-    void evalNbap(AstCFunc* funcp) { m_evalNbap = funcp; }
+    AstCFunc* evalFuncp(VEval eval) const { return m_evalFuncps[eval]; }
+    void evalFuncp(VEval eval, AstCFunc* funcp) { m_evalFuncps[eval] = funcp; }
+    AstCFunc* dumpTriggersFuncp(VEval eval) const { return m_dumpTriggersFuncps[eval]; }
+    void dumpTriggersFuncp(VEval eval, AstCFunc* funcp) { m_dumpTriggersFuncps[eval] = funcp; }
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
@@ -1522,6 +1524,9 @@ public:
         const std::string& name = resolvedTopModuleName();
         return prettyName(name.empty() ? v3Global.rootp()->topModulep()->name() : name);
     }
+
+    // Record statistics for eval functions
+    void addEvalStats(const std::string& phase);
 };
 class AstPackageExport final : public AstNode {
     // A package export declaration
@@ -1673,6 +1678,7 @@ class AstPropSpec final : public AstNode {
     // @astgen op1 := sensesp : Optional[AstSenItem]
     // @astgen op2 := disablep : Optional[AstNodeExpr]
     // @astgen op3 := propp : AstNode
+    // @astgen op4 := matchCountp : Optional[AstNodeExpr] // Cover sequence matches this tick
     VPropStrength m_propStrength = VPropStrength::DEFAULT;
 
 public:

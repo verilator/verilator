@@ -619,6 +619,8 @@ inline double VL_ROUND(double n) {
 # define VL_CPU_RELAX() asm volatile("lr 0,0" ::: "memory")
 #elif defined(__sparc__)
 # define VL_CPU_RELAX() asm volatile("rd %%ccr, %%g0" ::: "memory")
+#elif defined(__wasm__)  // Wasm has no spin-wait hint, and no inline asm
+# define VL_CPU_RELAX()
 #elif defined(VL_IGNORE_UNKNOWN_ARCH)
 # define VL_CPU_RELAX()
 #else

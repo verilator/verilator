@@ -1512,6 +1512,10 @@ List Of Warnings
    ``always_ff``/``always_comb`` if the intent is a single specialized
    process.
 
+   Does not warn for static variables used as loop induction variables:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_loopidx.rst
+
 
 .. option:: MULTITOP
 
@@ -2143,7 +2147,7 @@ List Of Warnings
 
 .. option:: SIMILARNAME
 
-   Warns that a variable name only differs from another in lexical case.
+   Warns that an entity name only differs from another in lexical case.
 
    Faulty example:
 
@@ -2152,6 +2156,13 @@ List Of Warnings
    Results in:
 
    .. include:: ../../docs/gen/ex_SIMILARNAME_msg.rst
+
+   Only declarations that can reach a downstream VLSI tool as a name are
+   checked, that is nets, variables, instances, named blocks (``begin``,
+   ``fork``, and generate blocks), functions and tasks. All of these can form
+   part of a flattened signal or scope name.  Other declarations, such as
+   parameters, localparams, genvars and typedefs, are elaborated away, and so
+   are not checked.
 
    Disabled by default as this is a code-style warning; it will simulate
    correctly.

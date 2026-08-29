@@ -276,7 +276,7 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 // Random
 
 // Random Number Generator with internal state
-class VlRNG final {
+class VlRNG VL_NOT_FINAL {
     std::array<uint64_t, 2> m_state;
 
 public:
@@ -293,6 +293,22 @@ public:
     static uint64_t vl_thread_rng_rand64() VL_MT_SAFE;
     static uint64_t vl_current_rng_rand64() VL_MT_SAFE;
     static VlRNG& vl_thread_rng() VL_MT_SAFE;
+};
+
+// VlRNG that also counts how often it was reseeded, for randomize() to notice.
+class VlRNGReseeds final : public VlRNG {
+    uint64_t m_reseeds = 0;  // Times the state was set from outside
+
+public:
+    void srandom(uint64_t n) VL_MT_UNSAFE {
+        VlRNG::srandom(n);
+        ++m_reseeds;
+    }
+    void set_randstate(const std::string& state) VL_MT_UNSAFE {
+        VlRNG::set_randstate(state);
+        ++m_reseeds;
+    }
+    uint64_t reseeds() const VL_MT_UNSAFE { return m_reseeds; }
 };
 
 //===================================================================
