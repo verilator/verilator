@@ -25,6 +25,9 @@ module t (
   int hit_clocked = 0;
   int hit_clocked_disable = 0;
   int hit_default_disable = 0;
+  int hit_consrep_1 = 0;
+  int hit_consrep_equal_range = 0;
+  int hit_consrep_range_0 = 0;
   int hit_consrep_range = 0;
   int hit_consrep_2 = 0;
   int hit_consrep_3 = 0;
@@ -60,6 +63,9 @@ module t (
   cover sequence (disable iff (!rst_n) a ##1 c) hit_default_disable++;
 
   // Form 5: consecutive repetition, counted per end-of-match
+  cover sequence (a [* 1]) hit_consrep_1++;
+  cover sequence (a [* 1: 1]) hit_consrep_equal_range++;
+  cover sequence (a [* 0: 1]) hit_consrep_range_0++;
   cover sequence (a [* 2: 3]) hit_consrep_range++;
   cover sequence (a [* 2]) hit_consrep_2++;
   cover sequence (a [* 3]) hit_consrep_3++;
@@ -100,6 +106,10 @@ module t (
     `checkd(hit_clocked, 149);
     `checkd(hit_clocked_disable, 27);
     `checkd(hit_default_disable, 30);
+    // a[*1:1] == a[*1] (IEEE 1800-2023 16.9.2)
+    `checkd(hit_consrep_1, 55);
+    `checkd(hit_consrep_equal_range, hit_consrep_1);
+    `checkd(hit_consrep_range_0, 154);  // Counts both empty and nonempty matches
     `checkd(hit_consrep_2, 30);  // Other sims: 29
     `checkd(hit_consrep_3, 14);  // Other sims: 13
     // a[*2:3] == a[*2] or a[*3] (IEEE 1800-2023 16.9.2)

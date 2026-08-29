@@ -691,7 +691,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     }
                     warnClockingDriven(nodep, entryp, otherWritep, otherWriteIsStaticInit);
                 }
-                if (multidrivenCommon
+                if (multidrivenCommon && !nodep->varp()->isUsedLoopIdx()
                     && !nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVENPROC)) {
                     // Two plain always blocks driving the whole signal: legal
                     // SystemVerilog, but a driver conflict for synthesis. The

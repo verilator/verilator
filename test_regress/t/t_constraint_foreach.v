@@ -153,6 +153,38 @@ class H;
   }
 endclass
 
+class I;
+  rand int a;
+  rand int arr[];
+  constraint c1 {
+    arr.size() == 5;
+    foreach(arr[i]) {
+      arr[i] inside {[10 : 200]};
+    }
+  }
+  constraint c2 {
+     a + arr.sum() == 200;
+  }
+endclass
+
+class J;
+  rand int a;
+  rand int arr[];
+
+  function new();
+    arr = new [5];
+  endfunction
+
+  constraint c1 {
+    foreach(arr[i]) {
+      arr[i] inside {[10 : 200]};
+    }
+  }
+  constraint c2 {
+     a + arr.sum() == 200;
+  }
+endclass
+
 module t;
   initial begin
     automatic C c = new;
@@ -161,6 +193,8 @@ module t;
     automatic F f = new;
     automatic G g = new;
     automatic H h = new;
+    automatic I i = new;
+    automatic J j = new;
 
     `check_rand(c, c.x, 4 < c.x && c.x < 7);
     `check_rand(d, d.posit, (d.posit ? 4 : -3) < d.x && d.x < (d.posit ? 7 : 0));
@@ -175,6 +209,14 @@ module t;
     end
     foreach (h.a[i]) begin
       `check_rand(h, h.a[i], (h.a[i] != h.b));
+    end
+    `check_rand(i, i.a, (i.arr.sum() + i.a == 200));
+    foreach (i.arr[it]) begin
+        `check_rand(i, i.arr[it], (i.arr[it] inside {[10 : 200]}));
+    end
+    `check_rand(j, j.a, (j.arr.sum() + j.a == 200));
+    foreach (j.arr[i]) begin
+        `check_rand(j, j.arr[i], (j.arr[i] inside {[10 : 200]}));
     end
     $write("*-* All Finished *-*\n");
     $finish;

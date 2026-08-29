@@ -118,7 +118,7 @@ class EmitCHeader final : public EmitCConstInit {
                 // Leftovers, just in case off by one error somewhere above
                 for (; it != varList.cend(); ++it) emitVarDecl(*it);
             } else {  // Output as nonanons
-                for (const auto& pair : varList) emitVarDecl(pair);
+                for (const AstVar* const varp : varList) emitVarDecl(varp);
             }
 
             varList.clear();
@@ -144,7 +144,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             if (classp->needRNG()) {
                 putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
-                puts("VlRNG __Vm_rng;\n");
+                puts("VlRNGReseeds __Vm_rng;\n");
             }
         } else {  // not class
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");

@@ -30,6 +30,9 @@ class Cls;
       bins two = {2};
     }
   endgroup
+  covergroup cg_ref(ref int value);
+    cp_ref: coverpoint value;
+  endgroup
   function new;
     cg_in_class = new;
   endfunction

@@ -49,26 +49,31 @@ bool VNUser4InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
-V3AST_VCMETHOD_ITEMDATA_DECL;
-
 //======================================================================
 // VCMethod information
 
 VCMethod VCMethod::arrayMethod(const string& name) {
-    for (const auto& it : s_itemData)
-        if (it.m_name == name) return it.m_e;
-    v3fatalSrc("Not a method name known to VCMethod::s_itemData: '" << name << '\'');
+    for (int i = 0; i < _ENUM_MAX; ++i) {
+        const VCMethod method{i};
+        if (name == method.ascii()) return method;
+    }
+    v3fatalSrc("Not a method name known to VCMethod: '" << name << '\'');
     return VCMethod{};
 }
-void VCMethod::selfTest() {
-    int i = 0;
-    for (const auto& it : s_itemData) {
-        const VCMethod exp{i};
-        UASSERT_STATIC(it.m_e == exp,
-                       "VCMethod::s_itemData table rows are out-of-order, starting at row "s
-                           + cvtToStr(i) + " '" + +it.m_name + '\'');
-        ++i;
-    }
+
+//######################################################################
+// VNUser
+
+std::string VNUser::dumpStr(std::string (*fmtAddrp)(const void*)) const {
+#ifdef VL_USER_TYPE_CHECKS
+    if (const int* const uip = std::get_if<int>(&m_u)) return "#"s + cvtToStr(*uip);
+    if (void* const* const upp = std::get_if<void*>(&m_u)) return fmtAddrp(*upp);
+    return "";
+#else
+    // Dumps void* representation
+    if (!m_u.up) return "";
+    return fmtAddrp(m_u.up);
+#endif
 }
 
 //######################################################################
@@ -1384,10 +1389,15 @@ void AstNode::dumpPtrs(std::ostream& os) const {
     if (op2p()) os << " op2p=" << cvtToHex(op2p());
     if (op3p()) os << " op3p=" << cvtToHex(op3p());
     if (op4p()) os << " op4p=" << cvtToHex(op4p());
-    if (user1p()) os << " user1p=" << cvtToHex(user1p());
-    if (user2p()) os << " user2p=" << cvtToHex(user2p());
-    if (user3p()) os << " user3p=" << cvtToHex(user3p());
-    if (user4p()) os << " user4p=" << cvtToHex(user4p());
+    const auto dumpUser = [&os](const char* prefix, const VNUser& user) {
+        const std::string s
+            = user.dumpStr([](const void* p) -> std::string { return cvtToHex(p); });
+        if (!s.empty()) os << prefix << s;
+    };
+    dumpUser(" user1p=", user1u());
+    dumpUser(" user2p=", user2u());
+    dumpUser(" user3p=", user3u());
+    dumpUser(" user4p=", user4u());
     if (m_iterpp) {
         os << " iterpp=" << cvtToHex(m_iterpp);
         // This may cause address sanitizer failures as iterpp can be stale
@@ -1660,7 +1670,7 @@ static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
 }
 
 static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                    const AstNode* fromConstp) {
+                                    const AstNode* fromConstp, const bool checkIfaceArgCompat) {
     const VCastable castable = VCastable::UNSUPPORTED;
     toDtp = toDtp->skipRefToEnump();
     fromDtp = fromDtp->skipRefToEnump();
@@ -1698,22 +1708,52 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         if (upcast) return VCastable::COMPATIBLE;
         if (downcast) return VCastable::DYNAMIC_CLASS;
         return VCastable::INCOMPATIBLE;
-    } else if (const AstIfaceRefDType* const toIfp = VN_CAST(toDtp, IfaceRefDType)) {
+    } else if (const AstIfaceRefDType* const toIfp
+               = VN_CAST(checkIfaceArgCompat ? toDtp->elemDTypep(true) : toDtp, IfaceRefDType)) {
         // Two interface refs are compatible if they point at the same interface
         // module (and modport, if any). Pointer-equality on the dtype isn't
         // enough since every cell binding clones the dtype.
-        const AstIfaceRefDType* const fromIfp = VN_CAST(fromDtp, IfaceRefDType);
-        if (fromIfp && toIfp->ifaceViaCellp() == fromIfp->ifaceViaCellp()
-            && (!toIfp->modportp() || toIfp->modportp() == fromIfp->modportp())) {
+        // Argument compatibility also requires matching virtualness for ref arguments, while
+        // input arguments may bind an unqualified or same-modport source to a virtual target.
+        // Argument compatibility also supports fixed-size arrays of interface references.
+        const AstIfaceRefDType* const fromIfp
+            = VN_CAST(checkIfaceArgCompat ? fromDtp->elemDTypep(true) : fromDtp, IfaceRefDType);
+        if (checkIfaceArgCompat && fromIfp && (toDtp != toIfp || fromDtp != fromIfp)) {
+            const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType);
+            const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
+            // IEEE 1800-2023 6.22.2: Equal-sized fixed arrays have equivalent types.
+            if (!toArrayp || !fromArrayp
+                || toArrayp->elementsConst() != fromArrayp->elementsConst()) {
+                return VCastable::INCOMPATIBLE;
+            }
+            return computeCastableImp(toArrayp->subDTypep(), fromArrayp->subDTypep(), nullptr,
+                                      checkIfaceArgCompat);
+        }
+        if (!fromIfp || toIfp->ifaceViaCellp() != fromIfp->ifaceViaCellp()) {
+            if (!checkIfaceArgCompat) return castable;
+            return VCastable::INCOMPATIBLE;
+        }
+        const bool sameModport = toIfp->modportp() == fromIfp->modportp();
+        if (!checkIfaceArgCompat) {
+            if (!toIfp->modportp() || sameModport) return VCastable::COMPATIBLE;
+            return castable;
+        }
+        if (toIfp->isVirtual() == fromIfp->isVirtual() && sameModport) {
+            return VCastable::SAMEISH;
+        }
+        // An unqualified interface or virtual interface may bind to a modport-qualified
+        // virtual interface.
+        if (toIfp->isVirtual() && (!fromIfp->modportp() || sameModport)) {
             return VCastable::COMPATIBLE;
         }
+        return VCastable::INCOMPATIBLE;
     }
     return castable;
 }
 
 VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                   const AstNode* fromConstp) {
-    const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
+                                   const AstNode* fromConstp, const bool checkIfaceArgCompat) {
+    const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp, checkIfaceArgCompat);
     UINFO(9, "  castable=" << castable << "  for " << toDtp);
     UINFO(9, "     =?= " << fromDtp);
     if (fromConstp) UINFO(9, "     const= " << fromConstp);
