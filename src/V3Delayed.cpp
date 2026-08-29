@@ -633,7 +633,7 @@ class DelayedVisitor final : public VNVisitor {
         vscpInfo.shadowVariableKit().vscp = shadowVscp;
         AstVarScope* pendingVscp = nullptr;
         if (vscpInfo.m_hasReactiveNba) {
-            pendingVscp = createTemp(flp, scopep, name + "__pending", 1);
+            pendingVscp = createTemp(flp, scopep, name + "__Vpending", 1);
             pendingVscp->varp()->setIgnorePostWrite();
         }
         vscpInfo.shadowVariableKit().pendingp = pendingVscp;
