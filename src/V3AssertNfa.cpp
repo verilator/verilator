@@ -2367,7 +2367,7 @@ private:
         return resultp;
     }
 
-    // Start depth of the attempt reaching each vertex, or -1 when ambiguous.
+    // Start depth of the attempt reaching each vertex; negative when unreachable or ambiguous.
     static std::vector<int> computeAttemptDepths(const LowerCtx& c) {
         std::vector<int> depths(c.N, kDepthUnreachable);
         depths[c.startIdx] = 0;
