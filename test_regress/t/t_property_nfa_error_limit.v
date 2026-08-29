@@ -36,6 +36,9 @@ module t (
 
   assert property (@(posedge clk) sync_reject_on (abrt) always[0: 1] (!zz));
 
+  // A guard drop fails every attempt in the delay ring with the default action
+  assert property (@(posedge clk) (!nb) throughout (1'b1 ##3 1'b1));
+
   // Simultaneous negated-consequent failures behind a temporal antecedent
   bit ant = 0;
   bit early_b = 0;
@@ -83,8 +86,8 @@ module t (
   always @(negedge clk) begin
     if (cyc == 8) begin
       `checkd(temporal_small_fail, 1);
-      `checkd(temporal_ring_fail, 1);
-      `checkd(boolean_ant_fail, 1);
+      `checkd(temporal_ring_fail, 2);
+      `checkd(boolean_ant_fail, 2);
       `checkd(impossible_pass, 0);
       `checkd(impossible_fail, 0);
       $write("*-* All Finished *-*\n");

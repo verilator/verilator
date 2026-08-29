@@ -45,12 +45,12 @@ module t (
   assert property (@(posedge clk) (cyc == 1) |=> 1'b1 s_until 1'b0);
 
   final begin
-    `checkd(pass_count[0], 6);
-    `checkd(pass_count[1], 6);
-    `checkd(pass_count[2], 6);
-    `checkd(pass_count[3], 6);
-    `checkd(pass_count[4], 5);
-    `checkd(pass_count[5], 5);
+    `checkd(pass_count[0], 5);
+    `checkd(pass_count[1], 5);
+    `checkd(pass_count[2], 5);
+    `checkd(pass_count[3], 5);
+    `checkd(pass_count[4], 4);
+    `checkd(pass_count[5], 4);
   end
 
   always @(posedge clk) begin

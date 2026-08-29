@@ -102,6 +102,7 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     const VAssertDirectiveType m_directive;  // Assertion directive type
     bool m_senFromAlways = false;  // Sensitivity list copied from upper always
     bool m_immediate = false;  // Immediate assert (may differ from userType being immediate)
+    bool m_nfaLowered = false;  // Property was lowered by V3AssertNfa
 
 public:
     AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp,
@@ -131,6 +132,8 @@ public:
     void immediate(bool flag) { m_immediate = flag; }
     bool senFromAlways() const VL_MT_STABLE { return m_senFromAlways; }
     void senFromAlways(bool flag) { m_senFromAlways = flag; }
+    bool nfaLowered() const { return m_nfaLowered; }
+    void nfaLowered(bool flag) { m_nfaLowered = flag; }
 };
 class AstNodeForeach VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := headerp : AstForeachHeader
@@ -523,6 +526,7 @@ class AstCoverInc final : public AstNodeStmt {
     // @astgen op1 := toggleExprp : Optional[AstNodeExpr]  // [After V3Clock]
     // @astgen op2 := toggleCovExprp : Optional[AstNodeExpr]  // [After V3Clock]
     // These are expressions to which the node corresponds. Used only in toggle coverage
+    // @astgen op3 := multiplicityp : Optional[AstNodeExpr]  // NFA action count
     //
     // @astgen ptr := m_declp : AstNodeCoverDecl  // [After V3CoverageJoin] Declaration
 public:

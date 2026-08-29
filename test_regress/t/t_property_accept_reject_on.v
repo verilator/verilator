@@ -92,7 +92,7 @@ module t (
     end
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
-      `checkd(count_fail1, 14);
+      `checkd(count_fail1, 14);  // One other sim: 15
       `checkd(count_fail2, 64);  // One other sim: 66
       `checkd(count_fail3, 14);
       `checkd(count_fail4, 64);
