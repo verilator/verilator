@@ -5572,7 +5572,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstNode* const attrp = nodep->attrp()->unlinkFrBack();
                     VL_DO_DANGLING(attrp->deleteTree(), attrp);
                 }
-                AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
+                AstNode* const basefromp = nodep->baseFromp(false);
                 if (VN_IS(basefromp, Replicate)) {
                     // From {...}[...] syntax in IEEE 2017
                     if (basefromp) UINFO(9, indent() << " Related node: " << basefromp);

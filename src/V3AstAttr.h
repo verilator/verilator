@@ -812,132 +812,137 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
 
 // ######################################################################
 
-// C++ methods invoked on runtime library data types via AstCMethodHard
+// C++ methods invoked on runtime library data types via AstCMethodHard.
+// The argument descriptor gives the access direction of each argument:
+// - 'r' read by the call
+// - 'w' written by the call (Use only if unconditionally and wholly written,
+//   that is: a preceding write can be removed. Otherwise use 'm'.)
+// - 'm' read and written (modified) by the call
+// - '+' repeats the entry before it for all remaining arguments, must be last
+// - "" if the method takes no arguments
+// - "TODO" if not yet checked due to existing issues
 // clang-format off
 #define FOR_EACH_CMETHOD(macro) \
-    /*    id,                                 method,                   pure */ \
-    macro(_NONE,                              "_none",                  false) \
-    macro(ARRAY_AND,                          "and",                    true) \
-    macro(ARRAY_AT,                           "at",                     true) \
-    macro(ARRAY_AT_BACK,                      "atBack",                 true) \
-    macro(ARRAY_AT_WRITE,                     "atWrite",                true) \
-    macro(ARRAY_FIND,                         "find",                   true) \
-    macro(ARRAY_FIND_FIRST,                   "find_first",             true) \
-    macro(ARRAY_FIND_FIRST_INDEX,             "find_first_index",       true) \
-    macro(ARRAY_FIND_INDEX,                   "find_index",             true) \
-    macro(ARRAY_FIND_LAST,                    "find_last",              true) \
-    macro(ARRAY_FIND_LAST_INDEX,              "find_last_index",        true) \
-    macro(ARRAY_FIRST,                        "first",                  false) \
-    macro(ARRAY_INSIDE,                       "inside",                 true) \
-    macro(ARRAY_LAST,                         "last",                   false) \
-    macro(ARRAY_MAP,                          "map",                    true) \
-    macro(ARRAY_MAX,                          "max",                    true) \
-    macro(ARRAY_MIN,                          "min",                    true) \
-    macro(ARRAY_NEXT,                         "next",                   false) \
-    macro(ARRAY_OR,                           "or",                     true) \
-    macro(ARRAY_POP_BACK,                     "pop_back",               false) \
-    macro(ARRAY_POP_FRONT,                    "pop_front",              false) \
-    macro(ARRAY_PREV,                         "prev",                   false) \
-    macro(ARRAY_PRODUCT,                      "product",                true) \
-    macro(ARRAY_PUSH_BACK,                    "push_back",              false) \
-    macro(ARRAY_PUSH_FRONT,                   "push_front",             false) \
-    macro(ARRAY_REVERSE,                      "reverse",                false) \
-    macro(ARRAY_RSORT,                        "rsort",                  false) \
-    macro(ARRAY_R_AND,                        "r_and",                  true) \
-    macro(ARRAY_R_OR,                         "r_or",                   true) \
-    macro(ARRAY_R_PRODUCT,                    "r_product",              true) \
-    macro(ARRAY_R_SUM,                        "r_sum",                  true) \
-    macro(ARRAY_R_XOR,                        "r_xor",                  true) \
-    macro(ARRAY_SHUFFLE,                      "shuffle",                false) \
-    macro(ARRAY_SORT,                         "sort",                   false) \
-    macro(ARRAY_SUM,                          "sum",                    true) \
-    macro(ARRAY_UNIQUE,                       "unique",                 true) \
-    macro(ARRAY_UNIQUE_INDEX,                 "unique_index",           true) \
-    macro(ARRAY_XOR,                          "xor",                    true) \
-    macro(ASSOC_CLEAR,                        "clear",                  false) \
-    macro(ASSOC_ERASE,                        "erase",                  false) \
-    macro(ASSOC_EXISTS,                       "exists",                 true) \
-    macro(ASSOC_FIRST,                        "first",                  false) \
-    macro(ASSOC_NEXT,                         "next",                   false) \
-    macro(ASSOC_SIZE,                         "size",                   true) \
-    macro(CLASS_SET_RANDMODE,                 "set_randmode",           false) \
-    macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false) \
-    macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false) \
-    macro(DYN_CLEAR,                          "clear",                  false) \
-    macro(DYN_ERASE,                          "erase",                  false) \
-    macro(DYN_INSERT,                         "insert",                 false) \
-    macro(DYN_POP,                            "pop",                    false) \
-    macro(DYN_POP_FRONT,                      "pop_front",              false) \
-    macro(DYN_PUSH,                           "push",                   false) \
-    macro(DYN_PUSH_FRONT,                     "push_front",             false) \
-    macro(DYN_RENEW,                          "renew",                  false) \
-    macro(DYN_RENEW_COPY,                     "renew_copy",             false) \
-    macro(DYN_RESIZE,                         "resize",                 false) \
-    macro(DYN_SIZE,                           "size",                   true) \
-    macro(DYN_SLICE,                          "slice",                  true) \
-    macro(DYN_SLICE_ASSIGN,                   "sliceAssign",            false) \
-    macro(DYN_SLICE_ASSIGN_BACK_BACK,         "sliceAssignBackBack",    false) \
-    macro(DYN_SLICE_ASSIGN_FRONT_BACK,        "sliceAssignFrontBack",   false) \
-    macro(DYN_SLICE_BACK_BACK,                "sliceBackBack",          true) \
-    macro(DYN_SLICE_FRONT_BACK,               "sliceFrontBack",         true) \
-    macro(EVENT_CLEAR_FIRED,                  "clearFired",             false) \
-    macro(EVENT_CLEAR_TRIGGERED,              "clearTriggered",         false) \
-    macro(EVENT_FIRE,                         "fire",                   false) \
-    macro(EVENT_IS_FIRED,                     "isFired",                true) \
-    macro(EVENT_IS_TRIGGERED,                 "isTriggered",            true) \
-    macro(FORCE_ADD,                          "addForce",               false) \
-    macro(FORCE_READ,                         "read",                   true) \
-    macro(FORCE_READ_INDEX,                   "readIndex",              true) \
-    macro(FORCE_READ_SEL,                     "readSel",                true) \
-    macro(FORCE_RELEASE,                      "release",                false) \
-    macro(FORCE_TOUCH,                        "touch",                  false) \
-    macro(FORK_DONE,                          "done",                   false) \
-    macro(FORK_INIT,                          "init",                   false) \
-    macro(FORK_JOIN,                          "join",                   false) \
-    macro(FORK_ON_KILL,                       "onKill",                 false) \
-    macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false) \
-    macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false) \
-    macro(RANDOMIZER_CLEARALL,                "clearAll",               false) \
-    macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false) \
-    macro(RANDOMIZER_HARD,                    "hard",                   false) \
-    macro(RANDOMIZER_SOFT,                    "soft",                   false) \
-    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false) \
-    macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false) \
-    macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false) \
-    macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false) \
-    macro(RANDOMIZER_WRITE_VAR,               "write_var",              false) \
-    macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false) \
-    macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false) \
-    macro(RANDOMIZER_MARK_VAR_STATIC,         "mark_var_static",        false) \
-    macro(RANDOMIZER_SET_STATIC_RANDMODE,     "set_static_randmode",    false) \
-    macro(RNG_GET_RANDSTATE,                  "__Vm_rng.get_randstate", true) \
-    macro(RNG_SET_RANDSTATE,                  "__Vm_rng.set_randstate", false) \
-    macro(SCHED_ANY_TRIGGERED,                "anyTriggered",           false) \
-    macro(SCHED_AWAITING_CURRENT_TIME,        "awaitingCurrentTime",    true) \
-    macro(SCHED_AWAITING_ZERO_DELAY,          "awaitingZeroDelay",      true) \
-    macro(SCHED_READY,                        "ready",                  false) \
-    macro(SCHED_COMMIT,                       "commit",                 false) \
-    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false) \
-    macro(SCHED_DELAY,                        "delay",                  false) \
-    macro(SCHED_DO_POST_UPDATES,              "doPostUpdates",          false) \
-    macro(SCHED_ENQUEUE,                      "enqueue",                false) \
-    macro(SCHED_EVALUATE,                     "evaluate",               false) \
-    macro(SCHED_EVALUATION,                   "evaluation",             false) \
-    macro(SCHED_POST_UPDATE,                  "postUpdate",             false) \
-    macro(SCHED_RESUME,                       "resume",                 false) \
-    macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false) \
-    macro(SCHED_RESUMPTION,                   "resumption",             false) \
-    macro(SCHED_TRIGGER,                      "trigger",                false) \
-    macro(SCHED_WAIT_FOREVER,                 "waitForever",            false) \
-    macro(UNPACKED_ASSIGN,                    "assign",                 false) \
-    macro(UNPACKED_FILL,                      "fill",                   false) \
-    macro(UNPACKED_NEQ,                       "neq",                    true)
+    /*    id,                                 method,                   pure,   args */ \
+    macro(_NONE,                              "_none",                  false,  "") \
+    macro(ARRAY_AT,                           "at",                     PURE,   "r") \
+    macro(ARRAY_AT_BACK,                      "atBack",                 PURE,   "r") \
+    macro(ARRAY_AT_WRITE,                     "atWrite",                PURE,   "r") \
+    macro(ARRAY_FIND,                         "find",                   PURE,   "") \
+    macro(ARRAY_FIND_FIRST,                   "find_first",             PURE,   "") \
+    macro(ARRAY_FIND_FIRST_INDEX,             "find_first_index",       PURE,   "") \
+    macro(ARRAY_FIND_INDEX,                   "find_index",             PURE,   "") \
+    macro(ARRAY_FIND_LAST,                    "find_last",              PURE,   "") \
+    macro(ARRAY_FIND_LAST_INDEX,              "find_last_index",        PURE,   "") \
+    macro(ARRAY_FIRST,                        "first",                  false,  "m") \
+    macro(ARRAY_INSIDE,                       "inside",                 PURE,   "r") \
+    macro(ARRAY_LAST,                         "last",                   false,  "m") \
+    macro(ARRAY_MAP,                          "map",                    PURE,   "") \
+    macro(ARRAY_MAX,                          "max",                    PURE,   "") \
+    macro(ARRAY_MIN,                          "min",                    PURE,   "") \
+    macro(ARRAY_NEXT,                         "next",                   false,  "m") \
+    macro(ARRAY_POP_BACK,                     "pop_back",               false,  "") \
+    macro(ARRAY_POP_FRONT,                    "pop_front",              false,  "") \
+    macro(ARRAY_PREV,                         "prev",                   false,  "m") \
+    macro(ARRAY_PUSH_BACK,                    "push_back",              false,  "r") \
+    macro(ARRAY_PUSH_FRONT,                   "push_front",             false,  "r") \
+    macro(ARRAY_REVERSE,                      "reverse",                false,  "") \
+    macro(ARRAY_RSORT,                        "rsort",                  false,  "") \
+    macro(ARRAY_R_AND,                        "r_and",                  PURE,   "") \
+    macro(ARRAY_R_OR,                         "r_or",                   PURE,   "") \
+    macro(ARRAY_R_PRODUCT,                    "r_product",              PURE,   "") \
+    macro(ARRAY_R_SUM,                        "r_sum",                  PURE,   "") \
+    macro(ARRAY_R_XOR,                        "r_xor",                  PURE,   "") \
+    macro(ARRAY_SHUFFLE,                      "shuffle",                false,  "") \
+    macro(ARRAY_SORT,                         "sort",                   false,  "") \
+    macro(ARRAY_UNIQUE,                       "unique",                 PURE,   "") \
+    macro(ARRAY_UNIQUE_INDEX,                 "unique_index",           PURE,   "") \
+    macro(ASSOC_CLEAR,                        "clear",                  false,  "") \
+    macro(ASSOC_ERASE,                        "erase",                  false,  "r") \
+    macro(ASSOC_EXISTS,                       "exists",                 PURE,   "r") \
+    macro(ASSOC_FIRST,                        "first",                  false,  "m") \
+    macro(ASSOC_NEXT,                         "next",                   false,  "m") \
+    macro(ASSOC_SIZE,                         "size",                   PURE,   "") \
+    macro(CLASS_SET_RANDMODE,                 "set_randmode",           false,  "r") \
+    macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
+    macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \
+    macro(DYN_CLEAR,                          "clear",                  false,  "") \
+    macro(DYN_ERASE,                          "erase",                  false,  "r") \
+    macro(DYN_INSERT,                         "insert",                 false,  "rr") \
+    macro(DYN_POP,                            "pop",                    false,  "rrm") \
+    macro(DYN_POP_FRONT,                      "pop_front",              false,  "") \
+    macro(DYN_PUSH,                           "push",                   false,  "rr") \
+    macro(DYN_PUSH_FRONT,                     "push_front",             false,  "r") \
+    macro(DYN_RENEW,                          "renew",                  false,  "r") \
+    macro(DYN_RENEW_COPY,                     "renew_copy",             false,  "rr") \
+    macro(DYN_RESIZE,                         "resize",                 false,  "TODO") \
+    macro(DYN_SIZE,                           "size",                   PURE,   "") \
+    macro(DYN_SLICE,                          "slice",                  PURE,   "rr") \
+    macro(DYN_SLICE_ASSIGN,                   "sliceAssign",            false,  "rrr") \
+    macro(DYN_SLICE_ASSIGN_BACK_BACK,         "sliceAssignBackBack",    false,  "rrr") \
+    macro(DYN_SLICE_ASSIGN_FRONT_BACK,        "sliceAssignFrontBack",   false,  "rrr") \
+    macro(DYN_SLICE_BACK_BACK,                "sliceBackBack",          PURE,   "rr") \
+    macro(DYN_SLICE_FRONT_BACK,               "sliceFrontBack",         PURE,   "rr") \
+    macro(EVENT_CLEAR_FIRED,                  "clearFired",             false,  "") \
+    macro(EVENT_CLEAR_TRIGGERED,              "clearTriggered",         false,  "") \
+    macro(EVENT_FIRE,                         "fire",                   false,  "") \
+    macro(EVENT_IS_FIRED,                     "isFired",                PURE,   "") \
+    macro(EVENT_IS_TRIGGERED,                 "isTriggered",            PURE,   "") \
+    macro(FORCE_ADD,                          "addForce",               false,  "rrrr+") \
+    macro(FORCE_READ,                         "read",                   PURE,   "r") \
+    macro(FORCE_READ_INDEX,                   "readIndex",              PURE,   "rr") \
+    macro(FORCE_READ_SEL,                     "readSel",                PURE,   "TODO") \
+    macro(FORCE_RELEASE,                      "release",                false,  "rr+") \
+    macro(FORCE_TOUCH,                        "touch",                  false,  "") \
+    macro(FORK_DONE,                          "done",                   false,  "rr") \
+    macro(FORK_INIT,                          "init",                   false,  "rr") \
+    macro(FORK_JOIN,                          "join",                   false,  "rrr") \
+    macro(FORK_ON_KILL,                       "onKill",                 false,  "r") \
+    macro(NBA_COMMIT,                         "commit",                 false,  "w") \
+    macro(NBA_ENQUEUE,                        "enqueue",                false,  "r+") \
+    macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false,  "mr") \
+    macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false,  "") \
+    macro(RANDOMIZER_CLEARALL,                "clearAll",               false,  "") \
+    macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false,  "r") \
+    macro(RANDOMIZER_HARD,                    "hard",                   false,  "r+") \
+    macro(RANDOMIZER_SOFT,                    "soft",                   false,  "rrrr") \
+    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "r") \
+    macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  "r") \
+    macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  "rr") \
+    macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  "rrr") \
+    macro(RANDOMIZER_WRITE_VAR,               "write_var",              false,  "TODO") \
+    macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false,  "r") \
+    macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false,  "r") \
+    macro(RANDOMIZER_MARK_VAR_STATIC,         "mark_var_static",        false,  "r") \
+    macro(RANDOMIZER_SET_STATIC_RANDMODE,     "set_static_randmode",    false,  "r") \
+    macro(RNG_GET_RANDSTATE,                  "__Vm_rng.get_randstate", PURE,   "") \
+    macro(RNG_SET_RANDSTATE,                  "__Vm_rng.set_randstate", false,  "r") \
+    macro(SCHED_ANY_TRIGGERED,                "anyTriggered",           false,  "r") \
+    macro(SCHED_AWAITING_CURRENT_TIME,        "awaitingCurrentTime",    PURE,   "") \
+    macro(SCHED_AWAITING_ZERO_DELAY,          "awaitingZeroDelay",      PURE,   "") \
+    macro(SCHED_READY,                        "ready",                  false,  "r") \
+    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false,  "r") \
+    macro(SCHED_DELAY,                        "delay",                  false,  "rrrr") \
+    macro(SCHED_DO_POST_UPDATES,              "doPostUpdates",          false,  "") \
+    macro(SCHED_EVALUATE,                     "evaluate",               false,  "") \
+    macro(SCHED_EVALUATION,                   "evaluation",             false,  "rrrr") \
+    macro(SCHED_POST_UPDATE,                  "postUpdate",             false,  "rrrr") \
+    macro(SCHED_RESUME,                       "resume",                 false,  "TODO") \
+    macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false,  "") \
+    macro(SCHED_RESUMPTION,                   "resumption",             false,  "rrrr") \
+    macro(SCHED_TRIGGER,                      "trigger",                false,  "rrrrr") \
+    macro(SCHED_WAIT_FOREVER,                 "waitForever",            false,  "rrr") \
+    macro(UNPACKED_ASSIGN,                    "assign",                 false,  "r") \
+    macro(UNPACKED_FILL,                      "fill",                   false,  "r") \
+    macro(UNPACKED_NEQ,                       "neq",                    PURE,   "r")
 // clang-format on
 
 class VCMethod final {
+    static constexpr bool PURE = true;  // For macro expansion of 'pure' field only
+
 public:
     enum en : uint8_t {
-#define VL_CMETHOD_ID(id, method, pure) id,
+#define VL_CMETHOD_ID(id, method, pure, args) id,
         FOR_EACH_CMETHOD(VL_CMETHOD_ID)
 #undef VL_CMETHOD_ID
             _ENUM_MAX  // Leave last
@@ -953,7 +958,7 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
         static const char* const values[] = {
-#define VL_CMETHOD_NAME(id, method, pure) method,
+#define VL_CMETHOD_NAME(id, method, pure, args) method,
             FOR_EACH_CMETHOD(VL_CMETHOD_NAME)
 #undef VL_CMETHOD_NAME
                 "_ENUM_MAX"  //
@@ -962,15 +967,39 @@ public:
     }
     bool isPure() const VL_PURE {
         static const bool values[] = {
-#define VL_CMETHOD_PURE(id, method, pure) pure,
+#define VL_CMETHOD_PURE(id, method, pure, args) pure,
             FOR_EACH_CMETHOD(VL_CMETHOD_PURE)
 #undef VL_CMETHOD_PURE
                 false  //
         };
         return values[m_e];
     }
+    const char* args() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CMETHOD_ARGS(id, method, pure, args) args,
+            FOR_EACH_CMETHOD(VL_CMETHOD_ARGS)
+#undef VL_CMETHOD_ARGS
+                ""  //
+        };
+        return values[m_e];
+    }
     // Return array method for given name
     static VCMethod arrayMethod(const string& name);
+
+    // Validate the arguments descriptor
+    static constexpr bool validateArgsDescriptor(const char* descrp) {
+        // Is "TODO"
+        if (descrp[0] == 'T' && descrp[1] == 'O' && descrp[2] == 'D' && descrp[3] == 'O'
+            && !descrp[4]) {
+            return true;
+        }
+        // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
+        for (const char* cp = descrp; *cp; ++cp) {
+            if (*cp == '+') return cp != descrp && !cp[1];
+            if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
+        }
+        return true;
+    }
 };
 constexpr bool operator==(const VCMethod& lhs, const VCMethod& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VCMethod& lhs, VCMethod::en rhs) { return lhs.m_e == rhs; }
@@ -978,6 +1007,13 @@ constexpr bool operator==(VCMethod::en lhs, const VCMethod& rhs) { return lhs ==
 inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
     return os << rhs.ascii();
 }
+
+// Static assert all argument descriptors are well formed
+#define VL_CMETHOD_ARGS_CHECK(id, method, pure, args) \
+    static_assert(VCMethod::validateArgsDescriptor(args), \
+                  "Malformed argument descriptor for " #id);
+FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
+#undef VL_CMETHOD_ARGS_CHECK
 
 #undef FOR_EACH_CMETHOD
 
