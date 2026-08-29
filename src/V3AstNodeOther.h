@@ -460,6 +460,7 @@ public:
     // METHODS
     inline bool hasClocked() const;
     inline bool hasCombo() const;
+    inline bool hasInitial() const;
     inline bool hasStatic() const;
 };
 class AstAlias final : public AstNode {
