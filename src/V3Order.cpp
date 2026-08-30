@@ -102,13 +102,14 @@ void V3Order::orderOrderGraph(OrderGraph& graph, const std::string& tag) {
 AstCFunc* V3Order::order(AstNetlist* netlistp,  //
                          const std::vector<V3Sched::LogicByScope*>& logic,  //
                          const V3Order::TrigToSenMap& trigToSen,
+                         const V3Sched::CovergroupRefBindings& cgRefBindings,
                          const string& tag,  //
                          bool parallel,  //
                          bool slow,  //
                          const ExternalDomainsProvider& externalDomains) {
     // Build the OrderGraph
     const std::unique_ptr<OrderGraph> graph
-        = buildOrderGraph(netlistp, logic, trigToSen, parallel);
+        = buildOrderGraph(netlistp, logic, trigToSen, cgRefBindings, parallel);
     // Order it
     orderOrderGraph(*graph, tag);
     // Assign sensitivity domains to combinational logic

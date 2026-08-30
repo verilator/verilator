@@ -345,6 +345,7 @@ set(COMMON_SOURCES
     V3Sampled.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp
+    V3SchedCovergroup.cpp
     V3SchedPartition.cpp
     V3SchedReplicate.cpp
     V3SchedTiming.cpp

@@ -391,7 +391,7 @@ void addVirtIfaceTriggerAssignments(AstNetlist* netlistp, AstCFunc* initFuncp,
 
 // Order the combinational logic to create the 'stl' region
 void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilder& senExprBulider,
-                  LogicClasses& logicClasses) {
+                  LogicClasses& logicClasses, const CovergroupRefBindings& cgRefBindings) {
     // Clone, because ordering is destructive, but we still need them for the other regions
     LogicByScope comb = logicClasses.m_comb.clone();
     LogicByScope hybrid = logicClasses.m_hybrid.clone();
@@ -418,7 +418,7 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
 
     // Create and the body function
     AstCFunc* const stlFuncp = V3Order::order(
-        netlistp, {&comb, &hybrid}, trigToSen, "stl", false, true,
+        netlistp, {&comb, &hybrid}, trigToSen, cgRefBindings, "stl", false, true,
         [=](const AstVarScope*, std::vector<AstSenTree*>& out) { out.push_back(inputChanged); });
     util::splitCheck(stlFuncp);
 
@@ -443,7 +443,8 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
 
 void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
                      SenExprBuilder& senExprBuilder, LogicByScope& logic,
-                     const VirtIfaceTriggers& virtIfaceTriggers) {
+                     const VirtIfaceTriggers& virtIfaceTriggers,
+                     const CovergroupRefBindings& cgRefBindings) {
     // SystemC only: Any top level inputs feeding a combinational logic must be marked,
     // so we can make them sc_sensitive
     if (v3Global.opt.systemC()) {
@@ -544,7 +545,7 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Create and Order the body function
     AstCFunc* const icoFuncp = V3Order::order(
-        netlistp, {&logic}, trigToSen, "ico", false, false,
+        netlistp, {&logic}, trigToSen, cgRefBindings, "ico", false, false,
         [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
             AstVar* const varp = vscp->varp();
             // If it has an explicit change detect trigger, use that,
@@ -858,6 +859,9 @@ void schedule(AstNetlist* netlistp) {
     // Step 2: Prepare external domains for timing and virtual interfaces
     // Create extra triggers for virtual interfaces
     const auto& virtIfaceTriggers = makeVirtIfaceTriggers(netlistp);
+    // Resolve what covergroup reference formal arguments are bound to, which is visible here
+    // but not from V3Order, where the reads through them must be modeled
+    const auto& cgRefBindings = makeCovergroupRefBindings(netlistp);
     // Prepare timing-related logic and external domains
     TimingKit timingKit = prepareTiming(netlistp);
 
@@ -898,7 +902,7 @@ void schedule(AstNetlist* netlistp) {
     SenExprBuilder senExprBuilder{scopeTopp};
 
     // Step 6: Create 'settle' region that restores the combinational invariant
-    createSettle(netlistp, staticp, senExprBuilder, logicClasses);
+    createSettle(netlistp, staticp, senExprBuilder, logicClasses, cgRefBindings);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-settle");
 
     // Step 7: Partition the clocked and combinational (including hybrid) logic into pre/act/nba.
@@ -929,7 +933,8 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 9: Create the input combinational logic
-    createIcoRegion(netlistp, staticp, senExprBuilder, logicReplicas.m_ico, virtIfaceTriggers);
+    createIcoRegion(netlistp, staticp, senExprBuilder, logicReplicas.m_ico, virtIfaceTriggers,
+                    cgRefBindings);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
     // Step 10: Create the triggers
@@ -998,7 +1003,8 @@ void schedule(AstNetlist* netlistp) {
 
     AstCFunc* const actFuncp = V3Order::order(
         netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
-        "act", false, false, [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+        cgRefBindings, "act", false, false,
+        [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
             auto it = actTimingDomains.find(vscp);
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
@@ -1035,7 +1041,8 @@ void schedule(AstNetlist* netlistp) {
 
         const auto& timingDomains = timingKit.remapDomains(trigMap);
         AstCFunc* const funcp = V3Order::order(
-            netlistp, logic, trigToSen, name, name == "nba" && v3Global.opt.mtasks(), false,
+            netlistp, logic, trigToSen, cgRefBindings, name,
+            name == "nba" && v3Global.opt.mtasks(), false,
             [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
                 auto it = timingDomains.find(vscp);
                 if (it != timingDomains.end()) out = it->second;
@@ -1118,6 +1125,15 @@ void schedule(AstNetlist* netlistp) {
 
     // Step 18: Clean up
     netlistp->clearStlFirstIterationp();
+
+    if (v3Global.opt.stats()) {
+        // A sample() call resolved to the union over its covergroup's constructions reads more
+        // than it can, which orders it against more logic than necessary
+        V3Stats::addStat("Scheduling, covergroup ref sample calls, per instance",
+                         cgRefBindings.numExactCalls());
+        V3Stats::addStat("Scheduling, covergroup ref sample calls, per type",
+                         cgRefBindings.numUnionCalls());
+    }
 
     // Haven't split static initializer yet
     util::splitCheck(staticp);

@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 test.top_filename = 't/t_covergroup_option.v'
 
 # runs without --coverage
