@@ -2341,8 +2341,10 @@ private:
         AstNodeExpr* throughoutRejectp = nullptr;  // Reject when a throughout guard drops
     };
 
+    // Sentinels stored in the attempt-depth vector
     static constexpr int kDepthUnreachable = -1;
     static constexpr int kDepthAmbiguous = -2;
+
     using OutcomeBuckets = std::map<int, AstNodeExpr*>;
 
     static AstNodeExpr* boolToCount(LowerCtx& c, AstNodeExpr* condp) {
@@ -3657,6 +3659,11 @@ public:
         return res;
     }
 };
+
+// Out-of-line definitions, required under C++14 as these are odr-used
+// (bound to a const reference by std::vector's fill constructor)
+constexpr int SvaNfaLowering::kDepthUnreachable;
+constexpr int SvaNfaLowering::kDepthAmbiguous;
 
 }  // namespace
 
