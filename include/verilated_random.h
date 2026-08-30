@@ -259,6 +259,9 @@ class VlRandomizer VL_NOT_FINAL {
         m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::vector<std::string> m_softConstraints;  // Soft constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
+    std::vector<const VlRandomVar*> m_randomConstraintVars;  // Scratch buffer for
+                                                             // randomConstraint(), reused
+                                                             // across calls
     std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
                                            // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
@@ -279,7 +282,8 @@ class VlRandomizer VL_NOT_FINAL {
     bool hasFrozenVar() const;  // true if any var is currently rand_mode(0)-frozen
 
     // PRIVATE METHODS
-    void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
+    void randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
+                          const std::vector<std::string>* layerVarsp = nullptr);
     // Fetch the model and write it into the registered variables.
     bool applyModel(VlSolverSession& sess);
     bool parseModel(std::istream& is, size_t requested);
