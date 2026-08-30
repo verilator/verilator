@@ -22,11 +22,10 @@ test.enable_tsan()
 # construction always assigns to a plain variable and the array element never reaches
 # V3SchedCovergroup. With it off the raw form survives, and the binding is only seen at all
 # because constructions are also collected where they are not a simple assignment.
-coverage_covergroup_common.run(
-    test,
-    verilator_flags2=(['--stats', '-fno-lift-expr'] +
-                      (['--no-threads-coarsen'] if test.vltmt else [])),
-    threads=(2 if test.vltmt else 1))
+coverage_covergroup_common.run(test,
+                               verilator_flags2=(['--stats', '-fno-lift-expr'] +
+                                                 (['--no-threads-coarsen'] if test.vltmt else [])),
+                               threads=(2 if test.vltmt else 1))
 
 # Neither sample names a covergroup object, so both resolve to the union over cg_a's two
 # constructions rather than to one instance

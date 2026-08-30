@@ -354,7 +354,7 @@ class OrderGraphBuilder final : public VNVisitor {
         VL_RESTORER(m_cgRefBoundps);
         m_inSampleFunc = true;
         // Reference formals are bound per covergroup object. If the call handle matches
-        // one that we recorded, use that info. If the call handle isn't something we 
+        // one that we recorded, use that info. If the call handle isn't something we
         // recorded (eg array-element construction), use the union of references across
         // the covergroup type.
         const AstVarScope* instp = nullptr;
