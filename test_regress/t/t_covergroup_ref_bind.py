@@ -23,6 +23,7 @@ coverage_covergroup_common.run(test,
                                threads=(2 if test.vltmt else 1))
 
 # Both resolutions order the sample correctly, so only these distinguish them: x_inst and
-# y_inst are sampled through the handle they were constructed into, z_alias is not.
+# y_inst are sampled through the handle they were constructed into, z_alias and z_alias2
+# are not.
 test.file_grep(test.stats, r'Scheduling, covergroup ref sample calls, per instance\s+(\d+)', 2)
-test.file_grep(test.stats, r'Scheduling, covergroup ref sample calls, per type\s+(\d+)', 1)
+test.file_grep(test.stats, r'Scheduling, covergroup ref sample calls, per type\s+(\d+)', 2)

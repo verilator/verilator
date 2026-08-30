@@ -40,17 +40,22 @@ module t (
   cg_x x_inst = new(siga);
   cg_y y_inst = new(sigb);
 
-  // Two instances of one type, sampled through a handle that is assigned rather than
+  // Two instances of one type, each sampled through a handle that is assigned rather than
   // constructed, so the sample must assume either of them
   cg_z z_first = new(sigc);
   cg_z z_second = new(sigd);
   cg_z z_alias;
+  cg_z z_alias2;
 
-  initial z_alias = z_first;
+  initial begin
+    z_alias  = z_first;
+    z_alias2 = z_second;
+  end
 
   always @(posedge clk) x_inst.sample();
   always @(posedge clk) y_inst.sample();
   always @(posedge clk) z_alias.sample();
+  always @(posedge clk) z_alias2.sample();
 
   int cyc = 0;
 

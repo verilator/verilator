@@ -6,7 +6,7 @@ cg_y.cp_y.one: 3
 cg_y.cp_y.three: 0
 cg_y.cp_y.two: 1
 cg_y.cp_y.zero: 1
-cg_z.cp_z.one: 0
-cg_z.cp_z.three: 2
-cg_z.cp_z.two: 0
-cg_z.cp_z.zero: 3
+cg_z.cp_z.one: 1
+cg_z.cp_z.three: 3
+cg_z.cp_z.two: 1
+cg_z.cp_z.zero: 5
