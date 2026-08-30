@@ -217,11 +217,11 @@ module t (
   logic [31:0] dout_pin_rl;  // Right-stream on input pin, left-stream on output pin
 
   t_stream_pass pin_lr (
-      .din ({<<{din_i}}),
+      .din({<<{din_i}}),
       .dout({>>{dout_pin_lr}})
   );
   t_stream_pass pin_rl (
-      .din ({>>{din_i}}),
+      .din({>>{din_i}}),
       .dout({<<{dout_pin_rl}})
   );
 
@@ -329,7 +329,7 @@ module t (
 endmodule
 
 module t_stream_pass (
-    input  logic [31:0] din,
+    input logic [31:0] din,
     output logic [31:0] dout
 );
   assign dout = din;

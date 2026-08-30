@@ -2638,7 +2638,7 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
 
 `ifdef TEST_VERBOSE
   always @(posedge clk or negedge clk) begin
-    $display("time: %0t\tclk:%b", $time, clk);
+    $display("[%0t] clk:%b", $time, clk);
 
     $display("nonPublic: %x", nonPublic);
     $display("forcedNonForceable: %x", forcedNonForceable);

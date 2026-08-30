@@ -84,7 +84,7 @@ module t;
   //   pure virtual function int bar();
   // endclass
 
-  class C extends B /* implements BarIface */;
+  class C extends B  /* implements BarIface */;
     task foo();
       y = 3'b111;
       expected[0] = 3'b001;
