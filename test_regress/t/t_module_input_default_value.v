@@ -168,7 +168,7 @@ module t
     if (cyc > 2) begin
       // check these for a few cycles to make sure it's constant
 
-      $display("%t %m: outputs  - defaults got {%0d %0d %0x}, want {0 1 12345678}",
+      $display("[%0t] %m: outputs  - defaults got {%0d %0d %0x}, want {0 1 12345678}",
                $time,
                dut0_o_default, dut1_o_default, dut_logic32_o_default);
 
@@ -176,7 +176,7 @@ module t
       if (dut1_o_default != 1) $error;
       if (dut_logic32_o_default != 32'h1234_5678) $error;
 
-      $display("%t %m: outputs  - open got {%0d %0d %0x}, want {0 1 12345678}",
+      $display("[%0t] %m: outputs  - open got {%0d %0d %0x}, want {0 1 12345678}",
                $time,
                dut0_o_open, dut1_o_open, dut_logic32_o_open);
 
@@ -186,7 +186,7 @@ module t
       if (dut_wire32_o_open != 32'h1234_5678) $error;
 
       // despite the port map override. At least the parameter goes through?
-      $display("%t %m: outputs  - overrides got {%0d %0d %0x} want {1 0 %0x}",
+      $display("[%0t] %m: outputs  - overrides got {%0d %0d %0x} want {1 0 %0x}",
                $time,
                dut0_o_overriden, dut1_o_overriden, dut_logic32_o_overriden,
                dut_logic32_want_overriden);
@@ -200,7 +200,7 @@ module t
 
     if (cyc == 10) begin
       // done checking various DUTs and finish
-      $display("%t %m: cyc=%0d", $time, cyc);
+      $display("[%0t] %m: cyc=%0d", $time, cyc);
       $write("*-* All Finished *-*\n");
       $finish();
     end

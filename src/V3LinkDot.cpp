@@ -361,7 +361,7 @@ public:
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
-            if (!lookupSymp->ignoreForSimilarTest(nodep)) {  // ignore typedefs, params, etc
+            if (forPrimary() && VSymEnt::checkSimilarname(nodep)) {
                 const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
                 if (alt) {
                     nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "

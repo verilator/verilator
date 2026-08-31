@@ -1,52 +1,245 @@
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:26:63: Unsupported: temporal property if/case with a pass action
-                                                       : ... note: In instance 't'
-   26 |   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c) $display("pass");
-      |                                                               ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:33:50: Unsupported: impure expression in a temporal 'or' composite
+   33 |   assert property (@(posedge clk) (fimp() ##1 a) or(b ##1 c));
+      |                                                  ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:27:62: Unsupported: temporal property if/case with cover
-                                                       : ... note: In instance 't'
-   27 |   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
-      |                                                              ^~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:28:68: Unsupported: temporal property if/case with negation
-                                                       : ... note: In instance 't'
-   28 |   assert property (@(posedge clk) not (if (a) 1'b1 ##1 b else 1'b1 ##2 c));
-      |                                                                    ^~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:30:35: Unsupported: temporal property if/case with a pass action
-                                                       : ... note: In instance 't'
-   30 |   assert property (@(posedge clk) case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d;
-      |                                   ^~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:35:65: Unsupported: multi-cycle sequence expression inside consecutive repetition (IEEE 1800-2023 16.9.2)
-                                                       : ... note: In instance 't'
-   35 |   assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) [* 2]));
-      |                                                                 ^~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:38:52: Unsupported: multi-cycle sequence expression inside consecutive repetition (IEEE 1800-2023 16.9.2)
-                                                       : ... note: In instance 't'
-   38 |   assert property (@(posedge clk) if (a) ((b ##1 c)[*2]) else d) $display("pass");
-      |                                                    ^~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:41:3: Unsupported: property instance inside a multi-cycle property expression
-                                                      : ... note: In instance 't'
-   41 |   assert property (@(posedge clk) p_nested or e);
-      |   ^~~~~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:59:52: Unsupported: ranged cycle delay in an operand of property 'and'
-   59 |   assert property (@(posedge clk) (1'b1 ##[1:2] b) and c);
-      |                                                    ^~~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:60:37: Unsupported: ranged cycle delay in an operand of property 'and'
-   60 |   assert property (@(posedge clk) c and (1'b1 ##[1:2] b));
-      |                                     ^~~
-%Warning-COVERIGN: t/t_property_nfa_msgs_unsup.v:63:45: Ignoring unsupported: cover sequence with a sequence operand of 'or'
-   63 |   cover sequence (@(posedge clk) ((a and b) or(c ##1 d)));
-      |                                             ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:36:54: Unsupported: temporal 'or' endpoint deadline after an operand that can reject earlier
+   36 |   assert property (@(posedge clk) (s_always[1: 2] a) or(s_always[1: 2] b));
+      |                                                      ^~
+%Warning-COVERIGN: t/t_property_nfa_msgs_unsup.v:39:39: Ignoring unsupported: cover sequence with a sequence operand of 'or'
+   39 |   cover sequence (@(posedge clk) 1'b1 or(a ##1 b));
+      |                                       ^~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Error: t/t_property_nfa_msgs_unsup.v:56:22: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
-                                           : ... note: In instance 't'
-                                           : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   56 |   assert property (a [* 2]);
+%Warning-COVERIGN: t/t_property_nfa_msgs_unsup.v:40:44: Ignoring unsupported: cover sequence with a sequence operand of 'or'
+   40 |   cover sequence (@(posedge clk) (a ##1 b) or 1'b1);
+      |                                            ^~
+%Warning-COVERIGN: t/t_property_nfa_msgs_unsup.v:41:44: Ignoring unsupported: cover sequence with a sequence operand of 'or'
+   41 |   cover sequence (@(posedge clk) (a ##1 b) or(c ##1 d));
+      |                                            ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:44:68: Unsupported: intersect/within endpoint deadline after an operand that can reject earlier
+   44 |   assert property (@(posedge clk) (((a ##1 b) or (c ##1 d)) ##1 e) intersect (a throughout (b ##2 c)));
+      |                                                                    ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:47:43: Unsupported: impure guard in a flattened throughout composite
+                                                       : ... note: In instance 't'
+   47 |   assert property (@(posedge clk) (fimp() throughout (a ##1 b)) and(c ##1 d));
+      |                                           ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:50:36: Unsupported: impure expression in a flattened temporal composite
+                                                       : ... note: In instance 't'
+   50 |   assert property (@(posedge clk) (fimp() ##1 a) and(b ##1 c));
+      |                                    ^~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:53:38: Unsupported: concurrent assertion fixed-trace expansion exceeds 1024 sites
+                                                       : ... note: In instance 't'
+   53 |   assert property (@(posedge clk) (a throughout (b ##1024 c)) and(d ##1024 e));
+      |                                      ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:56:53: Unsupported: property if/case inside a variable-end temporal window
+                                                       : ... note: In instance 't'
+   56 |   assert property (@(posedge clk) (a ##[1:$] b) or (if (c) d else e));
+      |                                                     ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:59:59: Unsupported: bounded temporal 'and' operand cannot be represented as a single fixed match trace
+                                                       : ... note: In instance 't'
+   59 |   assert property (@(posedge clk) ((a ##1 b) or(c ##1 d)) and(e ##1 a));
+      |                                                           ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:62:3: Unsupported: strong s_always in a temporal AND/intersect composite cannot preserve resolved attempt identity
+   62 |   assert property (@(posedge clk) (((a ##1 b) or (c ##1 d)) intersect (e ##1 a)) |-> s_always [1:2] b);
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:65:3: Unsupported: end-of-simulation attempt counting for multiple strong operators with an ambiguous temporal depth
+   65 |   assert property (@(posedge clk) ((a ##1 b) or(c ##1 d)) ##1 (e [-> 1]) |-> s_always[1: 2] a);
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:68:3: Unsupported: end-of-simulation attempt counting for multiple strong operators requires expanding 1030 ring slots (limit 1024)
+   68 |   assert property (@(posedge clk) ((a ##1 b) or(c ##1 d)) |-> s_always[1030: 1030] e) cnt++;
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:71:3: Unsupported: strong s_always pending state has a non-positive temporal depth
+   71 |   assert property (@(posedge clk) ((a ##1 b) or(c ##1 d)) |-> s_always[0: 0] e) cnt++;
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:74:3: Unsupported: pass-action multiplicity for strong s_always in a temporal OR composite cannot preserve resolved attempts
+   74 |   assert property (@(posedge clk) a |-> (((a ##1 b) or(c ##1 d)) |-> s_always[1: 2] e)) cnt++;
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:78:45: Unsupported: unequal/variable-end temporal 'or' cannot preserve overlapping assertion attempt identity
+   78 |   assert property (@(posedge clk) (a ##1 b) or (c ##2 d));
+      |                                             ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:80:48: Unsupported: variable/unbounded temporal 'and' cannot preserve overlapping assertion attempt identity
+                                                       : ... note: In instance 't'
+   80 |   cover property (@(posedge clk) (a ##[1:$] b) and (c ##1 d));
+      |                                                ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:83:49: Unsupported: ranged cycle delay in an operand of property 'and'
+   83 |   assert property (@(posedge clk) (a ##[1:2] b) and (c ##2 d));
+      |                                                 ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:85:56: Unsupported: temporal implication antecedent with a negated consequent and a pass or cover action cannot preserve attempt identity
+                                                       : ... note: In instance 't'
+   85 |   assert property (@(posedge clk) (a ##1 b) |-> not (c ##[1:2] d)) $display("pass");
+      |                                                        ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:87:58: Unsupported: impure expression in a flattened consecutive repetition
+                                                       : ... note: In instance 't'
+   87 |   assert property (@(posedge clk) ((|($random | $random))[*2]) and (1'b1 ##1 1'b1));
+      |                                                          ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:88:60: Unsupported: impure expression in a flattened consecutive repetition
+                                                       : ... note: In instance 't'
+   88 |   assert property (@(posedge clk) ((|($urandom | $urandom))[*2]) and (1'b1 ##1 1'b1));
+      |                                                            ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:90:37: Unsupported: concurrent assertion fixed-trace expansion exceeds 1024 sites
+                                                       : ... note: In instance 't'
+   90 |   assert property (@(posedge clk) (a[*2000]) and (1'b1 ##1 1'b1));
+      |                                     ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:92:3: Unsupported: end-of-simulation attempt counting for multiple strong operators with an ambiguous temporal depth
+   92 |   assert property (@(posedge clk)
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:95:46: Unsupported: 'until' inside a variable-length property window
+                                                       : ... note: In instance 't'
+   95 |   assert property (@(posedge clk) ##[1:$] (a until b));
+      |                                              ^~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:99:63: Unsupported: temporal property if/case with a pass action
+                                                       : ... note: In instance 't'
+   99 |   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c) $display("pass");
+      |                                                               ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:100:62: Unsupported: temporal property if/case with cover
+                                                        : ... note: In instance 't'
+  100 |   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
+      |                                                              ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:101:68: Unsupported: temporal property if/case with negation
+                                                        : ... note: In instance 't'
+  101 |   assert property (@(posedge clk) not (if (a) 1'b1 ##1 b else 1'b1 ##2 c));
+      |                                                                    ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:103:35: Unsupported: temporal property if/case with a pass action
+                                                        : ... note: In instance 't'
+  103 |   assert property (@(posedge clk) case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d;
+      |                                   ^~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:107:68: Unsupported: temporal property if/case with a strong end-of-trace obligation
+                                                        : ... note: In instance 't'
+  107 |   assert property (@(posedge clk) if (a) s_always[1:2] b else 1'b1 ##1 c);
+      |                                                                    ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:110:32: Unsupported: impure property if/case selector cannot be sampled once
+                                                        : ... note: In instance 't'
+  110 |                    if ($random == 0) 1'b1 ##1 b
+      |                                ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:114:65: Unsupported: multi-cycle sequence expression inside consecutive repetition (IEEE 1800-2023 16.9.2)
+                                                        : ... note: In instance 't'
+  114 |   assert property (@(posedge clk) sync_accept_on (a) ((b ##1 c) [* 2]));
+      |                                                                 ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:117:52: Unsupported: multi-cycle sequence expression inside consecutive repetition (IEEE 1800-2023 16.9.2)
+                                                        : ... note: In instance 't'
+  117 |   assert property (@(posedge clk) if (a) ((b ##1 c)[*2]) else d) $display("pass");
+      |                                                    ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:121:46: Unsupported: multi-cycle sequence expression inside consecutive repetition (IEEE 1800-2023 16.9.2)
+                                                        : ... note: In instance 't'
+  121 |   assert property (@(posedge clk) ((b ##1 c) [* 2]) and(d ##2 e));
+      |                                              ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:122:50: Unsupported: ranged cycle delay in an operand of property 'and'
+  122 |   assert property (@(posedge clk) ((a ##[1:2] b) and(c ##1 d)) and(e ##1 a));
+      |                                                  ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:123:74: Unsupported: bounded temporal 'and' operand cannot be represented as a single fixed match trace
+                                                        : ... note: In instance 't'
+  123 |   assert property (@(posedge clk) (a throughout ((b ##1 c) or(d ##1 e))) and(c ##2 a));
+      |                                                                          ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:126:45: Unsupported: variable/unbounded temporal 'and' cannot preserve overlapping assertion attempt identity
+                                                        : ... note: In instance 't'
+  126 |   cover property (@(posedge clk) (a [-> 1]) and(b [* 2]));
+      |                                             ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:129:45: Unsupported: impure expression in a temporal 'or' composite
+  129 |   assert property (@(posedge clk) (a ##1 b) or(fimp() ##1 c));
+      |                                             ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:130:66: Unsupported: temporal 'or' endpoint deadline after an operand that can reject earlier
+  130 |   assert property (@(posedge clk) (b throughout (1'b1 ##2 1'b1)) or(c ##2 d));
+      |                                                                  ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:131:45: Unsupported: temporal 'or' endpoint deadline after an operand that can reject earlier
+  131 |   assert property (@(posedge clk) (c ##2 d) or(b throughout (1'b1 ##2 1'b1)));
+      |                                             ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:134:74: Unsupported: bounded temporal 'and' operand cannot be represented as a single fixed match trace
+                                                        : ... note: In instance 't'
+  134 |   assert property (@(posedge clk) (((a ##1 b) or(c ##1 d)) and(e ##1 a)) and(b ##1 c));
+      |                                                                          ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:135:37: Unsupported: impure expression in a flattened temporal composite
+                                                        : ... note: In instance 't'
+  135 |   assert property (@(posedge clk) ((fimp() ##1 a) and(b ##1 c)) and(d ##1 e));
+      |                                     ^~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:136:49: Unsupported: impure expression in a flattened temporal composite
+                                                        : ... note: In instance 't'
+  136 |   assert property (@(posedge clk) (a ##1 b) and(fimp() ##1 c));
+      |                                                 ^~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:137:40: Unsupported: impure expression in a flattened temporal composite
+                                                        : ... note: In instance 't'
+  137 |   assert property (@(posedge clk) (##1 fimp()) and(b ##1 c));
+      |                                        ^~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:138:60: Unsupported: bounded temporal 'and' operand cannot be represented as a single fixed match trace
+                                                        : ... note: In instance 't'
+  138 |   assert property (@(posedge clk) (((a ##1 b) or(c ##1 d)) and(e ##1 a)) or(b ##1 c));
+      |                                                            ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:139:72: Unsupported: bounded temporal 'and' operand cannot be represented as a single fixed match trace
+                                                        : ... note: In instance 't'
+  139 |   assert property (@(posedge clk) (b ##1 c) or(((a ##1 b) or(c ##1 d)) and(e ##1 a)));
+      |                                                                        ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:140:71: Unsupported: impure expression in a temporal 'or' composite
+  140 |   assert property (@(posedge clk) (a ##2 b) intersect ((fimp() ##2 c) or(d ##2 e)));
+      |                                                                       ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:141:68: Unsupported: impure expression in a temporal 'or' composite
+  141 |   assert property (@(posedge clk) (a ##[1:2] b) and((fimp() ##1 c) or(d ##1 e)));
+      |                                                                    ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:142:51: Unsupported: impure expression in a temporal 'or' composite
+  142 |   assert property (@(posedge clk) ((fimp() ##1 c) or(d ##1 e)) and(a ##[1:2] b));
+      |                                                   ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:145:63: Unsupported: unequal/variable-end temporal 'or' cannot preserve overlapping assertion attempt identity
+  145 |   assert property (@(posedge clk) ((a [* 1: 2]) and(b ##1 c)) or(d ##1 e));
+      |                                                               ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:146:63: Unsupported: unequal/variable-end temporal 'or' cannot preserve overlapping assertion attempt identity
+  146 |   assert property (@(posedge clk) ((a ##1 b) and(c [* 1: 2])) or(d ##1 e));
+      |                                                               ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:149:45: Unsupported: 'until' in complex property expression
+                                                        : ... note: In instance 't'
+  149 |   assert property (@(posedge clk) (a ##1 b) until c);
+      |                                             ^~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:150:59: Unsupported: multi-cycle sequence expression inside consecutive repetition (IEEE 1800-2023 16.9.2)
+                                                        : ... note: In instance 't'
+  150 |   assert property (@(posedge clk) a throughout ((b ##1 c) [* 2]));
+      |                                                           ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:151:35: Unsupported: temporal property if/case with an abort operator
+                                                        : ... note: In instance 't'
+  151 |   assert property (@(posedge clk) sync_accept_on (a) (if (b) 1'b1 ##1 c else 1'b1 ##2 d));
+      |                                   ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:152:55: Unsupported: temporal implication antecedent with a negated consequent and a pass or cover action cannot preserve attempt identity
+                                                        : ... note: In instance 't'
+  152 |   cover property (@(posedge clk) (a ##1 b) |-> not (c ##[1:2] d));
+      |                                                       ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:155:3: Unsupported: property instance inside a multi-cycle property expression
+                                                       : ... note: In instance 't'
+  155 |   assert property (@(posedge clk) p_nested or e);
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:173:52: Unsupported: ranged cycle delay in an operand of property 'and'
+  173 |   assert property (@(posedge clk) (1'b1 ##[1:2] b) and c);
+      |                                                    ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:174:37: Unsupported: ranged cycle delay in an operand of property 'and'
+  174 |   assert property (@(posedge clk) c and(1'b1 ##[1:2] b));
+      |                                     ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:177:45: Unsupported: unequal/variable-end temporal 'or' cannot preserve overlapping assertion attempt identity
+  177 |   cover sequence (@(posedge clk) ((a and b) or(c ##1 d)));
+      |                                             ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:190:51: Unsupported: unequal/variable-end temporal 'or' cannot preserve overlapping assertion attempt identity
+  190 |   assert property (@(posedge clk) (a [= 1] ##1 b) or(c ##2 d));
+      |                                                   ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:191:45: Unsupported: unequal/variable-end temporal 'or' cannot preserve overlapping assertion attempt identity
+  191 |   assert property (@(posedge clk) (c ##2 d) or(a [= 1] ##1 b));
+      |                                             ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:200:74: Unsupported: bounded temporal 'and' operand cannot be represented as a single fixed match trace
+                                                        : ... note: In instance 't'
+  200 |   assert property (@(posedge clk) ((a ##1 b) and((c ##1 d) or(e ##1 a))) and(b ##1 c));
+      |                                                                          ^~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:201:50: Unsupported: impure expression in a flattened temporal composite
+                                                        : ... note: In instance 't'
+  201 |   assert property (@(posedge clk) ((a ##1 b) and(fimp() ##1 c)) and(d ##1 e));
+      |                                                  ^~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:218:74: Unsupported: intersect/within endpoint deadline after an operand that can reject earlier
+  218 |   assert property (@(posedge clk) (a throughout ((b ##2 c) or(d ##2 e))) intersect (c ##2 a));
+      |                                                                          ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:219:51: Unsupported: impure expression in a temporal 'or' composite
+  219 |   assert property (@(posedge clk) ((fimp() ##2 c) or(d ##2 e)) intersect (a ##2 b));
+      |                                                   ^~
+%Error: t/t_property_nfa_msgs_unsup.v:170:22: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                            : ... note: In instance 't'
+                                            : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+  170 |   assert property (a [* 2]);
       |                      ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_property_nfa_msgs_unsup.v:56:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
-                                          : ... note: In instance 't'
-                                          : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   56 |   assert property (a [* 2]);
+%Error: t/t_property_nfa_msgs_unsup.v:170:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                           : ... note: In instance 't'
+                                           : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+  170 |   assert property (a [* 2]);
       |   ^~~~~~
 %Error: Exiting due to

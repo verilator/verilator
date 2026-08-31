@@ -99,11 +99,34 @@ public:
 // cleared, as we assume that either the coroutine has finished and deleted itself, or, if it got
 // suspended, another VlCoroutineHandle was created to manage it.
 
+class VlCoroutine;
+
+struct VlPromise final {
+    std::coroutine_handle<VlPromise>
+        m_continuation;  // Coroutine to resume after this one finishes
+    VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
+    bool m_forever = false;  // Coroutine suspended forever
+
+    ~VlPromise();
+
+    VlCoroutine get_return_object();
+
+    // Never suspend at the start of the coroutine
+    std::suspend_never initial_suspend() const { return {}; }
+
+    // Never suspend at the end of the coroutine (thanks to this, the coroutine will clean up
+    // after itself)
+    std::suspend_never final_suspend() noexcept;
+
+    void unhandled_exception() const { std::abort(); }  // LCOV_EXCL_LINE
+    void return_void() const {}
+};
+
 class VlCoroutineHandle final {
     VL_UNCOPYABLE(VlCoroutineHandle);
 
     // MEMBERS
-    std::coroutine_handle<> m_coro;  // The wrapped coroutine handle
+    std::coroutine_handle<VlPromise> m_coro;  // The wrapped coroutine handle
     VlProcessRef m_process;  // Data of the suspended process, null if not needed
     VlFileLineDebug m_fileline;
 
@@ -117,7 +140,8 @@ public:
         , m_process{process} {
         if (m_process) m_process->state(VlProcess::WAITING);
     }
-    VlCoroutineHandle(std::coroutine_handle<> coro, VlProcessRef process, VlFileLineDebug fileline)
+    VlCoroutineHandle(std::coroutine_handle<VlPromise> coro, VlProcessRef process,
+                      VlFileLineDebug fileline)
         : m_coro{coro}
         , m_process{process}
         , m_fileline{fileline} {
@@ -135,10 +159,11 @@ public:
         // Usually these coroutines should get resumed; we only need to clean up if we destroy a
         // model with some coroutines suspended
         if (VL_UNLIKELY(m_coro)) {
-            m_coro.destroy();
-            if (m_process && m_process->state() != VlProcess::KILLED) {
+            if (m_process && m_process->state() != VlProcess::KILLED
+                && !m_coro.promise().m_forever) {
                 m_process->state(VlProcess::FINISHED);
             }
+            m_coro.destroy();
         }
     }
     // METHODS
@@ -173,7 +198,13 @@ class VlDelayScheduler final {
     std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
     // Coroutines that waited for #0 and are being resumed now. As member to avoid reallocations
     std::vector<VlCoroutineHandle> m_zeroDelayesSwap;
-
+    std::vector<VlCoroutineHandle>
+        m_forevered;  // Coroutines, that called wait(0), and are to be freed.
+    // Their callers are freed recursively through m_continuation.
+    //
+    // NOTE: it would be possible to clean up forevered coroutines immedietely without storing
+    // them, but it involves a lot of nasty edge cases. Defering cleanup to end of eval step
+    // simplifies logic a lot by ensuring that whole "coroutine stack" was already suspended.
 public:
     // CONSTRUCTORS
     explicit VlDelayScheduler(VerilatedContext& context)
@@ -195,6 +226,7 @@ public:
     }
     // Are there coroutines to resume in the inactive region after a #0 delay?
     bool awaitingZeroDelay() const { return !m_context.gotFinish() && !m_zeroDelayed.empty(); }
+    void cleanupForevered() { m_forevered.clear(); };
 #ifdef VL_DEBUG
     void dump() const;
 #endif
@@ -210,7 +242,7 @@ public:
             const VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
-            void await_suspend(std::coroutine_handle<> coro) {
+            void await_suspend(std::coroutine_handle<VlPromise> coro) {
                 // Both active delays and fork..join_none #0 are resumed out of the time queue.
                 if (phase != VlDelayPhase::INACTIVE) {
                     queue.emplace(delay, VlCoroutineHandle{coro, process, fileline});
@@ -232,6 +264,26 @@ public:
         return Awaitable{process,       m_queue,
                          m_zeroDelayed, m_context.time() + delay,
                          phase,         VlFileLineDebug{filename, lineno}};
+    }
+
+    // Helper awaitable func for suspending coroutines forever.
+    // Used for constant wait statements.
+    auto waitForever(VlProcessRef process, const char* filename = VL_UNKNOWN, int lineno = 0) {
+        VL_DEBUG_IF(
+            VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
+        struct Awaitable final {
+            VlProcessRef process;  // Data of the suspended process, null if not needed
+            std::vector<VlCoroutineHandle>& forevered;
+            VlFileLineDebug fileline;
+
+            bool await_ready() { return false; }
+            void await_suspend(std::coroutine_handle<VlPromise> coro) {
+                coro.promise().m_forever = true;
+                forevered.emplace_back(VlCoroutineHandle{coro, process, fileline});
+            }
+            void await_resume() const {}  // LCOV_EXCL_LINE
+        };
+        return Awaitable{process, m_forevered, VlFileLineDebug{filename, lineno}};
     }
 };
 
@@ -280,7 +332,7 @@ public:
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
-            void await_suspend(std::coroutine_handle<> coro) {
+            void await_suspend(std::coroutine_handle<VlPromise> coro) {
                 suspended.emplace_back(coro, process, fileline);
             }
             void await_resume() const {}
@@ -327,7 +379,7 @@ class VlDynamicTriggerScheduler final {
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
-            void await_suspend(std::coroutine_handle<> coro) {
+            void await_suspend(std::coroutine_handle<VlPromise> coro) {
                 suspended.emplace_back(coro, process, fileline);
             }
             void await_resume() const {}
@@ -372,16 +424,6 @@ public:
 };
 
 //=============================================================================
-// VlForever is a helper awaitable type for suspending coroutines forever. Used for constant
-// wait statements.
-
-struct VlForever final {
-    bool await_ready() const { return false; }  // Always suspend
-    void await_suspend(std::coroutine_handle<> coro) const { coro.destroy(); }
-    void await_resume() const {}
-};
-
-//=============================================================================
 // VlForkSync is used to manage fork..join and fork..join_any constructs.
 
 // Shared fork..join state, because VlForkSync is copied into generated coroutine frames.
@@ -393,11 +435,9 @@ public:
     size_t m_pendingDones = 0;  // done() calls seen before init() (e.g. early killed branch)
     bool m_inDone = false;  // Guard against re-entrant resume recursion from nested kills
     bool m_resumePending = false;  // Join reached zero again while inside done()
-    std::vector<VlProcessRef> m_onKillProcessps;  // Branches registered for kill hooks
 
     VlForkSyncState()  // Construct with a null coroutine handle
         : m_susp{VlProcessRef{}} {}
-    ~VlForkSyncState();
     void done(const char* filename = VL_UNKNOWN, int lineno = 0);
 };
 
@@ -431,7 +471,7 @@ public:
             VlFileLineDebug fileline;
 
             bool await_ready() { return state->m_counter == 0; }  // Suspend if join still exists
-            void await_suspend(std::coroutine_handle<> coro) {
+            void await_suspend(std::coroutine_handle<VlPromise> coro) {
                 state->m_susp = {coro, process, fileline};
             }
             void await_resume() const {}
@@ -445,31 +485,10 @@ public:
 // Return value of a coroutine. Used for chaining coroutine suspension/resumption.
 
 class VlCoroutine final {
-private:
-    // TYPES
-    struct VlPromise final {
-        std::coroutine_handle<> m_continuation;  // Coroutine to resume after this one finishes
-        VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
-
-        ~VlPromise();
-
-        VlCoroutine get_return_object() { return {this}; }
-
-        // Never suspend at the start of the coroutine
-        std::suspend_never initial_suspend() const { return {}; }
-
-        // Never suspend at the end of the coroutine (thanks to this, the coroutine will clean up
-        // after itself)
-        std::suspend_never final_suspend() noexcept;
-
-        void unhandled_exception() const { std::abort(); }
-        void return_void() const {}
-    };
-
+public:
     // MEMBERS
     VlPromise* m_promisep;  // The promise created for this coroutine
 
-public:
     // TYPES
     using promise_type = VlPromise;  // promise_type has to be public
 
@@ -495,7 +514,13 @@ public:
     // Suspend the awaiter if the coroutine is suspended (the promise exists)
     bool await_ready() const noexcept { return !m_promisep; }
     // Set the awaiting coroutine as the continuation of the current coroutine
-    void await_suspend(std::coroutine_handle<> coro) { m_promisep->m_continuation = coro; }
+    // If the current coroutine is suspended forever, propagate that to the awaiting coroutine
+    // In that case, m_continuation will be used for cleaning up the whole suspended coroutine
+    // stack
+    void await_suspend(std::coroutine_handle<VlPromise> awaiting_coro) {
+        if (m_promisep->m_forever) awaiting_coro.promise().m_forever = true;
+        m_promisep->m_continuation = awaiting_coro;
+    }
     void await_resume() const noexcept {}
 };
 

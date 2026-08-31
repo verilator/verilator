@@ -21,7 +21,7 @@ module t (/*AUTOARG*/
 
   logic genclk = 0, a = 0, b = 1, c = 0, x = 0, y, z = 0;
   always @(edge clk) genclk = clk;
-  always @(posedge genclk) $display("%0t | posedge", $time);
+  always @(posedge genclk) $display("[%0t] posedge", $time);
 
   // Clocking block
   clocking cb @(posedge genclk);
@@ -35,40 +35,40 @@ module t (/*AUTOARG*/
 
   // Print after Observed
   always @(posedge genclk) a = ~a;
-  always @cb $display("%0t | cb.a=%b", $time, cb.a);
-  always @cb $display("%0t | cb.b=%b", $time, cb.b);
-  always @cb.y $display("%0t | cb.y=%b", $time, cb.y);
+  always @cb $display("[%0t] cb.a=%b", $time, cb.a);
+  always @cb $display("[%0t] cb.b=%b", $time, cb.b);
+  always @cb.y $display("[%0t] cb.y=%b", $time, cb.y);
 
   // Retrigger everything after Observed
   always @cb.a b = x;
   always @b begin
-    $display("%0t | b=%b", $time, b);
+    $display("[%0t] b=%b", $time, b);
     if (b == 0) genclk = ~genclk;
   end
 
   // Do an NBA
   always @(posedge genclk) c <= ~c;
   always @c begin
-    $display("%0t | c<=%b", $time, c);
+    $display("[%0t] c<=%b", $time, c);
   end
 
   // Print after Re-NBA
   always @(posedge genclk) cb.x <= ~x;
-  always @x $display("%0t | x<=%b", $time, x);
+  always @x $display("[%0t] x<=%b", $time, x);
 
   // Retrigger everything after Re-NBA
   always @x y = x;
   always @y begin
-    $display("%0t | y=%b", $time, y);
+    $display("[%0t] y=%b", $time, y);
     if (y == 1) genclk = ~genclk;
   end
 
 `ifdef VERILATOR_TIMING
   // Print after delay and Re-NBA
   always @(posedge genclk) cb.z <= ~z;
-  always @z $display("%0t | z<=%b", $time, z);
+  always @z $display("[%0t] z<=%b", $time, z);
 `endif
 
   // Print in Postponed
-  always @(posedge genclk) $strobe("%0t | %b %b %b %b %b %b", $time, a, b, c, x, y, z);
+  always @(posedge genclk) $strobe("[%0t] %b %b %b %b %b %b", $time, a, b, c, x, y, z);
 endmodule;

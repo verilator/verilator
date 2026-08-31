@@ -146,6 +146,7 @@ bool AstBasicDType::ascending() const {
 
 bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
 bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
+bool AstActive::hasInitial() const { return m_sentreep->hasInitial(); }
 bool AstActive::hasStatic() const { return m_sentreep->hasStatic(); }
 
 AstAlways::AstAlways(AstAssignW* assignp)

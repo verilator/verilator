@@ -48,7 +48,7 @@ module t (
 
   function logic [15:0] sideeffect_func(logic [15:0] v);
     /*verilator no_inline_task */
-    $display(" sideeffect_func() is called %t", $time);
+    $display("[%0t] sideeffect_func() is called", $time);
     return ~v;
   endfunction
   reg [15:0] m_split_1 = 0;
