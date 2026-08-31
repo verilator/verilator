@@ -1878,6 +1878,7 @@ void AstNode::dump(std::ostream& str) const {
     } else {  // V3Broken will throw an error
         if (dtypep()) str << " %Error-dtype-exp=null,got=" << nodeAddr(dtypep());
     }
+    if (fileline()->erroringOn()) str << " [ERRORING]";
     if (name() != "") {
         if (VN_IS(this, Const)) {
             str << "  " << name();  // Already quoted
