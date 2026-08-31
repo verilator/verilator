@@ -6008,9 +6008,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     // Resolve a chained class-scope operand (`pkg::outer::inner` in
     // `pkg::outer::inner::t`) and reduce it to its innermost ClassOrPackageRef.
+    // Always reports a diagnostic when it cannot, so the caller need not.
     bool reduceScopeDot(AstRefDType* nodep, AstDot* scopeDotp) {
         std::vector<AstClassOrPackageRef*> refps;
-        if (!collectScopeRefs(scopeDotp, refps)) return false;
+        if (!collectScopeRefs(scopeDotp, refps)) {
+            scopeDotp->v3warn(E_UNSUPPORTED, "Unsupported: Multiple '::' package/class reference");
+            return false;
+        }
 
         VSymEnt* scopeSymp = m_ds.m_dotSymp;
         for (size_t i = 0; i < refps.size(); ++i) {
@@ -6018,11 +6022,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (!refp->classOrPackageSkipp() && !refp->classOrPackageNodep()
                 && !m_statep->resolveClassOrPackage(scopeSymp, refp, i == 0, false,
                                                     "class/package reference")) {
-                return true;  // Error already reported
+                return false;  // Error already reported
             }
             if (i + 1 == refps.size()) break;
+            // A middle segment that resolved to a node with no reachable module
+            // (e.g. a typedef alias of a not-yet-specialized parameterized class)
+            // gives nothing to look the next segment up in.
             AstNodeModule* const modp = refp->classOrPackageSkipp();
-            if (!modp) return false;
+            if (!modp) {
+                refp->v3warn(E_UNSUPPORTED, "Unsupported: Multiple '::' package/class reference");
+                return false;
+            }
             scopeSymp = m_statep->getNodeSym(modp);
         }
         AstClassOrPackageRef* const innerp = refps.back();
@@ -6100,9 +6110,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(5, indent() << "visit " << nodep);
         if (nodep->classOrPackageOpp()) {
             // Resolve a chained scope (`pkg::cls::t`, `pkg::cls#(P)::t`) from outside in.
-            bool scopeDotHandled = false;
+            // On failure reduceScopeDot has reported, so stop before using the operand.
             if (AstDot* const scopeDotp = VN_CAST(nodep->classOrPackageOpp(), Dot)) {
-                scopeDotHandled = reduceScopeDot(nodep, scopeDotp);
+                if (!reduceScopeDot(nodep, scopeDotp)) return;
             }
             // Re-read: reduceScopeDot may have replaced the operand
             AstNode* const cpackagep = nodep->classOrPackageOpp();
@@ -6148,7 +6158,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
                 }
             } else {
-                UASSERT_OBJ(scopeDotHandled, cpackagep, "Unexpected package/class scope operand");
+                // reduceScopeDot always leaves a ClassOrPackageRef or returns false above.
+                UASSERT_OBJ(!VN_IS(cpackagep, Dot), cpackagep,
+                            "Unexpected package/class scope operand");
             }
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }

@@ -341,6 +341,10 @@ class ParamProcessor final {
         return st;
     }
 
+    static bool isAggregateParamValue(const AstNode* nodep) {
+        return VN_IS(nodep, InitArray) || VN_IS(nodep, ConsPackUOrStruct);
+    }
+
     static string paramValueString(const AstNode* nodep) {
         if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
             nodep = refp->skipRefToNonRefp();
@@ -1514,6 +1518,14 @@ class ParamProcessor final {
         }
     }
 
+    // Include the pin's value in the specialization name, so cells passing equal
+    // values share one module clone.
+    void nameByPinValue(AstPin* pinp, AstNodeModule* srcModp, AstVar* modvarp, string& longnamer,
+                        bool& any_overridesr) {
+        longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(pinp->exprp());
+        any_overridesr = true;
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
                         string& longnamer, bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -1524,20 +1536,14 @@ class ParamProcessor final {
                                  << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
             } else if (VN_IS(pinp->exprp(), InitArray) && arraySubDTypep(modvarp->subDTypep())) {
                 // Array assigned to array
-                AstNode* const exprp = pinp->exprp();
-                longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
-                any_overridesr = true;
-            } else if (VN_IS(pinp->exprp(), InitArray)
-                       || VN_IS(pinp->exprp(), ConsPackUOrStruct)) {
-                // Treat constant aggregate parameters as values and include them in the module
-                // name. Constantify nested expressions before mangling the value number.
-                V3Const::constifyParamsEdit(pinp->exprp());
-                longnamer
-                    += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(pinp->exprp());
-                any_overridesr = true;
+                nameByPinValue(pinp, srcModp, modvarp, longnamer, any_overridesr);
             } else {
                 UINFO(9, "cellPinCleanup: before constify " << pinp << " " << modvarp);
                 V3Const::constifyParamsEdit(pinp->exprp());
+                if (isAggregateParamValue(pinp->exprp())) {
+                    nameByPinValue(pinp, srcModp, modvarp, longnamer, any_overridesr);
+                    return;
+                }
                 // Cast/CastSize default values are not yet folded by V3Width.
                 // Constify here so the comparison below sees a Const node.
                 // Other node kinds are handled in the branches above.

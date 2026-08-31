@@ -8,6 +8,9 @@
 // class or package, it should receive the same lookup diagnostic as any other
 // unresolved scope.
 //
+// Each declaration reports exactly once: once a segment fails, resolution of
+// that reference stops rather than also reporting the trailing type name.
+//
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0

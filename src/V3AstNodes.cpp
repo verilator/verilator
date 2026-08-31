@@ -1414,7 +1414,9 @@ bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
     if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {
-        return dtypep->basicp()->isLiteralType();
+        // basicp() is null for e.g. an array of unpacked structs, which is not literal
+        const AstBasicDType* const basicp = dtypep->basicp();
+        return basicp && basicp->isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), StructDType)) {
         // Currently all structs are packed, later this can be expanded to
         // 'forall members _.isLiteralType()'
