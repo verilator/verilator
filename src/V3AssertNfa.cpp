@@ -47,7 +47,7 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 // Fixed-trace conjunction and strong-pending expansion cap (sites / ring slots)
-static constexpr uint64_t kFixedTraceSiteLimit = 1024;
+static constexpr uint64_t FIXED_TRACE_SITE_LIMIT = 1024;
 
 //######################################################################
 // NFA Graph Data Structures (V3Graph-derived per upstream convention)
@@ -1312,13 +1312,13 @@ class SvaNfaBuilder final {
     }
 
     static bool reserveFixedTraceSites(AstNode* nodep, uint64_t& sites, uint64_t increment) {
-        if (increment <= kFixedTraceSiteLimit - sites) {
+        if (increment <= FIXED_TRACE_SITE_LIMIT - sites) {
             sites += increment;
             return true;
         }
         nodep->v3warn(E_UNSUPPORTED,
                       "Unsupported: concurrent assertion fixed-trace expansion exceeds "
-                          << kFixedTraceSiteLimit << " sites");
+                          << FIXED_TRACE_SITE_LIMIT << " sites");
         return false;
     }
 
@@ -2342,8 +2342,8 @@ private:
     };
 
     // Sentinels stored in the attempt-depth vector
-    static constexpr int kDepthUnreachable = -1;
-    static constexpr int kDepthAmbiguous = -2;
+    static constexpr int DEPTH_UNREACHABLE = -1;
+    static constexpr int DEPTH_AMBIGUOUS = -2;
 
     using OutcomeBuckets = std::map<int, AstNodeExpr*>;
 
@@ -2371,7 +2371,7 @@ private:
 
     // Start depth of the attempt reaching each vertex; negative when unreachable or ambiguous.
     static std::vector<int> computeAttemptDepths(const LowerCtx& c) {
-        std::vector<int> depths(c.N, kDepthUnreachable);
+        std::vector<int> depths(c.N, DEPTH_UNREACHABLE);
         depths[c.startIdx] = 0;
         for (int pass = 0;; ++pass) {
             UASSERT_OBJ(pass < 2 * c.N + 2, c.graph.m_startVertexp,
@@ -2380,18 +2380,18 @@ private:
             for (const SvaTransEdge* const tep : c.edges) {
                 const int fi = tep->fromVtxp()->color();
                 const int ti = tep->toVtxp()->color();
-                if (depths[fi] == kDepthUnreachable || ti == c.startIdx) continue;
+                if (depths[fi] == DEPTH_UNREACHABLE || ti == c.startIdx) continue;
                 int edgeDepth = tep->m_consumesCycle ? 1 : 0;
                 if (tep->toVtxp()->m_isFixedDelayRing) {
                     edgeDepth = tep->toVtxp()->m_delayRingSize;
                 }
                 const int candidate
-                    = depths[fi] == kDepthAmbiguous ? kDepthAmbiguous : depths[fi] + edgeDepth;
-                if (depths[ti] == kDepthUnreachable) {
+                    = depths[fi] == DEPTH_AMBIGUOUS ? DEPTH_AMBIGUOUS : depths[fi] + edgeDepth;
+                if (depths[ti] == DEPTH_UNREACHABLE) {
                     depths[ti] = candidate;
                     changed = true;
-                } else if (depths[ti] != candidate && depths[ti] != kDepthAmbiguous) {
-                    depths[ti] = kDepthAmbiguous;
+                } else if (depths[ti] != candidate && depths[ti] != DEPTH_AMBIGUOUS) {
+                    depths[ti] = DEPTH_AMBIGUOUS;
                     changed = true;
                 }
             }
@@ -2481,11 +2481,11 @@ private:
                 return strongPendingFastCount(c);
             }
         }
-        if (ringSlots > kFixedTraceSiteLimit) {
+        if (ringSlots > FIXED_TRACE_SITE_LIMIT) {
             c.flp->v3warn(E_UNSUPPORTED,
                           "Unsupported: end-of-simulation attempt counting for multiple strong "
                           "operators requires expanding "
-                              << ringSlots << " ring slots (limit " << kFixedTraceSiteLimit
+                              << ringSlots << " ring slots (limit " << FIXED_TRACE_SITE_LIMIT
                               << ")");
             return strongPendingFastCount(c);
         }
@@ -3662,8 +3662,8 @@ public:
 
 // Out-of-line definitions, required under C++14 as these are odr-used
 // (bound to a const reference by std::vector's fill constructor)
-constexpr int SvaNfaLowering::kDepthUnreachable;
-constexpr int SvaNfaLowering::kDepthAmbiguous;
+constexpr int SvaNfaLowering::DEPTH_UNREACHABLE;
+constexpr int SvaNfaLowering::DEPTH_AMBIGUOUS;
 
 }  // namespace
 
