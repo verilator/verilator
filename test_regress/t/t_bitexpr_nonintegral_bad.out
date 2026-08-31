@@ -1,0 +1,26 @@
+%Error: t/t_bitexpr_nonintegral_bad.v:13:18: Operator AND expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                           : ... note: In instance 't'
+   13 |     sink = x_arr & x;
+      |                  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_bitexpr_nonintegral_bad.v:14:18: Operator OR expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                           : ... note: In instance 't'
+   14 |     sink = x_arr | x;
+      |                  ^
+%Error: t/t_bitexpr_nonintegral_bad.v:15:18: Operator XOR expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                           : ... note: In instance 't'
+   15 |     sink = x_arr ^ x;
+      |                  ^
+%Error: t/t_bitexpr_nonintegral_bad.v:16:14: Operator AND expects integral operand on the RHS, but it's data type is: 'logic$[0:2]'
+                                           : ... note: In instance 't'
+   16 |     sink = x & x_arr;
+      |              ^
+%Error: t/t_bitexpr_nonintegral_bad.v:17:14: Operator OR expects integral operand on the RHS, but it's data type is: 'logic$[0:2]'
+                                           : ... note: In instance 't'
+   17 |     sink = x | x_arr;
+      |              ^
+%Error: t/t_bitexpr_nonintegral_bad.v:18:14: Operator XOR expects integral operand on the RHS, but it's data type is: 'logic$[0:2]'
+                                           : ... note: In instance 't'
+   18 |     sink = x ^ x_arr;
+      |              ^
+%Error: Exiting due to

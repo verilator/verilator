@@ -3,8 +3,8 @@
    26 |     getter = itf;   
       |              ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_interface_asvar_bad.v:27:21: Operator ADD expected non-interface on RHS but 'itf' is an interface.
+%Error: t/t_interface_asvar_bad.v:27:19: Operator ADD expects integral or real operand on the RHS, but it's data type is: 'IFACEREFDTYPE'
                                        : ... note: In instance 't.source'
    27 |     getter = 4'd3 + itf;   
-      |                     ^~~
+      |                   ^
 %Error: Exiting due to

@@ -45,7 +45,7 @@ class Cls #(
   typedef enum {E_PBASE = PBASE} enum_t;
 endclass
 
-typedef Cls#(8) Cls8_t;
+typedef Cls #(8) Cls8_t;
 
 module t;
 
@@ -54,15 +54,18 @@ module t;
   Cls8_t c8;
   Wrap #(.P(16)) w16;
   Wrap2 #(.P(32)) w32;
+  Wrap2 #(Wrap #(19)::PBASE & 'b111) w3;
   Wrap2 #(Wrap #(19)::PBASE * 2) w38;
   initial begin
     c12 = new;
-    c4 = new;
-    c8 = new;
+    c4  = new;
+    c8  = new;
     w16 = new;
     w32 = new;
     w38 = new;
+    w3 = new;
     if (w38.get_p() != 38) $stop;
+    if (w3.get_p() != 3) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

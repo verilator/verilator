@@ -1,5 +1,10 @@
-%Error: t/t_mem_slice_dtype_bad.v:22:43: ADD unexpected in assignment to unpacked array
+%Error: t/t_mem_slice_dtype_bad.v:22:43: Operator ADD expects integral or real operand on the LHS, but it's data type is: 'logic[4:0]$[1:0]'
+                                       : ... note: In instance 't'
    22 |     completed_cnt[id] <= completed_cnt_dp + 1;
       |                                           ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_mem_slice_dtype_bad.v:37:25: Operator AND expects integral operand on the LHS, but it's data type is: 'logic[39:0]$[1:0]'
+                                       : ... note: In instance 't'
+   37 |       assert ((addr[id] & way_mask) == 0);
+      |                         ^
 %Error: Exiting due to
