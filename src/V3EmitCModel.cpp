@@ -461,6 +461,12 @@ class EmitCModel final : public EmitCFunc {
         puts("\nvoid " + EmitCUtil::topClassName() + "::evalEnd() {\n");
         putsDecoration(nullptr, "// Evaluate cleanup\n");
         puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
+        if (AstVar* const delaySchedp = v3Global.rootp()->delaySchedulerp()) {
+            puts("vlSymsp->TOP.");
+            puts(delaySchedp->nameProtect());
+            puts(".cleanupForevered();\n");
+        }
+
         puts("}\n");
 
         // Evaluation entry points

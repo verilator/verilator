@@ -925,6 +925,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false) \
     macro(SCHED_RESUMPTION,                   "resumption",             false) \
     macro(SCHED_TRIGGER,                      "trigger",                false) \
+    macro(SCHED_WAIT_FOREVER,                 "waitForever",            false) \
     macro(UNPACKED_ASSIGN,                    "assign",                 false) \
     macro(UNPACKED_FILL,                      "fill",                   false) \
     macro(UNPACKED_NEQ,                       "neq",                    true)
