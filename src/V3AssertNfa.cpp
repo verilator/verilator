@@ -2341,8 +2341,8 @@ private:
         AstNodeExpr* throughoutRejectp = nullptr;  // Reject when a throughout guard drops
     };
 
-    static constexpr int kDepthUnreachable = -1;
-    static constexpr int kDepthAmbiguous = -2;
+    static constexpr int s_depthUnreachable = -1;
+    static constexpr int s_depthAmbiguous = -2;
     using OutcomeBuckets = std::map<int, AstNodeExpr*>;
 
     static AstNodeExpr* boolToCount(LowerCtx& c, AstNodeExpr* condp) {
@@ -2369,7 +2369,7 @@ private:
 
     // Start depth of the attempt reaching each vertex; negative when unreachable or ambiguous.
     static std::vector<int> computeAttemptDepths(const LowerCtx& c) {
-        std::vector<int> depths(c.N, kDepthUnreachable);
+        std::vector<int> depths(c.N, s_depthUnreachable);
         depths[c.startIdx] = 0;
         for (int pass = 0;; ++pass) {
             UASSERT_OBJ(pass < 2 * c.N + 2, c.graph.m_startVertexp,
@@ -2378,18 +2378,18 @@ private:
             for (const SvaTransEdge* const tep : c.edges) {
                 const int fi = tep->fromVtxp()->color();
                 const int ti = tep->toVtxp()->color();
-                if (depths[fi] == kDepthUnreachable || ti == c.startIdx) continue;
+                if (depths[fi] == s_depthUnreachable || ti == c.startIdx) continue;
                 int edgeDepth = tep->m_consumesCycle ? 1 : 0;
                 if (tep->toVtxp()->m_isFixedDelayRing) {
                     edgeDepth = tep->toVtxp()->m_delayRingSize;
                 }
                 const int candidate
-                    = depths[fi] == kDepthAmbiguous ? kDepthAmbiguous : depths[fi] + edgeDepth;
-                if (depths[ti] == kDepthUnreachable) {
+                    = depths[fi] == s_depthAmbiguous ? s_depthAmbiguous : depths[fi] + edgeDepth;
+                if (depths[ti] == s_depthUnreachable) {
                     depths[ti] = candidate;
                     changed = true;
-                } else if (depths[ti] != candidate && depths[ti] != kDepthAmbiguous) {
-                    depths[ti] = kDepthAmbiguous;
+                } else if (depths[ti] != candidate && depths[ti] != s_depthAmbiguous) {
+                    depths[ti] = s_depthAmbiguous;
                     changed = true;
                 }
             }
@@ -3657,6 +3657,9 @@ public:
         return res;
     }
 };
+
+constexpr int SvaNfaLowering::s_depthUnreachable;
+constexpr int SvaNfaLowering::s_depthAmbiguous;
 
 }  // namespace
 
