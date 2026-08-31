@@ -292,6 +292,10 @@ private:
         ++m_nCalls;
         processAndIterate(nodep);
     }
+    void visit(AstCFuncHard* nodep) override {
+        ++m_nCalls;
+        processAndIterate(nodep);
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         ++m_nCalls;
         processAndIterate(nodep);

@@ -883,9 +883,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         } else if (const AstCMethodHard* const cmethp = VN_CAST(nodep, CMethodHard)) {
             if (cmethp->method() == VCMethod::ARRAY_AT) {
                 AstNodeExpr* const argp = cmethp->pinsp();
-                exprp->add(".\" + vlToSolverHex(");
-                exprp->add(argp->cloneTreePure(false));
-                exprp->add(") + \"");
+                exprp->add(".\" + ");
+                AstCFuncHard* const solverHexFuncp
+                    = new AstCFuncHard{nodep->fileline(), VCFunction::RANDOMIZER_TO_SOLVER_HEX};
+                solverHexFuncp->addPinsp(argp->cloneTreePure(false));
+                solverHexFuncp->dtypeSetString();
+                exprp->add(solverHexFuncp);
+                exprp->add(" + \"");
             } else {
                 cmethp->v3fatalSrc("Unexpected CMethodHard: " << cmethp->prettyTypeName());
                 return;
@@ -915,9 +919,14 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstCExpr* buildArraySelNameExpr(FileLine* fl, const std::string& baseName,
                                     const AstNodeSel* selp) {
         AstCExpr* const p = new AstCExpr{fl, ""};
-        p->add("(\""s + baseName + ".\" + vlToSolverHex(");
-        p->add(selp->bitp()->cloneTreePure(false));
-        p->add("))");
+        p->add("(\""s + baseName + ".\"");
+        p->add("+");
+        AstCFuncHard* const solverHexFuncp
+            = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX};
+        solverHexFuncp->addPinsp(selp->bitp()->cloneTreePure(false));
+        solverHexFuncp->dtypeSetString();
+        p->add(solverHexFuncp);
+        p->add(")");
         p->dtypeSetString();
         return p;
     }
@@ -948,9 +957,14 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
                 if (baseName.empty()) return nullptr;
                 AstCExpr* const p = new AstCExpr{fl, ""};
-                p->add("(\""s + baseName + ".\" + vlToSolverHex(");
-                p->add(arrSelp->bitp()->cloneTreePure(false));
-                p->add("))");
+                p->add("(\""s + baseName + ".\"");
+                p->add("+");
+                AstCFuncHard* const solverHexFuncp
+                    = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX};
+                solverHexFuncp->addPinsp(arrSelp->bitp()->cloneTreePure(false));
+                solverHexFuncp->dtypeSetString();
+                p->add(solverHexFuncp);
+                p->add(")");
                 p->dtypeSetString();
                 return p;
             }
