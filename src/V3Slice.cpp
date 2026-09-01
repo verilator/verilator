@@ -383,11 +383,8 @@ class SliceVisitor final : public VNVisitor {
     void visit(AstNeqCase* nodep) override { expandBiOp(nodep); }
 
     void visit(AstSliceSel* nodep) override {
-        // Any SliceSel surviving to here wasn't consumed by one of the
-        // patterns above, e.g. used directly as a value such as a $display
-        // argument. Build a real runtime slice value via
-        // VlUnpacked::slice<N_Out>(loIdx), the same way DYN_SLICE already
-        // does for Queues.
+        // Slice used as a bare value, e.g. a $display argument. Build it via
+        // VlUnpacked::slice<N_Out>(loIdx), as DYN_SLICE already does for Queues.
         iterateChildren(nodep);
         AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
         AstConst* const lop = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32,
