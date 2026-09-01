@@ -123,7 +123,7 @@ module t (
     repeat (3) @(negedge clk);
 
     `checkd(or_fail_pass, 0);
-    `checkd(or_fail_count, 1);
+    `checkd(or_fail_count, 0);
     `checkd(or_both_pass, 1);
     `checkd(or_both_fail, 0);
     `checkd(cross_hits, 0);
@@ -132,7 +132,7 @@ module t (
     `checkd(isect_pass_one, 17);
     `checkd(isect_pass_both, 17);
     `checkd(isect_pass_zero, 18);
-    `checkd(isect_fail_left, 17);
+    `checkd(isect_fail_left, 0);
     `checkd(isect_fail_right, 17);
     `checkd(isect_fail_zero, 18);
     `checkd(isect_unexp_one, 0);

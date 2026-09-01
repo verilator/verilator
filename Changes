@@ -99,7 +99,6 @@ Verilator 5.051 devel
 * Fix use-after-free in V3LinkDotIfaceCapture (#7943). [Nick Brereton]
 * Fix sampled-value clocks in repeated assertions (#7944). [Artur Bieniek, Antmicro Ltd.]
 * Fix queued $finish/$stop request thread ordering (#7946 prep) (#7952). [Yilou Wang]
-* Fix NFA assertion scheduling to fix outcome counts (#7946). [Yilou Wang]
 * Fix DFG nested shifts with overflowing shift amount (#7955) (#7977).
 * Fix timing controls in interface tasks called via virtual interface (#7959). [Yilou Wang]
 * Fix lambda parameter types in queue min and max (#7962). [Bartosz Skorowski]

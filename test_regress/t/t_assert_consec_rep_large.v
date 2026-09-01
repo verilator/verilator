@@ -41,7 +41,7 @@ module t (
 
   // A blocking action counts all live threads rejected when the long run ends.
   assert property (@(posedge clk) cons_a [* 513])
-  else if (cyc == 1101) count_fail_threads_513++;
+  else if (cyc == 1100) count_fail_threads_513++;
 
   // One triggered attempt makes an off-by-one ring exit observable. Consecutive
   // repetition sees a long run; goto repetition advances across regular gaps.

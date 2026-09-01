@@ -73,22 +73,22 @@ module t (
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 19) begin
-      // Constant-true window [0:3]: the finish-edge action does not execute.
-      `checkd(high_bounded_pass_q.size(), 16);
-      `checkd(high_bounded_pass_q[0], 4);
+      // Constant-true window [0:3]: K=0..16 succeed at cyc K+3 = 3..19.
+      `checkd(high_bounded_pass_q.size(), 17);  // Other sims: 16
+      `checkd(high_bounded_pass_q[0], 3);  // Other sims: 4
       `checkd(high_bounded_pass_q[$], 19);
-      // Reactive actions observe the post-NBA value of cyc.
-      `checkd(high_degenerate_pass_q.size(), 19);
-      `checkd(high_degenerate_pass_q[0], 1);  // One other sim: 0
+      // Degenerate [0:0]: K=0..19 succeed at cyc K = 0..19.
+      `checkd(high_degenerate_pass_q.size(), 20);  // Other sims: 19
+      `checkd(high_degenerate_pass_q[0], 0);  // Other sims: 0, 1
       `checkd(high_degenerate_pass_q[$], 19);
       // Constant-false: every attempt fails immediately.
-      `checkd(low_bounded_fail_q.size(), 19);
-      `checkd(low_degenerate_fail_q.size(), 19);
+      `checkd(low_bounded_fail_q.size(), 20);  // Other sims: 19
+      `checkd(low_degenerate_fail_q.size(), 20);  // Other sims: 19
       // CRC + disable streams
       `checkd(rand_bounded_pass_q.size(), 0);
-      `checkd(rand_bounded_fail_q.size(), 19);  // One other sim: 11
+      `checkd(rand_bounded_fail_q.size(), 20);  // Other sims: 19, 11
       `checkd(disable_bounded_pass_q.size(), 0);
-      `checkd(disable_bounded_fail_q.size(), 6);  // One other sim: 5
+      `checkd(disable_bounded_fail_q.size(), 8);  // Other sims: 5, 6
       $write("*-* All Finished *-*\n");
       $finish;
     end
