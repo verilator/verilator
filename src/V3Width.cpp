@@ -7003,6 +7003,42 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
     }
+    static const AstCell* pinCellParamp(const AstPin* pinp) {
+        const AstNode* headp = pinp;
+        while (headp->backp() && headp->backp()->nextp() == headp) headp = headp->backp();
+        const AstCell* const cellp = VN_CAST(headp->backp(), Cell);
+        return cellp && cellp->paramsp() == headp ? cellp : nullptr;
+    }
+    static AstNodeDType* instanceParamDTypep(AstNodeDType* templateDtp, const AstCell* cellp) {
+        if (!templateDtp->exists(
+                [](const AstVarRef* refp) { return refp->varp() && refp->varp()->isGParam(); })) {
+            return nullptr;  // Not parameter dependent
+        }
+        AstNodeDType* const clonep = templateDtp->cloneTree(false);
+        // Hold under a temporary Var so edited nodes have a back pointer
+        AstVar* const holderp = new AstVar{templateDtp->fileline(), VVarType::MODULETEMP,
+                                           "__Vpindtype", VFlagChildDType{}, clonep};
+        holderp->foreach([cellp](AstVarRef* refp) {
+            AstVar* const targetp = refp->varp();
+            if (!targetp || !targetp->isGParam()) return;
+            AstNode* replacep = nullptr;
+            for (AstPin* pp = cellp->paramsp(); pp; pp = VN_AS(pp->nextp(), Pin)) {
+                if (pp->modVarp() == targetp) {
+                    if (pp->exprp()) replacep = pp->exprp()->cloneTree(false);
+                    break;
+                }
+            }
+            // Not overridden by this instance, so the default applies
+            if (!replacep && targetp->valuep()) replacep = targetp->valuep()->cloneTree(false);
+            if (!replacep) return;
+            refp->replaceWith(replacep);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        });
+        AstNodeDType* const resultp = holderp->childDTypep();
+        resultp->unlinkFrBack();
+        VL_DO_DANGLING(holderp->deleteTree(), holderp);
+        return resultp;
+    }
     void visit(AstPin* nodep) override {
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
@@ -7011,12 +7047,26 @@ class WidthVisitor final : public VNVisitor {
             bool didWidth = false;
             if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
                 const AstVar* const modVarp = nodep->modVarp();
-                // Convert BracketArrayDType
-                userIterate(modVarp->childDTypep(),
-                            WidthVP{SELF, BOTH}.p());  // May relink pointed to node
-                AstNodeDType* const setDtp = modVarp->childDTypep();
-                if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
-                userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                AstNodeDType* instDtp = nullptr;
+                if (!patternp->childDTypep()) {
+                    if (const AstCell* const cellp = pinCellParamp(nodep)) {
+                        instDtp = instanceParamDTypep(nodep->modVarp()->childDTypep(), cellp);
+                    }
+                }
+                if (instDtp) {
+                    // Hold under the Pattern so the type has a back pointer while widthed
+                    patternp->childDTypep(instDtp);
+                    // Convert BracketArrayDType
+                    userIterate(patternp->childDTypep(), WidthVP{SELF, BOTH}.p());
+                    userIterateChildren(nodep, WidthVP{patternp->childDTypep(), BOTH}.p());
+                } else {
+                    // Convert BracketArrayDType
+                    userIterate(modVarp->childDTypep(),
+                                WidthVP{SELF, BOTH}.p());  // May relink pointed to node
+                    AstNodeDType* const setDtp = modVarp->childDTypep();
+                    if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
+                    userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                }
                 didWidth = true;
             }
             if (!didWidth) userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
