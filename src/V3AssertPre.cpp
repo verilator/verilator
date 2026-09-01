@@ -675,12 +675,6 @@ private:
         iterateAndNextNull(nodep->stmtsp());
         m_seniAlwaysp = nullptr;
     }
-    void visit(AstAlwaysObserved* nodep) override {
-        iterateAndNextNull(nodep->sentreep());
-        VL_RESTORER(m_seniAlwaysp);
-        m_seniAlwaysp = nodep->sentreep()->sensesp();
-        iterateAndNextNull(nodep->stmtsp());
-    }
 
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
@@ -979,7 +973,7 @@ private:
             nodep->v3error("Repetition count is not an elaboration-time constant"
                            " (IEEE 1800-2023 16.9.2)");
             VL_DO_DANGLING(pushDeletep(countp), countp);
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return nullptr;
         }
@@ -987,7 +981,7 @@ private:
             nodep->v3error("Repetition count must be non-negative"
                            " (IEEE 1800-2023 16.9.2)");
             VL_DO_DANGLING(pushDeletep(countp), countp);
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return nullptr;
         }

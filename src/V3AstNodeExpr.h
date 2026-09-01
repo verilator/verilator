@@ -1159,6 +1159,16 @@ public:
         , m_num(this, 1, 0) {  // Need () constructor
         dtypeSetBit();
     }
+    // False but created due to reporting earlier error; suppress some later errors
+    class BitFalseErroring {};
+    AstConst(FileLine* fl, BitFalseErroring)
+        : ASTGEN_SUPER_Const(fl)
+        , m_num(this, 1, 0) {  // Need () constructor
+        dtypeSetBit();
+        FileLine* const newfl = new FileLine{fileline()};
+        newfl->erroringOn(true);
+        fileline(newfl);
+    }
     // Shorthand const 1 (or with argument 0/1), dtype should be a bit of size 1
     class BitTrue {};
     AstConst(FileLine* fl, BitTrue, bool on = true)
