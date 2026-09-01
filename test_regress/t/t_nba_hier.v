@@ -15,12 +15,22 @@ module t;
   always #5 clk = ~clk;
 
   logic [7:0] x;
+  logic [3:0] idx = 0;
+  logic [9:0] whole_only;
+  logic [9:0] whole_partial;
+  real real_value;
 
   sub a_0 ();
   sub a_1 ();
   always @(posedge clk) begin
-    a_0.x[3:0] <= ~x[3:0];
+    a_0.x[idx+:4] <= ~x[3:0];
     a_1.x[7:0] <= ~x;
+    whole_only <= {2'b0, ~x};
+    whole_partial <= {2'b0, ~x};
+    whole_partial[0] <= x[0];
+    real_value <= x;
+    // The LHS index must be captured before this update.
+    idx = idx + 1;
   end
 
   sub b_0 ();
@@ -58,6 +68,11 @@ module t;
     end
   end
 
+  sub f_0 ();
+  always @(posedge clk) begin
+    for (int i = 0; i < 2; ++i) f_0.x[i] <= ~x[i];
+  end
+
   initial begin
     #1;
     x = 8'hcc;
@@ -65,6 +80,9 @@ module t;
     @(negedge clk);
     `checkh(a_0.x[3:0], 4'h3);
     `checkh(a_1.x[7:0], 8'h33);
+    `checkh(whole_only, 10'h033);
+    `checkh(whole_partial, 10'h032);
+    `checkh($rtoi(real_value), 204);
     `checkh(b_0.x[3:0], 4'h3);
     `checkh(b_1.x[7:0], 8'h33);
     `checkh(c_0.x[3:0], 4'h3);
@@ -77,13 +95,17 @@ module t;
       `checkh(e_0.y[i][3:0], 4'h3);
       `checkh(e_1.y[i][7:0], 8'h33);
     end
+    `checkh(f_0.x[1:0], 2'h3);
 
     #1;
     x = 8'h55;
     @(posedge clk);
     @(negedge clk);
-    `checkh(a_0.x[3:0], 4'ha);
+    `checkh(a_0.x[4:0], 5'h15);
     `checkh(a_1.x[7:0], 8'haa);
+    `checkh(whole_only, 10'h0aa);
+    `checkh(whole_partial, 10'h0ab);
+    `checkh($rtoi(real_value), 85);
     `checkh(b_0.x[3:0], 4'ha);
     `checkh(b_1.x[7:0], 8'haa);
     `checkh(c_0.x[3:0], 4'ha);
@@ -96,6 +118,7 @@ module t;
       `checkh(e_0.y[i][3:0], 4'ha);
       `checkh(e_1.y[i][7:0], 8'haa);
     end
+    `checkh(f_0.x[1:0], 2'h2);
 
     #1;
     $finish;
