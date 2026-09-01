@@ -700,7 +700,6 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
         }
     }
 
-    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
     if (varBits == 0) {
         // Nothing to sample (e.g. a still-unsized queue/dynamic array, in a
         // layer or the whole class) -- tautology instead of the degenerate
@@ -708,6 +707,7 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
         os << "(= #b1 #b1)";
         return;
     }
+    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
     os << "(= #b";
     for (int i = bits - 1; i >= 0; i--) os << (VL_BITISSET_I(hash, i) ? '1' : '0');
     if (bits > 1) os << " (concat";
