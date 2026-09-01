@@ -114,6 +114,8 @@ module t (
         sige <= 2'b01;
       end
       4: begin
+        // Ensure w_stale_hold isn't optimized away. Clean-up after coverage registry lands.
+        if (w_stale_hold == null) $stop;
         $write("*-* All Finished *-*\n");
         $finish;
       end
