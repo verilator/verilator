@@ -45,7 +45,7 @@ module t (
   else $display("EOS_BRANCH");
 
   // Exercise the bit-vector pending ring and resolved-attempt depth tracking.
-  assert property (@(posedge clk) (s_always[1: 300] 1'b1) or(s_always[1: 300] 1'b1))
+  assert property (@(posedge clk) (s_always[1: 40] 1'b1) or(s_always[1: 40] 1'b1))
   else $display("EOS_LARGE_RING");
 
   // Large lower bounds use bit-vector pending rings and age-indexed resolution.

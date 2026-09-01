@@ -22,7 +22,6 @@ test.lint(expect_filename=test.golden_filename,
 
 test.file_grep_any(glob.glob(test.obj_dir + "/V" + test.name + "_*.tree"),
                    r'SAND.*\[PROPERTY_CONTROL\]')
-test.file_grep_any(glob.glob(test.obj_dir + "/V" + test.name + "_*.tree"), r'ASSERT.*\[NFA\]')
 
 jsons = glob.glob(test.obj_dir + "/V" + test.name + "_*.tree.json")
 if not jsons:

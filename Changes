@@ -60,6 +60,7 @@ Verilator 5.051 devel
 * Optimize associative constant patterns to fixed point (#8147) (#8209). [Geza Lore, Testorrent USA, Inc.]
 * Fix procedural tristate assignment overrides (#6785) (#8130). [Eddie Rydell]
 * Fix $finish continuing event loop (#7267) (#7950). [Artur Bieniek, Antmicro Ltd.]
+* Fix continuing on wait(0) (#7372) (#8231). [Szymon Gizler, Antmicro Ltd.]
 * Fix $display accepting streaming concat arguments (#7663) (#7890). [Jaeuk Lee]
 * Fix typedef clocking input sampling (#7688 partial) (#8204). [Marco Bartoli]
 * Fix DFG misoptimizing bound checks (#7755). [Jakub Michalski]
@@ -176,7 +177,7 @@ Verilator 5.051 devel
 * Fix folding of short circuiting operators guarding member access (#8238). [Geza Lore, Testorrent USA, Inc.]
 * Fix MULTIDRIVENPROC on static loop induction variables (#8242). [Geza Lore, Testorrent USA, Inc.]
 * Fix multiply undefined behavior on signed int overflow (#8247) (#8248). [Paul Rigge]
-* Fix initial statements with gate optimizaion (#8250). [Prithayan Barua]
+* Fix initial statements with gate optimization (#8250). [Prithayan Barua]
 
 
 Verilator 5.050 2026-07-01

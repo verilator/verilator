@@ -173,14 +173,14 @@ module t;
     `checkd(fail_rep_ring, fail_rep_ref);
     `checkd(fail_rep_ref_true, 5);
     `checkd(fail_rep_ring_true, fail_rep_ref_true);
-    `checkd(fail_goto, 5);  // One other sim: 9
-    `checkd(fail_goto2, 6);  // One other sim: 11
-    `checkd(fail_goto_range, 5);
-    `checkd(fail_goto_range2, 6);  // One other sim: 4
+    `checkd(fail_goto, 9);
+    `checkd(fail_goto2, 6);
+    `checkd(fail_goto_range, 10);
+    `checkd(fail_goto_range2, 6);
     `checkd(fail_delay, 12);
     `checkd(fail_fby, 16);
     `checkd(fail_and, 16);
-    `checkd(fail_unb, 2);  // One other sim: 19
+    `checkd(fail_unb, 3);  // One other sim: 19
     $write("*-* All Finished *-*\n");
     $finish;
   end

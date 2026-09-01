@@ -74,7 +74,7 @@ module t (
     `checkd(n_seq, 28);  // Other sims: 45, 27
     `checkd(n_seq0, 27);
     `checkd(n_strong, 28);
-    `checkd(n_bool, 55);  // Other sims: pass, 25, 54
+    `checkd(n_bool, 55);  // Other sims: pass, 25
     `checkd(n_named, 28);  // Other sims: 73, 54, 54
   end
 

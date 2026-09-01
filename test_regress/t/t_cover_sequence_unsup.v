@@ -14,13 +14,19 @@ module t (
   endclocking
 
   // cover sequence (IEEE 1800-2023 16.14.3) counts every end-of-match. The
-  // following forms lack an exact per-end representation, so they are
-  // ignored (COVERIGN) rather than under-counted.
+  // following forms put a sub-sequence where only its final end is forwarded,
+  // so they are ignored (COVERIGN) rather than under-counted.
+
+  // Sequence operand of 'or' (ranged cycle delay).
+  cover sequence ((a ##[1:3] b) or 1'b0);
+
+  // Sequence operand of 'or' (consecutive repetition).
+  cover sequence ((a [* 1: 3]) or 1'b0);
 
   // Ranged cycle delay before a multi-cycle sequence.
   cover sequence (a ##[1:2] (b ##1 c));
 
-  // Ranged cycle delay wider than the unroll limit.
+  // Ranged cycle delay wide enough to use the counter FSM.
   cover sequence (a ##[1:300] b);
 
   // Goto repetition coalesces multiple live attempts into one NFA state.

@@ -106,12 +106,12 @@ module t (
     `checkd(hit_clocked, 149);
     `checkd(hit_clocked_disable, 27);
     `checkd(hit_default_disable, 30);
-    `checkd(hit_consrep_2, 29);
-    `checkd(hit_consrep_3, 13);
     // a[*1:1] == a[*1] (IEEE 1800-2023 16.9.2)
-    `checkd(hit_consrep_1, 54);
+    `checkd(hit_consrep_1, 55);
     `checkd(hit_consrep_equal_range, hit_consrep_1);
-    `checkd(hit_consrep_range_0, 152);  // Counts both empty and nonempty matches; one other sim: 54
+    `checkd(hit_consrep_range_0, 154);  // Counts both empty and nonempty matches
+    `checkd(hit_consrep_2, 30);  // Other sims: 29
+    `checkd(hit_consrep_3, 14);  // Other sims: 13
     // a[*2:3] == a[*2] or a[*3] (IEEE 1800-2023 16.9.2)
     `checkd(hit_consrep_range, hit_consrep_2 + hit_consrep_3);
     `checkd(hit_consrep_unbounded_0, hit_consrep_star);
