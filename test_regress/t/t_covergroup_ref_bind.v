@@ -62,11 +62,13 @@ module t (
   // binding stale and must drop it, leaving the union over cg_w -- sige and sigf both.
   cg_w w_stale = new(sige);
   cg_w w_real = new(sigf);
+  cg_w w_stale_hold;
 
   initial begin
-    z_alias  = z_first;
-    z_alias2 = z_second;
-    w_stale  = w_real;
+    z_alias    = z_first;
+    z_alias2   = z_second;
+    w_stale_hold = w_stale;
+    w_stale    = w_real;
   end
 
   always @(posedge clk) x_inst.sample();
