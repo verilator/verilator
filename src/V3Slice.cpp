@@ -382,6 +382,26 @@ class SliceVisitor final : public VNVisitor {
     void visit(AstEqCase* nodep) override { expandBiOp(nodep); }
     void visit(AstNeqCase* nodep) override { expandBiOp(nodep); }
 
+    void visit(AstSliceSel* nodep) override {
+        // Any SliceSel surviving to here wasn't consumed by one of the
+        // patterns above, e.g. used directly as a value such as a $display
+        // argument. Build a real runtime slice value via
+        // VlUnpacked::slice<N_Out>(loIdx), the same way DYN_SLICE already
+        // does for Queues.
+        iterateChildren(nodep);
+        AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+        AstConst* const lop = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32,
+                                           static_cast<uint32_t>(nodep->declRange().lo())};
+        AstCMethodHard* const newp
+            = new AstCMethodHard{nodep->fileline(), fromp, VCMethod::ARRAY_SLICE};
+        newp->addPinsp(lop);
+        newp->dtypeFrom(nodep);  // Reuse the already-correct sliced array dtype
+        newp->didWidth(true);
+        newp->protect(false);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
