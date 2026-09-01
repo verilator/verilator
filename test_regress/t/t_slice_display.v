@@ -16,6 +16,14 @@ module t;
   byte dmem[7:0] = '{10, 20, 30, 40, 50, 60, 70, 80};
   byte sub[4];
 
+  // Ascending declaration with a non-zero low index
+  byte emem[5:12] = '{201, 202, 203, 204, 205, 206, 207, 208};
+
+  // Wide descending declaration with a non-zero low index
+  logic [95:0] memwide[10:6] = '{96'hE444_4444_4444_4444_4444_4444, 96'hA000_0000_0000_0000_0000_0001,
+                                  96'hB111_1111_1111_1111_1111_1111, 96'hC222_2222_2222_2222_2222_2222,
+                                  96'hD333_3333_3333_3333_3333_3333};
+
   task automatic check_arg(byte a[4]);
     `checkh(a[0], 8'd1);
     `checkh(a[3], 8'd4);
@@ -37,6 +45,14 @@ module t;
     sub = mem[0:3];
     `checkh(sub[0], 8'd1);
     `checkh(sub[3], 8'd4);
+
+    // Indexing into a slice result uses the source array's index minus the
+    // source array's own low bound (5 here), not the slice's own bounds.
+    $display("%p", emem[7:10]);
+    `checkh(emem[7:10][2], 8'd203);
+    `checkh(emem[7:10][5], 8'd206);
+
+    $display("%p", memwide[8:6]);
 
     $write("*-* All Finished *-*\n");
     $finish;
