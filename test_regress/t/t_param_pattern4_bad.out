@@ -1,0 +1,9 @@
+%Error: t/t_param_pattern4_bad.v:11:19: Variable's initial value is circular: 'N'
+   11 |     parameter int N = N + 1,
+      |                   ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_pattern4_bad.v:12:22: Size of range is '[0]', must be positive integer (IEEE 1800-2023 7.4.2)
+                                      : ... note: In instance 't'
+   12 |     parameter int ARR[N] = '{1, 1}
+      |                      ^
+%Error: Exiting due to
