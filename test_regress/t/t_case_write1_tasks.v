@@ -3200,7 +3200,7 @@ module t_case_write1_tasks ();
           end
           else $fwrite(fd, " 1382");
           17'b11_01??_?_????_??_????, 17'b10_00??_?_????_??_????:
-          if (foo[30]) $fwrite(fd, " 1383:%s", foo[27:16]);
+          if (foo[30]) $fwrite(fd, " 1383:%0x", foo[27:16]);
           else $fwrite(fd, " 1384:%s", foo[27:16]);
           17'b00_10??_?_????_01_1000:
           if (~foo[6]) begin
