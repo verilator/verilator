@@ -25,6 +25,12 @@ module t (
   int hit_clocked = 0;
   int hit_clocked_disable = 0;
   int hit_default_disable = 0;
+  int hit_boolean_or = 0;
+  int hit_cover_throughout = 0;
+  int hit_chained_ring_multiplicity = 0;
+  int hit_fixed_ring_multiplicity = 0;
+  int hit_range_ring_multiplicity = 0;
+  int hit_unbounded_ring_multiplicity = 0;
   int hit_consrep_1 = 0;
   int hit_consrep_equal_range = 0;
   int hit_consrep_range_0 = 0;
@@ -61,6 +67,28 @@ module t (
 
   // Form 4: cover sequence ( disable iff (expr) sexpr ) stmt
   cover sequence (disable iff (!rst_n) a ##1 c) hit_default_disable++;
+
+  // Coincident boolean alternatives are one sequence end, not two paths.
+  cover sequence ((cyc == 1) or(cyc <= 1)) hit_boolean_or++;
+
+  // Cover-sequence endpoints retain their enclosing throughout guard.
+  cover sequence (1'b1 throughout ((cyc <= 1) [* 1: 2])) hit_cover_throughout++;
+
+  // Two prefix matches enter the same fixed-delay ring slot.
+  cover sequence (((cyc <= 1) [* 1: 2]) ##0 ((cyc == 1) ##2 (cyc == 3)))
+    hit_fixed_ring_multiplicity++;
+
+  // The same multiplicity occupies each endpoint of a consecutive-repetition range ring.
+  cover sequence (((cyc <= 1) [* 1: 2]) ##0 ((cyc >= 1) [* 1: 3]))
+    hit_range_ring_multiplicity++;
+
+  // Multiplicity crosses a fixed-delay ring before entering a range ring.
+  cover sequence ((((cyc <= 1) [* 1: 2]) ##0 ((cyc >= 1) ##2 (cyc >= 3))) ##0
+                  ((cyc >= 3) [* 1: 2]))
+    hit_chained_ring_multiplicity++;
+
+  // A ring with entry and self-loop inputs retains each live attempt.
+  cover sequence ((cyc <= 1) ##[2:$] (cyc == 3)) hit_unbounded_ring_multiplicity++;
 
   // Form 5: consecutive repetition, counted per end-of-match
   cover sequence (a [* 1]) hit_consrep_1++;
@@ -106,6 +134,12 @@ module t (
     `checkd(hit_clocked, 149);
     `checkd(hit_clocked_disable, 27);
     `checkd(hit_default_disable, 30);
+    `checkd(hit_boolean_or, 2);
+    `checkd(hit_cover_throughout, 3);
+    `checkd(hit_chained_ring_multiplicity, 4);
+    `checkd(hit_fixed_ring_multiplicity, 2);
+    `checkd(hit_range_ring_multiplicity, 6);
+    `checkd(hit_unbounded_ring_multiplicity, 2);
     // a[*1:1] == a[*1] (IEEE 1800-2023 16.9.2)
     `checkd(hit_consrep_1, 55);
     `checkd(hit_consrep_equal_range, hit_consrep_1);
