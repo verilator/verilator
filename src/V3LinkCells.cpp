@@ -459,15 +459,15 @@ class LinkCellsVisitor final : public VNVisitor {
         {
             // For nested modules/classes, child below parent
             if (m_modp) newEdge(vertex(m_modp), vertex(nodep), 1, false);
-            //
             m_modp = nodep;
-            vertex(m_modp);  // Need vertex to levelize even if no edges
+            // Need vertex to levelize even if no edges
+            const V3GraphVertex* vertexExp = vertex(m_modp);
 
             UINFO(4, "Link Module: " << nodep);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename(), nodep->libname())
                 && !VN_IS(nodep, NotFoundModule) && !nodep->recursiveClone()
-                && nodep != v3Global.rootp()->dollarUnitPkgp()) {
+                && nodep != v3Global.rootp()->dollarUnitPkgp() && vertexExp->inEmpty()) {
                 // We only complain once per file, otherwise library-like files
                 // have a huge mess of warnings
                 const auto itFoundPair = m_declfnWarned.insert(nodep->fileline()->filename());
