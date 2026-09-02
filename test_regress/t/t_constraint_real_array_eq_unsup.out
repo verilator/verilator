@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_constraint_real_array_eq_unsup.v:14:24: Unsupported: real-element array compared in a constraint
+                                                              : ... note: In instance 't'
+   14 |   constraint c { frame == target; }
+      |                        ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_constraint_real_array_eq_unsup.v:24:24: Unsupported: real-element array compared in a constraint
+                                                              : ... note: In instance 't'
+   24 |   constraint c { frame != target; }
+      |                        ^~
+%Error: Exiting due to
