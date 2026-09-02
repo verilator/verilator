@@ -74,7 +74,7 @@
        "blocksp": [
         {"type":"ALWAYS","name":"","addr":"(GC)","loc":"d,23:14,23:15","keyword":"cont_assign","sentreep": [],
          "stmtsp": [
-          {"type":"COMMENT","name":"Function: foo","addr":"(HC)","loc":"d,23:16,23:19"},
+          {"type":"COMMENT","name":"Function: foo","addr":"(HC)","loc":"d,23:16,23:19","showAt":true},
           {"type":"ASSIGN","name":"","addr":"(IC)","loc":"d,23:20,23:23","dtypep":"(H)",
            "rhsp": [
             {"type":"VARREF","name":"i_a","addr":"(JC)","loc":"d,23:20,23:23","dtypep":"(H)","access":"RD","varp":"(G)","varScopep":"(R)","classOrPackagep":"UNLINKED"}
@@ -196,7 +196,7 @@
         ]},
         {"type":"ALWAYS","name":"","addr":"(ME)","loc":"d,24:14,24:15","keyword":"cont_assign","sentreep": [],
          "stmtsp": [
-          {"type":"COMMENT","name":"Function: foo","addr":"(NE)","loc":"d,24:16,24:19"},
+          {"type":"COMMENT","name":"Function: foo","addr":"(NE)","loc":"d,24:16,24:19","showAt":true},
           {"type":"ASSIGN","name":"","addr":"(OE)","loc":"d,24:20,24:23","dtypep":"(H)",
            "rhsp": [
             {"type":"VARREF","name":"i_b","addr":"(PE)","loc":"d,24:20,24:23","dtypep":"(H)","access":"RD","varp":"(I)","varScopep":"(S)","classOrPackagep":"UNLINKED"}

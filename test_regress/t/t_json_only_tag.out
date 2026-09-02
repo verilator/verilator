@@ -25,7 +25,7 @@
       {"type":"VAR","name":"m","addr":"(AB)","loc":"d,35:32,35:33","dtypep":"(BB)","origName":"m","verilogName":"m","direction":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"DISPLAY","name":"","addr":"(CB)","loc":"d,36:5,36:13",
        "fmtp": [
-        {"type":"SFORMATF","name":"%s","addr":"(DB)","loc":"d,36:5,36:13","dtypep":"(BB)",
+        {"type":"SFORMATF","name":"%s","addr":"(DB)","loc":"d,36:5,36:13","dtypep":"(BB)","hidden":true,
          "exprsp": [
           {"type":"SFORMATARG","name":"","addr":"(EB)","loc":"d,36:20,36:21","dtypep":"(BB)","formatAttr":"S",
            "exprp": [

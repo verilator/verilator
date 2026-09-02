@@ -9,7 +9,7 @@
        "stmtsp": [
         {"type":"DISPLAY","name":"","addr":"(K)","loc":"d,73:5,73:11",
          "fmtp": [
-          {"type":"SFORMATF","name":"*-* All Finished *-*\\n","addr":"(L)","loc":"d,73:5,73:11","dtypep":"(M)","exprsp": [],"scopeNamep": []}
+          {"type":"SFORMATF","name":"*-* All Finished *-*\\n","addr":"(L)","loc":"d,73:5,73:11","dtypep":"(M)","hidden":true,"exprsp": [],"scopeNamep": []}
         ],"filep": []},
         {"type":"FINISH","name":"","addr":"(N)","loc":"d,74:5,74:12"}
       ]}

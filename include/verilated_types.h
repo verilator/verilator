@@ -322,7 +322,7 @@ class VlProcess final {
     int m_state;  // Current state of the process
     VlProcessRef m_parentp = nullptr;  // Parent process, if exists
     std::set<VlProcess*> m_children;  // Active child processes
-    VlForkSyncState* m_forkSyncOnKillp
+    std::shared_ptr<VlForkSyncState> m_forkSyncOnKillp
         = nullptr;  // Optional fork..join counter to decrement on kill
     bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
     VlRNG m_rng;  // Per-process RNG (IEEE 1800-2023 18.14)
@@ -364,13 +364,14 @@ public:
     void disable() {
         state(KILLED);
         disableFork();
+        m_forkSyncOnKillp = nullptr;
     }
     void disableFork() {
         // childp->disable() may resume coroutines and mutate m_children
         const std::set<VlProcess*> children = m_children;
         for (VlProcess* childp : children) childp->disable();
     }
-    void forkSyncOnKill(VlForkSyncState* forkSyncp);
+    void forkSyncOnKill(std::shared_ptr<VlForkSyncState> forkSyncp);
     void forkSyncOnKillClear(VlForkSyncState* forkSyncp);
     bool completed() const { return state() == FINISHED || state() == KILLED; }
     bool completedFork() const {
