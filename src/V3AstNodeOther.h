@@ -517,7 +517,7 @@ class AstCFunc final : public AstNode {
     string m_rtnType;  // void, bool, or other return type
     string m_argTypes;  // Argument types
     string m_ifdef;  // #ifdef symbol around this function
-    string m_cDecl;  // Custom DPI-C function declaration
+    string m_dpiCDecl;  // Custom DPI-C function declaration
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
     bool m_isTrace : 1;  // Function is related to tracing
@@ -647,9 +647,9 @@ public:
     void dpiImportPrototype(bool flag) { m_dpiImportPrototype = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
-    bool dpiCDeclOverride() const { return !m_cDecl.empty(); }
-    const string& dpiCDecl() const { return m_cDecl; }
-    void dpiCDecl(const string& cDecl) { m_cDecl = cDecl; }
+    bool dpiCDeclOverride() const { return !m_dpiCDecl.empty(); }
+    const string& dpiCDecl() const { return m_dpiCDecl; }
+    void dpiCDecl(const string& cDecl) { m_dpiCDecl = cDecl; }
     bool isCoroutine() const { return m_rtnType == "VlCoroutine"; }
     void recursive(bool flag) { m_recursive = flag; }
     bool recursive() const { return m_recursive; }
@@ -806,7 +806,7 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    VCoverOptionType optionType() const { return m_optType; }
+    VCoverOptionType optType() const { return m_optType; }
     bool typeOption() const { return m_typeOption; }
 };
 class AstClassExtends final : public AstNode {
@@ -1050,7 +1050,7 @@ class AstCoverBin final : public AstNode {
     // @astgen op3 := arraySizep : Optional[AstNodeExpr]
     // @astgen op4 := transp : List[AstCoverTransSet]
     const string m_name;  // Base name of the bin
-    const VCoverBinsType m_type;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
+    const VCoverBinsType m_binsType;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
     bool m_isArray = false;  // Bin is either an auto-sized array of values or transitions
     bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
 
@@ -1059,10 +1059,10 @@ public:
                 bool isWildcard = false)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_type{isIllegal ? VCoverBinsType::BINS_ILLEGAL
-                           : (isIgnore ? VCoverBinsType::BINS_IGNORE
-                                       : (isWildcard ? VCoverBinsType::BINS_WILDCARD
-                                                     : VCoverBinsType::BINS_USER))}
+        , m_binsType{isIllegal ? VCoverBinsType::BINS_ILLEGAL
+                               : (isIgnore ? VCoverBinsType::BINS_IGNORE
+                                           : (isWildcard ? VCoverBinsType::BINS_WILDCARD
+                                                         : VCoverBinsType::BINS_USER))}
         , m_isWildcard{isWildcard} {
         addRangesp(rangesp);
     }
@@ -1070,7 +1070,7 @@ public:
     AstCoverBin(FileLine* fl, const string& name, AstNodeExpr* arraySizep)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_type{VCoverBinsType::BINS_AUTO}
+        , m_binsType{VCoverBinsType::BINS_AUTO}
         , m_isArray{true} {
         this->arraySizep(arraySizep);
     }
@@ -1078,13 +1078,13 @@ public:
     AstCoverBin(FileLine* fl, const string& name, VCoverBinsType type)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_type{type} {}
+        , m_binsType{type} {}
     // Constructor for transition bins
     AstCoverBin(FileLine* fl, const string& name, AstCoverTransSet* transp,
                 VCoverBinsType type = VCoverBinsType::BINS_TRANSITION, bool isArrayBin = false)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_type{type}
+        , m_binsType{type}
         , m_isArray{isArrayBin} {
         UASSERT(transp, "AstCoverBin transition constructor requires non-null transp");
         addTransp(transp);
@@ -1093,7 +1093,7 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    VCoverBinsType binsType() const { return m_type; }
+    VCoverBinsType binsType() const { return m_binsType; }
     bool isWildcard() const { return m_isWildcard; }
     bool isArray() const { return m_isArray; }
     void isArray(bool flag) { m_isArray = flag; }
@@ -1101,18 +1101,18 @@ public:
 class AstCoverOption final : public AstNode {
     // Coverage-option assignment
     // @astgen op1 := valuep : AstNodeExpr
-    const VCoverOptionType m_type;  // Option being assigned
+    const VCoverOptionType m_optType;  // Option being assigned
 
 public:
-    AstCoverOption(FileLine* fl, VCoverOptionType type, AstNodeExpr* valuep)
+    AstCoverOption(FileLine* fl, VCoverOptionType optType, AstNodeExpr* valuep)
         : ASTGEN_SUPER_CoverOption(fl)
-        , m_type{type} {
+        , m_optType{optType} {
         this->valuep(valuep);
     }
     ASTGEN_MEMBERS_AstCoverOption;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    VCoverOptionType optionType() const { return m_type; }
+    VCoverOptionType optType() const { return m_optType; }
 };
 class AstCoverTransItem final : public AstNode {
     // Represents a single transition item: value or value[*N] or value[->N] or value[=N]
@@ -2161,7 +2161,7 @@ class AstVar final : public AstNode {
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_constPoolEntry : 1;  // Constant pool variable
     bool m_covergroupRefMember : 1;  // Persistent covergroup ref/const ref argument
-    bool m_fileDescr : 1;  // File descriptor
+    bool m_attrFileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
     bool m_isConst : 1;  // Table contains constant data
@@ -2182,7 +2182,7 @@ class AstVar final : public AstNode {
     bool m_noSubst : 1;  // Do not substitute out references
     bool m_sampled : 1;  // Sampled timing region
     bool m_substConstOnly : 1;  // Only substitute if constant
-    bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
+    bool m_overriddenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     bool m_isForceable : 1;  // May be forced/released externally from user C code
@@ -2226,7 +2226,7 @@ class AstVar final : public AstNode {
         m_attrFsmArcInclCond = false;
         m_constPoolEntry = false;
         m_covergroupRefMember = false;
-        m_fileDescr = false;
+        m_attrFileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
         m_isConst = false;
@@ -2247,7 +2247,7 @@ class AstVar final : public AstNode {
         m_noSubst = false;
         m_sampled = false;
         m_substConstOnly = false;
-        m_overridenParam = false;
+        m_overriddenParam = false;
         m_trace = false;
         m_isLatched = false;
         m_isForceable = false;
@@ -2366,7 +2366,7 @@ public:
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
-    void attrFileDescr(bool flag) { m_fileDescr = flag; }
+    void attrFileDescr(bool flag) { m_attrFileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrScBigUint(bool flag) { m_attrScBigUint = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
@@ -2432,8 +2432,8 @@ public:
     void sampled(bool flag) { m_sampled = flag; }
     bool substConstOnly() const { return m_substConstOnly; }
     void substConstOnly(bool flag) { m_substConstOnly = flag; }
-    bool overriddenParam() const { return m_overridenParam; }
-    void overriddenParam(bool flag) { m_overridenParam = flag; }
+    bool overriddenParam() const { return m_overriddenParam; }
+    void overriddenParam(bool flag) { m_overriddenParam = flag; }
     void trace(bool flag) { m_trace = flag; }
     void isLatched(bool flag) { m_isLatched = flag; }
     bool isForceable() const { return m_isForceable; }
@@ -2537,7 +2537,7 @@ public:
     bool isPulldown() const { return m_isPulldown; }
     bool attrScBv() const { return m_attrScBv; }
     bool attrScBigUint() const { return m_attrScBigUint; }
-    bool attrFileDescr() const { return m_fileDescr; }
+    bool attrFileDescr() const { return m_attrFileDescr; }
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrFsmState() const { return m_attrFsmState; }

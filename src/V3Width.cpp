@@ -506,7 +506,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
-            if (nodep->format() == AstAtoN::ATOREAL) {
+            if (nodep->fmtType() == AstAtoN::ATOREAL) {
                 nodep->dtypeSetDouble();
             } else {
                 nodep->dtypeSetInteger();
@@ -2045,7 +2045,7 @@ class WidthVisitor final : public VNVisitor {
         // Extract covergroup option values and store in AstClass before deleting.
         // m_cgClassp is always set here: AstCgOptionAssign only appears in covergroup
         // class bodies, and visitClass sets m_cgClassp before iterating children.
-        if (nodep->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
+        if (nodep->optType() == VCoverOptionType::AUTO_BIN_MAX) {
             // By V3Width time, V3Param has already folded any parameter references.
             // If the value is still not a constant, it is a runtime expression - emit error.
             if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
