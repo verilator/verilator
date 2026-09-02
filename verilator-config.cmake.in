@@ -30,7 +30,7 @@ set(VERILATOR_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "VERILATOR_ROOT")
 
 find_program(
     VERILATOR_BIN
-    NAMES verilator_bin verilator_bin.exe
+    NAMES verilator verilator.exe
     HINTS ${VERILATOR_ROOT}/bin
     ENV VERILATOR_ROOT
     NO_CMAKE_PATH
