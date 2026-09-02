@@ -2572,10 +2572,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* resultp = nullptr;
         for (AstVar* const guardVarp : m_arraySizeGuardVarps) {
             const AstNodeDType* const guardDtp = guardVarp->dtypep()->skipRefp();
-            const VCMethod sizeMethod
-                = (VN_IS(guardDtp, AssocArrayDType) || VN_IS(guardDtp, WildcardArrayDType))
-                      ? VCMethod::ASSOC_SIZE
-                      : VCMethod::DYN_SIZE;
+            // WildcardArrayDType half untestable: see markArraySizeGuard() above.
+            const VCMethod sizeMethod = (VN_IS(guardDtp, AssocArrayDType)  // LCOV_EXCL_BR_LINE
+                                         || VN_IS(guardDtp, WildcardArrayDType))
+                                            ? VCMethod::ASSOC_SIZE
+                                            : VCMethod::DYN_SIZE;
             AstCMethodHard* const sizep = new AstCMethodHard{
                 fl, new AstVarRef{fl, guardVarp, VAccess::READ}, sizeMethod, nullptr};
             sizep->dtypeSetUInt32();
@@ -2936,6 +2937,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                     VL_RESTORER(m_conditionp);
                     m_conditionp = nullptr;
                     cstmtp->add(iterateSubtreeReturnEdits(perElemExprp));
+                    // Not reused (see above) -- discard rather than leak it.
+                    if (m_conditionp) VL_DO_DANGLING(m_conditionp->deleteTree(), m_conditionp);
                 }
                 cstmtp->add(";\n");
                 cstmtp->add("ret += \")\";\n");
