@@ -259,9 +259,8 @@ class VlRandomizer VL_NOT_FINAL {
         m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::vector<std::string> m_softConstraints;  // Soft constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
-    std::vector<const VlRandomVar*> m_randomConstraintVars;  // Scratch buffer for
-                                                             // randomConstraint(), reused
-                                                             // across calls
+    // Scratch buffer for randomConstraint(), reused across calls
+    std::vector<const VlRandomVar*> m_randomConstraintVars;
     std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
                                            // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration

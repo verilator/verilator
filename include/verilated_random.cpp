@@ -679,8 +679,6 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
     // layerVarsp scopes sampling to the current phase's own layer, so a
     // phased solve's diversity constraint can't be built entirely out of a
     // later phase's (still-unsolved) variable instead of this one's.
-    // vars aliases the m_randomConstraintVars scratch buffer, reused
-    // across calls instead of reallocating a local vector each time.
     std::vector<const VlRandomVar*>& vars = m_randomConstraintVars;
     vars.clear();
     int varBits = 0;
