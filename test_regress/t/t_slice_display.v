@@ -24,6 +24,10 @@ module t;
                                   96'hB111_1111_1111_1111_1111_1111, 96'hC222_2222_2222_2222_2222_2222,
                                   96'hD333_3333_3333_3333_3333_3333};
 
+  // For slicing the inner and outer dimensions of a 2D array
+  byte mem2d[3][8] = '{'{1, 2, 3, 4, 5, 6, 7, 8}, '{11, 12, 13, 14, 15, 16, 17, 18},
+                        '{21, 22, 23, 24, 25, 26, 27, 28}};
+
   task automatic check_arg(byte a[4]);
     `checkh(a[0], 8'd1);
     `checkh(a[3], 8'd4);
@@ -53,6 +57,17 @@ module t;
     `checkh(emem[7:10][5], 8'd206);
 
     $display("%p", memwide[8:6]);
+
+    $display("%p %p", mem[1:2], dmem[6:4]);
+
+    $display("%p", mem2d[1][2:4]);
+    `checkh(mem2d[1][2:4][2], 8'd13);
+    `checkh(mem2d[1][2:4][4], 8'd15);
+
+    // Slicing the outer dimension yields rows (each still an array), not elements
+    $display("%p", mem2d[0:1]);
+    `checkh(mem2d[0:1][0][0], 8'd1);
+    `checkh(mem2d[0:1][1][3], 8'd14);
 
     $write("*-* All Finished *-*\n");
     $finish;
