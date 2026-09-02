@@ -1746,7 +1746,7 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Implication |-> |=> (IEEE 1800-2023 16.12.6) and followed-by #-# #=#
+    // Implication |-> |=> (IEEE 1800-2023 16.12.7) and followed-by #-# #=#
     // (IEEE 1800-2023 16.12.9). Antecedent-miss is vacuous-pass for implication
     // and non-vacuous-fail for followed-by, hence the separate flag.
     // @astgen op1 := lhsp : AstNodeExpr
@@ -1774,7 +1774,7 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
-    bool isMultiCycleSva() const override { return m_isFollowedBy; }
+    bool isMultiCycleSva() const override { return m_isFollowedBy || !m_isOverlapped; }
     bool isOverlapped() const { return m_isOverlapped; }
     bool isFollowedBy() const { return m_isFollowedBy; }
 };

@@ -55,11 +55,16 @@ endinterface
 
 module t;
   bit clk = 0;
+  bit [6:0] stimulus = 7'b1;
   int imm_passes = 0;
   int imm_fails = 0;
   int vacuous_passes = 0;
   int nonvacuous_passes = 0;
   int concurrent_fails = 0;
+  int overlap_seq_passes = 0;
+  int overlap_seq_fails = 0;
+  int nonoverlap_seq_passes = 0;
+  int nonoverlap_seq_fails = 0;
   int class_fails = 0;
 
   class AssertCtlClass;
@@ -80,6 +85,7 @@ module t;
   virtual AssertCtlIface v_assert_ctl_iface = assert_ctl_iface;
 
   always #5 clk = !clk;
+  always @(negedge clk) stimulus = {stimulus[5:0], stimulus[6] ^ stimulus[5]};
 
   default clocking @(posedge clk);
   endclocking
@@ -98,6 +104,17 @@ module t;
   end
   else concurrent_fails++;
 
+  assert property (@(posedge clk) stimulus[0] |-> ##1 stimulus[3]) overlap_seq_passes++;
+  else overlap_seq_fails++;
+
+  assert property (@(posedge clk) stimulus[0] |=> stimulus[3]) nonoverlap_seq_passes++;
+  else nonoverlap_seq_fails++;
+
+  task automatic check_cycle_equivalence();
+    `checkd(nonoverlap_seq_passes, overlap_seq_passes);
+    `checkd(nonoverlap_seq_fails, overlap_seq_fails);
+  endtask
+
   task automatic tick_and_check(input int exp_vacuous, input int exp_nonvacuous,
                                 input int exp_concurrent_fails);
     @(posedge clk);
@@ -105,6 +122,7 @@ module t;
     `checkd(vacuous_passes, exp_vacuous);
     `checkd(nonvacuous_passes, exp_nonvacuous);
     `checkd(concurrent_fails, exp_concurrent_fails);
+    check_cycle_equivalence();
   endtask
 
   initial begin
@@ -220,6 +238,13 @@ module t;
 
     $assertcontrol(8, 1, 1);
     tick_and_check(4, 5, 1);
+
+    // Exercise all 127 states of the maximal-length LFSR.
+    repeat (127) begin
+      @(posedge clk);
+      #2;
+      check_cycle_equivalence();
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
