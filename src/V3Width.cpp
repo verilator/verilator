@@ -7065,7 +7065,7 @@ class WidthVisitor final : public VNVisitor {
             if (!replacep) return;
             refp->replaceWith(replacep);
             VL_DO_DANGLING(refp->deleteTree(), refp);
-        });
+        });  // LCOV_EXCL_LINE
         AstNodeDType* const resultp = holderp->childDTypep();
         resultp->unlinkFrBack();
         VL_DO_DANGLING(holderp->deleteTree(), holderp);
