@@ -1046,7 +1046,8 @@ public:
         dtypep(this);
     }
     ASTGEN_MEMBERS_AstNBACommitQueueDType;
-
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     AstNodeDType* subDTypep() const override VL_MT_STABLE { return m_subDTypep; }
     bool partial() const { return m_partial; }
     bool sameNode(const AstNode* samep) const override {
@@ -1460,6 +1461,8 @@ public:
         widthFromSub(subDTypep());
     }
     ASTGEN_MEMBERS_AstUnpackArrayDType;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string prettyDTypeName(bool full) const override;
     bool sameNode(const AstNode* samep) const override {
         const AstUnpackArrayDType* const sp = VN_DBG_AS(samep, UnpackArrayDType);
