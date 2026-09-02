@@ -1,35 +1,38 @@
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:13:42: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:13:42: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    13 |   constraint c { id inside {[0:3]}; !used[id][0]; }
       |                                          ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:20:68: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:20:68: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    20 |   constraint c { id1 inside {[0:3]}; id2 inside {[0:3]}; !used[id1][id2]; }
       |                                                                    ^
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:26:38: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:26:38: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    26 |   constraint c { id inside {[0:3]}; q[id] != q[id]; }
       |                                      ^
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:26:47: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:26:47: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    26 |   constraint c { id inside {[0:3]}; q[id] != q[id]; }
       |                                               ^
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:32:38: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:32:38: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    32 |   constraint c { id inside {[0:3]}; d[id] != d[id]; }
       |                                      ^
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:32:47: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:32:47: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    32 |   constraint c { id inside {[0:3]}; d[id] != d[id]; }
       |                                               ^
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:38:38: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:38:38: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    38 |   constraint c { id inside {[0:3]}; a[id] != a[id]; }
       |                                      ^
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:38:47: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:38:47: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    38 |   constraint c { id inside {[0:3]}; a[id] != a[id]; }
       |                                               ^
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:49:41: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:49:41: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    49 |   constraint c { id inside {[0:3]}; pool[id].tag == 4'hA; }
       |                                         ^
 %Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:62:44: Unsupported: rand-dependent index into an array reached through an operand that isn't a variable or member
    62 |   constraint c { id inside {[0:3]}; get_a()[id] == 8'hAA; }
       |                                            ^
-%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:73:41: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array)
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:73:41: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
    73 |   constraint c { id inside {[0:3]}; pool[id].v == 8'hAA; }
       |                                         ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:85:44: Unsupported: rand-dependent index into an array reached through an operand that isn't a variable or member
+   85 |   constraint c { id inside {[0:3]}; get_a()[id] == 8'hAA; }
+      |                                            ^
 %Error: Exiting due to

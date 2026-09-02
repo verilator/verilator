@@ -2120,24 +2120,34 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
-    // Resolves the AstVar an array-select chain ultimately reaches through
-    // fromp(), walking through nested ArraySel links (e.g. used[id1][id2]).
-    // Returns nullptr if the chain doesn't bottom out in a plain variable
-    // or member (e.g. a function call result).
-    static AstVar* resolveArraySelRootVarp(AstNodeExpr* fromp) {
+    // Walks nested ArraySel links (e.g. used[id1][id2]) down to the root
+    // variable. Diagnoses E_UNSUPPORTED and returns false itself when the
+    // chain doesn't bottom out in a plain variable or member (a function call).
+    static bool resolveArraySelRootVarp(AstArraySel* nodep, AstNodeExpr* fromp,
+                                        AstVar*& rootVarpr) {
         while (const AstArraySel* const selp = VN_CAST(fromp, ArraySel)) fromp = selp->fromp();
-        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) return refp->varp();
-        if (const AstMemberSel* const mselp = VN_CAST(fromp, MemberSel)) return mselp->varp();
-        return nullptr;
+        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) {
+            rootVarpr = refp->varp();
+            return true;
+        }
+        if (const AstMemberSel* const mselp = VN_CAST(fromp, MemberSel)) {
+            rootVarpr = mselp->varp();
+            return true;
+        }
+        // Root unresolvable (e.g. a function call): an SMT symbol here
+        // already selects from the call, not the array -- confirmed
+        // silently broken regardless of the root's rand-ness.
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: rand-dependent index into an array reached "
+                                     "through an operand that isn't a variable or member");
+        return false;
     }
     // Only called once the caller has already confirmed arrVarp is a
     // genuinely non-rand root of a rand-dependent array index. Always
     // handles it one way or another (expansion or E_UNSUPPORTED).
     void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl, const AstVar* arrVarp) {
-        // Every AstArraySel bottoms out in a variable whose own dtype is
-        // UnpackArrayDType: V3WidthSel lowers a queue/dynamic/associative-
-        // array index straight to AstCMethodHard, at every level of an
-        // index chain, so an ArraySel can never exist over anything else.
+        // V3WidthSel lowers queue/dynamic/associative-array indexing straight
+        // to AstCMethodHard at every level of a chain, so an ArraySel can
+        // never bottom out over anything but a genuine UnpackArrayDType.
         const AstUnpackArrayDType* const arrDtp
             = VN_AS(arrVarp->dtypep()->skipRefp(), UnpackArrayDType);
 
@@ -2157,7 +2167,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!arrIsSupported1D) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: rand-dependent index into this array shape in "
-                          "constraint (multidimensional, queue, dynamic, or associative array)");
+                          "constraint (multidimensional, queue, dynamic, or associative array, "
+                          "or a struct/class-typed element)");
             return;
         }
 
@@ -2202,16 +2213,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
         });
         if (indexIsRand) {
-            AstVar* const rootVarp = resolveArraySelRootVarp(nodep->fromp());
-            if (!rootVarp) {
-                // Root unresolvable (e.g. a function call) -- diagnose this
-                // directly rather than conflating it with a confirmed
-                // non-rand array below, which would report the wrong reason.
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: rand-dependent index into an array reached "
-                              "through an operand that isn't a variable or member");
-                return;
-            }
+            AstVar* rootVarp;
+            if (!resolveArraySelRootVarp(nodep, nodep->fromp(), rootVarp)) return;
             if (!rootVarp->rand().isRandomizable()) {
                 handleRandIndexIntoNonrandArray(nodep, fl, rootVarp);
                 return;

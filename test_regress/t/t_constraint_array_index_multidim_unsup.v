@@ -73,6 +73,18 @@ class C8;
   constraint c { id inside {[0:3]}; pool[id].v == 8'hAA; }
 endclass
 
+// Same shape as C7, but 'a' is itself rand: confirms the diagnostic fires
+// regardless of the unresolvable root's rand-ness, rather than silently
+// selecting from the function call expression instead of the array.
+class C9;
+  rand int id;
+  rand arr4_t a;
+  function arr4_t get_a();
+    return a;
+  endfunction
+  constraint c { id inside {[0:3]}; get_a()[id] == 8'hAA; }
+endclass
+
 module t;
   initial begin
     C1 obj1;
@@ -83,6 +95,7 @@ module t;
     C6 obj6;
     C7 obj7;
     C8 obj8;
+    C9 obj9;
     obj1 = new;
     obj2 = new;
     obj3 = new;
@@ -91,6 +104,7 @@ module t;
     obj6 = new;
     obj7 = new;
     obj8 = new;
+    obj9 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
@@ -99,5 +113,6 @@ module t;
     if (obj6.randomize() == 0) $stop;
     if (obj7.randomize() == 0) $stop;
     if (obj8.randomize() == 0) $stop;
+    if (obj9.randomize() == 0) $stop;
   end
 endmodule
