@@ -2573,10 +2573,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         for (AstVar* const guardVarp : m_arraySizeGuardVarps) {
             const AstNodeDType* const guardDtp = guardVarp->dtypep()->skipRefp();
             // WildcardArrayDType half untestable: see markArraySizeGuard() above.
-            const VCMethod sizeMethod = (VN_IS(guardDtp, AssocArrayDType)  // LCOV_EXCL_BR_LINE
-                                         || VN_IS(guardDtp, WildcardArrayDType))
-                                            ? VCMethod::ASSOC_SIZE
-                                            : VCMethod::DYN_SIZE;
+            const VCMethod sizeMethod
+                = (VN_IS(guardDtp, AssocArrayDType)
+                   || VN_IS(guardDtp, WildcardArrayDType))  // LCOV_EXCL_BR_LINE
+                      ? VCMethod::ASSOC_SIZE
+                      : VCMethod::DYN_SIZE;
             AstCMethodHard* const sizep = new AstCMethodHard{
                 fl, new AstVarRef{fl, guardVarp, VAccess::READ}, sizeMethod, nullptr};
             sizep->dtypeSetUInt32();
@@ -2818,8 +2819,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             auto identityForWidth = [&nodep](int width) -> std::string {
                 if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
                     // width==0 is dead: no real SV value has zero width.
-                    return (width > 0)  // LCOV_EXCL_BR_LINE
-                               ? "#b" + std::string(width - 1, '0') + "1"
+                    return (width > 0)
+                               ? "#b" + std::string(width - 1, '0') + "1"  // LCOV_EXCL_BR_LINE
                                : "#b0";  // LCOV_EXCL_LINE
                 }
                 if (nodep->method() == VCMethod::ARRAY_R_AND) {
