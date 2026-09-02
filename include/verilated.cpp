@@ -3072,9 +3072,11 @@ VerilatedContext::VerilatedContext()
 
 // Must declare here not in interface, as otherwise forward declarations not known
 VerilatedContext::~VerilatedContext() {
+    Verilated::threadContextp(this);  // In unlikely case some other destructor needs it
     checkMagic(this);
     m_magic = 0x1;  // Arbitrary but 0x1 is what Verilator src uses for a deleted pointer
     logRestoreOutput();
+    Verilated::threadContextp(nullptr);
 }
 
 void VerilatedContext::checkMagic(const VerilatedContext* contextp) {
@@ -4202,12 +4204,12 @@ VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const 
     , m_defnamep{defnamep}
     , m_timeunit{timeunit}
     , m_type{type} {
-    Verilated::threadContextp()->impp()->scopeInsert(this);
+    contextp()->impp()->scopeInsert(this);
 }
 
 VerilatedScope::~VerilatedScope() {
     // Memory cleanup - not called during normal operation
-    Verilated::threadContextp()->impp()->scopeErase(this);
+    contextp()->impp()->scopeErase(this);
     VL_DO_DANGLING(delete[] m_namep, m_namep);
     VL_DO_DANGLING(delete[] m_callbacksp, m_callbacksp);
     VL_DO_DANGLING(delete m_varsp, m_varsp);

@@ -178,6 +178,7 @@ Verilator 5.051 devel
 * Fix MULTIDRIVENPROC on static loop induction variables (#8242). [Geza Lore, Testorrent USA, Inc.]
 * Fix multiply undefined behavior on signed int overflow (#8247) (#8248). [Paul Rigge]
 * Fix initial statements with gate optimization (#8250). [Prithayan Barua]
+* Fix segmentation fault on context destruction (#8265).
 
 
 Verilator 5.050 2026-07-01
