@@ -234,6 +234,9 @@ class WidthVisitor final : public VNVisitor {
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
+    const AstPin* m_paramPinsp = nullptr;  // Parameter pin list of enclosing construct
+    bool m_paramPinMapValid = false;  // m_paramPinMap is built for m_paramPinsp
+    std::map<const AstVar*, const AstPin*> m_paramPinMap;  // Parameter var -> overriding pin
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstClass* m_cgClassp = nullptr;  // Current covergroup class
@@ -271,6 +274,27 @@ class WidthVisitor final : public VNVisitor {
     }
 
     StreamUse currentStreamUse() const { return m_vup ? m_vup->streamUse() : STREAM_USE_NONE; }
+
+    // Note the parameter pins of the construct being iterated, restoring on scope exit
+    class ParamPinScope final {
+        WidthVisitor& m_visitor;
+        const AstPin* const m_savedPinsp;
+        const bool m_savedValid;
+
+    public:
+        ParamPinScope(WidthVisitor& visitor, const AstPin* pinsp)
+            : m_visitor{visitor}
+            , m_savedPinsp{visitor.m_paramPinsp}
+            , m_savedValid{visitor.m_paramPinMapValid} {
+            m_visitor.m_paramPinsp = pinsp;
+            m_visitor.m_paramPinMapValid = false;
+        }
+        ~ParamPinScope() {
+            m_visitor.m_paramPinsp = m_savedPinsp;
+            // If this scope built a map it clobbered any outer one, which must be rebuilt
+            m_visitor.m_paramPinMapValid = m_visitor.m_paramPinMapValid ? false : m_savedValid;
+        }
+    };
 
     static void packIfUnpacked(AstNodeExpr* const nodep) {
         if (AstUnpackArrayDType* const unpackDTypep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
@@ -2667,7 +2691,10 @@ class WidthVisitor final : public VNVisitor {
             // We had to use AstRefDType for this construct as pointers to this type
             // in type table are still correct (which they wouldn't be if we replaced the node)
         }
-        userIterateChildren(nodep, nullptr);
+        {
+            const ParamPinScope paramPins{*this, nodep->paramsp()};
+            userIterateChildren(nodep, nullptr);
+        }
         if (nodep->subDTypep()) {
             // Normally iterateEditMoveDTypep iterate would work, but the refs are under
             // the TypeDef which will upset iterateEditMoveDTypep as it can't find it under
@@ -3791,6 +3818,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstIfaceRefDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "   IFACEREF " << nodep);
+        const ParamPinScope paramPins{*this, nodep->paramsp()};
         userIterateChildren(nodep, m_vup);
         nodep->dtypep(nodep);
         UINFO(4, "dtWidthed " << nodep);
@@ -3892,6 +3920,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
+        const ParamPinScope paramPins{*this, nodep->paramsp()};
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstDot* nodep) override {
@@ -7003,31 +7032,34 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
     }
-    static const AstCell* pinCellParamp(const AstPin* pinp) {
-        const AstNode* headp = pinp;
-        while (headp->backp() && headp->backp()->nextp() == headp) headp = headp->backp();
-        const AstCell* const cellp = VN_CAST(headp->backp(), Cell);
-        return cellp && cellp->paramsp() == headp ? cellp : nullptr;
+    // Map each parameter to the pin overriding it, built once per parameter pin list
+    const std::map<const AstVar*, const AstPin*>& paramPinMap() {
+        if (!m_paramPinMapValid) {
+            m_paramPinMapValid = true;
+            m_paramPinMap.clear();
+            for (const AstPin* pp = m_paramPinsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
+                if (pp->modVarp() && pp->exprp()) m_paramPinMap.emplace(pp->modVarp(), pp);
+            }
+        }
+        return m_paramPinMap;
     }
-    static AstNodeDType* instanceParamDTypep(AstNodeDType* templateDtp, const AstCell* cellp) {
+    // Copy a parameter's data type with this instance's parameter overrides substituted in
+    AstNodeDType* instanceParamDTypep(AstNodeDType* templateDtp) {
         if (!templateDtp->exists(
                 [](const AstVarRef* refp) { return refp->varp() && refp->varp()->isGParam(); })) {
             return nullptr;  // Not parameter dependent
         }
+        const std::map<const AstVar*, const AstPin*>& pinMap = paramPinMap();
         AstNodeDType* const clonep = templateDtp->cloneTree(false);
         // Hold under a temporary Var so edited nodes have a back pointer
         AstVar* const holderp = new AstVar{templateDtp->fileline(), VVarType::MODULETEMP,
                                            "__Vpindtype", VFlagChildDType{}, clonep};
-        holderp->foreach([cellp](AstVarRef* refp) {
-            AstVar* const targetp = refp->varp();
+        holderp->foreach([&pinMap](AstVarRef* refp) {
+            const AstVar* const targetp = refp->varp();
             if (!targetp || !targetp->isGParam()) return;
             AstNode* replacep = nullptr;
-            for (AstPin* pp = cellp->paramsp(); pp; pp = VN_AS(pp->nextp(), Pin)) {
-                if (pp->modVarp() == targetp) {
-                    if (pp->exprp()) replacep = pp->exprp()->cloneTree(false);
-                    break;
-                }
-            }
+            const auto it = pinMap.find(targetp);
+            if (it != pinMap.end()) replacep = it->second->exprp()->cloneTree(false);
             // Not overridden by this instance, so the default applies
             if (!replacep && targetp->valuep()) replacep = targetp->valuep()->cloneTree(false);
             if (!replacep) return;
@@ -7047,11 +7079,10 @@ class WidthVisitor final : public VNVisitor {
             bool didWidth = false;
             if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
                 const AstVar* const modVarp = nodep->modVarp();
+                // Width against a per-instance type copy, as the template's has defaults (#6284)
                 AstNodeDType* instDtp = nullptr;
-                if (!patternp->childDTypep()) {
-                    if (const AstCell* const cellp = pinCellParamp(nodep)) {
-                        instDtp = instanceParamDTypep(nodep->modVarp()->childDTypep(), cellp);
-                    }
+                if (!patternp->childDTypep() && m_paramPinsp) {
+                    instDtp = instanceParamDTypep(nodep->modVarp()->childDTypep());
                 }
                 if (instDtp) {
                     // Hold under the Pattern so the type has a back pointer while widthed
@@ -7214,6 +7245,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->rangep()) userIterateAndNext(nodep->rangep(), WidthVP{SELF, BOTH}.p());
             userIterateAndNext(nodep->pinsp(), nullptr);
         }
+        const ParamPinScope paramPins{*this, nodep->paramsp()};
         userIterateAndNext(nodep->paramsp(), nullptr);
     }
     void visit(AstGatePin* nodep) override {
