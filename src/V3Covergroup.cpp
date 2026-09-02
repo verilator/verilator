@@ -311,16 +311,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstConst* const constp = VN_CAST(optp->valuep(), Const);
             if (!constp) {
                 optp->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant 'option."
-                                                     << optp->optionType().ascii()
+                                                     << optp->optType().ascii()
                                                      << "'; using default value");
                 continue;
             }
-            if (optp->optionType() == VCoverOptionType::AT_LEAST) {
+            if (optp->optType() == VCoverOptionType::AT_LEAST) {
                 atLeastOut = constp->toSInt();
             } else {
                 // V3LinkParse only converts at_least/auto_bin_max coverpoint options into
                 // AstCoverOption (others are dropped there), so this is the only alternative.
-                UASSERT_OBJ(optp->optionType() == VCoverOptionType::AUTO_BIN_MAX, optp,
+                UASSERT_OBJ(optp->optType() == VCoverOptionType::AUTO_BIN_MAX, optp,
                             "Unexpected coverpoint option type reaching V3Covergroup");
                 autoBinMaxOut = constp->toSInt();
             }

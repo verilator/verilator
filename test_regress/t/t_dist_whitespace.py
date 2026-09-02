@@ -12,6 +12,8 @@ import collections
 
 test.scenarios('dist')
 
+Binary_Exempt_Re = r'(docs/.*\.png|test_regress/t/t_lint_bsspace_bad.v|test_regress/t/t_sys_file_basic_uz.dat)'
+
 Tabs_Exempt_Re = r'(\.out$)|(/fstcpp)|(Makefile)|(\.mk$)|(\.mk\.in$)|test_regress/t/t_preproc\.v|install-sh'
 
 Unicode_Exempt_Re = r'(Changes$|CONTRIBUTORS$|LICENSES?|contributors.rst$|spelling.txt$|ci-rtlmeter-report.py)'
@@ -74,10 +76,13 @@ for filename in sorted(files.keys()):
     if not os.path.exists(filename):  # git file might be deleted but not yet staged
         continue
     contents = test.file_contents(filename)
+    # We ignore ^A and ^B so coverage files escape the binary test
+    if re.search(r'[\000\003\004\005\006\377]', contents):
+        if not re.search(Binary_Exempt_Re, filename):
+            warns[filename] = "Binary files not allowed in: " + filename
+        continue  # Ignore binary files
     if re.search(r'(\.out|\.dat)$', filename):
         continue  # Ignore golden files
-    if re.search(r'[\001\002\003\004\005\006]', contents):
-        continue  # Ignore binary files
     if contents != "" and contents[-1] != "\n":
         contents += "\n"
         warns[filename] = "Missing trailing newline (add one) in: " + filename
@@ -145,6 +150,7 @@ if len(warns):
         msg += "Files have whitespace errors: " + ' '.join(sorted(warns.keys())) + "\n"
         msg += "To auto-fix (some): HARNESS_UPDATE_GOLDEN=1 {command} or --golden\n"
         msg += "If change any Verilog then remember to update .out files too (with --golden)\n"
+        msg += "\n"
     for filename in sorted(warns.keys()):
         msg += warns[filename] + "\n"
     test.error(msg)

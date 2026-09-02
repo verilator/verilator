@@ -1256,9 +1256,9 @@ class AssertVisitor final : public VNVisitor {
 
         bool assertTypeConst = true;
         if (!nodep->assertTypesp()) {
-            nodep->ctlAssertTypes(VAssertType{ALL_ASSERT_TYPES});
+            nodep->assertTypes(VAssertType{ALL_ASSERT_TYPES});
         } else if (const AstConst* const assertTypesp = VN_CAST(nodep->assertTypesp(), Const)) {
-            nodep->ctlAssertTypes(VAssertType{assertTypesp->toSInt()});
+            nodep->assertTypes(VAssertType{assertTypesp->toSInt()});
         } else {
             assertTypeConst = false;
         }
@@ -1278,9 +1278,9 @@ class AssertVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
-        if (assertTypeConst && nodep->ctlAssertTypes() != ALL_ASSERT_TYPES
-            && nodep->ctlAssertTypes().containsAny(VAssertType::UNIQUE | VAssertType::UNIQUE0
-                                                   | VAssertType::PRIORITY)) {
+        if (assertTypeConst && nodep->assertTypes() != ALL_ASSERT_TYPES
+            && nodep->assertTypes().containsAny(VAssertType::UNIQUE | VAssertType::UNIQUE0
+                                                | VAssertType::PRIORITY)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
@@ -1288,11 +1288,11 @@ class AssertVisitor final : public VNVisitor {
 
         bool directiveTypeConst = true;
         if (!nodep->directiveTypesp()) {
-            nodep->ctlDirectiveTypes(VAssertDirectiveType::ASSERT | VAssertDirectiveType::ASSUME
-                                     | VAssertDirectiveType::COVER);
+            nodep->directiveTypes(VAssertDirectiveType::ASSERT | VAssertDirectiveType::ASSUME
+                                  | VAssertDirectiveType::COVER);
         } else if (const AstConst* const directiveTypesp
                    = VN_CAST(nodep->directiveTypesp(), Const)) {
-            nodep->ctlDirectiveTypes(VAssertDirectiveType{directiveTypesp->toSInt()});
+            nodep->directiveTypes(VAssertDirectiveType{directiveTypesp->toSInt()});
         } else {
             directiveTypeConst = false;
         }
@@ -1314,7 +1314,7 @@ class AssertVisitor final : public VNVisitor {
         } else {
             newp->add(std::to_string(ALL_ASSERT_TYPES));
         }
-        newp->add(", " + std::to_string(nodep->ctlDirectiveTypes()) + ");\n");
+        newp->add(", " + std::to_string(nodep->directiveTypes()) + ");\n");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
