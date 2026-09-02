@@ -685,9 +685,9 @@ public:
         init(text, setwidth);
     }
     ASTGEN_MEMBERS_AstCExpr;
+    // METHODS
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    // METHODS
     bool cleanOut() const override { return true; }
     std::string emitC() override { V3ERROR_NA_RETURN(""); }
     std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -718,6 +718,8 @@ public:
         , m_pure{true} {}
     ASTGEN_MEMBERS_AstCExprUser;
     // METHODS
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     bool cleanOut() const override { return false; }
     std::string emitC() override { V3ERROR_NA_RETURN(""); }
     std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -1372,6 +1374,8 @@ public:
         this->weightp(weightp);
     }
     ASTGEN_MEMBERS_AstDistItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { return "%l "s + (m_isWhole ? ":/" : ":=") + " %r"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }  // NA
@@ -2189,6 +2193,8 @@ public:
         dtypeSetUInt32();
     }
     ASTGEN_MEMBERS_AstRand;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override {
         return seedp() ? (m_urandom ? "%f$urandom(%l)" : "%f$random(%l)")
                        : (m_urandom ? "%f$urandom()" : "%f$random()");
@@ -3097,6 +3103,8 @@ public:
         dtypeSetInt();
     }
     ASTGEN_MEMBERS_AstCompareNN;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opCompareNN(lhs, rhs, m_ignoreCase);
     }
@@ -3113,6 +3121,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool ignoreCase() const { return m_ignoreCase; }
 };
 class AstConcat final : public AstNodeBiop {
     // If you're looking for {#{}}, see AstReplicate

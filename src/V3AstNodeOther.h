@@ -1714,7 +1714,9 @@ public:
     bool sameNode(const AstNode* samep) const override {
         return direction() == VN_DBG_AS(samep, Pull)->direction();
     }
-    uint32_t direction() const { return static_cast<uint32_t>(m_direction); }
+    bool direction() const { return m_direction; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstScope final : public AstNode {
     // A particular usage of a cell
@@ -2099,6 +2101,8 @@ public:
         addOFieldsp(oFieldsp2);
     }
     ASTGEN_MEMBERS_AstUdpTableLine;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     int udpIsCombo() const { return m_udpIsCombo; }
 };
 class AstUdpTableLineVal final : public AstNode {
@@ -2735,6 +2739,8 @@ public:
     AstSequence(FileLine* fl, const string& name, AstNode* stmtp)
         : ASTGEN_SUPER_Sequence(fl, name, stmtp) {}
     ASTGEN_MEMBERS_AstSequence;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool hasDType() const override VL_MT_SAFE { return true; }
     AstNodeFTask* cloneType(const string& name) override {
         return new AstSequence{fileline(), name, nullptr};
