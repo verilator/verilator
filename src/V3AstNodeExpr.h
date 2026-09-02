@@ -5421,17 +5421,17 @@ public:
     enum FmtType : int { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
 
 private:
-    const FmtType m_fmt;  // Operation type
+    const FmtType m_fmtType;  // Operation type
 public:
-    AstAtoN(FileLine* fl, AstNodeExpr* lhsp, FmtType fmt)
+    AstAtoN(FileLine* fl, AstNodeExpr* lhsp, FmtType fmtType)
         : ASTGEN_SUPER_AtoN(fl, lhsp)
-        , m_fmt{fmt} {
-        fmt == ATOREAL ? dtypeSetDouble() : dtypeSetInteger();
+        , m_fmtType{fmtType} {
+        fmtType == ATOREAL ? dtypeSetDouble() : dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstAtoN;
-    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAtoN(lhs, m_fmt); }
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAtoN(lhs, m_fmtType); }
     string name() const override VL_MT_STABLE {
-        switch (m_fmt) {
+        switch (m_fmtType) {
         case ATOI: return "atoi";
         case ATOHEX: return "atohex";
         case ATOOCT: return "atooct";
@@ -5442,7 +5442,7 @@ public:
     }
     string emitVerilog() override { return "%l." + name() + "()"; }
     string emitC() override {
-        switch (m_fmt) {
+        switch (m_fmtType) {
         case ATOI: return "VL_ATOI_N(%li, 10)";
         case ATOHEX: return "VL_ATOI_N(%li, 16)";
         case ATOOCT: return "VL_ATOI_N(%li, 8)";
@@ -5454,7 +5454,7 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
-    FmtType format() const { return m_fmt; }
+    FmtType fmtType() const { return m_fmtType; }
 };
 class AstBitsToRealD final : public AstNodeUniop {
 public:

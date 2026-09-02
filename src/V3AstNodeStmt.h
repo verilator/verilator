@@ -262,10 +262,10 @@ public:
     bool isOutputter() override { return true; }
     VAssertCtlType ctlType() const { return m_ctlType; }
     void ctlType(int32_t type) { m_ctlType = VAssertCtlType{type}; }
-    VAssertType ctlAssertTypes() const { return m_assertTypes; }
-    void ctlAssertTypes(VAssertType types) { m_assertTypes = types; }
-    VAssertDirectiveType ctlDirectiveTypes() const { return m_directiveTypes; }
-    void ctlDirectiveTypes(VAssertDirectiveType types) { m_directiveTypes = types; }
+    VAssertType assertTypes() const { return m_assertTypes; }
+    void assertTypes(VAssertType types) { m_assertTypes = types; }
+    VAssertDirectiveType directiveTypes() const { return m_directiveTypes; }
+    void directiveTypes(VAssertDirectiveType types) { m_directiveTypes = types; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
 };
