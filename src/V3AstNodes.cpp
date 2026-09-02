@@ -3561,6 +3561,7 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     if (containsGenBlock()) str << " [GENBLK]";
+    if (superReference()) str << " [SUPERREF]";
     str << " -> ";
     if (dotted() != "") str << ".=" << dotted() << " ";
     if (taskp()) {
@@ -3572,6 +3573,7 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
 void AstNodeFTaskRef::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, dotted);
     dumpJsonBoolFuncIf(str, containsGenBlock);
+    dumpJsonBoolFuncIf(str, superReference);
     dumpJsonGen(str);
 }
 void AstNodeFTask::dump(std::ostream& str) const {

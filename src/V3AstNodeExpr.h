@@ -237,8 +237,9 @@ private:
     string m_name;  // Name of variable
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
-    bool m_pli = false;  // Pli system call ($name)
     bool m_containsGenBlock = false;  // Contains gen block reference
+    bool m_pli = false;  // Pli system call ($name)
+    bool m_superReference = false;  // Called with super reference
     VIsCached m_purity;  // Pure state
 
 protected:
@@ -263,10 +264,12 @@ public:
     void dotted(const string& name) { m_dotted = name; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
-    bool pli() const { return m_pli; }
-    void pli(bool flag) { m_pli = flag; }
     bool containsGenBlock() const { return m_containsGenBlock; }
     void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
+    bool pli() const { return m_pli; }
+    void pli(bool flag) { m_pli = flag; }
+    bool superReference() const { return m_superReference; }
+    void superReference(bool flag) { m_superReference = flag; }
     bool isPure() override;
     bool sameNode(const AstNode* samep) const override {
         const AstNodeFTaskRef* const asamep = VN_DBG_AS(samep, NodeFTaskRef);
@@ -276,7 +279,8 @@ public:
                && dotted() == asamep->dotted()  //
                && inlinedDots() == asamep->inlinedDots()  //
                && pli() == asamep->pli()  //
-               && containsGenBlock() == asamep->containsGenBlock();
+               && containsGenBlock() == asamep->containsGenBlock()
+               && superReference() == asamep->superReference();
     }
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
@@ -5085,19 +5089,11 @@ public:
 // === AstNodeFTaskRef ===
 class AstFuncRef final : public AstNodeFTaskRef {
     // A reference to a function
-    bool m_superReference = false;  // Called with super reference
 public:
     inline AstFuncRef(FileLine* fl, AstFunc* taskp, AstArg* argsp = nullptr);
     AstFuncRef(FileLine* fl, const string& name, AstArg* argsp = nullptr)
         : ASTGEN_SUPER_FuncRef(fl, name, argsp) {}
     ASTGEN_MEMBERS_AstFuncRef;
-    bool sameNode(const AstNode* samep) const override {
-        if (!this->AstNodeFTaskRef::sameNode(samep)) return false;
-        const AstFuncRef* const asamep = VN_DBG_AS(samep, FuncRef);
-        return superReference() == asamep->superReference();
-    }
-    bool superReference() const { return m_superReference; }
-    void superReference(bool flag) { m_superReference = flag; }
 };
 class AstMethodCall final : public AstNodeFTaskRef {
     // A reference to a member task (or function)
@@ -5138,7 +5134,6 @@ public:
 };
 class AstTaskRef final : public AstNodeFTaskRef {
     // A reference to a task
-    bool m_superReference = false;  // Called with super reference
 public:
     inline AstTaskRef(FileLine* fl, AstTask* taskp, AstArg* argsp = nullptr);
     AstTaskRef(FileLine* fl, const string& name, AstArg* argsp = nullptr)
@@ -5146,13 +5141,6 @@ public:
         dtypeSetVoid();
     }
     ASTGEN_MEMBERS_AstTaskRef;
-    bool sameNode(const AstNode* samep) const override {
-        if (!this->AstNodeFTaskRef::sameNode(samep)) return false;
-        const AstTaskRef* const asamep = VN_DBG_AS(samep, TaskRef);
-        return superReference() == asamep->superReference();
-    }
-    bool superReference() const { return m_superReference; }
-    void superReference(bool flag) { m_superReference = flag; }
 };
 
 // === AstNodePreSel ===
