@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Drew Risinger
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import vltest_bootstrap
+
+test.scenarios('simulator')
+
+# Run with the default stack limit. The 'verilator' wrapper otherwise raises it,
+# but the CMake integration invokes 'verilator_bin' directly, so the compiler
+# must not require an unlimited stack to elaborate this design.
+test.compile(verilator_flags2=['--no-unlimited-stack'])
+
+test.execute()
+
+test.passes()
