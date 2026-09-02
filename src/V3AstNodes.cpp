@@ -1982,15 +1982,15 @@ void AstAssertCtl::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (ctlType() != VAssertCtlType::_TO_BE_EVALUATED) {
         str << " [" << ctlType().ascii() << "]";
-        str << " [" << ctlAssertTypes().ascii() << "]";
-        str << " [" << ctlDirectiveTypes().ascii() << "]";
+        str << " [" << assertTypes().ascii() << "]";
+        str << " [" << directiveTypes().ascii() << "]";
     }
 }
 void AstAssertCtl::dumpJson(std::ostream& str) const {
     if (ctlType() != VAssertCtlType::_TO_BE_EVALUATED) {
         dumpJsonStr(str, "ctlType", ctlType().ascii());
-        dumpJsonStr(str, "ctlAssertTypes", ctlAssertTypes().ascii());
-        dumpJsonStr(str, "ctlDirectiveTypes", ctlDirectiveTypes().ascii());
+        dumpJsonStr(str, "assertTypes", assertTypes().ascii());
+        dumpJsonStr(str, "directiveTypes", directiveTypes().ascii());
     }
     dumpJsonGen(str);
 }
@@ -3561,6 +3561,7 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     if (containsGenBlock()) str << " [GENBLK]";
+    if (superReference()) str << " [SUPERREF]";
     str << " -> ";
     if (dotted() != "") str << ".=" << dotted() << " ";
     if (taskp()) {
@@ -3572,6 +3573,7 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
 void AstNodeFTaskRef::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, dotted);
     dumpJsonBoolFuncIf(str, containsGenBlock);
+    dumpJsonBoolFuncIf(str, superReference);
     dumpJsonGen(str);
 }
 void AstNodeFTask::dump(std::ostream& str) const {
@@ -3983,13 +3985,13 @@ void AstCoverpoint::dumpJson(std::ostream& str) const { this->AstNodeFuncCovItem
 
 void AstCoverBin::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " " << m_type.ascii();
+    str << " " << m_binsType.ascii();
     if (m_isArray) str << "[]";
 }
 
 void AstCoverBin::dumpJson(std::ostream& str) const {
     this->AstNode::dumpJson(str);
-    str << ", \"binsType\": \"" << m_type.ascii() << "\"";
+    str << ", \"binsType\": \"" << binsType().ascii() << "\"";
     if (m_isArray) str << ", \"isArray\": true";
 }
 
@@ -4013,12 +4015,12 @@ void AstCoverCross::dumpJson(std::ostream& str) const { this->AstNodeFuncCovItem
 
 void AstCoverOption::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " " << m_type.ascii();
+    str << " " << m_optType.ascii();
 }
 
 void AstCoverOption::dumpJson(std::ostream& str) const {
     this->AstNode::dumpJson(str);
-    str << ", \"optionType\": \"" << m_type.ascii() << "\"";
+    str << ", \"optType\": \"" << m_optType.ascii() << "\"";
 }
 
 void AstCoverpointRef::dump(std::ostream& str) const { this->AstNode::dump(str); }
