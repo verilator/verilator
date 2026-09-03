@@ -1,0 +1,22 @@
+%Error: t/t_randomize_rand_type_domain_bad.v:16:14: Unsupported: 'randc' on an object handle (IEEE 1800-2023 18.4: object handles shall not be declared randc)
+                                                  : ... note: In instance 't'
+   16 |   randc Item h;
+      |              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_randomize_rand_type_domain_bad.v:26:16: Unsupported: 'rand'/'randc' on a chandle variable (not in IEEE 1800-2023 18.4's random-variable type domain)
+                                                  : ... note: In instance 't'
+   26 |   rand chandle h;
+      |                ^
+%Error: t/t_randomize_rand_type_domain_bad.v:31:15: Unsupported: 'rand'/'randc' on a string variable (not in IEEE 1800-2023 18.4's random-variable type domain)
+                                                  : ... note: In instance 't'
+   31 |   rand string s;
+      |               ^
+%Error: t/t_randomize_rand_type_domain_bad.v:36:14: Unsupported: 'rand'/'randc' on an event variable (not in IEEE 1800-2023 18.4's random-variable type domain)
+                                                  : ... note: In instance 't'
+   36 |   rand event e;
+      |              ^
+%Error: t/t_randomize_rand_type_domain_bad.v:21:14: Unsupported: 'randc' on a real variable (IEEE 1800-2023 18.4: real variables shall not be declared randc)
+                                                  : ... note: In instance 't'
+   21 |   randc real v;
+      |              ^
+%Error: Exiting due to

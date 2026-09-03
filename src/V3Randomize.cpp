@@ -141,6 +141,48 @@ static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
     return dtypep;
 }
 
+// IEEE 1800-2023 18.4's rand/randc type domain is otherwise unenforced --
+// e.g. 'rand string' silently emits C++ that fails to compile downstream.
+// randc-real/unpacked-union are already rejected elsewhere, not re-checked here.
+static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bool isRandc) {
+    dtypep = dtypep->skipRefp();
+    if (AstNodeDType* const subp = dtypep->subDTypep()) {
+        checkRandTypeEligibility(contextp, subp, isRandc);  // Containers inherit rand/randc kind
+        return;
+    }
+    if (VN_IS(dtypep, ClassRefDType)) {
+        if (isRandc) {
+            contextp->v3error(
+                "Unsupported: 'randc' on an object handle (IEEE 1800-2023 18.4: object "
+                "handles shall not be declared randc)");
+        }
+        return;
+    }
+    if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (structp->packed()) return;  // Integral by construction; members checked separately
+        for (AstMemberDType* memberp = structp->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+            // Each unpacked-struct member independently declares its own rand/randc.
+            if (memberp->rand().isRandomizable()) {
+                checkRandTypeEligibility(memberp, memberp->subDTypep(), memberp->rand().isRandC());
+            }
+        }
+        return;
+    }
+    const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
+    if (basicp
+        && (basicp->keyword() == VBasicDTypeKwd::STRING
+            || basicp->keyword() == VBasicDTypeKwd::CHANDLE
+            || basicp->keyword() == VBasicDTypeKwd::EVENT)) {
+        const char* const articlep = basicp->keyword() == VBasicDTypeKwd::EVENT ? "an" : "a";
+        contextp->v3error("Unsupported: 'rand'/'randc' on " << articlep << " "
+                                                            << basicp->keyword().ascii()
+                                                            << " variable (not in IEEE "
+                                                               "1800-2023 18.4's "
+                                                               "random-variable type domain)");
+    }
+}
+
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
@@ -3995,6 +4037,15 @@ class RandomizeVisitor final : public VNVisitor {
         if (AstEnumDType* const enumDtp = VN_CAST(varp->dtypep()->skipRefToEnump(), EnumDType)) {
             items = static_cast<uint64_t>(enumDtp->itemCount());
         } else if (AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp()) {
+            if (basicp->isDouble()) {
+                // Real is always 64 bits, so this would also hit the width
+                // check below -- diagnosed here first for the actual LRM
+                // reason rather than an incidental width-limit message.
+                varp->v3error("Unsupported: 'randc' on a real variable (IEEE 1800-2023 18.4: "
+                              "real variables shall not be declared randc)");
+                varp->rand(VRandAttr::RAND);
+                return nullptr;
+            }
             if (basicp->width() > 32) {
                 varp->v3error("Maximum implemented width for randc is 32 bits, "
                               << varp->prettyNameQ() << " is " << basicp->width() << " bits");
@@ -6302,6 +6353,11 @@ public:
 
 void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    nodep->foreach([&](AstVar* varp) {
+        if (varp->rand().isRandomizable()) {
+            checkRandTypeEligibility(varp, varp->dtypep(), varp->rand().isRandC());
+        }
+    });
     {
         const RandomizeMarkVisitor markVisitor{nodep};
         const RandomizeVisitor randomizeVisitor{nodep};
