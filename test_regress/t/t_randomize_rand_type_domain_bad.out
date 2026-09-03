@@ -15,8 +15,20 @@
                                                   : ... note: In instance 't'
    36 |   rand event e;
       |              ^
+%Error: t/t_randomize_rand_type_domain_bad.v:49:20: Unsupported: 'rand'/'randc' on a virtual interface handle (not in IEEE 1800-2023 18.4's random-variable type domain)
+                                                  : ... note: In instance 't'
+   49 |   rand virtual Bus vif;
+      |                    ^~~
+%Error: t/t_randomize_rand_type_domain_bad.v:56:20: Unsupported: 'rand'/'randc' on a chandle variable (not in IEEE 1800-2023 18.4's random-variable type domain)
+                                                  : ... note: In instance 't'
+   56 |   rand chandle_q_t q;
+      |                    ^
 %Error: t/t_randomize_rand_type_domain_bad.v:21:14: Unsupported: 'randc' on a real variable (IEEE 1800-2023 18.4: real variables shall not be declared randc)
                                                   : ... note: In instance 't'
    21 |   randc real v;
       |              ^
+%Error: t/t_randomize_rand_type_domain_bad.v:42:18: Unsupported: 'randc' on a real variable (IEEE 1800-2023 18.4: real variables shall not be declared randc)
+                                                  : ... note: In instance 't'
+   42 |   randc realtime rt;
+      |                  ^~
 %Error: Exiting due to

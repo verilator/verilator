@@ -36,6 +36,26 @@ class CEvent;
   rand event e;
 endclass
 
+// randc on realtime: same LRM rule as real, checked separately since
+// realtime isn't literally the same dtype kind as real.
+class CRealtime;
+  randc realtime rt;
+endclass
+
+// A virtual interface handle is not in 18.4's enumerated domain either.
+interface Bus;
+endinterface
+class CVif;
+  rand virtual Bus vif;
+endclass
+
+// A typedef'd queue of an ineligible type: proves the dtype-unwrap walk
+// skips refs at every recursion level, not just the outermost one.
+typedef chandle chandle_q_t[$];
+class CChandleQueue;
+  rand chandle_q_t q;
+endclass
+
 module t;
   initial begin
     CHandle obj1;
@@ -43,15 +63,24 @@ module t;
     CChandle obj3;
     CString obj4;
     CEvent obj5;
+    CRealtime obj6;
+    CVif obj7;
+    CChandleQueue obj8;
     obj1 = new;
     obj2 = new;
     obj3 = new;
     obj4 = new;
     obj5 = new;
+    obj6 = new;
+    obj7 = new;
+    obj8 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
     if (obj4.randomize() == 0) $stop;
     if (obj5.randomize() == 0) $stop;
+    if (obj6.randomize() == 0) $stop;
+    if (obj7.randomize() == 0) $stop;
+    if (obj8.randomize() == 0) $stop;
   end
 endmodule

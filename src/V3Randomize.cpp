@@ -158,6 +158,15 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         }
         return;
     }
+    if (const AstIfaceRefDType* const ifacep = VN_CAST(dtypep, IfaceRefDType)) {
+        // Not in 18.4's domain at all; generates an int-to-pointer C++
+        // assignment that fails to compile, same failure class as chandle.
+        if (ifacep->isVirtual()) {
+            contextp->v3error("Unsupported: 'rand'/'randc' on a virtual interface handle (not "
+                              "in IEEE 1800-2023 18.4's random-variable type domain)");
+        }
+        return;
+    }
     if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
         if (structp->packed()) return;  // Integral by construction; members checked separately
         for (AstMemberDType* memberp = structp->membersp(); memberp;
