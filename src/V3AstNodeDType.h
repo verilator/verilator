@@ -38,7 +38,6 @@ class AstNodeDType VL_NOT_FINAL : public AstNode {
     int m_widthMin
         = 0;  // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
     VSigning m_numeric;  // (also in AstTypeTable::Key) Node is signed
-    // Other members
     bool m_generic = false;  // Simple globally referenced type, don't garbage collect
     // Unique number assigned to each dtype during creation for IEEE matching
     static int s_uniqueNum;
@@ -873,6 +872,8 @@ public:
         dtypep(this);
     }
     ASTGEN_MEMBERS_AstIfaceGenericDType;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void dumpSmall(std::ostream& str) const override;
     bool hasDType() const override VL_MT_SAFE { return true; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
@@ -1117,6 +1118,8 @@ public:
     ASTGEN_MEMBERS_AstParseTypeDType;
     AstNodeDType* dtypep() const VL_MT_STABLE { return nullptr; }
     // METHODS
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     int widthAlignBytes() const override { return 0; }

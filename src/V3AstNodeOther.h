@@ -1239,6 +1239,8 @@ public:
         , m_name{vname}
         , m_cname{cname} {}
     ASTGEN_MEMBERS_AstDpiExport;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     string cname() const { return m_cname; }
