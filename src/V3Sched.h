@@ -481,7 +481,7 @@ public:
 VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) VL_MT_DISABLED;
 
 // Collects what covergroup reference formal arguments are bound to at construction
-CovergroupRefBindings makeCovergroupRefBindings(AstNetlist* nodep) VL_MT_DISABLED;
+const CovergroupRefBindings makeCovergroupRefBindings(AstNetlist* nodep) VL_MT_DISABLED;
 
 // Creates the timing kit and marks variables written by suspendables
 TimingKit prepareTiming(AstNetlist* const netlistp) VL_MT_DISABLED;

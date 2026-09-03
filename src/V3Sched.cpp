@@ -861,7 +861,7 @@ void schedule(AstNetlist* netlistp) {
     const auto& virtIfaceTriggers = makeVirtIfaceTriggers(netlistp);
     // Resolve what covergroup reference formal arguments are bound to, which is visible here
     // but not from V3Order, where the reads through them must be modeled
-    const CovergroupRefBindings cgRefBindings = makeCovergroupRefBindings(netlistp);
+    const CovergroupRefBindings& cgRefBindings = makeCovergroupRefBindings(netlistp);
     // Prepare timing-related logic and external domains
     TimingKit timingKit = prepareTiming(netlistp);
 

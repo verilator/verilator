@@ -27,7 +27,7 @@ coverage_covergroup_common.run(test,
                                                  (['--no-threads-coarsen'] if test.vltmt else [])),
                                threads=(2 if test.vltmt else 1))
 
-# Neither sample names a covergroup object, so both resolve to the union over cg_a's two
+# No sample names a covergroup object, so each resolves to the union over its type's two
 # constructions rather than to one instance
 test.file_grep(test.stats, r'Scheduling, covergroup ref sample calls, per instance\s+(\d+)', 0)
-test.file_grep(test.stats, r'Scheduling, covergroup ref sample calls, per type\s+(\d+)', 2)
+test.file_grep(test.stats, r'Scheduling, covergroup ref sample calls, per type\s+(\d+)', 4)

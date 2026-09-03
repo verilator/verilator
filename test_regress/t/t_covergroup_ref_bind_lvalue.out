@@ -2,3 +2,7 @@ cg_a.cp_a.one: 1
 cg_a.cp_a.three: 4
 cg_a.cp_a.two: 2
 cg_a.cp_a.zero: 3
+cg_b.cp_b.one: 2
+cg_b.cp_b.three: 3
+cg_b.cp_b.two: 2
+cg_b.cp_b.zero: 3

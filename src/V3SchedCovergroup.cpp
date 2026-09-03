@@ -131,7 +131,6 @@ class CovergroupRefBindVisitor final : public VNVisitorConst {
             // over-approximation, and so safe.
             thisActualp->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
-                UASSERT_OBJ(vscp, refp, "Var didn't get varscoped in V3Scope.cpp");
                 bindings.push_back(vscp);
             });
         }
@@ -182,7 +181,7 @@ public:
     CovergroupRefBindings take_bindings() { return std::move(m_bindings); }
 };
 
-CovergroupRefBindings makeCovergroupRefBindings(AstNetlist* nodep) {
+const CovergroupRefBindings makeCovergroupRefBindings(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     CovergroupRefBindings bindings{};
     if (v3Global.useCovergroup()) bindings = CovergroupRefBindVisitor{nodep}.take_bindings();
