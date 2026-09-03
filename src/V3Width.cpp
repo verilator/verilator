@@ -2208,8 +2208,6 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSClocked* nodep) override {
-        VL_RESTORER(m_underSExpr);
-        m_underSExpr = true;
         m_hasSExpr = true;
         assertAtExpr(nodep);
         if (m_vup->prelim()) {

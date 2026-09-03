@@ -903,7 +903,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %left           yP_ANDANDAND
 %left           yMATCHES
 %left           prTAGGED
-//UNSUP %left   prSEQ_CLOCKING
+%left           prSEQ_CLOCKING
 
 // PSL op precedence
 
@@ -6359,11 +6359,14 @@ clocking_eventE<senItemp>:      // IEEE: optional clocking_event
 clocking_event<senItemp>:       // IEEE: clocking_event
         //                      // IEEE: '@' ps_identifier
         //                      // IEEE: '@' hierarchical_identifier
-        //UNSUP: '@' idClassSel/*ps_identifier*/
-                '@' id
-                        { $$ = new AstSenItem{$<fl>2, VEdgeType::ET_CHANGED,
-                                              new AstParseRef{$<fl>2, *$2, nullptr, nullptr}}; }
-        |       '@' '(' event_expression ')'            { $$ = $3; }
+        //                      // Fileline of '@', so diagnostics point at the clocking event
+                '@' idDottedSel
+                        { $$ = new AstSenItem{$<fl>1, VEdgeType::ET_CHANGED, $2}; }
+        |       '@' packageClassScope idAny
+                        { $$ = new AstSenItem{$<fl>1, VEdgeType::ET_CHANGED,
+                                              new AstDot{$<fl>3, true, $2,
+                                                        new AstParseRef{$<fl>3, *$3, nullptr, nullptr}}}; }
+        |       '@' '(' event_expression ')'            { $$ = $3; $$->fileline($<fl>1); }
         ;
 
 clocking_itemListE<nodep>:
@@ -6545,12 +6548,6 @@ concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_stat
                               $6, VAssertType::CONCURRENT};
                           coverp->isCoverSeq(true);
                           $$ = coverp; }
-        |       yCOVER ySEQUENCE '(' clocking_event sexpr ')' stmt
-                        { AstCover* const coverp = new AstCover{$1,
-                              new AstPropSpec{$4->fileline(), $4, nullptr, $5},
-                              $7, VAssertType::CONCURRENT};
-                          coverp->isCoverSeq(true);
-                          $$ = coverp; }
         |       yCOVER ySEQUENCE '(' clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt
                         { AstCover* const coverp = new AstCover{$1,
                               new AstPropSpec{$4->fileline(), $4, $8, $10},
@@ -6711,38 +6708,27 @@ sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
         |       assertion_variable_declarationList sexpr ';'    { $$ = addNextNull($1, $2); }
         |       sexpr                                   { $$ = $1; }
         |       sexpr ';'                               { $$ = $1; }
-        //                      // IEEE: clocking_event sequence_expr (16.7)
-        //                      // A leading clocking event on a named sequence body.
-        |       '@' '(' event_expression ')' sexpr      { $$ = new AstSClocked{$1, $3, $5}; }
-        |       '@' '(' event_expression ')' sexpr ';'  { $$ = new AstSClocked{$1, $3, $5}; }
-        |       '@' senitemVar sexpr                    { $$ = new AstSClocked{$1, $2, $3}; }
-        |       '@' senitemVar sexpr ';'                { $$ = new AstSClocked{$1, $2, $3}; }
         ;
 
 property_spec<propSpecp>:               // IEEE: property_spec
-        //UNSUP: This rule has been super-specialized to what is supported now
-        //UNSUP remove below
-                '@' '(' senitem ')' yDISABLE yIFF '(' expr ')' property_exprSpec
-                        { $$ = $10; $$->fileline($1); $$->sensesp($3); $$->disablep($8); }
-        |       '@' '(' senitem ')' property_exprSpec
-                        { $$ = $5; $$->fileline($1); $$->sensesp($3); }
-        |       '@' senitemVar property_exprSpec
-                        { $$ = $3; $$->fileline($1); $$->sensesp($2); }
-        |       yDISABLE yIFF '(' expr ')' '@' '(' senitem ')' property_exprSpec
-                        { $$ = $10; $$->fileline($1); $$->sensesp($8); $$->disablep($4); }
-        //UNSUP remove above
-        |       yDISABLE yIFF '(' expr ')' property_exprSpec
-                        { $$ = $6; $$->fileline($4->fileline()); $$->disablep($4); }
-        |       property_exprSpec                       { $$ = $1; }
+        //                      // A clocking_event before a plain property_expr parses via pexpr
+                property_exprSpec                       { $$ = $1; }
+        |       clocking_eventE yDISABLE yIFF '(' expr ')' property_exprSpec
+                        { $$ = $7; $$->fileline($1 ? $1->fileline() : $5->fileline());
+                          $$->addSensesp($1); $$->disablep($5); }
         ;
 
 property_exprSpec<propSpecp>:  // A property expression plus explicit weak/strong strength
                 pexpr
                         { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
-        |       ySTRONG '(' sexpr ')'
-                        { $$ = new AstPropSpec{$1, nullptr, nullptr, $3, VPropStrength::STRONG}; }
-        |       yWEAK '(' sexpr ')'
-                        { $$ = new AstPropSpec{$1, nullptr, nullptr, $3, VPropStrength::WEAK}; }
+        |       clocking_eventE ySTRONG '(' sexpr ')'
+                        { $$ = new AstPropSpec{$1 ? $1->fileline() : $2, nullptr, nullptr,
+                                               $1 ? new AstSClocked{$1->fileline(), $1, $4} : $4,
+                                               VPropStrength::STRONG}; }
+        |       clocking_eventE yWEAK '(' sexpr ')'
+                        { $$ = new AstPropSpec{$1 ? $1->fileline() : $2, nullptr, nullptr,
+                                               $1 ? new AstSClocked{$1->fileline(), $1, $4} : $4,
+                                               VPropStrength::WEAK}; }
         ;
 
 property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
@@ -6882,8 +6868,6 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // property_statement_spec: clocking_event property_statement
         //
         //                      // Include property_specDisable to match property_spec rule
-        //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING
-        //UNSUP         { $$ = $2; BBUNSUP($2, "Unsupported: clocking event (in sequence expression)"); DEL($1); }
         //
         //============= sexpr rules copied for property_expr
         |       BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })        // {copied}
@@ -6983,7 +6967,9 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       ~p~sexpr yWITHIN sexpr
                         { $$ = new AstSWithin{$2, $1, $3}; }
         //                      // Note concurrent_assertion had duplicate rule for below
-        //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING    { }
+        //                      // IEEE: clocking_event sequence_expr (A.2.10)
+        |       clocking_event ~p~sexpr %prec prSEQ_CLOCKING
+                        { $$ = new AstSClocked{$1->fileline(), $1, $2}; }
         //
         //============= expr rules copied for sequence_expr
         |       BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}

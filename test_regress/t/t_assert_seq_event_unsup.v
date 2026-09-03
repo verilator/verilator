@@ -8,16 +8,11 @@ module t (
   input clk
 );
   bit a, b;
-  logic g = 0;
 
   default clocking @(posedge clk);
   endclocking
 
   // verilog_format: off
-  sequence s_nonedge;
-    @(g) a ##1 b;
-  endsequence
-
   sequence s_ref;
     @(posedge clk) a;
   endsequence
@@ -36,7 +31,6 @@ module t (
   endproperty
 
   initial begin
-    @s_nonedge;
     @s_or;
   end
 endmodule

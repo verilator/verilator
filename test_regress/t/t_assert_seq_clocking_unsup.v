@@ -18,19 +18,17 @@ module t (
   sequence s_nest;
     @(posedge clk) b;
   endsequence
-
-  sequence s_level;
-    @clk a;
-  endsequence
-
-  sequence s_level2;
-    @clk a
-  endsequence
   // verilog_format: on
 
   assert property (@(posedge clk2) s_multi);
   assert property (s_nest ##1 a);
-  assert property (s_level);
-  assert property (s_level2);
+
+  // Clocking event both before and after disable iff
+  property p_double_clock;
+    @(posedge clk) disable iff (a) @(posedge clk2) not b;
+  endproperty
+
+  assert property (p_double_clock);
+  cover property (@(posedge clk) disable iff (a) @(posedge clk2) strong(b));
 
 endmodule

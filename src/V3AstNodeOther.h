@@ -1850,7 +1850,7 @@ class AstPropSpec final : public AstNode {
     // A clocked property
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
-    // @astgen op1 := sensesp : Optional[AstSenItem]
+    // @astgen op1 := sensesp : List[AstSenItem]
     // @astgen op2 := disablep : Optional[AstNodeExpr]
     // @astgen op3 := propp : AstNode
     // @astgen op4 := matchCountp : Optional[AstNodeExpr] // Cover sequence matches this tick
@@ -1861,7 +1861,7 @@ public:
                 VPropStrength propStrength = VPropStrength::DEFAULT)
         : ASTGEN_SUPER_PropSpec(fl)
         , m_propStrength{propStrength} {
-        this->sensesp(sensesp);
+        addSensesp(sensesp);
         this->disablep(disablep);
         this->propp(propp);
     }

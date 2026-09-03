@@ -1,0 +1,8 @@
+%Error: t/t_assert_clock_event_bad.v:13:21: syntax error, unexpected this
+   13 |   assert property (@this.clk a |-> a);
+      |                     ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assert_clock_event_bad.v:14:21: syntax error, unexpected super
+   14 |   assert property (@super.clk a |-> a);
+      |                     ^~~~~
+%Error: Exiting due to

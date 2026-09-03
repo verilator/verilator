@@ -7,28 +7,18 @@
                                                         : ... note: In instance 't'
    19 |     @(posedge clk) b;
       |     ^
-%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:23:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
-                                                        : ... note: In instance 't'
-   23 |     @clk a;
-      |     ^
-%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:27:5: Unsupported: non-edge clocking event on a sequence; use an edge such as @(posedge clk)
-                                                        : ... note: In instance 't'
-   27 |     @clk a
-      |     ^
-%Error: t/t_assert_seq_clocking_unsup.v:32:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:28:36: Unsupported: multiclocked sequence or property
+                                                         : ... note: In instance 't'
+   28 |     @(posedge clk) disable iff (a) @(posedge clk2) not b;
+      |                                    ^
+%Error-UNSUPPORTED: t/t_assert_seq_clocking_unsup.v:32:50: Unsupported: multiclocked sequence or property
+                                                         : ... note: In instance 't'
+   32 |   cover property (@(posedge clk) disable iff (a) @(posedge clk2) strong(b));
+      |                                                  ^
+%Error: t/t_assert_seq_clocking_unsup.v:24:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                             : ... note: In instance 't'
                                             : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   32 |   assert property (s_nest ##1 a);
+   24 |   assert property (s_nest ##1 a);
       |   ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_seq_clocking_unsup.v:33:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
-                                            : ... note: In instance 't'
-                                            : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   33 |   assert property (s_level);
-      |   ^~~~~~
-%Error: t/t_assert_seq_clocking_unsup.v:34:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
-                                            : ... note: In instance 't'
-                                            : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   34 |   assert property (s_level2);
-      |   ^~~~~~
 %Error: Exiting due to
