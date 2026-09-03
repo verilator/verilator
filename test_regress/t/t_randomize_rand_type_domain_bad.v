@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-FileCopyrightText: 2026 Aditya Shevade
 // SPDX-License-Identifier: CC0-1.0
 
 // IEEE 1800-2023 18.4 type-eligibility rules for rand/randc. Each
@@ -49,8 +49,8 @@ class CVif;
   rand virtual Bus vif;
 endclass
 
-// Typedef'd queue of chandle. Confirms skipRefp() runs at every
-// recursion level, not just the outermost.
+// Typedef'd queue of chandle. Confirms the type check unwraps both
+// the typedef and the queue, not just the outermost layer.
 typedef chandle chandle_q_t[$];
 class CChandleQueue;
   rand chandle_q_t q;

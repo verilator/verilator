@@ -150,6 +150,8 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         return;
     }
     if (VN_IS(dtypep, ClassRefDType)) {
+        // rand on a class handle is legal (recursive randomization).
+        // Only randc is disallowed.
         if (isRandc) {
             contextp->v3error(
                 "Unsupported: 'randc' on an object handle (IEEE 1800-2023 18.4: object "
@@ -2020,7 +2022,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         // emitSMT() assumes bit-vector operands and does not type-check.
-        // Check by operand type instead of by operator to cover them all.
+        // Check by operand type here, once, instead of duplicating this
+        // check in every operator that could receive a real value.
         if (arrayElementDTypep(nodep->lhsp()->dtypep())->isDouble()
             || arrayElementDTypep(nodep->rhsp()->dtypep())->isDouble()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: real value in this constraint expression");
