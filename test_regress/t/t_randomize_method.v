@@ -117,6 +117,7 @@ class OtherCls;
     str.i = 0;
     str.j = '{x: 1'b0, y: ONE, z: 64'd0, s: '{a: 32'd0, b: 1'b0, c: ONE}};
     str.k = ONE;
+    str.z = 0;
   endfunction
 
 endclass
@@ -189,6 +190,7 @@ module t;
       if (derived1.i.e != 0) $stop;
       if (derived1.k != 0) $stop;
       if (other.v != 0) $stop;
+      if (other.str.z != 0) $stop;
       if (cont.b != null) $stop;
       if (der_int.b != 0) $stop;
       if (der_contain.cls2.a != 0) $stop;
