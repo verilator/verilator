@@ -236,7 +236,10 @@ class WidthVisitor final : public VNVisitor {
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstPin* m_paramPinsp = nullptr;  // Parameter pin list of enclosing construct
     bool m_paramPinMapValid = false;  // m_paramPinMap is built for m_paramPinsp
+    const AstPin* m_paramPinMapBuiltFor = nullptr;  // Pins m_paramPinMap was built for
     std::map<const AstVar*, const AstPin*> m_paramPinMap;  // Parameter var -> overriding pin
+    // Type parameter -> overriding pin
+    std::map<const AstParamTypeDType*, const AstPin*> m_paramPinPTypeMap;
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstClass* m_cgClassp = nullptr;  // Current covergroup class
@@ -280,20 +283,30 @@ class WidthVisitor final : public VNVisitor {
         WidthVisitor& m_visitor;
         const AstPin* const m_savedPinsp;
         const bool m_savedValid;
+        const AstPin* const m_savedBuiltFor;
+        // Swap the maps aside rather than copy them, as VL_RESTORER_CLEAR would.
+        std::map<const AstVar*, const AstPin*> m_savedMap;
+        std::map<const AstParamTypeDType*, const AstPin*> m_savedPTypeMap;
 
     public:
         ParamPinScope(WidthVisitor& visitor, const AstPin* pinsp)
             : m_visitor{visitor}
             , m_savedPinsp{visitor.m_paramPinsp}
-            , m_savedValid{visitor.m_paramPinMapValid} {
+            , m_savedValid{visitor.m_paramPinMapValid}
+            , m_savedBuiltFor{visitor.m_paramPinMapBuiltFor} {
+            m_savedMap.swap(visitor.m_paramPinMap);
+            m_savedPTypeMap.swap(visitor.m_paramPinPTypeMap);
             m_visitor.m_paramPinsp = pinsp;
             m_visitor.m_paramPinMapValid = false;
         }
         ~ParamPinScope() {
             m_visitor.m_paramPinsp = m_savedPinsp;
-            // If this scope built a map it clobbered any outer one, which must be rebuilt
-            m_visitor.m_paramPinMapValid = m_visitor.m_paramPinMapValid ? false : m_savedValid;
+            m_visitor.m_paramPinMapValid = m_savedValid;
+            m_visitor.m_paramPinMapBuiltFor = m_savedBuiltFor;
+            m_visitor.m_paramPinMap.swap(m_savedMap);
+            m_visitor.m_paramPinPTypeMap.swap(m_savedPTypeMap);
         }
+        VL_UNCOPYABLE(ParamPinScope);
     };
 
     static void packIfUnpacked(AstNodeExpr* const nodep) {
@@ -7037,35 +7050,98 @@ class WidthVisitor final : public VNVisitor {
         if (!m_paramPinMapValid) {
             m_paramPinMapValid = true;
             m_paramPinMap.clear();
+            m_paramPinPTypeMap.clear();
             for (const AstPin* pp = m_paramPinsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
-                if (pp->modVarp() && pp->exprp()) m_paramPinMap.emplace(pp->modVarp(), pp);
+                if (!pp->exprp()) continue;
+                if (pp->modVarp()) m_paramPinMap.emplace(pp->modVarp(), pp);
+                if (pp->modPTypep()) m_paramPinPTypeMap.emplace(pp->modPTypep(), pp);
             }
+            m_paramPinMapBuiltFor = m_paramPinsp;
         }
+        UASSERT(m_paramPinMapBuiltFor == m_paramPinsp, "Parameter pin map not for current pins");
         return m_paramPinMap;
+    }
+    // Map each type parameter to the pin overriding it
+    const std::map<const AstParamTypeDType*, const AstPin*>& paramPinPTypeMap() {
+        paramPinMap();
+        return m_paramPinPTypeMap;
+    }
+    // Cache of parameter values already resolved for the current instance
+    using ParamValueMap = std::map<const AstVar*, AstNode*>;
+    AstNode* instanceParamValuep(AstVar* varp, ParamValueMap& cache,
+                                 std::set<const AstVar*>& inProgress) {
+        const auto it = cache.find(varp);
+        if (it != cache.end()) return it->second;
+        // Bail on self reference
+        if (!inProgress.emplace(varp).second) return nullptr;
+        const std::map<const AstVar*, const AstPin*>& pinMap = paramPinMap();
+        const auto pinIt = pinMap.find(varp);
+        AstNode* const sourcep = pinIt != pinMap.end() ? pinIt->second->exprp() : varp->valuep();
+        AstNode* valuep = nullptr;
+        if (sourcep) {
+            AstVar* const holderp
+                = new AstVar{varp->fileline(), VVarType::MODULETEMP, "__Vpinparam",
+                             VFlagChildDType{}, varp->subDTypep()->cloneTree(false)};
+            holderp->valuep(sourcep->cloneTree(false));
+            instanceParamSubst(holderp, cache, inProgress);
+            if (!holderp->exists([](const AstVarRef*) { return true; })) {
+                V3Const::constifyParamsNoWarnEdit(holderp);
+                valuep = VN_CAST(holderp->valuep(), Const);
+                if (valuep) valuep->unlinkFrBack();
+            }
+            VL_DO_DANGLING(holderp->deleteTree(), holderp);
+        }
+        inProgress.erase(varp);
+        cache.emplace(varp, valuep);
+        return valuep;
+    }
+    void instanceParamSubst(AstNode* nodep, ParamValueMap& cache,
+                            std::set<const AstVar*>& inProgress) {
+        nodep->foreach([this, &cache, &inProgress](AstVarRef* refp) {
+            AstVar* const targetp = refp->varp();
+            if (!targetp || !targetp->isGParam()) return;
+            AstNode* const valuep = instanceParamValuep(targetp, cache, inProgress);
+            if (!valuep) return;
+            refp->replaceWith(valuep->cloneTree(false));
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        });  // LCOV_EXCL_LINE
+        instanceParamTypeSubst(nodep);
+    }
+    void instanceParamTypeSubst(AstNode* nodep) {
+        // Collect then replace in reverse
+        std::vector<std::pair<AstRefDType*, AstNodeDType*>> replacements;
+        nodep->foreach([this, &replacements](AstRefDType* refp) {
+            const AstParamTypeDType* const ptypep = VN_CAST(refp->refDTypep(), ParamTypeDType);
+            if (!ptypep) return;
+            const std::map<const AstParamTypeDType*, const AstPin*>& pinMap = paramPinPTypeMap();
+            const auto it = pinMap.find(ptypep);
+            AstNodeDType* const substp = it != pinMap.end()
+                                             ? VN_CAST(it->second->exprp(), NodeDType)
+                                             : ptypep->subDTypep();
+            if (substp) replacements.emplace_back(refp, substp);
+        });
+        for (auto it = replacements.rbegin(); it != replacements.rend(); ++it) {
+            AstRefDType* const refp = it->first;
+            refp->replaceWith(it->second->cloneTree(false));
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
     }
     // Copy a parameter's data type with this instance's parameter overrides substituted in
     AstNodeDType* instanceParamDTypep(AstNodeDType* templateDtp) {
         if (!templateDtp->exists(
                 [](const AstVarRef* refp) { return refp->varp() && refp->varp()->isGParam(); })) {
-            return nullptr;  // Not parameter dependent
+            return nullptr;
         }
-        const std::map<const AstVar*, const AstPin*>& pinMap = paramPinMap();
         AstNodeDType* const clonep = templateDtp->cloneTree(false);
         // Hold under a temporary Var so edited nodes have a back pointer
         AstVar* const holderp = new AstVar{templateDtp->fileline(), VVarType::MODULETEMP,
                                            "__Vpindtype", VFlagChildDType{}, clonep};
-        holderp->foreach([&pinMap](AstVarRef* refp) {
-            const AstVar* const targetp = refp->varp();
-            if (!targetp || !targetp->isGParam()) return;
-            AstNode* replacep = nullptr;
-            const auto it = pinMap.find(targetp);
-            if (it != pinMap.end()) replacep = it->second->exprp()->cloneTree(false);
-            // Not overridden by this instance, so the default applies
-            if (!replacep && targetp->valuep()) replacep = targetp->valuep()->cloneTree(false);
-            if (!replacep) return;
-            refp->replaceWith(replacep);
-            VL_DO_DANGLING(refp->deleteTree(), refp);
-        });  // LCOV_EXCL_LINE
+        ParamValueMap cache;
+        std::set<const AstVar*> inProgress;
+        instanceParamSubst(holderp, cache, inProgress);
+        for (const auto& pair : cache) {
+            if (pair.second) pair.second->deleteTree();
+        }
         AstNodeDType* const resultp = holderp->childDTypep();
         resultp->unlinkFrBack();
         VL_DO_DANGLING(holderp->deleteTree(), holderp);
