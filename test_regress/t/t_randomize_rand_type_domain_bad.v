@@ -5,82 +5,45 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // IEEE 1800-2023 18.4 type-eligibility rules for rand/randc. Each
-// class below is illegal for a different reason.
+// member below is illegal for a different reason.
 
 class Item;
   rand int val;
 endclass
 
-// randc on an object handle: "Object handles shall not be declared randc."
-class CHandle;
-  randc Item h;
-endclass
-
-// randc on a real variable: "Real variables shall not be declared randc."
-class CReal;
-  randc real v;
-endclass
-
-// chandle is not in the rand-eligible type domain at all.
-class CChandle;
-  rand chandle h;
-endclass
-
-// string is not in the rand-eligible type domain.
-class CString;
-  rand string s;
-endclass
-
-// event is not in the rand-eligible type domain.
-class CEvent;
-  rand event e;
-endclass
-
-// randc on realtime: same LRM rule as real, but a different dtype
-// kind, so tested separately.
-class CRealtime;
-  randc realtime rt;
-endclass
-
-// IEEE 1800-2023 does not allow randomization of a virtual interface.
 interface Bus;
 endinterface
-class CVif;
-  rand virtual Bus vif;
-endclass
 
-// Typedef'd queue of chandle. Confirms the type check unwraps both
-// the typedef and the queue, not just the outermost layer.
 typedef chandle chandle_q_t[$];
-class CChandleQueue;
-  rand chandle_q_t q;
+
+typedef union {
+  int a;
+  bit [31:0] b;
+} unpacked_union_t;
+
+class C;
+  // Unpacked unions shall not be declared as rand or randc.
+  randc unpacked_union_t union_randc;
+  // Object handles shall not be declared randc.
+  randc Item handle_randc;
+  // Real (and shortreal, which promotes to real) shall not be randc.
+  randc real real_randc;
+  randc shortreal shortreal_randc;
+  randc realtime realtime_randc;
+  // Not in the rand type domain at all.
+  rand chandle chandle_rand;
+  rand string string_rand;
+  rand event event_rand;
+  // Not a basic type, checked separately.
+  rand virtual Bus vif_rand;
+  // Typedef'd queue: confirms the check unwraps both layers.
+  rand chandle_q_t chandle_queue_rand;
 endclass
 
 module t;
   initial begin
-    CHandle obj1;
-    CReal obj2;
-    CChandle obj3;
-    CString obj4;
-    CEvent obj5;
-    CRealtime obj6;
-    CVif obj7;
-    CChandleQueue obj8;
-    obj1 = new;
-    obj2 = new;
-    obj3 = new;
-    obj4 = new;
-    obj5 = new;
-    obj6 = new;
-    obj7 = new;
-    obj8 = new;
-    if (obj1.randomize() == 0) $stop;
-    if (obj2.randomize() == 0) $stop;
-    if (obj3.randomize() == 0) $stop;
-    if (obj4.randomize() == 0) $stop;
-    if (obj5.randomize() == 0) $stop;
-    if (obj6.randomize() == 0) $stop;
-    if (obj7.randomize() == 0) $stop;
-    if (obj8.randomize() == 0) $stop;
+    C obj;
+    obj = new;
+    if (obj.randomize() == 0) $stop;
   end
 endmodule

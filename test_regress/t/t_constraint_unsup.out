@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_constraint_unsup.v:9:29: Unsupported: real value in this constraint expression
+%Error-UNSUPPORTED: t/t_constraint_unsup.v:9:29: Unsupported expression inside constraint
                                                : ... note: In instance 't'
     9 |   constraint cons { x + 1.0 > 0.0; }
       |                             ^
