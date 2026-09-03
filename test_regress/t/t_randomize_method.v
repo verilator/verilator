@@ -41,9 +41,9 @@ typedef struct packed {
 } StructOuter;
 
 typedef struct {
-  int i;
-  StructOuter j;
-  Enum k;
+  rand int i;
+  rand StructOuter j;
+  rand Enum k;
   longint z;
 } StructUnpacked;
 
