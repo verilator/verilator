@@ -932,6 +932,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  "r") \
     macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  "rr") \
     macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  "rrr") \
+    macro(RANDOMIZER_UPDATE_VAR,              "update_var",             false,  "TODO") \
     macro(RANDOMIZER_WRITE_VAR,               "write_var",              false,  "TODO") \
     macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false,  "r") \
     macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false,  "r") \

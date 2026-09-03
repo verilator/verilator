@@ -735,6 +735,7 @@ void AstClass::dump(std::ostream& str) const {
     if (isPrintedFrom()) str << " [PRINTED]";
     if (isVirtual()) str << " [VIRT]";
     if (needRNG()) str << " [NRNG]";
+    if (hasRandVarsUpdate()) str << "[RANDVARUPD]";
     if (useVirtualPublic()) str << " [VIRPUB]";
     if (baseOverride().isAny()) str << " [" << baseOverride().ascii() << "]";
     if (cgAutoBinMax()) str << " cost=" << cgAutoBinMax();
@@ -747,6 +748,7 @@ void AstClass::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isPrintedFrom);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, needRNG);
+    dumpJsonBoolFuncIf(str, hasRandVarsUpdate);
     dumpJsonBoolFuncIf(str, useVirtualPublic);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonNumFunc(str, cgAutoBinMax);

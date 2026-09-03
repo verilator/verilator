@@ -114,6 +114,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_dpiPure : 1;  // DPI import pure (vs. virtual pure)
     bool m_keepAlive : 1;  // Disable dead function elimination
+    bool m_needsSyms : 1;  // Requires vlSymsp argument
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_static : 1;  // Static method in class
@@ -147,6 +148,7 @@ protected:
         , m_isHideProtected{false}
         , m_dpiPure{false}
         , m_keepAlive{false}
+        , m_needsSyms{true}
         , m_pureVirtual{false}
         , m_recursive{false}
         , m_static{false}
@@ -216,6 +218,8 @@ public:
     void dpiPure(bool flag) { m_dpiPure = flag; }
     bool keepAlive() const { return m_keepAlive; }
     void keepAlive(bool flag) { m_keepAlive = flag; }
+    bool needsSyms() const { return m_needsSyms; }
+    void needsSyms(bool flag) { m_needsSyms = flag; }
     bool pureVirtual() const { return m_pureVirtual; }
     void pureVirtual(bool flag) { m_pureVirtual = flag; }
     bool recursive() const { return m_recursive; }
@@ -3010,6 +3014,8 @@ class AstClass final : public AstNodeModule {
     // @astgen ptr := m_covergroupEnclosingClassp : Optional[AstClass]  // Lexical enclosing class
     uint32_t m_declTokenNum;  // Declaration token number
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
+    bool m_hasRandVarsUpdate = false;  // Has updateRandVars method,
+                                       // which updates pointers to rand variables in clone()
     bool m_covergroup = false;  // Is covergroup (TODO perhaps make a new Ast node type for CG?)
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
@@ -3038,6 +3044,8 @@ public:
     void covergroupEnclosingClassp(AstClass* classp) { m_covergroupEnclosingClassp = classp; }
     AstNode* membersp() const VL_MT_STABLE { return stmtsp(); }
     void addMembersp(AstNode* nodep) { addStmtsp(nodep); }
+    bool hasRandVarsUpdate() const { return m_hasRandVarsUpdate; }
+    void hasRandVarsUpdate(bool flag) { m_hasRandVarsUpdate = flag; }
     bool isCovergroup() const { return m_covergroup; }
     void isCovergroup(bool flag) { m_covergroup = flag; }
     bool isExtended() const { return m_extended; }

@@ -1383,7 +1383,8 @@ class TaskVisitor final : public VNVisitor {
         if (cfuncp->dpiImportWrapper()) cfuncp->cname(nodep->cname());
 
         const bool needSyms
-            = (!nodep->dpiImport() && !nodep->taskPublic()) || v3Global.opt.profExec();
+            = nodep->needsSyms()
+              && ((!nodep->dpiImport() && !nodep->taskPublic()) || v3Global.opt.profExec());
         if (needSyms) cfuncp->argTypes(EmitCUtil::symClassVar());
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
