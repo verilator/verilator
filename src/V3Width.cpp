@@ -2247,8 +2247,6 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSClocked* nodep) override {
-        VL_RESTORER(m_underSExpr);
-        m_underSExpr = true;
         m_hasSExpr = true;
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -2257,6 +2255,7 @@ class WidthVisitor final : public VNVisitor {
             for (AstSenItem* senp = nodep->sensesp(); senp;
                  senp = VN_CAST(senp->nextp(), SenItem)) {
                 userIterateAndNext(senp->sensp(), WidthVP{SELF, BOTH}.p());
+                userIterateAndNext(senp->condp(), WidthVP{SELF, BOTH}.p());
             }
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             nodep->dtypeSetBit();
