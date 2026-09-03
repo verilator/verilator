@@ -4,10 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// A scalar rand real reaching an == in a constraint is already a clean
-// compile-time E_UNSUPPORTED (see t_constraint_unsup.v); an array of real
-// took the whole-array-comparison path instead, which has no type check
-// of its own and only failed later at the solver.
+// Array real == has no type check of its own, unlike the scalar case
+// in t_constraint_unsup.v, and must diagnose cleanly instead of crashing.
 class C1;
   rand real frame[2];
   real target[2];

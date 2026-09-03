@@ -1969,17 +1969,13 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
-        // A whole-array ==/!= reaches emitSMT() unconditionally non-empty
-        // (it's a fixed template, not type-checked), so a real-element
-        // array's malformed width sails through to a solver-side error
-        // instead of failing cleanly here, unlike the scalar real case
-        // (an EQD node, whose emitSMT() is the empty default).
-        if (VN_IS(nodep, Eq) || VN_IS(nodep, Neq)) {
-            if (arrayElementDTypep(nodep->lhsp()->dtypep())->isDouble()) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: real-element array compared in a constraint");
-                return;
-            }
+        // emitSMT() templates assume bit-vector operands with no type
+        // check; caught by operand type here rather than by operator, so
+        // any array-shaped operator hits this the same way.
+        if (arrayElementDTypep(nodep->lhsp()->dtypep())->isDouble()
+            || arrayElementDTypep(nodep->rhsp()->dtypep())->isDouble()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: real value in this constraint expression");
+            return;
         }
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
     }
