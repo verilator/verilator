@@ -18,6 +18,7 @@ module t (
   int cyc;
   int seq_hits, seq_hits2, ref_hits, one_hits, dc_hits, arg_hits;
   int rng_hits, rng_ref;
+  int chg_hits, chg_ref;
 
   // verilog_format: off  // verible does not support clocking events inside sequence declarations
   sequence seq;
@@ -34,6 +35,10 @@ module t (
 
   sequence seq_arg(x);
     @(posedge clk) x;
+  endsequence
+
+  sequence seq_chg;
+    @(clk) a ##1 b;
   endsequence
   // verilog_format: on
 
@@ -71,6 +76,16 @@ module t (
   initial forever begin
     @(seq_arg(a));
     arg_hits = arg_hits + 1;
+  end
+  initial forever begin
+    @seq_chg;
+    chg_hits = chg_hits + 1;
+  end
+
+  bit chg_a;  // a at the previous change of clk
+  always @(clk) begin
+    if (chg_a && b) chg_ref = chg_ref + 1;
+    chg_a = a;
   end
 
   // A sequence used as an event may call a future sampled value function
@@ -121,6 +136,7 @@ module t (
     `checkd(rng_ref, 26);
     `checkd(future_hits, 32);
     `checkd(future_ref, 32);
+    `checkd(chg_hits, chg_ref);
     $write("*-* All Finished *-*\n");
   end
 endmodule

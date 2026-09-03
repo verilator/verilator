@@ -229,9 +229,11 @@ class AssertElabVisitor final : public VNVisitor {
         if (outerSpecp->sensesp() && propSpecp->sensesp()) {
             outerSpecp->v3warn(E_UNSUPPORTED,
                                "Unsupported: Clock event before property call and in its body");
-            pushDeletep(propSpecp->sensesp()->unlinkFrBack());
+            pushDeletep(propSpecp->sensesp()->unlinkFrBackWithNext());
         }
-        if (outerSpecp->sensesp()) propSpecp->sensesp(outerSpecp->sensesp()->unlinkFrBack());
+        if (outerSpecp->sensesp()) {
+            propSpecp->addSensesp(outerSpecp->sensesp()->unlinkFrBackWithNext());
+        }
 
         outerSpecp->replaceWith(propSpecp);
         VL_DO_DANGLING(pushDeletep(outerSpecp), outerSpecp);
