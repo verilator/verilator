@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// IEEE 1800-2023 18.4 type-eligibility rules for rand/randc: each class
-// below is illegal on its own for a distinct reason, not a working design.
+// IEEE 1800-2023 18.4 type-eligibility rules for rand/randc. Each
+// class below is illegal for a different reason.
 
 class Item;
   rand int val;
@@ -36,21 +36,21 @@ class CEvent;
   rand event e;
 endclass
 
-// randc on realtime: same LRM rule as real, checked separately since
-// realtime isn't literally the same dtype kind as real.
+// randc on realtime: same LRM rule as real, but a different dtype
+// kind, so tested separately.
 class CRealtime;
   randc realtime rt;
 endclass
 
-// A virtual interface handle is not in 18.4's enumerated domain either.
+// IEEE 1800-2023 does not allow randomization of a virtual interface.
 interface Bus;
 endinterface
 class CVif;
   rand virtual Bus vif;
 endclass
 
-// A typedef'd queue of an ineligible type: proves the dtype-unwrap walk
-// skips refs at every recursion level, not just the outermost one.
+// Typedef'd queue of chandle. Confirms skipRefp() runs at every
+// recursion level, not just the outermost.
 typedef chandle chandle_q_t[$];
 class CChandleQueue;
   rand chandle_q_t q;

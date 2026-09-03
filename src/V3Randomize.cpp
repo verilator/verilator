@@ -141,9 +141,8 @@ static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
     return dtypep;
 }
 
-// IEEE 1800-2023 18.4's rand/randc type domain is otherwise unenforced --
-// e.g. 'rand string' silently emits C++ that fails to compile downstream.
-// randc-real/unpacked-union are already rejected elsewhere, not re-checked here.
+// Check a rand/randc variable's type against IEEE 1800-2023 18.4's
+// allowed list. randc-real and unpacked unions are rejected elsewhere.
 static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bool isRandc) {
     dtypep = dtypep->skipRefp();
     if (AstNodeDType* const subp = dtypep->subDTypep()) {
@@ -159,8 +158,8 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         return;
     }
     if (const AstIfaceRefDType* const ifacep = VN_CAST(dtypep, IfaceRefDType)) {
-        // Not in 18.4's domain at all; generates an int-to-pointer C++
-        // assignment that fails to compile, same failure class as chandle.
+        // IEEE 1800-2023 does not allow randomization of a virtual
+        // interface. Generates code that does not compile.
         if (ifacep->isVirtual()) {
             contextp->v3error("Unsupported: 'rand'/'randc' on a virtual interface handle (not "
                               "in IEEE 1800-2023 18.4's random-variable type domain)");
@@ -2020,9 +2019,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
-        // emitSMT() templates assume bit-vector operands with no type
-        // check; caught by operand type here rather than by operator, so
-        // any array-shaped operator hits this the same way.
+        // emitSMT() assumes bit-vector operands and does not type-check.
+        // Check by operand type instead of by operator to cover them all.
         if (arrayElementDTypep(nodep->lhsp()->dtypep())->isDouble()
             || arrayElementDTypep(nodep->rhsp()->dtypep())->isDouble()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: real value in this constraint expression");
@@ -4047,9 +4045,9 @@ class RandomizeVisitor final : public VNVisitor {
             items = static_cast<uint64_t>(enumDtp->itemCount());
         } else if (AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp()) {
             if (basicp->isDouble()) {
-                // Real is always 64 bits, so this would also hit the width
-                // check below -- diagnosed here first for the actual LRM
-                // reason rather than an incidental width-limit message.
+                // Real is always 64 bits and would hit the width check
+                // below too, with a misleading message. Give the real
+                // LRM reason here instead.
                 varp->v3error("Unsupported: 'randc' on a real variable (IEEE 1800-2023 18.4: "
                               "real variables shall not be declared randc)");
                 varp->rand(VRandAttr::RAND);

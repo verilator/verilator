@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Array real == has no type check of its own, unlike the scalar case
-// in t_constraint_unsup.v, and must diagnose cleanly instead of crashing.
+// Array real == has no type check of its own. The scalar case in
+// t_constraint_unsup.v does, and diagnoses cleanly instead of crashing.
 class C1;
   rand real frame[2];
   real target[2];
