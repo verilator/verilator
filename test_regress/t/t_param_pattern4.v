@@ -107,6 +107,58 @@ module dut5 #(
   assign o_sum = sum;
 endmodule
 
+package pkg;
+  typedef int my_t;
+  parameter int PLEN = 3;
+endpackage
+
+// The element type is a typedef reached through a package, so the data type holds a
+// type reference that is not a type parameter
+module dut6 #(
+    parameter int ARRAY_LEN = 2,
+    parameter pkg::my_t ARRAY_PARAM[ARRAY_LEN] = '{1, 1}
+) (
+    output int o_sum
+);
+  int sum;
+  always_comb begin
+    sum = 0;
+    for (int i = 0; i < ARRAY_LEN; ++i) sum += ARRAY_PARAM[i];
+  end
+  assign o_sum = sum;
+endmodule
+
+// The size comes from a package parameter, so the data type references a parameter that
+// no pin on this instantiation can override
+module dut7 #(
+    parameter int ARRAY_PARAM[pkg::PLEN] = '{1, 1, 1}
+) (
+    output int o_sum
+);
+  int sum;
+  always_comb begin
+    sum = 0;
+    for (int i = 0; i < pkg::PLEN; ++i) sum += ARRAY_PARAM[i];
+  end
+  assign o_sum = sum;
+endmodule
+
+// The size selects an element of an earlier unpacked array parameter, so the override's
+// value is an InitArray rather than a constant (IEEE 1800-2023 23.10.3)
+module dut8 #(
+    parameter int SZ[2] = '{2, 3},
+    parameter int ARRAY_PARAM[SZ[0]] = '{1, 1}
+) (
+    output int o_sum
+);
+  int sum;
+  always_comb begin
+    sum = 0;
+    for (int i = 0; i < SZ[0]; ++i) sum += ARRAY_PARAM[i];
+  end
+  assign o_sum = sum;
+endmodule
+
 // Same, for an interface
 interface Ifc #(
     parameter int ARRAY_LEN = 3,
@@ -142,6 +194,12 @@ module t;
   int o_type;
   int o_typedef;
   int o_typelen;
+  int o_pkgtype;
+  int o_pkglen;
+  int o_locallen;
+  int o_unpackedlen;
+
+  localparam int LOCAL_LEN = 3;
 
   dut u_default (.o_sum(o_default));
 
@@ -225,6 +283,40 @@ module t;
       .o_sum(o_typelen)
   );
 
+  // Element type is a package typedef, so the copied data type holds a type reference
+  // that is not a type parameter and must be left alone
+  dut6 #(
+      .ARRAY_LEN(3),
+      .ARRAY_PARAM('{1, 2, 3})
+  ) u_pkgtype (
+      .o_sum(o_pkgtype)
+  );
+
+  // Size is a package parameter, which no pin here overrides
+  dut7 #(
+      .ARRAY_PARAM('{4, 5, 6})
+  ) u_pkglen (
+      .o_sum(o_pkglen)
+  );
+
+  // Size overridden with a reference to a localparam of the instantiating scope, which
+  // is not itself a parameter and so is folded rather than substituted
+  dut #(
+      .ARRAY_LEN(LOCAL_LEN),
+      .ARRAY_PARAM('{1, 2, 3})
+  ) u_locallen (
+      .o_sum(o_locallen)
+  );
+
+  // Size selects an element of an earlier unpacked array parameter, which is overridden
+  // here, so the size must come from the override rather than the declared default
+  dut8 #(
+      .SZ('{3, 4}),
+      .ARRAY_PARAM('{1, 2, 3})
+  ) u_unpackedlen (
+      .o_sum(o_unpackedlen)
+  );
+
   // Virtual interface handle to a parameterized interface, a distinct path from
   // the interface instantiation above
   virtual Ifc #(
@@ -251,6 +343,10 @@ module t;
     if (o_type !== 6) $stop;
     if (o_typedef !== 10) $stop;
     if (o_typelen !== 11) $stop;
+    if (o_pkgtype !== 6) $stop;
+    if (o_pkglen !== 15) $stop;
+    if (o_locallen !== 6) $stop;
+    if (o_unpackedlen !== 6) $stop;
     if (i_default.getSum() !== 8) $stop;
     if (i_wide.getSum() !== 10) $stop;
     v_wide = i_wide;

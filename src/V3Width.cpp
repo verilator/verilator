@@ -7086,8 +7086,10 @@ class WidthVisitor final : public VNVisitor {
             instanceParamSubst(holderp, cache, inProgress);
             if (!holderp->exists([](const AstVarRef*) { return true; })) {
                 V3Const::constifyParamsNoWarnEdit(holderp);
-                valuep = VN_CAST(holderp->valuep(), Const);
-                if (valuep) valuep->unlinkFrBack();
+                AstNode* const foldedp = holderp->valuep();
+                if (VN_IS(foldedp, Const) || VN_IS(foldedp, InitArray)) {
+                    valuep = foldedp->unlinkFrBack();
+                }
             }
             VL_DO_DANGLING(holderp->deleteTree(), holderp);
         }
@@ -7119,7 +7121,7 @@ class WidthVisitor final : public VNVisitor {
                                              ? VN_CAST(it->second->exprp(), NodeDType)
                                              : ptypep->subDTypep();
             if (substp) replacements.emplace_back(refp, substp);
-        });
+        });  // LCOV_EXCL_LINE
         for (auto it = replacements.rbegin(); it != replacements.rend(); ++it) {
             AstRefDType* const refp = it->first;
             refp->replaceWith(it->second->cloneTree(false));
