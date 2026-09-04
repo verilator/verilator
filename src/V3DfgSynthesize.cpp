@@ -268,7 +268,7 @@ class AstToDfgConverter final : public VNVisitor {
         };
 
         // Simplify the LHS, to get rid of things like SEL(CONCAT(_, _), _)
-        lhsp = VN_AS(V3Const::constifyExpensiveEdit(lhsp), NodeExpr);
+        if (!VN_IS(lhsp, VarRef)) lhsp = VN_AS(V3Const::constifyExpensiveEdit(lhsp), NodeExpr);
 
         // Assigning compound expressions to a concatenated LHS requires a temporary
         // to avoid multiple use of the expression
@@ -1590,11 +1590,6 @@ class AstToDfgSynthesize final {
     bool synthesizeAssignW(AstAssignW* nodep) {
         ++m_ctx.m_synt.inputAssign;
 
-        // Construct an equivalent AstAssign
-        AstNodeExpr* const lhsp = nodep->lhsp()->cloneTree(false);
-        AstNodeExpr* const rhsp = nodep->rhsp()->cloneTree(false);
-        AstAssign* const assignp = new AstAssign{nodep->fileline(), lhsp, rhsp};
-
         // The input and output symbol tables
         SymTab iSymTab;
         SymTab oSymTab;
@@ -1604,10 +1599,8 @@ class AstToDfgSynthesize final {
 
         // Synthesize as if it was in a single CfgBlock CFG
         DfgVertex* condp = nullptr;
-        const bool success = synthesizeBasicBlock(oSymTab, condp, {assignp}, iSymTab);
+        const bool success = synthesizeBasicBlock(oSymTab, condp, {nodep}, iSymTab);
         UASSERT_OBJ(!condp, nodep, "Conditional AstAssignW ???");
-        // Delete auxiliary AstAssign
-        VL_DO_DANGLING(assignp->deleteTree(), assignp);
         if (!success) return false;
 
         // Check exernal writes are observed correctly
