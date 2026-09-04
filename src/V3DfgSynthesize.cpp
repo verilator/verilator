@@ -587,8 +587,11 @@ class AstToDfgSynthesize final {
 
     // SymTab must be ordered in order to yield stable results
     struct AstVarScopeComparator final {
-        bool operator()(const AstVarScope* lhs, const AstVarScope* rhs) const {
-            return lhs->name() < rhs->name();
+        static int s_vscpIdCounter;  // Counter for lazily allocating the unique AstVarScope IDs
+        bool operator()(AstVarScope* lhs, AstVarScope* rhs) const {
+            if (!lhs->user4()) lhs->user4(++s_vscpIdCounter);
+            if (!rhs->user4()) rhs->user4(++s_vscpIdCounter);
+            return lhs->user4() < rhs->user4();
         }
     };
     using SymTab = std::map<AstVarScope*, DfgVertexVar*, AstVarScopeComparator>;
@@ -1790,28 +1793,32 @@ class AstToDfgSynthesize final {
 
         //-------------------------------------------------------------------
         UINFO(5, "Step 1: Attempting to synthesize each of the selected DfgLogic");
-        for (DfgVertex& vtx : m_dfg.opVertices()) {
-            DfgLogic* const logicp = vtx.cast<DfgLogic>();
-            if (!logicp) continue;
+        {
+            // AstVarScope::user4() -> int: unique ID for 'AstVarScopeComparator'
+            const VNUser4InUse user4InUse;
+            for (DfgVertex& vtx : m_dfg.opVertices()) {
+                DfgLogic* const logicp = vtx.cast<DfgLogic>();
+                if (!logicp) continue;
 
-            // We should only have DfgLogic remaining that was selected for synthesis
-            UASSERT_OBJ(logicp->selectedForSynthesis(), logicp, "Unselected DfgLogic remains");
+                // We should only have DfgLogic remaining that was selected for synthesis
+                UASSERT_OBJ(logicp->selectedForSynthesis(), logicp, "Unselected DfgLogic remains");
 
-            // Debug aid
-            const auto debugCallback = [&]() -> void {
-                // This is the breaking logic
-                m_debugLogicp = logicp;
-                // Dump it
-                UINFOTREE(0, logicp->nodep(), "Problematic DfgLogic: " << logicp, "  ");
-                V3EmitV::debugVerilogForTree(logicp->nodep(), std::cout);
-                debugDump("synth-lastok");
-            };
-            if (VL_UNLIKELY(s_dfgSynthDebugBisect.stop(debugCallback))) break;
+                // Debug aid
+                const auto debugCallback = [&]() -> void {
+                    // This is the breaking logic
+                    m_debugLogicp = logicp;
+                    // Dump it
+                    UINFOTREE(0, logicp->nodep(), "Problematic DfgLogic: " << logicp, "  ");
+                    V3EmitV::debugVerilogForTree(logicp->nodep(), std::cout);
+                    debugDump("synth-lastok");
+                };
+                if (VL_UNLIKELY(s_dfgSynthDebugBisect.stop(debugCallback))) break;
 
-            // Synthesize it, if failed, enqueue for reversion
-            if (!synthesize(*logicp)) {
-                logicp->setNonSynthesizable();
-                m_toRevert.push_front(*logicp);
+                // Synthesize it, if failed, enqueue for reversion
+                if (!synthesize(*logicp)) {
+                    logicp->setNonSynthesizable();
+                    m_toRevert.push_front(*logicp);
+                }
             }
         }
         debugDump("synth-converted");
@@ -1965,6 +1972,8 @@ public:
         }
     }
 };
+
+int AstToDfgSynthesize::AstVarScopeComparator::s_vscpIdCounter = 0;
 
 // Decide which DfgLogic to attempt to synthesize
 static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
