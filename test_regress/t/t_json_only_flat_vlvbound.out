@@ -1,6 +1,6 @@
 {"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","stdPackageProcessp":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"(E)","stlFirstIterationp":"UNLINKED",
  "modulesp": [
-  {"type":"MODULE","name":"$root","addr":"(F)","loc":"d,7:8,7:21","origName":"$root","verilogName":"$root","level":1,"modPublic":true,"timeunit":"1ps","inlinesp": [],
+  {"type":"MODULE","name":"$root","addr":"(F)","loc":"d,7:8,7:21","origName":"$root","verilogName":"$root","level":1,"depth":1,"modPublic":true,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
     {"type":"VAR","name":"i_a","addr":"(G)","loc":"d,8:24,8:27","dtypep":"(H)","origName":"i_a","verilogName":"i_a","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"VAR","name":"i_b","addr":"(I)","loc":"d,9:24,9:27","dtypep":"(H)","origName":"i_b","verilogName":"i_b","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
@@ -347,7 +347,7 @@
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
    "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(IG)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","level":0,"timeunit":"NONE","inlinesp": [],
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(IG)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","level":0,"depth":0,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
       {"type":"SCOPE","name":"@CONST-POOL@","addr":"(JG)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(IG)","varsp": [],"blocksp": [],"inlinesp": []}
     ]}

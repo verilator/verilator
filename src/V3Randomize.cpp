@@ -4082,7 +4082,9 @@ class RandomizeVisitor final : public VNVisitor {
                 if (structDtp->packed()) {
                     randp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr,
                                           outputVarp, offset, smemberp);
-                } else {
+                } else if (smemberp->rand().isRandomizable()) {
+                    // IEEE 1800-2023 18.4: an unpacked struct member is only
+                    // randomized if its own declaration carries rand/randc.
                     AstStructSel* structSelp
                         = new AstStructSel{fl, exprp->cloneTree(false), smemberp->name()};
                     structSelp->dtypep(smemberp->childDTypep());
