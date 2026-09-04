@@ -218,19 +218,21 @@ class OrderGraphBuilder final : public VNVisitor {
         }
     }
 
+    // Record the raw access for the multi-threaded data hazard fixer
+    void recordRawAccess(AstVarScope* varscp, const VAccess& access, AstNode* nodep) {
+        if (!m_parallel) return;
+        uint8_t recorded = 0;
+        if (access.isWriteOrRW()) recorded |= VA_WRITE;
+        if (access.isReadOrRW()) recorded |= VA_READ;
+        UASSERT_OBJ(recorded, nodep, "Unknown variable access type");
+        // Accumulate access type, record the variable on first access only
+        if (!varscp->user4Or(recorded)) m_accessedVscps.push_back(varscp);
+    }
+
     // Add the graph edges, and record the raw access, for one access of one variable
     void accountVarAccess(AstVarScope* varscp, const VAccess& access, AstNode* nodep) {
         // Variable reference in logic. Add data dependency.
-
-        // Record the raw access for the multi-threaded data hazard fixer
-        if (m_parallel) {
-            uint8_t recorded = 0;
-            if (access.isWriteOrRW()) recorded |= VA_WRITE;
-            if (access.isReadOrRW()) recorded |= VA_READ;
-            UASSERT_OBJ(recorded, nodep, "Unknown variable access type");
-            // Accumulate access type, record the variable on first access only
-            if (!varscp->user4Or(recorded)) m_accessedVscps.push_back(varscp);
-        }
+        recordRawAccess(varscp, access, nodep);
 
         // Check whether this variable was already generated/consumed in the same logic. We
         // don't want to add extra edges if the logic has many usages of the same variable,
@@ -259,7 +261,11 @@ class OrderGraphBuilder final : public VNVisitor {
                 //       latch?).
                 con = false;
             }
-            if (!m_inClocked && m_forceReadEdgeIgnores.count(varscp)) con = false;
+            if (!m_inClocked) {
+                // Ignored reads and references from within covergroups do not
+                // add to the combinational sensitivity of the block
+                if (m_forceReadEdgeIgnores.count(varscp) || m_cgRefBoundps) con = false;
+            }
         }
 
         // Note: See V3OrderGraph.h about the roles of the various vertex types
