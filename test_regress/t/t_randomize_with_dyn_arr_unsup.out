@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_randomize_with_dyn_arr_unsup.v:28:59: Unsupported: Randomization of an index to a non-random variable
+   28 |       if (c.randomize() with {solve foo before x; x == arr[foo]; foo <= 1;} != 1) $stop;
+      |                                                           ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

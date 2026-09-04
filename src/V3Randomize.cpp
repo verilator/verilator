@@ -1508,8 +1508,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                   VAccess::READWRITE},
                     VCMethod::RANDOMIZER_WRITE_VAR};
                 uint32_t unpackedDims = 0;
-                if (varp->dtypep()->isNonPackedArray()) {
-                    unpackedDims = varp->dtypep()->dimensions(false).second;
+                if (varp->dtypeSkipRefp()->isNonPackedArray()) {
+                    unpackedDims = varp->dtypeSkipRefp()->dimensions(false).second;
                 }
                 if (VN_IS(varp->dtypeSkipRefp(), StructDType)
                     && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
@@ -2629,42 +2629,73 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
 
-        if (nodep->method() == VCMethod::ARRAY_AT && nodep->fromp()->user1()) {
-            // Queue/dynamic element: pre-edit clone for the rand_mode hoist, non-rand index only.
-            bool indexIsRand = false;
-            if (nodep->pinsp()) {
-                nodep->pinsp()->foreach([&](const AstNodeVarRef* vrefp) {
-                    if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
-                });
-            }
-            AstNodeExpr* const origp = indexIsRand ? nullptr : nodep->cloneTree(false);
-            AstCMethodHard* const sizep
-                = m_structSel ? new AstCMethodHard{fl, nodep->fromp()->cloneTreePure(false),
-                                                   VCMethod::DYN_SIZE}
-                              : nullptr;
-            AstNodeExpr* const originalPinp = nodep->pinsp();
-            iterateChildren(nodep);
-            AstNodeExpr* const pinp = nodep->pinsp()->unlinkFrBack();
-            if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%x");
-            AstSFormatF* newp;
-            if (m_structSel) {
-                AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
-                sizep->dtypeSetInt();
-                AstLogAnd* const condp = new AstLogAnd{
-                    fl,
-                    new AstLteS{
-                        fl, new AstConst{fl, AstConst::WidthedValue{}, originalPinp->width(), 0},
-                        originalPinp->cloneTreePure(false)},
-                    new AstLtS{fl, originalPinp->cloneTreePure(false), sizep}};
-                m_conditionp = m_conditionp ? new AstLogAnd{fl, m_conditionp, condp} : condp;
-                newp = new AstSFormatF{fl, "%s.%s", false, argsp};
+        if (nodep->method() == VCMethod::ARRAY_AT) {
+            const bool indexIsRand
+                = nodep->pinsp() && nodep->pinsp()->exists([](const AstNodeVarRef* const vrefp) {
+                      return vrefp->varp()->rand().isRandomizable();
+                  });
+            if (nodep->fromp()->user1()) {
+                // Queue/dynamic element: pre-edit clone for the rand_mode hoist, non-rand index
+                // only.
+                {
+                    const AstNode* currentp = nodep;
+                    do {
+                        if (const AstCMethodHard* const cmethodHardp
+                            = VN_CAST(currentp, CMethodHard)) {
+                            currentp = cmethodHardp->fromp();
+                        } else if (const AstMemberSel* const memberSelp
+                                   = VN_CAST(currentp, MemberSel)) {
+                            currentp = memberSelp->fromp();
+                        } else {
+                            break;
+                        }
+                    } while (true);
+                    if (currentp->name() == "__Vthis"
+                        && VN_AS(currentp->backp(), MemberSel)->varp()->isRand()) {
+                        nodep->fromp()->v3warn(E_UNSUPPORTED,
+                                               "Unsupported: Complex expression captured from "
+                                               "current scope with randomized variable");
+                        return;
+                    }
+                }
+                AstNodeExpr* const origp = indexIsRand ? nullptr : nodep->cloneTree(false);
+                AstCMethodHard* const sizep
+                    = m_structSel ? new AstCMethodHard{fl, nodep->fromp()->cloneTreePure(false),
+                                                       VCMethod::DYN_SIZE}
+                                  : nullptr;
+                AstNodeExpr* const originalPinp = nodep->pinsp();
+                iterateChildren(nodep);
+                AstNodeExpr* const pinp = nodep->pinsp()->unlinkFrBack();
+                if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%x");
+                AstSFormatF* newp;
+                if (m_structSel) {
+                    AstNodeExpr* const argsp
+                        = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
+                    sizep->dtypeSetInt();
+                    AstLogAnd* const condp
+                        = new AstLogAnd{fl,
+                                        new AstLteS{fl,
+                                                    new AstConst{fl, AstConst::WidthedValue{},
+                                                                 originalPinp->width(), 0},
+                                                    originalPinp->cloneTreePure(false)},
+                                        new AstLtS{fl, originalPinp->cloneTreePure(false), sizep}};
+                    m_conditionp = m_conditionp ? new AstLogAnd{fl, m_conditionp, condp} : condp;
+                    newp = new AstSFormatF{fl, "%s.%s", false, argsp};
+                } else {
+                    newp = createSolverArrDerefp(fl, nodep->fromp()->unlinkFrBack(), pinp);
+                }
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                if (origp && !hoistRandModeOverSelect(newp, origp)) {
+                    VL_DO_DANGLING(origp->deleteTree(), origp);
+                }
+            } else if (indexIsRand) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Randomization of an index to a non-random variable");
             } else {
-                newp = createSolverArrDerefp(fl, nodep->fromp()->unlinkFrBack(), pinp);
-            }
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            if (origp && !hoistRandModeOverSelect(newp, origp)) {
-                VL_DO_DANGLING(origp->deleteTree(), origp);
+                nodep->user1(false);
+                UASSERT_OBJ(editFormat(nodep), nodep,
+                            "editFormat should return true when user1 is false");
             }
             return;
         }
@@ -5593,8 +5624,9 @@ class RandomizeVisitor final : public VNVisitor {
                     // Array elements of class data type are passed to the solver as separate
                     // variables, so passing the original array variable is redundant, because it
                     // won't be referenced
-                    const uint32_t unpackedDims = arrVarp->dtypep()->dimensions(false).second;
-                    if (isDynArrOfClassTypeRecurse(arrVarp->dtypep())) {
+                    AstNodeDType* const arrVarDTypep = arrVarp->dtypeSkipRefp();
+                    const uint32_t unpackedDims = arrVarDTypep->dimensions(false).second;
+                    if (isDynArrOfClassTypeRecurse(arrVarDTypep)) {
                         if (unpackedDims > 1) {
                             arrVarp->v3warn(
                                 E_UNSUPPORTED,
@@ -5612,7 +5644,7 @@ class RandomizeVisitor final : public VNVisitor {
                     varRefp->classOrPackagep(classp);
                     methodp->addPinsp(varRefp);
 
-                    const size_t width = arrayElementDTypep(arrVarp->dtypep())->width();
+                    const size_t width = arrayElementDTypep(arrVarDTypep)->width();
 
                     methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});
                     AstNodeExpr* const varnamep = new AstCExpr{
