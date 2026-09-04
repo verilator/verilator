@@ -56,8 +56,8 @@ class ScopeVisitor final : public VNVisitor {
     std::unordered_map<AstNodeModule*, AstScope*>
         m_classOrPackageScopes;  // Scopes for each class or package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
-    std::set<std::pair<AstVarRef*, AstScope*>>
-        m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
+    // Varrefs-in-scopes needing fixup when done
+    std::vector<std::pair<AstVarRef*, AstScope*>> m_varRefScopes;
 
     // METHODS
 
@@ -290,7 +290,7 @@ class ScopeVisitor final : public VNVisitor {
         // the var's referenced package etc might not be created yet.
         // So push to a list and post-correct.
         // No check here for nodep->classOrPackagep(), will check when walk list.
-        m_varRefScopes.emplace(nodep, m_scopep);
+        m_varRefScopes.emplace_back(nodep, m_scopep);
     }
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
