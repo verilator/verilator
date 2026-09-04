@@ -233,11 +233,22 @@ static void process() {
             v3Global.vlExit(0);
         }
 
-        // Insert generic non-FSM coverage before dead code elimination and
-        // inlining, or those opportunities may be optimized away. FSM
-        // coverage is handled later in V3FsmDetect, after scoping has created
-        // the AST context needed to recover and lower FSMs reliably.
-        if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
+        if (!v3Global.opt.serializeOnly() || v3Global.opt.flatten()) {
+            // Add top level wrapper with instance pointing to old top
+            // Move packages to under new top
+            // Must do this after we know parameters and dtypes (as don't clone dtype decls)
+            V3LinkLevel::wrapTop(v3Global.rootp());
+        } else {
+            V3LinkLevel::nonWrapTop(v3Global.rootp());
+        }
+
+        if (!v3Global.opt.serializeOnly()) {
+            // Insert generic code coverage before dead code elimination and
+            // inlining, or those opportunities may be optimized away. FSM
+            // coverage is handled later in V3FsmDetect, after scoping has created
+            // the AST context needed to recover and lower FSMs reliably.
+            if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
+        }
 
         // Functional coverage code generation
         //    Generate code for covergroups/coverpoints
@@ -267,15 +278,6 @@ static void process() {
         V3AssertPre::assertPreAll(v3Global.rootp());
         //
         V3Assert::assertAll(v3Global.rootp());
-
-        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
-            // Add top level wrapper with instance pointing to old top
-            // Move packages to under new top
-            // Must do this after we know parameters and dtypes (as don't clone dtype decls)
-            V3LinkLevel::wrapTop(v3Global.rootp());
-        } else {
-            V3LinkLevel::nonWrapTop(v3Global.rootp());
-        }
 
         // Propagate constants into expressions
         if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLint(v3Global.rootp());

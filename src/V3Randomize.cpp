@@ -3957,7 +3957,7 @@ class RandomizeVisitor final : public VNVisitor {
         varp->isStatic(true);
         varp->valuep(initp);
         // Add to root, as don't know module we are in, and aids later structure sharing
-        v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
+        v3Global.rootp()->dollarUnitPkgp()->addStmtsp(varp);
 
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
@@ -4130,7 +4130,7 @@ class RandomizeVisitor final : public VNVisitor {
                                                       EnumDType)) {
                 AstVarRef* const tabRefp
                     = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
-                tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+                tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
                 AstNodeExpr* const randp
                     = newRandValue(fl, randcVarp, exprp->findBasicDType(VBasicDTypeKwd::UINT32));
                 AstNodeExpr* const moddivp = new AstModDiv{
