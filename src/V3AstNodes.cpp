@@ -2365,59 +2365,70 @@ bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
 }
 const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                                                bool assertOn) const VL_MT_STABLE {
-    static constexpr int MAX_TYPEDEF_DEPTH = 1000;
-    static constexpr int MAX_CHAIN_DISPLAY = 10;
-    const AstNodeDType* nodep = this;
-    std::unordered_set<const AstNodeDType*> visited;
-    std::vector<const AstNodeDType*> chain;
-    bool isCycle = false;
-    for (int depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
-        if (VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType) || VN_IS(nodep, RefDType)  //
-            || VN_IS(nodep, RequireDType)  //
-            || (VN_IS(nodep, ConstDType) && skipConst)  //
-            || (VN_IS(nodep, EnumDType) && skipEnum)) {
-            if (!visited.emplace(nodep).second) {
-                isCycle = true;
-                break;
-            }
-            if (chain.size() < static_cast<size_t>(MAX_CHAIN_DISPLAY)) chain.push_back(nodep);
-            if (const AstNodeDType* subp = nodep->subDTypep()) {
-                nodep = subp;
-                continue;
-            } else {
+    static constexpr size_t MAX_TYPEDEF_DEPTH = 1000;
+    static constexpr size_t MAX_CHAIN_DISPLAY = 10;
+
+    // Skip type references. On valid inputs, this doesn't hit the limit,
+    // which is the common case and should be fast.
+    {
+        const AstNodeDType* nodep = this;
+        for (size_t depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
+            if (VN_IS(nodep, MemberDType)  //
+                || VN_IS(nodep, ParamTypeDType)  //
+                || VN_IS(nodep, RefDType)  //
+                || VN_IS(nodep, RequireDType)  //
+                || (VN_IS(nodep, ConstDType) && skipConst)  //
+                || (VN_IS(nodep, EnumDType) && skipEnum)) {
+                if (const AstNodeDType* subp = nodep->subDTypep()) {
+                    nodep = subp;
+                    continue;
+                }
                 if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
                 return nullptr;
             }
+            return nodep;
         }
-        return nodep;
     }
-    // Build user-facing error with type chain
-    V3Error::v3errorPrep(V3ErrorCode::EC_ERROR);
+
+    // All MAX_TYPEDEF_DEPTH nodes visited were skippable: chain too deep or recursive,
+    // re-walk to display the error. This is rare so can be slow.
     {
+        V3Error::v3errorPrep(V3ErrorCode::EC_ERROR);
+        std::unordered_set<const AstNodeDType*> visited;
+        visited.reserve(MAX_TYPEDEF_DEPTH);
+        bool isCyclic = false;
+        std::ostringstream ss;
+        const AstNodeDType* nodep = this;
+        for (size_t depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
+            if (!visited.emplace(nodep).second) {
+                isCyclic = true;
+                break;
+            }
+            // Skip internal scaffolding nodes (e.g. REQUIREDTYPE) with no user-visible name
+            if (depth < MAX_CHAIN_DISPLAY && !nodep->name().empty()) {
+                FileLine* const flp = nodep->fileline();
+                ss << '\n'
+                   << flp->warnOther() << "... Type chain: " << nodep->prettyTypeName() << '\n'
+                   << (!depth ? flp->warnContextPrimary() : flp->warnContextSecondary());
+            }
+            nodep = nodep->subDTypep();
+        }
         std::ostringstream& os = V3Error::v3errorStr();
-        if (isCycle) {
+        if (isCyclic) {
             os << "Recursive type definition";
         } else {
             os << "Type definition over " << MAX_TYPEDEF_DEPTH << " types deep";
         }
-        bool first = true;
-        for (const AstNodeDType* chainp : chain) {
-            // Skip internal scaffolding nodes (e.g. REQUIREDTYPE) with no user-visible name
-            if (chainp->name().empty()) continue;
-            os << '\n'
-               << chainp->fileline()->warnOther() << "... Type chain: " << chainp->prettyTypeName()
-               << '\n'
-               << (first ? chainp->fileline()->warnContextPrimary()
-                         : chainp->fileline()->warnContextSecondary());
-            first = false;
-        }
-        if (visited.size() > static_cast<size_t>(MAX_CHAIN_DISPLAY)) {
+        os << ss.str();
+        if (visited.size() > MAX_CHAIN_DISPLAY) {
             os << '\n'
                << this->fileline()->warnMore() << "... and "
                << (visited.size() - MAX_CHAIN_DISPLAY) << " more";
         }
+        this->v3errorEnd(V3Error::v3errorStr());
     }
-    this->v3errorEnd(V3Error::v3errorStr());
+
+    // Not resolved
     return nullptr;
 }
 string AstNodeDType::vlEnumType() const {
