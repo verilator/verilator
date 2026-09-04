@@ -1,0 +1,7 @@
+%Error-UNSUPPORTED: t/t_class_localparam_dotref_funcref_arg_unsup.v:27:32: dotted expressions in parameters
+                                                                         : ... note: In instance 't'
+                                                                         : ... Suggest use a typedef
+   27 |   localparam int y = D#(C#(7)::get_a())::x;
+      |                                ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -3917,6 +3917,8 @@ class WidthVisitor final : public VNVisitor {
         //                ^^~~~ this is our DOT
         nodep->v3warn(E_UNSUPPORTED, "dotted expressions in parameters\n"
                                          << nodep->warnMore() << "... Suggest use a typedef");
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstClassExtends* nodep) override {
         if (nodep->didWidthAndSet()) return;
