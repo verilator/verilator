@@ -506,7 +506,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
-            if (nodep->format() == AstAtoN::ATOREAL) {
+            if (nodep->fmtType() == AstAtoN::ATOREAL) {
                 nodep->dtypeSetDouble();
             } else {
                 nodep->dtypeSetInteger();
@@ -2045,7 +2045,7 @@ class WidthVisitor final : public VNVisitor {
         // Extract covergroup option values and store in AstClass before deleting.
         // m_cgClassp is always set here: AstCgOptionAssign only appears in covergroup
         // class bodies, and visitClass sets m_cgClassp before iterating children.
-        if (nodep->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
+        if (nodep->optType() == VCoverOptionType::AUTO_BIN_MAX) {
             // By V3Width time, V3Param has already folded any parameter references.
             // If the value is still not a constant, it is a runtime expression - emit error.
             if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
@@ -3033,7 +3033,7 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(nodep->valuep(), nodep, "circular, but without value");
             nodep->v3error("Variable's initial value is circular: " << nodep->prettyNameQ());
             pushDeletep(nodep->valuep()->unlinkFrBack());
-            nodep->valuep(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
+            nodep->valuep(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
             nodep->dtypeFrom(nodep->valuep());
             nodep->didWidth(true);
             return;
@@ -4330,7 +4330,8 @@ class WidthVisitor final : public VNVisitor {
             // Adjust to required argument counts, very bogus, but avoids core dump
             for (; narg < minArg; ++narg) {
                 nodep->addArgsp(
-                    new AstArg{nodep->fileline(), "", new AstConst(nodep->fileline(), 0)});
+                    new AstArg{nodep->fileline(), "",
+                               new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}}});
             }
             for (; narg > maxArg; --narg) {
                 AstArg* argp = nodep->argsp();
@@ -5223,7 +5224,7 @@ class WidthVisitor final : public VNVisitor {
             v3Global.useRandomizeMethods(true);
         } else {
             nodep->v3error("No such constraint method " << nodep->prettyNameQ());
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
@@ -8097,7 +8098,8 @@ class WidthVisitor final : public VNVisitor {
             // The parser distinguishes the two via AstLogNot::fromProperty().
             if (m_underSExpr && nodep->fromProperty()) {
                 nodep->v3error("Unexpected 'not' in sequence expression context");
-                AstConst* const newp = new AstConst{nodep->fileline(), 0};
+                AstConst* const newp
+                    = new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}};
                 newp->dtypeFrom(nodep);
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -8288,7 +8290,8 @@ class WidthVisitor final : public VNVisitor {
                                    << lhsDType->prettyDTypeNameQ() << "\n"
                                    << nodep->warnMore() << "... Right-hand data type: "
                                    << rhsDType->prettyDTypeNameQ());
-                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    AstNode* const newp
+                        = new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
@@ -8296,7 +8299,8 @@ class WidthVisitor final : public VNVisitor {
             } else if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
                 if (!realok) {
                     nodep->v3error("Real is illegal operand to ?== operator");
-                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    AstNode* const newp
+                        = new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
@@ -9292,7 +9296,7 @@ class WidthVisitor final : public VNVisitor {
             parentp->v3error("Logical operator " << parentp->prettyTypeName()
                                                  << " expects a non-complex data type on the "
                                                  << side << ".");
-            underp->replaceWith(new AstConst{parentp->fileline(), AstConst::BitFalse{}});
+            underp->replaceWith(new AstConst{parentp->fileline(), AstConst::BitFalseErroring{}});
             VL_DO_DANGLING(pushDeletep(underp), underp);
         } else {
             const bool bad = widthBad(underp, parentp->findBitDType());
@@ -9484,6 +9488,8 @@ class WidthVisitor final : public VNVisitor {
             // If user has a sizing cast, assume they know what they are doing
             // (for better or worse)
             if (VN_IS(parentp->backp(), CastSize)) warnOn = false;
+            if (parentp->fileline()->erroringOn() || underp->fileline()->erroringOn())
+                warnOn = false;
             if (VN_IS(underp, Const) && VN_AS(underp, Const)->num().isFromString()
                 && expWidth > underp->width()
                 && (((expWidth - underp->width()) % 8) == 0)) {  // At least it's character sized

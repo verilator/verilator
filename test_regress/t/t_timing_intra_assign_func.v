@@ -19,7 +19,7 @@ module t;
 
   always @(iufunc) begin
     if ($time > 0) begin
-      $display("time: %0t, iufunc: %0d", $time, iufunc);
+      $display("[%0t] iufunc: %0d", $time, iufunc);
       if (iufunc != 4'd4) $stop;
       if ($time != 3) $stop;
     end

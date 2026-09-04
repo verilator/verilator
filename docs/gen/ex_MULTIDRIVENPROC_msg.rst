@@ -2,7 +2,7 @@
 .. code-block::
 
    %Warning-MULTIDRIVENPROC: example.v:1:25 Variable written to in always block also written by another always block: 'q'
-                                                                  : ... note: In instance 't'
+                                                                  : ... note: In instance 't.u1'
                              example.v:1:25
-      16 |   always @(posedge clk) q <= ~d;
+      54 |   always @(posedge clk) q <= ~d;
          |                         ^

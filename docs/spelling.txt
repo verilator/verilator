@@ -32,6 +32,7 @@ Bagri
 Balboni
 Baltazar
 Bardsley
+Barua
 Benchmarking
 Berman
 Bhagavatula
@@ -390,6 +391,7 @@ Preprocess
 Pretet
 Pretl
 Pringlemeir
+Prithayan
 Priyadharshini
 Pullup
 Pulver
@@ -514,6 +516,7 @@ Ueno
 Uints
 Undefine
 Undefines
+Unigen
 Unsized
 Uppal
 Urbach

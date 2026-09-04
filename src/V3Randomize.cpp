@@ -913,7 +913,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Returns nullptr for unsupported expression types.
     // Helper: build a dynamic AstCExpr for "baseName[idx]" pattern
     AstCExpr* buildArraySelNameExpr(FileLine* fl, const std::string& baseName,
-                                    const AstArraySel* selp) {
+                                    const AstNodeSel* selp) {
         AstCExpr* const p = new AstCExpr{fl, ""};
         p->add("(\""s + baseName + ".\" + vlToSolverHex(");
         p->add(selp->bitp()->cloneTreePure(false));
@@ -974,7 +974,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             p->dtypeSetString();
             return p;
         }
-        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+        const AstNodeSel* selp = VN_CAST(exprp, ArraySel);
+        if (!selp) selp = VN_CAST(exprp, AssocSel);
+        if (selp) {
             // arr[i] -> dynamic name
             std::string baseName;
             if (const AstVarRef* const vp = VN_CAST(selp->fromp(), VarRef)) {
@@ -2118,10 +2120,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         VNRelinker handle;
         // Check if index actually references a rand variable (not just user1,
-        // which can be over-marked in sum/with expansion contexts)
+        // which can be over-marked in sum/with expansion contexts). A
+        // std::randomize() with-clause argument carries no rand qualifier of
+        // its own but is still part of the solve.
         bool indexIsRand = false;
         nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
-            if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
+            if (vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg()) {
+                indexIsRand = true;
+            }
         });
         if (indexIsRand) {
             // Index depends on rand variable -- keep as SMT symbol.
@@ -2379,12 +2385,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
 
         for (AstNodeExpr* lhsp = nodep->lhssp(); lhsp; lhsp = VN_CAST(lhsp->nextp(), NodeExpr)) {
-            if (VN_IS(lhsp->dtypep()->skipRefp(), AssocArrayDType)) {
-                lhsp->v3warn(E_UNSUPPORTED,
-                             "Unsupported: 'solve ... before' with associative array");
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                return;
-            }
             AstNodeExpr* const lhsTestp = buildSolveBeforeNameExpr(fl, lhsp);
             if (!lhsTestp) {
                 lhsp->v3fatalSrc("Unexpected expression type in solve...before lhs");
@@ -2393,12 +2393,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(lhsTestp->deleteTree(), lhsTestp);
             for (AstNodeExpr* rhsp = nodep->rhssp(); rhsp;
                  rhsp = VN_CAST(rhsp->nextp(), NodeExpr)) {
-                if (VN_IS(rhsp->dtypep()->skipRefp(), AssocArrayDType)) {
-                    rhsp->v3warn(E_UNSUPPORTED,
-                                 "Unsupported: 'solve ... before' with associative array");
-                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                    return;
-                }
                 AstNodeExpr* const rhsNamep = buildSolveBeforeNameExpr(fl, rhsp);
                 if (!rhsNamep) {
                     rhsp->v3fatalSrc("Unexpected expression type in solve...before rhs");
@@ -2641,10 +2635,15 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (nodep->method() == VCMethod::ARRAY_AT && nodep->fromp()->user1()) {
             // Queue/dynamic element: pre-edit clone for the rand_mode hoist, non-rand index only.
+            // A std::randomize() with-clause argument carries no rand qualifier
+            // of its own but is still part of the solve.
             bool indexIsRand = false;
             if (nodep->pinsp()) {
                 nodep->pinsp()->foreach([&](const AstNodeVarRef* vrefp) {
-                    if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
+                    if (vrefp->varp()->rand().isRandomizable()
+                        || vrefp->varp()->isStdRandomizeArg()) {
+                        indexIsRand = true;
+                    }
                 });
             }
             AstNodeExpr* const origp = indexIsRand ? nullptr : nodep->cloneTree(false);
@@ -4083,7 +4082,9 @@ class RandomizeVisitor final : public VNVisitor {
                 if (structDtp->packed()) {
                     randp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr,
                                           outputVarp, offset, smemberp);
-                } else {
+                } else if (smemberp->rand().isRandomizable()) {
+                    // IEEE 1800-2023 18.4: an unpacked struct member is only
+                    // randomized if its own declaration carries rand/randc.
                     AstStructSel* structSelp
                         = new AstStructSel{fl, exprp->cloneTree(false), smemberp->name()};
                     structSelp->dtypep(smemberp->childDTypep());

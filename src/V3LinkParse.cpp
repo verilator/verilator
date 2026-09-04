@@ -354,7 +354,7 @@ class LinkParseVisitor final : public VNVisitor {
         const AstClass* const classp = VN_CAST(m_modp, Class);
         if (classp && classp->isCovergroup() && nodep->isClassMember() && !nodep->isFuncLocal()
             && (nodep->declDirection().isRef() || nodep->declDirection().isConstRef())) {
-            nodep->covergroupRefMember();
+            nodep->covergroupRefMember(true);
         }
         if (nodep->valuep()) nodep->hasUserInit(true);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
@@ -1401,9 +1401,9 @@ class LinkParseVisitor final : public VNVisitor {
             nextp = itemp->nextp();
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
                 optp->unlinkFrBack();
-                if (optp->optionType() == VCoverOptionType::AT_LEAST
-                    || optp->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
-                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optionType(),
+                if (optp->optType() == VCoverOptionType::AT_LEAST
+                    || optp->optType() == VCoverOptionType::AUTO_BIN_MAX) {
+                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optType(),
                                                           optp->valuep()->cloneTree(false)});
                 } else {
                     optp->v3warn(COVERIGN,
@@ -1425,7 +1425,7 @@ class LinkParseVisitor final : public VNVisitor {
             nextp = itemp->nextp();
             itemp->unlinkFrBack();
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
-            const VCoverOptionType optType = optp->optionType();
+            const VCoverOptionType optType = optp->optType();
             optp->v3warn(COVERIGN,
                          "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             // Always preserve the option node so V3Coverage can track its source line
