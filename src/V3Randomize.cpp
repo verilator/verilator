@@ -2120,10 +2120,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         VNRelinker handle;
         // Check if index actually references a rand variable (not just user1,
-        // which can be over-marked in sum/with expansion contexts)
+        // which can be over-marked in sum/with expansion contexts). A
+        // std::randomize() with-clause argument carries no rand qualifier of
+        // its own but is still part of the solve.
         bool indexIsRand = false;
         nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
-            if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
+            if (vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg()) {
+                indexIsRand = true;
+            }
         });
         if (indexIsRand) {
             // Index depends on rand variable -- keep as SMT symbol.
@@ -2631,10 +2635,15 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (nodep->method() == VCMethod::ARRAY_AT && nodep->fromp()->user1()) {
             // Queue/dynamic element: pre-edit clone for the rand_mode hoist, non-rand index only.
+            // A std::randomize() with-clause argument carries no rand qualifier
+            // of its own but is still part of the solve.
             bool indexIsRand = false;
             if (nodep->pinsp()) {
                 nodep->pinsp()->foreach([&](const AstNodeVarRef* vrefp) {
-                    if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
+                    if (vrefp->varp()->rand().isRandomizable()
+                        || vrefp->varp()->isStdRandomizeArg()) {
+                        indexIsRand = true;
+                    }
                 });
             }
             AstNodeExpr* const origp = indexIsRand ? nullptr : nodep->cloneTree(false);
