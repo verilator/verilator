@@ -131,58 +131,35 @@ void V3DfgPasses::removeSelects(DfgGraph& dfg, V3DfgRemoveSelectsContext& ctx) {
         if (selp->fromp()->dtype() == dtype) {
             ++ctx.m_removedFullWidth;
             selp->replaceWith(selp->fromp());
+            VL_DO_DANGLING(selp->unlinkDelete(dfg), selp);
             continue;
         }
 
         // Push selects through synthesis temporaries only
         DfgVarPacked* const varp = selp->fromp()->cast<DfgVarPacked>();
         if (!varp || !varp->tmpForp()) continue;
-        DfgVertex* const srcp = varp->srcp();
-        if (!srcp) continue;
-        // Don't inline CReset
-        if (srcp->is<DfgCReset>()) continue;
 
-        const uint32_t lsb = selp->lsb();
-        const uint32_t msb = lsb + selp->width() - 1;
-
-        // If driven whole, select from the driver
-        if (!srcp->is<DfgSplicePacked>()) {
-            ++ctx.m_replacedWithSelFromFull;
-            DfgSel* const newSelp = new DfgSel{dfg, flp, dtype};
-            newSelp->lsb(lsb);
-            newSelp->fromp(srcp);
-            selp->replaceWith(newSelp);
-            continue;
-        }
-
-        // Otherwise attemt to select from the partial driver
-        DfgSplicePacked* const splicep = srcp->as<DfgSplicePacked>();
-        DfgVertex* driverp = nullptr;
-        uint32_t driverLsb = 0;
-        splicep->foreachDriver([&](DfgVertex& src, const uint32_t dLsb) {
-            const uint32_t dMsb = dLsb + src.width() - 1;
-            // If it does not cover the whole searched bit range, move on
-            if (lsb < dLsb || dMsb < msb) return false;
-            // Save the driver
-            driverp = &src;
-            driverLsb = dLsb;
-            return true;
-        });
+        // Find the driver of this range
+        const auto pair = varp->driverOfRange(selp->lsb(), selp->width());
+        DfgVertex* const driverp = pair.first;
+        const uint32_t driverLsb = pair.second;
         if (!driverp) continue;
 
-        // If partial driver is the whole thing we are looking for, just replace with the driver
+        // If partial driver is the whole thing we are looking for, just replace with that
         if (driverp->dtype() == dtype) {
-            ++ctx.m_replacedWithPart;
+            ++ctx.m_replacedWithWholeDriver;
             selp->replaceWith(driverp);
+            VL_DO_DANGLING(selp->unlinkDelete(dfg), selp);
             continue;
         }
 
         // Otherwise create a new select from the partial driver
-        ++ctx.m_replacedWithSelFromPart;
+        ++ctx.m_replacedWithSelFromDriver;
         DfgSel* const newSelp = new DfgSel{dfg, flp, dtype};
-        newSelp->lsb(lsb - driverLsb);
+        newSelp->lsb(driverLsb);
         newSelp->fromp(driverp);
         selp->replaceWith(newSelp);
+        VL_DO_DANGLING(selp->unlinkDelete(dfg), selp);
     }
 }
 

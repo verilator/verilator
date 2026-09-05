@@ -829,6 +829,47 @@ void DfgVertex::unlinkDelete(DfgGraph& dfg) {
     delete this;
 }
 
+//------------------------------------------------------------------------------
+// DfgVertexVar
+
+std::pair<DfgVertex*, uint32_t> DfgVertexVar::driverOfRange(uint32_t lo, uint32_t size) {
+    DfgVertex* const srcp = this->srcp();
+    // Not driven at all
+    if (!srcp) return {nullptr, 0};
+    // If volatile, can have other drivers
+    if (isVolatile()) return {nullptr, 0};
+    // Don't inline CReset
+    if (srcp->is<DfgCReset>()) return {nullptr, 0};
+
+    // If not driven via a splice, then it is driven whole, at the same offsets
+    DfgVertexSplice* const splicep = srcp->cast<DfgVertexSplice>();
+    if (!splicep) return {srcp, lo};
+
+    // Find the driver that covers the whole searched range, if there is a single one
+    const uint32_t hi = lo + size - 1;
+    DfgVertex* driverp = nullptr;
+    uint32_t driverLo = 0;
+    bool useDefault = defaultp();
+    splicep->foreachDriver([&](DfgVertex& src, const uint32_t dLo) {
+        const uint32_t dHi = dLo + src.size() - 1;
+        // Note whether it overlaps the searched range, so the default cannot be used
+        if (dLo <= hi && lo <= dHi) useDefault = false;
+        // If it does not cover the whole searched range, move on
+        if (lo < dLo || dHi < hi) return false;
+        // Save the driver that covers the whole searched range
+        driverp = &src;
+        driverLo = dLo;
+        return true;
+    });
+
+    // If a single driver covers the searched range, it is the one
+    if (driverp) return {driverp, lo - driverLo};
+    // Otherwise the default driver is responsible for it, if nothing else overlaps it
+    if (useDefault) return {defaultp(), lo};
+    // Not driven by a single vertex
+    return {nullptr, 0};
+}
+
 //######################################################################
 // Renders the canonical pattern S-expression for a single DfgVertex
 

@@ -84,6 +84,11 @@ public:
     DfgVertex* defaultp() const { return inputp(1); }
     void defaultp(DfgVertex* vtxp) { inputp(1, vtxp); }
 
+    // Return the vertex and the offset into the vertex driving the given range [lo, lo + size - 1]
+    // of this variable, iff it is driven by a single vertex. Returns nullptr if undriven, or the
+    // range is driven by multiple vertices in parts.
+    std::pair<DfgVertex*, uint32_t> driverOfRange(uint32_t lo, uint32_t size);
+
     std::string srcName(size_t idx) const override final { return idx ? "defaultp" : "srcp"; }
 
     // The Ast variable this vertex representess
