@@ -1907,9 +1907,15 @@ AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
-    , m_constPoolp{new AstConstPool{fileline()}} {
+    , m_constPoolp{new AstConstPool{fileline()}}
+    , m_dollarUnitPkgp{new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
+    // packages are always libraries; don't want to make them a "top"
+    m_dollarUnitPkgp->level(1);
+    m_dollarUnitPkgp->inLibrary(true);
+    m_dollarUnitPkgp->modTrace(false);  // may reconsider later
+    addModulesp(m_dollarUnitPkgp);
 }
 void AstNetlist::addEvalStats(const std::string& phase) {
     if (!v3Global.opt.stats()) return;
@@ -1975,18 +1981,6 @@ void AstNetlist::deleteContents() {
     if (op3p()) op3p()->unlinkFrBackWithNext()->deleteTree();
     if (op4p()) op4p()->unlinkFrBackWithNext()->deleteTree();
 #undef VN_DELETE_ONE
-}
-AstPackage* AstNetlist::dollarUnitPkgAddp() {
-    if (!m_dollarUnitPkgp) {
-        m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"};
-        // packages are always libraries; don't want to make them a "top"
-        m_dollarUnitPkgp->level(1);
-        m_dollarUnitPkgp->inLibrary(true);
-        m_dollarUnitPkgp->modTrace(false);  // may reconsider later
-        m_dollarUnitPkgp->internal(true);
-        addModulesp(m_dollarUnitPkgp);
-    }
-    return m_dollarUnitPkgp;
 }
 void AstNetlist::dump(std::ostream& str) const {
     Super::dump(str);

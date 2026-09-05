@@ -400,7 +400,10 @@ class DeadVisitor final : public VNVisitor {
             AstNodeModule* nextmodp;
             for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp = nextmodp) {
                 nextmodp = VN_AS(modp->nextp(), NodeModule);
-                if (modp->dead() || (!modp->isTop() && modp->user1() == 0 && !modp->internal())) {
+                // Keep $unit until m_elimCells stages. Note v3Global.opt.serializeOnly()
+                // won't reach this stage, and will always have an empty $unit. That's ok.
+                const bool keep = !m_elimCells && modp == v3Global.rootp()->dollarUnitPkgp();
+                if (modp->dead() || (!modp->isTop() && modp->user1() == 0 && !keep)) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
                     UINFO(4, "  Dead module " << modp);
                     // And its children may now be killable too; correct counts
@@ -409,6 +412,9 @@ class DeadVisitor final : public VNVisitor {
                         modp->foreach([](const AstCell* cellp) {  //
                             cellp->modp()->user1Inc(-1);
                         });
+                    }
+                    if (modp == v3Global.rootp()->dollarUnitPkgp()) {
+                        v3Global.rootp()->dollarUnitPkgp(nullptr);
                     }
                     deleting(modp);
                     retry = true;

@@ -467,7 +467,7 @@ class LinkCellsVisitor final : public VNVisitor {
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename(), nodep->libname())
                 && !VN_IS(nodep, NotFoundModule) && !nodep->recursiveClone()
-                && !nodep->internal()) {
+                && nodep != v3Global.rootp()->dollarUnitPkgp()) {
                 // We only complain once per file, otherwise library-like files
                 // have a huge mess of warnings
                 const auto itFoundPair = m_declfnWarned.insert(nodep->fileline()->filename());
