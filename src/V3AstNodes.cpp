@@ -3587,6 +3587,13 @@ void AstVar::dump(std::ostream& str) const {
     if (ignoreSchedWrite()) str << " [IGNWR]";
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
+    if (isFourstateComplement()) str << " [4STATECOMPL]";
+    if (const AstVar* const complementp = fourstateComplementp()) {
+        str << " [4STATECOMPL@" << nodeAddr(complementp) << "]";
+    }
+    if (fourstateOriginalDTypeKwd() != VBasicDTypeKwd::UNKNOWN) {
+        str << " [orgKwd=" << fourstateOriginalDTypeKwd().ascii() << "]";
+    }
     str << " " << varType();
 }
 void AstVar::dumpJson(std::ostream& str) const {
@@ -3631,6 +3638,13 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, hasUserInit);
     dumpJsonBoolFuncIf(str, ignorePostWrite);
     dumpJsonBoolFuncIf(str, ignoreSchedWrite);
+    dumpJsonBoolFuncIf(str, isFourstateComplement);
+    if (const AstVar* const complementp = fourstateComplementp()) {
+        dumpJsonStr(str, "fourstateComplement", nodeAddr(complementp));
+    }
+    if (fourstateOriginalDTypeKwd() != VBasicDTypeKwd::UNKNOWN) {
+        dumpJsonStr(str, "originalDTypeKeyword", fourstateOriginalDTypeKwd().ascii());
+    }
     if (rand().isRandomizable()) dumpJsonStr(str, "rand", rand().ascii());
     dumpJsonGen(str);
 }
@@ -3962,11 +3976,15 @@ void AstTraceDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (inDtypeFunc()) str << " [DT]";
     if (codeAssigned()) str << " [code=" << code() << "]";
+    if (dtypeKwd() != VBasicDTypeKwd::UNKNOWN) str << " [dtypeKwd=" << dtypeKwd().ascii() << "]";
     if (dtypeCallp()) str << " [dtypeCallp=" << dtypeCallp() << "]";
 }
 void AstTraceDecl::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, inDtypeFunc);
     dumpJsonNumFunc(str, code);
+    if (dtypeKwd() != VBasicDTypeKwd::UNKNOWN) {
+        dumpJsonStr(str, "dtypeKwd", dtypeKwd().ascii());
+    }
     dumpJsonGen(str);
 }
 void AstTraceInc::dump(std::ostream& str) const {
