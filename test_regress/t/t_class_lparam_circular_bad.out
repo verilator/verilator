@@ -1,0 +1,14 @@
+%Error: t/t_class_lparam_circular_bad.v:16:18: Variable's initial value is circular: 'a'
+                                             : ... note: In instance 't'
+   16 |   localparam int a = a;
+      |                  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_lparam_circular_bad.v:21:18: Variable's initial value is circular: 'a'
+                                             : ... note: In instance 't'
+   21 |   localparam int a = b;
+      |                  ^
+%Error: t/t_class_lparam_circular_bad.v:27:18: Variable's initial value is circular: 'p'
+                                             : ... note: In instance 't'
+   27 |   localparam int p = q;
+      |                  ^
+%Error: Exiting due to

@@ -406,13 +406,19 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += protect("__Vscopep_" + svd.m_scopeName);
         stmt += needsEntSize ? "->varInsertSized(\"" : "->varInsert(\"";
         stmt += V3OutFormatter::quoteNameControls(prettyName) + '"';
-        stmt += ", &(";
-        stmt += VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
-        stmt += ".";
-        stmt += cName;
-        stmt += "), false, ";
         const std::string varName
             = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        // A parameter is emitted 'static const', so its members are const too and
+        // need the same cast the whole-parameter insert uses.
+        if (svd.m_varp->isParam()) {
+            stmt += ", const_cast<void*>(static_cast<const void*>(&(";
+            stmt += varName;
+            stmt += "))), true, ";
+        } else {
+            stmt += ", &(";
+            stmt += varName;
+            stmt += "), false, ";
+        }
         const std::string entSize
             = needsEntSize
                   ? "sizeof(" + varName + ") / " + std::to_string(getUnpackedElements(dtypep))
