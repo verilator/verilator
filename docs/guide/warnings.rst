@@ -1469,9 +1469,52 @@ List Of Warnings
         q <= d;
       end
 
+   A further case is when a signal named as a clocking block ``output`` is
+   also driven by a continuous assignment, or is named as an ``output`` of a
+   second clocking block. The clocking block drives the signal, so the design
+   and the testbench contend for it and the synchronous drive may be silently
+   lost. Declare the clocking block ``input`` if the intent is only to
+   observe the signal.
+
    Ignoring this warning may hide clock domain crossing, timing, or
    portability bugs. It may also cause longer simulation runtimes due to
    reduced optimizations.
+
+
+.. option:: MULTIDRIVENPROC
+
+   Warns that the whole of a variable is driven by more than one plain
+   ``always`` block. Unlike the :option:`MULTIDRIVEN` cases, plain
+   ``always`` blocks carry no ``always_comb``/``always_ff`` intent, so this
+   is legal SystemVerilog rather than an IEEE 1800 violation. It is,
+   however, typically a synthesis error: hardware cannot have a signal
+   driven by two separate sequential blocks, so the design usually will not
+   behave as the RTL simulation suggests.
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_msg.rst
+
+   Also warns when a signal named as a clocking block ``output`` is driven
+   by a plain ``always`` block. Driving a signal from both a clocking block
+   and a plain ``always`` block is a deliberate idiom in some testbenches,
+   so it is reported as MULTIDRIVENPROC rather than under the on-by-default
+   :option:`MULTIDRIVEN`.
+
+   To fix, drive the signal from a single ``always`` block, or use
+   ``always_ff``/``always_comb`` if the intent is a single specialized
+   process.
+
+   Does not warn for static variables used as loop induction variables:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_loopidx.rst
 
 
 .. option:: MULTITOP
@@ -1515,6 +1558,19 @@ List Of Warnings
    Error when a timing-related construct, such as an event control or delay,
    has been encountered, without specifying how Verilator should handle it
    (neither :vlopt:`--timing` nor :vlopt:`--no-timing` option was provided).
+
+
+.. option:: NEVERMATCH
+
+   Warns that an SVA sequence is statically known to never match. Such a
+   sequence is legal SystemVerilog and is fully supported, the warning
+   only highlights a potential problem. For example, using the sequence as
+   the antecedent of an implication causes the implication to pass
+   vacuously. For an intersect sequence, ensure its operands can match
+   over a common length (IEEE 1800-2023 16.9.6).
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
 
 
 .. option:: NEWERSTD
@@ -2087,6 +2143,32 @@ List Of Warnings
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
+
+
+.. option:: SIMILARNAME
+
+   Warns that an entity name only differs from another in lexical case.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_SIMILARNAME_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_SIMILARNAME_msg.rst
+
+   Only declarations that can reach a downstream VLSI tool as a name are
+   checked, that is nets, variables, instances, named blocks (``begin``,
+   ``fork``, and generate blocks), functions and tasks. All of these can form
+   part of a flattened signal or scope name.  Other declarations, such as
+   parameters, localparams, genvars and typedefs, are elaborated away, and so
+   are not checked.
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   This is a warning as some downstream VLSI tools do
+   not distinguish net and gate names with the same case.
 
 
 .. option:: SPECIFYIGN

@@ -137,6 +137,10 @@ void EmitCBaseVisitorConst::emitCDefaultConstructor(const AstNodeModule* const m
 void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
                                             bool withScope) {
     if (funcp->slow()) putns(funcp, "VL_ATTR_COLD ");
+    if (funcp->dpiCDeclOverride()) {
+        putns(funcp, funcp->dpiCDecl() + ";\n");
+        return;
+    }
     if (!funcp->isDestructor()) {
         putns(funcp, funcp->rtnTypeVoid());
         puts(" ");
@@ -181,6 +185,12 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
     const AstBasicDType* const basicp = nodep->basicp();
     const bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
     if (nodep->mtaskCacheLineAlign() && !asRef) putns(nodep, "alignas(VL_CACHE_LINE_BYTES) ");
+    if (nodep->covergroupRefMember()) {
+        UASSERT_OBJ(!asRef, nodep, "Covergroup reference member emitted as C++ reference");
+        putns(nodep, nodep->dtypep()->cType("", false, false));
+        puts(" const* " + nodep->nameProtect() + " = nullptr;\n");
+        return;
+    }
 
     const auto emitDeclArrayBrackets = [this](const AstVar* nodep) -> void {
         // This isn't very robust and may need cleanup for other data types

@@ -57,9 +57,8 @@ module t (
     end
     else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
-      // Questa 2022.3 golden: count_gated=5, count_ref=12.
-      `checkd(count_gated, 5);
-      `checkd(count_ref, 12);
+      `checkd(count_gated, 5);  // Other sims same, one other: 4
+      `checkd(count_ref, 12);  // Other sims same, one other: 10
       $write("*-* All Finished *-*\n");
       $finish;
     end

@@ -236,10 +236,10 @@ public:
 
 class ReorderVisitor final : public VNVisitor {
     // NODE STATE - Only under AstAlways
-    // AstVarScope::user1p  -> Var ReorderVarStdVertex* for usage var, 0=not set yet
-    // AstVarScope::user2p  -> Var ReorderVarPostVertex* for delayed assignment var, 0=not set yet
-    // Ast*::user3p         -> Statement ReorderLogicVertex* (temporary only)
-    // Ast*::user4          -> Current ordering number (reorderBlock usage)
+    // AstVarScope::user1p  -> ReorderVarStdVertex*.  Usage var, 0=not set yet
+    // AstVarScope::user2p  -> ReorderVarPostVertex*.  Delayed assignment var, 0=not set yet
+    // Ast*::user3p         -> ReorderLogicVertex*.  Statement (temporary only)
+    // Ast*::user4          -> int.  Current ordering number (reorderBlock usage)
 
     // STATE
     V3Graph* m_graphp = nullptr;  // Scoreboard of var usages/dependencies
@@ -427,6 +427,15 @@ class ReorderVisitor final : public VNVisitor {
     void visit(AstJumpGo* nodep) override {
         if (!m_graphp || m_noReorderWhy) return;
         m_noReorderWhy = "JumpGo";
+        iterateChildren(nodep);
+    }
+
+    void visit(AstNodeCCall* nodep) override {
+        if (!m_graphp || m_noReorderWhy) return;
+        // The callee is not inlined, so the variables it reads and writes carry no VarRef at
+        // the call site, and the scoreboard would let assignments to them move across the
+        // call. Treat any such call as a barrier.
+        m_noReorderWhy = "CCall";
         iterateChildren(nodep);
     }
 

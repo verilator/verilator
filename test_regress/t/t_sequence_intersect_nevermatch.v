@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
-`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
 module t (
@@ -21,6 +22,7 @@ module t (
 
   int f_fix = 0;
   int f_dis = 0;
+  int f_within = 0;
 
   always_ff @(posedge clk) begin
     cyc <= cyc + 1;
@@ -50,8 +52,15 @@ module t (
   assert property (disable iff (cyc < 2) ((a ##[1:2] b) intersect (c ##[4:5] d)) |-> 1'b0)
   else f_dis <= f_dis + 1;
 
+  // Inner length 3 cannot fit within outer length 1.
+  ap_within :
+  assert property (disable iff (cyc < 2) ((a ##3 b) within (c ##1 d)) |-> 1'b0)
+  else f_within <= f_within + 1;
+
   final begin
-    `checkd(f_fix, 0);  // Questa: 0
-    `checkd(f_dis, 0);  // Questa: 0
+    // TODO need better non-zero test
+    `checkd(f_fix, 0);
+    `checkd(f_dis, 0);
+    `checkd(f_within, 0);
   end
 endmodule

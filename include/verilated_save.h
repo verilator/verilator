@@ -327,7 +327,7 @@ VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VlAssocArray<T_Key, T
         T_Value value;
         os >> index;
         os >> value;
-        rhs.at(index) = value;
+        rhs.atWrite(index) = value;
     }
     return os;
 }

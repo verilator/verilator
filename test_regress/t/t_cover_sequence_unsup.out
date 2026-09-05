@@ -12,7 +12,10 @@
 %Warning-COVERIGN: t/t_cover_sequence_unsup.v:30:21: Ignoring unsupported: cover sequence with this ranged cycle delay
    30 |   cover sequence (a ##[1:300] b);
       |                     ^~
-%Warning-COVERIGN: t/t_cover_sequence_unsup.v:33:21: Ignoring unsupported: cover sequence with a ranged goto repetition
-   33 |   cover sequence (a [-> 2: 3]);
+%Warning-COVERIGN: t/t_cover_sequence_unsup.v:33:21: Ignoring unsupported: cover sequence with a goto repetition
+   33 |   cover sequence (a [-> 2]);
+      |                     ^~~
+%Warning-COVERIGN: t/t_cover_sequence_unsup.v:34:21: Ignoring unsupported: cover sequence with a goto repetition
+   34 |   cover sequence (a [-> 2: 3]);
       |                     ^~~
 %Error: Exiting due to

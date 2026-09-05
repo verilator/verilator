@@ -539,7 +539,7 @@ public:
         for (auto idx : index()) m_fullname += "[" + std::to_string(idx) + "]";
         return m_fullname.c_str();
     }
-    void* prevDatap() const { return m_prevDatap; }
+    uint8_t* prevDatap() const { return m_prevDatap; }
     void* varDatap() const override { return m_varDatap; }
     void createPrevDatap() {
         if (VL_UNLIKELY(!m_prevDatap)) {
@@ -1027,6 +1027,26 @@ struct VerilatedVpiTimedCbsCmp final {
 class VerilatedVpiError;
 void vl_vpi_put_word(const VerilatedVpioVar* vop, QData word, size_t bitCount, size_t addOffset);
 
+// Information about how to access packed array data.
+// If underlying type is multi-word (VLVT_WDATA), the packed element might straddle word
+// boundaries, in which case m_maskHi != 0.
+template <typename T>
+struct VarAccessInfo final {
+    T* m_datap;  // Typed pointer to packed array base address
+    size_t m_bitOffset;  // Data start location (bit offset)
+    size_t m_wordOffset;  // Data start location (word offset, VLVT_WDATA only)
+    T m_maskLo;  // Access mask for m_datap[m_wordOffset]
+    T m_maskHi;  // Access mask for m_datap[m_wordOffset + 1] (VLVT_WDATA only)
+};
+template <typename T>
+VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
+                                        size_t addOffset);
+template <typename T>
+T vl_vpi_get_word_gen(VarAccessInfo<T> info);
+
+template <typename T>
+void vl_vpi_put_word_gen(VarAccessInfo<T> info, T word);
+
 class VerilatedVpiImp final {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maximum callback reason
     using VpioCbList = std::list<VerilatedVpiCbHolder>;
@@ -1169,6 +1189,72 @@ public:
         s().m_cbCallList.clear();
         return called;
     }
+    template <typename T>
+    static bool valueDiffersFromPrev(VerilatedVpioVar* varop) {
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p size=%d\n",
+                                    varop->fullname(), *(static_cast<CData*>(varop->varDatap())),
+                                    *(varop->prevDatap()), varop->varDatap(), varop->prevDatap(),
+                                    varop->entSize()););
+        if (varop->bitSize() == 1) {
+            T* const prevDatap = reinterpret_cast<T*>(
+                varop->prevDatap());  // Was malloced when we added the callback
+            const VarAccessInfo<T> currInfo
+                = vl_vpi_var_access_info<T>(varop, varop->bitSize(), 0);
+            VarAccessInfo<T> prevInfo = currInfo;
+            prevInfo.m_datap = prevDatap;
+            return vl_vpi_get_word_gen(currInfo) != vl_vpi_get_word_gen(prevInfo);
+        }
+        return std::memcmp(varop->prevDatap(), varop->varDatap(), varop->entSize()) != 0;
+    }
+    static bool valueDiffersFromPrev(VerilatedVpioVar* varop) {
+        switch (varop->varp()->vltype()) {
+        case VLVT_UINT8: return valueDiffersFromPrev<CData>(varop);
+        case VLVT_UINT16: return valueDiffersFromPrev<SData>(varop);
+        case VLVT_UINT32: return valueDiffersFromPrev<IData>(varop);
+        case VLVT_UINT64: return valueDiffersFromPrev<QData>(varop);
+        case VLVT_WDATA:
+            return valueDiffersFromPrev<EData>(varop);
+            // LCOV_EXCL_START - Would require earlier type check to not catch that
+        default:
+            const std::string msg
+                = "Unsupported type (" + std::to_string(varop->varp()->vltype()) + ")";
+            VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
+            return true;
+            // LCOV_EXCL_STOP
+        }
+    }
+    template <typename T>
+    static void updatePrev(const VerilatedVpioVar* const varop) {
+        if (varop->bitSize() == 1) {
+            const VarAccessInfo<T> currInfo
+                = vl_vpi_var_access_info<T>(varop, varop->bitSize(), 0);
+            VarAccessInfo<T> prevInfo = currInfo;
+            T* const prevDatap = reinterpret_cast<T*>(varop->prevDatap());
+            prevInfo.m_datap = prevDatap;
+            const T currWord = vl_vpi_get_word_gen(currInfo);
+            vl_vpi_put_word_gen(prevInfo, currWord);
+            assert(std::memcmp(varop->prevDatap(), varop->varDatap(), varop->entSize()) == 0);
+        } else {
+            std::memcpy(varop->prevDatap(), varop->varDatap(), varop->entSize());
+        }
+    }
+    static void updatePrev(const VerilatedVpioVar* const varop) {
+        switch (varop->varp()->vltype()) {
+        case VLVT_UINT8: updatePrev<CData>(varop); break;
+        case VLVT_UINT16: updatePrev<SData>(varop); break;
+        case VLVT_UINT32: updatePrev<IData>(varop); break;
+        case VLVT_UINT64: updatePrev<QData>(varop); break;
+        case VLVT_WDATA:
+            updatePrev<EData>(varop);
+            break;
+            // LCOV_EXCL_START - Would require earlier type check to not catch that
+        default:
+            const std::string msg
+                = "Unsupported type (" + std::to_string(varop->varp()->vltype()) + ")";
+            VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
+            // LCOV_EXCL_STOP
+        }
+    }
     static bool callValueCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
         VpioCbList& cbObjList = s().m_cbCurrentLists[cbValueChange];
@@ -1187,15 +1273,10 @@ public:
             VerilatedVpiCbHolder& ho = *it++;
             VerilatedVpioVar* const varop
                 = reinterpret_cast<VerilatedVpioVar*>(ho.cb_datap()->obj);
-            void* const newDatap = varop->varDatap();
-            void* const prevDatap = varop->prevDatap();  // Was malloced when we added the callback
-            VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p\n",
-                                        varop->fullname(), *(static_cast<CData*>(newDatap)),
-                                        *(static_cast<CData*>(prevDatap)), newDatap, prevDatap););
-            if (std::memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
+            if (valueDiffersFromPrev(varop)) {
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" PRId64 " %s v[0]=%d\n",
                                             ho.id(), varop->fullname(),
-                                            *(static_cast<CData*>(newDatap))););
+                                            *(static_cast<CData*>(varop->varDatap()))););
                 update.insert(varop);
                 vpi_get_value(ho.cb_datap()->obj, ho.cb_datap()->value);
                 (ho.cb_rtnp())(ho.cb_datap());
@@ -1203,9 +1284,7 @@ public:
             }
             if (was_last) break;
         }
-        for (const VerilatedVpioVar* const ip : update) {
-            std::memcpy(ip->prevDatap(), ip->varDatap(), ip->entSize());
-        }
+        for (const VerilatedVpioVar* const varop : update) updatePrev(varop);
         return called;
     }
     static void dumpCbs() VL_MT_UNSAFE_ONE;
@@ -2410,7 +2489,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
         return vop->castVpiHandle();
     }
     default:
-        VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Unsupported callback type %s", __func__,
+        VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Unsupported callback type '%s'", __func__,
                         VerilatedVpiError::strFromVpiCallbackReason(reason));
         return nullptr;
     }
@@ -2856,7 +2935,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
             return (new VerilatedVpioConst{vop->rangep()->left()})->castVpiHandle();
         }
         VL_VPI_WARNING_(__FILE__, __LINE__,
-                        "%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned",
+                        "%s: Unsupported vpiHandle '%p' for type '%s', nothing will be returned",
                         __func__, object, VerilatedVpiError::strFromVpiMethod(type));
         return nullptr;
     }
@@ -2870,7 +2949,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
             return (new VerilatedVpioConst{vop->rangep()->right()})->castVpiHandle();
         }
         VL_VPI_WARNING_(__FILE__, __LINE__,
-                        "%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned",
+                        "%s: Unsupported vpiHandle '%p' for type '%s', nothing will be returned",
                         __func__, object, VerilatedVpiError::strFromVpiMethod(type));
         return nullptr;
     }
@@ -3031,8 +3110,9 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         [[fallthrough]];
     }
     default:
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property %s, nothing will be returned",
-                      __func__, VerilatedVpiError::strFromVpiProp(property));
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: Unsupported property '%s', nothing will be returned", __func__,
+                      VerilatedVpiError::strFromVpiProp(property));
         return vpiUndefined;
     }
 }
@@ -3195,18 +3275,6 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_end(args);
 }
 
-// Information about how to access packed array data.
-// If underlying type is multi-word (VLVT_WDATA), the packed element might straddle word
-// boundaries, in which case m_maskHi != 0.
-template <typename T>
-struct VarAccessInfo final {
-    T* m_datap;  // Typed pointer to packed array base address
-    size_t m_bitOffset;  // Data start location (bit offset)
-    size_t m_wordOffset;  // Data start location (word offset, VLVT_WDATA only)
-    T m_maskLo;  // Access mask for m_datap[m_wordOffset]
-    T m_maskHi;  // Access mask for m_datap[m_wordOffset + 1] (VLVT_WDATA only)
-};
-
 template <typename T>
 VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
                                         size_t addOffset) {
@@ -3262,21 +3330,25 @@ VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t 
 }
 
 template <typename T>
-T vl_vpi_get_word_gen(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset) {
+T vl_vpi_get_word_gen(VarAccessInfo<T> info) {
     const size_t wordBits = sizeof(T) * 8;
-    const VarAccessInfo<T> info = vl_vpi_var_access_info<T>(vop, bitCount, addOffset);
-    if (info.m_maskHi)
+    if (info.m_maskHi) {
         return ((info.m_datap[info.m_wordOffset] & info.m_maskLo) >> info.m_bitOffset)
                | ((info.m_datap[info.m_wordOffset + 1] & info.m_maskHi)
                   << (wordBits - info.m_bitOffset));
+    }
     return (info.m_datap[info.m_wordOffset] & info.m_maskLo) >> info.m_bitOffset;
 }
 
 template <typename T>
-void vl_vpi_put_word_gen(const VerilatedVpioVar* vop, T word, size_t bitCount, size_t addOffset) {
-    const size_t wordBits = sizeof(T) * 8;
+T vl_vpi_get_word_gen(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset) {
     const VarAccessInfo<T> info = vl_vpi_var_access_info<T>(vop, bitCount, addOffset);
+    return vl_vpi_get_word_gen(info);
+}
 
+template <typename T>
+void vl_vpi_put_word_gen(VarAccessInfo<T> info, T word) {
+    const size_t wordBits = sizeof(T) * 8;
     if (info.m_maskHi) {
         info.m_datap[info.m_wordOffset + 1]
             = (info.m_datap[info.m_wordOffset + 1] & ~info.m_maskHi)
@@ -3285,6 +3357,12 @@ void vl_vpi_put_word_gen(const VerilatedVpioVar* vop, T word, size_t bitCount, s
     // cppcheck-suppress unreadVariable
     info.m_datap[info.m_wordOffset] = (info.m_datap[info.m_wordOffset] & ~info.m_maskLo)
                                       | ((word << info.m_bitOffset) & info.m_maskLo);
+}
+
+template <typename T>
+void vl_vpi_put_word_gen(const VerilatedVpioVar* vop, T word, size_t bitCount, size_t addOffset) {
+    const VarAccessInfo<T> info = vl_vpi_var_access_info<T>(vop, bitCount, addOffset);
+    vl_vpi_put_word_gen(info, word);
 }
 
 // bitCount: maximum number of bits to read, will stop earlier if it reaches the var bounds
@@ -3500,7 +3578,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
                       VerilatedVpiError::strFromVpiVal(valuep->format), vop->fullname());
         return;
     }
-    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
 }
 
 vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_p*/,
@@ -3841,7 +3919,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                         __func__, vop->fullname());
         return nullptr;
     }
-    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
     return nullptr;
 }
 
@@ -4236,13 +4314,13 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(!vop)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
         return;
     }
 
     if (vop->type() != vpiRegArray) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %s)", __func__, object,
-                      VerilatedVpiError::strFromVpiObjType(vop->type()));
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type '%s' for '%s'", __func__,
+                      VerilatedVpiError::strFromVpiObjType(vop->type()), vop->name());
         return;
     }
 
@@ -4418,13 +4496,13 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(!vop)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
         return;
     }
 
     if (vop->type() != vpiRegArray) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %s)", __func__, object,
-                      VerilatedVpiError::strFromVpiObjType(vop->type()));
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle type '%s' for '%s'", __func__,
+                      VerilatedVpiError::strFromVpiObjType(vop->type()), vop->name());
         return;
     }
 

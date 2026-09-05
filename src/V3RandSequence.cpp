@@ -136,7 +136,7 @@ class RandSequenceVisitor final : public VNVisitor {
         m_modp->addStmtsp(taskp);
 
         // Create local (not output) break variable
-        VL_RESTORER(m_localizeRemaps);
+        VL_RESTORER_COPY(m_localizeRemaps);
         AstVar* breakVarp = newBreakVar(nodep->fileline(), false);
         taskp->addStmtsp(breakVarp);
 
@@ -417,9 +417,9 @@ class RandSequenceVisitor final : public VNVisitor {
         m_rsp = nodep;
         VL_RESTORER(m_startProdp);
 
-        VL_RESTORER(m_localizes);
-        VL_RESTORER(m_localizeNames);
-        VL_RESTORER(m_localizeRemaps);
+        VL_RESTORER_COPY(m_localizes);
+        VL_RESTORER_COPY(m_localizeNames);
+        VL_RESTORER_COPY(m_localizeRemaps);
         findLocalizes(nodep);
 
         // Find first production
@@ -482,7 +482,7 @@ class RandSequenceVisitor final : public VNVisitor {
         // TODO we could do this only if break exists in the downstream production,
         // but as-is we'll optimize it away in most cases anyways
         VL_RESTORER(m_breakVarp);
-        VL_RESTORER(m_localizeRemaps);
+        VL_RESTORER_COPY(m_localizeRemaps);
         m_breakVarp = newBreakVar(nodep->fileline(), true);
         m_prodFuncp->addStmtsp(m_breakVarp);
 

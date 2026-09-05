@@ -542,7 +542,7 @@ bool V3Options::fileStatNormal(const string& filename) {
 }
 
 string V3Options::fileExists(const string& filename) {
-    // Surprisingly, for VCS and other simulators, this process
+    // Surprisingly, for some other simulators, this process
     // is quite slow; presumably because of re-reading each directory
     // many times.  So we read a whole dir at once and cache it
 
@@ -887,6 +887,8 @@ string V3Options::getSupported(const string& var) {
     // If update below, also update V3Options::showVersion()
     if (var == "COROUTINES" && coroutineSupport()) {
         return "1";
+    } else if (var == "TSAN" && tsanSupport()) {
+        return "1";
     } else if (var == "DEV_ASAN" && devAsan()) {
         return "1";
     } else if (var == "DEV_GCOV" && devGcov()) {
@@ -930,6 +932,14 @@ bool V3Options::devAsan() {
 
 bool V3Options::devGcov() {
 #ifdef HAVE_DEV_GCOV
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool V3Options::tsanSupport() {
+#ifdef HAVE_TSAN
     return true;
 #else
     return false;
@@ -1293,7 +1303,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_assertCase = flag;
     });
     DECL_OPTION("-assert-case", OnOff, &m_assertCase);
-    DECL_OPTION("-assert-unroll-limit", Set, &m_assertUnrollLimit);
+    DECL_OPTION("-assert-unroll-limit", CbVal, [fl](const char*) {
+        fl->v3warn(DEPRECATED, "Option '--assert-unroll-limit' is deprecated and has no effect.");
+    }).notForRerun();
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
 
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);
@@ -1466,7 +1478,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
-    DECL_OPTION("-fdfg-break-cycles", FOnOff, &m_fDfgBreakCycles);
+    DECL_OPTION("-fdfg-break-cycles", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-dfg-break-cycles' is deprecated and has no effect");
+    });
     DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
     DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
         m_fDfgPeepholeDisabled.erase(optp);
@@ -2285,6 +2299,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "Supported features (compiled-in or forced by environment):\n";
     cout << "    COROUTINES         = " << getSupported("COROUTINES") << "\n";
     cout << "    SYSTEMC            = " << getSupported("SYSTEMC") << "\n";
+    cout << "    TSAN               = " << getSupported("TSAN") << "\n";
 }
 
 //======================================================================

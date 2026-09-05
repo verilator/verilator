@@ -701,7 +701,9 @@ class FsmDetectVisitor final : public VNVisitor {
                 AstVarScope* resetStateVscp = nullptr;
                 const ResetAssignStatus resetStatus = FsmDetectVisitor::collectConstStateAssigns(
                     firstIfp->thensp(), resetStateVscp, reg.resetArcs());
-                if (resetStatus == ResetAssignStatus::NONE || resetStateVscp != vscp) {
+                if (resetStatus == ResetAssignStatus::EMPTY) {
+                    reg.resetArcs().clear();
+                } else if (resetStatus == ResetAssignStatus::NONE || resetStateVscp != vscp) {
                     reg.resetArcs().clear();
                     FsmStateValue resetValue;
                     AstNode* const thenNodep
@@ -988,21 +990,11 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
-    static AstVarRef* tryExtractVarRef(AstNodeExpr* const exprp) {
-        AstVarRef* const varp = VN_CAST(AstArraySel::baseFromp(exprp, true), VarRef);
-        if (!varp) {
-            exprp->v3warn(COVERIGN,
-                          "Ignoring unsupported: FSM coverage with " << exprp->prettyTypeName());
-            return nullptr;
-        }
-        return varp;
-    }
-
     static AstNodeAssign* nodeStateVarAssign(AstNode* nodep, AstVarScope*& stateVscp,
                                              AstVarScope*& fromVscp) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = tryExtractVarRef(assp->lhsp());
+        AstVarRef* const lhsp = VN_CAST(AstArraySel::baseFromp(assp->lhsp(), true), VarRef);
         AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
         if (!rhsp || !lhsp) return nullptr;
         stateVscp = lhsp->varScopep();
@@ -1016,7 +1008,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                                    FsmStateValue& resetValue) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = tryExtractVarRef(assp->lhsp());
+        AstVarRef* const lhsp = VN_CAST(AstArraySel::baseFromp(assp->lhsp(), true), VarRef);
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
         if (!rhsp || !lhsp) return nullptr;
         if (AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef)) {
@@ -1050,6 +1042,7 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     enum class ResetAssignStatus : uint8_t {
+        EMPTY,  // Reset branch had no non-coverage statements.
         NONE,  // Reset branch was not the supported direct-constant shape.
         SINGLE,  // Exactly one supported reset assignment was collected.
         MULTI_SAME_STATE  // Multiple assignments to the same FSM state var; warn and ignore.
@@ -1062,7 +1055,7 @@ class FsmDetectVisitor final : public VNVisitor {
     static ResetAssignStatus collectConstStateAssigns(AstNode* stmtp, AstVarScope*& stateVscp,
                                                       std::vector<FsmResetArcDesc>& resetArcs) {
         AstNode* nodep = skipLeadingIgnorableStmt(stmtp);
-        UASSERT_OBJ(nodep, stmtp, "Empty reset branch unexpectedly survived to FSM detection");
+        if (!nodep) return ResetAssignStatus::EMPTY;
         for (;; nodep = nodep->nextp()) {
             AstVarScope* assignStateVscp = nullptr;
             FsmStateValue value;
@@ -1116,9 +1109,8 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* thenVscp = nullptr;
         AstVarScope* elseVscp = nullptr;
         AstNode* const thenNodep = singleMeaningfulBranch(skipLeadingIgnorableStmt(ifp->thensp()));
-        UASSERT_OBJ(thenNodep, ifp, "Empty then-branch unexpectedly survived to FSM detection");
         AstNode* const elseNodep = singleMeaningfulBranch(skipLeadingIgnorableStmt(ifp->elsesp()));
-        if (!elseNodep) return false;
+        if (!thenNodep || !elseNodep) return false;
         if (!directConstStateAssignNode(thenNodep, thenVscp, thenValue)) return false;
         if (!directConstStateAssignNode(elseNodep, elseVscp, elseValue)) return false;
         if (thenVscp == stateVscp && elseVscp == stateVscp) return true;
@@ -1228,7 +1220,7 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarRef* vrefp = VN_CAST(eqp->lhsp(), VarRef);
         AstNodeExpr* valuep = eqp->rhsp();
         if (!vrefp) {
-            vrefp = tryExtractVarRef(eqp->rhsp());
+            vrefp = VN_CAST(AstArraySel::baseFromp(eqp->rhsp(), true), VarRef);
             if (!vrefp) { return false; }
             valuep = eqp->lhsp();
         }
@@ -1421,7 +1413,10 @@ class FsmDetectVisitor final : public VNVisitor {
             AstVarScope* resetStateVscp = nullptr;
             const ResetAssignStatus resetStatus
                 = collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs());
-            if (resetStatus == ResetAssignStatus::NONE) {
+            const bool emptyResetBranch = resetStatus == ResetAssignStatus::EMPTY;
+            if (emptyResetBranch) {
+                cand.resetArcs().clear();
+            } else if (resetStatus == ResetAssignStatus::NONE) {
                 cand.resetArcs().clear();
                 FsmStateValue resetValue;
                 AstNode* const thenNodep = singleMeaningfulBranch(ifp->thensp());
@@ -1436,7 +1431,7 @@ class FsmDetectVisitor final : public VNVisitor {
             AstNode* const elseNodep = singleMeaningfulBranch(ifp->elsesp());
             UASSERT_OBJ(elseNodep, ifp, "register reset match requires a non-empty commit branch");
             if (!nodeStateVarAssign(elseNodep, stateVscp, nextVscp)) return false;
-            if (resetStateVscp != stateVscp) return false;
+            if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
             cand.resetCond() = describeResetCond(ifp->condp());
             cand.hasResetCond(cand.resetCond().varScopep != nullptr);
         } else {

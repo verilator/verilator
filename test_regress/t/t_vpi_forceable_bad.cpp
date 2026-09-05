@@ -13,9 +13,12 @@
 
 #include "verilated.h"
 
+#include "TestCheck.h"
 #include "TestSimulator.h"  // For is_verilator()
 #include "TestVpi.h"  // For CHECK_RESULT_NZ
 #include "vpi_user.h"
+
+int errors = 0;
 
 extern "C" int forceValue(void) {
     if (!TestSimulator::is_verilator()) {
@@ -33,10 +36,9 @@ extern "C" int forceValue(void) {
     value_s.format = vpiIntVal;
     value_s.value.integer = 0;
     vpi_put_value(signal, &value_s, nullptr, vpiForceFlag);
-    // NOLINTNEXTLINE(concurrency-mt-unsafe);
-    CHECK_RESULT_Z(vpi_chk_error(nullptr))
+    TEST_CHECK_ERROR(false);
 
-    return 0;
+    return errors;
 }
 
 #ifdef IS_VPI

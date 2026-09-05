@@ -12,7 +12,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.050 2026-07-01],
+AC_INIT([Verilator],[5.052 2026-09-05],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -128,6 +128,21 @@ AC_ARG_ENABLE([dev-gcov],
                CFG_WITH_DEV_GCOV=no)
 AC_SUBST(CFG_WITH_DEV_GCOV)
 AC_MSG_RESULT($CFG_WITH_DEV_GCOV)
+
+# Flag to reduce the debug info in the debug executable to minimize its size
+AC_MSG_CHECKING(whether to reduce debug info in the debug executable)
+AC_ARG_ENABLE([light-debug],
+              [AS_HELP_STRING([--enable-light-debug],
+                              [Reduce the amount of debug information in the debug
+                               Verilator executable to minimize its size. Enable
+                               slight optimization. Enough for backtraces only.])],
+              [case "${enableval}" in
+                yes) CFG_WITH_LIGHT_DEBUG=yes ;;
+                no)  CFG_WITH_LIGHT_DEBUG=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-light-debug]) ;;
+               esac],
+               CFG_WITH_LIGHT_DEBUG=no)
+AC_MSG_RESULT($CFG_WITH_LIGHT_DEBUG)
 
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
@@ -432,6 +447,7 @@ AC_DEFUN([_MY_LDLIBS_CHECK_SET],
 
 # Add the coverage flags early as they influence later checks.
 if test "$CFG_WITH_DEV_GCOV" = "yes"; then
+  CFG_GCOV_CXX="$CXX"
   _MY_CXX_CHECK_OPT(CXX,--coverage)
   # Otherwise inline may not show as uncovered
   #  If we use this then e.g. verilated.h functions properly show up
@@ -453,8 +469,32 @@ if test "$CFG_WITH_DEV_GCOV" = "yes"; then
   _MY_CXX_CHECK_OPT(CXX,-fprofile-abs-path)
   # Define so compiled code can know
   _MY_CXX_CHECK_OPT(CXX,-DVL_GCOV)
-  AC_DEFINE([HAVE_DEV_GCOV],[1],[Defined if compiled with code coverage collection for gcov])]
+  AC_DEFINE([HAVE_DEV_GCOV],[1],[Defined if compiled with code coverage collection for gcov])
+  if test "x$GCOV" = "x"; then GCOV=gcov; fi
+  AC_MSG_CHECKING([whether $GCOV reads coverage data from $CFG_GCOV_CXX])
+  CFG_GCOV_DIR=conftest.gcov.dir
+  rm -rf $CFG_GCOV_DIR
+  AS_MKDIR_P([$CFG_GCOV_DIR])
+  echo 'int main() { return 0; }' > $CFG_GCOV_DIR/conftest_gcov.cpp
+  CFG_GCOV_RES=no
+  if (cd $CFG_GCOV_DIR \
+      && $CFG_GCOV_CXX --coverage -o conftest_gcov conftest_gcov.cpp \
+      && ./conftest_gcov) >/dev/null 2>&1; then
+    (cd $CFG_GCOV_DIR && $GCOV conftest_gcov.gcda) >/dev/null 2>&1
+    if test -s $CFG_GCOV_DIR/conftest_gcov.cpp.gcov; then CFG_GCOV_RES=yes; fi
+  else
+    CFG_GCOV_RES=untested
+  fi
+  rm -rf $CFG_GCOV_DIR
+  AC_MSG_RESULT($CFG_GCOV_RES)
+  if test "$CFG_GCOV_RES" = "no"; then
+    AC_MSG_ERROR(['$GCOV' cannot read coverage data written by '$CFG_GCOV_CXX'.
+  Coverage collection would silently produce no data.
+  Pass a matching tool, e.g. GCOV=gcov-<version>
+  or configure without --enable-dev-gcov.])
+  fi
 fi
+AC_SUBST(GCOV)
 AC_SUBST(HAVE_DEV_GCOV)
 
 # Compiler flags to enable profiling
@@ -492,6 +532,11 @@ _MY_CXX_CHECK_CORO_SET(CFG_CXXFLAGS_COROUTINES,-std=gnu++20)
 AC_SUBST(CFG_CXXFLAGS_COROUTINES)
 AC_SUBST(HAVE_COROUTINES)
 
+# Check if the C++ compiler supports ThreadSanitizer
+_MY_CXX_CHECK_IFELSE(-fsanitize=thread,
+  [AC_DEFINE([HAVE_TSAN],[1],[Defined if ThreadSanitizer is supported by $CXX])])
+AC_SUBST(HAVE_TSAN)
+
 # Flags for compiling Verilator internals including parser always
 if test "$CFG_WITH_DEV_ASAN" = "yes"; then
   _MY_CXX_CHECK_IFELSE(-fsanitize=address -DVL_ASAN,
@@ -518,15 +563,27 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
 AC_SUBST(CFG_CXXFLAGS_PARSER)
 
 # Flags for compiling the debug version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
-if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-Og)
+if test "$CFG_WITH_LIGHT_DEBUG" = "yes"; then
+  # Slight optimization and minimal compressed debug info. This is enough for
+  # --gdb/--gdbbt backtraces, but omits the bulk of the debug info, which
+  # significantly reduces object file sizes. For CI or release builds.
+  if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-Og)
+  fi
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb1)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-fdebug-info-for-profiling) # For fully-qualified names with clang
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-gz)
+else
+  # Full debug: no optimization, full debug info, for development.
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-O0)
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb)
 fi
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-gz)
 AC_SUBST(CFG_CXXFLAGS_DBG)
 
 # Flags for linking the debug version of Verilator (in addition to above CFG_LDFLAGS_SRC)
-_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DBG,-gz)
+if test "$CFG_WITH_LIGHT_DEBUG" = "yes"; then
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DBG,-gz)
+fi
 AC_SUBST(CFG_LDFLAGS_DBG)
 
 # Flags for compiling the optimized version of Verilator (in addition to above CFG_CXXFLAGS_SRC)

@@ -7,13 +7,16 @@ contribution terms including the AI policy in ``docs/CONTRIBUTING.rst``.
 
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
+24bit-xjkp
 404allen404
 Adam Bagley
 Adam Kostrzewski
+Aditya Shevade
 Adrian Sampson
 Adrien Le Masle
 أحمد المحمودي (Ahmed El-Mahmoudy)
 Aidan McNay
+Aisha Salimgereyeva
 Aleksander Kiryk
 Alex Chadwick
 Alex Solomatnikov
@@ -26,16 +29,20 @@ Andrei Kostovski
 Andrew Miloradovsky
 Andrew Nolte
 Andrew Voznytsa
+Andrii Andrieiev
 anonkey
 Anthony Donlon
 Anthony Moore
+apocelipes
 Arkadiusz Kozdra
 Arthur Rosa
 Artur Bieniek
 AUDIY
 Aylon Chaim Porat
+Bartosz Skorowski
 Bartłomiej Chmiel
 Benjamin Collier
+BRDR LIFE
 Brian Li
 Cameron Kirk
 Cameron Waite
@@ -53,27 +60,36 @@ Dan Ruelas-Petrisko
 Daniel Bates
 Danny Oler
 Dave Sargeant
+David Garau
 David Horton
 David Ledger
 David Metz
 David Stanford
 David Turner
+dependabot[bot]
 Dercury
+Demin Han
 Diego Roux
 Dominick Grochowina
 Don Williamson
+Dragon-Git
 Drew Ranck
 Drew Taussig
 Driss Hafdi
 Edgar E. Iglesias
+Eddie Rydell
+em2machine
+emmettifelts
 Eric Mejdrich
 Eric Müller
 Eric Rippey
-Eunseo Song
+Eryk Szpotański
 Ethan Sifferman
+Eunseo Song
 Eyck Jentzsch
 Fabian Keßler-Schulz
 Fan Shupei
+february cozzocrea
 Felix Neumärker
 Felix Yan
 Frans Skarman
@@ -108,6 +124,8 @@ Ilya Barkov
 Iru Cai
 Ivan Vnučec
 Iztok Jeras
+JAEUK LEE
+Jaeuk Lee (이재욱)
 Jake Merdich
 Jakub Michalski
 Jakub Wasilewski
@@ -122,6 +140,8 @@ Jamie Iles
 Jan Van Winkel
 Jean Berniolles
 Jean-Nicolas Strauss
+Jeffrey Song
+jeffrey.song
 Jens Yuechao Liu
 Jeremy Bennett
 Jesse Taube
@@ -147,6 +167,7 @@ Josep Sans
 Joseph Nwabueze
 Josh Redford
 Joshua Leahy
+JOTEGO (Jose Tejada)
 Julian Carrier
 Julian Daube
 Julie Schwartz
@@ -183,6 +204,7 @@ Maarten De Braekeleer
 Maciej Sobkowski
 Marcel Chang
 Marco Bartoli
+Marco Brambilla
 Marco Widmer
 Mariusz Glebocki
 Markus Krause
@@ -208,6 +230,7 @@ Mladen Slijepcevic
 Morten Borup Petersen
 Mostafa Gamal
 Moubarak Jeje
+Muzaffer Kal
 Nandu Raj
 Natan Kreimer
 Nathan Graybeal
@@ -218,8 +241,11 @@ Nikolai Kumar
 Nikolay Puzanov
 Nolan Poe
 Oleh Maksymenko
+Patrick Creighton
 Patrick Stewart
 Paul Bowen-Huggett
+Paul Campbell
+Paul Rigge
 Paul Swirhun
 Paul Wright
 Pawel Jewstafjew
@@ -262,15 +288,19 @@ Sergey Chusov
 Sergey Fedorov
 Sergi Granell
 Seth Pellegrino
+Shashvat Prabhu
 Shogo Yamazaki
 Shou-Li Hsu
+spomatasmd
 Srinivasan Venkataramanan
 Stefan Wallentowitz
 Stephen Henry
 Steven Hugg
 Stuart Morris
+sumpster
 Szymon Gizler
 Sören Tempel
+Sumanth Kadiyala
 Teng Huang
 Thomas Aldrian
 Thomas Brown
@@ -291,6 +321,7 @@ Tracy Narine
 Trung Nguyen
 Tudor Timi
 Tymoteusz Blazejczyk
+Tyrone Marhguy
 Udaya Raj Subedi
 Udi Finkelstein
 Unai Martinez-Corral
@@ -308,9 +339,11 @@ Wolfgang Mayerwieser
 Xi Zhang
 Yan Xu
 Yangyu Chen
+Yilin Li
 Yilou Wang
 Yinan Xu
 Yoda Lee
+Yogish Sekhar
 Yossi Nivin
 Yu-Sheng Lin
 Yuri Victorovich
@@ -321,17 +354,7 @@ Zhen Yan
 Zhou Shen
 Zhouyi Shen
 Zixi Li
-apocelipes
-dependabot[bot]
-february cozzocrea
-sumpster
-em2machine
-emmettifelts
+Zubin Jain
 Àlex Torregrosa
 Ícaro Lima
-Yogish Sekhar
-24bit-xjkp
-Zubin Jain
-Muzaffer Kal
-Yilin Li
-Shashvat Prabhu
+Sunimali Rathnayake

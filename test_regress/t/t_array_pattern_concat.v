@@ -14,6 +14,12 @@ endpackage
 
 module t (  /*AUTOARG*/);
 
+  typedef logic [31:0] word_t;
+  typedef word_t word_pair_t[2];
+
+  word_t stream_src = 32'h1234_5678;
+  word_pair_t stream_words;
+
   // Test: array concatenation in pattern initialization
   // An array localparam used as a value in another array's pattern
   // should have its elements "flattened" into the target array.
@@ -78,6 +84,11 @@ module t (  /*AUTOARG*/);
   localparam logic [31:0] PKG_SLICE[4] = '{arr_pkg::PKG_ADDRS[0:1], 32'hAA, 32'hBB};
 
   initial begin
+    // Streaming concatenation as a positional assignment-pattern member
+    stream_words = '{{<<8{stream_src}}, 32'h0};
+    `checkh(stream_words[0], 32'h7856_3412);
+    `checkh(stream_words[1], 32'h0000_0000);
+
     `checkh(ALL_ADDRS[0], 32'h80001000);
     `checkh(ALL_ADDRS[1], 32'h80002000);
     `checkh(ALL_ADDRS[2], 32'h80003000);

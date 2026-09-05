@@ -39,7 +39,7 @@ module t;
     cloned = test.clone();
     if (cloned.cls.name != "test_class") $stop;
 
-    test.cls.icls = null; // Prevent leak
+    test.cls.icls = null;  // Prevent leak
 
     $write("*-* All Finished *-*\n");
     $finish;

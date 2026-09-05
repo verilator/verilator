@@ -79,10 +79,14 @@ public:
     virtual void* datap(int /*idx*/) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
-    bool set(const std::string& idx, const std::string& val) const;
+    void set(const std::string& idx, const std::string& val) const;
     virtual void emitGetValue(std::ostream& s) const;
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
+    // Emit the expression referring to element j as a whole (the full var
+    // for scalars, "(select arr idx...)" for array element j). Used by BSAT
+    // to query/re-assert one whole element's value, not a single bit.
+    virtual void emitElement(std::ostream& s, int j) const;
     // Emit the current runtime value as an SMT bit-vector literal (#b...).
     // Used by randomize(null) to pin a var to its existing value.
     virtual void emitConcreteValue(std::ostream& s) const;
@@ -104,13 +108,32 @@ public:
         count_cache[base_name] = count;
         return count;
     }
+    bool hasMatchingElements(const ArrayInfoMap& arr_vars, const std::string& base_name) const {
+        return arr_vars.find(base_name + "0") != arr_vars.end();
+    }
+};
+// SMT key width per associative-array level (string = 128, integral = 8 * sizeof).
+template <typename T>
+struct VlRandomAssocKeyWidths final {
+    static void push(std::vector<size_t>&) {}
+};
+template <typename T_Key, typename T_Value>
+struct VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>> final {
+    static void push(std::vector<size_t>& widths) {
+        widths.push_back(std::is_same<T_Key, std::string>::value ? 128 : sizeof(T_Key) * 8);
+        VlRandomAssocKeyWidths<T_Value>::push(widths);
+    }
 };
 template <typename T>
 class VlRandomArrayVarTemplate final : public VlRandomVar {
+    // Static key widths per level for the empty-array declaration fallback
+    const std::vector<size_t> m_fallbackIdxWidths;
+
 public:
     VlRandomArrayVarTemplate(const std::string& name, int width, void* datap, int dimension,
-                             std::uint32_t randModeIdx)
-        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
+                             std::uint32_t randModeIdx, const std::vector<size_t>& idxWidths = {})
+        : VlRandomVar{name, width, datap, dimension, randModeIdx}
+        , m_fallbackIdxWidths{idxWidths} {}
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
         const auto it = m_arrVarsRefp->find(indexed_name);
@@ -175,7 +198,13 @@ public:
             }
         } else {
             if (dimension() > 0) {
-                for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
+                // Empty array: declare from the static key widths, not a 32-bit default.
+                for (int i = 0; i < dimension(); ++i) {
+                    const size_t idxWidth = i < static_cast<int>(m_fallbackIdxWidths.size())
+                                                ? m_fallbackIdxWidths[i]
+                                                : 32;
+                    s << "(Array (_ BitVec " << idxWidth << ") ";
+                }
                 s << "(_ BitVec " << width() << ")";
                 for (int i = 0; i < dimension(); ++i) s << ")";
             } else {
@@ -188,6 +217,20 @@ public:
         const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
         return width() * elementCounts;
     }
+    void emitElement(std::ostream& s, int j) const override {
+        const std::string indexed_name = name() + std::to_string(j);
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        // Callers take j from totalWidth(), which counts these same keys, so the element
+        // should always be there
+        if (VL_UNCOVERABLE(it == m_arrVarsRefp->end())) {
+            // LCOV_EXCL_START
+            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
+            return;
+            // LCOV_EXCL_STOP
+        }
+        s << ' ';
+        emitSelect(s, it->second->m_indices, it->second->m_idxWidths);
+    }  // LCOV_EXCL_BR_LINE
     void emitExtract(std::ostream& s, int i) const override {
         const int j = i / width();
         i = i % width();
@@ -205,6 +248,8 @@ public:
     }
 };
 
+class VlSolverSession;
+
 //=============================================================================
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
@@ -217,8 +262,7 @@ class VlRandomizer VL_NOT_FINAL {
     std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
                                            // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
-    std::vector<std::string> m_unique_arrays;
-    std::map<std::string, uint32_t> m_unique_array_sizes;
+    std::vector<std::string> m_unique_arrays;  // Arrays whose elements must be distinct
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     const VlQueue<CData>* m_static_randmodep = nullptr;  // Static rand_mode state (shared)
     std::unordered_set<std::string> m_staticVars;  // Names of static rand vars
@@ -230,17 +274,88 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<std::pair<std::string, std::string>>
         m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
     bool m_checkOnly = false;  // Set for randomize(null)
+    bool isFrozenVar(const std::string& name,
+                     const VlRandomVar& var) const;  // true if this var is currently frozen
+    bool hasFrozenVar() const;  // true if any var is currently rand_mode(0)-frozen
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& os, bool log = false);
-    bool checkSat(std::iostream& os);
+    // Fetch the model and write it into the registered variables.
+    bool applyModel(VlSolverSession& sess);
+    bool parseModel(std::istream& is, size_t requested);
+    // Assert the maximal compatible soft-constraint set onto the open session.
+    void relaxSoftConstraints(VlSolverSession& sess);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).
-    std::vector<int> readUnsatAssumptions(std::iostream& os);
+    std::vector<int> readUnsatAssumptions(VlSolverSession& sess);
+    void reportUnsatSetup(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
+    void reportUnsatCore(VlSolverSession& sess);
     void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
     void recordRandcValues();  // Record solved randc values for future exclusion
-    size_t hashConstraints() const;
-    bool nextPhased(VlRNG& rngr);  // Phased solving for solve...before
+    size_t hashConstraints(const std::vector<std::string>& extras) const;
+    bool nextRandomize(VlRNGReseeds& rngr, bool checkOnly);
+    // "(distinct ...)" expression per unique-constrained array
+    std::vector<std::string> buildUniqueExprs() const;
+    void emitDefines(std::ostream& os) const;
+    void emitDeclares(std::ostream& os, bool pinCurrent) const;
+    void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
+    bool nextFlat(VlRNG& rngr, VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
+
+    // --- UniGen2 (a near-uniform constrained randomization sampler) fields ---
+    // Implementation based on the following paper:
+    // "On Parallel Scalable Uniform SAT Witness Generation", Chakraborty et al.
+
+    using Witness = std::map<std::string, std::map<int, std::string>>;  // One sampled solution
+
+    // Sample one random solution. False if a sample couldn't be produced
+    bool unigen2(VlRNG& rngr, VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
+    // Find out how finely to cut the solution space, and what cell size to accept
+    bool estimateParameters(VlSolverSession& sess, VlRNG& rngr);
+    // Collect up to `bound` different solutions of whatever is asserted right now.
+    // diversifyRngp adds a randomization step that spreads the solutions apart
+    int bsat(VlSolverSession& sess, size_t bound, std::vector<Witness>& witnesses,
+             VlRNG* diversifyRngp = nullptr);
+    // Add `bits` random XOR equations, which cut the solution space into cells holding
+    // roughly 1/2**bits of all the solutions
+    void unigenXors(std::iostream& os, VlRNG& rngr, int bits);
+    // Draw a cell and refill the batch of solutions from it
+    bool generateSamples(VlSolverSession& sess, VlRNG& rngr);
+    // Copy one solution into the SV variables
+    void writeBackWitness(const Witness& witness);
+
+    // UniGen2: sampling state
+    struct Unigen2State final {
+        std::vector<Witness> loThreshWitnesses;  // Consumable batch of solutions: loThresh random
+                                                 // picks out of the cell BSAT enumerated
+        std::vector<std::pair<std::string, int>> bsatOrder;  // (var, element) query order
+        bool isLargeSpace = false;  // Large solution space (more than 61 * 2^10 solutions)
+        // Below properties are what estimateParameters worked out, kept until the constraints
+        // change so the expensive search is not repeated on every call.
+        bool paramsValid = false;  // Whether the values below are set
+        size_t paramHash = 0;  // Constraint set they were computed for
+        int hashBits = 0;  // How many XOR equations to cut the space with
+        int loThresh = 0;  // Smallest usable cell, and how many samples to take
+        int hiThresh = 0;  // First cell size counted as too big
+        uint64_t rngReseeds = 0;  // rngr.reseeds() as of the last call
+        int lastSuccessI = -1;  // Hash-bit count that worked last time, -1 if none
+    };
+    Unigen2State m_ug2;
+
+    void solveDiversity(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversityXor(VlRNG& rngr, VlSolverSession& sess);
+    // Layers of solve...before variables in dependency order
+    bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
+    const char* phasedLogic() const;
+    bool nextPhased(VlRNG& rngr, VlSolverSession& sess,
+                    const std::vector<std::string>& uniqueExprs);
+    bool solvePhases(VlRNG& rngr, VlSolverSession& sess,
+                     const std::vector<std::vector<std::string>>& layers,
+                     const std::vector<std::string>& uniqueExprs, bool& exhaustedr);
+    bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
+                          const std::vector<std::string>& layerVars,
+                          std::map<std::string, std::string>& solvedValuesr);
+    bool readPhaseValues(VlSolverSession& sess, std::map<std::string, std::string>& solvedValuesr);
+    bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);
 
 public:
     // CONSTRUCTORS
@@ -249,10 +364,10 @@ public:
 
     // METHODS
     // Finds the next solution satisfying the constraints
-    bool next(VlRNG& rngr);
+    bool next(VlRNGReseeds& rngr);
     // Validate the constraints against the current runtime values of every
     // registered rand variable without picking new ones.
-    bool next_check_only(VlRNG& rngr);
+    bool next_check_only(VlRNGReseeds& rngr);
 
     // ---  Process the key for associative array  ---
 
@@ -377,12 +492,12 @@ public:
     }
 
     // Register queue of non-struct types
-    template <typename T>
+    template <typename T, size_t N_MaxSize>
     typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
-    write_var(VlQueue<T>& var, int width, const char* name, int dimension,
+    write_var(VlQueue<T, N_MaxSize>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) == m_vars.end()) {
-            m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T>>>(
+            m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T, N_MaxSize>>>(
                 name, width, &var, dimension, randmodeIdx);
         }
         if (dimension > 0) {
@@ -394,9 +509,9 @@ public:
     }
 
     // Register queue of structs
-    template <typename T>
+    template <typename T, size_t N_MaxSize>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
-    write_var(VlQueue<T>& var, int width, const char* name, int dimension,
+    write_var(VlQueue<T, N_MaxSize>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
@@ -433,9 +548,11 @@ public:
     write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) == m_vars.end()) {
+            std::vector<size_t> keyWidths;
+            VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>>::push(keyWidths);
             m_vars[name]
                 = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
-                    name, width, &var, dimension, randmodeIdx);
+                    name, width, &var, dimension, randmodeIdx, keyWidths);
         }
         if (dimension > 0) {
             m_index = 0;
@@ -465,11 +582,10 @@ public:
         ++m_index;
     }
 
-    // This is the "Sender" API for the generated code
-    void rand_unique(const std::string& name, uint32_t size) {
-        m_unique_arrays.push_back(name);
-        m_unique_array_sizes[name] = size;
-    }
+    // This is the "Sender" API for the generated code.
+    // The elements to make distinct are taken from the array element table at
+    // solve time, so a container resized by the solver is handled correctly.
+    void rand_unique(const std::string& name) { m_unique_arrays.push_back(name); }
 
     // Recursively record all elements in an unpacked array
     template <typename T, std::size_t N_Depth>
@@ -488,8 +604,8 @@ public:
     }
 
     // Recursively record all elements in a queue
-    template <typename T>
-    void record_arr_table(VlQueue<T>& var, const std::string& name, int dimension,
+    template <typename T, size_t N_MaxSize>
+    void record_arr_table(VlQueue<T, N_MaxSize>& var, const std::string& name, int dimension,
                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
@@ -522,7 +638,8 @@ public:
                 idxWidths.push_back(idx_width);
                 indices.insert(indices.end(), integral_index.begin(), integral_index.end());
 
-                record_arr_table(var.at(key), indexed_name, dimension - 1, indices, idxWidths);
+                record_arr_table(var.atWrite(key), indexed_name, dimension - 1, indices,
+                                 idxWidths);
 
                 // Cleanup indices and widths
                 idxWidths.pop_back();
@@ -562,8 +679,8 @@ public:
     }
 
     // Recursively process VlQueue of structs
-    template <typename T>
-    void record_struct_arr(VlQueue<T>& var, const std::string& name, int dimension,
+    template <typename T, size_t N_MaxSize>
+    void record_struct_arr(VlQueue<T, N_MaxSize>& var, const std::string& name, int dimension,
                            std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
@@ -596,7 +713,7 @@ public:
 
                 std::string result = oss.str();
                 result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
-                record_struct_arr(var.at(key), name + "." + result, dimension - 1, indices,
+                record_struct_arr(var.atWrite(key), name + "." + result, dimension - 1, indices,
                                   idxWidths);
             }
         }
@@ -666,7 +783,7 @@ public:
 // Light wrapper for RNG used by std::randomize() to support scope-level randomization.
 class VlStdRandomizer final : public VlRandomizer {
     // MEMBERS
-    VlRNG m_rng;  // Random number generator
+    VlRNGReseeds m_rng;  // Random number generator
 
 public:
     // CONSTRUCTORS
@@ -724,11 +841,20 @@ public:
     bool basicStdRandomization(VlAssocArray<T_Key, T_Value>& value, size_t width) {
         T_Key key;
         for (int exists = value.first(key); exists; exists = value.next(key)) {
-            basicStdRandomization(value.at(key), width);
+            basicStdRandomization(value.atWrite(key), width);
         }
         return true;
     }
     bool next() { return VlRandomizer::next(m_rng); }
 };
+
+//======================================================================
+//Helper method for dynamic array handling in SMT expressions
+
+inline std::string vlToSolverHex(const IData& value) {
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0') << std::setw(8) << value;
+    return oss.str();
+}
 
 #endif  // Guard

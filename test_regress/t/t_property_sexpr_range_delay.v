@@ -13,6 +13,8 @@
 module t (
     input clk
 );
+  parameter P = 1;
+
   integer cyc = 0;
   reg [63:0] crc = '0;
   reg [63:0] sum = '0;
@@ -64,6 +66,11 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> ##[1:3] (a | b | c | d | e));
 
+  // Parameterized range bound
+  assert property (@(posedge clk) disable iff (cyc < 2)
+      a |-> ##[P:P+3] (a | b | c | d | e));
+  assert property (@(posedge clk) ##[P:P+3] 1);
+
   // ##[2:4] range delay
   assert property (@(posedge clk) disable iff (cyc < 2)
       b |-> ##[2:4] (a | b | c | d | e));
@@ -79,6 +86,9 @@ module t (
   // Large range ##[1:10000] (scalability, O(1) code size)
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> ##[1:10000] (a | b | c | d | e));
+
+  cover property (@(posedge clk) disable iff (cyc < 2)
+      ##[0:10000] 1'b1);
 
   // Range with binary SExpr: nextStep has delay > 0 after range match
   assert property (@(posedge clk) disable iff (cyc < 2)

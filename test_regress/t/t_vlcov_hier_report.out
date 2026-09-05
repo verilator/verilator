@@ -1,6 +1,6 @@
 $ verilator_coverage --report summary t/t_vlcov_data_e.dat
 Coverage Summary:
-  line      : 88.6% ( 39/ 44)
+  line      : 88.9% ( 40/ 45)
   toggle    : 33.3% ( 35/105)
   branch    : 78.1% ( 50/ 64)
   expr      : 66.7% (  8/ 12)

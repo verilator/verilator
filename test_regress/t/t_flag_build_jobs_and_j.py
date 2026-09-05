@@ -18,6 +18,6 @@ test.compile(verilator_flags2=[
 
 test.execute()
 
-test.file_grep(test.stats, r'Build jobs: 2')
+test.file_grep(test.stats, r'Build jobs: (\d+)', 2)
 
 test.passes()

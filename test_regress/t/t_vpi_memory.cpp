@@ -78,7 +78,6 @@ void _mon_check_range(const TestVpiHandle& handle, int size, int left, int right
 
 void _mem_check(const char* name, int size, int left, int right, int words) {
     s_vpi_value value;
-    s_vpi_error_info e;
 
     vpi_printf((PLI_BYTE8*)"Check memory vpi (%s) ...\n", name);
     TestVpiHandle mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
@@ -106,7 +105,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
             value.format = vpiIntVal;
             value.value.integer = ++cnt;
             vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
-            TEST_CHECK_Z(vpi_chk_error(&e));
+            TEST_CHECK_ERROR(false);
             // check size and range
             _mon_check_range(lcl_h, size, left, right);
         }
@@ -118,7 +117,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         value.format = vpiBinStrVal;
         value.value.str = const_cast<char*>(binStr.c_str());
         vpi_put_value(mem_h, &value, NULL, vpiNoDelay);
-        TEST_CHECK_Z(vpi_chk_error(&e));
+        TEST_CHECK_ERROR(false);
     }
     if (vpitype == vpiRegArray) {
         // iterate and accumulate
@@ -128,7 +127,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
             ++cnt;
             value.format = vpiIntVal;
             vpi_get_value(lcl_h, &value);
-            TEST_CHECK_Z(vpi_chk_error(&e));
+            TEST_CHECK_ERROR(false);
             TEST_CHECK_EQ(value.value.integer, cnt);
         }
         iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
@@ -136,7 +135,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
     } else {
         value.format = vpiBinStrVal;
         vpi_get_value(mem_h, &value);
-        TEST_CHECK_Z(vpi_chk_error(&e));
+        TEST_CHECK_ERROR(false);
         TEST_CHECK_EQ(std::string{value.value.str}, binStr);
     }
 
@@ -183,7 +182,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
             TEST_CHECK_EQ(value.value.integer, 1);
             // check writing to vpiConstant
             vpi_put_value(side_h, &value, NULL, vpiNoDelay);
-            TEST_CHECK_NZ(vpi_chk_error(&e));
+            TEST_CHECK_ERROR(true);
         }
         {
             // iterator should exhaust after 1 dimension

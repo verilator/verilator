@@ -47,11 +47,7 @@ module t (  /*AUTOARG*/
   initial begin
     // verilator lint_off STMTDLY
     #1;
-`ifdef VCS  // I-2014.03
-    `checkh({a, b, c, d, e, f, g}, 7'b1101111);
-`else
     `checkh({a, b, c, d, e, f, g}, 7'b1101011);
-`endif
 
     //======================================================================
 
@@ -76,20 +72,11 @@ module t (  /*AUTOARG*/
     w4_u = ((5'b0 == (5'sb11111 >>> 3'd7)));  // Exp 0     Vlt 0
     `checkh(w4_u, 4'b0001);
     w4_u = ((5'b01111 == (5'sb11111 / 5'sd2)));  // Strength-reduces to >>>
-`ifdef VCS  // I-2014.03
-    `checkh(w4_u, 4'b0000);  // Wrong, gets 5'b0==..., unsigned does not propagate
-`else
-    `checkh(w4_u, 4'b0001);  // NC-Verilog, Modelsim, XSim, ...
-`endif
+    `checkh(w4_u, 4'b0001);
 
-    // Does == sign propagate from lhs to rhs?  Yes, but not in VCS
+    // Does == sign propagate from lhs to rhs?
     w4_u = ((5'b01010 == (5'sb11111 / 5'sd3)));    // Exp 0     Vlt 0  // Must be signed result (-1/3) to make this result zero
-`ifdef VCS  // I-2014.03
-    `checkh(w4_u, 4'b0000);  // Wrong, gets 5'b0==..., unsigned does not propagate
-    // Somewhat questionable, as spec says division signed depends on only LHS and RHS, however differs from others
-`else
-    `checkh(w4_u, 4'b0001);  // NC-Verilog, Modelsim, XSim, ...
-`endif
+    `checkh(w4_u, 4'b0001);
 
     w4_u = (1'b0+(5'sb11111 >>> 3'd7));        // Exp 00000 Vlt 000000 Actually the signedness of result does NOT matter
     `checkh(w4_u, 4'b0000);

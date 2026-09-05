@@ -55,6 +55,7 @@ public:
         // Boolean information we track per-line, but aren't errors
         I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
+        I_ERRORING,     // Node created to handle earlier error; suppress new errors
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         I_LINT,         // All lint messages
         I_STYLE,        // All style messages
@@ -135,7 +136,9 @@ public:
         MODDUP,         // Duplicate module
         MODMISSING,     // Error: missing module
         MULTIDRIVEN,    // Driven from multiple blocks
+        MULTIDRIVENPROC,  // Driven from multiple plain always blocks
         MULTITOP,       // Multiple top level modules
+        NEVERMATCH,     // Sequence can never match
         NEWERSTD,       // Newer language standard required
         NOEFFECT,       // Statement has no effect
         NOLATCH,        // No latch detected in always_latch block
@@ -162,6 +165,7 @@ public:
         SELRANGE,       // Selection index out of range
         SHORTREAL,      // Shortreal not supported
         SIDEEFFECT,     // Sideeffect ignored
+        SIMILARNAME,    // names differ only by case
         SPECIFYIGN,     // Specify construct ignored
         SPLITVAR,       // Cannot split the variable
         STATICVAR,      // Static variable declared in a loop with a declaration assignment
@@ -217,8 +221,8 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALMANY", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_STYLE",
-            " I_TIMING", " I_TRACING",
+            " I_CELLDEFINE", " I_COVERAGE", " I_ERRORING", " I_DEF_NETTYPE_WIRE", " I_LINT",
+            " I_STYLE", " I_TIMING", " I_TRACING",
             // Errors
             "CONTASSINIT", "CONSTWRITTEN", "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT",
             "TASKNSVAR", "UNSUPPORTED",
@@ -233,22 +237,23 @@ public:
             "IEEEMAYDEPRECATE", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT",
             "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY",
             "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
-            "MODMISSING", "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD",
-            "NORETURN", "NOTREDOP", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING",
-            "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
-            "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT",
-            "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN",
-            "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET",
-            "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP",
-            "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC",
-            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
+            "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC", "MULTITOP", "NEVERMATCH", "NEWERSTD",
+            "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NOTREDOP", "NULLPORT", "PARAMNODEFAULT",
+            "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL",
+            "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
+            "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
+            "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN", "SPLITVAR", "STATICVAR",
+            "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD",
+            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR",
+            "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL",
+            "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
+            "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
+            " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
     bool defaultsOff() const VL_MT_SAFE {
-        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || styleError());
+        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING || styleError());
     }
     // Warnings that warn about nasty side effects
     bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
@@ -296,10 +301,10 @@ public:
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
                 || m_e == BLKSEQ || m_e == DECLFILENAME || m_e == DEFPARAM || m_e == EOFNEWLINE
                 || m_e == GENUNNAMED || m_e == IMPORTSTAR || m_e == INCABSPATH
-                || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT || m_e == PROCASSINIT
-                || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSEDGENVAR
-                || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL
-                || m_e == VARHIDDEN);
+                || m_e == MULTIDRIVENPROC || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT
+                || m_e == PROCASSINIT || m_e == SIMILARNAME || m_e == SYNCASYNCNET
+                || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP
+                || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
     }
     bool isNamed() const { return m_e >= EC_FIRST_NAMED; }
 

@@ -32,6 +32,7 @@ Bagri
 Balboni
 Baltazar
 Bardsley
+Barua
 Benchmarking
 Berman
 Bhagavatula
@@ -198,6 +199,7 @@ Holme
 Homebrew
 Hornung
 Hossell
+Hsieh
 Hsu
 Huggett
 Hutt
@@ -389,6 +391,7 @@ Preprocess
 Pretet
 Pretl
 Pringlemeir
+Prithayan
 Priyadharshini
 Pullup
 Pulver
@@ -477,6 +480,7 @@ Syms
 Synopsys
 SystemC
 SystemVerilog
+Szpotanski
 Takatsukasa
 Tambe
 Tarik
@@ -512,6 +516,7 @@ Ueno
 Uints
 Undefine
 Undefines
+Unigen
 Unsized
 Uppal
 Urbach
@@ -537,6 +542,7 @@ Verilog
 Vighnesh
 Viktor
 Vilp
+VlRNG
 VlWide
 Vlip
 Vm
@@ -644,6 +650,7 @@ casez
 casted
 castro
 cb
+cbValueChange
 ccache
 ccall
 cdc
@@ -707,6 +714,7 @@ de
 dearray
 deassign
 debugi
+deduplication
 defenv
 defname
 defparam
@@ -947,6 +955,7 @@ misconnected
 misconversion
 misdetecting
 misoptimized
+misoptimizing
 missized
 mk
 mno
@@ -995,6 +1004,7 @@ noprivate
 noreturn
 notif
 nullptr
+num
 numactl
 onehot
 ooo
@@ -1174,6 +1184,7 @@ tcmalloc
 tcmalloc
 tenghtt
 testbench
+testbenches
 threadsafe
 threashold
 timeInc

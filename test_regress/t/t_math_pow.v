@@ -244,9 +244,7 @@ module t (
       `checkh(67'h0 ** 21'h0, 67'h1);
       `checkh(67'sh0 ** 21'sh0, 67'sh1);
       `checkh(67'h10 ** 21'h0, 67'h1);
-`ifndef VCS
       `checkh(61'h7ab3811219 ** 21'ha6e30, 61'h01ea58c703687e81);
-`endif
       if (cyc==0) begin end
       else if (cyc==1) begin a <= 67'h0; b <= 67'h0; end
       else if (cyc==2) begin a <= 67'h0; b <= 67'h3; end

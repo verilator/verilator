@@ -160,6 +160,21 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_NET = (1 << 15)  // Net object
 };
 
+// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
+// replaces per-variable varInsert() calls, which compiles faster at scale.
+struct VlVarTableEntry final {
+    static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
+    const char* namep;  // VPI-facing (protected) variable name, string literal
+    size_t byteOffset;  // offsetof of storage member from module instance base
+    VerilatedVarType vltype;
+    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
+    uint8_t udims;  // udims + pdims <= kMaxDims
+    uint8_t pdims;
+    // (left,right) pairs: unpacked dims first, then packed; int32_t since large
+    // unpacked memories exceed int16 range
+    int32_t dims[kMaxDims * 2];
+};
+
 // IEEE 1800-2023 Table 20-6
 enum class VerilatedAssertType : uint8_t {
     ASSERT_TYPE_CONCURRENT = (1 << 0),
@@ -286,6 +301,8 @@ public:
 #endif
 };
 
+class VlExecutionProfilerBase;
+
 //=========================================================================
 /// Base class of a Verilator generated (Verilated) model.
 ///
@@ -298,6 +315,8 @@ class VerilatedModel VL_NOT_FINAL {
     VerilatedContext& m_context;  // The VerilatedContext this model is instantiated under
 
 protected:
+    bool m_didInit = false;  // Time 0 initialization has run
+
     explicit VerilatedModel(VerilatedContext& context);
     virtual ~VerilatedModel() = default;
 
@@ -316,8 +335,82 @@ private:
     // The following are for use by Verilator internals only
     template <typename, typename>
     friend class VerilatedTrace;
+    friend class VerilatedEvalLoop;
+
     // Run-time trace configuration requested by this model
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
+
+    // Entry points called by VerilatedEvalLoop
+    virtual void evalBegin() = 0;
+    virtual void evalEnd() = 0;
+    virtual void evalStatic() = 0;
+    virtual void evalInitial() = 0;
+    virtual void evalSample() = 0;
+    virtual bool evalStl(bool firstIteration) = 0;
+    virtual bool evalIco(bool firstIteration) = 0;
+    virtual bool evalAct() = 0;
+    virtual bool evalInact() = 0;
+    virtual bool evalNba() = 0;
+    virtual bool evalObs() = 0;
+    virtual bool evalReact() = 0;
+    virtual void evalPostponed() = 0;
+    virtual void dumpTriggersStl() = 0;
+    virtual void dumpTriggersIco() = 0;
+    virtual void dumpTriggersAct() = 0;
+    virtual void dumpTriggersNba() = 0;
+    virtual void dumpTriggersObs() = 0;
+    virtual void dumpTriggersReact() = 0;
+
+    // Runs 'final' blocks at the end of the simulation
+    virtual void evalFinal() = 0;
+};
+
+//=========================================================================
+/// Evaluation loop calling a VerilatedModel's entry points
+
+class VerilatedEvalLoop final {
+    VL_UNCOPYABLE(VerilatedEvalLoop);
+
+    // MEMBERS
+    VerilatedModel& m_model;  // The model this loop evaluates
+    const uint32_t m_convergeLimit;  // --converge-limit from compiler command line
+    // Where to record --prof-exec sections, or null if not profiling
+    VlExecutionProfilerBase* m_profilerp = nullptr;
+    // Whether this is the top level model during profiling
+    bool m_profTopLevel = false;
+
+public:
+    // CONSTRUCTORS
+    VerilatedEvalLoop(VerilatedModel& model, uint32_t convergeLimit)
+        : m_model{model}
+        , m_convergeLimit{convergeLimit} {}
+
+    // METHODS
+    // Evaluate a single time step of the SV scheduling model
+    void eval() {
+        if (VL_UNLIKELY(m_profilerp)) {
+            evalImpl<true>();
+        } else {
+            evalImpl<false>();
+        }
+    }
+    // Set --prof-exec profiler
+    void profiler(VlExecutionProfilerBase* profilerp, bool topLevel) {
+        m_profilerp = profilerp;
+        m_profTopLevel = topLevel;
+    }
+
+private:
+    // Evaluate a time step, recording --prof-exec sections iff 'Profiling'.
+    template <bool Profiling>
+    void evalImpl();
+    // Check the iteration convergence
+    void checkConvergence(uint32_t iterCount, const char* namep,
+                          void (VerilatedModel::*dumpTriggersp)() = nullptr) {
+        if (VL_UNLIKELY(iterCount > m_convergeLimit)) didNotConverge(namep, dumpTriggersp);
+    }
+    // Dump the region's triggers, if it has any, then report non-convergence and abort
+    void didNotConverge(const char* namep, void (VerilatedModel::*dumpTriggersp)());
 };
 
 //=========================================================================
@@ -340,6 +433,23 @@ class VerilatedVirtualBase VL_NOT_FINAL {
 public:
     VerilatedVirtualBase() = default;
     virtual ~VerilatedVirtualBase() = default;
+};
+
+//===========================================================================
+// Internal: Base of the '--prof-exec' execution profiler
+//
+// Implemented by VlExecutionProfiler, see verilated_profiler.h. Declared here
+// so the evaluation loop can drive the profiler without naming it, as it is
+// only linked when Verilated with --prof-exec.
+
+class VlExecutionProfilerBase VL_NOT_FINAL : public VerilatedVirtualBase {
+public:
+    // Mark the beginning of a section of execution
+    virtual void sectionPush(const char* namep) = 0;
+    // Mark the end of the innermost open section
+    virtual void sectionPop() = 0;
+    // Advance the profiling window at the start of a time step
+    virtual void configure() = 0;
 };
 
 //===========================================================================
@@ -372,6 +482,8 @@ private:
     static uint32_t assertOnMask(VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_PURE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
+    // No termination request has stamped m_finishPendingTime yet
+    static constexpr uint64_t TIME_UNSET = ~0ULL;
 
 protected:
     // TYPES
@@ -430,6 +542,12 @@ protected:
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        // A worker queues $finish before the main thread callback can set m_gotFinish.
+        std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
+        std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
+        std::atomic<bool> m_assertCtlsLocked{
+            false};  // When true, all assertion-control updates are ignored
+        int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
@@ -510,6 +628,12 @@ public:
     /// Clear enabled status for given assertion types
     void assertOnClear(VerilatedAssertType_t types,
                        VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
+    /// Return if assertion-control updates are locked. When locked, RTL assert
+    // control statements ($asserton/$assertoff/$assertcontrol) are ignored, as
+    // are updates from the C++ API.
+    bool assertCtlsLocked() const VL_MT_SAFE;
+    /// Lock/unlock assertion-control updates.
+    void assertCtlsLocked(bool flag) VL_MT_SAFE;
     /// Apply assertion control for given control, assertion, and directive types
     void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
@@ -669,6 +793,27 @@ public:
 
     // METHODS - public but for internal use only
 
+    // Internal: Track $finish/$stop callbacks queued by worker threads
+    bool finishPending() const VL_MT_SAFE { return m_ns.m_finishPending.load() != 0; }
+    void finishPendingInc() VL_MT_SAFE {
+        ++m_ns.m_finishPending;
+        uint64_t unset = TIME_UNSET;
+        m_ns.m_finishPendingTime.compare_exchange_strong(unset, time());
+    }
+    void finishPendingDec() VL_MT_SAFE {
+        const uint32_t previous = m_ns.m_finishPending.fetch_sub(1);
+        assert(previous > 0);
+        if (previous == 1 && !gotFinish()) m_ns.m_finishPendingTime = TIME_UNSET;
+    }
+    // Internal: Time of the first termination request, else the current time
+    uint64_t finishPendingTime() const VL_MT_SAFE {
+        const uint64_t stamped = m_ns.m_finishPendingTime.load();
+        return stamped == TIME_UNSET ? time() : stamped;
+    }
+    // Internal: Reserve a posted $stop, returning true if it reaches the termination limit
+    bool stopRequestReserve(bool maybe) VL_MT_SAFE;
+    void stopRequestRelease() VL_MT_SAFE;
+
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
     const VerilatedContextImp* impp() const VL_MT_SAFE {
@@ -756,6 +901,8 @@ public:  // But for internal use only
 // Verilator scope information class
 // Used for internal VPI implementation, and introspection into scopes
 
+struct VlScopeTableEntry;  // Defined below VerilatedScope; used by scopesConstructFromTable()
+
 class VerilatedScope final {
 public:
     enum Type : uint8_t {
@@ -792,6 +939,9 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
+    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
+                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -805,6 +955,18 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
     static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE;
     Type type() const { return m_type; }
+    VerilatedContext* contextp() const { return m_symsp->_vm_contextp__; }
+};
+
+// One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
+// per-scope 'new VerilatedScope{...}' statements, which compiles faster at scale.
+struct VlScopeTableEntry final {
+    size_t ptrOffset;  // offsetof of the target __Vscopep_* member within the Syms object
+    const char* namep;  // Scope suffix name (protected), string literal
+    const char* identp;  // Identifier with escapes removed (protected)
+    const char* defnamep;  // Definition name (SCOPE_MODULE only), else "<null>"
+    int8_t timeunit;  // Timeunit in negative power-of-10
+    VerilatedScope::Type type;
 };
 
 class VerilatedHierarchy final {

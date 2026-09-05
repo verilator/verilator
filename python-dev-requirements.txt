@@ -33,4 +33,4 @@ sphinxcontrib-spelling==8.0.2
 yamlfix==1.19.1
 yapf==0.43.0
 
-git+https://github.com/antmicro/astsee.git
+git+https://github.com/antmicro/astsee.git@222480a8ec13b312809ea4acc08c81b4c0f4da2f

@@ -1,0 +1,45 @@
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_clocking_bad.v:21:10: Variable driven by continuous assignment also written to in clocking block (IEEE 1800-2023 14.3): 'early_assign'
+                                                               : ... note: In instance 't'
+                      t/t_lint_multidriven_clocking_bad.v:21:10: 
+   21 |   assign early_assign = 1'b1;
+      |          ^~~~~~~~~~~~
+                      t/t_lint_multidriven_clocking_bad.v:17:12: ... Location of clocking block output
+   17 |     output early_assign;
+      |            ^~~~~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVENPROC: t/t_lint_multidriven_clocking_bad.v:22:25: Variable written to in process also written to in clocking block (IEEE 1800-2023 14.3): 'early_always'
+                                                                   : ... note: In instance 't'
+                          t/t_lint_multidriven_clocking_bad.v:22:25: 
+   22 |   always @(posedge clk) early_always <= 1'b1;
+      |                         ^~~~~~~~~~~~
+                          t/t_lint_multidriven_clocking_bad.v:18:12: ... Location of clocking block output
+   18 |     output early_always;
+      |            ^~~~~~~~~~~~
+                          ... For warning description see https://verilator.org/warn/MULTIDRIVENPROC?v=latest
+                          ... Use "/* verilator lint_off MULTIDRIVENPROC */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_clocking_bad.v:45:12: Variable written to in clocking block also driven by continuous assignment (IEEE 1800-2023 14.3): 'late_assign'
+                                                               : ... note: In instance 't'
+                      t/t_lint_multidriven_clocking_bad.v:45:12: 
+   45 |     output late_assign;
+      |            ^~~~~~~~~~~
+                      t/t_lint_multidriven_clocking_bad.v:27:10: ... Location of continuous assignment
+   27 |   assign late_assign = 1'b1;
+      |          ^~~~~~~~~~~
+%Warning-MULTIDRIVENPROC: t/t_lint_multidriven_clocking_bad.v:46:12: Variable written to in clocking block also written by another process (IEEE 1800-2023 14.3): 'late_always'
+                                                                   : ... note: In instance 't'
+                          t/t_lint_multidriven_clocking_bad.v:46:12: 
+   46 |     output late_always;
+      |            ^~~~~~~~~~~
+                          t/t_lint_multidriven_clocking_bad.v:32:25: ... Location of other write
+   32 |   always @(posedge clk) late_always <= 1'b1;
+      |                         ^~~~~~~~~~~
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_clocking_bad.v:53:12: Variable written to in clocking block also written by another clocking block (IEEE 1800-2023 14.3): 'dual_clocking'
+                                                               : ... note: In instance 't'
+                      t/t_lint_multidriven_clocking_bad.v:53:12: 
+   53 |     output dual_clocking;
+      |            ^~~~~~~~~~~~~
+                      t/t_lint_multidriven_clocking_bad.v:47:12: ... Location of other clocking block output
+   47 |     output dual_clocking;
+      |            ^~~~~~~~~~~~~
+%Error: Exiting due to

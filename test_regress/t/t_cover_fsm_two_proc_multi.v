@@ -37,6 +37,33 @@ module fsm_basic (
   end
 endmodule
 
+module fsm_negated_guard (
+    input logic clk,
+    input logic rst,
+    input logic hold
+);
+  typedef enum logic {
+    S0,
+    S1
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      S0: if (!hold) state_d = S1;
+      S1: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
 module fsm_three_block (
     input logic clk,
     input logic rst,
@@ -348,7 +375,8 @@ module fsm_seqmix_off (
     if (rst) begin
       side <= 1'b0;
       state_q <= S0;
-    end else begin
+    end
+    else begin
       side <= ~side;
       state_q <= state_d;
     end
@@ -368,6 +396,11 @@ module t (
       .clk(clk),
       .rst(rst),
       .start(start)
+  );
+  fsm_negated_guard negated_guard_u (
+      .clk(clk),
+      .rst(rst),
+      .hold(start)
   );
   fsm_three_block three_block_u (
       .clk(clk),

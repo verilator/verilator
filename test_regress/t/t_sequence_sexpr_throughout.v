@@ -74,7 +74,7 @@ module t (
   // by the throughout-drop check.
   cover property (@(posedge clk) a throughout (b ##1 c));
 
-  always_ff @(posedge clk) begin
+  always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x cond=%b a=%b b=%b c=%b\n",
            $time, cyc, crc, cond, a, b, c);
@@ -85,15 +85,15 @@ module t (
       crc <= 64'h5aef0c8d_d70a4497;
     end else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
-      `checkd(count_fail1, 28);  // Questa: 28
-      `checkd(count_fail2, 33);  // Questa: 33
-      `checkd(count_fail3, 31);  // Questa: 31
-      `checkd(count_fail4, 35);  // Questa: 35
+      `checkd(count_fail1, 28);
+      `checkd(count_fail2, 33);
+      `checkd(count_fail3, 31);
+      `checkd(count_fail4, 35);
       // count_fail5: NFA undercounts by 12; throughout+temporal-and first-step
       // rejection is a known limitation of the SAnd combiner architecture
       // (propagating isTopLevelStep causes double-counting; fix is future work).
-      `checkd(count_fail5, 25);  // Questa: 36
-      `checkd(count_fail6, 33);  // Questa: 33
+      `checkd(count_fail5, 25);  // All other sims: 36
+      `checkd(count_fail6, 33);
       $write("*-* All Finished *-*\n");
       $finish;
     end

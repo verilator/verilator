@@ -224,6 +224,10 @@ class DfgToAstVisitor final : DfgVisitor {
         m_resultp = new AstVarRef{vtxp->fileline(), vtxp->vscp(), VAccess::READ};
     }
 
+    void visit(DfgPrev* vtxp) override {
+        m_resultp = new AstVarRef{vtxp->fileline(), vtxp->vscp(), VAccess::READ};
+    }
+
     void visit(DfgConst* vtxp) override {  //
         m_resultp = new AstConst{vtxp->fileline(), vtxp->num()};
     }
@@ -312,13 +316,14 @@ class DfgToAstVisitor final : DfgVisitor {
             if (DfgAstRd* const rVtxp = vtx.cast<DfgAstRd>()) {
                 // Render the driver
                 AstNodeExpr* const exprp = convertDfgVertexToAstNodeExpr(rVtxp->srcp());
-                // If it's the same as the reference, do not repalce it so FileLines are preserved
+                // If it's the same as the reference, do not replace it so FileLines are preserved
                 if (exprp->sameTree(rVtxp->exprp())) {
                     VL_DO_DANGLING(exprp->deleteTree(), exprp);
                     continue;
                 }
                 // Replace the reference with the expression
                 if (VN_IS(exprp, VarRef)) {
+                    exprp->fileline(rVtxp->exprp()->fileline());
                     ++m_ctx.m_varRefsSubstituted;
                 } else {
                     ++m_ctx.m_expressionsInlined;

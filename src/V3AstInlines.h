@@ -146,6 +146,7 @@ bool AstBasicDType::ascending() const {
 
 bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
 bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
+bool AstActive::hasInitial() const { return m_sentreep->hasInitial(); }
 bool AstActive::hasStatic() const { return m_sentreep->hasStatic(); }
 
 AstAlways::AstAlways(AstAssignW* assignp)
@@ -160,7 +161,8 @@ AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr*
 
 bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
-    return m_name == asamep->m_name && varType() == asamep->varType();
+    return m_name == asamep->m_name && varType() == asamep->varType()
+           && covergroupRefMember() == asamep->covergroupRefMember();
 }
 
 AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp)

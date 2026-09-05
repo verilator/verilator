@@ -75,10 +75,12 @@ module t;
   } Instr;
 
   // Tagged union with chandle member
+`ifndef QUESTA
   typedef union tagged {
     void    Invalid;
     chandle Handle;
   } ChandleType;
+`endif
 
   // Tagged union with class reference member
   typedef union tagged {
@@ -122,7 +124,9 @@ module t;
   MultiType mt;
   ArrayType at;
   Instr instr;
+`ifndef QUESTA
   ChandleType cht;
+`endif
   ClassType clt;
   TestClass obj;
   RealType rt;
@@ -239,9 +243,11 @@ module t;
     `checkh(instr.Jmp.JmpC.cc, 2'd3);
     `checkh(instr.Jmp.JmpC.addr, 10'd100);
 
+`ifndef QUESTA
     // Test 13: Chandle member
     cht = tagged Invalid;
     cht = tagged Handle (null);
+`endif
 
     // Test 14: Class reference member
     obj = new(42);

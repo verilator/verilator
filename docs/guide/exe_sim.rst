@@ -21,6 +21,13 @@ Summary:
 
 Options:
 
+.. option:: +verilator+assert+lock
+
+   Only allow command line options to disable / enable assertions.
+   Disables RTL from changing assertion handling via ``$asserton``,
+   ``$assertoff``, and ``$assertcontrol``. Also prevents ``VerilatedContext*``
+   assertion control functions from updating assertion handling.
+
 .. option:: +verilator+coverage+file+<filename>
 
    When a model was Verilated using :vlopt:`--coverage`, sets the filename
@@ -114,7 +121,7 @@ Options:
    When a model was Verilated using :vlopt:`--x-initial unique
    <--x-initial>`, sets the simulation runtime initialization technique. 0
    = Reset to zeros. 1 = Reset to all-ones. 2 = Randomize. See
-   :ref:`Unknown States`.
+   :ref:`Unknown States`.  Default is 0.
 
 .. option:: +verilator+seed+<value>
 

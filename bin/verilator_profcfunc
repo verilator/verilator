@@ -51,12 +51,17 @@ def profcfunc(filename: str) -> None:
     # Find modules
     verilated_mods = {}
     for func in funcs:
-        match = re.search(r'(.*)::eval(_step)?\(', func)
+        # Match only the model entry points: 'eval', 'eval_step', 'eval_end_step',
+        # and the 'evalXxx' region entry points, but not e.g. a user's '::evaluate'
+        match = re.match(r'([A-Za-z_][A-Za-z_0-9]*)::eval(_step|_end_step|[A-Z][A-Za-z_0-9]*)?\(',
+                         func)
         if match:
             prefix = match.group(1)
+            if prefix.startswith('Verilated'):  # Run-time library, not a model
+                continue
             if Args.debug:
                 print("-got _eval %s   prefix=%s" % (func, prefix))
-            verilated_mods[prefix] = re.compile(r'^' + prefix)
+            verilated_mods[prefix] = re.compile(r'^' + re.escape(prefix))
     # pprint(verilated_mods)
 
     # Sort by Verilog name

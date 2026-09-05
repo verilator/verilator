@@ -63,12 +63,11 @@ module t (
   parameter THREE_2WIDE = 2'b11;
   parameter ALSO_THREE_WIDE = THREE_BITS_WIDE;
   parameter THREEPP_32_WIDE = 2 * 8 * 2 + 3;
-  parameter THREEPP_3_WIDE = 3'd4 * 3'd4 * 3'd2 + 3'd3;  // Yes folks VCS says 3 bits wide
+  parameter THREEPP_3_WIDE = 3'd4 * 3'd4 * 3'd2 + 3'd3;
 
   // Width propagation doesn't care about LHS vs RHS
   // But the width of a RHS/LHS on a upper node does affect lower nodes;
   // Thus must double-descend in width analysis.
-  // VCS 7.0.1 is broken on this test!
   parameter T10 = (3'h7 + 3'h7) + 4'h0;  //initial if (T10!==4'd14) $stop;
   parameter T11 = 4'h0 + (3'h7 + 3'h7);  //initial if (T11!==4'd14) $stop;
 

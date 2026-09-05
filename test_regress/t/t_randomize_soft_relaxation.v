@@ -32,12 +32,14 @@ endclass
 
 module t;
   initial begin
+    int randomize_result;
     SoftRelax obj;
     obj = new;
     repeat (20) begin
-      `checkd(obj.randomize(), 1)
-      `checkd(obj.a, 8'd80)
-      `check_range(obj.b, 8'd101, 8'd199)
+      randomize_result = obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(obj.a, 8'd80);
+      `check_range(obj.b, 8'd101, 8'd199);
     end
     $write("*-* All Finished *-*\n");
     $finish;

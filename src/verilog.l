@@ -825,6 +825,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator coverage_block_off*/"    { FL; return yVL_COVERAGE_BLOCK_OFF; }
   "/*verilator coverage_off*/"          { FL_FWD; PARSEP->lexFileline()->coverageOn(false); FL_BRK; }
   "/*verilator coverage_on*/"           { FL_FWD; PARSEP->lexFileline()->coverageOn(true); FL_BRK; }
+  "/*verilator dpi_c_decl*/"            { FL; return yVL_DPI_C_DECL; }  // The "foo(bar)" is converted by the preproc
   "/*verilator forceable*/"             { FL; return yVL_FORCEABLE; }
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
   "/*verilator hier_block*/"            { FL; return yVL_HIER_BLOCK; }
@@ -1006,8 +1007,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   \"[^\"\\]*\"          { FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
                           return yaSTRING;
                         }
-  \"                    { yy_push_state(STRING); yymore(); }
-  \"\"\"                { yy_push_state(QQQ); yymore(); }
+  \"                    { yy_push_state(STRING); PARSEP->lexString().clear(); }
+  \"\"\"                { yy_push_state(QQQ); PARSEP->lexString().clear(); }
   {vnum}                {
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
@@ -1054,26 +1055,33 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 <STRING>{crnl}          { FL; yylval.fl->v3error("Unterminated string");
                           FL_BRK; }
-<STRING>\\{crnl}        { yymore(); }
-<STRING>\\.             { yymore(); }
+<STRING>\\{crnl}        { PARSEP->lexFileline()->linenoInc(); }  /* IEEE 1800-2023 5.9: backslash-newline continuation is ignored */
+<STRING>\\.             { PARSEP->lexString().append(yytext, yyleng); }
 <STRING>\"              { yy_pop_state();
-                          FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
+                          PARSEP->lexFileline()->forwardToken(PARSEP->lexString().data(),
+                                                              PARSEP->lexString().size(), true);
+                          PARSEP->lexFileline()->forwardToken("\"", 1, true);
+                          FL; yylval.strp = PARSEP->newString(PARSEP->lexString());
                           return yaSTRING; }
-<STRING>{word}          { yymore(); }
-<STRING>.               { yymore(); }
+<STRING>{word}          { PARSEP->lexString().append(yytext, yyleng); }
+<STRING>.               { PARSEP->lexString().append(yytext, yyleng); }
 
   /************************************************************************/
   /* """ */
 <QQQ><<EOF>>            { FL; yylval.fl->v3error("EOF in unterminated \"\"\" string");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
-<QQQ>\\.                { yymore(); }
-<QQQ>\n                 { yymore(); }
+<QQQ>\\{crnl}           { PARSEP->lexFileline()->linenoInc(); }  /* IEEE 1800-2023 5.9: backslash-newline continuation is ignored */
+<QQQ>\\.                { PARSEP->lexString().append(yytext, yyleng); }
+<QQQ>\n                 { PARSEP->lexString().append(yytext, yyleng); }
 <QQQ>\"\"\"             { yy_pop_state();
-                          FL; yylval.strp = PARSEP->newString(yytext + 3, yyleng - 6);
+                          PARSEP->lexFileline()->forwardToken(PARSEP->lexString().data(),
+                                                              PARSEP->lexString().size(), true);
+                          PARSEP->lexFileline()->forwardToken("\"\"\"", 3, true);
+                          FL; yylval.strp = PARSEP->newString(PARSEP->lexString());
                           return yaSTRING; }
-<QQQ>\"                 { yymore(); }
-<QQQ>{word}             { yymore(); }
-<QQQ>.                  { yymore(); }
+<QQQ>\"                 { PARSEP->lexString().append(yytext, yyleng); }
+<QQQ>{word}             { PARSEP->lexString().append(yytext, yyleng); }
+<QQQ>.                  { PARSEP->lexString().append(yytext, yyleng); }
 
   /************************************************************************/
   /* Attributes */

@@ -1,10 +1,17 @@
-%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:14:9: Signal flopped as both synchronous and async: 'rst_both_l'
-                       t/t_lint_syncasyncnet_bad.v:52:13: ... Location of async usage
-   52 |     q4 <= (~rst_both_l) ? 1'b0 : d;
+%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:17:11: Signal flopped as both synchronous and async: 'rst_both_l'
+                       t/t_lint_syncasyncnet_bad.v:59:13: ... Location of async usage
+   59 |     q4 <= (~rst_both_l) ? 1'b0 : d;
       |             ^~~~~~~~~~
-                       t/t_lint_syncasyncnet_bad.v:34:12: ... Location of sync usage
-   34 |     q2 <= (rst_both_l) ? d : 1'b0;
+                       t/t_lint_syncasyncnet_bad.v:40:12: ... Location of sync usage
+   40 |     q2 <= (rst_both_l) ? d : 1'b0;
       |            ^~~~~~~~~~
                        ... For warning description see https://verilator.org/warn/SYNCASYNCNET?v=latest
                        ... Use "/* verilator lint_off SYNCASYNCNET */" and lint_on around source to disable this message.
+%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:20:11: Signal flopped as both synchronous and async: 'rst_both_b'
+                       t/t_lint_syncasyncnet_bad.v:74:9: ... Location of async usage
+   74 |     if (rst_both_b) begin
+      |         ^~~~~~~~~~
+                       t/t_lint_syncasyncnet_bad.v:12:37: ... Location of sync usage
+   12 |   assert property (@(posedge clk_b) rst_b);
+      |                                     ^~~~~
 %Error: Exiting due to

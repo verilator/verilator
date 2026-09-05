@@ -679,8 +679,9 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     // the port variable. The constant can still be inlined, in which case
     // this is needed for tracing the inlined port variable.
     if (AstConst* const pinp = VN_CAST(pinExprp, Const)) {
-        AstAssignW* const ap
-            = new AstAssignW{flp, portRef(VAccess::WRITE), pinp->cloneTree(false)};
+        AstVarRef* const lhsp = portRef(VAccess::WRITE);
+        lhsp->varp()->isContinuously(true);
+        AstAssignW* const ap = new AstAssignW{flp, lhsp, pinp->cloneTree(false)};
         modp->addStmtsp(new AstAlways{ap});
         return;
     }
@@ -696,10 +697,8 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     };
 
     const auto pinRefAsExpr = [&](VAccess access) -> AstNodeExpr* {
-        if (const AstVarRef* const vrp = VN_CAST(pinRefp, VarRef)) {
-            AstVarRef* const newp = new AstVarRef{vrp->fileline(), vrp->varp(), access};
-            newp->classOrPackagep(vrp->classOrPackagep());
-            return newp;
+        if (VN_IS(pinRefp, VarRef)) {
+            return pinRefAsVarRef(access);
         } else {
             const AstVarXRef* const xrp = VN_AS(pinRefp, VarXRef);
             AstVarXRef* const newp
@@ -732,12 +731,14 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     // Otherwise create the continuous assignment between the port var and the pin expression
     UINFO(6, "Not inlining port variable: " << nodep);
     if (nodep->direction() == VDirection::INPUT) {
-        AstAssignW* const ap
-            = new AstAssignW{flp, portRef(VAccess::WRITE), pinRefAsExpr(VAccess::READ)};
+        AstVarRef* const lhsp = portRef(VAccess::WRITE);
+        lhsp->varp()->isContinuously(true);
+        AstAssignW* const ap = new AstAssignW{flp, lhsp, pinRefAsExpr(VAccess::READ)};
         modp->addStmtsp(new AstAlways{ap});
     } else if (nodep->direction() == VDirection::OUTPUT) {
-        AstAssignW* const ap
-            = new AstAssignW{flp, pinRefAsExpr(VAccess::WRITE), portRef(VAccess::READ)};
+        AstNodeVarRef* const lhsp = VN_AS(pinRefAsExpr(VAccess::WRITE), NodeVarRef);
+        lhsp->varp()->isContinuously(true);
+        AstAssignW* const ap = new AstAssignW{flp, lhsp, portRef(VAccess::READ)};
         modp->addStmtsp(new AstAlways{ap});
     } else {
         pinExprp->v3fatalSrc("V3Tristate left INOUT port");
@@ -816,10 +817,10 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
 void process(AstNetlist* netlistp, InlineModGraph& graph) {
     // NODE STATE
     // Cleared entire netlist
-    //   AstIfaceRefDType::user1()  // Whether the cell pointed to by this
+    //   AstIfaceRefDType::user1()  // bool; Whether the cell pointed to by this
     //                              // AstIfaceRefDType has been inlined
-    //   AstCell::user3p()      // AstCell*, the clone
-    //   AstVar::user3p()       // AstVar*, the clone
+    //   AstCell::user3p()      // AstCell*.  The clone
+    //   AstVar::user3p()       // AstVar*.  The clone
     // Cleared each cell
     //   AstVar::user2p()       // AstVarRef*/AstConst* This port is connected to (AstPin::expr())
     const VNUser1InUse user1InUse;

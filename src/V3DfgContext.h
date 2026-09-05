@@ -100,10 +100,10 @@ class V3DfgBreakCyclesContext final : public V3DfgSubContext {
 public:
     // STATE
     VDouble0 m_nFixed;  // Number of graphs that became acyclic
-    VDouble0 m_nImproved;  // Number of graphs that were imporoved but still cyclic
+    VDouble0 m_nImproved;  // Number of graphs that were improved but still cyclic
     VDouble0 m_nUnchanged;  // Number of graphs that were left unchanged
-    VDouble0 m_nTrivial;  // Number of graphs that were not changed
     VDouble0 m_nImprovements;  // Number of changes made to graphs
+    VDouble0 m_nPrevInserted;  // Number of Prev vertices inserted
 
 private:
     V3DfgBreakCyclesContext()
@@ -112,8 +112,8 @@ private:
         addStat("made acyclic", m_nFixed);
         addStat("improved", m_nImproved);
         addStat("left unchanged", m_nUnchanged);
-        addStat("trivial", m_nTrivial);
         addStat("changes applied", m_nImprovements);
+        addStat("prev vertices inserted", m_nPrevInserted);
     }
 };
 class V3DfgCseContext final : public V3DfgSubContext {

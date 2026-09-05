@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--assert --timing'])
+test.compile(verilator_flags2=['--assert --timing -Wno-NEVERMATCH'])
 
 test.execute()
 

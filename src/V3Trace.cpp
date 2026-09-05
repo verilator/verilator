@@ -1146,8 +1146,8 @@ class TraceVisitor final : public VNVisitor {
     }
 
     TraceCFuncVertex* getCFuncVertexp(AstCFunc* nodep) {
-        TraceCFuncVertex* vertexp
-            = nodep->user1() ? nodep->user1u().toGraphVertex()->cast<TraceCFuncVertex>() : nullptr;
+        V3GraphVertex* const vtxp = nodep->user1u().toGraphVertex();
+        TraceCFuncVertex* vertexp = vtxp ? vtxp->cast<TraceCFuncVertex>() : nullptr;
         if (!vertexp) {
             vertexp = new TraceCFuncVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
@@ -1155,9 +1155,8 @@ class TraceVisitor final : public VNVisitor {
         return vertexp;
     }
     TraceActivityVertex* getActivityVertexp(AstNode* nodep, bool slow) {
-        TraceActivityVertex* vertexp
-            = nodep->user3() ? nodep->user3u().toGraphVertex()->cast<TraceActivityVertex>()
-                             : nullptr;
+        V3GraphVertex* const vtxp = nodep->user3u().toGraphVertex();
+        TraceActivityVertex* vertexp = vtxp ? vtxp->cast<TraceActivityVertex>() : nullptr;
         if (!vertexp) {
             vertexp = new TraceActivityVertex{&m_graph, nodep, slow};
             nodep->user3p(vertexp);
@@ -1221,7 +1220,7 @@ class TraceVisitor final : public VNVisitor {
         V3GraphVertex* const funcVtxp = getCFuncVertexp(nodep);
         if (!m_finding) {  // If public, we need a unique activity code to allow for sets
                            // directly in this func
-            if (nodep->funcPublic() || nodep->dpiExportImpl() || nodep == v3Global.rootp()->evalp()
+            if (nodep->funcPublic() || nodep->dpiExportImpl() || nodep->entryPoint()
                 || nodep->isCoroutine()) {
                 // Cannot treat a coroutine as slow, it may be resumed later
                 const bool slow = nodep->slow() && !nodep->isCoroutine();

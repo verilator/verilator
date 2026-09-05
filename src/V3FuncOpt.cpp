@@ -380,6 +380,8 @@ public:
 void V3FuncOpt::funcOptAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
+        // NODE STATE
+        //  AstNode::user1()     -> bool.  Processed
         const VNUser1InUse user1InUse;
         FuncOptStats stats;
         for (AstNodeModule* modp = nodep->modulesp(); modp;

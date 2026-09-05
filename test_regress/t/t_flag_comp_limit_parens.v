@@ -4,11 +4,9 @@
 // SPDX-FileCopyrightText: 2021 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  r
-  );
-  input real r;
+module t (
+    input real r
+);
 
   initial begin
     $display("%g", $cos($cos($cos($cos($cos($cos($cos($cos(r + 0.1)))))))));

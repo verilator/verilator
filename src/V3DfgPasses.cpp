@@ -78,7 +78,13 @@ void V3DfgPasses::removeUnobservable(DfgGraph& dfg, V3DfgContext& dfgCtx) {
                             && !vVtxp->hasExtWrRefs()  //
                             && !vVtxp->hasModWrRefs();
         VL_DO_DANGLING(vVtxp->unlinkDelete(dfg), vVtxp);
-        if (srcp) VL_DO_DANGLING(srcp->unlinkDelete(dfg), srcp);
+        if (srcp) {
+            srcp->foreachSource([&](DfgVertex& src) {
+                src.as<DfgLogic>()->setDrivesUnusedVars();
+                return false;
+            });
+            VL_DO_DANGLING(srcp->unlinkDelete(dfg), srcp);
+        }
         if (delAst) {
             VL_DO_DANGLING(vscp->unlinkFrBack()->deleteTree(), vscp);
             ++ctx.m_varsDeleted;

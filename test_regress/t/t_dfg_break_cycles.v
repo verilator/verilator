@@ -361,6 +361,19 @@ module t (
   assign ALWAYS_2 = always_2;
   // verilator lint_on ALWCOMBORDER
 
+  // verilator lint_off ALWCOMBORDER
+  logic [4:0] always_3;
+  always_comb begin
+    always_3[4] = always_3[0];
+    always_3[0] = rand_a[0];
+    always_3[2] = rand_a[2];
+    always_3[3] = |always_3[2:1];
+  end
+  assign always_3[1] = always_3[0];
+  `signal(ALWAYS_3, 5); // UNOPTFLAT
+  assign ALWAYS_3 = always_3;
+  // verilator lint_on ALWCOMBORDER
+
   logic [31:0] array_4[3]; // UNOPTFLAT
   // Input
   assign array_4[0] = rand_a[31:0];

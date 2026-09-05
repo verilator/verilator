@@ -62,6 +62,7 @@ set(HEADERS
     V3Cast.h
     V3Cfg.h
     V3Class.h
+    V3ClassGraph.h
     V3Clean.h
     V3Clock.h
     V3Combine.h
@@ -149,6 +150,7 @@ set(HEADERS
     V3OrderGraph.h
     V3OrderInternal.h
     V3OrderMoveGraph.h
+    V3OrderMTaskGraph.h
     V3Os.h
     V3PairingHeap.h
     V3Param.h
@@ -156,6 +158,7 @@ set(HEADERS
     V3ParseImp.h
     V3PchAstMT.h
     V3PchAstNoMT.h
+    V3PoolAllocator.h
     V3PreExpr.h
     V3PreLex.h
     V3PreProc.h
@@ -170,7 +173,6 @@ set(HEADERS
     V3Sampled.h
     V3Sched.h
     V3Scope.h
-    V3Scoreboard.h
     V3SenExprBuilder.h
     V3SenTree.h
     V3Simulate.h
@@ -229,6 +231,7 @@ set(COMMON_SOURCES
     V3CfgBuilder.cpp
     V3CfgLiveVariables.cpp
     V3Class.cpp
+    V3ClassGraph.cpp
     V3Clean.cpp
     V3Clock.cpp
     V3Combine.cpp
@@ -319,6 +322,9 @@ set(COMMON_SOURCES
     V3Order.cpp
     V3OrderGraphBuilder.cpp
     V3OrderMoveGraph.cpp
+    V3OrderMTaskContraction.cpp
+    V3OrderMTaskFixHazards.cpp
+    V3OrderMTaskGraph.cpp
     V3OrderParallel.cpp
     V3OrderProcessDomains.cpp
     V3OrderSerial.cpp
@@ -346,7 +352,6 @@ set(COMMON_SOURCES
     V3SchedUtil.cpp
     V3SchedVirtIface.cpp
     V3Scope.cpp
-    V3Scoreboard.cpp
     V3Slice.cpp
     V3Split.cpp
     V3SplitVar.cpp

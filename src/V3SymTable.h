@@ -45,6 +45,7 @@ class VSymEnt final {
     // MEMBERS
     using IdNameMap = std::multimap<std::string, VSymEnt*>;
     IdNameMap m_idNameMap;  // Hash of variables by name
+    std::unordered_set<std::string> m_idNameSimilarMap;  // Variables by name with same case
     AstNode* m_nodep;  // Node that entry belongs to
     VSymEnt* m_fallbackp = nullptr;  // Table "above" this in name scope, for fallback resolution
     VSymEnt* m_parentp = nullptr;  // Table that created this
@@ -135,6 +136,14 @@ public:
         } else {
             m_idNameMap.emplace(name, entp);
         }
+        if (!name.empty() && name.find("__DOT__") == std::string::npos  // ignore hierarchical
+            && checkSimilarname(entp->nodep())) {
+            string lc = name;
+            for (auto& c : lc) c = (char)tolower(c);
+            if (m_idNameSimilarMap.find(lc) == m_idNameSimilarMap.end())
+                m_idNameSimilarMap.insert(lc);
+        }
+
         return entp;
     }
     void reinsert(const string& name, VSymEnt* entp) {
@@ -159,6 +168,37 @@ public:
         if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
+    static bool checkSimilarname(const AstNode* nodep) {
+        // Only declarations that can contribute a name to the netlist handed
+        // to a backend tool.
+        if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+            return !varp->isParam() && !varp->isGenVar();
+        }
+        return VN_IS(nodep, Cell)  //
+               || VN_IS(nodep, NodeBlock)  //
+               || VN_IS(nodep, GenBlock)  //
+               || VN_IS(nodep, Func)  // Note: not AstNodeFTask (Property/Sequence)
+               || VN_IS(nodep, Task);
+    }
+    VSymEnt* findSimilarIdFlat(const string& name) const {
+        // Find identifier without looking upward through symbol hierarchy
+        // Were looking for symbols that are the same when compared without
+        // caring about case, but that are not the same name
+        if (name.find("__DOT__") != std::string::npos)  // ignore hierarchical equivalents
+            return nullptr;
+        string s = name;
+        for (auto& c : s) c = (char)tolower(c);
+        if (m_idNameSimilarMap.find(s) == m_idNameSimilarMap.end()) return nullptr;
+        for (auto it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
+            // Only report a declaration that is itself checked, otherwise we
+            // might point at e.g. a localparam that merely sorts first
+            if (!checkSimilarname(it->second->nodep())) continue;
+            string t = it->first;
+            for (auto& c : t) c = (char)tolower(c);
+            if (t == s && name != it->first) { return it->second; }
+        }
+        return nullptr;
+    }
     VSymEnt* findIdFallback(const string& name) const {
         // Find identifier looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
@@ -168,7 +208,8 @@ public:
         return nullptr;
     }
     void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
-        // Suggest alternative symbol candidates without looking upward through symbol hierarchy
+        // Suggest alternative symbol candidates without looking upward through symbol
+        // hierarchy
         for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
             const AstNode* const itemp = it->second->nodep();
             if (itemp && (!matcherp || matcherp->nodeMatch(itemp))) {
@@ -209,7 +250,8 @@ public:
         // Used for classes in early parsing only to handle "extends"
 
         // If an "extern foo" exists, then we can't import "foo" from the base class.
-        // But ok for "extern foo" and "foo" to both come from base (so must check before insert)
+        // But ok for "extern foo" and "foo" to both come from base (so must check before
+        // insert)
         std::unordered_set<std::string> haveExterns;
         for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
              it != srcp->m_idNameMap.end(); ++it) {

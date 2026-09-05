@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(
     Verilator
-    VERSION 5.050
+    VERSION 5.052
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )
@@ -155,11 +155,12 @@ install(
 foreach(
     program
     verilator
-    verilator_gantt
     verilator_ccache_report
+    verilator_coverage
     verilator_difftree
-    verilator_profcfunc
+    verilator_gantt
     verilator_includer
+    verilator_profcfunc
 )
     install(PROGRAMS bin/${program} TYPE BIN)
 endforeach()

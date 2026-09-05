@@ -372,6 +372,7 @@ private:
 
     void knownBadNodeType(AstNode* nodep) {
         // Call for node types we know we can't handle
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         if (optimizable()) {
             clearOptimizable(nodep, "Known unhandled node type "s + nodep->typeName());
@@ -1365,14 +1366,11 @@ private:
         // Some CMethods such as size() on queues could be supported, but
         // instead we should change those methods to new Ast types so we can
         // properly dispatch them
-        if (jumpingOver()) return;
         knownBadNodeType(nodep);
     }
-    void visit(AstMemberSel* nodep) override {
-        if (jumpingOver()) return;
-        knownBadNodeType(nodep);
-    }
-    void visit(AstGetInitialRandomSeed* nodep) override { badNodeType(nodep); }
+    void visit(AstGetInitialRandomSeed* nodep) override { knownBadNodeType(nodep); }
+    void visit(AstMemberSel* nodep) override { knownBadNodeType(nodep); }
+    void visit(AstSampled* nodep) override { knownBadNodeType(nodep); }
     // ====
     // default
     // These types are definitely not reducible

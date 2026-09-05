@@ -63,7 +63,7 @@ class ClockVisitor final : public VNVisitor {
     // NODE STATE
 
     // STATE
-    AstCFunc* m_sampleCFuncp = nullptr;  // The CFunc to populate with sampled value assignments
+    AstCFunc* const m_sampleCFuncp;  // The CFunc to populate with sampled value assignments
 
     // VISITORS
     void visit(AstCoverToggle* nodep) override {
@@ -106,11 +106,6 @@ class ClockVisitor final : public VNVisitor {
         if (!varp->valuep()) return;
         if (!varp->sampled()) return;
 
-        // Create the containing function on first encounter
-        if (!m_sampleCFuncp) {
-            m_sampleCFuncp = V3Sched::util::makeSubFunction(v3Global.rootp(), "_sample", false);
-        }
-
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const rhsp = VN_AS(varp->valuep()->unlinkFrBack(), NodeExpr);
         AstVarRef* const lhsp = new AstVarRef{flp, nodep, VAccess::WRITE};
@@ -124,15 +119,10 @@ class ClockVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ClockVisitor(AstNetlist* netlistp) {
+    explicit ClockVisitor(AstNetlist* netlistp)
+        : m_sampleCFuncp{netlistp->evalFuncp(VEval::SAMPLE)} {
         iterate(netlistp);
-        // If we need a sample function, call it at the begining of eval
-        if (m_sampleCFuncp) {
-            V3Sched::util::splitCheck(m_sampleCFuncp);
-            AstCCall* const callp = new AstCCall{m_sampleCFuncp->fileline(), m_sampleCFuncp};
-            callp->dtypeSetVoid();
-            netlistp->evalp()->stmtsp()->addHereThisAsNext(callp->makeStmt());
-        }
+        V3Sched::util::splitCheck(m_sampleCFuncp);
     }
     ~ClockVisitor() override = default;
 };

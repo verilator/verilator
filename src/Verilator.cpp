@@ -96,7 +96,6 @@
 #include "V3Sampled.h"
 #include "V3Sched.h"
 #include "V3Scope.h"
-#include "V3Scoreboard.h"
 #include "V3Slice.h"
 #include "V3Split.h"
 #include "V3SplitVar.h"
@@ -261,6 +260,7 @@ static void process() {
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
         V3AssertCommon::collectDefaultDisable(v3Global.rootp());
+        V3AssertCommon::lowerSequenceEvents(v3Global.rootp());
         V3AssertNfa::assertNfaAll(v3Global.rootp());
         // V3AssertProp removed: NFA subsumes multi-cycle property lowering.
         // Unsupported constructs fall through to V3AssertPre.
@@ -587,10 +587,6 @@ static void process() {
             }
         }
 
-        // These are no longer needed, remove references before CFunc inlining
-        v3Global.rootp()->evalp(nullptr);
-        v3Global.rootp()->evalNbap(nullptr);
-
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()) {
             if (v3Global.opt.fInlineCFuncs()) {
                 // Inline small CFuncs to reduce function call overhead
@@ -736,15 +732,13 @@ static bool verilate(const string& argString) {
     // and after removing files as may make debug output)
     VBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
+        AstClassRefDType::selfTest();
         V3Os::selfTest();
         V3Number::selfTest();
-        VCMethod::selfTest();
         VString::selfTest();
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
-        V3ScoreboardBase::selfTest();
-        V3Order::selfTestParallel();
         V3ExecGraph::selfTest();
         V3PreShell::selfTest();
         V3Broken::selfTest();

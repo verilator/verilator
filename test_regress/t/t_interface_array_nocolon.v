@@ -37,7 +37,6 @@ module t;
 
   initial begin
     // Check numbering with 0 first
-    // NC has a bug here
     if (foos[0].x !== 1'b1) $stop;
     if (foos[1].x !== 1'b1) $stop;
     if (foos[2].x !== 1'b0) $stop;

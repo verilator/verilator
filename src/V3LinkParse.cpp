@@ -273,7 +273,7 @@ class LinkParseVisitor final : public VNVisitor {
                            << nodep->verilogKwd() << "'");
         }
 
-        VL_RESTORER(m_portDups);
+        VL_RESTORER_COPY(m_portDups);
         collectPorts(nodep->stmtsp());
 
         iterateChildren(nodep);
@@ -297,6 +297,12 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstConstraint* nodep) override {
         v3Global.useRandomizeMethods(true);
         iterateChildren(nodep);
+    }
+    void visit(AstConstraintForeach* nodep) override {
+        if (nodep->isSoft()) {
+            nodep->v3warn(NONSTD, "Non-standard soft foreach");
+            nodep->foreach([](AstConstraintExpr* exprp) { exprp->isSoft(true); });
+        }
     }
     void visit(AstEnumDType* nodep) override {
         if (nodep->name() == "") {
@@ -345,6 +351,11 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         cleanFileline(nodep);
         UINFO(9, "VAR " << nodep);
+        const AstClass* const classp = VN_CAST(m_modp, Class);
+        if (classp && classp->isCovergroup() && nodep->isClassMember() && !nodep->isFuncLocal()
+            && (nodep->declDirection().isRef() || nodep->declDirection().isConstRef())) {
+            nodep->covergroupRefMember(true);
+        }
         if (nodep->valuep()) nodep->hasUserInit(true);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
         // responsible for marking those.
@@ -763,12 +774,12 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_genblkAbove);
         VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_beginDepth);
-        VL_RESTORER(m_implTypedef);
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         VL_RESTORER(m_moduleWithGenericIface);
         VL_RESTORER(m_randSequenceNum);
         VL_RESTORER(m_valueModp);
+        VL_RESTORER_CLEAR(m_implTypedef);
 
         // Module: Create sim table for entire module and iterate
         cleanFileline(nodep);
@@ -780,7 +791,6 @@ class LinkParseVisitor final : public VNVisitor {
         m_genblkAbove = 0;
         m_genblkNum = 0;
         m_beginDepth = 0;
-        m_implTypedef.clear();
         m_valueModp = nodep;
         m_lifetime = nodep->lifetime().makeImplicit();
         m_lifetimeAllowed = VN_IS(nodep, Class);
@@ -797,7 +807,7 @@ class LinkParseVisitor final : public VNVisitor {
                                          "Verilator top-level internals");
         }
 
-        VL_RESTORER(m_portDups);
+        VL_RESTORER_COPY(m_portDups);
         collectPorts(nodep->stmtsp());
 
         iterateChildren(nodep);
@@ -1146,17 +1156,18 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Append, for each arg in argsp, an INPUT parameter plus a "this.<member> = <param>"
+    // Append, for each arg in argsp, a parameter plus a "this.<member> = <param>"
     // assignment to funcp.  The parameter is a clone of the covergroup member and so shares its
     // name; 'this.' on the LHS targets the member, otherwise the same-named local parameter
     // shadows it and the assignment self-assigns the parameter, leaving the member unwritten.
     // argsp may be null (no args appended).
-    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp) {
+    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp, bool readOnlyRefs) {
         for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
             paramp->funcLocal(true);
-            paramp->direction(VDirection::INPUT);
+            paramp->direction(origVarp->direction());
+            if (readOnlyRefs && origVarp->isRef()) paramp->direction(VDirection::CONSTREF);
             funcp->addStmtsp(paramp);
             AstNodeExpr* const lhsp = new AstDot{
                 origVarp->fileline(), false, new AstParseRef{origVarp->fileline(), "this"},
@@ -1185,7 +1196,7 @@ class LinkParseVisitor final : public VNVisitor {
             // before the coverage body, then re-append the body.
             AstNode* const existingBodyp = newFuncp->stmtsp();
             if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
-            addArgMemberCopies(newFuncp, argsp);
+            addArgMemberCopies(newFuncp, argsp, true);
             if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
         }
 
@@ -1214,7 +1225,7 @@ class LinkParseVisitor final : public VNVisitor {
         // IEEE: function void sample([arguments])
         {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            addArgMemberCopies(funcp, sampleArgsp);
+            addArgMemberCopies(funcp, sampleArgsp, false);
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
@@ -1286,6 +1297,7 @@ class LinkParseVisitor final : public VNVisitor {
         const string libname = m_modp->libname();
         AstClass* const cgClassp = new AstClass{nodep->fileline(), nodep->name(), libname};
         cgClassp->isCovergroup(true);
+        cgClassp->covergroupEnclosingClassp(VN_CAST(m_modp, Class));
         v3Global.useCovergroup(true);
 
         // Clocking event: unlink before deleteTree, attach as AstCovergroup child on class
@@ -1299,16 +1311,33 @@ class LinkParseVisitor final : public VNVisitor {
         // Convert constructor args to member variables
         for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
+            if (origVarp->direction() == VDirection::OUTPUT
+                || origVarp->direction() == VDirection::INOUT) {
+                origVarp->v3error("Covergroup formal arguments cannot be output or inout"
+                                  " (IEEE 1800-2012 19.3)");
+                origVarp->direction(VDirection::INPUT);
+            }
+            if ((origVarp->isRef() || origVarp->isConstRef()) && origVarp->valuep()) {
+                origVarp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: default value on ref or const ref covergroup "
+                                 "formal argument");
+            }
             AstVar* const memberp = origVarp->cloneTree(false);
             memberp->varType(VVarType::MEMBER);
             memberp->funcLocal(false);
             memberp->direction(VDirection::NONE);
+            if (origVarp->isRef() || origVarp->isConstRef()) memberp->noReset(true);
             cgClassp->addMembersp(memberp);
         }
 
         // Convert sample args to member variables
         for (AstNode* argp = nodep->sampleArgsp(); argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
+            if (!origVarp->isInput()) {
+                origVarp->v3error("Covergroup sample formal argument must have input direction "
+                                  "(IEEE 1800-2012 19.8.1).");
+                origVarp->direction(VDirection::INPUT);
+            }
             AstVar* const memberp = origVarp->cloneTree(false);
             memberp->varType(VVarType::MEMBER);
             memberp->funcLocal(false);
@@ -1372,9 +1401,9 @@ class LinkParseVisitor final : public VNVisitor {
             nextp = itemp->nextp();
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
                 optp->unlinkFrBack();
-                if (optp->optionType() == VCoverOptionType::AT_LEAST
-                    || optp->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
-                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optionType(),
+                if (optp->optType() == VCoverOptionType::AT_LEAST
+                    || optp->optType() == VCoverOptionType::AUTO_BIN_MAX) {
+                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optType(),
                                                           optp->valuep()->cloneTree(false)});
                 } else {
                     optp->v3warn(COVERIGN,
@@ -1396,7 +1425,7 @@ class LinkParseVisitor final : public VNVisitor {
             nextp = itemp->nextp();
             itemp->unlinkFrBack();
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
-            const VCoverOptionType optType = optp->optionType();
+            const VCoverOptionType optType = optp->optType();
             optp->v3warn(COVERIGN,
                          "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             // Always preserve the option node so V3Coverage can track its source line

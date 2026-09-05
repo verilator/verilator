@@ -75,24 +75,24 @@ class VerilatedCovImp;
         ccontextp->_insertp("hier", name, __VA_ARGS__); \
     } while (false)
 
-static inline void VL_COV_TOGGLE_CHG_ST_I(const int width, uint32_t* covp, const IData newData,
-                                          const IData oldData) {
+inline void VL_COV_TOGGLE_CHG_ST_I(const int width, uint32_t* covp, const IData newData,
+                                   const IData oldData) {
     const IData chgData = newData ^ oldData;
     for (int i = 0; i < width; ++i) {
         *(covp + 2 * i + ((newData >> i) & 1)) += (chgData >> i) & 1;
     }
 }
 
-static inline void VL_COV_TOGGLE_CHG_ST_Q(const int width, uint32_t* covp, const QData newData,
-                                          const QData oldData) {
+inline void VL_COV_TOGGLE_CHG_ST_Q(const int width, uint32_t* covp, const QData newData,
+                                   const QData oldData) {
     const QData chgData = newData ^ oldData;
     for (int i = 0; i < width; ++i) {
         *(covp + 2 * i + ((newData >> i) & 1)) += (chgData >> i) & 1;
     }
 }
 
-static inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WDataInP newData,
-                                          WDataInP oldData) {
+inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WDataInP newData,
+                                   WDataInP oldData) {
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData chgData = newData[i] ^ oldData[i];
         if (chgData) {
@@ -104,8 +104,8 @@ static inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WData
     }
 }
 
-static inline void VL_COV_TOGGLE_CHG_MT_I(const int width, std::atomic<uint32_t>* covp,
-                                          const IData newData, const IData oldData) VL_MT_SAFE {
+inline void VL_COV_TOGGLE_CHG_MT_I(const int width, std::atomic<uint32_t>* covp,
+                                   const IData newData, const IData oldData) VL_MT_SAFE {
     const IData chgData = newData ^ oldData;
     for (int i = 0; i < width; ++i) {
         if (VL_BITISSET_I(chgData, i)) {
@@ -114,8 +114,8 @@ static inline void VL_COV_TOGGLE_CHG_MT_I(const int width, std::atomic<uint32_t>
     }
 }
 
-static inline void VL_COV_TOGGLE_CHG_MT_Q(const int width, std::atomic<uint32_t>* covp,
-                                          const QData newData, const QData oldData) VL_MT_SAFE {
+inline void VL_COV_TOGGLE_CHG_MT_Q(const int width, std::atomic<uint32_t>* covp,
+                                   const QData newData, const QData oldData) VL_MT_SAFE {
     const QData chgData = newData ^ oldData;
     for (int i = 0; i < width; ++i) {
         if (VL_BITISSET_Q(chgData, i)) {
@@ -124,8 +124,8 @@ static inline void VL_COV_TOGGLE_CHG_MT_Q(const int width, std::atomic<uint32_t>
     }
 }
 
-static inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>* covp,
-                                          WDataInP newData, WDataInP oldData) VL_MT_SAFE {
+inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>* covp, WDataInP newData,
+                                   WDataInP oldData) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData chgData = newData[i] ^ oldData[i];
         if (chgData) {

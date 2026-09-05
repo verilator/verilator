@@ -22,6 +22,7 @@
 
 #include "V3Ast.h"
 
+#include <array>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -354,8 +355,12 @@ public:
     // Create an AstSenTree that is sensitive to the given Extra trigger
     AstSenTree* newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const;
 
-    // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
-    void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bool clear = true) const;
+    // Statement setting the extra trigger bit at 'index' to the value of 'vscp'
+    AstNodeStmt* newExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const;
+
+    // Set the extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0.
+    // Prepended to the trigger computation function.
+    void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const;
 
     // Set trigger bit at 'index' when vscp's value changes from previous evaluation.
     // Creates a prev variable: trigger[bit] = (vscp != prev); prev = vscp
@@ -450,15 +455,15 @@ namespace util {
 AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow);
 // Create a new sub function (not an entry point)
 AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow);
+// Add an argument of the given type to the given function
+AstVarScope* newArgument(AstCFunc* funcp, AstNodeDType* dtypep, const string& name,
+                         VDirection direction);
 // Create statement that sets the given 'vscp' to 'val'
 AstNodeStmt* setVar(AstVarScope* vscp, uint32_t val);
 // Create statement that increments the given 'vscp' by one
 AstNodeStmt* incrementVar(AstVarScope* vscp);
 // Create statement that calls the given 'void' returning function
 AstNodeStmt* callVoidFunc(AstCFunc* funcp);
-// Create statement that checks counterp' to see if the eval loop iteration limit is reached
-AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
-                                 AstNodeStmt* dumpCallp);
 // Split large function according to --output-split-cfuncs
 void splitCheck(AstCFunc* ofuncp);
 // Build an AstIf conditional on the given SenTree being triggered

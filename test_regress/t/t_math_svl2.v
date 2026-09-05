@@ -19,15 +19,11 @@ module t (
         if ('1 !== {66{1'b1}}) $stop;
         if ('x !== {66{1'bx}}) $stop;
         if ('z !== {66{1'bz}}) $stop;
-`ifndef NC  // NC-Verilog 5.50-s09 chokes on this test
         if ("\v" != 8'd11) $stop;
         if ("\f" != 8'd12) $stop;
         if ("\a" != 8'd7) $stop;
         if ("\x9a" != 8'h9a) $stop;
         if ("\xf1" != 8'hf1) $stop;
-`endif
-      end
-      if (cyc == 8) begin
       end
       if (cyc == 9) begin
         $write("*-* All Finished *-*\n");

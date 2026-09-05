@@ -23,6 +23,8 @@ module t (
 
   int fail_nonoverlap = 0;
   int fail_overlap = 0;
+  int fail_strong_nonoverlap = 0;
+  int fail_strong_overlap = 0;
 
   // Weak non-overlapping until as implication consequent.
   // IEEE 1800-2023 16.12.12: c true at every tick until at least one tick
@@ -40,6 +42,15 @@ module t (
   // 1-bit reduction. The assertion itself is trivially true (q == 1).
   assert property (@(posedge clk) trig |=> 0 until 1);
 
+  // Strong forms use the same per-cycle checks, but require the RHS to
+  // eventually match. On the first consequent tick, s_until does not require
+  // the LHS when the RHS is true; s_until_with does.
+  assert property (@(posedge clk) (cyc == 2) |=> 0 s_until (cyc == 3))
+  else fail_strong_nonoverlap = fail_strong_nonoverlap + 1;
+
+  assert property (@(posedge clk) (cyc == 2) |=> 0 s_until_with (cyc == 3))
+  else fail_strong_overlap = fail_strong_overlap + 1;
+
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x trig=%b c=%b d=%b\n", $time, cyc, crc, trig, c, d);
@@ -50,12 +61,14 @@ module t (
       crc <= 64'h5aef0c8d_d70a4497;
     end
     else if (cyc == 99) begin
-      // Counts reflect NFA per-cycle reject aggregation, not Questa's
+      // Counts reflect NFA per-cycle reject aggregation, not some other sim's
       // per-attempt action_block firing; the two differ by a small constant
       // (see PR description for the model gap). Test is a regression for
       // "no internal error on `until` as |=> consequent" (issue #7548).
-      `checkd(fail_nonoverlap, 7);
-      `checkd(fail_overlap, 22);
+      `checkd(fail_nonoverlap, 7);  // Other sims: 8, one other: 7
+      `checkd(fail_overlap, 22);  // Other sims: 24, one other: 22
+      `checkd(fail_strong_nonoverlap, 0);
+      `checkd(fail_strong_overlap, 1);
       $write("*-* All Finished *-*\n");
       $finish;
     end

@@ -1,0 +1,165 @@
+---
+# DESCRIPTION: Github actions composite action
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: Artifact cache
+description: >-
+  Cache a directory across workflow runs using a GitHub Actions artifact instead
+  of actions/cache (useful where artifacts are preferable, e.g. no 10 GB limit
+  on public repos). The base 'key' is scoped automatically: per pull request
+  (<key>-pr-<N>) or per branch (<key>-branch-<name>), and on a PR restore falls
+  back to the target branch's cache. Call once with mode=restore before the work
+  and once with mode=save after, passing the same 'key' and 'path'.
+
+  Branch-scoped restores are provenance-checked (the artifact must come from a
+  same-repo push to that branch) - artifact names are a global, unauthenticated
+  namespace, so otherwise a fork PR could forge one.
+
+  mode=restore calls the GitHub API via 'gh', so the caller's job must grant
+  'actions: read'.
+
+inputs:
+  mode:
+    description: "'restore' or 'save'"
+    required: true
+  path:
+    description: "Directory to cache (archived on save, extracted into on restore)"
+    required: true
+  key:
+    description: "Base artifact name; scoped per PR/branch automatically"
+    required: true
+  retention-days:
+    description: "Artifact retention in days (mode=save)"
+    required: false
+    default: '3'
+  token:
+    description: "Token for the GitHub API (mode=restore); defaults to the job's GITHUB_TOKEN"
+    required: false
+    default: ''
+
+outputs:
+  key:
+    description: "Echoes the input 'key', so a later save can reuse it without repeating the expression"
+    value: ${{ inputs.key }}
+  cache-hit:
+    description: "'true' if an artifact was restored (mode=restore)"
+    value: ${{ steps.restore.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check mode
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+      run: |
+        case "$MODE" in
+          restore|save) ;;
+          *) echo "::error::artifact-cache: 'mode' must be 'restore' or 'save' (got '$MODE')"; exit 1 ;;
+        esac
+
+    # Scope the base key: <key>-pr-<N> for pull requests (with the target branch
+    # as fallback), else <key>-branch-<name>. Refs come via env, not ${{ }}
+    # interpolation, so a branch name with shell metacharacters can't inject.
+    - name: Compute artifact name
+      id: name
+      shell: bash
+      env:
+        BASE_KEY: ${{ inputs.key }}
+        EVENT_NAME: ${{ github.event_name }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        BASE_REF: ${{ github.event.pull_request.base.ref }}
+        REF_NAME: ${{ github.ref_name }}
+      run: |
+        set -euo pipefail
+        sanitize() { printf '%s' "$1" | tr '/' '-'; }  # artifact names cannot contain '/'
+        if [ "$EVENT_NAME" = pull_request ]; then
+          {
+            echo "primary=${BASE_KEY}-pr-${PR_NUMBER}"
+            echo "primary-branch="
+            echo "fallback=${BASE_KEY}-branch-$(sanitize "$BASE_REF")"
+            echo "fallback-branch=$BASE_REF"
+          } >> "$GITHUB_OUTPUT"
+        else
+          {
+            echo "primary=${BASE_KEY}-branch-$(sanitize "$REF_NAME")"
+            echo "primary-branch=$REF_NAME"
+            echo "fallback="
+            echo "fallback-branch="
+          } >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Restore artifact cache
+      id: restore
+      if: ${{ inputs.mode == 'restore' }}
+      continue-on-error: true  # a cold start is fine; a restore failure must not fail the caller
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token || github.token }}
+        CACHE_PATH: ${{ inputs.path }}
+        PRIMARY: ${{ steps.name.outputs.primary }}
+        PRIMARY_BRANCH: ${{ steps.name.outputs.primary-branch }}
+        FALLBACK: ${{ steps.name.outputs.fallback }}
+        FALLBACK_BRANCH: ${{ steps.name.outputs.fallback-branch }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$CACHE_PATH"
+        # Newest non-expired artifact named $1 (empty if none). With a non-empty
+        # $2 (branch), require provenance: a same-repo run (head_repository_id ==
+        # repository_id) whose head branch is $2, so a fork cannot forge it.
+        newest_run_id() {
+          want="$1" br="$2" gh api \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts?name=$1&per_page=100" \
+            --jq '.artifacts[]
+                  | select(.expired == false and .name == env.want)
+                  | select(env.br == ""
+                           or (.workflow_run.head_branch == env.br
+                               and .workflow_run.head_repository_id == .workflow_run.repository_id))
+                  | [.created_at, (.workflow_run.id | tostring)] | @tsv' \
+            | sort | tail -n1 | cut -f2
+        }
+        restore() {  # $1=name $2=branch(empty ok); returns 0 on a successful restore
+          local name="$1" br="$2" rid tarball
+          [ -n "$name" ] || return 1
+          rid="$(newest_run_id "$name" "$br")" || return 1
+          [ -n "$rid" ] || return 1
+          echo "Restoring '$CACHE_PATH' from artifact '$name' (run $rid)"
+          gh run download "$rid" -R "$GITHUB_REPOSITORY" --name "$name" --dir "$RUNNER_TEMP/artifact-cache-dl" || return 1
+          # Each artifact holds a single tarball; match by extension so the inner
+          # filename is not part of the contract.
+          tarball="$(find "$RUNNER_TEMP/artifact-cache-dl" -name '*.tar.zst' -print -quit)"
+          [ -n "$tarball" ] || return 1
+          tar -I zstd -x -f "$tarball" -C "$CACHE_PATH"
+        }
+        if restore "$PRIMARY" "$PRIMARY_BRANCH"; then
+          echo "Restored from primary key"
+          echo "cache-hit=true" >> "$GITHUB_OUTPUT"
+        elif restore "$FALLBACK" "$FALLBACK_BRANCH"; then
+          echo "Restored from fallback key"
+          echo "cache-hit=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "No matching artifact found; starting cold"
+          echo "cache-hit=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Pack artifact cache
+      id: pack
+      if: ${{ inputs.mode == 'save' }}
+      shell: bash
+      env:
+        CACHE_PATH: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+        packdir="$(mktemp -d)"  # unique dir so concurrent saves cannot collide
+        tar -I 'zstd -T0' -cf "$packdir/cache.tar.zst" -C "$CACHE_PATH" .
+        echo "tarball=$packdir/cache.tar.zst" >> "$GITHUB_OUTPUT"
+
+    - name: Upload artifact cache
+      if: ${{ inputs.mode == 'save' }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+      with:
+        name: ${{ steps.name.outputs.primary }}
+        path: ${{ steps.pack.outputs.tarball }}
+        retention-days: ${{ inputs.retention-days }}
+        overwrite: true
+        compression-level: 0  # tarball is already zstd-compressed

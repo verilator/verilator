@@ -45,7 +45,7 @@ jobs:
       cases: ${{ steps.cases.outputs.cases }}
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
       - name: Startup
         id: start
@@ -65,39 +65,47 @@ jobs:
   build-gcc-new:
     name: Build New Verilator - GCC
     needs: start
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: gcc
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ github.sha }}
 
   build-clang-new:
     name: Build New Verilator - Clang
     needs: start
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: clang
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ github.sha }}
 
   build-gcc-old:
     name: Build Old Verilator - GCC
     needs: start
     if: ${{ needs.start.outputs.old-sha != '' }}
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: gcc
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   build-clang-old:
     name: Build Old Verilator - Clang
     needs: start
     if: ${{ needs.start.outputs.old-sha != '' }}
-    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
-      runs-on: ubuntu-24.04
       cc: clang
+      ccwarn: false
+      install: true
+      runs-on: ubuntu-24.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   run-gcc:
@@ -208,7 +216,7 @@ jobs:
         run: echo "tags=$(jq -r 'keys | map(sub("^run-"; "")) | join(" ")' <<< '${{ toJSON(needs) }}')" >> "$GITHUB_OUTPUT"
 
       - name: Checkout RTLMeter
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -298,7 +306,7 @@ jobs:
           repositories: verilator-rtlmeter-results
           permission-contents: write
       - name: Checkout verilator-rtlmeter-results
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           repository: "verilator/verilator-rtlmeter-results"
           token: ${{ steps.generate-token.outputs.token }}
@@ -331,7 +339,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout RTLMeter
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -341,7 +349,7 @@ jobs:
         run: make venv
 
       - name: Checkout Verilator
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           path: verilator
 
@@ -361,10 +369,6 @@ jobs:
           mkdir ../report-artifact
           mv rtlmeter-report/report ../report-artifact/
           echo ${{ github.event.number }} > ../report-artifact/pr-number.txt
-          # Create the notification artifact
-          mkdir ../notification-artifact
-          mv rtlmeter-report/notification.txt ../notification-artifact/body.txt
-          echo ${{ github.event.number }} > ../notification-artifact/pr-number.txt
 
       - name: Upload report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
@@ -372,11 +376,11 @@ jobs:
           path: report-artifact
           name: rtlmeter-report
 
-      - name: Upload notification
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+      - name: Upload PR notification
+        uses: ./verilator/.github/actions/upload-pr-notification
         with:
-          path: notification-artifact
-          name: pr-notification
+          path: verilator/rtlmeter-report/notification
+          key: rtlmeter
 
       - name: Report status
         run: exit ${{ steps.report.outputs.status }}

@@ -29,8 +29,10 @@ module t;
 
   initial begin
     static item it = new;
+    int randomize_result;
     repeat (20) begin
-      `checkd(it.randomize(), 1);
+      randomize_result = it.randomize();
+      `checkd(randomize_result, 1);
       foreach (it.arr[i]) begin
         `checkd(it.arr[i] <= 32'd15, 1);
       end

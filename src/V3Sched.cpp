@@ -25,11 +25,14 @@
 //    All clocks (signals referenced in an AstSenTree) generated via a blocking assignment
 //    (including combinationally generated signals) are computed within the act region.
 //  - Replicate combinational logic
-//  - Create input combinational logic loop
+//  - Create input combinational logic region
 //  - Create the pre/act/nba triggers
 //  - Create the 'act' region evaluation function
 //  - Create the 'nba' region evaluation function
-//  - Bolt it all together to create the '_eval' function
+//
+// The loops iterating these regions are not generated. They live in the
+// run-time (VerilatedEvalLoop), which invokes the region evaluation
+// functions created here on the generated model.
 //
 // Details of the algorithm are described in the internals documentation docs/internals.rst
 //
@@ -111,25 +114,21 @@ std::vector<AstSenTree*> findTriggeredIface(const AstVarScope* vscp,
 }
 
 //============================================================================
-// Eval loop builder
+// Eval region builder
 
-struct EvalLoop final {
-    // Flag set to true on entry to the first iteration of the loop
-    AstVarScope* firstIterp;
-    // The loop itself and statements around it
-    AstNodeStmt* stmtsp;
-};
-
-// Create an eval loop with all the trimmings.
-EvalLoop createEvalLoop(
+// Create the evaluation function of a scheduling region. The loops iterating
+// the regions live in the run-time library (see VerilatedEvalLoop), which
+// invokes this function once per iteration of the region's loop via a virtual
+// method on the model (see V3EmitCModel). The function returns true if the
+// region did any work, in which case the loop iterates again.
+void createEvalRegion(
     AstNetlist* netlistp,  //
-    const std::string& tag,  // Tag for current phase
-    const string& name,  // Name of current phase
-    bool slow,  // Should create slow functions
+    VEval eval,  // The entry point of the current region
+    // Index of the region's 'first iteration' extra trigger, if it has one, otherwise ignored
+    uint32_t firstIterTrigger,
     const TriggerKit& trigKit,  // The trigger kit
     AstVarScope* trigp,  // The trigger vector - may be nullptr if no triggers or using 'condp'
     AstNodeExpr* condp,  // Explicit condition that must be true to run 'phaseWorkp'
-    AstNodeStmt* innerp,  // The inner loop, if any
     AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
     AstNodeStmt* phaseWorkp,  // The work to do if anything triggered
     // Extra statements to run after the work, even if no triggers fired. This function is
@@ -137,118 +136,81 @@ EvalLoop createEvalLoop(
     // and must be unmodified otherwise.
     std::function<AstNodeStmt*(AstVarScope*)> phaseExtra = [](AstVarScope*) { return nullptr; }  //
 ) {
-    UASSERT(!trigp || !condp, "Cannot use both 'trigp' and 'condp' in 'createEvalLoop'");
+    UASSERT(!trigp || !condp, "Cannot use both 'trigp' and 'condp' in 'createEvalRegion'");
+    UASSERT(!eval.firstIteration() || trigp,
+            "Region without triggers cannot need a first iteration flag");
 
-    // All work is under a trigger or condition, so if there are none,
-    // there is nothing to do besides executing the inner loop.
-    if (!trigp && !condp) return {nullptr, innerp};
+    // All work is under a trigger or condition, so with neither the region has
+    // nothing to evaluate, and what we create below reduces to a no-op function.
 
+    const std::string tag = eval.tag();
     const std::string varPrefix = "__V" + tag;
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();
     FileLine* const flp = netlistp->fileline();
 
-    // We wrap the prep/cond/work in a function for readability
-    AstCFunc* const phaseFuncp = util::makeTopFunction(netlistp, "_eval_phase__" + tag, slow);
+    // Populate the trigger dump entry point function
+    if (trigp) {
+        UASSERT(eval.hasTriggers(), "Region with a trigger vector must have triggers");
+        netlistp->dumpTriggersFuncp(eval)->addStmtsp(trigKit.newDumpCall(trigp, tag, false));
+    }
+
+    AstCFunc* const funcp = netlistp->evalFuncp(eval);
+
+    // A flag is passed from the run-time eval loop if this is the first iteration of the
+    // current loop
+    if (eval.firstIteration()) {
+        AstVarScope* const firstIterArgp = util::newArgument(funcp, netlistp->findBitDType(),
+                                                             "firstIteration", VDirection::INPUT);
+
+        // Set the region's 'first iteration' trigger straight from the argument
+        funcp->addStmtsp(trigKit.newExtraTriggerAssignment(firstIterArgp, firstIterTrigger));
+
+        // Only 'stl' also needs a module level flag, for design logic that reads
+        // it directly (see V3Timing). Those reads can be anywhere in the design,
+        // hence module level. Always created, even if nothing reads it.
+        // TODO: get rid of this special case
+        if (eval == VEval::STL) {
+            AstVarScope* const firstIterp = netlistp->stlFirstIterationp();
+            firstIterp->varp()->noReset(true);
+            firstIterp->varp()->isInternal(true);
+            funcp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, firstIterp, VAccess::WRITE},
+                                           new AstVarRef{flp, firstIterArgp, VAccess::READ}});
+        }
+    }
+
     {
         // Add the preparatory statements
-        phaseFuncp->addStmtsp(phasePrepp);
+        funcp->addStmtsp(phasePrepp);
 
         // The execute flag
         AstVarScope* const executeFlagp = scopeTopp->createTemp(varPrefix + "Execute", 1);
         executeFlagp->varp()->noReset(true);
 
-        // If there is work in this phase, execute it if any triggers fired
+        // If there is work in this region, execute it if any triggers fired
         if (phaseWorkp) {
             AstNodeExpr* const lhsp = new AstVarRef{flp, executeFlagp, VAccess::WRITE};
             // If using explicit condition, that directly determines whether to execute,
             // otherwise check if any triggers are fired
             AstNodeExpr* const rhsp = condp ? condp : trigKit.newAnySetCall(trigp);
-            phaseFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
+            funcp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
 
             // Add the work
             AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
             ifp->addThensp(phaseWorkp);
-            phaseFuncp->addStmtsp(ifp);
+            funcp->addStmtsp(ifp);
         }
 
         // Construct the extra statements
         AstNodeStmt* const extraWorkp = phaseExtra(executeFlagp);
-        if (extraWorkp) phaseFuncp->addStmtsp(extraWorkp);
+        if (extraWorkp) funcp->addStmtsp(extraWorkp);
 
-        // The function returns ture iff it did run work
-        phaseFuncp->rtnType("bool");
+        // The function returns true iff it did run work
         AstNodeExpr* const retp
             = phaseWorkp || extraWorkp
                   ? static_cast<AstNodeExpr*>(new AstVarRef{flp, executeFlagp, VAccess::READ})
                   : static_cast<AstNodeExpr*>(new AstConst{flp, AstConst::BitFalse{}});
-        phaseFuncp->addStmtsp(new AstCReturn{flp, retp});
+        funcp->addStmtsp(new AstCReturn{flp, retp});
     }
-
-    // The result statements
-    AstNodeStmt* stmtps = nullptr;
-
-    // Prof-exec section push
-    if (v3Global.opt.profExec()) {  //
-        stmtps = AstCStmt::profExecSectionPush(flp, "loop " + tag);
-    }
-
-    const auto addVar = [&](const std::string& name, int width, uint32_t initVal, bool init) {
-        const string tempName{"__V" + tag + name};
-        AstVarScope* const vscp = tempName == "__VstlFirstIteration"
-                                      ? netlistp->stlFirstIterationp()
-                                      : scopeTopp->createTemp(tempName, width);
-        vscp->varp()->noReset(true);
-        vscp->varp()->isInternal(true);
-        if (init) stmtps = AstNode::addNext(stmtps, util::setVar(vscp, initVal));
-        return vscp;
-    };
-
-    // The iteration counter
-    AstVarScope* const counterp = addVar("IterCount", 32, 0, true);
-    // The first iteration flag - cleared in 'phasePrepp' if used
-    AstVarScope* const firstIterFlagp = addVar("FirstIteration", 1, 1, true);
-    // Phase function result
-    AstVarScope* const phaseResultp = addVar("PhaseResult", 1, 0, false);
-
-    // The loop
-    {
-        AstLoop* const loopp = new AstLoop{flp};
-        stmtps->addNext(loopp);
-
-        // Check the iteration limit (aborts if exceeded). Dump triggers if using triggers.
-        AstNodeStmt* dumpCallp = trigp ? trigKit.newDumpCall(trigp, tag, false) : nullptr;
-        loopp->addStmtsp(util::checkIterationLimit(netlistp, name, counterp, dumpCallp));
-        // Increment the iteration counter
-        loopp->addStmtsp(util::incrementVar(counterp));
-
-        // Execute the inner loop
-        loopp->addStmtsp(innerp);
-
-        // Call the phase function to execute the current work. If we did
-        // work, then need to loop again, so set the continuation flag.
-        // If used, the first iteration flag is cleared when consumed, no
-        // need to reset it
-        AstCCall* const callp = new AstCCall{flp, phaseFuncp};
-        callp->dtypeSetBit();
-        AstAssign* const resultAssignp
-            = new AstAssign{flp, new AstVarRef{flp, phaseResultp, VAccess::WRITE}, callp};
-        loopp->addStmtsp(resultAssignp);
-        // Clear FirstIteration flag
-        AstAssign* const firstClearp
-            = new AstAssign{flp, new AstVarRef{flp, firstIterFlagp, VAccess::WRITE},
-                            new AstConst{flp, AstConst::BitFalse()}};
-        loopp->addStmtsp(firstClearp);
-        // Continues until the continuation flag is clear
-        loopp->addStmtsp(
-            new AstLoopTest{flp, loopp, new AstVarRef{flp, phaseResultp, VAccess::READ}});
-    }
-
-    // Prof-exec section pop
-    if (v3Global.opt.profExec()) {
-        stmtps->addNext(AstCStmt::profExecSectionPop(flp, "loop " + tag));
-    }
-
-    return {firstIterFlagp, stmtps};
 }
 
 //============================================================================
@@ -363,7 +325,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
 // Create simply ordered functions
 
 AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
-    AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_static", /* slow: */ true);
+    AstCFunc* const funcp = netlistp->evalFuncp(VEval::STATIC);
 
     const LogicByScope& orig = logicClasses.m_static;
     if (orig.size() <= 1) {
@@ -397,21 +359,19 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
 }
 
 void createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) {
-    AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_initial", /* slow: */ true);
+    AstCFunc* const funcp = netlistp->evalFuncp(VEval::INITIAL);
     orderSequentially(funcp, logicClasses.m_initial);
     util::splitCheck(funcp);
 }
 
-AstCFunc* createPostponed(AstNetlist* netlistp, const LogicClasses& logicClasses) {
-    if (logicClasses.m_postponed.empty()) return nullptr;
-    AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_postponed", /* slow: */ true);
+void createPostponed(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+    AstCFunc* const funcp = netlistp->evalFuncp(VEval::POSTPONED);
     orderSequentially(funcp, logicClasses.m_postponed);
     util::splitCheck(funcp);
-    return funcp;
 }
 
 void createFinal(AstNetlist* netlistp, const LogicClasses& logicClasses) {
-    AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_final", /* slow: */ true);
+    AstCFunc* const funcp = netlistp->evalFuncp(VEval::FINAL);
     orderSequentially(funcp, logicClasses.m_final);
     util::splitCheck(funcp);
 }
@@ -429,18 +389,12 @@ void addVirtIfaceTriggerAssignments(AstNetlist* netlistp, AstCFunc* initFuncp,
     }
 }
 
-// Order the combinational logic to create the settle loop
+// Order the combinational logic to create the 'stl' region
 void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilder& senExprBulider,
                   LogicClasses& logicClasses) {
-    AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_settle", true);
-
-    // Clone, because ordering is destructive, but we still need them for "_eval"
+    // Clone, because ordering is destructive, but we still need them for the other regions
     LogicByScope comb = logicClasses.m_comb.clone();
     LogicByScope hybrid = logicClasses.m_hybrid.clone();
-
-    // Nothing to do if there is no logic.
-    // While this is rare in real designs, it reduces noise in small tests.
-    if (comb.empty() && hybrid.empty()) return;
 
     // We have an extra trigger denoting this is the first iteration of the settle loop
     TriggerKit::ExtraTriggers extraTriggers;
@@ -468,14 +422,12 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
         [=](const AstVarScope*, std::vector<AstSenTree*>& out) { out.push_back(inputChanged); });
     util::splitCheck(stlFuncp);
 
-    // Create the eval loop
-    const EvalLoop stlLoop = createEvalLoop(  //
-        netlistp, "stl", "Settle", /* slow: */ true, trigKit,
+    // Create the region evaluation function
+    createEvalRegion(  //
+        netlistp, VEval::STL, firstIterationTrigger, trigKit,
         // Use trigger
         trigKit.vscp(), nullptr,
         // Explicit condition
-        // Inner loop statements
-        nullptr,
         // Prep statements: Compute the current 'stl' triggers
         [&trigKit] {
             AstNodeStmt* const stmtp = trigKit.newCompBaseCall();
@@ -484,23 +436,14 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
         }(),
         // Work statements: Invoke the 'stl' function
         util::callVoidFunc(stlFuncp));
-
-    // Add the first iteration trigger to the trigger computation function
-    trigKit.addExtraTriggerAssignment(stlLoop.firstIterp, firstIterationTrigger, false);
-
-    // Add the eval loop to the top function
-    funcp->addStmtsp(stlLoop.stmtsp);
 }
 
 //============================================================================
 // Order the replicated combinational logic to create the 'ico' region
 
-AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
-                             SenExprBuilder& senExprBuilder, LogicByScope& logic,
-                             const VirtIfaceTriggers& virtIfaceTriggers) {
-    // Nothing to do if no combinational logic is sensitive to top level inputs
-    if (logic.empty()) return nullptr;
-
+void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
+                     SenExprBuilder& senExprBuilder, LogicByScope& logic,
+                     const VirtIfaceTriggers& virtIfaceTriggers) {
     // SystemC only: Any top level inputs feeding a combinational logic must be marked,
     // so we can make them sc_sensitive
     if (v3Global.opt.systemC()) {
@@ -587,8 +530,9 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     V3Order::TrigToSenMap trigToSen;
     invertAndMergeSenTreeMap(trigToSen, trigKit.mapVec());
 
-    // The 'first iteration' trigger for top level inputs - lazy constructed only if needed
-    AstSenTree* firstIterTriggerp = nullptr;
+    // The 'first iteration' trigger for top level inputs
+    AstSenTree* const firstIterTriggerp
+        = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);
 
     // The DPI Export trigger
     AstSenTree* const dpiExportTriggered
@@ -609,10 +553,6 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
             if (it != inp2changedp.end()) {
                 out.push_back(it->second);
             } else if (varp->isPrimaryInish() || varp->isSigUserRWPublic() || varp->sampled()) {
-                if (!firstIterTriggerp) {
-                    firstIterTriggerp
-                        = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);
-                }
                 out.push_back(firstIterTriggerp);
             }
             // Add other triggers
@@ -625,13 +565,11 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         });
     util::splitCheck(icoFuncp);
 
-    // Create the eval loop
-    const EvalLoop icoLoop = createEvalLoop(  //
-        netlistp, "ico", "Input combinational", /* slow: */ false, trigKit,
+    // Create the region evaluation function
+    createEvalRegion(  //
+        netlistp, VEval::ICO, firstIterationTrigger, trigKit,
         // Use trigger
         trigKit.vscp(), nullptr,
-        // Inner loop statements
-        nullptr,
         // Prep statements: Compute the current 'ico' triggers
         [&trigKit] {
             AstNodeStmt* const stmtp = trigKit.newCompBaseCall();
@@ -641,16 +579,9 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         // Work statements: Invoke the 'ico' function
         util::callVoidFunc(icoFuncp));
 
-    // Add the first iteration trigger to the trigger computation function - if used
-    if (firstIterTriggerp) {
-        trigKit.addExtraTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger, false);
-    }
-
     // Release temporary input change detect SenTrees
     for (AstSenTree* const senTreep : icoChangeSenTreeps) senTreep->deleteTree();
     icoChangeSenTreeps.clear();
-
-    return icoLoop.stmtsp;
 }
 
 //============================================================================
@@ -666,16 +597,14 @@ struct EvalKit final {
 };
 
 //============================================================================
-// Bolt together parts to create the top level _eval function
+// Create the evaluation function of each region of a time step
 
 void createEval(AstNetlist* netlistp,  //
-                AstNode* icoLoop,  //
                 const TriggerKit& trigKit,  //
                 const EvalKit& actKit,  //
                 const EvalKit& nbaKit,  //
                 const EvalKit& obsKit,  //
                 const EvalKit& reactKit,  //
-                AstCFunc* postponedFuncp,  //
                 TimingKit& timingKit  //
 ) {
     FileLine* const flp = netlistp->fileline();
@@ -687,13 +616,11 @@ void createEval(AstNetlist* netlistp,  //
     AstCCall* const timingReadyp = timingKit.createReady(netlistp);
     AstCCall* const timingResumep = timingKit.createResume(netlistp);
 
-    // Create the active eval loop
-    EvalLoop topLoop = createEvalLoop(  //
-        netlistp, "act", "Active", /* slow: */ false, trigKit,
+    // Create the 'act' region
+    createEvalRegion(  //
+        netlistp, VEval::ACT, 0, trigKit,
         // Use trigger
         actKit.m_vscp, nullptr,
-        // Inner loop statements
-        nullptr,
         // Prep statements
         [&]() {
             // Compute the current 'act' triggers - the NBA triggers are the latched value
@@ -730,56 +657,54 @@ void createEval(AstNetlist* netlistp,  //
             return workp;
         }());
 
-    // Create if there are any delays, so we can check at runtime if a #0 is unexpected
-    if (delaySchedVscp) {
-        topLoop = createEvalLoop(  //
-            netlistp, "inact", "Inactive", /* slow: */ false, trigKit,
-            // Use explicit condition
-            nullptr,
-            [&]() {
-                // Run if any zero delays are pending
-                AstNodeExpr* const callp
-                    = new AstCMethodHard{flp, new AstVarRef{flp, delaySchedVscp, VAccess::READ},
-                                         VCMethod::SCHED_AWAITING_ZERO_DELAY};
-                callp->dtypeSetBit();
-                return callp;
-            }(),
-            // Inner loop statements
-            topLoop.stmtsp,
-            // Prep statements
-            nullptr,
-            // Work statements
-            [&]() -> AstNodeStmt* {
-                if (v3Global.usesZeroDelay()) {
-                    // Resume processes watiting for #0 delay
-                    AstCMethodHard* const callp = new AstCMethodHard{
-                        flp, new AstVarRef{flp, delaySchedVscp, VAccess::READWRITE},
-                        VCMethod::SCHED_RESUME_ZERO_DELAY};
-                    callp->dtypeSetVoid();
-                    return callp->makeStmt();
-                } else {
-                    // Assumption was that the design doesn't use #0 delays.
-                    // Die at run-time if it does.
-                    AstCStmt* const stmtp = new AstCStmt{flp};
-                    const FileLine* const locp = netlistp->topModulep()->fileline();
-                    const std::string& file = VIdProtect::protect(locp->filename());
-                    const std::string& line = std::to_string(locp->lineno());
-                    stmtp->add(
-                        "VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-                        + ", \"\", \"ZERODLY: Design Verilated with '--no-sched-zero-delay', "
-                        + "but #0 delay executed at runtime\");");
-                    return stmtp;
-                }
-            }());
-    }
+    // Create the 'inact' region
+    createEvalRegion(  //
+        netlistp, VEval::INACT, 0, trigKit,
+        // Use explicit condition
+        nullptr,
+        [&]() -> AstNodeExpr* {
+            if (!delaySchedVscp) return nullptr;
+            // Run if any zero delays are pending
+            AstNodeExpr* const callp
+                = new AstCMethodHard{flp, new AstVarRef{flp, delaySchedVscp, VAccess::READ},
+                                     VCMethod::SCHED_AWAITING_ZERO_DELAY};
+            callp->dtypeSetBit();
+            return callp;
+        }(),
+        // Prep statements
+        nullptr,
+        // Work statements
+        [&]() -> AstNodeStmt* {
+            if (!delaySchedVscp) {
+                // Nothing to do if there are no delays at all in the design
+                return nullptr;
+            } else if (v3Global.usesZeroDelay()) {
+                // Resume processes watiting for #0 delay
+                AstCMethodHard* const callp = new AstCMethodHard{
+                    flp, new AstVarRef{flp, delaySchedVscp, VAccess::READWRITE},
+                    VCMethod::SCHED_RESUME_ZERO_DELAY};
+                callp->dtypeSetVoid();
+                return callp->makeStmt();
+            } else {
+                // Assumption was that the design doesn't use #0 delays.
+                // Die at run-time if it does.
+                AstCStmt* const stmtp = new AstCStmt{flp};
+                const FileLine* const locp = netlistp->topModulep()->fileline();
+                const std::string& file = VIdProtect::protect(locp->filename());
+                const std::string& line = std::to_string(locp->lineno());
+                stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", "
+                           + line
+                           + ", \"\", \"ZERODLY: Design Verilated with '--no-sched-zero-delay', "
+                           + "but #0 delay executed at runtime\");");
+                return stmtp;
+            }
+        }());
 
-    // Create the NBA eval loop, which is the default top level loop.
-    topLoop = createEvalLoop(  //
-        netlistp, "nba", "NBA", /* slow: */ false, trigKit,
+    // Create the 'nba' region
+    createEvalRegion(  //
+        netlistp, VEval::NBA, 0, trigKit,
         // Use trigger
         nbaKit.m_vscp, nullptr,
-        // Inner loop statements
-        topLoop.stmtsp,
         // Prep statements
         nullptr,
         // Work statements
@@ -819,68 +744,45 @@ void createEval(AstNetlist* netlistp,  //
             return ifp;
         });
 
-    if (!obsKit.empty()) {
-        // Create the Observed eval loop, which becomes the top level loop.
-        topLoop = createEvalLoop(  //
-            netlistp, "obs", "Observed", /* slow: */ false, trigKit,
-            // Use trigger
-            obsKit.m_vscp, nullptr,
-            // Inner loop statements
-            topLoop.stmtsp,
-            // Prep statements
-            nullptr,
-            // Work statements
-            [&]() {
-                AstNodeStmt* workp = nullptr;
-                // Latch the Observed trigger flags under the Reactive trigger flags
-                if (!reactKit.empty()) {
-                    workp = trigKit.newOrIntoCall(reactKit.m_vscp, obsKit.m_vscp);
-                }
-                // Invoke the 'obs' function
-                workp = AstNode::addNext(workp, util::callVoidFunc(obsKit.m_funcp));
-                // Clear the 'obs' triggers
-                workp = AstNode::addNext(workp, trigKit.newClearCall(obsKit.m_vscp));
-                //
-                return workp;
-            }());
-    }
+    // Create the 'obs' region
+    createEvalRegion(  //
+        netlistp, VEval::OBS, 0, trigKit,
+        // Use trigger
+        obsKit.m_vscp, nullptr,
+        // Prep statements
+        nullptr,
+        // Work statements
+        [&]() -> AstNodeStmt* {
+            if (obsKit.empty()) return nullptr;
+            AstNodeStmt* workp = nullptr;
+            // Latch the Observed trigger flags under the Reactive trigger flags
+            if (!reactKit.empty()) {
+                workp = trigKit.newOrIntoCall(reactKit.m_vscp, obsKit.m_vscp);
+            }
+            // Invoke the 'obs' function
+            workp = AstNode::addNext(workp, util::callVoidFunc(obsKit.m_funcp));
+            // Clear the 'obs' triggers
+            workp = AstNode::addNext(workp, trigKit.newClearCall(obsKit.m_vscp));
+            //
+            return workp;
+        }());
 
-    if (!reactKit.empty()) {
-        // Create the Reactive eval loop, which becomes the top level loop.
-        topLoop = createEvalLoop(  //
-            netlistp, "react", "Reactive", /* slow: */ false, trigKit,
-            // Use trigger
-            reactKit.m_vscp, nullptr,
-            // Inner loop statements
-            topLoop.stmtsp,
-            // Prep statements
-            nullptr,
-            // Work statements
-            [&]() {
-                // Invoke the 'react' function
-                AstNodeStmt* workp = util::callVoidFunc(reactKit.m_funcp);
-                // Clear the 'react' triggers
-                workp = AstNode::addNext(workp, trigKit.newClearCall(reactKit.m_vscp));
-                return workp;
-            }());
-    }
-
-    // Now that we have build the loops, create the main 'eval' function
-    AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval", false);
-    netlistp->evalp(funcp);
-
-    if (v3Global.opt.profExec()) funcp->addStmtsp(AstCStmt::profExecSectionPush(flp, "eval"));
-
-    // Start with the ico loop, if any
-    if (icoLoop) funcp->addStmtsp(icoLoop);
-
-    // Execute the top level eval loop
-    funcp->addStmtsp(topLoop.stmtsp);
-
-    // Add the Postponed eval call
-    if (postponedFuncp) funcp->addStmtsp(util::callVoidFunc(postponedFuncp));
-
-    if (v3Global.opt.profExec()) funcp->addStmtsp(AstCStmt::profExecSectionPop(flp, "eval"));
+    // Create the 'react' region
+    createEvalRegion(  //
+        netlistp, VEval::REACT, 0, trigKit,
+        // Use trigger
+        reactKit.m_vscp, nullptr,
+        // Prep statements
+        nullptr,
+        // Work statements
+        [&]() -> AstNodeStmt* {
+            if (reactKit.empty()) return nullptr;
+            // Invoke the 'react' function
+            AstNodeStmt* workp = util::callVoidFunc(reactKit.m_funcp);
+            // Clear the 'react' triggers
+            workp = AstNode::addNext(workp, trigKit.newClearCall(reactKit.m_vscp));
+            return workp;
+        }());
 }
 
 }  // namespace
@@ -938,13 +840,28 @@ void schedule(AstNetlist* netlistp) {
         V3Stats::addStat("Scheduling, " + name, size);
     };
 
-    // Step 0. Prepare external domains for timing and virtual interfaces
+    // Step 1: Create every entry point called from the run-time eval loop
+    for (int i = 0; i < VEval::_ENUM_END; ++i) {
+        const VEval eval{i};
+        AstCFunc* const funcp = util::makeTopFunction(netlistp, eval.funcName(), eval.slow());
+        netlistp->evalFuncp(eval, funcp);
+        // Only the iterated functions report whether they did any work
+        if (eval.isIterated()) funcp->rtnType("bool");
+        // Only a region with a trigger vector has anything to dump
+        if (eval.hasTriggers()) {
+            AstCFunc* const dumpp
+                = util::makeTopFunction(netlistp, eval.dumpTriggersFuncName(), true);
+            netlistp->dumpTriggersFuncp(eval, dumpp);
+        }
+    }
+
+    // Step 2: Prepare external domains for timing and virtual interfaces
     // Create extra triggers for virtual interfaces
     const auto& virtIfaceTriggers = makeVirtIfaceTriggers(netlistp);
     // Prepare timing-related logic and external domains
     TimingKit timingKit = prepareTiming(netlistp);
 
-    // Step 1. Gather and classify all logic in the design
+    // Step 3: Gather and classify all logic in the design
     LogicClasses logicClasses = gatherLogicClasses(netlistp);
 
     if (v3Global.opt.stats()) {
@@ -954,7 +871,7 @@ void schedule(AstNetlist* netlistp) {
         addSizeStat("size of class: final", logicClasses.m_final);
     }
 
-    // Step 2. Schedule static, initial and final logic classes in source order
+    // Step 4: Schedule static, initial and final logic classes in source order
     AstCFunc* const staticp = createStatic(netlistp, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-static");
 
@@ -964,7 +881,7 @@ void schedule(AstNetlist* netlistp) {
     createFinal(netlistp, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-final");
 
-    // Step 3: Break combinational cycles by introducing hybrid logic
+    // Step 5: Break combinational cycles by introducing hybrid logic
     // Note: breakCycles also removes corresponding logic from logicClasses.m_comb;
     logicClasses.m_hybrid = breakCycles(netlistp, logicClasses.m_comb);
     if (v3Global.opt.stats()) {
@@ -980,11 +897,11 @@ void schedule(AstNetlist* netlistp) {
     AstScope* const scopeTopp = topScopep->scopep();
     SenExprBuilder senExprBuilder{scopeTopp};
 
-    // Step 4: Create 'settle' region that restores the combinational invariant
+    // Step 6: Create 'settle' region that restores the combinational invariant
     createSettle(netlistp, staticp, senExprBuilder, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-settle");
 
-    // Step 5: Partition the clocked and combinational (including hybrid) logic into pre/act/nba.
+    // Step 7: Partition the clocked and combinational (including hybrid) logic into pre/act/nba.
     // All clocks (signals referenced in an AstSenTree) generated via a blocking assignment
     // (including combinationally generated signals) are computed within the act region.
     LogicRegions logicRegions
@@ -1000,7 +917,7 @@ void schedule(AstNetlist* netlistp) {
         V3Stats::statsStage("sched-partition");
     }
 
-    // Step 6: Replicate combinational logic
+    // Step 8: Replicate combinational logic
     LogicReplicas logicReplicas = replicateLogic(logicRegions);
     if (v3Global.opt.stats()) {
         addSizeStat("size of replicated logic: Input", logicReplicas.m_ico);
@@ -1011,12 +928,11 @@ void schedule(AstNetlist* netlistp) {
         V3Stats::statsStage("sched-replicate");
     }
 
-    // Step 7: Create input combinational logic loop
-    AstNode* const icoLoopp = createInputCombLoop(netlistp, staticp, senExprBuilder,
-                                                  logicReplicas.m_ico, virtIfaceTriggers);
+    // Step 9: Create the input combinational logic
+    createIcoRegion(netlistp, staticp, senExprBuilder, logicReplicas.m_ico, virtIfaceTriggers);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
-    // Step 8: Create the triggers
+    // Step 10: Create the triggers
     AstVarScope* const dpiExportTriggerVscp = netlistp->dpiExportTriggerp();
     netlistp->dpiExportTriggerp(nullptr);  // Finished with this here
 
@@ -1056,7 +972,7 @@ void schedule(AstNetlist* netlistp) {
     // NBA for now. This can be revised if evidence is available that it would
     // be beneficial
 
-    // Step 9: Create the 'act' region evaluation function
+    // Step 11: Create the 'act' region evaluation function
 
     // Remap sensitivities of the input logic to the triggers
     remapSensitivities(logicRegions.m_pre, trigKit.mapPre());
@@ -1134,10 +1050,9 @@ void schedule(AstNetlist* netlistp) {
         return {trigVscp, funcp};
     };
 
-    // Step 10: Create the 'nba' region evaluation function
+    // Step 12: Create the 'nba' region evaluation function
     const EvalKit nbaKit = order("nba", {&logicRegions.m_nba, &logicReplicas.m_nba});
     util::splitCheck(nbaKit.m_funcp);
-    netlistp->evalNbap(nbaKit.m_funcp);  // Remember for V3LifePost
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-nba");
 
     // Orders a region's logic and creates the region eval function (only if there is any logic in
@@ -1151,21 +1066,20 @@ void schedule(AstNetlist* netlistp) {
         return kit;
     };
 
-    // Step 11: Create the 'obs' region evaluation function
+    // Step 13: Create the 'obs' region evaluation function
     const EvalKit obsKit = orderIfNonEmpty("obs", {&logicRegions.m_obs, &logicReplicas.m_obs});
 
-    // Step 12: Create the 're' region evaluation function
+    // Step 14: Create the 'react' region evaluation function
     const EvalKit reactKit
         = orderIfNonEmpty("react", {&logicRegions.m_react, &logicReplicas.m_react});
 
-    // Step 13: Create the 'postponed' region evaluation function
-    auto* const postponedFuncp = createPostponed(netlistp, logicClasses);
+    // Step 15: Create the 'postponed' region evaluation function
+    createPostponed(netlistp, logicClasses);
 
-    // Step 14: Bolt it all together to create the '_eval' function
-    createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
-               timingKit);
+    // Step 16: Populate the eval entry point function of each region of a time step
+    createEval(netlistp, trigKit, actKit, nbaKit, obsKit, reactKit, timingKit);
 
-    // Step 15: Add neccessary evaluation before awaits
+    // Step 17: Add neccessary evaluation before awaits
     if (AstCCall* const readyp = timingKit.createReady(netlistp)) {
         staticp->addStmtsp(readyp->makeStmt());
         beforeTrigVisitor(netlistp, senExprBuilder, trigKit);
@@ -1202,11 +1116,14 @@ void schedule(AstNetlist* netlistp) {
         staticp->addStmtsp(loopp);
     }
 
-    // Step 16: Clean up
+    // Step 18: Clean up
     netlistp->clearStlFirstIterationp();
 
     // Haven't split static initializer yet
     util::splitCheck(staticp);
+
+    // Record eval stats
+    netlistp->addEvalStats("sched");
 
     // Dump
     V3Global::dumpCheckGlobalTree("sched", 0, dumpTreeEitherLevel() >= 3);

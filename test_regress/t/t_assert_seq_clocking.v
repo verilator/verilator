@@ -44,10 +44,9 @@ module t (
   end
 
   // Counts read in final (Postponed) to avoid same-timestep races.
-  // Concrete Verilator counts; Questa: fails_single=17 fails_multi=17
   final begin
-    `checkd(fails_single, 17);
-    `checkd(fails_multi, 17);
+    `checkd(fails_single, 17);  // Other sims: 0
+    `checkd(fails_multi, 17);  // Other sims: 0
     $write("*-* All Finished *-*\n");
   end
 endmodule

@@ -294,6 +294,25 @@ or "`ifdef`"'s may break other tools.
    (if appropriate :vlopt:`--coverage` flags are passed) after being
    disabled earlier with :option:`/*verilator&32;coverage_off*/`.
 
+.. option:: /*verilator&32;dpi_c_decl "<C function declaration>"*/
+
+   Specifies C function declaration that will be emitted for given DPI-C
+   function into the Verilator-generated __Dpi.h header, replacing the declaration
+   that Verilator would build by default using the Verilog function signature.
+
+   This enables use of C functions with types not specified in the
+   standard. For example, it enables use of functions that return ``char*``:
+
+   .. code-block:: sv
+
+      module t;
+        import "DPI-C" function string getenv(input string arg) /*verilator dpi_c_decl "char* getenv(const char*)"*/;
+
+        initial begin
+          $display("%s", getenv("HOME"));
+        end
+      endmodule
+
 .. option:: /*verilator&32;fargs <arguments>*/
 
    For Verilator developers only. When a source file containing these `fargs`

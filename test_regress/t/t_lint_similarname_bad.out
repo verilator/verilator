@@ -1,0 +1,399 @@
+%Warning-SIMILARNAME: t/t_lint_similarname.v:13:8: Declaration overlaps another with different case: 'I'
+   13 |   wire I;
+      |        ^
+                      t/t_lint_similarname.v:12:7: ... Location of original declaration
+   12 |   reg i;
+      |       ^
+                      ... For warning description see https://verilator.org/warn/SIMILARNAME?v=latest
+                      ... Use "/* verilator lint_off SIMILARNAME */" and lint_on around source to disable this message.
+%Warning-SIMILARNAME: t/t_lint_similarname.v:75:9: Declaration overlaps another with different case: 'VAR_VAR'
+   75 |   logic VAR_VAR;
+      |         ^~~~~~~
+                      t/t_lint_similarname.v:74:9: ... Location of original declaration
+   74 |   logic var_var;
+      |         ^~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:79:8: Declaration overlaps another with different case: 'VAR_NET'
+   79 |   wire VAR_NET;
+      |        ^~~~~~~
+                      t/t_lint_similarname.v:78:9: ... Location of original declaration
+   78 |   logic var_net;
+      |         ^~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:83:18: Declaration overlaps another with different case: 'VAR_GENBLOCK'
+   83 |   if (1) begin : VAR_GENBLOCK
+      |                  ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:82:9: ... Location of original declaration
+   82 |   logic var_genblock;
+      |         ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:88:11: Declaration overlaps another with different case: 'VAR_BEGIN'
+   88 |   initial begin : VAR_BEGIN
+      |           ^~~~~
+                      t/t_lint_similarname.v:87:9: ... Location of original declaration
+   87 |   logic var_begin;
+      |         ^~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:93:11: Declaration overlaps another with different case: 'VAR_FORK'
+   93 |   initial fork : VAR_FORK
+      |           ^~~~
+                      t/t_lint_similarname.v:92:9: ... Location of original declaration
+   92 |   logic var_fork;
+      |         ^~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:98:18: Declaration overlaps another with different case: 'VAR_TASK'
+   98 |   task automatic VAR_TASK(); endtask
+      |                  ^~~~~~~~
+                      t/t_lint_similarname.v:97:9: ... Location of original declaration
+   97 |   logic var_task;
+      |         ^~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:102:26: Declaration overlaps another with different case: 'VAR_FUNCTION'
+  102 |   function automatic bit VAR_FUNCTION(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:101:9: ... Location of original declaration
+  101 |   logic var_function;
+      |         ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:106:7: Declaration overlaps another with different case: 'VAR_INSTANCE'
+  106 |   sub VAR_INSTANCE ();
+      |       ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:105:9: ... Location of original declaration
+  105 |   logic var_instance;
+      |         ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:110:9: Declaration overlaps another with different case: 'NET_VAR'
+  110 |   logic NET_VAR;
+      |         ^~~~~~~
+                      t/t_lint_similarname.v:109:8: ... Location of original declaration
+  109 |   wire net_var;
+      |        ^~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:114:8: Declaration overlaps another with different case: 'NET_NET'
+  114 |   wire NET_NET;
+      |        ^~~~~~~
+                      t/t_lint_similarname.v:113:8: ... Location of original declaration
+  113 |   wire net_net;
+      |        ^~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:118:18: Declaration overlaps another with different case: 'NET_GENBLOCK'
+  118 |   if (1) begin : NET_GENBLOCK
+      |                  ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:117:8: ... Location of original declaration
+  117 |   wire net_genblock;
+      |        ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:123:11: Declaration overlaps another with different case: 'NET_BEGIN'
+  123 |   initial begin : NET_BEGIN
+      |           ^~~~~
+                      t/t_lint_similarname.v:122:8: ... Location of original declaration
+  122 |   wire net_begin;
+      |        ^~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:128:11: Declaration overlaps another with different case: 'NET_FORK'
+  128 |   initial fork : NET_FORK
+      |           ^~~~
+                      t/t_lint_similarname.v:127:8: ... Location of original declaration
+  127 |   wire net_fork;
+      |        ^~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:133:18: Declaration overlaps another with different case: 'NET_TASK'
+  133 |   task automatic NET_TASK(); endtask
+      |                  ^~~~~~~~
+                      t/t_lint_similarname.v:132:8: ... Location of original declaration
+  132 |   wire net_task;
+      |        ^~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:137:26: Declaration overlaps another with different case: 'NET_FUNCTION'
+  137 |   function automatic bit NET_FUNCTION(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:136:8: ... Location of original declaration
+  136 |   wire net_function;
+      |        ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:141:7: Declaration overlaps another with different case: 'NET_INSTANCE'
+  141 |   sub NET_INSTANCE ();
+      |       ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:140:8: ... Location of original declaration
+  140 |   wire net_instance;
+      |        ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:146:9: Declaration overlaps another with different case: 'GENBLOCK_VAR'
+  146 |   logic GENBLOCK_VAR;
+      |         ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:144:18: ... Location of original declaration
+  144 |   if (1) begin : genblock_var
+      |                  ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:151:8: Declaration overlaps another with different case: 'GENBLOCK_NET'
+  151 |   wire GENBLOCK_NET;
+      |        ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:149:18: ... Location of original declaration
+  149 |   if (1) begin : genblock_net
+      |                  ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:156:18: Declaration overlaps another with different case: 'GENBLOCK_GENBLOCK'
+  156 |   if (1) begin : GENBLOCK_GENBLOCK
+      |                  ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:154:18: ... Location of original declaration
+  154 |   if (1) begin : genblock_genblock
+      |                  ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:162:11: Declaration overlaps another with different case: 'GENBLOCK_BEGIN'
+  162 |   initial begin : GENBLOCK_BEGIN
+      |           ^~~~~
+                      t/t_lint_similarname.v:160:18: ... Location of original declaration
+  160 |   if (1) begin : genblock_begin
+      |                  ^~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:168:11: Declaration overlaps another with different case: 'GENBLOCK_FORK'
+  168 |   initial fork : GENBLOCK_FORK
+      |           ^~~~
+                      t/t_lint_similarname.v:166:18: ... Location of original declaration
+  166 |   if (1) begin : genblock_fork
+      |                  ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:174:18: Declaration overlaps another with different case: 'GENBLOCK_TASK'
+  174 |   task automatic GENBLOCK_TASK(); endtask
+      |                  ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:172:18: ... Location of original declaration
+  172 |   if (1) begin : genblock_task
+      |                  ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:179:26: Declaration overlaps another with different case: 'GENBLOCK_FUNCTION'
+  179 |   function automatic bit GENBLOCK_FUNCTION(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:177:18: ... Location of original declaration
+  177 |   if (1) begin : genblock_function
+      |                  ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:184:7: Declaration overlaps another with different case: 'GENBLOCK_INSTANCE'
+  184 |   sub GENBLOCK_INSTANCE ();
+      |       ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:182:18: ... Location of original declaration
+  182 |   if (1) begin : genblock_instance
+      |                  ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:189:9: Declaration overlaps another with different case: 'BEGIN_VAR'
+  189 |   logic BEGIN_VAR;
+      |         ^~~~~~~~~
+                      t/t_lint_similarname.v:187:11: ... Location of original declaration
+  187 |   initial begin : begin_var
+      |           ^~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:194:8: Declaration overlaps another with different case: 'BEGIN_NET'
+  194 |   wire BEGIN_NET;
+      |        ^~~~~~~~~
+                      t/t_lint_similarname.v:192:11: ... Location of original declaration
+  192 |   initial begin : begin_net
+      |           ^~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:199:18: Declaration overlaps another with different case: 'BEGIN_GENBLOCK'
+  199 |   if (1) begin : BEGIN_GENBLOCK
+      |                  ^~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:197:11: ... Location of original declaration
+  197 |   initial begin : begin_genblock
+      |           ^~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:205:11: Declaration overlaps another with different case: 'BEGIN_BEGIN'
+  205 |   initial begin : BEGIN_BEGIN
+      |           ^~~~~
+                      t/t_lint_similarname.v:203:11: ... Location of original declaration
+  203 |   initial begin : begin_begin
+      |           ^~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:211:11: Declaration overlaps another with different case: 'BEGIN_FORK'
+  211 |   initial fork : BEGIN_FORK
+      |           ^~~~
+                      t/t_lint_similarname.v:209:11: ... Location of original declaration
+  209 |   initial begin : begin_fork
+      |           ^~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:217:18: Declaration overlaps another with different case: 'BEGIN_TASK'
+  217 |   task automatic BEGIN_TASK(); endtask
+      |                  ^~~~~~~~~~
+                      t/t_lint_similarname.v:215:11: ... Location of original declaration
+  215 |   initial begin : begin_task
+      |           ^~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:222:26: Declaration overlaps another with different case: 'BEGIN_FUNCTION'
+  222 |   function automatic bit BEGIN_FUNCTION(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:220:11: ... Location of original declaration
+  220 |   initial begin : begin_function
+      |           ^~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:227:7: Declaration overlaps another with different case: 'BEGIN_INSTANCE'
+  227 |   sub BEGIN_INSTANCE ();
+      |       ^~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:225:11: ... Location of original declaration
+  225 |   initial begin : begin_instance
+      |           ^~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:232:9: Declaration overlaps another with different case: 'FORK_VAR'
+  232 |   logic FORK_VAR;
+      |         ^~~~~~~~
+                      t/t_lint_similarname.v:230:11: ... Location of original declaration
+  230 |   initial fork : fork_var
+      |           ^~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:237:8: Declaration overlaps another with different case: 'FORK_NET'
+  237 |   wire FORK_NET;
+      |        ^~~~~~~~
+                      t/t_lint_similarname.v:235:11: ... Location of original declaration
+  235 |   initial fork : fork_net
+      |           ^~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:242:18: Declaration overlaps another with different case: 'FORK_GENBLOCK'
+  242 |   if (1) begin : FORK_GENBLOCK
+      |                  ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:240:11: ... Location of original declaration
+  240 |   initial fork : fork_genblock
+      |           ^~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:248:11: Declaration overlaps another with different case: 'FORK_BEGIN'
+  248 |   initial begin : FORK_BEGIN
+      |           ^~~~~
+                      t/t_lint_similarname.v:246:11: ... Location of original declaration
+  246 |   initial fork : fork_begin
+      |           ^~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:254:11: Declaration overlaps another with different case: 'FORK_FORK'
+  254 |   initial fork : FORK_FORK
+      |           ^~~~
+                      t/t_lint_similarname.v:252:11: ... Location of original declaration
+  252 |   initial fork : fork_fork
+      |           ^~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:260:18: Declaration overlaps another with different case: 'FORK_TASK'
+  260 |   task automatic FORK_TASK(); endtask
+      |                  ^~~~~~~~~
+                      t/t_lint_similarname.v:258:11: ... Location of original declaration
+  258 |   initial fork : fork_task
+      |           ^~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:265:26: Declaration overlaps another with different case: 'FORK_FUNCTION'
+  265 |   function automatic bit FORK_FUNCTION(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:263:11: ... Location of original declaration
+  263 |   initial fork : fork_function
+      |           ^~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:270:7: Declaration overlaps another with different case: 'FORK_INSTANCE'
+  270 |   sub FORK_INSTANCE ();
+      |       ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:268:11: ... Location of original declaration
+  268 |   initial fork : fork_instance
+      |           ^~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:274:9: Declaration overlaps another with different case: 'TASK_VAR'
+  274 |   logic TASK_VAR;
+      |         ^~~~~~~~
+                      t/t_lint_similarname.v:273:18: ... Location of original declaration
+  273 |   task automatic task_var(); endtask
+      |                  ^~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:278:8: Declaration overlaps another with different case: 'TASK_NET'
+  278 |   wire TASK_NET;
+      |        ^~~~~~~~
+                      t/t_lint_similarname.v:277:18: ... Location of original declaration
+  277 |   task automatic task_net(); endtask
+      |                  ^~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:282:18: Declaration overlaps another with different case: 'TASK_GENBLOCK'
+  282 |   if (1) begin : TASK_GENBLOCK
+      |                  ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:281:18: ... Location of original declaration
+  281 |   task automatic task_genblock(); endtask
+      |                  ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:287:11: Declaration overlaps another with different case: 'TASK_BEGIN'
+  287 |   initial begin : TASK_BEGIN
+      |           ^~~~~
+                      t/t_lint_similarname.v:286:18: ... Location of original declaration
+  286 |   task automatic task_begin(); endtask
+      |                  ^~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:292:11: Declaration overlaps another with different case: 'TASK_FORK'
+  292 |   initial fork : TASK_FORK
+      |           ^~~~
+                      t/t_lint_similarname.v:291:18: ... Location of original declaration
+  291 |   task automatic task_fork(); endtask
+      |                  ^~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:297:18: Declaration overlaps another with different case: 'TASK_TASK'
+  297 |   task automatic TASK_TASK(); endtask
+      |                  ^~~~~~~~~
+                      t/t_lint_similarname.v:296:18: ... Location of original declaration
+  296 |   task automatic task_task(); endtask
+      |                  ^~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:301:26: Declaration overlaps another with different case: 'TASK_FUNCTION'
+  301 |   function automatic bit TASK_FUNCTION(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:300:18: ... Location of original declaration
+  300 |   task automatic task_function(); endtask
+      |                  ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:305:7: Declaration overlaps another with different case: 'TASK_INSTANCE'
+  305 |   sub TASK_INSTANCE ();
+      |       ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:304:18: ... Location of original declaration
+  304 |   task automatic task_instance(); endtask
+      |                  ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:309:9: Declaration overlaps another with different case: 'FUNCTION_VAR'
+  309 |   logic FUNCTION_VAR;
+      |         ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:308:26: ... Location of original declaration
+  308 |   function automatic bit function_var(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:313:8: Declaration overlaps another with different case: 'FUNCTION_NET'
+  313 |   wire FUNCTION_NET;
+      |        ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:312:26: ... Location of original declaration
+  312 |   function automatic bit function_net(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:317:18: Declaration overlaps another with different case: 'FUNCTION_GENBLOCK'
+  317 |   if (1) begin : FUNCTION_GENBLOCK
+      |                  ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:316:26: ... Location of original declaration
+  316 |   function automatic bit function_genblock(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:322:11: Declaration overlaps another with different case: 'FUNCTION_BEGIN'
+  322 |   initial begin : FUNCTION_BEGIN
+      |           ^~~~~
+                      t/t_lint_similarname.v:321:26: ... Location of original declaration
+  321 |   function automatic bit function_begin(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:327:11: Declaration overlaps another with different case: 'FUNCTION_FORK'
+  327 |   initial fork : FUNCTION_FORK
+      |           ^~~~
+                      t/t_lint_similarname.v:326:26: ... Location of original declaration
+  326 |   function automatic bit function_fork(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:332:18: Declaration overlaps another with different case: 'FUNCTION_TASK'
+  332 |   task automatic FUNCTION_TASK(); endtask
+      |                  ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:331:26: ... Location of original declaration
+  331 |   function automatic bit function_task(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:336:26: Declaration overlaps another with different case: 'FUNCTION_FUNCTION'
+  336 |   function automatic bit FUNCTION_FUNCTION(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:335:26: ... Location of original declaration
+  335 |   function automatic bit function_function(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:340:7: Declaration overlaps another with different case: 'FUNCTION_INSTANCE'
+  340 |   sub FUNCTION_INSTANCE ();
+      |       ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:339:26: ... Location of original declaration
+  339 |   function automatic bit function_instance(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:344:9: Declaration overlaps another with different case: 'INSTANCE_VAR'
+  344 |   logic INSTANCE_VAR;
+      |         ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:343:7: ... Location of original declaration
+  343 |   sub instance_var ();
+      |       ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:348:8: Declaration overlaps another with different case: 'INSTANCE_NET'
+  348 |   wire INSTANCE_NET;
+      |        ^~~~~~~~~~~~
+                      t/t_lint_similarname.v:347:7: ... Location of original declaration
+  347 |   sub instance_net ();
+      |       ^~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:352:18: Declaration overlaps another with different case: 'INSTANCE_GENBLOCK'
+  352 |   if (1) begin : INSTANCE_GENBLOCK
+      |                  ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:351:7: ... Location of original declaration
+  351 |   sub instance_genblock ();
+      |       ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:357:11: Declaration overlaps another with different case: 'INSTANCE_BEGIN'
+  357 |   initial begin : INSTANCE_BEGIN
+      |           ^~~~~
+                      t/t_lint_similarname.v:356:7: ... Location of original declaration
+  356 |   sub instance_begin ();
+      |       ^~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:362:11: Declaration overlaps another with different case: 'INSTANCE_FORK'
+  362 |   initial fork : INSTANCE_FORK
+      |           ^~~~
+                      t/t_lint_similarname.v:361:7: ... Location of original declaration
+  361 |   sub instance_fork ();
+      |       ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:367:18: Declaration overlaps another with different case: 'INSTANCE_TASK'
+  367 |   task automatic INSTANCE_TASK(); endtask
+      |                  ^~~~~~~~~~~~~
+                      t/t_lint_similarname.v:366:7: ... Location of original declaration
+  366 |   sub instance_task ();
+      |       ^~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:371:26: Declaration overlaps another with different case: 'INSTANCE_FUNCTION'
+  371 |   function automatic bit INSTANCE_FUNCTION(); return 1'b0; endfunction
+      |                          ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:370:7: ... Location of original declaration
+  370 |   sub instance_function ();
+      |       ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:375:7: Declaration overlaps another with different case: 'INSTANCE_INSTANCE'
+  375 |   sub INSTANCE_INSTANCE ();
+      |       ^~~~~~~~~~~~~~~~~
+                      t/t_lint_similarname.v:374:7: ... Location of original declaration
+  374 |   sub instance_instance ();
+      |       ^~~~~~~~~~~~~~~~~
+%Warning-SIMILARNAME: t/t_lint_similarname.v:380:27: Declaration overlaps another with different case: 'sorts_first'
+  380 |   logic [SORTS_FIRST-1:0] sorts_first;
+      |                           ^~~~~~~~~~~
+                      t/t_lint_similarname.v:379:27: ... Location of original declaration
+  379 |   logic [SORTS_FIRST-1:0] Sorts_First;
+      |                           ^~~~~~~~~~~
+%Error: Exiting due to

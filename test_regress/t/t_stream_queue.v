@@ -6,6 +6,13 @@
 
 `define stop $stop
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%h' exp='%h'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks_w(width,gotv,expv) do begin \
+  logic [(width)-1:0] got_check; \
+  logic [(width)-1:0] exp_check; \
+  got_check = (gotv); \
+  exp_check = (expv); \
+  `checks(got_check, exp_check) \
+end while(0);
 module t;
 
   logic [7:0] i_char;
@@ -69,8 +76,8 @@ module t;
     byte_pkt = {<<8{i_header,i_len,i_crc,i_data}};
     {<<8{o_header,o_len,o_crc,o_data}} = byte_pkt;
 
-    `checks({>>{byte_pkt}},{<<8{i_header,i_len,i_crc,i_data}});
-    `checks({i_header,i_len,i_crc,i_data},{<<8{byte_pkt}});
+    `checks_w(128, {>>{byte_pkt}},{<<8{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {i_header,i_len,i_crc,i_data},{<<8{byte_pkt}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     // //----------- SData QUEUE --------
@@ -95,7 +102,7 @@ module t;
     sdata_pkt = {<<8{i_header,i_len,i_crc,i_data}};
     {<<8{o_header,o_len,o_crc,o_data}} = sdata_pkt;
 
-    `checks({>>{sdata_pkt}},{<<8{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{sdata_pkt}},{<<8{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     //----------- IData QUEUE --------
@@ -111,7 +118,7 @@ module t;
     int_pkt = {<<8{i_header,i_len,i_crc,i_data}};
     {<<8{o_header,o_len,o_crc,o_data}} = int_pkt;
 
-    `checks({>>{int_pkt}},{<<8{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{int_pkt}},{<<8{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     //----------- QData QUEUE --------
@@ -130,7 +137,7 @@ module t;
     qdata_pkt = {<<8{i_header,i_len,i_crc,i_data}};
     {<<8{o_header,o_len,o_crc,o_data}} = qdata_pkt;
 
-    `checks({>>{qdata_pkt}},{<<8{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{qdata_pkt}},{<<8{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     // ----------- VLWide QUEUE --------
@@ -143,7 +150,7 @@ module t;
 
     /* verilator lint_off WIDTHEXPAND */
     wide129 = {<<8{i_header,i_len,i_crc,i_data}};
-    `checks({>>{vlwide_pkt_129}},wide129);
+    `checks_w(129, {>>{vlwide_pkt_129}},wide129);
     /* verilator lint_on WIDTHEXPAND */
 
     //------------------------------- REVERSE ENDIAN ------------------------------
@@ -167,8 +174,8 @@ module t;
     byte_pkt_rev = {<<8{i_header,i_len,i_crc,i_data}};
     {<<8{o_header,o_len,o_crc,o_data}} = byte_pkt_rev;
 
-    `checks({>>{byte_pkt_rev}},{<<8{i_header,i_len,i_crc,i_data}});
-    `checks({i_header,i_len,i_crc,i_data},{<<8{byte_pkt_rev}});
+    `checks_w(128, {>>{byte_pkt_rev}},{<<8{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {i_header,i_len,i_crc,i_data},{<<8{byte_pkt_rev}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
         //----------- SData QUEUE --------
@@ -188,7 +195,7 @@ module t;
     sdata_pkt_rev = {<<8{i_header,i_len,i_crc,i_data}};
     {<<8{o_header,o_len,o_crc,o_data}} = sdata_pkt_rev;
 
-    `checks({>>{sdata_pkt_rev}},{<<8{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{sdata_pkt_rev}},{<<8{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     //----------- IData QUEUE --------
@@ -204,7 +211,7 @@ module t;
     int_pkt_rev = {<<8{i_header,i_len,i_crc,i_data}};
     {<<8{o_header,o_len,o_crc,o_data}} = int_pkt_rev;
 
-    `checks({>>{int_pkt_rev}},{<<8{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{int_pkt_rev}},{<<8{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     //----------- QData QUEUE --------
@@ -218,7 +225,7 @@ module t;
     qdata_pkt_rev = {<<8{i_header,i_len,i_crc,i_data}};
     {<<8{o_header,o_len,o_crc,o_data}} = qdata_pkt_rev;
 
-    `checks({>>{qdata_pkt_rev}},{<<8{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{qdata_pkt_rev}},{<<8{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     // ----------- VLWide QUEUE --------
@@ -227,7 +234,7 @@ module t;
     /* verilator lint_off WIDTHEXPAND */
     wide129 = {<<8{i_header,i_len,i_crc,i_data}};
     /* verilator lint_on WIDTHEXPAND */
-    `checks({>>{vlwide_pkt_129_rev}},wide129);
+    `checks_w(129, {>>{vlwide_pkt_129_rev}},wide129);
 
     // // -------------------- STREAMR ------------------------------------
     // //----------- CData QUEUE --------
@@ -237,21 +244,21 @@ module t;
 
     byte_pkt = {>>{i_header,i_len}};
     {>>{o_header,o_len}} = byte_pkt;
-    `checks({>>{i_header,i_len}},{>>{o_header,o_len}});
+    `checks_w(64, {>>{i_header,i_len}},{>>{o_header,o_len}});
     `checks({i_header,i_len},{o_header,o_len});
 
     byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
     {>>{o_header,o_len,o_crc,o_data}} = byte_pkt;
 
-    `checks({>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     //----------- IData QUEUE --------
     int_pkt = {>>{i_header}};
     o_header = {>>{int_pkt}};
     `checks(o_header,i_header);
-    `checks(o_header,{>>{int_pkt}});
-    `checks({>>{o_header}},{>>{int_pkt}});
+    `checks_w(32, o_header,{>>{int_pkt}});
+    `checks_w(32, {>>{o_header}},{>>{int_pkt}});
 
     //test with QData
     int_pkt = {>>{i_header,i_len}};
@@ -261,7 +268,7 @@ module t;
     int_pkt = {>>{i_header,i_len,i_crc,i_data}};
     {>>{o_header,o_len,o_crc,o_data}} = int_pkt;
 
-    `checks({>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     //----------- QData QUEUE --------
@@ -274,7 +281,7 @@ module t;
     qdata_pkt = {>>{i_header,i_len,i_crc,i_data}};
     {>>{o_header,o_len,o_crc,o_data}} = qdata_pkt;
 
-    `checks({>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     // ----------- VLWide QUEUE --------
@@ -288,84 +295,84 @@ module t;
     vlwide_pkt_129 = {>>{i_header,i_len,i_crc,i_data}};
     {>>{o_header,o_len,o_crc,o_data}} = vlwide_pkt_129;
 
-    `checks({>>{vlwide_pkt_129}},{>>{1'b0,i_header,i_len,i_crc,i_data}});
+    `checks_w(129, {>>{vlwide_pkt_129}},{>>{1'b0,i_header,i_len,i_crc,i_data}});
     `checks({o_header,o_len,o_crc,o_data} ,{i_header,i_len,i_crc,i_data});
 
     //---------- into other queues ------
     int_pkt = {>>{i_header,i_len,i_crc,i_data}};
     byte_pkt = {>>{int_pkt}};
-    `checks({>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
     int_pkt = {>>{byte_pkt}};
-    `checks({>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
     int_pkt = {>>{byte_pkt}};
-    `checks({>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     sdata_pkt = {>>{i_header,i_len,i_crc,i_data}};
     byte_pkt = {>>{sdata_pkt}};
-    `checks({>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
     sdata_pkt = {>>{byte_pkt}};
-    `checks({>>{sdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{sdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
     qdata_pkt = {>>{byte_pkt}};
-    `checks({>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     qdata_pkt = {>>{i_header,i_len,i_crc,i_data}};
     byte_pkt = {>>{qdata_pkt}};
-    `checks({>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     qdata_pkt = {>>{i_header,i_len,i_crc,i_data}};
     int_pkt = {>>{qdata_pkt}};
-    `checks({>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     int_pkt = {>>{i_header,i_len,i_crc,i_data}};
     qdata_pkt = {>>{int_pkt}};
-    `checks({>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     byte_pkt = {>>{i_header,i_len,i_crc,i_data}};
     vlwide_pkt_128 = {>>{byte_pkt}};
-    `checks({>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data}});
 
     vlwide_pkt_128 = {>>{i_header,i_len,i_crc,i_data}};
     byte_pkt = {>>{vlwide_pkt_128}};
-    `checks({i_header,i_len,i_crc,i_data},{>>{byte_pkt}});
-    `checks({>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {i_header,i_len,i_crc,i_data},{>>{byte_pkt}});
+    `checks_w(128, {>>{byte_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     int_pkt = {>>{i_header,i_len,i_crc,i_data}};
     vlwide_pkt_128 = {>>{int_pkt}};
-    `checks({i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
-    `checks({>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
+    `checks_w(128, {>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data}});
 
     vlwide_pkt_128 = {>>{i_header,i_len,i_crc,i_data}};
     int_pkt = {>>{vlwide_pkt_128}};
-    `checks({i_header,i_len,i_crc,i_data},{>>{int_pkt}});
-    `checks({>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {i_header,i_len,i_crc,i_data},{>>{int_pkt}});
+    `checks_w(128, {>>{int_pkt}},{>>{i_header,i_len,i_crc,i_data}});
 
     qdata_pkt = {>>{i_header,i_len,i_crc,i_data}};
     vlwide_pkt_128 = {>>{qdata_pkt}};
-    `checks({i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
-    `checks({>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
+    `checks_w(128, {>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data}});
 
     qdata_pkt = {>>{i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data}};
     vlwide_pkt_128 = {>>{qdata_pkt}};
-    `checks({i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
-    `checks({>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data}});
+    `checks_w(256, {i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
+    `checks_w(256, {>>{vlwide_pkt_128}},{>>{i_header,i_len,i_crc,i_data,i_header,i_len,i_crc,i_data}});
 
     qdata_pkt = {>>{i_header,i_len,i_crc,i_data,i_header,i_len,i_crc}};
     vlwide_pkt_128 = {>>{qdata_pkt}};
-    `checks({32'h0,i_header,i_len,i_crc,i_data,i_header,i_len,i_crc},{>>{vlwide_pkt_128}});
-    `checks({>>{vlwide_pkt_128}},{>>{32'h0,i_header,i_len,i_crc,i_data,i_header,i_len,i_crc}});
+    `checks_w(256, {32'h0,i_header,i_len,i_crc,i_data,i_header,i_len,i_crc},{>>{vlwide_pkt_128}});
+    `checks_w(256, {>>{vlwide_pkt_128}},{>>{32'h0,i_header,i_len,i_crc,i_data,i_header,i_len,i_crc}});
 
     vlwide_pkt_128 = {>>{i_header,i_len,i_crc,i_data}};
     qdata_pkt = {>>{vlwide_pkt_128}};
-    `checks({i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
-    `checks({>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
+    `checks_w(128, {i_header,i_len,i_crc,i_data},{>>{vlwide_pkt_128}});
+    `checks_w(128, {>>{qdata_pkt}},{>>{i_header,i_len,i_crc,i_data}});
     $write("*-* All Finished *-*\n");
     $finish;
 

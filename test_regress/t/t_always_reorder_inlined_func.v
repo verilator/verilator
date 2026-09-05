@@ -50,7 +50,7 @@ module t;
     repeat (100) begin
       @(posedge clk);
       #1;
-      $display("$08t %3d %3d", $time, cyc - 1, q);
+      $display("[%0t] %3d %3d", $time, cyc - 1, q);
       `check(q, cyc == 1 ? 0 : 100 + (cyc - 1) % 32);
     end
 

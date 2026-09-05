@@ -38,6 +38,7 @@
 #include <algorithm>
 #include <memory>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -78,15 +79,29 @@ static int countTrailingZeroes(uint64_t val) {
 #endif
 }
 
+// Allocates a unique id for each AstNode it is applied to, held in user4.
+class VNIdAllocator final {
+    // NODE STATE
+    // AstNode::user4p -> size_t. Unique id of the node (0/nullptr if not allocated yet)
+
+    // MEMBERS
+    // Claimed lazily on first use TODO: fix conflict with V3Param user4 slot
+    std::unique_ptr<VNUser4InUse> m_inuser4p;
+    size_t m_nextId = 0;  // Id allocated most recently
+
+public:
+    // Return the unique id of the given node, allocating a new one if it has none yet
+    size_t operator()(AstNode* nodep) {
+        if (!m_inuser4p) m_inuser4p = std::make_unique<VNUser4InUse>();  // Claim on first use
+        if (!nodep->user4p()) nodep->user4p(reinterpret_cast<void*>(++m_nextId));
+        return reinterpret_cast<size_t>(nodep->user4p());
+    }
+};
+
 // This visitor can be used in the post-expanded Ast from V3Expand, where the Ast satisfies:
 // - Constants are 64 bit at most (because words are accessed via AstWordSel)
 // - Variables are scoped.
 class ConstBitOpTreeVisitor final : public VNVisitorConst {
-    // NODE STATE
-    // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
-    // AstVarScope::user4u    -> Same as AstVarRef::user4
-    const VNUser4InUse m_inuser4;
-
     // TYPES
 
     // Holds a node to be added as a term in the reduction tree, it's equivalent op count, and a
@@ -382,6 +397,10 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         m_frozenNodes;  // Nodes that cannot be optimized
     std::vector<BitPolarityEntry> m_bitPolarities;  // Polarity of bits found during iterate()
     std::vector<std::unique_ptr<VarInfo>> m_varInfos;  // VarInfo for each variable, [0] is nullptr
+    VNIdAllocator& m_ids;  // Node id allocator, owned by ConstVisitor
+    // Base index of m_varInfos that points VarInfo, keyed by AstVarScope/AstVarRef id,
+    // zero means not set yet.
+    std::unordered_map<size_t, int> m_baseIdxs;
 
     // METHODS
 
@@ -411,15 +430,14 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         UASSERT_OBJ(ref.refp(), m_rootp, "null varref in And/Or/Xor optimization");
         AstNode* nodep = ref.refp()->varScopep();
         if (!nodep) nodep = ref.refp()->varp();  // Not scoped
-        int baseIdx = nodep->user4();
-        if (baseIdx == 0) {  // Not set yet
-            baseIdx = m_varInfos.size();
+        int& baseIdxr = m_baseIdxs[m_ids(nodep)];
+        if (baseIdxr == 0) {  // Not set yet
+            baseIdxr = m_varInfos.size();
             const int numWords
                 = ref.refp()->dtypep()->isWide() ? ref.refp()->dtypep()->widthWords() : 1;
             m_varInfos.resize(m_varInfos.size() + numWords);
-            nodep->user4(baseIdx);
         }
-        const size_t idx = baseIdx + std::max(0, ref.wordIdx());
+        const size_t idx = baseIdxr + std::max(0, ref.wordIdx());
         VarInfo* varInfop = m_varInfos[idx].get();
         if (!varInfop) {
             varInfop = new VarInfo{this, ref.refp(), ref.varWidth()};
@@ -438,6 +456,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
     // Traverse down to see AstConst or AstVarRef
     LeafInfo findLeaf(AstNode* nodep, bool expectConst) {
+        if (!nodep->dtypep()->skipRefp()->isIntegralOrPacked()) return LeafInfo{};
         LeafInfo info{m_lsb};
         {
             VL_RESTORER(m_leafp);
@@ -670,10 +689,11 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     }
 
     // CONSTRUCTORS
-    ConstBitOpTreeVisitor(AstNodeExpr* nodep, unsigned externalOps)
+    ConstBitOpTreeVisitor(AstNodeExpr* nodep, unsigned externalOps, VNIdAllocator& ids)
         : m_ops{externalOps}
-        , m_rootp{nodep} {
-        // Fill nullptr at [0] because AstVarScope::user4 is 0 by default
+        , m_rootp{nodep}
+        , m_ids{ids} {
+        // Fill nullptr at [0] because a base index of 0 means not set yet
         m_varInfos.push_back(nullptr);
         CONST_BITOP_RETURN_IF(!isAndTree() && !isOrTree() && !isXorTree(), nodep);
         if (AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
@@ -702,11 +722,11 @@ public:
     // Reduction ops are transformed in the same way.
     // &{v[0], v[1]} => 2'b11 == (2'b11 & v)
     static AstNodeExpr* simplify(AstNodeExpr* nodep, int resultWidth, unsigned externalOps,
-                                 VDouble0& reduction) {
+                                 VDouble0& reduction, VNIdAllocator& ids) {
         UASSERT_OBJ(1 <= resultWidth && resultWidth <= 64, nodep, "resultWidth out of range");
 
         // Walk tree, gathering all terms referenced in expression
-        const ConstBitOpTreeVisitor visitor{nodep, externalOps};
+        const ConstBitOpTreeVisitor visitor{nodep, externalOps, ids};
 
         // If failed on root node is not optimizable, or there are no variable terms, then done
         if (visitor.m_failed || visitor.m_varInfos.size() == 1) return nullptr;
@@ -912,12 +932,11 @@ class ConstVisitor final : public VNVisitor {
     static constexpr unsigned CONCAT_MERGABLE_MAX_DEPTH = 10;  // Limit alg recursion
 
     // NODE STATE
-    // ** only when m_warn/m_doExpensive is set.  If state is needed other times,
-    // ** must track down everywhere V3Const is called and make sure no overlaps.
-    // AstVar::user4p           -> Used by variable marking/finding
-    // AstEnum::user4           -> bool.  Recursing.
+    // See VNIdAllocator. All per node state below is held in side tables keyed on the
+    // node ids it hands out, as node pointers are not stable keys within V3Const.
 
     // STATE
+    VNIdAllocator m_ids;  // Node id allocator
     bool m_params = false;  // If true, propagate parameterized and true numbers only
     bool m_required = false;  // If true, must become a constant
     bool m_wremove = true;  // Inside scope, no assignw removal
@@ -939,10 +958,19 @@ class ConstVisitor final : public VNVisitor {
     VDouble0 m_statConcatMerge;  // Concat merges
     VDouble0 m_statCondExprRedundant;  // Conditional repeated expressions
     VDouble0 m_statIfCondExprRedundant;  // Conditional repeated expressions
+    VDouble0 m_statMemberAccessVisits;  // Nodes visited by containsMemberAccessRecurse
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
-    std::map<const AstNode*, bool> m_containsMemberAccess;  // Caches results of matchBiopToBitwise
+    // Caches results of matchBiopToBitwise, keyed on node id
+    std::unordered_map<size_t, bool> m_containsMemberAccess;
+    // Items of enum currently being recursed into. Cannot use VNIdAllocator, as this runs in
+    // every mode, including those invoked under a pass holding user4 (V3Param). Node pointers
+    // are safe as keys here, unlike elsewhere in V3Const: folding the item value below does
+    // free nodes whose addresses are then reused, but AstEnumItem is only ever constructed
+    // while parsing (verilog.y and V3LinkParse), so a reused address can never become one,
+    // and every key looked up is an AstEnumItem.
+    std::unordered_set<const AstEnumItem*> m_recursingEnumItems;
     std::unordered_set<AstJumpBlock*> m_usedJumpBlocks;  // JumpBlocks used by some JumpGo
 
     // METHODS
@@ -1484,8 +1512,8 @@ class ConstVisitor final : public VNVisitor {
             nodep->dumpTree(debugPrefix + "INPUT: ");
         }  // LCOV_EXCL_STOP
 
-        AstNodeExpr* const newp
-            = ConstBitOpTreeVisitor::simplify(rootp, width, externalOps, m_statBitOpReduction);
+        AstNodeExpr* const newp = ConstBitOpTreeVisitor::simplify(rootp, width, externalOps,
+                                                                  m_statBitOpReduction, m_ids);
 
         if (newp) {
             nodep->replaceWithKeepDType(newp);
@@ -1708,8 +1736,7 @@ class ConstVisitor final : public VNVisitor {
         const V3Number num{constp, subsize, constp->num()};
         nodep->lhsp(new AstConst{constp->fileline(), num});
         VL_DO_DANGLING(pushDeletep(constp), constp);
-        UINFOTREE(9, nodep, "", "BI(EXTEND)-ou");
-        return true;
+        return false;  // input node is still valid, keep going
     }
     bool operandBiExtendConstOver(const AstNodeBiop* nodep) {
         // EQ(const{width32}, EXTEND(xx{width3})) -> constant
@@ -2069,7 +2096,7 @@ class ConstVisitor final : public VNVisitor {
         rp->rhsp(bp);
         rp->dtypeFrom(nodep);  // Upper widthMin more likely correct
         if (VN_IS(rp->lhsp(), Const) && VN_IS(rp->rhsp(), Const)) replaceConst(rp);
-        // UINFOTREE(1, nodep, "", "repAsvConst_new");
+        iterate(nodep);  // Proceed to fixed point
     }
     void replaceAsvLUp(AstNodeBiop* nodep) {
         // BIASV(BIASV(CONSTll,lr),r) -> BIASV(CONSTll,BIASV(lr,r))
@@ -2082,7 +2109,7 @@ class ConstVisitor final : public VNVisitor {
         lp->lhsp(lrp);
         lp->rhsp(rp);
         lp->dtypeFrom(nodep);  // Upper widthMin more likely correct
-        // UINFOTREE(1, nodep, "", "repAsvLUp_new");
+        iterate(nodep);  // Proceed to fixed point
     }
     void replaceAsvRUp(AstNodeBiop* nodep) {
         // BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr))
@@ -2095,7 +2122,7 @@ class ConstVisitor final : public VNVisitor {
         rp->lhsp(lp);
         rp->rhsp(rrp);
         rp->dtypeFrom(nodep);  // Upper widthMin more likely correct
-        // UINFOTREE(1, nodep, "", "repAsvRUp_new");
+        iterate(nodep);  // Proceed to fixed point
     }
     void replaceAndOr(AstNodeBiop* nodep) {
         //  OR  (AND (CONSTll,lr), AND(CONSTrl==ll,rr))    -> AND (CONSTll, OR(lr,rr))
@@ -2441,17 +2468,15 @@ class ConstVisitor final : public VNVisitor {
             const bool need_temp_pure = !nodep->rhsp()->isPure();
             if (m_warn && !VN_IS(nodep, AssignDly)
                 && !need_temp_pure) {  // Is same var on LHS and RHS?
-                // Note only do this (need user4) when m_warn, which is
-                // done as unique visitor
                 // If the rhs is not pure, we need a temporary variable anyway
-                const VNUser4InUse m_inuser4;
-                nodep->lhsp()->foreach([](const AstVarRef* nodep) {
-                    UASSERT_OBJ(nodep->varp(), nodep, "Unlinked VarRef");
-                    nodep->varp()->user4(1);
+                std::unordered_set<size_t> lhsVarIds;
+                nodep->lhsp()->foreach([&](const AstVarRef* refp) {
+                    UASSERT_OBJ(refp->varp(), refp, "Unlinked VarRef");
+                    lhsVarIds.emplace(m_ids(refp->varp()));
                 });
-                nodep->rhsp()->foreach([&need_temp](const AstVarRef* nodep) {
-                    UASSERT_OBJ(nodep->varp(), nodep, "Unlinked VarRef");
-                    if (nodep->varp()->user4()) need_temp = true;
+                nodep->rhsp()->foreach([&](const AstVarRef* refp) {
+                    UASSERT_OBJ(refp->varp(), refp, "Unlinked VarRef");
+                    if (lhsVarIds.count(m_ids(refp->varp()))) need_temp = true;
                 });
             }
             if (need_temp_pure) {
@@ -2780,9 +2805,8 @@ class ConstVisitor final : public VNVisitor {
                 streamp->dtypeSetLogicUnsized(packedp->width(), packedp->widthMin(),
                                               VSigning::UNSIGNED);
                 srcp = packedp;
-            }
-            if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
-                 || VN_IS(srcDTypep, UnpackArrayDType))) {
+            } else if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
+                        || VN_IS(srcDTypep, UnpackArrayDType))) {
                 if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
                     int blockSize = 1;
                     if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
@@ -2932,10 +2956,12 @@ class ConstVisitor final : public VNVisitor {
         iterate(nodep);  // Again?
     }
 
-    bool containsMemberAccessRecurse(const AstNode* const nodep) {
+    bool containsMemberAccessRecurse(AstNode* const nodep) {
         if (!nodep) return false;
-        const auto it = m_containsMemberAccess.lower_bound(nodep);
-        if (it != m_containsMemberAccess.end() && it->first == nodep) return it->second;
+        const size_t id = m_ids(nodep);
+        const auto it = m_containsMemberAccess.find(id);
+        if (it != m_containsMemberAccess.end()) return it->second;
+        ++m_statMemberAccessVisits;
         bool result = false;
         if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
             result = true;
@@ -2960,7 +2986,7 @@ class ConstVisitor final : public VNVisitor {
             && containsMemberAccessRecurse(nodep->nextp())) {
             result = true;
         }
-        m_containsMemberAccess.insert(it, std::make_pair(nodep, result));
+        m_containsMemberAccess.emplace(id, result);
         return result;
     }
 
@@ -3428,12 +3454,13 @@ class ConstVisitor final : public VNVisitor {
         bool did = false;
         if (nodep->itemp()->valuep()) {
             // UINFOTREE(1, nodep->itemp()->valuep(), "", "visitvaref");
-            if (nodep->itemp()->user4()) {
+            const AstEnumItem* const itemp = nodep->itemp();
+            if (m_recursingEnumItems.count(itemp)) {
                 nodep->v3error("Recursive enum value: " << nodep->itemp()->prettyNameQ());
             } else {
-                nodep->itemp()->user4(true);
+                m_recursingEnumItems.emplace(itemp);
                 iterateAndNextNull(nodep->itemp()->valuep());
-                nodep->itemp()->user4(false);
+                m_recursingEnumItems.erase(itemp);
             }
             if (AstConst* const valuep = VN_CAST(nodep->itemp()->valuep(), Const)) {
                 const V3Number& num = valuep->num();
@@ -3581,13 +3608,6 @@ class ConstVisitor final : public VNVisitor {
             // least as frequently activating.  So we
             // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
             // other SENITEM(x).
-
-            // Mark x in SENITEM(x)
-            for (AstSenItem* senp = nodep->sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
-                if (senp->varrefp() && senp->varrefp()->varScopep()) {
-                    senp->varrefp()->varScopep()->user4(1);
-                }
-            }
 
             // Pass 1: Sort the sensitivity items so "posedge a or b" and "posedge b or a" and
             // similar, optimizable expressions end up next to each other.
@@ -4585,6 +4605,10 @@ class ConstVisitor final : public VNVisitor {
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");
+    // Sampled value functions of a constant.
+    // $rose/$fell/$stable/$changed are lowered to $past by V3AssertPre, so they fold via AstPast
+    TREEOPV("AstSampled{$exprp.castConst}", "replaceWChild(nodep, VN_AS(nodep->exprp(), NodeExpr))");
+    TREEOPV("AstPast{$exprp.castConst, !$ticksp}", "replaceWChild(nodep, nodep->exprp())");
     // clang-format on
 
     // Possible futures:
@@ -4667,6 +4691,8 @@ public:
         V3Stats::addStatSum("Optimizations, If cond redundant expressions",
                             m_statIfCondExprRedundant);
         V3Stats::addStatSum("Optimizations, Concat merges", m_statConcatMerge);
+        V3Stats::addStatSum("Optimizations, Member access predicate node visits",
+                            m_statMemberAccessVisits);
     }
 
     AstNode* mainAcceptEdit(AstNode* nodep) {

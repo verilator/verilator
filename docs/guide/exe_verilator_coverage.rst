@@ -133,7 +133,7 @@ verilator_coverage Arguments
 
 .. option:: --filter-type <regex>
 
-   Skips records of coverage types that matches with <regex>
+   Keeps records of coverage types that matches with <regex>
    Possible values are `toggle`, `line`, `branch`, `expr`, `covergroup`,
    `user`, `fsm_state`, `fsm_arc` and a wildcard with `\*` or `?`. The
    default value is `\*`.

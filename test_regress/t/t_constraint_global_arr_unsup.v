@@ -58,6 +58,15 @@ class Outer;
   constraint c_assoc {
     m_assoc[0].m_x == 500;
   }
+
+  // Case 6: Array elements member access in solve...before foreach loop
+  constraint c_foreach {
+    foreach (m_mid_arr[i]) {
+      solve m_mid_arr[((i*2)/2)].m_obj.m_x before m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+
+      m_mid_arr[((i*2)/2)].m_obj.m_x != m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+    }
+  }
 endclass
 
 module t_constraint_global_arr_unsup;

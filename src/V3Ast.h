@@ -30,6 +30,7 @@
 
 #include "V3Ast__gen_forward_class_decls.h"  // From ./astgen
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -39,6 +40,14 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+// VL_USER_TYPE_CHECKS requires C++17 for std::variant. Ignore on older standards
+#if defined(VL_USER_TYPE_CHECKS) && __cplusplus < 201703L
+#undef VL_USER_TYPE_CHECKS
+#endif
+#ifdef VL_USER_TYPE_CHECKS
+#include <variant>
+#endif
 
 // clang-format off
 #include "V3AstAttr.h"
@@ -137,12 +146,48 @@ class V3GraphVertex;
 class VSymEnt;
 
 class VNUser final {
+// Defining VL_USER_TYPE_CHECKS replaces the VNUser union with a std::variant
+// which remembers which form of VNUser is being stored to catch mismatched reads.
+#ifdef VL_USER_TYPE_CHECKS
+    // monostate is an unwritten / cleared slot. It can be read as either form
+    // and yields nullptr/0.
+    std::variant<std::monostate, int, void*> m_u;
+#else
     union {
         void* up;
         int ui;
     } m_u;
+#endif
 
 public:
+#ifdef VL_USER_TYPE_CHECKS
+    VNUser() = default;
+    // non-explicit:
+    // cppcheck-suppress noExplicitConstructor
+    VNUser(int i) {
+        // VNUser{0} represents the monostate
+        if (i) m_u = i;
+    }
+    explicit VNUser(void* p) {
+        // VNUser{nullptr} represents the monostate
+        if (p) m_u = p;
+    }
+    ~VNUser() = default;
+    // Casters
+    template <typename T>
+    typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
+        if (std::holds_alternative<std::monostate>(m_u)) return nullptr;
+        void* const* const upp = std::get_if<void*>(&m_u);
+        UASSERT_STATIC(upp, "AstNode user() slot written as int, read as pointer");
+        return reinterpret_cast<T>(*upp);
+    }
+    int toInt() const {
+        if (std::holds_alternative<std::monostate>(m_u)) return 0;
+        const int* const uip = std::get_if<int>(&m_u);
+        UASSERT_STATIC(uip, "AstNode user() slot written as pointer, read as int");
+        return *uip;
+    }
+#else
     VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
@@ -157,10 +202,14 @@ public:
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         return reinterpret_cast<T>(m_u.up);
     }
+    int toInt() const { return m_u.ui; }
+#endif
     VSymEnt* toSymEnt() const { return to<VSymEnt*>(); }
     AstNode* toNodep() const VL_MT_SAFE { return to<AstNode*>(); }
     V3GraphVertex* toGraphVertex() const { return to<V3GraphVertex*>(); }
-    int toInt() const { return m_u.ui; }
+    // Render for dumps without asserting on the form held: "" if unset, "#<int>"
+    // if an int, else the pointer via fmtAddrp
+    std::string dumpStr(std::string (*fmtAddrp)(const void*)) const;
 };
 
 //######################################################################
@@ -441,6 +490,8 @@ class AstNode VL_NOT_FINAL {
     static int s_cloneCntGbl;  // Count of which userp is set
 
     // This member ordering both allows 64 bit alignment and puts associated data together
+    // (under VL_USER_TYPE_CHECKS a VNUser is larger than 64 bits, so this packing no
+    // longer holds; that build trades node size for catching int/pointer confusion)
     VNUser m_user1u{0};  // Contains any information the user iteration routine wants
     uint32_t m_user1Cnt = 0;  // Mark of when userp was set
     uint32_t m_user2Cnt = 0;  // Mark of when userp was set
@@ -730,6 +781,7 @@ public:
 
     // ACCESSORS for specific types
     // Alas these can't be virtual or they break when passed a nullptr
+    bool isDisableQueuePushSelfStmt();
     inline bool isClassHandleValue() const;
     inline bool isNull() const;
     inline bool isZero() const;
@@ -808,7 +860,7 @@ public:
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                     const AstNode* fromConstp);
+                                     const AstNode* fromConstp, bool checkIfaceArgCompat = false);
     static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
 
     // METHODS - dump and error
@@ -1259,6 +1311,14 @@ public:
         int count = 0;
         this->foreach([&count](const AstNode*) { ++count; });
         return count;
+    }
+
+    // Return true if and only if the tree rooted at this node has more than 'limit' nodes.
+    // Traversal terminates as soon as the result is known, so unlike comparing 'nodeCount',
+    // this is cheap on a large tree.
+    bool isLargerThan(int limit) const {
+        int count = 0;
+        return this->exists([&count, limit](const AstNode*) { return ++count > limit; });
     }
 };
 

@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_prop_strong_unsup.v:12:20: Unsupported: strong property in assume.
+                                                 : ... note: In instance 't'
+   12 |   assume property (@(posedge clk) strong (a ##1 a));
+      |                    ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

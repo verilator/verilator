@@ -20,15 +20,22 @@ package PkgImp;
 endpackage
 
 class Cls;
+  bit cg_clk;
   int member = 1;
   rand int rmember1;
   rand int rmember2;
-  covergroup cg_in_class;
+  covergroup cg_in_class @(posedge cg_clk);
     cp_m: coverpoint member {
       bins one = {1};
       bins two = {2};
     }
   endgroup
+  covergroup cg_ref(ref int value);
+    cp_ref: coverpoint value;
+  endgroup
+  function new;
+    cg_in_class = new;
+  endfunction
   function void method;
     if (this != this) $stop;
   endfunction
@@ -64,6 +71,7 @@ module t (/*AUTOARG*/
   } ps_t;
   typedef struct {
     logic signed [2:0] a;
+    rand logic [1:0] b;
   } us_t;
   typedef union {
     logic a;
@@ -138,6 +146,7 @@ module t (/*AUTOARG*/
   endfunction
 
   sub sub(.*);
+  seq_event seq_event(.*);
 
   initial begin
     int other;
@@ -363,7 +372,8 @@ module t (/*AUTOARG*/
   assert_prop_reject_on: assert property (@(posedge clk) reject_on (in) in);
   assert_prop_sync_accept_on: assert property (@(posedge clk) sync_accept_on (in) in);
   assert_prop_sync_reject_on: assert property (@(posedge clk) sync_reject_on (in) in);
-
+  assert_prop_weak: assert property (@(posedge clk) weak(in));
+  cover_prop_strong: cover property (@(posedge clk) strong(in));
 
   int a;
   int ao;
@@ -423,7 +433,7 @@ module t (/*AUTOARG*/
       bins y0 = {0};
       bins y1 = {1};
     }
-    cx: cross cp_x, cp_y;
+    cx: cross cp_x, cp_y iff (cg_sig[0] == cg_sig2[0]);
   endgroup
 
   cg_basic   cg_basic_inst   = new;
@@ -441,6 +451,16 @@ module sub(input logic clk);
     return {31'd0, v[2]} + 32'd1;
   endfunction
   real r;
+endmodule
+
+module seq_event(input logic clk);
+  bit a, b, c;
+  sequence sq;
+    @(posedge clk) a ##1 b ##1 c;
+  endsequence
+  initial begin
+    @sq;
+  end
 endmodule
 
 package p;

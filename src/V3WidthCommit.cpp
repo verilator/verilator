@@ -37,7 +37,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class WidthCommitVisitor final : public VNVisitor {
     // NODE STATE
-    // AstVar::user1p           -> bool, processed
+    //  AstVar::user1p           -> bool.  Processed
     //  AstNodeFTask::user2()    -> int. Non-zero if ever referenced (called)
     //  AstNew::user2()          -> int. Count of number of references, minus references in
     //  functions never called
@@ -47,7 +47,7 @@ class WidthCommitVisitor final : public VNVisitor {
     // STATE
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeModule* m_modp = nullptr;  // Current module
-    std::string m_contNba;  // In continuous- or non-blocking assignment
+    const char* m_contNbap = nullptr;  // In continuous- or non-blocking assignment
     bool m_contReads = false;  // Check read continuous automatic variables
     bool m_dynsizedelem = false;  // Writing dynamically-sized array element, not the array itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
@@ -119,7 +119,11 @@ private:
             nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
         }
         if (local || prot) {
-            const auto refClassp = VN_CAST(m_modp, Class);
+            // In case of covergroup, the reference is to the enclosing class, not the covergroup
+            // itself
+            const AstClass* refClassp = VN_CAST(m_modp, Class);
+            if (refClassp && refClassp->isCovergroup())
+                refClassp = refClassp->covergroupEnclosingClassp();
             const char* how = nullptr;
             // Inner nested classes can access `local` or `protected` members of their outer class
             const auto nestedAccess = [refClassp](const AstClass*, const AstNode* memberp) {
@@ -148,7 +152,7 @@ private:
     void varLifetimeCheck(AstNode* nodep, AstVar* varp) {
         // Skip if we are under a member select (lhs of a dot)
         // We don't care about lifetime of anything else than rhs of a dot
-        if (!m_underSel && !m_contNba.empty()) {
+        if (!m_underSel && m_contNbap) {
             std::string varType;
             const AstNodeDType* const varDtp = varp->dtypep()->skipRefp();
             if (varp->lifetime().isAutomatic() && !VN_IS(varDtp, IfaceRefDType)
@@ -162,7 +166,7 @@ private:
             if (!varType.empty()) {
                 UINFO(1, "    Related var dtype: " << varDtp);
                 nodep->v3error(varType
-                               << " variable not allowed in " << m_contNba
+                               << " variable not allowed in " << m_contNbap
                                << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
             }
         }
@@ -419,9 +423,9 @@ private:
     void visit(AstAssignCont* nodep) override {
         iterateAndNextNull(nodep->timingControlp());
         {
-            VL_RESTORER(m_contNba);
+            VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
-            m_contNba = "continuous";
+            m_contNbap = "continuous";
             m_contReads = true;
             iterateAndNextNull(nodep->lhsp());
             iterateAndNextNull(nodep->rhsp());
@@ -432,9 +436,9 @@ private:
         iterateAndNextNull(nodep->timingControlp());
         iterateAndNextNull(nodep->rhsp());
         {
-            VL_RESTORER(m_contNba);
+            VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
-            m_contNba = "nonblocking";
+            m_contNbap = "nonblocking";
             m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }
@@ -444,9 +448,9 @@ private:
         iterateAndNextNull(nodep->timingControlp());
         iterateAndNextNull(nodep->rhsp());
         {
-            VL_RESTORER(m_contNba);
+            VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
-            m_contNba = "continuous";
+            m_contNbap = "continuous";
             m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }

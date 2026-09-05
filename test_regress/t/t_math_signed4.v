@@ -97,11 +97,7 @@ module t;
 
     // bug754
     w5_u = 4'sb0010 << -2'sd1;  // << 3
-`ifdef VCS
-    `checkh(w5_u, 5'b00000);  // VCS E-2014.03 bug
-`else
-    `checkh(w5_u, 5'b10000);  // VCS E-2014.03 bug
-`endif
+    `checkh(w5_u, 5'b10000);
     w5_u = 4'sb1000 << 0;  // Sign extends
     `checkh(w5_u, 5'b11000);
 

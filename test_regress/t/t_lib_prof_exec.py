@@ -51,7 +51,6 @@ test.run(cmd=[
 ])
 
 # Check both lib and sim are present
-test.file_grep(gantt_log, r'\|\s+[1-9][0-9]*\s+\|\s+[0-9.]+\s+\|\s+eval')
-test.file_grep(gantt_log, r'\|\s+[1-9][0-9]*\s+\|\s+[0-9.]+\s+\|\s+secret:eval')
+test.file_grep_count(gantt_log, r'\|\s+[1-9][0-9]*\s+\|\s+[0-9.]+\s+\|\s+eval', 2)
 
 test.passes()

@@ -47,8 +47,8 @@ class LibMapVisitor final : public VNVisitor {
     }
 
     void visit(AstLibrary* nodep) override {
-        VL_RESTORER(m_lib);
-        VL_RESTORER(m_rel);
+        VL_RESTORER_CLEAR(m_lib);
+        VL_RESTORER_CLEAR(m_rel);
         m_lib = nodep->name();
         m_rel = V3Os::filenameDir(nodep->fileline()->filename());
         iterateChildren(nodep);

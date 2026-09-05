@@ -42,7 +42,8 @@ namespace V3Order {
 
 std::unique_ptr<OrderGraph> buildOrderGraph(AstNetlist* netlistp,  //
                                             const std::vector<V3Sched::LogicByScope*>& coll,  //
-                                            const TrigToSenMap& trigToSen);
+                                            const TrigToSenMap& trigToSen,  //
+                                            bool parallel);
 
 void orderOrderGraph(OrderGraph& graph, const std::string& tag);
 
@@ -51,14 +52,9 @@ void processDomains(AstNetlist* netlistp,  //
                     const std::string& tag,  //
                     const ExternalDomainsProvider& externalDomains);
 
-AstNodeStmt* createSerial(OrderMoveGraph& moveGraph,  //
-                          const std::string& tag,  //
-                          bool slow);
+AstNodeStmt* createSerial(OrderMoveGraph& moveGraph, const std::string& tag, bool slow);
 
-AstNodeStmt* createParallel(const OrderGraph& orderGraph,  //
-                            OrderMoveGraph& moveGraph,  //
-                            const std::string& tag,  //
-                            bool slow);
+AstNodeStmt* createParallel(OrderMoveGraph& moveGraph, const std::string& tag, bool slow);
 
 };  // namespace V3Order
 

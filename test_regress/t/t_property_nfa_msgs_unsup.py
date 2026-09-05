@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import glob
+import json
+import vltest_bootstrap
+
+test.scenarios('vlt')
+
+test.lint(expect_filename=test.golden_filename,
+          verilator_flags2=[
+              '--assert', '--timing', '--error-limit', '100', '--dumpi-tree', '3',
+              '--dumpi-tree-json', '3', '--no-json-edit-nums'
+          ],
+          fails=True)
+
+test.file_grep_any(glob.glob(test.obj_dir + "/V" + test.name + "_*.tree"),
+                   r'SAND.*\[PROPERTY_CONTROL\]')
+
+jsons = glob.glob(test.obj_dir + "/V" + test.name + "_*.tree.json")
+if not jsons:
+    test.error("No .tree.json dumped")
+for fn in jsons:
+    with open(fn, 'r', encoding="utf8") as fh:
+        json.load(fh)
+
+test.passes()

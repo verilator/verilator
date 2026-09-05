@@ -52,6 +52,12 @@ extern "C" int mon_check();
   reg [0:95]      mem_3d[0:1][1:0][0:1]  /*verilator public_flat_rw */;  // Mixed: asc, desc, asc
 
   reg [0:15][0:3][7:0] multi_packed[2:0]  /*verilator public_flat_rw */;
+  reg [0:1][0:3][0:2]      multi_packed_bit /*verilator public_flat_rw */;
+  reg [1:-1][2:1]      multi_packed_endian /*verilator public_flat_rw */;
+  reg [-1:1][1:2]      multi_packed_little_endian /*verilator public_flat_rw */;
+  reg [0:1][0:7]      multi_packed_short /*verilator public_flat_rw */;
+  reg [0:1][0:127]      multi_packed_wide /*verilator public_flat_rw */;
+  reg multi_unpacked_bit[0:1][0:3][0:7]      /*verilator public_flat_rw */;
   reg [8:-7] [3:-4] negative_multi_packed[0:-2]  /*verilator public_flat_rw */;
   // verilator lint_on ASCRANGE
   reg             unpacked_only[7:0];
@@ -88,6 +94,14 @@ extern "C" int mon_check();
   input unpacked_struct_t struct_matrix_port [1:0][2:0] /*verilator public_flat_rw*/;
   input wire unpacked_struct_t wire_struct_array_port [1:0] /*verilator public_flat_rw*/;
   unpacked_struct_t struct_array_signal [1:0] /*verilator public_flat_rw*/;
+
+  // Unpacked array of a packed (not unpacked) struct element
+  typedef struct packed {
+    logic [6:0] packed_member_a;
+    logic packed_member_b;
+  } packed_leaf_struct_t;
+
+  packed_leaf_struct_t packed_struct_array_signal [1:0] /*verilator public_flat_rw*/;
 
   typedef struct {
     logic [6:0] unsigned_member;

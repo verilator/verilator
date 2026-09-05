@@ -98,8 +98,10 @@ void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     Super::closeBase();
     emitTimeChangeMaybe();
-    if (m_fst) m_fst->close();  // LCOV_EXCL_BR_LINE
-    m_fst = nullptr;
+    if (m_fst) {
+        m_fst->close();
+        VL_DO_CLEAR(delete m_fst, m_fst = nullptr);
+    }
 }
 
 void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {

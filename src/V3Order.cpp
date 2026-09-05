@@ -107,7 +107,8 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
                          bool slow,  //
                          const ExternalDomainsProvider& externalDomains) {
     // Build the OrderGraph
-    const std::unique_ptr<OrderGraph> graph = buildOrderGraph(netlistp, logic, trigToSen);
+    const std::unique_ptr<OrderGraph> graph
+        = buildOrderGraph(netlistp, logic, trigToSen, parallel);
     // Order it
     orderOrderGraph(*graph, tag);
     // Assign sensitivity domains to combinational logic
@@ -121,7 +122,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     AstNodeStmt* stmtsp = nullptr;
     if (!moveGraphp->empty()) {
         if (parallel) {
-            stmtsp = createParallel(*graph, *moveGraphp, tag, slow);
+            stmtsp = createParallel(*moveGraphp, tag, slow);
         } else {
             stmtsp = createSerial(*moveGraphp, tag, slow);
         }
@@ -143,7 +144,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     FileLine* const flp = netlistp->fileline();
     AstCFunc* const funcp = [&]() {
         AstScope* const scopeTopp = netlistp->topScopep()->scopep();
-        AstCFunc* const resp = new AstCFunc{flp, "_eval_" + tag, scopeTopp, ""};
+        AstCFunc* const resp = new AstCFunc{flp, "_eval_body__" + tag, scopeTopp, ""};
         resp->dontCombine(true);
         resp->isStatic(false);
         resp->isLoose(true);
@@ -155,13 +156,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     }();
 
     // Assemble the body
-    if (v3Global.opt.profExec()) {
-        funcp->addStmtsp(AstCStmt::profExecSectionPush(flp, "func " + tag));
-    }
     funcp->addStmtsp(stmtsp);
-    if (v3Global.opt.profExec()) {  //
-        funcp->addStmtsp(AstCStmt::profExecSectionPop(flp, "func " + tag));
-    }
 
     // Done
     return funcp;

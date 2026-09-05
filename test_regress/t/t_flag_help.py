@@ -18,10 +18,7 @@ def check(prog):
     logfile = test.obj_dir + "/t_help__" + os.path.basename(prog) + ".log"
 
     # Not using logfile=logfile as would invoke PAGER
-    test.run(fails=False,
-             cmd=[prog, "--help", ">", logfile, "2>&1"],
-             tee=False,
-             verilator_run=True)
+    test.run(cmd=[prog, "--help", ">", logfile, "2>&1"], tee=False, verilator_run=True)
 
     test.file_grep(logfile, r'(DISTRIBUTION|usage:)')
 

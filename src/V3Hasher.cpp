@@ -528,6 +528,7 @@ class HasherVisitor final : public VNVisitorConst {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
             m_hash += nodep->name();
             m_hash += nodep->joinType();
+            m_hash += nodep->immediateStart();
         });
     }
     void visit(AstPin* nodep) override {

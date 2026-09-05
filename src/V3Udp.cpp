@@ -56,14 +56,12 @@ class UdpVisitor final : public VNVisitor {
         VL_RESTORER(m_primp);
         VL_RESTORER(m_outputInitVerfp);
         VL_RESTORER(m_isFirstOutput);
-        VL_RESTORER(m_inputVars);
-        VL_RESTORER(m_outputVars);
+        VL_RESTORER_CLEAR(m_inputVars);
+        VL_RESTORER_CLEAR(m_outputVars);
         m_outputInitVerfp = nullptr;
         m_primp = nodep;
         m_isFirstOutput = false;
         iterateChildren(nodep);
-        m_inputVars.clear();
-        m_outputVars.clear();
     }
     void visit(AstVar* nodep) override {
         // Push the input and output vars for primitive.

@@ -43,7 +43,7 @@ class InlineIntfRefVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNetlist* nodep) override { iterateChildren(nodep->topModulep()); }
     void visit(AstCell* nodep) override {
-        VL_RESTORER(m_scope);
+        VL_RESTORER_COPY(m_scope);
         if (m_scope.empty()) {
             m_scope = nodep->name();
         } else {

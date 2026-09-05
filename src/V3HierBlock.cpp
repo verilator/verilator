@@ -331,12 +331,9 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
         }
 
         // This is a hierarchical block, gather parts
-        VL_RESTORER(m_params);
-        VL_RESTORER(m_typeParams);
-        VL_RESTORER(m_childrenp);
-        m_params.clear();
-        m_typeParams.clear();
-        m_childrenp.clear();
+        VL_RESTORER_CLEAR(m_params);
+        VL_RESTORER_CLEAR(m_typeParams);
+        VL_RESTORER_CLEAR(m_childrenp);
         iterateChildrenConst(nodep);
         // Create the graph vertex for this hier block
         V3HierBlock* const blockp = new V3HierBlock{m_graphp, nodep, m_params, m_typeParams};

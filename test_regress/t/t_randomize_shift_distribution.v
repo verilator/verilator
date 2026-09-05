@@ -2,12 +2,17 @@
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
+// SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
+
+// Checks that randomize() over a uvm_reg_field-shaped range whose bound shifts
+// by a member set at run time reaches the whole solution space. Samples are
+// printed so the driver can check uniformity (Jensen-Shannon divergence).
+// Widths too large to enumerate are only checked against the range itself.
 
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define check_le(gotv,maxv) do if ((gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp<=%0d\n", `__FILE__,`__LINE__, (gotv), (maxv)); `stop; end while(0);
 // verilog_format: on
 
 typedef logic unsigned [63:0] uvm_reg_data_t;
@@ -15,7 +20,6 @@ typedef logic unsigned [63:0] uvm_reg_data_t;
 class uvm_reg_field;
   rand uvm_reg_data_t value;
   int unsigned m_size;
-  int unsigned m_ones[64];
   constraint c_field_valid {
     if (64 > m_size) {
       value < (64'h1 << m_size);
@@ -25,71 +29,48 @@ class uvm_reg_field;
     value = 0;
     m_size = size;
   endfunction
-  function void tally;
-    for (int b = 0; b < 64; b++) if (value[b]) m_ones[b]++;
-  endfunction
-endclass
-
-class regA;
-  rand uvm_reg_field fa1, fa15, fa31, fa32;
-  function new;
-    fa1 = new;
-    fa15 = new;
-    fa31 = new;
-    fa32 = new;
-    fa1.configure(1);
-    fa15.configure(15);
-    fa31.configure(31);
-    fa32.configure(32);
-  endfunction
 endclass
 
 module t;
-  regA r;
-  int unsigned i;
-  // 200 trials over uvm_reg_field-shaped `value < (1<<m_size)`. Each free bit
-  // should be a fair coin flip; the pre-fix bug pinned them near the boundary
-  // K-1 (140-180 ones, 70-90%). Band [70, 130] = [35%, 65%] is ~4.2 sigma off
-  // the fair-50% mean (Binomial(200, 0.5)), so a uniform mechanism passes
-  // ~99.7% per run while the boundary bias overruns the upper bound.
-  localparam int unsigned TRIALS = 200;
-  localparam int unsigned HI = 130;
-  localparam int unsigned LO = 70;
+  localparam int NARROW_SIZE = 6;
+  localparam int NUM_SOLUTIONS = 1 << NARROW_SIZE;
+  localparam int NUM_ITERS = 25 * NUM_SOLUTIONS;
+  localparam int WIDE_ITERS = 100;
 
   initial begin
-    r = new;
-    for (int t = 0; t < TRIALS; t++) begin
-      i = r.randomize();
-      `checkd(i, 1);
-      r.fa1.tally;
-      r.fa15.tally;
-      r.fa31.tally;
-      r.fa32.tally;
+    automatic uvm_reg_field narrow = new;
+    automatic uvm_reg_field wide[4];
+    automatic bit seen[NUM_SOLUTIONS];
+    automatic int distinct = 0;
+    automatic int ok;
+
+    narrow.configure(NARROW_SIZE);
+    foreach (wide[i]) wide[i] = new;
+    wide[0].configure(1);
+    wide[1].configure(15);
+    wide[2].configure(31);
+    wide[3].configure(32);
+
+    for (int i = 0; i < NUM_ITERS; ++i) begin
+      ok = narrow.randomize();
+      `checkd(ok, 1);
+      if (!seen[int'(narrow.value)]) begin
+        seen[int'(narrow.value)] = 1'b1;
+        distinct++;
+      end
+      $display("%0d", narrow.value);
     end
-    // Symmetric 35-65% band per free bit. Master FAILs the upper bound.
-    for (int b = 0; b < 15; b++) `check_le(r.fa15.m_ones[b], HI);
-    for (int b = 0; b < 31; b++) `check_le(r.fa31.m_ones[b], HI);
-    for (int b = 0; b < 32; b++) `check_le(r.fa32.m_ones[b], HI);
-    for (int b = 0; b < 15; b++)
-    if (r.fa15.m_ones[b] < LO) begin
-      $write("%%Error: fa15[%0d] ones=%0d < %0d\n", b, r.fa15.m_ones[b], LO);
-      `stop;
+    `checkd(distinct, NUM_SOLUTIONS);
+
+    // Widths the divergence check cannot enumerate, so only the bound is checked
+    foreach (wide[i]) begin
+      for (int j = 0; j < WIDE_ITERS; ++j) begin
+        ok = wide[i].randomize();
+        `checkd(ok, 1);
+        `checkd(wide[i].value >> wide[i].m_size, 0);
+      end
     end
-    for (int b = 0; b < 31; b++)
-    if (r.fa31.m_ones[b] < LO) begin
-      $write("%%Error: fa31[%0d] ones=%0d < %0d\n", b, r.fa31.m_ones[b], LO);
-      `stop;
-    end
-    for (int b = 0; b < 32; b++)
-    if (r.fa32.m_ones[b] < LO) begin
-      $write("%%Error: fa32[%0d] ones=%0d < %0d\n", b, r.fa32.m_ones[b], LO);
-      `stop;
-    end
-    // High bits beyond m_size must remain 0.
-    for (int b = 1; b < 64; b++) `checkd(r.fa1.m_ones[b], 0);
-    for (int b = 15; b < 64; b++) `checkd(r.fa15.m_ones[b], 0);
-    for (int b = 31; b < 64; b++) `checkd(r.fa31.m_ones[b], 0);
-    for (int b = 32; b < 64; b++) `checkd(r.fa32.m_ones[b], 0);
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

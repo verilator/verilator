@@ -97,8 +97,6 @@ module paramed (  /*AUTOARG*/
     // No else
   endgenerate
 
-`ifndef NC  // for(genvar) unsupported
-`ifndef ATSIM  // for(genvar) unsupported
   generate
     // Empty loop body, local genvar
     for (genvar j = 0; j < 3; j = j + 1) begin
@@ -107,8 +105,6 @@ module paramed (  /*AUTOARG*/
     for (genvar j = 0; j < 5; j = j + 1) begin
     end
   endgenerate
-`endif
-`endif
 
   generate
   endgenerate
