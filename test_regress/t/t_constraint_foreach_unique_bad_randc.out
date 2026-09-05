@@ -1,0 +1,18 @@
+%Error: t/t_constraint_foreach_unique_bad_randc.v:12:36: No randc variable shall appear in a unique group (IEEE 1800-2023 18.5.4)
+                                                       : ... note: In instance 't'
+   12 |   constraint c2 {foreach (grid[i]) unique {grid[i]};}
+      |                                    ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_constraint_foreach_unique_bad_randc.v:20:36: No randc variable shall appear in a unique group (IEEE 1800-2023 18.5.4)
+                                                       : ... note: In instance 't'
+   20 |   constraint c1 {foreach (grid[i]) unique {grid[i]};}
+      |                                    ^~~~~~
+%Error: t/t_constraint_foreach_unique_bad_randc.v:32:18: No randc variable shall appear in a unique group (IEEE 1800-2023 18.5.4)
+                                                       : ... note: In instance 't'
+   32 |   constraint c1 {unique {obj.val};}
+      |                  ^~~~~~
+%Error: t/t_constraint_foreach_unique_bad_randc.v:39:18: No randc variable shall appear in a unique group (IEEE 1800-2023 18.5.4)
+                                                       : ... note: In instance 't'
+   39 |   constraint c1 {unique {x};}
+      |                  ^~~~~~
+%Error: Exiting due to
