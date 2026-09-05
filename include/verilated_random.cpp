@@ -674,10 +674,38 @@ void VlRandomVar::set(const std::string& idx, const std::string& val) const {
     }
 }
 
-void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
-    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
+void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
+                                    const std::vector<std::string>* layerVarsp) {
+    // layerVarsp scopes sampling to the current phase's own layer, so a
+    // phased solve's diversity constraint can't be built entirely out of a
+    // later phase's (still-unsolved) variable instead of this one's.
+    std::vector<const VlRandomVar*>& vars = m_randomConstraintVars;
+    vars.clear();
     int varBits = 0;
-    for (const auto& var : m_vars) varBits += var.second->totalWidth();
+    if (layerVarsp) {
+        for (const auto& name : *layerVarsp) {
+            const auto it = m_vars.find(name);
+            // buildSolveLayers() only ever adds a name after confirming
+            // it's already in m_vars.
+            assert(it != m_vars.end());
+            vars.push_back(it->second.get());
+            varBits += it->second->totalWidth();
+        }
+    } else {
+        for (const auto& var : m_vars) {
+            vars.push_back(var.second.get());
+            varBits += var.second->totalWidth();
+        }
+    }
+
+    if (varBits == 0) {
+        // Nothing to sample (e.g. a still-unsized queue/dynamic array, in a
+        // layer or the whole class) -- tautology instead of the degenerate
+        // empty-operand expression the loop below would otherwise build.
+        os << "(= #b1 #b1)";
+        return;
+    }
+    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
     os << "(= #b";
     for (int i = bits - 1; i >= 0; i--) os << (VL_BITISSET_I(hash, i) ? '1' : '0');
     if (bits > 1) os << " (concat";
@@ -685,11 +713,12 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
         IData varBitsLeft = varBits;
         IData varBitsWant = (varBits + 1) / 2;
         if (varBits > 2) os << " (bvxor";
-        for (const auto& var : m_vars) {
-            for (int j = 0; j < var.second->totalWidth(); j++, varBitsLeft--) {
+        for (const auto& varp : vars) {  // LCOV_EXCL_BR_LINE - reservoir-sampling below
+                                         // always forces its last pick before exhausting vars
+            for (int j = 0; j < varp->totalWidth(); j++, varBitsLeft--) {
                 const bool doEmit = (VL_RANDOM_RNG_I(rngr) % varBitsLeft) < varBitsWant;
                 if (doEmit) {
-                    var.second->emitExtract(os, j);
+                    varp->emitExtract(os, j);
                     if (--varBitsWant == 0) break;
                 }
             }
@@ -1748,8 +1777,9 @@ bool VlRandomizer::solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
 
     // Try diversity: add random constraint, re-check. If sat, get
     // updated (more diverse) values. If unsat, keep baseline values.
+    // Scoped to this layer's own vars -- see randomConstraint's comment.
     os << "(assert ";
-    randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+    randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN, &layerVars);
     os << ")\n";
     os << "(check-sat)\n";
     if (sess.readStatus() == VlSolverStatus::SAT) {
