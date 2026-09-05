@@ -10246,12 +10246,64 @@ class WidthVisitor final : public VNVisitor {
         }
         return nodep;
     }
+    // Return the node making this force/release left-hand side dynamic, else null.
+    // IEEE 1800-2023 6.21 requires force/release targets to be static variables.
+    static AstNode* forceLhsDynamicRecurse(AstNode* nodep) {
+        if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+            if (VN_IS(nodep, AssocSel) || VN_IS(nodep, WildcardSel)) return nodep;
+            return forceLhsDynamicRecurse(selp->fromp());
+        }
+        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+            return forceLhsDynamicRecurse(selp->fromp());
+        }
+        if (AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+            return forceLhsDynamicRecurse(selp->fromp());
+        }
+        if (VN_IS(nodep, MemberSel)) return nodep;  // Class property
+        if (AstCMethodHard* const callp = VN_CAST(nodep, CMethodHard)) {
+            return callp;  // Queue/dynamic array element select
+        }
+        return nullptr;
+    }
+    static AstNode* forceLhsSliceRecurse(AstNode* nodep) {
+        if (AstSliceSel* const selp = VN_CAST(nodep, SliceSel)) return selp;
+        if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+            return forceLhsSliceRecurse(selp->fromp());
+        }
+        if (AstSel* const selp = VN_CAST(nodep, Sel)) return forceLhsSliceRecurse(selp->fromp());
+        if (AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+            return forceLhsSliceRecurse(selp->fromp());
+        }
+        return nullptr;
+    }
     void checkForceReleaseLhs(AstNode* nodep, AstNode* lhsp) {
+        const string what = VN_IS(nodep, Release) ? "Release"s : "Force"s;
+        // An unpacked array slice is not one of the left-hand sides IEEE 1800-2023 10.6.2
+        // admits, and reaches V3Force with no variable reference at its base
+        if (AstNode* const sliceNodep = forceLhsSliceRecurse(lhsp)) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: " + what + " of an unpacked array slice (IEEE 1800-2023 10.6.2)\n"
+                    << nodep->warnContextPrimary() << '\n'
+                    << sliceNodep->warnOther() << "... Location of the slice\n"
+                    << sliceNodep->warnContextSecondary());
+            return;
+        }
+        if (AstNode* const dynNodep = forceLhsDynamicRecurse(lhsp)) {
+            nodep->v3error(what
+                               + " left-hand-side may not be automatically allocated storage: a "
+                                 "class property, or an associative, dynamic, or queue element "
+                                 "(IEEE 1800-2023 6.21)\n"
+                           << nodep->warnContextPrimary() << '\n'
+                           << dynNodep->warnOther() << "... Location of dynamic selection\n"
+                           << dynNodep->warnContextSecondary());
+            return;
+        }
         // V3Force can't check as vector may have expanded, or propagated constant into index
         if (AstNode* const selNodep = V3Width::selectNonConstantRecurse(lhsp))
-            nodep->v3error((VN_IS(nodep, Release) ? "Release"s : "Force"s)
-                               + " left-hand-side must not have variable bit/part select "
-                                 "(IEEE 1800-2023 10.6.2)\n"
+            nodep->v3error(what
+                               + " left-hand-side must not have a variable bit, part, or element "
+                                 "select (IEEE 1800-2023 10.6.2)\n"
                            << nodep->warnContextPrimary() << '\n'
                            << selNodep->warnOther() << "... Location of non-constant index\n"
                            << selNodep->warnContextSecondary());
