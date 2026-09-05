@@ -485,28 +485,47 @@ public:
         return vtxp;
     }
 
-    bool foreachDriver(std::function<bool(DfgVertex&, uint32_t, FileLine*)> f) {
+    template <typename T_Callable,
+              std::enable_if_t<vlstd::is_invocable_r<bool, T_Callable, DfgVertex&, uint32_t,
+                                                     FileLine*>::value,  //
+                               int>
+              = 0>
+    bool foreachDriver(T_Callable&& f) {
         const size_t n = nInputs();
         for (size_t i = 0; i < n; ++i) {
             if (f(*inputp(i), m_driverData[i].m_lo, m_driverData[i].m_flp)) return true;
         }
         return false;
     }
-    bool foreachDriver(std::function<bool(const DfgVertex&, uint32_t, FileLine*)> f) const {
+    template <typename T_Callable,
+              std::enable_if_t<vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&, uint32_t,
+                                                     FileLine*>::value,
+                               int>
+              = 0>
+    bool foreachDriver(T_Callable&& f) const {
         const size_t n = nInputs();
         for (size_t i = 0; i < n; ++i) {
             if (f(*inputp(i), m_driverData[i].m_lo, m_driverData[i].m_flp)) return true;
         }
         return false;
     }
-    bool foreachDriver(std::function<bool(DfgVertex&, uint32_t)> f) {
+    template <
+        typename T_Callable,
+        std::enable_if_t<vlstd::is_invocable_r<bool, T_Callable, DfgVertex&, uint32_t>::value,  //
+                         int>
+        = 0>
+    bool foreachDriver(T_Callable&& f) {
         const size_t n = nInputs();
         for (size_t i = 0; i < n; ++i) {
             if (f(*inputp(i), m_driverData[i].m_lo)) return true;
         }
         return false;
     }
-    bool foreachDriver(std::function<bool(const DfgVertex&, uint32_t)> f) const {
+    template <typename T_Callable,
+              std::enable_if_t<
+                  vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&, uint32_t>::value, int>
+              = 0>
+    bool foreachDriver(T_Callable&& f) const {
         const size_t n = nInputs();
         for (size_t i = 0; i < n; ++i) {
             if (f(*inputp(i), m_driverData[i].m_lo)) return true;
