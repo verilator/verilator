@@ -180,6 +180,7 @@ Verilator 5.051 devel
 * Fix multiply undefined behavior on signed int overflow (#8247) (#8248). [Paul Rigge]
 * Fix initial statements with gate optimization (#8250). [Prithayan Barua]
 * Fix segmentation fault on context destruction (#8265).
+* Fix mis-randomizing an unpacked struct member when not rand/randc (#8277) (#8278). [Aditya Shevade]
 
 
 Verilator 5.050 2026-07-01
