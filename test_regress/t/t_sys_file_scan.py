@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.unlink_ok(test.obj_dir + "/t_sys_file_scan_test.log")
 

@@ -703,9 +703,13 @@ class EmitCTrace final : public EmitCFunc {
 
         // Type
         puts(", VerilatedTraceSigType::");
-        UASSERT_OBJ(nodep->dtypep()->basicp()->keyword() != VBasicDTypeKwd::UNKNOWN, nodep,
-                    "DType is unknown");
-        puts(nodep->dtypep()->basicp()->keyword().traceSigType());
+        if (nodep->dtypeKwd() != VBasicDTypeKwd::UNKNOWN) {
+            puts(nodep->dtypeKwd().traceSigType());
+        } else {
+            UASSERT_OBJ(nodep->dtypep()->basicp()->keyword() != VBasicDTypeKwd::UNKNOWN, nodep,
+                        "DType is unknown");
+            puts(nodep->dtypep()->basicp()->keyword().traceSigType());
+        }
 
         // Array range
         if (nodep->arrayRange().ranged()) {
@@ -740,8 +744,9 @@ class EmitCTrace final : public EmitCFunc {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
-        const std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
+        std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
+        const bool isFourstate = VN_IS(nodep->valuep(), FourstateExpr);
         string stype;
         if (nodep->dtypep()->basicp()->isDouble()) {
             stype = "Double";
@@ -759,10 +764,14 @@ class EmitCTrace final : public EmitCFunc {
         } else if (nodep->dtypep()->basicp()->isEvent()) {
             stype = "Event";
             emitWidth = false;
+        } else if (isFourstate) {
+            stype = "Logic";
+            emitWidth = false;
         } else {
             stype = "Bit";
             emitWidth = false;
         }
+        if (isFourstate && stype != "Logic") func += "Fourstate";
         putns(nodep, "bufp->" + func + stype);
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
@@ -781,8 +790,8 @@ class EmitCTrace final : public EmitCFunc {
     }
 
     void emitTraceValue(const AstTraceInc* nodep, int arrayindex) {
-        if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
-            const AstVar* const varp = varrefp->varp();
+        auto putVarRef = [this, nodep, arrayindex](AstVarRef* const varrefp) {
+            AstVar* const varp = varrefp->varp();
             if (varp->isEvent()) puts("&");
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {
@@ -801,12 +810,39 @@ class EmitCTrace final : public EmitCFunc {
                 puts(")");
             }
             puts(")");
+        };
+        puts("(");
+        if (AstFourstateExpr* const exprp = VN_CAST(nodep->valuep(), FourstateExpr)) {
+            AstVarRef* const valueVarrefp = VN_CAST(exprp->valuep(), VarRef);
+            AstVarRef* const xzVarrefp = VN_CAST(exprp->xzp(), VarRef);
+            if (valueVarrefp && xzVarrefp && valueVarrefp->varp() == xzVarrefp->varp()) {
+                UASSERT_OBJ(valueVarrefp->isWide()
+                                && valueVarrefp->varp()->dtypep()->isShuffledFourstate(),
+                            nodep,
+                            "This shall only happen with wide shuffled four-state variables");
+                putVarRef(valueVarrefp);
+            } else {
+                if (!valueVarrefp) {
+                    iterateConst(exprp->valuep());
+                } else {
+                    putVarRef(valueVarrefp);
+                }
+                puts("), (");
+                if (!xzVarrefp) {
+                    iterateConst(exprp->xzp());
+                } else {
+                    putVarRef(xzVarrefp);
+                }
+            }
+        } else if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
+            putVarRef(varrefp);
         } else {
             puts("(");
             iterateConst(nodep->valuep());
             emitTraceIndex(nodep, arrayindex);
             puts(")");
         }
+        puts(")");
     }
 
     void emitTraceIndex(const AstTraceInc* const nodep, int arrayindex) {

@@ -11,6 +11,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 test.top_filename = "t/t_lint_multidriven_ok.v"
 
 test.lint()

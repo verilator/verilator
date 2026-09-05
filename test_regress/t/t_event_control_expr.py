@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.compile(
     # do not test classes for multithreaded, as V3InstrCount doesn't handle MemberSel

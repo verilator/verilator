@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.priority(30)
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 # CMake build executes from a different directory than the Make one.
 test.top_filename = os.path.abspath("t/t_hier_block_import.v")

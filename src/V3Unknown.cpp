@@ -143,21 +143,6 @@ class UnknownVisitor final : public VNVisitor {
         return varp;
     }
 
-    // Returns true if it is known at compile time that `msbConstp` is greater than or equal
-    // `exprp`
-    static bool isStaticlyGte(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
-        if (msbConstp->width() >= exprp->width()
-            && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1) {
-            return true;
-        }
-        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
-            if (V3Number{msbConstp}.opGte(msbConstp->num(), constp->num()).isNeqZero()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     AstNodeExpr* newExprStmtOrClone(AstNodeExpr*& exprp) {
         if (!exprp->isPure()) {
             AstVar* const varp = createAddTemp(exprp);
@@ -207,7 +192,11 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_allowXUnique);
-        if (nodep->isParam()) m_allowXUnique = false;
+        if (nodep->isParam()) {
+            m_allowXUnique = false;
+        } else if (m_modp && m_modp->isTop() && nodep->varType() == VVarType::PORT) {
+            nodep->setIsTopLevelPort();
+        }
         iterateChildren(nodep);
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
@@ -394,7 +383,9 @@ class UnknownVisitor final : public VNVisitor {
 
     void visit(AstSel* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->user1SetOnce()) {
+        // !v3Global.opt.fourstate() - in four-state mode V3Fourstate
+        // handles AstSel boundary checks
+        if (!v3Global.opt.fourstate() && !nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
             const AstNode* const basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
@@ -412,7 +403,7 @@ class UnknownVisitor final : public VNVisitor {
             AstConst* const maxmsbConstp = new AstConst{
                 nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(), maxmsb};
             AstNodeExpr* lsbp = V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack());
-            if (isStaticlyGte(maxmsbConstp, lsbp)) {
+            if (V3Unknown::isStaticlyGte(maxmsbConstp->num(), lsbp)) {
                 // We don't need to add a conditional; we know the existing expression is ok
                 VL_DO_DANGLING(maxmsbConstp->deleteTree(), maxmsbConstp);
                 nodep->lsbp(lsbp);
@@ -491,7 +482,7 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
                                static_cast<uint32_t>(declElements - 1)};
             AstNodeExpr* bitp = V3Const::constifyEdit(nodep->bitp()->unlinkFrBack());
-            if (isStaticlyGte(declElementsp, bitp)) {
+            if (V3Unknown::isStaticlyGte(declElementsp->num(), bitp)) {
                 // We don't need to add a conditional; we know the existing expression is ok
                 VL_DO_DANGLING(declElementsp->deleteTree(), declElementsp);
                 nodep->bitp(bitp);
@@ -551,7 +542,8 @@ public:
     // CONSTRUCTORS
     explicit UnknownVisitor(AstNetlist* nodep)
         : m_lvboundNames{"__Vlvbound"}
-        , m_xrandNames{std::make_unique<V3UniqueNames>(s_xrandPrefix)} {
+        , m_xrandNames{std::make_unique<V3UniqueNames>(s_xrandPrefix)}
+        , m_allowXUnique{!v3Global.opt.fourstate()} {
         iterate(nodep);
     }
     ~UnknownVisitor() override {  //
@@ -569,4 +561,20 @@ void V3Unknown::unknownAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { UnknownVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("unknown", 0, dumpTreeEitherLevel() >= 3);
+}
+
+bool V3Unknown::isStaticlyGte(const V3Number& msb, const AstNodeExpr* const exprp) {
+    FileLine* const flp = exprp->fileline();
+    if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+        if (V3Number{flp, 1, 0}.opGte(msb, constp->num()).isEqOne()) return true;
+    }
+    const int exprpWidth = exprp->width();
+    // msb >= ((1 << exprpWidth) - 1)
+    return V3Number{flp, 1, 0}
+        .opGte(msb, V3Number{flp, exprpWidth, 0}.opSub(
+                        V3Number{flp, exprpWidth, 0}.opShiftL(
+                            V3Number{flp, exprpWidth, 1},
+                            V3Number{flp, exprpWidth, static_cast<uint32_t>(exprpWidth)}),
+                        V3Number{flp, exprpWidth, 1}))
+        .isEqOne();
 }

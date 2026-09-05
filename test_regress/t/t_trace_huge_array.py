@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios("vlt_all")
+test.fourstate_capable = False
 
 test.compile(v_flags2=[
     "--trace-vcd --trace-max-width 0 --trace-max-array 0 --output-split-ctrace 10 --trace-structs"

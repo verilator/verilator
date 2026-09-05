@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.pli_filename = "t/t_trace_public_sig.cpp"
 test.top_filename = "t/t_trace_public.v"
 test.golden_filename = "t/t_trace_public.out"

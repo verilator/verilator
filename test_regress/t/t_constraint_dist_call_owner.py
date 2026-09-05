@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # Emitted C++ for call-owner constraints does not yet compile; verilate only
 test.compile(verilator_make_gmake=False)

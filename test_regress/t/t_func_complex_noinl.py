@@ -12,6 +12,7 @@ test.top_filename = "t/t_func_complex.v"
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.compile(v_flags2=["+define+TEST_NOINLINE"])
 

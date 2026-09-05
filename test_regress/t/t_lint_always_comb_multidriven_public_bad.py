@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_lint_always_comb_multidriven_bad.v"
 
 test.lint(verilator_flags2=['--public-flat-rw'], fails=True, expect_filename=test.golden_filename)

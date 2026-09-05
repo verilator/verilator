@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 test.top_filename = 't/t_randomize_soft_foreach.v'
 
 test.lint(fails=True, expect_filename=test.golden_filename)

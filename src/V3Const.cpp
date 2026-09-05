@@ -474,6 +474,9 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     }
 
     // VISITORS
+
+    // Silently omit this node as should not be considered here
+    void visit(AstCastWrap* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstNode* nodep) override { CONST_BITOP_SET_FAILED("Hit unexpected op", nodep); }
     void visit(AstCCast* nodep) override {
         iterateChildrenConst(nodep);
@@ -3729,6 +3732,16 @@ class ConstVisitor final : public VNVisitor {
         if (!m_doNConst) return;
         const AstBasicDType* const bdtypep = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType);
         if (!bdtypep) return;
+        {
+            const AstNodeExpr* const lhsp = VN_AS(nodep->abovep(), NodeAssign)->lhsp();
+            const AstVar* varp;
+            if (const AstMemberSel* memberSel = VN_CAST(lhsp, MemberSel)) {
+                varp = memberSel->varp();
+            } else {
+                varp = VN_AS(lhsp, NodeVarRef)->varp();
+            }
+            if (varp->isFourstateConstruct()) return;
+        }
         if (!bdtypep->isZeroInit()) return;
         AstConst* const newp = new AstConst{nodep->fileline(), V3Number{nodep, bdtypep}};
         UINFO(9, "CRESET(0) => CONST(0) " << nodep);
@@ -3866,8 +3879,9 @@ class ConstVisitor final : public VNVisitor {
                 nodep->condp(new AstLogNot{condp->fileline(),
                                            condp});  // LogNot, as C++ optimization also possible
                 nodep->addThensp(elsesp);
-            } else if (((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
-                        || VN_IS(nodep->condp(), LogNot))
+            } else if ((!v3Global.opt.fourstate() || v3Global.fourstateHandled())
+                       && ((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
+                           || VN_IS(nodep->condp(), LogNot))
                        && nodep->thensp() && nodep->elsesp()) {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep);
                 AstNodeExpr* const condp
@@ -3879,7 +3893,8 @@ class ConstVisitor final : public VNVisitor {
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            } else if (ifSameAssign(nodep)) {
+            } else if ((!v3Global.opt.fourstate() || v3Global.fourstateHandled())
+                       && ifSameAssign(nodep)) {
                 UINFO(4,
                       "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})");
                 AstNodeAssign* const thensp = VN_AS(nodep->thensp(), NodeAssign);

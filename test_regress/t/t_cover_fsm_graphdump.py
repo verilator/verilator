@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.fourstate_capable = False
 test.top_filename = "t/t_cover_fsm_policy_accept_multi.v"
 
 test.compile(v_flags2=["--coverage-fsm", "--dumpi-graph", "6"], threads=2)

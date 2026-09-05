@@ -12,6 +12,7 @@ from pathlib import Path
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_cover_fsm_policy_accept_multi.v"
 
 # Dump generic COVEROTHERDECL nodes so AstCoverOtherDecl::dump() also sees

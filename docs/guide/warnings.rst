@@ -443,6 +443,27 @@ List Of Warnings
    in decreased performance.
 
 
+.. option:: CASTFOURSTATE
+
+   Warns on an implicit conversion from four-state logic to two-state logic.
+   This warning is due to an unsupported :vlopt:`--fourstate` language construct.
+
+   The warning may be worked around by explicitly casting logic into two-state variant
+   (e.g.: `integer` into `int`, `logic` into `bit`).
+
+   Ignoring this warning may cause an unexpected behavior if value while
+   being casted has an unknown value (`x` or `z`) - it will become `0`;
+   in other cases (for known values) simulation will work correctly.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_CASTFOURSTATE_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_CASTFOURSTATE_msg.rst
+
+
 .. option:: CDCRSTLOGIC
 
    Historical, never issued since version 5.008.
