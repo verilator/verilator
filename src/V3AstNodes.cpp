@@ -1245,10 +1245,6 @@ void AstCoverOtherDecl::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, fsmTag);
     dumpJsonNumFunc(str, offset);
 }
-void AstCoverpointDType::dumpSmall(std::ostream& str) const {
-    Super::dumpSmall(str);
-    str << "coverpoint[" << m_hitBound << "]";
-}
 void AstCoverToggleDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (range().ranged()) str << " range=[" << range().left() << ":" << range().right() << "]";
@@ -1274,6 +1270,10 @@ void AstCoverTransSet::dumpJson(std::ostream& str) const { Super::dumpJson(str);
 // Functional coverage dump methods
 void AstCoverpoint::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverpoint::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
+void AstCoverpointDType::dumpSmall(std::ostream& str) const {
+    Super::dumpSmall(str);
+    str << "coverpoint[" << m_hitBound << "]";
+}
 void AstCoverpointRef::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverpointRef::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
 void AstCvtArrayToArray::dump(std::ostream& str) const {
