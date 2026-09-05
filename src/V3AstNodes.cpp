@@ -39,21 +39,19 @@
 // Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first field in
 // dict)
 void AstNode::dumpJsonNum(std::ostream& os, const std::string& name, int64_t val) {
-    os << ",\"" << name << "\":" << val;
-}
-void AstNode::dumpJsonBool(std::ostream& os, const std::string& name, bool val) {
-    os << ",\"" << name << "\":" << (val ? "true" : "false");
+    if (val) os << ",\"" << name << "\":" << val;
 }
 void AstNode::dumpJsonBoolIf(std::ostream& os, const std::string& name, bool val) {
-    if (val) dumpJsonBool(os, name, val);
+    if (val) os << ",\"" << name << "\":" << (val ? "true" : "false");
 }
 void AstNode::dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val) {
-    os << ",\"" << name << "\":\"" << V3OutFormatter::quoteNameControls(val) << '"';
+    if (!val.empty())
+        os << ",\"" << name << "\":\"" << V3OutFormatter::quoteNameControls(val) << '"';
 }
 void AstNode::dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp) {
     v3Global.saveJsonPtrFieldName(name);
-    std::string addr = "UNLINKED";
-    if (valp) addr = (v3Global.opt.jsonIds() ? v3Global.ptrToId(valp) : cvtToHex(valp));
+    if (!valp) return;
+    const std::string addr = v3Global.opt.jsonIds() ? v3Global.ptrToId(valp) : cvtToHex(valp);
     os << ",\"" << name << "\":\"" << addr << '"';
 }
 
@@ -1908,18 +1906,15 @@ void AstNode::dump(std::ostream& str) const {
 
 void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string& listName,
                       const string& indent) {
+    if (!nodep) return;
     os << ',';
-    if (!nodep) {  // empty list, print inline
-        os << '"' << listName << "\": []";
-    } else {
-        os << '\n' << indent + " \"" << listName << "\": [\n";
-        for (; nodep; nodep = nodep->nextp()) {
-            nodep->dumpTreeJson(os, indent + "  ");
-            if (nodep->nextp()) os << ',';
-            os << '\n';
-        }
-        os << indent << ']';
+    os << '\n' << indent + " \"" << listName << "\": [\n";
+    for (; nodep; nodep = nodep->nextp()) {
+        nodep->dumpTreeJson(os, indent + "  ");
+        if (nodep->nextp()) os << ',';
+        os << '\n';
     }
+    os << indent << ']';
 }
 
 static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
