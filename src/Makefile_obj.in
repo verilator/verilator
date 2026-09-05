@@ -196,6 +196,7 @@ RAW_OBJS = \
   V3GraphPathChecker.o \
   V3GraphTest.o \
   V3Hash.o \
+  V3HashTable.o \
   V3OptionParser.o \
   V3Os.o \
   V3ParseGrammar.o \

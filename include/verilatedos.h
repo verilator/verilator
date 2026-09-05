@@ -319,6 +319,15 @@
 #endif
 
 //=========================================================================
+// C++-2020
+
+#if __cplusplus >= 202002L
+# define VL_NO_UNIQUE_ADDRESS_CXX20 [[no_unique_address]]
+#else
+# define VL_NO_UNIQUE_ADDRESS_CXX20
+#endif
+
+//=========================================================================
 // Optimization
 
 #ifndef VL_NO_LEGACY
