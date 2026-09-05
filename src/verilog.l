@@ -179,6 +179,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-module"           { FL; return yVLT_D_MODULE; }
   -?"-mtask"            { FL; return yVLT_D_MTASK; }
   -?"-param"            { FL; return yVLT_D_PARAM; }
+  -?"-path"             { FL; return yVLT_D_PATH; }
   -?"-port"             { FL; return yVLT_D_PORT; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
   -?"-q"                { FL; return yVLT_D_Q; }
