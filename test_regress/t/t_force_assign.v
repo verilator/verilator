@@ -14,8 +14,9 @@ module t;
   reg [1:0] a = 0, b = 1;
   reg [1:0] r;
 
+  logic [7:0] raw = 8'hA5;
   logic [7:0] fa /* verilator forceable */;
-  assign fa = 8'hA5;
+  assign fa = raw;
   logic fb;
   logic fc /* verilator forceable */;
 
@@ -52,6 +53,12 @@ module t;
     `checkb(r, 2'b01)
     b = 2'b00;
     `checkb(r, 2'b00)
+
+    for (int i = 0; i < 20; ++i) begin
+      raw = 8'h11 + i[7:0];
+      `checkb(fa, raw)
+    end
+    raw = 8'hA5;
 
     if (`IMPURE_ONE == 0) force fa = 8'h00;
     else release fa;
