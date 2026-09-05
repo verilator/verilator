@@ -1,0 +1,8 @@
+cg_direct.cp_direct.one: 2
+cg_direct.cp_direct.three: 1
+cg_direct.cp_direct.two: 0
+cg_direct.cp_direct.zero: 3
+cg_ref.cp_ref.one: 2
+cg_ref.cp_ref.three: 1
+cg_ref.cp_ref.two: 1
+cg_ref.cp_ref.zero: 2

@@ -112,6 +112,11 @@ class OrderGraphBuilder final : public VNVisitor {
     V3Sched::util::VarScopeSet m_forceReadEdgeIgnores;
     const bool m_parallel;  // Ordering for multi-threaded execution (record variable accesses)
 
+    // What covergroup reference formal arguments are bound to at construction
+    const V3Sched::CovergroupRefBindings& m_cgRefBindings;
+    // Bindings reachable from the covergroup sample() being walked, nullptr when not in one
+    const V3Sched::CovergroupRefBindings::Bindings* m_cgRefBoundps = nullptr;
+
     // METHODS
 
     void iterateLogic(AstNode* nodep) {
@@ -198,18 +203,36 @@ class OrderGraphBuilder final : public VNVisitor {
         UASSERT_OBJ(m_logicVxp, nodep, "AstVarRef not under logic");
         AstVarScope* const varscp = nodep->varScopep();
         UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
-
-        // Variable reference in logic. Add data dependency.
-
-        // Record the raw access for the multi-threaded data hazard fixer
-        if (m_parallel) {
-            uint8_t recorded = 0;
-            if (nodep->access().isWriteOrRW()) recorded |= VA_WRITE;
-            if (nodep->access().isReadOrRW()) recorded |= VA_READ;
-            UASSERT_OBJ(recorded, nodep, "Unknown variable access type");
-            // Accumulate access type, record the variable on first access only
-            if (!varscp->user4Or(recorded)) m_accessedVscps.push_back(varscp);
+        // Reading a covergroup 'ref' formal reads whatever it was bound to at construction.
+        // The formal itself is a pointer member fixed at construction, so it is not itself
+        // interesting to ordering.
+        const AstVar* const varp = nodep->varp();
+        if (m_cgRefBoundps && varp->covergroupRefMember()) {
+            // Covergroup params are considered const-ref
+            UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "covergroup ref argument is written");
+            for (AstVarScope* const boundp : *m_cgRefBoundps) {
+                accountVarAccess(boundp, VAccess::READ, nodep);
+            }
+        } else {
+            accountVarAccess(varscp, nodep->access(), nodep);
         }
+    }
+
+    // Record the raw access for the multi-threaded data hazard fixer
+    void recordRawAccess(AstVarScope* varscp, const VAccess& access, AstNode* nodep) {
+        if (!m_parallel) return;
+        uint8_t recorded = 0;
+        if (access.isWriteOrRW()) recorded |= VA_WRITE;
+        if (access.isReadOrRW()) recorded |= VA_READ;
+        UASSERT_OBJ(recorded, nodep, "Unknown variable access type");
+        // Accumulate access type, record the variable on first access only
+        if (!varscp->user4Or(recorded)) m_accessedVscps.push_back(varscp);
+    }
+
+    // Add the graph edges, and record the raw access, for one access of one variable
+    void accountVarAccess(AstVarScope* varscp, const VAccess& access, AstNode* nodep) {
+        // Variable reference in logic. Add data dependency.
+        recordRawAccess(varscp, access, nodep);
 
         // Check whether this variable was already generated/consumed in the same logic. We
         // don't want to add extra edges if the logic has many usages of the same variable,
@@ -218,12 +241,11 @@ class OrderGraphBuilder final : public VNVisitor {
         const bool prevCon = varscp->user2() & VU_CON;
 
         // Compute whether the variable is produced (written) here
-        const bool gen
-            = !prevGen && nodep->access().isWriteOrRW() && !varscp->varp()->ignoreSchedWrite();
+        const bool gen = !prevGen && access.isWriteOrRW() && !varscp->varp()->ignoreSchedWrite();
 
         // Compute whether the value is consumed (read) here
         bool con = false;
-        if (!prevCon && nodep->access().isReadOrRW()) {
+        if (!prevCon && access.isReadOrRW()) {
             con = true;
             if (prevGen && !m_inClocked) {
                 // Dangerous assumption:
@@ -239,7 +261,11 @@ class OrderGraphBuilder final : public VNVisitor {
                 //       latch?).
                 con = false;
             }
-            if (!m_inClocked && m_forceReadEdgeIgnores.count(varscp)) con = false;
+            if (!m_inClocked) {
+                // Ignored reads and references from within covergroups do not
+                // add to the combinational sensitivity of the block
+                if (m_forceReadEdgeIgnores.count(varscp) || m_cgRefBoundps) con = false;
+            }
         }
 
         // Note: See V3OrderGraph.h about the roles of the various vertex types
@@ -323,7 +349,26 @@ class OrderGraphBuilder final : public VNVisitor {
             }
         }
     }
-    void visit(AstCCall* nodep) override { iterateChildren(nodep); }
+    // A covergroup sample() is not inlined and may read design signals through cross-scope
+    // references held by the covergroup. This attributes those references to the calling block.
+    void visit(AstCMethodCall* nodep) override {
+        iterateChildren(nodep);
+        AstCFunc* const funcp = nodep->funcp();
+        if (!funcp->isCovergroupSample()) return;
+        // Since sample is a built-in, we never expect recursion.
+        UASSERT_OBJ(!m_cgRefBoundps, nodep, "Covergroup sample() calls another sample()");
+        VL_RESTORER(m_cgRefBoundps);
+        // Reference formals are bound per covergroup object. If the call handle matches
+        // one that we recorded, use that info. If the call handle isn't something we
+        // recorded (eg array-element construction), use the union of references across
+        // the covergroup type.
+        const AstVarScope* instp = nullptr;
+        if (const AstVarRef* const fromRefp = VN_CAST(nodep->fromp(), VarRef)) {
+            instp = fromRefp->varScopep();
+        }
+        m_cgRefBoundps = &m_cgRefBindings.forSample(instp, VN_AS(funcp->scopep()->modp(), Class));
+        iterateChildren(funcp);
+    }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
     void visit(AstInitial* nodep) override {  // LCOV_EXCL_START
@@ -384,9 +429,11 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // CONSTRUCTOR
     OrderGraphBuilder(AstNetlist* /*nodep*/, const std::vector<V3Sched::LogicByScope*>& coll,
-                      const V3Order::TrigToSenMap& trigToSen, bool parallel)
+                      const V3Order::TrigToSenMap& trigToSen,
+                      const V3Sched::CovergroupRefBindings& cgRefBindings, bool parallel)
         : m_trigToSen{trigToSen}
-        , m_parallel{parallel} {
+        , m_parallel{parallel}
+        , m_cgRefBindings{cgRefBindings} {
         // Build the graph
         for (const V3Sched::LogicByScope* const lbsp : coll) {
             for (const auto& pair : *lbsp) {
@@ -404,9 +451,10 @@ public:
     static std::unique_ptr<OrderGraph> apply(AstNetlist* nodep,
                                              const std::vector<V3Sched::LogicByScope*>& coll,
                                              const V3Order::TrigToSenMap& trigToSen,
+                                             const V3Sched::CovergroupRefBindings& cgRefBindings,
                                              bool parallel) {
         return std::unique_ptr<OrderGraph>{
-            OrderGraphBuilder{nodep, coll, trigToSen, parallel}.m_graphp};
+            OrderGraphBuilder{nodep, coll, trigToSen, cgRefBindings, parallel}.m_graphp};
     }
 };
 
@@ -414,6 +462,7 @@ std::unique_ptr<OrderGraph>
 V3Order::buildOrderGraph(AstNetlist* netlistp,  //
                          const std::vector<V3Sched::LogicByScope*>& coll,  //
                          const V3Order::TrigToSenMap& trigToSen,  //
+                         const V3Sched::CovergroupRefBindings& cgRefBindings,  //
                          bool parallel) {
-    return OrderGraphBuilder::apply(netlistp, coll, trigToSen, parallel);
+    return OrderGraphBuilder::apply(netlistp, coll, trigToSen, cgRefBindings, parallel);
 }

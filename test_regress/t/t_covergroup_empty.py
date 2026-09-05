@@ -6,7 +6,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 
 test.compile()
 

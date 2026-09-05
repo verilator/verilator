@@ -430,8 +430,58 @@ public:
     VirtIfaceTriggers& operator=(VirtIfaceTriggers&&) = default;
 };
 
+// Design variables bound to covergroup 'ref'/'const ref' formal arguments at construction.
+//
+// Such a formal becomes a pointer member, bound when the covergroup is constructed, so a
+// sample() reading through it holds no AstVarRef naming the design variable. V3Order has to
+// model those reads, but by the time it runs the constructions sit in logic it does not order,
+// so they are collected before ordering and handed to it.
+class CovergroupRefBindings final {
+public:
+    // The design variables one covergroup sample() may read through its reference formals
+    using Bindings = std::vector<AstVarScope*>;
+
+private:
+    // Bindings of one covergroup handle. Exact, and so only present for a handle whose every
+    // write is a construction we recognized -- see dropInstance().
+    std::unordered_map<const AstVarScope*, Bindings> m_byInstance;
+    // Bindings over every construction of a covergroup class, used where the handle a sample()
+    // call reaches is not known. An over-approximation, which is safe.
+    std::unordered_map<const AstClass*, Bindings> m_byClass;
+    // How the sample() calls seen so far resolved. Statistics only, hence mutable: ordering
+    // runs once per scheduling region and must hold this by const reference.
+    mutable uint32_t m_numExactCalls = 0;
+    mutable uint32_t m_numUnionCalls = 0;
+    // Returned for a covergroup with no reference formal at all.
+    static const Bindings s_none;
+
+public:
+    // Record one construction of covergroup 'classp' binding reference formals to 'bindings'.
+    // 'instp' is the handle assigned, or nullptr if the destination could not be identified.
+    void addConstruction(const AstClass* classp, const AstVarScope* instp,
+                         const Bindings& bindings);
+    // Forget the exact bindings of a handle, which turned out to be written by something other
+    // than a construction we recognized. Its sample() calls fall back to the class union.
+    void dropInstance(const AstVarScope* instp) { m_byInstance.erase(instp); }
+    // What a sample() of covergroup 'classp' may read through reference formals, when called on
+    // handle 'instp' (nullptr if the call is not on a plain handle reference)
+    const Bindings& forSample(const AstVarScope* instp, const AstClass* classp) const;
+    // Sample calls of a covergroup with a reference formal resolved to one handle's bindings
+    uint32_t numExactCalls() const { return m_numExactCalls; }
+    // ... and those that had to take the class union instead
+    uint32_t numUnionCalls() const { return m_numUnionCalls; }
+
+    VL_UNCOPYABLE(CovergroupRefBindings);
+    CovergroupRefBindings() = default;
+    CovergroupRefBindings(CovergroupRefBindings&&) = default;
+    CovergroupRefBindings& operator=(CovergroupRefBindings&&) = default;
+};
+
 // Creates trigger vars for signals driven via virtual interfaces
 VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) VL_MT_DISABLED;
+
+// Collects what covergroup reference formal arguments are bound to at construction
+const CovergroupRefBindings makeCovergroupRefBindings(AstNetlist* nodep) VL_MT_DISABLED;
 
 // Creates the timing kit and marks variables written by suspendables
 TimingKit prepareTiming(AstNetlist* const netlistp) VL_MT_DISABLED;

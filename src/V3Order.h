@@ -32,6 +32,7 @@ class AstVarScope;
 
 namespace V3Sched {
 struct LogicByScope;
+class CovergroupRefBindings;
 };  // namespace V3Sched
 
 //============================================================================
@@ -46,6 +47,7 @@ using TrigToSenMap = std::unordered_map<const AstSenTree*, const AstSenTree*>;
 AstCFunc* order(AstNetlist* netlistp,  //
                 const std::vector<V3Sched::LogicByScope*>& logic,  //
                 const TrigToSenMap& trigToSen,  //
+                const V3Sched::CovergroupRefBindings& cgRefBindings,  //
                 const string& tag,  //
                 bool parallel,  //
                 bool slow,  //
