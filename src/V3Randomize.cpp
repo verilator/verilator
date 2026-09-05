@@ -2043,15 +2043,20 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
+        // fromp() may not have lowered to an SFormatF if it already warned
+        // as unsupported -- leave nodep alone rather than crash on it.
+        AstSFormatF* const fromFmtp = VN_CAST(nodep->fromp(), SFormatF);
+        if (!fromFmtp) return;
         AstSFormatF* newp = nullptr;
-        if (VN_AS(nodep->fromp(), SFormatF)->name() == "%s.%s") {
+        // Reachable only via a struct field on a rand-indexed rand array,
+        // which hits a separate, pre-existing crash before ever getting here.
+        if (fromFmtp->name() == "%s.%s") {  // LCOV_EXCL_BR_LINE
             newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
-                                   VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
+                                   fromFmtp->exprsp()->cloneTreePure(true)};  // LCOV_EXCL_LINE
             if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
                 newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
         } else {
-            newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
-                                   nullptr};
+            newp = new AstSFormatF{fl, fromFmtp->name() + "." + nodep->name(), false, nullptr};
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -2115,6 +2120,88 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
+    // Walks nested ArraySel links (e.g. used[id1][id2]) down to the root
+    // variable. Diagnoses E_UNSUPPORTED and returns false itself when the
+    // chain doesn't bottom out in a plain variable or member (a function call).
+    static bool resolveArraySelRootVarp(AstArraySel* nodep, AstNodeExpr* fromp,
+                                        AstVar*& rootVarpr) {
+        while (const AstArraySel* const selp = VN_CAST(fromp, ArraySel)) fromp = selp->fromp();
+        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) {
+            rootVarpr = refp->varp();
+            return true;
+        }
+        if (const AstMemberSel* const mselp = VN_CAST(fromp, MemberSel)) {
+            rootVarpr = mselp->varp();
+            return true;
+        }
+        // Root unresolvable (e.g. a function call): an SMT symbol here
+        // already selects from the call, not the array -- confirmed
+        // silently broken regardless of the root's rand-ness.
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: rand-dependent index into an array reached "
+                                     "through an operand that isn't a variable or member");
+        return false;
+    }
+    // Only called once the caller has already confirmed arrVarp is a
+    // genuinely non-rand root of a rand-dependent array index. Always
+    // handles it one way or another (expansion or E_UNSUPPORTED).
+    void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl, const AstVar* arrVarp) {
+        // V3WidthSel lowers queue/dynamic/associative-array indexing straight
+        // to AstCMethodHard at every level of a chain, so an ArraySel can
+        // never bottom out over anything but a genuine UnpackArrayDType.
+        const AstUnpackArrayDType* const arrDtp
+            = VN_AS(arrVarp->dtypep()->skipRefp(), UnpackArrayDType);
+
+        // 1-D only; element must be a scalar, not another array, a
+        // struct/union, or a class handle -- editSMT()'s hex formatting
+        // assumes a bit vector.
+        const AstNodeDType* const subp = arrDtp->subDTypep()->skipRefp();
+        // WildcardArrayDType hits an unrelated V3Width error first and
+        // can't be tested; NodeUOrStructDType/ClassRefDType are tested,
+        // but the coverage tool misreports one branch of each as untaken.
+        const bool arrIsSupported1D = !VN_IS(subp, NodeArrayDType) && !VN_IS(subp, QueueDType)
+                                      && !VN_IS(subp, DynArrayDType)
+                                      && !VN_IS(subp, AssocArrayDType)
+                                      && !VN_IS(subp, WildcardArrayDType)  // LCOV_EXCL_BR_LINE
+                                      && !VN_IS(subp, NodeUOrStructDType)  // LCOV_EXCL_BR_LINE
+                                      && !VN_IS(subp, ClassRefDType);  // LCOV_EXCL_BR_LINE
+        if (!arrIsSupported1D) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: rand-dependent index into this array shape in "
+                          "constraint (multidimensional, queue, dynamic, or associative array, "
+                          "or a struct/class-typed element)");
+            return;
+        }
+
+        AstNodeExpr* const idxp = nodep->bitp()->unlinkFrBack();
+        const int elements = arrDtp->elementsConst();
+        AstNodeExpr* chainp = nullptr;
+        // Use 0-based k, not arrDtp->lo()+k: idxp is already bias-
+        // adjusted for a non-zero-based array (e.g. 'id - 1' for
+        // [1:16]), and a freshly built AstArraySel needs that too.
+        for (int k = elements - 1; k >= 0; --k) {
+            AstArraySel* const elemp = new AstArraySel{
+                fl, nodep->fromp()->cloneTreePure(false),
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
+            if (!chainp) {
+                chainp = elemp;
+            } else {
+                AstEq* const eqp
+                    = new AstEq{fl, idxp->cloneTreePure(false),
+                                new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
+                                             static_cast<uint32_t>(k)}};
+                // Mark symbolic, else editFormat() would fold this
+                // using idxp's stale pre-solve value (same as
+                // AstExtend above).
+                eqp->user1(true);
+                chainp = new AstCond{fl, eqp, elemp, chainp};
+                chainp->user1(true);
+            }
+        }
+        VL_DO_DANGLING(idxp->deleteTree(), idxp);
+        nodep->replaceWith(chainp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterate(chainp);
+    }
     void visit(AstArraySel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
@@ -2130,6 +2217,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         });
         if (indexIsRand) {
+            AstVar* rootVarp;
+            if (!resolveArraySelRootVarp(nodep, nodep->fromp(), rootVarp)) return;
+            if (!rootVarp->rand().isRandomizable()) {
+                handleRandIndexIntoNonrandArray(nodep, fl, rootVarp);
+                return;
+            }
             // Index depends on rand variable -- keep as SMT symbol.
             // Array index sort is 32-bit, so zero-extend narrower indices.
             AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
