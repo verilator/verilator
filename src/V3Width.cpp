@@ -5773,6 +5773,8 @@ class WidthVisitor final : public VNVisitor {
                 if (it == patmap.end()) {  // Default or default_type assignment
                     patp = defaultPatp_patternUOrStruct(nodep, memp, vdtypep, defaultp, dtypemap);
                     pushDeletep(patp);
+                    patp = defaultPatp_forDType(patp, memp->virtRefDTypep());
+                    pushDeletep(patp);
                 } else {
                     patp = it->second;  // Member assignment
                 }
@@ -5858,11 +5860,13 @@ class WidthVisitor final : public VNVisitor {
         return newp;
     }
 
-    AstPatMember* defaultPatp_patternArray(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
+    AstPatMember* defaultPatp_forDType(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
         AstNodeExpr* const valuep = defaultp->lhssp()->cloneTree(false);
         AstNodeDType* const elemDTypeSkipRefp = elemDTypep->skipRefp();
+        const AstStructDType* const structp = VN_CAST(elemDTypeSkipRefp, StructDType);
+        const bool unpackedStruct = structp && !structp->packed();
 
-        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType)) {
+        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType) && !unpackedStruct) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             return defaultp->cloneTree(false);
         }
@@ -5871,9 +5875,14 @@ class WidthVisitor final : public VNVisitor {
             return defaultp->cloneTree(false);
         }
         if (!valuep->dtypep()) userIterate(valuep, WidthVP{SELF, BOTH}.p());
-        if (valuep->dtypep()
-            && AstNode::computeCastable(valuep->dtypep()->skipRefp(), elemDTypeSkipRefp, nullptr)
-                   .isAssignable()) {
+        bool wholeElement = unpackedStruct;
+        if (AstNodeDType* const valueDTypep = valuep->dtypep()) {
+            wholeElement = unpackedStruct ? !valueDTypep->skipRefp()->isIntegralOrPacked()
+                                          : AstNode::computeCastable(valueDTypep->skipRefp(),
+                                                                     elemDTypeSkipRefp, nullptr)
+                                                .isAssignable();
+        }
+        if (wholeElement) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             return defaultp->cloneTree(false);
         }
@@ -5899,7 +5908,7 @@ class WidthVisitor final : public VNVisitor {
             const auto it = patmap.find(ent);
             if (it == patmap.end()) {
                 if (defaultp) {
-                    newpatp = defaultPatp_patternArray(defaultp, arrayDtp->subDTypep());
+                    newpatp = defaultPatp_forDType(defaultp, arrayDtp->subDTypep());
                     patp = newpatp;
                 } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant && isConcat)) {
                     // If arrayDtp is an unpacked array and item is not constant,
