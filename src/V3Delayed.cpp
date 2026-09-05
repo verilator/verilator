@@ -56,8 +56,8 @@
 //  - Add new "Post-scheduled" logic:
 //      LHS = __Vdly__LHS;
 //
-// "Shared flag" scheme. Used for unpacked array target variables
-// in synthesizeable code. E.g.:
+// "Shared flag" scheme. Used for partial packed and unpacked array target
+// variables in synthesizeable code. E.g.:
 //   LHS[idxa][idxb] <= RHS
 // is converted to:
 //  - Add new "Pre-scheduled" logic:
@@ -462,6 +462,11 @@ class DelayedVisitor final : public VNVisitor {
             // which at least handles partial updates correctly, but might break
             // in loops or other dynamic context
             return Scheme::FlagUnique;
+        }
+
+        // Avoid copying an entire packed variable when only selected bits are updated
+        if (isIntegralOrPacked && vscpInfo.m_partial && !vscpInfo.m_whole && !vscpInfo.m_inLoop) {
+            return Scheme::FlagShared;
         }
 
         // Otherwise use the simple shadow variable scheme
