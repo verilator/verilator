@@ -36,8 +36,193 @@
 #include <unordered_map>
 #include <vector>
 
-// Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first field in
-// dict)
+// Shorthands for dumping fields that use func name as key
+#define dumpJsonNumFunc(os, func) dumpJsonNum(os, #func, func())
+#define dumpJsonBoolFuncIf(os, func) dumpJsonBoolIf(os, #func, func())
+#define dumpJsonStrFunc(os, func) dumpJsonStr(os, #func, func())
+#define dumpJsonPtrFunc(os, func) dumpJsonPtr(os, #func, func())
+
+//======================================================================
+// CLASSES
+
+class DpiTypesToStringConverter VL_NOT_FINAL {
+public:
+    virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
+    virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
+        return isBit ? "svBitVecVal" : "svLogicVecVal";
+    }
+    virtual string primitive(const AstVar* varp) const {
+        string type;
+        const VBasicDTypeKwd keyword = varp->basicp()->keyword();
+        if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
+        type += keyword.dpiType();
+        return type;
+    }
+    string convert(const AstVar* varp) const {
+        if (varp->isDpiOpenArray()) {
+            return openArray(varp);
+        } else if (const AstBasicDType* const basicp = varp->basicp()) {
+            if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
+                return bitLogicVector(varp, basicp->isDpiBitVec());
+            } else {
+                return primitive(varp);
+            }
+        } else {
+            return "UNKNOWN";
+        }
+    }
+};
+
+class AstNodeDType::CTypeRecursed final {
+public:
+    string m_type;  // The base type, e.g.: "Foo_t"s
+    string m_dims;  // Array dimensions, e.g.: "[3][2][1]"
+    string render(const string& name, bool isRef) const VL_MT_SAFE {
+        string out;
+        out += m_type;
+        if (!name.empty()) out += " ";
+        if (isRef) {
+            if (!m_dims.empty()) out += "(";
+            out += "&";
+            out += name;
+            if (!m_dims.empty()) out += ")";
+        } else {
+            out += name;
+        }
+        out += m_dims;
+        return out;
+    }
+};
+
+//======================================================================
+// File-local utility functions
+
+void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string& listName,
+                      const string& indent) {
+    if (!nodep) return;
+    os << ',';
+    os << '\n' << indent + " \"" << listName << "\": [\n";
+    for (; nodep; nodep = nodep->nextp()) {
+        nodep->dumpTreeJson(os, indent + "  ");
+        if (nodep->nextp()) os << ',';
+        os << '\n';
+    }
+    os << indent << ']';
+}
+
+static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
+    const std::string filename
+        = v3Global.opt.jsonIds() ? fileinfop->filenameLetters() : fileinfop->filename();
+    os << ",\"loc\":\"" << filename << ',' << fileinfop->firstLineno() << ':'
+       << fileinfop->firstColumn() << ',' << fileinfop->lastLineno() << ':'
+       << fileinfop->lastColumn() << '"';
+}
+
+static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
+    if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        if (refp->varp()->delayp()) return refp->varp()->delayp();
+    } else if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+        return getLhsNetDelayRecurse(selp->fromp());
+    }
+    return nullptr;
+}
+
+static bool sameInit(const AstConst* ap, const AstConst* bp) {
+    // Similarly to the AstInitArray comparison, we ignore the dtype instance, so long as they
+    // are compatible. For now, we assume the dtype is not relevant, as we only call this from
+    // V3Prelim which is a late pass.
+    // Compare initializers by value. This checks widths as well.
+    return ap->num().isCaseEq(bp->num());
+}
+static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
+    // Unpacked array initializers must have equivalent values
+    // Note, sadly we can't just call ap->sameTree(pb), because both:
+    // - the dtypes might be different instances
+    // - the default/inititem children might be in different order yet still yield the same table
+    // See note in AstInitArray::same about the same. This function instead compares by initializer
+    // value, rather than by tree structure.
+    if (const AstAssocArrayDType* const aDTypep = VN_CAST(ap->dtypep(), AssocArrayDType)) {
+        const AstAssocArrayDType* const bDTypep = VN_CAST(bp->dtypep(), AssocArrayDType);
+        if (!bDTypep) return false;
+        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
+        if (!aDTypep->keyDTypep()->sameTree(bDTypep->keyDTypep())) return false;
+        UASSERT_OBJ(ap->defaultp(), ap, "Assoc InitArray should have a default");
+        UASSERT_OBJ(bp->defaultp(), bp, "Assoc InitArray should have a default");
+        if (!ap->defaultp()->sameTree(bp->defaultp())) return false;
+        // Compare initializer arrays by value. Note this is only called when they hash the same,
+        // so they likely run at most once per call to 'AstConstPool::findTable'.
+        // This assumes that the defaults are used in the same way.
+        // TODO when building the AstInitArray, remove any values matching the default
+        const auto& amapr = ap->map();
+        const auto& bmapr = bp->map();
+        const auto ait = amapr.cbegin();
+        const auto bit = bmapr.cbegin();
+        while (ait != amapr.cend() || bit != bmapr.cend()) {
+            if (ait == amapr.cend() || bit == bmapr.cend()) return false;  // Different size
+            if (ait->first != bit->first) return false;  // Different key
+            if (ait->second->sameTree(bit->second)) return false;  // Different value
+        }
+    } else if (const AstUnpackArrayDType* const aDTypep
+               = VN_CAST(ap->dtypep(), UnpackArrayDType)) {
+        const AstUnpackArrayDType* const bDTypep = VN_CAST(bp->dtypep(), UnpackArrayDType);
+        if (!bDTypep) return false;
+        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
+        if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) return false;
+        // Compare initializer arrays by value. Note this is only called when they hash the same,
+        // so they likely run at most once per call to 'AstConstPool::findTable'.
+        const uint64_t size = aDTypep->elementsConst();
+        for (uint64_t n = 0; n < size; ++n) {
+            const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
+            const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
+            if (!valAp->sameTree(valBp)) return false;
+        }
+    }
+    return true;
+}
+
+//======================================================================
+// AstNode:: functions (*not* general Ast{something} functions)
+
+void AstNode::dump(std::ostream& str) const {
+    str << typeName() << " " << nodeAddr(this)
+#ifdef VL_DEBUG
+        << " <e" << std::dec << editCount() << ((editCount() >= editCountLast()) ? "#>" : ">")
+#endif
+        << " {" << fileline()->filenameLetters() << std::dec << fileline()->lastLineno()
+        << fileline()->firstColumnLetters() << "}";
+    const auto dumpUser = [&str](const char* prefix, const VNUser& user) {
+        const std::string s = user.dumpStr([](const void* p) -> std::string {
+            return nodeAddr(reinterpret_cast<const AstNode*>(p));
+        });
+        if (!s.empty()) str << prefix << s;
+    };
+    dumpUser(" u1=", user1u());
+    dumpUser(" u2=", user2u());
+    dumpUser(" u3=", user3u());
+    dumpUser(" u4=", user4u());
+    if (hasDType()) {
+        // Final @ so less likely to by accident read it as a nodep
+        if (dtypep() == this) {
+            str << " @dt=this@";
+        } else {
+            str << " @dt=" << nodeAddr(dtypep()) << "@";
+        }
+        if (const AstNodeDType* const dtp = dtypep()) dtp->dumpSmall(str);
+    } else {  // V3Broken will throw an error
+        if (dtypep()) str << " %Error-dtype-exp=null,got=" << nodeAddr(dtypep());
+    }
+    if (fileline()->erroringOn()) str << " [ERRORING]";
+    if (name() != "") {
+        if (VN_IS(this, Const)) {
+            str << "  " << name();  // Already quoted
+        } else {
+            str << "  " << V3OutFormatter::quoteNameControls(name());
+        }
+    }
+}
+
+// Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first
+// field in dict)
 void AstNode::dumpJsonNum(std::ostream& os, const std::string& name, int64_t val) {
     if (val) os << ",\"" << name << "\":" << val;
 }
@@ -54,16 +239,44 @@ void AstNode::dumpJsonPtr(std::ostream& os, const std::string& name, const AstNo
     const std::string addr = v3Global.opt.jsonIds() ? v3Global.ptrToId(valp) : cvtToHex(valp);
     os << ",\"" << name << "\":\"" << addr << '"';
 }
+void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
+    os << indent << "{\"type\":\"" << typeName() << '"';
+    dumpJsonStr(os, "name", V3OutFormatter::quoteNameControls(prettyName()));
+    dumpJsonPtr(os, "addr", this);
+    dumpFileInfo(os, fileline());
+#ifdef VL_DEBUG
+    if (v3Global.opt.jsonEditNums()) dumpJsonNum(os, "editNum", editCount());
+#endif
+    if (hasDType()) {
+        dumpJsonPtrFunc(os, dtypep);
+    } else {  // V3Broken will throw an error
+        if (dtypep()) {
+            dumpJsonStr(os, "dtypep", " %Error-dtype-exp=null,got=" + nodeAddr(dtypep()));
+        }
+    }
+    dumpJson(os);
+    dumpTreeJsonOpGen(os, indent);
+    os << "}";
+}
 
-// Shorthands for dumping fields that use func name as key
-#define dumpJsonNumFunc(os, func) dumpJsonNum(os, #func, func())
-#define dumpJsonBoolFuncIf(os, func) dumpJsonBoolIf(os, #func, func())
-#define dumpJsonStrFunc(os, func) dumpJsonStr(os, #func, func())
-#define dumpJsonPtrFunc(os, func) dumpJsonPtr(os, #func, func())
+bool AstNode::isDisableQueuePushSelfStmt() {
+    // Detect LinkJump-generated registration:
+    // __VprocessQueue_*.push_back(std::process::self())
+    AstStmtExpr* const stmtExprp = VN_CAST(this, StmtExpr);
+    if (!stmtExprp) return false;
+    AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
+    if (!methodp || methodp->name() != "push_back") return false;
+    AstNode* const basep = AstArraySel::baseFromp(methodp->fromp(), false);
+    if (AstVarRef* const refp = VN_CAST(basep, VarRef)) return refp->varp()->processQueue();
+    if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
+        return selp->varp() && selp->varp()->processQueue();
+    }
+    return false;
+}
 
 //======================================================================
 // Ast* methods (except AstNode:: tree methods which generally go in V3Ast.cpp)
-// dist-ast-style-start
+// dist-ast-style-sort
 
 // We need these here, because the classes they point to aren't defined when we declare the class
 AstIface* AstIfaceRefDType::ifaceViaCellp() const {
@@ -107,21 +320,6 @@ bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isG
 int AstNodeSel::bitConst() const {
     const AstConst* const constp = VN_AS(bitp(), Const);
     return (constp ? constp->toSInt() : 0);
-}
-
-bool AstNode::isDisableQueuePushSelfStmt() {
-    // Detect LinkJump-generated registration:
-    // __VprocessQueue_*.push_back(std::process::self())
-    AstStmtExpr* const stmtExprp = VN_CAST(this, StmtExpr);
-    if (!stmtExprp) return false;
-    AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
-    if (!methodp || methodp->name() != "push_back") return false;
-    AstNode* const basep = AstArraySel::baseFromp(methodp->fromp(), false);
-    if (AstVarRef* const refp = VN_CAST(basep, VarRef)) return refp->varp()->processQueue();
-    if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
-        return selp->varp() && selp->varp()->processQueue();
-    }
-    return false;
 }
 
 void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
@@ -938,45 +1136,17 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     return arg;
 }
 
-class dpiTypesToStringConverter VL_NOT_FINAL {
-public:
-    virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
-    virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
-        return isBit ? "svBitVecVal" : "svLogicVecVal";
-    }
-    virtual string primitive(const AstVar* varp) const {
-        string type;
-        const VBasicDTypeKwd keyword = varp->basicp()->keyword();
-        if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
-        type += keyword.dpiType();
-        return type;
-    }
-    string convert(const AstVar* varp) const {
-        if (varp->isDpiOpenArray()) {
-            return openArray(varp);
-        } else if (const AstBasicDType* const basicp = varp->basicp()) {
-            if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
-                return bitLogicVector(varp, basicp->isDpiBitVec());
-            } else {
-                return primitive(varp);
-            }
-        } else {
-            return "UNKNOWN";
-        }
-    }
-};
-
 string AstVar::dpiArgType(bool named, bool forReturn) const {
     if (forReturn) {
-        return dpiTypesToStringConverter{}.convert(this);
+        return DpiTypesToStringConverter{}.convert(this);
     } else {
-        class converter final : public dpiTypesToStringConverter {
+        class converter final : public DpiTypesToStringConverter {
             string bitLogicVector(const AstVar* varp, bool isBit) const override {
                 return string{varp->isReadOnly() ? "const " : ""}
-                       + dpiTypesToStringConverter::bitLogicVector(varp, isBit) + '*';
+                       + DpiTypesToStringConverter::bitLogicVector(varp, isBit) + '*';
             }
             string primitive(const AstVar* varp) const override {
-                string type = dpiTypesToStringConverter::primitive(varp);
+                string type = DpiTypesToStringConverter::primitive(varp);
                 if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                     if (!varp->isWritable() && varp->basicp()->keyword() != VBasicDTypeKwd::STRING)
                         type = "const " + type;
@@ -992,7 +1162,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 }
 
 string AstVar::dpiTmpVarType(const string& varName) const {
-    class converter final : public dpiTypesToStringConverter {
+    class converter final : public DpiTypesToStringConverter {
         const string m_name;
         string arraySuffix(const AstVar* varp, size_t n) const {
             if (const AstUnpackArrayDType* const unpackp
@@ -1008,16 +1178,16 @@ string AstVar::dpiTmpVarType(const string& varName) const {
             }
         }
         string openArray(const AstVar* varp) const override {
-            return dpiTypesToStringConverter::openArray(varp) + ' ' + m_name
+            return DpiTypesToStringConverter::openArray(varp) + ' ' + m_name
                    + arraySuffix(varp, 0);
         }
         string bitLogicVector(const AstVar* varp, bool isBit) const override {
-            string type = dpiTypesToStringConverter::bitLogicVector(varp, isBit);
+            string type = DpiTypesToStringConverter::bitLogicVector(varp, isBit);
             type += ' ' + m_name + arraySuffix(varp, varp->widthWords());
             return type;
         }
         string primitive(const AstVar* varp) const override {
-            string type = dpiTypesToStringConverter::primitive(varp);
+            string type = DpiTypesToStringConverter::primitive(varp);
             if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 if (!varp->isWritable() && varp->basicp()->isCHandle()) type = "const " + type;
             }
@@ -1172,27 +1342,6 @@ bool AstNodeDType::isNonPackedArray() const {
     return VN_IS(this, UnpackArrayDType) || VN_IS(this, DynArrayDType) || VN_IS(this, QueueDType)
            || VN_IS(this, AssocArrayDType);
 }
-
-class AstNodeDType::CTypeRecursed final {
-public:
-    string m_type;  // The base type, e.g.: "Foo_t"s
-    string m_dims;  // Array dimensions, e.g.: "[3][2][1]"
-    string render(const string& name, bool isRef) const VL_MT_SAFE {
-        string out;
-        out += m_type;
-        if (!name.empty()) out += " ";
-        if (isRef) {
-            if (!m_dims.empty()) out += "(";
-            out += "&";
-            out += name;
-            if (!m_dims.empty()) out += ")";
-        } else {
-            out += name;
-        }
-        out += m_dims;
-        return out;
-    }
-};
 
 string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef, bool packed) const {
     const CTypeRecursed info = cTypeRecurse(false, packed);
@@ -1728,52 +1877,6 @@ AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp
     return varScopep;
 }
 
-static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
-    // Unpacked array initializers must have equivalent values
-    // Note, sadly we can't just call ap->sameTree(pb), because both:
-    // - the dtypes might be different instances
-    // - the default/inititem children might be in different order yet still yield the same table
-    // See note in AstInitArray::same about the same. This function instead compares by initializer
-    // value, rather than by tree structure.
-    if (const AstAssocArrayDType* const aDTypep = VN_CAST(ap->dtypep(), AssocArrayDType)) {
-        const AstAssocArrayDType* const bDTypep = VN_CAST(bp->dtypep(), AssocArrayDType);
-        if (!bDTypep) return false;
-        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-        if (!aDTypep->keyDTypep()->sameTree(bDTypep->keyDTypep())) return false;
-        UASSERT_OBJ(ap->defaultp(), ap, "Assoc InitArray should have a default");
-        UASSERT_OBJ(bp->defaultp(), bp, "Assoc InitArray should have a default");
-        if (!ap->defaultp()->sameTree(bp->defaultp())) return false;
-        // Compare initializer arrays by value. Note this is only called when they hash the same,
-        // so they likely run at most once per call to 'AstConstPool::findTable'.
-        // This assumes that the defaults are used in the same way.
-        // TODO when building the AstInitArray, remove any values matching the default
-        const auto& amapr = ap->map();
-        const auto& bmapr = bp->map();
-        const auto ait = amapr.cbegin();
-        const auto bit = bmapr.cbegin();
-        while (ait != amapr.cend() || bit != bmapr.cend()) {
-            if (ait == amapr.cend() || bit == bmapr.cend()) return false;  // Different size
-            if (ait->first != bit->first) return false;  // Different key
-            if (ait->second->sameTree(bit->second)) return false;  // Different value
-        }
-    } else if (const AstUnpackArrayDType* const aDTypep
-               = VN_CAST(ap->dtypep(), UnpackArrayDType)) {
-        const AstUnpackArrayDType* const bDTypep = VN_CAST(bp->dtypep(), UnpackArrayDType);
-        if (!bDTypep) return false;
-        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-        if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) return false;
-        // Compare initializer arrays by value. Note this is only called when they hash the same,
-        // so they likely run at most once per call to 'AstConstPool::findTable'.
-        const uint64_t size = aDTypep->elementsConst();
-        for (uint64_t n = 0; n < size; ++n) {
-            const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
-            const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
-            if (!valAp->sameTree(valBp)) return false;
-        }
-    }
-    return true;
-}
-
 AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
     const AstNode* const defaultp = initp->defaultp();
     // Verify initializer is well formed
@@ -1805,14 +1908,6 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
     AstVarScope* const varScopep = createNewEntry(name, initp);
     m_tables.emplace(hash.value(), varScopep);
     return varScopep;
-}
-
-static bool sameInit(const AstConst* ap, const AstConst* bp) {
-    // Similarly to the AstInitArray comparison, we ignore the dtype instance, so long as they
-    // are compatible. For now, we assume the dtype is not relevant, as we only call this from
-    // V3Prelim which is a late pass.
-    // Compare initializers by value. This checks widths as well.
-    return ap->num().isCaseEq(bp->num());
 }
 
 AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
@@ -1861,88 +1956,6 @@ void AstConstPool::rebuildVarScopesAndCache() {
         if (isTable) m_tables.emplace(V3Hasher::uncachedHash(valuep).value(), vscp);
         if (constp) m_consts.emplace(constp->num().toHash().value(), vscp);
     }
-}
-
-//======================================================================
-// Per-type Debugging
-
-void AstNode::dump(std::ostream& str) const {
-    str << typeName() << " " << nodeAddr(this)
-#ifdef VL_DEBUG
-        << " <e" << std::dec << editCount() << ((editCount() >= editCountLast()) ? "#>" : ">")
-#endif
-        << " {" << fileline()->filenameLetters() << std::dec << fileline()->lastLineno()
-        << fileline()->firstColumnLetters() << "}";
-    const auto dumpUser = [&str](const char* prefix, const VNUser& user) {
-        const std::string s = user.dumpStr([](const void* p) -> std::string {
-            return nodeAddr(reinterpret_cast<const AstNode*>(p));
-        });
-        if (!s.empty()) str << prefix << s;
-    };
-    dumpUser(" u1=", user1u());
-    dumpUser(" u2=", user2u());
-    dumpUser(" u3=", user3u());
-    dumpUser(" u4=", user4u());
-    if (hasDType()) {
-        // Final @ so less likely to by accident read it as a nodep
-        if (dtypep() == this) {
-            str << " @dt=this@";
-        } else {
-            str << " @dt=" << nodeAddr(dtypep()) << "@";
-        }
-        if (const AstNodeDType* const dtp = dtypep()) dtp->dumpSmall(str);
-    } else {  // V3Broken will throw an error
-        if (dtypep()) str << " %Error-dtype-exp=null,got=" << nodeAddr(dtypep());
-    }
-    if (fileline()->erroringOn()) str << " [ERRORING]";
-    if (name() != "") {
-        if (VN_IS(this, Const)) {
-            str << "  " << name();  // Already quoted
-        } else {
-            str << "  " << V3OutFormatter::quoteNameControls(name());
-        }
-    }
-}
-
-void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string& listName,
-                      const string& indent) {
-    if (!nodep) return;
-    os << ',';
-    os << '\n' << indent + " \"" << listName << "\": [\n";
-    for (; nodep; nodep = nodep->nextp()) {
-        nodep->dumpTreeJson(os, indent + "  ");
-        if (nodep->nextp()) os << ',';
-        os << '\n';
-    }
-    os << indent << ']';
-}
-
-static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
-    const std::string filename
-        = v3Global.opt.jsonIds() ? fileinfop->filenameLetters() : fileinfop->filename();
-    os << ",\"loc\":\"" << filename << ',' << fileinfop->firstLineno() << ':'
-       << fileinfop->firstColumn() << ',' << fileinfop->lastLineno() << ':'
-       << fileinfop->lastColumn() << '"';
-}
-
-void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
-    os << indent << "{\"type\":\"" << typeName() << '"';
-    dumpJsonStr(os, "name", V3OutFormatter::quoteNameControls(prettyName()));
-    dumpJsonPtr(os, "addr", this);
-    dumpFileInfo(os, fileline());
-#ifdef VL_DEBUG
-    if (v3Global.opt.jsonEditNums()) dumpJsonNum(os, "editNum", editCount());
-#endif
-    if (hasDType()) {
-        dumpJsonPtrFunc(os, dtypep);
-    } else {  // V3Broken will throw an error
-        if (dtypep()) {
-            dumpJsonStr(os, "dtypep", " %Error-dtype-exp=null,got=" + nodeAddr(dtypep()));
-        }
-    }
-    dumpJson(os);
-    dumpTreeJsonOpGen(os, indent);
-    os << "}";
 }
 
 void AstNodeProcedure::dump(std::ostream& str) const {
@@ -4221,14 +4234,6 @@ void AstCUse::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 
-static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
-    if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
-        if (refp->varp()->delayp()) return refp->varp()->delayp();
-    } else if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
-        return getLhsNetDelayRecurse(selp->fromp());
-    }
-    return nullptr;
-}
 AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 
 string AstCase::pragmaString() const {
