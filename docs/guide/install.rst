@@ -174,7 +174,7 @@ once, after ``configure``:
    # Install dependencies
    sudo apt install python3-pip
 
-   # Create Python virtual environment in .venv:
+   # Create Python virutal environment in .venv:
    make venv
 
    # Or alternatively, to put it somewhere else:
