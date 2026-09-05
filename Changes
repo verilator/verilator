@@ -180,6 +180,10 @@ Verilator 5.051 devel
 * Fix multiply undefined behavior on signed int overflow (#8247) (#8248). [Paul Rigge]
 * Fix initial statements with gate optimization (#8250). [Prithayan Barua]
 * Fix segmentation fault on context destruction (#8265).
+* Fix mis-randomizing an unpacked struct member when not rand/randc (#8277) (#8278). [Aditya Shevade]
+* Fix std::randomize() with-clause array index arguments (#8279) (#8280). [Aditya Shevade]
+* Fix incorrect reference to sync/async in SYNCASYNCNET warning (#8281). [Andrii, Antmicro Ltd.]
+* Fix use-after-free of captured interface typedef in deleted generate branch (#8287). [Nick Brereton]
 
 
 Verilator 5.050 2026-07-01
