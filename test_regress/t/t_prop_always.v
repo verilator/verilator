@@ -35,6 +35,10 @@ module t (
   // Bare always (collapses to immediate P).
   assert property (@(posedge clk) always 1'b1);
 
+  // A zero-lower-bound weak always remains temporal even though it starts at entry.
+  assert property (@(posedge clk) (always [0:$] a_low) or 1'b1);
+  assert property (@(posedge clk) 1'b1 or (always [0:$] a_low));
+
   // Bounded weak always over constant-true input.
   assert property (@(posedge clk) always [0:3] a_high) high_bounded_pass_q.push_back(cyc);
 
