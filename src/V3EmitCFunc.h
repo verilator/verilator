@@ -814,9 +814,9 @@ public:
         int argNum = 0;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
-            if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
-                // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
-                // apply protect() similar to VL_STOP to handle --protected flag
+            if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 2) {
+                // For RANDOMIZER_HARD's filename argument (after the constraint and the
+                // variables it names), apply protect() similar to VL_STOP for --protected
                 if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {
                     // Extract filename from the CExpr (which contains "filename")
                     std::string filename;
