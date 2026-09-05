@@ -14,7 +14,8 @@ test.top_filename = "t/t_flag_make_cmake.v"
 
 test.compile(  # Don't call cmake nor gmake from driver.py
     verilator_flags2=[
-        '--exe --cc --build -j 2', '../' + test.main_filename, '-MAKEFLAGS -p --trace-vcd', '--stats'
+        '--exe --cc --build -j 2', '../' + test.main_filename, '-MAKEFLAGS -p --trace-vcd',
+        '--stats'
     ])
 
 test.execute()
