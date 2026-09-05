@@ -10,7 +10,15 @@ The changes in each Verilator version are described below.  The
 contributors that suggested or implemented a given issue are shown in []. Thanks!
 
 
-Verilator 5.051 devel
+Verilator 5.053 devel
+==========================
+
+**Other:**
+
+* TBD
+
+
+Verilator 5.052 2026-09-05
 ==========================
 
 **Important:**
@@ -181,6 +189,9 @@ Verilator 5.051 devel
 * Fix initial statements with gate optimization (#8250). [Prithayan Barua]
 * Fix segmentation fault on context destruction (#8265).
 * Fix mis-randomizing an unpacked struct member when not rand/randc (#8277) (#8278). [Aditya Shevade]
+* Fix std::randomize() with-clause array index arguments (#8279) (#8280). [Aditya Shevade]
+* Fix incorrect reference to sync/async in SYNCASYNCNET warning (#8281). [Andrii, Antmicro Ltd.]
+* Fix use-after-free of captured interface typedef in deleted generate branch (#8287). [Nick Brereton]
 
 
 Verilator 5.050 2026-07-01
