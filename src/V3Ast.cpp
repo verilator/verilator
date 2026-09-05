@@ -49,6 +49,8 @@ bool VNUser4InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
+V3AST_VCFUNCTION_ITEMDATA_DECL;
+
 //======================================================================
 // VCMethod information
 

@@ -4063,6 +4063,16 @@ void AstCAwait::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 int AstCMethodHard::instrCount() const {
     return 0;  // TODO
 }
+void AstCFuncHard::setPurity() {
+    m_pure = function().isPure();
+    if (!m_pure) return;
+    for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        if (!argp->isPure()) {
+            m_pure = false;
+            return;
+        }
+    }
+}
 void AstCMethodHard::setPurity() {
     if (method() == VCMethod::DYN_AT_WRITE_APPEND
         || method() == VCMethod::DYN_AT_WRITE_APPEND_BACK) {
