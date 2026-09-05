@@ -266,7 +266,7 @@ bool AstNode::isDisableQueuePushSelfStmt() {
     if (!stmtExprp) return false;
     AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
     if (!methodp || methodp->name() != "push_back") return false;
-    AstNode* const basep = AstArraySel::baseFromp(methodp->fromp(), false);
+    AstNode* const basep = methodp->fromp()->baseFromp(false);
     if (AstVarRef* const refp = VN_CAST(basep, VarRef)) return refp->varp()->processQueue();
     if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
         return selp->varp() && selp->varp()->processQueue();
@@ -313,50 +313,6 @@ const char* AstAnd::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
     return nullptr;
-}
-/// What is the base variable (or const) this dereferences?
-AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
-    // Else AstArraySel etc; search for the base
-    while (nodep) {
-        if (VN_IS(nodep, ArraySel)) {
-            nodep = VN_AS(nodep, ArraySel)->fromp();
-            continue;
-        } else if (VN_IS(nodep, Sel)) {
-            nodep = VN_AS(nodep, Sel)->fromp();
-            continue;
-        } else if (VN_IS(nodep, AssocSel)) {
-            nodep = VN_AS(nodep, AssocSel)->fromp();
-            continue;
-        } else if (VN_IS(nodep, WildcardSel)) {
-            nodep = VN_AS(nodep, WildcardSel)->fromp();
-            continue;
-        } else if (VN_IS(nodep, CMethodHard)) {
-            nodep = VN_AS(nodep, CMethodHard)->fromp();
-            continue;
-        } else if (overMembers && VN_IS(nodep, MemberSel)) {
-            nodep = VN_AS(nodep, MemberSel)->fromp();
-            continue;
-        } else if (overMembers && VN_IS(nodep, StructSel)) {
-            nodep = VN_AS(nodep, StructSel)->fromp();
-            continue;
-        }
-        // AstNodePreSel stashes the associated variable under an ATTROF
-        // of VAttrType::VAR_BASE so it isn't constified
-        else if (VN_IS(nodep, AttrOf)) {
-            nodep = VN_AS(nodep, AttrOf)->fromp();
-            continue;
-        } else if (VN_IS(nodep, NodePreSel)) {
-            if (VN_AS(nodep, NodePreSel)->attrp()) {
-                nodep = VN_AS(nodep, NodePreSel)->attrp();
-            } else {
-                nodep = VN_AS(nodep, NodePreSel)->fromp();
-            }
-            continue;
-        } else {
-            break;
-        }
-    }
-    return nodep;
 }
 AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, uint32_t assertType,
                            uint32_t directiveType, AstNodeExpr* levelp, AstNodeExpr* itemsp)
@@ -2513,6 +2469,73 @@ int AstNodeDType::widthStream() const {
         return width;
     }
     return dtypep->width();
+}
+// What is the base variable (or const) this dereferences?
+AstNode* AstNodeExpr::baseFromp(bool overMembers) {
+    AstNode* nodep = this;
+    while (nodep) {
+        if (VN_IS(nodep, ArraySel)) {
+            nodep = VN_AS(nodep, ArraySel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, Sel)) {
+            nodep = VN_AS(nodep, Sel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, AssocSel)) {
+            nodep = VN_AS(nodep, AssocSel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, WildcardSel)) {
+            nodep = VN_AS(nodep, WildcardSel)->fromp();
+            continue;
+        } else if (VN_IS(nodep, CMethodHard)) {
+            nodep = VN_AS(nodep, CMethodHard)->fromp();
+            continue;
+        } else if (overMembers && VN_IS(nodep, MemberSel)) {
+            nodep = VN_AS(nodep, MemberSel)->fromp();
+            continue;
+        } else if (overMembers && VN_IS(nodep, StructSel)) {
+            nodep = VN_AS(nodep, StructSel)->fromp();
+            continue;
+        }
+        // AstNodePreSel stashes the associated variable under an ATTROF
+        // of VAttrType::VAR_BASE so it isn't constified
+        else if (VN_IS(nodep, AttrOf)) {
+            nodep = VN_AS(nodep, AttrOf)->fromp();
+            continue;
+        } else if (VN_IS(nodep, NodePreSel)) {
+            if (VN_AS(nodep, NodePreSel)->attrp()) {
+                nodep = VN_AS(nodep, NodePreSel)->attrp();
+            } else {
+                nodep = VN_AS(nodep, NodePreSel)->fromp();
+            }
+            continue;
+        } else {
+            break;
+        }
+    }
+    return nodep;
+}
+AstNodeExpr* AstNodeExpr::cLValueTargetp() {
+    // Leaves
+    if (AstVarRef* const refp = VN_CAST(this, VarRef)) {  //
+        return refp;
+    }
+    if (AstMemberSel* const selp = VN_CAST(this, MemberSel)) {  //
+        return selp;
+    }
+
+    // Recursive
+    if (AstSel* const selp = VN_CAST(this, Sel)) {  //
+        return selp->fromp()->cLValueTargetp();
+    }
+    if (AstStructSel* const selp = VN_CAST(this, StructSel)) {  //
+        return selp->fromp()->cLValueTargetp();
+    }
+    if (AstNodeSel* const selp = VN_CAST(this, NodeSel)) {  // Array, Assoc, Wildcard, Word
+        return selp->fromp()->cLValueTargetp();
+    }
+
+    // Not an LValue
+    return nullptr;
 }
 void AstNodeExpr::dump(std::ostream& str) const { Super::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }

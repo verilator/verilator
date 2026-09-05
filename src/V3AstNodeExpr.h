@@ -66,7 +66,15 @@ public:
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
     // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
     virtual bool isMultiCycleSva() const { return false; }
+
+    // TODO: consolidate cLValueTargetp, isLValue, baseFromp
+    // If the expression is a valid C++ LValue, return the target reference, else nullptr
+    // This always returns either AstVarRef, AstMemberSel, or nullptr
+    AstNodeExpr* cLValueTargetp();
+    // TODO: this actually means it's a write or RW, not that it's an LValue
     bool isLValue() const;
+    // Return base var (or const) nodep dereferences
+    AstNode* baseFromp(bool overMembers);
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
@@ -4922,9 +4930,6 @@ public:
     bool isPredictOptimizable() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    // Special operators
-    // Return base var (or const) nodep dereferences
-    static AstNode* baseFromp(AstNode* nodep, bool overMembers);
 };
 class AstAssocSel final : public AstNodeSel {
     void init(const AstNode* fromp) {
