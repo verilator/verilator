@@ -241,17 +241,15 @@ class V3DfgRemoveSelectsContext final : public V3DfgSubContext {
 public:
     // STATE
     VDouble0 m_removedFullWidth;  // Number of full width selects removed
-    VDouble0 m_replacedWithSelFromFull;  // Number of selects replaced with sel from full driver
-    VDouble0 m_replacedWithSelFromPart;  // Number of selects replaced with sel from partial driver
-    VDouble0 m_replacedWithPart;  // Number of selects replaced with part of driver
+    VDouble0 m_replacedWithSelFromDriver;  // Number of selects replaced with sel from a driver
+    VDouble0 m_replacedWithWholeDriver;  // Number of selects replaced with a whole driver
 private:
     V3DfgRemoveSelectsContext()
         : V3DfgSubContext{"RemoveSelects"} {}
     ~V3DfgRemoveSelectsContext() {
         addStat("full width selects removed", m_removedFullWidth);
-        addStat("replaced with sel from full driver", m_replacedWithSelFromFull);
-        addStat("replaced with sel from partial driver", m_replacedWithSelFromPart);
-        addStat("replaced with partial driver", m_replacedWithPart);
+        addStat("replaced with sel from driver", m_replacedWithSelFromDriver);
+        addStat("replaced with whole driver", m_replacedWithWholeDriver);
     }
 };
 class V3DfgRemoveUnobservableContext final : public V3DfgSubContext {

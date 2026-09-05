@@ -1195,24 +1195,24 @@ class V3DfgPeephole final : public DfgVisitor {
 
             // Sel from a partial variable (including narrowed vertex)
             if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
-                if (varp->srcp() && !varp->isVolatile() && !varp->srcp()->is<DfgCReset>()) {
-                    // Must be a splice, otherwise it would have been inlined
-                    DfgSplicePacked* splicep = varp->srcp()->as<DfgSplicePacked>();
-                    DfgVertex* driverp = nullptr;
-                    uint32_t driverLsb = 0;
-                    splicep->foreachDriver([&](DfgVertex& src, const uint32_t dLsb) {
-                        const uint32_t dMsb = dLsb + src.width() - 1;
-                        // If it does not cover the whole searched bit range, move on
-                        if (lsb < dLsb || dMsb < msb) return false;
-                        // Save the driver
-                        driverp = &src;
-                        driverLsb = dLsb;
-                        return true;
-                    });
-                    if (driverp) {
+                // Find the driver of this range
+                const auto pair = varp->driverOfRange(lsb, width);
+                DfgVertex* const driverp = pair.first;
+                const uint32_t driverLsb = pair.second;
+                UASSERT_OBJ(
+                    !driverp || driverp != varp->srcp(), varp,
+                    "'varp' should be partially driven, otherwise should have been inlined");
+                if (driverp) {
+                    if (driverp == varp->defaultp()) {
+                        APPLYING(PUSH_SEL_THROUGH_DEFAULT) {
+                            fromp = driverp;
+                            lsb = driverLsb;
+                            continue;
+                        }
+                    } else {
                         APPLYING(PUSH_SEL_THROUGH_SPLICE) {
                             fromp = driverp;
-                            lsb -= driverLsb;
+                            lsb = driverLsb;
                             continue;
                         }
                     }

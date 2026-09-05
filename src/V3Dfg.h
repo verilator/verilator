@@ -49,6 +49,7 @@
 #include <new>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #ifndef VL_NOT_FINAL
