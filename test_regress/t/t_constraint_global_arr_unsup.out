@@ -1,34 +1,34 @@
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:41:20: Unsupported: Nested array element access in global constraint
-   41 |     m_mid.m_arr[0].m_x == 200;
-      |                    ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:42:20: Unsupported: Nested array element access in global constraint
-   42 |     m_mid.m_arr[0].m_y == 201;
-      |                    ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:47:24: Unsupported: Nested array element access in global constraint
-   47 |     m_mid_arr[0].m_obj.m_x == 300;
-      |                        ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:48:24: Unsupported: Nested array element access in global constraint
-   48 |     m_mid_arr[0].m_obj.m_y == 301;
-      |                        ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:27: Unsupported: Nested array element access in global constraint
-   53 |     m_mid_arr[1].m_arr[2].m_y == 400;
-      |                           ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:59:16: Unsupported: Array element access in global constraint
-   59 |     m_assoc[0].m_x == 500;
-      |                ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:65:34: Unsupported: Nested array element access in global constraint
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:44:34: Unsupported: Nested array element access in global constraint
                                                            : ... note: In instance 't_constraint_global_arr_unsup'
-   65 |       solve m_mid_arr[((i*2)/2)].m_obj.m_x before m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+   44 |       solve m_mid_arr[((i*2)/2)].m_obj.m_x before m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
       |                                  ^~~~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:65:76: Unsupported: Nested array element access in global constraint
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:44:76: Unsupported: Nested array element access in global constraint
                                                            : ... note: In instance 't_constraint_global_arr_unsup'
-   65 |       solve m_mid_arr[((i*2)/2)].m_obj.m_x before m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+   44 |       solve m_mid_arr[((i*2)/2)].m_obj.m_x before m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
       |                                                                            ^~~~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:67:34: Unsupported: Nested array element access in global constraint
-   67 |       m_mid_arr[((i*2)/2)].m_obj.m_x != m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
-      |                                  ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:67:72: Unsupported: Nested array element access in global constraint
-   67 |       m_mid_arr[((i*2)/2)].m_obj.m_x != m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
-      |                                                                        ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:46:16: Unsupported: Multiple expressions inside indices of complex expression in constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   46 |       m_mid_arr[((i*2)/2)].m_obj.m_x != m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+      |                ^
+                    t/t_constraint_global_arr_unsup.v:46:50: ... Location of second expression
+   46 |       m_mid_arr[((i*2)/2)].m_obj.m_x != m_mid_arr[((i*2)/2) + 1].m_obj.m_x;
+      |                                                  ^
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:52:14: Unsupported: Randomized index in complex expression
+   52 |     m_mid_arr[m_idx].m_obj.m_x == 123;
+      |              ^
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:57:16: Unsupported: Multiple expressions inside indices of complex expression in constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   57 |     m_mid.m_arr[m_base + 0].m_x == 123;
+      |                ^
+                    t/t_constraint_global_arr_unsup.v:58:16: ... Location of second expression
+   58 |     m_mid.m_arr[m_base + 1].m_x == 321;
+      |                ^
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:64:24: Unsupported: Array element access in global constraint
+   64 |       m_mid.m_assoc[i].m_x == 1;
+      |                        ^~~
+%Error: t/t_constraint_global_arr_unsup.v:64:21: Illegal non-integral expression or subexpression in random constraint. (IEEE 1800-2023 18.3)
+   64 |       m_mid.m_assoc[i].m_x == 1;
+      |                     ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
