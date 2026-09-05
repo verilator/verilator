@@ -698,6 +698,25 @@ class AstToDfgSynthesize final {
         return drivers;
     }
 
+    // Returns true if the driver explicitly covers a whole array element
+    static bool driverCoversWholeElement(const Driver& driver) {
+        const DfgUnitArray* const unitp = driver.m_vtxp->cast<DfgUnitArray>();
+        if (!unitp) return false;
+        DfgVertexSplice* const splicep = unitp->srcp()->cast<DfgVertexSplice>();
+        return splicep && splicep->wholep();
+    }
+
+    // Returns true if the drivers explicitly cover the whole variable
+    static bool driversCoverWhole(const std::vector<Driver>& drivers, const DfgVertexVar& var) {
+        uint32_t next = 0;
+        for (const Driver& driver : drivers) {
+            if (driver.m_lo != next) return false;
+            if (!driverCoversWholeElement(driver)) return false;
+            next = driver.m_hi + 1;
+        }
+        return next == var.size();
+    }
+
     // Returns true if the driver cone contains any variable introduced by
     // tristate lowering. Used to distinguish intentional tristate contributor
     // overlap from accidental multidrive.
@@ -1310,6 +1329,41 @@ class AstToDfgSynthesize final {
         return propagatedDrivers;
     }
 
+    // Propagate non-overwritten single-element array drivers from 'oldp'
+    bool computePropagatedArrayDrivers(const std::vector<Driver>& newDrivers, DfgVertexVar* oldp,
+                                       std::vector<Driver>& propagatedDrivers) {
+        const std::vector<Driver> oldDrivers = gatherDrivers(oldp->srcp()->as<DfgVertexSplice>());
+        UASSERT_OBJ(!oldDrivers.empty(), oldp, "Should have a proper driver");
+        for (const Driver& nDriver : newDrivers) {
+            if (!nDriver.m_vtxp->is<DfgUnitArray>()) return false;
+        }
+        for (const Driver& oDriver : oldDrivers) {
+            if (!oDriver.m_vtxp->is<DfgUnitArray>()) return false;
+        }
+
+        for (const Driver& oDriver : oldDrivers) {
+            bool overwritten = false;
+            for (const Driver& nDriver : newDrivers) {
+                if (nDriver.m_lo > oDriver.m_lo) break;
+                if (nDriver.m_lo <= oDriver.m_lo && nDriver.m_hi >= oDriver.m_hi) {
+                    if (!driverCoversWholeElement(nDriver)) return false;
+                    overwritten = true;
+                    break;
+                }
+            }
+            if (overwritten) continue;
+            FileLine* const flp = oDriver.m_flp;
+            const DfgUnitArray* const oldUnitp = oDriver.m_vtxp->as<DfgUnitArray>();
+            DfgArraySel* const selp = make<DfgArraySel>(flp, oldUnitp->srcp()->dtype());
+            selp->fromp(oldp);
+            selp->bitp(make<DfgConst>(flp, static_cast<size_t>(VL_IDATASIZE), oDriver.m_lo));
+            DfgUnitArray* const newUnitp = make<DfgUnitArray>(flp, oldUnitp->dtype());
+            newUnitp->srcp(selp);
+            propagatedDrivers.emplace_back(newUnitp, oDriver.m_lo, flp);
+        }
+        return true;
+    }
+
     // Given the drivers of a variable after converting a single statement
     // 'newp', add drivers from 'oldp' that were not reassigned be drivers
     // in newp. This computes the total result of all previous assignments.
@@ -1325,17 +1379,15 @@ class AstToDfgSynthesize final {
         // If the old value is the real variable we just computed the new value for,
         // then it is the circular feedback into the synthesized block, add it as default driver.
         if (oldp->vscp() == vscp) {
-            if (!nSplicep->wholep()) newp->defaultp(oldp);
+            bool fullyDriven = nSplicep->wholep();
+            if (!newp->isPacked() && !fullyDriven) {
+                fullyDriven = driversCoverWhole(gatherDrivers(nSplicep), *newp);
+            }
+            if (!fullyDriven) newp->defaultp(oldp);
             return true;
         }
 
         UASSERT_OBJ(oldp->srcp(), vscp, "Previously assigned variable has no driver");
-
-        // Can't do arrays yet
-        if (!newp->isPacked()) {
-            ++m_ctx.m_synt.nonSynArray;
-            return false;
-        }
 
         // Gather drivers of 'newp' - they are in incresing range order with no overlaps
         UASSERT_OBJ(!newp->defaultp(), newp, "Converted value should not have default");
@@ -1343,24 +1395,34 @@ class AstToDfgSynthesize final {
         UASSERT_OBJ(!nDrivers.empty(), newp, "Should have a proper driver");
 
         // Additional drivers of 'newp' propagated from 'oldp'
-        std::vector<Driver> pDrivers = computePropagatedDrivers(nDrivers, oldp);
+        std::vector<Driver> pDrivers;
+        if (newp->isPacked()) {
+            pDrivers = computePropagatedDrivers(nDrivers, oldp);
+        } else if (!computePropagatedArrayDrivers(nDrivers, oldp, pDrivers)) {
+            ++m_ctx.m_synt.nonSynArray;
+            return false;
+        }
 
+        std::vector<Driver> drivers;
         if (!pDrivers.empty()) {
             // Need to merge propagated sources, so reset the splice
             nSplicep->resetDrivers();
             // Merge drivers - they are both sorted and non-overlapping
-            std::vector<Driver> drivers;
             drivers.reserve(nDrivers.size() + pDrivers.size());
             std::merge(nDrivers.begin(), nDrivers.end(), pDrivers.begin(), pDrivers.end(),
                        std::back_inserter(drivers));
             // Coalesce adjacent ranges
-            coalesceDrivers(drivers);
+            if (newp->isPacked()) coalesceDrivers(drivers);
             // Reinsert drivers in order
             for (const Driver& d : drivers) nSplicep->addDriver(d.m_vtxp, d.m_lo, d.m_flp);
         }
 
         // If the old had a default, add to the new one too, unless redundant
-        if (oldp->defaultp() && !nSplicep->wholep()) newp->defaultp(oldp->defaultp());
+        bool fullyDriven = nSplicep->wholep();
+        if (!newp->isPacked() && !fullyDriven) {
+            fullyDriven = driversCoverWhole(pDrivers.empty() ? nDrivers : drivers, *newp);
+        }
+        if (oldp->defaultp() && !fullyDriven) newp->defaultp(oldp->defaultp());
 
         // Done
         return true;
@@ -1520,16 +1582,206 @@ class AstToDfgSynthesize final {
         }
     }
 
-    // Returns true if all external updates to volatile variables are observed correctly
-    bool checkExtWrites() {
-        for (const DfgVertex* const vtxp : m_logicp->synth()) {
+    // Checks whether a synthesized value depends on its externally writable entry value
+    class EntryValueDependency final {
+        struct Range final {
+            DfgVertex* m_vtxp;
+            uint32_t m_msb;
+            uint32_t m_lsb;
+
+            bool operator<(const Range& other) const {
+                if (m_vtxp != other.m_vtxp) {
+                    return std::less<DfgVertex*>{}(m_vtxp, other.m_vtxp);
+                }
+                if (m_msb != other.m_msb) return m_msb < other.m_msb;
+                return m_lsb < other.m_lsb;
+            }
+        };
+
+        const AstVarScope* const m_targetp;
+        std::map<Range, bool> m_rangeCache;
+        std::set<Range> m_active;
+
+        bool isTarget(const DfgVertex* vtxp) const {
             const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
+            return varp && !varp->tmpForp() && varp->vscp() == m_targetp;
+        }
+
+        bool dependsOnRaw(DfgVertex* rootp) const {
+            std::vector<DfgVertex*> stack{rootp};
+            std::unordered_set<DfgVertex*> visited;
+            while (!stack.empty()) {
+                DfgVertex* const vtxp = stack.back();
+                stack.pop_back();
+                if (!visited.emplace(vtxp).second) continue;
+                if (isTarget(vtxp)) return true;
+                vtxp->foreachSource([&](DfgVertex& src) {
+                    stack.emplace_back(&src);
+                    return false;
+                });
+            }
+            return false;
+        }
+
+        bool dependsOnWhole(DfgVertex* vtxp) {
+            if (vtxp->isPacked()) return dependsOnRange(vtxp, vtxp->width() - 1, 0);
+            return dependsOnRaw(vtxp);
+        }
+
+        bool dependsOnUnresolved(DfgUnresolved* unresolvedp, uint32_t msb, uint32_t lsb) {
+            const bool unsynthesizedDependency = unresolvedp->foreachSource([&](DfgVertex& src) {
+                DfgLogic* const logicp = src.cast<DfgLogic>();
+                if (!logicp) return false;
+                if (!logicp->nonSynthesizable() && !logicp->synth().empty()) return false;
+                return dependsOnRaw(logicp);
+            });
+            if (unsynthesizedDependency) return true;
+
+            const std::vector<Driver> drivers = gatherDriversUnresolved(unresolvedp);
+            uint32_t next = lsb;
+            for (const Driver& driver : drivers) {
+                if (driver.m_hi < lsb) continue;
+                if (driver.m_lo > msb) break;
+                const uint32_t overlapLo = std::max(lsb, driver.m_lo);
+                const uint32_t overlapHi = std::min(msb, driver.m_hi);
+                if (dependsOnRange(driver.m_vtxp, overlapHi - driver.m_lo,
+                                   overlapLo - driver.m_lo)) {
+                    return true;
+                }
+                if (driver.m_lo <= next && driver.m_hi >= next) next = overlapHi + 1;
+            }
+
+            const DfgVertexVar* const varp = unresolvedp->singleSink()->as<DfgVertexVar>();
+            return isTarget(varp) && next <= msb;
+        }
+
+        bool dependsOnSplice(DfgVertexSplice* splicep, DfgVertex* defaultp, uint32_t msb,
+                             uint32_t lsb) {
+            const std::vector<Driver> drivers = gatherDrivers(splicep);
+            uint32_t next = lsb;
+            for (const Driver& driver : drivers) {
+                if (driver.m_hi < next) continue;
+                if (driver.m_lo > msb) break;
+                if (driver.m_lo > next) {
+                    if (!defaultp) return true;
+                    if (dependsOnRange(defaultp, std::min(msb, driver.m_lo - 1), next)) {
+                        return true;
+                    }
+                    next = driver.m_lo;
+                }
+                const uint32_t overlapHi = std::min(msb, driver.m_hi);
+                if (dependsOnRange(driver.m_vtxp, overlapHi - driver.m_lo, next - driver.m_lo)) {
+                    return true;
+                }
+                next = overlapHi + 1;
+                if (next > msb) return false;
+            }
+            if (next > msb) return false;
+            return !defaultp || dependsOnRange(defaultp, msb, next);
+        }
+
+        bool dependsOnRangeImpl(DfgVertex* vtxp, uint32_t msb, uint32_t lsb) {
+            if (DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>()) {
+                if (isTarget(varp)) {
+                    DfgUnresolved* const unresolvedp
+                        = varp->srcp() ? varp->srcp()->cast<DfgUnresolved>() : nullptr;
+                    return unresolvedp ? dependsOnUnresolved(unresolvedp, msb, lsb) : true;
+                }
+                DfgVertex* const srcp = varp->srcp();
+                if (!srcp) {
+                    DfgVertex* const defaultp = varp->defaultp();
+                    return defaultp && dependsOnRange(defaultp, msb, lsb);
+                }
+                if (DfgVertexSplice* const splicep = srcp->cast<DfgVertexSplice>()) {
+                    return dependsOnSplice(splicep, varp->defaultp(), msb, lsb);
+                }
+                return dependsOnRange(srcp, msb, lsb);
+            }
+            if (DfgUnresolved* const unresolvedp = vtxp->cast<DfgUnresolved>()) {
+                return dependsOnUnresolved(unresolvedp, msb, lsb);
+            }
+            if (DfgVertexSplice* const splicep = vtxp->cast<DfgVertexSplice>()) {
+                return dependsOnSplice(splicep, nullptr, msb, lsb);
+            }
+            if (DfgSel* const selp = vtxp->cast<DfgSel>()) {
+                return dependsOnRange(selp->fromp(), msb + selp->lsb(), lsb + selp->lsb());
+            }
+            if (DfgConcat* const concatp = vtxp->cast<DfgConcat>()) {
+                const uint32_t rWidth = concatp->rhsp()->width();
+                if (msb < rWidth) return dependsOnRange(concatp->rhsp(), msb, lsb);
+                if (lsb >= rWidth) {
+                    return dependsOnRange(concatp->lhsp(), msb - rWidth, lsb - rWidth);
+                }
+                return dependsOnRange(concatp->rhsp(), rWidth - 1, lsb)
+                       || dependsOnRange(concatp->lhsp(), msb - rWidth, 0);
+            }
+            if (DfgCond* const condp = vtxp->cast<DfgCond>()) {
+                return dependsOnWhole(condp->condp()) || dependsOnRange(condp->thenp(), msb, lsb)
+                       || dependsOnRange(condp->elsep(), msb, lsb);
+            }
+            if (DfgNot* const notp = vtxp->cast<DfgNot>()) {
+                return dependsOnRange(notp->srcp(), msb, lsb);
+            }
+            if (DfgAnd* const andp = vtxp->cast<DfgAnd>()) {
+                return dependsOnRange(andp->lhsp(), msb, lsb)
+                       || dependsOnRange(andp->rhsp(), msb, lsb);
+            }
+            if (DfgOr* const orp = vtxp->cast<DfgOr>()) {
+                return dependsOnRange(orp->lhsp(), msb, lsb)
+                       || dependsOnRange(orp->rhsp(), msb, lsb);
+            }
+            if (DfgXor* const xorp = vtxp->cast<DfgXor>()) {
+                return dependsOnRange(xorp->lhsp(), msb, lsb)
+                       || dependsOnRange(xorp->rhsp(), msb, lsb);
+            }
+            return vtxp->foreachSource([&](DfgVertex& src) { return dependsOnWhole(&src); });
+        }
+
+        bool dependsOnRange(DfgVertex* vtxp, uint32_t msb, uint32_t lsb) {
+            UASSERT_OBJ(vtxp->isPacked(), vtxp, "Can only inspect packed ranges");
+            UASSERT_OBJ(msb >= lsb && vtxp->width() > msb, vtxp, "Invalid inspected range");
+            const Range key{vtxp, msb, lsb};
+            const auto cached = m_rangeCache.find(key);
+            if (cached != m_rangeCache.end()) return cached->second;
+            if (!m_active.emplace(key).second) return true;
+            const bool depends = dependsOnRangeImpl(vtxp, msb, lsb);
+            m_active.erase(key);
+            m_rangeCache.emplace(key, depends);
+            return depends;
+        }
+
+    public:
+        explicit EntryValueDependency(DfgVertexVar* rootp)
+            : m_targetp{rootp->tmpForp()} {}
+
+        bool apply(DfgVertex* rootp, uint32_t msb, uint32_t lsb) {
+            return dependsOnRange(rootp, msb, lsb);
+        }
+        bool applyWhole(DfgVertex* rootp) { return dependsOnWhole(rootp); }
+    };
+
+    static bool dependsOnEntryValue(DfgVertexVar* rootp) {
+        EntryValueDependency dependency{rootp};
+        if (!rootp->isPacked()) return dependency.applyWhole(rootp);
+        return rootp->foreachSink([&](DfgVertex& sink) {
+            if (DfgSel* const selp = sink.cast<DfgSel>()) {
+                return dependency.apply(rootp, selp->lsb() + selp->width() - 1, selp->lsb());
+            }
+            return dependency.applyWhole(rootp);
+        });
+    }
+
+    // Returns true if all external updates to volatile variables are observed correctly
+    bool checkExtWrites(DfgLogic& logic, bool packed) {
+        for (DfgVertex* const vtxp : logic.synth()) {
+            DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
             if (!varp) continue;
-            // If the variable we synthesized this vertex for is volatile, and
-            // the value of the synthesized temporary is observed, we might be
-            // missing an external update, so we mut give up.
             if (!varp->hasSinks()) continue;
+            if (varp->isPacked() != packed) continue;
             if (!DfgVertexVar::isVolatile(varp->tmpForp())) continue;
+            // An observed synthesized value is safe if the bits used by downstream logic do not
+            // depend on the externally writable value present on entry to the process.
+            if (!dependsOnEntryValue(varp)) continue;
             ++m_ctx.m_synt.nonSynExtWrite;
             return false;
         }
@@ -1610,8 +1862,8 @@ class AstToDfgSynthesize final {
         VL_DO_DANGLING(assignp->deleteTree(), assignp);
         if (!success) return false;
 
-        // Check exernal writes are observed correctly
-        if (!checkExtWrites()) return false;
+        // Arrays use the conservative raw dependency check and need no provisional drivers.
+        if (!checkExtWrites(*m_logicp, false)) return false;
 
         // Add resolved output variable drivers
         return addSynthesizedOutput(oSymTab);
@@ -1672,8 +1924,8 @@ class AstToDfgSynthesize final {
             assignPathPredicates(bb);
         }
 
-        // Check exernal writes are observed correctly
-        if (!checkExtWrites()) return false;
+        // Arrays use the conservative raw dependency check and need no provisional drivers.
+        if (!checkExtWrites(*m_logicp, false)) return false;
 
         // Add resolved output variable drivers
         return addSynthesizedOutput(m_bbToOSymTab[cfg.exit()]);
@@ -1687,12 +1939,10 @@ class AstToDfgSynthesize final {
         if (AstAssignW* const ap = VN_CAST(vtx.nodep()->stmtsp(), AssignW)) {
             if (ap->nextp()) return false;
             if (!synthesizeAssignW(ap)) return false;
-            ++m_ctx.m_synt.synthAssign;
             return true;
         }
 
         if (!synthesizeCfg(vtx.cfg())) return false;
-        ++m_ctx.m_synt.synthAlways;
         return true;
     }
 
@@ -1812,6 +2062,33 @@ class AstToDfgSynthesize final {
             if (!synthesize(*logicp)) {
                 logicp->setNonSynthesizable();
                 m_toRevert.push_front(*logicp);
+            }
+        }
+
+        // Check external-entry dependencies after all provisional drivers are available. Repeat
+        // until no additional process is rejected, as a rejected process can invalidate an
+        // earlier dependency proof that used its synthesized drivers.
+        bool changed;
+        do {
+            changed = false;
+            for (DfgVertex& vtx : m_dfg.opVertices()) {
+                DfgLogic* const logicp = vtx.cast<DfgLogic>();
+                if (!logicp || logicp->nonSynthesizable()) continue;
+                if (checkExtWrites(*logicp, true)) continue;
+                logicp->setNonSynthesizable();
+                m_toRevert.push_front(*logicp);
+                changed = true;
+            }
+        } while (changed);
+
+        // Count processes that remain synthesized after all checks.
+        for (DfgVertex& vtx : m_dfg.opVertices()) {
+            DfgLogic* const logicp = vtx.cast<DfgLogic>();
+            if (!logicp || logicp->nonSynthesizable()) continue;
+            if (VN_IS(logicp->nodep()->stmtsp(), AssignW)) {
+                ++m_ctx.m_synt.synthAssign;
+            } else {
+                ++m_ctx.m_synt.synthAlways;
             }
         }
         debugDump("synth-converted");
