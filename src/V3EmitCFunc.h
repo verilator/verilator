@@ -808,6 +808,11 @@ public:
         if (nodep->method() == VCMethod::FORCE_READ_SEL) {
             emitIQW(nodep);
             if (nodep->isWide()) puts("<" + cvtToStr(nodep->dtypep()->widthWords()) + ">");
+        } else if (nodep->method() == VCMethod::ARRAY_SLICE) {
+            // VlUnpacked::slice<N_Out>(loIdx) - N_Out is the (fixed) result array size
+            const AstUnpackArrayDType* const adtypep
+                = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+            puts("<" + cvtToStr(adtypep->elementsConst()) + ">");
         }
         puts("(");
         bool comma = false;

@@ -1468,6 +1468,14 @@ public:
 
     constexpr std::size_t size() const { return N_Depth; }
 
+    // Runtime slice v[loIdx +: N_Out], loIdx being an index into m_storage
+    template <std::size_t N_Out>
+    VlUnpacked<T_Value, N_Out> slice(int32_t loIdx) const {
+        VlUnpacked<T_Value, N_Out> out;
+        for (std::size_t i = 0; i < N_Out; ++i) out.m_storage[i] = m_storage[loIdx + i];
+        return out;
+    }
+
     void fill(const T_Value& value) {
         std::fill(std::begin(m_storage), std::end(m_storage), value);
     }
