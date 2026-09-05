@@ -195,6 +195,7 @@ class V3DfgPeephole final : public DfgVisitor {
         size_t m_iterListIndex = 0;  // Position of this vertx m_iterList (0 means not in list)
         size_t m_generation = 0;  // Generation number of this vertex - for uniqueness check
         size_t m_id = 0;  // Unique vertex ID (0 means unassigned) - for sorting
+        bool m_isCachedVertex = false;  // This vertex is the vertex cached for its operation
     };
 
     // STATE
@@ -224,6 +225,41 @@ class V3DfgPeephole final : public DfgVisitor {
         UINFO(9, "Applying DFG pattern " << id.ascii());
         ++m_ctx.m_count[id];
         return true;
+    }
+
+    // Add vertex to the cache. If an equivalent (but different) vertex is
+    // already cached, it is returned and the cache is not updated.
+    DfgVertex* cacheVertex(DfgVertex* vtxp) {
+        DfgVertex* const equivp = m_cache.cache(vtxp);
+        UASSERT_OBJ(!m_vInfo[vtxp].m_isCachedVertex || !equivp, vtxp,
+                    "Vertex marked 'm_isCachedVertex' has a cached equivalent");
+        m_vInfo[vtxp].m_isCachedVertex = !equivp;
+        return equivp;
+    }
+
+    // Remove vertex from the cache (no-op if it is not the cached vertex)
+    void invalidateVertex(DfgVertex* vtxp) {
+        m_cache.invalidate(vtxp);
+        m_vInfo[vtxp].m_isCachedVertex = false;
+    }
+
+    // Find the vertex of the given type with the given operands in the
+    // cache, or create a new one and add it to the cache.
+    template <typename Vertex, typename... Operands>
+    Vertex* getOrCreateVertex(FileLine* flp, const DfgDataType& dtype, Operands... operands) {
+        Vertex* const vtxp = m_cache.getOrCreate<Vertex, Operands...>(flp, dtype, operands...);
+        m_vInfo[vtxp].m_isCachedVertex = true;
+        return vtxp;
+    }
+
+    // Find the vertex of the given type with the given operands in the
+    // cache, or nullptr if there is no such vertex.
+    template <typename Vertex, typename... Operands>
+    Vertex* getVertex(const DfgDataType& dtype, Operands... operands) {
+        Vertex* const vtxp = m_cache.get<Vertex>(dtype, operands...);
+        UASSERT_OBJ(!vtxp || m_vInfo[vtxp].m_isCachedVertex, vtxp,
+                    "Cached vertex not marked 'm_isCachedVertex'");
+        return vtxp;
     }
 
     void incrementGeneration() {
@@ -270,7 +306,7 @@ class V3DfgPeephole final : public DfgVisitor {
         UASSERT_OBJ(!varp || !varp->hasPrev(), vtxp, "Deleting variable consumed via DfgPrev");
 
         // Invalidate cache entry
-        m_cache.invalidate(vtxp);
+        invalidateVertex(vtxp);
 
         // It might be in the iter list, remove it
         removeFromIterList(vtxp);
@@ -344,14 +380,14 @@ class V3DfgPeephole final : public DfgVisitor {
 
         // Remove sinks of the original vertex from the cache - their inputs are changing
         m_vtxp->foreachSink([&](DfgVertex& dst) {
-            m_cache.invalidate(&dst);
+            invalidateVertex(&dst);
             return false;
         });
         // Replace vertex with the replacement
         m_vtxp->replaceWith(resp);
         // Re-cache all sinks of the replacement
         resp->foreachSink([&](DfgVertex& dst) {
-            m_cache.cache(&dst);
+            cacheVertex(&dst);
             return false;
         });
 
@@ -390,7 +426,7 @@ class V3DfgPeephole final : public DfgVisitor {
     template <typename Vertex, typename... Operands>
     Vertex* make(FileLine* flp, const DfgDataType& dtype, Operands... operands) {
         // Find or create an equivalent vertex
-        Vertex* const vtxp = m_cache.getOrCreate<Vertex, Operands...>(flp, dtype, operands...);
+        Vertex* const vtxp = getOrCreateVertex<Vertex, Operands...>(flp, dtype, operands...);
         // Sanity check
         UASSERT_OBJ(vtxp->dtype() == dtype, vtxp, "Vertex dtype mismatch");
         if (VL_UNLIKELY(v3Global.opt.debugCheck())) vtxp->typeCheck(m_dfg);
@@ -594,7 +630,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
                 // '(a OP (b OP c))' -> '(a OP b) OP c'
                 if (Vertex* const existingp
-                    = m_cache.get<Vertex>(resultDType<Vertex>(lhsp, rlVtxp), lhsp, rlVtxp)) {
+                    = getVertex<Vertex>(resultDType<Vertex>(lhsp, rlVtxp), lhsp, rlVtxp)) {
                     UASSERT_OBJ(existingp->hasSinks(), vtxp, "Existing vertex should be used");
                     if (existingp != rhsp) {
                         APPLYING(REUSE_ASSOC_BINARY_LHS_WITH_LHS_OF_RHS) {
@@ -607,7 +643,7 @@ class V3DfgPeephole final : public DfgVisitor {
                 // '(a OP (b OP c))' -> '(a OP c) OP b' iff also commutative
                 if VL_CONSTEXPR_CXX17 (IsCommutative<Vertex>::value) {
                     if (Vertex* const existingp
-                        = m_cache.get<Vertex>(resultDType<Vertex>(lhsp, rrVtxp), lhsp, rrVtxp)) {
+                        = getVertex<Vertex>(resultDType<Vertex>(lhsp, rrVtxp), lhsp, rrVtxp)) {
                         UASSERT_OBJ(existingp->hasSinks(), vtxp, "Existing vertex should be used");
                         if (existingp != rhsp) {
                             APPLYING(REUSE_ASSOC_BINARY_LHS_WITH_RHS_OF_RHS) {
@@ -3127,6 +3163,9 @@ class V3DfgPeephole final : public DfgVisitor {
         // Assign vertex IDs
         m_dfg.forEachVertex([&](DfgVertex& vtx) { m_vInfo[vtx].m_id = ++m_lastId; });
 
+        // Add all operation vertices to the cache
+        for (DfgVertex& vtx : m_dfg.opVertices()) cacheVertex(&vtx);
+
         // Initialize the work list and iter list. They can't get bigger than
         // m_dfg.size(), but new vertices are created in the loop, so over alloacte
         m_workList.reserve(m_dfg.size() * 2);
@@ -3168,11 +3207,14 @@ class V3DfgPeephole final : public DfgVisitor {
                 // Unsued vertices should have been removed immediately
                 UASSERT_OBJ(m_vtxp->hasSinks(), m_vtxp, "Operation vertex should have sinks");
 
-                // Check if an equivalent vertex exists, if so replace this vertex with it
-                if (DfgVertex* const sampep = m_cache.cache(m_vtxp)) {
-                    APPLYING(REPLACE_WITH_EQUIVALENT) {
-                        replace(sampep);
-                        continue;
+                // Check if an equivalent vertex exists, if so replace this vertex with it.
+                // Can skip the lookup if the vertex is known to be the cached one
+                if (!m_vInfo[m_vtxp].m_isCachedVertex) {
+                    if (DfgVertex* const sampep = cacheVertex(m_vtxp)) {
+                        APPLYING(REPLACE_WITH_EQUIVALENT) {
+                            replace(sampep);
+                            continue;
+                        }
                     }
                 }
 
