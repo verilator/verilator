@@ -100,6 +100,9 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+class VerilatedIfaceRef;
+class VerilatedIfaceRefMap;
+struct VlIfaceRefTableEntry;
 template <typename, typename>
 class VerilatedTrace;
 class VerilatedTraceBaseC;
@@ -868,6 +871,9 @@ public:
     const VerilatedScope* scopeFind(const char* namep) const VL_MT_SAFE;
     const VerilatedScopeNameMap* scopeNameMap() VL_MT_SAFE;
 
+    // Internal: Find interface reference by fully qualified path
+    const VerilatedIfaceRef* ifaceRefFind(const char* namep) const VL_MT_SAFE_POSTINIT;
+
     // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
     void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
@@ -897,6 +903,32 @@ public:  // But for internal use only
     virtual const char* name() const = 0;
 };
 
+// An interface reference port, and the concrete interface it is connected to.
+// Used for VPI; references are not scopes, so are not in VerilatedScopeNameMap.
+class VerilatedIfaceRef final {
+    const VerilatedScope* m_scopep = nullptr;  // Concrete interface referred to
+    const char* m_namep = "";  // Name of the reference port
+    // Fully qualified path; owned, as the instance name prefix is set at construction
+    std::string m_fullname;
+    const char* m_modportp = "";  // Modport name, or "" if none
+public:
+    VerilatedIfaceRef() = default;
+    VerilatedIfaceRef(const VerilatedScope* scopep, const char* namep, const std::string& fullname,
+                      const char* modportp)
+        : m_scopep{scopep}
+        , m_namep{namep}
+        , m_fullname{fullname}
+        , m_modportp{modportp} {}
+    ~VerilatedIfaceRef() = default;
+    // ACCESSORS
+    const VerilatedScope* scopep() const VL_MT_SAFE_POSTINIT { return m_scopep; }
+    const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
+    const char* fullname() const VL_MT_SAFE_POSTINIT { return m_fullname.c_str(); }
+    const char* modport() const VL_MT_SAFE_POSTINIT { return m_modportp; }
+    bool hasModport() const VL_MT_SAFE_POSTINIT { return m_modportp[0] != '\0'; }
+    void ifaceRefDump() const VL_MT_SAFE_POSTINIT;
+};
+
 //===========================================================================
 // Verilator scope information class
 // Used for internal VPI implementation, and introspection into scopes
@@ -908,8 +940,9 @@ public:
     enum Type : uint8_t {
         SCOPE_MODULE,
         SCOPE_OTHER,
-        SCOPE_PACKAGE
-    };  // Type of a scope, currently only module and package are interesting
+        SCOPE_PACKAGE,
+        SCOPE_INTERFACE
+    };  // Type of a scope, currently only module, package and interface are interesting
 private:
     // Fastpath:
     VerilatedSyms* const m_symsp;  // Symbol table
@@ -942,6 +975,10 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;
+    static void ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
+                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
+    static void ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
+                                        const VerilatedSyms* symsp) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -956,6 +993,15 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE;
     Type type() const { return m_type; }
     VerilatedContext* contextp() const { return m_symsp->_vm_contextp__; }
+};
+
+// One interface reference, consumed by VerilatedScope::ifaceRefsInsertFromTable()
+struct VlIfaceRefTableEntry final {
+    uint32_t ptrOffset;  // offsetof of the referred-to __Vscopep_* member within the Syms object
+    const char* namep;  // Name of the reference port
+    // Path within the model; as VlScopeTableEntry::namep, instance name prepended at construction
+    const char* suffixp;
+    const char* modportp;  // Modport name, or "" if none
 };
 
 // One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces

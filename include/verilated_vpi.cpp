@@ -721,6 +721,17 @@ public:
     uint32_t type() const override { return vpiModule; }
 };
 
+class VerilatedVpioInterface final : public VerilatedVpioScope {
+public:
+    explicit VerilatedVpioInterface(const VerilatedScope* scopep)
+        : VerilatedVpioScope{scopep} {}
+    // cppcheck-suppress duplInheritedMember
+    static VerilatedVpioInterface* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioInterface*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiInterface; }
+};
+
 class VerilatedVpioModuleIter final : public VerilatedVpio {
     const std::vector<const VerilatedScope*>* m_vec;
     std::vector<const VerilatedScope*>::const_iterator m_it;
@@ -778,6 +789,8 @@ public:
                 return (new VerilatedVpioScope{modp})->castVpiHandle();
             } else if (itype == VerilatedScope::SCOPE_MODULE) {
                 return (new VerilatedVpioModule{modp})->castVpiHandle();
+            } else if (itype == VerilatedScope::SCOPE_INTERFACE) {
+                return (new VerilatedVpioInterface{modp})->castVpiHandle();
             }
         }
     }
@@ -801,6 +814,91 @@ public:
     }
     const char* fullname() const override { return m_fullname_string.c_str(); }
     uint32_t type() const override { return vpiPackage; }
+};
+
+class VerilatedVpioModport final : public VerilatedVpio {
+    const VerilatedScope* const m_scopep;  // Interface the modport is within
+    const char* const m_name;  // Modport name
+    const std::string m_fullname;  // Interface full name + "." + modport name
+
+public:
+    VerilatedVpioModport(const VerilatedScope* scopep, const char* namep)
+        : m_scopep{scopep}
+        , m_name{namep}
+        , m_fullname{[scopep, namep]() {  // LCOV_EXCL_LINE
+            const char* ifacename = scopep->name();
+            if (std::strncmp(ifacename, "TOP.", 4) == 0) ifacename += 4;
+            return std::string{ifacename} + "." + namep;
+        }()} {}
+    ~VerilatedVpioModport() override = default;
+    // cppcheck-suppress duplInheritedMember
+    static VerilatedVpioModport* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioModport*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiModport; }
+    const VerilatedScope* scopep() const { return m_scopep; }
+    const char* name() const override { return m_name; }
+    const char* fullname() const override { return m_fullname.c_str(); }
+    // IEEE 1800-2023 37.15
+    const char* defname() const override { return m_name; }
+};
+
+class VerilatedVpioIfaceRef final : public VerilatedVpio {
+    // Held by value, as a handle may outlive the model that registered it
+    const VerilatedIfaceRef m_ifaceRef;
+
+public:
+    explicit VerilatedVpioIfaceRef(const VerilatedIfaceRef& ifaceRef)
+        : m_ifaceRef{ifaceRef} {}
+    ~VerilatedVpioIfaceRef() override = default;
+    // cppcheck-suppress duplInheritedMember
+    static VerilatedVpioIfaceRef* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioIfaceRef*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiRefObj; }
+    const VerilatedIfaceRef* ifaceRefp() const { return &m_ifaceRef; }
+    const char* name() const override { return m_ifaceRef.name(); }
+    const char* fullname() const override { return m_ifaceRef.fullname(); }
+    // IEEE 1800-2023 37.15: modport name, else the interface definition name
+    const char* defname() const override {
+        return m_ifaceRef.hasModport() ? m_ifaceRef.modport() : m_ifaceRef.scopep()->defname();
+    }
+    vpiHandle actual() const {
+        if (m_ifaceRef.hasModport()) {
+            return (new VerilatedVpioModport{m_ifaceRef.scopep(), m_ifaceRef.modport()})
+                ->castVpiHandle();
+        }
+        return (new VerilatedVpioInterface{m_ifaceRef.scopep()})->castVpiHandle();
+    }
+};
+
+class VerilatedVpioInterfaceIter final : public VerilatedVpio {
+    const std::vector<const VerilatedScope*>* m_vec;
+    std::vector<const VerilatedScope*>::const_iterator m_it;
+
+public:
+    explicit VerilatedVpioInterfaceIter(const std::vector<const VerilatedScope*>& vec)
+        : m_vec{&vec} {
+        m_it = m_vec->begin();
+    }
+    ~VerilatedVpioInterfaceIter() override = default;
+    // cppcheck-suppress duplInheritedMember
+    static VerilatedVpioInterfaceIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioInterfaceIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiIterator; }
+    vpiHandle dovpi_scan() override {
+        while (true) {
+            if (m_it == m_vec->end()) {
+                delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+                return nullptr;
+            }
+            const VerilatedScope* const scopep = *m_it++;
+            if (scopep->type() == VerilatedScope::SCOPE_INTERFACE) {
+                return (new VerilatedVpioInterface{scopep})->castVpiHandle();
+            }
+        }
+    }
 };
 
 class VerilatedVpioInstanceIter final : public VerilatedVpio {
@@ -1999,6 +2097,9 @@ const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_PURE {
         "vpiStmt"
     };
     // clang-format on
+    // SystemVerilog relations are numbered far above the Verilog ones
+    if (vpiVal == vpiActual) return "vpiActual";
+    if (vpiVal >= vpiPackage && vpiVal <= vpiPropFormalDecl) return strFromVpiObjType(vpiVal);
     if (vpiVal > vpiStmt || vpiVal < vpiCondition) return "*undefined*";
     return names[vpiVal - vpiCondition];
 }
@@ -2402,6 +2503,8 @@ void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
 
     SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiCondition);
     SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiActual);
+    SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiInterface);
 
     SELF_CHECK_ENUM_STR(strFromVpiCallbackReason, cbValueChange);
     SELF_CHECK_ENUM_STR(strFromVpiCallbackReason, cbAtEndOfSimTime);
@@ -2771,6 +2874,10 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     const VerilatedVpioScope* const voScopep = VerilatedVpioScope::castp(scope);
     const VerilatedVpioVar* const voVarp = VerilatedVpioVar::castp(scope);
 
+    // Not scopes, so no name resolves relative to them; must not fall through to
+    // the unprefixed lookup below, which would resolve from the top level
+    if (VerilatedVpioIfaceRef::castp(scope) || VerilatedVpioModport::castp(scope)) return nullptr;
+
     if (0 == std::strncmp(scopeAndName.c_str(), "$root.", std::strlen("$root."))) {
         scopeAndName.erase(0, std::strlen("$root."));
     } else if (voScopep) {
@@ -2798,7 +2905,14 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
             if (scopep->type() == VerilatedScope::SCOPE_PACKAGE) {
                 return (new VerilatedVpioPackage{scopep})->castVpiHandle();
             }
+            if (scopep->type() == VerilatedScope::SCOPE_INTERFACE) {
+                return (new VerilatedVpioInterface{scopep})->castVpiHandle();
+            }
             return (new VerilatedVpioScope{scopep})->castVpiHandle();
+        }
+        if (const VerilatedIfaceRef* const ifaceRefp
+            = Verilated::threadContextp()->ifaceRefFind(scopeAndName.c_str())) {
+            return (new VerilatedVpioIfaceRef{*ifaceRefp})->castVpiHandle();
         }
         std::string basename = scopeAndName;
         std::string scopename;
@@ -2959,6 +3073,24 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         const int32_t val = vop->index().back();
         return (new VerilatedVpioConst{val})->castVpiHandle();
     }
+    case vpiActual: {
+        if (const VerilatedVpioIfaceRef* const vop = VerilatedVpioIfaceRef::castp(object)) {
+            return vop->actual();
+        }
+        VL_VPI_WARNING_(__FILE__, __LINE__,
+                        "%s: Unsupported vpiHandle '%p' for type '%s', nothing will be returned",
+                        __func__, object, VerilatedVpiError::strFromVpiMethod(type));
+        return nullptr;
+    }
+    case vpiInterface: {
+        if (const VerilatedVpioModport* const vop = VerilatedVpioModport::castp(object)) {
+            return (new VerilatedVpioInterface{vop->scopep()})->castVpiHandle();
+        }
+        VL_VPI_WARNING_(__FILE__, __LINE__,
+                        "%s: Unsupported vpiHandle '%p' for type '%s', nothing will be returned",
+                        __func__, object, VerilatedVpiError::strFromVpiMethod(type));
+        return nullptr;
+    }
     case vpiScope: {
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
@@ -3024,6 +3156,15 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(modp));
         if (it == map->end()) return nullptr;
         return ((new VerilatedVpioModuleIter{it->second})->castVpiHandle());
+    }
+    case vpiInterface: {
+        // IEEE 1800-2023 37.5: interfaces are a one-to-many of a module
+        const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
+        const VerilatedHierarchyMap* const map = VerilatedImp::hierarchyMap();
+        const VerilatedScope* const modp = vop ? vop->scopep() : nullptr;
+        const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(modp));
+        if (it == map->end()) return nullptr;
+        return ((new VerilatedVpioInterfaceIter{it->second})->castVpiHandle());
     }
     case vpiInternalScope: {
         const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
