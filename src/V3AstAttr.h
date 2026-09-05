@@ -752,6 +752,7 @@ public:
         static const char* const names[] = {"FALSE", "TRUE", "UNK"};
         return names[m_e];
     }
+    bool isKnown() const { return m_e != BU_UNKNOWN; }
     bool trueKnown() const { return m_e == BU_TRUE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? BU_TRUE : BU_FALSE; }
 };
@@ -793,6 +794,10 @@ public:
     }
     const char* ascii() const {
         static const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
+        return names[m_e];
+    }
+    const char* asciiShort() const {
+        static const char* const names[] = {"", "L", "!L"};
         return names[m_e];
     }
 };
@@ -1039,6 +1044,11 @@ public:
     explicit VCaseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static const char* const names[]
+            = {"CASE", "CASEX", "CASEZ", "CASEINSIDE", "CASEMATCHES", "RANDSEQUENCE"};
+        return names[m_e];
+    }
 };
 constexpr bool operator==(const VCaseType& lhs, const VCaseType& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -1726,13 +1736,14 @@ public:
     int hiMaxSelect() const {
         return (lo() < 0 ? hi() - lo() : hi());
     }  // Maximum value a [] select may index
-    void dump(std::ostream& str) const {
+    string ascii() const {
         if (ranged()) {
-            str << "[" << left() << ":" << right() << "]";
+            return "["s + std::to_string(left()) + ":" + std::to_string(right()) + "]";
         } else {
-            str << "[norg]";
+            return "[norg]";
         }
     }
+    void dump(std::ostream& str) const { str << ascii(); }
 };
 inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
     rhs.dump(os);

@@ -189,6 +189,7 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := argsp : List[AstNodeExpr]  // Note: op1 used by some sub-types only
     //
     // @astgen ptr := m_funcp : AstCFunc  // Function being called
+    // dist-ast-dump-suppress  // Too verbose
     string m_argTypes;
     bool m_superReference = false;  // Called with super reference
 
@@ -556,6 +557,7 @@ class AstWith final : public AstNode {
 private:
     // 'with (identifier_list) {...}' restricted form (IEEE 1800-2023 18.7).
     bool m_restricted = false;
+    // dist-ast-dump-suppress  // V3LinkDot temporary use only
     bool m_validated = false;  // identifier_list typo / unused checks already run
     std::set<std::string> m_restrictedNames;
 
@@ -750,6 +752,8 @@ public:
         setPurity();
     }
     ASTGEN_MEMBERS_AstCMethodHard;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return method().ascii(); }
     bool sameNode(const AstNode* samep) const override {
         const AstCMethodHard* const asamep = VN_DBG_AS(samep, CMethodHard);
@@ -1469,6 +1473,8 @@ public:
     }
     ASTGEN_MEMBERS_AstExprStmt;
     // METHODS
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1793,6 +1799,7 @@ public:
     using KeyItemMap = std::map<uint64_t, AstInitItem*>;
 
 private:
+    // dist-ast-dump-suppress  // Dumped using dumpInitList
     KeyItemMap m_map;  // Node value for each array index
     // METHODS
     void dumpInitList(std::ostream& str) const;
@@ -1866,6 +1873,8 @@ public:
         , m_name{name}
         , m_index{index} {}
     ASTGEN_MEMBERS_AstLambdaArgRef;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     string emitVerilog() override { return name(); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -3035,6 +3044,8 @@ public:
         addConstraintsp(constraintsp);
     }
     ASTGEN_MEMBERS_AstWithParse;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool restricted() const { return m_restricted; }
     void restricted(bool flag) { m_restricted = flag; }
@@ -5166,6 +5177,8 @@ public:
                     "not coded to create after dtypes resolved");
     }
     ASTGEN_MEMBERS_AstSelBit;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     VAccess access() const { return m_access; }
     void access(const VAccess& flag) { m_access = flag; }
 };
@@ -5430,6 +5443,7 @@ public:
     enum FmtType : int { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
 
 private:
+    // dist-ast-dump-suppress  // Part of name()
     const FmtType m_fmtType;  // Operation type
 public:
     AstAtoN(FileLine* fl, AstNodeExpr* lhsp, FmtType fmtType)

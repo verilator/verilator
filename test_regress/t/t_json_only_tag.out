@@ -1,15 +1,15 @@
-{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","stdPackageProcessp":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"UNLINKED","stlFirstIterationp":"UNLINKED",
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","resolvedTopModuleName":"","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","stdPackageProcessp":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"UNLINKED","stlFirstIterationp":"UNLINKED",
  "modulesp": [
-  {"type":"MODULE","name":"m","addr":"(E)","loc":"d,12:8,12:9","origName":"m","verilogName":"m","level":1,"depth":2,"timeunit":"1ps","inlinesp": [],
+  {"type":"MODULE","name":"m","addr":"(E)","loc":"d,12:8,12:9","origName":"m","verilogName":"m","level":1,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"VAR","name":"clk_ip","addr":"(F)","loc":"d,13:11,13:17","dtypep":"(G)","origName":"clk_ip","verilogName":"clk_ip","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"rst_ip","addr":"(H)","loc":"d,14:11,14:17","dtypep":"(G)","origName":"rst_ip","verilogName":"rst_ip","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"foo_op","addr":"(I)","loc":"d,15:12,15:18","dtypep":"(G)","origName":"foo_op","verilogName":"foo_op","isPrimaryIO":true,"direction":"OUTPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"clk_ip","addr":"(F)","loc":"d,13:11,13:17","dtypep":"(G)","origName":"clk_ip","verilogName":"clk_ip","isPrimaryIO":true,"direction":"INPUT","declDirection":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"rst_ip","addr":"(H)","loc":"d,14:11,14:17","dtypep":"(G)","origName":"rst_ip","verilogName":"rst_ip","isPrimaryIO":true,"direction":"INPUT","declDirection":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"foo_op","addr":"(I)","loc":"d,15:12,15:18","dtypep":"(G)","origName":"foo_op","verilogName":"foo_op","isPrimaryIO":true,"direction":"OUTPUT","declDirection":"OUTPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"TYPEDEF","name":"my_struct","addr":"(J)","loc":"d,25:5,25:14","dtypep":"(K)","childDTypep": [],"attrsp": []},
     {"type":"CELL","name":"itop","addr":"(L)","loc":"d,29:7,29:11","modName":"ifc","origName":"itop","verilogName":"itop","modp":"(M)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []},
-    {"type":"VAR","name":"itop","addr":"(N)","loc":"d,29:7,29:11","dtypep":"(O)","origName":"itop__Viftop","verilogName":"itop__Viftop","direction":"NONE","lifetime":"VSTATICI","varType":"IFACEREF","dtypeName":"","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"this_struct","addr":"(P)","loc":"d,31:13,31:24","dtypep":"(Q)","origName":"this_struct","verilogName":"this_struct","direction":"NONE","lifetime":"VSTATICI","varType":"VAR","dtypeName":"","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"dotted","addr":"(R)","loc":"d,33:15,33:21","dtypep":"(S)","origName":"dotted","verilogName":"dotted","direction":"NONE","icoMaybeWritten":true,"lifetime":"VSTATICI","varType":"WIRE","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"itop","addr":"(N)","loc":"d,29:7,29:11","dtypep":"(O)","origName":"itop__Viftop","verilogName":"itop__Viftop","direction":"NONE","declDirection":"NONE","lifetime":"VSTATICI","varType":"IFACEREF","dtypeName":"","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"this_struct","addr":"(P)","loc":"d,31:13,31:24","dtypep":"(Q)","origName":"this_struct","verilogName":"this_struct","direction":"NONE","declDirection":"NONE","lifetime":"VSTATICI","varType":"VAR","dtypeName":"","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"dotted","addr":"(R)","loc":"d,33:15,33:21","dtypep":"(S)","origName":"dotted","verilogName":"dotted","direction":"NONE","declDirection":"NONE","icoMaybeWritten":true,"lifetime":"VSTATICI","varType":"WIRE","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"ALWAYS","name":"","addr":"(T)","loc":"d,33:22,33:23","keyword":"cont_assign","sentreep": [],
      "stmtsp": [
       {"type":"ASSIGNW","name":"","addr":"(U)","loc":"d,33:22,33:23","dtypep":"(S)",
@@ -20,9 +20,9 @@
         {"type":"VARREF","name":"dotted","addr":"(Y)","loc":"d,33:15,33:21","dtypep":"(S)","access":"WR","varp":"(R)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],"timingControlp": [],"strengthSpecp": []}
     ]},
-    {"type":"TASK","name":"f","addr":"(Z)","loc":"d,35:17,35:18","cname":"f","fvarp": [],"classOrPackagep": [],
+    {"type":"TASK","name":"f","addr":"(Z)","loc":"d,35:17,35:18","ifacePortName":"","lifetime":"VSTATICI","cname":"f","fvarp": [],"classOrPackagep": [],
      "stmtsp": [
-      {"type":"VAR","name":"m","addr":"(AB)","loc":"d,35:32,35:33","dtypep":"(BB)","origName":"m","verilogName":"m","direction":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+      {"type":"VAR","name":"m","addr":"(AB)","loc":"d,35:32,35:33","dtypep":"(BB)","origName":"m","verilogName":"m","direction":"INPUT","declDirection":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"DISPLAY","name":"","addr":"(CB)","loc":"d,36:5,36:13","displayType":"display",
        "fmtp": [
         {"type":"SFORMATF","name":"%s","addr":"(DB)","loc":"d,36:5,36:13","dtypep":"(BB)","hidden":true,
@@ -40,7 +40,7 @@
        "stmtsp": [
         {"type":"STMTEXPR","name":"","addr":"(IB)","loc":"d,41:5,41:6",
          "exprp": [
-          {"type":"TASKREF","name":"f","addr":"(JB)","loc":"d,41:5,41:6","dtypep":"(KB)","dotted":"","taskp":"(Z)","classOrPackagep":"UNLINKED",
+          {"type":"TASKREF","name":"f","addr":"(JB)","loc":"d,41:5,41:6","dtypep":"(KB)","dotted":"","inlinedDots":"","taskp":"(Z)","classOrPackagep":"UNLINKED",
            "argsp": [
             {"type":"ARG","name":"","addr":"(LB)","loc":"d,42:9,42:736",
              "exprp": [
@@ -51,9 +51,9 @@
       ]}
     ]}
   ]},
-  {"type":"IFACE","name":"ifc","addr":"(M)","loc":"d,7:11,7:14","origName":"ifc","verilogName":"ifc","level":2,"depth":2,"inLibrary":true,"timeunit":"1ps","inlinesp": [],
+  {"type":"IFACE","name":"ifc","addr":"(M)","loc":"d,7:11,7:14","origName":"ifc","verilogName":"ifc","level":2,"depth":2,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"VAR","name":"value","addr":"(X)","loc":"d,8:11,8:16","dtypep":"(W)","origName":"value","verilogName":"value","direction":"NONE","lifetime":"VSTATICI","varType":"VAR","dtypeName":"integer","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"value","addr":"(X)","loc":"d,8:11,8:16","dtypep":"(W)","origName":"value","verilogName":"value","direction":"NONE","declDirection":"NONE","lifetime":"VSTATICI","varType":"VAR","dtypeName":"integer","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"MODPORT","name":"out_modport","addr":"(NB)","loc":"d,9:11,9:22",
      "varsp": [
       {"type":"MODPORTVARREF","name":"value","addr":"(OB)","loc":"d,9:30,9:35","direction":"OUTPUT","varp":"(X)","exprp": []}
@@ -95,7 +95,7 @@
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
    "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(CC)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","level":0,"depth":0,"timeunit":"NONE","inlinesp": [],
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(CC)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","level":0,"depth":0,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"NONE","inlinesp": [],
      "stmtsp": [
       {"type":"SCOPE","name":"@CONST-POOL@","addr":"(DC)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(CC)","varsp": [],"blocksp": [],"inlinesp": []}
     ]}

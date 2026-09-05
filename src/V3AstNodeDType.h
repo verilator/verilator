@@ -34,10 +34,14 @@ class AstNodeDType VL_NOT_FINAL : public AstNode {
     // Ideally width() would migrate to BasicDType as that's where it makes sense,
     // but it's currently so prevalent in the code we leave it here.
     // Note the below members are included in AstTypeTable::Key lookups
+    // dist-ast-dump-suppress  // Part of dumpSmall
     int m_width = 0;  // (also in AstTypeTable::Key) Bit width of operation
-    int m_widthMin
-        = 0;  // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
+    // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
+    // dist-ast-dump-suppress  // Part of dumpSmall
+    int m_widthMin = 0;
+    // dist-ast-dump-suppress  // Part of dumpSmall
     VSigning m_numeric;  // (also in AstTypeTable::Key) Node is signed
+    // dist-ast-dump-suppress  // Part of dumpSmall
     bool m_generic = false;  // Simple globally referenced type, don't garbage collect
     // Unique number assigned to each dtype during creation for IEEE matching
     static int s_uniqueNum;
@@ -405,6 +409,7 @@ class AstBasicDType final : public AstNodeDType {
     // @astgen op1 := rangep : Optional[AstRange] // Range of variable
     struct Members final {
         VBasicDTypeKwd m_keyword;  // (also in VBasicTypeKey) What keyword created basic type
+        // dist-ast-dump-suppress  // Part of dumpSmall
         VNumRange m_nrange;  // (also in VBasicTypeKey) Numeric msb/lsb (if non-opaque keyword)
         bool operator==(const Members& rhs) const {
             return rhs.m_keyword == m_keyword && rhs.m_nrange == m_nrange;
@@ -804,6 +809,7 @@ public:
 private:
     string m_name;  // Name from upper typedef, if any
     const int m_uniqueNum;
+    // dist-ast-dump-suppress  // Skip dumping cache
     TableMap m_tableMap;  // Created table for V3Width only to remove duplicates
 
 public:
@@ -859,6 +865,7 @@ public:
 class AstIfaceGenericDType final : public AstNodeDType {
     // Generic interface that will be replaced with AstIfaceRefDType
     FileLine* m_modportFileline;  // Where modport token was
+    // dist-ast-dump-suppress  // Part of name()
     string m_modportName;  // "" = no modport
 public:
     explicit AstIfaceGenericDType(FileLine* fl)
@@ -872,8 +879,6 @@ public:
         dtypep(this);
     }
     ASTGEN_MEMBERS_AstIfaceGenericDType;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
     void dumpSmall(std::ostream& str) const override;
     bool hasDType() const override VL_MT_SAFE { return true; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
