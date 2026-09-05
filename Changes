@@ -15,7 +15,7 @@ Verilator 5.053 devel
 
 **Other:**
 
-* TBD
+* Change JSON dumps to suppress empty strings, etc.
 
 
 Verilator 5.052 2026-09-05
