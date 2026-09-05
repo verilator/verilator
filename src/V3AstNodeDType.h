@@ -493,6 +493,12 @@ public:
     bool isStdRandomGenerator() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::RANDOM_STDGENERATOR;
     }
+    bool isCovergroupInstHandle() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::COVERGROUP_INSTHANDLE;
+    }
+    bool isCovergroupCross() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::COVERGROUP_CROSS;
+    }
     bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
     bool isString() const VL_MT_STABLE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
@@ -681,6 +687,34 @@ public:
     int widthAlignBytes() const override { return 1; }
     int widthTotalBytes() const override { return 1; }
     bool isCompound() const override { return false; }
+};
+class AstCoverpointDType final : public AstNodeDType {
+    // Borrowed pointer to a covergroup coverpoint runtime, 'VlCoverpointT<hitBound>*'.
+    // Follows pattern of AstQueueDType in capturing the compile-time max bin overlap
+    // template argument.
+    uint32_t m_hitBound;  // VlCoverpointT<> template argument; hit list size, >= 1
+public:
+    AstCoverpointDType(FileLine* fl, uint32_t hitBound)
+        : ASTGEN_SUPER_CoverpointDType(fl)
+        , m_hitBound{hitBound} {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstCoverpointDType;
+    const char* broken() const override {
+        BROKEN_RTN(m_hitBound < 1);
+        return nullptr;
+    }
+    // V3Covergroup interns these one-per-hitBound into the type table, so identity is
+    // equality; there is never a second node with the same bound to compare against.
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    void dumpSmall(std::ostream& str) const override;
+    // ACCESSORS
+    uint32_t hitBound() const { return m_hitBound; }
+    // METHODS
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    int widthAlignBytes() const override { return sizeof(void*); }
+    int widthTotalBytes() const override { return sizeof(void*); }
+    bool isCompound() const override { return true; }
 };
 class AstDefImplicitDType final : public AstNodeDType {
     // For parsing enum/struct/unions that are declared with a variable rather than typedef
