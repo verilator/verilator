@@ -159,7 +159,7 @@ class V3PreExpr final {
             }
         }
         const bool got = parser.result();
-        UASSERT_SELFTEST(const bool, got, expect);
+        UASSERT_SELFTEST(got, expect);
     }
 
     // METHODS
