@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Package name has to match test name
-package t_class_pkg_file_mismatch;
+package t_lint_declfilename_mismatch;
   class pkg_class;
     class pkg_class_nested;
     endclass
