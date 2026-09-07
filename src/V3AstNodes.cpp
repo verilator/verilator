@@ -3919,6 +3919,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 }
 void AstVar::dump(std::ostream& str) const {
     Super::dump(str);
+    if (!tag().empty()) str << " tag=\"" << V3OutFormatter::quoteNameControls(tag()) << "\"";
     if (isIO()) str << " " << direction().ascii();
     if (declDirection() != direction()) str << " dd=" << direction().ascii();
     if (constPoolEntry()) str << " [CONSTPOOL]";
@@ -3961,6 +3962,7 @@ void AstVar::dump(std::ostream& str) const {
     str << " " << varType();
 }
 void AstVar::dumpJson(std::ostream& str) const {
+    if (!tag().empty()) dumpJsonStrFunc(str, tag);
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, constPoolEntry);

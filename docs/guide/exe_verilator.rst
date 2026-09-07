@@ -1804,6 +1804,24 @@ Summary:
    to :vlopt:`--language 1800-2023 <--language>`. This option is selected
    by default; it exists for compatibility with other simulators.
 
+.. option:: --sva-preserve
+
+   Experimental, for internal use only. Lower each named ``assert``, ``assume``,
+   and ``cover`` property into a public one-bit internal signal that remains
+   visible in late tree dumps. Signal names begin with ``__Vsva_assert_``,
+   ``__Vsva_assume_``, or ``__Vsva_cover_`` and include the property
+   name. Assert signals indicate a violation, assume signals indicate that the
+   constraint holds, and cover signals indicate a match. Runtime assertion
+   controls and user action blocks are omitted for these properties.
+   Failure diagnostic templates are retained in the signal's ``tag`` metadata
+   in tree dumps, including format placeholders but excluding runtime argument
+   expressions. Multiple messages are joined in source order; their action-block
+   conditions are not retained. A default failure template is supplied when the
+   assertion has no action blocks.
+
+   Disabled by default. Use ``--no-sva-preserve`` to disable it explicitly.
+   Without this option, assertion and coverage lowering is unchanged.
+
 .. option:: +systemverilogext+<ext>
 
    A synonym for :vlopt:`+1800-2023ext+\<ext\>`.

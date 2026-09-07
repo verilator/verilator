@@ -210,6 +210,9 @@ public:
         : m_e{_e} {}
     explicit VAssertDirectiveType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr bool svaDirective() const {
+        return m_e == ASSERT || m_e == ASSUME || m_e == COVER;
+    }
     string ascii() const {
         std::stringstream types;
         if (m_e == INTERNAL)

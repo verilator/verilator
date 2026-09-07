@@ -255,6 +255,9 @@ static const char* assertPassOnQuery(bool vacuous) {
 
 static AstNodeExpr* assertOnCond(FileLine* flp, VAssertType type,
                                  VAssertDirectiveType directiveType) {
+    if (v3Global.opt.svaPreserve() && directiveType.svaDirective()) {
+        return new AstConst{flp, AstConst::BitTrue{}};
+    }
     if (!v3Global.opt.assertOn()) { return new AstConst{flp, AstConst::BitFalse{}}; }
     return new AstCExpr{flp, AstCExpr::Pure{},
                         assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
@@ -262,6 +265,9 @@ static AstNodeExpr* assertOnCond(FileLine* flp, VAssertType type,
 
 static AstNodeExpr* assertKillGet(FileLine* flp, VAssertType type,
                                   VAssertDirectiveType directiveType) {
+    if (v3Global.opt.svaPreserve() && directiveType.svaDirective()) {
+        return new AstConst{flp, AstConst::WidthedValue{}, 32, 0};
+    }
     return new AstCExpr{flp, AstCExpr::Pure{},
                         assertCtlGetCall("ASSERT_CTL_KILL", type, directiveType), 32};
 }
@@ -278,6 +284,9 @@ static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
 
 static AstNodeExpr* assertPassOnCond(FileLine* flp, VAssertType type,
                                      VAssertDirectiveType directiveType, bool vacuous) {
+    if (v3Global.opt.svaPreserve() && directiveType.svaDirective()) {
+        return new AstConst{flp, AstConst::BitTrue{}};
+    }
     return new AstCExpr{flp, AstCExpr::Pure{},
                         assertActionControlPrefix(directiveType)
                             + assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
@@ -287,6 +296,9 @@ static AstNodeExpr* assertPassOnCond(FileLine* flp, VAssertType type,
 
 static AstNodeExpr* assertFailOnCond(FileLine* flp, VAssertType type,
                                      VAssertDirectiveType directiveType) {
+    if (v3Global.opt.svaPreserve() && directiveType.svaDirective()) {
+        return new AstConst{flp, AstConst::BitTrue{}};
+    }
     return new AstCExpr{flp, AstCExpr::Pure{},
                         assertActionControlPrefix(directiveType)
                             + assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType) + "))"s,
@@ -2862,7 +2874,9 @@ public:
                 pendingp = new AstLogOr{flp, pendingp, pendingExprp};
             }
         }
-        if (pendingp) {
+        if (pendingp && v3Global.opt.svaPreserve() && directiveType.svaDirective()) {
+            VL_DO_DANGLING(pendingp->deleteTree(), pendingp);
+        } else if (pendingp) {
             AstCExpr* const assertOnp
                 = new AstCExpr{flp, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()", 1};
             AstNodeExpr* const condp = new AstLogAnd{flp, assertOnp, pendingp};

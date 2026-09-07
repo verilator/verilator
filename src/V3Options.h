@@ -294,6 +294,7 @@ private:
     VOptionBool m_schedZeroDelay;  // main switch: --sched-zero-delay
     bool m_stdPackage = true;       // main switch: --std-package
     bool m_stdWaiver = true;        // main switch: --std-waiver
+    bool m_svaPreserve = false;     // main switch: --sva-preserve
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
     bool m_statsVars = false;       // main switch: --stats-vars
@@ -509,6 +510,7 @@ public:
     bool statsVars() const { return m_statsVars; }
     bool stdPackage() const { return m_stdPackage; }
     bool stdWaiver() const { return m_stdWaiver; }
+    bool svaPreserve() const { return m_svaPreserve; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool assertCase() const { return m_assertCase; }
     bool autoflush() const { return m_autoflush; }

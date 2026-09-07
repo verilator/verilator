@@ -572,6 +572,7 @@ detailed descriptions of these arguments.
     --no-std-waiver             Prevent parsing standard lint waivers
     --no-stop-fail              Do not call $stop when assertion fails
      -sv                        Enable SystemVerilog parsing
+    --sva-preserve              Preserve SVA property results as public signals
      +systemverilogext+<ext>    Synonym for +1800-2023ext+<ext>
     --threads <threads>         Enable multithreading
     --threads-dpi <mode>        Enable multithreaded DPI
