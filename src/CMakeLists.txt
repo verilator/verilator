@@ -122,6 +122,7 @@ set(HEADERS
     V3HierBlock.h
     V3Inline.h
     V3InlineCFuncs.h
+    V3InsertDPIHook.h
     V3Inst.h
     V3InstrCount.h
     V3Interface.h
@@ -310,6 +311,7 @@ set(COMMON_SOURCES
     V3HierBlock.cpp
     V3Inline.cpp
     V3InlineCFuncs.cpp
+    V3InsertDPIHook.cpp
     V3Inst.cpp
     V3InstrCount.cpp
     V3Interface.cpp
