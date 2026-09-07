@@ -88,6 +88,7 @@ public:
     static int getHierWorkers(const string& model);
     static FileLine* getHierWorkersFileLine(const string& model);
     static const FsmRegisterWrapper* getFsmRegisterWrapper(const string& module);
+    static std::map<string, std::vector<HookInsertCfgEntry>>& getHookInsertCfg();
     static uint64_t getProfileData(const string& hierDpi);
     static uint64_t getProfileData(const string& model, const string& key);
     static FileLine* getProfileDataFileLine();
