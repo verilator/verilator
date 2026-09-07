@@ -918,6 +918,22 @@ public:
         const string varTarget = target.substr(pos + 1);
         return {prefix, varTarget};
     }
+    string splitElemIndex(FileLine* fl, const string& varTarget, AccessPath& accessPath) {
+        const auto open = varTarget.find('[');
+        if (open == string::npos) return varTarget;
+        if (varTarget.back() != ']') {
+            fl->v3error("Invalid element select in DPI-hook target: '"
+                        << varTarget << "'. Expected format 'name[i]'.");
+            return varTarget;
+        }
+        const string index = varTarget.substr(open + 1, varTarget.size() - open - 2);
+        if (!isDpiHookConfigNumber(index)) {
+            fl->v3error("Element index must be a non-negative integer: '" << varTarget << "'.");
+            return varTarget.substr(0, open);
+        }
+        accessPath.push_back(StepIntoTarget{true, static_cast<uint32_t>(std::stoul(index)), ""});
+        return varTarget.substr(0, open);
+    }
     // Add the hook-insertion config data to the map to create the initial map (Used in verilog.y)
     void addHookInsertCfg(FileLine* fl, const string& callback, const string& target) {
         // The periodic evaluation trigger of a hook is a delay, so hooks need --timing.
@@ -928,7 +944,10 @@ public:
                         << "... The periodic evaluation trigger of a DPI hook is a delay");
         }
         const auto result = splitPrefixAndVar(fl, target);
-        m_hookInsertCfg[result.first].push_back(HookInsertCfgEntry{callback, result.second});
+        const auto prefix = result.first;
+        AccessPath accessPath;
+        const auto varTarget = splitElemIndex(fl, result.second, accessPath);
+        m_hookInsertCfg[prefix].push_back(HookInsertCfgEntry{callback, varTarget, accessPath});
     }
     std::map<string, std::vector<HookInsertCfgEntry>>& getHookInsertCfg() {
         return m_hookInsertCfg;

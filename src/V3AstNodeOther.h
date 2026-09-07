@@ -2766,6 +2766,7 @@ public:
     bool isInoutOrRef() const { return m_direction.isInoutOrRef(); }
     bool isInput() const { return m_direction.isInput(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
+    bool isOutputish() const { return m_direction.isOutputish(); }
     bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }
     bool isConstRef() const VL_MT_SAFE { return m_direction.isConstRef(); }
     bool isRef() const VL_MT_SAFE { return m_direction.isRef(); }
