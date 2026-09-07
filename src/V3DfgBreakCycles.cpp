@@ -180,13 +180,10 @@ class TraceDriver final : public DfgVisitor {
     };
 
     // STATE
-    // Maximum recursive trace depth before we short-circuit and create a
-    // temporary slice. The trace logic already accepts creating a Sel to break
-    // the recursion safely when independence is guaranteed.
+    // Maximum recursive trace depth. If we exceed this, something is wrong with
+    // the SCC breakdown and the pass should fail loudly instead of creating a
+    // fake acyclic driver that keeps the graph inconsistent.
     static constexpr size_t MAX_TRACE_DEPTH = 2048;
-    // If a single vertex is extremely wide, slicing it early prevents deep
-    // recursion across its internal structure (packed arrays / concatenations).
-    static constexpr uint32_t LARGE_WIDTH_LIMIT = 4096;
     DfgGraph& m_dfg;  // The graph being processed
     SccInfo& m_sccInfo;  // The SccInfo instance
     // The strongly connected component we are currently trying to escape
@@ -255,53 +252,10 @@ class TraceDriver final : public DfgVisitor {
         UASSERT_OBJ(vtxp->isPacked(), vtxp, "Can only trace packed type vertices");
         UASSERT_OBJ(vtxp->size() > msb, vtxp, "Traced Vertex too narrow");
 
-        // Some deeply nested packed-array/shift chains can run several thousand
-        // recursive trace steps at a single stack size. Short-circuit the worst
-        // cases by creating a new slice of the original vertex; this preserves the
-        // requested bit selection while keeping the new driver outside the current
-        // SCC and avoids stack exhaustion.
-        // First, short-circuit extremely wide vertices to avoid deep internal
-        // traversal even when trace depth is small. This prevents pathological
-        // cases where a huge packed/concat structure would recurse a lot.
-        if (VL_UNLIKELY(vtxp->width() > LARGE_WIDTH_LIMIT)) {
-            DfgVertex* const basep = vtxp;
-            DfgVertex* respr = basep;
-            if (msb != respr->width() - 1 || lsb != 0) {
-                DfgSel* const selp = make<DfgSel>(basep, msb - lsb + 1);
-                selp->fromp(basep);
-                selp->lsb(lsb);
-                // Wrap the Sel in a temporary variable so the returned driver is
-                // outside the original SCC. This prevents returning a node that
-                // references back into the original component and avoids SCC
-                // inconsistency during replacement.
-                DfgVertexVar* const tmpp = createTmp("TraceDriver", selp);
-                tmpp->srcp(selp);
-                respr = tmpp;
-            }
-            UASSERT_OBJ(respr->width() == (msb - lsb + 1), vtxp, "Wrong result width");
-            return respr;
-        }
-
         if (VL_UNLIKELY(++m_traceDepth > MAX_TRACE_DEPTH)) {
-            std::cerr << "TRACEDEPTH " << m_traceDepth << " vertex " << vtxp->typeName()
-                      << " width " << vtxp->width() << " range " << msb << ":" << lsb << std::endl;
-            DfgVertex* const basep = vtxp;
-            DfgVertex* respr = basep;
-            if (msb != respr->width() - 1 || lsb != 0) {
-                DfgSel* const selp = make<DfgSel>(basep, msb - lsb + 1);
-                selp->fromp(basep);
-                selp->lsb(lsb);
-                // Wrap the Sel in a temporary variable to ensure the returned
-                // driver is outside the original SCC when we cut recursion by
-                // depth. This mirrors the handling elsewhere when a splice is
-                // returned and prevents SCC inconsistency.
-                DfgVertexVar* const tmpp = createTmp("TraceDriver", selp);
-                tmpp->srcp(selp);
-                respr = tmpp;
-            }
-            --m_traceDepth;
-            UASSERT_OBJ(respr->width() == (msb - lsb + 1), vtxp, "Wrong result width");
-            return respr;
+            vtxp->v3fatalSrc("TraceDriver recursion depth exceeded while tracing "
+                             << vtxp->typeName() << " width " << vtxp->width()
+                             << " range " << msb << ":" << lsb);
         }
 
         // Get the cache entry, which is the resulting driver that is not part of
