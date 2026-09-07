@@ -26,6 +26,14 @@
 #include "V3Mutex.h"
 
 //######################################################################
+// Declarative hook-insertion configuration parsed from the .vlt file
+
+struct HookInsertCfgEntry final {
+    string callback;  // Name of the DPI callback function to insert
+    string varTarget;  // Target variable name within the module
+};
+
+//######################################################################
 
 class V3Control final {
 public:
@@ -52,6 +60,7 @@ public:
     static void addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
                                       const string& q, const string& clock, const string& reset,
                                       const string& resetValue);
+    static void addHookInsertCfg(FileLine* fl, const string& callback, const string& target);
     static void addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max);
     static void addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
                                const string& match);
