@@ -28,9 +28,31 @@
 //######################################################################
 // Declarative hook-insertion configuration parsed from the .vlt file
 
+// Make one step into the target signal, after the instance path is resolved.
+// "-var" string is separated into instance path, var name and residual access path
+// (e.g. "a.b[i].c.d[j]").
+struct StepIntoTarget final {
+    bool isIndex = false;  // true: array index; false: member name
+    uint32_t index = 0;  // Array element index, when isIndex
+    string member;  // Member name, when !isIndex
+    bool operator==(const StepIntoTarget& other) const {
+        return isIndex == other.isIndex && index == other.index && member == other.member;
+    }
+};
+using AccessPath = std::vector<StepIntoTarget>;
+
+// Longest run of digits accepted in the configuration (e.g. element index,
+// generate-scope or interface-array index) is nine digits since it always fits 32-bit int
+static constexpr size_t DPIHOOK_MAX_NUM_DIGITS = 9;
+inline bool isDpiHookConfigNumber(const string& s) {
+    return !s.empty() && s.size() <= DPIHOOK_MAX_NUM_DIGITS
+           && s.find_first_not_of("0123456789") == string::npos;
+}
+
 struct HookInsertCfgEntry final {
     string callback;  // Name of the DPI callback function to insert
     string varTarget;  // Target variable name within the module
+    AccessPath accessPath;  // Member/index steps into the target var (e.g. "a.b[i]")
 };
 
 //######################################################################
