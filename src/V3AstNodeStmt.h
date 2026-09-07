@@ -163,6 +163,8 @@ protected:
 
 public:
     ASTGEN_MEMBERS_AstNodeIf;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     bool isGateDedupable() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
@@ -190,6 +192,8 @@ public:
         this->msbp(msbp);
     }
     ASTGEN_MEMBERS_AstNodeReadWriteMem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }
@@ -392,6 +396,8 @@ public:
         , m_fromDollarC{fromDollarC} {}
     ASTGEN_MEMBERS_AstCStmtUser;
     // METHODS
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
     bool isPredictOptimizable() const override { return false; }
@@ -407,16 +413,16 @@ class AstCase final : public AstNodeStmt {
     // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
     // @astgen op2 := itemsp : List[AstCaseItem]
     // @astgen op3 := notParallelp : List[AstNode] // assertion code for non-full case's
-    VCaseType m_casex;  // 0=case, 1=casex, 2=casez
+    VCaseType m_caseType;  // 0=case, 1=casex, 2=casez
     bool m_fullPragma = false;  // Synthesis full_case
     bool m_parallelPragma = false;  // Synthesis parallel_case
     bool m_uniquePragma = false;  // unique case
     bool m_unique0Pragma = false;  // unique0 case
     bool m_priorityPragma = false;  // priority case
 public:
-    AstCase(FileLine* fl, VCaseType casex, AstNodeExpr* exprp, AstCaseItem* itemsp)
+    AstCase(FileLine* fl, VCaseType caseType, AstNodeExpr* exprp, AstCaseItem* itemsp)
         : ASTGEN_SUPER_Case(fl)
-        , m_casex{casex} {
+        , m_caseType{caseType} {
         this->exprp(exprp);
         addItemsp(itemsp);
     }
@@ -426,15 +432,15 @@ public:
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     string verilogKwd() const override { return casez() ? "casez" : casex() ? "casex" : "case"; }
     bool sameNode(const AstNode* samep) const override {
-        return m_casex == VN_DBG_AS(samep, Case)->m_casex;
+        return m_caseType == VN_DBG_AS(samep, Case)->m_caseType;
     }
-    bool casex() const { return m_casex == VCaseType::CT_CASEX; }
-    bool casez() const { return m_casex == VCaseType::CT_CASEZ; }
-    bool caseInside() const { return m_casex == VCaseType::CT_CASEINSIDE; }
-    bool caseMatches() const { return m_casex == VCaseType::CT_CASEMATCHES; }
-    bool caseSimple() const { return m_casex == VCaseType::CT_CASE; }
-    void caseInsideSet() { m_casex = VCaseType::CT_CASEINSIDE; }
-    void caseMatchesSet() { m_casex = VCaseType::CT_CASEMATCHES; }
+    bool casex() const { return m_caseType == VCaseType::CT_CASEX; }
+    bool casez() const { return m_caseType == VCaseType::CT_CASEZ; }
+    bool caseInside() const { return m_caseType == VCaseType::CT_CASEINSIDE; }
+    bool caseMatches() const { return m_caseType == VCaseType::CT_CASEMATCHES; }
+    bool caseSimple() const { return m_caseType == VCaseType::CT_CASE; }
+    void caseInsideSet() { m_caseType = VCaseType::CT_CASEINSIDE; }
+    void caseMatchesSet() { m_caseType = VCaseType::CT_CASEMATCHES; }
     bool fullPragma() const { return m_fullPragma; }
     void fullPragma(bool flag) { m_fullPragma = flag; }
     bool parallelPragma() const { return m_parallelPragma; }
@@ -457,6 +463,8 @@ public:
         , m_name{name}
         , m_showAt{showAt} {}
     ASTGEN_MEMBERS_AstComment;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Text
     bool sameNode(const AstNode* samep) const override { return true; }  // Ignore name in comments
     virtual bool showAt() const { return m_showAt; }
@@ -582,11 +590,11 @@ class AstDelay final : public AstNodeStmt {
     // @astgen op3 := rhsp : Optional[AstNodeExpr] // Max bound for cycle range or fall delay
     // @astgen op4 := throughoutp : Optional[AstNodeExpr] // Throughout condition (IEEE 16.9.9)
     VTimescale m_timeunit;  // Delay's time unit
-    const bool m_isCycle;  // True if it is a cycle delay
+    const bool m_isCycleDelay;  // True if it is a cycle delay
 public:
-    AstDelay(FileLine* fl, AstNodeExpr* lhsp, bool isCycle)
+    AstDelay(FileLine* fl, AstNodeExpr* lhsp, bool isCycleDelay)
         : ASTGEN_SUPER_Delay(fl)
-        , m_isCycle{isCycle} {
+        , m_isCycleDelay{isCycleDelay} {
         this->lhsp(lhsp);
     }
     ASTGEN_MEMBERS_AstDelay;
@@ -596,11 +604,11 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
-    bool isCycleDelay() const { return m_isCycle; }
-    bool isRangeDelay() const { return m_isCycle && rhsp() != nullptr; }
+    bool isCycleDelay() const { return m_isCycleDelay; }
+    bool isRangeDelay() const { return m_isCycleDelay && rhsp(); }
     bool isUnbounded() const { return isRangeDelay() && VN_IS(rhsp(), Unbounded); }
     void fallDelay(AstNodeExpr* const fallDelayp) { rhsp(fallDelayp); }
-    AstNodeExpr* fallDelay() const { return m_isCycle ? nullptr : rhsp(); }
+    AstNodeExpr* fallDelay() const { return m_isCycleDelay ? nullptr : rhsp(); }
 };
 class AstDisable final : public AstNodeStmt {
     // @astgen op1 := targetRefp : Optional[AstNodeExpr]  // Reference to link in V3LinkDot
@@ -693,6 +701,8 @@ public:
     bool isPure() override { return false; }
     virtual bool cleanOut() const { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     VDumpCtlType ctlType() const { return m_ctlType; }
 };
 class AstEventControl final : public AstNodeStmt {
@@ -811,6 +821,8 @@ public:
         this->operandp(operandp);
     }
     ASTGEN_MEMBERS_AstFireEvent;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool isDelayed() const { return m_delayed; }
 };
 class AstInitialAutomaticStmt final : public AstNodeStmt {
@@ -954,6 +966,8 @@ public:
         : ASTGEN_SUPER_MonitorOff(fl)
         , m_off{off} {}
     ASTGEN_MEMBERS_AstMonitorOff;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string verilogKwd() const override { return m_off ? "$monitoroff" : "$monitoron"; }
     bool isGateOptimizable() const override { return false; }  // Though deleted before opt
     bool isPredictOptimizable() const override { return false; }  // Though deleted before opt
@@ -966,9 +980,9 @@ public:
     bool off() const { return m_off; }
 };
 class AstPExprClause final : public AstNodeStmt {
-    const bool m_pass;  // True if will be replaced by passing assertion clause, false for
+    const bool m_pass;  // Will be replaced by passing assertion clause, false for
                         // assertion failure clause
-    const bool m_vacuous;  // True if pass is vacuous
+    const bool m_vacuous;  // Pass is vacuous
 
 public:
     ASTGEN_MEMBERS_AstPExprClause;
@@ -976,6 +990,8 @@ public:
         : ASTGEN_SUPER_PExprClause(fl)
         , m_pass{pass}
         , m_vacuous{vacuous} {}
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool pass() const { return m_pass; }
     bool vacuous() const { return m_vacuous; }
 };
@@ -1324,6 +1340,7 @@ class AstTraceDecl final : public AstNodeStmt {
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
     const bool m_inDtypeFunc;  // Trace decl inside type init function
+    // dist-ast-dump-suppress  // Not stable and of low value
     int m_codeInc{0};  // Code increment for type
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
@@ -1432,6 +1449,8 @@ public:
         , m_quotedPrefix{quotedPrefix} {}
     ASTGEN_MEMBERS_AstTracePushPrefix;
     bool sameNode(const AstNode* samep) const override { return false; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string prefix() const { return m_prefix; }
     VTracePrefixType prefixType() const { return m_prefixType; }
     int left() const { return m_left; }
@@ -1715,6 +1734,8 @@ public:
     void unique0Pragma(bool flag) { m_unique0Pragma = flag; }
     bool priorityPragma() const { return m_priorityPragma; }
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 
 // === AstNodeReadWriteMem ===

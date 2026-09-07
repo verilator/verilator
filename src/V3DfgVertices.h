@@ -84,6 +84,11 @@ public:
     DfgVertex* defaultp() const { return inputp(1); }
     void defaultp(DfgVertex* vtxp) { inputp(1, vtxp); }
 
+    // Return the vertex and the offset into the vertex driving the given range [lo, lo + size - 1]
+    // of this variable, iff it is driven by a single vertex. Returns nullptr if undriven, or the
+    // range is driven by multiple vertices in parts.
+    std::pair<DfgVertex*, uint32_t> driverOfRange(uint32_t lo, uint32_t size);
+
     std::string srcName(size_t idx) const override final { return idx ? "defaultp" : "srcp"; }
 
     // The Ast variable this vertex representess
@@ -485,28 +490,47 @@ public:
         return vtxp;
     }
 
-    bool foreachDriver(std::function<bool(DfgVertex&, uint32_t, FileLine*)> f) {
+    template <typename T_Callable,
+              std::enable_if_t<vlstd::is_invocable_r<bool, T_Callable, DfgVertex&, uint32_t,
+                                                     FileLine*>::value,  //
+                               int>
+              = 0>
+    bool foreachDriver(T_Callable&& f) {
         const size_t n = nInputs();
         for (size_t i = 0; i < n; ++i) {
             if (f(*inputp(i), m_driverData[i].m_lo, m_driverData[i].m_flp)) return true;
         }
         return false;
     }
-    bool foreachDriver(std::function<bool(const DfgVertex&, uint32_t, FileLine*)> f) const {
+    template <typename T_Callable,
+              std::enable_if_t<vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&, uint32_t,
+                                                     FileLine*>::value,
+                               int>
+              = 0>
+    bool foreachDriver(T_Callable&& f) const {
         const size_t n = nInputs();
         for (size_t i = 0; i < n; ++i) {
             if (f(*inputp(i), m_driverData[i].m_lo, m_driverData[i].m_flp)) return true;
         }
         return false;
     }
-    bool foreachDriver(std::function<bool(DfgVertex&, uint32_t)> f) {
+    template <
+        typename T_Callable,
+        std::enable_if_t<vlstd::is_invocable_r<bool, T_Callable, DfgVertex&, uint32_t>::value,  //
+                         int>
+        = 0>
+    bool foreachDriver(T_Callable&& f) {
         const size_t n = nInputs();
         for (size_t i = 0; i < n; ++i) {
             if (f(*inputp(i), m_driverData[i].m_lo)) return true;
         }
         return false;
     }
-    bool foreachDriver(std::function<bool(const DfgVertex&, uint32_t)> f) const {
+    template <typename T_Callable,
+              std::enable_if_t<
+                  vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&, uint32_t>::value, int>
+              = 0>
+    bool foreachDriver(T_Callable&& f) const {
         const size_t n = nInputs();
         for (size_t i = 0; i < n; ++i) {
             if (f(*inputp(i), m_driverData[i].m_lo)) return true;

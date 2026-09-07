@@ -1,0 +1,12 @@
+cg_auto.cp_auto.one: 1
+cg_auto.cp_auto.three: 1
+cg_auto.cp_auto.two: 1
+cg_auto.cp_auto.zero: 2
+cg_derived.cp_derived.one: 2
+cg_derived.cp_derived.three: 1
+cg_derived.cp_derived.two: 1
+cg_derived.cp_derived.zero: 1
+cg_ref.cp_ref.one: 1
+cg_ref.cp_ref.three: 1
+cg_ref.cp_ref.two: 1
+cg_ref.cp_ref.zero: 2

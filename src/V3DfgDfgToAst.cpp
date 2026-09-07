@@ -316,13 +316,14 @@ class DfgToAstVisitor final : DfgVisitor {
             if (DfgAstRd* const rVtxp = vtx.cast<DfgAstRd>()) {
                 // Render the driver
                 AstNodeExpr* const exprp = convertDfgVertexToAstNodeExpr(rVtxp->srcp());
-                // If it's the same as the reference, do not repalce it so FileLines are preserved
+                // If it's the same as the reference, do not replace it so FileLines are preserved
                 if (exprp->sameTree(rVtxp->exprp())) {
                     VL_DO_DANGLING(exprp->deleteTree(), exprp);
                     continue;
                 }
                 // Replace the reference with the expression
                 if (VN_IS(exprp, VarRef)) {
+                    exprp->fileline(rVtxp->exprp()->fileline());
                     ++m_ctx.m_varRefsSubstituted;
                 } else {
                     ++m_ctx.m_expressionsInlined;

@@ -955,6 +955,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
     static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE;
     Type type() const { return m_type; }
+    VerilatedContext* contextp() const { return m_symsp->_vm_contextp__; }
 };
 
 // One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces

@@ -865,8 +865,9 @@ class DelayedVisitor final : public VNVisitor {
         activep->addStmtsp(postp);
         // Add the commit
         AstCMethodHard* const callp = new AstCMethodHard{
-            flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, VCMethod::SCHED_COMMIT};
+            flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, VCMethod::NBA_COMMIT};
         callp->dtypeSetVoid();
+        // TODO: this is a partial update, so must be READWRITE, but that breaks scheduling
         callp->addPinsp(new AstVarRef{flp, vscp, VAccess::WRITE});
         postp->addStmtsp(callp->makeStmt());
     }
@@ -975,7 +976,7 @@ class DelayedVisitor final : public VNVisitor {
         // Enqueue the update at the site of the original NBA
         AstCMethodHard* const callp = new AstCMethodHard{
             flp, new AstVarRef{flp, vscpInfo.valueQueueKit().vscp, VAccess::READWRITE},
-            VCMethod::SCHED_ENQUEUE};
+            VCMethod::NBA_ENQUEUE};
         callp->dtypeSetVoid();
         callp->addPinsp(valuep);
         if (partial) callp->addPinsp(maskp);

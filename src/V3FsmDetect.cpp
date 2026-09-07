@@ -994,7 +994,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                              AstVarScope*& fromVscp) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_CAST(AstArraySel::baseFromp(assp->lhsp(), true), VarRef);
+        AstVarRef* const lhsp = VN_CAST(assp->lhsp()->baseFromp(true), VarRef);
         AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
         if (!rhsp || !lhsp) return nullptr;
         stateVscp = lhsp->varScopep();
@@ -1008,7 +1008,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                                    FsmStateValue& resetValue) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_CAST(AstArraySel::baseFromp(assp->lhsp(), true), VarRef);
+        AstVarRef* const lhsp = VN_CAST(assp->lhsp()->baseFromp(true), VarRef);
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
         if (!rhsp || !lhsp) return nullptr;
         if (AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef)) {
@@ -1033,7 +1033,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                                      FsmStateValue& value) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
-        AstVarRef* const lhsp = VN_CAST(AstArraySel::baseFromp(assp->lhsp(), true), VarRef);
+        AstVarRef* const lhsp = VN_CAST(assp->lhsp()->baseFromp(true), VarRef);
         UASSERT_OBJ(lhsp, assp,
                     "direct constant state assignment lhs should be normalized to a VarRef");
         if (constValueStatus(assp->rhsp(), value) != ConstValueStatus::OK) return nullptr;
@@ -1220,7 +1220,7 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarRef* vrefp = VN_CAST(eqp->lhsp(), VarRef);
         AstNodeExpr* valuep = eqp->rhsp();
         if (!vrefp) {
-            vrefp = VN_CAST(AstArraySel::baseFromp(eqp->rhsp(), true), VarRef);
+            vrefp = VN_CAST(eqp->rhsp()->baseFromp(true), VarRef);
             if (!vrefp) { return false; }
             valuep = eqp->lhsp();
         }

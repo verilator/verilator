@@ -3269,6 +3269,7 @@ class ParamVisitor final : public VNVisitor {
             } else {
                 nodep->unlinkFrBack();
             }
+            V3LinkDotIfaceCapture::purgeDeletedSubtree(nodep);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             // Normal edit rules will now recurse the replacement
         } else {

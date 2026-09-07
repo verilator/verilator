@@ -1096,6 +1096,7 @@ def write_ast_macros(filename):
             #         kind=ptr['kind'])
 
             emitBlock('''\
+            using Super = Ast{s};
             Ast{t}* unlinkFrBack(VNRelinker* linkerp = nullptr) {{
                 return static_cast<Ast{t}*>(AstNode::unlinkFrBack(linkerp));
             }}
@@ -1116,7 +1117,8 @@ def write_ast_macros(filename):
             void dumpTreeJsonOpGen(std::ostream& str, const string& indent) const override;
             void dumpJsonGen(std::ostream& str) const;
             ''',
-                      t=node.name)
+                      t=node.name,
+                      s=(node.superClass.name if node.superClass else 'AstNode'))
             if node.ptrs:
                 emitBlock('''\
                 void cloneRelinkGen() override;

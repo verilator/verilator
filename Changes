@@ -10,7 +10,15 @@ The changes in each Verilator version are described below.  The
 contributors that suggested or implemented a given issue are shown in []. Thanks!
 
 
-Verilator 5.051 devel
+Verilator 5.053 devel
+==========================
+
+**Other:**
+
+* Change JSON dumps to suppress empty strings, etc.
+
+
+Verilator 5.052 2026-09-05
 ==========================
 
 **Important:**
@@ -99,6 +107,7 @@ Verilator 5.051 devel
 * Fix use-after-free in V3LinkDotIfaceCapture (#7943). [Nick Brereton]
 * Fix sampled-value clocks in repeated assertions (#7944). [Artur Bieniek, Antmicro Ltd.]
 * Fix queued $finish/$stop request thread ordering (#7946 prep) (#7952). [Yilou Wang]
+* Fix NFA assertion scheduling to fix outcome counts (#7946). [Yilou Wang]
 * Fix DFG nested shifts with overflowing shift amount (#7955) (#7977).
 * Fix timing controls in interface tasks called via virtual interface (#7959). [Yilou Wang]
 * Fix lambda parameter types in queue min and max (#7962). [Bartosz Skorowski]
@@ -155,7 +164,7 @@ Verilator 5.051 devel
 * Fix unordered data hazards in multi-threaded scheduling (#8133). [Geza Lore, Testorrent USA, Inc.]
 * Fix public table offsets larger than 32 bits (#8135). [Sunimali Rathnayake]
 * Fix 'get-value' for empty constrained arrays (#8138). [Kornel Uriasz, Antmicro Ltd.]
-* Fix streaming concatenation uninitialized RMW access (#8143). [Geza Lore, Testorrent USA, Inc.]
+* Fix streaming concatenation uninitialized read-modify-write access (#8143). [Geza Lore, Testorrent USA, Inc.]
 * Fix unpacked array passing to logic task argument error (#8148). [Pawel Klopotek, Antmicro Ltd.]
 * Fix $past in final blocks on a sampling-tick finish (#8153). [Yilou Wang]
 * Fix array reference in reduction constraints (#8158). [Kornel Uriasz, Antmicro Ltd.]
@@ -178,6 +187,11 @@ Verilator 5.051 devel
 * Fix MULTIDRIVENPROC on static loop induction variables (#8242). [Geza Lore, Testorrent USA, Inc.]
 * Fix multiply undefined behavior on signed int overflow (#8247) (#8248). [Paul Rigge]
 * Fix initial statements with gate optimization (#8250). [Prithayan Barua]
+* Fix segmentation fault on context destruction (#8265).
+* Fix mis-randomizing an unpacked struct member when not rand/randc (#8277) (#8278). [Aditya Shevade]
+* Fix std::randomize() with-clause array index arguments (#8279) (#8280). [Aditya Shevade]
+* Fix incorrect reference to sync/async in SYNCASYNCNET warning (#8281). [Andrii, Antmicro Ltd.]
+* Fix use-after-free of captured interface typedef in deleted generate branch (#8287). [Nick Brereton]
 
 
 Verilator 5.050 2026-07-01

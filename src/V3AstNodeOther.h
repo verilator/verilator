@@ -94,6 +94,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
+    // dist-ast-dump-suppress  // Not dumped due to verbosity
     string m_dpiCDecl;  // Custom DPI-C function declaration
     string m_ifacePortName;  // Interface port name for out-of-block definition (IEEE 25.8)
     uint64_t m_dpiOpenParent = 0;  // DPI import open array, if !=0, how many callees
@@ -293,8 +294,8 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     // @astgen op2 := stmtsp : List[AstNode]
     string m_name;  // Name of the module
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
+    // dist-ast-dump-suppress  // For some user errors messages only, visible where used
     string m_someInstanceName;  // Hierarchical name of some arbitrary instance of this module.
-                                // Used for user messages only.
     string m_libname;  // Work library
     int m_depth = 0;  // 1=top module, 2=cell off top, shared things low, for -depth options
     int m_level = 0;  // 1=top module, 2=cell off top, shared things have high number
@@ -889,6 +890,8 @@ public:
         }
     }
     ASTGEN_MEMBERS_AstClockingItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     VDirection direction() const { return m_direction; }
     AstClockingItem* outputp() const { return m_outputp; }
     void outputp(AstClockingItem* outputp) { m_outputp = outputp; }
@@ -907,11 +910,11 @@ public:
         , m_libname{libname}
         , m_configname{cellname} {}
     ASTGEN_MEMBERS_AstConfig;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     std::string name() const override VL_MT_STABLE { return m_libname + "." + m_configname; }
     std::string libname() const VL_MT_STABLE { return m_libname; }
     std::string configname() const VL_MT_STABLE { return m_configname; }
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
 };
 class AstConfigCell final : public AstNode {
     // Parents: CONFIGRULE
@@ -1239,6 +1242,8 @@ public:
         , m_name{vname}
         , m_cname{cname} {}
     ASTGEN_MEMBERS_AstDpiExport;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     string cname() const { return m_cname; }
@@ -1256,6 +1261,8 @@ public:
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     string verilogKwd() const override { return "$"s + string{displayType().ascii()}; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
@@ -1714,7 +1721,9 @@ public:
     bool sameNode(const AstNode* samep) const override {
         return direction() == VN_DBG_AS(samep, Pull)->direction();
     }
-    uint32_t direction() const { return static_cast<uint32_t>(m_direction); }
+    bool direction() const { return m_direction; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstScope final : public AstNode {
     // A particular usage of a cell
@@ -1911,8 +1920,11 @@ public:
 class AstTextBlock final : public AstNode {
     // Text block emitted into output, with some arbitrary nodes interspersed
     // @astgen op1 := nodesp : List[AstNode] // Nodes to print
+    // dist-ast-dump-suppress  // Omitting text blocks due to verbosity
     const std::string m_prefix;  // Prefix to print before first element in 'nodesp'
+    // dist-ast-dump-suppress  // Omitting text blocks due to verbosity
     const std::string m_separator;  // Separator to print between each element in 'nodesp'
+    // dist-ast-dump-suppress  // Omitting text blocks due to verbosity
     const std::string m_suffix;  // Suffix to pring after last element in 'nodesp'
 public:
     explicit AstTextBlock(FileLine* fl,  //
@@ -1961,6 +1973,7 @@ class AstTypeTable final : public AstNode {
     AstBasicDType* m_basicps[VBasicDTypeKwd::_ENUM_MAX]{};
     //
     using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
+    // dist-ast-dump-suppress  // Link to other nodes
     DetailedMap m_detailedMap;
 
 public:
@@ -2099,6 +2112,8 @@ public:
         addOFieldsp(oFieldsp2);
     }
     ASTGEN_MEMBERS_AstUdpTableLine;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     int udpIsCombo() const { return m_udpIsCombo; }
 };
 class AstUdpTableLineVal final : public AstNode {
@@ -2378,7 +2393,7 @@ public:
     bool constPoolEntry() const { return m_constPoolEntry; }
     void setConstPoolEntry() { m_constPoolEntry = true; }
     bool covergroupRefMember() const { return m_covergroupRefMember; }
-    void covergroupRefMember() { m_covergroupRefMember = true; }
+    void covergroupRefMember(bool flag) { m_covergroupRefMember = flag; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -2656,7 +2671,7 @@ public:
     const string& fsmTag() const { return m_fsmTag; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverOtherDecl* const asamep = VN_DBG_AS(samep, CoverOtherDecl);
-        return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov();
+        return Super::sameNode(samep) && linescov() == asamep->linescov();
     }
 };
 class AstCoverToggleDecl final : public AstNodeCoverDecl {
@@ -2678,7 +2693,7 @@ public:
     const VNumRange& range() const { return m_range; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverToggleDecl* const asamep = VN_DBG_AS(samep, CoverToggleDecl);
-        return AstNodeCoverDecl::sameNode(samep) && range() == asamep->range();
+        return Super::sameNode(samep) && range() == asamep->range();
     }
 };
 
@@ -2735,6 +2750,8 @@ public:
     AstSequence(FileLine* fl, const string& name, AstNode* stmtp)
         : ASTGEN_SUPER_Sequence(fl, name, stmtp) {}
     ASTGEN_MEMBERS_AstSequence;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool hasDType() const override VL_MT_SAFE { return true; }
     AstNodeFTask* cloneType(const string& name) override {
         return new AstSequence{fileline(), name, nullptr};
@@ -3023,9 +3040,11 @@ public:
     AstIface(FileLine* fl, const string& name, const string& libname)
         : ASTGEN_SUPER_Iface(fl, name, libname) {}
     ASTGEN_MEMBERS_AstIface;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string verilogKwd() const override { return "interface"; }
     // Interfaces have `timescale applicability but lots of code seems to
     // get false warnings if we enable this
-    string verilogKwd() const override { return "interface"; }
     bool timescaleMatters() const override { return false; }
     bool hasVirtualRef() const { return m_hasVirtualRef; }
     void setHasVirtualRef() { m_hasVirtualRef = true; }

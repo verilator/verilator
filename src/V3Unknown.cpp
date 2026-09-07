@@ -146,7 +146,7 @@ class UnknownVisitor final : public VNVisitor {
     // Returns true if it is known at compile time that `msbConstp` is greater than or equal
     // `exprp`
     static bool isStaticlyGte(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
-        if (msbConstp->width() >= exprp->width()
+        if (msbConstp->width() >= exprp->width() && exprp->width() < 32
             && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1) {
             return true;
         }
@@ -396,7 +396,7 @@ class UnknownVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
-            const AstNode* const basefromp = AstArraySel::baseFromp(nodep, true);
+            const AstNode* const basefromp = nodep->baseFromp(true);
             bool lvalue = false;
             if (const AstNodeVarRef* const varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();
@@ -455,7 +455,7 @@ class UnknownVisitor final : public VNVisitor {
         if (!nodep->user1SetOnce()) {
             UINFOTREE(9, nodep, "", "in");
             // Guard against reading/writing past end of arrays
-            AstNode* const basefromp = AstArraySel::baseFromp(nodep->fromp(), true);
+            AstNode* const basefromp = nodep->fromp()->baseFromp(true);
             bool lvalue = false;
             if (const AstNodeVarRef* const varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();

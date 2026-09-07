@@ -48,6 +48,11 @@ public:
     explicit VOptionBool(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[]
+            = {"DEFAULT_FALSE", "DEFAULT_TRUE", "OPT_TRUE", "OPT_FALSE"};
+        return names[m_e];
+    }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
     bool isSetTrue() const { return m_e == OPT_TRUE; }

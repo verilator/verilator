@@ -262,6 +262,18 @@ class V3DfgCse final {
         VL_UNREACHABLE;
     }
 
+    // Compares the sources of 'a' and 'b' for equivalence
+    bool sourcesEquivalent(const DfgVertex& a, const DfgVertex& b) {
+        for (size_t i = 0; i < a.nInputs(); ++i) {
+            const DfgVertex* const ap = a.inputp(i);
+            const DfgVertex* const bp = b.inputp(i);
+            if (!ap && !bp) continue;
+            if (!ap || !bp) return false;
+            if (!vertexEquivalent(*ap, *bp)) return false;
+        }
+        return true;
+    }
+
     // Compares 'a' and 'b' for equivalence
     bool vertexEquivalent(const DfgVertex& a, const DfgVertex& b) {
         // If same vertex, then equal
@@ -279,23 +291,17 @@ class V3DfgCse final {
         // Check vertex specifics
         if (!vertexSelfEquivalent(a, b)) return false;
 
+        // A given pair can only be reached more than once if one of the
+        // vertices has multiple sinks, or if there was a hash collision.
+        // Collisions are rare, so only memoize the result if it can actually
+        // be looked up again through multiple paths.
+        if (!a.hasMultipleSinks() && !b.hasMultipleSinks()) return sourcesEquivalent(a, b);
+
         // Check sources
         const VertexPair key = (&a < &b) ? std::make_pair(&a, &b) : std::make_pair(&b, &a);
         // The recursive invocation can cause a re-hash but that will not invalidate references
         uint8_t& result = m_equivalentCache[key];
-        if (!result) {
-            const bool equal = [&]() {
-                for (size_t i = 0; i < a.nInputs(); ++i) {
-                    const DfgVertex* const ap = a.inputp(i);
-                    const DfgVertex* const bp = b.inputp(i);
-                    if (!ap && !bp) continue;
-                    if (!ap || !bp) return false;
-                    if (!vertexEquivalent(*ap, *bp)) return false;
-                }
-                return true;
-            }();
-            result = (static_cast<uint8_t>(equal) << 1) | 1;
-        }
+        if (!result) result = (static_cast<uint8_t>(sourcesEquivalent(a, b)) << 1) | 1;
         return result >> 1;
     }
 
