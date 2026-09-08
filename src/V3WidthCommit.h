@@ -40,6 +40,11 @@ public:
         return nullptr;
     }
 
+    // Check local/protected access from refModp. Also used by V3Param, before a type argument
+    // is cloned into the class it specializes.
+    static void classEncapCheck(AstNode* nodep, AstNode* defp, AstClass* defClassp,
+                                AstNodeModule* refModp) VL_MT_DISABLED;
+
     // Final step... Mark all widths as equal
     static void widthCommit(AstNetlist* nodep) VL_MT_DISABLED;
 };
