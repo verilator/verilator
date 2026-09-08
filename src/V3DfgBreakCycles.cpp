@@ -155,12 +155,14 @@ class TraceDriver final : public DfgVisitor {
         DfgVertex* m_vtxp;
         uint32_t m_lsb;
         uint32_t m_msb;
+        uint64_t m_component;
 
         CacheKey() = delete;
-        CacheKey(DfgVertex* vtxp, uint32_t lsb, uint32_t msb)
+        CacheKey(DfgVertex* vtxp, uint32_t lsb, uint32_t msb, uint64_t component)
             : m_vtxp{vtxp}
             , m_lsb{lsb}
-            , m_msb{msb} {}
+            , m_msb{msb}
+            , m_component{component} {}
 
         struct Hash final {
             size_t operator()(const CacheKey& item) const {
@@ -168,13 +170,15 @@ class TraceDriver final : public DfgVisitor {
                 V3Hash hash{item.m_vtxp};
                 hash += item.m_lsb;
                 hash += item.m_msb;
+                hash += item.m_component;
                 return hash.value();
             }
         };
 
         struct Equal final {
             bool operator()(const CacheKey& a, const CacheKey& b) const {
-                return a.m_vtxp == b.m_vtxp && a.m_lsb == b.m_lsb && a.m_msb == b.m_msb;
+                return a.m_vtxp == b.m_vtxp && a.m_lsb == b.m_lsb && a.m_msb == b.m_msb
+                       && a.m_component == b.m_component;
             }
         };
     };
@@ -262,15 +266,31 @@ class TraceDriver final : public DfgVisitor {
         // the same component as vtxp
         DfgVertex*& respr = m_cache
                                 .emplace(std::piecewise_construct,  //
-                                         std::forward_as_tuple(vtxp, msb, lsb),  //
+                                         std::forward_as_tuple(vtxp, msb, lsb, m_component),  //
                                          std::forward_as_tuple(nullptr))
                                 .first->second;
 
-        // Trace the vertex
         if (respr) {
-            // If already traced this vtxp/msb/lsb, just use the result.
-            // This is important to avoid combinatorial explosion when the
-            // same sub-expression is needed multiple times.
+            // Cache hit: exact (vtxp, msb, lsb, m_component) match
+        } else {
+            // Check if full range of this vertex was already traced under this component
+            const CacheKey fullKey{vtxp, 0, vtxp->width() - 1, m_component};
+            const auto it = m_cache.find(fullKey);
+            if (it != m_cache.end() && it->second) {
+                DfgVertex* const fullDriver = it->second;
+                if (msb == vtxp->width() - 1 && lsb == 0) {
+                    respr = fullDriver;
+                } else {
+                    DfgSel* const selp = make<DfgSel>(fullDriver, msb - lsb + 1);
+                    selp->fromp(fullDriver);
+                    selp->lsb(lsb);
+                    respr = selp;
+                }
+            }
+        }
+
+        if (respr) {
+            // Reusing cached or derived driver result
         } else if (m_sccInfo.get(*vtxp) != m_component) {
             // If the currently traced vertex is in a different component,
             // then we found what we were looking for.
@@ -807,6 +827,9 @@ public:
     // to 'vtxp[lsb +: width]', but is not part of the same SCC. This should only
     // be called if the bit range is known to be independent of the SCC, so the
     // trace can always succeed.
+    // Clear the trace result cache. Call when graph structure or SCC assignments change.
+    void clearCache() { m_cache.clear(); }
+
     DfgVertex* apply(DfgVertex& vtx, uint32_t lsb, uint32_t width) {
         VL_RESTORER(m_component);
         m_component = m_sccInfo.get(vtx);
