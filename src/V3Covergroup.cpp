@@ -31,7 +31,6 @@
 #include "V3MemberMap.h"
 
 #include <array>
-#include <optional>
 #include <set>
 #include <unordered_map>
 #include <vector>
@@ -1616,6 +1615,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return true;
     }
 
+    enum class CrossMatchResult : uint8_t { MATCH, NO_MATCH, WORK_LIMIT };
+
     static constexpr uint8_t CROSS_AT_BOUNDS = 3;  // Prefix equals both interval bounds
     static constexpr uint8_t CROSS_NO_MATCH = 4;  // Prefix cannot match the interval/pattern
     static constexpr size_t CROSS_MATCH_LINEAR_ALLOWANCE = 4;  // Minimum linear traversals
@@ -1676,15 +1677,17 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return !result.opWildEq(value, range.pattern).isEqZero();
     }
 
-    static std::optional<bool> crossOutsideExcluded(const CrossValueRange& range,
-                                                    const std::vector<CrossValueRange>& excluded) {
+    static CrossMatchResult crossOutsideExcluded(const CrossValueRange& range,
+                                                 const std::vector<CrossValueRange>& excluded) {
         // Array-bin elements and singleton filters need no prefix search.
         if (range.lo.isCaseEq(range.hi)) {
-            if (!crossRangeContains(range, range.lo)) return false;
+            if (!crossRangeContains(range, range.lo)) return CrossMatchResult::NO_MATCH;
             return std::none_of(excluded.begin(), excluded.end(),
                                 [&](const CrossValueRange& exclusion) {
                                     return crossRangeContains(exclusion, range.lo);
-                                });
+                                })
+                       ? CrossMatchResult::MATCH
+                       : CrossMatchResult::NO_MATCH;
         }
         std::vector<const CrossValueRange*> blockers;
         std::vector<std::array<int, CROSS_NO_MATCH>> freeBelow;
@@ -1697,7 +1700,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             blockers.push_back(&exclusion);
             freeBelow.push_back(crossFreeBelow(exclusion));
         }
-        if (blockers.empty()) return !range.wildcard || crossWildcardIntersects(range);
+        if (blockers.empty()) {
+            return !range.wildcard || crossWildcardIntersects(range) ? CrossMatchResult::MATCH
+                                                                     : CrossMatchResult::NO_MATCH;
+        }
 
         struct Frame final {
             int bit;  // Next bit to assign
@@ -1721,7 +1727,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 stack.pop_back();
                 continue;
             }
-            if (stepCost > workLimit - work) return std::nullopt;
+            if (stepCost > workLimit - work) return CrossMatchResult::WORK_LIMIT;
             work += stepCost;
             const int value = frame.nextValue++;
             const uint8_t candidate = crossRangeStep(range, frame.state[0], frame.bit, value);
@@ -1739,34 +1745,38 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
             }
             if (covered) continue;
-            if (frame.bit == 0) return true;
+            if (frame.bit == 0) return CrossMatchResult::MATCH;
             const int bit = frame.bit - 1;
             if (failed.find({bit, successor}) == failed.end()) {
                 stack.push_back({bit, std::move(successor), 0});
             }
         }
-        return false;
+        return CrossMatchResult::NO_MATCH;
     }
 
-    static std::optional<bool> crossRangesIntersect(const CrossValueRange& bin,
-                                                    const CrossValueRange& filter,
-                                                    const std::vector<CrossValueRange>& excluded,
-                                                    bool excludeValues) {
+    static CrossMatchResult crossRangesIntersect(const CrossValueRange& bin,
+                                                 const CrossValueRange& filter,
+                                                 const std::vector<CrossValueRange>& excluded,
+                                                 bool excludeValues) {
         if (filter.lo.isFourState() || bin.lo.isFourState()) {
             if (!bin.singleton || !filter.singleton || !bin.lo.isCaseEq(filter.lo)) {
-                return false;
+                return CrossMatchResult::NO_MATCH;
             }
-            return !excludeValues
-                   || std::none_of(
-                       excluded.begin(), excluded.end(), [&](const CrossValueRange& range) {
-                           return !range.wildcard && range.singleton && bin.lo.isCaseEq(range.lo);
-                       });
+            return (!excludeValues
+                    || std::none_of(excluded.begin(), excluded.end(),
+                                    [&](const CrossValueRange& range) {
+                                        return !range.wildcard && range.singleton
+                                               && bin.lo.isCaseEq(range.lo);
+                                    }))
+                       ? CrossMatchResult::MATCH
+                       : CrossMatchResult::NO_MATCH;
         }
         CrossValueRange match = bin;
         intersectCrossRange(match, filter);
-        if (crossValueLess(match.hi, match.lo)) return false;
+        if (crossValueLess(match.hi, match.lo)) return CrossMatchResult::NO_MATCH;
         if (!excludeValues || excluded.empty()) {
-            return !bin.wildcard || crossWildcardIntersects(match);
+            return !bin.wildcard || crossWildcardIntersects(match) ? CrossMatchResult::MATCH
+                                                                   : CrossMatchResult::NO_MATCH;
         }
         return crossOutsideExcluded(match, excluded);
     }
@@ -1840,16 +1850,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
                 for (const CrossValueRange& filter : filters) {
                     // State exclusions do not remove values from transition sequences.
-                    const std::optional<bool> matches = crossRangesIntersect(
+                    const CrossMatchResult result = crossRangesIntersect(
                         range, filter, excluded, !bins.values[i].binp->transp());
-                    if (!matches.has_value()) {
+                    if (result == CrossMatchResult::WORK_LIMIT) {
                         selectp->v3warn(COVERIGN,
                                         "Unsupported: 'intersect' exclusion matching exceeds "
                                         "the selection work limit.");
                         valid = false;
                         return {};
                     }
-                    if (*matches) {
+                    if (result == CrossMatchResult::MATCH) {
                         selected[i] = true;
                         break;
                     }
@@ -2839,6 +2849,10 @@ public:
     explicit FunctionalCoverageVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~FunctionalCoverageVisitor() override = default;
 };
+
+// C++14 requires definitions for constexpr members passed by reference.
+constexpr uint8_t FunctionalCoverageVisitor::CROSS_AT_BOUNDS;
+constexpr size_t FunctionalCoverageVisitor::CROSS_MATCH_WORK_LIMIT;
 
 //######################################################################
 // Functional coverage class functions
