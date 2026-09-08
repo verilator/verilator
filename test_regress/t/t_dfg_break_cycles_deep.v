@@ -17,11 +17,10 @@ module prim (
   assign o = !(!i);
 endmodule
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t;
+
+  bit clk = 1'b0;
+  always #5 clk = ~clk;
 
   localparam WIDTH = 2;
   localparam DEPTH = 512;

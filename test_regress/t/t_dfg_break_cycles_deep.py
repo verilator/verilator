@@ -9,12 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-# Run with the default stack limit. The 'verilator' wrapper otherwise raises it,
-# but the CMake integration invokes 'verilator_bin' directly, so the compiler
-# must not require an unlimited stack to elaborate this design.
-test.compile(verilator_flags2=['--no-unlimited-stack'])
+# Run with the default stack limit to exercise Dfg cycle-breaking stack depth.
+test.compile(verilator_flags2=['--binary'])
 
 test.execute()
 
