@@ -1216,7 +1216,14 @@ class LinkDotFindVisitor final : public VNVisitor {
         // (sorted before this is called).
         // This may not be the module with isTop() set, as early in the steps,
         // wrapTop may have not been created yet.
-        if (!nodep->modulesp()) nodep->v3error("No top level module found");
+        // $unit always exists, so nothing else, and nothing in it, means nothing was given
+        AstNodeModule* const modulesp = nodep->modulesp();
+        UASSERT_OBJ(modulesp, nodep, "$unit should always be in the netlist");
+        if (!modulesp->nextp()) {
+            UASSERT_OBJ(modulesp == v3Global.rootp()->dollarUnitPkgp(), modulesp,
+                        "Sole module should be $unit");
+            if (!modulesp->stmtsp()) nodep->v3error("No top level module found");
+        }
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
             UINFO(8, "Top Module: " << modp);
@@ -1405,7 +1412,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstClassOrPackageRef* nodep) override {  // FindVisitor::
         if (!nodep->classOrPackageNodep() && nodep->name() == "$unit") {
-            nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgAddp());
+            nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgp());
         }
         iterateChildren(nodep);
     }

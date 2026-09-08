@@ -127,7 +127,6 @@ V3Global v3Global;
 static void reportStatsIfEnabled() {
     if (v3Global.opt.stats()) {
         FileLine::stats();
-        V3Stats::statsFinalAll(v3Global.rootp());
         V3Stats::statsReport();
     }
 }
@@ -207,10 +206,7 @@ static void process() {
             V3Hierarchical::createGraph(v3Global.rootp());
             // If a plan is created, further analysis is not necessary.
             // The actual Verilation will be done based on this plan.
-            if (v3Global.hierGraphp()) {
-                reportStatsIfEnabled();
-                return;
-            }
+            if (v3Global.hierGraphp()) return;
         }
 
         // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
@@ -233,11 +229,22 @@ static void process() {
             v3Global.vlExit(0);
         }
 
-        // Insert generic non-FSM coverage before dead code elimination and
-        // inlining, or those opportunities may be optimized away. FSM
-        // coverage is handled later in V3FsmDetect, after scoping has created
-        // the AST context needed to recover and lower FSMs reliably.
-        if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
+        if (!v3Global.opt.serializeOnly() || v3Global.opt.flatten()) {
+            // Add top level wrapper with instance pointing to old top
+            // Move packages to under new top
+            // Must do this after we know parameters and dtypes (as don't clone dtype decls)
+            V3LinkLevel::wrapTop(v3Global.rootp());
+        } else {
+            V3LinkLevel::nonWrapTop(v3Global.rootp());
+        }
+
+        if (!v3Global.opt.serializeOnly()) {
+            // Insert generic code coverage before dead code elimination and
+            // inlining, or those opportunities may be optimized away. FSM
+            // coverage is handled later in V3FsmDetect, after scoping has created
+            // the AST context needed to recover and lower FSMs reliably.
+            if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
+        }
 
         // Functional coverage code generation
         //    Generate code for covergroups/coverpoints
@@ -267,15 +274,6 @@ static void process() {
         V3AssertPre::assertPreAll(v3Global.rootp());
         //
         V3Assert::assertAll(v3Global.rootp());
-
-        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
-            // Add top level wrapper with instance pointing to old top
-            // Move packages to under new top
-            // Must do this after we know parameters and dtypes (as don't clone dtype decls)
-            V3LinkLevel::wrapTop(v3Global.rootp());
-        } else {
-            V3LinkLevel::nonWrapTop(v3Global.rootp());
-        }
 
         // Propagate constants into expressions
         if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLint(v3Global.rootp());
@@ -815,12 +813,6 @@ static bool verilate(const string& argString) {
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
 
-    // Free memory so compiler has more for --build
-    // No need to do this if skipped (above) as didn't alloc much
-    UINFO(1, "Releasing netlist memory");
-    v3Global.rootp()->deleteContents();
-    V3Os::releaseMemory();
-    if (v3Global.opt.stats()) V3Stats::statsStage("released");
     return true;
 }
 
@@ -844,10 +836,18 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     return cmd.str();
 }
 
+static void releaseNetlistMemory() {
+    UINFO(1, "Releasing netlist memory");
+    v3Global.rootp()->deleteContents();
+    V3Os::releaseMemory();
+    if (v3Global.opt.stats()) V3Stats::statsStage("released");
+}
+
 static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
     UASSERT(!v3Global.opt.makeJson(), "--build cannot use json build.");
+    releaseNetlistMemory();
     const VlOs::DeltaWallTime buildWallTime{true};
     UINFO(1, "Start Build");
 
@@ -864,6 +864,7 @@ static void execBuildJob() {
 
 static void execHierVerilation() {
     UASSERT(v3Global.hierGraphp(), "must be called only when plan exists");
+    releaseNetlistMemory();
     const string makefile = v3Global.opt.prefix() + "_hier.mk ";
     const string target = v3Global.opt.build() ? " hier_build" : " hier_verilation";
     const string cmdStr = buildMakeCmd(makefile, target);

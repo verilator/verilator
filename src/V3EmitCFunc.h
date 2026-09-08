@@ -808,6 +808,17 @@ public:
         if (nodep->method() == VCMethod::FORCE_READ_SEL) {
             emitIQW(nodep);
             if (nodep->isWide()) puts("<" + cvtToStr(nodep->dtypep()->widthWords()) + ">");
+        } else if (nodep->method() == VCMethod::ARRAY_SLICE) {
+            // VlUnpacked::slice<N_Out>(loIdx) - N_Out is the (fixed) result array size
+            const AstUnpackArrayDType* const adtypep
+                = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+            puts("<" + cvtToStr(adtypep->elementsConst()) + ">");
+        } else if (nodep->method() == VCMethod::COVERGROUP_ADD_COVERPOINT) {
+            // The hit-list bound is a template argument of the returned VlCoverpointT<>, and the
+            // node's own dtype is that type, so it is the one source of truth for both.
+            const AstCoverpointDType* const cpdtypep
+                = VN_AS(nodep->dtypep()->skipRefp(), CoverpointDType);
+            puts("<" + cvtToStr(cpdtypep->hitBound()) + ">");
         }
         puts("(");
         bool comma = false;

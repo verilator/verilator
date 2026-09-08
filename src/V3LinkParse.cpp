@@ -1415,14 +1415,43 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstCoverBinsof* nodep) override {
+        cleanFileline(nodep);
+        AstCoverpointRef* const refp = nodep->pointp();
+        const AstParseRef* pointp = VN_CAST(refp->exprp(), ParseRef);
+        const AstParseRef* binp = nullptr;
+        const AstDot* const dotp = VN_CAST(refp->exprp(), Dot);
+        if (dotp) {
+            pointp = VN_CAST(dotp->lhsp(), ParseRef);
+            binp = VN_CAST(dotp->rhsp(), ParseRef);
+        }
+        if (!pointp || (dotp && !binp)) {
+            nodep->v3warn(COVERIGN, "Unsupported: 'binsof' in coverage select expression");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        // These names belong to the coverage namespace, not the sampled variables.
+        if (binp) nodep->name(binp->name());
+        refp->replaceWith(new AstCoverpointRef{pointp->fileline(), pointp->name()});
+        VL_DO_DANGLING(pushDeletep(refp), refp);
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverCrossBin* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        if (!nodep->selectp()) {
+            nodep->v3warn(COVERIGN, "Unsupported: explicit coverage cross bins");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        }
+    }
+
     void visit(AstCoverCross* nodep) override {
         cleanFileline(nodep);
-        // Distribute the parse-time raw cross_body list (rawBodyp, op3) into the
-        // typed optionsp slot.  The grammar produces AstCgOptionAssign nodes for
-        // option.* items; convert them to AstCoverOption exactly as visit(AstCoverpoint*)
-        // does.  Other items (functions, unsupported bin selectors) are discarded.
-        for (AstNode *itemp = nodep->rawBodyp(), *nextp; itemp; itemp = nextp) {
+        // Move options out of the mixed parse-time body, leaving only cross bins.
+        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
+            if (VN_IS(itemp, CoverCrossBin)) continue;
             itemp->unlinkFrBack();
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
             const VCoverOptionType optType = optp->optType();

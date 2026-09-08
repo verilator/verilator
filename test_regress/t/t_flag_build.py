@@ -14,9 +14,13 @@ test.top_filename = "t/t_flag_make_cmake.v"
 
 test.compile(  # Don't call cmake nor gmake from driver.py
     verilator_flags2=[
-        '--exe --cc --build -j 2', '../' + test.main_filename, '-MAKEFLAGS -p --trace-vcd'
+        '--exe --cc --build -j 2', '../' + test.main_filename, '-MAKEFLAGS -p --trace-vcd',
+        '--stats'
     ])
 
 test.execute()
+
+# Check netlist was released before forking the build
+test.file_grep(test.stats, r"Stage, Elapsed time \(sec\), \d+_released")
 
 test.passes()

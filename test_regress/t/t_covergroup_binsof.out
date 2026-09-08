@@ -1,0 +1,82 @@
+cg_auto.a.auto_0: 10
+cg_auto.a.auto_1: 8
+cg_auto.all_products.combined [cross]: 18
+cg_auto.b.auto_0: 9
+cg_auto.b.auto_1: 9
+cg_binsof.all_products.combined [cross]: 10
+cg_binsof.array_bins.high_x_either [cross]: 2
+cg_binsof.array_bins.high_x_high [cross]: 1
+cg_binsof.array_bins.high_x_low [cross]: 1
+cg_binsof.array_bins.low_x_either [cross]: 4
+cg_binsof.array_bins.low_x_high [cross]: 2
+cg_binsof.array_bins.low_x_low [cross]: 2
+cg_binsof.array_bins.selected [cross]: 4
+cg_binsof.cp_a.arrayed[0]: 2
+cg_binsof.cp_a.arrayed[1]: 2
+cg_binsof.cp_a.high: 2
+cg_binsof.cp_a.ignored [ignore]: 2
+cg_binsof.cp_a.low: 4
+cg_binsof.cp_a.rest [default]: 8
+cg_binsof.cp_b.either: 18
+cg_binsof.cp_b.high: 9
+cg_binsof.cp_b.low: 9
+cg_binsof.empty_selection.arrayed[0]_x_either [cross]: 2
+cg_binsof.empty_selection.arrayed[0]_x_high [cross]: 1
+cg_binsof.empty_selection.arrayed[0]_x_low [cross]: 1
+cg_binsof.empty_selection.arrayed[1]_x_either [cross]: 2
+cg_binsof.empty_selection.arrayed[1]_x_high [cross]: 1
+cg_binsof.empty_selection.arrayed[1]_x_low [cross]: 1
+cg_binsof.empty_selection.high_x_either [cross]: 2
+cg_binsof.empty_selection.high_x_high [cross]: 1
+cg_binsof.empty_selection.high_x_low [cross]: 1
+cg_binsof.empty_selection.low_x_either [cross]: 4
+cg_binsof.empty_selection.low_x_high [cross]: 2
+cg_binsof.empty_selection.low_x_low [cross]: 2
+cg_binsof.guarded.arrayed[0]_x_either [cross]: 2
+cg_binsof.guarded.arrayed[0]_x_high [cross]: 1
+cg_binsof.guarded.arrayed[0]_x_low [cross]: 1
+cg_binsof.guarded.arrayed[1]_x_either [cross]: 2
+cg_binsof.guarded.arrayed[1]_x_high [cross]: 1
+cg_binsof.guarded.arrayed[1]_x_low [cross]: 1
+cg_binsof.guarded.high_x_either [cross]: 2
+cg_binsof.guarded.high_x_high [cross]: 1
+cg_binsof.guarded.high_x_low [cross]: 1
+cg_binsof.guarded.selected [cross]: 1
+cg_binsof.guarded.selected_one [cross]: 2
+cg_binsof.named.arrayed[0]_x_either [cross]: 2
+cg_binsof.named.arrayed[0]_x_high [cross]: 1
+cg_binsof.named.arrayed[0]_x_low [cross]: 1
+cg_binsof.named.arrayed[1]_x_either [cross]: 2
+cg_binsof.named.arrayed[1]_x_high [cross]: 1
+cg_binsof.named.arrayed[1]_x_low [cross]: 1
+cg_binsof.named.high_x_either [cross]: 2
+cg_binsof.named.high_x_high [cross]: 1
+cg_binsof.named.high_x_low [cross]: 1
+cg_binsof.named.selected [cross]: 4
+cg_binsof.other_axis.arrayed[0]_x_either [cross]: 2
+cg_binsof.other_axis.arrayed[0]_x_high [cross]: 1
+cg_binsof.other_axis.arrayed[1]_x_either [cross]: 2
+cg_binsof.other_axis.arrayed[1]_x_high [cross]: 1
+cg_binsof.other_axis.high_x_either [cross]: 2
+cg_binsof.other_axis.high_x_high [cross]: 1
+cg_binsof.other_axis.low_x_either [cross]: 4
+cg_binsof.other_axis.low_x_high [cross]: 2
+cg_binsof.other_axis.selected [cross]: 5
+cg_binsof.overlapping.arrayed[0]_x_either [cross]: 2
+cg_binsof.overlapping.arrayed[0]_x_high [cross]: 1
+cg_binsof.overlapping.arrayed[1]_x_either [cross]: 2
+cg_binsof.overlapping.arrayed[1]_x_high [cross]: 1
+cg_binsof.overlapping.high_x_either [cross]: 2
+cg_binsof.overlapping.high_x_high [cross]: 1
+cg_binsof.overlapping.lhs [cross]: 4
+cg_binsof.overlapping.rhs [cross]: 5
+cg_empty.cp_a.ignored [ignore]: 18
+cg_empty.cp_b.auto_0: 9
+cg_empty.cp_b.auto_1: 9
+cg_transition.cp_a.seq: 2
+cg_transition.cp_a.two: 2
+cg_transition.cp_b.auto_0: 3
+cg_transition.cp_b.auto_1: 3
+cg_transition.transitions.selected [cross]: 2
+cg_transition.transitions.two_x_auto_0 [cross]: 1
+cg_transition.transitions.two_x_auto_1 [cross]: 1

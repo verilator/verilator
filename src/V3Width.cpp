@@ -230,7 +230,6 @@ class WidthVisitor final : public VNVisitor {
     bool m_underSExpr = false;  // Visiting under a sequence expression
     bool m_underPackedArray = false;  // Visiting under a AstPackArrayDType
     bool m_underMemberSel = false;  // Viting under a MemberSel
-    bool m_hasNamedType = false;  // Packed array is defined using named type
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
@@ -2066,7 +2065,11 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->itemsp(), nullptr);
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->optionsp(), nullptr);
-        userIterateAndNext(nodep->rawBodyp(), nullptr);
+        userIterateAndNext(nodep->binsp(), nullptr);
+    }
+    void visit(AstCoverCrossBin* nodep) override {
+        userIterateAndNext(nodep->selectp(), nullptr);
+        if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
     }
     void visit(AstCoverpoint* nodep) override {
         // The coverpoint expression is self-determined (IEEE 1800-2023 19.5).  Width it
@@ -2503,8 +2506,6 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(basicp), basicp);
             }
         }
-        if (!m_underPackedArray) m_hasNamedType = false;  // Outermost dimension
-        VL_RESTORER(m_hasNamedType);
         VL_RESTORER(m_underPackedArray);
         if (VN_IS(nodep, PackArrayDType)) m_underPackedArray = true;
         // Iterate into subDTypep() to resolve that type and update pointer.
@@ -2518,13 +2519,23 @@ class WidthVisitor final : public VNVisitor {
             nodep->widthFromSub(nodep->subDTypep());
             if (nodep->subDTypep()->skipRefp()->isCompound()) adtypep->isCompound(true);
         } else {
+            const AstNodeDType* const elemDTypep = nodep->subDTypep()->skipRefp();
+            if (!elemDTypep->isIntegralOrPacked()) {
+                nodep->v3error("Unpacked data type " << elemDTypep->prettyDTypeNameQ()
+                                                     << " in packed array (IEEE 1800-2023 7.4.1)");
+            }
             const int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
             nodep->widthForce(width, width);
             if (!VL_RESTORER_PREV(m_underPackedArray)) {  // Outermost dimension
                 // IEEE 1800-2023 7.4.1 "Packed arrays" says
                 //   If a packed array is declared as signed,
                 //   then the array viewed as a single vector shall be signed.
-                if (!m_hasNamedType && nodep->basicp()->isSigned()) {
+                const AstNodeDType* baseDTypep = nodep->subDTypep();
+                while (!VN_IS(baseDTypep, RefDType) && baseDTypep->subDTypep()) {
+                    baseDTypep = baseDTypep->subDTypep();
+                }
+                const AstBasicDType* const basicp = nodep->basicp();
+                if (!VN_IS(baseDTypep, RefDType) && basicp && basicp->isSigned()) {
                     nodep->numeric(VSigning::fromBool(true));
                 }
             }
@@ -2649,7 +2660,6 @@ class WidthVisitor final : public VNVisitor {
         UINFO(4, "dtWidthed " << nodep);
     }
     void visit(AstRefDType* nodep) override {
-        m_hasNamedType = m_underPackedArray;
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         nodep->doingWidth(true);
         if (nodep->typeofp()) {  // type(typeofp_expression)
@@ -5773,6 +5783,8 @@ class WidthVisitor final : public VNVisitor {
                 if (it == patmap.end()) {  // Default or default_type assignment
                     patp = defaultPatp_patternUOrStruct(nodep, memp, vdtypep, defaultp, dtypemap);
                     pushDeletep(patp);
+                    patp = defaultPatp_forDType(patp, memp->virtRefDTypep());
+                    pushDeletep(patp);
                 } else {
                     patp = it->second;  // Member assignment
                 }
@@ -5858,11 +5870,13 @@ class WidthVisitor final : public VNVisitor {
         return newp;
     }
 
-    AstPatMember* defaultPatp_patternArray(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
+    AstPatMember* defaultPatp_forDType(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
         AstNodeExpr* const valuep = defaultp->lhssp()->cloneTree(false);
         AstNodeDType* const elemDTypeSkipRefp = elemDTypep->skipRefp();
+        const AstStructDType* const structp = VN_CAST(elemDTypeSkipRefp, StructDType);
+        const bool unpackedStruct = structp && !structp->packed();
 
-        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType)) {
+        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType) && !unpackedStruct) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             return defaultp->cloneTree(false);
         }
@@ -5871,9 +5885,14 @@ class WidthVisitor final : public VNVisitor {
             return defaultp->cloneTree(false);
         }
         if (!valuep->dtypep()) userIterate(valuep, WidthVP{SELF, BOTH}.p());
-        if (valuep->dtypep()
-            && AstNode::computeCastable(valuep->dtypep()->skipRefp(), elemDTypeSkipRefp, nullptr)
-                   .isAssignable()) {
+        bool wholeElement = unpackedStruct;
+        if (AstNodeDType* const valueDTypep = valuep->dtypep()) {
+            wholeElement = unpackedStruct ? !valueDTypep->skipRefp()->isIntegralOrPacked()
+                                          : AstNode::computeCastable(valueDTypep->skipRefp(),
+                                                                     elemDTypeSkipRefp, nullptr)
+                                                .isAssignable();
+        }
+        if (wholeElement) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             return defaultp->cloneTree(false);
         }
@@ -5899,7 +5918,7 @@ class WidthVisitor final : public VNVisitor {
             const auto it = patmap.find(ent);
             if (it == patmap.end()) {
                 if (defaultp) {
-                    newpatp = defaultPatp_patternArray(defaultp, arrayDtp->subDTypep());
+                    newpatp = defaultPatp_forDType(defaultp, arrayDtp->subDTypep());
                     patp = newpatp;
                 } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant && isConcat)) {
                     // If arrayDtp is an unpacked array and item is not constant,
@@ -9919,7 +9938,7 @@ class WidthVisitor final : public VNVisitor {
             varp->isStatic(true);
             varp->valuep(initp);
             // Add to root, as don't know module we are in, and aids later structure sharing
-            v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
+            v3Global.rootp()->dollarUnitPkgp()->addStmtsp(varp);
             // Element 0 is a non-index and has speced values
             initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, 0));
             for (unsigned i = 1; i < msbdim + 1; ++i) {
@@ -9988,7 +10007,7 @@ class WidthVisitor final : public VNVisitor {
             varp->isStatic(true);
             varp->valuep(initp);
             // Add to root, as don't know module we are in, and aids later structure sharing
-            v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
+            v3Global.rootp()->dollarUnitPkgp()->addStmtsp(varp);
 
             // Default for all unspecified values
             if (attrType == VAttrType::ENUM_NAME) {
@@ -10285,7 +10304,7 @@ class WidthVisitor final : public VNVisitor {
     }
     static AstVarRef* newVarRefDollarUnit(AstVar* nodep) {
         AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::READ};
-        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
         return varrefp;
     }
     AstNode* nodeForUnsizedWarning(AstNode* nodep) {

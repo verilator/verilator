@@ -57,8 +57,8 @@ endclass  //cls
 #define EXPORTED_UNION_NAME(UNION_NAME, NUMBER) \
     CONCAT5(VM_PREFIX, _, UNION_NAME, __union__, NUMBER)
 #define SUB_T EXPORTED_UNION_NAME(sub_t, 0)
-#define IN_T EXPORTED_STRUCT_NAME(in_t, 0)
-#define IN2_T EXPORTED_STRUCT_NAME(in_t, 1)
+#define IN_T EXPORTED_STRUCT_NAME(in_t, 1)
+#define IN2_T EXPORTED_STRUCT_NAME(in_t, 0)
 #define OUT_T EXPORTED_STRUCT_NAME(out_t, 0)
 
 int errors = 0;

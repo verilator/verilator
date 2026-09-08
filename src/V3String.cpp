@@ -395,9 +395,7 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
     return h;
 }
 
-void VString::selfTest() {
-    UASSERT_SELFTEST(const string&, VString::replaceSubstr("aa", "a", "ba"), "baba");
-}
+void VString::selfTest() { UASSERT_SELFTEST(VString::replaceSubstr("aa", "a", "ba"), "baba"); }
 
 //######################################################################
 // VHashSha256
@@ -786,8 +784,8 @@ string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distance
 }
 
 void VSpellCheck::selfTestDistanceOne(const string& a, const string& b, EditDistance expected) {
-    UASSERT_SELFTEST(const EditDistance, editDistance(a, b), expected);
-    UASSERT_SELFTEST(const EditDistance, editDistance(b, a), expected);
+    UASSERT_SELFTEST(editDistance(a, b), expected);
+    UASSERT_SELFTEST(editDistance(b, a), expected);
 }
 
 void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string& goal,
@@ -797,10 +795,10 @@ void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string
     speller.pushCandidate(c);
     const string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
     if (matches) {
-        UASSERT_SELFTEST(const string&, got, c);
-        UASSERT_SELFTEST(const EditDistance, gdist, dist);
+        UASSERT_SELFTEST(got, c);
+        UASSERT_SELFTEST(gdist, dist);
     } else {
-        UASSERT_SELFTEST(const string&, got, "");
+        UASSERT_SELFTEST(got, "");
     }
 }
 
@@ -821,16 +819,16 @@ void VSpellCheck::selfTest() {
     }
     {
         const VSpellCheck speller;
-        UASSERT_SELFTEST(const string, "", speller.bestCandidate(""));
+        UASSERT_SELFTEST(speller.bestCandidate(""), "");
     }
     {
         VSpellCheck speller;
         speller.pushCandidate("fred");
         speller.pushCandidate("wilma");
         speller.pushCandidate("barney");
-        UASSERT_SELFTEST(const string, "fred", speller.bestCandidate("fre"));
-        UASSERT_SELFTEST(const string, "wilma", speller.bestCandidate("whilma"));
-        UASSERT_SELFTEST(const string, "barney", speller.bestCandidate("Barney"));
-        UASSERT_SELFTEST(const string, "", speller.bestCandidate("nothing close"));
+        UASSERT_SELFTEST(speller.bestCandidate("fre"), "fred");
+        UASSERT_SELFTEST(speller.bestCandidate("whilma"), "wilma");
+        UASSERT_SELFTEST(speller.bestCandidate("Barney"), "barney");
+        UASSERT_SELFTEST(speller.bestCandidate("nothing close"), "");
     }
 }

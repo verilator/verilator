@@ -433,20 +433,20 @@ class AssertVisitor final : public VNVisitor {
         if (!m_monitorNumVarp) {
             m_monitorNumVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorNum",
                                           nodep->findUInt64DType()};
-            v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(m_monitorNumVarp);
+            v3Global.rootp()->dollarUnitPkgp()->addStmtsp(m_monitorNumVarp);
         }
         AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), m_monitorNumVarp, access};
-        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
         return varrefp;
     }
     AstVarRef* newMonitorOffVarRefp(const AstNode* nodep, VAccess access) {
         if (!m_monitorOffVarp) {
             m_monitorOffVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorOff",
                                           nodep->findBitDType()};
-            v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(m_monitorOffVarp);
+            v3Global.rootp()->dollarUnitPkgp()->addStmtsp(m_monitorOffVarp);
         }
         AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), m_monitorOffVarp, access};
-        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
         return varrefp;
     }
     static AstIf* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,

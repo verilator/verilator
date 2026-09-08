@@ -165,9 +165,6 @@ module t (
 
   covergroup cg_cross_bins;
     cross a, b {
-      bins bin_a = binsof(a);
-      bins bin_ai = binsof(a) iff (!rst);
-      bins bin_c = binsof(cp.x);
       bins bin_na = ! binsof(a);
 
       bins bin_d = binsof(a) intersect { b };
@@ -176,7 +173,6 @@ module t (
       bins bin_e = with (a);
       bins bin_not_e = ! with (a);
 
-      bins bin_par = (binsof(a));
       bins bin_and = binsof(a) && binsof(b);
       bins bin_or = binsof(a) || binsof(b);
       bins bin_with = binsof(a) with (a);

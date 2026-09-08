@@ -11,11 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-# Issue #5597 makes this fail
-test.compile(fails=test.vlt_all,
-             expect_filename=test.golden_filename,
-             verilator_flags2=['--timing'])
+test.compile(verilator_flags2=['--binary'])
 
-#test.execute()
+# Issue #8303 makes this fail
+test.execute(fails=True)
 
 test.passes()

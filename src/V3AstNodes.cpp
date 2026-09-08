@@ -1270,6 +1270,10 @@ void AstCoverTransSet::dumpJson(std::ostream& str) const { Super::dumpJson(str);
 // Functional coverage dump methods
 void AstCoverpoint::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverpoint::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
+void AstCoverpointDType::dumpSmall(std::ostream& str) const {
+    Super::dumpSmall(str);
+    str << "coverpoint[" << m_hitBound << "]";
+}
 void AstCoverpointRef::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverpointRef::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
 void AstCvtArrayToArray::dump(std::ostream& str) const {
@@ -1863,9 +1867,15 @@ AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
-    , m_constPoolp{new AstConstPool{fileline()}} {
+    , m_constPoolp{new AstConstPool{fileline()}}
+    , m_dollarUnitPkgp{new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
+    // packages are always libraries; don't want to make them a "top"
+    m_dollarUnitPkgp->level(1);
+    m_dollarUnitPkgp->inLibrary(true);
+    m_dollarUnitPkgp->modTrace(false);  // may reconsider later
+    addModulesp(m_dollarUnitPkgp);
 }
 void AstNetlist::addEvalStats(const std::string& phase) {
     if (!v3Global.opt.stats()) return;
@@ -1931,18 +1941,6 @@ void AstNetlist::deleteContents() {
     if (op3p()) op3p()->unlinkFrBackWithNext()->deleteTree();
     if (op4p()) op4p()->unlinkFrBackWithNext()->deleteTree();
 #undef VN_DELETE_ONE
-}
-AstPackage* AstNetlist::dollarUnitPkgAddp() {
-    if (!m_dollarUnitPkgp) {
-        m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"};
-        // packages are always libraries; don't want to make them a "top"
-        m_dollarUnitPkgp->level(1);
-        m_dollarUnitPkgp->inLibrary(true);
-        m_dollarUnitPkgp->modTrace(false);  // may reconsider later
-        m_dollarUnitPkgp->internal(true);
-        addModulesp(m_dollarUnitPkgp);
-    }
-    return m_dollarUnitPkgp;
 }
 void AstNetlist::dump(std::ostream& str) const {
     Super::dump(str);
@@ -2138,6 +2136,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, CoverpointDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        info.m_type = "VlCoverpointT<" + cvtToStr(adtypep->hitBound()) + ">*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, SampleQueueDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true, false);
@@ -2213,6 +2214,12 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlRandomizer";
         } else if (bdtypep->isStdRandomGenerator()) {
             info.m_type = "VlStdRandomizer";
+        } else if (bdtypep->isCovergroupInstHandle()) {
+            info.m_type = "VlCovInstHandle";
+        } else if (bdtypep->isCovergroupCross()) {
+            // Borrowed pointer: VlCovergroupInst owns the cross runtime, so its bins outlive the
+            // SV covergroup object (the coverage DB holds raw count pointers read at write() time)
+            info.m_type = "VlCoverCross*";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width

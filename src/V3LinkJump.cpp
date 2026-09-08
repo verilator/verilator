@@ -211,7 +211,7 @@ class LinkJumpVisitor final : public VNVisitor {
         if (!processQueuep->lifetime().isStatic() || processQueuep->isTemp()) {
             return new AstVarRef{fl, processQueuep, access};
         }
-        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgp();
         return new AstVarRef{fl, topPkgp, processQueuep, access};
     }
     static AstStmtExpr* getQueuePushProcessSelfp(FileLine* const fl, AstVar* const processQueuep) {
@@ -275,7 +275,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstNodeModule* const ownerp = findOwnerModulep(nodep);
 
         if (VN_IS(ownerp, Package) || VN_IS(ownerp, Class)) {
-            AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+            AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgp();
             AstVar* const processQueuep = newProcessQueuep(nodep, fl, VVarType::VAR);
             processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
             topPkgp->addStmtsp(processQueuep);

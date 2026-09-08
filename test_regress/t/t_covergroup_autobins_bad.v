@@ -116,6 +116,19 @@ module t;
     xc: cross cp_a, cp_c;
   endgroup
 
+  covergroup cgx_binsof;
+    cp_a: coverpoint cp_expr {bins a = {0};}
+    cp_b: coverpoint cp_expr {bins b = {0};}
+    cp_other: coverpoint cp_expr {bins other = {0};}
+    xc: cross cp_a, cp_b {
+      bins missing_point = binsof(missing);
+      bins uncrossed_point = binsof(cp_other);
+      bins missing_bin = binsof(cp_a.missing);
+      bins duplicate = binsof(cp_a);
+      bins duplicate = binsof(cp_b);
+    }
+  endgroup
+
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
   cg2b cg2b_inst = new;
@@ -130,6 +143,7 @@ module t;
   cgx_arr_4state_hi cgx_arr_4state_hi_inst = new;
   cgx_arr_ncval cgx_arr_ncval_inst = new;
   cgx_arr_open cgx_arr_open_inst = new;
+  cgx_binsof cgx_binsof_inst = new;
 
   initial $finish;
 endmodule

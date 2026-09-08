@@ -1282,7 +1282,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     output += t_tmp;
                 } else if (formatAttr == VL_VFORMATATTR_STRING) {
                     const std::string* const strp = static_cast<const std::string*>(thingp);
-                    output += '"' + *strp + '"';
+                    output += VL_TO_STRING(*strp);
                 } else if (formatAttr == VL_VFORMATATTR_COMPLEX) {
                     const std::string* const strp = static_cast<const std::string*>(thingp);
                     output += *strp;
@@ -2487,6 +2487,30 @@ std::string VL_TO_STRING(QData lhs) {
 }
 std::string VL_TO_STRING(double lhs) {
     return VL_SFORMATF_N_NX("%g", 1, VL_VFORMATATTR_DOUBLE, lhs);
+}
+std::string VL_TO_STRING(const std::string& obj) VL_PURE {
+    std::string out{"\""};
+    out.reserve(obj.size() + 2);
+    for (const unsigned char ch : obj) {
+        switch (ch) {
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        case '\t': out += "\\t"; break;
+        case '"': out += "\\\""; break;
+        case '\\': out += "\\\\"; break;
+        default:
+            if (std::isprint(ch)) {
+                out += static_cast<char>(ch);
+            } else {
+                out += '\\';
+                out += static_cast<char>('0' + ((ch >> 6) & 3));
+                out += static_cast<char>('0' + ((ch >> 3) & 7));
+                out += static_cast<char>('0' + (ch & 7));
+            }
+            break;
+        }
+    }
+    return out + '"';
 }
 std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_N_NX("'h%0x", 1, VL_VFORMATATTR_UNSIGNED, words * VL_EDATASIZE, obj);

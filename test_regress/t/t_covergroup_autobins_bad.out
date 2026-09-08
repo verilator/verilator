@@ -109,4 +109,20 @@
                                             : ... note: In instance 't'
   109 |     cp_a: coverpoint cp_expr {bins x[] = {size_var};}
       |                                    ^
+%Error: t/t_covergroup_autobins_bad.v:124:28: binsof coverpoint 'missing' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
+                                            : ... note: In instance 't'
+  124 |       bins missing_point = binsof(missing);
+      |                            ^~~~~~
+%Error: t/t_covergroup_autobins_bad.v:125:30: binsof coverpoint 'cp_other' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
+                                            : ... note: In instance 't'
+  125 |       bins uncrossed_point = binsof(cp_other);
+      |                              ^~~~~~
+%Error: t/t_covergroup_autobins_bad.v:126:26: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2012 19.6.1).
+                                            : ... note: In instance 't'
+  126 |       bins missing_bin = binsof(cp_a.missing);
+      |                          ^~~~~~
+%Error: t/t_covergroup_autobins_bad.v:128:7: Duplicate cross bin 'duplicate' (IEEE 1800-2012 19.6.1).
+                                           : ... note: In instance 't'
+  128 |       bins duplicate = binsof(cp_b);
+      |       ^~~~
 %Error: Exiting due to

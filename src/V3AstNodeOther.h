@@ -313,7 +313,6 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_hasParameterList : 1;  // Has #() for parameter declaration
     bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
     bool m_hierParams : 1;  // Block containing params for parameterized hier blocks
-    bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
     bool m_parameterizedTemplate : 1;  // True when at least one specialized clone exists;
@@ -335,7 +334,6 @@ protected:
         , m_hasParameterList{false}
         , m_hierBlock{false}
         , m_hierParams{false}
-        , m_internal{false}
         , m_recursive{false}
         , m_recursiveClone{false}
         , m_parameterizedTemplate{false}
@@ -379,8 +377,6 @@ public:
     void hierBlock(bool flag) { m_hierBlock = flag; }
     bool hierParams() const { return m_hierParams; }
     void hierParams(bool flag) { m_hierParams = flag; }
-    bool internal() const { return m_internal; }
-    void internal(bool flag) { m_internal = flag; }
     bool recursive() const { return m_recursive; }
     void recursive(bool flag) { m_recursive = flag; }
     void recursiveClone(bool flag) { m_recursiveClone = flag; }
@@ -1101,6 +1097,36 @@ public:
     bool isArray() const { return m_isArray; }
     void isArray(bool flag) { m_isArray = flag; }
 };
+class AstCoverBinsof final : public AstNode {
+    // A binsof selection of a coverpoint or one of its named bins
+    // @astgen op1 := pointp : AstCoverpointRef
+    string m_name;  // Selected bin name, or empty for all bins of the coverpoint
+
+public:
+    AstCoverBinsof(FileLine* fl, AstCoverpointRef* pointp)
+        : ASTGEN_SUPER_CoverBinsof(fl) {
+        this->pointp(pointp);
+    }
+    ASTGEN_MEMBERS_AstCoverBinsof;
+    string name() const override VL_MT_STABLE { return m_name; }
+    void name(const string& name) override { m_name = name; }
+};
+class AstCoverCrossBin final : public AstNode {
+    // A named cross bin and its selection expression
+    // @astgen op1 := selectp : Optional[AstNode]  // Null for unsupported selections
+    // @astgen op2 := iffp : Optional[AstNodeExpr]
+    const string m_name;  // Declared cross bin name
+
+public:
+    AstCoverCrossBin(FileLine* fl, const string& name, AstNode* selectp, AstNodeExpr* iffp)
+        : ASTGEN_SUPER_CoverCrossBin(fl)
+        , m_name{name} {
+        this->selectp(selectp);
+        this->iffp(iffp);
+    }
+    ASTGEN_MEMBERS_AstCoverCrossBin;
+    string name() const override VL_MT_STABLE { return m_name; }
+};
 class AstCoverOption final : public AstNode {
     // Coverage-option assignment
     // @astgen op1 := valuep : AstNodeExpr
@@ -1492,7 +1518,7 @@ public:
     void astConstOrigParamName(const AstConst* nodep, const string& name);
     void astConstOrigParamNameErase(const AstConst* nodep);
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
-    AstPackage* dollarUnitPkgAddp();
+    void dollarUnitPkgp(AstPackage* const packagep) { m_dollarUnitPkgp = packagep; }
     AstCFunc* evalFuncp(VEval eval) const { return m_evalFuncps[eval]; }
     void evalFuncp(VEval eval, AstCFunc* funcp) { m_evalFuncps[eval] = funcp; }
     AstCFunc* dumpTriggersFuncp(VEval eval) const { return m_dumpTriggersFuncps[eval]; }
@@ -2811,8 +2837,8 @@ public:
 class AstCoverCross final : public AstNodeFuncCovItem {
     // @astgen op1 := itemsp   : List[AstCoverpointRef]
     // @astgen op2 := optionsp : List[AstCoverOption]     // post-LinkParse only
-    // @astgen op3 := rawBodyp : List[AstNode]  // Parse: raw cross_body items;
-    //                                          // post-LinkParse: empty
+    // @astgen op3 := binsp    : List[AstNode]  // Parse: mixed cross bins/options;
+    //                                          // post-LinkParse: AstCoverCrossBin only
     // @astgen op4 := iffp     : Optional[AstNodeExpr]  // Conditional sampling guard
 public:
     AstCoverCross(FileLine* fl, const string& name, AstCoverpointRef* itemsp,

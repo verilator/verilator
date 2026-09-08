@@ -783,11 +783,10 @@ void v3errorEndFatal(std::ostringstream& sstr)
         } \
     } while (false)
 /// Check self test values for expected value.  Safe from side-effects.
-// Type argument can be removed when go to C++11 (use auto).
-#define UASSERT_SELFTEST(Type, got, exp) \
+#define UASSERT_SELFTEST(got, exp) \
     do { \
-        Type g = (got); \
-        Type e = (exp); \
+        const auto g = (got); \
+        const decltype(g) e{exp}; \
         UASSERT(g == e, "Self-test failed '" #got "==" #exp "'" \
                         " got=" \
                             << g << " expected=" << e); \
