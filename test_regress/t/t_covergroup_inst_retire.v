@@ -75,8 +75,8 @@ module t (
   // observability, not an SV-visible surface, so they are reached through $c.
   // The type name is the covergroup's name as the code generator emits it.
   function int slot_live();
-    slot_live = $c32(
-        "Verilated::threadContextp()->covergroupRegistryp()->liveInstanceCount(\"cg_slot\")");
+    slot_live =
+        $c32("Verilated::threadContextp()->covergroupRegistryp()->liveInstanceCount(\"cg_slot\")");
   endfunction
   function int slot_retired();
     slot_retired = $c32(
@@ -87,7 +87,8 @@ module t (
   function int slot_retired_cov_x100();
     slot_retired_cov_x100 = $c32(
         "(int)(Verilated::threadContextp()->covergroupRegistryp()",
-        "->retiredCoverage(\"cg_slot\") * 100.0 + 0.5)");
+        "->retiredCoverage(\"cg_slot\") * 100.0 + 0.5)"
+    );
   endfunction
   function int fold_retired();
     fold_retired = $c32(
@@ -96,7 +97,8 @@ module t (
   function int fold_retired_cov_x100();
     fold_retired_cov_x100 = $c32(
         "(int)(Verilated::threadContextp()->covergroupRegistryp()",
-        "->retiredCoverage(\"cg_fold\") * 100.0 + 0.5)");
+        "->retiredCoverage(\"cg_fold\") * 100.0 + 0.5)"
+    );
   endfunction
   function int none_retired();
     none_retired = $c32(
@@ -105,36 +107,42 @@ module t (
   function int none_retired_cov_x100();
     none_retired_cov_x100 = $c32(
         "(int)(Verilated::threadContextp()->covergroupRegistryp()",
-        "->retiredCoverage(\"cg_none\") * 100.0 + 0.5)");
+        "->retiredCoverage(\"cg_none\") * 100.0 + 0.5)"
+    );
   endfunction
   // retiredCoverage() reports "no data" as a negative, distinct from 0.0; the
   // x100 helpers cannot tell the two apart.
   function int slot_retired_cov_is_none();
     slot_retired_cov_is_none = $c32(
         "(Verilated::threadContextp()->covergroupRegistryp()",
-        "->retiredCoverage(\"cg_slot\") < 0.0 ? 1 : 0)");
+        "->retiredCoverage(\"cg_slot\") < 0.0 ? 1 : 0)"
+    );
   endfunction
 
   // Queries against a type the registry has never heard of: 0 / 0 / 0 / negative.
   function int unknown_live();
     unknown_live = $c32(
         "Verilated::threadContextp()->covergroupRegistryp()",
-        "->liveInstanceCount(\"cg_no_such_type\")");
+        "->liveInstanceCount(\"cg_no_such_type\")"
+    );
   endfunction
   function int unknown_created();
     unknown_created = $c32(
         "Verilated::threadContextp()->covergroupRegistryp()",
-        "->createdInstanceCount(\"cg_no_such_type\")");
+        "->createdInstanceCount(\"cg_no_such_type\")"
+    );
   endfunction
   function int unknown_retired();
     unknown_retired = $c32(
         "Verilated::threadContextp()->covergroupRegistryp()",
-        "->retiredInstanceCount(\"cg_no_such_type\")");
+        "->retiredInstanceCount(\"cg_no_such_type\")"
+    );
   endfunction
   function int unknown_cov_is_none();
     unknown_cov_is_none = $c32(
         "(Verilated::threadContextp()->covergroupRegistryp()",
-        "->retiredCoverage(\"cg_no_such_type\") < 0.0 ? 1 : 0)");
+        "->retiredCoverage(\"cg_no_such_type\") < 0.0 ? 1 : 0)"
+    );
   endfunction
 
   // Hit every bin of one cg_slot instance, so get_inst_coverage() reads 100%.

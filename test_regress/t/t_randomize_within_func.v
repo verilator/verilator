@@ -13,7 +13,7 @@ class Cls;
     if (a != 1) $stop;
     // Problem 2 (Fixed): m_2 should be 3 or 4, but get out-of-range return
     if (!(m_2 > 2 && m_2 < 5)) $stop;
-    // Problem 1 (Fixed): Got %Warning: /svaha/wsnyder/SandBox/homecvs/v4/verilator/include/verilated_random.cpp:417: Internal: Solver error: (error "line 9 column 27: invalid empty $
+    // Problem 1 (Fixed): Got %Warning: Internal: Solver error: (error "line 9 column 27: invalid empty...
     a = this.randomize() with {m_1 > 5 && m_1 < 10;};
     $display("%d: a=%0d %0d", `__LINE__, a, m_1);
     if (a != 1) $stop;

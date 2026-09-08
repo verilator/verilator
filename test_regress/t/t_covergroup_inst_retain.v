@@ -60,7 +60,8 @@ module t (
   function int retired_cov_x100();
     retired_cov_x100 = $c32(
         "(int)(Verilated::threadContextp()->covergroupRegistryp()",
-        "->retiredCoverage(\"cg_retain\") * 100.0 + 0.5)");
+        "->retiredCoverage(\"cg_retain\") * 100.0 + 0.5)"
+    );
   endfunction
 
   // Hit bins lo .. hi.  Sampling from a loop, not straight-line assignments.

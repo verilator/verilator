@@ -27,7 +27,7 @@ module t (
   logic [1:0] dir_req;
   logic [1:0] dir_gnt;
 
-  covergroup cg_ref (ref logic [1:0] sig);
+  covergroup cg_ref(ref logic [1:0] sig);
     cp_ref: coverpoint sig {
       bins zero = {2'b00}; bins one = {2'b01}; bins two = {2'b10}; bins three = {2'b11};
     }

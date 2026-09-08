@@ -41,14 +41,16 @@ module t (
         cg.sample();
       end
       cg = null;  // last handle dropped; freed at the next eval_step
-    end else if (cyc < 20) begin
+    end
+    else if (cyc < 20) begin
       // Churn: each of these reuses the freed storage of an earlier instance,
       // so a stale count pointer reads a live instance's counter instead.
       cg = new;
-      v  = 2'b11;
+      v = 2'b11;
       cg.sample();
       cg = null;
-    end else if (cyc == 20) begin
+    end
+    else if (cyc == 20) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end

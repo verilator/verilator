@@ -33,9 +33,7 @@ module t (
 
   cg_a arr[2];
 
-  typedef struct {
-    cg_b cg;
-  } struct_t;
+  typedef struct {cg_b cg;} struct_t;
 
   struct_t s0;
   struct_t s1;

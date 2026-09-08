@@ -52,19 +52,19 @@ module t (
 
     case (cyc)
       0: begin
-        data   <= 2'b00;
+        data <= 2'b00;
         refsig <= 2'b00;
       end
       1: begin
-        data   <= 2'b01;
+        data <= 2'b01;
         refsig <= 2'b01;
       end
       2: begin
-        data   <= 2'b10;
+        data <= 2'b10;
         refsig <= 2'b10;
       end
       3: begin
-        data   <= 2'b11;
+        data <= 2'b11;
         refsig <= 2'b11;
       end
       4: begin
