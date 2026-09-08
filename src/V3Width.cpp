@@ -213,6 +213,81 @@ public:
 #define accept in_WidthVisitor_use_AstNode_iterate_instead_of_AstNode_accept
 
 //######################################################################
+// Parameter pin state, shared between the width visitor and its RAII scope guard
+
+class ParamPinMap final {
+    // Map each parameter/type-parameter of the construct being iterated to the pin
+    // overriding it.  Rebuilt lazily whenever the active pin list changes.
+    const AstPin* m_pinsp = nullptr;  // Parameter pin list of enclosing construct
+    bool m_valid = false;  // Maps are built for m_pinsp
+    const AstPin* m_builtFor = nullptr;  // Pins the maps were built for
+    std::map<const AstVar*, const AstPin*> m_map;  // Parameter var -> overriding pin
+    // Type parameter -> overriding pin
+    std::map<const AstParamTypeDType*, const AstPin*> m_ptypeMap;
+
+    void build() {
+        if (!m_valid) {
+            m_valid = true;
+            m_map.clear();
+            m_ptypeMap.clear();
+            for (const AstPin* pp = m_pinsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
+                if (!pp->exprp()) continue;
+                if (pp->modVarp()) m_map.emplace(pp->modVarp(), pp);
+                if (pp->modPTypep()) m_ptypeMap.emplace(pp->modPTypep(), pp);
+            }
+            m_builtFor = m_pinsp;
+        }
+        UASSERT(m_builtFor == m_pinsp, "Parameter pin map not for current pins");
+    }
+
+public:
+    const AstPin* pinsp() const { return m_pinsp; }
+    // Map each parameter to the pin overriding it, built once per parameter pin list
+    const std::map<const AstVar*, const AstPin*>& map() {
+        build();
+        return m_map;
+    }
+    // Map each type parameter to the pin overriding it
+    const std::map<const AstParamTypeDType*, const AstPin*>& ptypeMap() {
+        build();
+        return m_ptypeMap;
+    }
+
+    friend class ParamPinScope;
+};
+
+// Note the parameter pins of the construct being iterated, restoring on scope exit
+class ParamPinScope final {
+    ParamPinMap& m_mapr;
+    const AstPin* const m_savedPinsp;
+    const bool m_savedValid;
+    const AstPin* const m_savedBuiltFor;
+    // Swap the maps aside rather than copy them, as VL_RESTORER_CLEAR would.
+    std::map<const AstVar*, const AstPin*> m_savedMap;
+    std::map<const AstParamTypeDType*, const AstPin*> m_savedPTypeMap;
+
+public:
+    ParamPinScope(ParamPinMap& mapr, const AstPin* pinsp)
+        : m_mapr{mapr}
+        , m_savedPinsp{mapr.m_pinsp}
+        , m_savedValid{mapr.m_valid}
+        , m_savedBuiltFor{mapr.m_builtFor} {
+        m_savedMap.swap(mapr.m_map);
+        m_savedPTypeMap.swap(mapr.m_ptypeMap);
+        m_mapr.m_pinsp = pinsp;
+        m_mapr.m_valid = false;
+    }
+    ~ParamPinScope() {
+        m_mapr.m_pinsp = m_savedPinsp;
+        m_mapr.m_valid = m_savedValid;
+        m_mapr.m_builtFor = m_savedBuiltFor;
+        m_mapr.m_map.swap(m_savedMap);
+        m_mapr.m_ptypeMap.swap(m_savedPTypeMap);
+    }
+    VL_UNCOPYABLE(ParamPinScope);
+};
+
+//######################################################################
 
 class WidthVisitor final : public VNVisitor {
     // TYPES
@@ -233,12 +308,7 @@ class WidthVisitor final : public VNVisitor {
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
-    const AstPin* m_paramPinsp = nullptr;  // Parameter pin list of enclosing construct
-    bool m_paramPinMapValid = false;  // m_paramPinMap is built for m_paramPinsp
-    const AstPin* m_paramPinMapBuiltFor = nullptr;  // Pins m_paramPinMap was built for
-    std::map<const AstVar*, const AstPin*> m_paramPinMap;  // Parameter var -> overriding pin
-    // Type parameter -> overriding pin
-    std::map<const AstParamTypeDType*, const AstPin*> m_paramPinPTypeMap;
+    ParamPinMap m_paramPins;  // Parameter pin -> overriding pin maps
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstClass* m_cgClassp = nullptr;  // Current covergroup class
@@ -276,37 +346,6 @@ class WidthVisitor final : public VNVisitor {
     }
 
     StreamUse currentStreamUse() const { return m_vup ? m_vup->streamUse() : STREAM_USE_NONE; }
-
-    // Note the parameter pins of the construct being iterated, restoring on scope exit
-    class ParamPinScope final {
-        WidthVisitor& m_visitor;
-        const AstPin* const m_savedPinsp;
-        const bool m_savedValid;
-        const AstPin* const m_savedBuiltFor;
-        // Swap the maps aside rather than copy them, as VL_RESTORER_CLEAR would.
-        std::map<const AstVar*, const AstPin*> m_savedMap;
-        std::map<const AstParamTypeDType*, const AstPin*> m_savedPTypeMap;
-
-    public:
-        ParamPinScope(WidthVisitor& visitor, const AstPin* pinsp)
-            : m_visitor{visitor}
-            , m_savedPinsp{visitor.m_paramPinsp}
-            , m_savedValid{visitor.m_paramPinMapValid}
-            , m_savedBuiltFor{visitor.m_paramPinMapBuiltFor} {
-            m_savedMap.swap(visitor.m_paramPinMap);
-            m_savedPTypeMap.swap(visitor.m_paramPinPTypeMap);
-            m_visitor.m_paramPinsp = pinsp;
-            m_visitor.m_paramPinMapValid = false;
-        }
-        ~ParamPinScope() {
-            m_visitor.m_paramPinsp = m_savedPinsp;
-            m_visitor.m_paramPinMapValid = m_savedValid;
-            m_visitor.m_paramPinMapBuiltFor = m_savedBuiltFor;
-            m_visitor.m_paramPinMap.swap(m_savedMap);
-            m_visitor.m_paramPinPTypeMap.swap(m_savedPTypeMap);
-        }
-        VL_UNCOPYABLE(ParamPinScope);
-    };
 
     static void packIfUnpacked(AstNodeExpr* const nodep) {
         if (AstUnpackArrayDType* const unpackDTypep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
@@ -2715,7 +2754,7 @@ class WidthVisitor final : public VNVisitor {
             // in type table are still correct (which they wouldn't be if we replaced the node)
         }
         {
-            const ParamPinScope paramPins{*this, nodep->paramsp()};
+            const ParamPinScope paramPins{m_paramPins, nodep->paramsp()};
             userIterateChildren(nodep, nullptr);
         }
         if (nodep->subDTypep()) {
@@ -3841,7 +3880,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstIfaceRefDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "   IFACEREF " << nodep);
-        const ParamPinScope paramPins{*this, nodep->paramsp()};
+        const ParamPinScope paramPins{m_paramPins, nodep->paramsp()};
         userIterateChildren(nodep, m_vup);
         nodep->dtypep(nodep);
         UINFO(4, "dtWidthed " << nodep);
@@ -3943,7 +3982,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
-        const ParamPinScope paramPins{*this, nodep->paramsp()};
+        const ParamPinScope paramPins{m_paramPins, nodep->paramsp()};
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstDot* nodep) override {
@@ -7064,27 +7103,6 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
     }
-    // Map each parameter to the pin overriding it, built once per parameter pin list
-    const std::map<const AstVar*, const AstPin*>& paramPinMap() {
-        if (!m_paramPinMapValid) {
-            m_paramPinMapValid = true;
-            m_paramPinMap.clear();
-            m_paramPinPTypeMap.clear();
-            for (const AstPin* pp = m_paramPinsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
-                if (!pp->exprp()) continue;
-                if (pp->modVarp()) m_paramPinMap.emplace(pp->modVarp(), pp);
-                if (pp->modPTypep()) m_paramPinPTypeMap.emplace(pp->modPTypep(), pp);
-            }
-            m_paramPinMapBuiltFor = m_paramPinsp;
-        }
-        UASSERT(m_paramPinMapBuiltFor == m_paramPinsp, "Parameter pin map not for current pins");
-        return m_paramPinMap;
-    }
-    // Map each type parameter to the pin overriding it
-    const std::map<const AstParamTypeDType*, const AstPin*>& paramPinPTypeMap() {
-        paramPinMap();
-        return m_paramPinPTypeMap;
-    }
     // Cache of parameter values already resolved for the current instance
     using ParamValueMap = std::map<const AstVar*, AstNode*>;
     AstNode* instanceParamValuep(AstVar* varp, ParamValueMap& cache,
@@ -7093,7 +7111,7 @@ class WidthVisitor final : public VNVisitor {
         if (it != cache.end()) return it->second;
         // Bail on self reference
         if (!inProgress.emplace(varp).second) return nullptr;
-        const std::map<const AstVar*, const AstPin*>& pinMap = paramPinMap();
+        const std::map<const AstVar*, const AstPin*>& pinMap = m_paramPins.map();
         const auto pinIt = pinMap.find(varp);
         AstNode* const sourcep = pinIt != pinMap.end() ? pinIt->second->exprp() : varp->valuep();
         AstNode* valuep = nullptr;
@@ -7134,7 +7152,8 @@ class WidthVisitor final : public VNVisitor {
         nodep->foreach([this, &replacements](AstRefDType* refp) {
             const AstParamTypeDType* const ptypep = VN_CAST(refp->refDTypep(), ParamTypeDType);
             if (!ptypep) return;
-            const std::map<const AstParamTypeDType*, const AstPin*>& pinMap = paramPinPTypeMap();
+            const std::map<const AstParamTypeDType*, const AstPin*>& pinMap
+                = m_paramPins.ptypeMap();
             const auto it = pinMap.find(ptypep);
             AstNodeDType* const substp = it != pinMap.end()
                                              ? VN_CAST(it->second->exprp(), NodeDType)
@@ -7178,7 +7197,7 @@ class WidthVisitor final : public VNVisitor {
                 const AstVar* const modVarp = nodep->modVarp();
                 // Width against a per-instance type copy, as the template's has defaults (#6284)
                 AstNodeDType* instDtp = nullptr;
-                if (!patternp->childDTypep() && m_paramPinsp) {
+                if (!patternp->childDTypep() && m_paramPins.pinsp()) {
                     instDtp = instanceParamDTypep(nodep->modVarp()->childDTypep());
                 }
                 if (instDtp) {
@@ -7342,7 +7361,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->rangep()) userIterateAndNext(nodep->rangep(), WidthVP{SELF, BOTH}.p());
             userIterateAndNext(nodep->pinsp(), nullptr);
         }
-        const ParamPinScope paramPins{*this, nodep->paramsp()};
+        const ParamPinScope paramPins{m_paramPins, nodep->paramsp()};
         userIterateAndNext(nodep->paramsp(), nullptr);
     }
     void visit(AstGatePin* nodep) override {
