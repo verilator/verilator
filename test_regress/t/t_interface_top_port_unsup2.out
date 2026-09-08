@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_interface_top_port_unsup2.v:7:28: Unsupported: Top module interface port with generic interface port
+    7 | interface bus_if(interface gen_port);
+      |                            ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
