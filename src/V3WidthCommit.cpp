@@ -46,6 +46,7 @@ struct PairHash final {
 // Copy all width() to widthMin().  V3Const expects this
 
 class WidthCommitVisitor final : public VNVisitor {
+    friend class V3WidthCommit;
     // NODE STATE
     //  AstVar::user1p           -> bool.  Processed
     //  AstNodeFTask::user2()    -> uint64_t. Non-zero if ever referenced (called)
@@ -107,6 +108,10 @@ private:
         return nodep;
     }
     void classEncapCheck(AstNode* nodep, AstNode* defp, AstClass* defClassp) {
+        classEncapCheck(nodep, defp, defClassp, m_modp);
+    }
+    static void classEncapCheck(AstNode* nodep, AstNode* defp, AstClass* defClassp,
+                                const AstNodeModule* refModp) {
         // Check local/protected status and complain
         bool local = false;
         bool prot = false;
@@ -131,7 +136,7 @@ private:
         if (local || prot) {
             // In case of covergroup, the reference is to the enclosing class, not the covergroup
             // itself
-            const AstClass* refClassp = VN_CAST(m_modp, Class);
+            const AstClass* refClassp = VN_CAST(refModp, Class);
             if (refClassp && refClassp->isCovergroup())
                 refClassp = refClassp->covergroupEnclosingClassp();
             const char* how = nullptr;
@@ -609,6 +614,11 @@ public:
 
 //######################################################################
 // V3WidthCommit class functions
+
+void V3WidthCommit::classEncapCheck(AstNode* nodep, AstNode* defp, AstClass* defClassp,
+                                    const AstNodeModule* refModp) {
+    WidthCommitVisitor::classEncapCheck(nodep, defp, defClassp, refModp);
+}
 
 void V3WidthCommit::widthCommit(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");

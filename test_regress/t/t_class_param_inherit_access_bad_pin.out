@@ -1,0 +1,21 @@
+%Error-ENCAPSULATED: t/t_class_param_inherit_access_bad.v:17:12: 'T' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
+   17 |   holder #(T) h;
+      |            ^
+                     t/t_class_param_inherit_access_bad.v:17:12: ... Location of definition
+    8 |   local typedef bit [N-1:0] T;
+      |                             ^
+                     ... For error description see https://verilator.org/warn/ENCAPSULATED?v=latest
+%Error-ENCAPSULATED: t/t_class_param_inherit_access_bad.v:18:17: 'T' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
+   18 |   holder #(type(T)) queried;
+      |                 ^
+                     t/t_class_param_inherit_access_bad.v:18:17: ... Location of definition
+    8 |   local typedef bit [N-1:0] T;
+      |                             ^
+%Error-ENCAPSULATED: t/t_class_param_inherit_access_bad.v:19:28: 'T' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
+                                                               : ... note: In instance 't'
+   19 |   holder #(struct packed { T value; }) structured;
+      |                            ^
+                     t/t_class_param_inherit_access_bad.v:19:28: ... Location of definition
+    8 |   local typedef bit [N-1:0] T;
+      |                             ^
+%Error: Exiting due to
