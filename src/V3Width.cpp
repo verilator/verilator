@@ -2080,13 +2080,13 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->optionsp(), nullptr);
     }
-    void visit(AstCoverBin* nodep) override {
-        // Bin range/value entries are self-determined constant expressions (IEEE 1800-2023
+    void widthCovergroupRanges(AstNode* rangesp) {
+        // Bin range/value entries are self-determined expressions (IEEE 1800-2023
         // 19.5).  Width each plain single-value entry self-determined so a referenced
         // parameter acquires a dtype, then constify so the reference folds to the AstConst
         // value that V3Covergroup requires.  AstInsideRange entries fold their own bounds in
         // visit(AstInsideRange).
-        for (AstNode *nextp, *itemp = nodep->rangesp(); itemp; itemp = nextp) {
+        for (AstNode *nextp, *itemp = rangesp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
             if (VN_IS(itemp, InsideRange)) {
                 userIterate(itemp, nullptr);
@@ -2095,6 +2095,13 @@ class WidthVisitor final : public VNVisitor {
                 V3Const::constifyEdit(itemp);  // itemp may change
             }
         }
+    }
+    void visit(AstCoverBinsof* nodep) override {
+        userIterateAndNext(nodep->pointp(), nullptr);
+        widthCovergroupRanges(nodep->rangesp());
+    }
+    void visit(AstCoverBin* nodep) override {
+        widthCovergroupRanges(nodep->rangesp());
         userIterateAndNext(nodep->iffp(), nullptr);
         userIterateAndNext(nodep->arraySizep(), nullptr);
         userIterateAndNext(nodep->transp(), nullptr);

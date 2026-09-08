@@ -135,24 +135,20 @@ void VlCoverCross::init(const char* hier, uint32_t dims, VlCoverpoint* const* cp
     m_flatCounts.assign(m_numAutoBins, 0);
 }
 
-void VlCoverCross::addBin(uint32_t dim, uint32_t first, uint32_t bins, const char* namep,
+void VlCoverCross::addBin(std::initializer_list<uint64_t> selection, const char* namep,
                           const char* filep, int line, int col) {
     if (!m_numAutoBins) return;  // An empty product creates no cross bin.
-    if (m_bins.empty()) m_autoExcluded.assign(m_numAutoBins, false);
-    m_bins.emplace_back(dim, first, bins, namep, filep, line, col);
-    // Visit only selected tuples. Multiple explicit bins may select the same tuple.
-    const uint64_t stride = m_stride[dim];
-    const uint64_t period = stride * m_cpBinCounts[dim];
-    for (uint64_t base = first * stride; base < m_numAutoBins; base += period) {
-        for (uint64_t flat = base; flat < base + bins * stride; ++flat) {
-            m_autoExcluded[flat] = true;
-        }
-    }
+    if (m_bins.empty()) m_autoExcluded.assign(selection.size(), 0);
+    m_bins.emplace_back(selection, namep, filep, line, col);
+    uint32_t word = 0;
+    for (const uint64_t bits : selection) { m_autoExcluded[word++] |= bits; }
 }
 
 void VlCoverCross::finalizeBins() {
     for (uint32_t flat = 0; flat < m_numAutoBins; ++flat) {
-        if (!m_autoExcluded[flat]) m_autoBins.push_back(flat);
+        if (!(m_autoExcluded[flat / 64] & (uint64_t{1} << (flat % 64)))) {
+            m_autoBins.push_back(flat);
+        }
     }
 }
 
@@ -177,17 +173,7 @@ void VlCoverCross::sample(const bool* binIffs) {
     for (uint32_t d = 0; d < m_dims; ++d) {
         if (m_cps[d]->hitCount() == 0) return;
     }
-    for (Bin& bin : m_bins) {
-        if (binIffs && !*binIffs++) continue;
-        const VlCoverpoint* const cpp = m_cps[bin.dim];
-        for (uint32_t hit = 0; hit < cpp->hitCount(); ++hit) {
-            const uint32_t idx = cpp->hitList()[hit];
-            if (idx >= bin.first && idx - bin.first < bin.bins) {
-                if (bin.count++ == 0) ++m_numCovered;
-                break;
-            }
-        }
-    }
+    for (Bin& bin : m_bins) { bin.matched = binIffs && !*binIffs++; }
     iterateProduct(0, 0);
 }
 

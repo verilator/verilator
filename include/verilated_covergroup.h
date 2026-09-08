@@ -36,6 +36,7 @@
 #include "verilated_cov_model.h"
 
 #include <cstdint>
+#include <initializer_list>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -207,26 +208,23 @@ public:
 // VlCoverCross
 /// Per-instance cross runtime.  Holds flat uint32_t[] storage over the
 /// Cartesian product of the feeding coverpoints' Normal bins.  Each sample()
-/// walks the coverpoint hit lists (O(hits), not O(product)).  Bin names are
-/// built on demand for automatic bins; explicit bins select a Normal-bin span
-/// in one dimension and replace the corresponding automatic cross bins.
+/// walks only hit tuples, not the entire product.  Bin names are
+/// built on demand for automatic bins; explicit bins select sets of tuples
+/// and replace the corresponding automatic cross bins.
 
 class VlCoverCross final : public VlCoverpointIf {
     struct Bin final {
-        const uint32_t dim;  // Selected coverpoint dimension
-        const uint32_t first;  // First selected Normal bin index
-        const uint32_t bins;  // Number of selected Normal bins
+        const std::vector<uint64_t> selection;  // Bitmap of selected flat tuple indices
         const char* const namep;  // Explicit bin name
         const char* const filep;  // Bin declaration file
         const int line;  // Bin declaration line
         const int col;  // Bin declaration column
         uint32_t count = 0;  // Samples matching the selection and guard
+        bool matched = false;  // Already counted, or disabled by iff, for this sample
 
-        Bin(uint32_t dim, uint32_t first, uint32_t bins, const char* namep, const char* filep,
+        Bin(std::initializer_list<uint64_t> selection, const char* namep, const char* filep,
             int line, int col)
-            : dim{dim}
-            , first{first}
-            , bins{bins}
+            : selection{selection}
             , namep{namep}
             , filep{filep}
             , line{line}
@@ -250,14 +248,24 @@ class VlCoverCross final : public VlCoverpointIf {
     std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] Per-bin hit counts
     std::vector<VlCoverpoint*> m_cps;  // Feeding coverpoints, set by init()
     std::vector<Bin> m_bins;  // Explicit bins in declaration order
-    std::vector<bool>
+    std::vector<uint64_t>
         m_autoExcluded;  // Tuples replaced by explicit bins; empty for auto-only crosses
     std::vector<uint32_t> m_autoBins;  // Retained flat indices, when explicit bins are present
 
     // PRIVATE METHODS
     void iterateProduct(uint32_t dim, uint32_t baseIdx);
     void incrementTuple(uint32_t idx) {
-        if (!m_autoExcluded.empty() && m_autoExcluded[idx]) return;
+        if (!m_autoExcluded.empty()) {
+            const uint32_t word = idx / 64;
+            const uint64_t bit = uint64_t{1} << (idx % 64);
+            for (Bin& bin : m_bins) {
+                if (!bin.matched && (bin.selection[word] & bit)) {
+                    bin.matched = true;
+                    if (bin.count++ == 0) ++m_numCovered;
+                }
+            }
+            if (m_autoExcluded[word] & bit) return;
+        }
         if (m_flatCounts[idx]++ == 0) ++m_numCovered;
     }
     uint32_t autoIndex(uint32_t i) const { return m_bins.empty() ? i : m_autoBins[i]; }
@@ -271,8 +279,8 @@ public:
     // ---- configuration (from generated constructor, after coverpoints init'd) ----
     void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
               int line, int col);
-    /// Add a single-binsof cross bin using verilation-time resolved Normal-bin indices.
-    void addBin(uint32_t dim, uint32_t first, uint32_t bins, const char* namep, const char* filep,
+    /// Add a cross bin using a verilation-time bitmap of selected Normal-bin tuples.
+    void addBin(std::initializer_list<uint64_t> selection, const char* namep, const char* filep,
                 int line, int col);
     /// Retain only automatic cross bins not selected by any explicit bin.
     void finalizeBins();
