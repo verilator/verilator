@@ -1,14 +1,14 @@
-%Warning-MULTITOP: t/t_multitop_sig.v:18:8: Multiple top level modules
+%Warning-MULTITOP: t/t_multitop_sig.v:26:8: Multiple top level modules
                                           : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
                    ... For warning description see https://verilator.org/warn/MULTITOP?v=latest
                    ... Use "/* verilator lint_off MULTITOP */" and lint_on around source to disable this message.
                                           : ... Top module 'a'
-    7 | module a (
+   12 | module a (
       |        ^
                                           : ... Top module 'b'
-   18 | module b (
+   26 | module b (
       |        ^
                                           : ... Top module 'c'
-   29 | module c (
+   40 | module c (
       |        ^
 %Error: Exiting due to

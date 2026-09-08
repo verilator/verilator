@@ -32,6 +32,9 @@ model:
 - Top level IO ports are exposed as references to the appropriate internal
   equivalents.
 
+- Top level interface ports are exposed as pointers to the interface class,
+  named after the port.
+
 - Public top level module instances are exposed as pointers to allow access
   to ``/* verilator public */`` items.
 
