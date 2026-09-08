@@ -3558,7 +3558,7 @@ class ParamSubstVisitor final {
                                              ? VN_CAST(it->second->exprp(), NodeDType)
                                              : ptypep->subDTypep();
             if (substp) replacements.emplace_back(refp, substp);
-        });
+        });  // LCOV_EXCL_LINE
         for (auto it = replacements.rbegin(); it != replacements.rend(); ++it) {
             AstRefDType* const refp = it->first;
             refp->replaceWith(it->second->cloneTree(false));
