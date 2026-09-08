@@ -1102,6 +1102,7 @@ class AstCoverBinsof final : public AstNode {
     // @astgen op1 := pointp : AstCoverpointRef
     // @astgen op2 := rangesp : List[AstNode]  // Optional intersect value ranges
     string m_name;  // Selected bin name, or empty for all bins of the coverpoint
+    // dist-ast-dump-suppress
     const bool m_isNegated;  // Complement the selection within the cross product
 
 public:
@@ -1141,6 +1142,7 @@ class AstCoverCrossSelect final : public AstNode {
     // Intersection or union of two cross-bin selections
     // @astgen op1 := lhsp : Optional[AstNode]  // Null for an unsupported selection
     // @astgen op2 := rhsp : Optional[AstNode]  // Null for an unsupported selection
+    // dist-ast-dump-suppress
     const bool m_isOr;  // Union (||), rather than intersection (&&)
 
 public:
