@@ -6,21 +6,15 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// The interface lives in a sibling instance and is passed to Foo by a
+// downward hierarchical reference.  Interface references are only registered
+// under the scope that instantiates the interface, so these are not visible
+// through VPI, and scopesDump() shows no IFACEREF entries.  See the TODO in
+// V3TraceDecl.
+
 interface SomeIntf;
 
   logic [31:0] some_intf_var;
-
-  // A class inside an interface gets its own scope under the interface's
-  // cell. That scope is not the interface, so must not register any of the
-  // interface's references; only the handle appears as a variable below.
-  class SomeClass;
-    int some_class_var;
-    function int get();
-      return some_class_var;
-    endfunction
-  endclass
-
-  SomeClass some_class = new;
 
   modport SomeModport(inout some_intf_var);
 
@@ -39,13 +33,19 @@ module Foo (
 
 endmodule
 
-module t;
+module Sub;
 
   SomeIntf concrete_intf ();
 
+endmodule
+
+module t;
+
+  Sub sub ();
+
   Foo foo (
-      .intf_ref (concrete_intf),
-      .plain_ref(concrete_intf)
+      .intf_ref (sub.concrete_intf),
+      .plain_ref(sub.concrete_intf)
   );
 
   initial begin
