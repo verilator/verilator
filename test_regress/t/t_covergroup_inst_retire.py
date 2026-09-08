@@ -4,16 +4,18 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=['--binary'])
+# Deliberately compiled WITHOUT --coverage, which is what unlocks the free path
+# in VlCovergroupType::retire().  Under --coverage the node is retained instead;
+# t_covergroup_inst_lifetime pins that side.
+test.compile()
 
-# Issue #8303 makes this fail
-test.execute(fails=True)
+test.execute()
 
 test.passes()

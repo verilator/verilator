@@ -41,6 +41,15 @@ public:
         if (itFoundPair.second) m_keys.push_back(key);
         return itFoundPair.second;
     }
+    template <typename T>
+    void insert(T begin, const T end) {
+        static_assert(std::is_same<typename std::iterator_traits<T>::value_type, T_Key>::value,
+                      "T must be an iterator with value type T_Key");
+        while (begin != end) {
+            if (m_keySet.insert(*begin).second) m_keys.push_back(*begin);
+            ++begin;
+        }
+    }
     void clear() {
         m_keys.clear();
         m_keySet.clear();
@@ -48,6 +57,7 @@ public:
 
     // ACCESSORS
     bool empty() const { return m_keys.empty(); }
+    size_t size() const { return m_keys.size(); }
     bool exists(const T_Key& key) const { return m_keySet.find(key) != m_keySet.end(); }
 
     // ITERATORS
