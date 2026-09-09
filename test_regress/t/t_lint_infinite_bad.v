@@ -7,9 +7,11 @@
 module t;
 
   initial begin
-    forever begin end
+    forever begin
+    end
     // verilator lint_off UNSIGNED
-    for (reg [31:0] i=0; i>=0; i=i+1) begin end
+    for (reg [31:0] i = 0; i >= 0; i = i + 1) begin
+    end
     $display;  // So loop not eaten
   end
 endmodule
