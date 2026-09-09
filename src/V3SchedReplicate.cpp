@@ -150,8 +150,11 @@ public:
         : SchedReplicateVertex{graphp}
         , m_vscp{vscp} {
         // Top level inputs are
-        if (varp()->isPrimaryInish() || varp()->isSigUserRWPublic() || varp()->sampled()
-            || varp()->isWrittenByDpi() || varp()->sensIfacep() || varp()->isVirtIface()) {
+        // A --vpi-lazy retained signal is not an INPUT: 'settle' re-runs to propagate a deposit
+        if (varp()->isPrimaryInish()
+            || (varp()->isSigExternallyRWPublic() && !varp()->isSigVpiLazyRetained())
+            || varp()->sampled() || varp()->isWrittenByDpi() || varp()->sensIfacep()
+            || varp()->isVirtIface()) {
             addDrivingRegions(INPUT);
         }
         // Currently we always execute suspendable processes at the beginning of

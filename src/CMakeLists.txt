@@ -199,6 +199,7 @@ set(HEADERS
     V3Unknown.h
     V3Unroll.h
     V3VariableOrder.h
+    V3VpiLazy.h
     V3Waiver.h
     V3Width.h
     V3WidthCommit.h
@@ -375,6 +376,7 @@ set(COMMON_SOURCES
     V3Unroll.cpp
     V3UnrollGen.cpp
     V3VariableOrder.cpp
+    V3VpiLazy.cpp
     V3Waiver.cpp
     V3Width.cpp
     V3WidthCommit.cpp

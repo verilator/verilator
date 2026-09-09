@@ -551,6 +551,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isCoroutine()) str << " [CORO]";
     if (needProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
+    if (vpiLazyReconstruct()) str << " [VPILAZYRECON]";
     if (noLife()) str << " [NOLIFE]";
     if (isConst().isKnown()) str << (isConst().trueKnown() ? " [CONST]" : " [!CONST]");
     if (m_cost) str << " cost=" << m_cost;
@@ -573,6 +574,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, vpiLazyReconstruct);
     dumpJsonBoolFuncIf(str, noLife);
     dumpJsonStr(str, "isConst", isConst().ascii());
     dumpJsonNum(str, "cost", m_cost);
@@ -1943,12 +1945,23 @@ void AstNetlist::dump(std::ostream& str) const {
     if (timescaleSpecified()) str << " [TIMESCALES]";
     str << " [" << timeunit() << "/" << timeprecision() << "]";
     if (resolvedTopModuleName() != "") str << " top=" << resolvedTopModuleName();
+    for (const VVpiLazyAliasRetarget& rt : m_vpiLazyAliasRetargets) {
+        str << "\n\t\t\t\t\tvpi-lazy-alias: " << rt;
+    }
 }
 void AstNetlist::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "timescaleSpecified", timescaleSpecified());
     dumpJsonStr(str, "timeunit", timeunit().ascii());
     dumpJsonStr(str, "timeprecision", timeprecision().ascii());
     dumpJsonStr(str, "resolvedTopModuleName", resolvedTopModuleName());
+    if (!m_vpiLazyAliasRetargets.empty()) {
+        string aliases;
+        for (const VVpiLazyAliasRetarget& rt : m_vpiLazyAliasRetargets) {
+            if (!aliases.empty()) aliases += ", ";
+            aliases += rt.ascii();
+        }
+        dumpJsonStr(str, "vpiLazyAliasRetargets", aliases);
+    }
     dumpJsonGen(str);
 }
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
@@ -3774,6 +3787,8 @@ void AstVar::combineType(const AstVar* otherp) {
     if (otherp->isSigModPublic()) sigModPublic(true);
     if (otherp->isSigUserRdPublic()) sigUserRdPublic(true);
     if (otherp->isSigUserRWPublic()) sigUserRWPublic(true);
+    sigVpiLazyRWPublic(isSigVpiLazyRWPublic() || otherp->isSigVpiLazyRWPublic());
+    sigVpiLazyRetained(isSigVpiLazyRetained() || otherp->isSigVpiLazyRetained());
     if (otherp->varType() == VVarType::PORT) {
         varType(otherp->varType());
         direction(otherp->direction());
@@ -3859,6 +3874,11 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
+    if (isSigVpiLazyRWPublic()) str << " [PVPILAZY]";
+    if (isSigVpiLazyRetained()) str << " [PVPIRETAIN]";
+    if (isLazyReconstructShadow()) str << " [PVPISHADOW]";
+    if (isLazyReconstructHelper()) str << " [PVPIHELPER]";
+    if (isLazyShadowNet()) str << " [PVPISHADOWNET]";
     if (isReadByDpi()) str << " [DPIRD]";
     if (isWrittenByDpi()) str << " [DPIWR]";
     if (isInternal()) str << " [INTERNAL]";
@@ -3921,6 +3941,11 @@ void AstVar::dumpJson(std::ostream& str) const {
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
     dumpJsonBoolFuncIf(str, isSigUserRdPublic);
     dumpJsonBoolFuncIf(str, isSigUserRWPublic);
+    dumpJsonBoolFuncIf(str, isSigVpiLazyRWPublic);
+    dumpJsonBoolFuncIf(str, isSigVpiLazyRetained);
+    dumpJsonBoolFuncIf(str, isLazyReconstructShadow);
+    dumpJsonBoolFuncIf(str, isLazyReconstructHelper);
+    dumpJsonBoolFuncIf(str, isLazyShadowNet);
     dumpJsonBoolFuncIf(str, isReadByDpi);
     dumpJsonBoolFuncIf(str, isWrittenByDpi);
     dumpJsonBoolFuncIf(str, isGParam);
@@ -4050,8 +4075,10 @@ string AstVar::vlEnumDir() const {
         out = "VLVD_NODIR";
     }
     //
-    if (isSigUserRWPublic()) {
+    if (isSigExternallyRWPublic()) {
         out += "|VLVF_PUB_RW";
+        // All emission paths route through here, so the write gate sees every retained signal
+        if (isSigVpiLazyRetained()) out += "|VLVF_LAZY_RETAINED";
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
@@ -4067,7 +4094,8 @@ string AstVar::vlEnumDir() const {
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
         if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
     }
-    if (isNet()) out += "|VLVF_NET";
+    // A shadow is a MODULETEMP, so its net-ness comes from the signal it reconstructs
+    if (isNet() || isLazyShadowNet()) out += "|VLVF_NET";
     return out;
 }
 string AstVar::vlEnumType() const { return dtypep()->vlEnumType(); }

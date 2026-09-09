@@ -2238,6 +2238,41 @@ inline std::ostream& operator<<(std::ostream& os, const VVarType& rhs) VL_MT_SAF
 
 // ######################################################################
 
+class VVpiLazyAliasRetarget final {
+    // --vpi-lazy pure alias: VPI entry retargets to the canonical var's storage. Captured
+    // before the optimizer deletes the alias, hence keyed by name rather than AstVar*.
+public:
+    string m_scopeName;  // AstScope::name(); same scope as the canonical var
+    string m_aliasVarName;  // AstVar::name() of the eliminated alias, still VPI-visible
+    string m_canonicalVarName;  // AstVar::name() of the surviving var holding the storage
+    // Only total bit width is guaranteed equal, so snapshot the rest from the alias
+    bool m_aliasSigned = false;  // Alias AstVar::isSigned()
+    bool m_aliasBitvar = false;  // Alias was 2-state (bit), not 4-state (logic)
+    bool m_aliasNet = false;  // Alias was a net (wire), not a variable
+    // Alias unpacked dim (left,right), outer-first
+    std::vector<std::pair<int, int>> m_aliasUnpackedLR;
+    std::vector<std::pair<int, int>> m_aliasPackedLR;  // Alias packed (left,right), inner to leaf
+    string ascii() const {
+        string out = m_scopeName + "." + m_aliasVarName + "->" + m_canonicalVarName;
+        if (m_aliasNet) out += " net";
+        if (m_aliasSigned) out += " signed";
+        if (m_aliasBitvar) out += " bit";
+        // Always empty while V3Slice expands array assigns first (see snapshotAliasDims)
+        for (const std::pair<int, int>& lr : m_aliasUnpackedLR) {
+            out += " [" + cvtToStr(lr.first) + ":" + cvtToStr(lr.second) + "]";  // LCOV_EXCL_LINE
+        }
+        for (const std::pair<int, int>& lr : m_aliasPackedLR) {
+            out += " p[" + cvtToStr(lr.first) + ":" + cvtToStr(lr.second) + "]";
+        }
+        return out;
+    }
+};
+inline std::ostream& operator<<(std::ostream& os, const VVpiLazyAliasRetarget& rhs) {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 // Not in sorted order, as depends on above classes
 class VBasicTypeKey final {
 public:

@@ -253,7 +253,7 @@ public:
         if (m_fullname.empty()) m_fullname = std::string{m_scopep->name()} + '.' + m_varp->name();
         return m_fullname.c_str();
     }
-    virtual void* varDatap() const { return m_varp->datap(); }
+    virtual void* varDatap() const { return m_varp->datapRefresh(); }
     CData* varCDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT8););
         return reinterpret_cast<CData*>(varDatap());
@@ -397,7 +397,12 @@ public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
         : VerilatedVpioVarBase{varp, scopep} {
         m_entSize = varp->entSize();
-        m_varDatap = varp->datap();
+        if (VL_UNLIKELY(varp->isLazyPublicRW())) {
+            // Storage only; varDatap() refreshes it on read
+            m_varDatap = static_cast<const VerilatedVarLazyDatap*>(varp->datap())->storagep;
+        } else {
+            m_varDatap = varp->datap();
+        }
         if (_vl_vpi_find_unescaped_dot(varp->name())) {
             m_name = _vl_vpi_member_local_name(varp->name());
         }
@@ -506,8 +511,8 @@ public:
         const std::string memberName = memberVarp->name();
         const size_t parentLen = std::strlen(parentName);
 
-        void* const parentDatap = varp()->datap();
-        void* const memberDatap = memberVarp->datap();
+        void* const parentDatap = varp()->datapRefresh();
+        void* const memberDatap = memberVarp->datapRefresh();
         if (VL_UNLIKELY(!parentDatap) || VL_UNLIKELY(!memberDatap)) return nullptr;
         const auto offset
             = static_cast<uint8_t*>(memberDatap) - static_cast<uint8_t*>(parentDatap);
@@ -540,11 +545,17 @@ public:
         return m_fullname.c_str();
     }
     uint8_t* prevDatap() const { return m_prevDatap; }
-    void* varDatap() const override { return m_varDatap; }
+    void* varDatap() const override {
+        // Refresh, but return m_varDatap rather than the refreshed base: an element handle
+        // (vpiMemoryWord) carries its offset into the shadow here
+        if (VL_UNLIKELY(m_varp->isLazyPublicRW())) m_varp->datapRefresh();
+        return m_varDatap;
+    }
     void createPrevDatap() {
         if (VL_UNLIKELY(!m_prevDatap)) {
             m_prevDatap = new uint8_t[entSize()];
-            std::memcpy(prevDatap(), m_varDatap, entSize());
+            // varDatap(), not m_varDatap: the baseline must not be a stale reconstruction
+            std::memcpy(prevDatap(), varDatap(), entSize());
         }
     }
 };
@@ -2701,7 +2712,7 @@ _vl_vpi_handle_indexed_member_from_scope(const VerilatedScope* const scopep,
     VerilatedVpioVar* baseVop
         = fullnameOverride.empty()
               ? new VerilatedVpioVar{baseVarp, varScopep}
-              : new VerilatedVpioVar{baseVarp, varScopep, baseVarp->datap(),
+              : new VerilatedVpioVar{baseVarp, varScopep, baseVarp->datapRefresh(),
                                      _vl_vpi_member_local_name(baseVarp->name()),
                                      fullnameOverride};
     VerilatedVpioVar* vop = _vl_vpi_handle_apply_indices(baseVop, indices);
@@ -2863,7 +2874,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         resultHandle = (new VerilatedVpioParam{varp, scopep})->castVpiHandle();
     } else if (!fullnameOverride.empty()) {
         resultHandle
-            = (new VerilatedVpioVar{varp, scopep, varp->datap(),
+            = (new VerilatedVpioVar{varp, scopep, varp->datapRefresh(),
                                     _vl_vpi_member_local_name(varp->name()), fullnameOverride})
                   ->castVpiHandle();
     } else {
@@ -3255,6 +3266,21 @@ PLI_INT32 vl_get_vltype_format(VerilatedVarType vlType) {
     }  // LCOV_EXCL_STOP
 }
 
+static bool vl_check_public_writable(const VerilatedVpioVar* vop) {
+    if (VL_UNLIKELY(!vop->varp()->isPublicRW())) return false;
+    // Deposits into a reconstructed signal must not bump: the epoch is also what marks the
+    // deposited shadow fresh, so bumping would discard it
+    if (!vop->varp()->isLazyPublicRW()) ++vop->scopep()->symsp()->__Vm_lazyEpoch;
+    return true;
+}
+
+// Pre-store hook; called only once storage is actually about to be written
+static void vl_prepare_lazy_write(const VerilatedVpioVar* vop) {
+    if (vop->varp()->isLazyRetained()) vop->scopep()->symsp()->__Vm_vpiLazyWritten = true;
+    // A partial store into a stale shadow would leave old bits behind, so refresh first
+    if (VL_UNLIKELY(vop->varp()->isLazyPublicRW())) vop->varp()->datapRefresh();
+}
+
 static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_list args;
     va_list args_copy;
@@ -3593,13 +3619,13 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     const PLI_INT32 delay_mode = flags & 0xfff;
     const PLI_INT32 forceFlag = flags & 0xfff;
     if (const VerilatedVpioVar* const baseSignalVop = VerilatedVpioVar::castp(object)) {
-        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n",
-                                    baseSignalVop->fullname(), valuep->format,
-                                    valuep->value.integer);
-                        VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n",
-                                    baseSignalVop->varp()->datap(), baseSignalVop->varDatap()););
+        VL_DEBUG_IF_PLI(
+            VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n",
+                        baseSignalVop->fullname(), valuep->format, valuep->value.integer);
+            VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", baseSignalVop->varp()->datapRefresh(),
+                        baseSignalVop->varDatap()););
 
-        if (VL_UNLIKELY(!baseSignalVop->varp()->isPublicRW())) {
+        if (VL_UNLIKELY(!vl_check_public_writable(baseSignalVop))) {
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "vpi_put_value was used on signal marked read-only,"
                           " use public_flat_rw instead for '%s'",
@@ -3627,6 +3653,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             VerilatedVpiImp::inertialDelay(baseSignalVop, valuep);
             return object;
         }
+        vl_prepare_lazy_write(baseSignalVop);
         VerilatedVpiImp::evalNeeded(true);
         const int varBits = baseSignalVop->bitSize();
 
@@ -4514,7 +4541,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
-    if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
+    if (VL_UNLIKELY(!vl_check_public_writable(vop))) {
         VL_VPI_ERROR_(__FILE__, __LINE__,
                       "Ignoring vpi_put_value_array to signal marked read-only,"
                       " use public_flat_rw instead: '%s'",
@@ -4528,6 +4555,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
+    vl_prepare_lazy_write(vop);
     vl_put_value_array(object, arrayvalue_p, index_p, num);
 }
 
