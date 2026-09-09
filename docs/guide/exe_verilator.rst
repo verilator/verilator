@@ -654,6 +654,15 @@ Summary:
    name or location of the emitted DPI header file, it is output in
    :vlopt:`--Mdir` as it would be without this option.
 
+.. option:: --dpihook-trigger-step <steps>
+
+   Set how often the periodic evaluation trigger of an inserted DPI hook
+   fires, in simulation time steps. Defaults to 1, meaning the hook is
+   re-evaluated every step. Larger values re-evaluate less often. This trades
+   temporal resolution of the injected behavior for simulation speed. Must be
+   at least 1. Only has an effect when a configuration file declares at least
+   one `insert_dpihook` directive.
+
 .. option:: --dump-<srcfile>
 
    Rarely needed - for developer use. Enable all dumping in the given
