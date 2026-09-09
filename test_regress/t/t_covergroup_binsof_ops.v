@@ -37,6 +37,10 @@ module t (
       bins absent = binsof (cp_a) intersect {30};
       bins outside_domain = binsof (cp_a) intersect {128};
       bins reversed = binsof (cp_a) intersect {[5 : 3]};
+      // Negative signed filters must not wrap into an unsigned bin's bit pattern.
+      bins unsigned_negative = binsof (cp_b.one) intersect {
+        1'sb1
+      };
     }
     logic_ops: cross cp_a, cp_b{
       bins negated = !binsof (cp_a.low);
@@ -103,6 +107,7 @@ module t (
                             || binsof(cp_a.encoded_range) intersect {
         -2
       };
+      bins unsigned_negative = binsof (cp_b.low) intersect {64'shffff_ffff_ffff_ffff};
     }
   endgroup
 
@@ -145,6 +150,19 @@ module t (
       bins last_row = binsof (cp_a) intersect {8} && binsof (cp_b) intersect {0};
     }
     all_tuples: cross cp_a, cp_b{bins all_bins = binsof (cp_a);}
+  endgroup
+
+  covergroup cg_fast_paths with function sample (
+      bit [2:0] a, bit [2:0] b, bit [2:0] c, bit enable_a, bit enable_b, bit enable_late
+  );
+    cp_a: coverpoint a {bins first = {0, 1}; bins second = {0, 2}; bins last = {3};}
+    cp_b: coverpoint b {bins first = {0, 1}; bins second = {0, 2}; bins last = {3};}
+    cp_c: coverpoint c {bins first = {0, 1}; bins second = {0, 2}; bins last = {3};}
+    selected: cross cp_a, cp_b, cp_c{
+      bins early_a = binsof (cp_a.first) && binsof (cp_b.first) iff (enable_a);
+      bins early_b = binsof (cp_a.first) && binsof (cp_b.first) iff (enable_b);
+      bins late = binsof (cp_a.last) && binsof (cp_b.last) && binsof (cp_c.last) iff (enable_late);
+    }
   endgroup
 
   // Check four-state bin identities without relying on four-state sampling.
@@ -280,6 +298,7 @@ module t (
   cg_transition transition_cov = new;
   cg_wildcard wildcard_cov = new;
   cg_words words_cov = new;
+  cg_fast_paths fast_paths_cov = new;
   cg_four_state four_state_cov = new;
   cg_narrow_wildcard narrow_wildcard_cov = new;
   cg_excluded excluded_cov = new;
@@ -297,6 +316,24 @@ module t (
       if (cyc < 24) sets_cov.sample(7'(cyc / 2), 1'(cyc), cyc / 2 != 2);
       if (cyc < 8) precedence_cov.sample(1'(cyc / 4), 1'(cyc / 2), 1'(cyc));
       if (cyc == 8) precedence_cov.sample(1, 0, 0);
+      // Vary guards and include a no-hit sample before covering the remaining tuples.
+      if (cyc < 8) begin
+        case (cyc)
+          0: fast_paths_cov.sample(0, 0, 0, 1, 0, 0);
+          1: fast_paths_cov.sample(0, 0, 0, 0, 0, 0);
+          2: fast_paths_cov.sample(0, 4, 0, 1, 1, 1);
+          3: fast_paths_cov.sample(0, 0, 0, 0, 1, 1);
+          4: fast_paths_cov.sample(0, 0, 0, 1, 1, 1);
+          5: fast_paths_cov.sample(0, 0, 0, 1, 1, 0);
+          6: fast_paths_cov.sample(3, 3, 3, 1, 1, 1);
+          7: fast_paths_cov.sample(0, 0, 0, 1, 1, 1);
+          default: ;
+        endcase
+      end
+      else if (cyc < 35) begin
+        fast_paths_cov.sample(3'(1 + (cyc - 8) / 9), 3'(1 + ((cyc - 8) / 3) % 3),
+                              3'(1 + (cyc - 8) % 3), 1, 1, 1);
+      end
       if (cyc < 6)
         numeric_cov.sample(signed_t'(cyc < 2 ? -1 : 2 * (cyc / 2) - 2),
                            (cyc % 2 != 0) ? HIGH : LOW);
@@ -321,6 +358,7 @@ module t (
       `checkr(transition_cov.get_inst_coverage(), 100.0);
       `checkr(wildcard_cov.get_inst_coverage(), 100.0);
       `checkr(words_cov.get_inst_coverage(), 100.0);
+      `checkr(fast_paths_cov.get_inst_coverage(), 100.0);
       `checkr(four_state_cov.get_inst_coverage(), 0.0);
       `checkr(narrow_wildcard_cov.get_inst_coverage(), 100.0);
       `checkr(excluded_cov.get_inst_coverage(), 100.0);

@@ -243,6 +243,7 @@ class VlCoverCross final : public VlCoverpointIf {
     // storable anyway: m_flatCounts alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
     uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
+    uint32_t m_numUnmatched = 0;  // Enabled explicit bins still unmatched in this sample
     std::vector<uint32_t> m_cpBinCounts;  // [m_dims] Normal bin count per dimension
     std::vector<uint32_t> m_stride;  // [m_dims] Flat-index stride per dimension
     std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] Per-bin hit counts
@@ -257,14 +258,22 @@ class VlCoverCross final : public VlCoverpointIf {
     void incrementTuple(uint32_t idx) {
         if (!m_autoExcluded.empty()) {
             const uint32_t word = idx / 64;
-            const uint64_t bit = uint64_t{1} << (idx % 64);
-            for (Bin& bin : m_bins) {
-                if (!bin.matched && (bin.selection[word] & bit)) {
-                    bin.matched = true;
-                    if (bin.count++ == 0) ++m_numCovered;
+            if ((m_autoExcluded[word] >> (idx % 64)) & 1U) {
+                uint32_t unmatched = m_numUnmatched;
+                if (unmatched) {
+                    const uint64_t bit = uint64_t{1} << (idx % 64);
+                    for (Bin& bin : m_bins) {
+                        if (!bin.matched && (bin.selection[word] & bit)) {
+                            bin.matched = true;
+                            if (bin.count++ == 0) ++m_numCovered;
+                            if (--unmatched == 0) break;
+                        }
+                    }
+                    m_numUnmatched = unmatched;
                 }
+                // Explicit selections consume automatic tuples independently of iff.
+                return;
             }
-            if (m_autoExcluded[word] & bit) return;
         }
         if (m_flatCounts[idx]++ == 0) ++m_numCovered;
     }

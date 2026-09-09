@@ -173,7 +173,12 @@ void VlCoverCross::sample(const bool* binIffs) {
     for (uint32_t d = 0; d < m_dims; ++d) {
         if (m_cps[d]->hitCount() == 0) return;
     }
-    for (Bin& bin : m_bins) { bin.matched = binIffs && !*binIffs++; }
+    uint32_t unmatched = 0;
+    for (Bin& bin : m_bins) {
+        bin.matched = binIffs && !*binIffs++;
+        if (!bin.matched) ++unmatched;
+    }
+    m_numUnmatched = unmatched;
     iterateProduct(0, 0);
 }
 

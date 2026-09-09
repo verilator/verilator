@@ -30,6 +30,41 @@ cg_excluded_wildcard.cp_a.odds [ignore]: 0
 cg_excluded_wildcard.cp_b.auto_0: 2
 cg_excluded_wildcard.cp_b.auto_1: 2
 cg_excluded_wildcard.selected.kept [cross]: 4
+cg_fast_paths.cp_a.first: 16
+cg_fast_paths.cp_a.last: 10
+cg_fast_paths.cp_a.second: 16
+cg_fast_paths.cp_b.first: 15
+cg_fast_paths.cp_b.last: 10
+cg_fast_paths.cp_b.second: 15
+cg_fast_paths.cp_c.first: 16
+cg_fast_paths.cp_c.last: 10
+cg_fast_paths.cp_c.second: 16
+cg_fast_paths.selected.early_a [cross]: 7
+cg_fast_paths.selected.early_b [cross]: 7
+cg_fast_paths.selected.first_x_last_x_first [cross]: 1
+cg_fast_paths.selected.first_x_last_x_last [cross]: 1
+cg_fast_paths.selected.first_x_last_x_second [cross]: 1
+cg_fast_paths.selected.first_x_second_x_first [cross]: 7
+cg_fast_paths.selected.first_x_second_x_last [cross]: 1
+cg_fast_paths.selected.first_x_second_x_second [cross]: 7
+cg_fast_paths.selected.last_x_first_x_first [cross]: 1
+cg_fast_paths.selected.last_x_first_x_last [cross]: 1
+cg_fast_paths.selected.last_x_first_x_second [cross]: 1
+cg_fast_paths.selected.last_x_last_x_first [cross]: 1
+cg_fast_paths.selected.last_x_last_x_second [cross]: 1
+cg_fast_paths.selected.last_x_second_x_first [cross]: 1
+cg_fast_paths.selected.last_x_second_x_last [cross]: 1
+cg_fast_paths.selected.last_x_second_x_second [cross]: 1
+cg_fast_paths.selected.late [cross]: 2
+cg_fast_paths.selected.second_x_first_x_first [cross]: 7
+cg_fast_paths.selected.second_x_first_x_last [cross]: 1
+cg_fast_paths.selected.second_x_first_x_second [cross]: 7
+cg_fast_paths.selected.second_x_last_x_first [cross]: 1
+cg_fast_paths.selected.second_x_last_x_last [cross]: 1
+cg_fast_paths.selected.second_x_last_x_second [cross]: 1
+cg_fast_paths.selected.second_x_second_x_first [cross]: 7
+cg_fast_paths.selected.second_x_second_x_last [cross]: 1
+cg_fast_paths.selected.second_x_second_x_second [cross]: 7
 cg_four_state.cp_a.known: 0
 cg_four_state.cp_a.xstate: 0
 cg_four_state.cp_a.zstate: 0

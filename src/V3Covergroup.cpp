@@ -1463,8 +1463,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (const AstCoverCrossBin* const binp : bins) {
             if (!first) cs->add(", ");
             first = false;
+            // A one-bit SV variable emits CData, which narrows in a bool initializer list.
+            cs->add("static_cast<bool>(");
             cs->add(binp->iffp() ? binp->iffp()->cloneTree(false)
                                  : new AstConst{fl, AstConst::BitTrue{}});
+            cs->add(")");
         }
         cs->add("}; ");
         cs->add(callp);

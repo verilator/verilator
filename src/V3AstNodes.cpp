@@ -1207,8 +1207,24 @@ void AstCoverBin::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "isWildcard", isWildcard());
     str << ", \"binsType\": \"" << binsType().ascii() << "\"";
 }
+void AstCoverBinsof::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (isNegated()) str << " [NEGATED]";
+}
+void AstCoverBinsof::dumpJson(std::ostream& str) const {
+    Super::dumpJson(str);
+    dumpJsonBoolIf(str, "isNegated", isNegated());
+}
 void AstCoverCross::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverCross::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
+void AstCoverCrossSelect::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << (isOr() ? " [OR]" : " [AND]");
+}
+void AstCoverCrossSelect::dumpJson(std::ostream& str) const {
+    Super::dumpJson(str);
+    dumpJsonBoolIf(str, "isOr", isOr());
+}
 void AstCoverInc::dump(std::ostream& str) const {
     Super::dump(str);
     str << " -> ";

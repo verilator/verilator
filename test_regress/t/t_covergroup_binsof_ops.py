@@ -13,8 +13,19 @@ import coverage_covergroup_common
 test.scenarios('vlt_all')
 
 coverage_covergroup_common.run(test,
-                               verilator_flags2=['--debug-self-test', '-CFLAGS -std=c++14'],
+                               verilator_flags2=[
+                                   '--debug-self-test', '--dump-tree', '--dump-tree-json',
+                                   '-CFLAGS -std=c++14'
+                               ],
                                threads=(2 if test.vltmt else 1))
+
+tree_files = test.glob_some(test.obj_dir + '/*.tree')
+json_files = test.glob_some(test.obj_dir + '/*.tree.json')
+test.file_grep_any(tree_files, r'COVERBINSOF.*\[NEGATED\]')
+test.file_grep_any(tree_files, r'COVERCROSSSELECT.*\[AND\]')
+test.file_grep_any(tree_files, r'COVERCROSSSELECT.*\[OR\]')
+test.file_grep_any(json_files, r'"type":"COVERBINSOF".*"isNegated":true')
+test.file_grep_any(json_files, r'"type":"COVERCROSSSELECT".*"isOr":true')
 
 merged = test.obj_dir + '/merged.dat'
 test.run(cmd=[
@@ -28,6 +39,10 @@ test.file_grep(merged, r"cg_sets\.logic_ops\.named_not_miss.*' 20")
 test.file_grep(merged, r"cg_precedence\.three_axes\.ungrouped.*' 5")
 test.file_grep(merged, r"cg_precedence\.three_axes\.grouped.*' 3")
 test.file_grep(merged, r"cg_precedence\.three_axes\.mixed.*' 4")
+test.file_grep(merged, r"cg_fast_paths\.selected\.early_a.*' 7")
+test.file_grep(merged, r"cg_fast_paths\.selected\.early_b.*' 7")
+test.file_grep(merged, r"cg_fast_paths\.selected\.late.*' 2")
+test.file_grep(merged, r"cg_fast_paths\.selected\.first_x_second_x_first.*' 7")
 test.file_grep(merged, r"cg_numeric\.numeric\.typed_negative.*' 2")
 test.file_grep(merged, r"cg_wildcard\.wildcard_range\.signed_pattern.*' 2")
 test.file_grep(merged, r"cg_four_state\.selected\.exact_x.*' 0")
@@ -47,5 +62,6 @@ test.file_grep(merged, r"cg_words\.partial\.values\[8\]_x_values\[7\].*' 1")
 test.file_grep_not(merged, r'\.no_tuple\b|\.no_bins\b|\.absent\b|\.reversed\b|\.outside_domain\b')
 test.file_grep_not(merged, r'\.removed(?:_|\b)|\.not_expanded\b')
 test.file_grep_not(merged, r'\.pattern_miss\b')
+test.file_grep_not(merged, r'\.unsigned_negative\b')
 
 test.passes()
