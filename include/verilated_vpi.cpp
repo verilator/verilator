@@ -363,10 +363,12 @@ protected:
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
         : m_scopep{scopep} {
-        m_fullname = m_scopep->name();
-        if (std::strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
+        m_fullname = vpiFullnamep(m_scopep->name());
         m_name = m_scopep->identifier();
         m_defname = m_scopep->defname();
+    }
+    static const char* vpiFullnamep(const char* namep) VL_PURE {
+        return (std::strncmp(namep, "TOP.", 4) == 0) ? namep + 4 : namep;
     }
     ~VerilatedVpioScope() override = default;
     // cppcheck-suppress duplInheritedMember
@@ -825,11 +827,8 @@ public:
     VerilatedVpioModport(const VerilatedScope* scopep, const char* namep)
         : m_scopep{scopep}
         , m_name{namep}
-        , m_fullname{[scopep, namep]() {  // LCOV_EXCL_LINE
-            const char* ifacename = scopep->name();
-            if (std::strncmp(ifacename, "TOP.", 4) == 0) ifacename += 4;
-            return std::string{ifacename} + "." + namep;
-        }()} {}
+        , m_fullname{std::string{VerilatedVpioScope::vpiFullnamep(scopep->name())} + "." + namep} {
+    }
     ~VerilatedVpioModport() override = default;
     // cppcheck-suppress duplInheritedMember
     static VerilatedVpioModport* castp(vpiHandle h) {
@@ -858,7 +857,9 @@ public:
     uint32_t type() const override { return vpiRefObj; }
     const VerilatedIfaceRef* ifaceRefp() const { return &m_ifaceRef; }
     const char* name() const override { return m_ifaceRef.name(); }
-    const char* fullname() const override { return m_ifaceRef.fullname(); }
+    const char* fullname() const override {
+        return VerilatedVpioScope::vpiFullnamep(m_ifaceRef.fullname());
+    }
     // IEEE 1800-2023 37.15: modport name, else the interface definition name
     const char* defname() const override {
         return m_ifaceRef.hasModport() ? m_ifaceRef.modport() : m_ifaceRef.scopep()->defname();

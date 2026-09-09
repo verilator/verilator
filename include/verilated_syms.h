@@ -75,7 +75,7 @@ public:
 // Map of sorted interface reference names to the concrete interface they refer to
 // Keyed by value, as the full name is built at construction
 // This is a class instead of typedef/using to allow forward declaration in verilated.h
-class VerilatedIfaceRefMap final : public std::map<std::string, VerilatedIfaceRef> {
+class VerilatedIfaceRefMap final : public std::map<std::string, VerilatedIfaceRef, std::less<>> {
 public:
     VerilatedIfaceRefMap() = default;
     ~VerilatedIfaceRefMap() = default;
