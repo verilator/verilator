@@ -1,0 +1,29 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Paths that do not resolve: another top module, missing instances, a missing variable
+insert_dpihook -callback "instrument_var" -var "top.w.l.sig"
+insert_dpihook -callback "instrument_var" -var "top_module.u[x].sig"
+insert_dpihook -callback "instrument_var" -var "top_module.w.nope.sig"
+insert_dpihook -callback "instrument_var" -var "top_module.w.l.nosuch"
+// Paths through unsupported containers: an instance array, a primitive, an interface signal
+insert_dpihook -callback "instrument_var" -var "top_module.u[0].sig"
+insert_dpihook -callback "instrument_var" -var "top_module.ud.a"
+insert_dpihook -callback "instrument_var" -var "top_module.ud.a.m"
+insert_dpihook -callback "instrument_var" -var "top_module.bi.p.a"
+// Member and index steps that do not fit the type
+insert_dpihook -callback "cb" -var "top_module.v.x"
+insert_dpihook -callback "cb" -var "top_module.s.nope"
+insert_dpihook -callback "cb" -var "top_module.s.b[1]"
+insert_dpihook -callback "cb" -var "top_module.s.arr"
+insert_dpihook -callback "cb" -var "top_module.v[3]"
+insert_dpihook -callback "cb" -var "top_module.g[0].gs.b"
+// Element indices outside the declared range
+insert_dpihook -callback "cb" -var "top_module.na[5].a"
+insert_dpihook -callback "cb" -var "top_module.mr[2]"
+insert_dpihook -callback "cb" -var "top_module.mr[9]"

@@ -1,0 +1,9 @@
+[0] port=11 xmr=11 other=12
+[0] elem in=aa out=aa member in=bb out=bb
+[1] port=11 xmr=11 other=12
+[1] elem in=aa out=aa member in=bb out=bb
+[2] port=ee xmr=ee other=12
+[2] elem in=aa out=aa member in=bb out=bb
+[3] port=ee xmr=ee other=12
+[3] elem in=aa out=aa member in=bb out=bb
+*-* All Finished *-*

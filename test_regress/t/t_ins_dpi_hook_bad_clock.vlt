@@ -1,0 +1,20 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// A clock input, and a signal of an event control without an edge
+insert_dpihook -callback "cb" -var "top_module.a1.clk"
+insert_dpihook -callback "cb" -var "top_module.a1.sum"
+// Targets that are a clock or contain one (struct member, struct as a whole, array element,
+// packed member)
+insert_dpihook -callback "cb" -var "top_module.cs.c"
+insert_dpihook -callback "cb" -var "top_module.cs"
+insert_dpihook -callback "cb" -var "top_module.ck2[0]"
+insert_dpihook -callback "cb" -var "top_module.pk.c"
+// Read as a clock in another module: through a hierarchical reference and an interface port
+insert_dpihook -callback "cb" -var "top_module.tk.tick"
+insert_dpihook -callback "cb" -var "top_module.ci.c"

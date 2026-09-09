@@ -1,0 +1,17 @@
+[0] alone=00 left=00 right=00 nested=01 func=00 comb=00 mem=00 00 00 00
+$[0| q: 12]
+[1] alone=10 left=2c right=2c nested=3d func=2c comb=4c mem=a0 00 00 00
+$[1| q: 0]
+[2] alone=ee left=d3 right=d3 nested=30 func=4f comb=2b mem=a1 00 00 00
+$[2| q: 12]
+[3] alone=ee left=d0 right=d0 nested=31 func=50 comb=2c mem=a1 00 a2 00
+$[3| q: 12]
+[4] alone=13 left=2c right=2c nested=43 func=2c comb=52 mem=a1 00 a3 00
+$[4| q: 12]
+[5] alone=14 left=2c right=2c nested=3d func=24 comb=4c mem=a1 00 a3 a4
+$[5| q: 12]
+[6] alone=15 left=2c right=2c nested=3f func=24 comb=4e mem=a5 00 a3 a4
+$[6| q: 12]
+[7] alone=16 left=2c right=2c nested=3d func=24 comb=50 mem=a5 a6 a3 a4
+$[7| q: 12]
+*-* All Finished *-*

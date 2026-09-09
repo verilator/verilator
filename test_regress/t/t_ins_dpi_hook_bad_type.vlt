@@ -1,0 +1,22 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// No bit vector: a class handle, a queue, associative arrays
+insert_dpihook -callback "cb" -var "top_module.ch"
+insert_dpihook -callback "cb" -var "top_module.q"
+insert_dpihook -callback "cb" -var "top_module.wa"
+insert_dpihook -callback "cb" -var "top_module.mws"
+insert_dpihook -callback "cb" -var "top_module.mws.w"
+insert_dpihook -callback "cb" -var "top_module.warr[1]"
+// Leaves without a bit vector: a string, reals
+insert_dpihook -callback "cb" -var "top_module.m.t"
+insert_dpihook -callback "cb" -var "top_module.m.r"
+insert_dpihook -callback "cb" -var "top_module.mw"
+insert_dpihook -callback "cb" -var "top_module.rs"
+// Too many leaves to hook as a whole
+insert_dpihook -callback "cb" -var "top_module.bigmem"
