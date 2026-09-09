@@ -155,14 +155,12 @@ class TraceDriver final : public DfgVisitor {
         DfgVertex* m_vtxp;
         uint32_t m_lsb;
         uint32_t m_msb;
-        uint64_t m_component;
 
         CacheKey() = delete;
-        CacheKey(DfgVertex* vtxp, uint32_t lsb, uint32_t msb, uint64_t component)
+        CacheKey(DfgVertex* vtxp, uint32_t lsb, uint32_t msb)
             : m_vtxp{vtxp}
             , m_lsb{lsb}
-            , m_msb{msb}
-            , m_component{component} {}
+            , m_msb{msb} {}
 
         struct Hash final {
             size_t operator()(const CacheKey& item) const {
@@ -170,24 +168,18 @@ class TraceDriver final : public DfgVisitor {
                 V3Hash hash{item.m_vtxp};
                 hash += item.m_lsb;
                 hash += item.m_msb;
-                hash += item.m_component;
                 return hash.value();
             }
         };
 
         struct Equal final {
             bool operator()(const CacheKey& a, const CacheKey& b) const {
-                return a.m_vtxp == b.m_vtxp && a.m_lsb == b.m_lsb && a.m_msb == b.m_msb
-                       && a.m_component == b.m_component;
+                return a.m_vtxp == b.m_vtxp && a.m_lsb == b.m_lsb && a.m_msb == b.m_msb;
             }
         };
     };
 
     // STATE
-    // Maximum recursive trace depth. If we exceed this, something is wrong with
-    // the SCC breakdown and the pass should fail loudly instead of creating a
-    // fake acyclic driver that keeps the graph inconsistent.
-    static constexpr size_t MAX_TRACE_DEPTH = 2048;
     DfgGraph& m_dfg;  // The graph being processed
     SccInfo& m_sccInfo;  // The SccInfo instance
     // The strongly connected component we are currently trying to escape
@@ -195,12 +187,13 @@ class TraceDriver final : public DfgVisitor {
     uint32_t m_lsb = 0;  // LSB to extract from the currently visited Vertex
     uint32_t m_msb = 0;  // MSB to extract from the currently visited Vertex
     std::vector<uint32_t> m_idxs;  // Indices to extract from the currently visited Vertex
-    size_t m_traceDepth = 0;       // Guard against pathological recursion depth
     // Result of tracing the currently visited Vertex. Use SET_RESULT below!
     DfgVertex* m_resp = nullptr;
     DfgVertex* m_defaultp = nullptr;  // When tracing a variable, this is its 'defaultp', if any
     // Result cache for reusing already traced vertices
     std::unordered_map<CacheKey, DfgVertex*, CacheKey::Hash, CacheKey::Equal> m_cache;
+    // Cache for boundary vertices (where m_sccInfo.get(*vtxp) != m_component)
+    std::unordered_map<CacheKey, DfgVertex*, CacheKey::Hash, CacheKey::Equal> m_boundaryCache;
 
 #ifdef VL_DEBUG
     std::ofstream m_lineCoverageFile;  // Line coverage file, just for testing
@@ -256,61 +249,46 @@ class TraceDriver final : public DfgVisitor {
         UASSERT_OBJ(vtxp->isPacked(), vtxp, "Can only trace packed type vertices");
         UASSERT_OBJ(vtxp->size() > msb, vtxp, "Traced Vertex too narrow");
 
-        if (VL_UNLIKELY(++m_traceDepth > MAX_TRACE_DEPTH)) {
-            vtxp->v3fatalSrc("TraceDriver recursion depth exceeded while tracing "
-                             << vtxp->typeName() << " width " << vtxp->width()
-                             << " range " << msb << ":" << lsb);
-        }
-
-        // Get the cache entry, which is the resulting driver that is not part of
-        // the same component as vtxp
-        DfgVertex*& respr = m_cache
-                                .emplace(std::piecewise_construct,  //
-                                         std::forward_as_tuple(vtxp, msb, lsb, m_component),  //
-                                         std::forward_as_tuple(nullptr))
-                                .first->second;
-
-        if (respr) {
-            // Cache hit: exact (vtxp, msb, lsb, m_component) match
-        } else {
-            // Check if full range of this vertex was already traced under this component
-            const CacheKey fullKey{vtxp, 0, vtxp->width() - 1, m_component};
-            const auto it = m_cache.find(fullKey);
-            if (it != m_cache.end() && it->second) {
-                DfgVertex* const fullDriver = it->second;
-                if (msb == vtxp->width() - 1 && lsb == 0) {
-                    respr = fullDriver;
-                } else {
-                    DfgSel* const selp = make<DfgSel>(fullDriver, msb - lsb + 1);
-                    selp->fromp(fullDriver);
+        // If this vertex is in a different component (boundary), check boundary cache
+        if (m_sccInfo.get(*vtxp) != m_component) {
+            DfgVertex*& respr = m_boundaryCache
+                                    .emplace(std::piecewise_construct,
+                                             std::forward_as_tuple(vtxp, lsb, msb),
+                                             std::forward_as_tuple(nullptr))
+                                    .first->second;
+            if (!respr) {
+                respr = vtxp;
+                // If the result is a splice, we need to insert a temporary for it
+                // as a splice cannot be fed into arbitray logic
+                if (DfgVertexSplice* const splicep = respr->cast<DfgVertexSplice>()) {
+                    DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
+                    // Note: we can't do 'splicep->replaceWith(tmpp)', as other
+                    // variable sinks of the splice might have a defaultp driver.
+                    tmpp->srcp(splicep);
+                    respr = tmpp;
+                }
+                // Apply a Sel to extract the relevant bits if only a part is needed
+                if (msb != respr->width() - 1 || lsb != 0) {
+                    DfgSel* const selp = make<DfgSel>(respr, msb - lsb + 1);
+                    selp->fromp(respr);
                     selp->lsb(lsb);
                     respr = selp;
                 }
             }
+            UASSERT_OBJ(respr, vtxp, "Tracing driver failed for " << vtxp->typeName());
+            UASSERT_OBJ(respr->width() == (msb - lsb + 1), vtxp, "Wrong result width");
+            return respr;
         }
 
+        // Normal cache for intra-component traces
+        DfgVertex*& respr = m_cache
+                                .emplace(std::piecewise_construct,
+                                         std::forward_as_tuple(vtxp, lsb, msb),
+                                         std::forward_as_tuple(nullptr))
+                                .first->second;
+
         if (respr) {
-            // Reusing cached or derived driver result
-        } else if (m_sccInfo.get(*vtxp) != m_component) {
-            // If the currently traced vertex is in a different component,
-            // then we found what we were looking for.
-            respr = vtxp;
-            // If the result is a splice, we need to insert a temporary for it
-            // as a splice cannot be fed into arbitray logic
-            if (DfgVertexSplice* const splicep = respr->cast<DfgVertexSplice>()) {
-                DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
-                // Note: we can't do 'splicep->replaceWith(tmpp)', as other
-                // variable sinks of the splice might have a defaultp driver.
-                tmpp->srcp(splicep);
-                respr = tmpp;
-            }
-            // Apply a Sel to extract the relevant bits if only a part is needed
-            if (msb != respr->width() - 1 || lsb != 0) {
-                DfgSel* const selp = make<DfgSel>(respr, msb - lsb + 1);
-                selp->fromp(respr);
-                selp->lsb(lsb);
-                respr = selp;
-            }
+            // Cache hit
         } else {
             // Otherwise visit the vertex to trace it
             VL_RESTORER(m_msb);
@@ -323,7 +301,6 @@ class TraceDriver final : public DfgVisitor {
             iterate(vtxp);
             respr = m_resp;
         }
-        --m_traceDepth;
         // We only ever trace drivers of bits that are known to be independent
         // of the cycles, so we should always be able to find an acyclic driver.
         UASSERT_OBJ(respr, vtxp, "Tracing driver failed for " << vtxp->typeName());
@@ -827,9 +804,6 @@ public:
     // to 'vtxp[lsb +: width]', but is not part of the same SCC. This should only
     // be called if the bit range is known to be independent of the SCC, so the
     // trace can always succeed.
-    // Clear the trace result cache. Call when graph structure or SCC assignments change.
-    void clearCache() { m_cache.clear(); }
-
     DfgVertex* apply(DfgVertex& vtx, uint32_t lsb, uint32_t width) {
         VL_RESTORER(m_component);
         m_component = m_sccInfo.get(vtx);
