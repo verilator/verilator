@@ -27,6 +27,9 @@ test.file_grep_any(tree_files, r'COVERCROSSSELECT.*\[OR\]')
 test.file_grep_any(json_files, r'"type":"COVERBINSOF".*"isNegated":true')
 test.file_grep_any(json_files, r'"type":"COVERCROSSSELECT".*"isOr":true')
 
+guards_cpp = test.glob_one(test.obj_dir + '/' + test.vm_prefix + '*cg_guards__Vclpkg__0.cpp')
+test.file_grep_not(guards_cpp, r'static_cast<bool>')
+
 merged = test.obj_dir + '/merged.dat'
 test.run(cmd=[
     os.environ['VERILATOR_ROOT'] + '/bin/verilator_coverage', '--write', merged,
@@ -36,6 +39,8 @@ test.run(cmd=[
 test.file_grep(merged, r"cg_sets\.logic_ops\.not_hit_negation.*' 8")
 test.file_grep(merged, r"cg_sets\.logic_ops\.named_not_hit.*' 16")
 test.file_grep(merged, r"cg_sets\.logic_ops\.named_not_miss.*' 20")
+test.file_grep(merged, r"cg_partial\.selected\.either_zero.*' 3")
+test.file_grep(merged, r"cg_partial\.selected\.auto_1_x_auto_1.*' 1")
 test.file_grep(merged, r"cg_precedence\.three_axes\.ungrouped.*' 5")
 test.file_grep(merged, r"cg_precedence\.three_axes\.grouped.*' 3")
 test.file_grep(merged, r"cg_precedence\.three_axes\.mixed.*' 4")
@@ -51,6 +56,7 @@ test.file_grep(merged, r"cg_guards\.selected\.whole_vector.*' 7")
 test.file_grep(merged, r"cg_guards\.selected\.wide_bit.*' 4")
 test.file_grep(merged, r"cg_guards\.selected\.wide_vector.*' 6")
 test.file_grep(merged, r"cg_guards\.selected\.signed_vector.*' 4")
+test.file_grep(merged, r"cg_guards\.selected\.constant_true.*' 8")
 test.file_grep(merged, r"cg_guards\.selected\.unguarded.*' 8")
 test.file_grep(merged, r"cg_hit_words\.selected\.low.*' 3")
 test.file_grep(merged, r"cg_hit_words\.selected\.boundary.*' 2")

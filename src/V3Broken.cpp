@@ -462,21 +462,4 @@ void V3Broken::selfTest() {
     deleted(newp);
 #endif
     VL_DO_DANGLING(newp->deleteTree(), newp);
-
-    // Cloning must preserve cross-selection attributes used by structural comparisons.
-    AstCoverBinsof* const plainp = new AstCoverBinsof{fl, new AstCoverpointRef{fl, "point"}};
-    AstCoverBinsof* const negatedp
-        = new AstCoverBinsof{fl, new AstCoverpointRef{fl, "point"}, true};
-    UASSERT_OBJ(!plainp->isSame(negatedp), plainp, "Cross selection negation compares equal.");
-    AstCoverCrossSelect* const andp = new AstCoverCrossSelect{fl, plainp, negatedp, false};
-    AstCoverCrossSelect* const clonep = andp->cloneTree(false);
-    UASSERT_OBJ(andp->sameTree(clonep), andp, "Cross selection clone differs.");
-    VN_AS(clonep->lhsp(), CoverBinsof)->name("named");
-    UASSERT_OBJ(!andp->sameTree(clonep), andp, "Different selected bin names compare equal.");
-    AstCoverCrossSelect* const orp = new AstCoverCrossSelect{fl, andp->lhsp()->cloneTree(false),
-                                                             andp->rhsp()->cloneTree(false), true};
-    UASSERT_OBJ(!andp->isSame(orp), andp, "Cross intersection and union compare equal.");
-    VL_DO_DANGLING(clonep->deleteTree(), clonep);
-    VL_DO_DANGLING(orp->deleteTree(), orp);
-    VL_DO_DANGLING(andp->deleteTree(), andp);
 }

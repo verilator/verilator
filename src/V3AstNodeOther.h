@@ -1156,6 +1156,7 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool isOr() const { return m_isOr; }
+    string verilogKwd() const override { return isOr() ? "||" : "&&"; }
     bool sameNode(const AstNode* samep) const override {
         return m_isOr == VN_DBG_AS(samep, CoverCrossSelect)->m_isOr;
     }

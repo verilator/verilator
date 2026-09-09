@@ -75,6 +75,7 @@ cg_four_state.selected.exact_z [cross]: 0
 cg_four_state.selected.not_x [cross]: 0
 cg_guards.cp_a.zero: 8
 cg_guards.cp_b.zero: 8
+cg_guards.selected.constant_true [cross]: 8
 cg_guards.selected.high_bit [cross]: 4
 cg_guards.selected.low_bit [cross]: 4
 cg_guards.selected.low_slice [cross]: 6
@@ -186,6 +187,12 @@ cg_numeric.numeric.nonnegative_low [cross]: 2
 cg_numeric.numeric.positive_x_high [cross]: 1
 cg_numeric.numeric.typed_negative [cross]: 2
 cg_numeric.numeric.zero_x_high [cross]: 1
+cg_partial.cp_a.auto_0: 2
+cg_partial.cp_a.auto_1: 2
+cg_partial.cp_b.auto_0: 2
+cg_partial.cp_b.auto_1: 2
+cg_partial.selected.auto_1_x_auto_1 [cross]: 1
+cg_partial.selected.either_zero [cross]: 3
 cg_precedence.a.auto_0: 4
 cg_precedence.a.auto_1: 5
 cg_precedence.b.auto_0: 5

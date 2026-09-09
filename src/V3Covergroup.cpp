@@ -1452,24 +1452,19 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return cs;
     }
 
-    // Append a "{ const bool __Vcx_iffs[] = {<iff>, ...}; <call> }" statement, one entry per
-    // explicit cross bin in declaration order (true where the bin has no iff).  As above, the
-    // temporary array is literal text because a CMethodHard is one call, not a block.
+    // Assign the per-bin flags individually: one-bit SV results have integer C++ storage types,
+    // which may narrow in a bool initializer list but convert implicitly in assignments.
     AstCStmt* makeCrossIffsCall(FileLine* fl, const std::vector<AstCoverCrossBin*>& bins,
                                 AstCMethodHard* callp) {
         AstCStmt* const cs = new AstCStmt{fl};
-        cs->add("{ const bool __Vcx_iffs[] = {");
-        bool first = true;
-        for (const AstCoverCrossBin* const binp : bins) {
-            if (!first) cs->add(", ");
-            first = false;
-            // A one-bit SV variable emits CData, which narrows in a bool initializer list.
-            cs->add("static_cast<bool>(");
+        cs->add("{ bool __Vcx_iffs[" + cvtToStr(bins.size()) + "]; ");
+        for (size_t i = 0; i < bins.size(); ++i) {
+            const AstCoverCrossBin* const binp = bins[i];
+            cs->add("__Vcx_iffs[" + cvtToStr(i) + "] = ");
             cs->add(binp->iffp() ? binp->iffp()->cloneTree(false)
                                  : new AstConst{fl, AstConst::BitTrue{}});
-            cs->add(")");
+            cs->add("; ");
         }
-        cs->add("}; ");
         cs->add(callp);
         cs->add("; }");
         return cs;
@@ -1620,13 +1615,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     enum class CrossMatchResult : uint8_t { MATCH, NO_MATCH, WORK_LIMIT };
 
-    static constexpr uint8_t CROSS_AT_BOUNDS = 3;  // Prefix equals both interval bounds
-    static constexpr uint8_t CROSS_NO_MATCH = 4;  // Prefix cannot match the interval/pattern
+    enum CrossRangeState : uint8_t {
+        CROSS_INSIDE_BOUNDS = 0,  // Prefix is strictly inside the interval
+        CROSS_AT_LOWER = 1,
+        CROSS_AT_UPPER = 2,
+        CROSS_AT_BOUNDS = CROSS_AT_LOWER | CROSS_AT_UPPER,
+        CROSS_NO_MATCH = 4  // Prefix cannot match the interval/pattern
+    };
     static constexpr size_t CROSS_MATCH_LINEAR_ALLOWANCE = 4;  // Minimum linear traversals
     static constexpr size_t CROSS_MATCH_WORK_LIMIT = 1U << 20;  // Base bit-step budget per search
 
-    static uint8_t crossRangeStep(const CrossValueRange& range, uint8_t state, int bit,
-                                  int value) {
+    static CrossRangeState crossRangeStep(const CrossValueRange& range, CrossRangeState state,
+                                          int bit, int value) {
         if (state == CROSS_NO_MATCH) return CROSS_NO_MATCH;
         // Flipping the sign bit makes signed order lexicographic.
         const bool sign = bit == range.pattern.width() - 1;
@@ -1635,20 +1635,24 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
         const int low = range.lo.bitIs1(bit) ^ sign;
         const int high = range.hi.bitIs1(bit) ^ sign;
-        if (((state & 1) && value < low) || ((state & 2) && value > high)) {
+        if (((state & CROSS_AT_LOWER) && value < low)
+            || ((state & CROSS_AT_UPPER) && value > high)) {
             return CROSS_NO_MATCH;
         }
-        return ((state & 1) && value == low ? 1 : 0) | ((state & 2) && value == high ? 2 : 0);
+        return static_cast<CrossRangeState>(
+            ((state & CROSS_AT_LOWER) && value == low ? CROSS_AT_LOWER : CROSS_INSIDE_BOUNDS)
+            | ((state & CROSS_AT_UPPER) && value == high ? CROSS_AT_UPPER : CROSS_INSIDE_BOUNDS));
     }
 
     static bool crossWildcardIntersects(const CrossValueRange& range) {
         unsigned states = 1U << CROSS_AT_BOUNDS;
         for (int bit = range.pattern.width() - 1; bit >= 0 && states; --bit) {
             unsigned next = 0;
-            for (uint8_t state = 0; state <= CROSS_AT_BOUNDS; ++state) {
+            for (const CrossRangeState state :
+                 {CROSS_INSIDE_BOUNDS, CROSS_AT_LOWER, CROSS_AT_UPPER, CROSS_AT_BOUNDS}) {
                 if (!(states & (1U << state))) continue;
                 for (int value = 0; value < 2; ++value) {
-                    const uint8_t equal = crossRangeStep(range, state, bit, value);
+                    const CrossRangeState equal = crossRangeStep(range, state, bit, value);
                     if (equal != CROSS_NO_MATCH) next |= 1U << equal;
                 }
             }
@@ -1710,12 +1714,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         struct Frame final {
             int bit;  // Next bit to assign
-            std::vector<uint8_t> state;  // Bound states for candidate and exclusions
+            std::vector<CrossRangeState> state;  // Bound states for candidate and exclusions
             int nextValue = 0;  // Next bit value to try
         };
-        std::vector<Frame> stack{{range.pattern.width() - 1,
-                                  std::vector<uint8_t>(blockers.size() + 1, CROSS_AT_BOUNDS), 0}};
-        std::set<std::pair<int, std::vector<uint8_t>>> failed;
+        std::vector<Frame> stack{
+            {range.pattern.width() - 1,
+             std::vector<CrossRangeState>(blockers.size() + 1, CROSS_AT_BOUNDS), 0}};
+        std::set<std::pair<int, std::vector<CrossRangeState>>> failed;
         size_t work = 0;
         const size_t stepCost = blockers.size() + 1;
         const size_t workLimit
@@ -1733,13 +1738,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (stepCost > workLimit - work) return CrossMatchResult::WORK_LIMIT;
             work += stepCost;
             const int value = frame.nextValue++;
-            const uint8_t candidate = crossRangeStep(range, frame.state[0], frame.bit, value);
+            const CrossRangeState candidate
+                = crossRangeStep(range, frame.state[0], frame.bit, value);
             if (candidate == CROSS_NO_MATCH) continue;
-            std::vector<uint8_t> successor = frame.state;
+            std::vector<CrossRangeState> successor = frame.state;
             successor[0] = candidate;
             bool covered = false;
             for (size_t i = 0; i < blockers.size(); ++i) {
-                const uint8_t match
+                const CrossRangeState match
                     = crossRangeStep(*blockers[i], frame.state[i + 1], frame.bit, value);
                 successor[i + 1] = match;
                 if (match != CROSS_NO_MATCH && freeBelow[i][match] >= frame.bit) {
@@ -1788,6 +1794,32 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         selectp->v3warn(COVERIGN, "Unsupported: non-constant or non-integral 'intersect' value, "
                                   "or four-state range bound.");
         valid = false;
+    }
+
+    static bool crossValueMatchesFilters(AstCoverBinsof* selectp, AstNode* valuep,
+                                         AstNodeExpr* exprp, const AstCoverBin* binp,
+                                         const CrossValueRange& domain,
+                                         const std::vector<CrossValueRange>& filters,
+                                         const std::vector<CrossValueRange>& excluded,
+                                         bool& valid) {
+        CrossValueRange range{valuep, domain.lo.width()};
+        if (!crossValueRange(valuep, exprp, true, binp->isWildcard(), domain, range)) {
+            unsupportedCrossRange(selectp, valid);
+            return false;
+        }
+        for (const CrossValueRange& filter : filters) {
+            // State exclusions do not remove values from transition sequences.
+            const CrossMatchResult result
+                = crossRangesIntersect(range, filter, excluded, !binp->transp());
+            if (result == CrossMatchResult::WORK_LIMIT) {
+                selectp->v3warn(COVERIGN, "Unsupported: 'intersect' exclusion matching exceeds "
+                                          "the selection work limit.");
+                valid = false;
+                return false;
+            }
+            if (result == CrossMatchResult::MATCH) return true;
+        }
+        return false;
     }
 
     std::vector<bool> selectCoverpointBins(AstCoverBinsof* selectp, const CoverpointBins& bins,
@@ -1845,28 +1877,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 continue;
             }
             for (AstNode* const valuep : values[i - first]) {
-                CrossValueRange range{valuep, width};
-                if (!crossValueRange(valuep, bins.exprp, true, bins.values[i].binp->isWildcard(),
-                                     domain, range)) {
-                    unsupportedCrossRange(selectp, valid);
-                    return {};
-                }
-                for (const CrossValueRange& filter : filters) {
-                    // State exclusions do not remove values from transition sequences.
-                    const CrossMatchResult result = crossRangesIntersect(
-                        range, filter, excluded, !bins.values[i].binp->transp());
-                    if (result == CrossMatchResult::WORK_LIMIT) {
-                        selectp->v3warn(COVERIGN,
-                                        "Unsupported: 'intersect' exclusion matching exceeds "
-                                        "the selection work limit.");
-                        valid = false;
-                        return {};
-                    }
-                    if (result == CrossMatchResult::MATCH) {
-                        selected[i] = true;
-                        break;
-                    }
-                }
+                selected[i]
+                    = crossValueMatchesFilters(selectp, valuep, bins.exprp, bins.values[i].binp,
+                                               domain, filters, excluded, valid);
+                if (!valid) return {};
                 if (selected[i]) break;
             }
         }
@@ -2854,7 +2868,6 @@ public:
 };
 
 // C++14 requires definitions for constexpr members passed by reference.
-constexpr uint8_t FunctionalCoverageVisitor::CROSS_AT_BOUNDS;
 constexpr size_t FunctionalCoverageVisitor::CROSS_MATCH_WORK_LIMIT;
 
 //######################################################################

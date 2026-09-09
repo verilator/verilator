@@ -1449,8 +1449,9 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstCoverCrossSelect* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
-        if (!nodep->lhsp() || !nodep->rhsp()) {
-            // Dropping only one operand would silently change the selected set.
+        if (!nodep->lhsp()
+            || !nodep->rhsp()) {  // Due to earlier Unsupported errors dropping only one operand
+                                  // would silently change the selected set.
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         }
     }

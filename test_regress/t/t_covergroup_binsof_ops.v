@@ -63,6 +63,16 @@ module t (
     }
   endgroup
 
+  covergroup cg_partial with function sample (bit a, bit b);
+    cp_a: coverpoint a;
+    cp_b: coverpoint b;
+    // Each item has two bins. The union consumes three tuples, leaving one
+    // explicit bin and the automatic (1,1) bin in the cross.
+    selected: cross cp_a, cp_b{
+      bins either_zero = binsof (cp_a) intersect {0} || binsof (cp_b) intersect {0};
+    }
+  endgroup
+
   covergroup cg_precedence with function sample (bit a, bit b, bit c);
     coverpoint a;
     coverpoint b;
@@ -179,6 +189,7 @@ module t (
       bins wide_bit = binsof (cp_a) iff (wide_enable[0]);
       bins wide_vector = binsof (cp_a) iff (|wide_enable);
       bins signed_vector = binsof (cp_a) iff (|signed_enable);
+      bins constant_true = binsof (cp_a) iff (1'b1);
       bins unguarded = binsof (cp_a);
     }
   endgroup
@@ -343,6 +354,7 @@ module t (
   endtask
 
   cg_sets sets_cov = new;
+  cg_partial partial_cov = new;
   cg_precedence precedence_cov = new;
   cg_numeric numeric_cov = new;
   cg_transition transition_cov = new;
@@ -366,6 +378,25 @@ module t (
     if (cyc == 2) sample_retired(0, 0);
     if (cyc < 81) begin
       if (cyc < 24) sets_cov.sample(7'(cyc / 2), 1'(cyc), cyc / 2 != 2);
+      if (cyc < 4) begin
+        if (cyc == 0) `checkr(partial_cov.get_inst_coverage(), 0.0);
+        partial_cov.sample(1'(cyc / 2), 1'(cyc));
+        case (cyc)
+          0: begin
+            `checkr(partial_cov.get_inst_coverage(), 50.0);
+          end
+          1: begin
+            `checkr(partial_cov.get_inst_coverage(), 100.0 * 4.0 / 6.0);
+          end
+          2: begin
+            `checkr(partial_cov.get_inst_coverage(), 100.0 * 5.0 / 6.0);
+          end
+          3: begin
+            `checkr(partial_cov.get_inst_coverage(), 100.0);
+          end
+          default: ;
+        endcase
+      end
       if (cyc < 8) precedence_cov.sample(1'(cyc / 4), 1'(cyc / 2), 1'(cyc));
       if (cyc == 8) precedence_cov.sample(1, 0, 0);
       if (cyc < 8)
@@ -426,6 +457,7 @@ module t (
     end
     else begin
       `checkr(sets_cov.get_inst_coverage(), 100.0);
+      `checkr(partial_cov.get_inst_coverage(), 100.0);
       `checkr(precedence_cov.get_inst_coverage(), 100.0);
       `checkr(numeric_cov.get_inst_coverage(), 100.0);
       `checkr(transition_cov.get_inst_coverage(), 100.0);
@@ -443,6 +475,8 @@ module t (
       `checkr(transition_ignore_cov.get_inst_coverage(), 100.0);
       `checkr(excluded_four_state_cov.get_inst_coverage(), 0.0);
 `ifdef VERILATOR
+      // Bin counts alone cannot detect leaked live instances. Standard SystemVerilog
+      // cannot query the registry's live/retired state, so check retirement directly.
       `checkd(
           $c32(
           "Verilated::threadContextp()->covergroupRegistryp()->liveInstanceCount(\"cg_registry\")"),
