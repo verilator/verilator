@@ -49,7 +49,6 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertex {
     // Represents a variable. It has 2 optional inputs, 'srcp' and 'defaultp'.
 
     DfgInlineEdgeStorage<2> m_inputs{this};  // Input edges
-
     AstVarScope* const m_vscp;  // The AstVarScope associated with this vertex (not owned)
     // Location of driver of this variable. Only used for converting back to Ast. Might be nullptr.
     FileLine* m_driverFileLine = nullptr;
@@ -438,7 +437,7 @@ protected:
     // Create a new input edge and return it
     DfgEdge* newInput() {
         m_edgeps.emplace_back(new DfgEdge{this});
-        ++m_nInputs;
+        m_nInputs = m_edgeps.size();
         return m_edgeps.back().get();
     }
 
