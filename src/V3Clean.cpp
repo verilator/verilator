@@ -141,12 +141,12 @@ class CleanVisitor final : public VNVisitor {
         computeCppWidth(nodep);
         if (!isClean(nodep)) insertClean(nodep);
     }
-    void ensureCleanAndNext(AstNodeExpr* nodep) {
+    void ensureCleanAndNext(AstNode* nodep) {
         // Editing list, careful looping!
-        for (AstNodeExpr* exprp = nodep; exprp;) {
-            AstNodeExpr* const nextp = VN_AS(exprp->nextp(), NodeExpr);
-            ensureClean(exprp);
-            exprp = nextp;
+        for (AstNode* argp = nodep; argp;) {
+            AstNode* const nextp = argp->nextp();
+            if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
+            argp = nextp;
         }
     }
 
@@ -250,9 +250,7 @@ class CleanVisitor final : public VNVisitor {
         setClean(nodep, false);
         // We always clean, as we don't trust those pesky users.
         if (!VN_IS(nodep->backp(), And)) insertClean(nodep);
-        for (AstNode* argp = nodep->nodesp(); argp; argp = argp->nextp()) {
-            if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
-        }
+        ensureCleanAndNext(nodep->nodesp());
     }
     void visit(AstTraceDecl* nodep) override {}  // Nothing to do here
     void visit(AstTraceInc* nodep) override {
@@ -288,11 +286,13 @@ class CleanVisitor final : public VNVisitor {
         ensureCleanAndNext(nodep->exprsp());
         setClean(nodep, true);  // generates a string, so not relevant
     }
+    void visit(AstCStmt* nodep) override {
+        iterateChildren(nodep);
+        ensureCleanAndNext(nodep->nodesp());
+    }
     void visit(AstCStmtUser* nodep) override {
         iterateChildren(nodep);
-        for (AstNode* argp = nodep->nodesp(); argp; argp = argp->nextp()) {
-            if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
-        }
+        ensureCleanAndNext(nodep->nodesp());
     }
     void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);

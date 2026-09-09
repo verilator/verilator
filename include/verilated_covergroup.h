@@ -210,7 +210,8 @@ public:
 /// Cartesian product of the feeding coverpoints' Normal bins.  Each sample()
 /// walks only hit tuples, not the entire product.  Bin names are
 /// built on demand for automatic bins; explicit bins select sets of tuples
-/// and replace the corresponding automatic cross bins.
+/// and replace the corresponding automatic cross bins.  Explicit selections
+/// are intersected with hit-tuple words once per sample.
 
 class VlCoverCross final : public VlCoverpointIf {
     struct Bin final {
@@ -220,7 +221,6 @@ class VlCoverCross final : public VlCoverpointIf {
         const int line;  // Bin declaration line
         const int col;  // Bin declaration column
         uint32_t count = 0;  // Samples matching the selection and guard
-        bool matched = false;  // Already counted, or disabled by iff, for this sample
 
         Bin(std::initializer_list<uint64_t> selection, const char* namep, const char* filep,
             int line, int col)
@@ -243,7 +243,6 @@ class VlCoverCross final : public VlCoverpointIf {
     // storable anyway: m_flatCounts alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
     uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
-    uint32_t m_numUnmatched = 0;  // Enabled explicit bins still unmatched in this sample
     std::vector<uint32_t> m_cpBinCounts;  // [m_dims] Normal bin count per dimension
     std::vector<uint32_t> m_stride;  // [m_dims] Flat-index stride per dimension
     std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] Per-bin hit counts
@@ -252,31 +251,30 @@ class VlCoverCross final : public VlCoverpointIf {
     std::vector<uint64_t>
         m_autoExcluded;  // Tuples replaced by explicit bins; empty for auto-only crosses
     std::vector<uint32_t> m_autoBins;  // Retained flat indices, when explicit bins are present
+    std::vector<uint64_t> m_hitBits;  // Selected hit tuples, cleared after each sample
+    std::vector<uint32_t> m_touchedWords;  // Nonzero words in m_hitBits
+    std::vector<uint64_t> m_binWordOffsets;  // [m_bins.size() + 1] Offsets into m_binWords
+    std::vector<uint32_t> m_binWords;  // Nonzero selection word indices, grouped by bin
 
     // PRIVATE METHODS
     void iterateProduct(uint32_t dim, uint32_t baseIdx);
+    void incrementAuto(uint32_t idx) {
+        if (m_flatCounts[idx]++ == 0) ++m_numCovered;
+    }
     void incrementTuple(uint32_t idx) {
         if (!m_autoExcluded.empty()) {
             const uint32_t word = idx / 64;
             if ((m_autoExcluded[word] >> (idx % 64)) & 1U) {
-                uint32_t unmatched = m_numUnmatched;
-                if (unmatched) {
-                    const uint64_t bit = uint64_t{1} << (idx % 64);
-                    for (Bin& bin : m_bins) {
-                        if (!bin.matched && (bin.selection[word] & bit)) {
-                            bin.matched = true;
-                            if (bin.count++ == 0) ++m_numCovered;
-                            if (--unmatched == 0) break;
-                        }
-                    }
-                    m_numUnmatched = unmatched;
-                }
+                if (!m_hitBits[word]) m_touchedWords.push_back(word);
+                m_hitBits[word] |= uint64_t{1} << (idx % 64);
                 // Explicit selections consume automatic tuples independently of iff.
                 return;
             }
         }
-        if (m_flatCounts[idx]++ == 0) ++m_numCovered;
+        incrementAuto(idx);
     }
+    void sampleSingleTuple(uint32_t idx, const bool* binIffs);
+    void sampleBins(const bool* binIffs);
     uint32_t autoIndex(uint32_t i) const { return m_bins.empty() ? i : m_autoBins[i]; }
     std::string autoBinName(uint32_t flat) const;
 

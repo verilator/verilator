@@ -165,6 +165,56 @@ module t (
     }
   endgroup
 
+  covergroup cg_guards with function sample (
+      bit [6:0] enables, bit [64:0] wide_enable, bit signed [6:0] signed_enable, bit [2:0] index
+  );
+    cp_a: coverpoint 1'b0 {bins zero = {0};}
+    cp_b: coverpoint 1'b0 {bins zero = {0};}
+    selected: cross cp_a, cp_b{
+      bins low_bit = binsof (cp_a) iff (enables[0]);
+      bins high_bit = binsof (cp_a) iff (enables[1]);
+      bins selected_bit = binsof (cp_a) iff (enables[index]);
+      bins low_slice = binsof (cp_a) iff (|enables[1:0]);
+      bins whole_vector = binsof (cp_a) iff (|enables);
+      bins wide_bit = binsof (cp_a) iff (wide_enable[0]);
+      bins wide_vector = binsof (cp_a) iff (|wide_enable);
+      bins signed_vector = binsof (cp_a) iff (|signed_enable);
+      bins unguarded = binsof (cp_a);
+    }
+  endgroup
+
+  covergroup cg_hit_words with function sample (bit [3:0] a, bit [3:0] b, bit [2:0] enables);
+    cp_a: coverpoint a {
+      bins b0 = {0, 1};
+      bins b1 = {0, 2};
+      bins b2 = {0, 3};
+      bins b3 = {0, 4};
+      bins b4 = {0, 5};
+      bins b5 = {0, 6};
+      bins b6 = {0, 7};
+      bins b7 = {0, 8};
+      bins b8 = {0, 9};
+    }
+    cp_b: coverpoint b {
+      bins b0 = {0, 1};
+      bins b1 = {0, 2};
+      bins b2 = {0, 3};
+      bins b3 = {0, 4};
+      bins b4 = {0, 5};
+      bins b5 = {0, 6};
+      bins b6 = {0, 7};
+      bins b7 = {0, 8};
+      bins b8 = {0, 9};
+    }
+    selected: cross cp_a, cp_b{
+      bins low = binsof (cp_a.b0) && binsof (cp_b.b0) iff (enables[0]);
+      bins boundary = binsof (cp_a.b7) iff (enables[1]);
+      bins high = binsof (cp_a.b8) && binsof (cp_b.b8);
+      bins ends = binsof (cp_a.b0) || binsof (cp_a.b8) iff (enables[2]);
+    }
+    whole: cross cp_a, cp_b{bins all_values = binsof (cp_a);}
+  endgroup
+
   // Check four-state bin identities without relying on four-state sampling.
   covergroup cg_four_state with function sample (logic [2:0] a, bit b);
     cp_a: coverpoint a {bins known = {3'b001}; bins xstate = {3'bx01}; bins zstate = {3'bz01};}
@@ -299,6 +349,8 @@ module t (
   cg_wildcard wildcard_cov = new;
   cg_words words_cov = new;
   cg_fast_paths fast_paths_cov = new;
+  cg_guards guards_cov = new;
+  cg_hit_words hit_words_cov = new;
   cg_four_state four_state_cov = new;
   cg_narrow_wildcard narrow_wildcard_cov = new;
   cg_excluded excluded_cov = new;
@@ -316,6 +368,27 @@ module t (
       if (cyc < 24) sets_cov.sample(7'(cyc / 2), 1'(cyc), cyc / 2 != 2);
       if (cyc < 8) precedence_cov.sample(1'(cyc / 4), 1'(cyc / 2), 1'(cyc));
       if (cyc == 8) precedence_cov.sample(1, 0, 0);
+      if (cyc < 8)
+        guards_cov.sample(7'(cyc), 65'(cyc / 4) << 64 | 65'(cyc % 2), cyc < 4 ? -7'sd1 : 7'sd0,
+                          3'(cyc % 3));
+      // Alternate multiword, empty, single-tuple, and automatic-only hit sets.
+      if (cyc < 12) begin
+        case (cyc)
+          0: hit_words_cov.sample(0, 0, 3'b111);
+          1: hit_words_cov.sample(10, 0, 3'b111);
+          2: hit_words_cov.sample(1, 1, 3'b000);
+          3: hit_words_cov.sample(9, 9, 3'b000);
+          4: hit_words_cov.sample(1, 0, 3'b001);
+          5: hit_words_cov.sample(0, 1, 3'b100);
+          6: hit_words_cov.sample(0, 0, 3'b000);
+          7: hit_words_cov.sample(8, 0, 3'b010);
+          8: hit_words_cov.sample(0, 9, 3'b100);
+          9: hit_words_cov.sample(10, 10, 3'b111);
+          10: hit_words_cov.sample(2, 0, 3'b111);
+          11: hit_words_cov.sample(1, 1, 3'b101);
+          default: ;
+        endcase
+      end
       // Vary guards and include a no-hit sample before covering the remaining tuples.
       if (cyc < 8) begin
         case (cyc)
@@ -359,6 +432,8 @@ module t (
       `checkr(wildcard_cov.get_inst_coverage(), 100.0);
       `checkr(words_cov.get_inst_coverage(), 100.0);
       `checkr(fast_paths_cov.get_inst_coverage(), 100.0);
+      `checkr(guards_cov.get_inst_coverage(), 100.0);
+      `checkr(hit_words_cov.get_inst_coverage(), 100.0);
       `checkr(four_state_cov.get_inst_coverage(), 0.0);
       `checkr(narrow_wildcard_cov.get_inst_coverage(), 100.0);
       `checkr(excluded_cov.get_inst_coverage(), 100.0);

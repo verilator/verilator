@@ -150,6 +150,24 @@ void VlCoverCross::finalizeBins() {
             m_autoBins.push_back(flat);
         }
     }
+    const uint32_t words = m_numAutoBins / 64 + (m_numAutoBins % 64 != 0);
+    m_hitBits.assign(words, 0);
+    m_touchedWords.reserve(words);
+    uint64_t nonzeroWords = 0;
+    for (const Bin& bin : m_bins) {
+        for (uint32_t word = 0; word < words; ++word) {
+            if (bin.selection[word]) ++nonzeroWords;
+        }
+    }
+    m_binWordOffsets.reserve(m_bins.size() + 1);
+    m_binWords.reserve(nonzeroWords);
+    for (const Bin& bin : m_bins) {
+        m_binWordOffsets.push_back(m_binWords.size());
+        for (uint32_t word = 0; word < words; ++word) {
+            if (bin.selection[word]) m_binWords.push_back(word);
+        }
+    }
+    m_binWordOffsets.push_back(m_binWords.size());
 }
 
 void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
@@ -168,18 +186,67 @@ void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
     }
 }
 
+void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
+    const uint32_t word = idx / 64;
+    const uint64_t bit = uint64_t{1} << (idx % 64);
+    if (!(m_autoExcluded[word] & bit)) {
+        incrementAuto(idx);
+        return;
+    }
+    for (Bin& bin : m_bins) {
+        if (binIffs && !*binIffs++) continue;
+        if (bin.selection[word] & bit) {
+            if (bin.count++ == 0) ++m_numCovered;
+        }
+    }
+}
+
+void VlCoverCross::sampleBins(const bool* binIffs) {
+    for (uint64_t binIdx = 0; binIdx < m_bins.size(); ++binIdx) {
+        if (binIffs && !*binIffs++) continue;
+        const uint64_t begin = m_binWordOffsets[binIdx];
+        const uint64_t end = m_binWordOffsets[binIdx + 1];
+        const bool sparse = end - begin < m_touchedWords.size();
+        const std::vector<uint32_t>& words = sparse ? m_binWords : m_touchedWords;
+        const uint64_t first = sparse ? begin : 0;
+        const uint64_t last = sparse ? end : m_touchedWords.size();
+        Bin& bin = m_bins[binIdx];
+        for (uint64_t pos = first; pos < last; ++pos) {
+            const uint32_t word = words[pos];
+            if (bin.selection[word] & m_hitBits[word]) {
+                if (bin.count++ == 0) ++m_numCovered;
+                break;
+            }
+        }
+    }
+    for (const uint32_t word : m_touchedWords) m_hitBits[word] = 0;
+    m_touchedWords.clear();
+}
+
 void VlCoverCross::sample(const bool* binIffs) {
     // Fast path: if any dimension had no Normal-bin hit, the cross cannot hit.
     for (uint32_t d = 0; d < m_dims; ++d) {
         if (m_cps[d]->hitCount() == 0) return;
     }
-    uint32_t unmatched = 0;
-    for (Bin& bin : m_bins) {
-        bin.matched = binIffs && !*binIffs++;
-        if (!bin.matched) ++unmatched;
+    if (m_bins.empty()) {
+        iterateProduct(0, 0);
+        return;
     }
-    m_numUnmatched = unmatched;
+    bool single = true;
+    for (uint32_t d = 0; d < m_dims; ++d) {
+        if (m_cps[d]->hitCount() != 1) {
+            single = false;
+            break;
+        }
+    }
+    if (single) {
+        uint32_t idx = 0;
+        for (uint32_t d = 0; d < m_dims; ++d) idx += m_cps[d]->hitList()[0] * m_stride[d];
+        sampleSingleTuple(idx, binIffs);
+        return;
+    }
     iterateProduct(0, 0);
+    if (!m_touchedWords.empty()) sampleBins(binIffs);
 }
 
 std::string VlCoverCross::binName(uint32_t i) const {
