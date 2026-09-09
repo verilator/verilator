@@ -151,11 +151,11 @@ class VNUser final {
 #ifdef VL_USER_TYPE_CHECKS
     // monostate is an unwritten / cleared slot. It can be read as either form
     // and yields nullptr/0.
-    std::variant<std::monostate, int, void*> m_u;
+    std::variant<std::monostate, uint64_t, void*> m_u;
 #else
     union {
         void* up;
-        int ui;
+        uint64_t uq;
     } m_u;
 #endif
 
@@ -164,7 +164,7 @@ public:
     VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(int i) {
+    VNUser(uint64_t i) {
         // VNUser{0} represents the monostate
         if (i) m_u = i;
     }
@@ -178,22 +178,22 @@ public:
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         if (std::holds_alternative<std::monostate>(m_u)) return nullptr;
         void* const* const upp = std::get_if<void*>(&m_u);
-        UASSERT_STATIC(upp, "AstNode user() slot written as int, read as pointer");
+        UASSERT_STATIC(upp, "AstNode user() slot written as uint64_t, read as pointer");
         return reinterpret_cast<T>(*upp);
     }
-    int toInt() const {
+    uint64_t toUQuad() const {
         if (std::holds_alternative<std::monostate>(m_u)) return 0;
-        const int* const uip = std::get_if<int>(&m_u);
-        UASSERT_STATIC(uip, "AstNode user() slot written as pointer, read as int");
+        const uint64_t* const uip = std::get_if<uint64_t>(&m_u);
+        UASSERT_STATIC(uip, "AstNode user() slot written as pointer, read as uint64_t");
         return *uip;
     }
 #else
     VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(int i) {
+    VNUser(uint64_t i) {
         m_u.up = nullptr;
-        m_u.ui = i;
+        m_u.uq = i;
     }
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() = default;
@@ -202,7 +202,7 @@ public:
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         return reinterpret_cast<T>(m_u.up);
     }
-    int toInt() const { return m_u.ui; }
+    uint64_t toUQuad() const { return m_u.uq; }
 #endif
     VSymEnt* toSymEnt() const { return to<VSymEnt*>(); }
     AstNode* toNodep() const VL_MT_SAFE { return to<AstNode*>(); }
@@ -492,14 +492,14 @@ class AstNode VL_NOT_FINAL {
     // This member ordering both allows 64 bit alignment and puts associated data together
     // (under VL_USER_TYPE_CHECKS a VNUser is larger than 64 bits, so this packing no
     // longer holds; that build trades node size for catching int/pointer confusion)
-    VNUser m_user1u{0};  // Contains any information the user iteration routine wants
+    VNUser m_user1u{nullptr};  // Contains any information the user iteration routine wants
     uint32_t m_user1Cnt = 0;  // Mark of when userp was set
     uint32_t m_user2Cnt = 0;  // Mark of when userp was set
-    VNUser m_user2u{0};  // Contains any information the user iteration routine wants
-    VNUser m_user3u{0};  // Contains any information the user iteration routine wants
+    VNUser m_user2u{nullptr};  // Contains any information the user iteration routine wants
+    VNUser m_user3u{nullptr};  // Contains any information the user iteration routine wants
     uint32_t m_user3Cnt = 0;  // Mark of when userp was set
     uint32_t m_user4Cnt = 0;  // Mark of when userp was set
-    VNUser m_user4u{0};  // Contains any information the user iteration routine wants
+    VNUser m_user4u{nullptr};  // Contains any information the user iteration routine wants
 
     // METHODS
     void op1p(AstNode* nodep) {
@@ -708,61 +708,61 @@ public:
     VNUser user1u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser1InUse::s_userBusy, "user1p used without AstUserInUse");
-        return ((m_user1Cnt == VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{0});
+        return ((m_user1Cnt == VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{nullptr});
     }
     AstNode* user1p() const VL_MT_STABLE { return user1u().toNodep(); }
     void user1u(const VNUser& user) { m_user1u = user; m_user1Cnt = VNUser1InUse::s_userCntGbl; }
     void user1p(void* userp) { user1u(VNUser{userp}); }
-    void user1(int val) { user1u(VNUser{val}); }
-    int user1() const { return user1u().toInt(); }
-    int user1Inc(int val = 1) { const int v = user1(); user1(v + val); return v; }
-    int user1Or(int val) { const int v = user1(); user1(v | val); return v; }
-    int user1SetOnce() { const int v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
+    void user1(uint64_t val) { user1u(VNUser{val}); }
+    uint64_t user1() const { return user1u().toUQuad(); }
+    uint64_t user1Inc(uint64_t val = 1) { const uint64_t v = user1(); user1(v + val); return v; }
+    uint64_t user1Or(uint64_t val) { const uint64_t v = user1(); user1(v | val); return v; }
+    uint64_t user1SetOnce() { const uint64_t v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
     static void user1ClearTree() { VNUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user2u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser2InUse::s_userBusy, "user2p used without AstUserInUse");
-        return ((m_user2Cnt == VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{0});
+        return ((m_user2Cnt == VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{nullptr});
     }
     AstNode* user2p() const VL_MT_STABLE { return user2u().toNodep(); }
     void user2u(const VNUser& user) { m_user2u = user; m_user2Cnt = VNUser2InUse::s_userCntGbl; }
     void user2p(void* userp) { user2u(VNUser{userp}); }
-    void user2(int val) { user2u(VNUser{val}); }
-    int user2() const { return user2u().toInt(); }
-    int user2Inc(int val = 1) { const int v = user2(); user2(v + val); return v; }
-    int user2Or(int val) { const int v = user2(); user2(v | val); return v; }
-    int user2SetOnce() { const int v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
+    void user2(uint64_t val) { user2u(VNUser{val}); }
+    uint64_t user2() const { return user2u().toUQuad(); }
+    uint64_t user2Inc(uint64_t val = 1) { const uint64_t v = user2(); user2(v + val); return v; }
+    uint64_t user2Or(uint64_t val) { const uint64_t v = user2(); user2(v | val); return v; }
+    uint64_t user2SetOnce() { const uint64_t v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
     static void user2ClearTree() { VNUser2InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user3u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser3InUse::s_userBusy, "user3p used without AstUserInUse");
-        return ((m_user3Cnt == VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{0});
+        return ((m_user3Cnt == VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{nullptr});
     }
     AstNode* user3p() const VL_MT_STABLE { return user3u().toNodep(); }
     void user3u(const VNUser& user) { m_user3u = user; m_user3Cnt = VNUser3InUse::s_userCntGbl; }
     void user3p(void* userp) { user3u(VNUser{userp}); }
-    void user3(int val) { user3u(VNUser{val}); }
-    int user3() const { return user3u().toInt(); }
-    int user3Inc(int val = 1) { const int v = user3(); user3(v + val); return v; }
-    int user3Or(int val) { const int v = user3(); user3(v | val); return v; }
-    int user3SetOnce() { const int v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
+    void user3(uint64_t val) { user3u(VNUser{val}); }
+    uint64_t user3() const { return user3u().toUQuad(); }
+    uint64_t user3Inc(uint64_t val = 1) { const uint64_t v = user3(); user3(v + val); return v; }
+    uint64_t user3Or(uint64_t val) { const uint64_t v = user3(); user3(v | val); return v; }
+    uint64_t user3SetOnce() { const uint64_t v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
     static void user3ClearTree() { VNUser3InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user4u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser4InUse::s_userBusy, "user4p used without AstUserInUse");
-        return ((m_user4Cnt == VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{0});
+        return ((m_user4Cnt == VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{nullptr});
     }
     AstNode* user4p() const VL_MT_STABLE { return user4u().toNodep(); }
     void user4u(const VNUser& user) { m_user4u = user; m_user4Cnt = VNUser4InUse::s_userCntGbl; }
     void user4p(void* userp) { user4u(VNUser{userp}); }
-    void user4(int val) { user4u(VNUser{val}); }
-    int user4() const { return user4u().toInt(); }
-    int user4Or(int val) { const int v = user4(); user4(v | val); return v; }
-    int user4Inc(int val = 1) { const int v = user4(); user4(v + val); return v; }
-    int user4SetOnce() { const int v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
+    void user4(uint64_t val) { user4u(VNUser{val}); }
+    uint64_t user4() const { return user4u().toUQuad(); }
+    uint64_t user4Or(uint64_t val) { const uint64_t v = user4(); user4(v | val); return v; }
+    uint64_t user4Inc(uint64_t val = 1) { const uint64_t v = user4(); user4(v + val); return v; }
+    uint64_t user4SetOnce() { const uint64_t v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
 

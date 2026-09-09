@@ -281,7 +281,7 @@ class DynScopeVisitor final : public VNVisitor {
     std::deque<AstNode*> m_frameOrder;  // Ordered list of frames (for determinism)
     std::map<AstNode*, ForkDynScopeFrame*> m_frames;  // Map nodes to related DynScopeFrames
     VMemberMap m_memberMap;  // Class member look-up
-    int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
+    uint64_t m_forkDepth = 0;  // Number of asynchronous forks we are currently under
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
                                         // process
     size_t m_id = 0;  // Unique ID for a frame

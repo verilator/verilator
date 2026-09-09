@@ -131,7 +131,7 @@ union RandomizeMode final {
         bool usesMode : 1;  // Variable/constraint uses rand_mode/constraint_mode
         uint32_t index : 31;  // Index of var/constraint in rand_mode/constraint_mode vector
     };
-    int asInt;  // Representation as int to be stored in nodep->user*
+    uint64_t asUQuad;  // Representation as int to be stored in nodep->user*
 };
 
 // Look through unpacked array dimensions to the element type
@@ -239,7 +239,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     if (nodep->user1() == IS_RANDOMIZED_INLINE) {
                         RandomizeMode randMode = {};
                         randMode.usesMode = true;
-                        varp->user1(randMode.asInt);
+                        varp->user1(randMode.asUQuad);
                     }
                 }
             }
@@ -404,7 +404,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                             "No class found for inline randomized variable");
                 RandomizeMode randMode = {};
                 randMode.usesMode = true;
-                randVarp->user1(randMode.asInt);
+                randVarp->user1(randMode.asUQuad);
                 backp->user1(IS_RANDOMIZED_INLINE);
             }
         }
@@ -481,14 +481,14 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     // Called on a rand member variable
                     RandomizeMode randMode = {};
                     randMode.usesMode = true;
-                    randModeTarget.receiverp->user1(randMode.asInt);
+                    randModeTarget.receiverp->user1(randMode.asUQuad);
                 } else {
                     // Called on 'this' or a non-rand class instance
                     randModeTarget.classp->foreachMember([&](AstClass*, AstVar* varp) {
                         if (!varp->isRand()) return;
                         RandomizeMode randMode = {};
                         randMode.usesMode = true;
-                        varp->user1(randMode.asInt);
+                        varp->user1(randMode.asUQuad);
                     });
                 }
             }
@@ -539,10 +539,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 RandomizeMode constraintMode = {};
                 constraintMode.usesMode = true;
                 if (constrp) {
-                    constrp->user1(constraintMode.asInt);
+                    constrp->user1(constraintMode.asUQuad);
                 } else {
                     classp->foreachMember([=](AstClass*, AstConstraint* constrp) {
-                        constrp->user1(constraintMode.asInt);
+                        constrp->user1(constraintMode.asUQuad);
                     });
                 }
             } else {
@@ -1281,7 +1281,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (memberselp) varp = memberselp->varp();
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
-        const RandomizeMode randMode = {.asInt = varp->user1()};
+        const RandomizeMode randMode = {.asUQuad = varp->user1()};
         if (!randMode.usesMode && editFormat(nodep)) return;
 
         VNRelinker relinker;
@@ -2511,7 +2511,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     writeVarCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, elemWidth});
                     writeVarCallp->addPinsp(varnamep);
                     writeVarCallp->addPinsp(new AstConst{fl, 1});  // Dimension
-                    const RandomizeMode randMode = {.asInt = varp->user1()};
+                    const RandomizeMode randMode = {.asUQuad = varp->user1()};
                     if (randMode.usesMode) {
                         writeVarCallp->addPinsp(
                             new AstConst{fl, AstConst::Unsized64{}, randMode.index});
@@ -2896,7 +2896,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 UASSERT_OBJ(unpackedDims == 1, arrVarp, "Array isn't 1-D");
                 writeVarCallp->addPinsp(new AstConst{fl, 1});  // Dimension
 
-                const RandomizeMode randMode = {.asInt = arrVarp->user1()};
+                const RandomizeMode randMode = {.asUQuad = arrVarp->user1()};
                 if (randMode.usesMode) {
                     writeVarCallp->addPinsp(
                         new AstConst{fl, AstConst::Unsized64{}, randMode.index});
@@ -3740,7 +3740,7 @@ class RandomizeVisitor final : public VNVisitor {
                 // index overlap. If the index > 0, it's already been set.
                 if (AstConstraint* const constrp = VN_CAST(memberp, Constraint)) {
                     hasConstraints = true;
-                    RandomizeMode constraintMode = {.asInt = memberp->user1()};
+                    RandomizeMode constraintMode = {.asUQuad = memberp->user1()};
                     if (!constraintMode.usesMode) return;
                     if (constraintMode.index == 0) {
                         // Use separate index counters for static vs non-static constraints
@@ -3749,7 +3749,7 @@ class RandomizeVisitor final : public VNVisitor {
                         } else {
                             constraintMode.index = constraintModeCount++;
                         }
-                        memberp->user1(constraintMode.asInt);
+                        memberp->user1(constraintMode.asUQuad);
                     } else {
                         if (constrp->isStatic()) {
                             staticConstraintModeCount = constraintMode.index + 1;
@@ -3758,7 +3758,7 @@ class RandomizeVisitor final : public VNVisitor {
                         }
                     }
                 } else if (AstVar* const varp = VN_CAST(memberp, Var)) {
-                    RandomizeMode randMode = {.asInt = memberp->user1()};
+                    RandomizeMode randMode = {.asUQuad = memberp->user1()};
                     if (!randMode.usesMode) return;
                     const bool isStaticVar = varp->lifetime().isStatic();
                     if (randMode.index == 0) {
@@ -3767,7 +3767,7 @@ class RandomizeVisitor final : public VNVisitor {
                         } else {
                             randMode.index = randModeCount++;
                         }
-                        memberp->user1(randMode.asInt);
+                        memberp->user1(randMode.asUQuad);
                     } else {
                         if (isStaticVar) {
                             staticRandModeCount = randMode.index + 1;
@@ -3785,7 +3785,7 @@ class RandomizeVisitor final : public VNVisitor {
                 std::function<void(AstClass*)> findSubObjRandModes = [&](AstClass* subClassp) {
                     subClassp->foreachMember([&](AstClass*, AstNode* subMemberp) {
                         if (AstVar* const subVarp = VN_CAST(subMemberp, Var)) {
-                            const RandomizeMode rm = {.asInt = subVarp->user1()};
+                            const RandomizeMode rm = {.asUQuad = subVarp->user1()};
                             if (!rm.usesMode) return;
                             // Static rand vars index into their own class's static
                             // rand mode array, not into the outer __Vrandmode.
@@ -3918,13 +3918,13 @@ class RandomizeVisitor final : public VNVisitor {
         return new AstBegin{fl, "", stmtsp, true};
     }
     AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {
-        const RandomizeMode rmode = {.asInt = varp->user1()};
+        const RandomizeMode rmode = {.asUQuad = varp->user1()};
         AstVar* const modeVarp = varp->lifetime().isStatic() ? getStaticRandModeVar(classp)
                                                              : getRandModeVarFromClass(classp);
         return VN_AS(wrapIfMode(rmode, modeVarp, stmtp), NodeStmt);
     }
     AstNode* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp, AstNode* stmtp) {
-        const RandomizeMode rmode = {.asInt = constrp->user1()};
+        const RandomizeMode rmode = {.asUQuad = constrp->user1()};
         AstVar* const modeVarp = constrp->isStatic() ? getStaticConstraintModeVar(classp)
                                                      : getConstraintModeVar(classp);
         return wrapIfMode(rmode, modeVarp, stmtp);
@@ -4526,7 +4526,7 @@ class RandomizeVisitor final : public VNVisitor {
         UASSERT_OBJ(newp, nodep, "No new() in class");
         nodep->foreachMember([&](AstClass* classp, AstVar* memberVarp) {
             if (!memberVarp->rand().isRandomizable()) return;
-            const RandomizeMode randMode = {.asInt = memberVarp->user1()};
+            const RandomizeMode randMode = {.asUQuad = memberVarp->user1()};
             if (randMode.usesMode
                 && !memberVarp->rand().isRand()) {  // Not randomizable by default
                 AstCMethodHard* setp = new AstCMethodHard{
@@ -4620,7 +4620,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (receiverp) {
                 // Called on a rand member variable/constraint. Set the variable/constraint's
                 // mode
-                const RandomizeMode rmode = {.asInt = receiverp->user1()};
+                const RandomizeMode rmode = {.asUQuad = receiverp->user1()};
                 UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
                 AstCMethodHard* const setp = new AstCMethodHard{fl, lhsp, VCMethod::ARRAY_AT_WRITE,
                                                                 new AstConst{fl, rmode.index}};
@@ -4638,7 +4638,7 @@ class RandomizeVisitor final : public VNVisitor {
         } else {
             UASSERT_OBJ(receiverp, ftaskRefp, "Should have receiver");
             UASSERT_OBJ(!appendStmtp, ftaskRefp, "Append path requires arg-form rand_mode");
-            const RandomizeMode rmode = {.asInt = receiverp->user1()};
+            const RandomizeMode rmode = {.asUQuad = receiverp->user1()};
             UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
             AstCMethodHard* const setp = new AstCMethodHard{fl, lhsp, VCMethod::ARRAY_AT_WRITE,
                                                             new AstConst{fl, rmode.index}};
@@ -4736,7 +4736,7 @@ class RandomizeVisitor final : public VNVisitor {
                     savedRandModeVarps.insert(randModeVarp);
                     tmpVarps = AstNode::addNext(tmpVarps, randModeTmpVarp);
                 }
-                const RandomizeMode randMode = {.asInt = randVarp->user1()};
+                const RandomizeMode randMode = {.asUQuad = randVarp->user1()};
                 AstCMethodHard* setp = new AstCMethodHard{
                     fl, makeModeVarRef(exprp, randModeVarp, VAccess::WRITE),
                     VCMethod::ARRAY_AT_WRITE, new AstConst{fl, randMode.index}};
@@ -4855,7 +4855,7 @@ class RandomizeVisitor final : public VNVisitor {
     static bool distBoundRefsModeVar(const AstNode* boundp) {
         return boundp->exists([](const AstVarRef* vrefp) {
             if (!vrefp->varp()->rand().isRandomizable()) return false;
-            const RandomizeMode rmode = {.asInt = vrefp->varp()->user1()};
+            const RandomizeMode rmode = {.asUQuad = vrefp->varp()->user1()};
             return rmode.usesMode;
         });
     }
@@ -4999,7 +4999,7 @@ class RandomizeVisitor final : public VNVisitor {
             arrayp = new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
                                    VAccess::READ};
         }
-        const RandomizeMode rmode = {.asInt = varp->user1()};
+        const RandomizeMode rmode = {.asUQuad = varp->user1()};
         AstCMethodHard* const atp
             = new AstCMethodHard{fl, arrayp, VCMethod::ARRAY_AT, new AstConst{fl, rmode.index}};
         atp->dtypeSetUInt32();
@@ -5013,7 +5013,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (!varp->rand().isRandomizable()) {
             return new AstConst{fl, AstConst::BitTrue{}, ownerLevel};
         }
-        const RandomizeMode rmode = {.asInt = varp->user1()};
+        const RandomizeMode rmode = {.asUQuad = varp->user1()};
         if (!rmode.usesMode) return new AstConst{fl, AstConst::BitTrue{}};
         return newModeBitRead(varp, mselp, randModeVarp, fl);
     }
