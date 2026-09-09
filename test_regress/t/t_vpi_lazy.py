@@ -14,8 +14,7 @@ test.scenarios('vlt')
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
-                 "--exe --vpi --vpi-lazy --no-l2name --stats -Wno-MULTIDRIVEN",
-                 test.pli_filename
+                 "--exe --vpi --vpi-lazy --no-l2name --stats -Wno-MULTIDRIVEN", test.pli_filename
              ])
 
 test.execute()

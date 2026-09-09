@@ -11,11 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(make_top_shell=False,
-             make_main=False,
-             verilator_flags2=[
-                 "--exe --vpi --vpi-lazy --trace --no-l2name --stats", test.pli_filename
-             ])
+test.compile(
+    make_top_shell=False,
+    make_main=False,
+    verilator_flags2=["--exe --vpi --vpi-lazy --trace --no-l2name --stats", test.pli_filename])
 
 test.execute()
 

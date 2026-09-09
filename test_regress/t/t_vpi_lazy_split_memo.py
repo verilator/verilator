@@ -14,8 +14,7 @@ test.scenarios('vlt')
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
-                 "--exe --vpi --vpi-lazy --no-l2name --output-split-cfuncs 1",
-                 test.pli_filename
+                 "--exe --vpi --vpi-lazy --no-l2name --output-split-cfuncs 1", test.pli_filename
              ])
 
 test.execute()
@@ -23,8 +22,8 @@ test.execute()
 srcs = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*.cpp")
 
 # The reconstruct body was split, so the memo must not live inside it.
-test.file_grep_any(srcs, r'void ' + test.vm_prefix + r'___024root__' +
-                   r'__Vlazy_reconstruct_body__\d+__\d+\(')
+test.file_grep_any(
+    srcs, r'void ' + test.vm_prefix + r'___024root__' + r'__Vlazy_reconstruct_body__\d+__\d+\(')
 
 # Epoch stamp compared and restamped in the entry function, so no body split bypasses it.
 test.file_grep_any(
