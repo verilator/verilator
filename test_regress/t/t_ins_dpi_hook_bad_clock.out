@@ -1,0 +1,27 @@
+%Error: t/t_ins_dpi_hook_bad_clock.v:19:10: Target variable 'cs' in 'top_module' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list); hooking such a signal is not supported
+   19 |   clkd_t cs;
+      |          ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_ins_dpi_hook_bad_clock.v:20:9: Target variable 'ck2[0]' in 'top_module' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list); hooking such a signal is not supported
+   20 |   logic ck2[2];
+      |         ^~~
+%Error: t/t_ins_dpi_hook_bad_clock.v:59:17: Target variable 'clk' in 'top_module.a1' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list); hooking such a signal is not supported
+   59 |     input logic clk,
+      |                 ^~~
+%Error: t/t_ins_dpi_hook_bad_clock.v:65:15: Target variable 'sum' in 'top_module.a1' is read in an event control without an edge (e.g. 'always @(sum or ...)'); hooking such a signal is not supported
+   65 |   logic [7:0] sum;
+      |               ^~~
+%Error: t/t_ins_dpi_hook_bad_clock.v:79:9: Target variable 'c' in 'top_module.ci' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list); hooking such a signal is not supported
+   79 |   logic c;
+      |         ^
+%Error: t/t_ins_dpi_hook_bad_clock.v:19:10: Target variable 'cs.c' in 'top_module' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list); hooking such a signal is not supported
+   19 |   clkd_t cs;
+      |          ^~
+%Error: t/t_ins_dpi_hook_bad_clock.v:24:5: Target variable 'pk.c' in 'top_module' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list); hooking such a signal is not supported
+   24 |   } pk;
+      |     ^~
+%Error: t/t_ins_dpi_hook_bad_clock.v:74:9: Target variable 'tick' in 'top_module.tk' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list); hooking such a signal is not supported
+   74 |   logic tick = 1'b0;
+      |         ^~~~
+%Error: Incomplete hook-insertion configuration for target 'top_module.a1.clk'; see the error above
+%Error: Exiting due to

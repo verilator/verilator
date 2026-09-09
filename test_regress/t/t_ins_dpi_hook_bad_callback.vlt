@@ -1,0 +1,16 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// One callback for targets of two widths
+insert_dpihook -callback "cbw" -var "top_module.narrow"
+insert_dpihook -callback "cbw" -var "top_module.wide"
+// A callback named like a function of the module
+insert_dpihook -callback "cb" -var "top_module.v"
+// One target hooked with two callbacks
+insert_dpihook -callback "cb1" -var "top_module.o"
+insert_dpihook -callback "cb2" -var "top_module.o"

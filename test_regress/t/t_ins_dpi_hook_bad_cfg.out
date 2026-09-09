@@ -1,0 +1,15 @@
+%Error: t/t_ins_dpi_hook_bad_cfg.vlt:10:1: insert_dpihook requires --timing
+                                         : ... The periodic evaluation trigger of a DPI hook is a delay
+   10 | insert_dpihook -callback "cb" -var "top_module.a2.out"
+      | ^~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_ins_dpi_hook_bad_cfg.vlt:13:1: DPI-hook insertion of target variable 'outa' must be qualified with at least the top module
+   13 | insert_dpihook -callback "cb" -var "outa"
+      | ^~~~~~~~~~~~~~
+%Error: t/t_ins_dpi_hook_bad_cfg.vlt:14:1: Invalid element select in DPI-hook target: 'mem[2'. Expected format 'name[i]'.
+   14 | insert_dpihook -callback "cb" -var "top_module.s.mem[2"
+      | ^~~~~~~~~~~~~~
+%Error: t/t_ins_dpi_hook_bad_cfg.vlt:15:1: Element index must be a non-negative integer: 'mem[x]'.
+   15 | insert_dpihook -callback "cb" -var "top_module.s.mem[x]"
+      | ^~~~~~~~~~~~~~
+%Error: Exiting due to

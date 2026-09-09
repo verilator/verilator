@@ -1,0 +1,36 @@
+%Error: t/t_ins_dpi_hook_bad_type.v:24:9: Target variable 'ch' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+   24 |   cls_t ch;
+      |         ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_ins_dpi_hook_bad_type.v:25:7: Target variable 'q' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+   25 |   int q[$];
+      |       ^
+%Error: t/t_ins_dpi_hook_bad_type.v:26:7: Target variable 'wa' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+   26 |   int wa[*];
+      |       ^~
+%Error: t/t_ins_dpi_hook_bad_type.v:27:8: Target variable 'mws.w' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+   27 |   ws_t mws;
+      |        ^~~
+%Error: t/t_ins_dpi_hook_bad_type.v:28:7: Target variable 'warr[1]' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+   28 |   int warr[2][*];
+      |       ^~~~
+%Error: t/t_ins_dpi_hook_bad_type.v:30:11: Target variable 'mw.t' in 'top_module' must be a supported type
+   30 |   mixed_t mw;
+      |           ^~
+%Error: t/t_ins_dpi_hook_bad_type.v:31:8: Target variable 'rs[0]' in 'top_module' is a floating-point type, which has no gate-level representation and cannot be hooked
+   31 |   real rs[2];
+      |        ^~
+%Error: t/t_ins_dpi_hook_bad_type.v:32:15: Target variable 'bigmem' in 'top_module' flattens to 512 leaves, too large to hook as a whole (limit 256); target individual elements instead
+   32 |   logic [7:0] bigmem[512];
+      |               ^~~~~~
+%Error: t/t_ins_dpi_hook_bad_type.v:29:11: Target variable 'm.t' in 'top_module' must be a supported type
+   29 |   mixed_t m;
+      |           ^
+%Error: t/t_ins_dpi_hook_bad_type.v:29:11: Target variable 'm.r' in 'top_module' is a floating-point type, which has no gate-level representation and cannot be hooked
+   29 |   mixed_t m;
+      |           ^
+%Error: t/t_ins_dpi_hook_bad_type.v:27:8: DPI-hook target 'mws' in 'top_module': the addressed member is an unpacked aggregate, which is not supported; target a scalar or packed leaf
+   27 |   ws_t mws;
+      |        ^~~
+%Error: Incomplete hook-insertion configuration for target 'top_module.ch'; see the error above
+%Error: Exiting due to

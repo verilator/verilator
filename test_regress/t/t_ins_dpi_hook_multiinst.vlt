@@ -1,0 +1,12 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+insert_dpihook -callback "instrument_var" -var "top_module.s0.v"
+insert_dpihook -callback "instrument_var" -var "top_module.s1.v"
+insert_dpihook -callback "instrument_var" -var "top_module.ia.va"
+insert_dpihook -callback "instrument_var" -var "top_module.ib.vb"
