@@ -4,11 +4,10 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module t;
-  initial begin
-    bit x[2];
-    if (!bit'(std::randomize(x) with {unique {x};}) || x[0] == x[1]) $stop;
-    $write("*-* All Finished *-*\n");
-    $finish;
-  end
-endmodule
+// Package name has to match test name
+package t_lint_declfilename_mismatch;
+  class pkg_class;
+    class pkg_class_nested;
+    endclass
+  endclass
+endpackage

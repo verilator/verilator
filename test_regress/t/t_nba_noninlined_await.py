@@ -9,8 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--binary', '--stats'])
+
+test.execute()
+
+test.file_grep(test.stats, r'Non-inlined co_awaits with SenTree\s+(\d+)', 2)
 
 test.passes()

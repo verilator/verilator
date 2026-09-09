@@ -25,8 +25,11 @@
 #ifndef VERILATOR_V3DFGCACHE_H_
 #define VERILATOR_V3DFGCACHE_H_
 
+#include "verilatedos.h"
+
 #include "V3Dfg.h"
 #include "V3DfgDataType.h"
+#include "V3HashTable.h"
 
 #include <type_traits>
 
@@ -52,137 +55,107 @@ struct V3DfgCacheType<Vertex, CacheBase, VertexBase, Cache, Pairs...> final {
 
 class V3DfgCache final {
     // TYPES
-    class KeySel final {
-        const DfgDataType& m_dtype;
-        const DfgVertex* const m_fromp;
-        const uint32_t m_lsb;
+    // Hashing and comparison of the cached vertices. Each takes either a vertex, or the
+    // parts a vertex would be created from, so a lookup needs no vertex and no key object.
 
-    public:
-        KeySel(const DfgDataType& dtype, DfgVertex* fromp, uint32_t lsb)
-            : m_dtype{dtype}
-            , m_fromp{fromp}
-            , m_lsb{lsb} {}
-        explicit KeySel(const DfgSel* vtxp)
-            : m_dtype{vtxp->dtype()}
-            , m_fromp{vtxp->fromp()}
-            , m_lsb{vtxp->lsb()} {}
-
-        struct Hash final {
-            size_t operator()(const KeySel& key) const {
-                // cppcheck-suppress unreadVariable  // cppcheck bug
-                V3Hash hash = key.m_dtype.hash();
-                hash += vertexHash(key.m_fromp);
-                hash += key.m_lsb;
-                return hash.value();
-            }
-        };
-
-        struct Equal final {
-            bool operator()(const KeySel& a, const KeySel& b) const {
-                return a.m_lsb == b.m_lsb && a.m_dtype == b.m_dtype
-                       && vertexEqual(a.m_fromp, b.m_fromp);
-            }
-        };
+    // DfgSel
+    struct HashSel final {
+        size_t operator()(const DfgSel* vtxp) const {
+            return operator()(vtxp->dtype(), vtxp->fromp(), vtxp->lsb());
+        }
+        size_t operator()(const DfgDataType& dtype, const DfgVertex* fromp, uint32_t lsb) const {
+            // cppcheck-suppress unreadVariable  // cppcheck bug
+            V3Hash hash = dtype.hash();
+            hash += vertexHash(fromp);
+            hash += lsb;
+            return hash.value();
+        }
+    };
+    struct EqualSel final {
+        bool operator()(const DfgSel* ap, const DfgSel* bp) const {
+            return operator()(ap, bp->dtype(), bp->fromp(), bp->lsb());
+        }
+        bool operator()(const DfgSel* vtxp, const DfgDataType& dtype, const DfgVertex* fromp,
+                        uint32_t lsb) const {
+            return vtxp->lsb() == lsb && vtxp->dtype() == dtype
+                   && vertexEqual(vtxp->fromp(), fromp);
+        }
     };
 
-    class KeyUnary final {
-        const DfgDataType& m_dtype;
-        const DfgVertex* const m_source0p;
-
-    public:
-        // cppcheck-suppress noExplicitConstructor
-        KeyUnary(const DfgDataType& dtype, DfgVertex* source0p)
-            : m_dtype{dtype}
-            , m_source0p{source0p} {}
-        explicit KeyUnary(const DfgVertexUnary* vtxp)
-            : m_dtype{vtxp->dtype()}
-            , m_source0p{vtxp->inputp(0)} {}
-
-        struct Hash final {
-            size_t operator()(const KeyUnary& key) const {  //
-                V3Hash hash = key.m_dtype.hash();
-                hash += vertexHash(key.m_source0p);
-                return hash.value();
-            }
-        };
-
-        struct Equal final {
-            bool operator()(const KeyUnary& a, const KeyUnary& b) const {
-                return a.m_dtype == b.m_dtype && vertexEqual(a.m_source0p, b.m_source0p);
-            }
-        };
+    // DfgVertexUnary
+    struct HashUnary final {
+        size_t operator()(const DfgVertexUnary* vtxp) const {
+            return operator()(vtxp->dtype(), vtxp->inputp(0));
+        }
+        size_t operator()(const DfgDataType& dtype, const DfgVertex* source0p) const {
+            V3Hash hash = dtype.hash();
+            hash += vertexHash(source0p);
+            return hash.value();
+        }
+    };
+    struct EqualUnary final {
+        bool operator()(const DfgVertexUnary* ap, const DfgVertexUnary* bp) const {
+            return operator()(ap, bp->dtype(), bp->inputp(0));
+        }
+        bool operator()(const DfgVertexUnary* vtxp, const DfgDataType& dtype,
+                        const DfgVertex* source0p) const {
+            return vtxp->dtype() == dtype && vertexEqual(vtxp->inputp(0), source0p);
+        }
     };
 
-    class KeyBinary final {
-        const DfgDataType& m_dtype;
-        const DfgVertex* const m_source0p;
-        const DfgVertex* const m_source1p;
-
-    public:
-        KeyBinary(const DfgDataType& dtype, DfgVertex* source0p, DfgVertex* source1p)
-            : m_dtype{dtype}
-            , m_source0p{source0p}
-            , m_source1p{source1p} {}
-        explicit KeyBinary(const DfgVertexBinary* vtxp)
-            : m_dtype{vtxp->dtype()}
-            , m_source0p{vtxp->inputp(0)}
-            , m_source1p{vtxp->inputp(1)} {}
-
-        struct Hash final {
-            size_t operator()(const KeyBinary& key) const {
-                V3Hash hash = key.m_dtype.hash();
-                hash += vertexHash(key.m_source0p);
-                hash += vertexHash(key.m_source1p);
-                return hash.value();
-            }
-        };
-
-        struct Equal final {
-            bool operator()(const KeyBinary& a, const KeyBinary& b) const {
-                return a.m_dtype == b.m_dtype && vertexEqual(a.m_source0p, b.m_source0p)
-                       && vertexEqual(a.m_source1p, b.m_source1p);
-            }
-        };
+    // DfgVertexBinary
+    struct HashBinary final {
+        size_t operator()(const DfgVertexBinary* vtxp) const {
+            return operator()(vtxp->dtype(), vtxp->inputp(0), vtxp->inputp(1));
+        }
+        size_t operator()(const DfgDataType& dtype, const DfgVertex* source0p,
+                          const DfgVertex* source1p) const {
+            V3Hash hash = dtype.hash();
+            hash += vertexHash(source0p);
+            hash += vertexHash(source1p);
+            return hash.value();
+        }
+    };
+    struct EqualBinary final {
+        bool operator()(const DfgVertexBinary* ap, const DfgVertexBinary* bp) const {
+            return operator()(ap, bp->dtype(), bp->inputp(0), bp->inputp(1));
+        }
+        bool operator()(const DfgVertexBinary* vtxp, const DfgDataType& dtype,
+                        const DfgVertex* source0p, const DfgVertex* source1p) const {
+            return vtxp->dtype() == dtype && vertexEqual(vtxp->inputp(0), source0p)
+                   && vertexEqual(vtxp->inputp(1), source1p);
+        }
     };
 
-    class KeyTernary final {
-        const DfgDataType& m_dtype;
-        const DfgVertex* const m_source0p;
-        const DfgVertex* const m_source1p;
-        const DfgVertex* const m_source2p;
-
-    public:
-        KeyTernary(const DfgDataType& dtype, DfgVertex* source0p, DfgVertex* source1p,
-                   DfgVertex* source2p)
-            : m_dtype{dtype}
-            , m_source0p{source0p}
-            , m_source1p{source1p}
-            , m_source2p{source2p} {}
-        explicit KeyTernary(const DfgVertexTernary* vtxp)
-            : m_dtype{vtxp->dtype()}
-            , m_source0p{vtxp->inputp(0)}
-            , m_source1p{vtxp->inputp(1)}
-            , m_source2p{vtxp->inputp(2)} {}
-
-        struct Hash final {
-            size_t operator()(const KeyTernary& key) const {
-                V3Hash hash = key.m_dtype.hash();
-                hash += vertexHash(key.m_source0p);
-                hash += vertexHash(key.m_source1p);
-                hash += vertexHash(key.m_source2p);
-                return hash.value();
-            }
-        };
-
-        struct Equal final {
-            bool operator()(const KeyTernary& a, const KeyTernary& b) const {
-                return a.m_dtype == b.m_dtype && vertexEqual(a.m_source0p, b.m_source0p)
-                       && vertexEqual(a.m_source1p, b.m_source1p)
-                       && vertexEqual(a.m_source2p, b.m_source2p);
-            }
-        };
+    // DfgVertexTernary
+    struct HashTernary final {
+        size_t operator()(const DfgVertexTernary* vtxp) const {
+            return operator()(vtxp->dtype(), vtxp->inputp(0), vtxp->inputp(1), vtxp->inputp(2));
+        }
+        size_t operator()(const DfgDataType& dtype, const DfgVertex* source0p,
+                          const DfgVertex* source1p, const DfgVertex* source2p) const {
+            V3Hash hash = dtype.hash();
+            hash += vertexHash(source0p);
+            hash += vertexHash(source1p);
+            hash += vertexHash(source2p);
+            return hash.value();
+        }
     };
 
+    struct EqualTernary final {
+        bool operator()(const DfgVertexTernary* ap, const DfgVertexTernary* bp) const {
+            return operator()(ap, bp->dtype(), bp->inputp(0), bp->inputp(1), bp->inputp(2));
+        }
+        bool operator()(const DfgVertexTernary* vtxp, const DfgDataType& dtype,
+                        const DfgVertex* source0p, const DfgVertex* source1p,
+                        const DfgVertex* source2p) const {
+            return vtxp->dtype() == dtype && vertexEqual(vtxp->inputp(0), source0p)
+                   && vertexEqual(vtxp->inputp(1), source1p)
+                   && vertexEqual(vtxp->inputp(2), source2p);
+        }
+    };
+
+    // Base class of vertex caches
     class CacheBase VL_NOT_FINAL {
     protected:
         // These set the operands of a new vertex
@@ -210,86 +183,68 @@ class V3DfgCache final {
     public:
         // CacheBase does not cache anything
         virtual DfgVertex* cache(DfgVertex*) { return nullptr; }
-        virtual void invalidate(const DfgVertex*) {}
+        virtual void invalidate(DfgVertex*) {}
     };
 
-    template <typename T_Key, typename T_Vertex>
+    template <typename T_Vertex, typename T_Hash, typename T_Equal>
     class Cache final : public CacheBase {
         static_assert(std::is_base_of<DfgVertex, T_Vertex>::value, "T_Vertex must be a DfgVertex");
-        // TYPES
-        using Hash = typename T_Key::Hash;
-        using Equal = typename T_Key::Equal;
-        using Map = std::unordered_map<T_Key, T_Vertex*, Hash, Equal>;
 
         // STATE
-        Map m_map;
-
-        // METHODS
-
-        // These return a reference to the mapped entry, inserting a nullptr if not yet exists
-
-        template <typename... T_Args>
-        T_Vertex*& entry(T_Args&&... args) {
-            const T_Key key{std::forward<T_Args>(args)...};
-            return m_map[key];
-        }
-        template <typename... T_Args>
-        typename Map::iterator find(T_Args&&... args) {
-            const T_Key key{std::forward<T_Args>(args)...};
-            return m_map.find(key);
-        }
+        V3HashSet<T_Vertex*, T_Hash, T_Equal> m_set;
 
     public:
-        // Add an existing vertex to the cache. If an equivalent exists,
-        // it is returned and the cache is not updated.
+        // Add an existing vertex to the cache. If an equivalent but different vertex exists,
+        // it is returned and the cache is not updated. Returns nullptr if the vertex is inserted.
         DfgVertex* cache(DfgVertex* vtxp) override {
-            UASSERT_OBJ(vtxp->is<T_Vertex>(), vtxp, "Vertex is wrong type");
-            T_Vertex*& entrypr = entry(static_cast<const T_Vertex*>(vtxp));
-            if (entrypr && entrypr != vtxp) return entrypr;
-            entrypr = static_cast<T_Vertex*>(vtxp);
-            return nullptr;
+            UDEBUGONLY(UASSERT_OBJ(vtxp->is<T_Vertex>(), vtxp, "Vertex is wrong type"););
+            T_Vertex* const typedp = static_cast<T_Vertex*>(vtxp);
+            T_Vertex* const cachedp = *m_set.insert(typedp).first;
+            return cachedp != vtxp ? cachedp : nullptr;
         }
         // Remove an existing vertex from the cache, if it is the cached vertex, otherwise no-op
-        void invalidate(const DfgVertex* vtxp) override {
-            UASSERT_OBJ(vtxp->is<T_Vertex>(), vtxp, "Vertex is wrong type");
-            const auto it = find(static_cast<const T_Vertex*>(vtxp));
-            if (it != m_map.end() && it->second == vtxp) m_map.erase(it);
+        void invalidate(DfgVertex* vtxp) override {
+            UDEBUGONLY(UASSERT_OBJ(vtxp->is<T_Vertex>(), vtxp, "Vertex is wrong type"););
+            T_Vertex* const typedp = static_cast<T_Vertex*>(vtxp);
+            const auto it = m_set.find(typedp);
+            if (it != m_set.end() && *it == typedp) m_set.erase(it);
         }
-
         // Get vertex with given operands, return nullptr if not in cache
         template <typename Vertex, typename... Operands>
         Vertex* get(const DfgDataType& dtype, Operands... operands) {
-            const auto it = find(dtype, operands...);
-            return it != m_map.end() ? static_cast<Vertex*>(it->second) : nullptr;
+            const auto it = m_set.find(dtype, operands...);
+            return it != m_set.end() ? static_cast<Vertex*>(*it) : nullptr;
         }
-
-        // Get or create (and insert) vertex with given operands
+        // Get vertex with given operands, if does not exist, create it
         template <typename Vertex, typename... Operands>
         Vertex* getOrCreate(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype,
                             Operands... operands) {
-            T_Vertex*& entryr = entry(dtype, operands...);
-            if (!entryr) {
-                T_Vertex* const newp = new Vertex{dfg, flp, dtype};
+            const auto pair = m_set.insertLazy(dtype, operands..., [&]() -> T_Vertex* {
+                Vertex* const newp = new Vertex{dfg, flp, dtype};
                 setOperands(newp, operands...);
-                entryr = newp;
-            }
-            return static_cast<Vertex*>(entryr);
+                return newp;
+            });
+            T_Vertex* const vtxp = *pair.first;
+            UDEBUGONLY(UASSERT_OBJ(vtxp->template is<Vertex>(), vtxp, "Vertex is wrong type"););
+            return static_cast<Vertex*>(vtxp);
         }
     };
 
     // Map from Vertex type to cache type
+    // clang-format off
     template <typename Vertex>
-    using CacheType =
-        typename V3DfgCacheType<Vertex, CacheBase,  //
-                                DfgSel, Cache<KeySel, DfgSel>,  //
-                                DfgVertexUnary, Cache<KeyUnary, DfgVertexUnary>,  //
-                                DfgVertexBinary, Cache<KeyBinary, DfgVertexBinary>,  //
-                                DfgVertexTernary, Cache<KeyTernary, DfgVertexTernary>  //
-                                >::Type;
+    using CacheType = typename V3DfgCacheType<Vertex, CacheBase,
+        DfgSel,           /* -> */  Cache<DfgSel, HashSel, EqualSel>,
+        DfgVertexUnary,   /* -> */  Cache<DfgVertexUnary, HashUnary, EqualUnary>,
+        DfgVertexBinary,  /* -> */  Cache<DfgVertexBinary, HashBinary, EqualBinary>,
+        DfgVertexTernary, /* -> */  Cache<DfgVertexTernary, HashTernary, EqualTernary>
+    >::Type;
+    // clang-format on
+
     // STATE
     DfgGraph& m_dfg;  // The DfgGraph we are caching the vertices of
 
-    // The per type caches
+// The per type caches
 #define VERTEX_CACHE_DECLARE_CACHE(t) CacheType<t> m_cache##t;
     FOREACH_DFG_VERTEX_TYPE(VERTEX_CACHE_DECLARE_CACHE)
 #undef VERTEX_CACHE_DECLARE_CACHE

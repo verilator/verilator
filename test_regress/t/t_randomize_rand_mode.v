@@ -69,8 +69,7 @@ class Packet extends Base;
       if (m_one != 10) one_ne10 = 1'b1;
       if (m_two != 10) two_ne10 = 1'b1;
 `ifdef TEST_VERBOSE
-      $display("one=%0d(rand_mode=%0d) two=%0d(rand_mode=%0d)",
-          m_one, mode_one, m_two, mode_two);
+      $display("one=%0d(rand_mode=%0d) two=%0d(rand_mode=%0d)", m_one, mode_one, m_two, mode_two);
 `endif
     end
     if (mode_one != 0 && !one_ne10) $stop;

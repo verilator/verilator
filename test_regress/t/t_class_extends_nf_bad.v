@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package Pkg;
-class otFound2;
-endclass
+  class otFound2;
+  endclass
 endpackage
 
 class IsFound;

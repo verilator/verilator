@@ -1272,6 +1272,10 @@ void AstCoverTransSet::dumpJson(std::ostream& str) const { Super::dumpJson(str);
 // Functional coverage dump methods
 void AstCoverpoint::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverpoint::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
+void AstCoverpointDType::dumpSmall(std::ostream& str) const {
+    Super::dumpSmall(str);
+    str << "coverpoint[" << m_hitBound << "]";
+}
 void AstCoverpointRef::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverpointRef::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
 void AstCvtArrayToArray::dump(std::ostream& str) const {
@@ -2145,6 +2149,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, CoverpointDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        info.m_type = "VlCoverpointT<" + cvtToStr(adtypep->hitBound()) + ">*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, SampleQueueDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true, false);
@@ -2220,6 +2227,12 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlRandomizer";
         } else if (bdtypep->isStdRandomGenerator()) {
             info.m_type = "VlStdRandomizer";
+        } else if (bdtypep->isCovergroupInstHandle()) {
+            info.m_type = "VlCovInstHandle";
+        } else if (bdtypep->isCovergroupCross()) {
+            // Borrowed pointer: VlCovergroupInst owns the cross runtime, so its bins outlive the
+            // SV covergroup object (the coverage DB holds raw count pointers read at write() time)
+            info.m_type = "VlCoverCross*";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -2365,59 +2378,70 @@ bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
 }
 const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                                                bool assertOn) const VL_MT_STABLE {
-    static constexpr int MAX_TYPEDEF_DEPTH = 1000;
-    static constexpr int MAX_CHAIN_DISPLAY = 10;
-    const AstNodeDType* nodep = this;
-    std::unordered_set<const AstNodeDType*> visited;
-    std::vector<const AstNodeDType*> chain;
-    bool isCycle = false;
-    for (int depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
-        if (VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType) || VN_IS(nodep, RefDType)  //
-            || VN_IS(nodep, RequireDType)  //
-            || (VN_IS(nodep, ConstDType) && skipConst)  //
-            || (VN_IS(nodep, EnumDType) && skipEnum)) {
-            if (!visited.emplace(nodep).second) {
-                isCycle = true;
-                break;
-            }
-            if (chain.size() < static_cast<size_t>(MAX_CHAIN_DISPLAY)) chain.push_back(nodep);
-            if (const AstNodeDType* subp = nodep->subDTypep()) {
-                nodep = subp;
-                continue;
-            } else {
+    static constexpr size_t MAX_TYPEDEF_DEPTH = 1000;
+    static constexpr size_t MAX_CHAIN_DISPLAY = 10;
+
+    // Skip type references. On valid inputs, this doesn't hit the limit,
+    // which is the common case and should be fast.
+    {
+        const AstNodeDType* nodep = this;
+        for (size_t depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
+            if (VN_IS(nodep, MemberDType)  //
+                || VN_IS(nodep, ParamTypeDType)  //
+                || VN_IS(nodep, RefDType)  //
+                || VN_IS(nodep, RequireDType)  //
+                || (VN_IS(nodep, ConstDType) && skipConst)  //
+                || (VN_IS(nodep, EnumDType) && skipEnum)) {
+                if (const AstNodeDType* subp = nodep->subDTypep()) {
+                    nodep = subp;
+                    continue;
+                }
                 if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
                 return nullptr;
             }
+            return nodep;
         }
-        return nodep;
     }
-    // Build user-facing error with type chain
-    V3Error::v3errorPrep(V3ErrorCode::EC_ERROR);
+
+    // All MAX_TYPEDEF_DEPTH nodes visited were skippable: chain too deep or recursive,
+    // re-walk to display the error. This is rare so can be slow.
     {
+        V3Error::v3errorPrep(V3ErrorCode::EC_ERROR);
+        std::unordered_set<const AstNodeDType*> visited;
+        visited.reserve(MAX_TYPEDEF_DEPTH);
+        bool isCyclic = false;
+        std::ostringstream ss;
+        const AstNodeDType* nodep = this;
+        for (size_t depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
+            if (!visited.emplace(nodep).second) {
+                isCyclic = true;
+                break;
+            }
+            // Skip internal scaffolding nodes (e.g. REQUIREDTYPE) with no user-visible name
+            if (depth < MAX_CHAIN_DISPLAY && !nodep->name().empty()) {
+                FileLine* const flp = nodep->fileline();
+                ss << '\n'
+                   << flp->warnOther() << "... Type chain: " << nodep->prettyTypeName() << '\n'
+                   << (!depth ? flp->warnContextPrimary() : flp->warnContextSecondary());
+            }
+            nodep = nodep->subDTypep();
+        }
         std::ostringstream& os = V3Error::v3errorStr();
-        if (isCycle) {
+        if (isCyclic) {
             os << "Recursive type definition";
         } else {
             os << "Type definition over " << MAX_TYPEDEF_DEPTH << " types deep";
         }
-        bool first = true;
-        for (const AstNodeDType* chainp : chain) {
-            // Skip internal scaffolding nodes (e.g. REQUIREDTYPE) with no user-visible name
-            if (chainp->name().empty()) continue;
-            os << '\n'
-               << chainp->fileline()->warnOther() << "... Type chain: " << chainp->prettyTypeName()
-               << '\n'
-               << (first ? chainp->fileline()->warnContextPrimary()
-                         : chainp->fileline()->warnContextSecondary());
-            first = false;
-        }
-        if (visited.size() > static_cast<size_t>(MAX_CHAIN_DISPLAY)) {
+        os << ss.str();
+        if (visited.size() > MAX_CHAIN_DISPLAY) {
             os << '\n'
                << this->fileline()->warnMore() << "... and "
                << (visited.size() - MAX_CHAIN_DISPLAY) << " more";
         }
+        this->v3errorEnd(V3Error::v3errorStr());
     }
-    this->v3errorEnd(V3Error::v3errorStr());
+
+    // Not resolved
     return nullptr;
 }
 string AstNodeDType::vlEnumType() const {

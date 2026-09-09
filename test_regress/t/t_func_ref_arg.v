@@ -30,9 +30,7 @@ class Cls;
   endfunction
 endclass
 
-typedef struct {
-  MyInt arr[2][][$];
-} struct_t;
+typedef struct {MyInt arr[2][][$];} struct_t;
 
 module t;
   int a, b;
@@ -49,12 +47,12 @@ module t;
     `checkh(b, 10);
 
     cls = new;
-    b   = cls.get_val_set_2(a);
+    b = cls.get_val_set_2(a);
     `checkh(a, 2);
     `checkh(b, 5);
 
     mi = new(1);
-    b  = cls.get_val_set_2(mi.x);
+    b = cls.get_val_set_2(mi.x);
     `checkh(mi.x, 2);
     `checkh(b, 1);
 

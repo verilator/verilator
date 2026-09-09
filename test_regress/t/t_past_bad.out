@@ -1,33 +1,33 @@
-%Error: t/t_past_bad.v:16:18: Expecting expression to be constant, but variable isn't const: 'num'
+%Error: t/t_past_bad.v:14:18: Expecting expression to be constant, but variable isn't const: 'num'
                             : ... note: In instance 't'
-   16 |     if ($past(d, num)) $stop;   
+   14 |     if ($past(d, num)) $stop;   
       |                  ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_past_bad.v:16:9: $past tick value must be constant (IEEE 1800-2023 16.9.3)
+%Error: t/t_past_bad.v:14:9: $past tick value must be constant (IEEE 1800-2023 16.9.3)
                            : ... note: In instance 't'
-   16 |     if ($past(d, num)) $stop;   
+   14 |     if ($past(d, num)) $stop;   
       |         ^~~~~
-%Error: t/t_past_bad.v:17:18: $past tick value must be >= 1 (IEEE 1800-2023 16.9.3)
+%Error: t/t_past_bad.v:15:18: $past tick value must be >= 1 (IEEE 1800-2023 16.9.3)
                             : ... note: In instance 't'
-   17 |     if ($past(d, 0)) $stop;   
+   15 |     if ($past(d, 0)) $stop;   
       |                  ^
-%Warning-TICKCOUNT: t/t_past_bad.v:18:18: $past tick value of 10000 may have a large performance cost
+%Warning-TICKCOUNT: t/t_past_bad.v:16:18: $past tick value of 10000 may have a large performance cost
                                         : ... note: In instance 't'
-   18 |     if ($past(d, 10000)) $stop;   
+   16 |     if ($past(d, 10000)) $stop;   
       |                  ^~~~~
                     ... For warning description see https://verilator.org/warn/TICKCOUNT?v=latest
                     ... Use "/* verilator lint_off TICKCOUNT */" and lint_on around source to disable this message.
-%Error-UNSUPPORTED: t/t_past_bad.v:19:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
+%Error-UNSUPPORTED: t/t_past_bad.v:17:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
                                        : ... note: In instance 't'
-   19 |     if ($past(d, 32'h7fffffff)) $stop;
+   17 |     if ($past(d, 32'h7fffffff)) $stop;
       |         ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_past_bad.v:20:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
+%Error-UNSUPPORTED: t/t_past_bad.v:18:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
                                        : ... note: In instance 't'
-   20 |     if ($past(d, 32'h7ffffffe)) $stop;
+   18 |     if ($past(d, 32'h7ffffffe)) $stop;
       |         ^~~~~
-%Error-UNSUPPORTED: t/t_past_bad.v:21:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
+%Error-UNSUPPORTED: t/t_past_bad.v:19:9: Unsupported: $past tick value exceeds implementation limit of 2147483615 (host arithmetic limit)
                                        : ... note: In instance 't'
-   21 |     if ($past(d, 32'h7ffffffc)) $stop;
+   19 |     if ($past(d, 32'h7ffffffc)) $stop;
       |         ^~~~~
 %Error: Exiting due to
