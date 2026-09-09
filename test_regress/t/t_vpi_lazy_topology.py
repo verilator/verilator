@@ -24,7 +24,7 @@ test.execute()
 
 syms = test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp"
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 28)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 35)
 test.file_grep(test.stats, r'VPI, lazy fallback retained\s+(\d+)', 26)
 test.file_grep(test.stats, r'VPI, lazy write-only retained\s+(\d+)', 2)
 test.file_grep(test.stats, r'VPI, lazy group bail, impure\s+(\d+)', 3)
@@ -33,6 +33,10 @@ test.file_grep(test.stats, r'VPI, lazy group bail, comb cycle\s+(\d+)', 4)
 # alc_x/alc_y via u_pass1/u_pass2 is a genuine alias cycle.
 test.file_grep(test.stats, r'VPI, lazy group bail, alias cycle\s+(\d+)', 6)
 test.file_grep(test.stats, r'VPI, lazy group bail, cross-scope write\s+(\d+)', 2)
+# chainorder: co_tap's chain resolves past the retained pin link, so it shares co_deep's
+# shadow, and co_use's cone must still be ordered after co_deep's.
+test.file_grep(test.stats, r'VPI, lazy alias to reconstructed\s+(\d+)', 1)
+test.file_grep(syms, r'"co_tap", offsetof\([^,]+, __Vlazyrecon__\d+_\d+\)')
 
 test.file_grep(syms, r'"rnd",.*VLVF_PUB_RW')
 test.file_grep(syms, r'"crbase",.*VLVF_PUB_RW')

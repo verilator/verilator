@@ -312,6 +312,24 @@ int main(int argc, char** argv) {
         checkInt("t.crbase (after put)", vecHnd, 0x5a);
     }
 
+    // chainorder: co_tap shares co_deep's shadow across a retained chain link. Read the
+    // downstream cone first, so only its own operand refresh can freshen that shadow.
+    {
+        vpiHandle coUse = mustFind("t.co_use");
+        vpiHandle coTap = mustFind("t.co_tap");
+        vpiHandle coDeep = mustFind("t.co_deep");
+        if (errors) return 10;
+
+        for (const int base : {0x00, 0x21, 0x7e, 0xc3}) {
+            topp->base = base;
+            topp->eval();
+            const int deep = m8(base + 0x1f) ^ 0x3c;
+            checkInt("t.co_use", coUse, deep ^ 0xa5);
+            checkInt("t.co_tap", coTap, deep);
+            checkInt("t.co_deep", coDeep, deep);
+        }
+    }
+
     topp->final();
     if (errors) {
         std::printf("%%Error: %0d failures\n", errors);

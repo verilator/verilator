@@ -1136,18 +1136,29 @@ private:
             Group* const g = ownp.get();
             if (!g->live) continue;
             std::unordered_set<Group*> seen;
+            const auto addDep = [&](AstVarScope* u) {
+                Group* const ugp = liveGroupOf(u);
+                if (!ugp || ugp == g) return;
+                if (!seen.insert(ugp).second) return;
+                m_dependents[ugp].push_back(g);
+            };
             forEachStmt(g, [&](AstNode* sp) {
                 sp->foreach([&](AstVarRef* refp) {
                     if (refp->access().isWriteOnly()) return;
                     AstVarScope* u = refp->varScopep();
                     if (g->members.count(u)) return;
                     if (AstVarScope* const canonp = aliasSubstituteFor(u, g)) u = canonp;
-                    Group* const ugp = liveGroupOf(u);
-                    if (!ugp || ugp == g) return;
-                    if (!seen.insert(ugp).second) return;
-                    m_dependents[ugp].push_back(g);
+                    addDep(u);
                 });
             });
+            // An alias group's statement names only the next link in its chain, but sharing
+            // retargets its readers to the chain-resolved canonical, so depend on that too: a
+            // link retained in between is a boundary read, which would sever the ordering the
+            // retargeted readers need (the transitive edge is redundant when no link is).
+            for (AstVarScope* const t : g->targets) {
+                const auto it = m_reconAliasCanonOf.find(t);
+                if (it != m_reconAliasCanonOf.end()) addDep(it->second);
+            }
         }
     }
 
@@ -1624,6 +1635,8 @@ private:
                 Group* const ugp = liveGroupOf(u);
                 if (ugp && ugp != g) {
                     // Operand is reconstructed too: read its shadow, calling its func to freshen.
+                    UASSERT_OBJ(ugp->funcp, g->keyp,
+                                "--vpi-lazy cone operand ordered after its consumer");
                     AstVarScope* const shadowp = shadowForMember(ugp, u);
                     refp->varScopep(shadowp);
                     refp->varp(shadowp->varp());

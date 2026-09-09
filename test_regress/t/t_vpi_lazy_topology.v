@@ -146,6 +146,26 @@ module t (
   assign o = intf.swapped;
   sub_creset u_creset (intf);
 
+  // chainorder: the input pin of a non-inlined instance is a cross-scope write, so that link
+  // of the alias chain is retained. co_tap's chain still resolves past it to co_deep, and the
+  // reader that retarget moves onto co_deep must stay ordered after co_deep's cone.
+  logic [7:0] co_l0;
+  logic [7:0] co_l1;
+  logic [7:0] co_l2;
+  logic [7:0] co_l3;
+  logic [7:0] co_l4;
+  logic [7:0] co_deep;
+  logic [7:0] co_tap;
+  logic [7:0] co_use;
+  assign co_l0 = base + 8'h01;
+  assign co_l1 = co_l0 + 8'h02;
+  assign co_l2 = co_l1 + 8'h04;
+  assign co_l3 = co_l2 + 8'h08;
+  assign co_l4 = co_l3 + 8'h10;
+  assign co_deep = co_l4 ^ 8'h3c;
+  t_vpi_lazy_topology_pass8 u_chain (.i(co_deep), .o(co_tap));
+  assign co_use = co_tap ^ 8'ha5;
+
   // contretain: impure and variable-index drivers must be retained
   logic [31:0] seed;
   logic [31:0] rnd;
@@ -163,8 +183,16 @@ module t (
   always_comb tstamp = 8'(nib) + 8'($time);
 
   assign obs = acc[7:0] ^ flat_gg[7:0] ^ {1'b0, cyc_down2} ^ o[0] ^ crbase ^ rndc ^ tstamp
-             ^ rnd[7:0] ^ {1'b0, alc_x};
+             ^ rnd[7:0] ^ {1'b0, alc_x} ^ co_use;
 
+endmodule
+
+module t_vpi_lazy_topology_pass8 (
+  input  logic [7:0] i,
+  output logic [7:0] o
+);
+  /*verilator no_inline_module*/
+  assign o = i;
 endmodule
 
 module t_vpi_lazy_topology_pass (
