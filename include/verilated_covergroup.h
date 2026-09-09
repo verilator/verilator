@@ -212,10 +212,17 @@ public:
 /// built on demand for automatic bins; explicit bins select sets of tuples
 /// and replace the corresponding automatic cross bins.  Explicit selections
 /// are intersected with hit-tuple words once per sample.
+/// Fixed-size storage uses owning arrays; explicit-bin buffers are allocated
+/// only when needed.
 
 class VlCoverCross final : public VlCoverpointIf {
+    struct Dimension final {
+        VlCoverpoint* cpp;  // Feeding coverpoint
+        uint32_t bins;  // Normal bin count
+        uint32_t stride;  // Flat-index stride
+    };
     struct Bin final {
-        const std::vector<uint64_t> selection;  // Bitmap of selected flat tuple indices
+        std::unique_ptr<uint64_t[]> selectionp;  // Fixed-size selection bitmap
         const char* const namep;  // Explicit bin name
         const char* const filep;  // Bin declaration file
         const int line;  // Bin declaration line
@@ -223,12 +230,23 @@ class VlCoverCross final : public VlCoverpointIf {
         uint32_t count = 0;  // Samples matching the selection and guard
 
         Bin(std::initializer_list<uint64_t> selection, const char* namep, const char* filep,
-            int line, int col)
-            : selection{selection}
-            , namep{namep}
-            , filep{filep}
-            , line{line}
-            , col{col} {}
+            int line, int col);
+    };
+    struct Explicit final {
+        std::vector<Bin> bins;  // Explicit bins in declaration order
+        std::unique_ptr<uint64_t[]> autoExcludedp;  // Tuples replaced by explicit bins
+        std::vector<uint32_t> autoBins;  // Retained flat indices
+        std::unique_ptr<uint64_t[]> hitBitsp;  // Selected hit tuples, cleared after each sample
+        std::vector<uint32_t> touchedWords;  // Nonzero hit-word indices
+        std::unique_ptr<uint64_t[]> binWordOffsetsp;  // [bins.size() + 1] Offsets into binWords
+        std::vector<uint32_t> binWords;  // Nonzero selection words, grouped by bin
+
+        Explicit() = default;
+        explicit Explicit(uint32_t words)
+            : autoExcludedp{new uint64_t[words]{}}
+            , hitBitsp{new uint64_t[words]{}} {
+            touchedWords.reserve(words);
+        }
     };
 
     // MEMBERS
@@ -240,42 +258,34 @@ class VlCoverCross final : public VlCoverpointIf {
     // Cross bin indexes are unsigned, like the coverpoint bin indexes they are
     // built from.  init() fatals if the product would exceed UINT32_MAX, so every
     // index computed here provably fits.  That bound is far beyond anything
-    // storable anyway: m_flatCounts alone would need 16GB.
+    // storable anyway: m_flatCountsp alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
     uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
-    std::vector<uint32_t> m_cpBinCounts;  // [m_dims] Normal bin count per dimension
-    std::vector<uint32_t> m_stride;  // [m_dims] Flat-index stride per dimension
-    std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] Per-bin hit counts
-    std::vector<VlCoverpoint*> m_cps;  // Feeding coverpoints, set by init()
-    std::vector<Bin> m_bins;  // Explicit bins in declaration order
-    std::vector<uint64_t>
-        m_autoExcluded;  // Tuples replaced by explicit bins; empty for auto-only crosses
-    std::vector<uint32_t> m_autoBins;  // Retained flat indices, when explicit bins are present
-    std::vector<uint64_t> m_hitBits;  // Selected hit tuples, cleared after each sample
-    std::vector<uint32_t> m_touchedWords;  // Nonzero words in m_hitBits
-    std::vector<uint64_t> m_binWordOffsets;  // [m_bins.size() + 1] Offsets into m_binWords
-    std::vector<uint32_t> m_binWords;  // Nonzero selection word indices, grouped by bin
+    std::unique_ptr<Dimension[]> m_dimensionsp;  // [m_dims], fixed after init()
+    std::unique_ptr<uint32_t[]> m_flatCountsp;  // [m_numAutoBins] Per-bin hit counts
+    Explicit m_explicit;  // Buffers remain unallocated for automatic-only crosses
 
     // PRIVATE METHODS
+    bool hasExplicitBins() const { return m_explicit.autoExcludedp != nullptr; }
+    template <bool T_Explicit>
     void iterateProduct(uint32_t dim, uint32_t baseIdx);
     void incrementAuto(uint32_t idx) {
-        if (m_flatCounts[idx]++ == 0) ++m_numCovered;
+        if (m_flatCountsp[idx]++ == 0) ++m_numCovered;
     }
     void incrementTuple(uint32_t idx) {
-        if (!m_autoExcluded.empty()) {
-            const uint32_t word = idx / 64;
-            if ((m_autoExcluded[word] >> (idx % 64)) & 1U) {
-                if (!m_hitBits[word]) m_touchedWords.push_back(word);
-                m_hitBits[word] |= uint64_t{1} << (idx % 64);
-                // Explicit selections consume automatic tuples independently of iff.
-                return;
-            }
+        Explicit& data = m_explicit;
+        const uint32_t wordIdx = idx / 64;
+        if ((data.autoExcludedp[wordIdx] >> (idx % 64)) & 1U) {
+            if (!data.hitBitsp[wordIdx]) data.touchedWords.push_back(wordIdx);
+            data.hitBitsp[wordIdx] |= uint64_t{1} << (idx % 64);
+            // Explicit selections consume automatic tuples independently of iff.
+            return;
         }
         incrementAuto(idx);
     }
     void sampleSingleTuple(uint32_t idx, const bool* binIffs);
     void sampleBins(const bool* binIffs);
-    uint32_t autoIndex(uint32_t i) const { return m_bins.empty() ? i : m_autoBins[i]; }
+    uint32_t autoIndex(uint32_t i) const { return hasExplicitBins() ? m_explicit.autoBins[i] : i; }
     std::string autoBinName(uint32_t flat) const;
 
 public:
@@ -295,14 +305,15 @@ public:
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
     /// Sample automatic and explicit bins, optionally applying per-bin iff guards.
-    /// Reads the feeding coverpoints from m_cps, so the caller passes no coverpoints.
+    /// Reads the feeding coverpoints saved by init(), so the caller passes no coverpoints.
     void sample(const bool* binIffs = nullptr);
 
     // ---- VlCoverpointIf ----
     // Explicit bins precede retained automatic bins; all are Normal bins.
     uint32_t binCount() const override {
-        return m_bins.empty() ? m_numAutoBins
-                              : static_cast<uint32_t>(m_bins.size() + m_autoBins.size());
+        return hasExplicitBins()
+                   ? static_cast<uint32_t>(m_explicit.bins.size() + m_explicit.autoBins.size())
+                   : m_numAutoBins;
     }
     std::string binName(uint32_t i) const override;
     void coverageParts(double& covered, double& total) const override {

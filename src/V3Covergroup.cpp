@@ -2077,7 +2077,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         // sample(): after all coverpoints have sampled (cross loop runs after coverpoint loop).
         UASSERT_OBJ(m_sampleFuncp, crossp, "sample() CFunc not set for cross");
-        // The cross reads its coverpoints from its own m_cps, so sample() needs no cps array;
+        // The cross remembers its feeding coverpoints, so sample() needs no cps array;
         // per-bin iff guards still need a temporary array, hence the block form.
         AstNodeStmt* const samplep
             = bins.empty() ? static_cast<AstNodeStmt*>(
