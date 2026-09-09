@@ -215,213 +215,6 @@ public:
     string dotColor() const override { return "blue"; }
 };
 
-//######################################################################
-// Split class functions
-
-class SplitReorderBaseVisitor VL_NOT_FINAL : public VNVisitor {
-    // NODE STATE
-    // AstVarScope::user1p      -> Var SplitNodeVertex* for usage var, 0=not set yet
-    // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
-    // Ast*::user3p             -> Statement SplitLogicVertex* (temporary only)
-    // Ast*::user4              -> Current ordering number (reorderBlock usage)
-    const VNUser1InUse m_inuser1;
-    const VNUser2InUse m_inuser2;
-    const VNUser3InUse m_inuser3;
-    const VNUser4InUse m_inuser4;
-
-protected:
-    // STATE
-    string m_noReorderWhy;  // Reason we can't reorder
-    std::vector<SplitLogicVertex*> m_stmtStackps;  // Current statements being tracked
-    SplitPliVertex* m_pliVertexp;  // Element specifying PLI ordering
-    V3Graph m_graph;  // Scoreboard of var usages/dependencies
-    bool m_inDly;  // Inside ASSIGNDLY
-
-    // CONSTRUCTORS
-public:
-    SplitReorderBaseVisitor() { scoreboardClear(); }
-    ~SplitReorderBaseVisitor() override = default;
-
-    // METHODS
-protected:
-    void scoreboardClear() {
-        // VV*****  We reset user1p() and user2p on each block!!!
-        m_inDly = false;
-        m_graph.clear();
-        m_stmtStackps.clear();
-        m_pliVertexp = nullptr;
-        m_noReorderWhy = "";
-        AstNode::user1ClearTree();
-        AstNode::user2ClearTree();
-        AstNode::user3ClearTree();
-        AstNode::user4ClearTree();
-    }
-
-private:
-    void scoreboardPli(AstNode* nodep) {
-        // Order all PLI statements with other PLI statements
-        // This ensures $display's and such remain in proper order
-        // We don't prevent splitting out other non-pli statements, however.
-        if (!m_pliVertexp) {
-            m_pliVertexp = new SplitPliVertex{&m_graph, nodep};  // m_graph.clear() will delete it
-        }
-        for (const auto& vtxp : m_stmtStackps) {
-            // Both ways...
-            new SplitScorebdEdge{&m_graph, vtxp, m_pliVertexp};
-            new SplitScorebdEdge{&m_graph, m_pliVertexp, vtxp};
-        }
-    }
-    void scoreboardPushStmt(AstNode* nodep) {
-        // UINFO(9, "    push " << nodep);
-        SplitLogicVertex* const vertexp = new SplitLogicVertex{&m_graph, nodep};
-        m_stmtStackps.push_back(vertexp);
-        UASSERT_OBJ(!nodep->user3p(), nodep, "user3p should not be used; cleared in processBlock");
-        nodep->user3p(vertexp);
-    }
-    void scoreboardPopStmt() {
-        // UINFO(9, "    pop");
-        UASSERT(!m_stmtStackps.empty(), "Stack underflow");
-        m_stmtStackps.pop_back();
-    }
-
-protected:
-    void scanBlock(AstNode* nodep) {
-        // Iterate across current block, making the scoreboard
-        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
-            scoreboardPushStmt(nextp);
-            iterate(nextp);
-            scoreboardPopStmt();
-        }
-    }
-
-    void pruneDepsOnInputs() {
-        for (V3GraphVertex& vertex : m_graph.vertices()) {
-            if (vertex.outEmpty() && vertex.is<SplitVarStdVertex>()) {
-                if (debug() >= 9) {
-                    const SplitVarStdVertex& sVtx = static_cast<SplitVarStdVertex&>(vertex);
-                    UINFO(0, "Will prune deps on var " << sVtx.nodep());
-                    sVtx.nodep()->dumpTree("-  ");
-                }
-                for (V3GraphEdge& edge : vertex.inEdges()) {
-                    SplitEdge& oedge = static_cast<SplitEdge&>(edge);
-                    oedge.setIgnoreThisStep();
-                }
-            }
-        }
-    }
-
-    virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) = 0;
-
-    // VISITORS
-    void visit(AstAlways* nodep) override = 0;
-    void visit(AstNodeIf* nodep) override = 0;
-
-    // We don't do AstLoop, due to the standard question of what is before vs. after
-
-    void visit(AstExprStmt* nodep) override {
-        VL_RESTORER(m_inDly);
-        m_inDly = false;
-        iterateChildren(nodep);
-    }
-    void visit(AstAssignDly* nodep) override {
-        UINFO(4, "    ASSIGNDLY " << nodep);
-        iterate(nodep->rhsp());
-        VL_RESTORER(m_inDly);
-        m_inDly = true;
-        iterate(nodep->lhsp());
-    }
-    void visit(AstVarRef* nodep) override {
-        if (!m_stmtStackps.empty()) {
-            AstVarScope* const vscp = nodep->varScopep();
-            UASSERT_OBJ(vscp, nodep, "Not linked");
-            if (!nodep->varp()->isConst()) {  // Constant lookups can be ignored
-                // ---
-                // NOTE: Formerly at this location we would avoid
-                // splitting or reordering if the variable is public.
-                //
-                // However, it should be perfectly safe to split an
-                // always block containing a public variable.
-                // Neither operation should perturb PLI's view of
-                // the variable.
-                //
-                // Former code:
-                //
-                //   if (nodep->varp()->isSigPublic()) {
-                //       // Public signals shouldn't be changed,
-                //       // pli code might be messing with them
-                //       scoreboardPli(nodep);
-                //   }
-                // ---
-
-                // Create vertexes for variable
-                if (!vscp->user1p()) {
-                    SplitVarStdVertex* const vstdp = new SplitVarStdVertex{&m_graph, vscp};
-                    vscp->user1p(vstdp);
-                }
-                SplitVarStdVertex* const vstdp
-                    = reinterpret_cast<SplitVarStdVertex*>(vscp->user1p());
-
-                // SPEEDUP: We add duplicate edges, that should be fixed
-                if (m_inDly && nodep->access().isWriteOrRW()) {
-                    UINFO(4, "     VARREFDLY: " << nodep);
-                    // Delayed variable is different from non-delayed variable
-                    if (!vscp->user2p()) {
-                        SplitVarPostVertex* const vpostp = new SplitVarPostVertex{&m_graph, vscp};
-                        vscp->user2p(vpostp);
-                        new SplitPostEdge{&m_graph, vstdp, vpostp};
-                    }
-                    SplitVarPostVertex* const vpostp
-                        = reinterpret_cast<SplitVarPostVertex*>(vscp->user2p());
-                    // Add edges
-                    for (SplitLogicVertex* vxp : m_stmtStackps) {
-                        new SplitLVEdge{&m_graph, vpostp, vxp};
-                    }
-                } else {  // Nondelayed assignment
-                    if (nodep->access().isWriteOrRW()) {
-                        // Non-delay; need to maintain existing ordering
-                        // with all consumers of the signal
-                        UINFO(4, "     VARREFLV: " << nodep);
-                        for (SplitLogicVertex* ivxp : m_stmtStackps) {
-                            new SplitLVEdge{&m_graph, vstdp, ivxp};
-                        }
-                    } else {
-                        UINFO(4, "     VARREF:   " << nodep);
-                        makeRvalueEdges(vstdp);
-                    }
-                }
-            }
-        }
-    }
-
-    void visit(AstJumpGo* nodep) override {
-        // Jumps will disable reordering at all levels
-        // This is overly pessimistic; we could treat jumps as barriers, and
-        // reorder everything between jumps/labels, however jumps are rare
-        // in always, so the performance gain probably isn't worth the work.
-        UINFO(9, "         NoReordering " << nodep);
-        m_noReorderWhy = "JumpGo";
-        iterateChildren(nodep);
-    }
-
-    //--------------------
-    // Default
-    void visit(AstNode* nodep) override {
-        // **** SPECIAL default type that sets PLI_ORDERING
-        if (!m_stmtStackps.empty() && !nodep->isPure()) {
-            UINFO(9, "         NotSplittable " << nodep);
-            scoreboardPli(nodep);
-        }
-        if (nodep->isTimingControl()) {
-            UINFO(9, "         NoReordering " << nodep);
-            m_noReorderWhy = "TimingControl";
-        }
-        iterateChildren(nodep);
-    }
-
-private:
-    VL_UNCOPYABLE(SplitReorderBaseVisitor);
-};
-
 using ColorSet = std::unordered_set<uint32_t>;
 using AlwaysVec = std::vector<AstAlways*>;
 
@@ -644,6 +437,213 @@ public:
         visitor.iterate(nodep);
         return visitor.m_emptyAlways;
     }
+};
+
+//######################################################################
+// Split class functions
+
+class SplitReorderBaseVisitor VL_NOT_FINAL : public VNVisitor {
+    // NODE STATE
+    // AstVarScope::user1p      -> Var SplitNodeVertex* for usage var, 0=not set yet
+    // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
+    // Ast*::user3p             -> Statement SplitLogicVertex* (temporary only)
+    // Ast*::user4              -> Current ordering number (reorderBlock usage)
+    const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
+
+protected:
+    // STATE
+    string m_noReorderWhy;  // Reason we can't reorder
+    std::vector<SplitLogicVertex*> m_stmtStackps;  // Current statements being tracked
+    SplitPliVertex* m_pliVertexp;  // Element specifying PLI ordering
+    V3Graph m_graph;  // Scoreboard of var usages/dependencies
+    bool m_inDly;  // Inside ASSIGNDLY
+
+    // CONSTRUCTORS
+public:
+    SplitReorderBaseVisitor() { scoreboardClear(); }
+    ~SplitReorderBaseVisitor() override = default;
+
+    // METHODS
+protected:
+    void scoreboardClear() {
+        // VV*****  We reset user1p() and user2p on each block!!!
+        m_inDly = false;
+        m_graph.clear();
+        m_stmtStackps.clear();
+        m_pliVertexp = nullptr;
+        m_noReorderWhy = "";
+        AstNode::user1ClearTree();
+        AstNode::user2ClearTree();
+        AstNode::user3ClearTree();
+        AstNode::user4ClearTree();
+    }
+
+private:
+    void scoreboardPli(AstNode* nodep) {
+        // Order all PLI statements with other PLI statements
+        // This ensures $display's and such remain in proper order
+        // We don't prevent splitting out other non-pli statements, however.
+        if (!m_pliVertexp) {
+            m_pliVertexp = new SplitPliVertex{&m_graph, nodep};  // m_graph.clear() will delete it
+        }
+        for (const auto& vtxp : m_stmtStackps) {
+            // Both ways...
+            new SplitScorebdEdge{&m_graph, vtxp, m_pliVertexp};
+            new SplitScorebdEdge{&m_graph, m_pliVertexp, vtxp};
+        }
+    }
+    void scoreboardPushStmt(AstNode* nodep) {
+        // UINFO(9, "    push " << nodep);
+        SplitLogicVertex* const vertexp = new SplitLogicVertex{&m_graph, nodep};
+        m_stmtStackps.push_back(vertexp);
+        UASSERT_OBJ(!nodep->user3p(), nodep, "user3p should not be used; cleared in processBlock");
+        nodep->user3p(vertexp);
+    }
+    void scoreboardPopStmt() {
+        // UINFO(9, "    pop");
+        UASSERT(!m_stmtStackps.empty(), "Stack underflow");
+        m_stmtStackps.pop_back();
+    }
+
+protected:
+    void scanBlock(AstNode* nodep) {
+        // Iterate across current block, making the scoreboard
+        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
+            scoreboardPushStmt(nextp);
+            iterate(nextp);
+            scoreboardPopStmt();
+        }
+    }
+
+    void pruneDepsOnInputs() {
+        for (V3GraphVertex& vertex : m_graph.vertices()) {
+            if (vertex.outEmpty() && vertex.is<SplitVarStdVertex>()) {
+                if (debug() >= 9) {
+                    const SplitVarStdVertex& sVtx = static_cast<SplitVarStdVertex&>(vertex);
+                    UINFO(0, "Will prune deps on var " << sVtx.nodep());
+                    sVtx.nodep()->dumpTree("-  ");
+                }
+                for (V3GraphEdge& edge : vertex.inEdges()) {
+                    SplitEdge& oedge = static_cast<SplitEdge&>(edge);
+                    oedge.setIgnoreThisStep();
+                }
+            }
+        }
+    }
+
+    virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) = 0;
+
+    // VISITORS
+    void visit(AstAlways* nodep) override = 0;
+    void visit(AstNodeIf* nodep) override = 0;
+
+    // We don't do AstLoop, due to the standard question of what is before vs. after
+
+    void visit(AstExprStmt* nodep) override {
+        VL_RESTORER(m_inDly);
+        m_inDly = false;
+        iterateChildren(nodep);
+    }
+    void visit(AstAssignDly* nodep) override {
+        UINFO(4, "    ASSIGNDLY " << nodep);
+        iterate(nodep->rhsp());
+        VL_RESTORER(m_inDly);
+        m_inDly = true;
+        iterate(nodep->lhsp());
+    }
+    void visit(AstVarRef* nodep) override {
+        if (!m_stmtStackps.empty()) {
+            AstVarScope* const vscp = nodep->varScopep();
+            UASSERT_OBJ(vscp, nodep, "Not linked");
+            if (!nodep->varp()->isConst()) {  // Constant lookups can be ignored
+                // ---
+                // NOTE: Formerly at this location we would avoid
+                // splitting or reordering if the variable is public.
+                //
+                // However, it should be perfectly safe to split an
+                // always block containing a public variable.
+                // Neither operation should perturb PLI's view of
+                // the variable.
+                //
+                // Former code:
+                //
+                //   if (nodep->varp()->isSigPublic()) {
+                //       // Public signals shouldn't be changed,
+                //       // pli code might be messing with them
+                //       scoreboardPli(nodep);
+                //   }
+                // ---
+
+                // Create vertexes for variable
+                if (!vscp->user1p()) {
+                    SplitVarStdVertex* const vstdp = new SplitVarStdVertex{&m_graph, vscp};
+                    vscp->user1p(vstdp);
+                }
+                SplitVarStdVertex* const vstdp
+                    = reinterpret_cast<SplitVarStdVertex*>(vscp->user1p());
+
+                // SPEEDUP: We add duplicate edges, that should be fixed
+                if (m_inDly && nodep->access().isWriteOrRW()) {
+                    UINFO(4, "     VARREFDLY: " << nodep);
+                    // Delayed variable is different from non-delayed variable
+                    if (!vscp->user2p()) {
+                        SplitVarPostVertex* const vpostp = new SplitVarPostVertex{&m_graph, vscp};
+                        vscp->user2p(vpostp);
+                        new SplitPostEdge{&m_graph, vstdp, vpostp};
+                    }
+                    SplitVarPostVertex* const vpostp
+                        = reinterpret_cast<SplitVarPostVertex*>(vscp->user2p());
+                    // Add edges
+                    for (SplitLogicVertex* vxp : m_stmtStackps) {
+                        new SplitLVEdge{&m_graph, vpostp, vxp};
+                    }
+                } else {  // Nondelayed assignment
+                    if (nodep->access().isWriteOrRW()) {
+                        // Non-delay; need to maintain existing ordering
+                        // with all consumers of the signal
+                        UINFO(4, "     VARREFLV: " << nodep);
+                        for (SplitLogicVertex* ivxp : m_stmtStackps) {
+                            new SplitLVEdge{&m_graph, vstdp, ivxp};
+                        }
+                    } else {
+                        UINFO(4, "     VARREF:   " << nodep);
+                        makeRvalueEdges(vstdp);
+                    }
+                }
+            }
+        }
+    }
+
+    void visit(AstJumpGo* nodep) override {
+        // Jumps will disable reordering at all levels
+        // This is overly pessimistic; we could treat jumps as barriers, and
+        // reorder everything between jumps/labels, however jumps are rare
+        // in always, so the performance gain probably isn't worth the work.
+        UINFO(9, "         NoReordering " << nodep);
+        m_noReorderWhy = "JumpGo";
+        iterateChildren(nodep);
+    }
+
+    //--------------------
+    // Default
+    void visit(AstNode* nodep) override {
+        // **** SPECIAL default type that sets PLI_ORDERING
+        if (!m_stmtStackps.empty() && !nodep->isPure()) {
+            UINFO(9, "         NotSplittable " << nodep);
+            scoreboardPli(nodep);
+        }
+        if (nodep->isTimingControl()) {
+            UINFO(9, "         NoReordering " << nodep);
+            m_noReorderWhy = "TimingControl";
+        }
+        iterateChildren(nodep);
+    }
+
+private:
+    VL_UNCOPYABLE(SplitReorderBaseVisitor);
 };
 
 class SplitVisitor final : public SplitReorderBaseVisitor {
