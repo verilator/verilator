@@ -9,18 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+test.top_filename = 't/t_cover_sequence_overflow.v'
 
-test.sim_time = 2700
-
-test.compile(timing_loop=True,
-             verilator_flags2=['--assert', '--timing', '--coverage-user', '--dumpi-graph', '6'])
-
-# Keep this multiplicity-free cover-sequence ring bit-packed to avoid 32x storage.
-if test.vlt_all:
-    headers = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*.h")
-    test.file_grep_any(headers, r'VlWide<32>.*/\*1023:0\*/.*__Vnfa___0__d2_ring')
+test.compile(verilator_flags2=['--assert', '--binary', '--stats'])
 
 test.execute()
+test.file_grep_not(test.run_log_filename, r'Cover sequence match count overflowed')
+test.file_grep(test.stats, r'Assertions, cover statements\s+(\d+)', 1)
 
 test.passes()
