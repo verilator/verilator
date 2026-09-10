@@ -2947,11 +2947,10 @@ class AssertNfaVisitor final : public VNVisitor {
         // Recursion guard: IEEE 1800-2023 16.12.1 forbids recursive properties.
         // V3Width emits "Recursive property call" for direct recursion before this
         // pass runs; this catches any nested-inlining cycle that slips past.
-        if (m_inliningProps.count(propyp)) {
+        if (!m_inliningProps.emplace(propyp).second) {
             funcrefp->v3error("Illegal recursive property reference");  // LCOV_EXCL_LINE
             return;  // LCOV_EXCL_LINE
         }
-        m_inliningProps.insert(propyp);
         struct Guard final {
             std::set<const AstProperty*>& setr;
             const AstProperty* keyp;
