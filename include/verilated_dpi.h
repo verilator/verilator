@@ -29,6 +29,7 @@
 #include "verilatedos.h"
 
 #include "verilated.h"  // Also presumably included by caller
+#include "verilated_util.h"
 
 #if VM_TIMING == 1
 #include "verilated_fiber.h"
@@ -121,26 +122,26 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
 namespace VerilatedDpi {
 
 namespace {
-static thread_local struct {
-    const char* m_filename{};
-    int m_lineno{};
-    bool m_inFuncContext{false};
-} t_fileline;
+struct VlFunctionContext {
+    const char* m_filename;
+    int m_lineno;
+};
+
+thread_local VlFunctionContext t_fileline{nullptr, 0};
+bool inFunctionContext() { return t_fileline.m_filename != nullptr; }
 };  //namespace
 
 template <typename Callable, typename... Args>
 decltype(auto) callImportFunction(const char* const filename, int lineno, Callable&& call,
                                   Args&&... args) {
-    t_fileline.m_inFuncContext = true;
+    VL_RESTORER(t_fileline);
     t_fileline.m_filename = filename;
     t_fileline.m_lineno = lineno;
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                         void>::value) {
         (void)call(std::forward<Args>(args)...);
-        t_fileline.m_inFuncContext = false;
     } else {
         auto ret = call(std::forward<Args>(args)...);
-        t_fileline.m_inFuncContext = false;
         return ret;
     }
 }
@@ -167,7 +168,7 @@ decltype(auto) callExportFunction(Callable&& call, Args&&... args) {
 
 template <typename Callable, typename... Args>
 decltype(auto) callExportTask(Callable&& call, Args&&... args) {
-    if (t_fileline.m_inFuncContext) {
+    if (inFunctionContext()) {
         VL_FATAL_MT(t_fileline.m_filename, t_fileline.m_lineno, "",
                     "DPI exported task called from function context");
     }
@@ -215,7 +216,7 @@ template <typename Callable, typename... Args>
 decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                         VlCoroutine>::value) {
-        if (t_fileline.m_inFuncContext) {
+        if (inFunctionContext()) {
             VL_FATAL_MT(t_fileline.m_filename, t_fileline.m_lineno, "",
                         "DPI exported task called from function context");
         }
