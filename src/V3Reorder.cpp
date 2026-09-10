@@ -320,7 +320,7 @@ class ReorderVisitor final : public VNVisitor {
 
         // Is the current ordering OK?
         bool leaveAlone = true;
-        int newOrder = 0;  // New sequence number of assignment
+        uint64_t newOrder = 0;  // New sequence number of assignment
         for (const auto& item : rankMap) {
             const AstNode* const nextp = item.second;
             if (++newOrder != nextp->user4()) leaveAlone = false;

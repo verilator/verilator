@@ -50,11 +50,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class DeadVisitor final : public VNVisitor {
     // NODE STATE
     // Entire Netlist:
-    //  AstNodeModule::user1()  -> int. Count of number of cells referencing this module.
-    //  AstVar::user1()         -> int. Count of number of references
-    //  AstVarScope::user1()    -> int. Count of number of references
-    //  AstNodeDType::user1()   -> int. Count of number of references
-    //  AstNodeFTask::user1()   -> int. Count of number of references (via AstNodeFTaskRefs)
+    //  AstNodeModule::user1()  -> uint64_t. Count of number of cells referencing this module.
+    //  AstVar::user1()         -> uint64_t. Count of number of references
+    //  AstVarScope::user1()    -> uint64_t. Count of number of references
+    //  AstNodeDType::user1()   -> uint64_t. Count of number of references
+    //  AstNodeFTask::user1()   -> uint64_t. Count of number of references (via AstNodeFTaskRefs)
     const VNUser1InUse m_inuser1;
 
     // TYPES

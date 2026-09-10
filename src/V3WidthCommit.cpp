@@ -38,8 +38,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class WidthCommitVisitor final : public VNVisitor {
     // NODE STATE
     //  AstVar::user1p           -> bool.  Processed
-    //  AstNodeFTask::user2()    -> int. Non-zero if ever referenced (called)
-    //  AstNew::user2()          -> int. Count of number of references, minus references in
+    //  AstNodeFTask::user2()    -> uint64_t. Non-zero if ever referenced (called)
+    //  AstNew::user2()          -> uint64_t. Count of number of references, minus references in
     //  functions never called
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
