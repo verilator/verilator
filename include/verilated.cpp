@@ -3126,15 +3126,6 @@ bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
                                    VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
     return assertCtlGet(VerilatedAssertCtlQuery::ASSERT_CTL_ON, type, directive);
 }
-uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
-                                        VerilatedAssertDirectiveType_t directives) VL_PURE {
-    // Place the directive bits at each selected assertion type's 3-bit group.
-    uint32_t mask = 0;
-    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if (VL_BITISSET_I(types, i)) mask |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
-    }
-    return mask;
-}
 void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
                                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
     if (assertCtlsLocked()) return;
@@ -3201,26 +3192,6 @@ void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t typ
                     + "' (IEEE 1800-2023 Table 20-5)")
                        .c_str());
     }
-}
-uint32_t
-VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
-                               VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    const uint32_t mask = assertOnMask(type, directive);
-    if (!mask) return 0;
-    switch (query) {  // LCOV_EXCL_BR_LINE
-    case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
-        assert(mask && (mask & (mask - 1)) == 0);
-        return m_s.m_assertKill[VL_CLOG2_I(mask)];
-    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
-        return (m_s.m_assertPassOnVacuous & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
-        return (m_s.m_assertPassOnNonvacuous & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_FAIL_ON: return (m_s.m_assertFailOn & mask) != 0;
-    default:  // LCOV_EXCL_START
-        VL_FATAL_MT("", 0, "", "Internal: Bad assertCtlGet query");
-        VL_UNREACHABLE;
-    }  // LCOV_EXCL_STOP
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
