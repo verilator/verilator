@@ -309,7 +309,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     static std::string memberVlEnumDir(const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
-        std::string out = "((" + varp->vlEnumDir() + ") & ~(VLVF_SIGNED|VLVF_BITVAR))";
+        std::string out
+            = "((" + varp->vlEnumDir() + ") & ~(VLVF_FORCEABLE|VLVF_SIGNED|VLVF_BITVAR))";
         const AstNodeDType* const skipDTypep = dtypep->skipRefp();
         if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
         if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
@@ -1408,20 +1409,20 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(
                         insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, bounds) + ";");
-                    if (const AstNodeUOrStructDType* const sdtypep
-                        = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
-                        if (!sdtypep->packed()) {
-                            addUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
-                                                   protect(varp->name()), sdtypep);
-                        }
-                    } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-                        addUnpackedArrayUOrStructMemberVars(residual, svd, scopep,
-                                                            svd.m_varBasePretty,
-                                                            protect(varp->name()), varp->dtypep());
-                    }
                     break;
                 }
                 default: v3fatalSrc("Bad case");
+                }
+                if (kind == TableEntryKind::TABLE_ROW) continue;
+                if (const AstNodeUOrStructDType* const sdtypep
+                    = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
+                    if (!sdtypep->packed()) {
+                        addUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                               protect(varp->name()), sdtypep);
+                    }
+                } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+                    addUnpackedArrayUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                                        protect(varp->name()), varp->dtypep());
                 }
             }
 
