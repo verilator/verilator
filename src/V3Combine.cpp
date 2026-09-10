@@ -132,9 +132,7 @@ class CombineVisitor final : VNVisitor {
                     // When redirecting a call to an equivalent function, we do not need to re-hash
                     // the caller, because the hash of the two calls must be the same, and hence
                     // the hash of the caller should not change.
-                    UASSERT_OBJ(oldHash == m_hasher.rehash(callp), callp,
-                                "Hash changed " << std::hex << oldHash << " ?= "
-                                                << m_hasher.rehash(callp) << "  " << callp);
+                    UASSERT_OBJ(oldHash == m_hasher.rehash(callp), callp, "Hash changed");
                 }
 
                 // Erase the replaced duplicate

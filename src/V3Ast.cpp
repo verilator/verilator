@@ -66,7 +66,7 @@ VCMethod VCMethod::arrayMethod(const string& name) {
 
 std::string VNUser::dumpStr(std::string (*fmtAddrp)(const void*)) const {
 #ifdef VL_USER_TYPE_CHECKS
-    if (const int* const uip = std::get_if<int>(&m_u)) return "#"s + cvtToStr(*uip);
+    if (const uint64_t* const uip = std::get_if<uint64_t>(&m_u)) return "#"s + cvtToStr(*uip);
     if (void* const* const upp = std::get_if<void*>(&m_u)) return fmtAddrp(*upp);
     return "";
 #else
