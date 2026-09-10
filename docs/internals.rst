@@ -856,8 +856,8 @@ are supported.
 ``VlFiberMemoryPool``
 +++++++++++++++++++++
 
-Manages a memory pool for the allocation of stacks used by fibers. It is used to
-optimize the number of memory map/unmap syscalls. It implements the
+Manages a memory pool for the allocation of stacks used by fibers. It is
+used to optimize the number of memory map/unmap syscalls. It implements the
 following functions:
 
 - ``get()`` - Gets the base of an allocated stack with predefined size
@@ -880,8 +880,8 @@ fibers to save the call stack of a foreign function call and jump back to
 the simulation event loop when a timing control is encountered.
 
 The ``awaitImportFiber()`` function creates a new fiber and calls the DPI
-imported task, forwarding all of the arguments. If the DPI import
-called an exported task with timing constructs, the call goes through
+imported task, forwarding all of the arguments. If the DPI import called an
+exported task with timing constructs, the call goes through
 ``awaitExportFiber()``, which calls the exported task and yields on the
 first delay or event that occurs. Control is then passed back to the most
 recent ``awaitImportFiber()``, which allows the event loop to continue by
