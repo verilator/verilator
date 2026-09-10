@@ -14,12 +14,13 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-extern void dpix_task();
+extern int dpix_task(void);
 }
 #endif
 
 //======================================================================
 
-void dpix_run_tests() {
+int dpix_run_tests(void) {
     dpix_task();  // Wrong scope
+    return 0;
 }

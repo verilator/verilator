@@ -394,6 +394,10 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (nodep->timingControlp()) v3Global.setUsesTiming();
         // Containing process will not suspend, don't mark it
     }
+    void visit(AstCFuncHard* nodep) override {
+        if (nodep->function() == VCFunction::CALL_IMPORT_TASK)
+            if (m_procp) addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER);
+    }
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
@@ -978,14 +982,25 @@ class TimingControlVisitor final : public VNVisitor {
                 nodep->addStmtsp(cstmtp);
             }
         }
-        if (nodep->dpiExportImpl()) {
-            nodep->exists([](AstCAwait* const awaitp) -> bool {
-                // A DPI-exported coroutine won't be able to block the calling code
-                // Error on the await node; fall back to the function node
-                awaitp->v3warn(E_UNSUPPORTED,
-                               "Unsupported: Timing controls inside DPI-exported tasks");
-                return true;
-            });
+    }
+    void visit(AstCFuncHard* nodep) override {
+        switch (nodep->function()) {
+        case VCFunction::CALL_IMPORT_TASK: {
+            if (m_procp) addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER);
+            AstStmtExpr* const stmtExprp = VN_AS(nodep->backp(), StmtExpr);
+            nodep->function(VCFunction::AWAIT_IMPORT_IN_FIBER);
+            AstCFuncHard* const cFuncp = nodep->unlinkFrBack();
+            stmtExprp->replaceWith(new AstCAwait{nodep->fileline(), cFuncp});
+            VL_DO_DANGLING(pushDeletep(stmtExprp), stmtExprp);
+            break;
+        }
+        case VCFunction::CALL_EXPORT_TASK: {
+            nodep->function(VCFunction::AWAIT_EXPORT_IN_FIBER);
+            break;
+        }
+        default: {
+            break;
+        }
         }
     }
     void visit(AstNodeCCall* nodep) override {

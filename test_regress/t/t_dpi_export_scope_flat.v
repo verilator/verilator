@@ -9,7 +9,7 @@
 module t;
   s s ();
 
-  import "DPI-C" context function void dpix_run_tests();
+  import "DPI-C" context task dpix_run_tests();
   initial dpix_run_tests();
 endmodule
 

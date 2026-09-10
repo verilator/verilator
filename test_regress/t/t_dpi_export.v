@@ -20,7 +20,7 @@ module t;
   sub b (.inst(2));
 
   // Returns integer line number, or -1 for all ok
-  import "DPI-C" context function int dpix_run_tests();
+  import "DPI-C" context task dpix_run_tests(output int lineno);
 
   export "DPI-C" task dpix_t_int;
   task dpix_t_int(input int i, output int o);  o = ~i; endtask
@@ -73,7 +73,7 @@ module t;
   int lineno;
 
   initial begin
-    lineno = dpix_run_tests();
+    dpix_run_tests(lineno);
     if (lineno != -1) begin
       $display("[%0t] %%Error: t_dpix_ort_c.c:%0d: dpix_run_tests returned an error", $time, lineno);
       $stop;
