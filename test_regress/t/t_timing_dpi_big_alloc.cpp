@@ -23,14 +23,15 @@ static int rec(int n) {
     int cn = n;
     big_array[0] = cn;
     for (int i = 1; i < SIZE; i++) { big_array[i] = big_array[i - 1] + cn++; }
+    dpi_export(n);
     if (n < 1) return n;
     return rec(n - 1) + big_array[SIZE - 1];
 }
 
-int dpi_import(unsigned int len) {
-    char big_array[SIZE];
+int dpi_import(unsigned int len, unsigned int* o) {
     printf("dpi_import: len=%d\n", len);
-    printf("rec(%d) = %d\n", len, rec(len));
+    *o = rec(len);
+    printf("rec(%d) = %d\n", len, *o);
     return 0;
 }
 

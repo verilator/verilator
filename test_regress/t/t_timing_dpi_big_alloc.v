@@ -5,8 +5,14 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module dpi_test ();
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
 
+`define expected_result 1342832650
+
+module t ();
   reg rtl_clk;
   initial begin
     rtl_clk = 1'b0;
@@ -20,11 +26,12 @@ module dpi_test ();
     $display("%t: dpi_export: i=%3d", $time, i);
   endtask
 
-  import "DPI-C" context task dpi_import(input int unsigned n);
+  import "DPI-C" context task dpi_import(input int unsigned n, output int unsigned o);
 
-  integer n = 10;
+  integer n = 10, o = 0;
   initial begin
-    dpi_import(n);
+    dpi_import(n, o);
+    `checkd(o, `expected_result);
     $finish;
   end
 endmodule
