@@ -2698,11 +2698,8 @@ public:
         const std::vector<const SvaTransEdge*> edges = graph.allEdges();
 
         // Allocate per-vertex lowering data (stored via V3GraphVertex::userp()).
-        std::vector<std::unique_ptr<SvaVertexData>> vertexData(N);
-        for (int i = 0; i < N; ++i) {
-            vertexData[i] = std::make_unique<SvaVertexData>();
-            vtx[i]->userp(vertexData[i].get());
-        }
+        std::vector<SvaVertexData> vertexData(N);
+        for (int i = 0; i < N; ++i) vtx[i]->userp(&vertexData[i]);
 
         // Identify registered vertices (targets of clocked edges).
         for (int i = 0; i < N; ++i) {
@@ -2877,7 +2874,7 @@ public:
             m_modp->addStmtsp(new AstFinal{flp, new AstIf{flp, condp, firep}});
         }
 
-        // Clear userp on every vertex before vertexData unique_ptrs are destroyed.
+        // Clear userp on every vertex before vertexData is destroyed.
         for (int i = 0; i < N; ++i) vtx[i]->userp(nullptr);
         return sigs;
     }
