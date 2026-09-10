@@ -1283,9 +1283,8 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
 }
 
 // Defined here, not in-class: VL_CLOG2_I / VL_FATAL_MT (verilated_funcs.h) are not yet in scope
-inline uint32_t
-VerilatedContext::assertOnMask(VerilatedAssertType_t types,
-                               VerilatedAssertDirectiveType_t directives) VL_PURE {
+inline uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
+                                               VerilatedAssertDirectiveType_t directives) VL_PURE {
     uint32_t mask = 0;
     for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
         if (VL_BITISSET_I(types, i)) mask |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
@@ -1299,8 +1298,7 @@ VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertTyp
     if (!mask) return 0;
     switch (query) {  // LCOV_EXCL_BR_LINE
     case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
-        return m_s.m_assertKill[VL_CLOG2_I(mask)];
+    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL: return m_s.m_assertKill[VL_CLOG2_I(mask)];
     case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
         return (m_s.m_assertPassOnVacuous & mask) != 0;
     case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
