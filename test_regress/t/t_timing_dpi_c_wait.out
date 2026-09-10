@@ -1,0 +1,11 @@
+[                   0] test start
+
+[               95000] calling tb_c_wait...
+
+[               95000] tb_sv_wait start...
+
+[              190000] tb_sv_wait done!
+
+[              190000] tb_c_wait finish
+
+*-* All Finished *-*

@@ -1190,10 +1190,16 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 
 // clang-format off
 #define FOR_EACH_CFUNCTION(macro) \
-    /*    id,                                 function,                 pure,   args */ \
-    macro(_NONE,                              "_none",                  false,  "") \
-    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r") \
-    macro(STRING_APPEND,                      "VL_APPENDN_NN",          false,  "mr")
+    /*    id,                                 function,                             pure,   args */ \
+    macro(_NONE,                              "_none",                              false,  "") \
+    macro(AWAIT_IMPORT_IN_FIBER,              "VerilatedDpi::awaitImportFiber",     false,  "TODO") \
+    macro(AWAIT_EXPORT_IN_FIBER,              "VerilatedDpi::awaitExportFiber",     false,  "TODO") \
+    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
+    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
+    macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "TODO") \
+    macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "TODO") \
+    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",                      PURE,   "r") \
+    macro(STRING_APPEND,                      "VL_APPENDN_NN",                      false,  "mr")
 // clang-format on
 
 class VCFunction final {
@@ -2202,6 +2208,11 @@ public:
     class VlSyms {};  // for creator type-overload selection
     VSelfPointerText(VlSyms, const string& field)
         : m_strp{std::make_shared<const string>("(&vlSymsp->vlInst." + field + ')')} {}
+    class VlSymsDpi {};
+    VSelfPointerText(VlSymsDpi, const string& symClassName, const string& field)
+        : m_strp{std::make_shared<const string>("(&((" + symClassName + "*)"
+                                                + "(Verilated::dpiScope()->symsp()))" + "->"
+                                                + field + ")")} {}
 
     // METHODS
     bool isEmpty() const { return m_strp == s_emptyp; }
