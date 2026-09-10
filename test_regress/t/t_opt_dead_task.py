@@ -11,11 +11,14 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--stats"])
+test.compile(verilator_flags2=["--stats", "--top-module t"])
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, deadified FTasks\s+(\d+)', 6)
 
 test.execute()
+
+test.file_grep(test.run_log_filename, r'static-still-live')
+test.file_grep_not(test.run_log_filename, r'static-made-in-dead')
 
 test.passes()

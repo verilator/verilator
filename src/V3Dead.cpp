@@ -327,9 +327,11 @@ class DeadVisitor final : public VNVisitor {
         if (assignInAssign) m_sideEffect = true;  // Parent assign shouldn't optimize
     }
     void visit(AstNodeFTask* nodep) override {
+        const bool removable = !(nodep->taskPublic() || nodep->dpiExport() || nodep->dpiImport()
+                                 || nodep->classMethod());
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->taskPublic() || nodep->dpiExport() || nodep->dpiImport()) {
+        if (!removable) {
             if (m_modp && !m_modp->dead() && !m_modp->verilatorLib())
                 m_modp->user1Inc();  // Keep container
         } else {
