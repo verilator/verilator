@@ -267,7 +267,7 @@ private:
 
 class DynScopeVisitor final : public VNVisitor {
     // NODE STATE
-    // AstVar::user1()          -> int.  timing-control fork nesting level of that variable
+    // AstVar::user1()          -> uint64_t.  timing-control fork nesting level of that variable
     // AstVarRef::user2()       -> bool. Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
     // AstAssignDly::user2()    -> bool.  Already visited

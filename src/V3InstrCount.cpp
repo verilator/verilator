@@ -32,7 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class InstrCountVisitor final : public VNVisitorConst {
     // NODE STATE
     //  AstNode::user1()        -> bool. Processed if assertNoDups
-    //  AstNode::user2()        -> int.  Path cost + 1, 0 means don't dump
+    //  AstNode::user2()        -> uint64_t.  Path cost + 1, 0 means don't dump
     const VNUser2InUse m_inuser2;
 
     // MEMBERS
