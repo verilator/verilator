@@ -480,8 +480,8 @@ private:
         = ASSERT_DIRECTIVE_TYPE_MASK_WIDTH * std::numeric_limits<VerilatedAssertType_t>::digits
           + 1;
     // Build the assertion-control bit mask for the given assertion x directive types.
-    static uint32_t assertOnMask(VerilatedAssertType_t types,
-                                 VerilatedAssertDirectiveType_t directives) VL_PURE;
+    static inline uint32_t assertOnMask(VerilatedAssertType_t types,
+                                        VerilatedAssertDirectiveType_t directives) VL_PURE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
     // No termination request has stamped m_finishPendingTime yet
     static constexpr uint64_t TIME_UNSET = ~0ULL;
@@ -643,8 +643,8 @@ public:
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
     /// Get assertion-control runtime state. Boolean queries return 0/1, Kill returns
     /// the generation count.
-    uint32_t assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
-                          VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
+    inline uint32_t assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
+                                 VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)
@@ -1283,22 +1283,25 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
 }
 
 // Defined here, not in-class: VL_CLOG2_I / VL_FATAL_MT (verilated_funcs.h) are not yet in scope
-inline uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
-                                               VerilatedAssertDirectiveType_t directives) VL_PURE {
+uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
+                                        VerilatedAssertDirectiveType_t directives) VL_PURE {
+    // Place the directive bits at each selected assertion type's 3-bit group.
     uint32_t mask = 0;
     for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
         if (VL_BITISSET_I(types, i)) mask |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
     }
     return mask;
 }
-inline uint32_t
+uint32_t
 VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
                                VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
     const uint32_t mask = assertOnMask(type, directive);
     if (!mask) return 0;
     switch (query) {  // LCOV_EXCL_BR_LINE
     case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL: return m_s.m_assertKill[VL_CLOG2_I(mask)];
+    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
+        assert(mask && (mask & (mask - 1)) == 0);
+        return m_s.m_assertKill[VL_CLOG2_I(mask)];
     case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
         return (m_s.m_assertPassOnVacuous & mask) != 0;
     case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
