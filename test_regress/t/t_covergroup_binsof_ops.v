@@ -10,9 +10,11 @@
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d: got=%f exp=%f\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while (0);
 // verilog_format: on
 
-module t (
-    input clk
-);
+module t;
+  timeunit 1ns; timeprecision 1ps;
+  bit clk = 0;
+  always #5 clk = ~clk;
+
   int cyc = 0;
 
   covergroup cg_sets with function sample (bit [6:0] a, bit b, bit enabled);
@@ -294,10 +296,20 @@ module t (
     }
   endgroup
 
-  covergroup cg_excluded_many with function sample (bit [30:0] a, bit b);
+  // Keep the large symbolic-exclusion stress for Verilator; Questa construction
+  // is prohibitively slow at 31 bits, so use the same pattern at seven bits elsewhere.
+`ifdef VERILATOR
+  typedef bit [30:0] excluded_t;
+`else
+  typedef bit [6:0] excluded_t;
+`endif
+  localparam excluded_t EXCLUDED_MAX = '1;
+
+  covergroup cg_excluded_many with function sample (excluded_t a, bit b);
     cp_a: coverpoint a {
-      bins whole = {[0 : 31'h7fffffff]};
+      bins whole = {[0 : EXCLUDED_MAX]};
       // Only the all-ones value remains; enumerating live prefix subsets is exponential.
+`ifdef VERILATOR
       wildcard ignore_bins zero_bit = {
         (31'bx & ~31'h00000001), (31'bx & ~31'h00000002), (31'bx & ~31'h00000004),
         (31'bx & ~31'h00000008), (31'bx & ~31'h00000010), (31'bx & ~31'h00000020),
@@ -311,9 +323,14 @@ module t (
         (31'bx & ~31'h08000000), (31'bx & ~31'h10000000), (31'bx & ~31'h20000000),
         (31'bx & ~31'h40000000)
       };
+`else
+      wildcard ignore_bins zero_bit = {
+        7'b??????0, 7'b?????0?, 7'b????0??, 7'b???0???, 7'b??0????, 7'b?0?????, 7'b0??????
+      };
+`endif
     }
     cp_b: coverpoint b;
-    selected: cross cp_a, cp_b{bins kept = binsof (cp_a.whole) intersect {[0 : 31'h7fffffff]};}
+    selected: cross cp_a, cp_b{bins kept = binsof (cp_a.whole) intersect {[0 : EXCLUDED_MAX]};}
   endgroup
 
   covergroup cg_transition_ignore with function sample (bit a, bit b);
@@ -451,7 +468,7 @@ module t (
       end
       if (cyc < 2) begin
         excluded_wide_cov.sample(HIGH, 1'(cyc));
-        excluded_many_cov.sample(31'h7fffffff, 1'(cyc));
+        excluded_many_cov.sample(EXCLUDED_MAX, 1'(cyc));
       end
       words_cov.sample(7'(cyc / 9), 7'(cyc % 9));
     end
