@@ -11,7 +11,7 @@ module t;
   wire [39:0] out;
   sub a (.value(out));
 
-  import "DPI-C" context function void poke_value(input int i);
+  import "DPI-C" context task poke_value(input int i);
 
 
   initial begin

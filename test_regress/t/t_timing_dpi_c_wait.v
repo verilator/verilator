@@ -4,12 +4,6 @@
 // SPDX-FileCopyrightText: 2023 Toru Niina
 // SPDX-License-Identifier: CC0-1.0
 
-`ifdef TEST_VERBOSE
-`define WRITE_VERBOSE(msg) $write(msg)
-`else
-`define WRITE_VERBOSE(msg)
-`endif
-
 `default_nettype none
 `timescale 1ns / 1ps
 
@@ -24,19 +18,19 @@ module t;
 
   export "DPI-C" task tb_sv_wait;
   task automatic tb_sv_wait(input int n);
-    `WRITE_VERBOSE("tb_sv_wait start...\n");
+    $display("[%t] tb_sv_wait start...\n", $time);
     repeat (n) @(negedge clk);
-    `WRITE_VERBOSE("tb_sv_wait done!\n");
+    $display("[%t] tb_sv_wait done!\n", $time);
   endtask
 
   always #halfcycle clk = ~clk;
 
   initial begin
-    `WRITE_VERBOSE("test start\n");
+    $display("[%t] test start\n", $time);
     repeat (10) @(posedge clk);
-    `WRITE_VERBOSE("calling tb_c_wait...\n");
+    $display("[%t] calling tb_c_wait...\n", $time);
     tb_c_wait();
-    `WRITE_VERBOSE("tb_c_wait finish\n");
+    $display("[%t] tb_c_wait finish\n", $time);
     repeat (10) @(posedge clk);
     $write("*-* All Finished *-*\n");
     $finish;
