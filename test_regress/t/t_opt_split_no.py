@@ -11,7 +11,13 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--stats"])
+test.compile(verilator_flags2=[
+    "--stats",
+    "--timing",
+    # To fill code coverage
+    "--dumpi-V3Split",
+    "9",
+])
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, Split always\s+(\d+)', 0)
