@@ -10,13 +10,13 @@
 import vltest_bootstrap
 
 test.scenarios("simulator")
-test.top_filename = "t/t_timing_dpi_counter.v"
+test.top_filename = "t/t_timing_dpi_call_tasks.v"
 
 test.compile(
-    v_flags2=["t/t_timing_dpi_counter.cpp"],
+    v_flags2=["t/t_timing_dpi_call_tasks.cpp"],
     verilator_flags2=["--binary"],
 )
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()
