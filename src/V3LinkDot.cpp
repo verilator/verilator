@@ -5996,25 +5996,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
 
     // Collect the ClassOrPackageRefs in a chained scope operand in source order.
-    static bool collectScopeRefs(AstNode* nodep, std::vector<AstClassOrPackageRef*>& refps) {
+    // The grammar builds a scope operand only from packageClassScopeItem, which
+    // always yields a ClassOrPackageRef, nested in Dots, so nothing else appears.
+    static void collectScopeRefs(AstNode* nodep, std::vector<AstClassOrPackageRef*>& refps) {
         if (AstClassOrPackageRef* const refp = VN_CAST(nodep, ClassOrPackageRef)) {
             refps.push_back(refp);
-            return true;
+            return;
         }
         AstDot* const dotp = VN_CAST(nodep, Dot);
-        return dotp && collectScopeRefs(dotp->lhsp(), refps)
-               && collectScopeRefs(dotp->rhsp(), refps);
+        UASSERT_OBJ(dotp, nodep, "Non-scope node in package/class scope operand");
+        collectScopeRefs(dotp->lhsp(), refps);
+        collectScopeRefs(dotp->rhsp(), refps);
     }
 
     // Resolve a chained class-scope operand (`pkg::outer::inner` in
     // `pkg::outer::inner::t`) and reduce it to its innermost ClassOrPackageRef.
-    // Always reports a diagnostic when it cannot, so the caller need not.
+    // Returns false, having reported, if a segment could not be resolved.
     bool reduceScopeDot(AstRefDType* nodep, AstDot* scopeDotp) {
         std::vector<AstClassOrPackageRef*> refps;
-        if (!collectScopeRefs(scopeDotp, refps)) {
-            scopeDotp->v3warn(E_UNSUPPORTED, "Unsupported: Multiple '::' package/class reference");
-            return false;
-        }
+        collectScopeRefs(scopeDotp, refps);
 
         VSymEnt* scopeSymp = m_ds.m_dotSymp;
         for (size_t i = 0; i < refps.size(); ++i) {
@@ -6116,6 +6116,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             // Re-read: reduceScopeDot may have replaced the operand
             AstNode* const cpackagep = nodep->classOrPackageOpp();
+            UASSERT_OBJ(!VN_IS(cpackagep, Dot), cpackagep,
+                        "Package/class scope operand should be reduced by now");
             if (AstClassOrPackageRef* const cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
                 iterate(cpackagerefp);
                 const AstClass* const clsp = VN_CAST(cpackagerefp->classOrPackageNodep(), Class);
@@ -6157,10 +6159,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         << "'\n"
                         << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
                 }
-            } else {
-                // reduceScopeDot always leaves a ClassOrPackageRef or returns false above.
-                UASSERT_OBJ(!VN_IS(cpackagep, Dot), cpackagep,
-                            "Unexpected package/class scope operand");
             }
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
