@@ -501,9 +501,6 @@ public:
     bool isCovergroupInstHandle() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::COVERGROUP_INSTHANDLE;
     }
-    bool isCovergroupCross() const VL_MT_SAFE {
-        return keyword() == VBasicDTypeKwd::COVERGROUP_CROSS;
-    }
     bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
     bool isString() const VL_MT_STABLE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
@@ -692,6 +689,50 @@ public:
     int widthAlignBytes() const override { return 1; }
     int widthTotalBytes() const override { return 1; }
     bool isCompound() const override { return false; }
+};
+class AstCoverCrossDType final : public AstNodeDType {
+    // Borrowed pointer to VlCoverCrossT<dimensions, tuples, bins, autoBins, binWords>.
+    const uint32_t m_dimensions;
+    const uint32_t m_tuples;
+    const uint32_t m_bins;
+    const uint32_t m_autoBins;
+    const uint64_t m_binWords;
+
+public:
+    AstCoverCrossDType(FileLine* fl, uint32_t dimensions, uint32_t tuples, uint32_t bins,
+                       uint32_t autoBins, uint64_t binWords)
+        : ASTGEN_SUPER_CoverCrossDType(fl)
+        , m_dimensions{dimensions}
+        , m_tuples{tuples}
+        , m_bins{bins}
+        , m_autoBins{autoBins}
+        , m_binWords{binWords} {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstCoverCrossDType;
+    const char* broken() const override {
+        BROKEN_RTN(m_dimensions == 0);
+        return nullptr;
+    }
+    bool sameNode(const AstNode* samep) const override {
+        const AstCoverCrossDType* const sp = VN_DBG_AS(samep, CoverCrossDType);
+        return dimensions() == sp->dimensions() && tuples() == sp->tuples() && bins() == sp->bins()
+               && autoBins() == sp->autoBins() && binWords() == sp->binWords();
+    }
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    void dumpSmall(std::ostream& str) const override;
+    uint32_t dimensions() const { return m_dimensions; }
+    uint32_t tuples() const { return m_tuples; }
+    uint32_t bins() const { return m_bins; }
+    uint32_t autoBins() const { return m_autoBins; }
+    uint64_t binWords() const { return m_binWords; }
+    string cppTemplateArgs() const;
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    int widthAlignBytes() const override { return sizeof(void*); }
+    int widthTotalBytes() const override { return sizeof(void*); }
+    bool isCompound() const override { return true; }
 };
 class AstCoverpointDType final : public AstNodeDType {
     // Borrowed pointer to a covergroup coverpoint runtime, 'VlCoverpointT<hitBound>*'.

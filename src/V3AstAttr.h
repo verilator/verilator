@@ -510,7 +510,6 @@ public:
         RANDOM_GENERATOR,
         RANDOM_STDGENERATOR,
         COVERGROUP_INSTHANDLE,
-        COVERGROUP_CROSS,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -547,7 +546,6 @@ public:
                                             "VlRandomizer",
                                             "VlStdRandomizer",
                                             "VlCovInstHandle",
-                                            "VlCoverCross*",
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
@@ -581,7 +579,6 @@ public:
                                             "%E-rand-gen",
                                             "%E-stdrand-gen",
                                             "%E-cg-insthandle",
-                                            "%E-cover-cross",
                                             "IData",
                                             "QData",
                                             "%E-logic-implct",
@@ -627,7 +624,6 @@ public:
         case RANDOM_GENERATOR: return 0;  // opaque
         case RANDOM_STDGENERATOR: return 0;  // opaque
         case COVERGROUP_INSTHANDLE: return 0;  // opaque
-        case COVERGROUP_CROSS: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -669,8 +665,7 @@ public:
                 || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
                 || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
-                || m_e == COVERGROUP_INSTHANDLE || m_e == COVERGROUP_CROSS || m_e == DOUBLE
-                || m_e == UNTYPED);
+                || m_e == COVERGROUP_INSTHANDLE || m_e == DOUBLE || m_e == UNTYPED);
     }
     bool isCHandle() const VL_MT_SAFE { return m_e == CHANDLE; }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
@@ -726,7 +721,6 @@ public:
             /* RANDOM_GENERATOR:          */ "",  // Should not be traced
             /* RANDOM_STD_GENERATOR:      */ "",  // Should not be traced
             /* COVERGROUP_INSTHANDLE:     */ "",  // Should not be traced
-            /* COVERGROUP_CROSS:          */ "",  // Should not be traced
             /* UINT32:                    */ "BIT",
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced

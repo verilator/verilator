@@ -33,6 +33,13 @@ if test.vlt_all:
     test.file_grep_any(tree_files, r'COVERCROSSSELECT.*\[OR\]')
     test.file_grep_any(json_files, r'"type":"COVERBINSOF".*"isNegated":true')
     test.file_grep_any(json_files, r'"type":"COVERCROSSSELECT".*"isOr":true')
+    test.file_grep_any(json_files,
+                       r'"type":"COVERCROSSDTYPE".*"dimensions":2.*"tuples":1.*"bins":10')
+
+    headers = test.glob_some(test.obj_dir + '/' + test.vm_prefix + '*.h')
+    test.file_grep_any(headers, r'VlCoverCrossT<2,\s*1,\s*10,\s*0,\s*10>')
+    test.file_grep_any(headers, r'VlCoverCrossT<2,\s*0,\s*0,\s*0,\s*0>')
+    test.file_grep_any(headers, r'VlCoverCrossT<2,\s*256,\s*2,\s*0,\s*5>')
 
     guards_cpp = test.glob_one(test.obj_dir + '/' + test.vm_prefix + '*cg_guards__Vclpkg__0.cpp')
     test.file_grep_not(guards_cpp, r'static_cast<bool>')
@@ -64,6 +71,11 @@ if test.vlt_all:
     test.file_grep(merged, r"cg_guards\.selected\.wide_vector.*' (\d+)", 6)
     test.file_grep(merged, r"cg_guards\.selected\.signed_vector.*' (\d+)", 4)
     test.file_grep(merged, r"cg_guards\.selected\.constant_true.*' (\d+)", 8)
+    test.file_grep(merged, r"cg_fixed_words\.selected\.all_values.*' (\d+)", 16)
+    test.file_grep(merged, r"cg_fixed_words\.sparse\.all_values.*' (\d+)", 16)
+    test.file_grep(merged, r"cg_fixed_words\.sparse\.subset.*' (\d+)", 4)
+    test.file_grep(merged, r"cg_fixed_words\.guarded\.all_values.*' (\d+)", 16)
+    test.file_grep(merged, r"cg_fixed_words\.guarded\.subset.*' (\d+)", 2)
     test.file_grep(merged, r"cg_guards\.selected\.unguarded.*' (\d+)", 8)
     test.file_grep(merged, r"cg_hit_words\.selected\.low.*' (\d+)", 3)
     test.file_grep(merged, r"cg_hit_words\.selected\.boundary.*' (\d+)", 2)

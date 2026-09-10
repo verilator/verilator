@@ -109,102 +109,104 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
 //=============================================================================
 // VlCoverCross
 
-VlCoverCross::Bin::Bin(std::initializer_list<uint64_t> selection, const char* namep,
-                       const char* filep, int line, int col)
-    : selectionp{new uint64_t[selection.size()]}
-    , namep{namep}
-    , filep{filep}
-    , line{line}
-    , col{col} {
-    std::copy(selection.begin(), selection.end(), selectionp.get());
-}
-
 void VlCoverCross::init(const char* hier, uint32_t dims, VlCoverpoint* const* cps,
                         const char* file, int line, int col) {
     m_hier = hier;
     m_file = file;
     m_line = line;
     m_col = col;
-    m_dims = dims;
-    m_dimensionsp.reset(new Dimension[dims]);
+    assert(dims == m_dims);
     // Accumulate in 64 bits so the overflow check itself cannot overflow.
-    uint64_t product = 1;
+    uint64_t product = m_numAutoBins ? 1 : 0;
     for (uint32_t d = 0; d < dims; ++d) {
-        m_dimensionsp[d] = {cps[d], cps[d]->normalBinCount(), 1};
+        m_dimensionsp[d] = {cps[d], nullptr, cps[d]->normalBinCount(), 1};
         product *= m_dimensionsp[d].bins;
         if (VL_UNLIKELY(product > UINT32_MAX)) {  // LCOV_EXCL_START
             VL_FATAL_MT(file, line, "", "Cross has too many auto bins to represent");
         }  // LCOV_EXCL_STOP
     }
-    m_numAutoBins = static_cast<uint32_t>(product);
+    assert(product == m_numAutoBins);
     // stride[d] = product of the Normal bin counts of all dimensions after d.
     // Counts down with an offset so the unsigned index never wraps below zero.
     for (uint32_t d = dims; d > 1; --d) {
         m_dimensionsp[d - 2].stride = m_dimensionsp[d - 1].stride * m_dimensionsp[d - 1].bins;
     }
-    m_flatCountsp.reset(m_numAutoBins ? new uint32_t[m_numAutoBins]{} : nullptr);
 }
 
 void VlCoverCross::addBin(std::initializer_list<uint64_t> selection, const char* namep,
                           const char* filep, int line, int col) {
     if (!m_numAutoBins) return;  // An empty product creates no cross bin.
-    if (!hasExplicitBins()) m_explicit = Explicit{static_cast<uint32_t>(selection.size())};
-    Explicit& data = m_explicit;
-    data.bins.emplace_back(selection, namep, filep, line, col);
+    Explicit& data = *m_explicitp;
+    const uint32_t words = m_numAutoBins / 64 + (m_numAutoBins % 64 != 0);
+    assert(selection.size() == words);
+    assert(data.numBins < data.bins.size());
+    uint64_t* const selectionp = data.selectionp + static_cast<uint64_t>(data.numBins) * words;
+    std::copy(selection.begin(), selection.end(), selectionp);
+    Bin& bin = data.bins[data.numBins++];
+    bin.selectionp = selectionp;
+    bin.namep = namep;
+    bin.filep = filep;
+    bin.line = line;
+    bin.col = col;
     uint32_t word = 0;
     for (const uint64_t bits : selection) { data.autoExcludedp[word++] |= bits; }
 }
 
 void VlCoverCross::finalizeBins() {
     if (!hasExplicitBins()) return;
-    Explicit& data = m_explicit;
+    Explicit& data = *m_explicitp;
+    assert(data.numBins == data.bins.size());
+    uint32_t autoIdx = 0;
     for (uint32_t flat = 0; flat < m_numAutoBins; ++flat) {
         if (!(data.autoExcludedp[flat / 64] & (uint64_t{1} << (flat % 64)))) {
-            data.autoBins.push_back(flat);
+            assert(autoIdx < data.autoBins.size());
+            data.autoBins[autoIdx++] = flat;
         }
     }
     const uint32_t words = m_numAutoBins / 64 + (m_numAutoBins % 64 != 0);
-    uint64_t nonzeroWords = 0;
-    for (const Bin& bin : data.bins) {
-        for (uint32_t word = 0; word < words; ++word) {
-            if (bin.selectionp[word]) ++nonzeroWords;
-        }
-    }
-    data.binWordOffsetsp.reset(new uint64_t[data.bins.size() + 1]);
-    data.binWords.reserve(nonzeroWords);
+    assert(autoIdx == data.autoBins.size());
+    data.minBinWords = words;
+    uint64_t pos = 0;
     uint64_t binIdx = 0;
     for (const Bin& bin : data.bins) {
-        data.binWordOffsetsp[binIdx++] = data.binWords.size();
+        const uint64_t begin = pos;
+        data.binWordOffsetsp[binIdx++] = pos;
         for (uint32_t word = 0; word < words; ++word) {
-            if (bin.selectionp[word]) data.binWords.push_back(word);
+            if (bin.selectionp[word]) {
+                assert(pos < data.binWords.size());
+                data.binWords[pos++] = word;
+            }
         }
+        data.minBinWords = std::min(data.minBinWords, static_cast<uint32_t>(pos - begin));
     }
-    data.binWordOffsetsp[binIdx] = data.binWords.size();
+    data.binWordOffsetsp[binIdx] = pos;
+    assert(pos == data.binWords.size());
 }
 
-template <bool T_Explicit>
+template <bool T_Explicit, bool T_RecordHits>
 void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
     const VlCoverpoint* const cpp = m_dimensionsp[dim].cpp;
     const uint32_t hits = cpp->hitCount();
-    const uint32_t* const list = cpp->hitList();
+    const uint32_t* const list = m_dimensionsp[dim].hitsp;
     const bool last = (dim == m_dims - 1);
     const uint32_t stride = m_dimensionsp[dim].stride;
     for (uint32_t hit = 0; hit < hits; ++hit) {
         const uint32_t idx = baseIdx + list[hit] * stride;
         if (last) {
             if (T_Explicit) {
-                incrementTuple(idx);
+                incrementTuple<T_RecordHits>(idx);
             } else {
                 incrementAuto(idx);
             }
         } else {
-            iterateProduct<T_Explicit>(dim + 1, idx);
+            iterateProduct<T_Explicit, T_RecordHits>(dim + 1, idx);
         }
     }
 }
 
+template <bool T_ApplyIffs>
 void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
-    Explicit& data = m_explicit;
+    Explicit& data = *m_explicitp;
     const uint32_t word = idx / 64;
     const uint64_t bit = uint64_t{1} << (idx % 64);
     if (!(data.autoExcludedp[word] & bit)) {
@@ -212,68 +214,132 @@ void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
         return;
     }
     for (Bin& bin : data.bins) {
-        if (binIffs && !*binIffs++) continue;
+        if (T_ApplyIffs && !*binIffs++) continue;
         if (bin.selectionp[word] & bit) {
             if (bin.count++ == 0) ++m_numCovered;
         }
     }
 }
 
+template <bool T_ApplyIffs, uint32_t T_Touched, bool T_Dense>
 void VlCoverCross::sampleBins(const bool* binIffs) {
-    Explicit& data = m_explicit;
-    for (uint64_t binIdx = 0; binIdx < data.bins.size(); ++binIdx) {
-        if (binIffs && !*binIffs++) continue;
-        const uint64_t begin = data.binWordOffsetsp[binIdx];
-        const uint64_t end = data.binWordOffsetsp[binIdx + 1];
-        const bool sparse = end - begin < data.touchedWords.size();
-        const std::vector<uint32_t>& words = sparse ? data.binWords : data.touchedWords;
-        const uint64_t first = sparse ? begin : 0;
-        const uint64_t last = sparse ? end : data.touchedWords.size();
+    Explicit& data = *m_explicitp;
+    const uint64_t bins = data.numBins;
+    const uint64_t touched = T_Touched ? T_Touched : data.touchedWords.size();
+    const uint64_t* const offsetsp = data.binWordOffsetsp;
+    const uint64_t* const hitsp = data.hitBitsp;
+    std::array<uint32_t, T_Touched> wordIds{};
+    std::array<uint64_t, T_Touched> wordHits{};
+    for (uint32_t i = 0; i < T_Touched; ++i) {
+        wordIds[i] = data.touchedWords[i];
+        wordHits[i] = hitsp[wordIds[i]];
+    }
+    for (uint64_t binIdx = 0; binIdx < bins; ++binIdx) {
+        if (T_ApplyIffs && !*binIffs++) continue;
+        const uint64_t begin = offsetsp[binIdx];
+        const uint64_t end = offsetsp[binIdx + 1];
         Bin& bin = data.bins[binIdx];
-        for (uint64_t pos = first; pos < last; ++pos) {
-            const uint32_t word = words[pos];
-            if (bin.selectionp[word] & data.hitBitsp[word]) {
-                if (bin.count++ == 0) ++m_numCovered;
-                break;
+        bool matched = false;
+        if (T_Touched == 1) {
+            matched = (bin.selectionp[wordIds[0]] & wordHits[0]) != 0;
+        } else if (T_Dense || end - begin >= touched) {
+            for (uint64_t i = 0; i < touched; ++i) {
+                const uint32_t word = T_Touched ? wordIds[i] : data.touchedWords[i];
+                const uint64_t hits = T_Touched ? wordHits[i] : hitsp[word];
+                if (bin.selectionp[word] & hits) {
+                    matched = true;
+                    break;
+                }
+            }
+        } else {
+            for (uint64_t pos = begin; pos < end; ++pos) {
+                const uint32_t word = data.binWords[pos];
+                if (bin.selectionp[word] & hitsp[word]) {
+                    matched = true;
+                    break;
+                }
             }
         }
+        if (matched && bin.count++ == 0) ++m_numCovered;
     }
     for (const uint32_t word : data.touchedWords) data.hitBitsp[word] = 0;
     data.touchedWords.clear();
 }
 
+template <bool T_ApplyIffs, bool T_Dense>
+void VlCoverCross::sampleHitWords(const bool* binIffs) {
+    switch (m_explicitp->touchedWords.size()) {
+    case 1: sampleBins<T_ApplyIffs, 1, T_Dense>(binIffs); break;
+    case 2: sampleBins<T_ApplyIffs, 2, T_Dense>(binIffs); break;
+    case 3: sampleBins<T_ApplyIffs, 3, T_Dense>(binIffs); break;
+    default: sampleBins<T_ApplyIffs, 0, T_Dense>(binIffs); break;
+    }
+}
+
 void VlCoverCross::sample(const bool* binIffs) {
     // Fast path: if any dimension had no Normal-bin hit, the cross cannot hit.
-    for (uint32_t d = 0; d < m_dims; ++d) {
-        if (m_dimensionsp[d].cpp->hitCount() == 0) return;
-    }
-    if (!hasExplicitBins()) {
-        iterateProduct<false>(0, 0);
-        return;
-    }
     bool single = true;
     for (uint32_t d = 0; d < m_dims; ++d) {
-        if (m_dimensionsp[d].cpp->hitCount() != 1) {
-            single = false;
-            break;
-        }
+        const uint32_t hits = m_dimensionsp[d].cpp->hitCount();
+        if (hits == 0) return;
+        single &= hits == 1;
     }
     if (single) {
         uint32_t idx = 0;
         for (uint32_t d = 0; d < m_dims; ++d) {
             idx += m_dimensionsp[d].cpp->hitList()[0] * m_dimensionsp[d].stride;
         }
-        sampleSingleTuple(idx, binIffs);
+        if (hasExplicitBins()) {
+            if (binIffs) {
+                sampleSingleTuple<true>(idx, binIffs);
+            } else {
+                sampleSingleTuple<false>(idx, nullptr);
+            }
+        } else {
+            incrementAuto(idx);
+        }
+        return;
+    }
+    bool enabled = true;
+    if (hasExplicitBins() && binIffs && !binIffs[0]) {
+        const bool* const endp = binIffs + m_explicitp->bins.size();
+        enabled = std::find(binIffs + 1, endp, true) != endp;
+        if (!enabled && m_explicitp->autoBins.empty()) return;
+    }
+    for (uint32_t d = 0; d < m_dims; ++d) {
+        m_dimensionsp[d].hitsp = m_dimensionsp[d].cpp->hitList();
+    }
+    if (!hasExplicitBins()) {
+        iterateProduct<false>(0, 0);
+        return;
+    }
+    if (!enabled) {
+        iterateProduct<true, false>(0, 0);
         return;
     }
     iterateProduct<true>(0, 0);
-    if (!m_explicit.touchedWords.empty()) sampleBins(binIffs);
+    if (!m_explicitp->touchedWords.empty()) {
+        const bool dense = m_explicitp->minBinWords >= m_explicitp->touchedWords.size();
+        if (binIffs) {
+            if (dense) {
+                sampleHitWords<true, true>(binIffs);
+            } else {
+                sampleHitWords<true, false>(binIffs);
+            }
+        } else {
+            if (dense) {
+                sampleHitWords<false, true>(nullptr);
+            } else {
+                sampleHitWords<false, false>(nullptr);
+            }
+        }
+    }
 }
 
 std::string VlCoverCross::binName(uint32_t i) const {
     if (hasExplicitBins()) {
-        if (i < m_explicit.bins.size()) return m_explicit.bins[i].namep;
-        i -= static_cast<uint32_t>(m_explicit.bins.size());
+        if (i < m_explicitp->bins.size()) return m_explicitp->bins[i].namep;
+        i -= static_cast<uint32_t>(m_explicitp->bins.size());
     }
     return autoBinName(autoIndex(i));
 }
@@ -295,13 +361,13 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
     const std::string lineStr = std::to_string(m_line);
     const std::string colStr = std::to_string(m_col);
     const uint32_t explicitCount
-        = hasExplicitBins() ? static_cast<uint32_t>(m_explicit.bins.size()) : 0;
+        = hasExplicitBins() ? static_cast<uint32_t>(m_explicitp->bins.size()) : 0;
     // Use the same indexed names for registration and the runtime read interface.
     for (uint32_t i = 0; i < binCount(); ++i) {
         const std::string bin = binName(i);
         const std::string full = m_hier + "." + bin;
         if (i < explicitCount) {
-            Bin& userBin = m_explicit.bins[i];
+            Bin& userBin = m_explicitp->bins[i];
             const std::string binLineStr = std::to_string(userBin.line);
             const std::string binColStr = std::to_string(userBin.col);
             VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page, "filename",

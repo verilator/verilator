@@ -75,6 +75,43 @@ module t;
     }
   endgroup
 
+  covergroup cg_zero_product with function sample (bit value);
+    cp_a: coverpoint value {bins zero = {0};}
+    cp_empty: coverpoint value {bins other = default;}
+    selected: cross cp_a, cp_empty;
+  endgroup
+
+  covergroup cg_fixed_words with function sample (bit [3:0] a, bit [3:0] b, bit enable);
+    cp_a: coverpoint a {
+      bins b0 = {0};
+      bins b1 = {[0 : 1]};
+      bins b2 = {[0 : 2]};
+      bins b3 = {[0 : 3]};
+      bins b4 = {[0 : 4]};
+      bins b5 = {[0 : 5]};
+      bins b6 = {[0 : 6]};
+      bins b7 = {[0 : 7]};
+      bins b8 = {[0 : 8]};
+      bins b9 = {[0 : 9]};
+      bins b10 = {[0 : 10]};
+      bins b11 = {[0 : 11]};
+      bins b12 = {[0 : 12]};
+      bins b13 = {[0 : 13]};
+      bins b14 = {[0 : 14]};
+      bins b15 = {[0 : 15]};
+    }
+    cp_b: coverpoint b;
+    selected: cross cp_a, cp_b{bins all_values = binsof (cp_a);}
+    sparse: cross cp_a, cp_b{
+      bins all_values = binsof (cp_a);
+      bins subset = binsof (cp_a.b0);
+    }
+    guarded: cross cp_a, cp_b{
+      bins all_values = binsof (cp_a);
+      bins subset = binsof (cp_a.b0) iff (enable);
+    }
+  endgroup
+
   covergroup cg_precedence with function sample (bit a, bit b, bit c);
     coverpoint a;
     coverpoint b;
@@ -372,6 +409,8 @@ module t;
 
   cg_sets sets_cov = new;
   cg_partial partial_cov = new;
+  cg_zero_product zero_product_cov = new;
+  cg_fixed_words fixed_words_cov = new;
   cg_precedence precedence_cov = new;
   cg_numeric numeric_cov = new;
   cg_transition transition_cov = new;
@@ -394,6 +433,8 @@ module t;
     if (cyc == 1) sample_retired(1, 0);
     if (cyc == 2) sample_retired(0, 0);
     if (cyc < 81) begin
+      if (cyc == 0) zero_product_cov.sample(0);
+      if (cyc < 16) fixed_words_cov.sample(4'(cyc % 5 == 4 ? 15 : 4 * (cyc % 5)), 4'(cyc), 1'(cyc));
       if (cyc < 24) sets_cov.sample(7'(cyc / 2), 1'(cyc), cyc / 2 != 2);
       if (cyc < 4) begin
         if (cyc == 0) `checkr(partial_cov.get_inst_coverage(), 0.0);
@@ -475,6 +516,8 @@ module t;
     else begin
       `checkr(sets_cov.get_inst_coverage(), 100.0);
       `checkr(partial_cov.get_inst_coverage(), 100.0);
+      `checkr(zero_product_cov.get_inst_coverage(), 100.0);
+      `checkr(fixed_words_cov.get_inst_coverage(), 100.0);
       `checkr(precedence_cov.get_inst_coverage(), 100.0);
       `checkr(numeric_cov.get_inst_coverage(), 100.0);
       `checkr(transition_cov.get_inst_coverage(), 100.0);

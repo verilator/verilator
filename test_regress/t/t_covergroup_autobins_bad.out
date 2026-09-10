@@ -137,24 +137,28 @@
                                                        : ... note: In instance 't'
   132 |       bins nonconstant_range = binsof(cp_a) intersect {[0:size_var]};
       |                                ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:143:9: Unsupported: explicit cross bins with more than 2^32-1 tuples.
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:143:9: Unsupported: cross coverage with more than 2^32-1 tuples.
                                                       : ... note: In instance 't'
   143 |     xc: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f {
       |         ^~~~~
-%Error: t/t_covergroup_autobins_bad.v:151:34: Non-constant expression in bin value list; values must be constants
-                                            : ... note: In instance 't'
-  151 |       ignore_bins nonconstant = {size_var};
-      |                                  ^~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:151:34: Non-constant expression in bin range; values must be constants
-                                            : ... note: In instance 't'
-  151 |       ignore_bins nonconstant = {size_var};
-      |                                  ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:155:23: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:146:16: Unsupported: cross coverage with more than 2^32-1 tuples.
                                                        : ... note: In instance 't'
-  155 |       bins selected = binsof(cp_a) intersect {0};
+  146 |     auto_only: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
+      |                ^~~~~
+%Error: t/t_covergroup_autobins_bad.v:152:34: Non-constant expression in bin value list; values must be constants
+                                            : ... note: In instance 't'
+  152 |       ignore_bins nonconstant = {size_var};
+      |                                  ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:152:34: Non-constant expression in bin range; values must be constants
+                                            : ... note: In instance 't'
+  152 |       ignore_bins nonconstant = {size_var};
+      |                                  ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:156:23: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                       : ... note: In instance 't'
+  156 |       bins selected = binsof(cp_a) intersect {0};
       |                       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:194:23: Unsupported: 'intersect' exclusion matching exceeds the selection work limit.
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:195:23: Unsupported: 'intersect' exclusion matching exceeds the selection work limit.
                                                        : ... note: In instance 't'
-  194 |       bins selected = binsof(cp_a.whole) intersect {[0:30'h3fffffff]} && binsof(cp_b);
+  195 |       bins selected = binsof(cp_a.whole) intersect {[0:30'h3fffffff]} && binsof(cp_b);
       |                       ^~~~~~
 %Error: Exiting due to

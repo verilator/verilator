@@ -31,7 +31,9 @@
 #include "V3MemberMap.h"
 
 #include <array>
+#include <bitset>
 #include <set>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -180,6 +182,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::set<AstCoverCross*>
         m_droppedCrosses;  // Crosses with a bare-variable item: drop (COVERIGN)
     std::map<uint32_t, AstCoverpointDType*> m_cpDTypes;  // Hit-list bound -> interned dtype
+    using CrossShape = std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint64_t>;
+    std::map<CrossShape, AstCoverCrossDType*> m_cxDTypes;
     AstVar* m_cgInstVarp = nullptr;  // __Vcg_inst handle member of the current covergroup
 
     VMemberMap m_memberMap;  // Member names cached for fast lookup
@@ -1471,6 +1475,17 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     using CrossSelection = std::vector<uint64_t>;
+    struct ResolvedCrossBin final {
+        AstCoverCrossBin* binp;
+        CrossSelection selection;
+    };
+    struct CrossLayout final {
+        uint32_t tuples = 0;
+        uint32_t autoBins = 0;
+        uint64_t binWords = 0;
+        bool valid = true;
+        std::vector<ResolvedCrossBin> bins;
+    };
     struct CrossSelectionContext final {
         AstCoverCross* crossp;  // Cross whose tuple space is being selected
         const std::vector<AstVar*>& cpVars;  // Feeding coverpoints in dimension order
@@ -1955,11 +1970,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return result;
     }
 
-    std::vector<AstCoverCrossBin*>
-    generateCrossBins(AstCoverCross* crossp, AstVar* cxVarp, const std::vector<AstVar*>& cpVars,
-                      const std::map<std::string, uint32_t>& dimensions) {
-        std::vector<AstCoverCrossBin*> bins;
-        if (!crossp->binsp()) return bins;
+    CrossLayout resolveCrossLayout(AstCoverCross* crossp, const std::vector<AstVar*>& cpVars,
+                                   const std::map<std::string, uint32_t>& dimensions) {
+        CrossLayout layout;
         CrossSelectionContext ctx{crossp, cpVars, dimensions, 0, {}};
         uint64_t tuples = std::any_of(cpVars.begin(), cpVars.end(),
                                       [this](AstVar* varp) { return !m_cpBins.at(varp).total; })
@@ -1971,11 +1984,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             tuples *= m_cpBins.at(cpVars[d - 1]).total;
             if (tuples > UINT32_MAX) {
                 crossp->v3warn(COVERIGN,
-                               "Unsupported: explicit cross bins with more than 2^32-1 tuples.");
-                return bins;
+                               "Unsupported: cross coverage with more than 2^32-1 tuples.");
+                layout.valid = false;
+                return layout;
             }
         }
         ctx.tuples = tuples;
+        layout.tuples = tuples;
+        CrossSelection excluded;
         std::set<std::string> names;
         for (AstNode* itemp = crossp->binsp(); itemp; itemp = itemp->nextp()) {
             AstCoverCrossBin* const binp = VN_AS(itemp, CoverCrossBin);
@@ -1985,12 +2001,46 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 continue;
             }
             ctx.valid = true;
-            const CrossSelection selection = crossSelection(binp->selectp(), ctx);
+            CrossSelection selection = crossSelection(binp->selectp(), ctx);
             if (!ctx.valid || std::all_of(selection.begin(), selection.end(), [](uint64_t word) {
                     return word == 0;
                 })) {
                 continue;
             }
+            if (excluded.empty()) excluded.resize(selection.size(), 0);
+            for (size_t i = 0; i < selection.size(); ++i) {
+                excluded[i] |= selection[i];
+                if (selection[i]) ++layout.binWords;
+            }
+            layout.bins.push_back({binp, std::move(selection)});
+        }
+        if (!layout.bins.empty()) {
+            layout.autoBins = layout.tuples;
+            for (const uint64_t word : excluded) {
+                layout.autoBins -= static_cast<uint32_t>(std::bitset<VL_QUADSIZE>{word}.count());
+            }
+        }
+        return layout;
+    }
+
+    AstCoverCrossDType* crossDType(FileLine* fl, uint32_t dimensions, const CrossLayout& layout) {
+        const uint32_t bins = static_cast<uint32_t>(layout.bins.size());
+        const CrossShape shape{dimensions, layout.tuples, bins, layout.autoBins, layout.binWords};
+        AstCoverCrossDType*& typep = m_cxDTypes[shape];
+        if (!typep) {
+            typep = new AstCoverCrossDType{fl,   dimensions,      layout.tuples,
+                                           bins, layout.autoBins, layout.binWords};
+            v3Global.rootp()->typeTablep()->addTypesp(typep);
+        }
+        return typep;
+    }
+
+    std::vector<AstCoverCrossBin*> generateCrossBins(AstCoverCross* crossp, AstVar* cxVarp,
+                                                     const CrossLayout& layout) {
+        std::vector<AstCoverCrossBin*> bins;
+        for (const ResolvedCrossBin& resolved : layout.bins) {
+            AstCoverCrossBin* const binp = resolved.binp;
+            const CrossSelection& selection = resolved.selection;
             FileLine* const fl = binp->fileline();
             const bool prot = v3Global.opt.protectIds();
             std::string mask = "{";
@@ -2044,9 +2094,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             itemp = nextp;
         }
         const int dims = static_cast<int>(cpVars.size());
+        const CrossLayout layout = resolveCrossLayout(crossp, cpVars, dimensions);
+        if (!layout.valid) return;
 
         AstVar* const cxVarp = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(),
-                                          basicDType(fl, VBasicDTypeKwd::COVERGROUP_CROSS)};
+                                          crossDType(fl, static_cast<uint32_t>(dims), layout)};
         m_covergroupp->addMembersp(cxVarp);
         m_crossVars.push_back(cxVarp);
         m_constructorp->addStmtsp(makeItemCreate(fl, cxVarp, VCMethod::COVERGROUP_ADD_CROSS));
@@ -2064,8 +2116,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                       ctext(fl, quoted(VIdProtect::protectIf(fl->filename(), prot))),
                       cnum(fl, static_cast<uint32_t>(fl->lineno())),
                       cnum(fl, static_cast<uint32_t>(fl->firstColumn()))})));
-        const std::vector<AstCoverCrossBin*> bins
-            = generateCrossBins(crossp, cxVarp, cpVars, dimensions);
+        const std::vector<AstCoverCrossBin*> bins = generateCrossBins(crossp, cxVarp, layout);
         if (v3Global.opt.coverage()) {
             const std::string page
                 = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
@@ -2079,13 +2130,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         UASSERT_OBJ(m_sampleFuncp, crossp, "sample() CFunc not set for cross");
         // The cross remembers its feeding coverpoints, so sample() needs no cps array;
         // per-bin iff guards still need a temporary array, hence the block form.
+        const bool hasIffs
+            = std::any_of(bins.begin(), bins.end(),
+                          [](const AstCoverCrossBin* binp) { return binp->iffp() != nullptr; });
         AstNodeStmt* const samplep
-            = bins.empty() ? static_cast<AstNodeStmt*>(
-                                 itemCall(fl, cxVarp, VCMethod::COVERGROUP_SAMPLE)->makeStmt())
-                           : static_cast<AstNodeStmt*>(makeCrossIffsCall(
-                                 fl, bins,
-                                 itemCall(fl, cxVarp, VCMethod::COVERGROUP_SAMPLE_IFFS,
-                                          {ctext(fl, "__Vcx_iffs")})));
+            = !hasIffs ? static_cast<AstNodeStmt*>(
+                             itemCall(fl, cxVarp, VCMethod::COVERGROUP_SAMPLE)->makeStmt())
+                       : static_cast<AstNodeStmt*>(makeCrossIffsCall(
+                             fl, bins,
+                             itemCall(fl, cxVarp, VCMethod::COVERGROUP_SAMPLE_IFFS,
+                                      {ctext(fl, "__Vcx_iffs")})));
         if (AstNodeExpr* const iffp = crossp->iffp()) {
             m_sampleFuncp->addStmtsp(new AstIf{fl, iffp->cloneTree(false), samplep});
         } else {

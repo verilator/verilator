@@ -65,6 +65,43 @@ cg_fast_paths.selected.second_x_last_x_second [cross]: 1
 cg_fast_paths.selected.second_x_second_x_first [cross]: 7
 cg_fast_paths.selected.second_x_second_x_last [cross]: 1
 cg_fast_paths.selected.second_x_second_x_second [cross]: 7
+cg_fixed_words.cp_a.b0: 4
+cg_fixed_words.cp_a.b1: 4
+cg_fixed_words.cp_a.b10: 10
+cg_fixed_words.cp_a.b11: 10
+cg_fixed_words.cp_a.b12: 13
+cg_fixed_words.cp_a.b13: 13
+cg_fixed_words.cp_a.b14: 13
+cg_fixed_words.cp_a.b15: 16
+cg_fixed_words.cp_a.b2: 4
+cg_fixed_words.cp_a.b3: 4
+cg_fixed_words.cp_a.b4: 7
+cg_fixed_words.cp_a.b5: 7
+cg_fixed_words.cp_a.b6: 7
+cg_fixed_words.cp_a.b7: 7
+cg_fixed_words.cp_a.b8: 10
+cg_fixed_words.cp_a.b9: 10
+cg_fixed_words.cp_b.auto_0: 1
+cg_fixed_words.cp_b.auto_1: 1
+cg_fixed_words.cp_b.auto_10: 1
+cg_fixed_words.cp_b.auto_11: 1
+cg_fixed_words.cp_b.auto_12: 1
+cg_fixed_words.cp_b.auto_13: 1
+cg_fixed_words.cp_b.auto_14: 1
+cg_fixed_words.cp_b.auto_15: 1
+cg_fixed_words.cp_b.auto_2: 1
+cg_fixed_words.cp_b.auto_3: 1
+cg_fixed_words.cp_b.auto_4: 1
+cg_fixed_words.cp_b.auto_5: 1
+cg_fixed_words.cp_b.auto_6: 1
+cg_fixed_words.cp_b.auto_7: 1
+cg_fixed_words.cp_b.auto_8: 1
+cg_fixed_words.cp_b.auto_9: 1
+cg_fixed_words.guarded.all_values [cross]: 16
+cg_fixed_words.guarded.subset [cross]: 2
+cg_fixed_words.selected.all_values [cross]: 16
+cg_fixed_words.sparse.all_values [cross]: 16
+cg_fixed_words.sparse.subset [cross]: 4
 cg_four_state.cp_a.known: 0
 cg_four_state.cp_a.xstate: 0
 cg_four_state.cp_a.zstate: 0
@@ -353,3 +390,5 @@ cg_words.partial.values[8]_x_values[4] [cross]: 1
 cg_words.partial.values[8]_x_values[5] [cross]: 1
 cg_words.partial.values[8]_x_values[6] [cross]: 1
 cg_words.partial.values[8]_x_values[7] [cross]: 1
+cg_zero_product.cp_a.zero: 1
+cg_zero_product.cp_empty.other [default]: 1

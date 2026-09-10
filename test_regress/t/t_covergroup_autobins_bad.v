@@ -143,6 +143,7 @@ module t;
     xc: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f {
       bins selected = binsof(cp_a);
     }
+    auto_only: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
   endgroup
 
   covergroup cgx_binsof_excluded;
