@@ -928,7 +928,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false,  "r") \
     macro(RANDOMIZER_HARD,                    "hard",                   false,  "r+") \
     macro(RANDOMIZER_SOFT,                    "soft",                   false,  "rrrr") \
-    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "r") \
+    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "rr") \
     macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  "r") \
     macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  "rr") \
     macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  "rrr") \

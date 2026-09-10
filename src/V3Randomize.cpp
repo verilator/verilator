@@ -786,6 +786,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
     AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
                                           // (nullptr == always defined)
+    uint32_t* m_uniqueConstraintId = nullptr;  // Current ID of unique call
     AstNode* m_firstExpressionInsideIndexp = nullptr;
 
     class NestedAccessPath final {
@@ -2738,9 +2739,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                     = new AstCMethodHard{fl, new AstVarRef{fl, genModp, genVarp, VAccess::READ},
                                          VCMethod::RANDOMIZER_UNIQUE, namep};
                 randUniqueCallp->dtypep(nodep->findVoidDType());
+                randUniqueCallp->addPinsp(new AstConst{fl, *m_uniqueConstraintId});
                 setupStmtsp = AstNode::addNext(setupStmtsp, new AstStmtExpr{fl, randUniqueCallp});
             }
         }
+        ++(*m_uniqueConstraintId);
         if (m_wantSingle && !smtExprs.empty()) {
             std::string exprStr = smtExprs.front();
             if (smtExprs.size() > 1) {
@@ -3338,6 +3341,7 @@ public:
     explicit ConstraintExprVisitor(AstClass* classp, VMemberMap& memberMap, AstNode* nodep,
                                    AstNodeFTask* inlineInitTaskp, AstVar* genp,
                                    AstVar* randModeVarp, std::set<std::string>& writtenVars,
+                                   uint32_t* uniqueConstraintId,
                                    AstNodeFTask* memberselInitTaskp = nullptr,
                                    std::set<AstVar*>* sizeConstrainedArraysp = nullptr)
         : m_classp{classp}
@@ -3347,7 +3351,8 @@ public:
         , m_randModeVarp{randModeVarp}
         , m_memberMap{memberMap}
         , m_writtenVars{writtenVars}
-        , m_sizeConstrainedArraysp{sizeConstrainedArraysp} {
+        , m_sizeConstrainedArraysp{sizeConstrainedArraysp}
+        , m_uniqueConstraintId{uniqueConstraintId} {
         // Pre-pass before SMT lowering: extract conditional disable-soft
         // directives as runtime AstIf statements and append them to the
         // constraint-items chain so they reach the setup task body.  The SMT
@@ -3668,6 +3673,7 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<AstClass*, AstVar*> m_staticRandModeVars;  // Static rand mode vars per class
     std::map<AstClass*, std::pair<bool, bool>>
         m_prePostWrap;  // Per-handle-type pre/post virtual wrapper presence
+    uint32_t m_uniqueConstraintId = 0;  // current ID of unique call
 
     // METHODS
     // Check if two nodes are semantically equivalent (not pointer equality):
@@ -5736,9 +5742,9 @@ class RandomizeVisitor final : public VNVisitor {
                     lowerDistConstraints(taskp, constrp->itemsp(), randModeVarp);
                 }
                 std::set<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
-                ConstraintExprVisitor{classp,        m_memberMap, constrp->itemsp(),
-                                      nullptr,       genp,        randModeVarp,
-                                      m_writtenVars, randomizep,  &sizeArrays};
+                ConstraintExprVisitor{
+                    classp,       m_memberMap,   constrp->itemsp(),     nullptr,    genp,
+                    randModeVarp, m_writtenVars, &m_uniqueConstraintId, randomizep, &sizeArrays};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
@@ -6219,8 +6225,9 @@ class RandomizeVisitor final : public VNVisitor {
                 randomizeFuncp->addStmtsp(capturedTreep);
                 {
                     expandUniqueElementList(capturedTreep);
-                    ConstraintExprVisitor{nullptr, m_memberMap, capturedTreep, randomizeFuncp,
-                                          stdrand, nullptr,     m_writtenVars, nullptr};
+                    ConstraintExprVisitor{
+                        nullptr, m_memberMap,   capturedTreep,         randomizeFuncp, stdrand,
+                        nullptr, m_writtenVars, &m_uniqueConstraintId, nullptr};
                 }
                 AstCExpr* const solverCallp = new AstCExpr{fl};
                 solverCallp->dtypeSetBit();
@@ -6437,7 +6444,8 @@ class RandomizeVisitor final : public VNVisitor {
         {
             expandUniqueElementList(capturedTreep);
             ConstraintExprVisitor{classp,    m_memberMap,  capturedTreep, randomizeFuncp,
-                                  localGenp, randModeVarp, m_writtenVars, nullptr};
+                                  localGenp, randModeVarp, m_writtenVars, &m_uniqueConstraintId,
+                                  nullptr};
         }
 
         // Call the solver and set return value

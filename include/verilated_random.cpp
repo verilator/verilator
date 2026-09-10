@@ -808,7 +808,7 @@ bool VlRandomizer::next_check_only(VlRNGReseeds& rngr) { return nextRandomize(rn
 bool VlRandomizer::next(VlRNGReseeds& rngr) { return nextRandomize(rngr, false); }
 
 bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
-    if (!checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
+    if (!checkOnly && m_vars.empty() && m_uniqueArrays.empty()) return true;
     if (checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
     VlSolverSession& sess = s_solverSession;
     const VerilatedLockGuard lock{sess.m_mutex};
@@ -843,21 +843,27 @@ bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
 
 std::vector<std::string> VlRandomizer::buildUniqueExprs() const {
     std::vector<std::string> exprs;
-    if (m_unique_arrays.empty()) return exprs;
+    if (m_uniqueArrays.empty()) return exprs;
     const auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-    for (const std::string& baseName : m_unique_arrays) {
-        const auto it = m_vars.find(baseName);
-        if (it == m_vars.end()) continue;
-        const VlRandomVar& var = *it->second;
-        // Select the elements the array actually holds now, by their own index
-        // or key, rather than by ordinal position
-        var.setArrayInfo(arrVarsp);
-        // 'distinct' needs at least two operands; fewer elements are trivially unique
-        if (var.countMatchingElements(*arrVarsp, baseName) < 2) continue;
+    for (const auto& [key, arrNameVec] : m_uniqueArrays) {
+        uint32_t matchingElementsCount = 0;
+        std::ostringstream varsString;
+
+        for (const auto& baseName : arrNameVec) {
+            const auto it = m_vars.find(baseName);
+            if (it == m_vars.end()) continue;
+            const VlRandomVar& var = *it->second;
+            // Select the elements the array actually holds now, by their own index
+            // or key, rather than by ordinal position
+            var.setArrayInfo(arrVarsp);
+            // 'distinct' needs at least two operands; fewer elements are trivially unique
+            matchingElementsCount += var.countMatchingElements(*arrVarsp, baseName);
+            var.emitGetValue(varsString);
+        }
+
+        if (matchingElementsCount < 2) continue;
         std::ostringstream os;
-        os << "(__Vbv (distinct ";
-        var.emitGetValue(os);
-        os << "))";
+        os << "(__Vbv (distinct " << varsString.str() << "))";
         exprs.push_back(os.str());
     }
     return exprs;
@@ -1606,7 +1612,7 @@ void VlRandomizer::clearConstraints() {
     m_constraints_line.clear();
     m_solveBefore.clear();
     m_softConstraints.clear();
-    m_unique_arrays.clear();  // Re-registered by constraint setup
+    m_uniqueArrays.clear();  // Re-registered by constraint setup
     // Keep m_vars for class member randomization
 }
 
