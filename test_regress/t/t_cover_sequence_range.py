@@ -9,10 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing', '--coverage-user'])
-
+test.sim_time = 2500
+test.compile(timing_loop=True,
+             verilator_flags2=['--assert', '--coverage-user', '--timing', '--stats'])
 test.execute()
+
+if test.vlt_all:
+    test.file_grep(test.stats, r'Assertions, NFA delay ring edge visits\s+(\d+)', 19)
+    test.inline_checks()
 
 test.passes()
