@@ -1118,10 +1118,10 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     bool isNegated() const { return m_isNegated; }
-    bool sameNode(const AstNode* samep) const override {
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
         const AstCoverBinsof* const asamep = VN_DBG_AS(samep, CoverBinsof);
         return m_name == asamep->m_name && m_isNegated == asamep->m_isNegated;
-    }
+    }  // LCOV_EXCL_STOP
 };
 class AstCoverCrossBin final : public AstNode {
     // A named cross bin and its selection expression
@@ -1157,9 +1157,9 @@ public:
     void dumpJson(std::ostream& str) const override;
     bool isOr() const { return m_isOr; }
     string verilogKwd() const override { return isOr() ? "||" : "&&"; }
-    bool sameNode(const AstNode* samep) const override {
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
         return m_isOr == VN_DBG_AS(samep, CoverCrossSelect)->m_isOr;
-    }
+    }  // LCOV_EXCL_STOP
 };
 class AstCoverOption final : public AstNode {
     // Coverage-option assignment
