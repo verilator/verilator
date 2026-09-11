@@ -588,39 +588,34 @@ void AstCFunc::dumpJson(std::ostream& str) const {
 }
 void AstCMethodHard::dump(std::ostream& str) const {
     Super::dump(str);
-    if (m_pure) str << " [PURE]";
+    if (m_purity.get()) str << " [PURE]";
     if (usePtr()) str << " [USEPTR]";
 }
 void AstCMethodHard::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "pure", m_pure);
+    dumpJsonBoolIf(str, "pure", m_purity.get());
     dumpJsonBoolIf(str, "usePtr", usePtr());
     dumpJsonGen(str);
 }
-int AstCMethodHard::instrCount() const {
-    return 0;  // TODO
-}
-void AstCMethodHard::setPurity() {
+bool AstCMethodHard::getPurity() {
     if (method() == VCMethod::DYN_AT_WRITE_APPEND
         || method() == VCMethod::DYN_AT_WRITE_APPEND_BACK) {
-        m_pure = false;
         // Treat atWriteAppend as pure if the argument is a loop iterator
         if (const AstNodeExpr* const argp = pinsp()) {
             if (const AstVarRef* const varrefp = VN_CAST(argp, VarRef)) {
-                if (varrefp->varp()->isUsedLoopIdx()) m_pure = true;
+                if (varrefp->varp()->isUsedLoopIdx()) return true;
             }
         }
-        return;
+        return false;
     }
-    m_pure = method().isPure();
-    if (!m_pure) return;
-    if (!fromp()->isPure()) m_pure = false;
-    if (!m_pure) return;
+    if (!method().isPure()) return false;
+    if (!fromp()->isPure()) return false;
     for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
-        if (!argp->isPure()) {
-            m_pure = false;
-            return;
-        }
+        if (!argp->isPure()) { return false; }
     }
+    return true;
+}
+int AstCMethodHard::instrCount() const {
+    return 0;  // TODO
 }
 void AstCReset::dump(std::ostream& str) const {
     Super::dump(str);
