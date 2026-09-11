@@ -14,10 +14,10 @@ module t;
   reg [1:0] a = 0, b = 1;
   reg [1:0] r;
 
-  logic [7:0] fa /* verilator forceable */;
+  logic [7:0] fa  /* verilator forceable */;
   assign fa = 8'hA5;
   logic fb;
-  logic fc /* verilator forceable */;
+  logic fc  /* verilator forceable */;
 
   initial begin
     r = 2'b00;

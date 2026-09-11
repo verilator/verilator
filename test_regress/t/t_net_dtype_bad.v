@@ -28,9 +28,9 @@ module t;
 
   wire string bad_string;  // <--- Error - bad net type
 
-  wire bit bad_bit;    // <--- Error - bad net type
+  wire bit bad_bit;  // <--- Error - bad net type
 
-  wire bad_t bad_struct;    // <--- Error - bad net type
+  wire bad_t bad_struct;  // <--- Error - bad net type
 
   wire ok_unpk_t ok_unpk_struct;
 

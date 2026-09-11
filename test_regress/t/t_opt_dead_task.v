@@ -4,6 +4,17 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+function static int printit(string s);
+  // Intentionally not using a variable reference here as want V3Dead
+  // not to be tracking other dependencies
+  $display(s);
+  return 0;
+endfunction
+
+module dead;
+  static int made_in_dead = printit("static-made-in-dead");
+endmodule
+
 module t (
     input clk
 );
@@ -15,6 +26,7 @@ module t (
   endfunction
   task livetask;
   endtask
+
   // Tasks/functions that are called somewhere will not be deadified
   initial begin
     livefunc();
@@ -41,4 +53,14 @@ module t (
   endtask
   task deeptask4;
   endtask
+
+  class Unused;
+    virtual task unused_func;
+      // Although class and task is unused, per IEEE believe that still-live should
+      // still be printed.  Most but not all other simulators agree with this; one
+      // will not print still-live
+      static int made = printit("static-still-live");
+    endtask
+  endclass
+
 endmodule

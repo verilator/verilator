@@ -150,6 +150,21 @@ module t (
   endcase)
   else case_fail++;
 
+  // Alternative sequence matches belong to one assertion evaluation.
+  bit guard = 1;
+  int throughout_or_fail = 0;
+
+  sequence twice; (1'b1 ##0 1'b1) or(1'b1 ##0 1'b1); endsequence
+
+  assert property (@(posedge clk) guard throughout (twice ##2 1'b1))
+  else throughout_or_fail++;
+
+  initial begin
+    repeat (4) @(negedge clk);
+    guard = 0;
+    @(negedge clk) guard = 1;
+  end
+
   always @(negedge clk) begin
     if (cyc == 12) begin
       `checkd(imp_pass, 10);
@@ -172,6 +187,7 @@ module t (
       `checkd(vacuous_pass, 12);
       `checkd(negated_vacuous_pass, 12);
       `checkd(case_fail, 2);
+      `checkd(throughout_or_fail, 3);
       $write("*-* All Finished *-*\n");
       $finish;
     end

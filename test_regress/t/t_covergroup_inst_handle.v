@@ -32,7 +32,8 @@ module t (
       g = new;
       v = 0;
       g.sample();
-    end else if (g == null) begin
+    end
+    else if (g == null) begin
       // Never taken.  It exists to *read* g: a covergroup handle that is written
       // and never read is localized into this block, and the instance would then
       // be dropped at the end of the edge that created it -- leaving nothing

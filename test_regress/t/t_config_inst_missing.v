@@ -7,8 +7,8 @@
 
 module t;
   // Test config allows selecting two different libraries for these instances
-  m1 u_1();
-  m2 u_2();
+  m1 u_1 ();
+  m2 u_2 ();
   final $write("*-* All Finished *-*\n");
 endmodule
 

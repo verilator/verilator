@@ -18,30 +18,43 @@
 
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
+#include "V3HashTable.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-class V3DfgCse final {
-    // TYPES
-    using VertexPair = std::pair<const DfgVertex*, const DfgVertex*>;
-    struct VertexPairHash final {
-        size_t operator()(const VertexPair& pair) const {
-            V3Hash hash;
-            hash += pair.first;
-            hash += pair.second;
-            return hash.value();
-        }
-    };
-
+// Hash functor for V3HashSet - depends on vertex and all its inputs
+class DfgCseHash final {
     // STATE
-    // The graph being processed
-    DfgGraph& m_dfg;
-    // Cache for vertex hashes
-    DfgUserMap<V3Hash> m_hashCache = m_dfg.makeUserMap<V3Hash>();
-    // Cache for vertex equality
-    std::unordered_map<VertexPair, uint8_t, VertexPairHash> m_equivalentCache;
+    mutable DfgUserMap<V3Hash> m_cache;  // Cache for vertex hashes
+
+public:
+    // CONSTRUCTOR
+    explicit DfgCseHash(DfgGraph& dfg)
+        : m_cache{dfg.makeUserMap<V3Hash>()} {
+        // Pre-hash variables, these are all unique, so just set their hash to a unique value
+        uint32_t fixedHash = 0;
+        for (const DfgVertexVar& vtx : dfg.varVertices()) m_cache[vtx] = V3Hash{++fixedHash};
+        // Pre-hash Ast references, these are all unique like variables
+        for (const DfgVertexAst& vtx : dfg.astVertices()) m_cache[vtx] = V3Hash{++fixedHash};
+        // Pre-hash CReset and Prev vertices, these are all unique
+        for (const DfgVertex& vtx : dfg.opVertices()) {
+            if (vtx.is<DfgCReset>() || vtx.is<DfgPrev>()) m_cache[vtx] = V3Hash{++fixedHash};
+        }
+        // Similarly pre-hash constants for speed. While we don't combine constants, we do want
+        // expressions using the same constants to be combined, so we do need to hash equal
+        // constants to equal values.
+        ++fixedHash;
+        for (const DfgConst& vtx : dfg.constVertices()) {
+            const V3Hash hash = vtx.num().toHash() + fixedHash;
+            // Technically possible for a hash to be zero, 'vertexSelfHash' assumes it isn't
+            m_cache[vtx] = VL_LIKELY(hash.value()) ? hash : V3Hash{1};
+        }
+    }
 
     // METHODS
+    size_t operator()(DfgVertex* vtxp) const { return vertexHash(*vtxp).value(); }
+
+private:
     // Returns hash of vertex dependent on information internal to the vertex
     static V3Hash vertexSelfHash(const DfgVertex& vtx) {
         switch (vtx.type()) {
@@ -135,29 +148,53 @@ class V3DfgCse final {
         VL_UNREACHABLE;
     }
 
-    // Returns hash of vertex dependent on and all its input
-    V3Hash vertexHash(DfgVertex& vtx) {
-        V3Hash& result = m_hashCache[vtx];
+    // Returns hash of vertex dependent on itself and all its inputs - memoized
+    V3Hash vertexHash(DfgVertex& vtx) const {
+        V3Hash& result = m_cache[vtx];
+        // Technically possible for a hash to be zero, but rare, so assume 0 means uninitialized
         if (!result.value()) {
             V3Hash hash{vertexSelfHash(vtx)};
-            // Variables are defined by themselves, so there is no need to hash them further
-            // (especially the sources). This enables sound hashing of graphs circular only through
-            // variables, which we rely on.
-            if (!vtx.is<DfgVertexVar>()) {
-                hash += vtx.type();
-                hash += vtx.size();
-                vtx.foreachSource([&](DfgVertex& src) {
-                    hash += vertexHash(src);
-                    return false;
-                });
-            }
+            hash += vtx.type();
+            hash += vtx.size();
+            vtx.foreachSource([&](DfgVertex& src) {
+                hash += vertexHash(src);  // Graph is acyclic, so this terminates
+                return false;
+            });
             result = hash;
         }
         return result;
     }
+};
 
+// Equal functor for V3HashSet - depends on vertex and all its inputs
+class DfgCseEqual final {
+    // TYPES
+    using VertexPair = std::pair<const DfgVertex*, const DfgVertex*>;
+    struct VertexPairHash final {
+        size_t operator()(const VertexPair& pair) const {
+            V3Hash hash;
+            hash += pair.first;
+            hash += pair.second;
+            return hash.value();
+        }
+    };
+
+    // STATE
+    mutable V3HashMap<VertexPair, bool, VertexPairHash> m_cache;  // Cache for vertex equality
+    mutable std::vector<uint32_t> m_driverLo;  // Low indices of drivers
+    const size_t m_size;  // Size of the graph
+
+public:
+    // CONSTRUCTORS
+    explicit DfgCseEqual(const DfgGraph& dfg)
+        : m_size{dfg.size()} {}
+
+    // METHODS
+    bool operator()(DfgVertex* ap, DfgVertex* bp) const { return vertexEquivalent(*ap, *bp); }
+
+private:
     // Compare 'a' and 'b' for equivalence based on their internal information only
-    bool vertexSelfEquivalent(const DfgVertex& a, const DfgVertex& b) {
+    bool vertexSelfEquivalent(const DfgVertex& a, const DfgVertex& b) const {
         // Note: 'a' and 'b' are of the same Vertex type, data type, and have
         // the same number of inputs with matching types. This is established
         // by 'vertexEquivalent'.
@@ -187,16 +224,17 @@ class V3DfgCse final {
         case VDfgType::SplicePacked: {
             const DfgVertexSplice* const ap = a.as<DfgVertexSplice>();
             // Gather indices of drivers of 'a'
-            std::vector<uint32_t> aLo;
-            aLo.reserve(ap->nInputs());
+            m_driverLo.clear();
+            m_driverLo.reserve(ap->nInputs());
             ap->foreachDriver([&](const DfgVertex&, uint32_t lo) {
-                aLo.push_back(lo);
+                m_driverLo.push_back(lo);
                 return false;
             });
-            // Compare indices of drivers of 'b'
-            uint32_t* aLop = aLo.data();
-            return !b.as<DfgVertexSplice>()->foreachDriver(
-                [&](const DfgVertex&, uint32_t lo) { return *aLop++ != lo; });
+            // Compare indices of drivers of 'b', equal if all match
+            uint32_t* aLop = m_driverLo.data();
+            return !b.as<DfgVertexSplice>()->foreachDriver([&](const DfgVertex&, uint32_t lo) {  //
+                return *aLop++ != lo;
+            });
         }
 
         // Vertices with no internal information
@@ -263,19 +301,19 @@ class V3DfgCse final {
     }
 
     // Compares the sources of 'a' and 'b' for equivalence
-    bool sourcesEquivalent(const DfgVertex& a, const DfgVertex& b) {
+    bool sourcesEquivalent(const DfgVertex& a, const DfgVertex& b) const {
         for (size_t i = 0; i < a.nInputs(); ++i) {
             const DfgVertex* const ap = a.inputp(i);
             const DfgVertex* const bp = b.inputp(i);
             if (!ap && !bp) continue;
             if (!ap || !bp) return false;
-            if (!vertexEquivalent(*ap, *bp)) return false;
+            if (!vertexEquivalent(*ap, *bp)) return false;  // Graph is acyclic, so this terminates
         }
         return true;
     }
 
     // Compares 'a' and 'b' for equivalence
-    bool vertexEquivalent(const DfgVertex& a, const DfgVertex& b) {
+    bool vertexEquivalent(const DfgVertex& a, const DfgVertex& b) const {
         // If same vertex, then equal
         if (&a == &b) return true;
 
@@ -297,70 +335,51 @@ class V3DfgCse final {
         // be looked up again through multiple paths.
         if (!a.hasMultipleSinks() && !b.hasMultipleSinks()) return sourcesEquivalent(a, b);
 
-        // Check sources
+        // Need to compare the source vertices, check memo
         const VertexPair key = (&a < &b) ? std::make_pair(&a, &b) : std::make_pair(&b, &a);
-        // The recursive invocation can cause a re-hash but that will not invalidate references
-        uint8_t& result = m_equivalentCache[key];
-        if (!result) result = (static_cast<uint8_t>(sourcesEquivalent(a, b)) << 1) | 1;
-        return result >> 1;
-    }
+        const auto it = m_cache.find(key);
+        if (it != m_cache.end()) return it->second;
 
-    V3DfgCse(DfgGraph& dfg, V3DfgCseContext& ctx)
-        : m_dfg{dfg} {
-        std::unordered_map<V3Hash, std::vector<DfgVertex*>> verticesWithEqualHashes;
-        verticesWithEqualHashes.reserve(dfg.size());
+        // Not memoized yet, so compute and memoize, reserve table on first insert
+        const bool equal = sourcesEquivalent(a, b);
+        if (VL_UNLIKELY(m_cache.empty())) m_cache.reserve(m_size / 4);
+        m_cache.insert({key, equal});
 
-        // Pre-hash variables, these are all unique, so just set their hash to a unique value
-        uint32_t varHash = 0;
-        for (const DfgVertexVar& vtx : dfg.varVertices()) m_hashCache[vtx] = V3Hash{++varHash};
-        // Pre-hash Ast references, these are all unique like variables
-        for (const DfgVertexAst& vtx : dfg.astVertices()) m_hashCache[vtx] = V3Hash{++varHash};
-        // Pre-hash CReset and Prev vertices, these are all unique
-        for (const DfgVertex& vtx : dfg.opVertices()) {
-            if (vtx.is<DfgCReset>() || vtx.is<DfgPrev>()) m_hashCache[vtx] = V3Hash{++varHash};
-        }
-
-        // Similarly pre-hash constants for speed. While we don't combine constants, we do want
-        // expressions using the same constants to be combined, so we do need to hash equal
-        // constants to equal values.
-        for (DfgConst* const vtxp : dfg.constVertices().unlinkable()) {
-            // Delete unused constants while we are at it.
-            if (!vtxp->hasSinks()) {
-                VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
-                continue;
-            }
-            m_hashCache[vtxp] = vtxp->num().toHash() + varHash;
-        }
-
-        // Combine operation vertices
-        for (DfgVertex* const vtxp : dfg.opVertices().unlinkable()) {
-            // Delete unused nodes while we are at it.
-            if (!vtxp->hasSinks()) {
-                vtxp->unlinkDelete(dfg);
-                continue;
-            }
-            std::vector<DfgVertex*>& vec = verticesWithEqualHashes[vertexHash(*vtxp)];
-            bool replaced = false;
-            for (DfgVertex* const candidatep : vec) {
-                if (vertexEquivalent(*candidatep, *vtxp)) {
-                    ++ctx.m_eliminated;
-                    vtxp->replaceWith(candidatep);
-                    VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
-                    replaced = true;
-                    break;
-                }
-            }
-            if (replaced) continue;
-            vec.push_back(vtxp);
-        }
-    }
-
-public:
-    static void apply(DfgGraph& dfg, V3DfgCseContext& ctx) {
-        { V3DfgCse{dfg, ctx}; }
-        // Prune unused nodes
-        V3DfgPasses::removeUnused(dfg);
+        // The predicate result
+        return equal;
     }
 };
 
-void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) { V3DfgCse::apply(dfg, ctx); }
+// Combine equivalent operation vertices
+void dfgCseCombineEquivalent(DfgGraph& dfg, V3DfgCseContext& ctx) {
+    // Delete unused constants, so the pre-hashing below need not consider them
+    for (DfgConst* const vtxp : dfg.constVertices().unlinkable()) {
+        if (!vtxp->hasSinks()) VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+    }
+
+    // Set of unique vertices. This set does all the work identifying equivalent vertices.
+    V3HashSet<DfgVertex*, DfgCseHash, DfgCseEqual> uniqueVtxps{DfgCseHash{dfg}, DfgCseEqual{dfg}};
+    // There is at most one entry per vertex
+    uniqueVtxps.reserve(dfg.size());
+
+    // Combine operation vertices
+    for (DfgVertex* const vtxp : dfg.opVertices().unlinkable()) {
+        // Delete unused nodes while we are at it.
+        if (!vtxp->hasSinks()) {
+            vtxp->unlinkDelete(dfg);
+            continue;
+        }
+        // Insert the vertex into the set, if an equivalent is found, replace the vertex with it
+        const auto pair = uniqueVtxps.insert(vtxp);
+        if (!pair.second) {
+            ++ctx.m_eliminated;
+            vtxp->replaceWith(*pair.first);
+            VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+        }
+    }
+}
+
+void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
+    dfgCseCombineEquivalent(dfg, ctx);
+    V3DfgPasses::removeUnused(dfg);
+}

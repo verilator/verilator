@@ -12,9 +12,14 @@
 module top;
 
   int x, y, z;
-  int out [3];
+  int out[3];
 
-  sub sub_i(x, y, z, out);
+  sub sub_i (
+      x,
+      y,
+      z,
+      out
+  );
 
   initial begin
     x = 2;
@@ -31,11 +36,11 @@ module top;
 
 endmodule
 
-module sub(
-  input int a,
-  input int b,
-  input int c,
-  output int sorted [3]
+module sub (
+    input int a,
+    input int b,
+    input int c,
+    output int sorted[3]
 );
 
   /* verilator no_inline_module */

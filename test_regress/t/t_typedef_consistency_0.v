@@ -8,18 +8,16 @@ package pkg;
   typedef logic l;
 endpackage
 
-module t(/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
-  wire logic  o_logic;
+  wire logic o_logic;
   // Using 'pkg::l' instead of 'logic' should make no difference
   wire pkg::l o_alias;
 
-  sub sub_logic(o_logic);
-  sub sub_alias(o_alias);
+  sub sub_logic (o_logic);
+  sub sub_alias (o_alias);
 
   assign o_logic = clk;
   assign o_alias = clk;
@@ -34,5 +32,7 @@ module t(/*AUTOARG*/
 
 endmodule
 
-module sub(output wire  o);
+module sub (
+    output wire o
+);
 endmodule

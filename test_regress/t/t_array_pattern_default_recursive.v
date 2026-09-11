@@ -7,22 +7,22 @@
 module t;
 
   typedef struct {
-    int         i;
+    int i;
     logic [7:0] b;
   } unpacked_t;
 
   typedef struct {
-    int         x;
+    int x;
     logic [3:0] y;
   } inner_t;
 
   typedef struct {
     inner_t in;
-    int     sub[2];
+    int sub[2];
   } nested_t;
 
   typedef struct packed {
-    int         i;
+    int i;
     logic [7:0] b;
   } packed_t;
 

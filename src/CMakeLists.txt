@@ -114,6 +114,7 @@ set(HEADERS
     V3GraphPathChecker.h
     V3GraphStream.h
     V3Hash.h
+    V3HashTable.h
     V3Hasher.h
     V3HierBlock.h
     V3Inline.h
@@ -292,6 +293,7 @@ set(COMMON_SOURCES
     V3GraphPathChecker.cpp
     V3GraphTest.cpp
     V3Hash.cpp
+    V3HashTable.cpp
     V3Hasher.cpp
     V3HierBlock.cpp
     V3Inline.cpp

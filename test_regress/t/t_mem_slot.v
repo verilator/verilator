@@ -6,7 +6,14 @@
 
 `define RegDel 1
 
-module t_mem_slot (Clk, SlotIdx, BitToChange, BitVal, SlotToReturn, OutputVal);
+module t_mem_slot (
+    Clk,
+    SlotIdx,
+    BitToChange,
+    BitVal,
+    SlotToReturn,
+    OutputVal
+);
 
   input Clk;
   input [1:0] SlotIdx;
@@ -17,8 +24,7 @@ module t_mem_slot (Clk, SlotIdx, BitToChange, BitVal, SlotToReturn, OutputVal);
 
   bit [1:0] Array[2:0];
 
-  always @(posedge Clk)
-  begin
+  always @(posedge Clk) begin
     Array[SlotIdx][BitToChange] <= #`RegDel BitVal;
 
     OutputVal = Array[SlotToReturn];

@@ -55,7 +55,7 @@ class HasherVisitor final : public VNVisitorConst {
                               std::function<void()>&& f) {
         // See comments in visit(AstCFunc) about this breaking recursion
         if (m_cacheInUser4 && nodep->user4()) {
-            return V3Hash{nodep->user4()};
+            return V3Hash{static_cast<uint32_t>(nodep->user4())};
         } else {
             VL_RESTORER(m_hash);
             // Reset accumulator
@@ -585,13 +585,13 @@ public:
 
 V3Hash V3Hasher::operator()(AstNode* nodep) const {
     if (!nodep->user4()) HasherVisitor{nodep};
-    return V3Hash{nodep->user4()};
+    return V3Hash{static_cast<uint32_t>(nodep->user4())};
 }
 
 V3Hash V3Hasher::rehash(AstNode* nodep) const {
     nodep->user4(0);
     { HasherVisitor{nodep}; }
-    return V3Hash{nodep->user4()};
+    return V3Hash{static_cast<uint32_t>(nodep->user4())};
 }
 
 V3Hash V3Hasher::uncachedHash(const AstNode* nodep) {

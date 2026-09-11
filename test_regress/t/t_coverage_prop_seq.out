@@ -1,0 +1,13 @@
+TN:verilator_coverage
+SF:t/t_coverage_prop_seq.v
+DA:8,1
+DA:48,5
+DA:50,1
+DA:51,3
+BRDA:51,0,block,1
+BRDA:51,0,block,3
+DA:52,1
+DA:53,1
+BRF:2
+BRH:0
+end_of_record

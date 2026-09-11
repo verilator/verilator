@@ -55,7 +55,7 @@ module t (
 
     if (cyc < CHURN) begin
       cg = new;
-      v  = cyc[1:0];
+      v = cyc[1:0];
       cg.sample();
 
       // Live when sampled, so a working registry reports >= 1.  Zero would mean
@@ -64,7 +64,8 @@ module t (
       if (live > peak_live) peak_live = live;
 
       cg = null;  // Last handle dropped; collected at the next eval_step
-    end else if (cyc == CHURN + 2) begin
+    end
+    else if (cyc == CHURN + 2) begin
       // Two edges after the final drop, so the last instance has been collected.
       live = $c32("Verilated::threadContextp()->covergroupRegistryp()->liveInstanceCount()");
       created = $c32("Verilated::threadContextp()->covergroupRegistryp()->createdInstanceCount()");

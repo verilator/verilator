@@ -15,7 +15,30 @@ Verilator 5.053 devel
 
 **Other:**
 
+* Add covergroup runtime registry (#8134). [Matthew Ballance]
+* Add initial support for solo `binsof` (#8298). [Marco Bartoli]
 * Change JSON dumps to suppress empty strings, etc.
+* Support nested array and associative array element member access in constraint 1/4 - pre-cleanup (#8237). [Kamil Danecki, Antmicro Ltd.]
+* Support unique constraint inside std::randomize (#8241). [Kornel Uriasz, Antmicro Ltd.]
+* Support non-overlapped property implications correctly (#8268). [Artur Bieniek, Antmicro Ltd.]
+* Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
+* Optimize redundant vertex cache lookups in DFG peephole (#8283). [Geza Lore, Testorrent USA, Inc.]
+* Optimize DFG vertex iteration callbacks (#8284). [Geza Lore, Testorrent USA, Inc.]
+* Optimize redundant memoization in DFG CSE (#8285). [Geza Lore, Testorrent USA, Inc.]
+* Optimize DFG synthesis of simple continuous assignments (#8286). [Geza Lore, Testorrent USA, Inc.]
+* Optimize more selects in DFG (#8292). [Geza Lore, Testorrent USA, Inc.]
+* Optimize netlist teardown when about to exit (#8294). [Geza Lore, Testorrent USA, Inc.]
+* Optimize data-type type chain recursion (#8310). [Geza Lore, Testorrent USA, Inc.]
+* Fix array slice crash when used as a bare value (#5132) (#8262). [Marco Frank]
+* Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
+* Fix detecting non-inlined awaits in V3Delayed.cpp (#7982). [Igor Zaworski, Antmicro Ltd.]
+* Fix phased `solve...before` diversity (#8189) (#8194). [Aditya Shevade]
+* Fix array-size constraint on arrays inside base class (#8219). [Kornel Uriasz, Antmicro Ltd.]
+* Fix multidimensional packed array type handling (#8235). [Artur Bieniek, Antmicro Ltd.]
+* Fix library method argument references (#8252). [Geza Lore, Testorrent USA, Inc.]
+* Fix assignment pattern default fill of an array of unpacked structs (#8289). [Nick Brereton]
+* Fix escape strings in pattern formatting (#8297). [Marco Bartoli]
+* Fix DECLFILENAME warning on nested declarations (#8302). [Martijn Wobbes]
 
 
 Verilator 5.052 2026-09-05
@@ -1863,7 +1886,7 @@ Verilator 5.016 2023-09-16
 * Optimize Verilator executable size by refactoring error reporting routines (#4446). [Anthony Donlon]
 * Optimize Verilation runtime pointers and graphs (#4396) (#4397) (#4398). [Krzysztof Bieganski, Antmicro Ltd]
 * Optimize preparations towards multithreaded Verilation (#4291) (#4463) (#4476) (#4477) (#4479).  [Kamil Rakoczy, Antmicro Ltd]
-* Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
+* Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon]
 * Fix t_dist_cppstyle Perl performance issue (#4085). [Srinivasan Venkataramanan]
 * Fix using type in parameterized classes without #() (#4281) (#4440). [Anthony Donlon]
 * Fix false INFINITELOOP on forever..mailbox.get() (#4323). [Srinivasan Venkataramanan]
@@ -3648,7 +3671,7 @@ Verilator 3.880 2015-12-19
 * Fix model restore crash. (#1013) [Jason McMullan]
 * Fix arrayed instances to unpacked of same size. (#1015) [Varun Koyyalagunta]
 * Fix slices of unpacked arrays with non-zero LSBs.
-* Fix ternary operation with unpacked array. (#1017) [Varun Koyyalagunta].
+* Fix ternary operation with unpacked array. (#1017) [Varun Koyyalagunta]
 
 
 Verilator 3.878 2015-11-01
@@ -3738,7 +3761,7 @@ Verilator 3.870 2015-02-12
 
 * Suppress COMBDLY when inside always_latch. (#864) [Iztok Jeras]
 * Support cast operator with expression size. (#865) [Iztok Jeras]
-* Add warning on slice selection out of bounds. (#875) [Cong Van Nguyen].
+* Add warning on slice selection out of bounds. (#875) [Cong Van Nguyen]
 * Fix member select error broke in 3.868. (#867) [Iztok Jeras]
 * Fix $sccanf from string. (#866) [David Pierce]
 * Fix VM_PARALLEL_BUILDS broke in 3.868. (#870) [Hiroki Honda]
