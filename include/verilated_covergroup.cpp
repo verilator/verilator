@@ -149,7 +149,7 @@ void VlCoverCross::addBin(std::initializer_list<uint64_t> selection, const char*
     bin.line = line;
     bin.col = col;
     uint32_t word = 0;
-    for (const uint64_t bits : selection) { data.autoExcludedp[word++] |= bits; }
+    for (const uint64_t bits : selection) { data.wordsp[word++].autoExcluded |= bits; }
 }
 
 void VlCoverCross::finalizeBins() {
@@ -158,7 +158,7 @@ void VlCoverCross::finalizeBins() {
     assert(data.numBins == data.bins.size());
     uint32_t autoIdx = 0;
     for (uint32_t flat = 0; flat < m_numAutoBins; ++flat) {
-        if (!(data.autoExcludedp[flat / 64] & (uint64_t{1} << (flat % 64)))) {
+        if (!(data.wordsp[flat / 64].autoExcluded & (uint64_t{1} << (flat % 64)))) {
             assert(autoIdx < data.autoBins.size());
             data.autoBins[autoIdx++] = flat;
         }
@@ -167,19 +167,19 @@ void VlCoverCross::finalizeBins() {
     assert(autoIdx == data.autoBins.size());
     data.minBinWords = words;
     uint64_t pos = 0;
-    uint64_t binIdx = 0;
-    for (const Bin& bin : data.bins) {
+    const uint32_t* const indicesp = data.binWords.begin();
+    for (Bin& bin : data.bins) {
         const uint64_t begin = pos;
-        data.binWordOffsetsp[binIdx++] = pos;
         for (uint32_t word = 0; word < words; ++word) {
             if (bin.selectionp[word]) {
                 assert(pos < data.binWords.size());
                 data.binWords[pos++] = word;
             }
         }
-        data.minBinWords = std::min(data.minBinWords, static_cast<uint32_t>(pos - begin));
+        bin.wordIndicesp = indicesp ? indicesp + begin : nullptr;
+        bin.numWords = static_cast<uint32_t>(pos - begin);
+        data.minBinWords = std::min(data.minBinWords, bin.numWords);
     }
-    data.binWordOffsetsp[binIdx] = pos;
     assert(pos == data.binWords.size());
 }
 
@@ -209,7 +209,7 @@ void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
     Explicit& data = *m_explicitp;
     const uint32_t word = idx / 64;
     const uint64_t bit = uint64_t{1} << (idx % 64);
-    if (!(data.autoExcludedp[word] & bit)) {
+    if (!(data.wordsp[word].autoExcluded & bit)) {
         incrementAuto(idx);
         return;
     }
@@ -223,38 +223,38 @@ void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
 
 template <bool T_ApplyIffs, uint32_t T_Touched, bool T_Dense>
 void VlCoverCross::sampleBins(const bool* binIffs) {
+    struct HitWord final {
+        uint32_t index;
+        uint64_t bits;
+    };
     Explicit& data = *m_explicitp;
     const uint64_t bins = data.numBins;
-    const uint64_t touched = T_Touched ? T_Touched : data.touchedWords.size();
-    const uint64_t* const offsetsp = data.binWordOffsetsp;
-    const uint64_t* const hitsp = data.hitBitsp;
-    std::array<uint32_t, T_Touched> wordIds{};
-    std::array<uint64_t, T_Touched> wordHits{};
+    const uint64_t touched = T_Touched ? T_Touched : data.numTouchedWords;
+    const Word* const wordsp = data.wordsp;
+    std::array<HitWord, T_Touched> cached{};
     for (uint32_t i = 0; i < T_Touched; ++i) {
-        wordIds[i] = data.touchedWords[i];
-        wordHits[i] = hitsp[wordIds[i]];
+        const uint32_t word = wordsp[i].touchedWord;
+        cached[i] = {word, wordsp[word].hitBits};
     }
     for (uint64_t binIdx = 0; binIdx < bins; ++binIdx) {
         if (T_ApplyIffs && !*binIffs++) continue;
-        const uint64_t begin = offsetsp[binIdx];
-        const uint64_t end = offsetsp[binIdx + 1];
         Bin& bin = data.bins[binIdx];
         bool matched = false;
         if (T_Touched == 1) {
-            matched = (bin.selectionp[wordIds[0]] & wordHits[0]) != 0;
-        } else if (T_Dense || end - begin >= touched) {
+            matched = (bin.selectionp[cached[0].index] & cached[0].bits) != 0;
+        } else if (T_Dense || bin.numWords >= touched) {
             for (uint64_t i = 0; i < touched; ++i) {
-                const uint32_t word = T_Touched ? wordIds[i] : data.touchedWords[i];
-                const uint64_t hits = T_Touched ? wordHits[i] : hitsp[word];
+                const uint32_t word = T_Touched ? cached[i].index : wordsp[i].touchedWord;
+                const uint64_t hits = T_Touched ? cached[i].bits : wordsp[word].hitBits;
                 if (bin.selectionp[word] & hits) {
                     matched = true;
                     break;
                 }
             }
         } else {
-            for (uint64_t pos = begin; pos < end; ++pos) {
-                const uint32_t word = data.binWords[pos];
-                if (bin.selectionp[word] & hitsp[word]) {
+            for (uint32_t pos = 0; pos < bin.numWords; ++pos) {
+                const uint32_t word = bin.wordIndicesp[pos];
+                if (bin.selectionp[word] & wordsp[word].hitBits) {
                     matched = true;
                     break;
                 }
@@ -262,13 +262,15 @@ void VlCoverCross::sampleBins(const bool* binIffs) {
         }
         if (matched && bin.count++ == 0) ++m_numCovered;
     }
-    for (const uint32_t word : data.touchedWords) data.hitBitsp[word] = 0;
-    data.touchedWords.clear();
+    for (uint32_t i = 0; i < data.numTouchedWords; ++i) {
+        data.wordsp[wordsp[i].touchedWord].hitBits = 0;
+    }
+    data.numTouchedWords = 0;
 }
 
 template <bool T_ApplyIffs, bool T_Dense>
 void VlCoverCross::sampleHitWords(const bool* binIffs) {
-    switch (m_explicitp->touchedWords.size()) {
+    switch (m_explicitp->numTouchedWords) {
     case 1: sampleBins<T_ApplyIffs, 1, T_Dense>(binIffs); break;
     case 2: sampleBins<T_ApplyIffs, 2, T_Dense>(binIffs); break;
     case 3: sampleBins<T_ApplyIffs, 3, T_Dense>(binIffs); break;
@@ -318,8 +320,8 @@ void VlCoverCross::sample(const bool* binIffs) {
         return;
     }
     iterateProduct<true>(0, 0);
-    if (!m_explicitp->touchedWords.empty()) {
-        const bool dense = m_explicitp->minBinWords >= m_explicitp->touchedWords.size();
+    if (m_explicitp->numTouchedWords) {
+        const bool dense = m_explicitp->minBinWords >= m_explicitp->numTouchedWords;
         if (binIffs) {
             if (dense) {
                 sampleHitWords<true, true>(binIffs);

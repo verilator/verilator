@@ -263,6 +263,10 @@ module t;
       bins ends = binsof (cp_a.b0) || binsof (cp_a.b8) iff (enables[2]);
     }
     whole: cross cp_a, cp_b{bins all_values = binsof (cp_a);}
+    // A multiword selection remains excluded from automatic bins when its guard is false.
+    single_guarded: cross cp_a, cp_b{
+      bins ends = binsof (cp_a.b0) || binsof (cp_a.b8) iff (enables[2]);
+    }
   endgroup
 
   // Check four-state bin identities without relying on four-state sampling.

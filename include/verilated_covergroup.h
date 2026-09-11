@@ -231,6 +231,13 @@ protected:
         int line;  // Bin declaration line
         int col;  // Bin declaration column
         uint32_t count = 0;  // Samples matching the selection and guard
+        uint32_t numWords = 0;  // Number of nonzero selection-word indices
+        const uint32_t* wordIndicesp = nullptr;  // Slice of the packed selection-word indices
+    };
+    struct Word final {
+        uint64_t autoExcluded = 0;  // Tuples replaced by explicit bins
+        uint64_t hitBits = 0;  // Selected hit tuples, cleared after each sample
+        uint32_t touchedWord = 0;  // Flat word ID, stored by touched-list position
     };
     template <typename T>
     class View final {
@@ -246,20 +253,16 @@ protected:
         bool empty() const { return m_beginp == m_endp; }
         T* begin() const { return m_beginp; }
         T* end() const { return m_endp; }
-        void push_back(const T& value) { *m_endp++ = value; }
-        void clear() { m_endp = m_beginp; }
     };
     struct Explicit final {
         View<Bin> bins;  // Explicit bins in declaration order
-        uint64_t* autoExcludedp;  // Tuples replaced by explicit bins
+        Word* wordsp;  // Masks use flat word indices; touchedWord uses a dense prefix
         View<uint32_t> autoBins;  // Retained flat indices
-        uint64_t* hitBitsp;  // Selected hit tuples, cleared after each sample
-        View<uint32_t> touchedWords;  // Active prefix of the fixed hit-word index array
-        uint64_t* binWordOffsetsp;  // [bins.size() + 1] Offsets into binWords
         View<uint32_t> binWords;  // Nonzero selection words, grouped by bin
         uint64_t* selectionp;  // [bins.size() * ceil(m_numAutoBins / 64)]
         uint32_t numBins = 0;  // Bins configured by addBin()
         uint32_t minBinWords = 0;  // Minimum nonzero-word count across explicit bins
+        uint32_t numTouchedWords = 0;  // Active prefix of wordsp[].touchedWord
     };
 
 private:
@@ -290,10 +293,11 @@ private:
     void incrementTuple(uint32_t idx) {
         Explicit& data = *m_explicitp;
         const uint32_t wordIdx = idx / 64;
-        if ((data.autoExcludedp[wordIdx] >> (idx % 64)) & 1U) {
+        Word& word = data.wordsp[wordIdx];
+        if ((word.autoExcluded >> (idx % 64)) & 1U) {
             if (T_RecordHits) {
-                if (!data.hitBitsp[wordIdx]) data.touchedWords.push_back(wordIdx);
-                data.hitBitsp[wordIdx] |= uint64_t{1} << (idx % 64);
+                if (!word.hitBits) { data.wordsp[data.numTouchedWords++].touchedWord = wordIdx; }
+                word.hitBits |= uint64_t{1} << (idx % 64);
             }
             // Explicit selections consume automatic tuples independently of iff.
             return;
@@ -369,11 +373,8 @@ class VlCoverCrossT final : public VlCoverCross {
     std::array<Dimension, Dims> m_dimensions;
     std::array<uint32_t, Tuples> m_counts{};
     std::array<Bin, Bins> m_bins;
-    std::array<uint64_t, WORDS> m_autoExcluded{};
+    std::array<Word, WORDS> m_words{};
     std::array<uint32_t, AutoBins> m_autoBins;
-    std::array<uint64_t, WORDS> m_hitBits{};
-    std::array<uint32_t, WORDS> m_touchedWords;
-    std::array<uint64_t, static_cast<uint64_t>(Bins) + 1> m_binWordOffsets;
     std::array<uint32_t, BinWords> m_binWords;
     std::array<uint64_t, static_cast<uint64_t>(Bins) * WORDS> m_selections;
     Explicit m_explicit;
@@ -381,10 +382,11 @@ class VlCoverCrossT final : public VlCoverCross {
 public:
     VlCoverCrossT()
         : VlCoverCross{Dims, Tuples}
-        , m_explicit{{m_bins.data(), Bins},         m_autoExcluded.data(),
-                     {m_autoBins.data(), AutoBins}, m_hitBits.data(),
-                     {m_touchedWords.data(), 0},    m_binWordOffsets.data(),
-                     {m_binWords.data(), BinWords}, m_selections.data()} {
+        , m_explicit{{m_bins.data(), Bins},
+                     m_words.data(),
+                     {m_autoBins.data(), AutoBins},
+                     {m_binWords.data(), BinWords},
+                     m_selections.data()} {
         bindStorage(m_dimensions.data(), m_counts.data(), &m_explicit);
     }
 };

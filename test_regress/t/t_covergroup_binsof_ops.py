@@ -84,6 +84,8 @@ if test.vlt_all:
     test.file_grep(merged, r"cg_hit_words\.selected\.b1_x_b0.*' (\d+)", 4)
     test.file_grep(merged, r"cg_hit_words\.selected\.b1_x_b1.*' (\d+)", 3)
     test.file_grep(merged, r"cg_hit_words\.whole\.all_values.*' (\d+)", 10)
+    test.file_grep(merged, r"cg_hit_words\.single_guarded\.ends.*' (\d+)", 4)
+    test.file_grep(merged, r"cg_hit_words\.single_guarded\.b7_x_b0.*' (\d+)", 4)
     test.file_grep(merged, r"cg_numeric\.numeric\.typed_negative.*' (\d+)", 2)
     test.file_grep(merged, r"cg_wildcard\.wildcard_range\.signed_pattern.*' (\d+)", 2)
     test.file_grep(merged, r"cg_four_state\.selected\.exact_x.*' (\d+)", 0)
