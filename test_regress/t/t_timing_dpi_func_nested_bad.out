@@ -1,0 +1,7 @@
+                   0: Calling dpi_import_function1()
+Calling dpi_export_function()
+                   0: Calling dpi_import_function2()
+Returning to dpi_export_function()
+Calling dpi_export_task()
+%Error: t/t_timing_dpi_func_nested_bad.v:32: DPI exported task called from function context
+Aborting...

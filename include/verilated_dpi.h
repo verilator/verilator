@@ -122,13 +122,15 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
 namespace VerilatedDpi {
 
 namespace {
-struct VlFunctionContext {
+struct VlFunctionContext final {
     const char* m_filename;
     int m_lineno;
+
+    bool inFunctionContext() { return m_filename != nullptr and m_lineno != 0; }
 };
 
 thread_local VlFunctionContext t_fileline{nullptr, 0};
-bool inFunctionContext() { return t_fileline.m_filename != nullptr; }
+
 };  //namespace
 
 template <typename Callable, typename... Args>
@@ -141,8 +143,7 @@ decltype(auto) callImportFunction(const char* const filename, int lineno, Callab
                                         void>::value) {
         (void)call(std::forward<Args>(args)...);
     } else {
-        auto ret = call(std::forward<Args>(args)...);
-        return ret;
+        return call(std::forward<Args>(args)...);
     }
 }
 
@@ -168,7 +169,7 @@ decltype(auto) callExportFunction(Callable&& call, Args&&... args) {
 
 template <typename Callable, typename... Args>
 decltype(auto) callExportTask(Callable&& call, Args&&... args) {
-    if (inFunctionContext()) {
+    if (t_fileline.inFunctionContext()) {
         VL_FATAL_MT(t_fileline.m_filename, t_fileline.m_lineno, "",
                     "DPI exported task called from function context");
     }
@@ -216,7 +217,7 @@ template <typename Callable, typename... Args>
 decltype(auto) awaitExportFiber(Callable&& call, Args&&... args) {
     if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                         VlCoroutine>::value) {
-        if (inFunctionContext()) {
+        if (t_fileline.inFunctionContext()) {
             VL_FATAL_MT(t_fileline.m_filename, t_fileline.m_lineno, "",
                         "DPI exported task called from function context");
         }
