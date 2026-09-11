@@ -861,6 +861,12 @@ public:
         }
         puts(")");
     }
+    void visit(AstCFuncHard* nodep) override {
+        putns(nodep, nodep->name());
+        puts("(");
+        putCommaIterateNext(nodep->pinsp());
+        puts(")");
+    }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
     void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
