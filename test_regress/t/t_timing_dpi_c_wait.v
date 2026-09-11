@@ -15,7 +15,7 @@
 `define expected_start_time 95
 `define expected_end_time   190
 
-module t;
+module t ();
 
   localparam cycle = 1000.0 / 100.0;
   localparam halfcycle = 0.5 * cycle;

@@ -122,12 +122,13 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
 namespace VerilatedDpi {
 
 namespace {
-struct VlFunctionContext {
+struct VlFunctionContext final {
     const char* m_filename;
     int m_lineno;
 };
 
 thread_local VlFunctionContext t_fileline{nullptr, 0};
+
 bool inFunctionContext() { return t_fileline.m_filename != nullptr; }
 };  //namespace
 
@@ -141,8 +142,7 @@ decltype(auto) callImportFunction(const char* const filename, int lineno, Callab
                                         void>::value) {
         (void)call(std::forward<Args>(args)...);
     } else {
-        auto ret = call(std::forward<Args>(args)...);
-        return ret;
+        return call(std::forward<Args>(args)...);
     }
 }
 
