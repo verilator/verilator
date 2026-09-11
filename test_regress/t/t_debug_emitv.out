@@ -312,7 +312,7 @@ module Vt_debug_emitv_t;
                     begin
                         $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", 
                                136'h742f745f64656275675f656d6974762e76, 
-                               'sh105, SUB_B, 2'h1);
+                               'sh10a, SUB_B, 2'h1);
                         $stop;
                     end
                 end
@@ -1125,7 +1125,19 @@ package Vt_debug_emitv___024unit;
         member = 'sh1;
         int signed rmember1;
         int signed rmember2;
-        covergroup Vt_debug_emitv___vlAnonCG_cg_in_class;
+        int signed rarray[0:2];
+
+        ???? // CONSTRAINT 'array_values'
+
+        ???? // CONSTRAINTBEFORE
+        (rarray[2'h0])rmember1
+        ???? // CONSTRAINTFOREACH
+
+        ???? // FOREACHHEADER
+        rarrayint signed i;
+
+        ???? // CONSTRAINTEXPR
+        ((rarray[i[1:0]]) == (rmember1 + i))covergroup Vt_debug_emitv___vlAnonCG_cg_in_class;
         @(posedge cg_clk)function new;
             cp_m: coverpoint member {
                 bins one = {'sh1};
