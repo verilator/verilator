@@ -100,6 +100,7 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+class VerilatedSyms;
 template <typename, typename>
 class VerilatedTrace;
 class VerilatedTraceBaseC;
@@ -158,7 +159,16 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
     VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
-    VLVF_NET = (1 << 15)  // Net object
+    VLVF_NET = (1 << 15),  // Net object
+    VLVF_LAZY_PUBLIC_RW = (1 << 16),  // VPI public_rw storage resolved on demand
+    VLVF_LAZY_RETAINED = (1 << 17)  // --vpi-lazy signal kept with storage, written only by VPI
+};
+
+// Descriptor a --vpi-lazy VerilatedVar's datap points at
+struct VerilatedVarLazyDatap final {
+    void (*refreshp)(void* selfp);  // Reconstructs this signal's cone, memoised per epoch
+    void* storagep;  // Where the reconstructed value lands
+    void* selfp;  // Owning module instance
 };
 
 // One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
@@ -168,9 +178,10 @@ struct VlVarTableEntry final {
     const char* namep;  // VPI-facing (protected) variable name, string literal
     size_t byteOffset;  // offsetof of storage member from module instance base
     VerilatedVarType vltype;
-    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
+    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_PUBLIC_RW
     uint8_t udims;  // udims + pdims <= kMaxDims
     uint8_t pdims;
+    int32_t lazyIdx;  // -1: normal; else module-relative --vpi-lazy slot
     // (left,right) pairs: unpacked dims first, then packed; int32_t since large
     // unpacked memories exceed int16 range
     int32_t dims[kMaxDims * 2];
@@ -347,6 +358,8 @@ private:
     virtual void evalStatic() = 0;
     virtual void evalInitial() = 0;
     virtual void evalSample() = 0;
+    // Overridden only by --vpi-lazy; consumes the deposit request, so true once per deposit
+    virtual bool evalNeedsSettle();
     virtual bool evalStl(bool firstIteration) = 0;
     virtual bool evalIco(bool firstIteration) = 0;
     virtual bool evalAct() = 0;
@@ -896,6 +909,9 @@ public:  // But for internal use only
     // Keep first so is at zero offset for fastest code
     VerilatedContext* const _vm_contextp__;  // Context for current model
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
+    // --vpi-lazy: group stamps equal to this are fresh; starts at 1 so zero stamps are stale
+    uint64_t __Vm_lazyEpoch = 1;
+    bool __Vm_vpiLazyWritten = false;  // --vpi-lazy deposit awaiting a settle
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
     VL_UNCOPYABLE(VerilatedSyms);
@@ -945,7 +961,10 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
-    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    // lazyBasep/lazyReconFnsp are null when the table has no lazy rows; both keyed by lazyIdx
+    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                             VerilatedVarLazyDatap* lazyBasep,
+                             void (*const* lazyReconFnsp)(void*)) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;
     // ACCESSORS

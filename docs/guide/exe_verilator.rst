@@ -2104,6 +2104,29 @@ Summary:
 
    Enable the use of VPI and linking against the :file:`verilated_vpi.cpp` files.
 
+.. option:: --vpi-lazy
+
+   Declares all variables, ports, and wires VPI accessible by their flat name,
+   as :vlopt:`--public-flat-rw` does, but, where possible, reconstructing them
+   on demand when VPI reads them instead of pinning them as model state on the
+   evaluation path. Requires :vlopt:`--vpi`, and is ignored without it.
+
+   Signals that cannot be reconstructed keep ordinary storage, as
+   :vlopt:`--public-flat-rw` gives them all, and the set of visible signals is a
+   superset of what it exposes, at the cost of longer compile times and a larger
+   model. Deposits are accepted except on signals an explicit
+   ``public_flat_rd`` keeps read-only. From the next ``eval()`` the model
+   converges as it does under :vlopt:`--public-flat-rw`; before then, a
+   reconstructed signal related to the deposited one may either reflect the
+   deposit immediately or hold its pre-deposit value, and aliases sharing a
+   descriptor observe the same deposited shadow.
+
+   :vlopt:`--public-flat-rw` remains preferable where signals are read directly
+   as members of the generated C++ model rather than through VPI, or where a
+   client reads many signals on every time step, since a reconstructed read
+   costs more than a load from storage. Marking only the signals that need
+   public access is typically better performing than either option.
+
 .. option:: --waiver-multiline
 
    When using :vlopt:`--waiver-output \<filename\> <--waiver-output>`,

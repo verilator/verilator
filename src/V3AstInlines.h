@@ -161,8 +161,14 @@ AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr*
 
 bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
+    // The lazy VPI state decides storage, driver survival and the emitted VPI row
     return m_name == asamep->m_name && varType() == asamep->varType()
-           && covergroupRefMember() == asamep->covergroupRefMember();
+           && covergroupRefMember() == asamep->covergroupRefMember()
+           && isSigVpiLazyRWPublic() == asamep->isSigVpiLazyRWPublic()
+           && isSigVpiLazyRetained() == asamep->isSigVpiLazyRetained()
+           && isLazyReconstructShadow() == asamep->isLazyReconstructShadow()
+           && isLazyReconstructHelper() == asamep->isLazyReconstructHelper()
+           && isLazyShadowNet() == asamep->isLazyShadowNet();
 }
 
 AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp)

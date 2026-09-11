@@ -478,8 +478,17 @@ class LinkParseVisitor final : public VNVisitor {
         // Maybe this variable has a signal attribute
         V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
 
-        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()) {
-            if (v3Global.opt.publicFlatRW()) {
+        if ((v3Global.opt.anyPublicFlat() || v3Global.opt.vpiLazy())
+            && nodep->varType().isVPIAccessible()) {
+            if (v3Global.opt.vpiLazy()) {
+                if (nodep->isParam()) {
+                    // Params need no lazy machinery, as with --public-params
+                    nodep->sigUserRWPublic(true);
+                } else {
+                    // Reconciled below against any explicit public_flat_rw metacomment
+                    nodep->sigVpiLazyRWPublic(true);
+                }
+            } else if (v3Global.opt.publicFlatRW()) {
                 nodep->sigUserRWPublic(true);
             } else if (v3Global.opt.publicParams() && nodep->isParam()) {
                 nodep->sigUserRWPublic(true);
@@ -503,6 +512,10 @@ class LinkParseVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
         m_varp = nullptr;
+        // Explicit public_flat_rw/rd pins the signal against DCE, so it wins over lazy
+        if (nodep->isSigVpiLazyRWPublic()
+            && (nodep->isSigUserRWPublic() || nodep->isSigUserRdPublic()))
+            nodep->sigVpiLazyRWPublic(false);
         // temporaries under an always aren't expected to be blocking
         if (m_procedurep && VN_IS(m_procedurep, Always))
             nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);

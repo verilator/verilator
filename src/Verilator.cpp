@@ -115,6 +115,7 @@
 #include "V3Unknown.h"
 #include "V3Unroll.h"
 #include "V3VariableOrder.h"
+#include "V3VpiLazy.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
 #include "V3WidthCommit.h"
@@ -432,6 +433,9 @@ static void process() {
             // directly from force discovery to assign/deassign lowering without rediscovery.
             V3Force::forceAndAssignAll(v3Global.rootp());
 
+            // Capture reconstructable lazy VPI signals before the optimizer deletes them
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::prepare(v3Global.rootp());
+
             // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());
 
@@ -481,6 +485,9 @@ static void process() {
             // Schedule the logic
             V3Sched::schedule(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
+
+            // Split the cold reconstruction functions, their size now settled
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::finalize(v3Global.rootp());
 
             // Post scheduling transformations - TODO: this should at least be renamed
             V3Clock::clockAll(v3Global.rootp());

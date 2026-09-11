@@ -171,7 +171,8 @@ struct SplitVarImpl VL_NOT_FINAL {
         if (const char* const reason = cannotSplitVarDirectionReason(varp->direction())) {
             return reason;
         }
-        if (varp->isSigPublic()) return "it is public";
+        // A --vpi-lazy var must survive to V3VpiLazy::prepare to reach VPI at all
+        if (varp->isSigPublic() || varp->isSigVpiLazyRWPublic()) return "it is public";
         if (varp->isUsedLoopIdx()) return "it is used as a loop variable";
         if (varp->isForceable()) return "it is forceable";
         return nullptr;

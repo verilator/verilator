@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import vltest_bootstrap
+
+test.scenarios('vlt')
+
+test.top_filename = "t/t_vpi_lazy.v"
+test.pli_filename = "t/t_vpi_lazy.cpp"
+
+# A small split spreads the syms ctor over several files; the recon-fn arrays must not be
+# local to one of them.
+test.compile(make_top_shell=False,
+             make_main=False,
+             verilator_flags2=[
+                 "--exe --vpi --vpi-lazy --no-l2name --output-split 1 --output-split-cfuncs 1"
+                 " -Wno-MULTIDRIVEN", test.pli_filename
+             ])
+
+test.execute()
+
+syms = test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp"
+# Array defined at file scope in the main syms file...
+test.file_grep(syms, r'^void \(\*const \S+__VlazyReconFns\d+\[\]\)\(void\*\) = \{')
+# ...and declared extern once in the syms header, not per split translation unit.
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__Syms.h",
+               r'extern void \(\*const \S+__VlazyReconFns\d+\[\]\)\(void\*\);')
+for f in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "__Syms__ctor__*.cpp"):
+    test.file_grep_not(f, r'extern void \(\*const \S+__VlazyReconFns\d+\[\]\)\(void\*\);')
+
+test.passes()

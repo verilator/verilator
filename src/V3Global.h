@@ -186,6 +186,7 @@ class V3Global final {
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
     bool m_hasTable = false;  // Desgin has the UDP Table.
     bool m_hasVirtIfaces = false;  // Design uses virtual interfaces
+    bool m_hasVpiLazyRetained = false;  // Design has a --vpi-lazy retained signal
     bool m_usesProbDist = false;  // Uses $dist_*
     bool m_usesStdPackage = false;  // Design uses the std package
     bool m_usesTiming = false;  // Design uses timing constructs
@@ -259,6 +260,8 @@ public:
     void setHasClasses() { m_hasClasses = true; }
     bool hasSampled() const { return m_hasSampled; }
     void setHasSampled() { m_hasSampled = true; }
+    bool hasVpiLazyRetained() const { return m_hasVpiLazyRetained; }
+    void setHasVpiLazyRetained() { m_hasVpiLazyRetained = true; }
     bool hasTable() const { return m_hasTable; }
     void setHasTable() { m_hasTable = true; }
     bool hasVirtIfaces() const { return m_hasVirtIfaces; }

@@ -988,6 +988,15 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_exe && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
     }
+    // Ignore rather than error without --vpi, so build systems can pass it unconditionally
+    if (m_vpiLazy && !m_vpi) m_vpiLazy = false;
+    if (m_vpiLazy && m_publicFlatRW) {
+        // Warn rather than error: some callers (e.g. cocotb) always inject --public-flat-rw
+        cmdfl->v3warn(NOEFFECT, "--public-flat-rw has no effect when --vpi-lazy is set; the lazy "
+                                "path is used instead. Mark individual signals with a "
+                                "public_flat_rw attribute for write access");
+        m_publicFlatRW = false;
+    }
 
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_makeJson) m_gmake = true;
@@ -1898,6 +1907,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         v3Global.vlExit(0);
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
+    DECL_OPTION("-vpi-lazy", OnOff, &m_vpiLazy);
 
     DECL_OPTION("-Wall", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::I_LINT, false); });
     DECL_OPTION("-Werror-", CbPartialMatch, [this, fl](const char* optp) {

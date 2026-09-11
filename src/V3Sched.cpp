@@ -550,10 +550,12 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
             AstVar* const varp = vscp->varp();
             // If it has an explicit change detect trigger, use that,
             // otherwise fall back to using the 'first iteration' trigger
+            // A --vpi-lazy retained signal gets neither; 'settle' re-runs to propagate a deposit
             auto it = inp2changedp.find(vscp);
             if (it != inp2changedp.end()) {
                 out.push_back(it->second);
-            } else if (varp->isPrimaryInish() || varp->isSigUserRWPublic() || varp->sampled()) {
+            } else if (varp->isPrimaryInish() || varp->sampled()
+                       || (varp->isSigExternallyRWPublic() && !varp->isSigVpiLazyRetained())) {
                 out.push_back(firstIterTriggerp);
             }
             // Add other triggers

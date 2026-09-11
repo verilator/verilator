@@ -49,6 +49,11 @@ class EmitCModel final : public EmitCFunc {
         return funcps;
     }
 
+    // Whether the model reports a pending --vpi-lazy deposit, which the eval loop settles
+    static bool emitVpiLazySettleRequest() {
+        return v3Global.opt.vpiLazy() && v3Global.hasVpiLazyRetained();
+    }
+
     void putSectionDelimiter(const string& name) {
         puts("\n");
         puts("//============================================================\n");
@@ -269,6 +274,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n// Internal functions - the model's evaluation entry points\n");
         puts("void evalBegin() override final;\n");
         puts("void evalEnd() override final;\n");
+        if (emitVpiLazySettleRequest()) puts("bool evalNeedsSettle() override final;\n");
         for (int i = 0; i < VEval::_ENUM_END; ++i) {
             const VEval eval{i};
             // Only the iterated regions report whether they did any work
@@ -466,8 +472,19 @@ class EmitCModel final : public EmitCFunc {
             puts(delaySchedp->nameProtect());
             puts(".cleanupForevered();\n");
         }
+        // Once per time step, so the next VPI read reconstructs from fresh model state
+        if (v3Global.opt.vpiLazy()) puts("++vlSymsp->__Vm_lazyEpoch;\n");
 
         puts("}\n");
+
+        // ::evalNeedsSettle - report and consume a pending --vpi-lazy deposit
+        if (emitVpiLazySettleRequest()) {
+            puts("\nbool " + EmitCUtil::topClassName() + "::evalNeedsSettle() {\n");
+            puts("const bool needsSettle = vlSymsp->__Vm_vpiLazyWritten;\n");
+            puts("vlSymsp->__Vm_vpiLazyWritten = false;\n");
+            puts("return needsSettle;\n");
+            puts("}\n");
+        }
 
         // Evaluation entry points
         for (int i = 0; i < VEval::_ENUM_END; ++i) {

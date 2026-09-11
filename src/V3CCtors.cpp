@@ -29,6 +29,7 @@
 #include "V3CCtors.h"
 
 #include "V3EmitCBase.h"
+#include "V3VpiLazy.h"
 
 #include <list>
 
@@ -204,8 +205,15 @@ class CCtorsVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    // --vpi-lazy shadows are fully written by the reconstruct function before any read.
+    // Anonymous per-temp shadows carry no AST flag, so also match by name.
+    static bool needsNoLazyReset(const AstVar* nodep) {
+        if (nodep->isFuncLocal()) return false;
+        if (nodep->isLazyReconstructShadow() || nodep->isLazyReconstructHelper()) return true;
+        return VString::startsWith(nodep->name(), V3VpiLazy::SHADOW_PREFIX);
+    }
     void visit(AstVar* nodep) override {
-        if (nodep->needsCReset()) {
+        if (nodep->needsCReset() && !needsNoLazyReset(nodep)) {
             AstNode* const crstp = new AstAssign{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                 new AstCReset{nodep->fileline(), nodep, true}};
