@@ -584,6 +584,21 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
     // TODO: maybe try to shorten these flags somehow
 }
+void AstCFuncHard::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_purity.get()) str << " [PURE]";
+}
+void AstCFuncHard::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "pure", m_purity.get());
+    dumpJsonGen(str);
+}
+bool AstCFuncHard::getPurity() {
+    if (!function().isPure()) { return false; }
+    for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        if (!argp->isPure()) { return false; }
+    }
+    return true;
+}
 void AstCMethodHard::dump(std::ostream& str) const {
     Super::dump(str);
     if (m_pure) str << " [PURE]";
