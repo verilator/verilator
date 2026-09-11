@@ -156,9 +156,9 @@ public:
                 DeadVertex* const toVtxp = static_cast<DeadVertex*>(oedge.top());
                 pushWorkMaybe(toVtxp, true);
             }
-            vtxp->unlinkDelete(this);
             nodep->user2p(nullptr);  // Shouldn't be checked later as deleting, but in case
             if (vtxp->removable()) m_funcs.erase(vtxp);
+            VL_DO_DANGLING(vtxp->unlinkDelete(this), vtxp);
         }
     }
     // This only tracks usage dependancy, not "containership",
