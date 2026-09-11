@@ -13,6 +13,7 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=['--assert', '--binary', '--coverage-user'])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute(all_run_flags=[" +verilator+coverage+file+" + test.obj_dir + "/coverage.dat"],
+             expect_filename=test.golden_filename)
 
 test.passes()
