@@ -949,17 +949,6 @@ class ParamProcessor final {
         }
     }
 
-    class InterfacePinCloneRelinkVisitor final : public VNVisitor {
-        void visit(AstPin* nodep) override {
-            nodep->cloneRelinkGen();
-            iterateChildren(nodep);
-        }
-        void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-    public:
-        explicit InterfacePinCloneRelinkVisitor(AstIface* nodep) { iterate(nodep); }
-    };
-
     // Return true on success, false on error
     bool deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
                          const string& newname, const IfaceRefRefs& ifaceRefRefs) {
@@ -976,7 +965,7 @@ class ParamProcessor final {
         // interface, relink pins whose formals were cloned with the interface while clonep() is
         // still valid, so nested parameterized classes use the cloned interface parameters.
         if (AstIface* const newIfacep = VN_CAST(newModp, Iface)) {
-            InterfacePinCloneRelinkVisitor{newIfacep};
+            newIfacep->foreach([](AstPin* pinp) { pinp->cloneRelinkGen(); });
         }
 
         // Mark the source module as a parameterized template now that a specialized
