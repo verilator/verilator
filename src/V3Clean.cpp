@@ -18,7 +18,8 @@
 // Each module:
 //      For each expression, if it requires a clean operand,
 //      and the operand is dirty, insert a CLEAN node.
-//      Resize operands (but not variables or variable selects) to C++ 32/64/wide types.
+//      Resize operands (but not variables, variable selects, or formatting metadata)
+//      to C++ 32/64/wide types.
 //      Copy all width() values to widthMin() so RANGE, etc can still see orig widths
 //
 //*************************************************************************
@@ -84,6 +85,7 @@ class CleanVisitor final : public VNVisitor {
                 || VN_IS(nodep, ConsPackMember)  //
                 || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
                 || VN_IS(nodep, NodeSel)  // Array selects should reflect variable widths
+                || VN_IS(nodep, SFormatArg)  // Retain the logical argument type, not storage width
                 || VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)  // Or arrays
                 || VN_IS(nodep->dtypep()->skipRefp(), WildcardArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), DynArrayDType)
