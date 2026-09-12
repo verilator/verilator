@@ -329,33 +329,13 @@ class ParamProcessor final {
             }
         }
     }
-    static string paramSmallName(AstNodeModule* modp, AstNode* paramp) {
-        if (paramp->user3() <= 1) makeSmallNames(modp);
-        if (paramp->user3() <= 1) {
-            // Pins on a cloned class can still reference the corresponding parameter from an
-            // earlier clone. Resolve the formal owned by this module before reading its small name.
-            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (stmtp->name() != paramp->name()) continue;
-                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                    if (VN_IS(paramp, Var)
-                        && (varp->isGParam() || varp->isIfaceRef())) {
-                        paramp = stmtp;
-                        break;
-                    }
-                } else if (AstParamTypeDType* const typep = VN_CAST(stmtp, ParamTypeDType)) {
-                    if (VN_IS(paramp, ParamTypeDType) && typep->isGParam()) {
-                        paramp = stmtp;
-                        break;
-                    }
-                }
-            }
-        }
-        UASSERT_OBJ(paramp->user3() > 1, paramp, "Parameter has no small-name discriminator");
-        int index = paramp->user3() / 256;
-        const char ch = paramp->user3() & 255;
-        string st{ch};
+    static string paramSmallName(AstNodeModule* modp, AstNode* varp) {
+        if (varp->user3() <= 1) makeSmallNames(modp);
+        int index = varp->user3() / 256;
+        const char ch = varp->user3() & 255;
+        string st = cvtToStr(ch);
         while (index) {
-            st += static_cast<char>((index % 25) + 'A');
+            st += cvtToStr(static_cast<char>((index % 25) + 'A'));
             index /= 26;
         }
         return st;
@@ -969,6 +949,17 @@ class ParamProcessor final {
         }
     }
 
+    class InterfacePinCloneRelinkVisitor final : public VNVisitor {
+        void visit(AstPin* nodep) override {
+            nodep->cloneRelinkGen();
+            iterateChildren(nodep);
+        }
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    public:
+        explicit InterfacePinCloneRelinkVisitor(AstIface* nodep) { iterate(nodep); }
+    };
+
     // Return true on success, false on error
     bool deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
                          const string& newname, const IfaceRefRefs& ifaceRefRefs) {
@@ -980,6 +971,12 @@ class ParamProcessor final {
             newModp = VN_CAST(srcModp->user3p()->cloneTree(false), NodeModule);
         } else {
             newModp = srcModp->cloneTree(false);
+        }
+        // AstPin normally retains links to external module formals across cloning. For a cloned
+        // interface, relink pins whose formals were cloned with the interface while clonep() is
+        // still valid, so nested parameterized classes use the cloned interface parameters.
+        if (AstIface* const newIfacep = VN_CAST(newModp, Iface)) {
+            InterfacePinCloneRelinkVisitor{newIfacep};
         }
 
         // Mark the source module as a parameterized template now that a specialized
