@@ -2948,8 +2948,8 @@ inline void VL_ZERO_INIT_QUEUE_ELEM(VlWide<N_Words>& elem) {
     for (size_t j = 0; j < N_Words; ++j) { elem.at(j) = 0; }
 }
 
-// This specialization works for both VlQueue<CData> (and similar) as well
-// as VlQueue<VlWide<N>>.
+// These overloads work for both VlQueue<CData> (and similar) as well
+// as VlQueue<VlWide<N>>, including queues with different element types.
 template <typename T>
 inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int /*lbits*/, int srcElementBits,
                       int dstElementBits) {
@@ -2971,16 +2971,32 @@ inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int /*lbits*/, int 
     }
 }
 
-// This specialization works for both VlQueue<CData> (and similar) as well
-// as VlQueue<VlWide<N>>.
-template <typename T>
-inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits, int srcElementBits,
-                         int dstElementBits) {
+// Keep the same-type overload separate for its direct-copy optimization and alias handling;
+// differently typed queues cannot alias.
+template <typename T_Dst, typename T_Src>
+inline typename std::enable_if<!std::is_same<T_Dst, T_Src>::value>::type
+VL_COPY_Q(VlQueue<T_Dst>& q, const VlQueue<T_Src>& from, int /*lbits*/, int srcElementBits,
+          int dstElementBits) {
+    const size_t srcTotalBits = from.size() * srcElementBits;
+    const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;
+    q.renew(dstSize);
+    for (size_t i = 0; i < dstSize; ++i) { VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i)); }
+    for (size_t bitIndex = 0; bitIndex < srcTotalBits; ++bitIndex) {
+        VL_SET_QUEUE_BIT(q, dstElementBits, bitIndex,
+                         VL_GET_QUEUE_BIT(from, srcElementBits, bitIndex));
+    }
+}
+
+// This works for both VlQueue<CData> (and similar) as well as VlQueue<VlWide<N>>,
+// including queues with different element types.
+template <typename T_Dst, typename T_Src>
+inline void VL_REVCOPY_Q(VlQueue<T_Dst>& q, const VlQueue<T_Src>& from, int lbits,
+                         int srcElementBits, int dstElementBits) {
     const size_t srcTotalBits = from.size() * srcElementBits;
     const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;
 
     // Always make a copy to handle the case where q and from are the same queue
-    VlQueue<T> srcCopy = from;
+    VlQueue<T_Src> srcCopy = from;
 
     // Initialize all elements to zero using appropriate method
     q.renew(dstSize);
