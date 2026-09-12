@@ -1,0 +1,7 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_funccall.v:19:18: Unsupported: Unique constraint on an array slice with an operand that isn't a variable, member, or constant-indexed slice
+                                                                            : ... note: In instance 't'
+   19 |   constraint c1 {unique {get_row()};}
+      |                  ^~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to
