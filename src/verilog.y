@@ -7076,7 +7076,7 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
                                   else {
                                       $<fl>1->v3error("Unknown coverage option name 'option."
                                                       << *$3 << "'"
-                                                      << "; not a valid option per IEEE 1800-2023 Table 19-1");
+                                                      << "; not a valid option (IEEE 1800-2023 Table 19-1)");
                                       valid = false;
                                   }
                               } else {
@@ -7099,7 +7099,7 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
                                       } else {
                                           $<fl>1->v3error("Unknown coverage type option name 'type_option."
                                               << *$3 << "'"
-                                              << "; not a valid type option per IEEE 1800-2023 Table 19-3");
+                                              << "; not a valid type option (IEEE 1800-2023 Table 19-3)");
                                       }
                                       valid = false;
                                   }
@@ -7468,7 +7468,8 @@ coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
                         { $$ = $1; }  // Keep the clocking event for automatic sampling
         |       yWITH__ETC yFUNCTION idAny/*"sample"*/ '(' tf_port_listE ')'
                         { if (*$3 != "sample") {
-                            $<fl>3->v3error("Coverage sampling function must be named 'sample'");
+                            $<fl>3->v3error("Coverage sampling function must be named 'sample'"
+                                            " (IEEE 1800-2023 19.8.1)");
                             $$ = nullptr;
                             DEL($5);
                           } else {
