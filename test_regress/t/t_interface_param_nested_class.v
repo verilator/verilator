@@ -2,7 +2,7 @@
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2026 by Verilator Authors.
-// SPDX-FileCopyrightText: 2026 by Verilator Authors
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // A parameterized class nested in a specialized parameterized interface must
