@@ -1360,6 +1360,10 @@ class TaskVisitor final : public VNVisitor {
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->recursive(nodep->recursive());
+        // Hardcoded based on UVM usage; TODO make a verilated_std.vlt control for these
+        cfuncp->unlikely(nodep->name() == "uvm_report_error" || nodep->name() == "uvm_report_info"
+                         || nodep->name() == "uvm_report_fatal"
+                         || nodep->name() == "uvm_report_warning");
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
             cfuncp->isLoose(true);

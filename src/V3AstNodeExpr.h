@@ -225,7 +225,7 @@ public:
     void funcp(AstCFunc* funcp) { m_funcp = funcp; }
     string argTypes() const { return m_argTypes; }
     void argTypes(const string& str) { m_argTypes = str; }
-
+    bool isUnlikely() const override { return m_funcp && m_funcp->isUnlikely(); }
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { return true; }
@@ -280,6 +280,7 @@ public:
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
     bool isPure() override;
+    bool isUnlikely() const override { return m_taskp && m_taskp->isUnlikely(); }
     bool sameNode(const AstNode* samep) const override {
         const AstNodeFTaskRef* const asamep = VN_DBG_AS(samep, NodeFTaskRef);
         return taskp() == asamep->taskp()  //

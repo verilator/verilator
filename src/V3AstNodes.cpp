@@ -547,6 +547,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isDestructor()) str << " [DTOR]";
     if (isMethod()) str << " [METHOD]";
     if (isLoose()) str << " [LOOSE]";
+    if (isUnlikely()) str << " [UNL]";
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
     if (needProcess()) str << " [NPRC]";
@@ -570,6 +571,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, dpiContext);
     dumpJsonBoolFuncIf(str, isConstructor);
     dumpJsonBoolFuncIf(str, isDestructor);
+    dumpJsonBoolFuncIf(str, isUnlikely);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needProcess);
