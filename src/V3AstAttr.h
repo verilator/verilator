@@ -963,7 +963,93 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(UNPACKED_ASSIGN,                    "assign",                 false,  "r") \
     macro(UNPACKED_FILL,                      "fill",                   false,  "r") \
     macro(UNPACKED_NEQ,                       "neq",                    PURE,   "r")
+
+#define FOR_EACH_CFUNCTION(macro) \
+    /*    id,                                 function,                 pure,   args */ \
+    macro(_NONE,                              "_none",                  false,  "") \
+    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r")
 // clang-format on
+
+namespace {
+// Validate the arguments descriptor
+static constexpr bool validateArgsDescriptor(const char* descrp) {
+    // Is "TODO"
+    if (descrp[0] == 'T' && descrp[1] == 'O' && descrp[2] == 'D' && descrp[3] == 'O'
+        && !descrp[4]) {
+        return true;
+    }
+    // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
+    for (const char* cp = descrp; *cp; ++cp) {
+        if (*cp == '+') return cp != descrp && !cp[1];
+        if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
+    }
+    return true;
+}
+};  //namespace
+
+class VCFunction final {
+    static constexpr bool PURE = true;  // For macro expansion of 'pure' field only
+
+public:
+    enum en : uint8_t {
+#define VL_CFUNCTION_ID(id, method, pure, args) id,
+        FOR_EACH_CFUNCTION(VL_CFUNCTION_ID)
+#undef VL_CFUNCTION_ID
+            _ENUM_MAX  // Leave last
+    };
+    enum en m_e;
+    VCFunction()
+        : m_e{_NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCFunction(en _e)
+        : m_e{_e} {}
+    explicit VCFunction(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CFUNCTION_NAME(id, function, pure, args) function,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_NAME)
+#undef VL_CFUNCTION_NAME
+                "_ENUM_MAX"  //
+        };
+        return values[m_e];
+    }
+    bool isPure() const VL_PURE {
+        static const bool values[] = {
+#define VL_CFUNCTION_PURE(id, method, pure, args) pure,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_PURE)
+#undef VL_CFUNCTION_PURE
+                false  //
+        };
+        return values[m_e];
+    }
+    const char* args() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CFUNCTION_ARGS(id, method, pure, args) args,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_ARGS)
+#undef VL_CFUNCTION_ARGS
+                ""  //
+        };
+        return values[m_e];
+    }
+};
+constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCFunction& lhs, VCFunction::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCFunction::en lhs, const VCFunction& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
+    return os << rhs.ascii();
+}
+
+// Static assert all argument descriptors are well formed
+#define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \
+    static_assert(validateArgsDescriptor(args), "Malformed argument descriptor for " #id);
+FOR_EACH_CFUNCTION(VL_CFUNCTION_ARGS_CHECK)
+#undef VL_CFUNCTION_ARGS_CHECK
+
+#undef FOR_EACH_CFUNCTION
 
 class VCMethod final {
     static constexpr bool PURE = true;  // For macro expansion of 'pure' field only
@@ -1013,21 +1099,6 @@ public:
     }
     // Return array method for given name
     static VCMethod arrayMethod(const string& name);
-
-    // Validate the arguments descriptor
-    static constexpr bool validateArgsDescriptor(const char* descrp) {
-        // Is "TODO"
-        if (descrp[0] == 'T' && descrp[1] == 'O' && descrp[2] == 'D' && descrp[3] == 'O'
-            && !descrp[4]) {
-            return true;
-        }
-        // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
-        for (const char* cp = descrp; *cp; ++cp) {
-            if (*cp == '+') return cp != descrp && !cp[1];
-            if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
-        }
-        return true;
-    }
 };
 constexpr bool operator==(const VCMethod& lhs, const VCMethod& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VCMethod& lhs, VCMethod::en rhs) { return lhs.m_e == rhs; }
@@ -1038,8 +1109,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 // Static assert all argument descriptors are well formed
 #define VL_CMETHOD_ARGS_CHECK(id, method, pure, args) \
-    static_assert(VCMethod::validateArgsDescriptor(args), \
-                  "Malformed argument descriptor for " #id);
+    static_assert(validateArgsDescriptor(args), "Malformed argument descriptor for " #id);
 FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 #undef VL_CMETHOD_ARGS_CHECK
 

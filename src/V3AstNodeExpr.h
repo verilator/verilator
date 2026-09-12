@@ -742,6 +742,40 @@ public:
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
     void add(AstNode* nodep) { addNodesp(nodep); }
 };
+class AstCFuncHard final : public AstNodeExpr {
+    // A call to a C++ function in the runtime library (include/verilated*)
+    // PARENTS: stmt/expr
+    // @astgen op1 := pinsp : List[AstNodeExpr] // Arguments
+    VIsCached m_purity;  // Pure optimizable
+    VCFunction m_function;  // Which function to call
+public:
+    AstCFuncHard(FileLine* fl, VCFunction function, AstNodeExpr* pinsp = nullptr)
+        : ASTGEN_SUPER_CFuncHard(fl)
+        , m_function{function} {
+        addPinsp(pinsp);
+        m_purity.set(getPurity());
+    }
+    ASTGEN_MEMBERS_AstCFuncHard;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string name() const override VL_MT_STABLE { return function().ascii(); }
+    bool sameNode(const AstNode* samep) const override {
+        const AstCFuncHard* const asamep = VN_DBG_AS(samep, CFuncHard);
+        return (m_function == asamep->m_function);
+    }
+    bool isPure() override {
+        if (!m_purity.isCached()) { m_purity.set(getPurity()); }
+        return m_purity.get();
+    }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    VCFunction function() const VL_MT_STABLE { return m_function; }
+    void function(VCFunction value) { m_function = value; }
+
+private:
+    bool getPurity();
+};
 class AstCMethodHard final : public AstNodeExpr {
     // A reference to a "C" hardcoded member task (or function)
     // PARENTS: stmt/expr

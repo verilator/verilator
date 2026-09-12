@@ -339,6 +339,11 @@ private:
         processAndIterate(nodep);
         checkArgRefs(nodep, nodep->method().args(), nodep->pinsp());
     }
+    void visit(AstCFuncHard* nodep) override {
+        ++m_nCalls;
+        processAndIterate(nodep);
+        checkArgRefs(nodep, nodep->function().args(), nodep->pinsp());
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         ++m_nCalls;
         processAndIterate(nodep);
