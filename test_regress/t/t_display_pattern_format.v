@@ -64,8 +64,12 @@ module t;
 `ifdef QUESTA
     escaped_expected = {"\"", escaped, "\""};
 `else
-    escaped_expected = {"\"quote=\\\" slash=\\\\ line=\\n cr=\\r tab=\\t bell=\\007 ",
-                        "form=\\014 vert=\\013 ctrl=\\001 ", plain, "\""};
+    escaped_expected = {
+      "\"quote=\\\" slash=\\\\ line=\\n cr=\\r tab=\\t bell=\\007 ",
+      "form=\\014 vert=\\013 ctrl=\\001 ",
+      plain,
+      "\""
+    };
 `endif
     formatted = $sformatf("%p", plain);
     `checks(formatted, {"\"", plain, "\""});

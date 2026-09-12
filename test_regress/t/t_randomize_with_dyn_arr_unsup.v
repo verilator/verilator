@@ -25,7 +25,12 @@ class Cls4;
     arr[0] = 123;
     arr[1] = 124;
     repeat (40) begin
-      if (c.randomize() with {solve foo before x; x == arr[bit'(foo)]; foo <= 1;} != 1) $stop;
+      if (c.randomize() with {
+            solve foo before x;
+            x == arr[bit'(foo)];
+            foo <= 1;
+          } != 1)
+        $stop;
       `checkd(c.x, arr[bit'(c.foo)]);
     end
   endtask

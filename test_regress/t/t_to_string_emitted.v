@@ -5,12 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 typedef struct {
-  struct {
-    int a;
-  } s1;
-  struct {
-    int b;
-  } s2[2][3];
+  struct {int a;} s1;
+  struct {int b;} s2[2][3];
   int x;
 } struct_t;
 
@@ -26,17 +22,14 @@ class Class;
   int z;
   virtual iface i1;
   virtual iface2 i2[1][1];
-  struct {
-    int a;
-  } s1;
-  struct {
-    int b;
-  } s2[2][3];
+  struct {int a;} s1;
+  struct {int b;} s2[2][3];
 endclass
 
 class Class2;
   int x;
-endclass;
+endclass
+;
 
 class Base;
   int base_a;
@@ -53,7 +46,8 @@ endclass
 class Derived2 extends Base2;
   int derived2_a;
   Class2 c2;
-endclass;
+endclass
+;
 
 class Base3;
   int base3_a;
@@ -79,9 +73,7 @@ class OuterClass;
   endclass
 endclass
 
-typedef struct {
-  int x;
-} struct2_t;
+typedef struct {int x;} struct2_t;
 
 interface iface3;
   int i;

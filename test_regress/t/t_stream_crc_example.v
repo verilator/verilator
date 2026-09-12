@@ -12,21 +12,20 @@
 
 typedef bit bit_q_t[$];
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
-  integer        cyc = 0;
-  reg     [63:0] crc = '0;
-  reg     [63:0] sum = '0;
+
+  integer cyc = 0;
+  reg [63:0] crc = '0;
+  reg [63:0] sum = '0;
 
   // Take CRC data and apply to testblock inputs
-  wire    [31:0] in = crc[31:0];
+  wire [31:0] in = crc[31:0];
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-  wire    [31:0] out;  // From test of Test.v
+  wire [31:0] out;  // From test of Test.v
   // End of automatics
 
   Test test (

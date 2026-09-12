@@ -44,7 +44,7 @@ module t;
   SomeIntf concrete_intf ();
 
   Foo foo (
-      .intf_ref (concrete_intf),
+      .intf_ref(concrete_intf),
       .plain_ref(concrete_intf)
   );
 

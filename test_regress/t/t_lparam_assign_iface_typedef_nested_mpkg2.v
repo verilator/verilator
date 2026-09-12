@@ -16,20 +16,17 @@ package a_pkg;
   } cfg_t;
 endpackage
 
-module a_mod #(parameter a_pkg::cfg_t cfg=0)(
-  input logic a
+module a_mod #(
+    parameter a_pkg::cfg_t cfg = 0
+) (
+    input logic a
 );
 endmodule
 
-module top();
-  localparam a_pkg::cfg_t cfg = '{
-    awidth : 16
-    ,dwidth : 8
-  };
+module top ();
+  localparam a_pkg::cfg_t cfg = '{awidth : 16, dwidth : 8};
 
-  a_mod #(cfg) a_mod_inst(
-    .a(1'b0)
-  );
+  a_mod #(cfg) a_mod_inst (.a(1'b0));
 
   initial begin
     #1;

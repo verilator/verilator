@@ -17,11 +17,9 @@ interface ifc #(
   typedef struct packed {logic [WIDTH-1:0] data;} struct_t;
 endinterface
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
 
   ifc #(10) i_ifc10 ();
   ifc #(20) i_ifc20 ();

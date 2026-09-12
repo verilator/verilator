@@ -31,7 +31,10 @@ class Cls;
     arr[0] = 111112300;
     arr[1] = 123000000;
     repeat (40) begin
-      ok = a.randomize() with {x >= 0; x <= arr[1];};
+      ok = a.randomize() with {
+        x >= 0;
+        x <= arr[1];
+      };
       `checkd(ok, 1);
       `check_range(a.x, 0, 123000000);
       `checkd_ne(a.x, prev);
@@ -39,7 +42,10 @@ class Cls;
     end
     prev = -1;
     repeat (40) begin
-      ok = a.randomize() with {x >= 0; x <= foo();};
+      ok = a.randomize() with {
+        x >= 0;
+        x <= foo();
+      };
       `checkd(ok, 1);
       `check_range(a.x, 0, 111112300);
       `checkd_ne(a.x, prev);

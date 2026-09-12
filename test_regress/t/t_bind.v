@@ -7,11 +7,10 @@
 bit a_finished;
 bit b_finished;
 
-module t (  /*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
+
   wire [31:0] o;
   wire si = 1'b0;
 

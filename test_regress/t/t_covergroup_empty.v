@@ -6,11 +6,9 @@
 // Test: Empty covergroup (no coverpoints)
 // Expected: Should compile, coverage should be 100% (nothing to cover)
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
 
   logic [7:0] value;
 

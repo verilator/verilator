@@ -44,7 +44,7 @@ module t;
   Sub sub ();
 
   Foo foo (
-      .intf_ref (sub.concrete_intf),
+      .intf_ref(sub.concrete_intf),
       .plain_ref(sub.concrete_intf)
   );
 

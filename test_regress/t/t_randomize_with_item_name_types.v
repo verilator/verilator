@@ -63,7 +63,7 @@ class Seq;
   endfunction
 endclass
 
-module t (  /*AUTOARG*/);
+module t;
   // std::randomize() with reaches the 'with' clause through a different call
   // site than a class randomize(), and must not shadow 'item' either.
   function automatic void check_std_randomize();

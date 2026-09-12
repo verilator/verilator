@@ -4,23 +4,18 @@
 // SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/
-  // Outputs
-  data_o,
-  // Inputs
-  clk, rst_i, write_valid_i, write_front_i, read_valid_i, data_i
+module t (
+    input clk,
+    input rst_i,
+    input write_valid_i,
+    input write_front_i,
+    input read_valid_i,
+    input [31:0] data_i,
+    output [31:0] data_o
 );
 
   localparam NR_ELEMENTS = 16;
   localparam DATAW = 32;
-
-  input clk;
-  input rst_i;
-  input write_valid_i;
-  input write_front_i;
-  input read_valid_i;
-  input [31:0] data_i;
-  output [31:0] data_o;
 
   reg [31:0] FIFOContent[NR_ELEMENTS-1:0];
 

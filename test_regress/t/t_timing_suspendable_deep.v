@@ -4,12 +4,13 @@
 // SPDX-FileCopyrightText: 2023 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-`timescale 1ns/1ns
+`timescale 1ns / 1ns
 
 event evt;
 
 class Baz;
-  virtual task do_something(); endtask
+  virtual task do_something();
+  endtask
 endclass
 
 class Foo extends Baz;
@@ -21,7 +22,7 @@ class Bar extends Foo;
   endtask
 endclass
 
-module top();
+module top;
   initial begin
     Bar bar;
     bar = new;

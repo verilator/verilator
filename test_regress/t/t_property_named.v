@@ -4,11 +4,10 @@
 // SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-    clk
-  );
+module t (
+    input clk
+);
 
-  input clk;
   int cyc = 0;
   logic val = 0;
 

@@ -29,15 +29,10 @@ module t (
   end
 endmodule
 
-module t_extend_c_class_v (/*AUTOARG*/
-  // Outputs
-  out,
-  // Inputs
-  in
-  );
-
-  input [31:0]  in;
-  output logic [31:0] out;
+module t_extend_c_class_v (
+    input [31:0]  in,
+    output logic [31:0] out
+);
 
   always @* begin
     // When "in" changes, call my method

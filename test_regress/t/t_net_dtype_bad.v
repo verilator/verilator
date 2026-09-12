@@ -10,17 +10,11 @@ endclass
 module t;
   typedef real real_t;
 
-  typedef struct packed {
-    bit m_bit;
-  } bad_t;
+  typedef struct packed {bit m_bit;} bad_t;
 
-  typedef struct {
-    logic m_bit;
-  } ok_unpk_t;
+  typedef struct {logic m_bit;} ok_unpk_t;
 
-  typedef struct packed {
-    logic m_bit;
-  } ok_t;
+  typedef struct packed {logic m_bit;} ok_t;
 
   wire real_t bad_real;  // <--- Error - bad net type
 

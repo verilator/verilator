@@ -79,8 +79,7 @@ module t (
     hit_fixed_ring_multiplicity++;
 
   // The same multiplicity occupies each endpoint of a consecutive-repetition range ring.
-  cover sequence (((cyc <= 1) [* 1: 2]) ##0 ((cyc >= 1) [* 1: 3]))
-    hit_range_ring_multiplicity++;
+  cover sequence (((cyc <= 1) [* 1: 2]) ##0 ((cyc >= 1) [* 1: 3])) hit_range_ring_multiplicity++;
 
   // Multiplicity crosses a fixed-delay ring before entering a range ring.
   cover sequence ((((cyc <= 1) [* 1: 2]) ##0 ((cyc >= 1) ##2 (cyc >= 3))) ##0

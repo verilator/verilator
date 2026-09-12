@@ -14,7 +14,7 @@ interface my_if (
   assert property (@(posedge clk) s_eventually a);
 endinterface
 
-module t (  /*AUTOARG*/);
+module t;
   bit clk = 0;
   initial forever #1 clk = ~clk;
 

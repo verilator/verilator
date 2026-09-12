@@ -6,7 +6,7 @@
 
 module t;
   logic clk = 1'b0;
-
+  // verilog_format: off
   property c_prop;
     @(negedge clk)
     1'b1;

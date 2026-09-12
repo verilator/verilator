@@ -48,7 +48,7 @@ module Bar (
 );
 
   Foo foo (
-      .intf_ref (intf_ref),
+      .intf_ref(intf_ref),
       .plain_ref(plain_ref)
   );
 
@@ -64,7 +64,7 @@ module t (
   SomeIntf concrete_intf ();
 
   Bar bar (
-      .intf_ref (concrete_intf),
+      .intf_ref(concrete_intf),
       .plain_ref(concrete_intf)
   );
 
@@ -74,7 +74,7 @@ module t (
   logic run_mon_check = 1'b0;
 
   initial begin
-    concrete_intf.some_intf_var  = 32'h1111_2222;
+    concrete_intf.some_intf_var = 32'h1111_2222;
     concrete_intf.other_intf_var = 32'h3333_4444;
 
     run_mon_check = 1'b1;
