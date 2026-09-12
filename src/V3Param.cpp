@@ -329,13 +329,33 @@ class ParamProcessor final {
             }
         }
     }
-    static string paramSmallName(AstNodeModule* modp, AstNode* varp) {
-        if (varp->user3() <= 1) makeSmallNames(modp);
-        int index = varp->user3() / 256;
-        const char ch = varp->user3() & 255;
-        string st = cvtToStr(ch);
+    static string paramSmallName(AstNodeModule* modp, AstNode* paramp) {
+        if (paramp->user3() <= 1) makeSmallNames(modp);
+        if (paramp->user3() <= 1) {
+            // Pins on a cloned class can still reference the corresponding parameter from an
+            // earlier clone. Resolve the formal owned by this module before reading its small name.
+            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (stmtp->name() != paramp->name()) continue;
+                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                    if (VN_IS(paramp, Var)
+                        && (varp->isGParam() || varp->isIfaceRef())) {
+                        paramp = stmtp;
+                        break;
+                    }
+                } else if (AstParamTypeDType* const typep = VN_CAST(stmtp, ParamTypeDType)) {
+                    if (VN_IS(paramp, ParamTypeDType) && typep->isGParam()) {
+                        paramp = stmtp;
+                        break;
+                    }
+                }
+            }
+        }
+        UASSERT_OBJ(paramp->user3() > 1, paramp, "Parameter has no small-name discriminator");
+        int index = paramp->user3() / 256;
+        const char ch = paramp->user3() & 255;
+        string st{ch};
         while (index) {
-            st += cvtToStr(static_cast<char>((index % 25) + 'A'));
+            st += static_cast<char>((index % 25) + 'A');
             index /= 26;
         }
         return st;
