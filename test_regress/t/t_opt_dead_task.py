@@ -14,7 +14,9 @@ test.scenarios('simulator')
 test.compile(verilator_flags2=["--stats", "--top-module t"])
 
 if test.vlt_all:
-    test.file_grep(test.stats, r'Optimizations, deadified FTasks\s+(\d+)', 6)
+    test.file_grep_not(test.stats, r'Optimizations, FTasks, deadified, methods\s+(\d+)')
+    test.file_grep(test.stats, r'Optimizations, FTasks, deadified, non-methods\s+(\d+)', 6)
+    test.file_grep(test.stats, r'Optimizations, FTasks, deadified, virtual\s+(\d+)', 1)
 
 test.execute()
 

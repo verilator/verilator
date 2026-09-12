@@ -706,6 +706,8 @@ Summary:
 
 .. option:: -fno-dead-cells
 
+.. option:: -fno-dead-methods
+
 .. option:: -fno-dedup
 
 .. option:: -fno-dfg

@@ -17,6 +17,7 @@ Verilator 5.053 devel
 
 * Add covergroup runtime registry (#8134). [Matthew Ballance]
 * Add initial support for solo `binsof` (#8298). [Marco Bartoli]
+* Add `-fno-dead-members` and optimize dead class member functions.
 * Change JSON dumps to suppress empty strings, etc.
 * Support VPI interface references (#8081). [Todd Strader]
 * Support nested array and associative array element member access in constraint 1/4 - pre-cleanup (#8237). [Kamil Danecki, Antmicro Ltd.]

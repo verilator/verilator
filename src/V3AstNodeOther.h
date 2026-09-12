@@ -113,6 +113,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_dpiPure : 1;  // DPI import pure (vs. virtual pure)
+    bool m_keepAlive : 1;  // Disable dead function elimination
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_static : 1;  // Static method in class
@@ -145,6 +146,7 @@ protected:
         , m_isHideLocal{false}
         , m_isHideProtected{false}
         , m_dpiPure{false}
+        , m_keepAlive{false}
         , m_pureVirtual{false}
         , m_recursive{false}
         , m_static{false}
@@ -212,6 +214,8 @@ public:
     void isHideProtected(bool flag) { m_isHideProtected = flag; }
     bool dpiPure() const { return m_dpiPure; }
     void dpiPure(bool flag) { m_dpiPure = flag; }
+    bool keepAlive() const { return m_keepAlive; }
+    void keepAlive(bool flag) { m_keepAlive = flag; }
     bool pureVirtual() const { return m_pureVirtual; }
     void pureVirtual(bool flag) { m_pureVirtual = flag; }
     bool recursive() const { return m_recursive; }
