@@ -13,13 +13,18 @@ test.scenarios('simulator')
 
 test.sim_time = 2700
 
-test.compile(timing_loop=True,
-             verilator_flags2=['--assert', '--timing', '--coverage-user', '--dumpi-graph', '6'])
+test.compile(
+    timing_loop=True,
+    verilator_flags2=['--assert', '--timing', '--coverage-user', '--dumpi-graph', '6', '--stats'])
 
-# Keep this multiplicity-free cover-sequence ring bit-packed to avoid 32x storage.
 if test.vlt_all:
-    headers = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*.h")
-    test.file_grep_any(headers, r'VlWide<32>.*/\*1023:0\*/.*__Vnfa___0__d2_ring')
+    # Ring updates must not copy whole packed vectors.
+    test.file_grep(test.stats, r'Optimizations, Expand, expanded wide words\s+(\d+)', 0)
+    test.file_grep(test.stats, r'Optimizations, Expand, expanded wides\s+(\d+)', 0)
+
+    # Keep the six wide rings bit-packed to avoid 32x storage.
+    test.file_grep(test.stats,
+                   r'Optimizations, Expand, pattern assign to sel var wide one bit\s+(\d+)', 6)
 
 test.execute()
 
