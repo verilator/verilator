@@ -1228,6 +1228,7 @@ class LinkParseVisitor final : public VNVisitor {
             addArgMemberCopies(funcp, sampleArgsp, false);
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
+            funcp->keepAlive(true);  // TODO create AstFuncRef and hold until findMethod("sample")
             nodep->addMembersp(funcp);
         }
 

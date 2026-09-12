@@ -2603,6 +2603,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (isExternDef()) str << " [EXTDEF]";
     if (isExternProto()) str << " [EXTPROTO]";
     if (isVirtual()) str << " [VIRT]";
+    if (keepAlive()) str << " [KALIVE]";
     if (prototype()) str << " [PROTOTYPE]";
     if (pureVirtual()) str << " [PUREVIRTUAL]";
     if (recursive()) str << " [RECURSIVE]";
@@ -2625,6 +2626,7 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isExternDef);
     dumpJsonBoolFuncIf(str, isExternProto);
     dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, keepAlive);
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonBoolFuncIf(str, prototype);
     dumpJsonBoolFuncIf(str, recursive);

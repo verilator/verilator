@@ -412,6 +412,7 @@ private:
     bool m_fDfgSynthesizeAll = false;  // main switch: -fdfg-synthesize-all
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
+    bool m_fDeadMethods;   // main switch: -fno-dead-methods: remove dead methods
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
     bool m_fFuncBalanceCat = true;  // main switch: -fno-func-balance-cat: expansion of C macros
     bool m_fFuncSplitCat = true;  // main switch: -fno-func-split-cat: expansion of C macros
@@ -753,6 +754,7 @@ public:
     }
     bool fDeadAssigns() const { return m_fDeadAssigns; }
     bool fDeadCells() const { return m_fDeadCells; }
+    bool fDeadMethods() const { return m_fDeadMethods; }
     bool fExpand() const { return m_fExpand; }
     bool fFuncBalanceCat() const { return m_fFuncBalanceCat; }
     bool fFuncSplitCat() const { return m_fFuncSplitCat; }
