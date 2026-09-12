@@ -773,9 +773,10 @@ class TraceDeclVisitor final : public VNVisitor {
                 // Save the mapping from the path of the reference to the scope
                 m_pathToScopep.emplace(refName, nodep);
 
-                // No more need for AstIntfRef
-                intfRefp->unlinkFrBack();
-                VL_DO_DANGLING(intfRefp->deleteTree(), intfRefp);
+                // No more need for AstIntfRef, unless V3EmitCSyms wants it for VPI
+                if (!v3Global.opt.vpi()) {
+                    VL_DO_DANGLING(intfRefp->unlinkFrBack()->deleteTree(), intfRefp);
+                }
             }
         }
     }

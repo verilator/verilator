@@ -327,7 +327,10 @@ static void process() {
             }
         }
 
-        if (v3Global.opt.trace()) V3Interface::interfaceAll(v3Global.rootp());
+        // Interface references feed trace file aliases and VPI name resolution
+        if (v3Global.opt.trace() || v3Global.opt.vpi()) {
+            V3Interface::interfaceAll(v3Global.rootp());
+        }
 
         // --PRE-FLAT OPTIMIZATIONS------------------
 
