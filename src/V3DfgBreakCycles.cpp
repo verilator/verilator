@@ -192,8 +192,6 @@ class TraceDriver final : public DfgVisitor {
     DfgVertex* m_defaultp = nullptr;  // When tracing a variable, this is its 'defaultp', if any
     // Result cache for reusing already traced vertices
     std::unordered_map<CacheKey, DfgVertex*, CacheKey::Hash, CacheKey::Equal> m_cache;
-    // Cache for boundary vertices (where m_sccInfo.get(*vtxp) != m_component)
-    std::unordered_map<CacheKey, DfgVertex*, CacheKey::Hash, CacheKey::Equal> m_boundaryCache;
 
 #ifdef VL_DEBUG
     std::ofstream m_lineCoverageFile;  // Line coverage file, just for testing
@@ -249,46 +247,39 @@ class TraceDriver final : public DfgVisitor {
         UASSERT_OBJ(vtxp->isPacked(), vtxp, "Can only trace packed type vertices");
         UASSERT_OBJ(vtxp->size() > msb, vtxp, "Traced Vertex too narrow");
 
-        // If this vertex is in a different component (boundary), check boundary cache
-        if (m_sccInfo.get(*vtxp) != m_component) {
-            DfgVertex*& respr = m_boundaryCache
-                                    .emplace(std::piecewise_construct,
-                                             std::forward_as_tuple(vtxp, lsb, msb),
-                                             std::forward_as_tuple(nullptr))
-                                    .first->second;
-            if (!respr) {
-                respr = vtxp;
-                // If the result is a splice, we need to insert a temporary for it
-                // as a splice cannot be fed into arbitray logic
-                if (DfgVertexSplice* const splicep = respr->cast<DfgVertexSplice>()) {
-                    DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
-                    // Note: we can't do 'splicep->replaceWith(tmpp)', as other
-                    // variable sinks of the splice might have a defaultp driver.
-                    tmpp->srcp(splicep);
-                    respr = tmpp;
-                }
-                // Apply a Sel to extract the relevant bits if only a part is needed
-                if (msb != respr->width() - 1 || lsb != 0) {
-                    DfgSel* const selp = make<DfgSel>(respr, msb - lsb + 1);
-                    selp->fromp(respr);
-                    selp->lsb(lsb);
-                    respr = selp;
-                }
-            }
-            UASSERT_OBJ(respr, vtxp, "Tracing driver failed for " << vtxp->typeName());
-            UASSERT_OBJ(respr->width() == (msb - lsb + 1), vtxp, "Wrong result width");
-            return respr;
-        }
-
-        // Normal cache for intra-component traces
+        // Get the cache entry, which is the resulting driver that is not part of
+        // the same component as vtxp
         DfgVertex*& respr = m_cache
-                                .emplace(std::piecewise_construct,
-                                         std::forward_as_tuple(vtxp, lsb, msb),
+                                .emplace(std::piecewise_construct,  //
+                                         std::forward_as_tuple(vtxp, msb, lsb),  //
                                          std::forward_as_tuple(nullptr))
                                 .first->second;
 
+        // Trace the vertex
         if (respr) {
-            // Cache hit
+            // If already traced this vtxp/msb/lsb, just use the result.
+            // This is important to avoid combinatorial explosion when the
+            // same sub-expression is needed multiple times.
+        } else if (m_sccInfo.get(*vtxp) != m_component) {
+            // If the currently traced vertex is in a different component,
+            // then we found what we were looking for.
+            respr = vtxp;
+            // If the result is a splice, we need to insert a temporary for it
+            // as a splice cannot be fed into arbitray logic
+            if (DfgVertexSplice* const splicep = respr->cast<DfgVertexSplice>()) {
+                DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
+                // Note: we can't do 'splicep->replaceWith(tmpp)', as other
+                // variable sinks of the splice might have a defaultp driver.
+                tmpp->srcp(splicep);
+                respr = tmpp;
+            }
+            // Apply a Sel to extract the relevant bits if only a part is needed
+            if (msb != respr->width() - 1 || lsb != 0) {
+                DfgSel* const selp = make<DfgSel>(respr, msb - lsb + 1);
+                selp->fromp(respr);
+                selp->lsb(lsb);
+                respr = selp;
+            }
         } else {
             // Otherwise visit the vertex to trace it
             VL_RESTORER(m_msb);
