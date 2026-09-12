@@ -78,7 +78,7 @@ class EmitCHeader final : public EmitCConstInit {
         const auto emitCurrentList = [this, &first, &varList, &lastAnon]() {
             if (varList.empty()) return;
 
-            decorateFirst(first, "\n// DESIGN SPECIFIC STATE\n");
+            decorateFirst(first, "\n// DESIGN-SPECIFIC STATE\n");
 
             if (lastAnon) {  // Output as anons
                 const int anonMembers = varList.size();
