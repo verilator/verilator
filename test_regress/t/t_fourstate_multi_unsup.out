@@ -1,0 +1,97 @@
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:69:5: Unsupported: Variable of type: 'SAMPLEQUEUEDTYPE' with --fourstate
+                                                    : ... note: In instance 't'
+   69 |     input Q;
+      |     ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:73:9: Unsupported: Variable of type: 'logic$[$]' with --fourstate
+                                                    : ... note: In instance 't'
+   73 |   logic queue [$];
+      |         ^~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:74:9: Unsupported: Variable of type: 'logic$[0:12]' with --fourstate
+                                                    : ... note: In instance 't'
+   74 |   logic unpackedArr [13];
+      |         ^~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:75:9: Unsupported: Variable of type: 'logic$[integer]' with --fourstate
+                                                    : ... note: In instance 't'
+   75 |   logic assocArr [integer];
+      |         ^~~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:77:21: Unsupported: Variable of type: 'logic[13:0][13:0]' with --fourstate
+                                                     : ... note: In instance 't'
+   77 |   long_logic [13:0] packedArr;
+      |                     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:78:7: Unsupported: Variable of type: 'struct{}$unit::bar' with --fourstate
+                                                    : ... note: In instance 't'
+   78 |   bar barInst;
+      |       ^~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:93:7: Unsupported: Cells with pins that are not a variable reference or a constant with --fourstate
+                                                    : ... note: In instance 't'
+   93 |   m m(foo(), dummy_if, dummy_if, kk, 'x);
+      |       ^~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:93:34: Unsupported: Ports with direction other than INPUT and OUTPUT with --fourstate
+                                                     : ... note: In instance 't'
+   93 |   m m(foo(), dummy_if, dummy_if, kk, 'x);
+      |                                  ^~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:93:38: Unsupported: Four-state non variable reference output pin with --fourstate
+                                                     : ... note: In instance 't'
+   93 |   m m(foo(), dummy_if, dummy_if, kk, 'x);
+      |                                      ^~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:98:11: Unsupported: Operator: POWSS with --fourstate
+                                                     : ... note: In instance 't'
+   98 |     y = 2 ** x;
+      |           ^~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:99:10: Unsupported: Fourstate LHS other than a simple variable reference with --fourstate
+                                                     : ... note: In instance 't'
+   99 |     x[1] = 1;
+      |          ^
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:101:21: Unsupported: Conditional expression with four-state condition and non-integral result with --fourstate
+                                                      : ... note: In instance 't'
+  101 |     c = (f(($c(1))) ? a : b);
+      |                     ^
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:103:5: Unsupported: Case statements with four-state value as an expression with --fourstate
+                                                     : ... note: In instance 't'
+  103 |     casex (dummy_if.signal)
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:104:18: Unsupported: Four-state case items values with --fourstate
+                                                      : ... note: In instance 't'
+  104 |       8'b01z0100x: ;
+      |                  ^
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:43:10: Unsupported: Pullups and pulldowns are unsupported with --fourstate
+                                                     : ... note: In instance 't.m'
+   43 |   pullup d_0_pup (dummy_out.signal[0]);
+      |          ^~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:44:10: Unsupported: Pullups and pulldowns are unsupported with --fourstate
+                                                     : ... note: In instance 't.m'
+   44 |   pullup d_1_pup (dummy_out.signal[1]);
+      |          ^~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:45:12: Unsupported: Pullups and pulldowns are unsupported with --fourstate
+                                                     : ... note: In instance 't.m'
+   45 |   pulldown d_2_pdown (dummy_out.signal[2]);
+      |            ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:46:12: Unsupported: Pullups and pulldowns are unsupported with --fourstate
+                                                     : ... note: In instance 't.m'
+   46 |   pulldown d_3_pdown (dummy_out.signal[3]);
+      |            ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:47:11: Unsupported: supply0/tri0 and supply1/tri1 with --fourstate
+                                                     : ... note: In instance 't.m'
+   47 |   supply1 high;
+      |           ^~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:48:14: Unsupported: supply0/tri0 and supply1/tri1 with --fourstate
+                                                     : ... note: In instance 't.m'
+   48 |   supply0 #1 low = dummy_in.signal[0];
+      |              ^~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:48:11: Unsupported: Continuous assignment delays with --fourstate
+                                                     : ... note: In instance 't.m'
+   48 |   supply0 #1 low = dummy_in.signal[0];
+      |           ^
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:16:23: Unsupported: Modports with --fourstate
+                                                     : ... note: In instance 't.m.ff'
+   16 |   modport slave(input signal);
+      |                       ^~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:18:25: Unsupported: Modports with --fourstate
+                                                     : ... note: In instance 't.m.ff'
+   18 |   modport master(output signal);
+      |                         ^~~~~~
+%Error-UNSUPPORTED: t/t_fourstate_multi_unsup.v:28:72: Unsupported: Hierarchical references with --fourstate
+   28 |   for (i = 0; i < N; i = i + 1) assign downstream[i].signal = upstream.signal;
+      |                                                                        ^~~~~~
+%Error: Exiting due to

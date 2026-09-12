@@ -636,11 +636,31 @@ void VerilatedVcdBuffer::emitBit(uint32_t code, CData newval) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitLogic(uint32_t code, CData newval, CData newvalXZ) {
+    // Don't prefetch suffix as it's a bit too late;
+    char* wp = m_writep;
+    *wp++ = "01zx"[(newvalXZ << 1) | newval];
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     cvtCDataToStr(wp, newval << (VL_BYTESIZE - bits));
     finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateCData(uint32_t code, CData newval, CData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const CData index = (((newvalXZ >> i) & 1) << 1) | ((newval >> i) & 1);
+        *wp++ = "01zx"[index];
+    }
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
@@ -652,11 +672,35 @@ void VerilatedVcdBuffer::emitSData(uint32_t code, SData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateSData(uint32_t code, SData newval, SData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const CData index = (((newvalXZ >> i) & 1) << 1) | ((newval >> i) & 1);
+        *wp++ = "01zx"[index];
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     cvtIDataToStr(wp, newval << (VL_IDATASIZE - bits));
     finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateIData(uint32_t code, IData newval, IData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const CData index = (((newvalXZ >> i) & 1) << 1) | ((newval >> i) & 1);
+        *wp++ = "01zx"[index];
+    }
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
@@ -668,7 +712,19 @@ void VerilatedVcdBuffer::emitQData(uint32_t code, QData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcdBuffer::emitWData(uint32_t code, WDataInP newval, int bits) {
+void VerilatedVcdBuffer::emitFourstateQData(uint32_t code, QData newval, QData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const CData index = (((newvalXZ >> i) & 1) << 1) | ((newval >> i) & 1);
+        *wp++ = "01zx"[index];
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitWData(uint32_t code, const WDataInP newval, int bits) {
     int words = VL_WORDS_I(bits);
     char* wp = m_writep;
     *wp++ = 'b';
@@ -680,6 +736,31 @@ void VerilatedVcdBuffer::emitWData(uint32_t code, WDataInP newval, int bits) {
     while (words > 0) {
         cvtEDataToStr(wp, newval[--words]);
         wp += VL_EDATASIZE;
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateWData(uint32_t code, const WDataInP newval,
+                                            const WDataInP newvalXZ, int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    const int lastIdx = (bits - 1) / VL_EDATASIZE;
+    {
+        const EData value = newval[lastIdx];
+        const EData xz = newvalXZ[lastIdx];
+        for (int i = (bits - 1) % VL_EDATASIZE; i >= 0; --i) {
+            const CData index = (((xz >> i) & 1) << 1) | ((value >> i) & 1);
+            *wp++ = "01zx"[index];
+        }
+    }
+    for (int w = lastIdx - 1; w >= 0; --w) {
+        const EData value = newval[w];
+        const EData xz = newvalXZ[w];
+        for (int i = VL_EDATASIZE - 1; i >= 0; --i) {
+            const CData index = (((xz >> i) & 1) << 1) | ((value >> i) & 1);
+            *wp++ = "01zx"[index];
+        }
     }
     finishLine(code, wp);
 }
