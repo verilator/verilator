@@ -8002,6 +8002,7 @@ class WidthVisitor final : public VNVisitor {
                 if (AstNodeFTask* const ftaskp
                     = VN_CAST(m_memberMap.findMember(nodep, "self"), NodeFTask)) {
                     ftaskp->setNeedProcess();
+                    v3Global.setUsesTiming();
                 }
             }
         }
