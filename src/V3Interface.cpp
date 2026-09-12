@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Interface references for tracing
+// DESCRIPTION: Verilator: Interface references for tracing and VPI
 //
 // Code available from: https://verilator.org
 //
@@ -64,7 +64,12 @@ class InlineIntfRefVisitor final : public VNVisitor {
             if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
                 varp->user1p(cellp);
                 const string alias = m_scope + "__DOT__" + pinp->name();
-                cellp->addIntfRefsp(new AstIntfRef{pinp->fileline(), alias});
+                // Prefer the port's own dtype; the source may have no modport
+                const AstIfaceRefDType* const portIrdtp = VN_CAST(varp->dtypep(), IfaceRefDType);
+                const string modportName
+                    = portIrdtp ? portIrdtp->modportName() : irdtp->modportName();
+                cellp->addIntfRefsp(
+                    new AstIntfRef{pinp->fileline(), alias, pinp->name(), modportName});
             }
         }
 
@@ -92,7 +97,10 @@ class InlineIntfRefVisitor final : public VNVisitor {
         string alias;
         if (!m_scope.empty()) alias = m_scope + "__DOT__";
         alias += varlp->name();
-        cellp->addIntfRefsp(new AstIntfRef{varlp->fileline(), alias});
+        const AstIfaceRefDType* const lirdtp = VN_CAST(varlp->dtypep(), IfaceRefDType);
+        const string modportName = lirdtp ? lirdtp->modportName() : "";
+        cellp->addIntfRefsp(
+            new AstIntfRef{varlp->fileline(), alias, varlp->origName(), modportName});
     }
     //--------------------
     void visit(AstNodeExpr*) override {}  // Accelerate
