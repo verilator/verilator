@@ -375,7 +375,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 AstConst* const hiConstp = VN_CAST(rhsp, Const);
                 if ((!loConstp && !loUnbounded) || (!hiConstp && !hiUnbounded)) {
                     rangep->v3error("Non-constant expression in bin range; "
-                                    "range bounds must be constants");
+                                    "range bounds must be constants (IEEE 1800-2023 19.5)");
                     continue;
                 }
                 if ((loConstp && loConstp->num().isFourState())
@@ -388,7 +388,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     values.insert(v);
                 }
             } else {
-                np->v3error("Non-constant expression in bin value list; values must be constants");
+                np->v3error("Non-constant expression in bin value list; values must be constants "
+                            "(IEEE 1800-2023 19.5)");
             }
         }
     }
@@ -886,16 +887,17 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const uint64_t maxVal = (width >= 64) ? UINT64_MAX : ((1ULL << width) - 1);
         std::vector<AstNodeExpr*> values;
         for (AstNode* rangep = arrayBinp->rangesp(); rangep; rangep = rangep->nextp()) {
+            rangep = V3Const::constifyEdit(rangep);
             if (AstInsideRange* const irp = VN_CAST(rangep, InsideRange)) {
-                AstNodeExpr* const lhsp = V3Const::constifyEdit(irp->lhsp());
-                AstNodeExpr* const rhsp = V3Const::constifyEdit(irp->rhsp());
+                AstNodeExpr* const lhsp = irp->lhsp();
+                AstNodeExpr* const rhsp = irp->rhsp();
                 const bool loUnb = VN_IS(lhsp, Unbounded);
                 const bool hiUnb = VN_IS(rhsp, Unbounded);
                 AstConst* const minp = VN_CAST(lhsp, Const);
                 AstConst* const maxp = VN_CAST(rhsp, Const);
                 if ((!minp && !loUnb) || (!maxp && !hiUnb)) {
                     arrayBinp->v3error("Non-constant expression in array bins range; "
-                                       "range bounds must be constants");
+                                       "range bounds must be constants (IEEE 1800-2023 19.5)");
                     return values;
                 }
                 if ((minp && minp->num().isFourState()) || (maxp && maxp->num().isFourState())) {
@@ -926,7 +928,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 values.push_back(VN_AS(rangep->cloneTree(false), NodeExpr));
             } else {
                 arrayBinp->v3error("Non-constant expression in array bins value list; "
-                                   "values must be constants");
+                                   "values must be constants (IEEE 1800-2023 19.5)");
                 return values;
             }
         }
@@ -1335,11 +1337,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         for (AstNode* valp = itemp->valuesp(); valp; valp = valp->nextp()) {
             AstNodeExpr* singleCondp = nullptr;
-
-            AstConst* const constp = VN_AS(valp, Const);
+            valp = V3Const::constifyEdit(valp);
+            AstConst* const constp = VN_CAST(valp, Const);
+            if (!constp) {
+                valp->v3error("Non-constant expression in transition bin; "
+                              "values must be constants (IEEE 1800-2023 19.5)");
+                return new AstConst{valp->fileline(), AstConst::BitFalseErroring{}};
+            }
             singleCondp
                 = new AstEq{constp->fileline(), exprp->cloneTree(false), constp->cloneTree(false)};
-
             if (condp) {
                 condp = new AstOr{itemp->fileline(), condp, singleCondp};
             } else {
@@ -1634,6 +1640,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         for (AstNode* currRangep = rangep; currRangep; currRangep = currRangep->nextp()) {
             AstNodeExpr* rangeCondp = nullptr;
+            currRangep = V3Const::constifyEdit(currRangep);
 
             if (AstInsideRange* irp = VN_CAST(currRangep, InsideRange)) {
                 AstNodeExpr* const minExprp = irp->lhsp();
@@ -1650,7 +1657,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                         rangeCondp = new AstConst{irp->fileline(), AstConst::BitTrue{}};
                     } else if (!boundp) {
                         irp->v3error("Non-constant expression in bin range; "
-                                     "range bounds must be constants");
+                                     "range bounds must be constants (IEEE 1800-2023 19.5)");
                         if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                         return nullptr;
                     } else if (boundp->num().isFourState()) {
@@ -1664,7 +1671,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     }
                 } else if (!minConstp || !maxConstp) {
                     irp->v3error("Non-constant expression in bin range; "
-                                 "range bounds must be constants");
+                                 "range bounds must be constants (IEEE 1800-2023 19.5)");
                     if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                     return nullptr;
                 } else if (minConstp->num().isFourState() || maxConstp->num().isFourState()) {
@@ -1694,8 +1701,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                            constp->cloneTree(false)};
                 }
             } else {
-                currRangep->v3error(
-                    "Non-constant expression in bin range; values must be constants");
+                currRangep->v3error("Non-constant expression in bin range; values must be "
+                                    "constants (IEEE 1800-2023 19.5)");
                 if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                 return nullptr;
             }
