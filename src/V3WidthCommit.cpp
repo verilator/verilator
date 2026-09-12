@@ -32,6 +32,16 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
+
+// Hash a std::pair automatically
+struct PairHash final {
+    template <typename T, typename U>
+    std::size_t operator()(const std::pair<T, U>& x) const {
+        return std::hash<T>()(x.first) + std::hash<U>()(x.second);
+    }
+};
+
+//######################################################################
 // Now that all widthing is complete,
 // Copy all width() to widthMin().  V3Const expects this
 
@@ -183,6 +193,38 @@ private:
                 newp->v3error("Illegal to call 'new' using an abstract virtual class "
                               + AstNode::prettyNameQ(newp->classOrPackagep()->origName())
                               + " (IEEE 1800-2023 8.21)");
+        }
+    }
+
+    void virtualRecurse(AstNodeFTask* nodep, const AstClass* classp, bool& isVirtualr) {
+        static std::unordered_map<std::pair<const AstClass*, const AstNodeFTask*>, bool, PairHash>
+            s_classFuncsChecked;  // Track what was recursed to avoid O(class*funcs^2)
+        // IEEE doesn't require virtual marking at derived classes' functions.
+        // Propagate virtual marking from base class function upwards.
+        auto pair = s_classFuncsChecked.emplace(std::make_pair(classp, nodep), isVirtualr);
+        if (!pair.second) {
+            if (pair.first->second) isVirtualr = true;
+            return;
+        }
+        //
+        if (nodep->isVirtual()) isVirtualr = true;
+        // Propagate value from extends/implements
+        for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
+             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+            const AstClass* const eclassp = extendsp->classp();
+            if (AstNodeFTask* const fbasep
+                = VN_CAST(m_memberMap.findMember(eclassp, nodep->name()), NodeFTask)) {
+                if (fbasep != nodep) {
+                    virtualRecurse(fbasep, eclassp, isVirtualr);
+                    continue;
+                }
+            }
+            virtualRecurse(nodep, eclassp, isVirtualr);
+        }
+        if (isVirtualr) {
+            nodep->isVirtual(true);
+            // Update memoize map in case had a false when first created
+            s_classFuncsChecked[std::make_pair(classp, nodep)] = isVirtualr;
         }
     }
 
@@ -342,6 +384,12 @@ private:
         m_ftaskp = nodep;
         iterateChildren(nodep);
         editDType(nodep);
+        bool isVirtual = false;
+        if (const AstClass* const classp = VN_CAST(m_modp, Class)) {
+            virtualRecurse(nodep, classp, isVirtual /*ref*/);
+        }
+        if (nodep->isStatic() && nodep->isVirtual())  // After propagated isVirtual
+            nodep->v3error("Static methods cannot be virtual");
         {
             const AstClass* const classp = VN_CAST(m_modp, Class);
             if (nodep->classMethod() && nodep->pureVirtual() && classp
@@ -352,6 +400,7 @@ private:
         }
         bool extended = false;
         if (const AstClass* const classp = VN_CAST(m_modp, Class)) {
+            // Walk down inheritance
             for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
                  extendsp = extendsp->classp()->extendsp()) {
                 const AstClass* const eclassp = extendsp->classp();

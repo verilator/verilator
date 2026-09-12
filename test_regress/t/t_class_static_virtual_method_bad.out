@@ -2,4 +2,10 @@
     8 |   static virtual task foo();
       |                       ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_static_virtual_method_bad.v:15:15: Static methods cannot be virtual
+   15 |   static task vimplicit();
+      |               ^~~~~~~~~
+%Error: t/t_class_static_virtual_method_bad.v:25:15: Static methods cannot be virtual
+   25 |   static task vimplicit();
+      |               ^~~~~~~~~
 %Error: Exiting due to
