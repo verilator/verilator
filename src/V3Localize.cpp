@@ -38,7 +38,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LocalizeVisitor final : public VNVisitor {
     // NODE STATE
-    //  AstVarScope::user1()    ->  bool.  VarScope is not optimizable
+    //  AstVarScope::user1()    ->  bool.  VarScope is not optimizable (set when a read may
+    //                                     precede a whole write)
     //  AstCFunc::user1()       ->  bool.  CFunc is not a leaf function
     //  AstVarScope::user2()    ->  bool.  VarScope was fully assigned in current function
     //  AstVarScope::user3p()   ->  Set of CFuncs referencing this VarScope. (via m_accessors)
@@ -106,6 +107,11 @@ class LocalizeVisitor final : public VNVisitor {
             // for now, as not all VarScopes referencing this Var might be localized.
             pushDeletep(nodep->unlinkFrBack());
 
+            // If no read of the variable precedes an assignment to the whole of it, then its
+            // value on entry to the function is never observed, and the local replacement
+            // needs no reset.
+            const bool noReset = !nodep->user1();
+
             // In each referencing function, create a replacement local variable
             AstVar* const oldVarp = nodep->varp();
             for (AstCFunc* const funcp : funcps) {
@@ -117,7 +123,7 @@ class LocalizeVisitor final : public VNVisitor {
                 AstVar* const newVarp
                     = new AstVar{oldVarp->fileline(), oldVarp->varType(), newName, oldVarp};
                 newVarp->funcLocal(true);
-                newVarp->noReset(oldVarp->noReset());
+                newVarp->noReset(oldVarp->noReset() || noReset);
                 newVarp->noSubst(oldVarp->noSubst());
                 funcp->addVarsp(newVarp);
 
