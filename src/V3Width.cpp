@@ -235,7 +235,6 @@ class WidthVisitor final : public VNVisitor {
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    AstClass* m_cgClassp = nullptr;  // Current covergroup class
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
@@ -2041,15 +2040,25 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
     void visit(AstCgOptionAssign* nodep) override {
+        // Recursive function widthing can reach a covergroup constructor without first visiting
+        // its class, so find the owning covergroup structurally instead of using visit context.
+        AstClass* cgClassp = nullptr;
+        for (AstNode* parentp = nodep->aboveLoopp(); parentp; parentp = parentp->aboveLoopp()) {
+            if (AstClass* const classp = VN_CAST(parentp, Class)) {
+                cgClassp = classp;
+                break;
+            }
+        }
+        UASSERT_OBJ(cgClassp && cgClassp->isCovergroup(), nodep,
+                    "Covergroup option is not under a covergroup class");
+
         // Extract covergroup option values and store in AstClass before deleting.
-        // m_cgClassp is always set here: AstCgOptionAssign only appears in covergroup
-        // class bodies, and visitClass sets m_cgClassp before iterating children.
         if (nodep->optType() == VCoverOptionType::AUTO_BIN_MAX) {
             // By V3Width time, V3Param has already folded any parameter references.
             // If the value is still not a constant, it is a runtime expression - emit error.
             if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
-                m_cgClassp->cgAutoBinMax(constp->toSInt());
-                UINFO(6, "  Covergroup " << m_cgClassp->name()
+                cgClassp->cgAutoBinMax(constp->toSInt());
+                UINFO(6, "  Covergroup " << cgClassp->name()
                                          << " option.auto_bin_max = " << constp->toSInt() << endl);
             } else {
                 nodep->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant "
@@ -8010,8 +8019,6 @@ class WidthVisitor final : public VNVisitor {
         // Must do extends first, as we may in functions under this class
         // start following a tree of extends that takes us to other classes
         userIterateAndNext(nodep->extendsp(), nullptr);
-        VL_RESTORER(m_cgClassp);
-        if (nodep->isCovergroup()) m_cgClassp = nodep;
         userIterateChildren(nodep, nullptr);  // First size all members
     }
     void visit(AstNodeModule* nodep) override {
