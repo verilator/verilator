@@ -473,8 +473,11 @@ DfgGraph::neighborhood(const std::vector<const DfgVertex*>& vtxps, size_t n) con
 //------------------------------------------------------------------------------
 // DfgVertex
 
-DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dt)
-    : m_filelinep{flp}
+DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dt,
+                     DfgEdge* inlineInputsp, uint32_t nInputs)
+    : m_inlineInputsp{inlineInputsp}
+    , m_nInputs{nInputs}
+    , m_filelinep{flp}
     , m_dtype{dt}
     , m_type{type} {
     dfg.addVertex(*this);
