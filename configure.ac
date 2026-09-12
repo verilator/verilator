@@ -219,6 +219,25 @@ AC_ARG_WITH([solver],
 AC_SUBST(CFG_WITH_SOLVER)
 AC_MSG_RESULT($CFG_WITH_SOLVER)
 
+# On BSD systems, third-party packages (e.g. liblz4) are typically installed
+# under a non-default prefix such as /usr/local. Tell generated verilated
+# makefiles where to look for those packaged headers and libraries.
+AC_ARG_VAR([CFG_PACKAGE_PREFIX],
+           [Prefix under which packaged dependencies are installed for verilated makefiles])
+AC_MSG_CHECKING([for package prefix for verilated makefiles])
+if test "x$prefix" != "x" && test "x$prefix" != "xNONE"; then
+  if test "x$CFG_PACKAGE_PREFIX" = "x"; then
+    case "`uname -s`" in
+      FreeBSD|OpenBSD|DragonFly*)
+        CFG_PACKAGE_PREFIX="$prefix"
+        echo "using --prefix=$prefix for package prefix for verilated makefiles (CFG_PACKAGE_PREFIX)"
+        ;;
+    esac
+  fi
+fi
+AC_MSG_RESULT([$CFG_PACKAGE_PREFIX])
+AC_SUBST([CFG_PACKAGE_PREFIX])
+
 ######################################################################
 ## Compiler checks
 
