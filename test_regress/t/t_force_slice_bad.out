@@ -1,0 +1,23 @@
+%Error-UNSUPPORTED: t/t_force_slice_bad.v:19:5: Unsupported: Force of an unpacked array slice (IEEE 1800-2023 10.6.2)
+                                              : ... note: In instance 't'
+   19 |     force a[1:2] = fill[1:2];
+      |     ^~~~~
+                    t/t_force_slice_bad.v:19:12: ... Location of the slice
+   19 |     force a[1:2] = fill[1:2];
+      |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_force_slice_bad.v:20:5: Unsupported: Release of an unpacked array slice (IEEE 1800-2023 10.6.2)
+                                              : ... note: In instance 't'
+   20 |     release a[1:2];
+      |     ^~~~~~~
+                    t/t_force_slice_bad.v:20:14: ... Location of the slice
+   20 |     release a[1:2];
+      |              ^
+%Error-UNSUPPORTED: t/t_force_slice_bad.v:21:5: Unsupported: Force of an unpacked array slice (IEEE 1800-2023 10.6.2)
+                                              : ... note: In instance 't'
+   21 |     force s.arr[0:1] = fill[0:1];
+      |     ^~~~~
+                    t/t_force_slice_bad.v:21:16: ... Location of the slice
+   21 |     force s.arr[0:1] = fill[0:1];
+      |                ^
+%Error: Exiting due to
