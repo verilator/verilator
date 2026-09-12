@@ -27,6 +27,7 @@
 
 #include "V3ActiveTop.h"
 
+#include "V3Cfg.h"
 #include "V3Const.h"
 #include "V3SenTree.h"
 
@@ -44,21 +45,17 @@ class ActiveTopVisitor final : public VNVisitor {
 
     // METHODS
     static bool isInitial(AstNode* nodep) {
-        const VNUser1InUse user1InUse;
-        // Return true if no variables that read.
-        return nodep->forall([&](const AstVarRef* refp) -> bool {
-            AstVarScope* const vscp = refp->varScopep();
-            // Note: Use same heuristic as ordering does to ignore written variables
-            // TODO: Use live variable analysis.
-            if (refp->access().isWriteOnly()) {
-                vscp->user1(true);
-                return true;
-            }
-            // Read or ReadWrite: OK if written before
-            return vscp->user1();
-        });
-    }
+        AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
+        if (!procp) return false;
 
+        std::unique_ptr<CfgGraph> cfgp = CfgGraph::build(procp->stmtsp());
+        if (!cfgp) return false;
+
+        std::unique_ptr<std::vector<AstVarScope*>> livep = V3Cfg::liveVarScopes(*cfgp);
+        if (!livep) return false;
+
+        return livep->empty();
+    }
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         // Create required actives and add to module
