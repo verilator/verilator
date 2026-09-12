@@ -163,12 +163,12 @@ class EmitCImp final : public EmitCFunc {
                              "(" + modName + "* vlSelf, bool first);");
         }
 
-        puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(bool first) {\n");
-        puts("(void)first;  // Prevent unused variable warning\n");
         if (v3Global.opt.coverage()) {
+            puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(bool first) {\n");
+            puts("(void)first;  // Prevent unused variable warning\n");
             puts(modName + "__" + protect("_configure_coverage") + "(this, first);\n");
+            puts("}\n");
         }
-        puts("}\n");
     }
     void emitCoverageImp() {
         // Rather than putting out VL_COVER_INSERT calls directly, we do it via this

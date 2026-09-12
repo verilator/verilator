@@ -209,7 +209,9 @@ class EmitCHeader final : public EmitCConstInit {
 
         if (!VN_IS(modp, Class)) {
             decorateFirst(first, section);
-            puts("void " + protect("__Vconfigure") + "(bool first);\n");
+            if (v3Global.opt.coverage()) {
+                puts("void " + protect("__Vconfigure") + "(bool first);\n");
+            }
         } else {
             decorateFirst(first, section);
             const std::string name = V3OutFormatter::quoteNameControls(

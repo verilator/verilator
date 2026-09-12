@@ -1277,15 +1277,17 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
         add(stmt);
     }
 
-    add("// Setup each module's pointer back to symbol table (for public functions)");
-    for (const ScopeModPair& i : m_scopes) {
-        const AstScope* const scopep = i.first;
-        AstNodeModule* const modp = i.second;
-        // first is used by AstCoverDecl's call to __vlCoverInsert
-        const bool first = !modp->user1();
-        modp->user1(true);
-        add(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
-            + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");");
+    if (v3Global.opt.coverage()) {
+        add("// Setup each module's pointer back to symbol table (for public functions)");
+        for (const ScopeModPair& i : m_scopes) {
+            const AstScope* const scopep = i.first;
+            AstNodeModule* const modp = i.second;
+            // first is used by AstCoverDecl's call to __vlCoverInsert
+            const bool first = !modp->user1();
+            modp->user1(true);
+            add(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
+                + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");");
+        }
     }
 
     // Every scope has the same construction shape, so all fold into one table with no
