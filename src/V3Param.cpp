@@ -1485,58 +1485,7 @@ class ParamProcessor final {
                         cloneVarp->childDTypep(origDTypep->cloneTree(false));
                         cloneVarp->dtypep(nullptr);
                         // Inline param refs so widthing doesn't touch the template (#7411).
-                        constexpr int maxSubstIters = 1000;
-                        for (int it = 0; it < maxSubstIters; ++it) {
-                            bool any = false;
-                            cloneVarp->foreach([&](AstVarRef* varrefp) {
-                                AstVar* const targetp = varrefp->varp();
-                                AstNode* replacep = nullptr;
-                                for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
-                                    if (pp->modVarp() == targetp) {
-                                        if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
-                                            replacep = constp->cloneTree(false);
-                                        }
-                                        break;
-                                    }
-                                }
-                                if (!replacep && targetp->valuep()) {
-                                    replacep = targetp->valuep()->cloneTree(false);
-                                }
-                                if (replacep) {
-                                    varrefp->replaceWith(replacep);
-                                    VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
-                                    any = true;
-                                }
-                            });
-                            // Replace RefDType to a ParamTypeDType with pin override
-                            // or the paramtype's default so constify below does not
-                            // reach into the template.  Collect then replace in
-                            // reverse so descendants aren't freed early.
-                            std::vector<std::pair<AstRefDType*, AstNodeDType*>> toReplace;
-                            cloneVarp->foreach([&](AstRefDType* refp) {
-                                AstParamTypeDType* const ptdp
-                                    = VN_CAST(refp->refDTypep(), ParamTypeDType);
-                                if (!ptdp) return;
-                                AstPin* overridePinp = nullptr;
-                                for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
-                                    if (pp->modPTypep() == ptdp) {
-                                        overridePinp = pp;
-                                        break;
-                                    }
-                                }
-                                AstNodeDType* const substp
-                                    = overridePinp ? VN_CAST(overridePinp->exprp(), NodeDType)
-                                                   : ptdp->subDTypep();
-                                if (substp) toReplace.emplace_back(refp, substp);
-                            });
-                            for (auto it = toReplace.rbegin(); it != toReplace.rend(); ++it) {
-                                AstRefDType* const refp = it->first;
-                                refp->replaceWith(it->second->cloneTree(false));
-                                VL_DO_DANGLING(refp->deleteTree(), refp);
-                                any = true;
-                            }
-                            if (!any) break;
-                        }
+                        V3Param::substituteParams(cloneVarp, paramsp);
                         // Bail if anything still points at the template.
                         cloneVarp->foreach([&](AstVarRef* varrefp) {
                             varrefp->v3fatalSrc(
@@ -3560,6 +3509,100 @@ public:
 };
 
 //######################################################################
+// Substitute an instance's parameter overrides into a detached clone (IEEE 1800-2023 23.10.3)
+
+class ParamSubstVisitor final {
+    std::map<const AstVar*, const AstPin*> m_pinMap;  // Parameter var -> overriding pin
+    std::map<const AstParamTypeDType*, const AstPin*> m_ptypeMap;  // Type param -> overriding pin
+    std::map<const AstVar*, AstNode*> m_valueCache;  // Parameter var -> resolved value (or null)
+    std::set<const AstVar*> m_inProgress;  // Parameters currently being resolved (cycle guard)
+
+    // Resolve one parameter to its per-instance value, or null if it can't be folded here
+    AstNode* paramValuep(AstVar* varp) {
+        const auto it = m_valueCache.find(varp);
+        if (it != m_valueCache.end()) return it->second;
+        // Bail on self reference
+        if (!m_inProgress.emplace(varp).second) return nullptr;
+        const auto pinIt = m_pinMap.find(varp);
+        AstNode* const sourcep = pinIt != m_pinMap.end() ? pinIt->second->exprp() : varp->valuep();
+        AstNode* valuep = nullptr;
+        if (sourcep) {
+            AstVar* const holderp
+                = new AstVar{varp->fileline(), VVarType::MODULETEMP, "__Vpinparam",
+                             VFlagChildDType{}, varp->subDTypep()->cloneTree(false)};
+            holderp->valuep(sourcep->cloneTree(false));
+            substitute(holderp);
+            if (!holderp->exists([](const AstVarRef*) { return true; })) {
+                V3Const::constifyParamsNoWarnEdit(holderp);
+                AstNode* const foldedp = holderp->valuep();
+                // Unpacked array params fold to an InitArray, not a Const; keep either
+                if (VN_IS(foldedp, Const) || VN_IS(foldedp, InitArray)) {
+                    valuep = foldedp->unlinkFrBack();
+                }
+            }
+            VL_DO_DANGLING(holderp->deleteTree(), holderp);
+        }
+        m_inProgress.erase(varp);
+        m_valueCache.emplace(varp, valuep);
+        return valuep;
+    }
+
+    bool substituteTypes(AstNode* nodep) {
+        // Collect then replace in reverse so descendants aren't freed early
+        std::vector<std::pair<AstRefDType*, AstNodeDType*>> replacements;
+        nodep->foreach([this, &replacements](AstRefDType* refp) {
+            const AstParamTypeDType* const ptypep = VN_CAST(refp->refDTypep(), ParamTypeDType);
+            if (!ptypep) return;
+            const auto it = m_ptypeMap.find(ptypep);
+            AstNodeDType* const substp = it != m_ptypeMap.end()
+                                             ? VN_CAST(it->second->exprp(), NodeDType)
+                                             : ptypep->subDTypep();
+            if (substp) replacements.emplace_back(refp, substp);
+        });  // LCOV_EXCL_LINE
+        for (auto it = replacements.rbegin(); it != replacements.rend(); ++it) {
+            AstRefDType* const refp = it->first;
+            refp->replaceWith(it->second->cloneTree(false));
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
+        return !replacements.empty();
+    }
+
+public:
+    void substitute(AstNode* nodep) {
+        // A type param's default can expand to refs to value params, so re-run to a fixpoint
+        constexpr int maxSubstIters = 1000;
+        for (int it = 0; it < maxSubstIters; ++it) {
+            bool any = false;
+            nodep->foreach([this, &any](AstVarRef* refp) {
+                AstVar* const targetp = refp->varp();
+                if (!targetp || !targetp->isGParam()) return;
+                AstNode* const valuep = paramValuep(targetp);
+                if (!valuep) return;
+                refp->replaceWith(valuep->cloneTree(false));
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+                any = true;
+            });
+            if (substituteTypes(nodep)) any = true;
+            if (!any) break;
+        }
+    }
+
+    explicit ParamSubstVisitor(const AstPin* pinsp) {
+        for (const AstPin* pp = pinsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
+            if (!pp->exprp()) continue;
+            if (pp->modVarp()) m_pinMap.emplace(pp->modVarp(), pp);
+            if (pp->modPTypep()) m_ptypeMap.emplace(pp->modPTypep(), pp);
+        }
+    }
+    ~ParamSubstVisitor() {
+        for (const auto& pair : m_valueCache) {
+            if (pair.second) pair.second->deleteTree();
+        }
+    }
+    VL_UNCOPYABLE(ParamSubstVisitor);
+};
+
+//######################################################################
 // Param class functions
 
 void V3Param::param(AstNetlist* rootp) {
@@ -3580,4 +3623,8 @@ void V3Param::finalizeDeferredParams(AstNetlist* rootp) {
         if (varp->valuep() && !VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
     }
     rootp->clearDeferredParamVarps();
+}
+
+void V3Param::substituteParams(AstNode* nodep, const AstPin* pinsp) {
+    ParamSubstVisitor{pinsp}.substitute(nodep);
 }

@@ -1,0 +1,18 @@
+%Error: t/t_param_pattern4_nodefault_bad.v:11:31: Expecting expression to be constant, but variable isn't const: 'ARRAY_LEN'
+                                                : ... note: In instance 't'
+   11 |     parameter int ARRAY_PARAM[ARRAY_LEN] = '{1, 1}
+      |                               ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_pattern4_nodefault_bad.v:11:31: right side of bit range isn't a two-state constant (IEEE 1800-2023 6.9.1)
+                                                : ... note: In instance 't'
+   11 |     parameter int ARRAY_PARAM[ARRAY_LEN] = '{1, 1}
+      |                               ^~~~~~~~~
+%Error: t/t_param_pattern4_nodefault_bad.v:20:22: Assignment pattern with too many elements
+                                                : ... note: In instance 't'
+   20 |   dut #(.ARRAY_PARAM('{1, 2, 3})) u (.o(o));
+      |                      ^~
+%Error: t/t_param_pattern4_nodefault_bad.v:10:19: Parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'ARRAY_LEN'
+                                                : ... note: In instance 't.u'
+   10 |     parameter int ARRAY_LEN,
+      |                   ^~~~~~~~~
+%Error: Exiting due to
