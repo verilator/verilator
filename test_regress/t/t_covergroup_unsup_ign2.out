@@ -90,47 +90,26 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:162:32: Unsupported: 'with' in cover bin
   162 |      bins div_by_2_paren[] = a with (item % 2 == 0);
       |                                ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:168:21: Unsupported: 'binsof' in coverage select expression
-  168 |       bins bin_na = ! binsof(a);
-      |                     ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:170:30: Unsupported: 'intersect' in coverage select expression
-  170 |       bins bin_d = binsof(a) intersect { b };
-      |                              ^~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:171:31: Unsupported: 'intersect' in coverage select expression
-  171 |       bins bin_nd = ! binsof(a) intersect { b };
-      |                               ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:173:20: Unsupported: 'with' in coverage select expression
-  173 |       bins bin_e = with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:168:20: Unsupported: 'with' in coverage select expression
+  168 |       bins bin_e = with (a);
       |                    ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:174:24: Unsupported: 'with' in coverage select expression
-  174 |       bins bin_not_e = ! with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:169:24: Unsupported: 'with' in coverage select expression
+  169 |       bins bin_not_e = ! with (a);
       |                        ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:176:32: Unsupported: '&&' in coverage select expression
-  176 |       bins bin_and = binsof(a) && binsof(b);
-      |                                ^~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:177:31: Unsupported: '||' in coverage select expression
-  177 |       bins bin_or = binsof(a) || binsof(b);
-      |                               ^~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:178:33: Unsupported: 'with' in coverage select expression
-  178 |       bins bin_with = binsof(a) with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:171:33: Unsupported: 'with' in coverage select expression
+  171 |       bins bin_with = binsof(a) with (a);
       |                                 ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:179:49: Unsupported: 'with' in coverage select expression
-  179 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:172:49: Unsupported: 'with' in coverage select expression
+  172 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
       |                                                 ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:179:36: Unsupported: '||' in coverage select expression
-  179 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
-      |                                    ^~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:180:50: Unsupported: 'with' in coverage select expression
-  180 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:173:50: Unsupported: 'with' in coverage select expression
+  173 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
       |                                                  ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:180:37: Unsupported: '&&' in coverage select expression
-  180 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
-      |                                     ^~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:183:7: Unsupported: explicit coverage cross bins
-  183 |       ignore_bins ib_cross = binsof(a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:176:7: Unsupported: explicit coverage cross bins
+  176 |       ignore_bins ib_cross = binsof(a);
       |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:184:7: Unsupported: explicit coverage cross bins
-  184 |       illegal_bins lib_cross = binsof(a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:177:7: Unsupported: explicit coverage cross bins
+  177 |       illegal_bins lib_cross = binsof(a);
       |       ^~~~~~~~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:98:18: Ignoring unsupported coverage cross option: 'comment'
    98 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
@@ -145,40 +124,25 @@
   103 |       bins one = crossfunc();
       |       ^~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:168:7: Unsupported: explicit coverage cross bins
-  168 |       bins bin_na = ! binsof(a);
+  168 |       bins bin_e = with (a);
       |       ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:170:7: Unsupported: explicit coverage cross bins
-  170 |       bins bin_d = binsof(a) intersect { b };
+%Warning-COVERIGN: t/t_covergroup_unsup.v:169:7: Unsupported: explicit coverage cross bins
+  169 |       bins bin_not_e = ! with (a);
       |       ^~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:171:7: Unsupported: explicit coverage cross bins
-  171 |       bins bin_nd = ! binsof(a) intersect { b };
+  171 |       bins bin_with = binsof(a) with (a);
+      |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:172:7: Unsupported: explicit coverage cross bins
+  172 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
       |       ^~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:173:7: Unsupported: explicit coverage cross bins
-  173 |       bins bin_e = with (a);
+  173 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
       |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:174:47: Unsupported: 'binsof' in coverage select expression
+  174 |       bins bin_multiple_fields = binsof(a) && binsof(p.inner_packet.field);
+      |                                               ^~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:174:7: Unsupported: explicit coverage cross bins
-  174 |       bins bin_not_e = ! with (a);
-      |       ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:176:7: Unsupported: explicit coverage cross bins
-  176 |       bins bin_and = binsof(a) && binsof(b);
-      |       ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:177:7: Unsupported: explicit coverage cross bins
-  177 |       bins bin_or = binsof(a) || binsof(b);
-      |       ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:178:7: Unsupported: explicit coverage cross bins
-  178 |       bins bin_with = binsof(a) with (a);
-      |       ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:179:7: Unsupported: explicit coverage cross bins
-  179 |       bins bin_or_with = binsof(a) || binsof(a) with (a);
-      |       ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:180:7: Unsupported: explicit coverage cross bins
-  180 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
-      |       ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:181:34: Unsupported: 'binsof' in coverage select expression
-  181 |       bins bin_multiple_fields = binsof(p.inner_packet.field);
-      |                                  ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:181:7: Unsupported: explicit coverage cross bins
-  181 |       bins bin_multiple_fields = binsof(p.inner_packet.field);
+  174 |       bins bin_multiple_fields = binsof(a) && binsof(p.inner_packet.field);
       |       ^~~~
 %Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:76:5: Logical operator COVERPOINT 'a' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
                                                 : ... note: In instance 't'

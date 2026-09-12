@@ -89,40 +89,76 @@
                                            : ... note: In instance 't'
    84 |     cp_a: coverpoint cp_expr {bins x = {size_var};}
       |                                         ^~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:89:41: Non-constant expression in bin range; range bounds must be constants
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:87:23: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                      : ... note: In instance 't'
+   87 |       bins filtered = binsof(cp_a) intersect {0};
+      |                       ^~~~~~
+%Error: t/t_covergroup_autobins_bad.v:91:41: Non-constant expression in bin range; range bounds must be constants
                                            : ... note: In instance 't'
-   89 |     cp_a: coverpoint cp_expr {bins x = {[size_var : 1]};}
+   91 |     cp_a: coverpoint cp_expr {bins x = {[size_var : 1]};}
       |                                         ^
-%Error: t/t_covergroup_autobins_bad.v:94:41: Non-constant expression in bin range; range bounds must be constants
+%Error: t/t_covergroup_autobins_bad.v:96:41: Non-constant expression in bin range; range bounds must be constants
                                            : ... note: In instance 't'
-   94 |     cp_a: coverpoint cp_expr {bins x = {[0 : size_var]};}
+   96 |     cp_a: coverpoint cp_expr {bins x = {[0 : size_var]};}
       |                                         ^
-%Error: t/t_covergroup_autobins_bad.v:99:36: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
-                                           : ... note: In instance 't'
-   99 |     cp_a: coverpoint cp_expr {bins x[] = {[4'b000x : 4'hF]};}
-      |                                    ^
-%Error: t/t_covergroup_autobins_bad.v:104:36: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+%Error: t/t_covergroup_autobins_bad.v:101:36: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
                                             : ... note: In instance 't'
-  104 |     cp_a: coverpoint cp_expr {bins x[] = {[4'h0 : 4'b000x]};}
+  101 |     cp_a: coverpoint cp_expr {bins x[] = {[4'b000x : 4'hF]};}
       |                                    ^
-%Error: t/t_covergroup_autobins_bad.v:109:36: Non-constant expression in array bins value list; values must be constants
+%Error: t/t_covergroup_autobins_bad.v:106:36: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
                                             : ... note: In instance 't'
-  109 |     cp_a: coverpoint cp_expr {bins x[] = {size_var};}
+  106 |     cp_a: coverpoint cp_expr {bins x[] = {[4'h0 : 4'b000x]};}
       |                                    ^
-%Error: t/t_covergroup_autobins_bad.v:124:28: binsof coverpoint 'missing' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:111:36: Non-constant expression in array bins value list; values must be constants
                                             : ... note: In instance 't'
-  124 |       bins missing_point = binsof(missing);
+  111 |     cp_a: coverpoint cp_expr {bins x[] = {size_var};}
+      |                                    ^
+%Error: t/t_covergroup_autobins_bad.v:126:28: binsof coverpoint 'missing' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
+                                            : ... note: In instance 't'
+  126 |       bins missing_point = binsof(missing);
       |                            ^~~~~~
-%Error: t/t_covergroup_autobins_bad.v:125:30: binsof coverpoint 'cp_other' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:127:30: binsof coverpoint 'cp_other' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
                                             : ... note: In instance 't'
-  125 |       bins uncrossed_point = binsof(cp_other);
+  127 |       bins uncrossed_point = binsof(cp_other);
       |                              ^~~~~~
-%Error: t/t_covergroup_autobins_bad.v:126:26: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:128:26: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2012 19.6.1).
                                             : ... note: In instance 't'
-  126 |       bins missing_bin = binsof(cp_a.missing);
+  128 |       bins missing_bin = binsof(cp_a.missing);
       |                          ^~~~~~
-%Error: t/t_covergroup_autobins_bad.v:128:7: Duplicate cross bin 'duplicate' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:130:7: Duplicate cross bin 'duplicate' (IEEE 1800-2012 19.6.1).
                                            : ... note: In instance 't'
-  128 |       bins duplicate = binsof(cp_b);
+  130 |       bins duplicate = binsof(cp_b);
       |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:131:26: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                       : ... note: In instance 't'
+  131 |       bins nonconstant = binsof(cp_a) intersect {size_var} || binsof(cp_b);
+      |                          ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:132:32: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                       : ... note: In instance 't'
+  132 |       bins nonconstant_range = binsof(cp_a) intersect {[0:size_var]};
+      |                                ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:143:9: Unsupported: cross coverage with more than 2^32-1 tuples.
+                                                      : ... note: In instance 't'
+  143 |     xc: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f {
+      |         ^~~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:146:16: Unsupported: cross coverage with more than 2^32-1 tuples.
+                                                       : ... note: In instance 't'
+  146 |     auto_only: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
+      |                ^~~~~
+%Error: t/t_covergroup_autobins_bad.v:152:34: Non-constant expression in bin value list; values must be constants
+                                            : ... note: In instance 't'
+  152 |       ignore_bins nonconstant = {size_var};
+      |                                  ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:152:34: Non-constant expression in bin range; values must be constants
+                                            : ... note: In instance 't'
+  152 |       ignore_bins nonconstant = {size_var};
+      |                                  ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:156:23: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                       : ... note: In instance 't'
+  156 |       bins selected = binsof(cp_a) intersect {0};
+      |                       ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:195:23: Unsupported: 'intersect' exclusion matching exceeds the selection work limit.
+                                                       : ... note: In instance 't'
+  195 |       bins selected = binsof(cp_a.whole) intersect {[0:30'h3fffffff]} && binsof(cp_b);
+      |                       ^~~~~~
 %Error: Exiting due to

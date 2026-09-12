@@ -354,7 +354,38 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(";\n");
     }
-    void visit(AstCoverpointRef* nodep) override { putfs(nodep, nodep->name()); }
+    void visit(AstCoverBinsof* nodep) override {
+        putfs(nodep, nodep->isNegated() ? "!binsof(" : "binsof(");
+        iterateConst(nodep->pointp());
+        if (!nodep->name().empty()) puts("." + nodep->name());
+        puts(")");
+        if (nodep->rangesp()) {
+            puts(" intersect {");
+            iterateAndCommaConstNull(nodep->rangesp());
+            puts("}");
+        }
+    }
+    void visit(AstCoverCrossBin* nodep) override {
+        putfs(nodep, "bins " + nodep->name() + " = ");
+        iterateConstNull(nodep->selectp());
+        if (nodep->iffp()) {
+            puts(" iff (");
+            iterateConst(nodep->iffp());
+            puts(")");
+        }
+        puts(";\n");
+    }
+    void visit(AstCoverCrossSelect* nodep) override {
+        putfs(nodep, "(");
+        iterateConstNull(nodep->lhsp());
+        putbs(" " + nodep->verilogKwd() + " ");
+        iterateConstNull(nodep->rhsp());
+        puts(")");
+    }
+    void visit(AstCoverpointRef* nodep) override {
+        putfs(nodep, nodep->name());
+        iterateConstNull(nodep->exprp());
+    }
     void visit(AstCoverCross* nodep) override {
         putfs(nodep, nodep->name() + ": cross ");
         for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
@@ -366,7 +397,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             iterateConst(nodep->iffp());
             puts(")");
         }
-        puts(";\n");
+        if (nodep->binsp()) {
+            puts(" {\n");
+            iterateAndNextConstNull(nodep->binsp());
+            puts("}\n");
+        } else {
+            puts(";\n");
+        }
     }
     void visit(AstCoverTransSet* nodep) override {
         puts("(");
@@ -1207,6 +1244,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
     }
     void visit(AstConst* nodep) override { putfs(nodep, nodep->num().ascii(m_prefixed, true)); }
+    void visit(AstUnbounded* nodep) override { emitVerilogFormat(nodep, nodep->emitVerilog()); }
 
     // Just iterate
     void visit(AstTopScope* nodep) override { iterateChildrenConst(nodep); }

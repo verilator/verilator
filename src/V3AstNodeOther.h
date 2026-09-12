@@ -1100,16 +1100,28 @@ public:
 class AstCoverBinsof final : public AstNode {
     // A binsof selection of a coverpoint or one of its named bins
     // @astgen op1 := pointp : AstCoverpointRef
+    // @astgen op2 := rangesp : List[AstNode]  // Optional intersect value ranges
     string m_name;  // Selected bin name, or empty for all bins of the coverpoint
+    const bool m_isNegated;  // Complement the selection within the cross product
 
 public:
-    AstCoverBinsof(FileLine* fl, AstCoverpointRef* pointp)
-        : ASTGEN_SUPER_CoverBinsof(fl) {
+    AstCoverBinsof(FileLine* fl, AstCoverpointRef* pointp, bool isNegated = false,
+                   AstNode* rangesp = nullptr)
+        : ASTGEN_SUPER_CoverBinsof(fl)
+        , m_isNegated{isNegated} {
         this->pointp(pointp);
+        addRangesp(rangesp);
     }
     ASTGEN_MEMBERS_AstCoverBinsof;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
+    bool isNegated() const { return m_isNegated; }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
+        const AstCoverBinsof* const asamep = VN_DBG_AS(samep, CoverBinsof);
+        return m_name == asamep->m_name && m_isNegated == asamep->m_isNegated;
+    }  // LCOV_EXCL_STOP
 };
 class AstCoverCrossBin final : public AstNode {
     // A named cross bin and its selection expression
@@ -1126,6 +1138,28 @@ public:
     }
     ASTGEN_MEMBERS_AstCoverCrossBin;
     string name() const override VL_MT_STABLE { return m_name; }
+};
+class AstCoverCrossSelect final : public AstNode {
+    // Intersection or union of two cross-bin selections
+    // @astgen op1 := lhsp : Optional[AstNode]  // Null for an unsupported selection
+    // @astgen op2 := rhsp : Optional[AstNode]  // Null for an unsupported selection
+    const bool m_isOr;  // Union (||), rather than intersection (&&)
+
+public:
+    AstCoverCrossSelect(FileLine* fl, AstNode* lhsp, AstNode* rhsp, bool isOr)
+        : ASTGEN_SUPER_CoverCrossSelect(fl)
+        , m_isOr{isOr} {
+        this->lhsp(lhsp);
+        this->rhsp(rhsp);
+    }
+    ASTGEN_MEMBERS_AstCoverCrossSelect;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isOr() const { return m_isOr; }
+    string verilogKwd() const override { return isOr() ? "||" : "&&"; }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
+        return m_isOr == VN_DBG_AS(samep, CoverCrossSelect)->m_isOr;
+    }  // LCOV_EXCL_STOP
 };
 class AstCoverOption final : public AstNode {
     // Coverage-option assignment
