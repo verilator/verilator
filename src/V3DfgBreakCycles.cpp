@@ -481,12 +481,9 @@ class TraceDriver final : public DfgVisitor {
             SET_RESULT(tracePopIdx(driverp->as<DfgUnitArray>()->srcp()));
             return;
         }
-        // TODO: this is unreachable, as syntheis can't create it today.
-        // // Element not driven explicitly, so it comes from the default array. Keep the
-        // // index pending (the default is the whole array, indexed the same way) and
-        // // continue tracing it.
-        // UASSERT_OBJ(m_defaultp, vtxp, "Independent array element should have a driver or
-        // default"); SET RESULT(traceSameIdx(m_defaultp));
+        // An element not driven explicitly comes from the default array at the same index.
+        UASSERT_OBJ(m_defaultp, vtxp, "Independent array element should have a driver or default");
+        SET_RESULT(traceSameIdx(m_defaultp));
     }
 
     void visit(DfgVertexVar* vtxp) override {
