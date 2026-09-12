@@ -189,6 +189,12 @@ class TraceDriver final : public DfgVisitor {
     std::vector<uint32_t> m_idxs;  // Indices to extract from the currently visited Vertex
     // Result of tracing the currently visited Vertex. Use SET_RESULT below!
     DfgVertex* m_resp = nullptr;
+    // Set instead of 'm_resp' when the result of tracing the currently visited Vertex is
+    // exactly the result of tracing 'm_tailp' at [m_tailMsb:m_tailLsb]. 'trace' resolves
+    // these iteratively. Use SET_RESULT_TAIL below!
+    DfgVertex* m_tailp = nullptr;
+    uint32_t m_tailMsb = 0;  // MSB to extract from 'm_tailp'
+    uint32_t m_tailLsb = 0;  // LSB to extract from 'm_tailp'
     DfgVertex* m_defaultp = nullptr;  // When tracing a variable, this is its 'defaultp', if any
     // Result cache for reusing already traced vertices
     std::unordered_map<CacheKey, DfgVertex*, CacheKey::Hash, CacheKey::Equal> m_cache;
@@ -244,59 +250,90 @@ class TraceDriver final : public DfgVisitor {
 
     // Trace drivers of the given packed vertex, at the given bit range.
     DfgVertex* trace(DfgVertex* const vtxp, const uint32_t msb, const uint32_t lsb) {
-        UASSERT_OBJ(vtxp->isPacked(), vtxp, "Can only trace packed type vertices");
-        UASSERT_OBJ(vtxp->size() > msb, vtxp, "Traced Vertex too narrow");
+        // Many vertices just pass the traced bit range through to one of their sources
+        // (see SET_RESULT_TAIL). Chains of such vertices can be tens of thousands of
+        // vertices long in large designs (e.g.: a wide concatenation), so resolve them
+        // in this loop instead of by recursion, which would overflow the C++ stack.
+        // 'pendingps' holds the cache entries of the vertices on the current chain. They
+        // all yield the same result, which is filled in when the chain is resolved.
+        // Note: references into 'm_cache' are stable across the insertions below.
+        std::vector<DfgVertex**> pendingps;
+        DfgVertex* currp = vtxp;
+        uint32_t currMsb = msb;
+        uint32_t currLsb = lsb;
+        DfgVertex* resp = nullptr;
 
-        // Get the cache entry, which is the resulting driver that is not part of
-        // the same component as vtxp
-        DfgVertex*& respr = m_cache
-                                .emplace(std::piecewise_construct,  //
-                                         std::forward_as_tuple(vtxp, msb, lsb),  //
-                                         std::forward_as_tuple(nullptr))
-                                .first->second;
+        while (true) {
+            UASSERT_OBJ(currp->isPacked(), currp, "Can only trace packed type vertices");
+            UASSERT_OBJ(currp->size() > currMsb, currp, "Traced Vertex too narrow");
 
-        // Trace the vertex
-        if (respr) {
-            // If already traced this vtxp/msb/lsb, just use the result.
-            // This is important to avoid combinatorial explosion when the
-            // same sub-expression is needed multiple times.
-        } else if (m_sccInfo.get(*vtxp) != m_component) {
-            // If the currently traced vertex is in a different component,
-            // then we found what we were looking for.
-            respr = vtxp;
-            // If the result is a splice, we need to insert a temporary for it
-            // as a splice cannot be fed into arbitray logic
-            if (DfgVertexSplice* const splicep = respr->cast<DfgVertexSplice>()) {
-                DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
-                // Note: we can't do 'splicep->replaceWith(tmpp)', as other
-                // variable sinks of the splice might have a defaultp driver.
-                tmpp->srcp(splicep);
-                respr = tmpp;
+            // Get the cache entry, which is the resulting driver that is not part of
+            // the same component as currp
+            DfgVertex*& respr = m_cache
+                                    .emplace(std::piecewise_construct,  //
+                                             std::forward_as_tuple(currp, currMsb, currLsb),  //
+                                             std::forward_as_tuple(nullptr))
+                                    .first->second;
+
+            // Trace the vertex
+            if (respr) {
+                // If already traced this currp/currMsb/currLsb, just use the result.
+                // This is important to avoid combinatorial explosion when the
+                // same sub-expression is needed multiple times.
+            } else if (m_sccInfo.get(*currp) != m_component) {
+                // If the currently traced vertex is in a different component,
+                // then we found what we were looking for.
+                respr = currp;
+                // If the result is a splice, we need to insert a temporary for it
+                // as a splice cannot be fed into arbitray logic
+                if (DfgVertexSplice* const splicep = respr->cast<DfgVertexSplice>()) {
+                    DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
+                    // Note: we can't do 'splicep->replaceWith(tmpp)', as other
+                    // variable sinks of the splice might have a defaultp driver.
+                    tmpp->srcp(splicep);
+                    respr = tmpp;
+                }
+                // Apply a Sel to extract the relevant bits if only a part is needed
+                if (currMsb != respr->width() - 1 || currLsb != 0) {
+                    DfgSel* const selp = make<DfgSel>(respr, currMsb - currLsb + 1);
+                    selp->fromp(respr);
+                    selp->lsb(currLsb);
+                    respr = selp;
+                }
+            } else {
+                // Otherwise visit the vertex to trace it
+                VL_RESTORER(m_msb);
+                VL_RESTORER(m_lsb);
+                VL_RESTORER_CLEAR(m_idxs);
+                VL_RESTORER(m_resp);
+                VL_RESTORER(m_tailp);
+                m_msb = currMsb;
+                m_lsb = currLsb;
+                m_resp = nullptr;
+                m_tailp = nullptr;
+                iterate(currp);
+                if (m_tailp) {
+                    // This vertex just passes the range through, so continue with its
+                    // source. Its cache entry is filled in when the chain is resolved.
+                    pendingps.push_back(&respr);
+                    currp = m_tailp;
+                    currMsb = m_tailMsb;
+                    currLsb = m_tailLsb;
+                    continue;
+                }
+                respr = m_resp;
             }
-            // Apply a Sel to extract the relevant bits if only a part is needed
-            if (msb != respr->width() - 1 || lsb != 0) {
-                DfgSel* const selp = make<DfgSel>(respr, msb - lsb + 1);
-                selp->fromp(respr);
-                selp->lsb(lsb);
-                respr = selp;
-            }
-        } else {
-            // Otherwise visit the vertex to trace it
-            VL_RESTORER(m_msb);
-            VL_RESTORER(m_lsb);
-            VL_RESTORER_CLEAR(m_idxs);
-            VL_RESTORER(m_resp);
-            m_msb = msb;
-            m_lsb = lsb;
-            m_resp = nullptr;
-            iterate(vtxp);
-            respr = m_resp;
+            resp = respr;
+            break;
         }
+
         // We only ever trace drivers of bits that are known to be independent
         // of the cycles, so we should always be able to find an acyclic driver.
-        UASSERT_OBJ(respr, vtxp, "Tracing driver failed for " << vtxp->typeName());
-        UASSERT_OBJ(respr->width() == (msb - lsb + 1), vtxp, "Wrong result width");
-        return respr;
+        UASSERT_OBJ(resp, vtxp, "Tracing driver failed for " << vtxp->typeName());
+        UASSERT_OBJ(resp->width() == (msb - lsb + 1), vtxp, "Wrong result width");
+        // Every vertex on the pass-through chain resolves to the same driver
+        for (DfgVertex** const resultpp : pendingps) *resultpp = resp;
+        return resp;
     }
 
     // Trace drivers of the given array vertex, at the current m_idxs, m_msb, m_lsb.
@@ -388,6 +425,28 @@ class TraceDriver final : public DfgVisitor {
 #define SET_RESULT(vtxp) m_resp = vtxp;
 #endif
 
+    // Use this macro in 'visit' methods when the result is exactly the result of tracing
+    // 'srcp' at [smsb:slsb]. 'trace' then continues iteratively instead of recursing, so
+    // arbitrarily long chains of such pass-through vertices do not consume C++ stack.
+    // Only use this when no state set up by the visitor (e.g.: 'm_defaultp') has to stay
+    // live while 'srcp' is traced, as the visitor returns before that happens.
+#ifdef VL_DEBUG
+#define SET_RESULT_TAIL(srcp, smsb, slsb) \
+    do { \
+        m_tailp = (srcp); \
+        m_tailMsb = (smsb); \
+        m_tailLsb = (slsb); \
+        if (VL_UNLIKELY(m_lineCoverageFile.is_open())) m_lineCoverageFile << __LINE__ << '\n'; \
+    } while (false)
+#else
+#define SET_RESULT_TAIL(srcp, smsb, slsb) \
+    do { \
+        m_tailp = (srcp); \
+        m_tailMsb = (smsb); \
+        m_tailLsb = (slsb); \
+    } while (false)
+#endif
+
     // VISITORS
     void visit(DfgVertex* vtxp) override {  // LCOV_EXCL_START
         vtxp->v3fatalSrc("TraceDriver - Unhandled vertex type: " << vtxp->typeName());
@@ -416,14 +475,14 @@ class TraceDriver final : public DfgVisitor {
             // If it does not cover the whole searched bit range, move on
             if (m_lsb < lsb || msb < m_msb) return false;
             // Driver covers whole search range, trace that and we are done
-            SET_RESULT(trace(&src, m_msb - lsb, m_lsb - lsb));
+            SET_RESULT_TAIL(&src, m_msb - lsb, m_lsb - lsb);
             return true;
         });
         if (done) return;
 
         // Trace the default driver if no other drivers cover the searched range
         if (tryWholeDefault) {
-            SET_RESULT(trace(m_defaultp, m_msb, m_lsb));
+            SET_RESULT_TAIL(m_defaultp, m_msb, m_lsb);
             return;
         }
 
@@ -534,12 +593,12 @@ class TraceDriver final : public DfgVisitor {
         const uint32_t rWidth = rhsp->width();
         // If the traced bits are wholly in the RHS
         if (rWidth > m_msb) {
-            SET_RESULT(trace(rhsp, m_msb, m_lsb));
+            SET_RESULT_TAIL(rhsp, m_msb, m_lsb);
             return;
         }
         // If the traced bits are wholly in the LHS
         if (m_lsb >= rWidth) {
-            SET_RESULT(trace(lhsp, m_msb - rWidth, m_lsb - rWidth));
+            SET_RESULT_TAIL(lhsp, m_msb - rWidth, m_lsb - rWidth);
             return;
         }
         // The traced bit spans both sides, trace both
@@ -564,7 +623,7 @@ class TraceDriver final : public DfgVisitor {
         }
         // If the requested bits are within the same repliacted word
         if (m_msb / sWidth == m_lsb / sWidth) {
-            SET_RESULT(trace(srcp, m_msb % sWidth, m_lsb % sWidth));
+            SET_RESULT_TAIL(srcp, m_msb % sWidth, m_lsb % sWidth);
             return;
         }
         // The requested bits span two replicated words
@@ -579,7 +638,7 @@ class TraceDriver final : public DfgVisitor {
         const uint32_t sWidth = srcp->width();
         // If the traced bits are wholly in the input
         if (sWidth > m_msb) {
-            SET_RESULT(trace(srcp, m_msb, m_lsb));
+            SET_RESULT_TAIL(srcp, m_msb, m_lsb);
             return;
         }
         // If the traced bits are wholly in the extension
@@ -598,17 +657,16 @@ class TraceDriver final : public DfgVisitor {
         const uint32_t sWidth = srcp->width();
         // If the traced bits are wholly in the input
         if (sWidth > m_msb) {
-            SET_RESULT(trace(srcp, m_msb, m_lsb));
+            SET_RESULT_TAIL(srcp, m_msb, m_lsb);
             return;
         }
         // If the traced bits are wholly in the extension
         if (m_lsb >= sWidth) {
-            DfgVertex* const sp = trace(srcp, sWidth - 1, sWidth - 1);
             if (m_msb == m_lsb) {
-                SET_RESULT(sp);
+                SET_RESULT_TAIL(srcp, sWidth - 1, sWidth - 1);
             } else {
                 DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
-                resp->srcp(sp);
+                resp->srcp(trace(srcp, sWidth - 1, sWidth - 1));
                 SET_RESULT(resp);
             }
             return;
@@ -621,7 +679,7 @@ class TraceDriver final : public DfgVisitor {
 
     void visit(DfgSel* vtxp) override {
         const uint32_t lsb = vtxp->lsb();
-        SET_RESULT(trace(vtxp->srcp(), m_msb + lsb, m_lsb + lsb));
+        SET_RESULT_TAIL(vtxp->srcp(), m_msb + lsb, m_lsb + lsb);
     }
 
     void visit(DfgNot* vtxp) override {
@@ -653,7 +711,7 @@ class TraceDriver final : public DfgVisitor {
             const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? 0 : vtxp->width() - shiftAmnt;
             // If the traced bits are wholly in the input
             if (lowerWidth > m_msb) {
-                SET_RESULT(trace(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt));
+                SET_RESULT_TAIL(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt);
                 return;
             }
             // If the traced bits are wholly in the extension
@@ -691,7 +749,7 @@ class TraceDriver final : public DfgVisitor {
             const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? 0 : vtxp->width() - shiftAmnt;
             // If the traced bits are wholly in the input
             if (lowerWidth > m_msb) {
-                SET_RESULT(trace(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt));
+                SET_RESULT_TAIL(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt);
                 return;
             }
             // If the traced bits are wholly in the extension
@@ -727,7 +785,7 @@ class TraceDriver final : public DfgVisitor {
             const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? vtxp->width() : shiftAmnt;
             // If the traced bits are wholly in the input
             if (m_lsb >= lowerWidth) {
-                SET_RESULT(trace(lhsp, m_msb - shiftAmnt, m_lsb - shiftAmnt));
+                SET_RESULT_TAIL(lhsp, m_msb - shiftAmnt, m_lsb - shiftAmnt);
                 return;
             }
             // If the traced bits are wholly in the extension
@@ -775,6 +833,7 @@ class TraceDriver final : public DfgVisitor {
     }
 
 #undef SET_RESULT
+#undef SET_RESULT_TAIL
 
 public:
     // CONSTRUCTOR
