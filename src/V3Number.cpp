@@ -1153,8 +1153,10 @@ uint8_t V3Number::dataByte(int byte) const {
 
 bool V3Number::isAllZ() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
-    for (int i = 0; i < width(); ++i) {
-        if (!bitIsZ(i)) return false;
+    for (int i = 0; i < words(); ++i) {
+        const ValueAndX v = m_data.num()[i];
+        const uint32_t mask = i == words() - 1 ? hiWordMask() : ~0U;
+        if (((~v.m_value & v.m_valueX) & mask) != mask) return false;
     }
     return true;
 }
@@ -1215,16 +1217,24 @@ bool V3Number::isFourState() const VL_MT_SAFE {
 }
 bool V3Number::isAnyX() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
-    for (int bit = 0; bit < width(); ++bit) {
-        if (bitIsX(bit)) return true;
+    for (int i = 0; i < words(); ++i) {
+        const ValueAndX v = m_data.num()[i];
+        if (v.m_value & v.m_valueX) return true;
     }
     return false;
 }
-bool V3Number::isAnyXZ() const { return isAnyX() || isAnyZ(); }
+bool V3Number::isAnyXZ() const {
+    if (isDouble() || isString()) return false;
+    for (int i = 0; i < words(); ++i) {
+        if (m_data.num()[i].m_valueX) return true;
+    }
+    return false;
+}
 bool V3Number::isAnyZ() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
-    for (int bit = 0; bit < width(); ++bit) {
-        if (bitIsZ(bit)) return true;
+    for (int i = 0; i < words(); ++i) {
+        const ValueAndX v = m_data.num()[i];
+        if (~v.m_value & v.m_valueX) return true;
     }
     return false;
 }
@@ -1565,6 +1575,34 @@ V3Number& V3Number::opXor(const V3Number& lhs, const V3Number& rhs) {
     return *this;
 }
 
+void V3Number::copyBits(int destLsb, const V3Number& source, int sourceLsb, int width) {
+    UASSERT(destLsb >= 0 && sourceLsb >= 0 && width >= 0, "Negative bit range");
+    UASSERT(destLsb + width <= this->width(), "Destination bit range exceeds number width");
+    UASSERT(sourceLsb + width <= source.width(), "Source bit range exceeds number width");
+
+    while (width > 0) {
+        // Keep each chunk within one source and destination word. This avoids per-bit copies while
+        // making unaligned ranges no different from aligned ones.
+        const int destOffset = destLsb & 31;
+        const int sourceOffset = sourceLsb & 31;
+        const int chunkWidth = std::min({width, 32 - destOffset, 32 - sourceOffset});
+        const uint32_t chunkMask = chunkWidth == 32 ? std::numeric_limits<uint32_t>::max()
+                                                    : (uint32_t{1} << chunkWidth) - 1;
+        const uint32_t destMask = chunkMask << destOffset;
+
+        const ValueAndX sourceWord = source.m_data.num()[sourceLsb / 32];
+        ValueAndX& destWord = m_data.num()[destLsb / 32];
+        destWord.m_value = (destWord.m_value & ~destMask)
+                           | ((sourceWord.m_value >> sourceOffset) & chunkMask) << destOffset;
+        destWord.m_valueX = (destWord.m_valueX & ~destMask)
+                            | ((sourceWord.m_valueX >> sourceOffset) & chunkMask) << destOffset;
+
+        destLsb += chunkWidth;
+        sourceLsb += chunkWidth;
+        width -= chunkWidth;
+    }
+}
+
 V3Number& V3Number::opConcat(const V3Number& lhs, const V3Number& rhs) {
     // Correct number of zero bits/width matters
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
@@ -1574,15 +1612,8 @@ V3Number& V3Number::opConcat(const V3Number& lhs, const V3Number& rhs) {
     if (!lhs.sized() || !rhs.sized()) {
         v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in concatenations.");
     }
-    int obit = 0;
-    for (int bit = 0; bit < rhs.width(); ++bit) {
-        setBit(obit, rhs.bitIs(bit));
-        ++obit;
-    }
-    for (int bit = 0; bit < lhs.width(); ++bit) {
-        setBit(obit, lhs.bitIs(bit));
-        ++obit;
-    }
+    copyBits(0, rhs, 0, rhs.width());
+    copyBits(rhs.width(), lhs, 0, lhs.width());
     return *this;
 }
 
@@ -1616,12 +1647,11 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
                                 << v3Global.opt.replicationLimit() << " is suspect: " << rhsval);
     }
     setZero();
-    int obit = 0;
     for (unsigned times = 0; times < rhsval; ++times) {
-        for (int bit = 0; bit < lhs.width(); ++bit) {
-            setBit(obit, lhs.bitIs(bit));
-            ++obit;
-        }
+        const uint64_t destLsb = uint64_t{times} * lhs.width();
+        if (destLsb >= static_cast<uint32_t>(width())) break;
+        copyBits(static_cast<int>(destLsb), lhs, 0,
+                 std::min(lhs.width(), width() - static_cast<int>(destLsb)));
     }
     return *this;
 }
@@ -1638,9 +1668,7 @@ V3Number& V3Number::opStreamL(const V3Number& lhs, const V3Number& rhs) {
     const int ssize = std::min(rhs.toUInt(), static_cast<unsigned>(lhs.width()));
     for (int istart = 0; istart < lhs.width(); istart += ssize) {
         const int ostart = std::max(0, lhs.width() - ssize - istart);
-        for (int bit = 0; bit < ssize && bit < lhs.width() - istart; ++bit) {
-            setBit(ostart + bit, lhs.bitIs(istart + bit));
-        }
+        copyBits(ostart, lhs, istart, std::min(ssize, lhs.width() - istart));
     }
     return *this;
 }
@@ -1979,7 +2007,8 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
     }
     const uint32_t rhsval = rhs.toUInt();
     if (rhsval < static_cast<uint32_t>(lhs.width())) {
-        for (int bit = 0; bit < width(); ++bit) setBit(bit, lhs.bitIs(bit + rhsval));
+        copyBits(0, lhs, static_cast<int>(rhsval),
+                 std::min(width(), lhs.width() - static_cast<int>(rhsval)));
     }
     return *this;
 }
@@ -1996,10 +2025,10 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
     const bool overflow = rhs.width() > 32 && !rhs.isBitsZero(rhs.width() - 1, 32);
     if (!overflow) {
         const uint32_t rhsval = rhs.toUInt();
-        if (rhsval < static_cast<uint32_t>(lhs.width())) {
-            for (int bit = 0; bit < width(); ++bit) {
-                setBit(bit, lhs.bitIsExtend(bit + rhsval, lbits));
-            }
+        if (rhsval < lbits) {
+            const int copyWidth = std::min(width(), static_cast<int>(lbits - rhsval));
+            copyBits(0, lhs, static_cast<int>(rhsval), copyWidth);
+            for (int bit = copyWidth; bit < width(); ++bit) setBit(bit, lhs.bitIs(lbits - 1));
             return *this;
         }
     }
@@ -2017,8 +2046,9 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
         if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
     }
     const uint32_t rhsval = rhs.toUInt();
-    for (uint32_t bit = 0; bit < static_cast<uint32_t>(width()); ++bit) {
-        if (bit >= rhsval) setBit(bit, lhs.bitIs(bit - rhsval));
+    if (rhsval < static_cast<uint32_t>(width())) {
+        copyBits(static_cast<int>(rhsval), lhs, 0,
+                 std::min(width() - static_cast<int>(rhsval), lhs.width()));
     }
     return *this;
 }
@@ -2413,10 +2443,11 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
             setZero();
         } else if (lhs.isDouble()) {
             setDouble(lhs.toDouble());
+        } else if (!ignoreXZ) {
+            setZero();
+            copyBits(0, lhs, 0, std::min(width(), lhs.width()));
         } else {
-            for (int bit = 0; bit < this->width(); ++bit) {
-                setBit(bit, ignoreXZ ? lhs.bitIs1(bit) : lhs.bitIs(bit));
-            }
+            for (int bit = 0; bit < this->width(); ++bit) { setBit(bit, lhs.bitIs1(bit)); }
         }
     }
     return *this;
@@ -2443,10 +2474,9 @@ V3Number& V3Number::opExtendS(const V3Number& lhs, uint32_t lbits) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < width(); ++bit) {
-        const char extendWith = lhs.bitIsExtend(bit, lbits);
-        setBit(bit, extendWith);
-    }
+    const int copyWidth = std::min(width(), static_cast<int>(lbits));
+    copyBits(0, lhs, 0, copyWidth);
+    for (int bit = copyWidth; bit < width(); ++bit) setBit(bit, lhs.bitIs(lbits - 1));
     return *this;
 }
 
@@ -2455,7 +2485,9 @@ V3Number& V3Number::opExtendXZ(const V3Number& lhs, uint32_t lbits) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < width(); ++bit) setBit(bit, lhs.bitIsExtend(bit, lbits));
+    const int copyWidth = std::min(width(), static_cast<int>(lbits));
+    copyBits(0, lhs, 0, copyWidth);
+    for (int bit = copyWidth; bit < width(); ++bit) setBit(bit, lhs.bitIs(lbits - 1));
     return *this;
 }
 
@@ -2487,15 +2519,15 @@ V3Number& V3Number::opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval)
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    int ibit = lsbval;
-    for (int bit = 0; bit < width(); ++bit) {
-        if (ibit >= 0 && ibit < lhs.width() && ibit <= static_cast<int>(msbval)) {
-            setBit(bit, lhs.bitIs(ibit));
-        } else {
-            setBitX0(bit);
-        }
-        ++ibit;
+    int copyWidth = 0;
+    if (lsbval <= msbval && lsbval < static_cast<uint32_t>(lhs.width())) {
+        const uint64_t selectedWidth = uint64_t{msbval} - lsbval + 1;
+        copyWidth = static_cast<int>(
+            std::min({static_cast<uint64_t>(width()), static_cast<uint64_t>(lhs.width()) - lsbval,
+                      selectedWidth}));
     }
+    copyBits(0, lhs, copyWidth ? static_cast<int>(lsbval) : 0, copyWidth);
+    for (int bit = copyWidth; bit < width(); ++bit) setBitX0(bit);
     // UINFO(0, "RANGE " << lhs << " " << msb << " " << lsb << " = " << *this);
     return *this;
 }
@@ -2508,15 +2540,10 @@ V3Number& V3Number::opSelInto(const V3Number& lhs, int lsbval, int width) {
     // this[lsbval+width-1 : lsbval] = lhs;  Other bits of this are not affected
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    int ibit = 0;
-    for (int bit = lsbval; bit < lsbval + width; ++bit) {
-        if (ibit >= 0 && ibit < lhs.width()) {
-            setBit(bit, lhs.bitIs(ibit));
-        } else {
-            setBitX0(bit);
-        }
-        ++ibit;
-    }
+    UASSERT(lsbval >= 0, "Negative destination bit range");
+    const int copyWidth = std::max(0, std::min({width, lhs.width(), this->width() - lsbval}));
+    copyBits(lsbval, lhs, 0, copyWidth);
+    for (int bit = copyWidth; bit < width; ++bit) setBitX0(lsbval + bit);
     return *this;
 }
 
