@@ -3720,7 +3720,7 @@ class ConstVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(procp), procp);
             // Set the initial value right in the variable so we can constant propagate
             AstNode* const initvaluep = exprp->cloneTree(false);
-            varrefp->varp()->isConst(true);
+            if (!varrefp->varp()->isSigPublic()) varrefp->varp()->isConst(true);
             varrefp->varp()->valuep(initvaluep);
         }
     }
