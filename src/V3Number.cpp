@@ -2434,10 +2434,11 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
             setZero();
         } else if (lhs.isDouble()) {
             setDouble(lhs.toDouble());
+        } else if (!ignoreXZ) {
+            setZero();
+            copyBits(0, lhs, 0, std::min(width(), lhs.width()));
         } else {
-            for (int bit = 0; bit < this->width(); ++bit) {
-                setBit(bit, ignoreXZ ? lhs.bitIs1(bit) : lhs.bitIs(bit));
-            }
+            for (int bit = 0; bit < this->width(); ++bit) { setBit(bit, lhs.bitIs1(bit)); }
         }
     }
     return *this;
