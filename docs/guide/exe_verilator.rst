@@ -127,6 +127,20 @@ Summary:
 
    Defaults to 1024. Increase if a design needs larger repetition counts.
 
+.. option:: --ast-pre-codegen <filename>
+
+   Write the JSON AST to the specified filename immediately after the optional
+   sampled-value lowering pass, then stop processing before scheduling and C++
+   generation. The file is also written when no sampled values are present.
+   Unlike :vlopt:`--json-only`, this runs the normal lowering and optimization
+   passes up to this point. No :vlopt:`--cc` option is required.
+
+   Companion metadata is written to ``<filename>.meta.json``. JSON formatting
+   options, including :vlopt:`--json-full-tables`, apply to this output.
+   This option cannot be combined with :vlopt:`--build`, :vlopt:`--binary`,
+   :vlopt:`-E`, :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`,
+   :vlopt:`--json-only`, or :vlopt:`--hierarchical`.
+
 .. option:: --autoflush
 
    After every $display or $fdisplay, flush the output stream. This ensures

@@ -953,7 +953,8 @@ void V3Options::notify() VL_MT_DISABLED {
     // Notify that all arguments have been passed and final modification can be made.
     FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};
 
-    if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
+    // Select the normal C++ lowering pipeline when no output format was specified.
+    if (!outFormatOk() && (main() || !astPreCodegen().empty())) ccSet();
     if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !serializeOnly()) {
         v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
                 "--json-only or --E option");
@@ -963,8 +964,7 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
-    // exclusive
+    // Build, preprocessing, header-only, lint-only, and JSON output modes are mutually exclusive.
     std::vector<std::string> backendFlags;
     if (m_build) {
         if (m_binary)
@@ -976,6 +976,10 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_dpiHdrOnly) backendFlags.emplace_back("--dpi-hdr-only");
     if (m_lintOnly) backendFlags.emplace_back("--lint-only");
     if (m_jsonOnly) backendFlags.emplace_back("--json-only");
+    if (!m_astPreCodegen.empty()) {
+        backendFlags.emplace_back("--ast-pre-codegen");
+        if (m_hierarchical) backendFlags.emplace_back("--hierarchical");
+    }
     if (backendFlags.size() > 1) {
         std::string backendFlagsString = backendFlags.front();
         for (size_t i = 1; i < backendFlags.size(); i++) {
@@ -1306,6 +1310,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-assert-unroll-limit", CbVal, [fl](const char*) {
         fl->v3warn(DEPRECATED, "Option '--assert-unroll-limit' is deprecated and has no effect.");
     }).notForRerun();
+    DECL_OPTION("-ast-pre-codegen", Set, &m_astPreCodegen);
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
 
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);

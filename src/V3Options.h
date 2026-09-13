@@ -369,6 +369,7 @@ private:
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
     int         m_compLimitParens = 240;  // compiler selection; number of nested parens
 
+    string      m_astPreCodegen;  // main switch: --ast-pre-codegen
     string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
     string      m_diagnosticsSarifOutput;  // main switch: --diagnostics-sarif-output
     string      m_exeName;      // main switch: -o {name}
@@ -518,6 +519,7 @@ public:
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
     bool build() const { return m_build; }
+    string astPreCodegen() const { return m_astPreCodegen; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
     bool context() const VL_MT_SAFE { return m_context; }
