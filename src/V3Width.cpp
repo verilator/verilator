@@ -5790,7 +5790,7 @@ class WidthVisitor final : public VNVisitor {
                 if (it == patmap.end()) {  // Default or default_type assignment
                     patp = defaultPatp_patternUOrStruct(nodep, memp, vdtypep, defaultp, dtypemap);
                     pushDeletep(patp);
-                    patp = defaultPatp_forDType(patp, memp->virtRefDTypep());
+                    patp = defaultPatp_forDType(patp, memp->virtRefDTypep(), dtypemap);
                     pushDeletep(patp);
                 } else {
                     patp = it->second;  // Member assignment
@@ -5877,7 +5877,8 @@ class WidthVisitor final : public VNVisitor {
         return newp;
     }
 
-    AstPatMember* defaultPatp_forDType(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
+    AstPatMember* defaultPatp_forDType(AstPatMember* defaultp, AstNodeDType* elemDTypep,
+                                       const DTypeMap& dtypemap = DTypeMap{}) {
         AstNodeExpr* const valuep = defaultp->lhssp()->cloneTree(false);
         AstNodeDType* const elemDTypeSkipRefp = elemDTypep->skipRefp();
         const AstStructDType* const structp = VN_CAST(elemDTypeSkipRefp, StructDType);
@@ -5907,6 +5908,8 @@ class WidthVisitor final : public VNVisitor {
         AstPatMember* const nestedDefaultp
             = new AstPatMember{defaultp->fileline(), valuep, nullptr, nullptr};
         nestedDefaultp->isDefault(true);
+        // Propagate the outer 'data_type: value' entries into the nested aggregate
+        for (const auto& entry : dtypemap) nestedDefaultp->addNext(entry.second->cloneTree(false));
         AstPattern* const recursivePatternp = new AstPattern{defaultp->fileline(), nestedDefaultp};
         return new AstPatMember{defaultp->fileline(), recursivePatternp, nullptr, nullptr};
     }

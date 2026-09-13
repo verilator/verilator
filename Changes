@@ -39,6 +39,7 @@ Verilator 5.053 devel
 * Optimize unnecessary per-vertex allocations in NFA lowering (#8319). [Artur Bieniek, Antmicro Ltd.]
 * Optimize duplicate lookup in NFA property recursion guard (#8321). [Artur Bieniek, Antmicro Ltd.]
 * Fix array slice crash when used as a bare value (#5132) (#8262). [Marco Frank]
+* Fix pattern type matching against nested aggregates (#7304).
 * Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
 * Fix detecting non-inlined awaits in V3Delayed.cpp (#7982). [Igor Zaworski, Antmicro Ltd.]
 * Fix phased `solve...before` diversity (#8189) (#8194). [Aditya Shevade]
