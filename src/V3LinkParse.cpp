@@ -1285,6 +1285,23 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
 
+    bool dropDeprecatedCoverageOption(AstCgOptionAssign* const nodep) {
+        if (!(nodep->optType() == VCoverOptionType::CROSS_AUTO_BIN_MAX)) return false;
+        cleanFileline(nodep);
+        nodep->v3warn(DEPRECATED, "Coverage option 'option."
+                                      << nodep->optType().ascii()
+                                      << "' is deprecated and ignored; it was removed from the "
+                                         "IEEE LRM because it was poorly defined.");
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        return true;
+    }
+
+    void visit(AstCgOptionAssign* nodep) override {
+        if (dropDeprecatedCoverageOption(nodep)) return;
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+
     void visit(AstCovergroup* nodep) override {
         // AstCovergroup can only appear inside a module/class/package; never at root level.
         UASSERT_OBJ(m_modp, nodep, "AstCovergroup not under module");
@@ -1401,6 +1418,7 @@ class LinkParseVisitor final : public VNVisitor {
         for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
+                if (dropDeprecatedCoverageOption(optp)) continue;
                 optp->unlinkFrBack();
                 if (optp->optType() == VCoverOptionType::AT_LEAST
                     || optp->optType() == VCoverOptionType::AUTO_BIN_MAX) {
@@ -1463,8 +1481,9 @@ class LinkParseVisitor final : public VNVisitor {
         for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
             if (VN_IS(itemp, CoverCrossBin)) continue;
-            itemp->unlinkFrBack();
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
+            if (dropDeprecatedCoverageOption(optp)) continue;
+            itemp->unlinkFrBack();
             const VCoverOptionType optType = optp->optType();
             optp->v3warn(COVERIGN,
                          "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());

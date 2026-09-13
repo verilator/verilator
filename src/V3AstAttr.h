@@ -1221,6 +1221,8 @@ public:
         MERGE_INSTANCES,
         DISTRIBUTE_FIRST,
         REAL_INTERVAL,
+        // Legacy option.* accepted for compatibility
+        CROSS_AUTO_BIN_MAX,
         // sentinel - should never appear after parse-time validation
         UNKNOWN
     };
@@ -1244,6 +1246,7 @@ public:
                                             "merge_instances",
                                             "distribute_first",
                                             "real_interval",
+                                            "cross_auto_bin_max",
                                             "unknown"};
         return names[m_e];
     }
