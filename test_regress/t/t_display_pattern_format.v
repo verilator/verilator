@@ -21,6 +21,19 @@ module t;
     SECOND = 7'd65
   } enum_t;
   typedef enum_t enum_alias_t;
+  typedef enum logic signed [6:0] {
+    SIGNED7_NEG = -7'sd3,
+    SIGNED7_POS = 7'sd7
+  } signed7_t;
+  typedef signed7_t signed7_alias_t;
+  typedef enum logic signed [32:0] {
+    SIGNED33_NEG = -33'sd3,
+    SIGNED33_POS = 33'sd7
+  } signed33_t;
+  typedef enum logic signed [64:0] {
+    SIGNED65_NEG = -65'sd18446744073709551615,
+    SIGNED65_POS = 65'sd7
+  } signed65_t;
 
   localparam text_t TEXT_PARAM = "quote=\" slash=\\ bell=\a form=\f vert=\v ctrl=\001";
   localparam string ESCAPED_PARAM_STRING = $sformatf("%p", TEXT_PARAM);
@@ -58,6 +71,10 @@ module t;
     string real_expected;
     string formatted;
     string enum_text;
+    signed7_alias_t signed7_value;
+    signed33_t signed33_value;
+    signed65_t signed65_value;
+    string signed_expected;
 
     plain = $sformatf("round %0d", cyc);
     escaped = {"quote=\" slash=\\ line=\n cr=\r tab=\t bell=\a form=\f vert=\v ctrl=\001 ", plain};
@@ -115,6 +132,47 @@ module t;
     real_expected = cyc[0] ? REAL_SECOND_TEXT : REAL_FIRST_TEXT;
     formatted = $sformatf(fmt, real_value);
     `checks(formatted, real_expected);
+
+    signed7_value = cyc[0] ? SIGNED7_NEG : signed7_t'(-7'sd2);
+    signed33_value = cyc[0] ? SIGNED33_NEG : signed33_t'(-33'sd2);
+    signed_expected = cyc[0] ? "-3" : "-2";
+    formatted = $sformatf("%0d", signed7_value);
+    `checks(formatted, signed_expected);
+    formatted = $sformatf("%0d", signed33_value);
+    `checks(formatted, signed_expected);
+    fmt = cyc[0] ? "%0d" : "%0D";
+    formatted = $sformatf(fmt, signed7_value);
+    `checks(formatted, signed_expected);
+    formatted = $sformatf(fmt, signed33_value);
+    `checks(formatted, signed_expected);
+
+    signed65_value = cyc[0] ? signed65_t'(-65'sd2) : SIGNED65_NEG;
+    signed_expected = cyc[0] ? "-2" : "-18446744073709551615";
+    formatted = $sformatf("%0d", signed65_value);
+    `checks(formatted, signed_expected);
+    formatted = $sformatf(fmt, signed65_value);
+    `checks(formatted, signed_expected);
+
+    signed_expected = cyc[0] ? "SIGNED7_NEG" : "-2";
+`ifdef QUESTA
+    // Questa 2025.2 zero-extends unnamed enums narrower than 32 bits for %p/%s.
+    if (!cyc[0]) signed_expected = "126";
+`endif
+    formatted = $sformatf("%p", signed7_value);
+    `checks(formatted, signed_expected);
+    formatted = $sformatf("%s", signed7_value);
+    `checks(formatted, signed_expected);
+    fmt = cyc[1] ? "%p" : "%s";
+    formatted = $sformatf(fmt, signed7_value);
+    `checks(formatted, signed_expected);
+
+    signed_expected = cyc[0] ? "SIGNED33_NEG" : "-2";
+    formatted = $sformatf("%p", signed33_value);
+    `checks(formatted, signed_expected);
+    formatted = $sformatf("%s", signed33_value);
+    `checks(formatted, signed_expected);
+    formatted = $sformatf(fmt, signed33_value);
+    `checks(formatted, signed_expected);
 
     cyc <= cyc + 1;
     if (cyc == 3) begin

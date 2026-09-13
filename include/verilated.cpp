@@ -1178,8 +1178,12 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             } else if (formatAttr == VL_VFORMATATTR_STRING) {
                 thingp = va_arg(ap, std::string*);
                 if (fmt != 'p' && fmt != 'x') fmt = 's';  // Override
-            } else if (formatAttr == VL_VFORMATATTR_ENUM) {
+            } else if (formatAttr == VL_VFORMATATTR_ENUM
+                       || formatAttr == VL_VFORMATATTR_ENUM_SIGNED) {
                 // Always <= VL_QUADSIZE; emit uses non-ENUM format for wider enums
+                const int numericAttr = formatAttr == VL_VFORMATATTR_ENUM_SIGNED
+                                            ? VL_VFORMATATTR_SIGNED
+                                            : VL_VFORMATATTR_UNSIGNED;
                 lbits = va_arg(ap, int);
                 ld = VL_VA_ARG_Q_(ap, lbits);
                 strwide.resize(2);
@@ -1192,6 +1196,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 enump = va_arg(ap, std::string*);
                 if (enump && !enump->empty()) {
                     formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
+                    if (fmt == 'd') formatAttr = numericAttr;
                     thingp = const_cast<std::string*>(enump);
                 } else if (fmt == 'p' && widthSet && width == 0) {
                     output += "'h";
@@ -1201,7 +1206,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     if (fmt == 'p') width = 0;
                     widthSet = true;
                     fmt = 'd';
-                    formatAttr = VL_VFORMATATTR_UNSIGNED;
+                    formatAttr = numericAttr;
                 }
                 if (widthSet && width == 0) {
                     while (lsb && !VL_BITISSET_W(lwp, lsb)) --lsb;
