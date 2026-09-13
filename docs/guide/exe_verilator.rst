@@ -724,6 +724,16 @@ Summary:
 
 .. option:: -fno-dedup
 
+.. option:: -fno-delayed
+
+   Skip nonblocking assignment lowering (``V3Delayed``), retaining nonblocking
+   assignments in the exported AST instead of introducing delayed-value,
+   index, and write-enable temporaries. Requires :vlopt:`--ast-pre-codegen`,
+   since subsequent scheduling and C++ generation require this lowering.
+   Active-domain normalization and optional sampled-value lowering still run.
+   The pass is enabled by default; ``-fdelayed`` re-enables it explicitly.
+   This setting is independent of optimization levels such as ``-O0``.
+
 .. option:: -fno-dfg
 
    Rarely needed. Disable the DFG-based combinational logic optimizer.

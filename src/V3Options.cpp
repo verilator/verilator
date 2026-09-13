@@ -989,6 +989,10 @@ void V3Options::notify() VL_MT_DISABLED {
                 + ". Suggest see manual");
     }
 
+    if (!m_fDelayed && m_astPreCodegen.empty()) {
+        cmdfl->v3error("-fno-delayed requires --ast-pre-codegen");
+    }
+
     if (m_exe && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
     }
@@ -1483,6 +1487,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdead-methods", FOnOff, &m_fDeadMethods);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
+    DECL_OPTION("-fdelayed", FOnOff, &m_fDelayed);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", CbFOnOff, [fl](bool) {
         fl->v3warn(DEPRECATED, "Option '-fno-dfg-break-cycles' is deprecated and has no effect");
