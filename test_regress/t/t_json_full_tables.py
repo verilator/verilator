@@ -20,8 +20,8 @@ for mode, flags, count in [
 ]:
     filename = test.obj_dir + '/' + mode + '.tree.json'
     test.compile(
-        verilator_flags2=['--json-only', '--json-only-output', filename,
-                          '--no-json-edit-nums'] + flags,
+        verilator_flags2=['--json-only', '--json-only-output', filename, '--no-json-edit-nums'] +
+        flags,
         verilator_make_gmake=False,
         make_top_shell=False,
         make_main=False)

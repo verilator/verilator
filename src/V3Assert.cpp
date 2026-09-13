@@ -737,7 +737,7 @@ class AssertVisitor final : public VNVisitor {
                 varp->tag(SvaMessageVisitor::apply(failsp));
             } else if (!passsp && !coverp) {
                 varp->tag(assertDisplayMessage(nodep, "%%Error", "'assert' failed.",
-                                              VDisplayType::DT_ERROR));
+                                               VDisplayType::DT_ERROR));
             }
             const bool isAssume = nodep->directive() == VAssertDirectiveType::ASSUME;
             svaDefaultp = newSvaPreserveAssign(nodep, varp, isAssume);

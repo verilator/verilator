@@ -12,11 +12,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(
-    verilator_flags2=['--dump-tree-json', '--sva-preserve', '--no-json-edit-nums'],
-    verilator_make_gmake=False,
-    make_top_shell=False,
-    make_main=False)
+test.compile(verilator_flags2=['--dump-tree-json', '--sva-preserve', '--no-json-edit-nums'],
+             verilator_make_gmake=False,
+             make_top_shell=False,
+             make_main=False)
 
 dead_filenames = test.glob_some(test.obj_dir + "/*deadAllScoped.tree.json")
 if not dead_filenames:
@@ -49,8 +48,8 @@ for filename in dead_filenames:
 
     visit(tree)
     if set(sva_vars) != expected_names:
-        test.error("Unexpected preserved SVA signals in " + filename + ": "
-                   + repr(sorted(sva_vars)))
+        test.error("Unexpected preserved SVA signals in " + filename + ": " +
+                   repr(sorted(sva_vars)))
     for name, node in sva_vars.items():
         if not node.get('isSigPublic'):
             test.error(name + " is not public in " + filename)

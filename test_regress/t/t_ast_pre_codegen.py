@@ -23,12 +23,13 @@ for mode, delay_flags, delayed in [
         os.makedirs(out_dir, exist_ok=True)
         filename = out_dir + '/result.json'
         flags = delay_flags + (['-DWITH_SAMPLED'] if sampled else [])
-        test.compile(
-            verilator_flags2=['--Mdir', out_dir, '--ast-pre-codegen', filename,
-                              '--dump-tree-json', '--no-json-edit-nums'] + flags,
-            verilator_make_gmake=False,
-            make_top_shell=False,
-            make_main=False)
+        test.compile(verilator_flags2=[
+            '--Mdir', out_dir, '--ast-pre-codegen', filename, '--dump-tree-json',
+            '--no-json-edit-nums'
+        ] + flags,
+                     verilator_make_gmake=False,
+                     make_top_shell=False,
+                     make_main=False)
 
         with open(filename, 'r', encoding='utf8') as fh:
             tree = json.load(fh)
@@ -50,8 +51,9 @@ for mode, delay_flags, delayed in [
         visit(tree)
         if any(node['type'] == 'SAMPLED' for node in nodes):
             test.error('Sampled expressions were not lowered')
-        has_nbas = any(node['type'] == 'ASSIGNDLY'
-                       and node.get('lhsp', [{}])[0].get('type') == 'ARRAYSEL' for node in nodes)
+        has_nbas = any(
+            node['type'] == 'ASSIGNDLY' and node.get('lhsp', [{}])[0].get('type') == 'ARRAYSEL'
+            for node in nodes)
         if has_nbas == delayed:
             test.error('Unexpected nonblocking assignment lowering')
         has_delayed_values = any(node['type'] == 'VAR' and '__VdlyVal' in node.get('name', '')

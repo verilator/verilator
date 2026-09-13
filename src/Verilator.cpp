@@ -768,12 +768,12 @@ static bool verilate(const string& argString) {
     // Final steps
     V3Global::dumpCheckGlobalTree("final", 990, dumpTreeEitherLevel() >= 3);
     if (v3Global.opt.jsonOnly() || !v3Global.opt.astPreCodegen().empty() || dumpTreeJsonLevel()) {
-        const string filename
-            = (v3Global.opt.jsonOnlyMetaOutput().empty()
-                   ? (!v3Global.opt.astPreCodegen().empty()
-                          ? v3Global.opt.astPreCodegen() + ".meta.json"
-                          : v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".tree.meta.json")
-                   : v3Global.opt.jsonOnlyMetaOutput());
+        const string filename = (v3Global.opt.jsonOnlyMetaOutput().empty()
+                                     ? (!v3Global.opt.astPreCodegen().empty()
+                                            ? v3Global.opt.astPreCodegen() + ".meta.json"
+                                            : v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
+                                                  + ".tree.meta.json")
+                                     : v3Global.opt.jsonOnlyMetaOutput());
         v3Global.rootp()->dumpJsonMetaFile(filename);
     }
 
