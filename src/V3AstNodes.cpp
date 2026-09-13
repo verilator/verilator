@@ -1620,11 +1620,12 @@ void AstInitArray::dump(std::ostream& str) const {
     Super::dump(str);
     dumpInitList(str);
 }
-void AstInitArray::dumpInitList(std::ostream& str) const {
-    int n = 0;
+void AstInitArray::dumpInitList(std::ostream& str, bool full) const {
+    static constexpr unsigned SUMMARY_ENTRIES = 6;
+    unsigned n = 0;
     const auto& mapr = map();
     for (const auto& itr : mapr) {
-        if (n++ > 5) {
+        if (!full && n++ >= SUMMARY_ENTRIES) {
             str << " ...";
             break;
         }
@@ -1635,7 +1636,7 @@ void AstInitArray::dumpInitList(std::ostream& str) const {
 }
 void AstInitArray::dumpJson(std::ostream& str) const {
     str << ',' << '"' << "initList" << '"' << ':' << '"';
-    dumpInitList(str);
+    dumpInitList(str, v3Global.opt.jsonFullTables());
     str << '"';
     dumpJsonGen(str);
 }

@@ -1576,6 +1576,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
 
     DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
+    DECL_OPTION("-json-full-tables", OnOff, &m_jsonFullTables).notForRerun();
     DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
     DECL_OPTION("-json-only", OnOff, &m_jsonOnly);
     DECL_OPTION("-json-only-meta-output", CbVal, [this](const char* valp) {

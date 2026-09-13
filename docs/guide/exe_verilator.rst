@@ -1060,6 +1060,15 @@ Summary:
    Don't dump edit number in .tree.json files. This may make the file more
    run-to-run stable for easier comparison.
 
+.. option:: --json-full-tables
+
+   Include every array initializer entry in the ``initList`` field of JSON
+   tree output, including lookup tables produced by optimization. By default,
+   this field is abbreviated after six entries. This applies to both
+   :vlopt:`--json-only` and :vlopt:`--dump-tree-json`; text tree dumps retain
+   their abbreviated summaries. Use ``--no-json-full-tables`` to restore the
+   default behavior.
+
 .. option:: --no-json-ids
 
    Don't use short identifiers instead of addresses/paths in .tree.json.

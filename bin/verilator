@@ -490,6 +490,7 @@ detailed descriptions of these arguments.
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -j <jobs>                  Parallelism for --build-jobs/--verilate-jobs
     --no-json-edit-nums         Don't dump editNum in .tree.json files
+    --json-full-tables         Include all table entries in .tree.json files
     --no-json-ids               Don't use short identifiers instead of addresses/paths in .tree.json
     --json-only                 Create JSON parser output (.tree.json and .meta.json)
     --json-only-meta-output <filename>  Set .tree.meta.json output filename
