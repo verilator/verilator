@@ -434,6 +434,18 @@ module t (/*AUTOARG*/
       bins y1 = {1};
     }
     cx: cross cp_x, cp_y iff (cg_sig[0] == cg_sig2[0]);
+    cx_select: cross cp_x, cp_y{
+      bins plain = binsof (cp_x);
+      bins named = binsof (cp_x.x0);
+      bins filtered = binsof (cp_x) intersect {0, [1 : 2]};
+      bins lower = binsof (cp_x) intersect {[$ : 0]};
+      bins upper = binsof (cp_x) intersect {[1 : $]};
+      bins negated = !binsof (cp_x.x0);
+      bins complemented = !binsof (cp_x) intersect {0};
+      bins either = binsof (cp_x.x0) || binsof (cp_y.y0);
+      bins both = binsof (cp_x.x1) && binsof (cp_y.y1) iff (cg_sig[1]);
+      bins grouped = (binsof (cp_x.x0) || binsof (cp_y.y0)) && !binsof (cp_x.x1);
+    }
   endgroup
 
   cg_basic   cg_basic_inst   = new;

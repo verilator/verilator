@@ -592,6 +592,10 @@ List Of Warnings
    ``covergroup``, ``coverpoint``, and coverage options, and the
    construct was ignored.
 
+   This includes crosses whose normal-bin Cartesian product exceeds
+   ``2**32 - 1`` tuples.  The limit is checked during verilation for both
+   automatic and explicit cross bins.
+
    Disabling the :option:`UNSUPPORTED` error also disables this warning.
 
    Ignoring this warning may make Verilator ignore lint checking on the

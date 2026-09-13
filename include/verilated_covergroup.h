@@ -35,7 +35,9 @@
 #include "verilated.h"
 #include "verilated_cov_model.h"
 
+#include <array>
 #include <cstdint>
+#include <initializer_list>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -207,32 +209,63 @@ public:
 // VlCoverCross
 /// Per-instance cross runtime.  Holds flat uint32_t[] storage over the
 /// Cartesian product of the feeding coverpoints' Normal bins.  Each sample()
-/// walks the coverpoint hit lists (O(hits), not O(product)).  Bin names are
-/// built on demand for automatic bins; explicit bins select a Normal-bin span
-/// in one dimension and replace the corresponding automatic cross bins.
+/// walks only hit tuples, not the entire product.  Bin names are
+/// built on demand for automatic bins; explicit bins select sets of tuples
+/// and replace the corresponding automatic cross bins.  Explicit selections
+/// are intersected with hit-tuple words once per sample.
+/// VlCoverCrossT owns the fixed arrays. This shared core does not allocate bin
+/// storage, and its borrowed storage pointers remain valid for the instance.
 
-class VlCoverCross final : public VlCoverpointIf {
+class VlCoverCross VL_NOT_FINAL : public VlCoverpointIf {
+protected:
+    struct Dimension final {
+        VlCoverpoint* cpp;  // Feeding coverpoint
+        const uint32_t* hitsp;  // Hit list cached for Cartesian traversal
+        uint32_t bins;  // Normal bin count
+        uint32_t stride;  // Flat-index stride
+    };
     struct Bin final {
-        const uint32_t dim;  // Selected coverpoint dimension
-        const uint32_t first;  // First selected Normal bin index
-        const uint32_t bins;  // Number of selected Normal bins
-        const char* const namep;  // Explicit bin name
-        const char* const filep;  // Bin declaration file
-        const int line;  // Bin declaration line
-        const int col;  // Bin declaration column
+        const uint64_t* selectionp;  // Slice of the fixed selection storage
+        const char* namep;  // Explicit bin name
+        const char* filep;  // Bin declaration file
+        int line;  // Bin declaration line
+        int col;  // Bin declaration column
         uint32_t count = 0;  // Samples matching the selection and guard
+        uint32_t numWords = 0;  // Number of nonzero selection-word indices
+        const uint32_t* wordIndicesp = nullptr;  // Slice of the packed selection-word indices
+    };
+    struct Word final {
+        uint64_t autoExcluded = 0;  // Tuples replaced by explicit bins
+        uint64_t hitBits = 0;  // Selected hit tuples, cleared after each sample
+        uint32_t touchedWord = 0;  // Flat word ID, stored by touched-list position
+    };
+    template <typename T>
+    class View final {
+        T* m_beginp;
+        T* m_endp;
 
-        Bin(uint32_t dim, uint32_t first, uint32_t bins, const char* namep, const char* filep,
-            int line, int col)
-            : dim{dim}
-            , first{first}
-            , bins{bins}
-            , namep{namep}
-            , filep{filep}
-            , line{line}
-            , col{col} {}
+    public:
+        View(T* datap, uint64_t size)
+            : m_beginp{datap}
+            , m_endp{datap ? datap + size : nullptr} {}
+        T& operator[](uint64_t i) const { return m_beginp[i]; }
+        uint64_t size() const { return m_beginp == m_endp ? 0 : m_endp - m_beginp; }
+        bool empty() const { return m_beginp == m_endp; }
+        T* begin() const { return m_beginp; }
+        T* end() const { return m_endp; }
+    };
+    struct Explicit final {
+        View<Bin> bins;  // Explicit bins in declaration order
+        Word* wordsp;  // Masks use flat word indices; touchedWord uses a dense prefix
+        View<uint32_t> autoBins;  // Retained flat indices
+        View<uint32_t> binWords;  // Nonzero selection words, grouped by bin
+        uint64_t* selectionp;  // [bins.size() * ceil(m_numAutoBins / 64)]
+        uint32_t numBins = 0;  // Bins configured by addBin()
+        uint32_t minBinWords = 0;  // Minimum nonzero-word count across explicit bins
+        uint32_t numTouchedWords = 0;  // Active prefix of wordsp[].touchedWord
     };
 
+private:
     // MEMBERS
     std::string m_hier;  // "covergroup.cross"
     const char* m_file = nullptr;  // Cross declaration file (registration metadata)
@@ -242,37 +275,66 @@ class VlCoverCross final : public VlCoverpointIf {
     // Cross bin indexes are unsigned, like the coverpoint bin indexes they are
     // built from.  init() fatals if the product would exceed UINT32_MAX, so every
     // index computed here provably fits.  That bound is far beyond anything
-    // storable anyway: m_flatCounts alone would need 16GB.
+    // storable anyway: m_flatCountsp alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
     uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
-    std::vector<uint32_t> m_cpBinCounts;  // [m_dims] Normal bin count per dimension
-    std::vector<uint32_t> m_stride;  // [m_dims] Flat-index stride per dimension
-    std::vector<uint32_t> m_flatCounts;  // [m_numAutoBins] Per-bin hit counts
-    std::vector<VlCoverpoint*> m_cps;  // Feeding coverpoints, set by init()
-    std::vector<Bin> m_bins;  // Explicit bins in declaration order
-    std::vector<bool>
-        m_autoExcluded;  // Tuples replaced by explicit bins; empty for auto-only crosses
-    std::vector<uint32_t> m_autoBins;  // Retained flat indices, when explicit bins are present
+    Dimension* m_dimensionsp = nullptr;  // [m_dims], owned by VlCoverCrossT
+    uint32_t* m_flatCountsp = nullptr;  // [m_numAutoBins] Per-bin hit counts
+    Explicit* m_explicitp = nullptr;  // Absent for automatic-only crosses
 
     // PRIVATE METHODS
+    bool hasExplicitBins() const { return m_explicitp != nullptr; }
+    template <bool T_Explicit, bool T_RecordHits = true>
     void iterateProduct(uint32_t dim, uint32_t baseIdx);
-    void incrementTuple(uint32_t idx) {
-        if (!m_autoExcluded.empty() && m_autoExcluded[idx]) return;
-        if (m_flatCounts[idx]++ == 0) ++m_numCovered;
+    void incrementAuto(uint32_t idx) {
+        if (m_flatCountsp[idx]++ == 0) ++m_numCovered;
     }
-    uint32_t autoIndex(uint32_t i) const { return m_bins.empty() ? i : m_autoBins[i]; }
+    template <bool T_RecordHits>
+    void incrementTuple(uint32_t idx) {
+        Explicit& data = *m_explicitp;
+        const uint32_t wordIdx = idx / 64;
+        Word& word = data.wordsp[wordIdx];
+        if ((word.autoExcluded >> (idx % 64)) & 1U) {
+            if (T_RecordHits) {
+                if (!word.hitBits) { data.wordsp[data.numTouchedWords++].touchedWord = wordIdx; }
+                word.hitBits |= uint64_t{1} << (idx % 64);
+            }
+            // Explicit selections consume automatic tuples independently of iff.
+            return;
+        }
+        incrementAuto(idx);
+    }
+    template <bool T_ApplyIffs>
+    void sampleSingleTuple(uint32_t idx, const bool* binIffs);
+    template <bool T_ApplyIffs, uint32_t T_Touched, bool T_Dense>
+    void sampleBins(const bool* binIffs);
+    template <bool T_ApplyIffs, bool T_Dense>
+    void sampleHitWords(const bool* binIffs);
+    uint32_t autoIndex(uint32_t i) const {
+        return hasExplicitBins() ? m_explicitp->autoBins[i] : i;
+    }
     std::string autoBinName(uint32_t flat) const;
 
-public:
+protected:
     // CONSTRUCTORS
-    VlCoverCross() = default;
+    VlCoverCross(uint32_t dims, uint32_t tuples)
+        : m_dims{dims}
+        , m_numAutoBins{tuples} {}
+    void bindStorage(Dimension* dimensionsp, uint32_t* countsp, Explicit* explicitp = nullptr) {
+        m_dimensionsp = dimensionsp;
+        m_flatCountsp = countsp;
+        m_explicitp = explicitp;
+    }
+
+public:
+    VL_UNCOPYABLE(VlCoverCross);
 
     // METHODS
     // ---- configuration (from generated constructor, after coverpoints init'd) ----
     void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
               int line, int col);
-    /// Add a single-binsof cross bin using verilation-time resolved Normal-bin indices.
-    void addBin(uint32_t dim, uint32_t first, uint32_t bins, const char* namep, const char* filep,
+    /// Add a cross bin using a verilation-time bitmap of selected Normal-bin tuples.
+    void addBin(std::initializer_list<uint64_t> selection, const char* namep, const char* filep,
                 int line, int col);
     /// Retain only automatic cross bins not selected by any explicit bin.
     void finalizeBins();
@@ -280,19 +342,65 @@ public:
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
     /// Sample automatic and explicit bins, optionally applying per-bin iff guards.
-    /// Reads the feeding coverpoints from m_cps, so the caller passes no coverpoints.
+    /// Reads the feeding coverpoints saved by init(), so the caller passes no coverpoints.
     void sample(const bool* binIffs = nullptr);
 
     // ---- VlCoverpointIf ----
     // Explicit bins precede retained automatic bins; all are Normal bins.
     uint32_t binCount() const override {
-        return m_bins.empty() ? m_numAutoBins
-                              : static_cast<uint32_t>(m_bins.size() + m_autoBins.size());
+        return hasExplicitBins()
+                   ? static_cast<uint32_t>(m_explicitp->bins.size() + m_explicitp->autoBins.size())
+                   : m_numAutoBins;
     }
     std::string binName(uint32_t i) const override;
     void coverageParts(double& covered, double& total) const override {
         covered = m_numCovered;
         total = binCount();
+    }
+};
+
+//=============================================================================
+// VlCoverCrossT
+/// Cross storage with verilation-time dimensions and bin capacities. All bin
+/// data stays at the registry-owned object's address; no per-buffer allocations
+/// or per-shape copies of the sampling algorithm are needed.
+
+template <uint32_t Dims, uint32_t Tuples, uint32_t Bins, uint32_t AutoBins, uint64_t BinWords>
+class VlCoverCrossT final : public VlCoverCross {
+    static constexpr uint32_t WORDS = Tuples / 64 + (Tuples % 64 != 0);
+    static_assert(Bins > 0, "Explicit cross storage requires bins");
+
+    std::array<Dimension, Dims> m_dimensions;
+    std::array<uint32_t, Tuples> m_counts{};
+    std::array<Bin, Bins> m_bins;
+    std::array<Word, WORDS> m_words{};
+    std::array<uint32_t, AutoBins> m_autoBins;
+    std::array<uint32_t, BinWords> m_binWords;
+    std::array<uint64_t, static_cast<uint64_t>(Bins) * WORDS> m_selections;
+    Explicit m_explicit;
+
+public:
+    VlCoverCrossT()
+        : VlCoverCross{Dims, Tuples}
+        , m_explicit{{m_bins.data(), Bins},
+                     m_words.data(),
+                     {m_autoBins.data(), AutoBins},
+                     {m_binWords.data(), BinWords},
+                     m_selections.data()} {
+        bindStorage(m_dimensions.data(), m_counts.data(), &m_explicit);
+    }
+};
+
+/// Automatic-only crosses omit every explicit-bin array and its bookkeeping.
+template <uint32_t Dims, uint32_t Tuples>
+class VlCoverCrossT<Dims, Tuples, 0, 0, 0> final : public VlCoverCross {
+    std::array<Dimension, Dims> m_dimensions;
+    std::array<uint32_t, Tuples> m_counts{};
+
+public:
+    VlCoverCrossT()
+        : VlCoverCross{Dims, Tuples} {
+        bindStorage(m_dimensions.data(), m_counts.data());
     }
 };
 
@@ -340,8 +448,9 @@ public:
         m_items.emplace_back(cpp);
         return cpp;  // borrowed by the generated class
     }
-    VlCoverCross* addCross() {
-        VlCoverCross* const cxp = new VlCoverCross{};
+    template <uint32_t Dims, uint32_t Tuples, uint32_t Bins, uint32_t AutoBins, uint64_t BinWords>
+    VlCoverCrossT<Dims, Tuples, Bins, AutoBins, BinWords>* addCross() {
+        auto* const cxp = new VlCoverCrossT<Dims, Tuples, Bins, AutoBins, BinWords>{};
         m_items.emplace_back(cxp);
         return cxp;  // borrowed by the generated class
     }

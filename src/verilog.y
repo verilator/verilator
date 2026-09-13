@@ -7407,9 +7407,9 @@ select_expression<nodep>:  // ==IEEE: select_expression
                 select_expression_r
                         { $$ = $1; }
         |       select_expression yP_ANDAND select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Unsupported: '&&' in coverage select expression"); DEL($1, $3); }
+                        { $$ = new AstCoverCrossSelect{$2, $1, $3, false}; }
         |       select_expression yP_OROR   select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Unsupported: '||' in coverage select expression"); DEL($1, $3); }
+                        { $$ = new AstCoverCrossSelect{$2, $1, $3, true}; }
         ;
 
 // This non-terminal exists to disambiguate select_expression and make "with" bind tighter
@@ -7418,11 +7418,12 @@ select_expression_r<nodep>:
                 yBINSOF '(' bins_expression ')'
                         { $$ = new AstCoverBinsof{$1, new AstCoverpointRef{$3->fileline(), $3}}; }
         |       '!' yBINSOF '(' bins_expression ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Unsupported: 'binsof' in coverage select expression"); DEL($4); }
-        |       yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'
-                        { $$ = nullptr; BBCOVERIGN($5, "Unsupported: 'intersect' in coverage select expression"); DEL($3, $7); }
-        |       '!' yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'    { }
-                        { $$ = nullptr; BBCOVERIGN($5, "Unsupported: 'intersect' in coverage select expression"); DEL($4, $8); }
+                        { $$ = new AstCoverBinsof{$1, new AstCoverpointRef{$4->fileline(), $4}, true}; }
+        //                      // IEEE: covergroup_range_list has the same syntax as range_list
+        |       yBINSOF '(' bins_expression ')' yINTERSECT '{' range_list '}'
+                        { $$ = new AstCoverBinsof{$1, new AstCoverpointRef{$3->fileline(), $3}, false, $7}; }
+        |       '!' yBINSOF '(' bins_expression ')' yINTERSECT '{' range_list '}'
+                        { $$ = new AstCoverBinsof{$1, new AstCoverpointRef{$4->fileline(), $4}, true, $8}; }
         |       yWITH__PAREN '(' cgexpr ')'
                         { $$ = nullptr; BBCOVERIGN($1, "Unsupported: 'with' in coverage select expression"); DEL($3); }
         |       '!' yWITH__PAREN '(' cgexpr ')'
