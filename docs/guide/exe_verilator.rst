@@ -1792,12 +1792,11 @@ Summary:
 
 .. option:: --structs-packed
 
-   Deprecated; discontinue use of this option.
+   Removed in 5.054.
 
-   Converts all unpacked structures to packed structures, and issues an
-   :option:`UNPACKED` warning. Specifying this option allows for backward
-   compatibility with versions before Verilator 5.006, when Verilator would
-   always pack unpacked structures.
+   Converted all unpacked structures to packed structures, Specifying this
+   option allowed for backward compatibility with versions before Verilator
+   5.006, when Verilator would always pack unpacked structures.
 
 .. option:: -sv
 
