@@ -26,7 +26,11 @@ module t;
       ignore_bins ignored = {12};
       bins rest = default;
     }
-    cp_b: coverpoint b {bins zero = {0}; bins one = {1}; bins both = {0, 1};}
+    cp_b: coverpoint b {
+      bins zero = {0};
+      bins one = {1};
+      bins both = {0, 1};
+    }
     ranges: cross cp_a, cp_b{
       // Intersect selects entire bins, including values outside the filter.
       bins middle = binsof (cp_a) intersect {
@@ -76,8 +80,12 @@ module t;
   endgroup
 
   covergroup cg_zero_product with function sample (bit value);
-    cp_a: coverpoint value {bins zero = {0};}
-    cp_empty: coverpoint value {bins other = default;}
+    cp_a: coverpoint value {
+      bins zero = {0};
+    }
+    cp_empty: coverpoint value {
+      bins other = default;
+    }
     selected: cross cp_a, cp_empty;
   endgroup
 
@@ -134,7 +142,7 @@ module t;
 
   typedef bit signed [6:0] signed_t;
   typedef bit [64:0] wide_t;
-  localparam wide_t LOW  = 65'h0_ffff_ffff_ffff_ffff;
+  localparam wide_t LOW = 65'h0_ffff_ffff_ffff_ffff;
   localparam wide_t HIGH = 65'h1_0000_0000_0000_0000;
 
   covergroup cg_numeric with function sample (signed_t a, wide_t b);
@@ -146,7 +154,10 @@ module t;
       bins zero = {0};
       bins positive = {[1 : 4]};
     }
-    cp_b: coverpoint b {bins low = {LOW}; bins high = {HIGH};}
+    cp_b: coverpoint b {
+      bins low = {LOW};
+      bins high = {HIGH};
+    }
     numeric: cross cp_a, cp_b{
       bins negative_high = binsof (cp_a) intersect {[-3 : -2]} && binsof (cp_b) intersect {
         [HIGH : $]
@@ -177,7 +188,10 @@ module t;
   endgroup
 
   covergroup cg_wildcard with function sample (signed_t a, bit b);
-    cp_a: coverpoint a {wildcard bins odd = {7'b??????1}; bins high = {[32 : 35]};}
+    cp_a: coverpoint a {
+      wildcard bins odd = {7'b??????1};
+      bins high = {[32 : 35]};
+    }
     cp_b: coverpoint b;
     wildcard_range: cross cp_a, cp_b{
       // Neither endpoint matches, but the interior value 3 does.
@@ -191,8 +205,12 @@ module t;
   endgroup
 
   covergroup cg_words with function sample (bit [6:0] a, bit [6:0] b);
-    cp_a: coverpoint a {bins values[] = {[0 : 8]};}
-    cp_b: coverpoint b {bins values[] = {[0 : 8]};}
+    cp_a: coverpoint a {
+      bins values[] = {[0 : 8]};
+    }
+    cp_b: coverpoint b {
+      bins values[] = {[0 : 8]};
+    }
     partial: cross cp_a, cp_b{
       bins boundary = binsof (cp_a) intersect {7};
       bins either = binsof (cp_a) intersect {7} || binsof (cp_b) intersect {8};
@@ -204,9 +222,21 @@ module t;
   covergroup cg_fast_paths with function sample (
       bit [2:0] a, bit [2:0] b, bit [2:0] c, bit enable_a, bit enable_b, bit enable_late
   );
-    cp_a: coverpoint a {bins first = {0, 1}; bins second = {0, 2}; bins last = {3};}
-    cp_b: coverpoint b {bins first = {0, 1}; bins second = {0, 2}; bins last = {3};}
-    cp_c: coverpoint c {bins first = {0, 1}; bins second = {0, 2}; bins last = {3};}
+    cp_a: coverpoint a {
+      bins first = {0, 1};
+      bins second = {0, 2};
+      bins last = {3};
+    }
+    cp_b: coverpoint b {
+      bins first = {0, 1};
+      bins second = {0, 2};
+      bins last = {3};
+    }
+    cp_c: coverpoint c {
+      bins first = {0, 1};
+      bins second = {0, 2};
+      bins last = {3};
+    }
     selected: cross cp_a, cp_b, cp_c{
       bins early_a = binsof (cp_a.first) && binsof (cp_b.first) iff (enable_a);
       bins early_b = binsof (cp_a.first) && binsof (cp_b.first) iff (enable_b);
@@ -217,8 +247,12 @@ module t;
   covergroup cg_guards with function sample (
       bit [6:0] enables, bit [64:0] wide_enable, bit signed [6:0] signed_enable, bit [2:0] index
   );
-    cp_a: coverpoint 1'b0 {bins zero = {0};}
-    cp_b: coverpoint 1'b0 {bins zero = {0};}
+    cp_a: coverpoint 1'b0 {
+      bins zero = {0};
+    }
+    cp_b: coverpoint 1'b0 {
+      bins zero = {0};
+    }
     selected: cross cp_a, cp_b{
       bins low_bit = binsof (cp_a) iff (enables[0]);
       bins high_bit = binsof (cp_a) iff (enables[1]);
@@ -271,7 +305,11 @@ module t;
 
   // Check four-state bin identities without relying on four-state sampling.
   covergroup cg_four_state with function sample (logic [2:0] a, bit b);
-    cp_a: coverpoint a {bins known = {3'b001}; bins xstate = {3'bx01}; bins zstate = {3'bz01};}
+    cp_a: coverpoint a {
+      bins known = {3'b001};
+      bins xstate = {3'bx01};
+      bins zstate = {3'bz01};
+    }
     cp_b: coverpoint b;
     selected: cross cp_a, cp_b{
       bins exact_x = binsof (cp_a) intersect {3'bx01};
@@ -281,8 +319,13 @@ module t;
   endgroup
 
   covergroup cg_narrow_wildcard with function sample (signed_t a, bit b);
-    cp_s: coverpoint a {wildcard bins w = {3'sb?01}; ignore_bins outside = {7'sd7};}
-    cp_u: coverpoint 7'd1 {wildcard bins w = {3'sb?01};}
+    cp_s: coverpoint a {
+      wildcard bins w = {3'sb?01};
+      ignore_bins outside = {7'sd7};
+    }
+    cp_u: coverpoint 7'd1 {
+      wildcard bins w = {3'sb?01};
+    }
     cp_b: coverpoint b;
     signed_values: cross cp_s, cp_b{
       bins positive = binsof (cp_s.w) intersect {1};
@@ -299,7 +342,9 @@ module t;
 
   covergroup cg_excluded with function sample (bit [6:0] a, bit b);
     cp_a: coverpoint a {
-      bins normal = {[0 : 3]}; ignore_bins ignored = {1}; illegal_bins illegal = {3};
+      bins normal = {[0 : 3]};
+      ignore_bins ignored = {1};
+      illegal_bins illegal = {3};
     }
     cp_b: coverpoint b;
     selected: cross cp_a, cp_b{
@@ -329,7 +374,10 @@ module t;
   endgroup
 
   covergroup cg_excluded_wide with function sample (wide_t a, bit b);
-    cp_a: coverpoint a {bins normal = {LOW, HIGH}; ignore_bins ignored = {LOW};}
+    cp_a: coverpoint a {
+      bins normal = {LOW, HIGH};
+      ignore_bins ignored = {LOW};
+    }
     cp_b: coverpoint b;
     selected: cross cp_a, cp_b{
       bins kept = binsof (cp_a.normal) intersect {HIGH};
@@ -375,7 +423,10 @@ module t;
   endgroup
 
   covergroup cg_transition_ignore with function sample (bit a, bit b);
-    cp_a: coverpoint a {bins seq = (0 => 1); ignore_bins value_only = {1};}
+    cp_a: coverpoint a {
+      bins seq = (0 => 1);
+      ignore_bins value_only = {1};
+    }
     cp_b: coverpoint b;
     selected: cross cp_a, cp_b{bins kept = binsof (cp_a.seq) intersect {1};}
   endgroup

@@ -593,7 +593,7 @@ List Of Warnings
    construct was ignored.
 
    This includes crosses whose normal-bin Cartesian product exceeds
-   ``2**32 - 1`` tuples.  The limit is checked during verilation for both
+   ``2**32 - 1`` tuples.  The limit is checked during Verilation for both
    automatic and explicit cross bins.
 
    Disabling the :option:`UNSUPPORTED` error also disables this warning.

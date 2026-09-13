@@ -25,6 +25,7 @@ Verilator 5.053 devel
 * Support rand dynamic arrays used inside `with` clause of randomize (#8246). [Kamil Danecki, Antmicro Ltd.]
 * Support multiplicity in SVA shapes that use NFA rings (#8267). [Artur Bieniek, Antmicro Ltd.]
 * Support non-overlapped property implications correctly (#8268). [Artur Bieniek, Antmicro Ltd.]
+* Support logic and set operations on binsof (#8306). [Marco Bartoli]
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
 * Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
 * Optimize redundant vertex cache lookups in DFG peephole (#8283). [Geza Lore, Testorrent USA, Inc.]
@@ -50,6 +51,8 @@ Verilator 5.053 devel
 * Fix DECLFILENAME warning on nested declarations (#8302). [Martijn Wobbes]
 * Fix property and sequence line coverage (#8314). [Andrii, Antmicro Ltd.]
 * Fix wide typed pattern formatting primitives (#8325). [Marco Bartoli]
+* Fix parameterized class nested in a parameterized interface (#8328) (#8329). [Kristof Marien]
+* Fix format of signed enums (#8338). [Marco Bartoli]
 
 
 Verilator 5.052 2026-09-05
