@@ -1153,8 +1153,10 @@ uint8_t V3Number::dataByte(int byte) const {
 
 bool V3Number::isAllZ() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
-    for (int i = 0; i < width(); ++i) {
-        if (!bitIsZ(i)) return false;
+    for (int i = 0; i < words(); ++i) {
+        const ValueAndX v = m_data.num()[i];
+        const uint32_t mask = i == words() - 1 ? hiWordMask() : ~0U;
+        if (((~v.m_value & v.m_valueX) & mask) != mask) return false;
     }
     return true;
 }
@@ -1215,16 +1217,24 @@ bool V3Number::isFourState() const VL_MT_SAFE {
 }
 bool V3Number::isAnyX() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
-    for (int bit = 0; bit < width(); ++bit) {
-        if (bitIsX(bit)) return true;
+    for (int i = 0; i < words(); ++i) {
+        const ValueAndX v = m_data.num()[i];
+        if (v.m_value & v.m_valueX) return true;
     }
     return false;
 }
-bool V3Number::isAnyXZ() const { return isAnyX() || isAnyZ(); }
+bool V3Number::isAnyXZ() const {
+    if (isDouble() || isString()) return false;
+    for (int i = 0; i < words(); ++i) {
+        if (m_data.num()[i].m_valueX) return true;
+    }
+    return false;
+}
 bool V3Number::isAnyZ() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
-    for (int bit = 0; bit < width(); ++bit) {
-        if (bitIsZ(bit)) return true;
+    for (int i = 0; i < words(); ++i) {
+        const ValueAndX v = m_data.num()[i];
+        if (~v.m_value & v.m_valueX) return true;
     }
     return false;
 }
