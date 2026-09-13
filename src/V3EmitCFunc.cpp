@@ -371,7 +371,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
     bool comma = false;
     if (nodep->funcp()->isLoose() && !nodep->funcp()->isStatic()) {
         UASSERT_OBJ(!selfPointer.empty(), nodep, "Call to loose method without self pointer");
-        puts(selfPointer);
+        puts(selfReferenceString(selfPointer));
         comma = true;
     }
     if (nodep->funcp()->needProcess()) {
@@ -407,6 +407,21 @@ std::string EmitCFunc::dereferenceString(const std::string& pointer) const {
         }
     }
 }
+
+std::string EmitCFunc::selfReferenceString(const std::string& pointer) const {
+    // Loose functions take the model object by reference; convert the self
+    // pointer text of a call into the corresponding object expression
+    if (pointer[0] == '(' && pointer[1] == '&') {
+        // '(&OBJECT)' -> 'OBJECT'
+        // Note: this relies on only the form '(&OBJECT)' being used by Verilator
+        return pointer.substr(2, pointer.length() - 3);
+    } else if (pointer == "vlSelf" && m_usevlSelfRef) {
+        return "vlSelfRef";
+    } else {
+        return "*" + pointer;
+    }
+}
+
 void EmitCFunc::emitDereference(AstNode* nodep, const string& pointer) {
     putns(nodep, dereferenceString(pointer));
 }

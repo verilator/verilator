@@ -404,7 +404,7 @@ class EmitCModel final : public EmitCFunc {
         UASSERT_OBJ(modp->isTop(), modp, "Attempting to emitWrapEval for non-top class");
 
         const string topModNameProtected = EmitCUtil::prefixNameProtect(modp);
-        const string selfDecl = "(" + topModNameProtected + "* vlSelf)";
+        const string selfDecl = "(" + topModNameProtected + "& vlSelfRef)";
 
         putSectionDelimiter("Evaluation function");
 
@@ -446,8 +446,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\nvoid " + EmitCUtil::topClassName() + "::evalBegin() {\n");
         puts("#ifdef VL_DEBUG\n");
         putsDecoration(nullptr, "// Debug assertions\n");
-        puts(topModNameProtected + "__" + protect("_eval_debug_assertions")
-             + "(&(vlSymsp->TOP));\n");
+        puts(topModNameProtected + "__" + protect("_eval_debug_assertions") + "(vlSymsp->TOP);\n");
         puts("#endif  // VL_DEBUG\n");
 
         if (v3Global.opt.trace()) puts("vlSymsp->__Vm_activity = true;\n");
@@ -478,7 +477,7 @@ class EmitCModel final : public EmitCFunc {
             if (eval.firstIteration()) puts("bool firstIteration");
             puts(") {\n");
             if (eval.isIterated()) puts("return ");
-            puts(funcNameProtect(funcp, m_modp) + "(&(vlSymsp->TOP)");
+            puts(funcNameProtect(funcp, m_modp) + "(vlSymsp->TOP");
             if (eval.firstIteration()) puts(", firstIteration");
             puts(");\n");
             puts("}\n");
@@ -491,7 +490,7 @@ class EmitCModel final : public EmitCFunc {
             puts("\nVL_ATTR_COLD void " + EmitCUtil::topClassName()
                  + "::" + eval.dumpTriggersMethod() + "() {\n");
             puts(funcNameProtect(v3Global.rootp()->dumpTriggersFuncp(eval), m_modp)
-                 + "(&(vlSymsp->TOP));\n");
+                 + "(vlSymsp->TOP);\n");
             puts("}\n");
         }
     }
@@ -588,13 +587,13 @@ class EmitCModel final : public EmitCFunc {
         // Forward declaration
         if (!v3Global.opt.libCreate().empty()) {
             putns(modp, "\nvoid " + topModNameProtected + "__" + protect("trace_init_root") + "("
-                            + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
+                            + topModNameProtected + "& vlSelfRef, " + v3Global.opt.traceClassBase()
                             + "* tracep);\n");
         }
         putns(modp, "\nvoid " + topModNameProtected + "__" + protect("trace_decl_types") + "("
                         + v3Global.opt.traceClassBase() + "* tracep);\n");
         putns(modp, "\nvoid " + topModNameProtected + "__" + protect("trace_init_top") + "("
-                        + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
+                        + topModNameProtected + "& vlSelfRef, " + v3Global.opt.traceClassBase()
                         + "* tracep);\n");
 
         // Static helper function
@@ -615,13 +614,13 @@ class EmitCModel final : public EmitCFunc {
         } else {
             puts("if (tracep->rootInit()) {\n");
             puts("tracep->pushPrefix(vlSymsp->name(), VerilatedTracePrefixType::SCOPE_MODULE);\n");
-            puts(topModNameProtected + "__" + protect("trace_init_root") + "(vlSelf, tracep);\n");
+            puts(topModNameProtected + "__" + protect("trace_init_root") + "(*vlSelf, tracep);\n");
             puts("tracep->pushPrefix(\"" + topTraceName
                  + "\", VerilatedTracePrefixType::SCOPE_MODULE);\n");
             puts("}\n");
         }
         puts(topModNameProtected + "__" + protect("trace_decl_types") + "(tracep);\n");
-        puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
+        puts(topModNameProtected + "__" + protect("trace_init_top") + "(*vlSelf, tracep);\n");
         if (v3Global.opt.libCreate().empty()) {  //
             puts("tracep->popPrefix();\n");
         } else {
@@ -635,8 +634,8 @@ class EmitCModel final : public EmitCFunc {
         // Forward declaration
         puts("\n");
         putns(modp, "VL_ATTR_COLD void " + topModNameProtected + "__" + protect("trace_register")
-                        + "(" + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
-                        + "* tracep);\n");
+                        + "(" + topModNameProtected + "& vlSelfRef, "
+                        + v3Global.opt.traceClassBase() + "* tracep);\n");
 
         // ::traceRegisterModel
         puts("\n");
@@ -668,7 +667,7 @@ class EmitCModel final : public EmitCFunc {
              + ", " + std::to_string(v3Global.rootp()->nTraceCodes())  //
              + ");\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
-             + "(&(vlSymsp->TOP), stfp->spTrace());\n");
+             + "(vlSymsp->TOP, stfp->spTrace());\n");
         puts("}\n");
     }
 
