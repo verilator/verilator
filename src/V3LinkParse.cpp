@@ -1288,10 +1288,10 @@ class LinkParseVisitor final : public VNVisitor {
     bool dropDeprecatedCoverageOption(AstCgOptionAssign* const nodep) {
         if (!(nodep->optType() == VCoverOptionType::CROSS_AUTO_BIN_MAX)) return false;
         cleanFileline(nodep);
-        nodep->v3warn(DEPRECATED, "Coverage option 'option."
-                                      << nodep->optType().ascii()
-                                      << "' is deprecated and ignored; it was removed from the "
-                                         "IEEE LRM because it was poorly defined.");
+        nodep->v3warn(NONSTD, "Coverage option 'option."
+                                  << nodep->optType().ascii()
+                                  << "' is deprecated and ignored; it was removed from the "
+                                     "IEEE LRM because it was poorly defined.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }

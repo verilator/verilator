@@ -1,11 +1,11 @@
-%Warning-DEPRECATED: t/t_covergroup_cross_auto_max.v:14:5: Coverage option 'option.cross_auto_bin_max' is deprecated and ignored; it was removed from the IEEE LRM because it was poorly defined.
+%Warning-NONSTD: t/t_covergroup_cross_auto_max.v:14:5: Coverage option 'option.cross_auto_bin_max' is deprecated and ignored; it was removed from the IEEE LRM because it was poorly defined.
    14 |     option.cross_auto_bin_max = 0;
       |     ^~~~~~
-                     ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
-                     ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
-%Warning-DEPRECATED: t/t_covergroup_cross_auto_max.v:24:7: Coverage option 'option.cross_auto_bin_max' is deprecated and ignored; it was removed from the IEEE LRM because it was poorly defined.
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Warning-NONSTD: t/t_covergroup_cross_auto_max.v:24:7: Coverage option 'option.cross_auto_bin_max' is deprecated and ignored; it was removed from the IEEE LRM because it was poorly defined.
    24 |       option.cross_auto_bin_max = 0;
       |       ^~~~~~
-%Warning-DEPRECATED: t/t_covergroup_cross_auto_max.v:27:26: Coverage option 'option.cross_auto_bin_max' is deprecated and ignored; it was removed from the IEEE LRM because it was poorly defined.
+%Warning-NONSTD: t/t_covergroup_cross_auto_max.v:27:26: Coverage option 'option.cross_auto_bin_max' is deprecated and ignored; it was removed from the IEEE LRM because it was poorly defined.
    27 |     ab: cross cp_a, cp_b{option.cross_auto_bin_max = 1;}
       |                          ^~~~~~
