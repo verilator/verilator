@@ -1647,12 +1647,11 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
                                 << v3Global.opt.replicationLimit() << " is suspect: " << rhsval);
     }
     setZero();
-    int obit = 0;
     for (unsigned times = 0; times < rhsval; ++times) {
-        for (int bit = 0; bit < lhs.width(); ++bit) {
-            setBit(obit, lhs.bitIs(bit));
-            ++obit;
-        }
+        const uint64_t destLsb = uint64_t{times} * lhs.width();
+        if (destLsb >= static_cast<uint32_t>(width())) break;
+        copyBits(static_cast<int>(destLsb), lhs, 0,
+                 std::min(lhs.width(), width() - static_cast<int>(destLsb)));
     }
     return *this;
 }
@@ -1669,9 +1668,7 @@ V3Number& V3Number::opStreamL(const V3Number& lhs, const V3Number& rhs) {
     const int ssize = std::min(rhs.toUInt(), static_cast<unsigned>(lhs.width()));
     for (int istart = 0; istart < lhs.width(); istart += ssize) {
         const int ostart = std::max(0, lhs.width() - ssize - istart);
-        for (int bit = 0; bit < ssize && bit < lhs.width() - istart; ++bit) {
-            setBit(ostart + bit, lhs.bitIs(istart + bit));
-        }
+        copyBits(ostart, lhs, istart, std::min(ssize, lhs.width() - istart));
     }
     return *this;
 }
@@ -2010,7 +2007,8 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
     }
     const uint32_t rhsval = rhs.toUInt();
     if (rhsval < static_cast<uint32_t>(lhs.width())) {
-        for (int bit = 0; bit < width(); ++bit) setBit(bit, lhs.bitIs(bit + rhsval));
+        copyBits(0, lhs, static_cast<int>(rhsval),
+                 std::min(width(), lhs.width() - static_cast<int>(rhsval)));
     }
     return *this;
 }
@@ -2027,10 +2025,10 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
     const bool overflow = rhs.width() > 32 && !rhs.isBitsZero(rhs.width() - 1, 32);
     if (!overflow) {
         const uint32_t rhsval = rhs.toUInt();
-        if (rhsval < static_cast<uint32_t>(lhs.width())) {
-            for (int bit = 0; bit < width(); ++bit) {
-                setBit(bit, lhs.bitIsExtend(bit + rhsval, lbits));
-            }
+        if (rhsval < lbits) {
+            const int copyWidth = std::min(width(), static_cast<int>(lbits - rhsval));
+            copyBits(0, lhs, static_cast<int>(rhsval), copyWidth);
+            for (int bit = copyWidth; bit < width(); ++bit) setBit(bit, lhs.bitIs(lbits - 1));
             return *this;
         }
     }
@@ -2048,8 +2046,9 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
         if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
     }
     const uint32_t rhsval = rhs.toUInt();
-    for (uint32_t bit = 0; bit < static_cast<uint32_t>(width()); ++bit) {
-        if (bit >= rhsval) setBit(bit, lhs.bitIs(bit - rhsval));
+    if (rhsval < static_cast<uint32_t>(width())) {
+        copyBits(static_cast<int>(rhsval), lhs, 0,
+                 std::min(width() - static_cast<int>(rhsval), lhs.width()));
     }
     return *this;
 }
@@ -2475,10 +2474,9 @@ V3Number& V3Number::opExtendS(const V3Number& lhs, uint32_t lbits) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < width(); ++bit) {
-        const char extendWith = lhs.bitIsExtend(bit, lbits);
-        setBit(bit, extendWith);
-    }
+    const int copyWidth = std::min(width(), static_cast<int>(lbits));
+    copyBits(0, lhs, 0, copyWidth);
+    for (int bit = copyWidth; bit < width(); ++bit) setBit(bit, lhs.bitIs(lbits - 1));
     return *this;
 }
 
@@ -2487,7 +2485,9 @@ V3Number& V3Number::opExtendXZ(const V3Number& lhs, uint32_t lbits) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < width(); ++bit) setBit(bit, lhs.bitIsExtend(bit, lbits));
+    const int copyWidth = std::min(width(), static_cast<int>(lbits));
+    copyBits(0, lhs, 0, copyWidth);
+    for (int bit = copyWidth; bit < width(); ++bit) setBit(bit, lhs.bitIs(lbits - 1));
     return *this;
 }
 
@@ -2519,15 +2519,15 @@ V3Number& V3Number::opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval)
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    int ibit = lsbval;
-    for (int bit = 0; bit < width(); ++bit) {
-        if (ibit >= 0 && ibit < lhs.width() && ibit <= static_cast<int>(msbval)) {
-            setBit(bit, lhs.bitIs(ibit));
-        } else {
-            setBitX0(bit);
-        }
-        ++ibit;
+    int copyWidth = 0;
+    if (lsbval <= msbval && lsbval < static_cast<uint32_t>(lhs.width())) {
+        const uint64_t selectedWidth = uint64_t{msbval} - lsbval + 1;
+        copyWidth = static_cast<int>(
+            std::min({static_cast<uint64_t>(width()), static_cast<uint64_t>(lhs.width()) - lsbval,
+                      selectedWidth}));
     }
+    copyBits(0, lhs, copyWidth ? static_cast<int>(lsbval) : 0, copyWidth);
+    for (int bit = copyWidth; bit < width(); ++bit) setBitX0(bit);
     // UINFO(0, "RANGE " << lhs << " " << msb << " " << lsb << " = " << *this);
     return *this;
 }
@@ -2540,15 +2540,10 @@ V3Number& V3Number::opSelInto(const V3Number& lhs, int lsbval, int width) {
     // this[lsbval+width-1 : lsbval] = lhs;  Other bits of this are not affected
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    int ibit = 0;
-    for (int bit = lsbval; bit < lsbval + width; ++bit) {
-        if (ibit >= 0 && ibit < lhs.width()) {
-            setBit(bit, lhs.bitIs(ibit));
-        } else {
-            setBitX0(bit);
-        }
-        ++ibit;
-    }
+    UASSERT(lsbval >= 0, "Negative destination bit range");
+    const int copyWidth = std::max(0, std::min({width, lhs.width(), this->width() - lsbval}));
+    copyBits(lsbval, lhs, 0, copyWidth);
+    for (int bit = copyWidth; bit < width; ++bit) setBitX0(lsbval + bit);
     return *this;
 }
 
