@@ -7061,10 +7061,11 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
                               VCoverOptionType optType = VCoverOptionType::UNKNOWN;
                               bool valid = true;
                               if (!typeOpt) {
-                                  // IEEE 1800-2023 Table 19-1: option.* names
+                                  // IEEE 1800-2023 Table 19-1 option.* names and ignored legacy names
                                   if      (*$3 == "at_least")                optType = VCoverOptionType::AT_LEAST;
                                   else if (*$3 == "auto_bin_max")            optType = VCoverOptionType::AUTO_BIN_MAX;
                                   else if (*$3 == "comment")                 optType = VCoverOptionType::COMMENT;
+                                  else if (*$3 == "cross_auto_bin_max")      optType = VCoverOptionType::CROSS_AUTO_BIN_MAX;
                                   else if (*$3 == "cross_num_print_missing") optType = VCoverOptionType::CROSS_NUM_PRINT_MISSING;
                                   else if (*$3 == "cross_retain_auto_bins")  optType = VCoverOptionType::CROSS_RETAIN_AUTO_BINS;
                                   else if (*$3 == "detect_overlap")          optType = VCoverOptionType::DETECT_OVERLAP;
