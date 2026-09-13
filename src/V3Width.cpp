@@ -6768,7 +6768,9 @@ class WidthVisitor final : public VNVisitor {
                 argp = newp;
             } else if (nodep->exprFormat()) {
                 if (AstEnumDType* const enumDtp = formatEnumDType(argp)) {
-                    nodep->addExprsp(new AstSFormatArg{argp->fileline(), VFormatAttr::ENUM, argp});
+                    const VFormatAttr attr
+                        = enumDtp->isSigned() ? VFormatAttr::ENUM_SIGNED : VFormatAttr::ENUM;
+                    nodep->addExprsp(new AstSFormatArg{argp->fileline(), attr, argp});
                     AstNodeExpr* const namep
                         = enumSelect(argp->cloneTreePure(false), enumDtp, VAttrType::ENUM_NAME);
                     nodep->addExprsp(
@@ -8796,12 +8798,17 @@ class WidthVisitor final : public VNVisitor {
                                 }
                                 if (widthSet && width == 0) fallbackFormat = "'h%0h";
                             }
-                            AstNodeExpr* const newp = new AstCond{
-                                subargp->fileline(), enumTestValid(subargp, enumDtp),
-                                enumSelect(subargp->cloneTreePure(false), enumDtp,
-                                           VAttrType::ENUM_NAME),
-                                new AstSFormatF{subargp->fileline(), fallbackFormat, true,
-                                                subargp->cloneTreePure(false)}};
+                            AstNodeExpr* fallbackp = subargp->cloneTreePure(false);
+                            if (enumDtp->isSigned()) {
+                                fallbackp = new AstSFormatArg{subargp->fileline(),
+                                                              VFormatAttr::SIGNED, fallbackp};
+                            }
+                            AstNodeExpr* const newp
+                                = new AstCond{subargp->fileline(), enumTestValid(subargp, enumDtp),
+                                              enumSelect(subargp->cloneTreePure(false), enumDtp,
+                                                         VAttrType::ENUM_NAME),
+                                              new AstSFormatF{subargp->fileline(), fallbackFormat,
+                                                              true, fallbackp}};
                             subargp->replaceWith(new AstSFormatArg{subargp->fileline(),
                                                                    VFormatAttr::COMPLEX, newp});
                             VL_DO_DANGLING(pushDeletep(subargp), subargp);
