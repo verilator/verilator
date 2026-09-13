@@ -1565,6 +1565,34 @@ V3Number& V3Number::opXor(const V3Number& lhs, const V3Number& rhs) {
     return *this;
 }
 
+void V3Number::copyBits(int destLsb, const V3Number& source, int sourceLsb, int width) {
+    UASSERT(destLsb >= 0 && sourceLsb >= 0 && width >= 0, "Negative bit range");
+    UASSERT(destLsb + width <= this->width(), "Destination bit range exceeds number width");
+    UASSERT(sourceLsb + width <= source.width(), "Source bit range exceeds number width");
+
+    while (width > 0) {
+        // Keep each chunk within one source and destination word. This avoids per-bit copies while
+        // making unaligned ranges no different from aligned ones.
+        const int destOffset = destLsb & 31;
+        const int sourceOffset = sourceLsb & 31;
+        const int chunkWidth = std::min({width, 32 - destOffset, 32 - sourceOffset});
+        const uint32_t chunkMask = chunkWidth == 32 ? std::numeric_limits<uint32_t>::max()
+                                                    : (uint32_t{1} << chunkWidth) - 1;
+        const uint32_t destMask = chunkMask << destOffset;
+
+        const ValueAndX sourceWord = source.m_data.num()[sourceLsb / 32];
+        ValueAndX& destWord = m_data.num()[destLsb / 32];
+        destWord.m_value = (destWord.m_value & ~destMask)
+                           | ((sourceWord.m_value >> sourceOffset) & chunkMask) << destOffset;
+        destWord.m_valueX = (destWord.m_valueX & ~destMask)
+                            | ((sourceWord.m_valueX >> sourceOffset) & chunkMask) << destOffset;
+
+        destLsb += chunkWidth;
+        sourceLsb += chunkWidth;
+        width -= chunkWidth;
+    }
+}
+
 V3Number& V3Number::opConcat(const V3Number& lhs, const V3Number& rhs) {
     // Correct number of zero bits/width matters
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
@@ -1574,15 +1602,8 @@ V3Number& V3Number::opConcat(const V3Number& lhs, const V3Number& rhs) {
     if (!lhs.sized() || !rhs.sized()) {
         v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in concatenations.");
     }
-    int obit = 0;
-    for (int bit = 0; bit < rhs.width(); ++bit) {
-        setBit(obit, rhs.bitIs(bit));
-        ++obit;
-    }
-    for (int bit = 0; bit < lhs.width(); ++bit) {
-        setBit(obit, lhs.bitIs(bit));
-        ++obit;
-    }
+    copyBits(0, rhs, 0, rhs.width());
+    copyBits(rhs.width(), lhs, 0, lhs.width());
     return *this;
 }
 
