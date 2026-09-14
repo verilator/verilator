@@ -58,6 +58,8 @@ module t;
   typedef unsigned65_t unsigned65_alias_t;
 
   int enum_calls = 0;
+  int format_calls = 0;
+  unsigned65_t format_value;
   function automatic unsigned65_t next_enum(input bit high);
     enum_calls++;
     return high ? UNSIGNED65_HIGH : UNSIGNED65_LOW;
@@ -67,6 +69,10 @@ module t;
     return $sformatf("%p/%s", value, value);
   endfunction
 
+  function automatic string format_next_enum(input bit high);
+    return $sformatf("%p", next_enum(high));
+  endfunction
+
   function automatic enum_t next_narrow_enum(input bit high);
     enum_calls++;
     return high ? SECOND : FIRST;
@@ -74,6 +80,12 @@ module t;
 
   function automatic string format_narrow_enum(input enum_t value);
     return $sformatf("%p/%s", value, value);
+  endfunction
+
+  function automatic string select_format(input bit high, input bit string_format);
+    format_calls++;
+    format_value = high ? UNSIGNED65_HIGH : UNSIGNED65_LOW;
+    return string_format ? "%s" : "%p";
   endfunction
 
   localparam text_t TEXT_PARAM = "quote=\" slash=\\ bell=\a form=\f vert=\v ctrl=\001";
@@ -97,6 +109,8 @@ module t;
   localparam string SMALL_INVALID_TEXT = $sformatf("%p", small_t'(7'd2));
   localparam string ENUM_LOW_TEXT = $sformatf("%p", UNSIGNED65_LOW);
   localparam string ENUM_HIGH_TEXT = $sformatf("%s", UNSIGNED65_HIGH);
+  localparam unsigned65_t ENUM_METHOD_VALUE = UNSIGNED65_HIGH;
+  localparam string ENUM_METHOD_TEXT = ENUM_METHOD_VALUE.name();
   localparam string WIDE_EXPR_TEXT = $sformatf("%p", unsigned65_t'((65'd1 << 64) | 65'd1));
   localparam string ENUM_NEG_TEXT = $sformatf("%p", SIGNED65_NEG);
   localparam string ENUM95_NEG_TEXT = $sformatf("%p", SIGNED95_NEG);
@@ -142,6 +156,7 @@ module t;
 `endif
     `checks(SMALL_INVALID_TEXT, "2");
     `checks(ENUM_UNKNOWN_STRING, ENUM_UNKNOWN_TEXT);
+    `checks(ENUM_METHOD_TEXT, ENUM_HIGH_TEXT);
     `checks(ENUM_UNKNOWN_FUNC_TEXT, {ENUM_UNKNOWN_TEXT, "/", ENUM_UNKNOWN_TEXT});
     `checks(ENUM_SIGNED_UNKNOWN_TEXT, "-2");
 `ifdef QUESTA
@@ -154,6 +169,9 @@ module t;
     fmt = "%0h";
     formatted = $sformatf(fmt, UNSIGNED65_HIGH);
     `checks(formatted, "10000000000000001");
+    fmt = "%p";
+    formatted = $sformatf(fmt, FIRST);
+    `checks(formatted, ENUM_FIRST_TEXT);
 `ifdef QUESTA
     // Questa 2025.2 does not escape strings as required by IEEE 1800-2012 21.2.1.7.
     `checks(ESCAPED_PARAM_STRING, {"\"", TEXT_PARAM, "\""});
@@ -361,6 +379,21 @@ module t;
     formatted = next_narrow_enum(cyc[0]).name();
     `checks(formatted, enum_text);
     `checkd(enum_calls, 9);
+    formatted = $sformatf(cyc[1] ? "%p/%p" : "%s/%s", next_enum(cyc[0]), next_enum(!cyc[0]));
+    `checks(formatted, {unsigned_expected, "/", cyc[0] ? ENUM_LOW_TEXT : ENUM_HIGH_TEXT});
+    `checkd(enum_calls, 11);
+    formatted = format_next_enum(cyc[0]);
+    `checks(formatted, unsigned_expected);
+    `checkd(enum_calls, 12);
+
+    format_value = cyc[0] ? UNSIGNED65_LOW : UNSIGNED65_HIGH;
+    formatted = $sformatf(select_format(cyc[0], cyc[1]), format_value);
+    `checks(formatted, unsigned_expected);
+    `checkd(format_calls, 2 * cyc + 1);
+    format_value = cyc[0] ? UNSIGNED65_LOW : UNSIGNED65_HIGH;
+    $sformat(formatted, select_format(cyc[0], !cyc[1]), format_value);
+    `checks(formatted, unsigned_expected);
+    `checkd(format_calls, 2 * cyc + 2);
 
     unsigned65_value = cyc[0] ? UNSIGNED65_HIGH : \escaped.wide ;
     unsigned_expected = cyc[0] ? ENUM_HIGH_TEXT : ENUM_ESCAPED_TEXT;

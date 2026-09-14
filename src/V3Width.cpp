@@ -8833,7 +8833,7 @@ class WidthVisitor final : public VNVisitor {
     AstSFormatArg* newFormatEnumArg(AstNodeExpr* valuep, AstEnumDType* dtypep) {
         if (valuep->isPure()) valuep = V3Const::constifyEdit(valuep);
         AstNodeExpr* keyp;
-        if (VN_IS(valuep, Const) || (!m_modep && !m_ftaskp)) {
+        if (VN_IS(valuep, Const) || VN_IS(valuep, VarRef) || (!m_modep && !m_ftaskp)) {
             // Standalone parameter expressions are checked for constness by V3Const.
             keyp = valuep->cloneTree(false);
         } else {
@@ -10094,6 +10094,15 @@ class WidthVisitor final : public VNVisitor {
 
     AstNodeExpr* enumSelect(AstNodeExpr* nodep, AstEnumDType* adtypep, VAttrType attrType) {
         // Return expression to get given attrType information from a enum's value (nodep)
+        if (attrType == VAttrType::ENUM_NAME) {
+            if (nodep->isPure()) nodep = V3Const::constifyEdit(nodep);
+            if (const AstConst* const constp = VN_CAST(nodep, Const)) {
+                AstNodeExpr* const newp = new AstConst{nodep->fileline(), AstConst::String{},
+                                                       constp->num().displayedEnumName(adtypep)};
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return newp;
+            }
+        }
         if (attrType == VAttrType::ENUM_NAME && !nodep->isPure() && (m_modep || m_ftaskp)) {
             AstExprStmt* const capturep = newEnumCapture(nodep, adtypep);
             AstNodeExpr* const valuep = capturep->resultp()->unlinkFrBack();

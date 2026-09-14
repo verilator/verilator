@@ -219,7 +219,6 @@ public:
     bool displayEmitHeader(AstNode* nodep);
     void displayNode(AstNode* nodep, AstSFormatF* fmtp, const string& vformat, AstNode* exprsp,
                      bool isScan);
-    void emitFormatEnum(const AstSFormatArg* nodep, const string& suffix);
 
     bool emitSimpleOk(AstNodeExpr* nodep);
     void emitIQW(const AstNode* nodep) {
