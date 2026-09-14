@@ -2464,8 +2464,9 @@ class LinkDotParamVisitor final : public VNVisitor {
             if (AstNode* const refp = nodep->op2p()) pinImplicitExprRecurse(refp);
             if (AstNode* const refp = nodep->op3p()) pinImplicitExprRecurse(refp);
             if (AstNode* const refp = nodep->op4p()) pinImplicitExprRecurse(refp);
-            if (AstNode* const refp = nodep->nextp()) pinImplicitExprRecurse(refp);
         }
+        // Continue along a list (e.g. the terminals under AstImplicit), also after a reference
+        if (AstNode* const refp = nodep->nextp()) pinImplicitExprRecurse(refp);
     }
 
     // VISITORS
