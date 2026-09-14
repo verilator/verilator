@@ -769,7 +769,7 @@ public:
         return (m_method == asamep->m_method);
     }
     bool isPure() override {
-        if (!m_purity.isCached()) { m_purity.set(getPurity()); }
+        if (!m_purity.isCached()) m_purity.set(getPurity());
         return m_purity.get();
     }
     int instrCount() const override;
