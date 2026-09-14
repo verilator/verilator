@@ -447,6 +447,11 @@ class DeadVisitor final : public VNVisitor {
         checkDType(nodep);
         checkAll(nodep);
     }
+    void visit(AstEnumDType* nodep) override {
+        // Keep cached lookup tables until V3WidthCommit releases the cache.
+        for (const auto& entry : nodep->tableMap()) entry.second->user1Inc();
+        visit(static_cast<AstNodeDType*>(nodep));
+    }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);

@@ -415,12 +415,33 @@ class PremitVisitor final : public VNVisitor {
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
         AstNodeExpr* exprsp = nodep->exprsp();
-        if (nodep->exprFormat()) exprsp = VN_AS(exprsp->nextp(), NodeExpr);
+        if (nodep->exprFormat()) {
+            exprsp = VN_AS(exprsp->nextp(), NodeExpr);
+            for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+                const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+                if (fargp && fargp->formatAttr().isEnum()) {
+                    // Evaluate the format before materializing enum arguments.
+                    AstVar* const varp = createTemp(nodep->exprsp());
+                    varp->noSubst(true);
+                    break;
+                }
+            }
+        }
         for (AstNodeExpr *argp = exprsp, *nextp; argp; argp = nextp) {
             nextp = VN_AS(argp->nextp(), NodeExpr);
 
             AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
             AstNodeExpr* const subargp = fargp ? fargp->exprp() : argp;
+            if (fargp && fargp->formatAttr().isEnum()) {
+                // The name lookup must see the same value as the numeric argument.
+                AstVar* const valueVarp = createTemp(subargp);
+                valueVarp->noSubst(true);
+                if (!VN_IS(fargp->namep(), VarRef)) {
+                    AstVar* const nameVarp = createTemp(fargp->namep());
+                    nameVarp->noSubst(true);
+                }
+                continue;
+            }
             // Must avoid taking address of rvalue, so even Const needs a temp
             if (subargp->isString() && !VN_IS(subargp, VarRef)) {
                 AstVar* const varp = createTemp(subargp);
