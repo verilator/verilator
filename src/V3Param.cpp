@@ -2367,6 +2367,23 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
         }
     }
 
+    // A class's name before specialization (e.g. "holder" for "holder__Tz1").
+    static string classOrigName(const AstClass* classp) {
+        return classp->origName().empty() ? classp->name() : classp->origName();
+    }
+
+    // Find 'name' in classp or any base class (findTypedefInModule() searches
+    // only the class itself).
+    static AstTypedef* findTypedefWithBases(AstClass* classp, const string& name) {
+        for (AstClass* cp = classp;
+             cp; cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
+            if (AstTypedef* const tdp = V3LinkDotIfaceCapture::findTypedefInModule(cp, name)) {
+                if (tdp->subDTypep()) return tdp;
+            }
+        }
+        return nullptr;
+    }
+
     // Re-resolve REFDTYPE.typedefp/refDTypep using the containing module's
     // own resolved typedef chain. The eager retargeting in deepCloneModule
     // blindly retargets every captured entry to whichever sibling clone is
@@ -2377,46 +2394,45 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
     // those local typedefs as ground truth.
     void retargetRefDType(AstRefDType* refp) {
         if (!m_ownerModp) return;
-        AstTypedef* const oldTdp = refp->typedefp();
-        if (!oldTdp) return;
-        AstClass* const oldOwnerp = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(oldTdp), Class);
-        if (!oldOwnerp) return;
 
-        // Self-reference case (IEEE 1800-2023 8.25.1): a parameterized class
-        // name used without #() inside its own body denotes the current
-        // specialization. V3LinkDot resolves such a reference to the class's
-        // *default* instance (the bare name is linked before any
-        // specialization exists), so a member typedef reached through it
-        // (e.g. ``Cls::member_t``) is resolved with the template's default
-        // type parameters. That makes the type differ from the same typedef
-        // spelled without the class qualifier inside the specialization, which
-        // then fails width/type checking. Retarget the reference at the
-        // specialization's own member typedef.
+        // IEEE 1800-2023 8.25.1: a bare class-qualified reference to the class
+        // being compiled means the current specialization, but V3LinkDot binds
+        // it to the default instance, so a typedef reached through it widens
+        // with the template's defaults (#8348). Rebind it to the
+        // specialization's own typedef.
         if (AstClass* const ownerClassp = VN_CAST(m_ownerModp, Class)) {
-            if (oldOwnerp != ownerClassp && !refp->paramsp()) {
-                const std::string ownerOrig = ownerClassp->origName().empty()
-                                                  ? ownerClassp->name()
-                                                  : ownerClassp->origName();
-                const std::string oldOrig
-                    = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
-                // Same originating class means this is a bare self reference
-                // (a reference to a *different* specialization would carry
-                // #() parameters and be rejected by the paramsp() check).
-                if (ownerOrig == oldOrig) {
-                    AstTypedef* const selfTdp
-                        = V3LinkDotIfaceCapture::findTypedefInModule(ownerClassp, refp->name());
-                    if (selfTdp && selfTdp->subDTypep()) {
-                        refp->typedefp(selfTdp);
-                        refp->classOrPackagep(ownerClassp);
-                        refp->refDTypep(selfTdp->subDTypep());
+            if (!ownerClassp->hasGParam() && !refp->paramsp()) {
+                // What the reference resolves to: its typedef's owner if
+                // linked, else the class it is qualified by.
+                const AstClass* refClassp = nullptr;
+                if (AstTypedef* const tdp = refp->typedefp()) {
+                    refClassp = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(tdp), Class);
+                } else if (const AstClassOrPackageRef* const classRefp
+                           = VN_CAST(refp->classOrPackageOpp(), ClassOrPackageRef)) {
+                    refClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+                }
+                // Same originating class => bare self reference (another
+                // specialization would carry #(), rejected above).
+                if (refClassp && refClassp != ownerClassp
+                    && classOrigName(refClassp) == classOrigName(ownerClassp)) {
+                    AstTypedef* const selfTdp = findTypedefWithBases(ownerClassp, refp->name());
+                    if (selfTdp) {
                         UINFO(9, "post-param REFDTYPE self-reference retarget: "
-                                     << refp << " from " << oldOwnerp->name() << " to "
+                                     << refp << " from " << refClassp->name() << " to "
                                      << ownerClassp->name());
+                        refp->typedefp(selfTdp);
+                        refp->classOrPackagep(V3LinkDotIfaceCapture::findOwnerModule(selfTdp));
+                        refp->refDTypep(selfTdp->subDTypep());
                         return;
                     }
                 }
             }
         }
+
+        AstTypedef* const oldTdp = refp->typedefp();
+        if (!oldTdp) return;
+        AstClass* const oldOwnerp = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(oldTdp), Class);
+        if (!oldOwnerp) return;
 
         ensureOwnerMap();
         if (m_origNameToClone.empty()) return;
