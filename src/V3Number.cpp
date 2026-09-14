@@ -641,8 +641,6 @@ bool V3Number::displayedFmtHasArg(char format, bool isScan) {
 string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) VL_PURE {
     string padding;
     if (in.length() < fmtsize) padding = string(fmtsize - in.length(), pad);
-    if (pad == '0' && !left && !in.empty() && in.front() == '-')
-        return '-' + padding + in.substr(1);
     return left ? (in + padding) : (padding + in);
 }
 

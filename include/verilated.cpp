@@ -1339,12 +1339,17 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 }
                 const int needmore = static_cast<int>(width) - digits;
                 if (needmore > 0) {
-                    const bool zeropad = !left && pctit != format.end() && pctit[1] == '0';
-                    const std::string padding(needmore, zeropad ? '0' : ' ');
-                    if (zeropad && append.front() == '-') {
-                        output += '-' + padding + append.substr(1);
+                    std::string padding;
+                    if (left) {
+                        padding.append(needmore, ' ');  // Pre-pad spaces
+                        output += append + padding;
                     } else {
-                        output += left ? (append + padding) : (padding + append);
+                        if (pctit != format.end() && pctit[0] && pctit[1] == '0') {  // %0
+                            padding.append(needmore, '0');  // Pre-pad zero
+                        } else {
+                            padding.append(needmore, ' ');  // Pre-pad spaces
+                        }
+                        output += padding + append;
                     }
                 } else {
                     output += append;

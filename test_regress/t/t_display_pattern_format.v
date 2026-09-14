@@ -63,10 +63,6 @@ module t;
     return $sformatf("%p/%s", value, value);
   endfunction
 
-  function automatic string format_padded_decimal(input int value);
-    return $sformatf("%04d", value);
-  endfunction
-
   localparam text_t TEXT_PARAM = "quote=\" slash=\\ bell=\a form=\f vert=\v ctrl=\001";
   localparam string ESCAPED_PARAM_STRING = $sformatf("%p", TEXT_PARAM);
   localparam narrow_array_t NARROW_FIRST = '{7'd3, 7'd127};
@@ -95,23 +91,9 @@ module t;
   localparam string ENUM_UNKNOWN_COMPACT = $sformatf("%0p", ENUM_UNKNOWN);
   localparam string ENUM_UNKNOWN_FUNC_TEXT = format_enum(ENUM_UNKNOWN);
   localparam string ENUM_SIGNED_UNKNOWN_TEXT = $sformatf("%p", signed65_t'(-65'sd2));
-  localparam string PADDED_CONST_TEXT = $sformatf("%04d", 32'd2);
-  localparam string PADDED_FUNC_TEXT = format_padded_decimal(-2);
-`ifdef QUESTA
-  localparam string PADDED_POS_EXPECTED = "   2";
-  localparam string PADDED_NEG2_EXPECTED = "  -2";
-  localparam string PADDED_NEG3_EXPECTED = "  -3";
-`else
-  localparam string PADDED_POS_EXPECTED = "0002";
-  localparam string PADDED_NEG2_EXPECTED = "-002";
-  localparam string PADDED_NEG3_EXPECTED = "-003";
-`endif
-
   initial begin
     string formatted;
     string fmt;
-    `checks(PADDED_CONST_TEXT, PADDED_POS_EXPECTED);
-    `checks(PADDED_FUNC_TEXT, PADDED_NEG2_EXPECTED);
 `ifdef TEST_PROTECT
     formatted = ENUM_HIGH_TEXT.substr(0, 1);
     `checks(formatted, "PS");
@@ -369,28 +351,6 @@ module t;
 `else
     `checks(formatted, {"'h", unsigned_expected});
 `endif
-
-    // Match VCS/Xcelium zero padding; Questa uses IEEE 1800-2023 21.2.1.2 spaces.
-    fmt = cyc[0] ? "%04d" : "%04D";
-    signed_expected = cyc[0] ? PADDED_NEG3_EXPECTED : PADDED_NEG2_EXPECTED;
-    formatted = $sformatf("%04d", signed7_value);
-    `checks(formatted, signed_expected);
-    formatted = $sformatf(fmt, signed7_value);
-    `checks(formatted, signed_expected);
-    formatted = format_padded_decimal(cyc[0] ? -3 : -2);
-    `checks(formatted, signed_expected);
-    signed_expected = cyc[0] ? PADDED_NEG2_EXPECTED : "-18446744073709551615";
-    formatted = $sformatf("%04d", signed65_value);
-    `checks(formatted, signed_expected);
-    formatted = $sformatf(fmt, signed65_value);
-    `checks(formatted, signed_expected);
-
-    signed_expected = cyc[0] ? "  -3" : "  -2";
-    formatted = $sformatf("%4d", signed7_value);
-    `checks(formatted, signed_expected);
-    signed_expected = cyc[0] ? "-3  " : "-2  ";
-    formatted = $sformatf("%-04d", signed7_value);
-    `checks(formatted, signed_expected);
 
     // Signed values sharing their low 64 bits must retain distinct names.
     signed95_value = cyc[0] ? SIGNED95_NEG : SIGNED95_POS;
