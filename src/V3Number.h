@@ -30,6 +30,7 @@
 #include <limits>
 #include <vector>
 
+class AstEnumItem;
 class AstNode;
 class AstNodeDType;
 class AstSFormatArg;
@@ -650,6 +651,8 @@ public:
                      const VFormatAttr& formatAttr = VFormatAttr::UNSIGNED) const VL_MT_STABLE;
     string displayed(FileLine* fl, const string& vformat,
                      const VFormatAttr& formatAttr = VFormatAttr::UNSIGNED) const VL_MT_STABLE;
+    string displayedEnum(const AstSFormatArg* argp, const string& vformat) const VL_MT_STABLE;
+    static string displayedEnumName(const AstEnumItem* itemp);
     static bool displayedFmtHasArg(char format, bool isScan);
     string emitC() const VL_MT_STABLE;
     int width() const VL_MT_SAFE { return m_data.width(); }

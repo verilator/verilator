@@ -12,7 +12,7 @@
 // verilog_format: on
 
 module t (
-    input string empty_no_opt
+    input no_opt
 );
   typedef enum logic [1:0] {
     E0 = 0,
@@ -24,12 +24,18 @@ module t (
     W64A = 64'h1,
     W64B = 64'h0000_0001_0000_0001
   } wide64_e;
-  // Enums > 64 bits are beyond enum.name() support, so %p/%s format numerically
   typedef enum logic [95:0] {
     W96A = 96'h1,
     W96B = 96'hA_0000_0000_0000_0001
   } wide96_e;
   typedef logic signed [4095:0] uvm_bitstream_t;
+
+  // IEEE 1800-2023 21.2.1.6 permits implementation-specific %0p output.
+`ifdef QUESTA
+  localparam string COMPACT_NUM_PREFIX = "";
+`else
+  localparam string COMPACT_NUM_PREFIX = "'h";
+`endif
 
   my_e e;
   wide64_e e64;
@@ -39,6 +45,10 @@ module t (
 
   initial begin
     string fmt;
+    string formatted;
+    string empty_no_opt;
+    // Keep formats nonconstant using an input supported by the generated testbench.
+    empty_no_opt = (no_opt === 1'b1) ? "unexpected" : "";
     begin
       my_e it;
       string names_p;
@@ -89,8 +99,13 @@ module t (
     `checks($sformatf("%p", e), "E2");
     `checks($sformatf("%s", e), "E2");
     `checks($sformatf("%s|%p", e, e), "E2|E2");
-    `checks($sformatf("%4p", e), "E2");
-    `checks($sformatf("%-4p", e), "E2");
+    // IEEE 1800-2023 21.2.1.6 specifies %p/%0p, not nonzero %p field widths.
+    formatted = $sformatf("%4p/%-4p", e, e);
+`ifdef QUESTA
+    `checks(formatted, "00E2/E2  ");
+`else
+    `checks(formatted, "E2/E2");
+`endif
     `checks($sformatf("%d", e), "2");
     `checks($sformatf("%h", e), "2");
     `checks($sformatf("%b", e), "10");
@@ -98,7 +113,12 @@ module t (
     `checks($sformatf("%o", e), "2");
     `checks($sformatf("%x", e), "2");
     `checks($sformatf("%4d", e), "   2");
-    `checks($sformatf("%04d", e), "0002");
+    formatted = $sformatf("%04d", e);
+`ifdef QUESTA
+    `checks(formatted, "   2");
+`else
+    `checks(formatted, "0002");
+`endif
     `checks($sformatf("%4h", e), "0002");
     `checks($sformatf("%-4s", e), "E2  ");
     `checks($sformatf("%4s", e), "  E2");
@@ -116,12 +136,17 @@ module t (
     `checks($sformatf("%p", e64), "8589934593");
     `checks($sformatf("%s", e64), "8589934593");
     n64 = 64'h0000_0000_0000_0001;
-    `checks($sformatf("%0p", n64), "'h1");
-    // > 64-bit enums print numerically for %p (no name table support)
+    formatted = $sformatf("%0p", n64);
+    `checks(formatted, {COMPACT_NUM_PREFIX, "1"});
+    // Wide enums use names for %p/%s without changing explicit numeric formats.
     e96 = W96B;  // 10 * 2**64 + 1
     if (empty_no_opt != "") e96 = W96A;  // Defeat constant folding
-    `checks($sformatf("%p", e96), "184467440737095516161");
-    `checks($sformatf("%0p", e96), "'ha0000000000000001");
+    formatted = $sformatf("%p", e96);
+    `checks(formatted, "W96B");
+    formatted = $sformatf("%s", e96);
+    `checks(formatted, "W96B");
+    formatted = $sformatf("%0p", e96);
+    `checks(formatted, "W96B");
     `checks($sformatf("%0d", e96), "184467440737095516161");
     `checks($sformatf("%0h", e96), "a0000000000000001");
     // Exercise display/write-family formatting path in addition to $sformatf checks.
@@ -131,10 +156,16 @@ module t (
     e = my_e'(3);
     `checks($sformatf("%p", e), "3");
     `checks($sformatf("%P", e), "3");
-    `checks($sformatf("%0p", e), "'h3");
+    formatted = $sformatf("%0p", e);
+    `checks(formatted, {COMPACT_NUM_PREFIX, "3"});
     `checks($sformatf("%s", e), "3");
     `checks($sformatf("%S", e), "3");
-    `checks($sformatf("%4p", e), "3");
+    formatted = $sformatf("%4p", e);
+`ifdef QUESTA
+    `checks(formatted, "0003");
+`else
+    `checks(formatted, "3");
+`endif
     `checks($sformatf("%4s", e), "   3");
     `checks($sformatf("%d", e), "3");
     `checks($sformatf("%0d", e), "3");
@@ -159,26 +190,34 @@ module t (
     `checks($sformatf(fmt, e), "E2");
     fmt = {"%", "p", empty_no_opt};
     `checks($sformatf(fmt, e), "E2");
+    fmt = {"%0h", empty_no_opt};
+    formatted = $sformatf(fmt, e);
+    `checks(formatted, "2");
     fmt = {"%0d:%", "s", ":%0d", empty_no_opt};
     `checks($sformatf(fmt, 9, e, 7), "9:E2:7");
     fmt = {"%", "s", " %h %", "p", empty_no_opt};
     `checks($sformatf(fmt, e, 4'hA, e), "E2 a E2");
     e = my_e'(3);
+    fmt = {"%0b", empty_no_opt};
+    formatted = $sformatf(fmt, e);
+    `checks(formatted, "11");
     fmt = {"%", "s", empty_no_opt};
     `checks($sformatf(fmt, e), "3");
     fmt = {"%", "p", empty_no_opt};
     `checks($sformatf(fmt, e), "3");
     fmt = {"%0", "p", empty_no_opt};
-    `checks($sformatf(fmt, e), "'h3");
+    formatted = $sformatf(fmt, e);
+    `checks(formatted, {COMPACT_NUM_PREFIX, "3"});
     fmt = {"%0d:%", "s", ":%0d", empty_no_opt};
     `checks($sformatf(fmt, 9, e, 7), "9:3:7");
     fmt = {"%", "s", " %h %", "p", empty_no_opt};
     `checks($sformatf(fmt, e, 4'hA, e), "3 a 3");
     fmt = {"%", "p", empty_no_opt};
     `checks($sformatf(fmt, e64), "8589934593");
-    // > 64-bit enums use the non-ENUM format in runtime formats too
+    // Runtime formats must also preserve the wide enum's name.
     fmt = {"%", "p", empty_no_opt};
-    `checks($sformatf(fmt, e96), "184467440737095516161");
+    formatted = $sformatf(fmt, e96);
+    `checks(formatted, "W96B");
     fmt = {"%0d", empty_no_opt};
     `checks($sformatf(fmt, e96), "184467440737095516161");
     bitstream_value = 30;

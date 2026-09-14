@@ -238,6 +238,27 @@ bool EmitCFunc::displayEmitHeader(AstNode* nodep) {
     return isStmt;
 }
 
+void EmitCFunc::emitFormatWideEnum(const AstSFormatArg* nodep, const string& suffix) {
+    const AstEnumDType* const dtypep = VN_AS(nodep->dtypep()->skipRefToEnump(), EnumDType);
+    const string value = "__VenumValue" + suffix;
+    const string name = "__VenumName" + suffix;
+    puts("const auto " + value + " = ");
+    iterateConst(nodep->exprp());
+    puts(";\nstd::string " + name + ";\n");
+    bool first = true;
+    for (const AstEnumItem* itemp = dtypep->itemsp(); itemp;
+         itemp = VN_AS(itemp->nextp(), EnumItem)) {
+        const AstConst* const constp = VN_AS(itemp->valuep(), Const);
+        if (constp->num().isAnyXZ()) continue;
+        if (!first) puts("else ");
+        puts("if (" + value + " == " + constp->num().emitC() + ") {\n");
+        puts(name + " = ");
+        putsQuoted(V3Number::displayedEnumName(itemp));
+        puts(";\n}\n");
+        first = false;
+    }
+}
+
 void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullptr for AstScan
                             const string& vformat, AstNode* exprsp, bool isScan) {
     // Check format, if it exists
@@ -281,12 +302,38 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     if (vformat.empty() && VN_IS(nodep, Display))  // not fscanf etc, as they need to return value
         return;  // NOP
 
+    std::map<const AstSFormatArg*, string> enumTemps;
+    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+        const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+        if (fargp && fargp->formatAttr().isEnum() && fargp->isWide())
+            enumTemps.emplace(fargp, cvtToStr(enumTemps.size()));
+    }
+    if (!enumTemps.empty()) {
+        // Evaluate the value once for both the name lookup and numeric fallback.
+        putns(nodep, "([&]() {\n");
+        if (exprFormat) {
+            puts("const auto __VenumFormat = ");
+            iterateConst(exprsp);
+            puts(";\n");
+        }
+        for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+            const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+            const auto it = enumTemps.find(fargp);
+            if (it != enumTemps.end()) emitFormatWideEnum(fargp, it->second);
+        }
+        puts("return ");
+    }
+
     const bool isStmt = displayEmitHeader(nodep);
 
     if (exprFormat) {
         UASSERT_OBJ(exprsp, nodep, "Missing format expression");
-        iterateConst(exprsp);
-        emitDatap(exprsp);
+        if (enumTemps.empty()) {
+            iterateConst(exprsp);
+            emitDatap(exprsp);
+        } else {
+            puts("__VenumFormat");
+        }
         exprsp = exprsp->nextp();
     } else {
         ofp()->putsQuoted(vformat);
@@ -301,7 +348,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     }  // LCOV_EXCL_STOP
 
     // argc for error check. Also MSVC++ requires va_args to not be off a reference
-    int argc = 0;
+    int argc = static_cast<int>(enumTemps.size());  // Additional enum name arguments
     if (needsScope) ++argc;
     if (needsTimescale) ++argc;
     for (AstNode* argp = exprsp; argp; argp = argp->nextp()) ++argc;
@@ -342,6 +389,14 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         AstNode* const subargp = fargp ? fargp->exprp() : argp;
         const VFormatAttr formatAttr = AstSFormatArg::formatAttrDefauled(fargp, subargp->dtypep());
         puts(", '"s + formatAttr.ascii() + '\'');
+        const auto enumIt = enumTemps.find(fargp);
+        if (enumIt != enumTemps.end()) {
+            puts("," + cvtToStr(fargp->widthMin()) + ",__VenumValue" + enumIt->second + ".data()");
+            puts(", '"s + VFormatAttr{VFormatAttr::STRING}.ascii() + "', &__VenumName"
+                 + enumIt->second);
+            ofp()->indentDec();
+            continue;
+        }
         if (formatAttr.isSigned() || formatAttr.isUnsigned() || formatAttr.isEnum())
             puts("," + cvtToStr(subargp->widthMin()));
         const bool addrof = isScan || formatAttr.isString() || formatAttr.isComplex();
@@ -358,7 +413,10 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     }
 
     // End
-    if (isStmt) {
+    if (!enumTemps.empty()) {
+        puts(");\n}())");
+        puts(isStmt ? ";\n" : " ");
+    } else if (isStmt) {
         puts(");\n");
     } else {
         puts(") ");

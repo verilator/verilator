@@ -1305,7 +1305,9 @@ private:
                         break;
                     }
                     const string pformat = "%"s + width + pos[0];
-                    result += constp->num().displayed(nodep, pformat, formatAttr);
+                    result += formatAttr.isEnum() && argp->isWide()
+                                  ? constp->num().displayedEnum(fargp, pformat)
+                                  : constp->num().displayed(nodep, pformat, formatAttr);
                 } else {
                     switch (std::tolower(pos[0])) {
                     case '%': result += "%"; break;

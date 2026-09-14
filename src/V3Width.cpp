@@ -6728,6 +6728,10 @@ class WidthVisitor final : public VNVisitor {
         while (AstNodeExpr* argp = oldExprsp) {
             oldExprsp = VN_AS(oldExprsp->nextp(), NodeExpr);
             if (oldExprsp) oldExprsp->unlinkFrBackWithNext();
+            if (VN_IS(argp, SFormatArg)) {
+                nodep->addExprsp(argp);
+                continue;
+            }
             // Need to record formatAttr's at elaboration time, as later optimizations
             // may change an argument's data type. Plus need them for runtime formats
             VFormatAttr formatAttr = VFormatAttr::UNSIGNED;
@@ -6771,6 +6775,7 @@ class WidthVisitor final : public VNVisitor {
                     const VFormatAttr attr
                         = enumDtp->isSigned() ? VFormatAttr::ENUM_SIGNED : VFormatAttr::ENUM;
                     nodep->addExprsp(new AstSFormatArg{argp->fileline(), attr, argp});
+                    if (enumDtp->isWide()) continue;  // Name lookup is emitted with the value
                     AstNodeExpr* const namep
                         = enumSelect(argp->cloneTreePure(false), enumDtp, VAttrType::ENUM_NAME);
                     nodep->addExprsp(
@@ -6781,8 +6786,7 @@ class WidthVisitor final : public VNVisitor {
             if (formatAttr.isUnsigned() && dtypep->isSigned()) {
                 formatAttr = VFormatAttr::SIGNED;
             }
-            if (VN_IS(argp, SFormatArg)  // Already done
-                || formatAttr.isUnsigned()) {  // Save Ast space and imply the AstSFormatArg
+            if (formatAttr.isUnsigned()) {  // Save Ast space and imply the AstSFormatArg
                 nodep->addExprsp(argp);
             } else {
                 nodep->addExprsp(new AstSFormatArg{argp->fileline(), formatAttr, argp});
@@ -8785,8 +8789,19 @@ class WidthVisitor final : public VNVisitor {
                 case 'p':  // FALLTHRU
                 case 's':
                     // As with enum.name(): valid values print the mnemonic, else numeric
-                    if (subargp) {
+                    if (subargp && !fargp) {
                         if (AstEnumDType* const enumDtp = formatEnumDType(subargp)) {
+                            if (enumDtp->isWide()) {
+                                VNRelinker relinker;
+                                subargp->unlinkFrBack(&relinker);
+                                const VFormatAttr attr = enumDtp->isSigned()
+                                                             ? VFormatAttr::ENUM_SIGNED
+                                                             : VFormatAttr::ENUM;
+                                relinker.relink(
+                                    new AstSFormatArg{subargp->fileline(), attr, subargp});
+                                argp = nextp;
+                                break;
+                            }
                             string fallbackFormat = "%0d";
                             if (ch == 'p') {
                                 bool widthSet = false;
@@ -8833,8 +8848,6 @@ class WidthVisitor final : public VNVisitor {
                 enumDtp = VN_CAST(varrefp->varp()->dtypep()->skipRefToEnump(), EnumDType);
             }
         }
-        // Enums > 64 bits have no name table (see enumMaxValue); format as plain numbers
-        if (enumDtp && enumDtp->width() > VL_QUADSIZE) return nullptr;
         return enumDtp;
     }
 

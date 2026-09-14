@@ -4033,7 +4033,9 @@ class ConstVisitor final : public VNVisitor {
                                       : VFormatAttr{};
                             if (VN_IS(subargp, Const)) {  // Convert it
                                 const string out
-                                    = constNumV(subargp).displayed(nodep, fmt, formatAttr);
+                                    = formatAttr.isEnum() && argp->isWide()
+                                          ? constNumV(subargp).displayedEnum(fargp, fmt)
+                                          : constNumV(subargp).displayed(nodep, fmt, formatAttr);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
                                                             << subargp);
                                 // fmt = out w/ replace % with %% as it must later when

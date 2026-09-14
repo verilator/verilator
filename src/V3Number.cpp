@@ -641,7 +641,40 @@ bool V3Number::displayedFmtHasArg(char format, bool isScan) {
 string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) VL_PURE {
     string padding;
     if (in.length() < fmtsize) padding = string(fmtsize - in.length(), pad);
+    if (pad == '0' && !left && !in.empty() && in.front() == '-')
+        return '-' + padding + in.substr(1);
     return left ? (in + padding) : (padding + in);
+}
+
+string V3Number::displayedEnumName(const AstEnumItem* itemp) {
+    const string name = VIdProtect::protect(itemp->prettyName());
+    return VString::isIdentifier(name) && !std::isdigit(static_cast<unsigned char>(name[0]))
+               ? name
+               : "\\" + name + " ";
+}
+
+string V3Number::displayedEnum(const AstSFormatArg* argp,
+                               const string& vformat) const VL_MT_STABLE {
+    const AstEnumDType* const dtypep = VN_AS(argp->dtypep()->skipRefToEnump(), EnumDType);
+    V3Number value{this, dtypep->width()};
+    value.opAssign(*this);
+    const VFormatAttr numericAttr
+        = dtypep->isSigned() ? VFormatAttr::SIGNED : VFormatAttr::UNSIGNED;
+    const char fmt = std::tolower(vformat.back());
+    if (fmt != 'p' && fmt != 's') return value.displayed(argp, vformat, numericAttr);
+    string name;
+    for (const AstEnumItem* itemp = dtypep->itemsp(); itemp;
+         itemp = VN_AS(itemp->nextp(), EnumItem)) {
+        const AstConst* const constp = VN_AS(itemp->valuep(), Const);
+        if (!constp->num().isAnyXZ() && value.isCaseEq(constp->num())) {
+            name = displayedEnumName(itemp);
+            break;
+        }
+    }
+    if (name.empty()) name = value.displayed(argp, fmt == 'p' ? vformat : "%0d", numericAttr);
+    V3Number nameNum{this};
+    nameNum.setString(name);
+    return nameNum.displayed(argp, vformat, VFormatAttr::COMPLEX);
 }
 
 string V3Number::displayed(const AstNode* nodep, const string& vformat,
