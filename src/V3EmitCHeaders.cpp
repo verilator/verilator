@@ -72,73 +72,41 @@ class EmitCHeader final : public EmitCConstInit {
     }
     void emitDesignVarDecls(const AstNodeModule* modp) {
         bool first = true;
-        std::vector<const AstVar*> varList;
-        bool lastAnon = false;  // initial value is not important, but is used
+        bool firstBlock = true;
+        EmitCUtil::MemberBlockPath curPath;
 
-        const auto emitCurrentList = [this, &first, &varList, &lastAnon]() {
-            if (varList.empty()) return;
-
-            decorateFirst(first, "\n// DESIGN-SPECIFIC STATE\n");
-
-            if (lastAnon) {  // Output as anons
-                const int anonMembers = varList.size();
-                const int lim = v3Global.opt.compLimitMembers();
-                int anonL3s = 1;
-                int anonL2s = 1;
-                int anonL1s = 1;
-                if (anonMembers > (lim * lim * lim)) {
-                    anonL3s = (anonMembers + (lim * lim * lim) - 1) / (lim * lim * lim);
-                    anonL2s = lim;
-                    anonL1s = lim;
-                } else if (anonMembers > (lim * lim)) {
-                    anonL2s = (anonMembers + (lim * lim) - 1) / (lim * lim);
-                    anonL1s = lim;
-                } else if (anonMembers > lim) {
-                    anonL1s = (anonMembers + lim - 1) / lim;
-                }
-                if (anonL1s != 1)
-                    puts("// Anonymous structures to workaround compiler member-count bugs\n");
-                auto it = varList.cbegin();
-                for (int l3 = 0; l3 < anonL3s && it != varList.cend(); ++l3) {
-                    if (anonL3s != 1) puts("struct {\n");
-                    for (int l2 = 0; l2 < anonL2s && it != varList.cend(); ++l2) {
-                        if (anonL2s != 1) puts("struct {\n");
-                        for (int l1 = 0; l1 < anonL1s && it != varList.cend(); ++l1) {
-                            if (anonL1s != 1) puts("struct {\n");
-                            for (int l0 = 0; l0 < lim && it != varList.cend(); ++l0) {
-                                emitVarDecl(*it);
-                                ++it;
-                            }
-                            if (anonL1s != 1) puts("};\n");
-                        }
-                        if (anonL2s != 1) puts("};\n");
-                    }
-                    if (anonL3s != 1) puts("};\n");
-                }
-                // Leftovers, just in case off by one error somewhere above
-                for (; it != varList.cend(); ++it) emitVarDecl(*it);
-            } else {  // Output as nonanons
-                for (const AstVar* const varp : varList) emitVarDecl(varp);
+        const auto closeTo = [this, &curPath](size_t depth) {
+            while (curPath.size() > depth) {
+                const std::string name = curPath.back().second;
+                curPath.pop_back();
+                puts(name.empty() ? "};\n" : "} " + name + ";\n");
             }
-
-            varList.clear();
         };
 
-        // Emit variables in consecutive anon and non-anon batches
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
-                    || varp->isGenVar()) {
-                    const bool anon = EmitCUtil::isAnonOk(varp);
-                    if (anon != lastAnon) emitCurrentList();
-                    lastAnon = anon;
-                    varList.emplace_back(varp);
-                }
-            }
-        }
+            const AstVar* const varp = VN_CAST(nodep, Var);
+            if (!varp || !EmitCUtil::isDesignVarDecl(varp)) continue;
+            decorateFirst(first, "\n// DESIGN-SPECIFIC STATE\n");
 
-        // Emit final batch
-        emitCurrentList();
+            const EmitCUtil::MemberBlockPath& path = EmitCUtil::memberBlockPath(varp);
+            size_t common = 0;
+            while (common < curPath.size() && common < path.size()
+                   && curPath[common].first == path[common].first) {
+                ++common;
+            }
+            closeTo(common);
+            while (curPath.size() < path.size()) {
+                const std::pair<int, std::string>& block = path[curPath.size()];
+                if (firstBlock) {
+                    puts("// Structures to workaround compiler member-count bugs\n");
+                    firstBlock = false;
+                }
+                puts(block.second.empty() ? "struct {\n" : "struct " + block.second + " {\n");
+                curPath.push_back(block);
+            }
+            emitVarDecl(varp);
+        }
+        closeTo(0);
     }
     void emitInternalVarDecls(const AstNodeModule* modp) {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {

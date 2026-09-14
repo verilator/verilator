@@ -325,7 +325,7 @@ public:
             if (!assigntop->selfPointer().isEmpty()) {
                 emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
             }
-            puts(assigntop->varp()->nameProtect());
+            puts(EmitCUtil::memberNameProtect(assigntop->varp()));
             for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
                 ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
@@ -343,7 +343,7 @@ public:
             if (!assigntop->selfPointer().isEmpty()) {
                 emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
             }
-            puts(assigntop->varp()->nameProtect());
+            puts(EmitCUtil::memberNameProtect(assigntop->varp()));
             for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
                 ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
@@ -568,7 +568,7 @@ public:
                      + (fromVarRefp->selfPointer().isEmpty()
                             ? ""
                             : dereferenceString(fromVarRefp->selfPointerProtect(m_useSelfForThis)))
-                     + fromVarRefp->varp()->nameProtect() + ", \""
+                     + EmitCUtil::memberNameProtect(fromVarRefp->varp()) + ", \""
                      + V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename()))
                      + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
                     memberVarp, resetp->constructing());
@@ -1622,7 +1622,7 @@ public:
             // MemberSel name which matches the cell's C++ member (e.g. "tx").
             puts(nodep->nameProtect());
         } else {
-            puts(varp->nameProtect());
+            puts(EmitCUtil::memberNameProtect(varp));
         }
         if (dereferenceCovergroupRef) puts(")");
     }
@@ -1806,7 +1806,7 @@ public:
         } else if (!nodep->selfPointer().isEmpty()) {
             emitDereference(nodep, nodep->selfPointerProtect(m_useSelfForThis));
         }
-        putns(nodep, nodep->varp()->nameProtect());
+        putns(nodep, EmitCUtil::memberNameProtect(varp));
         if (dereferenceCovergroupRef) puts(")");
     }
     void visit(AstAddrOfCFunc* nodep) override {

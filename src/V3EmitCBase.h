@@ -25,6 +25,9 @@
 
 #include <cmath>
 #include <cstdarg>
+#include <string>
+#include <utility>
+#include <vector>
 
 //######################################################################
 // Set user4p in all CFunc, Var, and coverage declarations to point to the
@@ -78,6 +81,23 @@ public:
                && !(VN_IS(dtp, NodeUOrStructDType) && !VN_CAST(dtp, NodeUOrStructDType)->packed())
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
     }
+    // (block id unique per module, struct name, empty if anonymous); see V3EmitCBase.cpp
+    using MemberBlockPath = std::vector<std::pair<int, std::string>>;
+    static bool isDesignVarDecl(const AstVar* varp) VL_MT_STABLE {
+        return varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
+               || varp->isGenVar();
+    }
+    // Only a var the user cannot reach by name through 'rootp' may go in a named block
+    static bool memberNameIsUserFacing(const AstVar* varp) VL_MT_STABLE {
+        return varp->isSigUserRdPublic() || varp->isSigUserRWPublic() || varp->isPrimaryIO();
+    }
+    static void planMemberBlocks() VL_MT_DISABLED;
+    static const MemberBlockPath& memberBlockPath(const AstVar* varp) VL_MT_STABLE;
+    static string memberBlockPrefix(const AstVar* varp) VL_MT_STABLE;
+    // For a member an emitter names by string rather than by AstVar, e.g. a force companion
+    static string memberBlockPrefix(const AstNodeModule* modp, const string& name) VL_MT_STABLE;
+    // nameProtect() plus any block qualification; use for a member access, not a decl
+    static string memberNameProtect(const AstVar* varp) VL_MT_STABLE;
     static bool isConstPoolMod(const AstNode* modp) {
         return modp == v3Global.rootp()->constPoolp()->modp();
     }

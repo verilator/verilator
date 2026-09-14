@@ -22,7 +22,10 @@ def gen(filename, n):
         fh.write("  input i;\n")
         fh.write("  output logic o;\n")
         for i in range(0, n + 1):
-            fh.write("  logic r" + str(i) + ";\n")
+            # The upper half is public_flat, so the user can reach it by name and it must
+            # stay in an anonymous block; the lower half is internal and may be named
+            pub = " /*verilator public_flat*/" if i > n // 2 else ""
+            fh.write("  logic r" + str(i) + pub + ";\n")
         fh.write("  always @ (posedge clk) begin\n")
         fh.write("    r0 <= i;\n")
         for i in range(1, n):
@@ -48,6 +51,9 @@ test.compile(verilator_flags2=[
 
 test.execute()
 
+# Internal members go in named blocks, so their access can be qualified
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root.h", r'struct __Vblk\d+ \{')
+# public_flat members stay in anonymous blocks, so 'rootp->r6000' keeps working
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root.h", r'struct \{')
 
 test.passes()

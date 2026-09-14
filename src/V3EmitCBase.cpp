@@ -20,6 +20,8 @@
 
 #include "V3Task.h"
 
+#include <unordered_map>
+
 //######################################################################
 // EmitCParentModule implementation
 
@@ -332,4 +334,120 @@ void EmitCBaseVisitorConst::emitSystemCSection(const AstNodeModule* modp,
     // function needs to traverse the entire module linearly.
     auto textAndFileline = scSection(modp, type);
     if (!textAndFileline.first.empty()) ofp()->putsNoTracking(textAndFileline.first);
+}
+
+//######################################################################
+// Member block planning
+//
+// GCC resolves a member of an anonymous aggregate by walking the enclosing class's whole
+// field list (lookup_anon_field), so with tens of thousands of members every access and
+// every offsetof costs O(members). Naming the member-count workaround structs avoids that
+// walk, at the cost of having to qualify the member on access.
+
+namespace {
+std::unordered_map<const AstVar*, EmitCUtil::MemberBlockPath> t_memberBlockPath;
+std::unordered_map<const AstNodeModule*,
+                   std::unordered_map<std::string, EmitCUtil::MemberBlockPath>>
+    t_memberBlockPathByName;
+const EmitCUtil::MemberBlockPath t_noMemberBlock;
+
+string prefixOf(const EmitCUtil::MemberBlockPath& path) {
+    string out;
+    for (const auto& block : path) {
+        if (block.second.empty()) return "";
+        out += block.second + ".";
+    }
+    return out;
+}
+}  // namespace
+
+const EmitCUtil::MemberBlockPath& EmitCUtil::memberBlockPath(const AstVar* varp) VL_MT_STABLE {
+    const auto it = t_memberBlockPath.find(varp);
+    return it == t_memberBlockPath.end() ? t_noMemberBlock : it->second;
+}
+
+string EmitCUtil::memberBlockPrefix(const AstVar* varp) VL_MT_STABLE {
+    return prefixOf(memberBlockPath(varp));
+}
+
+string EmitCUtil::memberBlockPrefix(const AstNodeModule* modp, const string& name) VL_MT_STABLE {
+    const auto mit = t_memberBlockPathByName.find(modp);
+    if (mit == t_memberBlockPathByName.end()) return "";
+    const auto it = mit->second.find(name);
+    return it == mit->second.end() ? "" : prefixOf(it->second);
+}
+
+string EmitCUtil::memberNameProtect(const AstVar* varp) VL_MT_STABLE {
+    return memberBlockPrefix(varp) + varp->nameProtect();
+}
+
+void EmitCUtil::planMemberBlocks() {
+    for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
+        const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
+        int nextBlockId = 0;
+        std::vector<const AstVar*> batch;
+        bool batchAnon = false;  // Initial value is not important, but is used
+        bool batchNamed = false;
+
+        const auto flush = [&]() {
+            if (batch.empty()) return;
+            if (batchAnon) {
+                const int lim = v3Global.opt.compLimitMembers();
+                const int members = static_cast<int>(batch.size());
+                int anonL3s = 1;
+                int anonL2s = 1;
+                int anonL1s = 1;
+                if (members > (lim * lim * lim)) {
+                    anonL3s = (members + (lim * lim * lim) - 1) / (lim * lim * lim);
+                    anonL2s = lim;
+                    anonL1s = lim;
+                } else if (members > (lim * lim)) {
+                    anonL2s = (members + (lim * lim) - 1) / (lim * lim);
+                    anonL1s = lim;
+                } else if (members > lim) {
+                    anonL1s = (members + lim - 1) / lim;
+                }
+                const auto newBlock = [&]() -> std::pair<int, std::string> {
+                    const int id = nextBlockId++;
+                    return {id, batchNamed ? VIdProtect::protect("__Vblk" + std::to_string(id))
+                                           : std::string{}};
+                };
+                size_t it = 0;
+                for (int l3 = 0; l3 < anonL3s && it < batch.size(); ++l3) {
+                    MemberBlockPath path3;
+                    if (anonL3s != 1) path3.push_back(newBlock());
+                    for (int l2 = 0; l2 < anonL2s && it < batch.size(); ++l2) {
+                        MemberBlockPath path2 = path3;
+                        if (anonL2s != 1) path2.push_back(newBlock());
+                        for (int l1 = 0; l1 < anonL1s && it < batch.size(); ++l1) {
+                            MemberBlockPath path1 = path2;
+                            if (anonL1s != 1) path1.push_back(newBlock());
+                            for (int l0 = 0; l0 < lim && it < batch.size(); ++l0) {
+                                t_memberBlockPath.emplace(batch[it], path1);
+                                t_memberBlockPathByName[modp].emplace(batch[it]->name(), path1);
+                                ++it;
+                            }
+                        }
+                    }
+                }
+                // Leftovers, just in case off by one error somewhere above
+                for (; it < batch.size(); ++it) {
+                    t_memberBlockPath.emplace(batch[it], MemberBlockPath{});
+                }
+            }
+            batch.clear();
+        };
+
+        for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            const AstVar* const varp = VN_CAST(stmtp, Var);
+            if (!varp || !isDesignVarDecl(varp)) continue;
+            const bool anon = isAnonOk(varp);
+            const bool named = anon && !memberNameIsUserFacing(varp);
+            if (anon != batchAnon || named != batchNamed) flush();
+            batchAnon = anon;
+            batchNamed = named;
+            batch.push_back(varp);
+        }
+        flush();
+    }
 }

@@ -344,7 +344,7 @@ class EmitCImp final : public EmitCFunc {
                                 puts("; " + ivar + " < " + cvtToStr(elementp->widthWords()));
                                 puts("; ++" + ivar + ") {\n");
                             }
-                            putns(varp, "os" + op + varp->nameProtect());
+                            putns(varp, "os" + op + EmitCUtil::memberNameProtect(varp));
                             for (int v = 0; v < vects; ++v) puts("[__Vi" + cvtToStr(v) + "]");
                             puts(";\n");
                             for (int v = 0; v < vects; ++v) puts("}\n");

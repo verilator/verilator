@@ -322,7 +322,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                           const AstVar* const varp, const int udim, const int pdim,
                                           const std::string& bounds) {
         const std::string varName = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect())
-                                    + "." + protect(varp->name());
+                                    + "." + EmitCUtil::memberBlockPrefix(varp)
+                                    + protect(varp->name());
         const std::string vlEnumType = varp->vlEnumType();
         const bool needsEntSize = needsEmittedEntSize(vlEnumType);
 
@@ -383,10 +384,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         if (varp->isParam()) return TableEntryKind::PLAIN_RESIDUAL;
 
         const std::string name = V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty));
-        // nameProtect() (not protect(name())) so the offsetof member matches the
-        // emitted struct field: a primary I/O port keeps its unprotected name
-        // under --protect-ids, whereas protect() would always hash it.
-        const std::string member = varp->nameProtect();
+        // Not protect(name()): the offsetof must match the emitted field, and a primary I/O
+        // port keeps its unprotected name under --protect-ids whereas protect() would hash it.
+        const std::string member = EmitCUtil::memberNameProtect(varp);
         const std::string dir = varp->vlEnumDir();
         // Flat dim (left,right) ints in varInsert() order: unpacked then packed.
         std::vector<int> dv;
@@ -488,7 +488,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty)) + '"';
 
         const std::string varName = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect())
-                                    + "." + protect(varp->name());
+                                    + "." + EmitCUtil::memberBlockPrefix(varp)
+                                    + protect(varp->name());
 
         assert(!varp->isParam());  // Forceable params do not make sense
         stmt += ", &(";
@@ -499,7 +500,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += ", ";
         stmt += varp->vlEnumDir();  // VLVD_IN etc
         stmt += ", &(";
-        stmt += varName + "__VforceRd";
+        // Named by string, not by AstVar, so the companion's own block must be looked up
+        stmt += VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
+                + EmitCUtil::memberBlockPrefix(scopep->modp(), varp->name() + "__VforceRd")
+                + protect(varp->name()) + "__VforceRd";
         stmt += "), \"" + V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty))
                 + "__VforceRd" + '"';
         stmt += ", {";
@@ -1406,12 +1410,15 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                         = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
                         if (!sdtypep->packed()) {
                             addUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
-                                                   protect(varp->name()), sdtypep);
+                                                   EmitCUtil::memberBlockPrefix(varp)
+                                                       + protect(varp->name()),
+                                                   sdtypep);
                         }
                     } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-                        addUnpackedArrayUOrStructMemberVars(residual, svd, scopep,
-                                                            svd.m_varBasePretty,
-                                                            protect(varp->name()), varp->dtypep());
+                        addUnpackedArrayUOrStructMemberVars(
+                            residual, svd, scopep, svd.m_varBasePretty,
+                            EmitCUtil::memberBlockPrefix(varp) + protect(varp->name()),
+                            varp->dtypep());
                     }
                     break;
                 }

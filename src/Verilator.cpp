@@ -48,6 +48,7 @@
 #include "V3DfgOptimizer.h"
 #include "V3DiagSarif.h"
 #include "V3EmitC.h"
+#include "V3EmitCBase.h"
 #include "V3EmitCMain.h"
 #include "V3EmitMk.h"
 #include "V3EmitMkJson.h"
@@ -641,6 +642,8 @@ static void process() {
         // Output the text
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
             && !v3Global.opt.dpiHdrOnly()) {
+            // Member blocks must be assigned before anything emits a member name
+            EmitCUtil::planMemberBlocks();
             // emitcInlines is first, as it may set needHInlines which other emitters read
             V3EmitC::emitcInlines();
             V3EmitC::emitcSyms();

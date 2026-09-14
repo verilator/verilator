@@ -118,7 +118,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                         emitDereference(m_wideTempRefp,
                                         m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
                     }
-                    out += m_wideTempRefp->varp()->nameProtect();
+                    out += EmitCUtil::memberNameProtect(m_wideTempRefp->varp());
                     m_wideTempRefp = nullptr;
                     needComma = true;
                 } else if (usesQueue) {
@@ -476,8 +476,8 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
     const string vlSelf = VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
     const string varNameProtected
         = ((VN_IS(m_modp, Class) || varp->isFuncLocal()) || !prefix.empty())
-              ? varp->nameProtect()
-              : vlSelf + varp->nameProtect();
+              ? EmitCUtil::memberNameProtect(varp)
+              : vlSelf + EmitCUtil::memberNameProtect(varp);
     const string newPrefix = prefix + varNameProtected;
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
