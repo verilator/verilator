@@ -397,6 +397,8 @@ class V3Number final {
         m_data.m_autoExtend = true;
     }
     V3Number& setSingleBits(char value);
+    void fillBits(int destLsb, int width, char value);
+    void copyBits(int destLsb, const V3Number& source, int sourceLsb, int width);
     V3Number& setString(const string& str) {
         m_data.setString(str);
         return *this;
