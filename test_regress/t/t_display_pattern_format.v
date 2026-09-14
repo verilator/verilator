@@ -22,6 +22,10 @@ module t;
     SECOND = 7'd65
   } enum_t;
   typedef enum_t enum_alias_t;
+  typedef enum logic [6:0] {
+    SMALL_FIRST = 7'd0,
+    SMALL_SECOND = 7'd1
+  } small_t;
   typedef enum logic signed [6:0] {
     SIGNED7_NEG = -7'sd3,
     SIGNED7_POS = 7'sd7
@@ -63,6 +67,15 @@ module t;
     return $sformatf("%p/%s", value, value);
   endfunction
 
+  function automatic enum_t next_narrow_enum(input bit high);
+    enum_calls++;
+    return high ? SECOND : FIRST;
+  endfunction
+
+  function automatic string format_narrow_enum(input enum_t value);
+    return $sformatf("%p/%s", value, value);
+  endfunction
+
   localparam text_t TEXT_PARAM = "quote=\" slash=\\ bell=\a form=\f vert=\v ctrl=\001";
   localparam string ESCAPED_PARAM_STRING = $sformatf("%p", TEXT_PARAM);
   localparam narrow_array_t NARROW_FIRST = '{7'd3, 7'd127};
@@ -75,8 +88,16 @@ module t;
   localparam string WIDE_SECOND_TEXT = $sformatf("%p", WIDE_SECOND);
   localparam string REAL_FIRST_TEXT = $sformatf("%p", 1.25);
   localparam string REAL_SECOND_TEXT = $sformatf("%p", 0.5);
+  localparam string ENUM_FIRST_TEXT = $sformatf("%p", FIRST);
+  localparam string ENUM_SECOND_TEXT = $sformatf("%s", SECOND);
+  localparam string ENUM7_NEG_TEXT = $sformatf("%p", SIGNED7_NEG);
+  localparam string ENUM33_NEG_TEXT = $sformatf("%p", SIGNED33_NEG);
+  localparam string NARROW_FUNC_TEXT = format_narrow_enum(FIRST);
+  localparam string NARROW_EXPR_TEXT = $sformatf("%p", enum_t'(7'd1 + 7'd2));
+  localparam string SMALL_INVALID_TEXT = $sformatf("%p", small_t'(7'd2));
   localparam string ENUM_LOW_TEXT = $sformatf("%p", UNSIGNED65_LOW);
   localparam string ENUM_HIGH_TEXT = $sformatf("%s", UNSIGNED65_HIGH);
+  localparam string WIDE_EXPR_TEXT = $sformatf("%p", unsigned65_t'((65'd1 << 64) | 65'd1));
   localparam string ENUM_NEG_TEXT = $sformatf("%p", SIGNED65_NEG);
   localparam string ENUM95_NEG_TEXT = $sformatf("%p", SIGNED95_NEG);
   localparam string ENUM95_POS_TEXT = $sformatf("%s", SIGNED95_POS);
@@ -91,6 +112,7 @@ module t;
   localparam string ENUM_UNKNOWN_COMPACT = $sformatf("%0p", ENUM_UNKNOWN);
   localparam string ENUM_UNKNOWN_FUNC_TEXT = format_enum(ENUM_UNKNOWN);
   localparam string ENUM_SIGNED_UNKNOWN_TEXT = $sformatf("%p", signed65_t'(-65'sd2));
+
   initial begin
     string formatted;
     string fmt;
@@ -100,8 +122,15 @@ module t;
     formatted = ENUM129_NEG_TEXT.substr(0, 1);
     `checks(formatted, "PS");
 `else
+    `checks(ENUM_FIRST_TEXT, "FIRST");
+    `checks(ENUM_SECOND_TEXT, "SECOND");
+    `checks(ENUM7_NEG_TEXT, "SIGNED7_NEG");
+    `checks(ENUM33_NEG_TEXT, "SIGNED33_NEG");
+    `checks(NARROW_FUNC_TEXT, "FIRST/FIRST");
+    `checks(NARROW_EXPR_TEXT, "FIRST");
     `checks(ENUM_LOW_TEXT, "UNSIGNED65_LOW");
     `checks(ENUM_HIGH_TEXT, "UNSIGNED65_HIGH");
+    `checks(WIDE_EXPR_TEXT, "UNSIGNED65_HIGH");
     `checks(ENUM_NEG_TEXT, "SIGNED65_NEG");
     `checks(ENUM95_NEG_TEXT, "SIGNED95_NEG");
     `checks(ENUM95_POS_TEXT, "SIGNED95_POS");
@@ -111,6 +140,7 @@ module t;
     `checks(ENUM_ESCAPED_TEXT, "\\escaped.wide ");
     `checks(ENUM_FUNC_TEXT, "UNSIGNED65_HIGH/UNSIGNED65_HIGH");
 `endif
+    `checks(SMALL_INVALID_TEXT, "2");
     `checks(ENUM_UNKNOWN_STRING, ENUM_UNKNOWN_TEXT);
     `checks(ENUM_UNKNOWN_FUNC_TEXT, {ENUM_UNKNOWN_TEXT, "/", ENUM_UNKNOWN_TEXT});
     `checks(ENUM_SIGNED_UNKNOWN_TEXT, "-2");
@@ -139,6 +169,7 @@ module t;
     string escaped_expected;
     string fmt;
     enum_alias_t enum_value;
+    small_t small_value;
     narrow_array_t narrow;
     wide_array_t wide;
     real real_value;
@@ -202,11 +233,23 @@ module t;
     if (cyc[0]) enum_text = $sformatf(fmt, enum_value);
     else enum_text = $sformatf(fmt, enum_value);
 
-    `checks(enum_text, cyc[0] ? "SECOND" : "FIRST");
+    `checks(enum_text, cyc[0] ? ENUM_SECOND_TEXT : ENUM_FIRST_TEXT);
     formatted = $sformatf("%p", enum_value);
     `checks(formatted, enum_text);
     formatted = $sformatf("%s", enum_value);
     `checks(formatted, enum_text);
+    formatted = enum_value.name();
+    `checks(formatted, enum_text);
+    formatted = format_narrow_enum(enum_value);
+    `checks(formatted, {enum_text, "/", enum_text});
+    small_value = small_t'(cyc + 2);
+    formatted = small_value.name();
+    `checks(formatted, "");
+    unsigned_expected = $sformatf("%0d", cyc + 2);
+    formatted = $sformatf("%p", small_value);
+    `checks(formatted, unsigned_expected);
+    formatted = $sformatf(fmt, small_value);
+    `checks(formatted, unsigned_expected);
 
     real_value = cyc[0] ? 0.5 : 1.25;
     real_expected = cyc[0] ? REAL_SECOND_TEXT : REAL_FIRST_TEXT;
@@ -233,7 +276,7 @@ module t;
     formatted = $sformatf(fmt, signed65_value);
     `checks(formatted, signed_expected);
 
-    signed_expected = cyc[0] ? "SIGNED7_NEG" : "-2";
+    signed_expected = cyc[0] ? ENUM7_NEG_TEXT : "-2";
 `ifdef QUESTA
     // Questa 2025.2 zero-extends unnamed enums narrower than 32 bits for %p/%s.
     if (!cyc[0]) signed_expected = "126";
@@ -246,7 +289,7 @@ module t;
     formatted = $sformatf(fmt, signed7_value);
     `checks(formatted, signed_expected);
 
-    signed_expected = cyc[0] ? "SIGNED33_NEG" : "-2";
+    signed_expected = cyc[0] ? ENUM33_NEG_TEXT : "-2";
     formatted = $sformatf("%p", signed33_value);
     `checks(formatted, signed_expected);
     formatted = $sformatf("%s", signed33_value);
@@ -260,6 +303,8 @@ module t;
     formatted = $sformatf("%p", unsigned65_value);
     `checks(formatted, unsigned_expected);
     formatted = $sformatf("%s", unsigned65_value);
+    `checks(formatted, unsigned_expected);
+    formatted = unsigned65_value.name();
     `checks(formatted, unsigned_expected);
     formatted = $sformatf("%0p", unsigned65_value);
     `checks(formatted, unsigned_expected);
@@ -280,6 +325,8 @@ module t;
     `checks(formatted, signed_expected);
     formatted = $sformatf("%s", signed65_value);
     `checks(formatted, signed_expected);
+    formatted = signed65_value.name();
+    `checks(formatted, cyc[0] ? "" : ENUM_NEG_TEXT);
     formatted = $sformatf(fmt, signed65_value);
     `checks(formatted, signed_expected);
 
@@ -302,12 +349,26 @@ module t;
     `checkd(enum_calls, 4);
     $display("wide-enum: %p", next_enum(cyc[0]));
     `checkd(enum_calls, 5);
+    formatted = $sformatf("%p", next_narrow_enum(cyc[0]));
+    `checks(formatted, enum_text);
+    `checkd(enum_calls, 6);
+    formatted = $sformatf(fmt, next_narrow_enum(cyc[0]));
+    `checks(formatted, enum_text);
+    `checkd(enum_calls, 7);
+    formatted = next_enum(cyc[0]).name();
+    `checks(formatted, unsigned_expected);
+    `checkd(enum_calls, 8);
+    formatted = next_narrow_enum(cyc[0]).name();
+    `checks(formatted, enum_text);
+    `checkd(enum_calls, 9);
 
     unsigned65_value = cyc[0] ? UNSIGNED65_HIGH : \escaped.wide ;
     unsigned_expected = cyc[0] ? ENUM_HIGH_TEXT : ENUM_ESCAPED_TEXT;
     formatted = $sformatf("%p", unsigned65_value);
     `checks(formatted, unsigned_expected);
     formatted = $sformatf("%s", unsigned65_value);
+    `checks(formatted, unsigned_expected);
+    formatted = unsigned65_value.name();
     `checks(formatted, unsigned_expected);
     formatted = $sformatf(fmt, unsigned65_value);
     `checks(formatted, unsigned_expected);
@@ -359,6 +420,8 @@ module t;
     `checks(formatted, signed_expected);
     formatted = $sformatf("%s", signed95_value);
     `checks(formatted, signed_expected);
+    formatted = signed95_value.name();
+    `checks(formatted, signed_expected);
     fmt = cyc[0] ? "%p" : "%s";
     formatted = $sformatf(fmt, signed95_value);
     `checks(formatted, signed_expected);
@@ -374,6 +437,8 @@ module t;
     formatted = $sformatf("%p", signed129_value);
     `checks(formatted, signed_expected);
     formatted = $sformatf("%s", signed129_value);
+    `checks(formatted, signed_expected);
+    formatted = signed129_value.name();
     `checks(formatted, signed_expected);
     fmt = cyc[0] ? "%p" : "%s";
     formatted = $sformatf(fmt, signed129_value);

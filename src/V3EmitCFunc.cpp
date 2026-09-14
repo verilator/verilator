@@ -238,25 +238,14 @@ bool EmitCFunc::displayEmitHeader(AstNode* nodep) {
     return isStmt;
 }
 
-void EmitCFunc::emitFormatWideEnum(const AstSFormatArg* nodep, const string& suffix) {
-    const AstEnumDType* const dtypep = VN_AS(nodep->dtypep()->skipRefToEnump(), EnumDType);
+void EmitCFunc::emitFormatEnum(const AstSFormatArg* nodep, const string& suffix) {
     const string value = "__VenumValue" + suffix;
     const string name = "__VenumName" + suffix;
-    puts("const auto " + value + " = ");
+    puts("const " + nodep->dtypep()->cType(value, false, false) + " = ");
     iterateConst(nodep->exprp());
-    puts(";\nstd::string " + name + ";\n");
-    bool first = true;
-    for (const AstEnumItem* itemp = dtypep->itemsp(); itemp;
-         itemp = VN_AS(itemp->nextp(), EnumItem)) {
-        const AstConst* const constp = VN_AS(itemp->valuep(), Const);
-        if (constp->num().isAnyXZ()) continue;
-        if (!first) puts("else ");
-        puts("if (" + value + " == " + constp->num().emitC() + ") {\n");
-        puts(name + " = ");
-        putsQuoted(V3Number::displayedEnumName(itemp));
-        puts(";\n}\n");
-        first = false;
-    }
+    puts(";\nstd::string " + name + " = ");
+    iterateConst(nodep->namep());
+    puts(";\n");
 }
 
 void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullptr for AstScan
@@ -305,7 +294,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     std::map<const AstSFormatArg*, string> enumTemps;
     for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
         const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
-        if (fargp && fargp->formatAttr().isEnum() && fargp->isWide())
+        if (fargp && fargp->formatAttr().isEnum())
             enumTemps.emplace(fargp, cvtToStr(enumTemps.size()));
     }
     if (!enumTemps.empty()) {
@@ -319,7 +308,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
             const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
             const auto it = enumTemps.find(fargp);
-            if (it != enumTemps.end()) emitFormatWideEnum(fargp, it->second);
+            if (it != enumTemps.end()) emitFormatEnum(fargp, it->second);
         }
         puts("return ");
     }
@@ -391,7 +380,8 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         puts(", '"s + formatAttr.ascii() + '\'');
         const auto enumIt = enumTemps.find(fargp);
         if (enumIt != enumTemps.end()) {
-            puts("," + cvtToStr(fargp->widthMin()) + ",__VenumValue" + enumIt->second + ".data()");
+            puts("," + cvtToStr(fargp->widthMin()) + ",__VenumValue" + enumIt->second);
+            emitDatap(fargp);
             puts(", '"s + VFormatAttr{VFormatAttr::STRING}.ascii() + "', &__VenumName"
                  + enumIt->second);
             ofp()->indentDec();

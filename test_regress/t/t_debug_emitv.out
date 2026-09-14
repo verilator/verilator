@@ -52,6 +52,10 @@ module Vt_debug_emitv_t;
             if ((ZERO == 'sh0)) begin
                 $write("");
             end
+            $display("%p", $_EXPRSTMT(
+                    __Venum_h4d326b97__0 = (in);
+                    , __Venum_h4d326b97__0);
+            );
             if ($value$plusargs("TEST=%d", i1)) begin
                 $display("value was %d", i1);
             end
@@ -1023,6 +1027,10 @@ module Vt_debug_emitv_t;
     cg_trans_inst = new();
     Vt_debug_emitv_cg_cross cg_cross_instVt_debug_emitv_cg_cross;
     cg_cross_inst = new();
+    enum logic [2:0] {
+        ZERO = 3'h0,
+        ONE = 3'h1
+    } __Venum_h4d326b97__0;
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
@@ -1154,6 +1162,7 @@ package Vt_debug_emitv___024unit;
             disable label3;
         end
     endfunction
+    string __Venumtab_enum_name17[1:0];
 endpackage
 package Vt_debug_emitv_std;
     class Vt_debug_emitv_semaphore;

@@ -3969,7 +3969,10 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }
-    void visit(AstSFormatArg* nodep) override { iterateChildren(nodep); }
+    void visit(AstSFormatArg* nodep) override {
+        // Constant enum names come from the dtype, not the runtime lookup.
+        iterateAndNextNull(nodep->exprp());
+    }
     void visit(AstSFormatF* nodep) override {
         // Substitute constants into displays.  The main point of this is to
         // simplify assertion methodologies which call functions with display's.
@@ -4033,7 +4036,7 @@ class ConstVisitor final : public VNVisitor {
                                       : VFormatAttr{};
                             if (VN_IS(subargp, Const)) {  // Convert it
                                 const string out
-                                    = formatAttr.isEnum() && argp->isWide()
+                                    = formatAttr.isEnum()
                                           ? constNumV(subargp).displayedEnum(fargp, fmt)
                                           : constNumV(subargp).displayed(nodep, fmt, formatAttr);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "

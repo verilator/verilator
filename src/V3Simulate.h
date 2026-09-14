@@ -1261,7 +1261,8 @@ private:
 
     void visit(AstSFormatArg* nodep) override {
         checkNodeInfo(nodep);
-        iterateChildrenConst(nodep);
+        // Constant enum names come from the dtype, not the runtime lookup.
+        iterateAndNextConstNull(nodep->exprp());
     }
     void visit(AstSFormatF* nodep) override {
         if (jumpingOver()) return;
@@ -1305,7 +1306,7 @@ private:
                         break;
                     }
                     const string pformat = "%"s + width + pos[0];
-                    result += formatAttr.isEnum() && argp->isWide()
+                    result += formatAttr.isEnum()
                                   ? constp->num().displayedEnum(fargp, pformat)
                                   : constp->num().displayed(nodep, pformat, formatAttr);
                 } else {
