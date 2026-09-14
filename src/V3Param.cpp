@@ -2381,6 +2381,43 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
         if (!oldTdp) return;
         AstClass* const oldOwnerp = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(oldTdp), Class);
         if (!oldOwnerp) return;
+
+        // Self-reference case (IEEE 1800-2023 8.25.1): a parameterized class
+        // name used without #() inside its own body denotes the current
+        // specialization. V3LinkDot resolves such a reference to the class's
+        // *default* instance (the bare name is linked before any
+        // specialization exists), so a member typedef reached through it
+        // (e.g. ``Cls::member_t``) is resolved with the template's default
+        // type parameters. That makes the type differ from the same typedef
+        // spelled without the class qualifier inside the specialization, which
+        // then fails width/type checking. Retarget the reference at the
+        // specialization's own member typedef.
+        if (AstClass* const ownerClassp = VN_CAST(m_ownerModp, Class)) {
+            if (oldOwnerp != ownerClassp && !refp->paramsp()) {
+                const std::string ownerOrig = ownerClassp->origName().empty()
+                                                  ? ownerClassp->name()
+                                                  : ownerClassp->origName();
+                const std::string oldOrig
+                    = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
+                // Same originating class means this is a bare self reference
+                // (a reference to a *different* specialization would carry
+                // #() parameters and be rejected by the paramsp() check).
+                if (ownerOrig == oldOrig) {
+                    AstTypedef* const selfTdp
+                        = V3LinkDotIfaceCapture::findTypedefInModule(ownerClassp, refp->name());
+                    if (selfTdp && selfTdp->subDTypep()) {
+                        refp->typedefp(selfTdp);
+                        refp->classOrPackagep(ownerClassp);
+                        refp->refDTypep(selfTdp->subDTypep());
+                        UINFO(9, "post-param REFDTYPE self-reference retarget: "
+                                     << refp << " from " << oldOwnerp->name() << " to "
+                                     << ownerClassp->name());
+                        return;
+                    }
+                }
+            }
+        }
+
         ensureOwnerMap();
         if (m_origNameToClone.empty()) return;
         const std::string origName
