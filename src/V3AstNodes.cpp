@@ -610,7 +610,7 @@ bool AstCMethodHard::getPurity() {
     if (!method().isPure()) return false;
     if (!fromp()->isPure()) return false;
     for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
-        if (!argp->isPure()) { return false; }
+        if (!argp->isPure()) return false;
     }
     return true;
 }
