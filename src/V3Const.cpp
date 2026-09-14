@@ -3970,7 +3970,9 @@ class ConstVisitor final : public VNVisitor {
         return true;
     }
     void visit(AstSFormatArg* nodep) override {
-        // Constant enum names come from the dtype, not the runtime lookup.
+        // Skip namep(): requiring its runtime lookup to be constant can reject valid
+        // enum-valued constant-function calls in parameters. displayedEnum() resolves
+        // the name from the folded exprp() value and enum dtype instead.
         iterateAndNextNull(nodep->exprp());
     }
     void visit(AstSFormatF* nodep) override {

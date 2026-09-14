@@ -30,6 +30,15 @@ module t (
   } wide96_e;
   typedef logic signed [4095:0] uvm_bitstream_t;
 
+  function automatic wide64_e const_enum(input bit high);
+    wide64_e value;
+    if (high) value = W64B;
+    else value = W64A;
+    return value;
+  endfunction
+
+  localparam string CONST_ENUM_TEXT = $sformatf("%p/%s", const_enum(1'b1), const_enum(1'b1));
+
   // IEEE 1800-2023 21.2.1.6 permits implementation-specific %0p output.
 `ifdef QUESTA
   localparam string COMPACT_NUM_PREFIX = "";
@@ -49,6 +58,7 @@ module t (
     string empty_no_opt;
     // Keep formats nonconstant using an input supported by the generated testbench.
     empty_no_opt = (no_opt === 1'b1) ? "unexpected" : "";
+    `checks(CONST_ENUM_TEXT, "W64B/W64B");
     begin
       my_e it;
       string names_p;
