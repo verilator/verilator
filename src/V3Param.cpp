@@ -2375,8 +2375,7 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
     // Find 'name' in classp or any base class (findTypedefInModule() searches
     // only the class itself).
     static AstTypedef* findTypedefWithBases(AstClass* classp, const string& name) {
-        for (AstClass* cp = classp;
-             cp; cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
+        for (AstClass* cp = classp; cp; cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
             if (AstTypedef* const tdp = V3LinkDotIfaceCapture::findTypedefInModule(cp, name)) {
                 if (tdp->subDTypep()) return tdp;
             }
