@@ -158,7 +158,7 @@ NEXTHIST_TEMPLATE
   # 'pr-notification' for a single run, as the artifacts endpoint lists
   # artifacts across all run attempts, and a re-run uploads a new one while
   # keeping the previous attempt's artifact.
-  ARTIFACT_IDS=$(gh api "repos/{owner}/{repo}/actions/runs/${RUN_ID}/artifacts" --jq '.artifacts[] | select(.name == "pr-notification") | .id')
+  ARTIFACT_IDS=$(gh api "repos/{owner}/{repo}/actions/runs/${RUN_ID}/artifacts?name=pr-notification" --jq '.artifacts[].id')
 
   # Delete them all, so we only notify once
   for ARTIFACT_ID in ${ARTIFACT_IDS}; do
