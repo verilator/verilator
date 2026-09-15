@@ -94,7 +94,7 @@ class EmitCImp final : public EmitCFunc {
         puts("\n");
         if (modp->ctorVarReset())
             m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
-                             "(" + modName + "* vlSelf);");
+                             "(" + modName + "& vlSelfRef);");
         puts("\n");
 
         const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
@@ -149,7 +149,7 @@ class EmitCImp final : public EmitCFunc {
         }
 
         putsDecoration(modp, "// Reset structure values\n");
-        if (modp->ctorVarReset()) puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
+        if (modp->ctorVarReset()) puts(modName + "__" + protect("_ctor_var_reset") + "(*this);\n");
         emitSystemCSection(modp, VSystemCSectionType::CTOR);
 
         puts("}\n");
@@ -160,13 +160,13 @@ class EmitCImp final : public EmitCFunc {
         if (v3Global.opt.coverage()) {
             puts("\n");
             m_lazyDecls.emit("void " + modName + "__", protect("_configure_coverage"),
-                             "(" + modName + "* vlSelf, bool first);");
+                             "(" + modName + "& vlSelfRef, bool first);");
         }
 
         if (v3Global.opt.coverage()) {
             puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(bool first) {\n");
             puts("(void)first;  // Prevent unused variable warning\n");
-            puts(modName + "__" + protect("_configure_coverage") + "(this, first);\n");
+            puts(modName + "__" + protect("_configure_coverage") + "(*this, first);\n");
             puts("}\n");
         }
     }
