@@ -128,6 +128,8 @@ private:
 
     static CapturedMap s_map;
     static bool s_enabled;
+    // Which module each node sits in, only good while the tree holds still
+    static std::unordered_map<const AstNode*, const AstNodeModule*> s_containingModp;
 
     // --- Internal-only methods (not called outside V3LinkDotIfaceCapture.cpp) ---
     static void enable(bool flag);  // LCOV_EXCL_LINE
@@ -135,6 +137,12 @@ private:
     static void clearModuleCache();
     static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
     static string extractIfacePortName(const string& dotText);
+    // True if this module is a copy of that one.
+    static bool isCloneOfModule(const AstNodeModule* modp, const AstNodeModule* templateModp);
+    // Point a reference at a typedef and fix its other links.
+    static void retargetRefToTypedef(AstRefDType* refp, AstTypedef* typedefp);
+    // Same, for a parameter type.
+    static void retargetRefToParamType(AstRefDType* refp, AstParamTypeDType* paramTypep);
     static AstNodeModule* findCloneViaHierarchy(AstNodeModule* containingModp,
                                                 AstNodeModule* deadTargetModp, int depth = 0);
     static AstNodeModule* findLiveCloneOf(AstNodeModule* deadTargetModp,
@@ -155,6 +163,10 @@ private:
 public:
     static bool enabled() { return s_enabled; }
     static AstNodeModule* findOwnerModule(AstNode* nodep);
+    // Find the module a node sits in, remembering what it passed on the way.
+    static const AstNodeModule* containingModule(AstNode* nodep);
+    // Forget what was remembered, as the tree has moved.
+    static void clearContainingModuleCache();
     // Find a Typedef by name in a module's top-level statements
     static AstTypedef* findTypedefInModule(AstNodeModule* modp, const string& name);
     // Find a NodeDType by name and VNType in a module's top-level statements
