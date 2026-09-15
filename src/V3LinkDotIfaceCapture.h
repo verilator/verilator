@@ -149,6 +149,8 @@ private:
     static int fixDeadRefsInModules(const std::unordered_set<const AstNode*>& liveNodes);
     static int resolveCapturedRefs();
     static void verifyNoDeadRefs(const std::unordered_set<const AstNode*>& liveNodes);
+    // Cheap, always-on sibling of verifyNoDeadRefs()
+    static void verifyNoDeadIfaceVarRefs(const std::unordered_set<const AstNode*>& liveNodes);
     template <typename T_FilterFn, typename T_Fn>
     static void forEachImpl(T_FilterFn&& filter, T_Fn&& fn);
 
