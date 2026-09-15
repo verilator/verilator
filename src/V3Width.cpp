@@ -70,6 +70,7 @@
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Const.h"
+#include "V3ContainingClass.h"
 #include "V3Error.h"
 #include "V3Global.h"
 #include "V3LinkDotIfaceCapture.h"
@@ -249,8 +250,7 @@ class WidthVisitor final : public VNVisitor {
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
-    std::map<const AstNode*, const AstClass*>
-        m_containingClassp;  // Containing class cache for containingClass() function
+    V3ContainingClassFinder m_containingClassFinder;
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
 
@@ -2042,13 +2042,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCgOptionAssign* nodep) override {
         // Recursive function widthing can reach a covergroup constructor without first visiting
         // its class, so find the owning covergroup structurally instead of using visit context.
-        AstClass* cgClassp = nullptr;
-        for (AstNode* parentp = nodep->aboveLoopp(); parentp; parentp = parentp->aboveLoopp()) {
-            if (AstClass* const classp = VN_CAST(parentp, Class)) {
-                cgClassp = classp;
-                break;
-            }
-        }
+        AstClass* const cgClassp = m_containingClassFinder.find(nodep);
         UASSERT_OBJ(cgClassp && cgClassp->isCovergroup(), nodep,
                     "Covergroup option is not under a covergroup class");
 
@@ -7432,22 +7426,6 @@ class WidthVisitor final : public VNVisitor {
         }
         return VN_CAST(pkgItemp->backp(), Package);
     }
-    const AstClass* containingClass(AstNode* nodep) {
-        // abovep is still needed, m_containingClassp is just a cache
-        if (const AstClass* const classp = VN_CAST(nodep, Class))
-            return m_containingClassp[nodep] = classp;
-        if (const AstClassPackage* const packagep = VN_CAST(nodep, ClassPackage)) {
-            return m_containingClassp[nodep] = packagep->classp();
-        }
-        if (m_containingClassp.find(nodep) != m_containingClassp.end()) {
-            return m_containingClassp[nodep];
-        }
-        if (AstNode* const abovep = nodep->aboveLoopp()) {
-            return m_containingClassp[nodep] = containingClass(abovep);
-        } else {
-            return m_containingClassp[nodep] = nullptr;
-        }
-    }
     void visit(AstFuncRef* nodep) override {
         visit(static_cast<AstNodeFTaskRef*>(nodep));
         if (nodep->taskp() && VN_IS(nodep->taskp(), Task)) {
@@ -7801,10 +7779,14 @@ class WidthVisitor final : public VNVisitor {
                     allow = taskRefp->superReference();
                 }
                 if (!allow) {
-                    const AstClass* callerClassp = containingClass(m_ftaskp);
-                    if (!callerClassp) callerClassp = containingClass(m_ftaskp->classOrPackagep());
+                    const AstClass* callerClassp = m_containingClassFinder.find(m_ftaskp);
+                    if (!callerClassp) {
+                        callerClassp = m_containingClassFinder.find(m_ftaskp->classOrPackagep());
+                    }
                     const AstClass* calleeClassp = VN_CAST(nodep->classOrPackagep(), Class);
-                    if (!calleeClassp) calleeClassp = containingClass(nodep->taskp());
+                    if (!calleeClassp) {
+                        calleeClassp = m_containingClassFinder.find(nodep->taskp());
+                    }
                     allow = AstClass::isClassExtendedFrom(callerClassp, calleeClassp);
                 }
             }
