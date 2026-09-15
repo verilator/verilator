@@ -1128,31 +1128,32 @@ void EmitCSyms::emitSymImpPreamble() {
 void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
 
-    std::vector<std::string> typeNames;
-    std::vector<std::string> tableNames;
-    std::vector<std::reference_wrapper<const std::vector<std::string>>> tables;
+    struct TableInfo {
+        std::string typeName;
+        std::string tableName;
+        std::reference_wrapper<const std::vector<std::string>> rows;
+
+        TableInfo(std::string typeName, std::string tableName, const std::vector<std::string> &rows)
+          : typeName(std::move(typeName)), tableName(std::move(tableName)), rows(std::cref(rows)) {}
+    };
+
+    std::vector<TableInfo> tables;
 
     for (const auto &kv : m_varTables) {
-        typeNames.emplace_back("VlVarTableEntry");
-        tableNames.emplace_back(kv.first);
-        tables.emplace_back(std::cref(kv.second));
+        tables.emplace_back("VlVarTableEntry", kv.first, kv.second);
     }
     if (!m_scopeTableRows.empty()) {
-        typeNames.emplace_back("VlScopeTableEntry");
-        tableNames.emplace_back(m_scopeTableName);
-        tables.emplace_back(std::cref(m_scopeTableRows));
+        tables.emplace_back("VlScopeTableEntry", m_scopeTableName, m_scopeTableRows);
     }
     if (!m_ifaceRefTableRows.empty()) {
-        typeNames.emplace_back("VlIfaceRefTableEntry");
-        tableNames.emplace_back(m_ifaceRefTableName);
-        tables.emplace_back(std::cref(m_ifaceRefTableRows));
+        tables.emplace_back("VlIfaceRefTableEntry", m_ifaceRefTableName, m_ifaceRefTableRows);
     }
 
     constexpr static size_t maxCost = 10000;
 
     size_t totalCost = 0;
     for (const auto &table : tables) {
-        totalCost += table.get().size();
+        totalCost += table.rows.get().size();
     }
     const bool allInSingleFile = totalCost <= maxCost;
 
@@ -1179,15 +1180,16 @@ void EmitCSyms::emitVarTables() {
 
         totalCost = 0;
         for (; i < tables.size() && totalCost <= maxCost; i++) {
-            puts("const " + typeNames[i] + " " + tableNames[i] + "[] = {\n");
-            for (const std::string &row : tables[i].get()) {
+            auto &table = tables[i];
+            puts("const " + table.typeName + " " + table.tableName + "[] = {\n");
+            for (const std::string &row : table.rows.get()) {
                 puts("    ");
                 puts(row);
                 puts(",\n");
             }
             puts("};\n");
 
-            totalCost += tables[i].get().size();
+            totalCost += table.rows.get().size();
         }
 
         puts("#if defined(__GNUC__)\n");
