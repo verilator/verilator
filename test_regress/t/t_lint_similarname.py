@@ -9,10 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator_st')
+test.scenarios('linter')
 
-test.compile(verilator_flags2=['-Wall -Wno-DECLFILENAME -Wno-SIMILARNAME'])
-
-test.execute()
+test.lint(verilator_flags2=['-Wall', '-Wno-DECLFILENAME', '-Wno-SIMILARNAME'])
 
 test.passes()

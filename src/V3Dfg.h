@@ -49,6 +49,7 @@
 #include <new>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #ifndef VL_NOT_FINAL
@@ -247,7 +248,10 @@ public:
     // Calls given function 'f' for each source vertex of this vertex. If 'f'
     // returns true, further sources are not iterated and this method returns
     // true itself. Unconnected source edges are not iterated.
-    bool foreachSource(std::function<bool(DfgVertex&)> f) {
+    template <typename T_Callable>
+    bool foreachSource(T_Callable&& f) {
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, DfgVertex&>::value,
+                      "T_Callable 'f' must have a signature compatible with 'bool(DfgVertex&)'");
         for (const std::unique_ptr<DfgEdge>& edgep : m_inputps) {
             if (DfgVertex* const srcp = edgep->srcp()) {
                 if (f(*srcp)) return true;
@@ -259,9 +263,13 @@ public:
     // Calls given function 'f' for each source vertex of this vertex. If 'f'
     // returns true, further sources are not iterated and this method returns
     // true itself. Unconnected source edges are not iterated.
-    bool foreachSource(std::function<bool(const DfgVertex&)> f) const {
+    template <typename T_Callable>
+    bool foreachSource(T_Callable&& f) const {
+        static_assert(
+            vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&>::value,
+            "T_Callable 'f' must have a signature compatible with 'bool(const DfgVertex&)'");
         for (const std::unique_ptr<DfgEdge>& edgep : m_inputps) {
-            if (DfgVertex* const srcp = edgep->srcp()) {
+            if (const DfgVertex* const srcp = edgep->srcp()) {
                 if (f(*srcp)) return true;
             }
         }
@@ -272,7 +280,10 @@ public:
     // returns true, further sinks are not iterated and this method returns
     // true itself. Unlinking/deleting the given sink during iteration is safe,
     // but not other sinks of this vertex.
-    bool foreachSink(std::function<bool(DfgVertex&)> f) {
+    template <typename T_Callable>
+    bool foreachSink(T_Callable&& f) {
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, DfgVertex&>::value,
+                      "T_Callable 'f' must have a signature compatible with 'bool(DfgVertex&)'");
         for (const DfgEdge* const edgep : m_sinks.unlinkable()) {
             if (f(*edgep->dstp())) return true;
         }
@@ -282,7 +293,11 @@ public:
     // Calls given function 'f' for each sink vertex of this vertex. If 'f'
     // returns true, further sinks are not iterated and this method returns
     // true itself.
-    bool foreachSink(std::function<bool(const DfgVertex&)> f) const {
+    template <typename T_Callable>
+    bool foreachSink(T_Callable&& f) const {
+        static_assert(
+            vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&>::value,
+            "T_Callable 'f' must have a signature compatible with 'bool(const DfgVertex&)'");
         for (const DfgEdge& edge : m_sinks) {
             if (f(*edge.dstp())) return true;
         }

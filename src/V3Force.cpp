@@ -268,7 +268,7 @@ public:
     }
 
     static AstVarRef* getOneVarRef(AstNodeExpr* forceStmtp) {
-        AstNode* const basep = AstArraySel::baseFromp(forceStmtp, true);
+        AstNode* const basep = forceStmtp->baseFromp(true);
         if (AstSampled* sampledp = VN_CAST(basep, Sampled))
             if (AstNodeExpr* exprp = VN_CAST(sampledp->exprp(), NodeExpr))
                 return getOneVarRef(exprp);
@@ -822,8 +822,9 @@ public:
     AstNodeExpr* createForceReadExpression(const VarForceInfo& varInfo,
                                            AstVarRef* originalRefp) const {
         FileLine* const flp = originalRefp->fileline();
-        return createForceReadCall(varInfo, flp, VCMethod::FORCE_READ,
-                                   originalRefp->cloneTreePure(false), originalRefp->varp(),
+        AstVarRef* const refp = originalRefp->cloneTreePure(false);
+        refp->access(VAccess::READ);
+        return createForceReadCall(varInfo, flp, VCMethod::FORCE_READ, refp, refp->varp(),
                                    nullptr);
     }
 
@@ -831,8 +832,11 @@ public:
                                                 AstNodeExpr* originalExprp,
                                                 AstNodeExpr* indexExprp) const {
         FileLine* const flp = originalExprp->fileline();
-        return createForceReadCall(varInfo, flp, VCMethod::FORCE_READ_INDEX,
-                                   originalExprp->cloneTreePure(false), originalExprp, indexExprp);
+        AstNodeExpr* const exprp = originalExprp->cloneTreePure(false);
+        // Must be an LValue to a static variable
+        VN_AS(exprp->cLValueTargetp(), VarRef)->access(VAccess::READ);
+        return createForceReadCall(varInfo, flp, VCMethod::FORCE_READ_INDEX, exprp, originalExprp,
+                                   indexExprp);
     }
 
     static AstNodeExpr* rebuildSelPath(AstNodeExpr* pathp, AstNodeExpr* baseExprp) {
@@ -1315,7 +1319,7 @@ class ForceReplaceVisitor final : public VNVisitor {
         m_stmtp = nodep;
         iterate(nodep->lhsp());
         iterate(nodep->rhsp());
-        if (AstVarRef* const lhsp = VN_CAST(AstArraySel::baseFromp(nodep->lhsp(), true), VarRef)) {
+        if (AstVarRef* const lhsp = VN_CAST(nodep->lhsp()->baseFromp(true), VarRef)) {
             if (AstNode* const updatep
                 = m_state.createRhsUpdatesForWrite(nodep->fileline(), lhsp->varp())) {
                 nodep->addNextHere(updatep);
@@ -1394,7 +1398,7 @@ class ForceReplaceVisitor final : public VNVisitor {
             }
         }
 
-        AstNode* const basep = AstArraySel::baseFromp(nodep, true);
+        AstNode* const basep = nodep->baseFromp(true);
         AstVarRef* const baseRefp = VN_CAST(basep, VarRef);
         if (!baseRefp) {
             iterateChildren(nodep);
@@ -1492,7 +1496,7 @@ class ForceReplaceVisitor final : public VNVisitor {
             // Handle the whole opaque path at its outermost node so we can assign one stable
             // synthetic force-path index to the full selection/member chain.
             AstNodeExpr* const exprp = VN_AS(nodep, NodeExpr);
-            AstNode* const basep = AstArraySel::baseFromp(exprp, true);
+            AstNode* const basep = exprp->baseFromp(true);
             AstVarRef* const baseRefp = VN_CAST(basep, VarRef);
             if (baseRefp) {
                 AstVar* const varp = baseRefp->varp();

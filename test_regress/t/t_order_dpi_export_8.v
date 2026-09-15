@@ -33,7 +33,7 @@ module testbench (
     // This always block needs to evaluate before the NBA to even_other
     // above is committed, as setting clocks via the set_other_clk uses
     // blocking assignment.
-    $display("t=%t q=%d x=%d y=%d", $time, q, x, y);
+    $display("[%0t] q=%d x=%d y=%d", $time, q, x, y);
     if (y !== q) $stop;
     if (n == 20) begin
       $write("*-* All Finished *-*\n");

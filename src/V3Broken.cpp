@@ -227,6 +227,52 @@ private:
         }
         return false;
     }
+    static void checkArgRefs(AstNodeExpr* nodep, const char* descrp, AstNodeExpr* argsp) {
+        if (!std::strcmp(descrp, "TODO")) return;  // Skip if not yet checked
+
+        // Check each argument
+        const char* dp = descrp;
+        for (AstNodeExpr* argp = argsp; argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+            if (argp->fileline()->erroringOn()) return;  // Intentionally skip all checks
+            const AstNodeExpr* const lvalp = argp->cLValueTargetp();
+            const VAccess access = [&]() -> VAccess {
+                if (const AstVarRef* const varrefp = VN_CAST(lvalp, VarRef)) {
+                    return varrefp->access();
+                }
+                if (const AstMemberSel* const memberselp = VN_CAST(lvalp, MemberSel)) {
+                    return memberselp->access();
+                }
+                UASSERT_OBJ(!lvalp, argp, "Unknown LValue expression");
+                // Not an LValue, so it's read-only
+                return VAccess::READ;
+            }();
+            if (dp[0] == '+') --dp;  // Repeats the entry before it
+            switch (dp[0]) {
+            case 'r':
+                UASSERT_OBJ(access.isReadOnly(), argp,
+                            "Input argument of library call is not a read-only expression");
+                break;
+            case 'w':
+                UASSERT_OBJ(lvalp, argp,  //
+                            "Output argument of library call is not a valid C++ LValue");
+                UASSERT_OBJ(access.isWriteOnly(), argp,
+                            "Output argument of library call is not write-only");
+                break;
+            case 'm':
+                UASSERT_OBJ(lvalp, argp,  //
+                            "Inout argument of library call is not a valid C++ LValue");
+                UASSERT_OBJ(access.isRW(), argp,
+                            "Inout argument of library call is not read-write");
+                break;
+            default:
+                UASSERT_OBJ(dp[0], argp, "Unexpected trailing arguments to library call");
+                break;  // LCOV_EXCL_LINE
+            }
+            ++dp;
+        }
+        UASSERT_OBJ(!dp[0] || dp[0] == '+', nodep, "Insufficient arguments to library call");
+    }
+
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
         processEnter(nodep);
@@ -291,6 +337,7 @@ private:
     void visit(AstCMethodHard* nodep) override {
         ++m_nCalls;
         processAndIterate(nodep);
+        checkArgRefs(nodep, nodep->method().args(), nodep->pinsp());
     }
     void visit(AstNodeFTaskRef* nodep) override {
         ++m_nCalls;

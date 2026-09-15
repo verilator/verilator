@@ -491,41 +491,41 @@ public:
         IgnIndices results;
         int nextChange = 0;
         tree.find(0, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 0);
-        UASSERT_SELFTEST(const int, nextChange, 10);
+        UASSERT_SELFTEST(results.size(), 0);
+        UASSERT_SELFTEST(nextChange, 10);
         tree.find(10, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 2);
-        UASSERT_SELFTEST(const int, results[0], 0);
-        UASSERT_SELFTEST(const int, results[1], 3);
-        UASSERT_SELFTEST(const int, nextChange, 11);
+        UASSERT_SELFTEST(results.size(), 2);
+        UASSERT_SELFTEST(results[0], 0);
+        UASSERT_SELFTEST(results[1], 3);
+        UASSERT_SELFTEST(nextChange, 11);
         tree.find(11, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 1);
-        UASSERT_SELFTEST(const int, results[0], 3);
-        UASSERT_SELFTEST(const int, nextChange, 15);  // Center, or would be 20
+        UASSERT_SELFTEST(results.size(), 1);
+        UASSERT_SELFTEST(results[0], 3);
+        UASSERT_SELFTEST(nextChange, 15);  // Center, or would be 20
         tree.find(20, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 3);
-        UASSERT_SELFTEST(const int, results[0], 1);
-        UASSERT_SELFTEST(const int, results[1], 3);
-        UASSERT_SELFTEST(const int, results[2], 4);
-        UASSERT_SELFTEST(const int, nextChange, 21);
+        UASSERT_SELFTEST(results.size(), 3);
+        UASSERT_SELFTEST(results[0], 1);
+        UASSERT_SELFTEST(results[1], 3);
+        UASSERT_SELFTEST(results[2], 4);
+        UASSERT_SELFTEST(nextChange, 21);
         tree.find(21, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 2);
-        UASSERT_SELFTEST(const int, results[0], 3);
-        UASSERT_SELFTEST(const int, results[1], 4);
-        UASSERT_SELFTEST(const int, nextChange, 25);  // Center, or would be 30
+        UASSERT_SELFTEST(results.size(), 2);
+        UASSERT_SELFTEST(results[0], 3);
+        UASSERT_SELFTEST(results[1], 4);
+        UASSERT_SELFTEST(nextChange, 25);  // Center, or would be 30
         tree.find(30, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 2);
-        UASSERT_SELFTEST(const int, results[0], 3);
-        UASSERT_SELFTEST(const int, results[1], 4);
-        UASSERT_SELFTEST(const int, nextChange, 31);
+        UASSERT_SELFTEST(results.size(), 2);
+        UASSERT_SELFTEST(results[0], 3);
+        UASSERT_SELFTEST(results[1], 4);
+        UASSERT_SELFTEST(nextChange, 31);
         tree.find(40, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 2);
-        UASSERT_SELFTEST(const int, results[0], 2);
-        UASSERT_SELFTEST(const int, results[1], 4);
-        UASSERT_SELFTEST(const int, nextChange, 41);
+        UASSERT_SELFTEST(results.size(), 2);
+        UASSERT_SELFTEST(results[0], 2);
+        UASSERT_SELFTEST(results[1], 4);
+        UASSERT_SELFTEST(nextChange, 41);
         tree.find(41, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 0);
-        UASSERT_SELFTEST(const int, nextChange, std::numeric_limits<int>::max());
+        UASSERT_SELFTEST(results.size(), 0);
+        UASSERT_SELFTEST(nextChange, std::numeric_limits<int>::max());
         //
         points = {{0, 0}};
         for (const auto& it : points) {
@@ -536,8 +536,8 @@ public:
         tree.build(data);
         //
         tree.find(50, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 1);
-        UASSERT_SELFTEST(const int, results[0], 5);
+        UASSERT_SELFTEST(results.size(), 1);
+        UASSERT_SELFTEST(results[0], 5);
     }
 };
 

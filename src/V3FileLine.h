@@ -393,6 +393,8 @@ public:
     void celldefineOn(bool flag) { warnOn(V3ErrorCode::I_CELLDEFINE, flag); }
     bool coverageOn() const { return msgEn().enabled(V3ErrorCode::I_COVERAGE); }
     void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE, flag); }
+    bool erroringOn() const { return msgEn().enabled(V3ErrorCode::I_ERRORING); }
+    void erroringOn(bool flag) { warnOn(V3ErrorCode::I_ERRORING, flag); }
     bool tracingOn() const { return msgEn().enabled(V3ErrorCode::I_TRACING); }
     void tracingOn(bool flag) { warnOn(V3ErrorCode::I_TRACING, flag); }
     bool timingOn() const { return msgEn().enabled(V3ErrorCode::I_TIMING); }

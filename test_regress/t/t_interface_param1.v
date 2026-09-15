@@ -6,12 +6,9 @@
 
 //bug692
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input wire clk
 );
-  input wire clk;
-
   wire [31:0] result;
   test_if #(.ID(3)) s ();
   sub_test U_SUB_TEST (

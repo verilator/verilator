@@ -36,13 +36,10 @@
 //   - homepage : https://www.cprover.org/ebmc/
 //   - source repository : https://github.com/diffblue/hw-cbmc
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk,
-    reset
+module t (
+    input clk,
+    input reset
 );
-  input clk;
-  input reset;
   eventually1 eventually1 (.*);
   eventually2 eventually2 (.*);
   sva_implies2 sva_implies2 (.*);

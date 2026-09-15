@@ -284,13 +284,13 @@ void VlDynamicTriggerScheduler::dump() const {
 //======================================================================
 // VlForkSync:: Methods
 
-void VlProcess::forkSyncOnKill(VlForkSyncState* forkSyncp) {
+void VlProcess::forkSyncOnKill(std::shared_ptr<VlForkSyncState> forkSyncp) {
     m_forkSyncOnKillp = forkSyncp;
     m_forkSyncOnKillDone = false;
 }
 
 void VlProcess::forkSyncOnKillClear(VlForkSyncState* forkSyncp) {
-    if (m_forkSyncOnKillp != forkSyncp) return;
+    if (m_forkSyncOnKillp.get() != forkSyncp) return;
     m_forkSyncOnKillp = nullptr;
     m_forkSyncOnKillDone = false;
 }
@@ -301,19 +301,15 @@ void VlProcess::state(int s) {
         m_forkSyncOnKillDone = true;
         m_state = s;
         m_forkSyncOnKillp->done();
+        m_forkSyncOnKillp = nullptr;
         return;
     }
     m_state = s;
 }
 
-VlForkSyncState::~VlForkSyncState() {
-    for (const VlProcessRef& processp : m_onKillProcessps) processp->forkSyncOnKillClear(this);
-}
-
 void VlForkSync::onKill(VlProcessRef process) {
     if (!process) return;
-    m_state->m_onKillProcessps.emplace_back(process);
-    process->forkSyncOnKill(m_state.get());
+    process->forkSyncOnKill(m_state);
 }
 
 void VlForkSyncState::done(const char* filename, int lineno) {
@@ -337,16 +333,18 @@ void VlForkSyncState::done(const char* filename, int lineno) {
 }
 
 //======================================================================
-// VlCoroutine:: Methods
+// VlPromise:: Methods
 
-VlCoroutine::VlPromise::~VlPromise() {
+VlCoroutine VlPromise::get_return_object() { return {this}; }
+
+VlPromise::~VlPromise() {
     // Indicate to the return object that the coroutine has finished or been destroyed
     if (m_corop) m_corop->m_promisep = nullptr;
     // If there is a continuation, destroy it
     if (m_continuation) m_continuation.destroy();
 }
 
-std::suspend_never VlCoroutine::VlPromise::final_suspend() noexcept {
+std::suspend_never VlPromise::final_suspend() noexcept {
     // Indicate to the return object that the coroutine has finished
     if (m_corop) {
         m_corop->m_promisep = nullptr;

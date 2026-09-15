@@ -231,7 +231,7 @@ extern std::string VL_TO_STRING(SData lhs);
 extern std::string VL_TO_STRING(IData lhs);
 extern std::string VL_TO_STRING(QData lhs);
 extern std::string VL_TO_STRING(double lhs);
-inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
+extern std::string VL_TO_STRING(const std::string& obj) VL_PURE;
 template <std::size_t N_Words>
 inline std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
     return VL_TO_STRING_W(N_Words, obj);
@@ -322,7 +322,7 @@ class VlProcess final {
     int m_state;  // Current state of the process
     VlProcessRef m_parentp = nullptr;  // Parent process, if exists
     std::set<VlProcess*> m_children;  // Active child processes
-    VlForkSyncState* m_forkSyncOnKillp
+    std::shared_ptr<VlForkSyncState> m_forkSyncOnKillp
         = nullptr;  // Optional fork..join counter to decrement on kill
     bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
     VlRNG m_rng;  // Per-process RNG (IEEE 1800-2023 18.14)
@@ -364,13 +364,14 @@ public:
     void disable() {
         state(KILLED);
         disableFork();
+        m_forkSyncOnKillp = nullptr;
     }
     void disableFork() {
         // childp->disable() may resume coroutines and mutate m_children
         const std::set<VlProcess*> children = m_children;
         for (VlProcess* childp : children) childp->disable();
     }
-    void forkSyncOnKill(VlForkSyncState* forkSyncp);
+    void forkSyncOnKill(std::shared_ptr<VlForkSyncState> forkSyncp);
     void forkSyncOnKillClear(VlForkSyncState* forkSyncp);
     bool completed() const { return state() == FINISHED || state() == KILLED; }
     bool completedFork() const {
@@ -1466,6 +1467,14 @@ public:
     const T_Value* data() const { return &m_storage[0]; }
 
     constexpr std::size_t size() const { return N_Depth; }
+
+    // Runtime slice v[loIdx +: N_Out], loIdx being an index into m_storage
+    template <std::size_t N_Out>
+    VlUnpacked<T_Value, N_Out> slice(int32_t loIdx) const {
+        VlUnpacked<T_Value, N_Out> out;
+        for (std::size_t i = 0; i < N_Out; ++i) out.m_storage[i] = m_storage[loIdx + i];
+        return out;
+    }
 
     void fill(const T_Value& value) {
         std::fill(std::begin(m_storage), std::end(m_storage), value);

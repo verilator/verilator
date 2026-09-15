@@ -1476,6 +1476,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fconst-eager", FOnOff, &m_fConstEager);
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
+    DECL_OPTION("-fdead-methods", FOnOff, &m_fDeadMethods);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", CbFOnOff, [fl](bool) {
@@ -1773,10 +1774,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-std-package", OnOff, &m_stdPackage);
     DECL_OPTION("-std-waiver", OnOff, &m_stdWaiver);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
-    DECL_OPTION("-structs-packed", CbOnOff, [this, fl](bool flag) {
-        m_structsPacked = flag;
-        fl->v3warn(DEPRECATED, "Option --structs-packed is deprecated, avoid use");
-    }).undocumented();
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
 
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
@@ -2386,6 +2383,7 @@ void V3Options::optimize(int level) {
     m_fDfg = flag;
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
+    m_fDeadMethods = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;

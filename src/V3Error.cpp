@@ -266,7 +266,7 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
                     }
                     if (debug()) {
                         execErrorExitCb();
-                        V3Stats::statsFinalAll(v3Global.rootp());
+                        V3Stats::statsStageAll(v3Global.rootp(), "Final");
                         V3Stats::statsReport();
                     }
                     vlAbortOrExit();

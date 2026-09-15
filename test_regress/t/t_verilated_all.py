@@ -14,12 +14,24 @@ test.scenarios('vltmt')
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
+if not re.search(r'g\+\+|GCC|clang', test.cxx_version):
+    test.skip("Compiler does not support -fno-exceptions")
+
 test.compile(
-    # Can't use --coverage and --savable together, so cheat and compile inline
+    # Can't use --coverage and --savable together, or multiple trace formats, so cheat and compile inline
     verilator_flags2=[
-        "--cc", "--coverage-toggle --coverage-line --coverage-user", "--trace-vcd --vpi ",
-        ("--timing" if test.have_coroutines else "--no-timing -Wno-STMTDLY"), "--prof-exec",
-        "--prof-pgo", test.root + "/include/verilated_save.cpp"
+        "--cc",
+        "--coverage-toggle --coverage-line --coverage-user",
+        "--trace-fst",  # Also adds -lz4 and the like
+        "--vpi",
+        ("--timing" if test.have_coroutines else "--no-timing -Wno-STMTDLY"),
+        "--prof-exec",
+        "--prof-pgo",
+        # -fno-exceptions checks the runtime/generated code does not rely on exceptions
+        "-CFLAGS -fno-exceptions",
+        test.root + "/include/verilated_save.cpp",
+        test.root + "/include/verilated_vcd_c.cpp",
+        test.root + "/include/verilated_saif_c.cpp"
     ],
     threads=2)
 
@@ -43,9 +55,12 @@ for dfile in test.glob_some(test.obj_dir + "/*.d"):
         hit[filename] = True
 
 for filename in sorted(hit.keys()):
-    if (not hit[filename] and not re.search(r'_sc', filename) and not re.search(r'_fst', filename)
-            and not re.search(r'_saif', filename) and not re.search(r'_thread', filename)
-            and (not re.search(r'_timing', filename) or test.have_coroutines)):
-        test.error("Include file not covered by t_verilated_all test: ", filename)
+    if hit[filename]:
+        continue
+    if re.search(r'_sc', filename):  # SystemC files are not built by this test
+        continue
+    if re.search(r'_timing', filename) and not test.have_coroutines:
+        continue
+    test.error("Include file not covered by t_verilated_all test: ", filename)
 
 test.passes()

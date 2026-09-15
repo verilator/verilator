@@ -541,6 +541,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                      depth + 1, suffix + ".atDefault()", nullptr);
     } else if (VN_IS(dtypep, CDType)) {
         return "";  // Constructor does it
+    } else if (VN_IS(dtypep, CoverCrossDType) || VN_IS(dtypep, CoverpointDType)) {
+        return "";  // Covergroup constructor creates the runtime and assigns the pointer
     } else if (const AstClassRefDType* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         return adtypep->rawPointer() ? varNameProtected + suffix + " = nullptr;\n" : "";
     } else if (VN_IS(dtypep, IfaceRefDType)) {
@@ -593,6 +595,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
     } else if (basicp && basicp->isDynamicTriggerScheduler()) {
         return "";
     } else if (basicp && (basicp->isRandomGenerator() || basicp->isStdRandomGenerator())) {
+        return "";
+    } else if (basicp && basicp->isCovergroupInstHandle()) {
+        // The handle's own constructor deals with it.
         return "";
     } else if (basicp && (basicp->isEvent())) {
         return "VlAssignableEvent{};\n";

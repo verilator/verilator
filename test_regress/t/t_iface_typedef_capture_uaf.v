@@ -38,6 +38,22 @@ module avmm_autopipeline (
   always_comb slave.req = internal_req;
 endmodule
 
+module genif_body #(
+    parameter bit ENABLE = 1
+) (
+    avmm_if.slave master,
+    avmm_if.master slave
+);
+  if (ENABLE) begin : gen_on
+    typedef master.request_t request_t;
+    request_t internal_req;
+    assign internal_req = master.req;
+    always_comb slave.req = internal_req;
+  end else begin : gen_off
+    always_comb slave.req = '0;
+  end
+endmodule
+
 module t;
   for (genvar g = 0; g < 2; ++g) begin : gen_block
     avmm_if #(.DW(32 * (g + 1))) m_if ();
@@ -48,8 +64,17 @@ module t;
     );
   end
 
+  avmm_if #(.DW(32)) on_m_if ();
+  avmm_if #(.DW(32)) on_s_if ();
+  avmm_if #(.DW(64)) off_m_if ();
+  avmm_if #(.DW(64)) off_s_if ();
+  // ENABLE=0 deletes the generate branch holding the captured typedef
+  genif_body #(.ENABLE(1)) body_on (.master(on_m_if), .slave(on_s_if));
+  genif_body #(.ENABLE(0)) body_off (.master(off_m_if), .slave(off_s_if));
+
   initial begin
     #1;
+    `checkd($bits(body_on.gen_on.internal_req), 33);
     `checkd($bits(gen_block[0].pipe.internal_req), 33);
     `checkd($bits(gen_block[1].pipe.internal_req), 65);
     $write("*-* All Finished *-*\n");

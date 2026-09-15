@@ -70,7 +70,18 @@ package Pkg_Keep;
   endfunction
 endpackage
 
-module t (  /*AUTOARG*/);
+class Cls_Keep;
+  task cls_task_Dead;
+  endtask
+  function void cls_func_Dead;
+  endfunction
+  static task cls_stask_Dead;
+  endtask
+  static function void cls_sfunc_Dead;
+  endfunction
+endclass
+
+module t;
 
   typedef struct {int struct_member_Dead;} struct_Dead_t;
   struct_Dead_t var_struct_Dead;
@@ -106,6 +117,8 @@ module t (  /*AUTOARG*/);
   always_comb assigned_to_Dead2 = assigned_to_Dead1;
 
   initial begin
+    Cls_Keep c;
+    c = new;
     assigned_to_Dead1 = 1;
     assigned_to_Dead1 = 2;
     $write("*-* All Finished *-*\n");

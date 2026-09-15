@@ -354,7 +354,7 @@ class LinkParseVisitor final : public VNVisitor {
         const AstClass* const classp = VN_CAST(m_modp, Class);
         if (classp && classp->isCovergroup() && nodep->isClassMember() && !nodep->isFuncLocal()
             && (nodep->declDirection().isRef() || nodep->declDirection().isConstRef())) {
-            nodep->covergroupRefMember();
+            nodep->covergroupRefMember(true);
         }
         if (nodep->valuep()) nodep->hasUserInit(true);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
@@ -1228,6 +1228,7 @@ class LinkParseVisitor final : public VNVisitor {
             addArgMemberCopies(funcp, sampleArgsp, false);
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
+            funcp->keepAlive(true);  // TODO create AstFuncRef and hold until findMethod("sample")
             nodep->addMembersp(funcp);
         }
 
@@ -1282,6 +1283,23 @@ class LinkParseVisitor final : public VNVisitor {
             varp->direction(VDirection::INPUT);
             funcp->addStmtsp(varp);
         }
+    }
+
+    bool dropDeprecatedCoverageOption(AstCgOptionAssign* const nodep) {
+        if (!(nodep->optType() == VCoverOptionType::CROSS_AUTO_BIN_MAX)) return false;
+        cleanFileline(nodep);
+        nodep->v3warn(NONSTD, "Coverage option 'option."
+                                  << nodep->optType().ascii()
+                                  << "' is deprecated and ignored; it was removed from the "
+                                     "IEEE LRM because it was poorly defined.");
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        return true;
+    }
+
+    void visit(AstCgOptionAssign* nodep) override {
+        if (dropDeprecatedCoverageOption(nodep)) return;
+        cleanFileline(nodep);
+        iterateChildren(nodep);
     }
 
     void visit(AstCovergroup* nodep) override {
@@ -1400,10 +1418,11 @@ class LinkParseVisitor final : public VNVisitor {
         for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
+                if (dropDeprecatedCoverageOption(optp)) continue;
                 optp->unlinkFrBack();
-                if (optp->optionType() == VCoverOptionType::AT_LEAST
-                    || optp->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
-                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optionType(),
+                if (optp->optType() == VCoverOptionType::AT_LEAST
+                    || optp->optType() == VCoverOptionType::AUTO_BIN_MAX) {
+                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optType(),
                                                           optp->valuep()->cloneTree(false)});
                 } else {
                     optp->v3warn(COVERIGN,
@@ -1415,17 +1434,57 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstCoverBinsof* nodep) override {
+        cleanFileline(nodep);
+        AstCoverpointRef* const refp = nodep->pointp();
+        const AstParseRef* pointp = VN_CAST(refp->exprp(), ParseRef);
+        const AstParseRef* binp = nullptr;
+        const AstDot* const dotp = VN_CAST(refp->exprp(), Dot);
+        if (dotp) {
+            pointp = VN_CAST(dotp->lhsp(), ParseRef);
+            binp = VN_CAST(dotp->rhsp(), ParseRef);
+        }
+        if (!pointp || (dotp && !binp)) {
+            nodep->v3warn(COVERIGN, "Unsupported: 'binsof' in coverage select expression");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        // These names belong to the coverage namespace, not the sampled variables.
+        if (binp) nodep->name(binp->name());
+        refp->replaceWith(new AstCoverpointRef{pointp->fileline(), pointp->name()});
+        VL_DO_DANGLING(pushDeletep(refp), refp);
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverCrossBin* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        if (!nodep->selectp()) {
+            nodep->v3warn(COVERIGN, "Unsupported: explicit coverage cross bins");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        }
+    }
+
+    void visit(AstCoverCrossSelect* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        if (!nodep->lhsp()
+            || !nodep->rhsp()) {  // Due to earlier Unsupported errors dropping only one operand
+                                  // would silently change the selected set.
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        }
+    }
+
     void visit(AstCoverCross* nodep) override {
         cleanFileline(nodep);
-        // Distribute the parse-time raw cross_body list (rawBodyp, op3) into the
-        // typed optionsp slot.  The grammar produces AstCgOptionAssign nodes for
-        // option.* items; convert them to AstCoverOption exactly as visit(AstCoverpoint*)
-        // does.  Other items (functions, unsupported bin selectors) are discarded.
-        for (AstNode *itemp = nodep->rawBodyp(), *nextp; itemp; itemp = nextp) {
+        // Move options out of the mixed parse-time body, leaving only cross bins.
+        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
-            itemp->unlinkFrBack();
+            if (VN_IS(itemp, CoverCrossBin)) continue;
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
-            const VCoverOptionType optType = optp->optionType();
+            if (dropDeprecatedCoverageOption(optp)) continue;
+            itemp->unlinkFrBack();
+            const VCoverOptionType optType = optp->optType();
             optp->v3warn(COVERIGN,
                          "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             // Always preserve the option node so V3Coverage can track its source line
