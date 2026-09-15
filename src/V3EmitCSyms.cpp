@@ -1127,43 +1127,79 @@ void EmitCSyms::emitSymImpPreamble() {
 
 void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
-    puts("\n// VPI VARIABLE/SCOPE TABLES\n");
-    // offsetof on the (non-standard-layout) generated module/Syms classes is well
-    // defined on all supported compilers but warns; suppress just here.
-    puts("#if defined(__GNUC__)\n");
-    puts("# pragma GCC diagnostic push\n");
-    puts("# pragma GCC diagnostic ignored \"-Winvalid-offsetof\"\n");
-    puts("#endif\n");
-    for (const auto& kv : m_varTables) {
-        puts("extern const VlVarTableEntry " + kv.first + "[] = {\n");
-        for (const std::string& row : kv.second) {
-            ofp()->putsNoTracking("    ");
-            ofp()->putsNoTracking(row);
-            ofp()->putsNoTracking(",\n");
-        }
-        puts("};\n");
+
+    struct TableInfo final {
+        std::string typeName;
+        std::string tableName;
+        std::reference_wrapper<const std::vector<std::string>> rows;
+
+        TableInfo(std::string typeName, std::string tableName, const std::vector<std::string> &rows)
+          : typeName(std::move(typeName)), tableName(std::move(tableName)), rows(std::cref(rows)) {}
+    };
+
+    std::vector<TableInfo> tables;
+
+    for (const auto &kv : m_varTables) {
+        tables.emplace_back("VlVarTableEntry", kv.first, kv.second);
     }
     if (!m_scopeTableRows.empty()) {
-        puts("extern const VlScopeTableEntry " + m_scopeTableName + "[] = {\n");
-        for (const std::string& row : m_scopeTableRows) {
-            ofp()->putsNoTracking("    ");
-            ofp()->putsNoTracking(row);
-            ofp()->putsNoTracking(",\n");
-        }
-        puts("};\n");
+        tables.emplace_back("VlScopeTableEntry", m_scopeTableName, m_scopeTableRows);
     }
     if (!m_ifaceRefTableRows.empty()) {
-        puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[] = {\n");
-        for (const std::string& row : m_ifaceRefTableRows) {
-            ofp()->putsNoTracking("    ");
-            ofp()->putsNoTracking(row);
-            ofp()->putsNoTracking(",\n");
-        }
-        puts("};\n");
+        tables.emplace_back("VlIfaceRefTableEntry", m_ifaceRefTableName, m_ifaceRefTableRows);
     }
-    puts("#if defined(__GNUC__)\n");
-    puts("# pragma GCC diagnostic pop\n");
-    puts("#endif\n");
+
+    constexpr static size_t maxCost = 10000;
+
+    size_t totalCost = 0;
+    for (const auto &table : tables) {
+        totalCost += table.rows.get().size();
+    }
+    const bool allInSingleFile = totalCost <= maxCost;
+
+    size_t i = 0;
+    size_t nFile = 0;
+    while (i < tables.size()) {
+        if (!allInSingleFile) {
+            const std::string funcName = symClassName() + "__tables__" + std::to_string(nFile++);
+            openNewOutputSourceFile(funcName, true, true, "Variable/scope tables");
+            puts("\n");
+
+            // Includes
+            puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
+            puts("\n");
+        }
+
+        puts("\n// VPI VARIABLE/SCOPE TABLES\n");
+        // offsetof on the (non-standard-layout) generated module/Syms classes is well
+        // defined on all supported compilers but warns; suppress just here.
+        puts("#if defined(__GNUC__)\n");
+        puts("# pragma GCC diagnostic push\n");
+        puts("# pragma GCC diagnostic ignored \"-Winvalid-offsetof\"\n");
+        puts("#endif\n");
+
+        totalCost = 0;
+        for (; i < tables.size() && totalCost <= maxCost; i++) {
+            auto &table = tables[i];
+            puts("const " + table.typeName + " " + table.tableName + "[] = {\n");
+            for (const std::string &row : table.rows.get()) {
+                puts("    ");
+                puts(row);
+                puts(",\n");
+            }
+            puts("};\n");
+
+            totalCost += table.rows.get().size();
+        }
+
+        puts("#if defined(__GNUC__)\n");
+        puts("# pragma GCC diagnostic pop\n");
+        puts("#endif\n");
+
+        if (!allInSingleFile) closeOutputFile();
+        UASSERT(!allInSingleFile || i == tables.size(),
+                "expected single table file, but wrote " << i << " of " << tables.size() << " tables");
+    }
 }
 
 void EmitCSyms::emitScopeHier(std::vector<std::string>& stmts, bool destroy) {
