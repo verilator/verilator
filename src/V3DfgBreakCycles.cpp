@@ -253,7 +253,7 @@ class TraceDriver final : public DfgVisitor {
         // (see RETURN_RESULT_TAIL). Chains of such vertices can be tens of thousands of
         // vertices long in large designs (e.g.: a wide concatenation), so resolve them
         // in this loop instead of by recursion, which would overflow the C++ stack.
-        // 'pendingps' holds the cache entries of the vertices on the current chain. They
+        // 'm_pendingps' holds the cache entries of the vertices on the current chain. They
         // all yield the same result, which is filled in when the chain is resolved.
         // Note: references into 'm_cache' are stable across the insertions below.
         DfgVertex* const startVtxp = vtxp;
