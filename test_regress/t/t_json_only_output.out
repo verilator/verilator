@@ -2,7 +2,7 @@
  "modulesp": [
   {"type":"MODULE","name":"m","addr":"(F)","loc":"d,7:8,7:9","origName":"m","verilogName":"m","level":1,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
-    {"type":"VAR","name":"clk","addr":"(G)","loc":"d,8:11,8:14","dtypep":"(H)","origName":"clk","verilogName":"clk","isPrimaryIO":true,"direction":"INPUT","declDirection":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"}
+    {"type":"VAR","name":"clk","addr":"(G)","loc":"d,8:11,8:14","dtypep":"(H)","tag":"foo_op","origName":"clk","verilogName":"clk","isPrimaryIO":true,"direction":"INPUT","declDirection":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"}
   ]},
   {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","verilogName":"\\$unit ","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"}
 ],

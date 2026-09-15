@@ -294,6 +294,7 @@ private:
     VOptionBool m_schedZeroDelay;  // main switch: --sched-zero-delay
     bool m_stdPackage = true;       // main switch: --std-package
     bool m_stdWaiver = true;        // main switch: --std-waiver
+    bool m_svaPreserve = false;     // main switch: --sva-preserve
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
     bool m_statsVars = false;       // main switch: --stats-vars
@@ -331,6 +332,7 @@ private:
     int         m_inlineMult = 2000;   // main switch: --inline-mult
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
     bool        m_jsonEditNums = true; // main switch: --no-json-edit-nums
+    bool        m_jsonFullTables = false; // main switch: --json-full-tables
     bool        m_jsonIds = true; // main switch: --no-json-ids
     int         m_localizeMaxSize = 1024;  // main switch: --localize-max-size
     VOptionBool m_makeDepend;  // main switch: -MMD
@@ -367,6 +369,7 @@ private:
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
     int         m_compLimitParens = 240;  // compiler selection; number of nested parens
 
+    string      m_astPreCodegen;  // main switch: --ast-pre-codegen
     string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
     string      m_diagnosticsSarifOutput;  // main switch: --diagnostics-sarif-output
     string      m_exeName;      // main switch: -o {name}
@@ -405,6 +408,7 @@ private:
     bool m_fConstBitOpTree;  // main switch: -fno-const-bit-op-tree constant bit op tree
     bool m_fConstEager = true;  // main switch: -fno-const-eagerly run V3Const during passes
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
+    bool m_fDelayed = true;  // main switch: -fno-delayed: nonblocking assignment lowering
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
     bool m_fDfgPushDownSels = true; // main switch: -fno-dfg-push-down-sels
     bool m_fDfg;         // main switch: -fno-dfg
@@ -509,12 +513,14 @@ public:
     bool statsVars() const { return m_statsVars; }
     bool stdPackage() const { return m_stdPackage; }
     bool stdWaiver() const { return m_stdWaiver; }
+    bool svaPreserve() const { return m_svaPreserve; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool assertCase() const { return m_assertCase; }
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
     bool build() const { return m_build; }
+    string astPreCodegen() const { return m_astPreCodegen; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
     bool context() const VL_MT_SAFE { return m_context; }
@@ -635,6 +641,7 @@ public:
     int instrCountDpi() const { return m_instrCountDpi; }
     int localizeMaxSize() const { return m_localizeMaxSize; }
     bool jsonEditNums() const { return m_jsonEditNums; }
+    bool jsonFullTables() const { return m_jsonFullTables; }
     bool jsonIds() const { return m_jsonIds; }
     VOptionBool makeDepend() const { return m_makeDepend; }
     int maxNumWidth() const { return m_maxNumWidth; }
@@ -743,6 +750,7 @@ public:
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
     bool fConstEager() const { return m_fConstEager; }
     bool fDedupe() const { return m_fDedupe; }
+    bool fDelayed() const { return m_fDelayed; }
     bool fDfg() const { return m_fDfg; }
     bool fDfgPeephole() const { return m_fDfgPeephole; }
     bool fDfgPushDownSels() const { return m_fDfgPushDownSels; }
