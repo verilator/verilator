@@ -1,0 +1,28 @@
+%Warning-CASTFOURSTATE: t/t_fourstate_format.v:14:20: Unsupported: Implicitly casting to two-state logic
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest cast to two-state logic explicitly
+   14 |     $write("%d\n", v);   
+      |                    ^
+                        ... For warning description see https://verilator.org/warn/CASTFOURSTATE?v=latest
+                        ... Use "/* verilator lint_off CASTFOURSTATE */" and lint_on around source to disable this message.
+%Warning-CASTFOURSTATE: t/t_fourstate_format.v:16:20: Unsupported: Implicitly casting to two-state logic
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest cast to two-state logic explicitly
+   16 |     $write("%d\n", v);
+      |                    ^
+%Warning-CASTFOURSTATE: t/t_fourstate_format.v:18:20: Unsupported: Implicitly casting to two-state logic
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest cast to two-state logic explicitly
+   18 |     $write("%d\n", v);
+      |                    ^
+%Warning-CASTFOURSTATE: t/t_fourstate_format.v:20:20: Unsupported: Implicitly casting to two-state logic
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest cast to two-state logic explicitly
+   20 |     $write("%d\n", v);
+      |                    ^
+%Warning-CASTFOURSTATE: t/t_fourstate_format.v:21:20: Unsupported: Implicitly casting to two-state logic
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest cast to two-state logic explicitly
+   21 |     $write("%d\n", foo(1, 2));
+      |                    ^~~
+%Error: Exiting due to
