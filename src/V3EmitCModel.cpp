@@ -18,6 +18,7 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3Global.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
