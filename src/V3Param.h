@@ -21,6 +21,8 @@
 #include "verilatedos.h"
 
 class AstNetlist;
+class AstNode;
+class AstPin;
 
 //============================================================================
 
@@ -28,6 +30,7 @@ class V3Param final {
 public:
     static void param(AstNetlist* rootp) VL_MT_DISABLED;
     static void finalizeDeferredParams(AstNetlist* rootp) VL_MT_DISABLED;
+    static void substituteParams(AstNode* nodep, const AstPin* pinsp) VL_MT_DISABLED;
 };
 
 #endif  // Guard
