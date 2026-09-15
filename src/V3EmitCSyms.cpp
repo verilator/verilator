@@ -1137,13 +1137,13 @@ void EmitCSyms::emitVarTables() {
     std::vector<TableInfo> tables;
 
     for (const auto &kv : m_varTables) {
-        tables.emplace_back("VlVarTableEntry", kv.first, kv.second);
+        tables.emplace_back("VlVarTableEntry", kv.first, std::cref(kv.second));
     }
     if (!m_scopeTableRows.empty()) {
-        tables.emplace_back("VlScopeTableEntry", m_scopeTableName, m_scopeTableRows);
+        tables.emplace_back("VlScopeTableEntry", m_scopeTableName, std::cref(m_scopeTableRows));
     }
     if (!m_ifaceRefTableRows.empty()) {
-        tables.emplace_back("VlIfaceRefTableEntry", m_ifaceRefTableName, m_ifaceRefTableRows);
+        tables.emplace_back("VlIfaceRefTableEntry", m_ifaceRefTableName, std::cref(m_ifaceRefTableRows));
     }
 
     constexpr static size_t maxCost = 10000;
