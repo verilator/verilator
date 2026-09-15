@@ -304,11 +304,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     int argc = 0;
     if (needsScope) ++argc;
     if (needsTimescale) ++argc;
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
-        ++argc;
-        const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
-        if (fargp && fargp->formatAttr().isEnum()) ++argc;  // Additional name argument
-    }
+    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) ++argc;
     ofp()->puts("," + std::to_string(argc));
 
     if (needsScope) {
@@ -349,9 +345,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         if (formatAttr.isSigned() || formatAttr.isUnsigned() || formatAttr.isEnum())
             puts("," + cvtToStr(subargp->widthMin()));
         const bool addrof = isScan || formatAttr.isString() || formatAttr.isComplex();
-        const bool wideEnum = formatAttr.isEnum() && subargp->isWide();
         puts(",");
-        if (wideEnum) puts("static_cast<const EData*>(");
         if (addrof) puts("&(");
         if (VN_IS(subargp, StreamR))
             emitStreamR(
@@ -360,12 +354,6 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         else { iterateConst(subargp); }
         if (addrof) puts(")");
         if (!addrof) emitDatap(argp);
-        if (wideEnum) puts(")");
-        if (formatAttr.isEnum()) {
-            puts(", '"s + VFormatAttr{VFormatAttr::STRING}.ascii() + "', &(");
-            iterateConst(fargp->namep());
-            puts(")");
-        }
         ofp()->indentDec();
     }
 

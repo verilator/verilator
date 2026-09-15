@@ -1180,28 +1180,23 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 if (fmt != 'p' && fmt != 'x') fmt = 's';  // Override
             } else if (formatAttr == VL_VFORMATATTR_ENUM
                        || formatAttr == VL_VFORMATATTR_ENUM_SIGNED) {
+                // Always <= VL_QUADSIZE; emit uses non-ENUM format for wider enums
                 const int numericAttr = formatAttr == VL_VFORMATATTR_ENUM_SIGNED
                                             ? VL_VFORMATATTR_SIGNED
                                             : VL_VFORMATATTR_UNSIGNED;
                 lbits = va_arg(ap, int);
-                if (lbits <= VL_QUADSIZE) {
-                    ld = VL_VA_ARG_Q_(ap, lbits);
-                    strwide.resize(2);
-                    WDataOutP strwidep = WDataOutP::external(strwide.data());
-                    VL_SET_WQ(strwidep, ld);
-                    lwp = strwidep;
-                } else {
-                    lwp = WDataInP::external(va_arg(ap, const EData*));
-                    ld = VL_SET_QW(lwp);
-                }
+                ld = VL_VA_ARG_Q_(ap, lbits);
+                strwide.resize(2);
+                WDataOutP strwidep = WDataOutP::external(strwide.data());
+                VL_SET_WQ(strwidep, ld);
+                lwp = strwidep;
                 lsb = lbits - 1;
                 ++argn;  // Enum value is followed by the generated name string argument
                 static_cast<void>(va_arg(ap, int));  // VL_VFORMATATTR_STRING
                 enump = va_arg(ap, std::string*);
-                if (fmt != 'p' && fmt != 's') {
-                    formatAttr = numericAttr;
-                } else if (enump && !enump->empty()) {
+                if (enump && !enump->empty()) {
                     formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
+                    if (fmt == 'd') formatAttr = numericAttr;
                     thingp = const_cast<std::string*>(enump);
                 } else if (fmt == 'p' && widthSet && width == 0) {
                     output += "'h";

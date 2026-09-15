@@ -282,11 +282,6 @@ class CleanVisitor final : public VNVisitor {
         iterateChildren(nodep);
         ensureClean(nodep->condp());
     }
-    void visit(AstSFormatArg* nodep) override {
-        iterateChildren(nodep);
-        ensureCleanAndNext(nodep->exprp());
-        setClean(nodep, true);
-    }
     void visit(AstSFormatF* nodep) override {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->exprsp());
