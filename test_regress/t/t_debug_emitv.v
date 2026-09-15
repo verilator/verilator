@@ -96,6 +96,7 @@ module t (/*AUTOARG*/
     if ($test$plusargs("HELLO")) $display("Hello argument found.");
     if (Pkg::FOO == 0) $write("");
     if (ZERO == 0) $write("");
+    $display("%p", e_t'(in));
     if ($value$plusargs("TEST=%d", i1))
       $display("value was %d", i1);
     else
