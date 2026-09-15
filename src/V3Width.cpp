@@ -6735,36 +6735,28 @@ class WidthVisitor final : public VNVisitor {
             // Need to record formatAttr's at elaboration time, as later optimizations
             // may change an argument's data type. Plus need them for runtime formats
             VFormatAttr formatAttr = VFormatAttr::UNSIGNED;
-            const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
+            AstNodeDType* const dtypep = argp->dtypep()->skipRefp();
             if (dtypep->isDouble()) {
                 formatAttr = VFormatAttr::DOUBLE;
             } else if (dtypep->isString()) {
                 formatAttr = VFormatAttr::STRING;
             } else if (isFormatNonNumericArg(dtypep)) {
-                const AstNodeExpr* formatTypeArgp = argp;
-                if (const AstCMethodHard* const cmethp = VN_CAST(formatTypeArgp, CMethodHard)) {
-                    if (cmethp->method() == VCMethod::ARRAY_AT) formatTypeArgp = cmethp->fromp();
-                } else if (const AstArraySel* const arselp = VN_CAST(formatTypeArgp, ArraySel)) {
-                    formatTypeArgp = arselp->fromp();
-                }
-                if (const AstVarRef* const varRefp = VN_CAST(formatTypeArgp, VarRef)) {
-                    if (AstClassRefDType* const classRefp
-                        = VN_CAST(varRefp->dtypep(), ClassRefDType)) {
-                        if (classRefp->classp()) {
-                            classRefp->classp()->markPrintedFrom();
+                if (AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
+                    if (classRefp->classp()) {
+                        classRefp->classp()->markPrintedFrom();
+                        v3Global.hasPrintedObjects(true);
+                    }
+                } else {
+                    // Class handles inside containers print type names, not their members.
+                    AstNodeDType* nodeDtypep = dtypep;
+                    while (nodeDtypep) {
+                        nodeDtypep = nodeDtypep->skipRefp();
+                        if (AstNodeUOrStructDType* const uOrStructDTypep
+                            = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
+                            uOrStructDTypep->setEmitToString();
                             v3Global.hasPrintedObjects(true);
                         }
-                    } else {
-                        AstNodeDType* nodeDtypep = varRefp->dtypep();
-                        while (nodeDtypep && nodeDtypep->subDTypep()
-                               && nodeDtypep->subDTypep()->skipRefp()) {
-                            nodeDtypep = nodeDtypep->subDTypep()->skipRefp();
-                            if (AstNodeUOrStructDType* const uOrStructDTypep
-                                = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
-                                uOrStructDTypep->setEmitToString();
-                                v3Global.hasPrintedObjects(true);
-                            }
-                        }
+                        nodeDtypep = nodeDtypep->subDTypep();
                     }
                 }
                 AstNodeExpr* const newp = new AstToStringN{argp->fileline(), argp};
