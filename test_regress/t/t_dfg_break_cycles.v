@@ -248,6 +248,17 @@ module t (
   `signal(ARRAY_3, 3); // UNOPTFLAT
   assign ARRAY_3 = array_3[0];
 
+  logic [6:0] array_default[3];  // UNOPTFLAT
+  logic [6:0] array_default_in;
+  assign array_default[1] = rand_a[6:0];
+  always @* begin
+    array_default_in = array_default[1];
+    array_default[0] = rand_b[6:0] ^ array_default_in;
+    array_default[2] = array_default[1];
+  end
+  `signal(ARRAY_DEFAULT, 21);
+  assign ARRAY_DEFAULT = {array_default[2], array_default[1], array_default[0]};
+
   `signal(ADD_A, 8); // UNOPTFLAT
   `signal(ADD_B, 8);
   `signal(ADD_C, 8);
