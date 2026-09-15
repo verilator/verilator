@@ -285,6 +285,19 @@ class PremitVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstWriteMem* nodep) override {
+        // Task lowering and scheduling put every memory dump inside a C++ function.
+        UASSERT_OBJ(m_cfuncp, nodep, "Memory dump not under CFunc");
+        START_STATEMENT_OR_RETURN(nodep);
+        iterateChildren(nodep);
+        // Memory dumps take an address, so force-aware reads need stable storage.
+        // Keep temporaries created here or while visiting a wide memory expression.
+        if (const AstVarRef* const refp = VN_CAST(nodep->memp(), VarRef)) {
+            refp->varp()->noSubst(true);
+        } else {
+            createTemp(nodep->memp())->noSubst(true);
+        }
+    }
     void visit(AstNodeStmt* nodep) override {
         START_STATEMENT_OR_RETURN(nodep);
         iterateChildren(nodep);
