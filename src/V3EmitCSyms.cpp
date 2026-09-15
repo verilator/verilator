@@ -1128,7 +1128,7 @@ void EmitCSyms::emitSymImpPreamble() {
 void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
 
-    struct TableInfo {
+    struct TableInfo final {
         std::string typeName;
         std::string tableName;
         std::reference_wrapper<const std::vector<std::string>> rows;
