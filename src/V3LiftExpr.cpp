@@ -238,8 +238,14 @@ class LiftExprVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_doNotLiftp);
-        // Do not lift the RHS if this is already a simple assignment to a variable
-        m_doNotLiftp = VN_IS(nodep->lhsp(), NodeVarRef) ? nodep->rhsp() : nullptr;
+        // Do not lift the RHS if this is already a simple assignment to a variable, nor of a
+        // force statement: V3Task lifts a function call out of a force right-hand side into a
+        // combinational block that re-evaluates it, so a call lifted here instead would be
+        // captured once and never track its operands (true whatever the force target's shape,
+        // where a non-variable target such as an unpacked-array element would otherwise lift)
+        m_doNotLiftp = (VN_IS(nodep->lhsp(), NodeVarRef) || VN_IS(nodep, AssignForce))
+                           ? nodep->rhsp()
+                           : nullptr;
         if (AstNode* const newStmtps = lift(nodep->rhsp())) {
             nodep->addHereThisAsNext(newStmtps);
         }
