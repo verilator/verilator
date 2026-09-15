@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_class_scope_chain_alias_bad.v:38:6: Unsupported: Multiple '::' package/class reference
+   38 |   Q::AliasPC::inner::u e;
+      |      ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
