@@ -9358,6 +9358,10 @@ class WidthVisitor final : public VNVisitor {
                                              << " bits.");
                 }
                 VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
+            } else if ((VN_IS(parentp, LogAnd) || VN_IS(parentp, LogOr))
+                       && underp->width() != 1) {
+                // V3LiftExpr merges the operands of these into one 1 bit temporary
+                VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);
             }
         }
     }
