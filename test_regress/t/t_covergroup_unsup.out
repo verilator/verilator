@@ -105,14 +105,14 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:173:50: Unsupported: 'with' in coverage select expression
   173 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
       |                                                  ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:176:7: Unsupported: explicit coverage cross bins
-  176 |       ignore_bins ib_cross = binsof(a);
-      |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:177:7: Unsupported: explicit coverage cross bins
-  177 |       illegal_bins lib_cross = binsof(a);
-      |       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_covergroup_unsup.v:202:5: Unsupported: covergroup inheritance (extends)
-  202 |     covergroup extends cg_empty;
+%Warning-COVERIGN: t/t_covergroup_unsup.v:175:40: Unsupported: 'with' in coverage select expression
+  175 |       ignore_bins ib_cross = binsof(a) with (a);
+      |                                        ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:176:42: Unsupported: 'with' in coverage select expression
+  176 |       illegal_bins lib_cross = binsof(a) with (a);
+      |                                          ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_unsup.v:201:5: Unsupported: covergroup inheritance (extends)
+  201 |     covergroup extends cg_empty;
       |     ^~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

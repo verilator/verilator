@@ -172,9 +172,8 @@ module t (
       bins bin_or_with = binsof(a) || binsof(a) with (a);
       bins bin_and_with = binsof(a) && binsof(a) with (a);
       bins bin_multiple_fields = binsof(a) && binsof(p.inner_packet.field);
-      // explicit cross ignore/illegal bins (unsupported)
-      ignore_bins ib_cross = binsof(a);
-      illegal_bins lib_cross = binsof(a);
+      ignore_bins ib_cross = binsof(a) with (a);
+      illegal_bins lib_cross = binsof(a) with (a);
     }
   endgroup
 
