@@ -188,14 +188,12 @@ class TraceDriver final : public DfgVisitor {
     uint32_t m_msb = 0;  // MSB to extract from the currently visited Vertex
     std::vector<uint32_t> m_idxs;  // Indices to extract from the currently visited Vertex
     std::vector<DfgVertex**> m_pendingps;  // Pending pass-through cache entries across trace calls
-    // Result of tracing the currently visited Vertex. Use SET_RESULT below!
+    // Result of tracing the currently visited Vertex. Use RETURN_RESULT below!
     DfgVertex* m_resp = nullptr;
     // Set instead of 'm_resp' when the result of tracing the currently visited Vertex is
-    // exactly the result of tracing 'm_tailp' at [m_tailMsb:m_tailLsb]. 'trace' resolves
-    // these iteratively. Use SET_RESULT_TAIL below!
+    // exactly the result of tracing 'm_tailp' at the updated [m_msb:m_lsb]. 'trace'
+    // resolves these iteratively. Use RETURN_RESULT_TAIL below!
     DfgVertex* m_tailp = nullptr;
-    uint32_t m_tailMsb = 0;  // MSB to extract from 'm_tailp'
-    uint32_t m_tailLsb = 0;  // LSB to extract from 'm_tailp'
     DfgVertex* m_defaultp = nullptr;  // When tracing a variable, this is its 'defaultp', if any
     // Result cache for reusing already traced vertices
     std::unordered_map<CacheKey, DfgVertex*, CacheKey::Hash, CacheKey::Equal> m_cache;
@@ -252,7 +250,7 @@ class TraceDriver final : public DfgVisitor {
     // Trace drivers of the given packed vertex, at the given bit range.
     DfgVertex* trace(DfgVertex* vtxp, uint32_t msb, uint32_t lsb) {
         // Many vertices just pass the traced bit range through to one of their sources
-        // (see SET_RESULT_TAIL). Chains of such vertices can be tens of thousands of
+        // (see RETURN_RESULT_TAIL). Chains of such vertices can be tens of thousands of
         // vertices long in large designs (e.g.: a wide concatenation), so resolve them
         // in this loop instead of by recursion, which would overflow the C++ stack.
         // 'pendingps' holds the cache entries of the vertices on the current chain. They
@@ -308,24 +306,21 @@ class TraceDriver final : public DfgVisitor {
                 VL_RESTORER_CLEAR(m_idxs);
                 VL_RESTORER(m_resp);
                 VL_RESTORER(m_tailp);
-                VL_RESTORER(m_tailMsb);
-                VL_RESTORER(m_tailLsb);
                 m_msb = msb;
                 m_lsb = lsb;
                 m_resp = nullptr;
                 m_tailp = nullptr;
-                m_tailMsb = 0;
-                m_tailLsb = 0;
                 iterate(vtxp);
                 UASSERT_OBJ((m_resp != nullptr) != (m_tailp != nullptr), vtxp,
                             "Expected exactly one trace result");
                 if (m_tailp) {
                     // This vertex just passes the range through, so continue with its
-                    // source. Its cache entry is filled in when the chain is resolved.
+                    // source, at the updated range. Its cache entry is filled in when
+                    // the chain is resolved.
                     m_pendingps.push_back(&respr);
                     vtxp = m_tailp;
-                    msb = m_tailMsb;
-                    lsb = m_tailLsb;
+                    msb = m_msb;
+                    lsb = m_lsb;
                     continue;
                 }
                 respr = m_resp;
@@ -420,7 +415,7 @@ class TraceDriver final : public DfgVisitor {
         return resp;
     }
 
-    // Use this macro to set the result in 'visit' methods. This also emits
+    // Use this macro to return the result from 'visit' methods. This also emits
     // a line to m_lineCoverageFile for testing.
     // TODO: Use C++20 std::source_location instead of a macro
 #ifdef VL_DEBUG
@@ -434,23 +429,30 @@ class TraceDriver final : public DfgVisitor {
     } while (false)
 #endif
 
-#define SET_RESULT(vtxp) \
+#define RETURN_RESULT(vtxp) \
     do { \
         m_resp = (vtxp); \
         TRACE_RESULT_COVER(); \
+        return; \
     } while (false)
 
     // Use this macro in 'visit' methods when the result is exactly the result of tracing
     // 'srcp' at [smsb:slsb]. 'trace' then continues iteratively instead of recursing, so
     // arbitrarily long chains of such pass-through vertices do not consume C++ stack.
-    // Only use this when no state set up by the visitor (e.g.: 'm_defaultp') has to stay
-    // live while 'srcp' is traced, as the visitor returns before that happens.
-#define SET_RESULT_TAIL(srcp, smsb, slsb) \
+    // Note this overwrites 'm_msb'/'m_lsb', which is fine as the visitor returns
+    // immediately. Only use this when no state set up by the visitor (e.g.: 'm_defaultp')
+    // has to stay live while 'srcp' is traced, as that happens after the visitor returned.
+#define RETURN_RESULT_TAIL(srcp, smsb, slsb) \
     do { \
-        m_tailp = (srcp); \
-        m_tailMsb = (smsb); \
-        m_tailLsb = (slsb); \
+        /* Evaluate all arguments before assigning, as they usually read 'm_msb'/'m_lsb' */ \
+        DfgVertex* const tailp = (srcp); \
+        const uint32_t tailMsb = (smsb); \
+        const uint32_t tailLsb = (slsb); \
+        m_tailp = tailp; \
+        m_msb = tailMsb; \
+        m_lsb = tailLsb; \
         TRACE_RESULT_COVER(); \
+        return; \
     } while (false)
 
     // VISITORS
@@ -473,24 +475,26 @@ class TraceDriver final : public DfgVisitor {
 
         // Look at all the drivers, one might cover the whole range, but also gather all drivers
         bool tryWholeDefault = m_defaultp;
-        const bool done = vtxp->foreachDriver([&](DfgVertex& src, uint32_t lsb) {
+        DfgVertex* coverp = nullptr;  // Driver covering the whole searched range, if any
+        uint32_t coverLsb = 0;  // LSB of the range driven by 'coverp'
+        vtxp->foreachDriver([&](DfgVertex& src, uint32_t lsb) {
             const uint32_t msb = lsb + src.width() - 1;
             drivers.emplace_back(&src, lsb, msb);
             // Check if this driver covers any of the bits, then we can't use whole default
             if (m_msb >= lsb && msb >= m_lsb) tryWholeDefault = false;
             // If it does not cover the whole searched bit range, move on
             if (m_lsb < lsb || msb < m_msb) return false;
-            // Driver covers whole search range, trace that and we are done
-            SET_RESULT_TAIL(&src, m_msb - lsb, m_lsb - lsb);
+            // Driver covers whole search range, we are done gathering
+            coverp = &src;
+            coverLsb = lsb;
             return true;
         });
-        if (done) return;
+
+        // Trace the driver covering the whole searched range, if there is one
+        if (coverp) RETURN_RESULT_TAIL(coverp, m_msb - coverLsb, m_lsb - coverLsb);
 
         // Trace the default driver if no other drivers cover the searched range
-        if (tryWholeDefault) {
-            SET_RESULT_TAIL(m_defaultp, m_msb, m_lsb);
-            return;
-        }
+        if (tryWholeDefault) RETURN_RESULT_TAIL(m_defaultp, m_msb, m_lsb);
 
         // Hard case: We need to combine multiple drivers to produce the searched bit range
 
@@ -536,22 +540,21 @@ class TraceDriver final : public DfgVisitor {
             catp->lhsp(termp);
             resp = catp;
         }
-        SET_RESULT(resp);
+        RETURN_RESULT(resp);
     }
 
     void visit(DfgSpliceArray* vtxp) override {
         // Explicit per-element driver (a UnitArray wrapping the element value)
         if (DfgVertex* const driverp = vtxp->driverAt(m_idxs.back())) {
             // Consume this index, then trace the element value
-            SET_RESULT(tracePopIdx(driverp->as<DfgUnitArray>()->srcp()));
-            return;
+            RETURN_RESULT(tracePopIdx(driverp->as<DfgUnitArray>()->srcp()));
         }
         // TODO: this is unreachable, as syntheis can't create it today.
         // // Element not driven explicitly, so it comes from the default array. Keep the
         // // index pending (the default is the whole array, indexed the same way) and
         // // continue tracing it.
         // UASSERT_OBJ(m_defaultp, vtxp, "Independent array element should have a driver or
-        // default"); SET RESULT(traceSameIdx(m_defaultp));
+        // default"); RETURN RESULT(traceSameIdx(m_defaultp));
     }
 
     void visit(DfgVertexVar* vtxp) override {
@@ -562,7 +565,7 @@ class TraceDriver final : public DfgVisitor {
         UASSERT_OBJ(drvp, vtxp, "Should not have to trace undriven variable");
         // Packed variable: trace the driver. Array variable: continue navigating it at
         // the pending element (both at the same bit range).
-        SET_RESULT(m_idxs.empty() ? trace(drvp, m_msb, m_lsb) : traceSameIdx(drvp));
+        RETURN_RESULT(m_idxs.empty() ? trace(drvp, m_msb, m_lsb) : traceSameIdx(drvp));
     }
 
     void visit(DfgArraySel* vtxp) override {
@@ -570,8 +573,7 @@ class TraceDriver final : public DfgVisitor {
         // structure of 'fromp'. This handles arbitrarily nested (multi-dimensional)
         // arrays, as each nested ArraySel pushes a further index.
         if (const DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
-            SET_RESULT(tracePushIdx(vtxp->fromp(), idxp->toU32()));
-            return;
+            RETURN_RESULT(tracePushIdx(vtxp->fromp(), idxp->toU32()));
         }
 
         // If index is not constant, independence was proven only if the 'fromp' is
@@ -584,13 +586,13 @@ class TraceDriver final : public DfgVisitor {
         DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
         selp->fromp(resp);
         selp->lsb(m_lsb);
-        SET_RESULT(selp);
+        RETURN_RESULT(selp);
     }
 
     void visit(DfgUnitArray* vtxp) override {
         // Single-element array adapter, the pending index must be 0, unwrap the element
         UASSERT_OBJ(m_idxs.back() == 0, vtxp, "UnitArray element index should be 0");
-        SET_RESULT(tracePopIdx(vtxp->srcp()));
+        RETURN_RESULT(tracePopIdx(vtxp->srcp()));
     }
 
     void visit(DfgConcat* vtxp) override {
@@ -598,20 +600,14 @@ class TraceDriver final : public DfgVisitor {
         DfgVertex* const lhsp = vtxp->lhsp();
         const uint32_t rWidth = rhsp->width();
         // If the traced bits are wholly in the RHS
-        if (rWidth > m_msb) {
-            SET_RESULT_TAIL(rhsp, m_msb, m_lsb);
-            return;
-        }
+        if (rWidth > m_msb) RETURN_RESULT_TAIL(rhsp, m_msb, m_lsb);
         // If the traced bits are wholly in the LHS
-        if (m_lsb >= rWidth) {
-            SET_RESULT_TAIL(lhsp, m_msb - rWidth, m_lsb - rWidth);
-            return;
-        }
+        if (m_lsb >= rWidth) RETURN_RESULT_TAIL(lhsp, m_msb - rWidth, m_lsb - rWidth);
         // The traced bit spans both sides, trace both
         DfgConcat* const resp = make<DfgConcat>(vtxp, m_msb - m_lsb + 1);
         resp->rhsp(trace(rhsp, rWidth - 1, m_lsb));
         resp->lhsp(trace(lhsp, m_msb - rWidth, 0));
-        SET_RESULT(resp);
+        RETURN_RESULT(resp);
     }
 
     void visit(DfgRep* vtxp) override {
@@ -624,90 +620,75 @@ class TraceDriver final : public DfgVisitor {
             DfgSel* const resp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
             resp->fromp(repp);
             resp->lsb(m_lsb);
-            SET_RESULT(resp);
-            return;
+            RETURN_RESULT(resp);
         }
         // If the requested bits are within the same repliacted word
         if (m_msb / sWidth == m_lsb / sWidth) {
-            SET_RESULT_TAIL(srcp, m_msb % sWidth, m_lsb % sWidth);
-            return;
+            RETURN_RESULT_TAIL(srcp, m_msb % sWidth, m_lsb % sWidth);
         }
         // The requested bits span two replicated words
         DfgConcat* const resp = make<DfgConcat>(vtxp, m_msb - m_lsb + 1);
         resp->rhsp(trace(srcp, sWidth - 1, m_lsb % sWidth));
         resp->lhsp(trace(srcp, m_msb % sWidth, 0));
-        SET_RESULT(resp);
+        RETURN_RESULT(resp);
     }
 
     void visit(DfgExtend* vtxp) override {
         DfgVertex* const srcp = vtxp->srcp();
         const uint32_t sWidth = srcp->width();
         // If the traced bits are wholly in the input
-        if (sWidth > m_msb) {
-            SET_RESULT_TAIL(srcp, m_msb, m_lsb);
-            return;
-        }
+        if (sWidth > m_msb) RETURN_RESULT_TAIL(srcp, m_msb, m_lsb);
         // If the traced bits are wholly in the extension
-        if (m_lsb >= sWidth) {
-            SET_RESULT(make<DfgConst>(vtxp, m_msb - m_lsb + 1));
-            return;
-        }
+        if (m_lsb >= sWidth) RETURN_RESULT(make<DfgConst>(vtxp, m_msb - m_lsb + 1));
         // The traced bits span both sides
         DfgExtend* const resp = make<DfgExtend>(vtxp, m_msb - m_lsb + 1);
         resp->srcp(trace(srcp, sWidth - 1, m_lsb));
-        SET_RESULT(resp);
+        RETURN_RESULT(resp);
     }
 
     void visit(DfgExtendS* vtxp) override {
         DfgVertex* const srcp = vtxp->srcp();
         const uint32_t sWidth = srcp->width();
         // If the traced bits are wholly in the input
-        if (sWidth > m_msb) {
-            SET_RESULT_TAIL(srcp, m_msb, m_lsb);
-            return;
-        }
+        if (sWidth > m_msb) RETURN_RESULT_TAIL(srcp, m_msb, m_lsb);
         // If the traced bits are wholly in the extension
         if (m_lsb >= sWidth) {
-            if (m_msb == m_lsb) {
-                SET_RESULT_TAIL(srcp, sWidth - 1, sWidth - 1);
-            } else {
-                DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
-                resp->srcp(trace(srcp, sWidth - 1, sWidth - 1));
-                SET_RESULT(resp);
-            }
-            return;
+            if (m_msb == m_lsb) RETURN_RESULT_TAIL(srcp, sWidth - 1, sWidth - 1);
+            DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
+            resp->srcp(trace(srcp, sWidth - 1, sWidth - 1));
+            RETURN_RESULT(resp);
         }
         // The traced bits span both sides
         DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
         resp->srcp(trace(srcp, sWidth - 1, m_lsb));
-        SET_RESULT(resp);
+        RETURN_RESULT(resp);
     }
 
     void visit(DfgSel* vtxp) override {
         const uint32_t lsb = vtxp->lsb();
-        SET_RESULT_TAIL(vtxp->srcp(), m_msb + lsb, m_lsb + lsb);
+        RETURN_RESULT_TAIL(vtxp->srcp(), m_msb + lsb, m_lsb + lsb);
     }
 
     void visit(DfgNot* vtxp) override {
         DfgNot* const resp = make<DfgNot>(vtxp, m_msb - m_lsb + 1);
         resp->srcp(trace(vtxp->srcp(), m_msb, m_lsb));
-        SET_RESULT(resp);
+        RETURN_RESULT(resp);
     }
 
-    void visit(DfgAnd* vtxp) override { SET_RESULT(traceBitwiseBinary(vtxp)); }
-    void visit(DfgOr* vtxp) override { SET_RESULT(traceBitwiseBinary(vtxp)); }
-    void visit(DfgXor* vtxp) override { SET_RESULT(traceBitwiseBinary(vtxp)); }
-    void visit(DfgAdd* vtxp) override { SET_RESULT(traceAddSub(vtxp)); }
-    void visit(DfgSub* vtxp) override { SET_RESULT(traceAddSub(vtxp)); }
-    void visit(DfgRedAnd* vtxp) override { SET_RESULT(traceReduction(vtxp)); }
-    void visit(DfgRedOr* vtxp) override { SET_RESULT(traceReduction(vtxp)); }
-    void visit(DfgRedXor* vtxp) override { SET_RESULT(traceReduction(vtxp)); }
-    void visit(DfgEq* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
-    void visit(DfgNeq* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
-    void visit(DfgLt* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
-    void visit(DfgLte* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
-    void visit(DfgGt* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
-    void visit(DfgGte* vtxp) override { SET_RESULT(traceCmp(vtxp)); }
+    void visit(DfgAnd* vtxp) override { RETURN_RESULT(traceBitwiseBinary(vtxp)); }
+    void visit(DfgOr* vtxp) override { RETURN_RESULT(traceBitwiseBinary(vtxp)); }
+    void visit(DfgXor* vtxp) override { RETURN_RESULT(traceBitwiseBinary(vtxp)); }
+    void visit(DfgAdd* vtxp) override { RETURN_RESULT(traceAddSub(vtxp)); }
+    void visit(DfgSub* vtxp) override { RETURN_RESULT(traceAddSub(vtxp)); }
+    void visit(DfgRedAnd* vtxp) override { RETURN_RESULT(traceReduction(vtxp)); }
+    void visit(DfgRedOr* vtxp) override { RETURN_RESULT(traceReduction(vtxp)); }
+    void visit(DfgRedXor* vtxp) override { RETURN_RESULT(traceReduction(vtxp)); }
+    void visit(DfgEq* vtxp) override { RETURN_RESULT(traceCmp(vtxp)); }
+    void visit(DfgNeq* vtxp) override { RETURN_RESULT(traceCmp(vtxp)); }
+    void visit(DfgLt* vtxp) override { RETURN_RESULT(traceCmp(vtxp)); }
+    void visit(DfgLte* vtxp) override { RETURN_RESULT(traceCmp(vtxp)); }
+    void visit(DfgGt* vtxp) override { RETURN_RESULT(traceCmp(vtxp)); }
+    void visit(DfgGte* vtxp) override { RETURN_RESULT(traceCmp(vtxp)); }
 
     void visit(DfgShiftRS* vtxp) override {
         DfgVertex* const lhsp = vtxp->lhsp();
@@ -717,34 +698,28 @@ class TraceDriver final : public DfgVisitor {
             const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? 0 : vtxp->width() - shiftAmnt;
             // If the traced bits are wholly in the input
             if (lowerWidth > m_msb) {
-                SET_RESULT_TAIL(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt);
-                return;
+                RETURN_RESULT_TAIL(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt);
             }
             // If the traced bits are wholly in the extension
             if (m_lsb >= lowerWidth) {
                 DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
                 resp->srcp(trace(lhsp, lhsp->width() - 1, lhsp->width() - 1));
-                SET_RESULT(resp);
-                return;
+                RETURN_RESULT(resp);
             }
             // The traced bits span both sides
             DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
             resp->srcp(trace(lhsp, lowerWidth - 1 + shiftAmnt, m_lsb + shiftAmnt));
-            SET_RESULT(resp);
-            return;
+            RETURN_RESULT(resp);
         }
 
         DfgShiftRS* const shiftrsp = make<DfgShiftRS>(vtxp, vtxp->lhsp()->width() - m_lsb);
         shiftrsp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
         shiftrsp->lhsp(trace(vtxp->lhsp(), vtxp->lhsp()->width() - 1, m_lsb));
-        if (m_msb == vtxp->lhsp()->width() - 1) {
-            SET_RESULT(shiftrsp);
-            return;
-        }
+        if (m_msb == vtxp->lhsp()->width() - 1) RETURN_RESULT(shiftrsp);
         DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
         selp->fromp(shiftrsp);
         selp->lsb(0);
-        SET_RESULT(selp);
+        RETURN_RESULT(selp);
     }
 
     void visit(DfgShiftR* vtxp) override {
@@ -755,32 +730,24 @@ class TraceDriver final : public DfgVisitor {
             const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? 0 : vtxp->width() - shiftAmnt;
             // If the traced bits are wholly in the input
             if (lowerWidth > m_msb) {
-                SET_RESULT_TAIL(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt);
-                return;
+                RETURN_RESULT_TAIL(lhsp, m_msb + shiftAmnt, m_lsb + shiftAmnt);
             }
             // If the traced bits are wholly in the extension
-            if (m_lsb >= lowerWidth) {
-                SET_RESULT(make<DfgConst>(vtxp, m_msb - m_lsb + 1));
-                return;
-            }
+            if (m_lsb >= lowerWidth) RETURN_RESULT(make<DfgConst>(vtxp, m_msb - m_lsb + 1));
             // The traced bits span both sides
             DfgExtend* const resp = make<DfgExtend>(vtxp, m_msb - m_lsb + 1);
             resp->srcp(trace(lhsp, lowerWidth - 1 + shiftAmnt, m_lsb + shiftAmnt));
-            SET_RESULT(resp);
-            return;
+            RETURN_RESULT(resp);
         }
 
         DfgShiftR* const shiftrp = make<DfgShiftR>(vtxp, vtxp->lhsp()->width() - m_lsb);
         shiftrp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
         shiftrp->lhsp(trace(vtxp->lhsp(), vtxp->lhsp()->width() - 1, m_lsb));
-        if (m_msb == vtxp->lhsp()->width() - 1) {
-            SET_RESULT(shiftrp);
-            return;
-        }
+        if (m_msb == vtxp->lhsp()->width() - 1) RETURN_RESULT(shiftrp);
         DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
         selp->fromp(shiftrp);
         selp->lsb(0);
-        SET_RESULT(selp);
+        RETURN_RESULT(selp);
     }
 
     void visit(DfgShiftL* vtxp) override {
@@ -791,33 +758,25 @@ class TraceDriver final : public DfgVisitor {
             const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? vtxp->width() : shiftAmnt;
             // If the traced bits are wholly in the input
             if (m_lsb >= lowerWidth) {
-                SET_RESULT_TAIL(lhsp, m_msb - shiftAmnt, m_lsb - shiftAmnt);
-                return;
+                RETURN_RESULT_TAIL(lhsp, m_msb - shiftAmnt, m_lsb - shiftAmnt);
             }
             // If the traced bits are wholly in the extension
-            if (lowerWidth > m_msb) {
-                SET_RESULT(make<DfgConst>(vtxp, m_msb - m_lsb + 1));
-                return;
-            }
+            if (lowerWidth > m_msb) RETURN_RESULT(make<DfgConst>(vtxp, m_msb - m_lsb + 1));
             // The traced bits span both sides
             DfgConcat* const resp = make<DfgConcat>(vtxp, m_msb - m_lsb + 1);
             resp->rhsp(make<DfgConst>(vtxp, resp->width() - (m_msb - lowerWidth + 1)));
             resp->lhsp(trace(lhsp, m_msb - shiftAmnt, lowerWidth - shiftAmnt));
-            SET_RESULT(resp);
-            return;
+            RETURN_RESULT(resp);
         }
 
         DfgShiftL* const shiftlp = make<DfgShiftL>(vtxp, m_msb + 1);
         shiftlp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
         shiftlp->lhsp(trace(vtxp->lhsp(), m_msb, 0));
-        if (m_lsb == 0) {
-            SET_RESULT(shiftlp);
-            return;
-        }
+        if (m_lsb == 0) RETURN_RESULT(shiftlp);
         DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
         selp->fromp(shiftlp);
         selp->lsb(m_lsb);
-        SET_RESULT(selp);
+        RETURN_RESULT(selp);
     }
 
     void visit(DfgCond* vtxp) override {
@@ -825,7 +784,7 @@ class TraceDriver final : public DfgVisitor {
         resp->condp(trace(vtxp->condp(), vtxp->condp()->width() - 1, 0));
         resp->thenp(trace(vtxp->thenp(), m_msb, m_lsb));
         resp->elsep(trace(vtxp->elsep(), m_msb, m_lsb));
-        SET_RESULT(resp);
+        RETURN_RESULT(resp);
     }
 
     void visit(DfgMatchMasked* vtxp) override {
@@ -835,12 +794,12 @@ class TraceDriver final : public DfgVisitor {
         DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
         selp->fromp(resp);
         selp->lsb(m_lsb);
-        SET_RESULT(selp);
+        RETURN_RESULT(selp);
     }
 
-#undef SET_RESULT
+#undef RETURN_RESULT
 #undef TRACE_RESULT_COVER
-#undef SET_RESULT_TAIL
+#undef RETURN_RESULT_TAIL
 
 public:
     // CONSTRUCTOR
