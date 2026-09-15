@@ -2404,7 +2404,6 @@ class AstSFormatArg final : public AstNodeExpr {
     // used to pass to (potentially) runtime decoding of format arguments
     // PARENT: SFormatF (or next list of expressions)
     // @astgen op1 := exprp : AstNodeExpr
-    // @astgen op2 := namep : Optional[AstNodeExpr] // Runtime enum name lookup
     VFormatAttr m_formatAttr;  // How to format expression
 
 public:
@@ -2427,7 +2426,6 @@ public:
     bool cleanOut() const override { return true; }
     const char* broken() const override {
         BROKEN_RTN(!VN_IS(backp(), SFormatF) && firstAbovep());  // In list under SFormatF
-        BROKEN_RTN(formatAttr().isEnum() != static_cast<bool>(namep()));
         return nullptr;
     }
     VFormatAttr formatAttr() const { return m_formatAttr; }
