@@ -14,6 +14,7 @@ import vltest_bootstrap
 # must pick up that prefix just as scopes do, as the name is not known until
 # construction.
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 test.top_filename = "t/t_vpi_interface_ref.v"
 test.pli_filename = "t/t_vpi_interface_ref.cpp"
 

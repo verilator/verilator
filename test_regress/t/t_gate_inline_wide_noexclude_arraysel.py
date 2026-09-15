@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 test.lint(verilator_flags2=['--stats', '--expand-limit 5', '-fno-dfg'])
 

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 test.compile(v_flags2=["t/t_dpi_import_c.cpp"], verilator_flags2=["-Wall -Wno-DECLFILENAME"])
 

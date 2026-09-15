@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 # Issue #7780 unstable with --vltmt
 test.scenarios('simulator_st')
+test.fourstate_capable = False
 
 test.compile(verilator_flags2=["--timing"])
 

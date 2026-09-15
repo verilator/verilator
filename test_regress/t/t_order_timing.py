@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.top_filename = "t/t_order.v"
 test.main_time_multiplier = 1e-8 / 1e-9
 

@@ -43,8 +43,12 @@ The main flow of Verilator can be followed by reading the Verilator.cpp
 #. Parameters are resolved, and the design is elaborated.
 
 #. Verilator then performs additional edits and optimizations on the
-   hierarchical design. This includes coverage, assertions, X elimination,
-   inlining, constant propagation, and dead code elimination.
+   hierarchical design. This includes coverage, assertions, inlining,
+   constant propagation, and dead code elimination.
+
+#. Unknown values (x/z) are handled - in two-state mode their are
+   eliminated, in four-state mode they are split into two two-state values
+   which together encodes a four-state value.
 
 #. References in the design are then pseudo-flattened. Each module's
    variables and functions get "Scope" references. A scope reference is an
@@ -1169,6 +1173,157 @@ gets reset, so that it can be reused by subsequent randomization attempts:
    (get-value)
    ...
    (reset)
+
+
+Four-state values
+-----------------
+
+Verilator may work in two and four-state logic mode. First one works by
+changing `x`/`z` values into `0`/`1` - depending on a case and flags
+provided by user. The four-state mode works by splitting four-state values
+into two two-state values which encodes a four-state value. The rest of
+this section will describe how Verilator works in four-state mode.
+
+Four-state values splitting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Four-state values requires two bits to encode them. These are kept on
+corresponding positions of split values. This is made for plenty of reasons
+among them it is worth to mention:
+
+   - easier casting,
+
+   - faster arithmetics operations,
+
+   - similarity to what VPI expects.
+
+Four-state values are split into two two-state values which may be referred
+as:
+
+   - value part/aval
+
+   - xz part/bval/value complement
+
+When a four-state value is stored in a four-state variable this variable is
+split as well (into two-state variables) and a value part variable keeps a
+pointer to its complement and a complement has a flag indicating that this
+variable is a complement.
+
+Four-state values encoding
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Values are encoded the same way as VPI does it:
+
+========= = =
+aval\bval 0 1
+0         0 z
+1         1 x
+========= = =
+
+Therefore, when `bval` is equal to zero, signal has no unknown values and
+`aval` keeps its value in the same way as a two-state signal would.
+
+In general to cast a four-state value into a two-state value (where all
+unknown values will become `0`) the following expression may be applied:
+`aval & ~bval`.
+
+Four-state values detection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In four-state mode not all expressions are treated as four-state ones.
+Whether an expression should be treated as a four-state is decided in a
+`FourstateLogicTypePropagator` in `V3Fourstate.cpp`. This is not decided by
+types propagated by `V3Width` because currently it does not differentiate
+between `bits` and `logics` correctly - which is a key difference in this
+context.
+
+Expressions become a four-state one when it is impossible to trivially
+prove that an expression can be made a two-state.
+
+Examples:
+
+.. code-block:: SystemVerilog
+
+   integer a;
+   int b;
+   int c;
+   integer result = a + b;
+   //   four-state--^   ^
+   //         two-state-|
+   //               a + b
+   //               ^~~~~
+   //    four-state-|
+
+   integer result2 = b / c;
+   //     two-state--^   ^
+   //          two-state-|
+   //                b / c
+   //                ^~~~~
+   //     four-state-| because dividing by `0` is an 'x' and `c` may be `0`
+
+   int result3 = b / 3;
+   // two-state--^   ^
+   //      two-state-|
+   //            b / c
+   //            ^~~~~
+   //  two-state-| because it is trivially proven that rhs is not `0`
+
+Generally it is preferred to make as much expressions as it is possible
+two-state because they are faster.
+
+Four-state expressions handling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Four-state expressions are handled at compile time by transforming it into
+a combination of two-state expressions e.g.:
+
+.. code-block:: SystemVerilog
+
+   integer a;
+   integer b;
+   integer c = a + b;
+
+Will be transformed into:
+
+.. code-block:: SystemVerilog
+
+   integer a;
+   integer a_xz;
+   integer b;
+   integer b_xz;
+   integer c = |(a_xz | b_xz) ? '1 : a + b;
+   integer c_xz = |(a_xz | b_xz) ? '1 : '0;
+
+
+`AstFourstateExpr`
+~~~~~~~~~~~~~~~~~~
+
+`AstFourstateExpr` node keeps two children `valuep` (aval) and `xzp` (bval)
+and has been introduced to be able to fit a four-state value as a child of
+a node that expects an expression and for some reason may not be split
+e.g.: `AstTraceDecl`. This node should be used rarely and only in justified
+cases.
+
+Handling values after split
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Generally, four-state values after being split should be treated normally
+(as two-state values) by the rest of Verilator. When `AstFourstateExpr` is
+occurred it should be just iterated into unless it is somehow meaningful
+for a particular phase.
+
+It is only important to handle variables created as a result of splitting
+carefully. They should be handled together - if one is moved, the other one
+shall be as well; if one is removed, the other one shall be as well. The
+recommended way to handle such cases is to:
+
+   #. Skip complement variables.
+
+   #. When value part variable is occurred make a check on both value and
+   xz part.
+
+   #. If both variables meet a condition then both should be altered and
+   none if any of them does not meet the condition.
 
 
 Coding Conventions

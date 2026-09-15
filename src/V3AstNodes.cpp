@@ -382,21 +382,24 @@ void AstBasicDType::cvtRangeConst() {
 void AstBasicDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " kwd=" << keyword().ascii();
+    if (isShuffledFourstate()) str << "[SHUFFLED4STATE]";
     if (isRanged() && !rangep()) str << " range=[" << left() << ":" << right() << "]";
 }
 void AstBasicDType::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
+    dumpJsonBoolIf(str, "isShuffledFourstate", isShuffledFourstate());
     if (isRanged() && !rangep()) {
         dumpJsonStr(str, "range", std::to_string(left()) + ":" + std::to_string(right()));
     }
     dumpJsonGen(str);
 }
 void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int wantwidthmin,
-                         AstRange* rangep) {
+                         AstRange* rangep, bool isShuffledFourstate) {
     // wantwidth=0 means figure it out, but if a widthmin is >=0
     //    we allow width 0 so that {{0{x}},y} works properly
     // wantwidthmin=-1:  default, use wantwidth if it is non-zero
     m.m_keyword = kwd;
+    m.m_isShuffledFourstate = isShuffledFourstate;
     // Implicitness: // "parameter X" is implicit and sized from initial
     // value, "parameter reg x" not
     if (keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT) {
@@ -2239,7 +2242,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         // We don't print msb()/lsb() as multidim packed would require recursion,
         // and may confuse users as C++ data is stored always with bit 0 used
         const string bitvec = (!bdtypep->isOpaque() && !v3Global.opt.protectIds())
-                                  ? "/*" + cvtToStr(dtypep->width() - 1) + ":0*/"
+                                  ? "/*" + cvtToStr(dtypep->width() - 1) + ":0"
+                                        + (isShuffledFourstate() ? " 4-state" : "") + "*/"
                                   : "";
         if (bdtypep->keyword() == VBasicDTypeKwd::CHARPTR) {
             info.m_type = "const char*";
@@ -2269,6 +2273,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlCovInstHandle";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
+        } else if (dtypep->isWide()) {
+            info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">" + bitvec;
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
             info.m_type = "CData" + bitvec;
         } else if (dtypep->widthMin() <= 16) {
@@ -2277,8 +2283,6 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "IData" + bitvec;
         } else if (dtypep->isQuad()) {
             info.m_type = "QData" + bitvec;
-        } else if (dtypep->isWide()) {
-            info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">" + bitvec;
         }
         // CData, SData, IData, QData or VlWide are packed type.
         const bool packedType = VString::startsWith(info.m_type, "CData")
@@ -3513,6 +3517,7 @@ void AstTraceDecl::dump(std::ostream& str) const {
     if (inDtypeFunc()) str << " [DT]";
     if (codeAssigned()) str << " [code=" << code() << "]";
     if (dtypeCallp()) str << " [dtypeCallp=" << dtypeCallp() << "]";
+    if (dtypeKwd() != VBasicDTypeKwd::UNKNOWN) str << " [dtypeKwd=" << dtypeKwd().ascii() << "]";
     if (showname() != "") str << " showname=" << showname();
     if (arrayRange().ranged()) str << " arr=" << arrayRange().ascii();
     if (bitRange().ranged()) str << " bits=" << bitRange().ascii();
@@ -3526,6 +3531,7 @@ void AstTraceDecl::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "showname", showname());
     dumpJsonStr(str, "declDirection", declDirection().ascii());
     dumpJsonStr(str, "varType", varType().ascii());
+    if (dtypeKwd() != VBasicDTypeKwd::UNKNOWN) dumpJsonStr(str, "dtypeKwd", dtypeKwd().ascii());
     dumpJsonGen(str);
 }
 void AstTraceInc::dump(std::ostream& str) const {
@@ -3594,11 +3600,12 @@ void AstTypeTable::dump(std::ostream& str) const {
     // Note get newline from caller too.
 }
 void AstTypeTable::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
+AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd,
+                                            bool isShuffledFourstate) {
     // Because the detailed map doesn't update m_basicps, check the detailed
     // map for this same node. Also adds this new node to the detailed map
     if (!m_basicps[kwd]) {
-        AstBasicDType basic{fl, kwd};
+        AstBasicDType basic{fl, kwd, VSigning::NOSIGN, isShuffledFourstate};
         m_basicps[kwd] = findCreateSameDType(basic);
     }
     return m_basicps[kwd];
@@ -3612,8 +3619,8 @@ AstConstraintRefDType* AstTypeTable::findConstraintRefDType(FileLine* fl) {
     return m_constraintRefp;
 }
 AstBasicDType* AstTypeTable::findCreateSameDType(AstBasicDType& node) {
-    const VBasicTypeKey key{node.width(), node.widthMin(), node.numeric(), node.keyword(),
-                            node.nrange()};
+    const VBasicTypeKey key{node.width(),   node.widthMin(), node.numeric(),
+                            node.keyword(), node.nrange(),   node.isShuffledFourstate()};
     AstBasicDType*& entryr = m_detailedMap[key];
     if (!entryr) {
         entryr = node.cloneTree(false);
@@ -3632,22 +3639,23 @@ AstEmptyQueueDType* AstTypeTable::findEmptyQueueDType(FileLine* fl) {
 }
 // cppcheck-suppress duplInheritedMember
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
-    const VBasicTypeKey key{nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
-                            nodep->nrange()};
+    const VBasicTypeKey key{nodep->width(),   nodep->widthMin(), nodep->numeric(),
+                            nodep->keyword(), nodep->nrange(),   nodep->isShuffledFourstate()};
     auto pair = m_detailedMap.emplace(key, nodep);
     if (pair.second) nodep->generic(true);
     // No addTypesp; the upper function that called new() is responsible for adding
     return pair.first->second;
 }
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width,
-                                               int widthMin, VSigning numeric) {
-    AstBasicDType basic{fl, kwd, numeric, width, widthMin};
+                                               int widthMin, VSigning numeric,
+                                               bool isShuffledFourstate) {
+    AstBasicDType basic{fl, kwd, numeric, width, widthMin, isShuffledFourstate};
     return findCreateSameDType(basic);
 }
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
                                                const VNumRange& range, int widthMin,
-                                               VSigning numeric) {
-    AstBasicDType basic{fl, kwd, numeric, range, widthMin};
+                                               VSigning numeric, bool isShuffledFourstate) {
+    AstBasicDType basic{fl, kwd, numeric, range, widthMin, isShuffledFourstate};
     return findCreateSameDType(basic);
 }
 AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
@@ -3792,6 +3800,14 @@ void AstUntil::dumpJson(std::ostream& str) const {
 }
 void AstVFile::dump(std::ostream& str) const { Super::dump(str); }
 void AstVFile::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+const char* AstVar::broken() const {
+    BROKEN_RTN(v3Global.fourstateHandled() && dtypep()->isFourstate());
+    BROKEN_RTN(v3Global.fourstateShuffled() && dtypep()->isWide()
+               && (isFourstateComplement()
+                   || name().rfind("__Vxz")  // TODO: make this not a hard coded value
+                          == name().size() - sizeof("__Vxz")));
+    return nullptr;
+}
 string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named = false;
     string arg;
@@ -3958,6 +3974,13 @@ void AstVar::dump(std::ostream& str) const {
     if (ignoreSchedWrite()) str << " [IGNWR]";
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
+    if (isFourstateComplement()) str << " [4STATECOMPL]";
+    if (const AstVar* const complementp = fourstateComplementp()) {
+        str << " [4STATECOMPL@" << nodeAddr(complementp) << "]";
+    }
+    if (fourstateOriginalDTypeKwd() != VBasicDTypeKwd::UNKNOWN) {
+        str << " [orgKwd=" << fourstateOriginalDTypeKwd().ascii() << "]";
+    }
     str << " " << varType();
 }
 void AstVar::dumpJson(std::ostream& str) const {
@@ -4003,6 +4026,13 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, hasUserInit);
     dumpJsonBoolFuncIf(str, ignorePostWrite);
     dumpJsonBoolFuncIf(str, ignoreSchedWrite);
+    dumpJsonBoolFuncIf(str, isFourstateComplement);
+    if (const AstVar* const complementp = fourstateComplementp()) {
+        dumpJsonStr(str, "fourstateComplement", nodeAddr(complementp));
+    }
+    if (fourstateOriginalDTypeKwd() != VBasicDTypeKwd::UNKNOWN) {
+        dumpJsonStr(str, "originalDTypeKeyword", fourstateOriginalDTypeKwd().ascii());
+    }
     if (rand().isRandomizable()) dumpJsonStr(str, "rand", rand().ascii());
     dumpJsonGen(str);
 }

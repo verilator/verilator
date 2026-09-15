@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = "t/t_hier_block_type_param.v"
 
 test.compile(verilator_flags2=["--hierarchical-params-file", "/does-not-exist"],

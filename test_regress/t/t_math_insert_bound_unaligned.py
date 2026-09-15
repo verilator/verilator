@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # Utilizes AddressSanitizer to catch out of bounds writes
 test.compile(verilator_flags2=["-runtime-debug"])

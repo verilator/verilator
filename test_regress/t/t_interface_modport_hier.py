@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 
 # Test hierarchical access through modport interface ports
 # Related to Issue #5941 and #2656

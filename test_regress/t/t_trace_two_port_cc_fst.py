@@ -11,5 +11,6 @@ import vltest_bootstrap
 import trace_two_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 trace_two_common.run(test)

@@ -11,6 +11,7 @@ import vltest_bootstrap
 import coverage_covergroup_common
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 # A sample() reached from combinational logic is deliberately left unordered against what it
 # samples: calling sample() must not make the calling block behave as if sensitive to what the

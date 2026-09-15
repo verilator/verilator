@@ -16,6 +16,7 @@ import time
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 test.top_filename = test.obj_dir + "/t_iface_typedef_scale.sv"
 
 N_TYPEDEFS = 5000
