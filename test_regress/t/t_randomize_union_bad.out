@@ -1,5 +1,6 @@
-%Error: t/t_randomize_union_bad.v:7:9: Unpacked unions shall not be declared as rand or randc. (IEEE 1800-2023 18.4)
-    7 | typedef union {
-      |         ^~~~~
+%Error: t/t_randomize_union_bad.v:13:22: Unsupported: 'rand'/'randc' on an unpacked union (IEEE 1800-2023 18.4: unpacked unions shall not be declared as rand or randc)
+                                       : ... note: In instance 't_randomize_union_bad'
+   13 |   rand UnpackedUnion union_instance;
+      |                      ^~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
