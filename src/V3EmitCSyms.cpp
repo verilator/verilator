@@ -1131,26 +1131,26 @@ void EmitCSyms::emitVarTables() {
     struct TableInfo {
         std::string typeName;
         std::string tableName;
-        std::reference_wrapper<const std::vector<std::string>> rows;
+        const std::vector<std::string> *rows;
     };
 
     std::vector<TableInfo> tables;
 
     for (const auto &kv : m_varTables) {
-        tables.emplace_back("VlVarTableEntry", kv.first, std::cref(kv.second));
+        tables.emplace_back("VlVarTableEntry", kv.first, &kv.second);
     }
     if (!m_scopeTableRows.empty()) {
-        tables.emplace_back("VlScopeTableEntry", m_scopeTableName, std::cref(m_scopeTableRows));
+        tables.emplace_back("VlScopeTableEntry", m_scopeTableName, &m_scopeTableRows);
     }
     if (!m_ifaceRefTableRows.empty()) {
-        tables.emplace_back("VlIfaceRefTableEntry", m_ifaceRefTableName, std::cref(m_ifaceRefTableRows));
+        tables.emplace_back("VlIfaceRefTableEntry", m_ifaceRefTableName, &m_ifaceRefTableRows);
     }
 
     constexpr static size_t maxCost = 10000;
 
     size_t totalCost = 0;
     for (const auto &table : tables) {
-        totalCost += table.rows.get().size();
+        totalCost += table.rows->size();
     }
     const bool allInSingleFile = totalCost <= maxCost;
 
@@ -1179,14 +1179,14 @@ void EmitCSyms::emitVarTables() {
         for (; i < tables.size() && totalCost <= maxCost; i++) {
             auto &table = tables[i];
             puts("const " + table.typeName + " " + table.tableName + "[] = {\n");
-            for (const std::string &row : table.rows.get()) {
+            for (const std::string &row : *table.rows) {
                 puts("    ");
                 puts(row);
                 puts(",\n");
             }
             puts("};\n");
 
-            totalCost += table.rows.get().size();
+            totalCost += table.rows->size();
         }
 
         puts("#if defined(__GNUC__)\n");
