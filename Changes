@@ -28,6 +28,7 @@ Verilator 5.053 devel
 * Support non-overlapped property implications correctly (#8268). [Artur Bieniek, Antmicro Ltd.]
 * Support logic and set operations on binsof (#8306). [Marco Bartoli]
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
+* Optimize recursion depth in DFG circular driver tracing (#8272). [Drew Risinger]
 * Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
 * Optimize redundant vertex cache lookups in DFG peephole (#8283). [Geza Lore, Testorrent USA, Inc.]
 * Optimize DFG vertex iteration callbacks (#8284). [Geza Lore, Testorrent USA, Inc.]
@@ -39,6 +40,8 @@ Verilator 5.053 devel
 * Optimize data-type type chain recursion (#8310). [Geza Lore, Testorrent USA, Inc.]
 * Optimize unnecessary per-vertex allocations in NFA lowering (#8319). [Artur Bieniek, Antmicro Ltd.]
 * Optimize duplicate lookup in NFA property recursion guard (#8321). [Artur Bieniek, Antmicro Ltd.]
+* Optimize NBA assertions by keeping all writers before readers (#8326). [Artur Bieniek, Antmicro Ltd.]
+* Optimize wide four-state constant operations in V3Number (#8333). [CatalpaEel]
 * Fix array slice crash when used as a bare value (#5132) (#8262). [Marco Frank]
 * Fix pattern type matching against nested aggregates (#7304).
 * Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
@@ -54,7 +57,12 @@ Verilator 5.053 devel
 * Fix property and sequence line coverage (#8314). [Andrii, Antmicro Ltd.]
 * Fix wide typed pattern formatting primitives (#8325). [Marco Bartoli]
 * Fix parameterized class nested in a parameterized interface (#8328) (#8329). [Kristof Marien]
-* Fix format of signed enums (#8338). [Marco Bartoli]
+* Fix printing signed enums and wide enum names (#8338). [Marco Bartoli]
+* Fix ignoring cross_auto_bin_max instead of hard error (#8340). [Marco Bartoli]
+* Fix class-qualified self reference to a typedef in a parameterized class (#8348) (#8349). [Dragon-Git]
+* Fix missing implicit net for bufif/notif/nmos/pmos data input (#8353) (#8354). [Mike Murunov]
+* Fix %p format on class members (#8360). [Marco Bartoli]
+* Fix V3InstrCount with recursive functions (#8361) (#8327). [Geza Lore, Testorrent USA, Inc.]
 
 
 Verilator 5.052 2026-09-05
