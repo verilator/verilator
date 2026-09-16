@@ -73,6 +73,13 @@ module t;
       bins b_huge[] = {[0:$]};  // open '[lo:$]' over 16-bit coverpoint exceeds bin limit
     }
   endgroup
+  covergroup cg_nonconst_transition;
+    coverpoint cp_expr {
+      bins bns1 = (1 => size_var);  // Transition values must be constant expr
+      bins bns2 = (size_var => 2);
+      bins bns3 = (size_var => size_var);
+    }
+  endgroup
 
   // Malformed bins on a coverpoint that feeds a *cross*.  The cross path
   // sizes the coverpoint's hit list (computeHitListBound/extractRangeIntervals)
