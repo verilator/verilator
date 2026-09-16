@@ -750,7 +750,7 @@ class AstCMethodHard final : public AstNodeExpr {
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
     // @astgen op3 := withp : Optional[AstWith] // With clause
     VCMethod m_method;  // Which method to call
-    bool m_pure = false;  // Pure optimizable
+    VIsCached m_purity;  // Pure optimizable
     bool m_usePtr = false;  // Use '->' not '.'
 public:
     AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, VCMethod method, AstNodeExpr* pinsp = nullptr)
@@ -758,7 +758,6 @@ public:
         , m_method{method} {
         this->fromp(fromp);
         addPinsp(pinsp);
-        setPurity();
     }
     ASTGEN_MEMBERS_AstCMethodHard;
     void dump(std::ostream& str) const override;
@@ -768,7 +767,10 @@ public:
         const AstCMethodHard* const asamep = VN_DBG_AS(samep, CMethodHard);
         return (m_method == asamep->m_method);
     }
-    bool isPure() override { return m_pure; }
+    bool isPure() override {
+        if (!m_purity.isCached()) m_purity.set(getPurity());
+        return m_purity.get();
+    }
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -779,7 +781,7 @@ public:
     void method(VCMethod value) { m_method = value; }
 
 private:
-    void setPurity();
+    bool getPurity();
 };
 class AstCReset final : public AstNodeExpr {
     // Reset variable at startup
