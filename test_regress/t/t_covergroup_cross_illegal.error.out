@@ -1,0 +1,14 @@
+%Error: t/t_covergroup_cross_illegal.v:26: Illegal cross bin 'forbidden' hit in cross 'cg_iff.illegal_last'.
+-Info: t/t_covergroup_cross_illegal.v:26: Verilog $stop, ignored due to +verilator+error+limit
+%Error: t/t_covergroup_cross_illegal.v:31: Illegal cross bin 'forbidden' hit in cross 'cg_iff.illegal_first'.
+%Error: t/t_covergroup_cross_illegal.v:34: Illegal cross bin 'forbidden_again' hit in cross 'cg_iff.illegal_first'.
+%Error: t/t_covergroup_cross_illegal.v:26: Illegal cross bin 'forbidden' hit in cross 'cg_iff.illegal_last'.
+%Error: t/t_covergroup_cross_illegal.v:31: Illegal cross bin 'forbidden' hit in cross 'cg_iff.illegal_first'.
+%Error: t/t_covergroup_cross_illegal.v:34: Illegal cross bin 'forbidden_again' hit in cross 'cg_iff.illegal_first'.
+%Error: t/t_covergroup_cross_illegal.v:48: Illegal cross bin 'forbidden' hit in cross 'cg_plain.cx'.
+%Error: t/t_covergroup_cross_illegal.v:51: Illegal cross bin 'forbidden' hit in cross 'cg_plain.only_illegal'.
+%Error: t/t_covergroup_cross_illegal.v:78: Illegal cross bin 'forbidden_seq' hit in cross 'cg_multi.guarded'.
+%Error: t/t_covergroup_cross_illegal.v:72: Illegal cross bin 'forbidden' hit in cross 'cg_multi.cx'.
+%Error: t/t_covergroup_cross_illegal.v:72: Illegal cross bin 'forbidden' hit in cross 'cg_multi.cx'.
+%Error: t/t_covergroup_cross_illegal.v:77: Illegal cross bin 'forbidden' hit in cross 'cg_multi.guarded'.
+*-* All Finished *-*

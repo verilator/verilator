@@ -446,6 +446,8 @@ module t (/*AUTOARG*/
       bins either = binsof (cp_x.x0) || binsof (cp_y.y0);
       bins both = binsof (cp_x.x1) && binsof (cp_y.y1) iff (cg_sig[1]);
       bins grouped = (binsof (cp_x.x0) || binsof (cp_y.y0)) && !binsof (cp_x.x1);
+      ignore_bins ignored = binsof (cp_x.x0) iff (cg_sig[0]);
+      illegal_bins forbidden = binsof (cp_y.y1);
     }
   endgroup
 

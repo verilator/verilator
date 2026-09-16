@@ -105,12 +105,12 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:173:50: Unsupported: 'with' in coverage select expression
   173 |       bins bin_and_with = binsof(a) && binsof(a) with (a);
       |                                                  ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:176:7: Unsupported: explicit coverage cross bins
-  176 |       ignore_bins ib_cross = binsof(a);
-      |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:177:7: Unsupported: explicit coverage cross bins
-  177 |       illegal_bins lib_cross = binsof(a);
-      |       ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:175:40: Unsupported: 'with' in coverage select expression
+  175 |       ignore_bins ib_cross = binsof(a) with (a);
+      |                                        ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:176:42: Unsupported: 'with' in coverage select expression
+  176 |       illegal_bins lib_cross = binsof(a) with (a);
+      |                                          ^~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:98:18: Ignoring unsupported coverage cross option: 'comment'
    98 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
       |                  ^~~~~~
@@ -144,6 +144,12 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:174:7: Unsupported: explicit coverage cross bins
   174 |       bins bin_multiple_fields = binsof(a) && binsof(p.inner_packet.field);
       |       ^~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:175:7: Unsupported: explicit coverage cross bins
+  175 |       ignore_bins ib_cross = binsof(a) with (a);
+      |       ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:176:7: Unsupported: explicit coverage cross bins
+  176 |       illegal_bins lib_cross = binsof(a) with (a);
+      |       ^~~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:76:5: Logical operator COVERPOINT 'a' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
                                                 : ... note: In instance 't'
    76 |     coverpoint a iff (b);

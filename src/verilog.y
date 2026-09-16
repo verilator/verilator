@@ -7398,9 +7398,9 @@ cross_body_item<nodep>:  // ==IEEE: cross_body_item
         |       yBINS idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
                         { $$ = new AstCoverCrossBin{$1, *$2, $4, $5}; }
         |       yIGNORE_BINS idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
-                        { $$ = nullptr; BBCOVERIGN($1, "Unsupported: explicit coverage cross bins"); DEL($4, $5); }
+                        { $$ = new AstCoverCrossBin{$1, *$2, $4, $5, VCoverBinsType::BINS_IGNORE}; }
         |       yILLEGAL_BINS idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
-                        { $$ = nullptr; BBCOVERIGN($1, "Unsupported: explicit coverage cross bins"); DEL($4, $5); }
+                        { $$ = new AstCoverCrossBin{$1, *$2, $4, $5, VCoverBinsType::BINS_ILLEGAL}; }
         |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 

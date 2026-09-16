@@ -135,6 +135,14 @@ module t;
       bins missing_bin = binsof(cp_a.missing);
       bins duplicate = binsof(cp_a);
       bins duplicate = binsof(cp_b);
+      ignore_bins duplicate = binsof(cp_a);
+      illegal_bins duplicate = binsof(cp_b);
+      ignore_bins ignored_duplicate = binsof(cp_a);
+      illegal_bins ignored_duplicate = binsof(cp_b);
+      illegal_bins illegal_duplicate = binsof(cp_a);
+      bins illegal_duplicate = binsof(cp_b);
+      ignore_bins missing_ignore = binsof(cp_a.missing);
+      illegal_bins uncrossed_illegal = binsof(cp_other);
       bins nonconstant = binsof(cp_a) intersect {size_var} || binsof(cp_b);
       bins nonconstant_range = binsof(cp_a) intersect {[0:size_var]};
     }

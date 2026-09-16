@@ -1136,16 +1136,26 @@ class AstCoverCrossBin final : public AstNode {
     // @astgen op1 := selectp : Optional[AstNode]  // Null for unsupported selections
     // @astgen op2 := iffp : Optional[AstNodeExpr]
     const string m_name;  // Declared cross bin name
+    // dist-ast-dump-suppress  // Bin kind is shown by verilogKwd() in emitted Verilog.
+    const VCoverBinsType m_binsType;  // Normal, ignore, or illegal bin
 
 public:
-    AstCoverCrossBin(FileLine* fl, const string& name, AstNode* selectp, AstNodeExpr* iffp)
+    AstCoverCrossBin(FileLine* fl, const string& name, AstNode* selectp, AstNodeExpr* iffp,
+                     VCoverBinsType binsType = VCoverBinsType::BINS_USER)
         : ASTGEN_SUPER_CoverCrossBin(fl)
-        , m_name{name} {
+        , m_name{name}
+        , m_binsType{binsType} {
         this->selectp(selectp);
         this->iffp(iffp);
     }
     ASTGEN_MEMBERS_AstCoverCrossBin;
     string name() const override VL_MT_STABLE { return m_name; }
+    string verilogKwd() const override;
+    VCoverBinsType binsType() const { return m_binsType; }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
+        const AstCoverCrossBin* const asamep = VN_DBG_AS(samep, CoverCrossBin);
+        return m_name == asamep->m_name && m_binsType.m_e == asamep->m_binsType.m_e;
+    }  // LCOV_EXCL_STOP
 };
 class AstCoverCrossSelect final : public AstNode {
     // Intersection or union of two cross-bin selections

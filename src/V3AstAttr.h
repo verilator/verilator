@@ -1176,8 +1176,8 @@ public:
         : m_e{_e} {}
     constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
-        static const char* const names[]
-            = {"user", "array", "auto", "ignore", "illegal", "default", "wildcard", "transition"};
+        static const char* const names[] = {"array",        "auto",       "default", "ignore_bins",
+                                            "illegal_bins", "transition", "bins",    "wildcard"};
         return names[m_e];
     }
     // VlCovBinKind enumerator naming the bin's set

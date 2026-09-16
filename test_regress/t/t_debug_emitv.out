@@ -974,6 +974,9 @@ module Vt_debug_emitv_t;
             bins grouped = ((binsof(cp_x.x0) || binsof(
                                                        cp_y.y0))
                              && !binsof(cp_x.x1));
+            ignore_bins ignored = binsof(cp_x.x0) iff (
+                                                       cg_sig[0]);
+            illegal_bins forbidden = binsof(cp_y.y1);
         }
     endfunction
     int signed __Vint;

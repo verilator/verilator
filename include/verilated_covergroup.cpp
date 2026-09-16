@@ -133,8 +133,8 @@ void VlCoverCross::init(const char* hier, uint32_t dims, VlCoverpoint* const* cp
     }
 }
 
-void VlCoverCross::addBin(std::initializer_list<uint64_t> selection, const char* namep,
-                          const char* filep, int line, int col) {
+void VlCoverCross::addBin(VlCovBinKind kind, std::initializer_list<uint64_t> selection,
+                          const char* namep, const char* filep, int line, int col) {
     if (!m_numAutoBins) return;  // An empty product creates no cross bin.
     Explicit& data = *m_explicitp;
     const uint32_t words = m_numAutoBins / 64 + (m_numAutoBins % 64 != 0);
@@ -148,6 +148,8 @@ void VlCoverCross::addBin(std::initializer_list<uint64_t> selection, const char*
     bin.filep = filep;
     bin.line = line;
     bin.col = col;
+    bin.kind = kind;
+    if (kind == VlCovBinKind::KIND_NORMAL) ++data.normalBins;
     uint32_t word = 0;
     for (const uint64_t bits : selection) { data.wordsp[word++].autoExcluded |= bits; }
 }
@@ -204,20 +206,27 @@ void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
     }
 }
 
+void VlCoverCross::incrementBin(Bin& bin) {
+    if (bin.count++ == 0 && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
+    if (VL_UNLIKELY(bin.kind == VlCovBinKind::KIND_ILLEGAL)) {
+        VL_PRINTF_MT("%%Error: %s:%d: Illegal cross bin '%s' hit in cross '%s'.\n", bin.filep,
+                     bin.line, bin.namep, m_hier.c_str());
+        VL_STOP_MT(bin.filep, bin.line, "");
+    }
+}
+
 template <bool T_ApplyIffs>
 void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
     Explicit& data = *m_explicitp;
-    const uint32_t word = idx / 64;
-    const uint64_t bit = uint64_t{1} << (idx % 64);
+    const uint32_t word = idx / VL_QUADSIZE;
+    const uint64_t bit = uint64_t{1} << VL_BITBIT_Q(idx);
     if (!(data.wordsp[word].autoExcluded & bit)) {
         incrementAuto(idx);
         return;
     }
     for (Bin& bin : data.bins) {
         if (T_ApplyIffs && !*binIffs++) continue;
-        if (bin.selectionp[word] & bit) {
-            if (bin.count++ == 0) ++m_numCovered;
-        }
+        if (bin.selectionp[word] & bit) incrementBin(bin);
     }
 }
 
@@ -260,7 +269,7 @@ void VlCoverCross::sampleBins(const bool* binIffs) {
                 }
             }
         }
-        if (matched && bin.count++ == 0) ++m_numCovered;
+        if (matched) incrementBin(bin);
     }
     for (uint32_t i = 0; i < data.numTouchedWords; ++i) {
         data.wordsp[wordsp[i].touchedWord].hitBits = 0;
@@ -372,9 +381,18 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
             Bin& userBin = m_explicitp->bins[i];
             const std::string binLineStr = std::to_string(userBin.line);
             const std::string binColStr = std::to_string(userBin.col);
-            VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page, "filename",
-                            userBin.filep, "lineno", binLineStr.c_str(), "column",
-                            binColStr.c_str(), "bin", bin.c_str(), "cross", "1");
+            if (userBin.kind == VlCovBinKind::KIND_NORMAL) {
+                VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page,
+                                "filename", userBin.filep, "lineno", binLineStr.c_str(), "column",
+                                binColStr.c_str(), "bin", bin.c_str(), "cross", "1");
+            } else {
+                const char* const binType
+                    = userBin.kind == VlCovBinKind::KIND_IGNORE ? "ignore" : "illegal";
+                VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page,
+                                "filename", userBin.filep, "lineno", binLineStr.c_str(), "column",
+                                binColStr.c_str(), "bin", bin.c_str(), "cross", "1", "bin_type",
+                                binType);
+            }
             continue;
         }
         const uint32_t flat = autoIndex(i - explicitCount);
