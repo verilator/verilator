@@ -857,7 +857,7 @@ public:
         FileLine* const flp = originalExprp->fileline();
         AstNodeExpr* const exprp = originalExprp->cloneTreePure(false);
         // Must be an LValue to a static variable
-        VN_AS(exprp->cLValueTargetp(), VarRef)->access(VAccess::READ);
+        VN_AS(exprp->getVAccessTargetRecurse(), VarRef)->access(VAccess::READ);
         return createForceReadCall(varInfo, flp, VCMethod::FORCE_READ_INDEX, exprp, originalExprp,
                                    indexExprp);
     }

@@ -998,7 +998,7 @@ class TaskVisitor final : public VNVisitor {
             vscp->varp()->protect(false);
             portp->protect(false);
             // Add argument to call
-            const VAccess access = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+            const VAccess access = portp->direction().pinAccess();
             callp->add(", ");
             callp->add(new AstVarRef{portp->fileline(), vscp, access});
             return vscp;
@@ -2208,7 +2208,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         } else {  // Defaulting arg
             AstNodeExpr* const valuep = VN_AS(portp->valuep(), NodeExpr);
             if ((portp->isRef() || portp->isConstRef()) && VN_IS(valuep, VarRef)) {
-                const VAccess refAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+                const VAccess refAccess = portp->direction().pinAccess();
                 AstVarRef* const refp = VN_AS(valuep->cloneTree(false), VarRef);
                 refp->access(refAccess);
                 AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(), refp};
@@ -2231,9 +2231,9 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             }
         }
         oldNewVars.emplace(portp, newPortp);
-        const VAccess pinAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
-        AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(),
-                                           new AstVarRef{portp->fileline(), newPortp, pinAccess}};
+        AstArg* const newArgp = new AstArg{
+            portp->fileline(), portp->name(),
+            new AstVarRef{portp->fileline(), newPortp, portp->direction().pinAccess()}};
         newCallp->addArgsp(newArgp);
     }
     // Create wrapper call to original, passing arguments, adding setting of return value

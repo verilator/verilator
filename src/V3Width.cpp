@@ -1134,8 +1134,7 @@ class WidthVisitor final : public VNVisitor {
             }
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
 
-            AstNodeVarRef* lrefp = AstNodeVarRef::varRefLValueRecurse(nodep);
-            const bool isWriteSelect = lrefp && lrefp->access().isWriteOrRW();
+            const bool isWriteSelect = nodep->fromp()->isLValue();
             // Suppress SELRANGE in parameterized template modules where
             // parameter-dependent widths haven't been resolved yet.
             const bool inParameterizedTemplate
@@ -1229,7 +1228,6 @@ class WidthVisitor final : public VNVisitor {
                     }
                     UINFO(1, "    Related node: " << nodep);
                 }
-                if (lrefp) UINFO(9, "    Select extend lrefp " << lrefp);
                 // Extend unless it's a lvalue,
                 // because extending lvalue would lose write access.
                 if (!isWriteSelect) {
@@ -3964,7 +3962,9 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(fromp->deleteTree(), fromp);
                 nodep->dtypep(varp->dtypep());
                 nodep->varp(varp);
-                if (nodep->access().isWriteOrRW()) V3LinkLValue::linkLValueSet(nodep);
+                if (nodep->access().isWriteOrRW()) {
+                    V3LinkLValue::linkLValueSet(nodep, nodep->access());
+                }
                 if (AstIfaceRefDType* const adtypep
                     = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType)) {
                     nodep->varp()->sensIfacep(adtypep->ifacep());
@@ -7651,7 +7651,9 @@ class WidthVisitor final : public VNVisitor {
                     AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
                     relinkHandle.relink(newp);
                 }
-                if (portp->isWritable()) V3LinkLValue::linkLValueSet(pinp);
+                if (portp->isWritable()) {
+                    V3LinkLValue::linkLValueSet(pinp, portp->direction().pinAccess());
+                }
                 if (portp->direction() != VDirection::REF
                     && !(portp->basicp()
                          && portp->basicp()->untyped())  // for properties, handled in V3AssertPre
@@ -7854,9 +7856,8 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstClockingItem* nodep) override {
-        nodep->exprp()->foreach([nodep](AstVarRef* const refp) {
-            refp->access(nodep->direction().isWritable() ? VAccess::WRITE : VAccess::READ);
-        });
+        nodep->exprp()->foreach(
+            [nodep](AstVarRef* const refp) { refp->access(nodep->direction().pinAccess()); });
         userIterateChildren(nodep, WidthVP{SELF, PRELIM}.p());
     }
     void visit(AstWait* nodep) override {
