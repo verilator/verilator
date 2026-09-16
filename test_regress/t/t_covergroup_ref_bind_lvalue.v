@@ -1,13 +1,11 @@
 // DESCRIPTION: Verilator: Test covergroup 'ref' bindings where no handle is a plain variable
 // Companion to t_covergroup_ref_bind, which covers the resolvable shapes.  Here nothing is a
 // plain variable: the covergroup is constructed into an array element, sampled through an array
-// element, and the 'ref' actual is an array element too.  So neither the construction nor the
-// sample names one covergroup object, and both must fall back to the union over the covergroup
-// type -- which must still order every sample against the non-blocking writer of what any
-// instance of that type reads.  cg_b repeats that with a struct member as the handle instead of
-// an array element.  Runs under --vltmt, where an unordered sample is a data race,
-// and with -fno-lift-expr, which leaves the construction assigning directly to the array
-// element instead of to a lifted temporary.
+// element, and the 'ref' actual is an array element too.  So no sample names one covergroup
+// object, and each must fall back to the union over the covergroup type -- which must still
+// order every sample against the non-blocking writer of what any instance of that type reads.
+// cg_b repeats that with a struct member as the handle instead of an array element.  Runs
+// under --vltmt, where an unordered sample is a data race.
 // This file ONLY is placed into the Public Domain, for any use, without warranty.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
