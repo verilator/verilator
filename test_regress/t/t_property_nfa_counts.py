@@ -11,8 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(timing_loop=True,
-             verilator_flags2=['--assert', '--timing', '--coverage-user', '-Wno-UNOPTTHREADS'])
+test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing', '--coverage-user'])
 
 test.execute()
 

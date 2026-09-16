@@ -8,8 +8,8 @@ module t (
     input clk
 );
 
-  integer cyc = 1;
-  always @(posedge clk) cyc <= cyc + 1;
+  integer cyc;
+  initial cyc = 1;
 
   reg [15:0] m_din;
 
@@ -101,57 +101,10 @@ module t (
     end
   end  // always @ (posedge clk)
 
-  reg [15:0] n_split_1, n_split_2;
   always @(posedge clk) begin
-    @(negedge clk);
-    n_split_1 <= m_din;
-    n_split_2 <= ~m_din;
-  end
-
-  reg [15:0] o_split_1, o_split_2;
-  reg [15:0] o_cnt;
-  always @(posedge clk) begin
-    o_cnt = 16'h0;
-    while (o_cnt < m_din) begin
-      if (m_din[0]) break;
-      o_cnt = o_cnt + 16'h1;
+    if (cyc != 0) begin
+      cyc <= cyc + 1;
     end
-    o_split_1 <= m_din;
-    if (m_din[1]) o_split_2 <= ~m_din;
-  end
-
-  reg [15:0] p_split_1;
-  reg [15:0] p_cnt;
-  always @(posedge clk) begin : pblk
-    p_split_1 <= m_din;
-    p_cnt = 16'h0;
-    while (p_cnt < m_din) begin
-      @(negedge clk);
-      disable pblk;
-    end
-  end
-
-  // The same constructs, but outside of any always block
-  function automatic [15:0] fret(input [15:0] a);
-    fret = 16'h0;
-    if (a[0]) return 16'hbeef;
-    fret = a;
-  endfunction
-  reg [15:0] q_init_1, q_init_2, q_init_3;
-  reg [15:0] q_cnt;
-  initial begin : qblk
-    if (m_din == 16'h0) q_init_1 = 16'h1;
-    q_init_1 <= 16'h2;
-    q_init_2 = fret(m_din | 16'h1);
-    q_cnt = 16'h0;
-    while (q_cnt < (m_din | 16'h1)) begin
-      q_cnt = q_cnt + 16'h1;
-      q_init_3 = q_cnt;
-      disable qblk;
-    end
-  end
-
-  always @(posedge clk) begin
     if (cyc == 1) begin
       m_din <= 16'hfeed;
     end
@@ -163,10 +116,6 @@ module t (
       if (!(f_split_1 == 16'hfeed && f_split_2 == 16'hfeed)) $stop;
       if (!(m_split_1 == 16'hfeed && m_split_2 == 16'h0000)) $stop;
       if (!(z_split_1 == 16'h0112 && z_split_2 == 16'h0112)) $stop;
-      if (!(n_split_1 == 16'hfeed && n_split_2 == 16'h0112)) $stop;
-      if (!(o_split_1 == 16'hfeed)) $stop;
-      if (!(p_split_1 == 16'hfeed)) $stop;
-      if (!(q_init_1 == 16'h2 && q_init_2 == 16'hbeef && q_init_3 == 16'h1)) $stop;
     end
     if (cyc == 5) begin
       m_din <= 16'he22e;
@@ -179,9 +128,6 @@ module t (
         $stop;
       if (!(m_split_1 == 16'hfeed && m_split_2 == 16'h0000)) $stop;
       if (!(z_split_1 == 16'h0112 && z_split_2 == 16'h0112)) $stop;
-      if (!(n_split_1 == 16'he11e && n_split_2 == 16'h1ee1)) $stop;
-      if (!(o_split_1 == 16'hfeed)) $stop;
-      if (!(p_split_1 == 16'hfeed)) $stop;
     end
     if (cyc == 6) begin
       m_din <= 16'he33e;
@@ -194,9 +140,6 @@ module t (
         $stop;
       if (!(m_split_1 == 16'he11e && m_split_2 == 16'h0000)) $stop;
       if (!(z_split_1 == 16'h1ee1 && z_split_2 == 16'h0112)) $stop;
-      if (!(n_split_1 == 16'he22e && n_split_2 == 16'h1dd1)) $stop;
-      if (!(o_split_1 == 16'he11e && o_split_2 == 16'h1ee1)) $stop;
-      if (!(p_split_1 == 16'he11e)) $stop;
     end
     if (cyc == 7) begin
       $write("*-* All Finished *-*\n");

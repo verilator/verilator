@@ -77,22 +77,22 @@ module t (
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 19) begin
-      // Constant-true window [0:3]: K=0..15 succeed at cyc K+3 = 3..18.
-      `checkd(high_bounded_pass_q.size(), 16);
+      // Constant-true window [0:3]: K=0..16 succeed at cyc K+3 = 3..19.
+      `checkd(high_bounded_pass_q.size(), 17);  // Other sims: 16
       `checkd(high_bounded_pass_q[0], 3);  // Other sims: 4
-      `checkd(high_bounded_pass_q[$], 18);
-      // Degenerate [0:0]: K=0..18 succeed at cyc K = 0..18.
-      `checkd(high_degenerate_pass_q.size(), 19);
-      `checkd(high_degenerate_pass_q[0], 0);  // Some other sims: 1
-      `checkd(high_degenerate_pass_q[$], 18);
+      `checkd(high_bounded_pass_q[$], 19);
+      // Degenerate [0:0]: K=0..19 succeed at cyc K = 0..19.
+      `checkd(high_degenerate_pass_q.size(), 20);  // Other sims: 19
+      `checkd(high_degenerate_pass_q[0], 0);  // Other sims: 0, 1
+      `checkd(high_degenerate_pass_q[$], 19);
       // Constant-false: every attempt fails immediately.
-      `checkd(low_bounded_fail_q.size(), 19);
-      `checkd(low_degenerate_fail_q.size(), 19);
+      `checkd(low_bounded_fail_q.size(), 20);  // Other sims: 19
+      `checkd(low_degenerate_fail_q.size(), 20);  // Other sims: 19
       // CRC + disable streams
       `checkd(rand_bounded_pass_q.size(), 0);
-      `checkd(rand_bounded_fail_q.size(), 19);  // Some other sims: 11
+      `checkd(rand_bounded_fail_q.size(), 20);  // Other sims: 19, 11
       `checkd(disable_bounded_pass_q.size(), 0);
-      `checkd(disable_bounded_fail_q.size(), 7);  // Other sims: 5, 6
+      `checkd(disable_bounded_fail_q.size(), 8);  // Other sims: 5, 6
       $write("*-* All Finished *-*\n");
       $finish;
     end

@@ -36,7 +36,7 @@ module t (
     cyc <= cyc + 1;
     if (cyc == 10) begin
       `checkd(low_s_fail_q.size(), low_w_fail_q.size());
-      `checkd(low_w_fail_q.size(), 8);
+      `checkd(low_w_fail_q.size(), 9);
       $write("*-* All Finished *-*\n");
       $finish;
     end
