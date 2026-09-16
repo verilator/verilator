@@ -51,16 +51,16 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 49) begin
-      // Constant-true [1:33]: K=0..15 succeed at cyc K+33 = 33..48.
-      `checkd(wide_pass_q.size(), 16);
+      // Constant-true [1:33]: K=0..16 succeed at cyc K+33 = 33..49.
+      `checkd(wide_pass_q.size(), 17);
       `checkd(wide_pass_q[0], 33);
-      `checkd(wide_pass_q[$], 48);
+      `checkd(wide_pass_q[$], 49);
     end
     if (cyc == 1041) begin
-      // Constant-true [1:1025]: K=0..15 succeed at cyc K+1025 = 1025..1040.
-      `checkd(wide_ring_pass_q.size(), 16);
+      // Constant-true [1:1025]: K=0..16 succeed at cyc K+1025 = 1025..1041.
+      `checkd(wide_ring_pass_q.size(), 17);
       `checkd(wide_ring_pass_q[0], 1025);
-      `checkd(wide_ring_pass_q[$], 1040);
+      `checkd(wide_ring_pass_q[$], 1041);
       `checkd(wide_fail_q.size(), 1025);
       `checkd(wide_fail_q[0], 1025);
       `checkd(wide_fail_q[$], 1025);

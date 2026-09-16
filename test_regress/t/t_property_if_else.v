@@ -26,7 +26,7 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 10) begin
-      `checkd(vacuous_passes, 9);
+      `checkd(vacuous_passes, 10);
       $write("*-* All Finished *-*\n");
       $finish;
     end

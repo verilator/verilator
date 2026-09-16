@@ -12,10 +12,7 @@ import vltest_bootstrap
 test.scenarios("vltmt")
 test.top_filename = "t/t_x_rand_stability.v"
 
-# See t_x_rand_mt_stability.py for why a single MTask is forced.
-test.compile(verilator_flags2=[
-    "--x-initial unique", "-DNOT_RAND", "--threads-max-mtasks 1", "-Wno-UNOPTTHREADS"
-])
+test.compile(verilator_flags2=["--x-initial unique", "-DNOT_RAND"])
 
 test.execute(all_run_flags=["+verilator+rand+reset+0"], expect_filename=test.golden_filename)
 
