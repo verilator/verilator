@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+test.fourstate_capable = False
 
 lib_dir = test.obj_dir + "/sub"
 test.mkdir_ok(lib_dir)

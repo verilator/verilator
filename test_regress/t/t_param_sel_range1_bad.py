@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.fourstate_capable = False
 test.top_filename = "t/t_param_sel_range1.v"
 
 test.lint(fails=True, expect_filename=test.golden_filename)

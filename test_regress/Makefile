@@ -43,7 +43,7 @@ endif
 
 ######################################################################
 
-SCENARIOS ?= --vlt --vltmt --dist
+SCENARIOS ?= --vlt --vltmt --dist --vlt4 --vltmt4
 DRIVER_HASHSET ?=
 
 .PHONY: test

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.fourstate_capable = False
 test.pli_filename = "t/t_forceable_unpacked.cpp"
 test.top_filename = "t/t_forceable_unpacked.v"
 

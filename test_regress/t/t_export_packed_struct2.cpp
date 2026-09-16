@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
                 for (int k = 0; k < 3; ++k) {
-                    VL_SET_WQ(in.b[i][j][k].a, 0x1234123412341234UL);
+                    VL_SET_WQ_T(in.b[i][j][k].a, 0x1234123412341234UL);
                     // Set last bit zero and upper bits one
                     in.b[i][j][k].a[2] = 0xfe;
                 }

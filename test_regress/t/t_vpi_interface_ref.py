@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 # Not Icarus eligible
 test.scenarios("vlt_all", "xrun")
+test.fourstate_capable = False
 
 test.compile(
     make_top_shell=False,

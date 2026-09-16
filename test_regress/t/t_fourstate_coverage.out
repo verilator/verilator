@@ -1,0 +1,86 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Antmicro
+        // SPDX-License-Identifier: CC0-1.0
+        
+        `ifdef VERILATOR
+        `define IMPURE_ONE ($c(1))
+        `else
+        `define IMPURE_ONE (|($random | $random))
+        `endif
+        
+        module t;
+%000001   static int calls = 0;
+        
+ 000021   function logic f(logic a);
+%000007     if (a === 1'b1) $write("1");
+%000007     else if (a === 1'b0) $write("0");
+%000004     else if (a === 1'bx) $write("x");
+%000003     else if (a === 1'bz) $write("z");
+            else $stop;
+ 000021     $write("\n");
+ 000021     return a;
+          endfunction
+        
+ 000016   function integer f2(integer a);
+ 000016     return a;
+          endfunction
+        
+%000000   function logic bar();
+%000000     calls++;
+%000000     return 'x;
+          endfunction
+        
+%000001   initial begin
+%000001     static integer result;
+%000001     if ((f(0) ? f(1) : f(0)) !== 0) $stop;
+%000001     if ((f(1) ? f(1) : f(0)) !== 1) $stop;
+%000001     if ((f('x) ? f(1) : f(0)) !== 'x) $stop;
+%000001     if ((f('x) ? f(1) : f(1)) !== 1) $stop;
+%000001     if ((f('z) ? f(1) : f(0)) !== 'x) $stop;
+%000001     if ((f('z) ? f(0) : f(0)) !== 0) $stop;
+%000001     if ((`IMPURE_ONE ? 0 : bar()) !== 0) $stop;
+%000001     if (calls !== 0) $stop;
+        
+%000001     if ((f(1) ? f2(32'h1fx1) : f2('x)) !== 32'h1fx1) $stop;
+%000001     if ((f(0) ? f2(123) : f2(432)) !== 432) $stop;
+%000001     if ((
+              f('x) ?
+               f2(32'b01011001011110101010100101000111) :
+               f2(32'b01011001011110101010100101000111)
+            ) !== 32'b01011001011110101010100101000111) $stop;
+%000001     if ((
+              f('z) ?
+               f2(32'b01011001001010101010100101000111) :
+               f2(32'b01011001010110101010100101000111)
+            ) !== 32'b010110010xxx10101010100101000111) $stop;
+%000001     if ((
+              f('x) ?
+               f2(32'bz101100101111xx0101x1z0x010001x1) :
+               f2(32'b0101100zz1111010011z1z0x01000111)
+            ) !== 32'bx101100xx1111xx0xx1x1x0x010001x1) $stop;
+        
+%000001     if ((1 ? f2(32'h1fx1) : f2('x)) !== 32'h1fx1) $stop;
+%000001     if ((0 ? f2(123) : f2(432)) !== 432) $stop;
+%000001     if ((
+%000000       'x ?
+               f2(32'b01011001011110101010100101000111) :
+               f2(32'b01011001011110101010100101000111)
+            ) !== 32'b01011001011110101010100101000111) $stop;
+%000001     if ((
+%000000       'z ?
+               f2(32'b01011001001010101010100101000111) :
+               f2(32'b01011001010110101010100101000111)
+            ) !== 32'b010110010xxx10101010100101000111) $stop;
+%000001     result = 'x ?
+%000001        f2(32'bz101100101111xx0101x1z0x010001x1) :
+%000001        f2(32'b0101100zz1111010011z1z0x01000111);
+%000001     if (result !== 32'bx101100xx1111xx0xx1x1x0x010001x1) $stop;
+        
+%000001     $write("*-* All Finished *-*\n");
+%000001     $finish;
+          end
+        endmodule
+        

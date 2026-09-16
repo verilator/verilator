@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.fourstate_capable = False
 
 test.compile(expect_filename=test.golden_filename,
              verilator_flags2=['--timing'],

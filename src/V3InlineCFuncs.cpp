@@ -222,10 +222,19 @@ class InlineCFuncsVisitor final : public VNVisitor {
 
         // Clone local variables, add them to the local scope
         for (AstVar* varp = calleep->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
-            AstVar* const newVarp = varp->cloneTree(false);
+            if (varp->isFourstateComplement()) continue;
+            AstVar* const complementp = varp->fourstateComplementp();
+            AstVar* const newVarp
+                = complementp ? varp->cloneWithFourstateComplementp() : varp->cloneTree(false);
             newVarp->name(varPrefix + varp->name());
             lscopep->addStmtsp(newVarp);
             varp->user2p(newVarp);
+            if (complementp) {
+                AstVar* const newComplementp = newVarp->fourstateComplementp();
+                newComplementp->name(varPrefix + complementp->name());
+                lscopep->addStmtsp(newComplementp);
+                complementp->user2p(newComplementp);
+            }
         }
 
         // Clone the function body
