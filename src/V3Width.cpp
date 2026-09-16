@@ -10019,9 +10019,10 @@ class WidthVisitor final : public VNVisitor {
             }
             AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
             v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
+            // Rebuilt tables may coexist with live tables from earlier widthing.
             AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
                                             "__Venumtab_" + VString::downcase(attrType.ascii())
-                                                + cvtToStr(nodep->uniqueNum()),
+                                                + cvtToStr(AstNodeDType::uniqueNumInc()),
                                             vardtypep};
             varp->lifetime(VLifetime::STATIC_EXPLICIT);
             varp->isConst(true);

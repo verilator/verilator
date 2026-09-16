@@ -37,7 +37,12 @@ module t (
     return value;
   endfunction
 
+  function automatic string format_wide_enum(input wide96_e value);
+    return $sformatf("%p/%s", value, value);
+  endfunction
+
   localparam string CONST_ENUM_TEXT = $sformatf("%p/%s", const_enum(1'b1), const_enum(1'b1));
+  localparam string CONST_WIDE_TEXT = format_wide_enum(W96B);
 
   // IEEE 1800-2023 21.2.1.6 permits implementation-specific %0p output.
 `ifdef QUESTA
@@ -59,6 +64,7 @@ module t (
     // Keep formats nonconstant using an input supported by the generated testbench.
     empty_no_opt = (no_opt === 1'b1) ? "unexpected" : "";
     `checks(CONST_ENUM_TEXT, "W64B/W64B");
+    `checks(CONST_WIDE_TEXT, "W96B/W96B");
     begin
       my_e it;
       string names_p;
@@ -186,6 +192,9 @@ module t (
     // Wide enums use names for %p/%s without changing explicit numeric formats.
     e96 = W96B;  // 10 * 2**64 + 1
     if (empty_no_opt != "") e96 = W96A;  // Defeat constant folding
+    // The early-width function and later lookups must survive cache rebuilding.
+    formatted = format_wide_enum(e96);
+    `checks(formatted, "W96B/W96B");
     formatted = $sformatf("%p/%p", e96, e96);
     `checks(formatted, "W96B/W96B");
     formatted = $sformatf("%s/%s", e96, e96);

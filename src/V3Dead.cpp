@@ -448,8 +448,8 @@ class DeadVisitor final : public VNVisitor {
         checkAll(nodep);
     }
     void visit(AstEnumDType* nodep) override {
-        // Keep cached lookup tables until V3WidthCommit releases the cache.
-        for (const auto& entry : nodep->tableMap()) entry.second->user1Inc();
+        // Widthing during parameter evaluation may have populated the cache.
+        nodep->tableMap().clear();
         visit(static_cast<AstNodeDType*>(nodep));
     }
     void visit(AstEnumItemRef* nodep) override {

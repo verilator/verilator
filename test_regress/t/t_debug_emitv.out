@@ -1162,7 +1162,7 @@ package Vt_debug_emitv___024unit;
             disable label3;
         end
     endfunction
-    string __Venumtab_enum_name17[1:0];
+    string __Venumtab_enum_name34[1:0];
 endpackage
 package Vt_debug_emitv_std;
     class Vt_debug_emitv_semaphore;
