@@ -11,13 +11,17 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-class C #(parameter int W = 1);
+class C #(
+    parameter int W = 1
+);
   int notaparam;
   static int alsonotaparam;
   localparam int good = W;
 endclass
 
-module Sub #(parameter int P = 0) ();
+module Sub #(
+    parameter int P = 0
+) ();
 endmodule
 
 module t;

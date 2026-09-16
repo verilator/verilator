@@ -30,70 +30,87 @@ typedef struct packed {
 } inner_t;
 
 typedef struct packed {
-  inner_t     jt;
+  inner_t jt;
   logic [7:0] tag;
 } cfg_t;
 
-typedef struct packed {
-  inner_t [1:0] entries;
-} table_t;
+typedef struct packed {inner_t [1:0] entries;} table_t;
 
 package pkg;
-  virtual class C #(parameter int W = 1);
+  virtual class C #(
+      parameter int W = 1
+  );
     typedef logic [W-1:0] data_t;
   endclass
 endpackage
 
 // Struct localparam whose fields derive from the class parameter, plus a
 // wrapper class whose own lparam reads a nested struct field.
-class SC #(parameter int W = 1);
-  localparam cfg_t cfg = '{jt: '{cam_type: W[7:0], depth: W[7:0] + 8'd1},
-                           tag: W[7:0] + 8'd2};
+class SC #(
+    parameter int W = 1
+);
+  localparam cfg_t cfg = '{jt: '{cam_type: W[7:0], depth: W[7:0] + 8'd1}, tag: W[7:0] + 8'd2};
   localparam logic [7:0] bits = W[7:0];
-  localparam inner_t [1:0] entries = '{default: '{cam_type: W[7:0],
-                                                    depth: W[7:0] + 8'd1}};
-  localparam table_t tbl = '{entries: '{default: '{cam_type: W[7:0],
-                                                     depth: W[7:0] + 8'd1}}};
+  localparam inner_t [1:0] entries = '{default: '{cam_type: W[7:0], depth: W[7:0] + 8'd1}};
+  localparam table_t tbl = '{entries: '{default: '{cam_type: W[7:0], depth: W[7:0] + 8'd1}}};
 endclass
 
-class SD #(parameter int W = 1);
+class SD #(
+    parameter int W = 1
+);
   typedef SC#(W) CC;
   localparam int q = int'(CC::cfg.tag) + 100;
 endclass
 
-class P #(parameter cfg_t p = '{default: 0});
+class P #(
+    parameter cfg_t p = '{default: 0}
+);
   localparam cfg_t pp = p;
 endclass
 
-module Sub #(parameter int WIDTH = 0) ();
+module Sub #(
+    parameter int WIDTH = 0
+) ();
 endmodule
 
 // Two-level: outer module forwards its param to an inner cell, so the
 // deferred lparam value must flow through the cell-deparam chain.
-module SubL1 #(parameter int W = 0) ();
+module SubL1 #(
+    parameter int W = 0
+) ();
   Sub #(W) inner ();
 endmodule
 
-interface SubIface #(parameter int IW = 1) ();
+interface SubIface #(
+    parameter int IW = 1
+) ();
   logic [IW-1:0] data;
 endinterface
 
 // Takes an interface port - must elaborate after the iface cell pin is
 // fully constified.
-module Consumer (SubIface si);
+module Consumer (
+    SubIface si
+);
 endmodule
 
 // Presence is observable, to confirm each generate flavour elaborated.
-module Tag #(parameter int ID = 0) ();
+module Tag #(
+    parameter int ID = 0
+) ();
 endmodule
 
-module Sink #(parameter int BITS = 1) ();
+module Sink #(
+    parameter int BITS = 1
+) ();
   logic [BITS-1:0] data;
 endmodule
 
 // Parameterized wrapper so the class specialization is deferred until
 // V3Param processes the cell instance.
-module Mid #(parameter int W = 8) ();
+module Mid #(
+    parameter int W = 8
+) ();
   typedef SC#(W) CFG;
   // (5) single-level struct field access, then nested (lsb accumulation)
   Sub #(int'(CFG::cfg.tag)) u_tag ();
@@ -115,12 +132,14 @@ module Mid #(parameter int W = 8) ();
   typedef pkg::C#(W) PCFG;
   typedef struct packed {
     PCFG::data_t payload;
-    logic        v;
+    logic v;
   } wrap_t;
   Sink #(.BITS($bits(wrap_t))) u_sink ();
 endmodule
 
-module PairHolder #(parameter cfg_t cfg = '{default: 0}) ();
+module PairHolder #(
+    parameter cfg_t cfg = '{default: 0}
+) ();
   typedef P#(cfg) PALIAS;
   localparam logic [7:0] tag_val = PALIAS::pp.tag;
   localparam logic [7:0] cam_val = PALIAS::pp.jt.cam_type;
@@ -128,16 +147,31 @@ endmodule
 
 // (7) The pin's RefDType has no typedefp() to follow - it points at the
 // enclosing ParamTypeDType - so the deferred walk must descend refDTypep().
-module TChild #(parameter type T = logic, parameter int EXP = 1) (input T a_i);
+module TChild #(
+    parameter type T = logic,
+    parameter int EXP = 1
+) (
+    input T a_i
+);
   initial `checkh($bits(T), EXP);
 endmodule
 
-module TFwd #(parameter type T = logic, parameter int EXP = 1) ();
-  TChild #(.T(T), .EXP(EXP)) u (.a_i('0));
+module TFwd #(
+    parameter type T = logic,
+    parameter int EXP = 1
+) ();
+  TChild #(
+      .T(T),
+      .EXP(EXP)
+  ) u (
+      .a_i('0)
+  );
 endmodule
 
 module t;
-  virtual class C #(parameter int a = 0);
+  virtual class C #(
+      parameter int a = 0
+  );
     localparam int b = a;
     typedef logic [a-1:0] inner_t;
     // localparam derived from a typedef inside the same class
@@ -145,10 +179,14 @@ module t;
   endclass
 
   // Two-level: B2's lparam value contains a class::member Dot of its own
-  virtual class A2 #(parameter int x = 0);
+  virtual class A2 #(
+      parameter int x = 0
+  );
     localparam int v = x * 2;
   endclass
-  virtual class B2 #(parameter int y = 0);
+  virtual class B2 #(
+      parameter int y = 0
+  );
     typedef A2#(y + 1) inner_a;
     localparam int width = inner_a::v;  // nested Dot inside B2's lparam
     // `sib` is deferred (holds the Dot); `sib_use` reads it as a sibling, so
@@ -157,7 +195,9 @@ module t;
     localparam int sib_use = sib + 1;
   endclass
   // Three-level: C2 wraps B2 wraps A2
-  virtual class C2 #(parameter int z = 0);
+  virtual class C2 #(
+      parameter int z = 0
+  );
     typedef B2#(z * 3) inner_b;
     localparam int total = inner_b::width;  // double-nested Dot
   endclass
@@ -211,13 +251,21 @@ module t;
   end
   if (b5 > b3) begin : gi_t
     Tag #(200) inst ();
-  end else begin : gi_f
+  end
+  else begin : gi_f
     Tag #(201) inst ();
   end
   case (b5)
-    3: begin : gc Tag #(303) inst (); end
-    5: begin : gc Tag #(305) inst (); end
-    default: begin : gc Tag #(399) inst (); end
+    3: begin : gc
+      Tag #(303) inst ();
+    end
+    5: begin : gc
+      Tag #(305) inst ();
+    end
+    default:
+    begin : gc
+      Tag #(399) inst ();
+    end
   endcase
 
   // (3) typedef range from a deferred lparam; class type-arg using a
@@ -240,10 +288,28 @@ module t;
   localparam type t_plain = pkg::C#(12)::data_t;
   typedef pkg::C#(9) alias_c;
   localparam type t_alias = alias_c::data_t;
-  TChild #(.T(t_plain), .EXP(12)) u_plain (.a_i('0));
-  TChild #(.T(cfg_t), .EXP(24)) u_tstruct (.a_i('0));
-  TChild #(.T(t_alias), .EXP(9)) u_alias (.a_i('0));
-  TFwd #(.T(t_plain), .EXP(12)) u_fwd ();
+  TChild #(
+      .T(t_plain),
+      .EXP(12)
+  ) u_plain (
+      .a_i('0)
+  );
+  TChild #(
+      .T(cfg_t),
+      .EXP(24)
+  ) u_tstruct (
+      .a_i('0)
+  );
+  TChild #(
+      .T(t_alias),
+      .EXP(9)
+  ) u_alias (
+      .a_i('0)
+  );
+  TFwd #(
+      .T(t_plain),
+      .EXP(12)
+  ) u_fwd ();
 
   initial begin
     `checkh(b3, 32'd3);

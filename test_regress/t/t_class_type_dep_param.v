@@ -26,9 +26,7 @@
 // verilog_format: on
 
 package pkg;
-  typedef struct packed {
-    int depth;
-  } config_t;
+  typedef struct packed {int depth;} config_t;
 
   virtual class cfg #(
       parameter config_t c
@@ -41,10 +39,10 @@ endpackage
 // Child with a type parameter defaulted from another parameter, as in a
 // sample-and-hold style utility module
 module Holder #(
-    parameter int  width  = 0,
+    parameter int width = 0,
     parameter type data_t = logic [width-1:0]
 ) (
-    input  data_t dat_i,
+    input data_t dat_i,
     output data_t dat_o
 );
   always_comb dat_o = dat_i;
@@ -53,7 +51,7 @@ endmodule
 module Sub #(
     parameter pkg::config_t cfg
 ) ();
-  typedef pkg::cfg #(cfg) CFG;
+  typedef pkg::cfg#(cfg) CFG;
   CFG::data_t src, dst;
   typedef CFG::data_t unpacked_t[3:1];
   typedef CFG::data_t dynamic_t[];
@@ -69,17 +67,21 @@ module Sub #(
   localparam int UnpackedBits = $bits(unpacked_data);
 
   // (2) $bits() of a class-scoped-typed signal, as a cell parameter pin
-  Holder #(.width($bits(src))) holder (
-      .dat_i (src),
-      .dat_o (dst)
+  Holder #(
+      .width($bits(src))
+  ) holder (
+      .dat_i(src),
+      .dat_o(dst)
   );
 
   // (3) Same, inside a generate arm
   if (CFG::width > 0) begin : gen_arm
     CFG::data_t arm_src, arm_dst;
-    Holder #(.width($bits(arm_src))) armHolder (
-        .dat_i (arm_src),
-        .dat_o (arm_dst)
+    Holder #(
+        .width($bits(arm_src))
+    ) armHolder (
+        .dat_i(arm_src),
+        .dat_o(arm_dst)
     );
     initial arm_src = '0;
   end

@@ -18,19 +18,24 @@ typedef struct packed {
 } inner_t;
 
 typedef struct packed {
-  inner_t     jt;
+  inner_t jt;
   logic [7:0] tag;
 } cfg_t;
 
-class C #(parameter int W = 1);
-  localparam cfg_t cfg = '{jt: '{cam_type: W[7:0], depth: W[7:0] + 8'd1},
-                           tag: W[7:0] + 8'd2};
+class C #(
+    parameter int W = 1
+);
+  localparam cfg_t cfg = '{jt: '{cam_type: W[7:0], depth: W[7:0] + 8'd1}, tag: W[7:0] + 8'd2};
 endclass
 
-module Sub #(parameter int WIDTH = 0) ();
+module Sub #(
+    parameter int WIDTH = 0
+) ();
 endmodule
 
-module Mid #(parameter int W = 8) ();
+module Mid #(
+    parameter int W = 8
+) ();
   typedef C#(W) CFG;
   // (1) `.bogus` on the scalar field `tag`: dotting into a non-struct
   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();

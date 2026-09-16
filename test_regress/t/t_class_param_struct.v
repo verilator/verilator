@@ -10,9 +10,7 @@
 // verilog_format: on
 
 package P;
-  typedef struct {
-    int depth;
-  } memory_config_t;
+  typedef struct {int depth;} memory_config_t;
 
   typedef struct {
     memory_config_t memory;

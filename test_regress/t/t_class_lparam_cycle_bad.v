@@ -10,15 +10,21 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module Sub #(parameter int WIDTH = 0) ();
+module Sub #(
+    parameter int WIDTH = 0
+) ();
 endmodule
 
 module t;
-  virtual class A #(parameter int x = 0);
+  virtual class A #(
+      parameter int x = 0
+  );
     localparam int v = x * 2;
   endclass
 
-  virtual class B #(parameter int y = 0);
+  virtual class B #(
+      parameter int y = 0
+  );
     typedef A#(y + 1) inner_a;
     // 'a' is deferred (holds the inner_a::v Dot) and also references 'b';
     // 'b' references 'a' back -> cycle through the deferred fold.

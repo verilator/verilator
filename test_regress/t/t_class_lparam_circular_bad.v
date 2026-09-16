@@ -12,24 +12,32 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-class Self #(parameter int W = 1);
+class Self #(
+    parameter int W = 1
+);
   localparam int a = a;
 endclass
 
-class Direct #(parameter int W = 1);
+class Direct #(
+    parameter int W = 1
+);
   // Two-step cycle: a -> b -> a
   localparam int a = b;
   localparam int b = a;
 endclass
 
-class Indirect #(parameter int W = 1);
+class Indirect #(
+    parameter int W = 1
+);
   // Three-step cycle through sibling lparams: p -> q -> r -> p
   localparam int p = q;
   localparam int q = r;
   localparam int r = p;
 endclass
 
-module Sub #(parameter int P = 0) ();
+module Sub #(
+    parameter int P = 0
+) ();
 endmodule
 
 module t;

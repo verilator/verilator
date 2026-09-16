@@ -43,13 +43,13 @@ module t #(
       bins bins3[] = {[3 ** 3 : 58 - 7], [LOCAL_PARAM : PARAM]};
     }
   endgroup
-  c_trans  ctrans;
+  c_trans ctrans;
   c_values cvalues;
   c_ranges cranges;
 
 
   initial begin
-    ctrans  = new();
+    ctrans = new();
     cvalues = new();
     cranges = new();
     // Transition

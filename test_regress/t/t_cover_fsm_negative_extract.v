@@ -372,20 +372,35 @@ module t (
   fsm_if_mixed_vars_bad mixed_vars_u (.clk(clk));
   fsm_if_one_branch_bad one_branch_u (.clk(clk));
   fsm_if_duplicate_bad duplicate_u (.clk(clk));
-  fsm_if_two_comparisons_bad two_comparisons_u (.clk(clk), .start(start));
+  fsm_if_two_comparisons_bad two_comparisons_u (
+      .clk(clk),
+      .start(start)
+  );
   fsm_if_or_bad or_u (.clk(clk));
-  fsm_if_alias_guard_bad alias_guard_u (.clk(clk), .start(start));
+  fsm_if_alias_guard_bad alias_guard_u (
+      .clk(clk),
+      .start(start)
+  );
   fsm_if_ambiguous_alias_bad ambiguous_alias_u (.clk(clk));
   fsm_if_missing_default_bad missing_default_u (.clk(clk));
   fsm_if_no_assign_bad no_assign_u (.clk(clk));
   fsm_if_nonvar_compare_bad nonvar_compare_u (.clk(clk));
   fsm_if_var_rhs_compare_bad var_rhs_compare_u (.clk(clk));
-  fsm_if_var_target_bad var_target_u (.clk(clk), .dyn(dyn_case[1:0]));
+  fsm_if_var_target_bad var_target_u (
+      .clk(clk),
+      .dyn(dyn_case[1:0])
+  );
   fsm_if_alias_other_state_bad alias_other_state_u (.clk(clk));
-  fsm_if_bit_or_bad bit_or_u (.clk(clk), .start(start));
+  fsm_if_bit_or_bad bit_or_u (
+      .clk(clk),
+      .start(start)
+  );
   fsm_if_reduction_bad reduction_u (.clk(clk));
   fsm_direct_active_low_dynamic_reset_bad active_low_dynamic_reset_u (
-      .clk(clk), .rst_n(cyc != 0), .dyn_reset(dyn_case[1:0]));
+      .clk(clk),
+      .rst_n(cyc != 0),
+      .dyn_reset(dyn_case[1:0])
+  );
 
   always @(posedge clk) begin
     cyc <= cyc + 1;

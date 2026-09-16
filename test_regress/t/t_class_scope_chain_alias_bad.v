@@ -13,9 +13,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package P;
-  typedef struct packed {
-    int depth;
-  } config_t;
+  typedef struct packed {int depth;} config_t;
 
   virtual class PC #(
       parameter config_t c

@@ -199,7 +199,7 @@ z\nq";
 two", "one two");
 
     // Str check
-`ifndef NC    // NC-Verilog 5.3 chokes on this test
+`ifndef NC  // NC-Verilog 5.3 chokes on this test
     if (str !== 32'h00_bf_11_0a) $stop;
 `endif
 
@@ -266,7 +266,7 @@ module sub;
   task write_m;
     $write("[%0t] In %m (%l)\n", $time);
     begin : subblock
-      $write("[%0t] In %M (%L)\n", $time); // Uppercase %M test
+      $write("[%0t] In %M (%L)\n", $time);  // Uppercase %M test
     end
   endtask
 endmodule

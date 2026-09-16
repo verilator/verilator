@@ -17,11 +17,15 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
-class Inner #(parameter int V = 1);
+class Inner #(
+    parameter int V = 1
+);
   localparam int v = V;
 endclass
 
-class C #(parameter int W = 1);
+class C #(
+    parameter int W = 1
+);
   // Only `base` holds the class::member Dot directly.
   localparam int base = Inner#(W)::v;
   // `one` is a bare VarRef to a sibling that is not yet Const.

@@ -50,7 +50,8 @@ module t;
   // (1) Generate-if cond: inline specialization, single '::'
   if (C#(5)::b > C#(3)::b) begin : gi_t
     Tag #(200) inst ();
-  end else begin : gi_f
+  end
+  else begin : gi_f
     Tag #(201) inst ();
   end
 
@@ -73,9 +74,16 @@ module t;
 
   // (5) Generate-case selector = inline specialization
   case (P::cfg#(5)::width)
-    3: begin : gc Tag #(303) inst (); end
-    5: begin : gc Tag #(305) inst (); end
-    default: begin : gc Tag #(399) inst (); end
+    3: begin : gc
+      Tag #(303) inst ();
+    end
+    5: begin : gc
+      Tag #(305) inst ();
+    end
+    default:
+    begin : gc
+      Tag #(399) inst ();
+    end
   endcase
 
   initial begin

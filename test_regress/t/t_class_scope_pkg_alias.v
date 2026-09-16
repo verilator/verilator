@@ -33,7 +33,7 @@ package base_pkg;
     typedef logic [width-1:0] data_t;
     typedef struct packed {
       logic [c.meta-1:0] m;
-      data_t             d;
+      data_t d;
     } meta_t;
   endclass
 endpackage
@@ -41,18 +41,18 @@ endpackage
 package top_pkg;
   localparam base_pkg::config_t cfgv = '{depth: 512, meta: 4};
   // Typedef alias of a parameterized class, in a different package
-  typedef base_pkg::cfg #(cfgv) AliasCFG;
+  typedef base_pkg::cfg#(cfgv) AliasCFG;
 endpackage
 
 // Alias-scoped type as a port, and in the body, of an instantiated submodule
 module Leaf (
-    input  top_pkg::AliasCFG::meta_t   in_meta,
-    output top_pkg::AliasCFG::data_t   out_data
+    input top_pkg::AliasCFG::meta_t in_meta,
+    output top_pkg::AliasCFG::data_t out_data
 );
   top_pkg::AliasCFG::meta_t body_meta;
   always_comb begin
     body_meta = in_meta;
-    out_data  = body_meta.d;
+    out_data = body_meta.d;
   end
   initial begin
     `checkh($bits(in_meta), 13);
@@ -64,8 +64,8 @@ module Mid ();
   top_pkg::AliasCFG::meta_t m;
   top_pkg::AliasCFG::data_t d;
   Leaf leaf (
-      .in_meta  (m),
-      .out_data (d)
+      .in_meta(m),
+      .out_data(d)
   );
   initial m = '0;
 endmodule
