@@ -360,27 +360,6 @@ AstNodeModule* V3LinkDotIfaceCapture::findOwnerModule(AstNode* nodep) {
     return findOwnerModuleImpl(nodep, nullptr);
 }
 
-std::unordered_map<const AstNode*, const AstNodeModule*> V3LinkDotIfaceCapture::s_containingModp;
-
-void V3LinkDotIfaceCapture::clearContainingModuleCache() { s_containingModp.clear(); }
-
-// The end of a list knows the parent, and the types we ask about are added at the end.
-static AstNode* parentFromTail(AstNode* nodep) {
-    AstNode* tailp = nodep;
-    while (tailp->nextp()) tailp = tailp->nextp();
-    return tailp->abovep();
-}
-
-const AstNodeModule* V3LinkDotIfaceCapture::containingModule(AstNode* nodep) {
-    // Nothing to remember.
-    if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp;
-    const auto it = s_containingModp.find(nodep);
-    if (it != s_containingModp.end()) return it->second;
-    // Only true parents are followed.
-    AstNode* const abovep = parentFromTail(nodep);
-    return s_containingModp[nodep] = abovep ? containingModule(abovep) : nullptr;
-}
-
 void V3LinkDotIfaceCapture::nullStaleLedgerRefs(const std::unordered_set<const AstNode*>& live) {
     for (auto& kv : s_map) {
         kv.second.foreachLink([&](AstNode*& nodep) {

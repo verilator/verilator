@@ -1950,7 +1950,22 @@ void AstNetlist::astConstOrigParamName(const AstConst* nodep, const string& name
 void AstNetlist::astConstOrigParamNameErase(const AstConst* nodep) {
     m_constOrigParamNames.erase(nodep);
 }
+const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
+    if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp;
+    const auto it = m_containingModules.find(nodep);
+    if (it != m_containingModules.end()) return it->second;
+    // Only true parents are followed.
+    AstNode* const abovep = nodep->aboveTailp();
+    const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
+    // Only nodes brokeExists() can check.
+    if (nodep->maybePointedTo()) m_containingModules[nodep] = modp;
+    return modp;
+}
 const char* AstNetlist::broken() const {
+    for (const auto& pair : m_containingModules) {
+        BROKEN_RTN(!pair.first || !pair.first->brokeExists());
+        BROKEN_RTN(pair.second && !pair.second->brokeExists());
+    }
     for (const AstVar* const varp : m_deferredParamVarps) {
         BROKEN_RTN(!varp || !varp->brokeExists());
     }
@@ -1982,6 +1997,7 @@ void AstNetlist::deleteContents() {
     m_nbaEventp = nullptr;
     m_nbaEventTriggerp = nullptr;
     m_topScopep = nullptr;
+    m_containingModules.clear();
     m_evalFuncps.fill(nullptr);
     m_dumpTriggersFuncps.fill(nullptr);
     if (op1p()) op1p()->unlinkFrBackWithNext()->deleteTree();

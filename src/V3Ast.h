@@ -592,6 +592,7 @@ public:
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
     AstNode* abovep() const;  // Get parent node above, only for list head and tail
     AstNode* aboveLoopp() const;  // Get parent node above, may have performance issues as loops
+    AstNode* aboveTailp() const;  // Get parent node above, by scanning to list tail
     AstNode* lastp() const {  // Get last node in list, only for list head
         UASSERT_OBJ(m_backp->m_nextp != this, this, "lastp() only allowed on head of list");
         return m_headtailp;
