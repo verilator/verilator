@@ -13,7 +13,11 @@ import glob
 test.scenarios("vltmt")
 test.top_filename = "t/t_x_rand_stability.v"
 
-test.compile(verilator_flags2=["--x-initial unique"])
+# $random has one seed per C thread, so the values printed depend on which thread runs the
+# block. Force a single MTask, which then runs on the main thread, to make this stable
+# against changes in partitioning.
+test.compile(
+    verilator_flags2=["--x-initial unique", "--threads-max-mtasks 1", "-Wno-UNOPTTHREADS"])
 
 test.execute(all_run_flags=["+verilator+rand+reset+2"], expect_filename=test.golden_filename)
 
