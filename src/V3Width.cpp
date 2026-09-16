@@ -70,7 +70,6 @@
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Const.h"
-#include "V3ContainingClass.h"
 #include "V3Error.h"
 #include "V3Global.h"
 #include "V3LinkDotIfaceCapture.h"
@@ -88,6 +87,44 @@
 #include "V3WidthRemove.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+//######################################################################
+
+class ContainingClassFinder final {
+    // The cache stores the class containing each node, excluding the node itself when it is a
+    // class. This lets recursion through preceding siblings reuse the same ownership result.
+    // Outside of V3Width, where the whole netlist is iterated, instead of this technique,
+    // parents should be remembered during the top-down visit recursion into classes.
+    std::unordered_map<const AstNode*, AstClass*> m_cache;
+
+    AstClass* findCached(AstNode* nodep) {
+        if (!nodep) return nullptr;
+        const auto it = m_cache.find(nodep);
+        if (it != m_cache.end()) return it->second;
+
+        AstClass* classp = nullptr;
+        if (nodep->backp() && nodep->backp()->nextp() == nodep) {
+            classp = findCached(nodep->backp());
+        } else if (AstClass* const parentp = VN_CAST(nodep->backp(), Class)) {
+            classp = parentp;
+        } else if (AstClassPackage* const packagep = VN_CAST(nodep->backp(), ClassPackage)) {
+            classp = packagep->classp();
+        } else {
+            classp = findCached(nodep->backp());
+        }
+        m_cache.emplace(nodep, classp);
+        return classp;
+    }
+
+public:
+    AstClass* find(AstNode* nodep) {
+        if (AstClass* const classp = VN_CAST(nodep, Class)) return classp;
+        if (AstClassPackage* const packagep = VN_CAST(nodep, ClassPackage)) {
+            return packagep->classp();
+        }
+        return findCached(nodep);
+    }
+};
 
 //######################################################################
 
@@ -250,7 +287,7 @@ class WidthVisitor final : public VNVisitor {
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
-    V3ContainingClassFinder m_containingClassFinder;
+    ContainingClassFinder m_containingClassFinder;
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
 
