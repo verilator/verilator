@@ -29,25 +29,24 @@ module t (
   int count_fail4 = 0;
 
   // Test 1: a[=2] |-> b (overlapping implication, 2 non-consecutive occurrences)
-  assert property (@(posedge clk) a[=2] |-> b)
-    else count_fail1 <= count_fail1 + 1;
+  assert property (@(posedge clk) a [= 2] |-> b)
+  else count_fail1 <= count_fail1 + 1;
 
   // Test 2: a[=1] |-> c (single occurrence, overlapping)
-  assert property (@(posedge clk) a[=1] |-> c)
-    else count_fail2 <= count_fail2 + 1;
+  assert property (@(posedge clk) a [= 1] |-> c)
+  else count_fail2 <= count_fail2 + 1;
 
   // Test 3: a[=3] |=> d (3 occurrences, non-overlapping implication)
-  assert property (@(posedge clk) a[=3] |=> d)
-    else count_fail3 <= count_fail3 + 1;
+  assert property (@(posedge clk) a [= 3] |=> d)
+  else count_fail3 <= count_fail3 + 1;
 
   // Test 4: standalone nonconsec rep (no implication)
-  assert property (@(posedge clk) b[=2])
-    else count_fail4 <= count_fail4 + 1;
+  assert property (@(posedge clk) b [= 2])
+  else count_fail4 <= count_fail4 + 1;
 
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n",
-           $time, cyc, crc, a, b, c, d);
+    $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n", $time, cyc, crc, a, b, c, d);
 `endif
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};

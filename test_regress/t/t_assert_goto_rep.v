@@ -31,6 +31,7 @@ module t (
   int count_fail6 = 0;
   int count_fail7 = 0;
   int count_fail8 = 0;
+  int count_fail9 = 0;
 
   // Test 1: a[->2] |-> b (overlapping implication, 2 non-consecutive occurrences)
   assert property (@(posedge clk) a [-> 2] |-> b)
@@ -64,6 +65,10 @@ module t (
   assert property (@(posedge clk) a [-> 1: 4] |-> b)
   else count_fail8 <= count_fail8 + 1;
 
+  // Test 9: a[->2:2] is equivalent to a[->2].
+  assert property (@(posedge clk) a [-> 2: 2] |-> b)
+  else count_fail9 <= count_fail9 + 1;
+
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n", $time, cyc, crc, a, b, c, d);
@@ -83,6 +88,7 @@ module t (
       `checkd(count_fail6, 25);
       `checkd(count_fail7, 20);
       `checkd(count_fail8, 20);
+      `checkd(count_fail9, count_fail1);
       $write("*-* All Finished *-*\n");
       $finish;
     end

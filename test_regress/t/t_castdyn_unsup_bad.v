@@ -13,7 +13,7 @@ module t;
 
   string q[$];
   int aarray[string];
-  Iface intf();
+  Iface intf ();
   Iface ifaces[2] ();
   virtual Iface.monitor monitored;
   virtual Iface vifaces[2];

@@ -396,13 +396,6 @@ class InlineCFuncsVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
 
-    // Nodes that reference functions/calls
-    void visit(AstNetlist* nodep) override {
-        UASSERT_OBJ(!nodep->evalp(), nodep, "evalp should not be null at this stage");
-        UASSERT_OBJ(!nodep->evalNbap(), nodep, "evalNbap should be null at this stage");
-        iterateChildrenConst(nodep);
-    }
-
     void visit(AstNodeCCall* nodep) override {
         if (m_cfuncVtxp) m_cfuncVtxp->sizeInc();
         getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Called elsewhere");

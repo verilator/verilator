@@ -62,6 +62,7 @@ set(HEADERS
     V3Cast.h
     V3Cfg.h
     V3Class.h
+    V3ClassGraph.h
     V3Clean.h
     V3Clock.h
     V3Combine.h
@@ -113,6 +114,7 @@ set(HEADERS
     V3GraphPathChecker.h
     V3GraphStream.h
     V3Hash.h
+    V3HashTable.h
     V3Hasher.h
     V3HierBlock.h
     V3Inline.h
@@ -230,6 +232,7 @@ set(COMMON_SOURCES
     V3CfgBuilder.cpp
     V3CfgLiveVariables.cpp
     V3Class.cpp
+    V3ClassGraph.cpp
     V3Clean.cpp
     V3Clock.cpp
     V3Combine.cpp
@@ -290,6 +293,7 @@ set(COMMON_SOURCES
     V3GraphPathChecker.cpp
     V3GraphTest.cpp
     V3Hash.cpp
+    V3HashTable.cpp
     V3Hasher.cpp
     V3HierBlock.cpp
     V3Inline.cpp
@@ -343,6 +347,7 @@ set(COMMON_SOURCES
     V3Sampled.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp
+    V3SchedCovergroup.cpp
     V3SchedPartition.cpp
     V3SchedReplicate.cpp
     V3SchedTiming.cpp

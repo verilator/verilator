@@ -7,12 +7,9 @@
 `define STRINGIFY(x) `"x`"
 `define TRIGGER(e) ->e; $display("[%0t] triggered %s", $time, `STRINGIFY(e))
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-
-  input clk;
 
   bit [1:0] val = 0;
   event e1;

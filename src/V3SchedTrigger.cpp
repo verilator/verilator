@@ -34,18 +34,7 @@ namespace V3Sched {
 
 namespace {
 
-AstVarScope* newArgument(AstCFunc* funcp, AstNodeDType* dtypep, const std::string& name,
-                         VDirection direction) {
-    FileLine* const flp = funcp->fileline();
-    AstScope* const scopep = funcp->scopep();
-    AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
-    varp->funcLocal(true);
-    varp->direction(direction);
-    funcp->addArgsp(varp);
-    AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
-    scopep->addVarsp(vscp);
-    return vscp;
-}
+using util::newArgument;
 
 AstVarScope* newLocal(AstCFunc* funcp, AstNodeDType* dtypep, const std::string& name) {
     FileLine* const flp = funcp->fileline();
@@ -404,22 +393,24 @@ AstSenTree* TriggerKit::newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index
     return newTriggerSenTree(vscp, {index + m_nSenseWords * WORD_SIZE});
 }
 
-void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bool clear) const {
+AstNodeStmt* TriggerKit::newExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const {
     index += m_nSenseWords * WORD_SIZE;
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;
     FileLine* const flp = vscp->fileline();
-    // Set the trigger bit
     AstVarRef* const refp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
     AstNodeExpr* const wordp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
     AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
     AstNodeExpr* const trigRhsp = new AstVarRef{flp, vscp, VAccess::READ};
-    AstNode* const setp = new AstAssign{flp, trigLhsp, trigRhsp};
-    if (clear) {
-        // Clear the input variable
-        setp->addNext(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
-                                    new AstConst{flp, AstConst::BitFalse{}}});
-    }
+    return new AstAssign{flp, trigLhsp, trigRhsp};
+}
+
+void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const {
+    FileLine* const flp = vscp->fileline();
+    // Set the trigger bit, then clear the input variable
+    AstNode* const setp = newExtraTriggerAssignment(vscp, index);
+    setp->addNext(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                new AstConst{flp, AstConst::BitFalse{}}});
     if (AstNode* const nodep = m_compVecp->stmtsp()) {
         setp->addNext(setp, nodep->unlinkFrBackWithNext());
     }
@@ -779,10 +770,6 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     AstScope* const scopep = netlistp->topScopep()->scopep();
     {
         AstCFunc* const fp = kit.m_compVecp;
-        // Profiling push
-        if (v3Global.opt.profExec()) {
-            fp->addStmtsp(AstCStmt::profExecSectionPush(flp, "trigBase " + name));
-        }
         // Trigger computation
         for (AstNodeStmt* const nodep : senResults.m_preUpdates) fp->addStmtsp(nodep);
         fp->addStmtsp(trigStmtsp);
@@ -795,10 +782,6 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
             ifp->addThensp(util::setVar(initVscp, 1));
             ifp->addThensp(initialTrigsp);
-        }
-        // Profiling pop
-        if (v3Global.opt.profExec()) {
-            fp->addStmtsp(AstCStmt::profExecSectionPop(flp, "trigBase " + name));
         }
         util::splitCheck(fp);
     };

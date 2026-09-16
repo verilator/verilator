@@ -514,22 +514,31 @@ class TaskVisitor final : public VNVisitor {
         AstNodeExpr* postRhsp = new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ};
         if (AstResizeLValue* soutPinp = VN_CAST(outPinp, ResizeLValue)) {
             outPinp = soutPinp->lhsp();
-            if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, Extend)) {
-                outPinp = aoutPinp->lhsp();
-            } else if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, ExtendS)) {
-                outPinp = aoutPinp->lhsp();
-            } else if (AstSel* aoutPinp = VN_CAST(outPinp, Sel)) {
-                outPinp = aoutPinp->fromp();
-            } else {
-                outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
-            }
-            if (outPinp->width() < portp->width()) {
-                postRhsp = new AstSel{pinp->fileline(), postRhsp, 0, pinp->width()};
-            } else {  // pin width > port width
-                if (pinp->isSigned() && postRhsp->isSigned()) {
-                    postRhsp = new AstExtendS{pinp->fileline(), postRhsp};
+            if (VN_IS(outPinp, RToIRoundS) || VN_IS(outPinp, RToIS)) {
+                outPinp = VN_AS(outPinp, NodeUniop)->lhsp();
+                if (postRhsp->isSigned()) {
+                    postRhsp = new AstISToRD{pinp->fileline(), postRhsp};
                 } else {
-                    postRhsp = new AstExtend{pinp->fileline(), postRhsp};
+                    postRhsp = new AstIToRD{pinp->fileline(), postRhsp};
+                }
+            } else {
+                if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, Extend)) {
+                    outPinp = aoutPinp->lhsp();
+                } else if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, ExtendS)) {
+                    outPinp = aoutPinp->lhsp();
+                } else if (AstSel* aoutPinp = VN_CAST(outPinp, Sel)) {
+                    outPinp = aoutPinp->fromp();
+                } else {
+                    outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
+                }
+                if (outPinp->width() < portp->width()) {
+                    postRhsp = new AstSel{pinp->fileline(), postRhsp, 0, pinp->width()};
+                } else {  // pin width > port width
+                    if (pinp->isSigned() && postRhsp->isSigned()) {
+                        postRhsp = new AstExtendS{pinp->fileline(), postRhsp};
+                    } else {
+                        postRhsp = new AstExtend{pinp->fileline(), postRhsp};
+                    }
                 }
             }
             postRhsp->dtypeFrom(outPinp);
@@ -1351,6 +1360,10 @@ class TaskVisitor final : public VNVisitor {
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->recursive(nodep->recursive());
+        // Hardcoded based on UVM usage; TODO make a verilated_std.vlt control for these
+        cfuncp->unlikely(nodep->name() == "uvm_report_error" || nodep->name() == "uvm_report_info"
+                         || nodep->name() == "uvm_report_fatal"
+                         || nodep->name() == "uvm_report_warning");
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
             cfuncp->isLoose(true);
@@ -1742,10 +1755,6 @@ class TaskVisitor final : public VNVisitor {
                 nodep->v3error("Cannot mix DPI import, DPI export, class methods, and/or public "
                                "on same function: "
                                << nodep->prettyNameQ());
-            }
-
-            if (nodep->isStatic() && nodep->isVirtual()) {
-                nodep->v3error("Static methods cannot be virtual");
             }
 
             const bool noInline = m_statep->ftaskNoInline(nodep);

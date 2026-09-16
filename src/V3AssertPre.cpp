@@ -414,6 +414,7 @@ private:
                     flp, new AstVarRef{flp, queueVarp, VAccess::READWRITE}, VCMethod::DYN_POP,
                     new AstTime{nodep->fileline(), m_modp->timeunit()}};
                 popp->addPinsp(skewp->unlinkFrBack());
+                refp->access(VAccess::READWRITE);  // Only conditionally assigned
                 popp->addPinsp(refp);
                 popp->dtypeSetVoid();
                 m_clockingp->addNextHere(
@@ -973,7 +974,7 @@ private:
             nodep->v3error("Repetition count is not an elaboration-time constant"
                            " (IEEE 1800-2023 16.9.2)");
             VL_DO_DANGLING(pushDeletep(countp), countp);
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return nullptr;
         }
@@ -981,7 +982,7 @@ private:
             nodep->v3error("Repetition count must be non-negative"
                            " (IEEE 1800-2023 16.9.2)");
             VL_DO_DANGLING(pushDeletep(countp), countp);
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return nullptr;
         }
@@ -1284,7 +1285,8 @@ private:
                     lhsp
                         = new AstAnd{flp, new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
                 }
-                AstPast* const pastp = new AstPast{flp, lhsp};
+                AstPast* const pastp
+                    = new AstPast{flp, lhsp, nullptr, nullptr, /* propertyTiming */ true};
                 pastp->dtypeFrom(lhsp);
                 pastp->sentreep(newSenTree(nodep));
                 condp = pastp;
@@ -1308,7 +1310,8 @@ private:
                 lhsp = new AstAnd{flp, new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
             }
 
-            AstPast* const pastp = new AstPast{flp, lhsp};
+            AstPast* const pastp
+                = new AstPast{flp, lhsp, nullptr, nullptr, /* propertyTiming */ true};
             pastp->dtypeFrom(lhsp);
             pastp->sentreep(newSenTree(nodep));
             AstNodeExpr* const exprp
@@ -1325,6 +1328,13 @@ private:
             !m_pexprp, nodep,
             "'" << nodep->verilogKwd()
                 << "' in complex property expression should have been rejected by V3AssertNfa");
+        if (nodep->isStrong()
+            && (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue())) {
+            nodep->v3warn(E_NOTIMING, nodep->verilogKwd() << " requires --timing");
+            nodep->replaceWith(new AstConst{flp, AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         if (nodep->isStrong()) {
             // p s_until q / p s_until_with q: q must eventually be true. Until then, p must
             // be true on every sampled tick. For s_until, check q first: when q is true on

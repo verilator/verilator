@@ -267,7 +267,7 @@ private:
 
 class DynScopeVisitor final : public VNVisitor {
     // NODE STATE
-    // AstVar::user1()          -> int.  timing-control fork nesting level of that variable
+    // AstVar::user1()          -> uint64_t.  timing-control fork nesting level of that variable
     // AstVarRef::user2()       -> bool. Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
     // AstAssignDly::user2()    -> bool.  Already visited
@@ -281,7 +281,7 @@ class DynScopeVisitor final : public VNVisitor {
     std::deque<AstNode*> m_frameOrder;  // Ordered list of frames (for determinism)
     std::map<AstNode*, ForkDynScopeFrame*> m_frames;  // Map nodes to related DynScopeFrames
     VMemberMap m_memberMap;  // Class member look-up
-    int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
+    uint64_t m_forkDepth = 0;  // Number of asynchronous forks we are currently under
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
                                         // process
     size_t m_id = 0;  // Unique ID for a frame

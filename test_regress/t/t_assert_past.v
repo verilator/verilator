@@ -13,7 +13,7 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     val = ~val;
-    $display("t=%0t   cyc=%0d   val=%b", $time, cyc, val);
+    $display("[%0t]   cyc=%0d   val=%b", $time, cyc, val);
     if (cyc == 10) begin
       $write("*-* All Finished *-*\n");
       $finish;

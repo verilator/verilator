@@ -34,11 +34,14 @@ class AstNodeDType VL_NOT_FINAL : public AstNode {
     // Ideally width() would migrate to BasicDType as that's where it makes sense,
     // but it's currently so prevalent in the code we leave it here.
     // Note the below members are included in AstTypeTable::Key lookups
+    // dist-ast-dump-suppress  // Part of dumpSmall
     int m_width = 0;  // (also in AstTypeTable::Key) Bit width of operation
-    int m_widthMin
-        = 0;  // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
+    // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
+    // dist-ast-dump-suppress  // Part of dumpSmall
+    int m_widthMin = 0;
+    // dist-ast-dump-suppress  // Part of dumpSmall
     VSigning m_numeric;  // (also in AstTypeTable::Key) Node is signed
-    // Other members
+    // dist-ast-dump-suppress  // Part of dumpSmall
     bool m_generic = false;  // Simple globally referenced type, don't garbage collect
     // Unique number assigned to each dtype during creation for IEEE matching
     static int s_uniqueNum;
@@ -406,6 +409,7 @@ class AstBasicDType final : public AstNodeDType {
     // @astgen op1 := rangep : Optional[AstRange] // Range of variable
     struct Members final {
         VBasicDTypeKwd m_keyword;  // (also in VBasicTypeKey) What keyword created basic type
+        // dist-ast-dump-suppress  // Part of dumpSmall
         VNumRange m_nrange;  // (also in VBasicTypeKey) Numeric msb/lsb (if non-opaque keyword)
         bool operator==(const Members& rhs) const {
             return rhs.m_keyword == m_keyword && rhs.m_nrange == m_nrange;
@@ -493,6 +497,9 @@ public:
     }
     bool isStdRandomGenerator() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::RANDOM_STDGENERATOR;
+    }
+    bool isCovergroupInstHandle() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::COVERGROUP_INSTHANDLE;
     }
     bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
     bool isString() const VL_MT_STABLE { return keyword().isString(); }
@@ -683,6 +690,78 @@ public:
     int widthTotalBytes() const override { return 1; }
     bool isCompound() const override { return false; }
 };
+class AstCoverCrossDType final : public AstNodeDType {
+    // Borrowed pointer to VlCoverCrossT<dimensions, tuples, bins, autoBins, binWords>.
+    const uint32_t m_dimensions;
+    const uint32_t m_tuples;
+    const uint32_t m_bins;
+    const uint32_t m_autoBins;
+    const uint64_t m_binWords;
+
+public:
+    AstCoverCrossDType(FileLine* fl, uint32_t dimensions, uint32_t tuples, uint32_t bins,
+                       uint32_t autoBins, uint64_t binWords)
+        : ASTGEN_SUPER_CoverCrossDType(fl)
+        , m_dimensions{dimensions}
+        , m_tuples{tuples}
+        , m_bins{bins}
+        , m_autoBins{autoBins}
+        , m_binWords{binWords} {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstCoverCrossDType;
+    const char* broken() const override {
+        BROKEN_RTN(m_dimensions == 0);
+        return nullptr;
+    }
+    bool sameNode(const AstNode* samep) const override {
+        const AstCoverCrossDType* const sp = VN_DBG_AS(samep, CoverCrossDType);
+        return dimensions() == sp->dimensions() && tuples() == sp->tuples() && bins() == sp->bins()
+               && autoBins() == sp->autoBins() && binWords() == sp->binWords();
+    }
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    void dumpSmall(std::ostream& str) const override;
+    uint32_t dimensions() const { return m_dimensions; }
+    uint32_t tuples() const { return m_tuples; }
+    uint32_t bins() const { return m_bins; }
+    uint32_t autoBins() const { return m_autoBins; }
+    uint64_t binWords() const { return m_binWords; }
+    string cppTemplateArgs() const;
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    int widthAlignBytes() const override { return sizeof(void*); }
+    int widthTotalBytes() const override { return sizeof(void*); }
+    bool isCompound() const override { return true; }
+};
+class AstCoverpointDType final : public AstNodeDType {
+    // Borrowed pointer to a covergroup coverpoint runtime, 'VlCoverpointT<hitBound>*'.
+    // Follows pattern of AstQueueDType in capturing the compile-time max bin overlap
+    // template argument.
+    uint32_t m_hitBound;  // VlCoverpointT<> template argument; hit list size, >= 1
+public:
+    AstCoverpointDType(FileLine* fl, uint32_t hitBound)
+        : ASTGEN_SUPER_CoverpointDType(fl)
+        , m_hitBound{hitBound} {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstCoverpointDType;
+    const char* broken() const override {
+        BROKEN_RTN(m_hitBound < 1);
+        return nullptr;
+    }
+    // V3Covergroup interns these one-per-hitBound into the type table, so identity is
+    // equality; there is never a second node with the same bound to compare against.
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    void dumpSmall(std::ostream& str) const override;
+    // ACCESSORS
+    uint32_t hitBound() const { return m_hitBound; }
+    // METHODS
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    int widthAlignBytes() const override { return sizeof(void*); }
+    int widthTotalBytes() const override { return sizeof(void*); }
+    bool isCompound() const override { return true; }
+};
 class AstDefImplicitDType final : public AstNodeDType {
     // For parsing enum/struct/unions that are declared with a variable rather than typedef
     // This allows "var enum {...} a,b" to share the enum definition for both variables
@@ -805,6 +884,7 @@ public:
 private:
     string m_name;  // Name from upper typedef, if any
     const int m_uniqueNum;
+    // dist-ast-dump-suppress  // Skip dumping cache
     TableMap m_tableMap;  // Created table for V3Width only to remove duplicates
 
 public:
@@ -860,6 +940,7 @@ public:
 class AstIfaceGenericDType final : public AstNodeDType {
     // Generic interface that will be replaced with AstIfaceRefDType
     FileLine* m_modportFileline;  // Where modport token was
+    // dist-ast-dump-suppress  // Part of name()
     string m_modportName;  // "" = no modport
 public:
     explicit AstIfaceGenericDType(FileLine* fl)
@@ -1046,7 +1127,8 @@ public:
         dtypep(this);
     }
     ASTGEN_MEMBERS_AstNBACommitQueueDType;
-
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     AstNodeDType* subDTypep() const override VL_MT_STABLE { return m_subDTypep; }
     bool partial() const { return m_partial; }
     bool sameNode(const AstNode* samep) const override {
@@ -1116,6 +1198,8 @@ public:
     ASTGEN_MEMBERS_AstParseTypeDType;
     AstNodeDType* dtypep() const VL_MT_STABLE { return nullptr; }
     // METHODS
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     int widthAlignBytes() const override { return 0; }
@@ -1460,6 +1544,8 @@ public:
         widthFromSub(subDTypep());
     }
     ASTGEN_MEMBERS_AstUnpackArrayDType;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string prettyDTypeName(bool full) const override;
     bool sameNode(const AstNode* samep) const override {
         const AstUnpackArrayDType* const sp = VN_DBG_AS(samep, UnpackArrayDType);

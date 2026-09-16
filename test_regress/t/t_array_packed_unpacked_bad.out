@@ -1,0 +1,14 @@
+%Error: t/t_array_packed_unpacked_bad.v:18:26: Unpacked data type 'struct{}$unit::unpacked_struct_t' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   18 |   unpacked_struct_t [0:0][0:0] unpacked_struct_array;
+      |                          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_array_packed_unpacked_bad.v:19:25: Unpacked data type 'union{}$unit::unpacked_union_t' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   19 |   unpacked_union_t [0:0][0:0] unpacked_union_array;
+      |                         ^
+%Error: t/t_array_packed_unpacked_bad.v:21:34: Unpacked data type 'struct{}' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   21 |   typedef struct {logic a;} [0:0][0:0] direct_unpacked_struct_array_t;
+      |                                  ^
+%Error: Exiting due to

@@ -16,9 +16,9 @@ RELEASE_OK_RE = r'(^test_regress/t/.*\.(cpp|h|map|mk|sv|v|vlt)|^test_regress/t_d
 
 EXEMPT_AUTHOR_RE = r'(^ci/|^nodist/fastcov.py|^nodist/fuzzer|^test_regress/t/.*\.(cpp|h|mk|s?vh?|vlt)$)'
 
-EXEMPT_FILES_RE = r'(^\.|/\.|\.gitignore$|\.dat|\.gprof|\.mem|\.out$|\.png$|\.tree|\.vc$|\.vcd$|^\.)'
+EXEMPT_COPYRIGHT_RE = r'(^\.|/\.|\.gitignore$|\.dat|\.gprof|\.mem|\.out$|\.png$|\.tree|\.vc$|\.vcd$|^\.)'
 
-EXEMPT_FILES_LIST = """
+EXEMPT_COPYRIGHT_FILES = """
     CITATION.cff
     CPPLINT.cfg
     LICENSE
@@ -43,9 +43,9 @@ EXEMPT_FILES_LIST = """
     verilator.pc.in
     """
 
-Exempt_Files_List_Re = list(map(re.escape, EXEMPT_FILES_LIST.split()))
-Exempt_Files_List_Re = '^(' + '|'.join(Exempt_Files_List_Re) + ")"
-# pprint(Exempt_Files_List_Re)
+Exempt_Copyright_Files_Re = list(map(re.escape, EXEMPT_COPYRIGHT_FILES.split()))
+Exempt_Copyright_Files_Re = '^(' + '|'.join(Exempt_Copyright_Files_Re) + ")"
+# pprint(Exempt_Copyright_Files_Re)
 
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
@@ -58,9 +58,9 @@ year = datetime.datetime.now().year
 files = {}
 out = re.sub(r'\s+', ' ', out)
 for filename in out.split():
-    if re.search(EXEMPT_FILES_RE, filename):
+    if re.search(EXEMPT_COPYRIGHT_RE, filename):
         continue
-    if re.search(Exempt_Files_List_Re, filename):
+    if re.search(Exempt_Copyright_Files_Re, filename):
         continue
     files[filename] = True
 

@@ -113,11 +113,11 @@ module t (
 
     // concurrent test
     #10;
-    $display("Disabling concurrent asserts, time: %g", $time);
+    $display("[%0t] Disabling concurrent asserts", $time);
     $assertcontrol(On, ALL_TYPES);
     $assertcontrol(Off, CONCURRENT);
     #10;
-    $display("Enabling concurrent asserts, time: %g", $time);
+    $display("[%0t] Enabling concurrent asserts", $time);
     $assertcontrol(On, CONCURRENT);
 
     $write("*-* All Finished *-*\n");

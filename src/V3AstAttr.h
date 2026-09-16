@@ -509,6 +509,7 @@ public:
         PROCESS_REFERENCE,
         RANDOM_GENERATOR,
         RANDOM_STDGENERATOR,
+        COVERGROUP_INSTHANDLE,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -544,6 +545,7 @@ public:
                                             "VlProcessRef",
                                             "VlRandomizer",
                                             "VlStdRandomizer",
+                                            "VlCovInstHandle",
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
@@ -576,6 +578,7 @@ public:
                                             "%E-proc-ref",
                                             "%E-rand-gen",
                                             "%E-stdrand-gen",
+                                            "%E-cg-insthandle",
                                             "IData",
                                             "QData",
                                             "%E-logic-implct",
@@ -620,6 +623,7 @@ public:
         case PROCESS_REFERENCE: return 0;  // opaque
         case RANDOM_GENERATOR: return 0;  // opaque
         case RANDOM_STDGENERATOR: return 0;  // opaque
+        case COVERGROUP_INSTHANDLE: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -660,8 +664,8 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
-                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE
-                || m_e == UNTYPED);
+                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
+                || m_e == COVERGROUP_INSTHANDLE || m_e == DOUBLE || m_e == UNTYPED);
     }
     bool isCHandle() const VL_MT_SAFE { return m_e == CHANDLE; }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
@@ -716,6 +720,7 @@ public:
             /* PROCESS_REFERENCE:         */ "",  // Should not be traced
             /* RANDOM_GENERATOR:          */ "",  // Should not be traced
             /* RANDOM_STD_GENERATOR:      */ "",  // Should not be traced
+            /* COVERGROUP_INSTHANDLE:     */ "",  // Should not be traced
             /* UINT32:                    */ "BIT",
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
@@ -752,6 +757,7 @@ public:
         static const char* const names[] = {"FALSE", "TRUE", "UNK"};
         return names[m_e];
     }
+    bool isKnown() const { return m_e != BU_UNKNOWN; }
     bool trueKnown() const { return m_e == BU_TRUE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? BU_TRUE : BU_FALSE; }
 };
@@ -795,6 +801,10 @@ public:
         static const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
         return names[m_e];
     }
+    const char* asciiShort() const {
+        static const char* const names[] = {"", "L", "!L"};
+        return names[m_e];
+    }
 };
 constexpr bool operator==(const VBranchPred& lhs, const VBranchPred& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -807,137 +817,158 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
 
 // ######################################################################
 
+// C++ methods invoked on runtime library data types via AstCMethodHard.
+// The argument descriptor gives the access direction of each argument:
+// - 'r' read by the call
+// - 'w' written by the call (Use only if unconditionally and wholly written,
+//   that is: a preceding write can be removed. Otherwise use 'm'.)
+// - 'm' read and written (modified) by the call
+// - '+' repeats the entry before it for all remaining arguments, must be last
+// - "" if the method takes no arguments
+// - "TODO" if not yet checked due to existing issues
+// clang-format off
+#define FOR_EACH_CMETHOD(macro) \
+    /*    id,                                 method,                   pure,   args */ \
+    macro(_NONE,                              "_none",                  false,  "") \
+    macro(ARRAY_AT,                           "at",                     PURE,   "r") \
+    macro(ARRAY_AT_BACK,                      "atBack",                 PURE,   "r") \
+    macro(ARRAY_AT_WRITE,                     "atWrite",                PURE,   "r") \
+    macro(ARRAY_FIND,                         "find",                   PURE,   "") \
+    macro(ARRAY_FIND_FIRST,                   "find_first",             PURE,   "") \
+    macro(ARRAY_FIND_FIRST_INDEX,             "find_first_index",       PURE,   "") \
+    macro(ARRAY_FIND_INDEX,                   "find_index",             PURE,   "") \
+    macro(ARRAY_FIND_LAST,                    "find_last",              PURE,   "") \
+    macro(ARRAY_FIND_LAST_INDEX,              "find_last_index",        PURE,   "") \
+    macro(ARRAY_FIRST,                        "first",                  false,  "m") \
+    macro(ARRAY_INSIDE,                       "inside",                 PURE,   "r") \
+    macro(ARRAY_LAST,                         "last",                   false,  "m") \
+    macro(ARRAY_MAP,                          "map",                    PURE,   "") \
+    macro(ARRAY_MAX,                          "max",                    PURE,   "") \
+    macro(ARRAY_MIN,                          "min",                    PURE,   "") \
+    macro(ARRAY_NEXT,                         "next",                   false,  "m") \
+    macro(ARRAY_POP_BACK,                     "pop_back",               false,  "") \
+    macro(ARRAY_POP_FRONT,                    "pop_front",              false,  "") \
+    macro(ARRAY_PREV,                         "prev",                   false,  "m") \
+    macro(ARRAY_PUSH_BACK,                    "push_back",              false,  "r") \
+    macro(ARRAY_PUSH_FRONT,                   "push_front",             false,  "r") \
+    macro(ARRAY_REVERSE,                      "reverse",                false,  "") \
+    macro(ARRAY_RSORT,                        "rsort",                  false,  "") \
+    macro(ARRAY_R_AND,                        "r_and",                  PURE,   "") \
+    macro(ARRAY_R_OR,                         "r_or",                   PURE,   "") \
+    macro(ARRAY_R_PRODUCT,                    "r_product",              PURE,   "") \
+    macro(ARRAY_R_SUM,                        "r_sum",                  PURE,   "") \
+    macro(ARRAY_R_XOR,                        "r_xor",                  PURE,   "") \
+    macro(ARRAY_SHUFFLE,                      "shuffle",                false,  "") \
+    macro(ARRAY_SLICE,                        "slice",                  PURE,   "r") \
+    macro(ARRAY_SORT,                         "sort",                   false,  "") \
+    macro(ARRAY_UNIQUE,                       "unique",                 PURE,   "") \
+    macro(ARRAY_UNIQUE_INDEX,                 "unique_index",           PURE,   "") \
+    macro(ASSOC_CLEAR,                        "clear",                  false,  "") \
+    macro(ASSOC_ERASE,                        "erase",                  false,  "r") \
+    macro(ASSOC_EXISTS,                       "exists",                 PURE,   "r") \
+    macro(ASSOC_FIRST,                        "first",                  false,  "m") \
+    macro(ASSOC_NEXT,                         "next",                   false,  "m") \
+    macro(ASSOC_SIZE,                         "size",                   PURE,   "") \
+    macro(CLASS_SET_RANDMODE,                 "set_randmode",           false,  "r") \
+    macro(COVERGROUP_ADD_ARRAY_NAMER,         "addArrayNamer",          false,  "r+") \
+    macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  "r+") \
+    macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  "") \
+    macro(COVERGROUP_ADD_CROSS,               "addCross",               false,  "") \
+    macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  "r+") \
+    macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
+    macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
+    macro(COVERGROUP_COVERAGE_PARTS,          "coverageParts",          false,  "TODO") \
+    macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  "") \
+    macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  "r") \
+    macro(COVERGROUP_INIT,                    "init",                   false,  "r+") \
+    macro(COVERGROUP_INST_P,                  "p",                      PURE,   "") \
+    macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  "r") \
+    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rr") \
+    macro(COVERGROUP_SAMPLE,                  "sample",                 false,  "") \
+    macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  "r") \
+    macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
+    macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \
+    macro(DYN_CLEAR,                          "clear",                  false,  "") \
+    macro(DYN_ERASE,                          "erase",                  false,  "r") \
+    macro(DYN_INSERT,                         "insert",                 false,  "rr") \
+    macro(DYN_POP,                            "pop",                    false,  "rrm") \
+    macro(DYN_POP_FRONT,                      "pop_front",              false,  "") \
+    macro(DYN_PUSH,                           "push",                   false,  "rr") \
+    macro(DYN_PUSH_FRONT,                     "push_front",             false,  "r") \
+    macro(DYN_RENEW,                          "renew",                  false,  "r") \
+    macro(DYN_RENEW_COPY,                     "renew_copy",             false,  "rr") \
+    macro(DYN_RESIZE,                         "resize",                 false,  "TODO") \
+    macro(DYN_SIZE,                           "size",                   PURE,   "") \
+    macro(DYN_SLICE,                          "slice",                  PURE,   "rr") \
+    macro(DYN_SLICE_ASSIGN,                   "sliceAssign",            false,  "rrr") \
+    macro(DYN_SLICE_ASSIGN_BACK_BACK,         "sliceAssignBackBack",    false,  "rrr") \
+    macro(DYN_SLICE_ASSIGN_FRONT_BACK,        "sliceAssignFrontBack",   false,  "rrr") \
+    macro(DYN_SLICE_BACK_BACK,                "sliceBackBack",          PURE,   "rr") \
+    macro(DYN_SLICE_FRONT_BACK,               "sliceFrontBack",         PURE,   "rr") \
+    macro(EVENT_CLEAR_FIRED,                  "clearFired",             false,  "") \
+    macro(EVENT_CLEAR_TRIGGERED,              "clearTriggered",         false,  "") \
+    macro(EVENT_FIRE,                         "fire",                   false,  "") \
+    macro(EVENT_IS_FIRED,                     "isFired",                PURE,   "") \
+    macro(EVENT_IS_TRIGGERED,                 "isTriggered",            PURE,   "") \
+    macro(FORCE_ADD,                          "addForce",               false,  "rrrr+") \
+    macro(FORCE_READ,                         "read",                   PURE,   "r") \
+    macro(FORCE_READ_INDEX,                   "readIndex",              PURE,   "rr") \
+    macro(FORCE_READ_SEL,                     "readSel",                PURE,   "TODO") \
+    macro(FORCE_RELEASE,                      "release",                false,  "rr+") \
+    macro(FORCE_TOUCH,                        "touch",                  false,  "") \
+    macro(FORK_DONE,                          "done",                   false,  "rr") \
+    macro(FORK_INIT,                          "init",                   false,  "rr") \
+    macro(FORK_JOIN,                          "join",                   false,  "rrr") \
+    macro(FORK_ON_KILL,                       "onKill",                 false,  "r") \
+    macro(NBA_COMMIT,                         "commit",                 false,  "w") \
+    macro(NBA_ENQUEUE,                        "enqueue",                false,  "r+") \
+    macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false,  "mr") \
+    macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false,  "") \
+    macro(RANDOMIZER_CLEARALL,                "clearAll",               false,  "") \
+    macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false,  "r") \
+    macro(RANDOMIZER_HARD,                    "hard",                   false,  "r+") \
+    macro(RANDOMIZER_SOFT,                    "soft",                   false,  "rrrr") \
+    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "r") \
+    macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  "r") \
+    macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  "rr") \
+    macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  "rrr") \
+    macro(RANDOMIZER_WRITE_VAR,               "write_var",              false,  "TODO") \
+    macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false,  "r") \
+    macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false,  "r") \
+    macro(RANDOMIZER_MARK_VAR_STATIC,         "mark_var_static",        false,  "r") \
+    macro(RANDOMIZER_SET_STATIC_RANDMODE,     "set_static_randmode",    false,  "r") \
+    macro(RNG_GET_RANDSTATE,                  "__Vm_rng.get_randstate", PURE,   "") \
+    macro(RNG_SET_RANDSTATE,                  "__Vm_rng.set_randstate", false,  "r") \
+    macro(SCHED_ANY_TRIGGERED,                "anyTriggered",           false,  "r") \
+    macro(SCHED_AWAITING_CURRENT_TIME,        "awaitingCurrentTime",    PURE,   "") \
+    macro(SCHED_AWAITING_ZERO_DELAY,          "awaitingZeroDelay",      PURE,   "") \
+    macro(SCHED_READY,                        "ready",                  false,  "r") \
+    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false,  "r") \
+    macro(SCHED_DELAY,                        "delay",                  false,  "rrrr") \
+    macro(SCHED_DO_POST_UPDATES,              "doPostUpdates",          false,  "") \
+    macro(SCHED_EVALUATE,                     "evaluate",               false,  "") \
+    macro(SCHED_EVALUATION,                   "evaluation",             false,  "rrrr") \
+    macro(SCHED_POST_UPDATE,                  "postUpdate",             false,  "rrrr") \
+    macro(SCHED_RESUME,                       "resume",                 false,  "TODO") \
+    macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false,  "") \
+    macro(SCHED_RESUMPTION,                   "resumption",             false,  "rrrr") \
+    macro(SCHED_TRIGGER,                      "trigger",                false,  "rrrrr") \
+    macro(SCHED_WAIT_FOREVER,                 "waitForever",            false,  "rrr") \
+    macro(UNPACKED_ASSIGN,                    "assign",                 false,  "r") \
+    macro(UNPACKED_FILL,                      "fill",                   false,  "r") \
+    macro(UNPACKED_NEQ,                       "neq",                    PURE,   "r")
+// clang-format on
+
 class VCMethod final {
+    static constexpr bool PURE = true;  // For macro expansion of 'pure' field only
+
 public:
-    // Entries in this table need to match below VCMethod::s_itemData[] table
     enum en : uint8_t {
-        _NONE,  // Unknown
-        ARRAY_AND,
-        ARRAY_AT,
-        ARRAY_AT_BACK,
-        ARRAY_AT_WRITE,
-        ARRAY_FIND,
-        ARRAY_FIND_FIRST,
-        ARRAY_FIND_FIRST_INDEX,
-        ARRAY_FIND_INDEX,
-        ARRAY_FIND_LAST,
-        ARRAY_FIND_LAST_INDEX,
-        ARRAY_FIRST,
-        ARRAY_INSIDE,
-        ARRAY_LAST,
-        ARRAY_MAP,
-        ARRAY_MAX,
-        ARRAY_MIN,
-        ARRAY_NEXT,
-        ARRAY_OR,
-        ARRAY_POP_BACK,
-        ARRAY_POP_FRONT,
-        ARRAY_PREV,
-        ARRAY_PRODUCT,
-        ARRAY_PUSH_BACK,
-        ARRAY_PUSH_FRONT,
-        ARRAY_REVERSE,
-        ARRAY_RSORT,
-        ARRAY_R_AND,
-        ARRAY_R_OR,
-        ARRAY_R_PRODUCT,
-        ARRAY_R_SUM,
-        ARRAY_R_XOR,
-        ARRAY_SHUFFLE,
-        ARRAY_SORT,
-        ARRAY_SUM,
-        ARRAY_UNIQUE,
-        ARRAY_UNIQUE_INDEX,
-        ARRAY_XOR,
-        ASSOC_CLEAR,
-        ASSOC_ERASE,
-        ASSOC_EXISTS,
-        ASSOC_FIRST,
-        ASSOC_NEXT,
-        ASSOC_SIZE,
-        CLASS_SET_RANDMODE,
-        DYN_AT_WRITE_APPEND,
-        DYN_AT_WRITE_APPEND_BACK,
-        DYN_CLEAR,
-        DYN_ERASE,
-        DYN_INSERT,
-        DYN_POP,
-        DYN_POP_FRONT,
-        DYN_PUSH,
-        DYN_PUSH_FRONT,
-        DYN_RENEW,
-        DYN_RENEW_COPY,
-        DYN_RESIZE,
-        DYN_SIZE,
-        DYN_SLICE,
-        DYN_SLICE_ASSIGN,
-        DYN_SLICE_ASSIGN_BACK_BACK,
-        DYN_SLICE_ASSIGN_FRONT_BACK,
-        DYN_SLICE_BACK_BACK,
-        DYN_SLICE_FRONT_BACK,
-        EVENT_CLEAR_FIRED,
-        EVENT_CLEAR_TRIGGERED,
-        EVENT_FIRE,
-        EVENT_IS_FIRED,
-        EVENT_IS_TRIGGERED,
-        FORCE_ADD,
-        FORCE_READ,
-        FORCE_READ_INDEX,
-        FORCE_READ_SEL,
-        FORCE_RELEASE,
-        FORCE_TOUCH,
-        FORK_DONE,
-        FORK_INIT,
-        FORK_JOIN,
-        FORK_ON_KILL,
-        RANDOMIZER_BASIC_STD_RANDOMIZATION,
-        RANDOMIZER_CLEARCONSTRAINTS,
-        RANDOMIZER_CLEARALL,
-        RANDOMIZER_DISABLE_SOFT,
-        RANDOMIZER_HARD,
-        RANDOMIZER_SOFT,
-        RANDOMIZER_UNIQUE,
-        RANDOMIZER_MARK_RANDC,
-        RANDOMIZER_SOLVE_BEFORE,
-        RANDOMIZER_PIN_VAR,
-        RANDOMIZER_WRITE_VAR,
-        RANDOMIZER_SET_VAR_DISABLED,
-        RANDOMIZER_CLEAR_VAR_DISABLED,
-        RANDOMIZER_MARK_VAR_STATIC,
-        RANDOMIZER_SET_STATIC_RANDMODE,
-        RNG_GET_RANDSTATE,
-        RNG_SET_RANDSTATE,
-        SCHED_ANY_TRIGGERED,
-        SCHED_AWAITING_CURRENT_TIME,
-        SCHED_AWAITING_ZERO_DELAY,
-        SCHED_READY,
-        SCHED_COMMIT,
-        SCHED_MOVE_TO_RESUME_QUEUE,
-        SCHED_DELAY,
-        SCHED_DO_POST_UPDATES,
-        SCHED_ENQUEUE,
-        SCHED_EVALUATE,
-        SCHED_EVALUATION,
-        SCHED_POST_UPDATE,
-        SCHED_RESUME,
-        SCHED_RESUME_ZERO_DELAY,
-        SCHED_RESUMPTION,
-        SCHED_TRIGGER,
-        UNPACKED_ASSIGN,
-        UNPACKED_FILL,
-        UNPACKED_NEQ,
-        _ENUM_MAX  // Leave last
+#define VL_CMETHOD_ID(id, method, pure, args) id,
+        FOR_EACH_CMETHOD(VL_CMETHOD_ID)
+#undef VL_CMETHOD_ID
+            _ENUM_MAX  // Leave last
     };
-
-private:
-    struct Item final {
-        enum en m_e;  // Method's enum mnemonic, for checking
-        const char* m_name;  // Method name, printed into C++
-        bool m_pure;  // Method being called is pure
-    };
-    static Item s_itemData[];
-
-public:
     enum en m_e;
     VCMethod()
         : m_e{_NONE} {}
@@ -947,11 +978,50 @@ public:
     explicit VCMethod(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
-    const char* ascii() const VL_PURE { return s_itemData[m_e].m_name; }
-    bool isPure() const VL_PURE { return s_itemData[m_e].m_pure; }
+    const char* ascii() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CMETHOD_NAME(id, method, pure, args) method,
+            FOR_EACH_CMETHOD(VL_CMETHOD_NAME)
+#undef VL_CMETHOD_NAME
+                "_ENUM_MAX"  //
+        };
+        return values[m_e];
+    }
+    bool isPure() const VL_PURE {
+        static const bool values[] = {
+#define VL_CMETHOD_PURE(id, method, pure, args) pure,
+            FOR_EACH_CMETHOD(VL_CMETHOD_PURE)
+#undef VL_CMETHOD_PURE
+                false  //
+        };
+        return values[m_e];
+    }
+    const char* args() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CMETHOD_ARGS(id, method, pure, args) args,
+            FOR_EACH_CMETHOD(VL_CMETHOD_ARGS)
+#undef VL_CMETHOD_ARGS
+                ""  //
+        };
+        return values[m_e];
+    }
     // Return array method for given name
     static VCMethod arrayMethod(const string& name);
-    static void selfTest();
+
+    // Validate the arguments descriptor
+    static constexpr bool validateArgsDescriptor(const char* descrp) {
+        // Is "TODO"
+        if (descrp[0] == 'T' && descrp[1] == 'O' && descrp[2] == 'D' && descrp[3] == 'O'
+            && !descrp[4]) {
+            return true;
+        }
+        // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
+        for (const char* cp = descrp; *cp; ++cp) {
+            if (*cp == '+') return cp != descrp && !cp[1];
+            if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
+        }
+        return true;
+    }
 };
 constexpr bool operator==(const VCMethod& lhs, const VCMethod& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VCMethod& lhs, VCMethod::en rhs) { return lhs.m_e == rhs; }
@@ -960,127 +1030,14 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
     return os << rhs.ascii();
 }
 
-// Entries in this table need to match above VCMethod enum table
-//
-// {Mnemonic, C++ method, pure}
-#define V3AST_VCMETHOD_ITEMDATA_DECL \
-    VCMethod::Item VCMethod::s_itemData[] \
-        = {{_NONE, "_none", false}, \
-           {ARRAY_AND, "and", true}, \
-           {ARRAY_AT, "at", true}, \
-           {ARRAY_AT_BACK, "atBack", true}, \
-           {ARRAY_AT_WRITE, "atWrite", true}, \
-           {ARRAY_FIND, "find", true}, \
-           {ARRAY_FIND_FIRST, "find_first", true}, \
-           {ARRAY_FIND_FIRST_INDEX, "find_first_index", true}, \
-           {ARRAY_FIND_INDEX, "find_index", true}, \
-           {ARRAY_FIND_LAST, "find_last", true}, \
-           {ARRAY_FIND_LAST_INDEX, "find_last_index", true}, \
-           {ARRAY_FIRST, "first", false}, \
-           {ARRAY_INSIDE, "inside", true}, \
-           {ARRAY_LAST, "last", false}, \
-           {ARRAY_MAP, "map", true}, \
-           {ARRAY_MAX, "max", true}, \
-           {ARRAY_MIN, "min", true}, \
-           {ARRAY_NEXT, "next", false}, \
-           {ARRAY_OR, "or", true}, \
-           {ARRAY_POP_BACK, "pop_back", false}, \
-           {ARRAY_POP_FRONT, "pop_front", false}, \
-           {ARRAY_PREV, "prev", false}, \
-           {ARRAY_PRODUCT, "product", true}, \
-           {ARRAY_PUSH_BACK, "push_back", false}, \
-           {ARRAY_PUSH_FRONT, "push_front", false}, \
-           {ARRAY_REVERSE, "reverse", false}, \
-           {ARRAY_RSORT, "rsort", false}, \
-           {ARRAY_R_AND, "r_and", true}, \
-           {ARRAY_R_OR, "r_or", true}, \
-           {ARRAY_R_PRODUCT, "r_product", true}, \
-           {ARRAY_R_SUM, "r_sum", true}, \
-           {ARRAY_R_XOR, "r_xor", true}, \
-           {ARRAY_SHUFFLE, "shuffle", false}, \
-           {ARRAY_SORT, "sort", false}, \
-           {ARRAY_SUM, "sum", true}, \
-           {ARRAY_UNIQUE, "unique", true}, \
-           {ARRAY_UNIQUE_INDEX, "unique_index", true}, \
-           {ARRAY_XOR, "xor", true}, \
-           {ASSOC_CLEAR, "clear", false}, \
-           {ASSOC_ERASE, "erase", false}, \
-           {ASSOC_EXISTS, "exists", true}, \
-           {ASSOC_FIRST, "first", false}, \
-           {ASSOC_NEXT, "next", false}, \
-           {ASSOC_SIZE, "size", true}, \
-           {CLASS_SET_RANDMODE, "set_randmode", false}, \
-           {DYN_AT_WRITE_APPEND, "atWriteAppend", false}, \
-           {DYN_AT_WRITE_APPEND_BACK, "atWriteAppendBack", false}, \
-           {DYN_CLEAR, "clear", false}, \
-           {DYN_ERASE, "erase", false}, \
-           {DYN_INSERT, "insert", false}, \
-           {DYN_POP, "pop", false}, \
-           {DYN_POP_FRONT, "pop_front", false}, \
-           {DYN_PUSH, "push", false}, \
-           {DYN_PUSH_FRONT, "push_front", false}, \
-           {DYN_RENEW, "renew", false}, \
-           {DYN_RENEW_COPY, "renew_copy", false}, \
-           {DYN_RESIZE, "resize", false}, \
-           {DYN_SIZE, "size", true}, \
-           {DYN_SLICE, "slice", true}, \
-           {DYN_SLICE_ASSIGN, "sliceAssign", false}, \
-           {DYN_SLICE_ASSIGN_BACK_BACK, "sliceAssignBackBack", false}, \
-           {DYN_SLICE_ASSIGN_FRONT_BACK, "sliceAssignFrontBack", false}, \
-           {DYN_SLICE_BACK_BACK, "sliceBackBack", true}, \
-           {DYN_SLICE_FRONT_BACK, "sliceFrontBack", true}, \
-           {EVENT_CLEAR_FIRED, "clearFired", false}, \
-           {EVENT_CLEAR_TRIGGERED, "clearTriggered", false}, \
-           {EVENT_FIRE, "fire", false}, \
-           {EVENT_IS_FIRED, "isFired", true}, \
-           {EVENT_IS_TRIGGERED, "isTriggered", true}, \
-           {FORCE_ADD, "addForce", false}, \
-           {FORCE_READ, "read", true}, \
-           {FORCE_READ_INDEX, "readIndex", true}, \
-           {FORCE_READ_SEL, "readSel", true}, \
-           {FORCE_RELEASE, "release", false}, \
-           {FORCE_TOUCH, "touch", false}, \
-           {FORK_DONE, "done", false}, \
-           {FORK_INIT, "init", false}, \
-           {FORK_JOIN, "join", false}, \
-           {FORK_ON_KILL, "onKill", false}, \
-           {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
-           {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
-           {RANDOMIZER_CLEARALL, "clearAll", false}, \
-           {RANDOMIZER_DISABLE_SOFT, "disable_soft", false}, \
-           {RANDOMIZER_HARD, "hard", false}, \
-           {RANDOMIZER_SOFT, "soft", false}, \
-           {RANDOMIZER_UNIQUE, "rand_unique", false}, \
-           {RANDOMIZER_MARK_RANDC, "markRandc", false}, \
-           {RANDOMIZER_SOLVE_BEFORE, "solveBefore", false}, \
-           {RANDOMIZER_PIN_VAR, "pin_var", false}, \
-           {RANDOMIZER_WRITE_VAR, "write_var", false}, \
-           {RANDOMIZER_SET_VAR_DISABLED, "set_var_disabled", false}, \
-           {RANDOMIZER_CLEAR_VAR_DISABLED, "clear_var_disabled", false}, \
-           {RANDOMIZER_MARK_VAR_STATIC, "mark_var_static", false}, \
-           {RANDOMIZER_SET_STATIC_RANDMODE, "set_static_randmode", false}, \
-           {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
-           {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
-           {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
-           {SCHED_AWAITING_CURRENT_TIME, "awaitingCurrentTime", true}, \
-           {SCHED_AWAITING_ZERO_DELAY, "awaitingZeroDelay", true}, \
-           {SCHED_READY, "ready", false}, \
-           {SCHED_COMMIT, "commit", false}, \
-           {SCHED_MOVE_TO_RESUME_QUEUE, "moveToResumeQueue", false}, \
-           {SCHED_DELAY, "delay", false}, \
-           {SCHED_DO_POST_UPDATES, "doPostUpdates", false}, \
-           {SCHED_ENQUEUE, "enqueue", false}, \
-           {SCHED_EVALUATE, "evaluate", false}, \
-           {SCHED_EVALUATION, "evaluation", false}, \
-           {SCHED_POST_UPDATE, "postUpdate", false}, \
-           {SCHED_RESUME, "resume", false}, \
-           {SCHED_RESUME_ZERO_DELAY, "resumeZeroDelay", false}, \
-           {SCHED_RESUMPTION, "resumption", false}, \
-           {SCHED_TRIGGER, "trigger", false}, \
-           {UNPACKED_ASSIGN, "assign", false}, \
-           {UNPACKED_FILL, "fill", false}, \
-           {UNPACKED_NEQ, "neq", true}, \
-           {_ENUM_MAX, "_ENUM_MAX", false}};
+// Static assert all argument descriptors are well formed
+#define VL_CMETHOD_ARGS_CHECK(id, method, pure, args) \
+    static_assert(VCMethod::validateArgsDescriptor(args), \
+                  "Malformed argument descriptor for " #id);
+FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
+#undef VL_CMETHOD_ARGS_CHECK
+
+#undef FOR_EACH_CMETHOD
 
 // ######################################################################
 
@@ -1145,6 +1102,11 @@ public:
     explicit VCaseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static const char* const names[]
+            = {"CASE", "CASEX", "CASEZ", "CASEINSIDE", "CASEMATCHES", "RANDSEQUENCE"};
+        return names[m_e];
+    }
 };
 constexpr bool operator==(const VCaseType& lhs, const VCaseType& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -1259,6 +1221,8 @@ public:
         MERGE_INSTANCES,
         DISTRIBUTE_FIRST,
         REAL_INTERVAL,
+        // Legacy option.* accepted for compatibility
+        CROSS_AUTO_BIN_MAX,
         // sentinel - should never appear after parse-time validation
         UNKNOWN
     };
@@ -1282,6 +1246,7 @@ public:
                                             "merge_instances",
                                             "distribute_first",
                                             "real_interval",
+                                            "cross_auto_bin_max",
                                             "unknown"};
         return names[m_e];
     }
@@ -1537,6 +1502,110 @@ constexpr bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs 
 
 // ######################################################################
 
+// Enumeration of the model's evaluation entry points. Fields:
+// is iterated, has triggers, takes 'firstIteration' flag, is slow
+// clang-format off
+#define FOR_EACH_EVAL(macro) \
+    /*    id,        iterated,  hasTrigs, firstIt, slow */ \
+    macro(STATIC,    false,     false,    false,   true) \
+    macro(INITIAL,   false,     false,    false,   true) \
+    macro(STL,       true,      true,     true,    true) \
+    macro(SAMPLE,    false,     false,    false,   false) \
+    macro(ICO,       true,      true,     true,    false) \
+    macro(ACT,       true,      true,     false,   false) \
+    macro(INACT,     true,      false,    false,   false) \
+    macro(NBA,       true,      true,     false,   false) \
+    macro(OBS,       true,      true,     false,   false) \
+    macro(REACT,     true,      true,     false,   false) \
+    macro(POSTPONED, false,     false,    false,   false) \
+    macro(FINAL,     false,     false,    false,   true)
+// clang-format on
+
+class VEval final {
+public:
+    enum en : uint8_t {
+#define VL_EVAL_ID(id, iterated, triggers, first, slow) id,
+        FOR_EACH_EVAL(VL_EVAL_ID)
+#undef VL_EVAL_ID
+            _ENUM_END
+    };
+    enum en m_e;
+
+    const char* ascii() const {
+        static const char* const values[] = {
+#define VL_EVAL_NAME(id, iterated, triggers, first, slow) #id,
+            FOR_EACH_EVAL(VL_EVAL_NAME)
+#undef VL_EVAL_NAME
+                "_ENUM_END"  //
+        };
+        return values[m_e];
+    }
+    bool isIterated() const {
+        static const bool values[] = {
+#define VL_EVAL_IS_ITERATED(id, iterated, triggers, first, slow) iterated,
+            FOR_EACH_EVAL(VL_EVAL_IS_ITERATED)
+#undef VL_EVAL_IS_ITERATED
+                false  //
+        };
+        return values[m_e];
+    }
+    bool hasTriggers() const {
+        static const bool values[] = {
+#define VL_EVAL_HAS_TRIGGERS(id, iterated, triggers, first, slow) triggers,
+            FOR_EACH_EVAL(VL_EVAL_HAS_TRIGGERS)
+#undef VL_EVAL_HAS_TRIGGERS
+                false  //
+        };
+        return values[m_e];
+    }
+    bool firstIteration() const {
+        static const bool values[] = {
+#define VL_EVAL_FIRST(id, iterated, triggers, first, slow) first,
+            FOR_EACH_EVAL(VL_EVAL_FIRST)
+#undef VL_EVAL_FIRST
+                false  //
+        };
+        return values[m_e];
+    }
+    bool slow() const {
+        static const bool values[] = {
+#define VL_EVAL_SLOW(id, iterated, triggers, first, slow) slow,
+            FOR_EACH_EVAL(VL_EVAL_SLOW)
+#undef VL_EVAL_SLOW
+                false  //
+        };
+        return values[m_e];
+    }
+
+    // Short name
+    std::string tag() const { return VString::downcase(ascii()); }
+    // Name of the generated entry point function
+    std::string funcName() const { return "_eval_" + tag(); }
+    // Name of the VerilatedModel virtual method invoking the entry point
+    std::string evalMethod() const { return "eval" + capitalizedTag(); }
+    // Name of the function dumping the triggers of this region
+    std::string dumpTriggersFuncName() const { return "_eval_dump_triggers__" + tag(); }
+    // Name of the VerilatedModel virtual method dumping this region's triggers
+    std::string dumpTriggersMethod() const { return "dumpTriggers" + capitalizedTag(); }
+
+    // cppcheck-suppress noExplicitConstructor
+    VEval(en _e)
+        : m_e{_e} {}
+    explicit VEval(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+
+private:
+    std::string capitalizedTag() const {
+        const std::string name = ascii();
+        return name.substr(0, 1) + VString::downcase(name.substr(1));
+    }
+};
+
+#undef FOR_EACH_EVAL
+
+// ######################################################################
+
 class VFwdType final {
 public:
     enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS, GENERIC_INTERFACE };
@@ -1728,13 +1797,14 @@ public:
     int hiMaxSelect() const {
         return (lo() < 0 ? hi() - lo() : hi());
     }  // Maximum value a [] select may index
-    void dump(std::ostream& str) const {
+    string ascii() const {
         if (ranged()) {
-            str << "[" << left() << ":" << right() << "]";
+            return "["s + std::to_string(left()) + ":" + std::to_string(right()) + "]";
         } else {
-            str << "[norg]";
+            return "[norg]";
         }
     }
+    void dump(std::ostream& str) const { str << ascii(); }
 };
 inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
     rhs.dump(os);

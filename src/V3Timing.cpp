@@ -173,13 +173,11 @@ class TimingSuspendableVisitor final : public VNVisitor {
     };
 
     // NODE STATE
-    //  AstClass::user1()                        -> bool.               Set true if the class
-    //                                                                  member cache has been
-    //                                                                  refreshed.
-    //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> int.                Set to >= T_SUSP if
-    //                                                                  process/task suspendable
-    //                                                                  and to T_PROC if it
-    //                                                                  needs process metadata.
+    //  AstClass::user1() -> bool.  Class member cache has been refreshed.
+    //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> uint64_t.  Set to >= T_SUSP if
+    //                                                         process/task suspendable
+    //                                                         and to T_PROC if it
+    //                                                         needs process metadata.
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_suspGraph
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_procGraph
     const VNUser3InUse m_user3InUse;
@@ -1393,8 +1391,13 @@ class TimingControlVisitor final : public VNVisitor {
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack
-                AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}"};
-                AstCAwait* const awaitp = new AstCAwait{flp, foreverp};
+                AstCMethodHard* const foreverMethodp = new AstCMethodHard{
+                    flp, new AstVarRef{flp, getCreateDelayScheduler(), VAccess::WRITE},
+                    VCMethod::SCHED_WAIT_FOREVER};
+                foreverMethodp->dtypeSetVoid();
+                addProcessInfo(foreverMethodp);
+                addDebugInfo(foreverMethodp);
+                AstCAwait* const awaitp = new AstCAwait{flp, foreverMethodp};
                 nodep->replaceWith(awaitp);
                 if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
                 VL_DO_DANGLING(condp->deleteTree(), condp);

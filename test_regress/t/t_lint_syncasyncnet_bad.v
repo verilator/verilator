@@ -4,11 +4,20 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+module b (
+  input clk_b,
+  input rst_b
+);
+/* verilator no_inline_module */
+  assert property (@(posedge clk_b) rst_b);
+endmodule
+
 module t (
     input clk,
     input rst_both_l,
     input rst_sync_l,
     input rst_async_l,
+    input rst_both_b,
     input d
 );
 
@@ -54,6 +63,17 @@ module t (
   always @(posedge clk or negedge rst_both_l) begin
     q5 <= (~rst_both_l) ? 1'b0 : d;
     if (0 && q3 && q4 && q5);
+  end
+
+  b t_b (
+    .clk_b(clk),
+    .rst_b(rst_both_b)
+  );
+  reg q6;
+  always_ff @(negedge rst_both_b) begin
+    if (rst_both_b) begin
+      q6 <= q6;
+    end
   end
 
   // Issue #7980 - should not cause a warning

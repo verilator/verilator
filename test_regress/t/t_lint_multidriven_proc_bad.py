@@ -11,18 +11,18 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-# MULTIDRIVENPROC is off by default; enable it explicitly. Module 't' (same
-# clock) triggers it; module 't2' (different clocks) is reported by MULTIDRIVEN
-# instead, confirming MULTIDRIVENPROC is suppressed there.
-# -Wno-MULTITOP: both modules are top-level here on purpose (two independent
-# demonstrations), so silence the unrelated multiple-top-module warning.
+# MULTIDRIVENPROC is off by default; enable it explicitly.
 test.lint(fails=True,
-          verilator_flags2=['-Wwarn-MULTIDRIVENPROC', '-Wno-MULTITOP'],
+          verilator_flags2=['-Wwarn-MULTIDRIVENPROC'],
           expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
              out_filename=test.root + "/docs/gen/ex_MULTIDRIVENPROC_faulty.rst",
-             lines="15-16")
+             lines="53-54")
+
+test.extract(in_filename=test.top_filename,
+             out_filename=test.root + "/docs/gen/ex_MULTIDRIVENPROC_loopidx.rst",
+             lines="81-89")
 
 test.extract(in_filename=test.golden_filename,
              out_filename=test.root + "/docs/gen/ex_MULTIDRIVENPROC_msg.rst",

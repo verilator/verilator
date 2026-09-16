@@ -116,6 +116,10 @@ Summary:
 
 .. option:: --assert-unroll-limit <iterations>
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.052:
+
    Rarely needed. Specifies the maximum repetition or range count Verilator
    will unroll inside an SVA concurrent assertion (e.g. ``[*N]``, ``[->M:N]``,
    ``always[lo:hi]``). Beyond this, the assertion is rejected with an error
@@ -701,6 +705,8 @@ Summary:
 .. option:: -fno-dead-assigns
 
 .. option:: -fno-dead-cells
+
+.. option:: -fno-dead-methods
 
 .. option:: -fno-dedup
 
@@ -1786,12 +1792,11 @@ Summary:
 
 .. option:: --structs-packed
 
-   Deprecated; discontinue use of this option.
+   Removed in 5.054.
 
-   Converts all unpacked structures to packed structures, and issues an
-   :option:`UNPACKED` warning. Specifying this option allows for backward
-   compatibility with versions before Verilator 5.006, when Verilator would
-   always pack unpacked structures.
+   Converted all unpacked structures to packed structures, Specifying this
+   option allowed for backward compatibility with versions before Verilator
+   5.006, when Verilator would always pack unpacked structures.
 
 .. option:: -sv
 

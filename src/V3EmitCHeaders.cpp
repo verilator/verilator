@@ -78,7 +78,7 @@ class EmitCHeader final : public EmitCConstInit {
         const auto emitCurrentList = [this, &first, &varList, &lastAnon]() {
             if (varList.empty()) return;
 
-            decorateFirst(first, "\n// DESIGN SPECIFIC STATE\n");
+            decorateFirst(first, "\n// DESIGN-SPECIFIC STATE\n");
 
             if (lastAnon) {  // Output as anons
                 const int anonMembers = varList.size();
@@ -144,7 +144,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             if (classp->needRNG()) {
                 putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
-                puts("VlRNG __Vm_rng;\n");
+                puts("VlRNGReseeds __Vm_rng;\n");
             }
         } else {  // not class
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
@@ -209,7 +209,9 @@ class EmitCHeader final : public EmitCConstInit {
 
         if (!VN_IS(modp, Class)) {
             decorateFirst(first, section);
-            puts("void " + protect("__Vconfigure") + "(bool first);\n");
+            if (v3Global.opt.coverage()) {
+                puts("void " + protect("__Vconfigure") + "(bool first);\n");
+            }
         } else {
             decorateFirst(first, section);
             const std::string name = V3OutFormatter::quoteNameControls(

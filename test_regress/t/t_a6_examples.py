@@ -12,7 +12,11 @@ import vltest_bootstrap
 test.priority(180)
 test.scenarios('dist')
 
-test.clean_command = '/bin/rm -rf ../examples/*/build ../examples/*/obj*'
+test.clean_command = (
+    '/bin/rm -rf '  #
+    + test.root + '/examples/*/log '  #
+    + test.root + '/examples/*/build '  #
+    + test.root + '/examples/*/obj*')
 
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")

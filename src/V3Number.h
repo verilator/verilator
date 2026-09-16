@@ -47,6 +47,7 @@ public:
         COMPLEX = VL_VFORMATATTR_COMPLEX,
         DOUBLE = VL_VFORMATATTR_DOUBLE,
         ENUM = VL_VFORMATATTR_ENUM,
+        ENUM_SIGNED = VL_VFORMATATTR_ENUM_SIGNED,
         SCOPE = VL_VFORMATATTR_SCOPE,
         STRING = VL_VFORMATATTR_STRING,
         TIMEUNIT = VL_VFORMATATTR_TIMEUNIT
@@ -63,7 +64,7 @@ public:
     char ascii() const { return m_e; }
     bool isComplex() const { return m_e == COMPLEX; }
     bool isDouble() const { return m_e == DOUBLE; }
-    bool isEnum() const { return m_e == ENUM; }
+    bool isEnum() const { return m_e == ENUM || m_e == ENUM_SIGNED; }
     bool isSigned() const { return m_e == SIGNED; }
     bool isString() const { return m_e == STRING; }
     bool isUnsigned() const { return m_e == UNSIGNED; }
@@ -396,6 +397,8 @@ class V3Number final {
         m_data.m_autoExtend = true;
     }
     V3Number& setSingleBits(char value);
+    void fillBits(int destLsb, int width, char value);
+    void copyBits(int destLsb, const V3Number& source, int sourceLsb, int width);
     V3Number& setString(const string& str) {
         m_data.setString(str);
         return *this;

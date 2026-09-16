@@ -96,8 +96,14 @@ ______________________________________________________________________
 - [ ] Ran the full regression on at least one OS before submitting. Partial runs
   are fine during development, but the submitted PR is expected to pass every
   test.
+- [ ] Validated the code changes against recommendations in the AGENTS.md files.
 - [ ] Did not edit `docs/CONTRIBUTORS` (humans only) or `Changes` (maintainer
   updates it near release).
+
+## Drafting a PR
+
+- [ ] When creating a pull request message, omit itemized lists of changed
+  files and changes, since reviewers already have access to the diff.
 
 ## Pick the right diagnostic (and its required test)
 

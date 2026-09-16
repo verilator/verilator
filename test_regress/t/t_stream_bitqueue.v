@@ -10,9 +10,8 @@
 `define checks(gotv, expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
 
   typedef bit bit_q_t[$];  // CData (1-bit)
@@ -26,7 +25,6 @@ module t (  /*AUTOARG*/
   typedef logic [63:0] qdata_logic_q_t[$];  // QData (64-bit)
   typedef logic [127:0] wide_q_t[$];  // VlWide (128-bit)
 
-  input clk;
   integer cyc = 0;
   logic [7:0] d;
   string s;

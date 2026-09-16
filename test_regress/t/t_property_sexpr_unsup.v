@@ -4,12 +4,10 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
 
-  input clk;
   integer cyc = 1;
   bit val = 0;
 
@@ -48,13 +46,9 @@ module t (  /*AUTOARG*/
 
   assert property (@(posedge clk) val until (val ##1 val)) $display("[%0t] sequence in until, fileline:%d", $time, `__LINE__);
 
-  assert property (@(posedge clk) ##1 (val s_until val)) $display("[%0t] s_until in sequence, fileline:%d", $time, `__LINE__);
-
   assert property (@(posedge clk) val s_until val s_until val) $display("[%0t] nested s_until, fileline:%d", $time, `__LINE__);
 
   assert property (@(posedge clk) val s_until (val ##1 val)) $display("[%0t] sequence in until_with, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) ##1 (val s_until_with val)) $display("[%0t] s_until_with in sequence, fileline:%d", $time, `__LINE__);
 
   assert property (@(posedge clk) val s_until_with val s_until_with val) $display("[%0t] nested s_until_with, fileline:%d", $time, `__LINE__);
 

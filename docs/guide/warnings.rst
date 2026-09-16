@@ -592,6 +592,10 @@ List Of Warnings
    ``covergroup``, ``coverpoint``, and coverage options, and the
    construct was ignored.
 
+   This includes crosses whose normal-bin Cartesian product exceeds
+   ``2**32 - 1`` tuples.  The limit is checked during Verilation for both
+   automatic and explicit cross bins.
+
    Disabling the :option:`UNSUPPORTED` error also disables this warning.
 
    Ignoring this warning may make Verilator ignore lint checking on the
@@ -1512,6 +1516,10 @@ List Of Warnings
    ``always_ff``/``always_comb`` if the intent is a single specialized
    process.
 
+   Does not warn for static variables used as loop induction variables:
+
+   .. include:: ../../docs/gen/ex_MULTIDRIVENPROC_loopidx.rst
+
 
 .. option:: MULTITOP
 
@@ -2143,7 +2151,7 @@ List Of Warnings
 
 .. option:: SIMILARNAME
 
-   Warns that a variable name only differs from another in lexical case.
+   Warns that an entity name only differs from another in lexical case.
 
    Faulty example:
 
@@ -2152,6 +2160,13 @@ List Of Warnings
    Results in:
 
    .. include:: ../../docs/gen/ex_SIMILARNAME_msg.rst
+
+   Only declarations that can reach a downstream VLSI tool as a name are
+   checked, that is nets, variables, instances, named blocks (``begin``,
+   ``fork``, and generate blocks), functions and tasks. All of these can form
+   part of a flattened signal or scope name.  Other declarations, such as
+   parameters, localparams, genvars and typedefs, are elaborated away, and so
+   are not checked.
 
    Disabled by default as this is a code-style warning; it will simulate
    correctly.
@@ -2488,14 +2503,10 @@ List Of Warnings
 
 .. option:: UNPACKED
 
-   Warns that unpacked structs and unions are not supported because
-   :vlopt:`--structs-packed` was used, or by up through version 5.004.
+   Historical, never issued since version 5.004.
 
-   Ignoring this warning will make Verilator treat the structure as packed,
-   which may make Verilator simulations differ from other simulators. This
-   downgrading may also result in what would typically be a legal unpacked
-   struct/array inside an unpacked struct/array becoming an illegal
-   unpacked struct/array inside a packed struct/array.
+   Warned that unpacked structs and unions were not supported, or disabled
+   by the since-removed `--structs-packed` option.
 
 
 .. option:: UNSATCONSTR

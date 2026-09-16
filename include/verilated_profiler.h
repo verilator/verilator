@@ -149,7 +149,7 @@ static_assert(std::is_trivially_destructible<VlExecutionRecord>::value,
 //=============================================================================
 // VlExecutionProfiler is for collecting profiling data about model execution
 
-class VlExecutionProfiler final : public VerilatedVirtualBase {
+class VlExecutionProfiler final : public VlExecutionProfilerBase {
     // CONSTANTS
 
     // In order to try to avoid dynamic memory allocations during the actual profiling phase,
@@ -193,8 +193,15 @@ public:
         t_trace.emplace_back();
         return t_trace.back();
     }
-    // Configure profiler (called in beginning of 'eval')
-    void configure();
+    // Record the beginning/end of a section, for the run-time library
+    void sectionPush(const char* namep) override {
+        if (VL_UNLIKELY(m_enabled)) addRecord().sectionPush(namep);
+    }
+    void sectionPop() override {
+        if (VL_UNLIKELY(m_enabled)) addRecord().sectionPop();
+    }
+    // Advance the profiling window, called by the run-time evaluation loop
+    void configure() override;
     // Setup profiling on a particular thread;
     void setupThread(uint32_t threadId);
     // Clear all profiling data

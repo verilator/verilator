@@ -361,7 +361,7 @@ public:
         AstNode* const fnodep = foundp ? foundp->nodep() : nullptr;
         if (!fnodep) {
             // Not found, will add in a moment.
-            if (!lookupSymp->ignoreForSimilarTest(nodep->type())) {  // ignore typedefs etc
+            if (forPrimary() && VSymEnt::checkSimilarname(nodep)) {
                 const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
                 if (alt) {
                     nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
@@ -1216,7 +1216,14 @@ class LinkDotFindVisitor final : public VNVisitor {
         // (sorted before this is called).
         // This may not be the module with isTop() set, as early in the steps,
         // wrapTop may have not been created yet.
-        if (!nodep->modulesp()) nodep->v3error("No top level module found");
+        // $unit always exists, so nothing else, and nothing in it, means nothing was given
+        AstNodeModule* const modulesp = nodep->modulesp();
+        UASSERT_OBJ(modulesp, nodep, "$unit should always be in the netlist");
+        if (!modulesp->nextp()) {
+            UASSERT_OBJ(modulesp == v3Global.rootp()->dollarUnitPkgp(), modulesp,
+                        "Sole module should be $unit");
+            if (!modulesp->stmtsp()) nodep->v3error("No top level module found");
+        }
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
             UINFO(8, "Top Module: " << modp);
@@ -1405,7 +1412,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstClassOrPackageRef* nodep) override {  // FindVisitor::
         if (!nodep->classOrPackageNodep() && nodep->name() == "$unit") {
-            nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgAddp());
+            nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgp());
         }
         iterateChildren(nodep);
     }
@@ -2457,8 +2464,9 @@ class LinkDotParamVisitor final : public VNVisitor {
             if (AstNode* const refp = nodep->op2p()) pinImplicitExprRecurse(refp);
             if (AstNode* const refp = nodep->op3p()) pinImplicitExprRecurse(refp);
             if (AstNode* const refp = nodep->op4p()) pinImplicitExprRecurse(refp);
-            if (AstNode* const refp = nodep->nextp()) pinImplicitExprRecurse(refp);
         }
+        // Continue along a list (e.g. the terminals under AstImplicit), also after a reference
+        if (AstNode* const refp = nodep->nextp()) pinImplicitExprRecurse(refp);
     }
 
     // VISITORS
@@ -3590,7 +3598,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (oldp->wouldBreak(newp)) {
             newp->v3error(
                 "Data type used where a non-data type is expected: " << newp->prettyNameQ());
-            oldp->replaceWith(new AstConst{newp->fileline(), AstConst::BitFalse{}});
+            oldp->replaceWith(new AstConst{newp->fileline(), AstConst::BitFalseErroring{}});
         } else {
             oldp->replaceWith(newp);
         }
@@ -5572,7 +5580,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstNode* const attrp = nodep->attrp()->unlinkFrBack();
                     VL_DO_DANGLING(attrp->deleteTree(), attrp);
                 }
-                AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
+                AstNode* const basefromp = nodep->baseFromp(false);
                 if (VN_IS(basefromp, Replicate)) {
                     // From {...}[...] syntax in IEEE 2017
                     if (basefromp) UINFO(9, indent() << " Related node: " << basefromp);

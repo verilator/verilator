@@ -21,6 +21,8 @@
 
 cmake_minimum_required(VERSION 3.19)
 
+find_package(Perl REQUIRED)
+
 # Prefer VERILATOR_ROOT from environment
 if(DEFINED ENV{VERILATOR_ROOT})
     set(VERILATOR_ROOT "$ENV{VERILATOR_ROOT}" CACHE PATH "VERILATOR_ROOT")
@@ -30,13 +32,18 @@ set(VERILATOR_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "VERILATOR_ROOT")
 
 find_program(
     VERILATOR_BIN
-    NAMES verilator_bin verilator_bin.exe
+    NAMES verilator
     HINTS ${VERILATOR_ROOT}/bin
     ENV VERILATOR_ROOT
     NO_CMAKE_PATH
     NO_CMAKE_ENVIRONMENT_PATH
     NO_CMAKE_SYSTEM_PATH
 )
+
+# The installed wrapper under bin/verilator is a Perl script. Execute it via
+# Perl explicitly so CMake can launch it reliably on Windows and other hosts
+# where direct execution of the wrapper is not supported.
+set(VERILATOR_BIN_COMMAND "${PERL_EXECUTABLE}" "${VERILATOR_BIN}")
 
 if(NOT VERILATOR_ROOT)
     message(
@@ -46,7 +53,7 @@ if(NOT VERILATOR_ROOT)
 endif()
 
 if(NOT VERILATOR_BIN)
-    message(FATAL_ERROR "Cannot find verilator_bin excecutable.")
+    message(FATAL_ERROR "Cannot find verilator executable.")
 endif()
 
 set(verilator_FOUND 1)
@@ -398,7 +405,7 @@ function(verilate TARGET)
         -E
         env
         "VERILATOR_ROOT=${VERILATOR_ROOT}"
-        "${VERILATOR_BIN}"
+        ${VERILATOR_BIN_COMMAND}
         --compiler
         ${COMPILER}
         --prefix
@@ -860,7 +867,7 @@ endfunction()
 
 function(verilator_generate_key OUTPUT_VARIABLE)
     execute_process(
-        COMMAND ${VERILATOR_BIN} --generate-key
+        COMMAND ${VERILATOR_BIN_COMMAND} --generate-key
         OUTPUT_VARIABLE KEY_VAL
         RESULT_VARIABLE KEY_RET
     )
