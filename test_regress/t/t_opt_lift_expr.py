@@ -18,11 +18,13 @@ test.compile(verilator_flags2=['--binary', '--stats', '-fno-const-before-dfg', t
 
 test.execute()
 
-test.file_grep(test.stats, r'LiftExpr, lifted LogAnd\s+([1-9]\d*)')
-test.file_grep(test.stats, r'LiftExpr, lifted LogOr\s+([1-9]\d*)')
-test.file_grep(test.stats, r'LiftExpr, lifted LogIf\s+([1-9]\d*)')
-test.file_grep(test.stats, r'LiftExpr, lifted Cond\s+([1-9]\d*)')
-test.file_grep(test.stats, r'LiftExpr, lifted calls\s+([1-9]\d*)')
-test.file_grep(test.stats, r'LiftExpr, lifted impure expressions\s+([1-9]\d*)')
+test.file_grep(test.stats, r'LiftExpr, lifted LogAnd\s+(\d+)', 16)
+test.file_grep(test.stats, r'LiftExpr, lifted LogOr\s+(\d+)', 16)
+test.file_grep(test.stats, r'LiftExpr, lifted LogIf\s+(\d+)', 16)
+test.file_grep(test.stats, r'LiftExpr, lifted Cond\s+(\d+)', 32)
+test.file_grep(test.stats, r'LiftExpr, lifted calls\s+(\d+)', 178)
+test.file_grep(test.stats, r'LiftExpr, lifted impure expressions\s+(\d+)', 2)
+test.file_grep(test.stats, r'LiftExpr, temporaries created\s+(\d+)', 196)
+test.file_grep(test.stats, r'LiftExpr, temporaries reused\s+(\d+)', 16)
 
 test.passes()
