@@ -447,6 +447,11 @@ class DeadVisitor final : public VNVisitor {
         checkDType(nodep);
         checkAll(nodep);
     }
+    void visit(AstEnumDType* nodep) override {
+        // Widthing during parameter evaluation may have populated the cache.
+        nodep->tableMap().clear();
+        visit(static_cast<AstNodeDType*>(nodep));
+    }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);

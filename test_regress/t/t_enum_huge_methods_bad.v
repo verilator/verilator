@@ -25,7 +25,7 @@ module t (
       e <= E01;
     end
     else if (cyc == 1) begin
-      $display(e.name);
+      e <= e.next();
       e <= ELARGE;
     end
     else if (cyc == 99) begin
