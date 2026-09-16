@@ -8812,7 +8812,8 @@ class WidthVisitor final : public VNVisitor {
         if (m_ftaskp) {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            m_ftaskp->addStmtsp(varp);
+            // Declare before use, including in non-inlined class methods.
+            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
         } else {
             UASSERT_OBJ(m_modep, valuep, "Enum expression without a containing module");
             m_modep->addStmtsp(varp);

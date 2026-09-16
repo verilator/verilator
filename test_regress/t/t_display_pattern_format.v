@@ -57,6 +57,41 @@ module t;
   } unsigned65_t;
   typedef unsigned65_t unsigned65_alias_t;
 
+  class EnumFormatter;
+    enum_t queue_values[$];
+    signed65_t array_values[];
+    int calls = 0;
+
+    virtual function string format(input string fmt);
+      string result = "";
+      foreach (queue_values[i])
+      result = {result, $sformatf("%p/%s", queue_values[i], queue_values[i]), ";"};
+      foreach (array_values[i])
+      result = {result, $sformatf(fmt, array_values[i], array_values[i]), ";"};
+      return result;
+    endfunction
+
+    function string pop_name();
+      calls++;
+      return queue_values.pop_front().name();
+    endfunction
+  endclass
+
+  EnumFormatter formatter;
+
+  task automatic format_noinline(input enum_t queue_values[$], input signed65_t array_values[],
+                                 input string fmt, output string result);
+    // verilator no_inline_task
+    result = "";
+    foreach (queue_values[i]) begin
+      result = {result, $sformatf("%p/%s", queue_values[i], queue_values[i]), ";"};
+    end
+    foreach (array_values[i]) begin
+      result = {result, $sformatf(fmt, array_values[i], array_values[i]), ";"};
+    end
+    result = {result, queue_values.pop_front().name()};
+  endtask
+
   int enum_calls = 0;
   int format_calls = 0;
   unsigned65_t format_value;
@@ -130,6 +165,7 @@ module t;
   initial begin
     string formatted;
     string fmt;
+    formatter = new;
 `ifdef TEST_PROTECT
     formatted = ENUM_HIGH_TEXT.substr(0, 1);
     `checks(formatted, "PS");
@@ -204,6 +240,8 @@ module t;
     logic [64:0] unsigned65_bits;
     string signed_expected;
     string unsigned_expected;
+    string class_queue_expected;
+    string class_array_expected;
 
     plain = $sformatf("round %0d", cyc);
     escaped = {"quote=\" slash=\\ line=\n cr=\r tab=\t bell=\a form=\f vert=\v ctrl=\001 ", plain};
@@ -347,6 +385,28 @@ module t;
     `checks(formatted, cyc[0] ? "" : ENUM_NEG_TEXT);
     formatted = $sformatf(fmt, signed65_value);
     `checks(formatted, signed_expected);
+
+    formatter.queue_values = '{enum_value, enum_value};
+    formatter.array_values = '{signed65_value, signed65_value};
+    fmt = cyc[0] ? "%p/%s" : "%s/%p";
+    formatted = formatter.format(fmt);
+    class_queue_expected = {enum_text, "/", enum_text, ";"};
+    class_array_expected = {signed_expected, "/", signed_expected, ";"};
+    `checks(formatted, {
+            class_queue_expected, class_queue_expected, class_array_expected, class_array_expected
+            });
+    format_noinline(formatter.queue_values, formatter.array_values, fmt, formatted);
+    `checks(formatted, {
+            class_queue_expected,
+            class_queue_expected,
+            class_array_expected,
+            class_array_expected,
+            enum_text
+            });
+    formatted = formatter.pop_name();
+    `checks(formatted, enum_text);
+    `checkd(formatter.calls, cyc + 1);
+    `checkd(formatter.queue_values.size(), 1);
 
     fmt = cyc[0] ? "%0d:%p:%s:%0d" : "%0d:%P:%S:%0d";
     formatted = $sformatf(fmt, 9, unsigned65_value, signed65_value, 7);
