@@ -218,15 +218,15 @@ void VlCoverCross::incrementBin(Bin& bin) {
 template <bool T_ApplyIffs>
 void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
     Explicit& data = *m_explicitp;
-    const uint32_t word = idx / 64;
-    const uint64_t bit = uint64_t{1} << (idx % 64);
+    const uint32_t word = idx / VL_QUADSIZE;
+    const uint64_t bit = uint64_t{1} << VL_BITBIT_Q(idx);
     if (!(data.wordsp[word].autoExcluded & bit)) {
         incrementAuto(idx);
         return;
     }
     for (Bin& bin : data.bins) {
         if (T_ApplyIffs && !*binIffs++) continue;
-        if (bin.selectionp[word] & bit) { incrementBin(bin); }
+        if (bin.selectionp[word] & bit) incrementBin(bin);
     }
 }
 

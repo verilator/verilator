@@ -1214,11 +1214,7 @@ void AstCoverBinsof::dumpJson(std::ostream& str) const {
 }
 void AstCoverCross::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverCross::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
-string AstCoverCrossBin::verilogKwd() const {
-    if (binsType() == VCoverBinsType::BINS_IGNORE) return "ignore_bins";
-    if (binsType() == VCoverBinsType::BINS_ILLEGAL) return "illegal_bins";
-    return "bins";
-}
+string AstCoverCrossBin::verilogKwd() const { return binsType().ascii(); }
 string AstCoverCrossDType::cppTemplateArgs() const {
     return cvtToStr(dimensions()) + ", " + cvtToStr(tuples()) + ", " + cvtToStr(bins()) + ", "
            + cvtToStr(autoBins()) + ", " + cvtToStr(binWords());
