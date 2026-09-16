@@ -1,0 +1,19 @@
+%Error-UNSUPPORTED: t/t_class_lparam_struct_field_chain_bad.v:36:27: Unsupported: Member call on object 'SEL' which is a 'BASICDTYPE 'logic''
+                                                                   : ... note: In instance 't.u'
+   36 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
+      |                           ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_class_lparam_struct_field_chain_bad.v:36:12: Unsupported: static cast to 'int' from 'VOIDDTYPE'
+                                                                   : ... note: In instance 't.u'
+   36 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
+      |            ^
+%Error: t/t_class_lparam_struct_field_chain_bad.v:36:12: Can't convert defparam value to constant: Param '__paramNumber1' of 'u_nonstruct'
+                                                       : ... note: In instance 't.u'
+   36 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
+      |            ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_lparam_struct_field_chain_bad.v:38:26: Member 'nosuchfield' not found in structure
+                                                       : ... note: In instance 't.u'
+   38 |   Sub #(int'(CFG::cfg.jt.nosuchfield)) u_nomember ();
+      |                          ^~~~~~~~~~~
+%Error: Exiting due to

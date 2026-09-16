@@ -1,0 +1,21 @@
+%Error-UNSUPPORTED: t/t_class_lparam_nonparam_bad.v:26:14: dotted expressions in parameters
+                                                         : ... note: In instance 't'
+                                                         : ... Suggest use a typedef
+   26 |   Sub #(CFG::notaparam) u_prop ();
+      |              ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_class_lparam_nonparam_bad.v:26:14: Can't convert defparam value to constant: Param '__paramNumber1' of 'u_prop'
+                                             : ... note: In instance 't'
+   26 |   Sub #(CFG::notaparam) u_prop ();
+      |              ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_class_lparam_nonparam_bad.v:27:14: dotted expressions in parameters
+                                                         : ... note: In instance 't'
+                                                         : ... Suggest use a typedef
+   27 |   Sub #(CFG::alsonotaparam) u_static ();
+      |              ^~~~~~~~~~~~~
+%Error: t/t_class_lparam_nonparam_bad.v:27:14: Can't convert defparam value to constant: Param '__paramNumber1' of 'u_static'
+                                             : ... note: In instance 't'
+   27 |   Sub #(CFG::alsonotaparam) u_static ();
+      |              ^~~~~~~~~~~~~
+%Error: Exiting due to
