@@ -9,10 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing', '--coverage-user'])
-
+test.sim_time = 1940
+test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing'])
 test.execute()
-
 test.passes()

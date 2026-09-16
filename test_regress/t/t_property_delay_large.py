@@ -22,9 +22,9 @@ if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, Expand, expanded wide words\s+(\d+)', 0)
     test.file_grep(test.stats, r'Optimizations, Expand, expanded wides\s+(\d+)', 0)
 
-    # Keep the six wide rings bit-packed to avoid 32x storage.
+    # Keep the wide rings bit-packed to avoid 32x storage.
     test.file_grep(test.stats,
-                   r'Optimizations, Expand, pattern assign to sel var wide one bit\s+(\d+)', 6)
+                   r'Optimizations, Expand, pattern assign to sel var wide one bit\s+(\d+)', 8)
 
 test.execute()
 
