@@ -7061,10 +7061,11 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
                               VCoverOptionType optType = VCoverOptionType::UNKNOWN;
                               bool valid = true;
                               if (!typeOpt) {
-                                  // IEEE 1800-2023 Table 19-1: option.* names
+                                  // IEEE 1800-2023 Table 19-1 option.* names and ignored legacy names
                                   if      (*$3 == "at_least")                optType = VCoverOptionType::AT_LEAST;
                                   else if (*$3 == "auto_bin_max")            optType = VCoverOptionType::AUTO_BIN_MAX;
                                   else if (*$3 == "comment")                 optType = VCoverOptionType::COMMENT;
+                                  else if (*$3 == "cross_auto_bin_max")      optType = VCoverOptionType::CROSS_AUTO_BIN_MAX;
                                   else if (*$3 == "cross_num_print_missing") optType = VCoverOptionType::CROSS_NUM_PRINT_MISSING;
                                   else if (*$3 == "cross_retain_auto_bins")  optType = VCoverOptionType::CROSS_RETAIN_AUTO_BINS;
                                   else if (*$3 == "detect_overlap")          optType = VCoverOptionType::DETECT_OVERLAP;
@@ -7076,7 +7077,7 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
                                   else {
                                       $<fl>1->v3error("Unknown coverage option name 'option."
                                                       << *$3 << "'"
-                                                      << "; not a valid option per IEEE 1800-2023 Table 19-1");
+                                                      << "; not a valid option (IEEE 1800-2023 Table 19-1)");
                                       valid = false;
                                   }
                               } else {
@@ -7099,7 +7100,7 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
                                       } else {
                                           $<fl>1->v3error("Unknown coverage type option name 'type_option."
                                               << *$3 << "'"
-                                              << "; not a valid type option per IEEE 1800-2023 Table 19-3");
+                                              << "; not a valid type option (IEEE 1800-2023 Table 19-3)");
                                       }
                                       valid = false;
                                   }
@@ -7407,9 +7408,9 @@ select_expression<nodep>:  // ==IEEE: select_expression
                 select_expression_r
                         { $$ = $1; }
         |       select_expression yP_ANDAND select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Unsupported: '&&' in coverage select expression"); DEL($1, $3); }
+                        { $$ = new AstCoverCrossSelect{$2, $1, $3, false}; }
         |       select_expression yP_OROR   select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Unsupported: '||' in coverage select expression"); DEL($1, $3); }
+                        { $$ = new AstCoverCrossSelect{$2, $1, $3, true}; }
         ;
 
 // This non-terminal exists to disambiguate select_expression and make "with" bind tighter
@@ -7418,11 +7419,12 @@ select_expression_r<nodep>:
                 yBINSOF '(' bins_expression ')'
                         { $$ = new AstCoverBinsof{$1, new AstCoverpointRef{$3->fileline(), $3}}; }
         |       '!' yBINSOF '(' bins_expression ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Unsupported: 'binsof' in coverage select expression"); DEL($4); }
-        |       yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'
-                        { $$ = nullptr; BBCOVERIGN($5, "Unsupported: 'intersect' in coverage select expression"); DEL($3, $7); }
-        |       '!' yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'    { }
-                        { $$ = nullptr; BBCOVERIGN($5, "Unsupported: 'intersect' in coverage select expression"); DEL($4, $8); }
+                        { $$ = new AstCoverBinsof{$1, new AstCoverpointRef{$4->fileline(), $4}, true}; }
+        //                      // IEEE: covergroup_range_list has the same syntax as range_list
+        |       yBINSOF '(' bins_expression ')' yINTERSECT '{' range_list '}'
+                        { $$ = new AstCoverBinsof{$1, new AstCoverpointRef{$3->fileline(), $3}, false, $7}; }
+        |       '!' yBINSOF '(' bins_expression ')' yINTERSECT '{' range_list '}'
+                        { $$ = new AstCoverBinsof{$1, new AstCoverpointRef{$4->fileline(), $4}, true, $8}; }
         |       yWITH__PAREN '(' cgexpr ')'
                         { $$ = nullptr; BBCOVERIGN($1, "Unsupported: 'with' in coverage select expression"); DEL($3); }
         |       '!' yWITH__PAREN '(' cgexpr ')'
@@ -7468,7 +7470,8 @@ coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
                         { $$ = $1; }  // Keep the clocking event for automatic sampling
         |       yWITH__ETC yFUNCTION idAny/*"sample"*/ '(' tf_port_listE ')'
                         { if (*$3 != "sample") {
-                            $<fl>3->v3error("Coverage sampling function must be named 'sample'");
+                            $<fl>3->v3error("Coverage sampling function must be named 'sample'"
+                                            " (IEEE 1800-2023 19.8.1)");
                             $$ = nullptr;
                             DEL($5);
                           } else {

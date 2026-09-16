@@ -1178,8 +1178,12 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
             } else if (formatAttr == VL_VFORMATATTR_STRING) {
                 thingp = va_arg(ap, std::string*);
                 if (fmt != 'p' && fmt != 'x') fmt = 's';  // Override
-            } else if (formatAttr == VL_VFORMATATTR_ENUM) {
+            } else if (formatAttr == VL_VFORMATATTR_ENUM
+                       || formatAttr == VL_VFORMATATTR_ENUM_SIGNED) {
                 // Always <= VL_QUADSIZE; emit uses non-ENUM format for wider enums
+                const int numericAttr = formatAttr == VL_VFORMATATTR_ENUM_SIGNED
+                                            ? VL_VFORMATATTR_SIGNED
+                                            : VL_VFORMATATTR_UNSIGNED;
                 lbits = va_arg(ap, int);
                 ld = VL_VA_ARG_Q_(ap, lbits);
                 strwide.resize(2);
@@ -1192,6 +1196,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 enump = va_arg(ap, std::string*);
                 if (enump && !enump->empty()) {
                     formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
+                    if (fmt == 'd') formatAttr = numericAttr;
                     thingp = const_cast<std::string*>(enump);
                 } else if (fmt == 'p' && widthSet && width == 0) {
                     output += "'h";
@@ -1201,7 +1206,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     if (fmt == 'p') width = 0;
                     widthSet = true;
                     fmt = 'd';
-                    formatAttr = VL_VFORMATATTR_UNSIGNED;
+                    formatAttr = numericAttr;
                 }
                 if (widthSet && width == 0) {
                     while (lsb && !VL_BITISSET_W(lwp, lsb)) --lsb;
@@ -3126,15 +3131,6 @@ bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
                                    VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
     return assertCtlGet(VerilatedAssertCtlQuery::ASSERT_CTL_ON, type, directive);
 }
-uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
-                                        VerilatedAssertDirectiveType_t directives) VL_PURE {
-    // Place the directive bits at each selected assertion type's 3-bit group.
-    uint32_t mask = 0;
-    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if (VL_BITISSET_I(types, i)) mask |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
-    }
-    return mask;
-}
 void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
                                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
     if (assertCtlsLocked()) return;
@@ -3201,26 +3197,6 @@ void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t typ
                     + "' (IEEE 1800-2023 Table 20-5)")
                        .c_str());
     }
-}
-uint32_t
-VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
-                               VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    const uint32_t mask = assertOnMask(type, directive);
-    if (!mask) return 0;
-    switch (query) {  // LCOV_EXCL_BR_LINE
-    case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
-        assert(mask && (mask & (mask - 1)) == 0);
-        return m_s.m_assertKill[VL_CLOG2_I(mask)];
-    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
-        return (m_s.m_assertPassOnVacuous & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
-        return (m_s.m_assertPassOnNonvacuous & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_FAIL_ON: return (m_s.m_assertFailOn & mask) != 0;
-    default:  // LCOV_EXCL_START
-        VL_FATAL_MT("", 0, "", "Internal: Bad assertCtlGet query");
-        VL_UNREACHABLE;
-    }  // LCOV_EXCL_STOP
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
@@ -3769,11 +3745,17 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
 // VerilatedContext:: Methods - scopes
 
 void VerilatedContext::scopesDump() const VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_impdatap->m_nameMutex};
-    VL_PRINTF_MT("  scopesDump:\n");
-    for (const auto& i : m_impdatap->m_nameMap) {
-        const VerilatedScope* const scopep = i.second;
-        scopep->scopeDump();
+    {
+        const VerilatedLockGuard lock{m_impdatap->m_nameMutex};
+        VL_PRINTF_MT("  scopesDump:\n");
+        for (const auto& i : m_impdatap->m_nameMap) {
+            const VerilatedScope* const scopep = i.second;
+            scopep->scopeDump();
+        }
+    }
+    {
+        const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
+        for (const auto& i : m_impdatap->m_ifaceRefMap) i.second.ifaceRefDump();
     }
     VL_PRINTF_MT("\n");
 }
@@ -3801,6 +3783,31 @@ const VerilatedScope* VerilatedContext::scopeFind(const char* namep) const VL_MT
 }
 const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
     return &(impp()->m_impdatap->m_nameMap);
+}
+
+void VerilatedContextImp::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE {
+    // Slow ok - called once/interface-reference at construction
+    const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
+    m_impdatap->m_ifaceRefMap.emplace(ifaceRef.fullname(), ifaceRef);
+}
+void VerilatedContextImp::ifaceRefErase(const std::string& fullname,
+                                        const VerilatedScope* scopep) VL_MT_SAFE {
+    // Slow ok - called once/interface-reference at destruction
+    const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
+    const auto it = m_impdatap->m_ifaceRefMap.find(fullname);
+    // Models sharing an instance name collide on the key; only erase our own,
+    // so tearing one down leaves another's live reference registered
+    if (it != m_impdatap->m_ifaceRefMap.end() && it->second.scopep() == scopep) {
+        m_impdatap->m_ifaceRefMap.erase(it);
+    }
+}
+const VerilatedIfaceRef*
+VerilatedContext::ifaceRefFind(const char* namep) const VL_MT_SAFE_POSTINIT {
+    // Thread safe only assuming this is called only after model construction completed
+    const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
+    const auto& it = m_impdatap->m_ifaceRefMap.find(namep);
+    if (VL_UNLIKELY(it == m_impdatap->m_ifaceRefMap.end())) return nullptr;
+    return &it->second;
 }
 
 //======================================================================
@@ -4336,6 +4343,41 @@ void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, siz
     }
 }
 
+// Prefix with the model instance name, as VerilatedScope's constructor does
+static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* suffixp) {
+    const char* const prefixp = symsp->name();
+    std::string out{prefixp};
+    if (*prefixp && *suffixp) out += '.';
+    out += suffixp;
+    return out;
+}
+
+void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
+                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+    // Use the model's own context; at destruction threadContextp() may be another's
+    VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
+    uint8_t* const base = reinterpret_cast<uint8_t*>(symsp);
+    for (size_t i = 0; i < n; ++i) {
+        const VlIfaceRefTableEntry& e = entp[i];
+        const VerilatedScope* const scopep
+            = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
+        impp->ifaceRefInsert(
+            VerilatedIfaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp), e.modportp});
+    }
+}
+
+void VerilatedScope::ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
+                                             const VerilatedSyms* symsp) VL_MT_UNSAFE {
+    VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
+    uint8_t* const base = reinterpret_cast<uint8_t*>(const_cast<VerilatedSyms*>(symsp));
+    for (size_t i = 0; i < n; ++i) {
+        const VlIfaceRefTableEntry& e = entp[i];
+        const VerilatedScope* const scopep
+            = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
+        impp->ifaceRefErase(vl_ifaceRefFullname(symsp, e.suffixp), scopep);
+    }
+}
+
 VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, bool isParam,
                                              VerilatedVarType vltype, int vlflags, int udims,
                                              uint32_t entSize...) VL_MT_UNSAFE {
@@ -4479,6 +4521,12 @@ void VerilatedScope::scopeDump() const {
     if (const VerilatedVarNameMap* const ivarsp = this->varsp()) {
         for (const auto& i : *ivarsp) VL_PRINTF_MT("       VAR %p: %s\n", &(i.second), i.first);
     }
+}
+
+void VerilatedIfaceRef::ifaceRefDump() const VL_MT_SAFE_POSTINIT {
+    VL_PRINTF_MT("    IFACEREF %p: %s -> %s", this, fullname(), scopep()->name());
+    if (hasModport()) VL_PRINTF_MT(".%s", modport());
+    VL_PRINTF_MT("\n");
 }
 
 void VerilatedHierarchy::add(const VerilatedScope* fromp, const VerilatedScope* top) {

@@ -21,6 +21,6 @@ test.run(cmd=[
     test.coverage_filename
 ],
          verilator_run=True)
-test.file_grep(merged, r"cg_binsof\.all_products\.combined.*' 10")
+test.file_grep(merged, r"cg_binsof\.all_products\.combined.*' (\d+)", 10)
 
 test.passes()

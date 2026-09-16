@@ -20,7 +20,7 @@ module t;
   endtask
 
   logic [16:0] clearBit_i;
-  int          clearBit_idx;
+  int clearBit_idx;
   logic [16:0] clearBit_o;
   function automatic logic [16:0] clearBit(logic [16:0] i, int idx);
     i[idx] = 1'b0;
@@ -31,9 +31,9 @@ module t;
     `check(clearBit_o, (clearBit_i & ~(17'd1 << clearBit_idx)));
   end
 
-  logic [2:0]  lut_idx;
-  logic [4:0]  lut_o;
-  localparam logic [4:0] LUT [7:0] = '{5'd0, 5'd1, 5'd2, 5'd3, 5'd4, 5'd5, 5'd6, 5'd7};
+  logic [2:0] lut_idx;
+  logic [4:0] lut_o;
+  localparam logic [4:0] LUT[7:0] = '{5'd0, 5'd1, 5'd2, 5'd3, 5'd4, 5'd5, 5'd6, 5'd7};
   function automatic logic [4:0] lut(logic [2:0] idx);
     return LUT[idx];
   endfunction

@@ -819,6 +819,10 @@ public:
             const AstCoverpointDType* const cpdtypep
                 = VN_AS(nodep->dtypep()->skipRefp(), CoverpointDType);
             puts("<" + cvtToStr(cpdtypep->hitBound()) + ">");
+        } else if (nodep->method() == VCMethod::COVERGROUP_ADD_CROSS) {
+            const AstCoverCrossDType* const cxdtypep
+                = VN_AS(nodep->dtypep()->skipRefp(), CoverCrossDType);
+            puts("<" + cxdtypep->cppTemplateArgs() + ">");
         }
         puts("(");
         bool comma = false;

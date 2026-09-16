@@ -427,7 +427,7 @@ private:
         if (const AstInitArray* const avaluep = VN_CAST(valuep, InitArray)) {
             string result = "'{";
             string comma;
-            if (VN_IS(nodep->dtypep(), AssocArrayDType)) {
+            if (VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
                 if (avaluep->defaultp()) {
                     result += comma + "default:" + toStringRecurse(avaluep->defaultp());
                     comma = ", ";
@@ -439,7 +439,7 @@ private:
                     comma = ", ";
                 }
             } else if (const AstUnpackArrayDType* const dtypep
-                       = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+                       = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
                 for (int n = 0; n < dtypep->elementsConst(); ++n) {
                     result += comma + toStringRecurse(avaluep->getIndexDefaultedValuep(n));
                     comma = ", ";

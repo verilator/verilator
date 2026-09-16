@@ -52,8 +52,8 @@ class SliceVisitor final : public VNVisitor {
     //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()       -> AstVarRef. The VarRef that the final ArraySel points to
     const VNUser1InUse m_inuser1;
-    //  AstInitArray::user2()       -> int.  Previously accessed itemIdx
-    //  AstInitItem::user2()        -> int.  Corresponding first elemIdx
+    //  AstInitArray::user2()       -> uint64_t.  Previously accessed itemIdx
+    //  AstInitItem::user2()        -> uint64_t.  Corresponding first elemIdx
     const VNUser2InUse m_inuser2;
 
     // STATE - across all visitors
@@ -66,7 +66,7 @@ class SliceVisitor final : public VNVisitor {
     bool m_okInitArray = false;  // Allow InitArray children
 
     // METHODS
-    AstNodeExpr* cloneAndSel(AstNodeExpr* const nodep, int elements, int elemIdx,
+    AstNodeExpr* cloneAndSel(AstNodeExpr* const nodep, uint64_t elements, uint64_t elemIdx,
                              const bool needPure) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
@@ -83,7 +83,7 @@ class SliceVisitor final : public VNVisitor {
             // Likely will cause downstream errors
             return nodep->cloneTree(false, needPure);
         }
-        if (arrayp->rangep()->elementsConst() != elements) {
+        if (static_cast<uint64_t>(arrayp->rangep()->elementsConst()) != elements) {
             if (!m_assignError) {
                 nodep->v3error(
                     "Slices of arrays in assignments have different unpacked dimensions, "
@@ -103,10 +103,10 @@ class SliceVisitor final : public VNVisitor {
                            : idxFromLeft;
             };
             newp = nullptr;
-            int itemIdx = 0;
-            int i = 0;
+            uint64_t itemIdx = 0;
+            uint64_t i = 0;
             const AstInitArray::KeyItemMap& itemMap = initp->map();
-            if (const int prevItemIdx = initp->user2()) {
+            if (const uint64_t prevItemIdx = initp->user2()) {
                 const auto it = itemMap.find(considerOrder(arrayp, prevItemIdx));
                 if (it != itemMap.end()) {
                     const AstInitItem* itemp = it->second;
@@ -284,7 +284,7 @@ class SliceVisitor final : public VNVisitor {
         // Assign of an ascending range slice to a descending range one must reverse
         // the elements
         AstNodeAssign* newlistp = nullptr;
-        for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
+        for (uint64_t elemIdx = 0; elemIdx < static_cast<uint64_t>(elements); ++elemIdx) {
             // Original node is replaced, so it is safe to copy it one time even if it is impure.
             AstNodeAssign* const newp
                 = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),

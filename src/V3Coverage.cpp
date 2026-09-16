@@ -1114,6 +1114,16 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     // VISITORS - BOTH
+    void visit(AstProperty* nodep) override {
+        VL_RESTORER(m_state);
+        m_state.m_on = false;
+        iterateChildren(nodep);
+    }
+    void visit(AstSequence* nodep) override {
+        VL_RESTORER(m_state);
+        m_state.m_on = false;
+        iterateChildren(nodep);
+    }
     void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         lineTrack(nodep);

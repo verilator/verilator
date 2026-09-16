@@ -592,6 +592,10 @@ List Of Warnings
    ``covergroup``, ``coverpoint``, and coverage options, and the
    construct was ignored.
 
+   This includes crosses whose normal-bin Cartesian product exceeds
+   ``2**32 - 1`` tuples.  The limit is checked during Verilation for both
+   automatic and explicit cross bins.
+
    Disabling the :option:`UNSUPPORTED` error also disables this warning.
 
    Ignoring this warning may make Verilator ignore lint checking on the
@@ -2499,14 +2503,10 @@ List Of Warnings
 
 .. option:: UNPACKED
 
-   Warns that unpacked structs and unions are not supported because
-   :vlopt:`--structs-packed` was used, or by up through version 5.004.
+   Historical, never issued since version 5.004.
 
-   Ignoring this warning will make Verilator treat the structure as packed,
-   which may make Verilator simulations differ from other simulators. This
-   downgrading may also result in what would typically be a legal unpacked
-   struct/array inside an unpacked struct/array becoming an illegal
-   unpacked struct/array inside a packed struct/array.
+   Warned that unpacked structs and unions were not supported, or disabled
+   by the since-removed `--structs-packed` option.
 
 
 .. option:: UNSATCONSTR

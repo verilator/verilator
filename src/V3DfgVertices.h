@@ -72,8 +72,8 @@ protected:
 public:
     ~DfgVertexVar() {
         // Decrement reference count
+        UASSERT_OBJ(m_vscp->user1() >= 0x40, m_vscp, "Reference count underflow");
         m_vscp->user1(m_vscp->user1() - 0x40);
-        UASSERT_OBJ((m_vscp->user1() >> 6) >= 0, m_vscp, "Reference count underflow");
     }
     ASTGEN_MEMBERS_DfgVertexVar;
 

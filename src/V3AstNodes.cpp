@@ -547,6 +547,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isDestructor()) str << " [DTOR]";
     if (isMethod()) str << " [METHOD]";
     if (isLoose()) str << " [LOOSE]";
+    if (isUnlikely()) str << " [UNL]";
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
     if (needProcess()) str << " [NPRC]";
@@ -570,6 +571,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, dpiContext);
     dumpJsonBoolFuncIf(str, isConstructor);
     dumpJsonBoolFuncIf(str, isDestructor);
+    dumpJsonBoolFuncIf(str, isUnlikely);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needProcess);
@@ -586,39 +588,34 @@ void AstCFunc::dumpJson(std::ostream& str) const {
 }
 void AstCMethodHard::dump(std::ostream& str) const {
     Super::dump(str);
-    if (m_pure) str << " [PURE]";
+    if (m_purity.get()) str << " [PURE]";
     if (usePtr()) str << " [USEPTR]";
 }
 void AstCMethodHard::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "pure", m_pure);
+    dumpJsonBoolIf(str, "pure", m_purity.get());
     dumpJsonBoolIf(str, "usePtr", usePtr());
     dumpJsonGen(str);
 }
-int AstCMethodHard::instrCount() const {
-    return 0;  // TODO
-}
-void AstCMethodHard::setPurity() {
+bool AstCMethodHard::getPurity() {
     if (method() == VCMethod::DYN_AT_WRITE_APPEND
         || method() == VCMethod::DYN_AT_WRITE_APPEND_BACK) {
-        m_pure = false;
         // Treat atWriteAppend as pure if the argument is a loop iterator
         if (const AstNodeExpr* const argp = pinsp()) {
             if (const AstVarRef* const varrefp = VN_CAST(argp, VarRef)) {
-                if (varrefp->varp()->isUsedLoopIdx()) m_pure = true;
+                if (varrefp->varp()->isUsedLoopIdx()) return true;
             }
         }
-        return;
+        return false;
     }
-    m_pure = method().isPure();
-    if (!m_pure) return;
-    if (!fromp()->isPure()) m_pure = false;
-    if (!m_pure) return;
+    if (!method().isPure()) return false;
+    if (!fromp()->isPure()) return false;
     for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
-        if (!argp->isPure()) {
-            m_pure = false;
-            return;
-        }
+        if (!argp->isPure()) return false;
     }
+    return true;
+}
+int AstCMethodHard::instrCount() const {
+    return 0;  // TODO
 }
 void AstCReset::dump(std::ostream& str) const {
     Super::dump(str);
@@ -1207,8 +1204,44 @@ void AstCoverBin::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "isWildcard", isWildcard());
     str << ", \"binsType\": \"" << binsType().ascii() << "\"";
 }
+void AstCoverBinsof::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (isNegated()) str << " [NEGATED]";
+}
+void AstCoverBinsof::dumpJson(std::ostream& str) const {
+    Super::dumpJson(str);
+    dumpJsonBoolIf(str, "isNegated", isNegated());
+}
 void AstCoverCross::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverCross::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
+string AstCoverCrossDType::cppTemplateArgs() const {
+    return cvtToStr(dimensions()) + ", " + cvtToStr(tuples()) + ", " + cvtToStr(bins()) + ", "
+           + cvtToStr(autoBins()) + ", " + cvtToStr(binWords());
+}
+void AstCoverCrossDType::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " [" << cppTemplateArgs() << "]";
+}
+void AstCoverCrossDType::dumpJson(std::ostream& str) const {
+    dumpJsonNumFunc(str, dimensions);
+    dumpJsonNumFunc(str, tuples);
+    dumpJsonNumFunc(str, bins);
+    dumpJsonNumFunc(str, autoBins);
+    dumpJsonNumFunc(str, binWords);
+    dumpJsonGen(str);
+}
+void AstCoverCrossDType::dumpSmall(std::ostream& str) const {
+    Super::dumpSmall(str);
+    str << "covercross[" << cppTemplateArgs() << "]";
+}
+void AstCoverCrossSelect::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << (isOr() ? " [OR]" : " [AND]");
+}
+void AstCoverCrossSelect::dumpJson(std::ostream& str) const {
+    Super::dumpJson(str);
+    dumpJsonBoolIf(str, "isOr", isOr());
+}
 void AstCoverInc::dump(std::ostream& str) const {
     Super::dump(str);
     str << " -> ";
@@ -1652,6 +1685,16 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
     return new AstLogAnd{fileline(), ap, bp};
+}
+void AstIntfRef::dump(std::ostream& str) const {  // LCOV_EXCL_START
+    Super::dump(str);
+    if (baseName() != "") str << " base=" << baseName();
+    if (modportName() != "") str << " mp=" << modportName();
+}  // LCOV_EXCL_STOP
+void AstIntfRef::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, baseName);
+    dumpJsonStrFunc(str, modportName);
+    dumpJsonGen(str);
 }
 bool AstJumpBlock::getPurityRecurse() const {
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -2136,6 +2179,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, CoverCrossDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        info.m_type = "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverpointDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = "VlCoverpointT<" + cvtToStr(adtypep->hitBound()) + ">*";
@@ -2216,10 +2262,6 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlStdRandomizer";
         } else if (bdtypep->isCovergroupInstHandle()) {
             info.m_type = "VlCovInstHandle";
-        } else if (bdtypep->isCovergroupCross()) {
-            // Borrowed pointer: VlCovergroupInst owns the cross runtime, so its bins outlive the
-            // SV covergroup object (the coverage DB holds raw count pointers read at write() time)
-            info.m_type = "VlCoverCross*";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -2327,7 +2369,9 @@ bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
     if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {
-        return dtypep->basicp()->isLiteralType();
+        // basicp() is null for e.g. an array of unpacked structs, which is not literal
+        const AstBasicDType* const basicp = dtypep->basicp();
+        return basicp && basicp->isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), StructDType)) {
         // Currently all structs are packed, later this can be expanded to
         // 'forall members _.isLiteralType()'
@@ -2591,6 +2635,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (isExternDef()) str << " [EXTDEF]";
     if (isExternProto()) str << " [EXTPROTO]";
     if (isVirtual()) str << " [VIRT]";
+    if (keepAlive()) str << " [KALIVE]";
     if (prototype()) str << " [PROTOTYPE]";
     if (pureVirtual()) str << " [PUREVIRTUAL]";
     if (recursive()) str << " [RECURSIVE]";
@@ -2613,6 +2658,7 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isExternDef);
     dumpJsonBoolFuncIf(str, isExternProto);
     dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, keepAlive);
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonBoolFuncIf(str, prototype);
     dumpJsonBoolFuncIf(str, recursive);
@@ -3711,7 +3757,7 @@ std::vector<AstUnpackArrayDType*> AstUnpackArrayDType::unpackDimensions() {
     for (AstUnpackArrayDType* unpackp = this; unpackp;) {
         dims.push_back(unpackp);
         if (AstNodeDType* const subp = unpackp->subDTypep()) {
-            unpackp = VN_CAST(subp, UnpackArrayDType);
+            unpackp = VN_CAST(subp->skipRefp(), UnpackArrayDType);
         } else {
             unpackp = nullptr;
         }

@@ -307,7 +307,7 @@ static void process() {
 
         if (!v3Global.opt.serializeOnly()) {
             // Lift expressions out of statements.
-            if (v3Global.opt.fLiftExpr()) V3LiftExpr::liftExprAll(v3Global.rootp());
+            V3LiftExpr::liftExprAll(v3Global.rootp());
 
             // Move assignments from X into MODULE temps.
             // (Before flattening, so each new X variable is shared between all scopes of that
@@ -327,7 +327,10 @@ static void process() {
             }
         }
 
-        if (v3Global.opt.trace()) V3Interface::interfaceAll(v3Global.rootp());
+        // Interface references feed trace file aliases and VPI name resolution
+        if (v3Global.opt.trace() || v3Global.opt.vpi()) {
+            V3Interface::interfaceAll(v3Global.rootp());
+        }
 
         // --PRE-FLAT OPTIMIZATIONS------------------
 

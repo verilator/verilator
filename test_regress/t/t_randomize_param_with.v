@@ -22,16 +22,19 @@ begin \
   if (ok != 1) $stop; \
 end
 
-class Cls #(int LIMIT = 3);
+class Cls #(
+    int LIMIT = 3
+);
   rand int x;
-  int      y = -100;
-  constraint x_limit { x <= LIMIT; };
+  int y = -100;
+  constraint x_limit {x <= LIMIT;}
+  ;
 endclass
 
 module t;
   initial begin
-    automatic Cls#() cd = new;
-    automatic Cls#(5) c5 = new;
+    automatic Cls #() cd = new;
+    automatic Cls #(5) c5 = new;
 
     `check_rand(cd, cd.x, x > 0, cd.x > 0 && cd.x <= 3);
     `check_rand(cd, cd.x, x > y, cd.x > -100 && cd.x <= 3);
