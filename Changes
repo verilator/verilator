@@ -63,6 +63,7 @@ Verilator 5.053 devel
 * Fix missing implicit net for bufif/notif/nmos/pmos data input (#8353) (#8354). [Mike Murunov]
 * Fix %p format on class members (#8360). [Marco Bartoli]
 * Fix V3InstrCount with recursive functions (#8361) (#8327). [Geza Lore, Testorrent USA, Inc.]
+* Fix Docker compilation with --trace-fst (#8370). [Giuseppe Manzoni]
 
 
 Verilator 5.052 2026-09-05
