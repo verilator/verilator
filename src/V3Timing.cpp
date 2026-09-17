@@ -173,13 +173,11 @@ class TimingSuspendableVisitor final : public VNVisitor {
     };
 
     // NODE STATE
-    //  AstClass::user1()                        -> bool.               Set true if the class
-    //                                                                  member cache has been
-    //                                                                  refreshed.
-    //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> int.                Set to >= T_SUSP if
-    //                                                                  process/task suspendable
-    //                                                                  and to T_PROC if it
-    //                                                                  needs process metadata.
+    //  AstClass::user1() -> bool.  Class member cache has been refreshed.
+    //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> uint64_t.  Set to >= T_SUSP if
+    //                                                         process/task suspendable
+    //                                                         and to T_PROC if it
+    //                                                         needs process metadata.
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_suspGraph
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_procGraph
     const VNUser3InUse m_user3InUse;

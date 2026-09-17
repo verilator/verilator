@@ -12,9 +12,9 @@ endmodule
 
 module t;
 
-  m1 u_1a();
-  m1 u_1b();
-  m1 u_1c();
+  m1 u_1a ();
+  m1 u_1b ();
+  m1 u_1c ();
 
   final $write("*-* All Finished *-*\n");
 

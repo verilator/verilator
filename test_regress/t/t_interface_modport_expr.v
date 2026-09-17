@@ -60,10 +60,10 @@ module top ();
 
   initial begin
     #1;
-    `checkh(myIf.sig_b, 8'h42); // mp1: b = a
-    `checkh(myIf.sig_d, 8'hAB); // mp2: b = a
-    `checkh(myIf.sig_f, 8'hCD); // mp3: f = sig_e
-    `checkh(myIf.m3, 8'hFF);    // mp4: out = in1 ^ in2
+    `checkh(myIf.sig_b, 8'h42);  // mp1: b = a
+    `checkh(myIf.sig_d, 8'hAB);  // mp2: b = a
+    `checkh(myIf.sig_f, 8'hCD);  // mp3: f = sig_e
+    `checkh(myIf.m3, 8'hFF);  // mp4: out = in1 ^ in2
     #1;
     $write("*-* All Finished *-*\n");
     $finish;

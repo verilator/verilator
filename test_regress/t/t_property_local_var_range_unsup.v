@@ -32,9 +32,9 @@ module t (
   endproperty
   assert property (p_composite);
 
-  // Nested range delay inside the consequent's preExprp -- the outer
-  // SExpr's recursion into preExprp errors, then the outer caller's
-  // `if (errorEmitted) return -1;` after preLen recursion is exercised.
+  // A nested range delay in the consequent's prefix is unsupported.
+  // Propagate its diagnostic through the enclosing concatenation
+  // without continuing substitution after the failure.
   property p_nested_in_pre;
     int snap;
     @(posedge clk) (valid,
@@ -43,9 +43,9 @@ module t (
   endproperty
   assert property (p_nested_in_pre);
 
-  // Nested range delay inside the consequent's exprp -- the outer
-  // SExpr's recursion into exprp errors, then the outer caller's
-  // `if (errorEmitted) return -1;` after bodyLen recursion is exercised.
+  // A nested range delay in the consequent's body is unsupported.
+  // Propagate its diagnostic through the enclosing concatenation
+  // without continuing substitution after the failure.
   property p_nested_in_body;
     int snap;
     @(posedge clk) (valid,

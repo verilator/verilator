@@ -7,6 +7,6 @@
 import vltest_bootstrap
 import coverage_covergroup_common
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 
 coverage_covergroup_common.run(test)

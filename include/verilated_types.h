@@ -231,7 +231,7 @@ extern std::string VL_TO_STRING(SData lhs);
 extern std::string VL_TO_STRING(IData lhs);
 extern std::string VL_TO_STRING(QData lhs);
 extern std::string VL_TO_STRING(double lhs);
-inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
+extern std::string VL_TO_STRING(const std::string& obj) VL_PURE;
 template <std::size_t N_Words>
 inline std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
     return VL_TO_STRING_W(N_Words, obj);
@@ -1467,6 +1467,14 @@ public:
     const T_Value* data() const { return &m_storage[0]; }
 
     constexpr std::size_t size() const { return N_Depth; }
+
+    // Runtime slice v[loIdx +: N_Out], loIdx being an index into m_storage
+    template <std::size_t N_Out>
+    VlUnpacked<T_Value, N_Out> slice(int32_t loIdx) const {
+        VlUnpacked<T_Value, N_Out> out;
+        for (std::size_t i = 0; i < N_Out; ++i) out.m_storage[i] = m_storage[loIdx + i];
+        return out;
+    }
 
     void fill(const T_Value& value) {
         std::fill(std::begin(m_storage), std::end(m_storage), value);

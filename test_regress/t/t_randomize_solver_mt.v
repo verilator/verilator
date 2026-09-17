@@ -63,11 +63,9 @@ module sub_hi (
   end
 endmodule
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
   int nlo, nhi;
   int cyc = 0;
   sub_lo u_lo (

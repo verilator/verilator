@@ -9,9 +9,7 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-typedef enum int {
-   RANDOMIZED = 20
-} enumed_t;
+typedef enum int {RANDOMIZED = 20} enumed_t;
 
 class Base;
   int m_pre;
@@ -37,13 +35,13 @@ class Cls extends Base;
   int m_cpre;
   int m_cpost;
   function void pre_randomize;
-     m_cpre = 111;
-     super.pre_randomize();
+    m_cpre = 111;
+    super.pre_randomize();
   endfunction
 
   function void post_randomize;
-     m_cpost = 222;
-     super.post_randomize();
+    m_cpost = 222;
+    super.post_randomize();
   endfunction
 endclass
 
@@ -82,7 +80,7 @@ module t;
     `checkd(c.m_cpost, 222);
 
     c = new;
-    rand_result = c.randomize() with { r == RANDOMIZED; };
+    rand_result = c.randomize() with {r == RANDOMIZED;};
     `checkd(rand_result, 1);
     `checkd(c.m_pre, 10);
     `checkd(c.m_cpre, 111);

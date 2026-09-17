@@ -165,27 +165,15 @@ module t (
 
   covergroup cg_cross_bins;
     cross a, b {
-      bins bin_a = binsof(a);
-      bins bin_ai = binsof(a) iff (!rst);
-      bins bin_c = binsof(cp.x);
-      bins bin_na = ! binsof(a);
-
-      bins bin_d = binsof(a) intersect { b };
-      bins bin_nd = ! binsof(a) intersect { b };
-
       bins bin_e = with (a);
       bins bin_not_e = ! with (a);
 
-      bins bin_par = (binsof(a));
-      bins bin_and = binsof(a) && binsof(b);
-      bins bin_or = binsof(a) || binsof(b);
       bins bin_with = binsof(a) with (a);
       bins bin_or_with = binsof(a) || binsof(a) with (a);
       bins bin_and_with = binsof(a) && binsof(a) with (a);
-      bins bin_multiple_fields = binsof(p.inner_packet.field);
-      // explicit cross ignore/illegal bins (unsupported)
-      ignore_bins ib_cross = binsof(a);
-      illegal_bins lib_cross = binsof(a);
+      bins bin_multiple_fields = binsof(a) && binsof(p.inner_packet.field);
+      ignore_bins ib_cross = binsof(a) with (a);
+      illegal_bins lib_cross = binsof(a) with (a);
     }
   endgroup
 

@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_randomize_with_dyn_arr_multi_dyn_unsup.v:28:40: Unsupported: Complex expression captured from current scope with randomized variable
+   28 |       ok = a.randomize() with {x == arr[1][1];};
+      |                                        ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

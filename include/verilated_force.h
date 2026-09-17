@@ -303,7 +303,7 @@ public:
     }
 
     template <typename T>
-    T readIndex(T origVal, int index) const {
+    T readIndex(const T origVal, int index) const {
         if (m_entries.empty()) return origVal;
 
         T result = origVal;

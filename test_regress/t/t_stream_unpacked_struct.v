@@ -49,17 +49,11 @@ module t;
     byte suffix;
   } struct_array_t;
 
-  typedef struct {
-    byte data[1:0];
-  } descending_array_t;
+  typedef struct {byte data[1:0];} descending_array_t;
 
-  typedef struct {
-    byte matrix[2][3];
-  } matrix_array_t;
+  typedef struct {byte matrix[2][3];} matrix_array_t;
 
-  typedef struct {
-    logic [1:0][3:0] data[2];
-  } mixed_array_t;
+  typedef struct {logic [1:0][3:0] data[2];} mixed_array_t;
 
   typedef enum logic [2:0] {
     E0 = 3'd0,
@@ -137,7 +131,7 @@ module t;
   logic [$bits(simple_t)-1:0] simple_bits_from_bits;
   byte byte_array_out[2];
 
-  assign {>>{simple_cont_out}} = 20'habcde;
+  assign{>>{simple_cont_out}} = 20'habcde;
 
   initial begin
     byteswapped_bits = {<<8{32'h11223344}};
@@ -341,11 +335,12 @@ module t;
     real_struct.ra[0] = 4.0;
     real_struct.ra[1] = 5.0;
     real_bits = {>>{real_struct}};
-    `checkh(real_bits,
-            {8'h42, $realtobits(1.0), $realtobits(3.0), $realtobits(4.0), $realtobits(5.0)});
+    `checkh(real_bits, {
+            8'h42, $realtobits(1.0), $realtobits(3.0), $realtobits(4.0), $realtobits(5.0)});
 
-    {>>{real_struct_out}}
-        = {8'h99, $realtobits(2.0), $realtobits(6.0), $realtobits(7.0), $realtobits(8.0)};
+    {>>{real_struct_out}} = {
+      8'h99, $realtobits(2.0), $realtobits(6.0), $realtobits(7.0), $realtobits(8.0)
+    };
     `checkh(real_struct_out.tag, 8'h99);
     `checkh($realtobits(real_struct_out.r), $realtobits(2.0));
     `checkh($realtobits(real_struct_out.rt), $realtobits(6.0));

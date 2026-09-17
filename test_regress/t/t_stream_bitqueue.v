@@ -10,9 +10,8 @@
 `define checks(gotv, expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
 
   typedef bit bit_q_t[$];  // CData (1-bit)
@@ -26,7 +25,6 @@ module t (  /*AUTOARG*/
   typedef logic [63:0] qdata_logic_q_t[$];  // QData (64-bit)
   typedef logic [127:0] wide_q_t[$];  // VlWide (128-bit)
 
-  input clk;
   integer cyc = 0;
   logic [7:0] d;
   string s;
@@ -549,23 +547,19 @@ module t (  /*AUTOARG*/
       cdata_q = cdata_q_t'(
           256'h00010203_04050607_08090a0b_0c0d0e0f_10111213_14151617_18191a1b_1c1d1e1f);
       p256 = {>>{cdata_q}};
-      `checkh(p256,
-              256'h00010203_04050607_08090a0b_0c0d0e0f_10111213_14151617_18191a1b_1c1d1e1f);
+      `checkh(p256, 256'h00010203_04050607_08090a0b_0c0d0e0f_10111213_14151617_18191a1b_1c1d1e1f);
       cdata_q = cdata_q_t'(64'h00010203_04050607);
       p256 = {>>{cdata_q}};
-      `checkh(p256,
-              256'h00010203_04050607_00000000_00000000_00000000_00000000_00000000_00000000);
+      `checkh(p256, 256'h00010203_04050607_00000000_00000000_00000000_00000000_00000000_00000000);
 
       // 64-bit elements
       qdata_q = qdata_logic_q_t'(
           256'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888);
       p256 = {>>{qdata_q}};
-      `checkh(p256,
-              256'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888);
+      `checkh(p256, 256'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888);
       qdata_q = qdata_logic_q_t'(128'hdeadbeef_cafebabe_feedface_12345678);
       p256 = {>>{qdata_q}};
-      `checkh(p256,
-              256'hdeadbeef_cafebabe_feedface_12345678_00000000_00000000_00000000_00000000);
+      `checkh(p256, 256'hdeadbeef_cafebabe_feedface_12345678_00000000_00000000_00000000_00000000);
 
       // 128-bit (VlWide) elements
       wide_q = wide_q_t'(

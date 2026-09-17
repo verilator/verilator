@@ -5,16 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `ifdef verilator
- `define dontOptimize $c1("1")
+`define dontOptimize $c1("1")
 `else
- `define dontOptimize 1'b1
+`define dontOptimize 1'b1
 `endif
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
   int cyc = 0;
   int x = 0;
@@ -78,8 +76,8 @@ module t (/*AUTOARG*/
     $write("[%0t] cyc=%0d x=%x\n", $time, cyc, x);
     if (x !== cyc) $stop;
     if (cyc == 99) begin
-       $write("*-* All Finished *-*\n");
-       $finish;
+      $write("*-* All Finished *-*\n");
+      $finish;
     end
   end
 endmodule

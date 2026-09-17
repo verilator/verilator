@@ -3969,7 +3969,12 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }
-    void visit(AstSFormatArg* nodep) override { iterateChildren(nodep); }
+    void visit(AstSFormatArg* nodep) override {
+        // Skip namep(): requiring its runtime lookup to be constant can reject valid
+        // enum-valued constant-function calls in parameters. displayedEnum() resolves
+        // the name from the folded exprp() value and enum dtype instead.
+        iterateAndNextNull(nodep->exprp());
+    }
     void visit(AstSFormatF* nodep) override {
         // Substitute constants into displays.  The main point of this is to
         // simplify assertion methodologies which call functions with display's.
@@ -4033,7 +4038,9 @@ class ConstVisitor final : public VNVisitor {
                                       : VFormatAttr{};
                             if (VN_IS(subargp, Const)) {  // Convert it
                                 const string out
-                                    = constNumV(subargp).displayed(nodep, fmt, formatAttr);
+                                    = formatAttr.isEnum()
+                                          ? constNumV(subargp).displayedEnum(fargp, fmt)
+                                          : constNumV(subargp).displayed(nodep, fmt, formatAttr);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
                                                             << subargp);
                                 // fmt = out w/ replace % with %% as it must later when

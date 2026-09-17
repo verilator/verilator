@@ -18,14 +18,14 @@ endmodule
 
 module c2_b;
 
-  bb u_bb();
+  bb u_bb ();
 
   initial $display("c2_b %%m=%m %%l=%l");
 endmodule
 
 module t;
 
-  m1 u_1();
+  m1 u_1 ();
 
   final $write("*-* All Finished *-*\n");
 
