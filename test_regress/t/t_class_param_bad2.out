@@ -1,50 +1,50 @@
-%Error: t/t_class_param_bad2.v:23:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
+%Error: t/t_class_param_bad2.v:32:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
                                    : ... note: In instance 't'
-   23 |   Cls c;   
+   32 |   Cls c;   
       |   ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_param_bad2.v:24:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'A'
+%Error: t/t_class_param_bad2.v:33:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'A'
                                    : ... note: In instance 't'
-   24 |   ClsTT tt;
+   33 |   ClsTT tt;
       |   ^~~~~
-%Error: t/t_class_param_bad2.v:24:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'B'
+%Error: t/t_class_param_bad2.v:33:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'B'
                                    : ... note: In instance 't'
-   24 |   ClsTT tt;
+   33 |   ClsTT tt;
       |   ^~~~~
-%Error: t/t_class_param_bad2.v:25:3: Class parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'N'
+%Error: t/t_class_param_bad2.v:34:3: Class parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'N'
                                    : ... note: In instance 't'
-   25 |   ClsVT vt;
+   34 |   ClsVT vt;
       |   ^~~~~
-%Error: t/t_class_param_bad2.v:25:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+%Error: t/t_class_param_bad2.v:34:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
                                    : ... note: In instance 't'
-   25 |   ClsVT vt;
+   34 |   ClsVT vt;
       |   ^~~~~
-%Error: t/t_class_param_bad2.v:26:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+%Error: t/t_class_param_bad2.v:35:3: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
                                    : ... note: In instance 't'
-   26 |   ClsTV tv;
+   35 |   ClsTV tv;
       |   ^~~~~
-%Error: t/t_class_param_bad2.v:26:3: Class parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'N'
+%Error: t/t_class_param_bad2.v:35:3: Class parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'N'
                                    : ... note: In instance 't'
-   26 |   ClsTV tv;
+   35 |   ClsTV tv;
       |   ^~~~~
 %Error: t/t_class_param_bad2.v:8:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
                                    : ... note: In instance 't'
     8 |     type PARAMB
       |          ^~~~~~
-%Error: t/t_class_param_bad2.v:12:20: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'A'
+%Error: t/t_class_param_bad2.v:13:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'A'
                                     : ... note: In instance 't'
-   12 | class ClsTT #(type A, type B);
-      |                    ^
-%Error: t/t_class_param_bad2.v:12:28: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'B'
+   13 |     type A,
+      |          ^
+%Error: t/t_class_param_bad2.v:14:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'B'
                                     : ... note: In instance 't'
-   12 | class ClsTT #(type A, type B);
-      |                            ^
-%Error: t/t_class_param_bad2.v:15:27: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+   14 |     type B
+      |          ^
+%Error: t/t_class_param_bad2.v:20:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
                                     : ... note: In instance 't'
-   15 | class ClsVT #(int N, type T);
-      |                           ^
-%Error: t/t_class_param_bad2.v:18:20: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+   20 |     type T
+      |          ^
+%Error: t/t_class_param_bad2.v:25:10: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
                                     : ... note: In instance 't'
-   18 | class ClsTV #(type T, int N);
-      |                    ^
+   25 |     type T,
+      |          ^
 %Error: Exiting due to

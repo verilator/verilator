@@ -106,8 +106,7 @@ class NewWithoutSuperParam #(
   endfunction
 endclass
 
-module t (  /*AUTOARG*/
-);
+module t;
 
   class FooInModule;
     int x;

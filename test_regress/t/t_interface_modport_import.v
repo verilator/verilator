@@ -23,11 +23,9 @@ interface test_if;
 endinterface  // test_if
 
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
 
   test_if i ();
 

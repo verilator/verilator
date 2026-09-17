@@ -66,7 +66,15 @@ public:
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
     // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
     virtual bool isMultiCycleSva() const { return false; }
+
+    // TODO: consolidate cLValueTargetp, isLValue, baseFromp
+    // If the expression is a valid C++ LValue, return the target reference, else nullptr
+    // This always returns either AstVarRef, AstMemberSel, or nullptr
+    AstNodeExpr* cLValueTargetp();
+    // TODO: this actually means it's a write or RW, not that it's an LValue
     bool isLValue() const;
+    // Return base var (or const) nodep dereferences
+    AstNode* baseFromp(bool overMembers);
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
@@ -189,6 +197,7 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := argsp : List[AstNodeExpr]  // Note: op1 used by some sub-types only
     //
     // @astgen ptr := m_funcp : AstCFunc  // Function being called
+    // dist-ast-dump-suppress  // Too verbose
     string m_argTypes;
     bool m_superReference = false;  // Called with super reference
 
@@ -216,7 +225,7 @@ public:
     void funcp(AstCFunc* funcp) { m_funcp = funcp; }
     string argTypes() const { return m_argTypes; }
     void argTypes(const string& str) { m_argTypes = str; }
-
+    bool isUnlikely() const override { return m_funcp && m_funcp->isUnlikely(); }
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { return true; }
@@ -271,6 +280,7 @@ public:
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
     bool isPure() override;
+    bool isUnlikely() const override { return m_taskp && m_taskp->isUnlikely(); }
     bool sameNode(const AstNode* samep) const override {
         const AstNodeFTaskRef* const asamep = VN_DBG_AS(samep, NodeFTaskRef);
         return taskp() == asamep->taskp()  //
@@ -556,6 +566,7 @@ class AstWith final : public AstNode {
 private:
     // 'with (identifier_list) {...}' restricted form (IEEE 1800-2023 18.7).
     bool m_restricted = false;
+    // dist-ast-dump-suppress  // V3LinkDot temporary use only
     bool m_validated = false;  // identifier_list typo / unused checks already run
     std::set<std::string> m_restrictedNames;
 
@@ -739,7 +750,7 @@ class AstCMethodHard final : public AstNodeExpr {
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
     // @astgen op3 := withp : Optional[AstWith] // With clause
     VCMethod m_method;  // Which method to call
-    bool m_pure = false;  // Pure optimizable
+    VIsCached m_purity;  // Pure optimizable
     bool m_usePtr = false;  // Use '->' not '.'
 public:
     AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, VCMethod method, AstNodeExpr* pinsp = nullptr)
@@ -747,15 +758,19 @@ public:
         , m_method{method} {
         this->fromp(fromp);
         addPinsp(pinsp);
-        setPurity();
     }
     ASTGEN_MEMBERS_AstCMethodHard;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return method().ascii(); }
     bool sameNode(const AstNode* samep) const override {
         const AstCMethodHard* const asamep = VN_DBG_AS(samep, CMethodHard);
         return (m_method == asamep->m_method);
     }
-    bool isPure() override { return m_pure; }
+    bool isPure() override {
+        if (!m_purity.isCached()) m_purity.set(getPurity());
+        return m_purity.get();
+    }
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -766,7 +781,7 @@ public:
     void method(VCMethod value) { m_method = value; }
 
 private:
-    void setPurity();
+    bool getPurity();
 };
 class AstCReset final : public AstNodeExpr {
     // Reset variable at startup
@@ -1469,6 +1484,8 @@ public:
     }
     ASTGEN_MEMBERS_AstExprStmt;
     // METHODS
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1746,7 +1763,7 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Implication |-> |=> (IEEE 1800-2023 16.12.6) and followed-by #-# #=#
+    // Implication |-> |=> (IEEE 1800-2023 16.12.7) and followed-by #-# #=#
     // (IEEE 1800-2023 16.12.9). Antecedent-miss is vacuous-pass for implication
     // and non-vacuous-fail for followed-by, hence the separate flag.
     // @astgen op1 := lhsp : AstNodeExpr
@@ -1774,7 +1791,7 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
-    bool isMultiCycleSva() const override { return m_isFollowedBy; }
+    bool isMultiCycleSva() const override { return m_isFollowedBy || !m_isOverlapped; }
     bool isOverlapped() const { return m_isOverlapped; }
     bool isFollowedBy() const { return m_isFollowedBy; }
 };
@@ -1793,6 +1810,7 @@ public:
     using KeyItemMap = std::map<uint64_t, AstInitItem*>;
 
 private:
+    // dist-ast-dump-suppress  // Dumped using dumpInitList
     KeyItemMap m_map;  // Node value for each array index
     // METHODS
     void dumpInitList(std::ostream& str) const;
@@ -1866,6 +1884,8 @@ public:
         , m_name{name}
         , m_index{index} {}
     ASTGEN_MEMBERS_AstLambdaArgRef;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     string emitVerilog() override { return name(); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -2386,6 +2406,7 @@ class AstSFormatArg final : public AstNodeExpr {
     // used to pass to (potentially) runtime decoding of format arguments
     // PARENT: SFormatF (or next list of expressions)
     // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := namep : Optional[AstNodeExpr] // Runtime enum name lookup
     VFormatAttr m_formatAttr;  // How to format expression
 
 public:
@@ -2408,6 +2429,7 @@ public:
     bool cleanOut() const override { return true; }
     const char* broken() const override {
         BROKEN_RTN(!VN_IS(backp(), SFormatF) && firstAbovep());  // In list under SFormatF
+        BROKEN_RTN(formatAttr().isEnum() != static_cast<bool>(namep()));
         return nullptr;
     }
     VFormatAttr formatAttr() const { return m_formatAttr; }
@@ -3035,6 +3057,8 @@ public:
         addConstraintsp(constraintsp);
     }
     ASTGEN_MEMBERS_AstWithParse;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool restricted() const { return m_restricted; }
     void restricted(bool flag) { m_restricted = flag; }
@@ -4911,9 +4935,6 @@ public:
     bool isPredictOptimizable() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    // Special operators
-    // Return base var (or const) nodep dereferences
-    static AstNode* baseFromp(AstNode* nodep, bool overMembers);
 };
 class AstAssocSel final : public AstNodeSel {
     void init(const AstNode* fromp) {
@@ -5166,6 +5187,8 @@ public:
                     "not coded to create after dtypes resolved");
     }
     ASTGEN_MEMBERS_AstSelBit;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     VAccess access() const { return m_access; }
     void access(const VAccess& flag) { m_access = flag; }
 };
@@ -5430,6 +5453,7 @@ public:
     enum FmtType : int { ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1 };
 
 private:
+    // dist-ast-dump-suppress  // Part of name()
     const FmtType m_fmtType;  // Operation type
 public:
     AstAtoN(FileLine* fl, AstNodeExpr* lhsp, FmtType fmtType)

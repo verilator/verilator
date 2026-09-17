@@ -7,7 +7,9 @@
 // Output class type-parameter upcast through a 3-level extends chain.
 
 package x_pkg;
-  virtual class x_t_fifo_base #(type T = int);
+  virtual class x_t_fifo_base #(
+      type T = int
+  );
     T m_val;
     virtual task put(input T t);
       m_val = t;
@@ -16,9 +18,13 @@ package x_pkg;
       t = m_val;
     endtask
   endclass
-  class x_t_fifo #(type T = int) extends x_t_fifo_base #(T);
+  class x_t_fifo #(
+      type T = int
+  ) extends x_t_fifo_base #(T);
   endclass
-  class x_t_analysis_fifo #(type T = int) extends x_t_fifo #(T);
+  class x_t_analysis_fifo #(
+      type T = int
+  ) extends x_t_fifo #(T);
   endclass
 endpackage
 

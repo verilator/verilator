@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=[test.pli_filename])
+test.compile(verilator_flags2=['--stats', test.pli_filename])
 
 test.execute()
 
@@ -22,5 +22,8 @@ test.execute()
 test.file_grep(test.obj_dir + "/V" + test.name + "__Dpi.h", r'dpii_Keep')
 test.file_grep(test.obj_dir + "/V" + test.name + "__Dpi.h", r'dpix_Keep')
 test.file_grep(test.obj_dir + "/V" + test.name + "_Pkg_public_kpt.h", r'public_int_Keep')
+
+test.file_grep(test.stats, r'Optimizations, FTasks, deadified, methods\s+(\d+)', 4)
+test.file_grep(test.stats, r'Optimizations, FTasks, deadified, non-methods\s+(\d+)', 2)
 
 test.passes()

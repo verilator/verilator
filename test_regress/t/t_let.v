@@ -15,7 +15,7 @@ module t;
   let B() = 20;
   let C(a) = 30 + a;
   let D(a, b) = 30 + a + b;
-  let E(a=1, b=7) = 30 + a + b;
+  let E(a = 1, b = 7) = 30 + a + b;
   let F(untyped a) = 30 + a;
 
   initial begin

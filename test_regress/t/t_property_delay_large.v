@@ -41,7 +41,7 @@ module t (
                  || (cyc == 610) || (cyc == 650) || (cyc == 690) || (cyc == 730);
 
   // Questa action blocks observe the cycle after the sampled property cycle.
-  cover property (@(posedge clk) fixed_a ##1024 fixed_b) fixed_pass_q.push_back($sampled(cyc) + 1);
+  cover sequence (@(posedge clk) fixed_a ##1024 fixed_b) fixed_pass_q.push_back($sampled(cyc) + 1);
 
   assert property (@(posedge clk) fixed_a |-> ##1024 fixed_b)
   else fixed_fail_q.push_back($sampled(cyc) + 1);

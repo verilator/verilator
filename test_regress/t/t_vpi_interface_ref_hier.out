@@ -1,0 +1,10 @@
+  scopesDump:
+    SCOPE 0x#: t
+    SCOPE 0x#: t.foo
+       VAR 0x#: foo_saw_plain
+       VAR 0x#: foo_saw_some
+    SCOPE 0x#: t.sub
+    SCOPE 0x#: t.sub.concrete_intf
+       VAR 0x#: some_intf_var
+
+*-* All Finished *-*

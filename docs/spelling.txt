@@ -627,6 +627,7 @@ benchmarking
 biguint
 binToOneHot
 bindir
+binsof
 biops
 bisonpre
 bitOpTree
@@ -947,6 +948,7 @@ makefile
 makefiles
 malloc
 manpages
+memoization
 metacomment
 metacomments
 miree
@@ -1182,6 +1184,7 @@ systemc
 taskify
 tcmalloc
 tcmalloc
+teardown
 tenghtt
 testbench
 testbenches

@@ -198,11 +198,6 @@ void V3Graph::userClearEdges() {
     }
 }
 
-void V3Graph::clearColors() {
-    // Reset colors
-    for (V3GraphVertex& vertex : vertices()) vertex.color(0);
-}
-
 //======================================================================
 // Dumping
 

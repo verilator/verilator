@@ -1,0 +1,36 @@
+cg_iff.cp_a.auto_0: 1
+cg_iff.cp_a.auto_1: 5
+cg_iff.cp_b.auto_0: 1
+cg_iff.cp_b.auto_1: 5
+cg_iff.illegal_first.forbidden [illegal,cross]: 2
+cg_iff.illegal_first.forbidden_again [illegal,cross]: 2
+cg_iff.illegal_first.ignored [ignore,cross]: 2
+cg_iff.illegal_first.normal [cross]: 1
+cg_iff.illegal_last.forbidden [illegal,cross]: 2
+cg_iff.illegal_last.ignored [ignore,cross]: 2
+cg_iff.illegal_last.normal [cross]: 1
+cg_multi.cp_a.either: 5
+cg_multi.cp_a.one: 3
+cg_multi.cp_a.seq: 1
+cg_multi.cp_a.zero: 2
+cg_multi.cp_b.either: 6
+cg_multi.cp_b.one: 4
+cg_multi.cp_b.zero: 2
+cg_multi.cx.forbidden [illegal,cross]: 2
+cg_multi.cx.ignored [ignore,cross]: 3
+cg_multi.cx.normal [cross]: 5
+cg_multi.guarded.forbidden [illegal,cross]: 1
+cg_multi.guarded.forbidden_seq [illegal,cross]: 1
+cg_multi.guarded.ignored [ignore,cross]: 2
+cg_multi.guarded.normal [cross]: 5
+cg_plain.cp_a.auto_0: 2
+cg_plain.cp_a.auto_1: 2
+cg_plain.cp_b.auto_0: 2
+cg_plain.cp_b.auto_1: 2
+cg_plain.cx.forbidden [illegal,cross]: 1
+cg_plain.cx.ignored [ignore,cross]: 2
+cg_plain.cx.normal [cross]: 2
+cg_plain.only_illegal.auto_0_x_auto_0 [cross]: 1
+cg_plain.only_illegal.auto_0_x_auto_1 [cross]: 1
+cg_plain.only_illegal.auto_1_x_auto_0 [cross]: 1
+cg_plain.only_illegal.forbidden [illegal,cross]: 1

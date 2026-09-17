@@ -4,12 +4,10 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
 
-  input clk;
   integer cyc = 1;
   bit val = 0;
 

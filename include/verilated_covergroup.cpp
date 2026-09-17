@@ -27,12 +27,13 @@
 
 // This file is compiled whenever covergroups are used, with or without
 // "verilator --coverage" (see V3Global::verilatedCppFiles).  Bin counts are
-// members of the covergroup objects themselves, so sampling, bin naming, and
-// coverage queries such as get_inst_coverage() all work with no coverage
-// database present.  VL_COVER_INSERT does not copy a count; it hands the
-// database the address of a counter to read at write time.  Only that
-// publication step needs verilated_cov.cpp, which is compiled solely under
-// --coverage, so only the registerBins() bodies are gated on VM_COVERAGE.
+// owned by the covergroup instance nodes in the VerilatedContext's registry, so
+// sampling, bin naming, and coverage queries such as get_inst_coverage() all
+// work with no coverage database present.  VL_COVER_INSERT does not copy a
+// count; it hands the database the address of a counter the registry owns and
+// reads it at write time.  Only that publication step needs the database, so
+// only the registerBins() bodies -- and this include -- are gated on
+// VM_COVERAGE.
 #if VM_COVERAGE
 #include "verilated_cov.h"
 #endif
@@ -114,79 +115,454 @@ void VlCoverCross::init(const char* hier, uint32_t dims, VlCoverpoint* const* cp
     m_file = file;
     m_line = line;
     m_col = col;
-    m_dims = dims;
-    m_cps.assign(cps, cps + dims);
-    m_cpBinCounts.resize(dims);
+    assert(dims == m_dims);
     // Accumulate in 64 bits so the overflow check itself cannot overflow.
-    uint64_t product = 1;
+    uint64_t product = m_numAutoBins ? 1 : 0;
     for (uint32_t d = 0; d < dims; ++d) {
-        m_cpBinCounts[d] = cps[d]->normalBinCount();
-        product *= m_cpBinCounts[d];
+        m_dimensionsp[d] = {cps[d], nullptr, cps[d]->normalBinCount(), 1};
+        product *= m_dimensionsp[d].bins;
         if (VL_UNLIKELY(product > UINT32_MAX)) {  // LCOV_EXCL_START
             VL_FATAL_MT(file, line, "", "Cross has too many auto bins to represent");
         }  // LCOV_EXCL_STOP
     }
-    m_numAutoBins = static_cast<uint32_t>(product);
+    assert(product == m_numAutoBins);
     // stride[d] = product of the Normal bin counts of all dimensions after d.
     // Counts down with an offset so the unsigned index never wraps below zero.
-    m_stride.assign(dims, 1);
-    for (uint32_t d = dims; d > 1; --d) m_stride[d - 2] = m_stride[d - 1] * m_cpBinCounts[d - 1];
-    m_flatCounts.assign(m_numAutoBins, 0);
+    for (uint32_t d = dims; d > 1; --d) {
+        m_dimensionsp[d - 2].stride = m_dimensionsp[d - 1].stride * m_dimensionsp[d - 1].bins;
+    }
 }
 
-void VlCoverCross::iterateProduct(VlCoverpoint* const* cps, uint32_t dim, uint32_t baseIdx) {
-    const uint32_t hits = cps[dim]->hitCount();
-    const uint32_t* const list = cps[dim]->hitList();
+void VlCoverCross::addBin(VlCovBinKind kind, std::initializer_list<uint64_t> selection,
+                          const char* namep, const char* filep, int line, int col) {
+    if (!m_numAutoBins) return;  // An empty product creates no cross bin.
+    Explicit& data = *m_explicitp;
+    const uint32_t words = m_numAutoBins / 64 + (m_numAutoBins % 64 != 0);
+    assert(selection.size() == words);
+    assert(data.numBins < data.bins.size());
+    uint64_t* const selectionp = data.selectionp + static_cast<uint64_t>(data.numBins) * words;
+    std::copy(selection.begin(), selection.end(), selectionp);
+    Bin& bin = data.bins[data.numBins++];
+    bin.selectionp = selectionp;
+    bin.namep = namep;
+    bin.filep = filep;
+    bin.line = line;
+    bin.col = col;
+    bin.kind = kind;
+    if (kind == VlCovBinKind::KIND_NORMAL) ++data.normalBins;
+    uint32_t word = 0;
+    for (const uint64_t bits : selection) { data.wordsp[word++].autoExcluded |= bits; }
+}
+
+void VlCoverCross::finalizeBins() {
+    if (!hasExplicitBins()) return;
+    Explicit& data = *m_explicitp;
+    assert(data.numBins == data.bins.size());
+    uint32_t autoIdx = 0;
+    for (uint32_t flat = 0; flat < m_numAutoBins; ++flat) {
+        if (!(data.wordsp[flat / 64].autoExcluded & (uint64_t{1} << (flat % 64)))) {
+            assert(autoIdx < data.autoBins.size());
+            data.autoBins[autoIdx++] = flat;
+        }
+    }
+    const uint32_t words = m_numAutoBins / 64 + (m_numAutoBins % 64 != 0);
+    assert(autoIdx == data.autoBins.size());
+    data.minBinWords = words;
+    uint64_t pos = 0;
+    const uint32_t* const indicesp = data.binWords.begin();
+    for (Bin& bin : data.bins) {
+        const uint64_t begin = pos;
+        for (uint32_t word = 0; word < words; ++word) {
+            if (bin.selectionp[word]) {
+                assert(pos < data.binWords.size());
+                data.binWords[pos++] = word;
+            }
+        }
+        bin.wordIndicesp = indicesp ? indicesp + begin : nullptr;
+        bin.numWords = static_cast<uint32_t>(pos - begin);
+        data.minBinWords = std::min(data.minBinWords, bin.numWords);
+    }
+    assert(pos == data.binWords.size());
+}
+
+template <bool T_Explicit, bool T_RecordHits>
+void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
+    const VlCoverpoint* const cpp = m_dimensionsp[dim].cpp;
+    const uint32_t hits = cpp->hitCount();
+    const uint32_t* const list = m_dimensionsp[dim].hitsp;
     const bool last = (dim == m_dims - 1);
-    const uint32_t stride = m_stride[dim];
+    const uint32_t stride = m_dimensionsp[dim].stride;
     for (uint32_t hit = 0; hit < hits; ++hit) {
         const uint32_t idx = baseIdx + list[hit] * stride;
         if (last) {
-            incrementTuple(idx);
+            if (T_Explicit) {
+                incrementTuple<T_RecordHits>(idx);
+            } else {
+                incrementAuto(idx);
+            }
         } else {
-            iterateProduct(cps, dim + 1, idx);
+            iterateProduct<T_Explicit, T_RecordHits>(dim + 1, idx);
         }
     }
 }
 
-void VlCoverCross::sample(VlCoverpoint* const* cps) {
-    // Fast path: if any dimension had no Normal-bin hit, the cross cannot hit.
-    for (uint32_t d = 0; d < m_dims; ++d) {
-        if (cps[d]->hitCount() == 0) return;
+void VlCoverCross::incrementBin(Bin& bin) {
+    if (bin.count++ == 0 && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
+    if (VL_UNLIKELY(bin.kind == VlCovBinKind::KIND_ILLEGAL)) {
+        VL_PRINTF_MT("%%Error: %s:%d: Illegal cross bin '%s' hit in cross '%s'.\n", bin.filep,
+                     bin.line, bin.namep, m_hier.c_str());
+        VL_STOP_MT(bin.filep, bin.line, "");
     }
-    iterateProduct(cps, 0, 0);
 }
 
-std::string VlCoverCross::binName(uint32_t flat) const {
+template <bool T_ApplyIffs>
+void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
+    Explicit& data = *m_explicitp;
+    const uint32_t word = idx / VL_QUADSIZE;
+    const uint64_t bit = uint64_t{1} << VL_BITBIT_Q(idx);
+    if (!(data.wordsp[word].autoExcluded & bit)) {
+        incrementAuto(idx);
+        return;
+    }
+    for (Bin& bin : data.bins) {
+        if (T_ApplyIffs && !*binIffs++) continue;
+        if (bin.selectionp[word] & bit) incrementBin(bin);
+    }
+}
+
+template <bool T_ApplyIffs, uint32_t T_Touched, bool T_Dense>
+void VlCoverCross::sampleBins(const bool* binIffs) {
+    struct HitWord final {
+        uint32_t index;
+        uint64_t bits;
+    };
+    Explicit& data = *m_explicitp;
+    const uint64_t bins = data.numBins;
+    const uint64_t touched = T_Touched ? T_Touched : data.numTouchedWords;
+    const Word* const wordsp = data.wordsp;
+    std::array<HitWord, T_Touched> cached{};
+    for (uint32_t i = 0; i < T_Touched; ++i) {
+        const uint32_t word = wordsp[i].touchedWord;
+        cached[i] = {word, wordsp[word].hitBits};
+    }
+    for (uint64_t binIdx = 0; binIdx < bins; ++binIdx) {
+        if (T_ApplyIffs && !*binIffs++) continue;
+        Bin& bin = data.bins[binIdx];
+        bool matched = false;
+        if (T_Touched == 1) {
+            matched = (bin.selectionp[cached[0].index] & cached[0].bits) != 0;
+        } else if (T_Dense || bin.numWords >= touched) {
+            for (uint64_t i = 0; i < touched; ++i) {
+                const uint32_t word = T_Touched ? cached[i].index : wordsp[i].touchedWord;
+                const uint64_t hits = T_Touched ? cached[i].bits : wordsp[word].hitBits;
+                if (bin.selectionp[word] & hits) {
+                    matched = true;
+                    break;
+                }
+            }
+        } else {
+            for (uint32_t pos = 0; pos < bin.numWords; ++pos) {
+                const uint32_t word = bin.wordIndicesp[pos];
+                if (bin.selectionp[word] & wordsp[word].hitBits) {
+                    matched = true;
+                    break;
+                }
+            }
+        }
+        if (matched) incrementBin(bin);
+    }
+    for (uint32_t i = 0; i < data.numTouchedWords; ++i) {
+        data.wordsp[wordsp[i].touchedWord].hitBits = 0;
+    }
+    data.numTouchedWords = 0;
+}
+
+template <bool T_ApplyIffs, bool T_Dense>
+void VlCoverCross::sampleHitWords(const bool* binIffs) {
+    switch (m_explicitp->numTouchedWords) {
+    case 1: sampleBins<T_ApplyIffs, 1, T_Dense>(binIffs); break;
+    case 2: sampleBins<T_ApplyIffs, 2, T_Dense>(binIffs); break;
+    case 3: sampleBins<T_ApplyIffs, 3, T_Dense>(binIffs); break;
+    default: sampleBins<T_ApplyIffs, 0, T_Dense>(binIffs); break;
+    }
+}
+
+void VlCoverCross::sample(const bool* binIffs) {
+    // Fast path: if any dimension had no Normal-bin hit, the cross cannot hit.
+    bool single = true;
+    for (uint32_t d = 0; d < m_dims; ++d) {
+        const uint32_t hits = m_dimensionsp[d].cpp->hitCount();
+        if (hits == 0) return;
+        single &= hits == 1;
+    }
+    if (single) {
+        uint32_t idx = 0;
+        for (uint32_t d = 0; d < m_dims; ++d) {
+            idx += m_dimensionsp[d].cpp->hitList()[0] * m_dimensionsp[d].stride;
+        }
+        if (hasExplicitBins()) {
+            if (binIffs) {
+                sampleSingleTuple<true>(idx, binIffs);
+            } else {
+                sampleSingleTuple<false>(idx, nullptr);
+            }
+        } else {
+            incrementAuto(idx);
+        }
+        return;
+    }
+    bool enabled = true;
+    if (hasExplicitBins() && binIffs && !binIffs[0]) {
+        const bool* const endp = binIffs + m_explicitp->bins.size();
+        enabled = std::find(binIffs + 1, endp, true) != endp;
+        if (!enabled && m_explicitp->autoBins.empty()) return;
+    }
+    for (uint32_t d = 0; d < m_dims; ++d) {
+        m_dimensionsp[d].hitsp = m_dimensionsp[d].cpp->hitList();
+    }
+    if (!hasExplicitBins()) {
+        iterateProduct<false>(0, 0);
+        return;
+    }
+    if (!enabled) {
+        iterateProduct<true, false>(0, 0);
+        return;
+    }
+    iterateProduct<true>(0, 0);
+    if (m_explicitp->numTouchedWords) {
+        const bool dense = m_explicitp->minBinWords >= m_explicitp->numTouchedWords;
+        if (binIffs) {
+            if (dense) {
+                sampleHitWords<true, true>(binIffs);
+            } else {
+                sampleHitWords<true, false>(binIffs);
+            }
+        } else {
+            if (dense) {
+                sampleHitWords<false, true>(nullptr);
+            } else {
+                sampleHitWords<false, false>(nullptr);
+            }
+        }
+    }
+}
+
+std::string VlCoverCross::binName(uint32_t i) const {
+    if (hasExplicitBins()) {
+        if (i < m_explicitp->bins.size()) return m_explicitp->bins[i].namep;
+        i -= static_cast<uint32_t>(m_explicitp->bins.size());
+    }
+    return autoBinName(autoIndex(i));
+}
+
+std::string VlCoverCross::autoBinName(uint32_t flat) const {
     // Built on demand by concatenating each coverpoint's own bin name.
     std::string name;
     for (uint32_t d = 0; d < m_dims; ++d) {
-        const uint32_t crossIdx = (flat / m_stride[d]) % m_cpBinCounts[d];
+        const Dimension& dimension = m_dimensionsp[d];
+        const uint32_t crossIdx = (flat / dimension.stride) % dimension.bins;
         if (d > 0) name += "_x_";
-        name += m_cps[d]->normalBinName(crossIdx);
+        name += dimension.cpp->normalBinName(crossIdx);
     }
     return name;
 }
 
 #if VM_COVERAGE
 void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* page) {
-    // Register every auto cross bin (zero-count bins included), so the report
-    // shows the full Cartesian product of cross bins.  Names are built on the fly.
     const std::string lineStr = std::to_string(m_line);
     const std::string colStr = std::to_string(m_col);
-    for (uint32_t flat = 0; flat < binCount(); ++flat) {
-        const std::string bin = binName(flat);  // "b1_x_b2_x_..."
+    const uint32_t explicitCount
+        = hasExplicitBins() ? static_cast<uint32_t>(m_explicitp->bins.size()) : 0;
+    // Use the same indexed names for registration and the runtime read interface.
+    for (uint32_t i = 0; i < binCount(); ++i) {
+        const std::string bin = binName(i);
+        const std::string full = m_hier + "." + bin;
+        if (i < explicitCount) {
+            Bin& userBin = m_explicitp->bins[i];
+            const std::string binLineStr = std::to_string(userBin.line);
+            const std::string binColStr = std::to_string(userBin.col);
+            if (userBin.kind == VlCovBinKind::KIND_NORMAL) {
+                VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page,
+                                "filename", userBin.filep, "lineno", binLineStr.c_str(), "column",
+                                binColStr.c_str(), "bin", bin.c_str(), "cross", "1");
+            } else {
+                const char* const binType
+                    = userBin.kind == VlCovBinKind::KIND_IGNORE ? "ignore" : "illegal";
+                VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page,
+                                "filename", userBin.filep, "lineno", binLineStr.c_str(), "column",
+                                binColStr.c_str(), "bin", bin.c_str(), "cross", "1", "bin_type",
+                                binType);
+            }
+            continue;
+        }
+        const uint32_t flat = autoIndex(i - explicitCount);
         // cross_bins metadata: the same components joined by ',' (not read by the report)
         std::string crossBins;
         for (uint32_t d = 0; d < m_dims; ++d) {
-            const uint32_t crossIdx = (flat / m_stride[d]) % m_cpBinCounts[d];
+            const Dimension& dimension = m_dimensionsp[d];
+            const uint32_t crossIdx = (flat / dimension.stride) % dimension.bins;
             if (d > 0) crossBins += ",";
-            crossBins += m_cps[d]->normalBinName(crossIdx);
+            crossBins += dimension.cpp->normalBinName(crossIdx);
         }
-        const std::string full = m_hier + "." + bin;
-        VL_COVER_INSERT(covcontextp, full.c_str(), &m_flatCounts[flat], "page", page, "filename",
+        VL_COVER_INSERT(covcontextp, full.c_str(), &m_flatCountsp[flat], "page", page, "filename",
                         m_file, "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
                         bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str());
     }
 }
 #endif  // VM_COVERAGE
+
+//=============================================================================
+// VlCovergroupType / VlCovRegistry
+
+VlCovergroupInst* VlCovergroupType::newInstance() {
+    VlCovergroupInst* const instp = new VlCovergroupInst{this, m_nextInstId++};
+    m_insts.emplace_back(instp);
+#if !VM_COVERAGE
+    instp->m_slot = static_cast<uint32_t>(m_insts.size() - 1);
+#endif
+    ++m_createdInsts;
+    return instp;
+}
+
+void VlCovergroupType::foldResidue(const VlCovergroupInst* instp) {
+    double covered = 0.0;
+    double total = 0.0;
+    instp->coverageParts(covered, total);
+    // Nothing coverable: excluded from both sums, so it moves neither the mean
+    // nor the denominator.  Never-sampled is different: it has bins, none hit,
+    // and folds as 0%.
+    if (total == 0.0) return;
+    // TODO(P5): IEEE 1800-2023 19.5 defines covergroup coverage as the weighted
+    // mean of the per-item ratios, not the ratio of the summed parts.  This
+    // matches what the generated get_inst_coverage() computes today, so that a
+    // live instance and the same instance one delta after death never disagree.
+    m_retired.sumCoverage += 100.0 * covered / total;
+    ++m_retired.count;
+}
+
+// Runs when the last handle to instp drops, possibly after ~VlCovRegistry, on a
+// type teardown leaked to keep this valid (see ~VlCovRegistry).  That late case
+// needs no special handling: the leaked type is self-consistent.
+void VlCovergroupType::retire(VlCovergroupInst* instp) {
+    foldResidue(instp);  // Before unlink: reads instp's items, freed below
+
+#if VM_COVERAGE
+    // registerBins() gave the coverage database raw &m_counts[i], read at
+    // write() time.  Keep the node alive, marked dead so it counts as neither
+    // live nor residue.  Freeing here needs the coverage-writer rework.
+    instp->m_retained = true;
+#else
+    // Move out first, so the node destructs at end of scope with m_insts
+    // already consistent rather than mid-swap.
+    const uint32_t slot = instp->m_slot;
+    const std::unique_ptr<VlCovergroupInst> dying = std::move(m_insts[slot]);
+    if (slot != m_insts.size() - 1) {
+        m_insts[slot] = std::move(m_insts.back());
+        m_insts[slot]->m_slot = slot;  // Moved node's slot is now stale
+    }
+    m_insts.pop_back();
+#endif
+}
+
+uint32_t VlCovergroupType::liveInstanceCount() const {
+    uint32_t live = 0;
+    // Under VM_COVERAGE m_insts also holds retained (dead) nodes; otherwise
+    // retained() is never set and this equals m_insts.size().
+    for (const auto& instp : m_insts) {
+        if (!instp->retained()) ++live;
+    }
+    return live;
+}
+
+bool VlCovergroupType::anyAttached() const {
+    for (const auto& instp : m_insts) {
+        if (instp->m_attachCount > 0) return true;
+    }
+    return false;
+}
+
+double VlCovergroupType::retiredCoverage() const {
+    if (m_retired.count == 0) return -1.0;
+    return m_retired.sumCoverage / static_cast<double>(m_retired.count);
+}
+
+// Defined here, not in verilated.cpp, so that the registry costs nothing in a model with no
+// covergroups: this file is linked only when covergroups are used (or --coverage is on).
+// Mirrors VerilatedContext::coveragep(), which lives in verilated_cov.cpp for the same reason.
+VlCovRegistry* VerilatedContext::covergroupRegistryp() VL_MT_SAFE {
+    static VerilatedMutex s_mutex;
+    // cppcheck-suppress identicalInnerCondition
+    if (VL_UNLIKELY(!m_covergroupsp)) {
+        const VerilatedLockGuard lock{s_mutex};
+        // cppcheck-suppress identicalInnerCondition
+        if (VL_LIKELY(!m_covergroupsp)) {  // LCOV_EXCL_LINE // Not redundant, prevents race
+            m_covergroupsp.reset(new VlCovRegistry{});
+        }
+    }
+    return static_cast<VlCovRegistry*>(m_covergroupsp.get());
+}
+
+VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
+    VlCovergroupType*& typep = m_byName[typeName];
+    if (!typep) {  // First instance of this type
+        m_types.emplace_back(new VlCovergroupType{});
+        typep = m_types.back().get();
+    }
+    return typep->newInstance();
+}
+
+// A covergroup object can outlive the registry: models must be destroyed before
+// their context, and a user who gets that backwards drops covergroup handles
+// after ~VerilatedContext.  Those handle destructors call attachDec(), which
+// reads the instance node and its type -- so freeing the nodes here is itself
+// what would make the wrong ordering a use-after-free, and a "retirement
+// disarmed" flag could not help.  Instead, leak any type that still has an
+// attached node, keeping the type, its nodes and their items valid; the late
+// retire() then frees the nodes itself, so only the type object leaks.
+VlCovRegistry::~VlCovRegistry() {
+    for (auto& typep : m_types) {
+        // Normally nothing is still attached; if something is, the model
+        // outlived its context and those handles still reach this type.
+        if (VL_UNLIKELY(typep->anyAttached())) {
+            VlCovergroupType* const leakedp = typep.release();
+            static_cast<void>(leakedp);  // Deliberate leak
+        }
+    }
+}
+
+VlCovergroupType* VlCovRegistry::findType(const char* typeName) const {
+    const auto it = m_byName.find(typeName);
+    return it == m_byName.end() ? nullptr : it->second;
+}
+
+uint32_t VlCovRegistry::liveInstanceCount() const {
+    uint32_t total = 0;
+    for (const auto& typep : m_types) total += typep->liveInstanceCount();
+    return total;
+}
+
+uint32_t VlCovRegistry::createdInstanceCount() const {
+    uint32_t total = 0;
+    for (const auto& typep : m_types) total += typep->createdInstanceCount();
+    return total;
+}
+
+uint32_t VlCovRegistry::liveInstanceCount(const char* typeName) const {
+    const VlCovergroupType* const typep = findType(typeName);
+    return typep ? typep->liveInstanceCount() : 0;
+}
+
+uint32_t VlCovRegistry::createdInstanceCount(const char* typeName) const {
+    const VlCovergroupType* const typep = findType(typeName);
+    return typep ? typep->createdInstanceCount() : 0;
+}
+
+uint32_t VlCovRegistry::retiredInstanceCount(const char* typeName) const {
+    const VlCovergroupType* const typep = findType(typeName);
+    return typep ? typep->retiredInstanceCount() : 0;
+}
+
+double VlCovRegistry::retiredCoverage(const char* typeName) const {
+    const VlCovergroupType* const typep = findType(typeName);
+    return typep ? typep->retiredCoverage() : -1.0;
+}

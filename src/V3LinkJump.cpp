@@ -211,7 +211,7 @@ class LinkJumpVisitor final : public VNVisitor {
         if (!processQueuep->lifetime().isStatic() || processQueuep->isTemp()) {
             return new AstVarRef{fl, processQueuep, access};
         }
-        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgp();
         return new AstVarRef{fl, topPkgp, processQueuep, access};
     }
     static AstStmtExpr* getQueuePushProcessSelfp(FileLine* const fl, AstVar* const processQueuep) {
@@ -251,6 +251,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Disable-by-name rewrites kill this detached task-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         taskBodyp->setNeedProcess();
+        v3Global.setUsesTiming();
         if (taskp->stmtsp()) taskBodyp->addStmtsp(taskp->stmtsp()->unlinkFrBackWithNext());
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};
@@ -275,7 +276,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstNodeModule* const ownerp = findOwnerModulep(nodep);
 
         if (VN_IS(ownerp, Package) || VN_IS(ownerp, Class)) {
-            AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+            AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgp();
             AstVar* const processQueuep = newProcessQueuep(nodep, fl, VVarType::VAR);
             processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
             topPkgp->addStmtsp(processQueuep);
@@ -306,6 +307,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Disable-by-name rewrites kill this detached block-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         beginBodyp->setNeedProcess();
+        v3Global.setUsesTiming();
         if (beginp->stmtsp()) beginBodyp->addStmtsp(beginp->stmtsp()->unlinkFrBackWithNext());
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};
