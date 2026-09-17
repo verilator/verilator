@@ -1820,12 +1820,6 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
-            // Coerce unsized constant operands (e.g. literal 0/1) to actual
-            // 1-bit width; iterateCheckBool keeps widthMin-fitting unsized
-            // constants at their nominal 32-bit width, which trips the
-            // downstream NFA lowering's Log* chains in V3AssertNfa.
-            if (nodep->lhsp()->width() != 1) fixWidthReduce(nodep->lhsp());
-            if (nodep->rhsp()->width() != 1) fixWidthReduce(nodep->rhsp());
             nodep->dtypeSetBit();
         }
     }
@@ -9316,47 +9310,65 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(underp, parentp, "Node has no child");
         UASSERT_OBJ(underp->dtypep(), underp,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
+        // The operand is not necessarily itself a value. AstExprStmt stands for its
+        // resultp(), and must keep that shape as later passes match on it (V3AssertNfa
+        // matches sequence match items), so work on the value it stands for. Take the
+        // container up front, as the value below may be deleted when converted.
+        AstExprStmt* const exprStmtp = VN_CAST(underp, ExprStmt);
+        AstNodeExpr* const valuep = exprStmtp ? exprStmtp->resultp() : VN_CAST(underp, NodeExpr);
+        if (!valuep) {
+            // Nothing to convert, so a Boolean operand in this state must already be
+            // one bit (e.g. AstPropSpec).
+            UASSERT_OBJ(underp->width() == 1, underp,
+                        "Non-expression Boolean operand is not one bit");
+            return;
+        }
         //
         // For DOUBLE under a logical op, add implied test against zero, never a warning
-        AstNodeDType* const underVDTypep = underp ? underp->dtypep()->skipRefp() : nullptr;
-        if (underp && underVDTypep->isDouble()) {
-            UINFO(6, "   spliceCvtCmpD0: " << underp);
+        AstNodeDType* const valueVDTypep = valuep->dtypep()->skipRefp();
+        if (valueVDTypep->isDouble()) {
+            UINFO(6, "   spliceCvtCmpD0: " << valuep);
             VNRelinker linker;
-            underp->unlinkFrBack(&linker);
+            valuep->unlinkFrBack(&linker);
             AstNode* const newp
-                = new AstNeqD{parentp->fileline(), VN_AS(underp, NodeExpr),
+                = new AstNeqD{parentp->fileline(), valuep,
                               new AstConst{parentp->fileline(), AstConst::RealDouble{}, 0.0}};
             linker.relink(newp);
-        } else if (VN_IS(underVDTypep, ClassRefDType) || VN_IS(underVDTypep, IfaceRefDType)
-                   || (VN_IS(underVDTypep, BasicDType)
-                       && VN_AS(underVDTypep, BasicDType)->isCHandle())) {
+        } else if (VN_IS(valueVDTypep, ClassRefDType) || VN_IS(valueVDTypep, IfaceRefDType)
+                   || (VN_IS(valueVDTypep, BasicDType)
+                       && VN_AS(valueVDTypep, BasicDType)->isCHandle())) {
             // Allow warning-free "if (handle)"
-            VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
-        } else if (!underVDTypep->basicp()) {
+            VL_DO_DANGLING(fixWidthReduce(valuep), valuep);  // Changed
+        } else if (!valueVDTypep->basicp()) {
             parentp->v3error("Logical operator " << parentp->prettyTypeName()
                                                  << " expects a non-complex data type on the "
                                                  << side << ".");
-            underp->replaceWith(new AstConst{parentp->fileline(), AstConst::BitFalseErroring{}});
-            VL_DO_DANGLING(pushDeletep(underp), underp);
+            valuep->replaceWith(new AstConst{parentp->fileline(), AstConst::BitFalseErroring{}});
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
         } else {
-            const bool bad = widthBad(underp, parentp->findBitDType());
+            const bool bad = widthBad(valuep, parentp->findBitDType());
             if (bad) {
                 {  // if (warnOn), but not needed here
                     UINFOTREE(5, parentp->backp(), "", "back");
-                    parentp->v3widthWarn(1, underp->width(),
+                    parentp->v3widthWarn(1, valuep->width(),
                                          "Logical operator "
                                              << parentp->prettyTypeName()
                                              << " expects 1 bit on the " << side << ", but "
-                                             << side << "'s " << underp->prettyTypeName()
-                                             << " generates " << underp->width()
-                                             << (underp->width() != underp->widthMin()
-                                                     ? " or " + cvtToStr(underp->widthMin())
+                                             << side << "'s " << valuep->prettyTypeName()
+                                             << " generates " << valuep->width()
+                                             << (valuep->width() != valuep->widthMin()
+                                                     ? " or " + cvtToStr(valuep->widthMin())
                                                      : "")
                                              << " bits.");
                 }
-                VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
             }
+            // The above only warns; a Boolean context also needs the operand to actually
+            // be one bit. widthBad() accepts an unsized operand that fits in one bit, which
+            // then keeps its nominal width, so reduce whatever is not one bit.
+            if (valuep->width() != 1) fixWidthReduce(valuep);  // Changed
         }
+        // The container now stands for the value above, so take its type
+        if (exprStmtp) exprStmtp->dtypeFrom(exprStmtp->resultp());
     }
 
     AstNode* iterateCheck(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
