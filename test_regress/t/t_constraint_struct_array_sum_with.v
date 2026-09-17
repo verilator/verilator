@@ -7,6 +7,13 @@
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// The reduction total is pinned by its own constraint, so it can't be the
+// signal checked for genuine variation -- track one element's value
+// instead, which the solver is still free to distribute differently
+// across solves as long as the pinned total still holds.
+`define track_varies(signal, prevvar, variedvar) \
+  if (longint'(signal) != (prevvar)) variedvar = 1; \
+  prevvar = longint'(signal);
 // verilog_format: on
 
 // sum() with (item.field) on a dynamically-sized array of structs sized
@@ -85,11 +92,17 @@ module t;
     int sum;
     int product;
     int bitand_;
+    longint prevBVal, prevBiVal, prevBpVal, prevBaVal;
+    bit bValVaried, biValVaried, bpValVaried, baValVaried;
 
     bas.items[0].val = 0;
     bas.items[1].val = 0;
     bas.items[2].val = 0;
 
+    prevBVal = 64'h7fffffff_ffffffff;
+    prevBiVal = 64'h7fffffff_ffffffff;
+    prevBpVal = 64'h7fffffff_ffffffff;
+    prevBaVal = 64'h7fffffff_ffffffff;
     repeat (10) begin
       ok = b.randomize();
       `checkd(ok, 1);
@@ -97,6 +110,7 @@ module t;
       sum = 0;
       foreach (b.items[i]) sum += b.items[i].val;
       `checkd(sum, 20);
+      `track_varies(b.items[0].val, prevBVal, bValVaried)
 
       ok = bi.randomize();
       `checkd(ok, 1);
@@ -104,6 +118,7 @@ module t;
       sum = 0;
       foreach (bi.items[i]) sum += bi.items[i].val;
       `checkd(sum, 20);
+      `track_varies(bi.items[0].val, prevBiVal, biValVaried)
 
       ok = bp.randomize();
       `checkd(ok, 1);
@@ -111,6 +126,7 @@ module t;
       product = 1;
       foreach (bp.items[i]) product *= bp.items[i].val;
       `checkd(product, 24);
+      `track_varies(bp.items[0].val, prevBpVal, bpValVaried)
 
       ok = ba.randomize();
       `checkd(ok, 1);
@@ -118,11 +134,13 @@ module t;
       bitand_ = '1;
       foreach (ba.items[i]) bitand_ &= ba.items[i].val;
       `checkd(bitand_, 8);
+      `track_varies(ba.items[0].val, prevBaVal, baValVaried)
 
       ok = bas.randomize();
       `checkd(ok, 1);
       `checkd(bas.items.size(), 3);
     end
+    if (!bValVaried || !biValVaried || !bpValVaried || !baValVaried) `stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

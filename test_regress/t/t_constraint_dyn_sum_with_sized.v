@@ -7,6 +7,13 @@
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// Records whether signal ever differs from its value on the previous
+// iteration, across a repeat loop that otherwise only checks a fixed
+// invariant -- a fixed invariant alone can't tell a real solve from one
+// that keeps returning the same trivially-satisfying assignment.
+`define track_varies(signal, prevvar, variedvar) \
+  if (longint'(signal) != (prevvar)) variedvar = 1; \
+  prevvar = longint'(signal);
 // verilog_format: on
 
 // A sum() with (...) reduction over a dynamically-sized array (and a
@@ -15,7 +22,7 @@
 
 class CountFives;
   rand int items[];
-  constraint c_size {items.size() == 8;}
+  constraint c_size {items.size() inside {6, 7, 8};}
   constraint c_count {items.sum() with (item == 5 ? 1 : 0) == 3;}
 endclass
 
@@ -23,6 +30,27 @@ class QueueParity;
   rand int q[$];
   constraint c_size {q.size() == 6;}
   constraint c_parity {q.sum() with (item % 2 == 0 ? 1 : 0) == 4;}
+endclass
+
+// with (item.index) on a dynamically-sized array whose own size is a
+// separate constraint: exercises both the pre-resize guard and the
+// item.index substitution path (a different width-adjustment shape than
+// item/item.field above) together.
+class IndexSum;
+  rand int idxArr[];
+  constraint c_size {idxArr.size() == 5;}
+  constraint c_idxsum {idxArr.sum() with (item.index) == 10;}
+endclass
+
+// or()/xor() with (...) on a dynamically-sized array whose own size is a
+// separate constraint: closes the last two reduction kinds this bug shape
+// hadn't been tested against (sum/product/and above only covered three of
+// the five with()-reduction methods).
+class OrXorReduce;
+  rand bit [7:0] arr[];
+  constraint c_size {arr.size() == 4;}
+  constraint c_or {(arr.or() with (item & 8'h08)) == 8'h08;}
+  constraint c_xor {(arr.xor() with (item)) != 0;}
 endclass
 
 // Same reduction reached through an if-constraint: this merges constraint
@@ -92,6 +120,8 @@ module t;
   initial begin
     automatic CountFives cf = new;
     automatic QueueParity qp = new;
+    automatic IndexSum idxsum = new;
+    automatic OrXorReduce oxr = new;
     automatic CountFivesIf cfi = new;
     automatic PlainIf pi = new;
     automatic CountFivesAssoc cfa = new;
@@ -103,6 +133,12 @@ module t;
     int countEven;
     int found;
     int count7;
+    int idxSum;
+    bit [7:0] orResult, xorResult;
+    longint prevCfSize, prevCfSum, prevQSum, prevOxrElem, prevCfiSum, prevInsX, prevInsifX,
+        prevMgSum;
+    bit cfSizeVaried, cfSumVaried, qSumVaried, oxrElemVaried, cfiSumVaried, insXVaried,
+        insifXVaried, mgSumVaried;
 
     cfa.items[0] = 0;
     cfa.items[1] = 0;
@@ -115,15 +151,21 @@ module t;
     mg.b[1] = 0;
     mg.b[2] = 0;
 
+    prevCfSize = -1;
+    prevCfSum = 64'h7fffffff_ffffffff;
     repeat (10) begin
       ok = cf.randomize();
       `checkd(ok, 1);
-      `checkd(cf.items.size(), 8);
+      if (cf.items.size() < 6 || cf.items.size() > 8) `stop;
       count5 = 0;
       foreach (cf.items[i]) if (cf.items[i] == 5) count5++;
       `checkd(count5, 3);
+      `track_varies(cf.items.size(), prevCfSize, cfSizeVaried)
+      `track_varies(cf.items.sum(), prevCfSum, cfSumVaried)
     end
+    if (!cfSizeVaried || !cfSumVaried) `stop;
 
+    prevQSum = 64'h7fffffff_ffffffff;
     repeat (10) begin
       ok = qp.randomize();
       `checkd(ok, 1);
@@ -131,8 +173,35 @@ module t;
       countEven = 0;
       foreach (qp.q[i]) if (qp.q[i] % 2 == 0) countEven++;
       `checkd(countEven, 4);
+      `track_varies(qp.q.sum(), prevQSum, qSumVaried)
+    end
+    if (!qSumVaried) `stop;
+
+    repeat (10) begin
+      ok = idxsum.randomize();
+      `checkd(ok, 1);
+      `checkd(idxsum.idxArr.size(), 5);
+      idxSum = 0;
+      foreach (idxsum.idxArr[i]) idxSum += i;
+      `checkd(idxSum, 10);
     end
 
+    prevOxrElem = 64'h7fffffff_ffffffff;
+    repeat (10) begin
+      ok = oxr.randomize();
+      `checkd(ok, 1);
+      `checkd(oxr.arr.size(), 4);
+      orResult = 8'h00;
+      foreach (oxr.arr[i]) orResult |= (oxr.arr[i] & 8'h08);
+      `checkd(orResult, 8'h08);
+      xorResult = 8'h00;
+      foreach (oxr.arr[i]) xorResult ^= oxr.arr[i];
+      if (xorResult == 8'h00) `stop;
+      `track_varies(oxr.arr[0], prevOxrElem, oxrElemVaried)
+    end
+    if (!oxrElemVaried) `stop;
+
+    prevCfiSum = 64'h7fffffff_ffffffff;
     repeat (10) begin
       ok = cfi.randomize();
       `checkd(ok, 1);
@@ -140,7 +209,9 @@ module t;
       count5 = 0;
       foreach (cfi.items[i]) if (cfi.items[i] == 5) count5++;
       `checkd(count5, 3);
+      `track_varies(cfi.items.sum(), prevCfiSum, cfiSumVaried)
     end
+    if (!cfiSumVaried) `stop;
 
     repeat (10) begin
       ok = pi.randomize();
@@ -154,6 +225,7 @@ module t;
       `checkd(cfa.items.size(), 5);
     end
 
+    prevInsX = 64'h7fffffff_ffffffff;
     repeat (10) begin
       ok = ins.randomize();
       `checkd(ok, 1);
@@ -161,8 +233,11 @@ module t;
       found = 0;
       foreach (ins.arr[i]) if (ins.arr[i] == ins.x) found = 1;
       `checkd(found, 1);
+      `track_varies(ins.x, prevInsX, insXVaried)
     end
+    if (!insXVaried) `stop;
 
+    prevInsifX = 64'h7fffffff_ffffffff;
     repeat (10) begin
       ok = insif.randomize();
       `checkd(ok, 1);
@@ -170,8 +245,11 @@ module t;
       found = 0;
       foreach (insif.arr[i]) if (insif.arr[i] == insif.x) found = 1;
       `checkd(found, 1);
+      `track_varies(insif.x, prevInsifX, insifXVaried)
     end
+    if (!insifXVaried) `stop;
 
+    prevMgSum = 64'h7fffffff_ffffffff;
     repeat (10) begin
       ok = mg.randomize();
       `checkd(ok, 1);
@@ -182,7 +260,9 @@ module t;
       count7 = 0;
       foreach (mg.b[i]) if (mg.b[i] == 7) count7++;
       `checkd(count7, 1);
+      `track_varies(mg.a.sum(), prevMgSum, mgSumVaried)
     end
+    if (!mgSumVaried) `stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

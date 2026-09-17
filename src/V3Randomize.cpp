@@ -786,10 +786,10 @@ class ConstraintExprVisitor final : public VNVisitor {
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
     AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
                                           // (nullptr == always defined)
-    // Size()-constrained arrays a with()-reduction/inside{} loops over in
-    // this expression, still empty during the pre-resize pass. A set, not
-    // a scalar, since one expression can combine several via &&.
-    std::set<AstVar*> m_arraySizeGuardVarps;
+    // Size()-constrained arrays that a with()-reduction/inside{} loops over in
+    // this expression, still empty during the pre-resize pass. Holds more
+    // than one, since a single expression can combine several via &&.
+    std::vector<AstVar*> m_arraySizeGuardVarps;
 
     // Routes nested sub-objects with static rand vars when the outer class has none.
     AstVar* findStaticRandModeVarMember(AstClass* classp) const {
@@ -2627,11 +2627,13 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     // ORs across the whole set: true if any guarded array is still empty,
     // meaning this pass hasn't resized it yet.
-    AstNodeExpr* buildArraySizeIsZerop(FileLine* fl) {
+    AstNodeExpr* buildArraySizeIsZerop(FileLine* fl) const {
         AstNodeExpr* resultp = nullptr;
         for (AstVar* const guardVarp : m_arraySizeGuardVarps) {
             const AstNodeDType* const guardDtp = guardVarp->dtypep()->skipRefp();
-            // WildcardArrayDType half untestable: see markArraySizeGuard() above.
+            // The WildcardArrayDType branch below can't be exercised by a real
+            // test: selecting an element from that array kind at all crashes
+            // with an unrelated internal error, independent of this guard.
             const VCMethod sizeMethod
                 = (VN_IS(guardDtp, AssocArrayDType)
                    || VN_IS(guardDtp, WildcardArrayDType))  // LCOV_EXCL_BR_LINE
@@ -2646,18 +2648,18 @@ class ConstraintExprVisitor final : public VNVisitor {
         return resultp;
     }
 
-    // Adds fromp to m_arraySizeGuardVarps if it's a dynamically-sized
-    // container VarRef. Must run before newSel()/similar unlink it.
+    // Records a dynamically-sized array so the pre-resize guard can gate
+    // this expression on it still being empty; no-ops for any other shape.
     void markArraySizeGuard(AstNodeExpr* fromp) {
         const AstVarRef* const arrRefp = VN_CAST(fromp, VarRef);
         if (!arrRefp) return;
         const AstNodeDType* const arrDtp = arrRefp->varp()->dtypep()->skipRefp();
-        // WildcardArrayDType half untestable: any with()/inside{} over one hits a
-        // separate, pre-existing Internal Error in newSel(), confirmed on master.
+        // Any with()/inside{} over a WildcardArrayDType hits the same
+        // unrelated crash noted above, so this branch stays half-covered.
         if (VN_IS(arrDtp, QueueDType) || VN_IS(arrDtp, DynArrayDType)
             || VN_IS(arrDtp, AssocArrayDType)
             || VN_IS(arrDtp, WildcardArrayDType)) {  // LCOV_EXCL_BR_LINE
-            m_arraySizeGuardVarps.insert(arrRefp->varp());
+            m_arraySizeGuardVarps.push_back(arrRefp->varp());
         }
     }
     void visit(AstConstraintExpr* nodep) override {
@@ -2814,7 +2816,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (nodep->method() == VCMethod::ARRAY_INSIDE) {
             const bool randArr = nodep->fromp()->user1();
-            markArraySizeGuard(nodep->fromp());  // Must run before newSel() below
+            markArraySizeGuard(nodep->fromp());
 
             AstVar* const newVarp
                 = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findIntDType()};
@@ -2893,37 +2895,13 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstForeachHeader* const headerp
                 = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), loopVarp};
 
-            // Determine SMT operation and compute identity elements
+            // Filled in by whichever branch below applies; the with-clause
+            // branch defers until the per-element width is known further
+            // down, since the reduction node's own dtype isn't resolved yet
+            // for a dynamically-sized struct-array element.
             const char* smtOp = nullptr;
             std::string identity;
-            // Deferred: a struct-typed array element's inferred width is a
-            // placeholder 1 bit, not the real per-element width, so identity
-            // must be sized from perElemExprp's own width once known below.
-            auto identityForWidth = [&nodep](int width) -> std::string {
-                if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
-                    // width==0 is dead: no real SV value has zero width.
-                    return (width > 0)
-                               ? "#b" + std::string(width - 1, '0') + "1"  // LCOV_EXCL_BR_LINE
-                               : "#b0";  // LCOV_EXCL_LINE
-                }
-                if (nodep->method() == VCMethod::ARRAY_R_AND) {
-                    return "#b" + std::string(width, '1');
-                }
-                return "#b" + std::string(width, '0');  // SUM, OR, XOR
-            };
-            if (withp) {
-                if (nodep->method() == VCMethod::ARRAY_R_SUM) {
-                    smtOp = "bvadd";
-                } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
-                    smtOp = "bvmul";
-                } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
-                    smtOp = "bvand";
-                } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
-                    smtOp = "bvor";
-                } else {  // ARRAY_R_XOR
-                    smtOp = "bvxor";
-                }
-            } else {
+            if (!withp) {
                 // For without 'with' clause: use hex format, compute from element width
                 AstVarRef* const arrRefp = VN_CAST(nodep->fromp(), VarRef);
                 UASSERT_OBJ(arrRefp, nodep, "Array reduction in constraint has non-VarRef source");
@@ -2959,7 +2937,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (withp) {
                 // With 'with' clause: evaluate expression for each element
                 const bool randArr = nodep->fromp()->user1();
-                markArraySizeGuard(nodep->fromp());  // Must run before newSel() below
+                markArraySizeGuard(nodep->fromp());
 
                 AstNodeExpr* const idxRefp = new AstVarRef{fl, loopVarp, VAccess::READ};
                 AstNodeExpr* const elemSelp = newSel(fl, nodep->fromp(), idxRefp);
@@ -2996,7 +2974,26 @@ class ConstraintExprVisitor final : public VNVisitor {
                     });
                 }
                 VL_DO_DANGLING(elemSelp->deleteTree(), elemSelp);
-                identity = identityForWidth(perElemExprp->width());
+                {
+                    const int width = perElemExprp->width();
+                    if (nodep->method() == VCMethod::ARRAY_R_SUM) {
+                        smtOp = "bvadd";
+                        identity = "#b" + std::string(width, '0');
+                    } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
+                        smtOp = "bvmul";
+                        UASSERT_OBJ(width > 0, nodep, "Zero-width per-element expression");
+                        identity = "#b" + std::string(width - 1, '0') + "1";
+                    } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
+                        smtOp = "bvand";
+                        identity = "#b" + std::string(width, '1');
+                    } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
+                        smtOp = "bvor";
+                        identity = "#b" + std::string(width, '0');
+                    } else {  // ARRAY_R_XOR
+                        smtOp = "bvxor";
+                        identity = "#b" + std::string(width, '0');
+                    }
+                }
 
                 // enum-literal folding pass already ran -- re-fold the literals.
                 perElemExprp = V3Const::constifyEdit(perElemExprp);
