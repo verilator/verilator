@@ -4,8 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Aditya Shevade
 // SPDX-License-Identifier: CC0-1.0
 
-// Keeps the generic fallback message reachable. Real values now get
-// their own diagnostic and no longer trigger it.
+// $isunbounded() on a plain variable always folds to false; this is fatal
+// by default (CONSTRAINTIGN), see t_constraint_isunbounded.v for the
+// suppressed, successfully-compiling case.
 class C;
   rand int x;
   constraint c { !$isunbounded(x); }

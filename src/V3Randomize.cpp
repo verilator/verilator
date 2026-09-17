@@ -148,6 +148,24 @@ static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
     return dtypep;
 }
 
+// Whether dtypep is, or contains anywhere through unpacked array/struct
+// nesting, a real value. A packed struct can't hold one (IEEE disallows
+// real as a packed-struct member), so it's never worth descending into.
+static bool dtypeContainsReal(AstNodeDType* dtypep) {
+    dtypep = dtypep->skipRefp();
+    if (AstNodeDType* const subp = dtypep->subDTypep()) return dtypeContainsReal(subp);
+    if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (structp->packed()) return false;
+        for (AstMemberDType* memberp = structp->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+            if (dtypeContainsReal(memberp->subDTypep())) return true;
+        }
+        return false;
+    }
+    const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
+    return basicp && basicp->isDouble();
+}
+
 // Check a rand/randc variable's type against IEEE 1800-2023 18.4's
 // allowed list. Purely diagnostic: codegen sites that would otherwise
 // mishandle one of these types guard themselves on V3Error::errorCount()
@@ -162,9 +180,8 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         // rand on a class handle is legal (recursive randomization).
         // Only randc is disallowed.
         if (isRandc) {
-            contextp->v3error(
-                "Unsupported: 'randc' on an object handle (IEEE 1800-2023 18.4: object "
-                "handles shall not be declared randc)");
+            contextp->v3error("'randc' on an object handle (IEEE 1800-2023 18.4: object "
+                              "handles shall not be declared randc)");
         }
         return;
     }
@@ -172,7 +189,7 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         // IEEE 1800-2023 does not allow randomization of a virtual
         // interface. Generates code that does not compile.
         if (ifacep->isVirtual()) {
-            contextp->v3error("Unsupported: 'rand'/'randc' on a virtual interface handle (not "
+            contextp->v3error("'rand'/'randc' on a virtual interface handle (not "
                               "in IEEE 1800-2023 18.4's random-variable type domain)");
         }
         return;
@@ -180,7 +197,7 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
     if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
         if (structp->packed()) return;  // Integral by construction; members checked separately
         if (VN_IS(structp, UnionDType)) {
-            contextp->v3error("Unsupported: 'rand'/'randc' on an unpacked union (IEEE "
+            contextp->v3error("'rand'/'randc' on an unpacked union (IEEE "
                               "1800-2023 18.4: unpacked unions shall not be declared as rand "
                               "or randc)");
             return;
@@ -198,7 +215,7 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
     if (basicp && basicp->isDouble()) {
         // rand on a real variable is legal; only randc is disallowed.
         if (isRandc) {
-            contextp->v3error("Unsupported: 'randc' on a real variable (IEEE 1800-2023 18.4: "
+            contextp->v3error("'randc' on a real variable (IEEE 1800-2023 18.4: "
                               "real variables shall not be declared randc)");
         }
         return;
@@ -208,11 +225,9 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
             || basicp->keyword() == VBasicDTypeKwd::CHANDLE
             || basicp->keyword() == VBasicDTypeKwd::EVENT)) {
         const char* const articlep = basicp->keyword() == VBasicDTypeKwd::EVENT ? "an" : "a";
-        contextp->v3error("Unsupported: 'rand'/'randc' on " << articlep << " "
-                                                            << basicp->keyword().ascii()
-                                                            << " variable (not in IEEE "
-                                                               "1800-2023 18.4's "
-                                                               "random-variable type domain)");
+        contextp->v3error("'rand'/'randc' on " << articlep << " " << basicp->keyword().ascii()
+                                               << " variable (not in IEEE 1800-2023 18.4's "
+                                                  "random-variable type domain)");
     }
 }
 
@@ -1705,9 +1720,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
 
         if (memberselp) varp = memberselp->varp();
-        // emitSMT() assumes bit-vector operands and does not type-check.
-        // A real value here would silently emit a malformed bit-vector width.
-        if (arrayElementDTypep(varp->dtypep())->isDouble()) {
+        // The SMT translation assumes bit-vector operands and does not
+        // type-check. A real value anywhere in this operand, even nested
+        // inside a struct field, would silently produce a malformed width.
+        if (dtypeContainsReal(varp->dtypep())) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: real value in this constraint expression");
             return;
         }
@@ -1989,6 +2005,17 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->replaceWith(resultp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(resultp);
+    }
+    void visit(AstIsUnbounded* nodep) override {
+        // Only true for the literal '$' token, never a real expression, so
+        // this always folds to false. It has no runtime implementation of
+        // its own, so it must be substituted now rather than left for later.
+        nodep->v3warn(CONSTRAINTIGN,
+                      "Unsupported: $isunbounded() in a constraint, treating as constant");
+        AstConst* const zerop = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        nodep->replaceWith(zerop);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(zerop);
     }
     void handlePow(AstNodeBiop* nodep) {
         if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {

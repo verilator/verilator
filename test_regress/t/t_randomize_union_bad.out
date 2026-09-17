@@ -1,4 +1,4 @@
-%Error: t/t_randomize_union_bad.v:13:22: Unsupported: 'rand'/'randc' on an unpacked union (IEEE 1800-2023 18.4: unpacked unions shall not be declared as rand or randc)
+%Error: t/t_randomize_union_bad.v:13:22: 'rand'/'randc' on an unpacked union (IEEE 1800-2023 18.4: unpacked unions shall not be declared as rand or randc)
                                        : ... note: In instance 't_randomize_union_bad'
    13 |   rand UnpackedUnion union_instance;
       |                      ^~~~~~~~~~~~~~
