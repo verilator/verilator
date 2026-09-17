@@ -127,8 +127,9 @@ void createEvalRegion(
     // Index of the region's 'first iteration' extra trigger, if it has one, otherwise ignored
     uint32_t firstIterTrigger,
     const TriggerKit& trigKit,  // The trigger kit
-    AstVarScope* trigp,  // The trigger vector - may be nullptr if no triggers or using 'condp'
-    AstNodeExpr* condp,  // Explicit condition that must be true to run 'phaseWorkp'
+    AstVarScope* trigp,  // The trigger vector - may be nullptr if no triggers
+    // Explicit condition that must be true to run 'phaseWorkp', instead of any bit of 'trigp'
+    AstNodeExpr* condp,
     AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
     AstNodeStmt* phaseWorkp,  // The work to do if anything triggered
     // Extra statements to run after the work, even if no triggers fired. This function is
@@ -136,7 +137,6 @@ void createEvalRegion(
     // and must be unmodified otherwise.
     std::function<AstNodeStmt*(AstVarScope*)> phaseExtra = [](AstVarScope*) { return nullptr; }  //
 ) {
-    UASSERT(!trigp || !condp, "Cannot use both 'trigp' and 'condp' in 'createEvalRegion'");
     UASSERT(!eval.firstIteration() || trigp,
             "Region without triggers cannot need a first iteration flag");
 
@@ -597,6 +597,66 @@ struct EvalKit final {
     bool empty() const { return !m_funcp; }
 };
 
+// Collect the trigger bits one guard tests: an Or tree over 'mask & trigVec[word]' terms,
+// with V3Const having folded an all ones mask away
+bool collectGuardMask(const AstNodeExpr* condp, const AstVarScope* trigVscp,
+                      std::vector<uint64_t>& mask) {
+    if (const AstOr* const orp = VN_CAST(condp, Or)) {
+        return collectGuardMask(orp->lhsp(), trigVscp, mask)
+               && collectGuardMask(orp->rhsp(), trigVscp, mask);
+    }
+    uint64_t bits = ~0ULL;
+    const AstArraySel* selp = VN_CAST(condp, ArraySel);
+    if (const AstAnd* const andp = VN_CAST(condp, And)) {
+        const AstConst* const bitsp = VN_CAST(andp->lhsp(), Const);
+        if (!bitsp) return false;
+        bits = bitsp->toUQuad();
+        selp = VN_CAST(andp->rhsp(), ArraySel);
+    }
+    if (!selp) return false;
+    const AstVarRef* const refp = VN_CAST(selp->fromp(), VarRef);
+    if (!refp || refp->varScopep() != trigVscp || refp->access() != VAccess::READ) return false;
+    const AstConst* const idxp = VN_CAST(selp->bitp(), Const);
+    if (!idxp || idxp->toUInt() >= mask.size()) return false;
+    mask[idxp->toUInt()] |= bits;
+    return true;
+}
+
+// Collect the trigger bits a region body of guarded calls tests
+bool collectTriggerMask(const AstNode* stmtsp, const AstVarScope* trigVscp,
+                        std::vector<uint64_t>& mask) {
+    bool gotAny = false;
+    for (const AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+        const AstIf* const ifp = VN_CAST(nodep, If);
+        if (!ifp || ifp->elsesp()) return false;
+        if (!collectGuardMask(ifp->condp(), trigVscp, mask)) return false;
+        gotAny = true;
+    }
+    return gotAny;
+}
+
+// Condition testing only the trigger bits the region's logic is sensitive to
+AstNodeExpr* newExecCond(FileLine* flp, const EvalKit& kit) {
+    if (kit.empty()) return nullptr;
+    UASSERT_OBJ(kit.m_vscp, kit.m_funcp, "Region with logic but no trigger vector");
+    const uint32_t nWords = VN_AS(kit.m_vscp->dtypep(), UnpackArrayDType)->elementsConst();
+    std::vector<uint64_t> mask(nWords, 0);
+    // An unrecognized body shape falls back to testing every trigger, as before
+    if (!collectTriggerMask(kit.m_funcp->stmtsp(), kit.m_vscp, mask)) mask.assign(nWords, ~0ULL);
+    AstNodeExpr* condp = nullptr;
+    for (size_t w = 0; w < mask.size(); ++w) {
+        if (!mask[w]) continue;
+        AstNodeExpr* const wordp = new AstArraySel{
+            flp, new AstVarRef{flp, kit.m_vscp, VAccess::READ}, static_cast<int>(w)};
+        AstNodeExpr* const termp = new AstNeq{
+            flp, new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, mask[w]}, wordp},
+            new AstConst{flp, AstConst::Unsized64{}, 0}};
+        condp = condp ? new AstLogOr{flp, condp, termp} : termp;
+    }
+    UASSERT_OBJ(condp, kit.m_funcp, "Region with logic but no triggers");
+    return condp;
+}
+
 //============================================================================
 // Create the evaluation function of each region of a time step
 
@@ -745,45 +805,35 @@ void createEval(AstNetlist* netlistp,  //
             return ifp;
         });
 
-    // Create the 'obs' region
+    // Create the 'obs' region. The Reactive flags are latched and the Observed flags cleared
+    // whether or not the region's own logic runs.
     createEvalRegion(  //
         netlistp, VEval::OBS, 0, trigKit,
         // Use trigger
-        obsKit.m_vscp, nullptr,
-        // Prep statements
-        nullptr,
-        // Work statements
-        [&]() -> AstNodeStmt* {
-            if (obsKit.empty()) return nullptr;
-            AstNodeStmt* workp = nullptr;
-            // Latch the Observed trigger flags under the Reactive trigger flags
-            if (!reactKit.empty()) {
-                workp = trigKit.newOrIntoCall(reactKit.m_vscp, obsKit.m_vscp);
-            }
-            // Invoke the 'obs' function
-            workp = AstNode::addNext(workp, util::callVoidFunc(obsKit.m_funcp));
-            // Clear the 'obs' triggers
-            workp = AstNode::addNext(workp, trigKit.newClearCall(obsKit.m_vscp));
-            //
-            return workp;
-        }());
+        obsKit.m_vscp, newExecCond(flp, obsKit),
+        // Prep statements: latch the Observed trigger flags under the Reactive trigger flags
+        obsKit.empty() || reactKit.empty() ? nullptr
+                                           : trigKit.newOrIntoCall(reactKit.m_vscp, obsKit.m_vscp),
+        // Work statements: invoke the 'obs' function
+        obsKit.empty() ? nullptr : util::callVoidFunc(obsKit.m_funcp),
+        // Clear the 'obs' triggers
+        [&](AstVarScope*) -> AstNodeStmt* {
+            return obsKit.empty() ? nullptr : trigKit.newClearCall(obsKit.m_vscp);
+        });
 
     // Create the 'react' region
     createEvalRegion(  //
         netlistp, VEval::REACT, 0, trigKit,
         // Use trigger
-        reactKit.m_vscp, nullptr,
+        reactKit.m_vscp, newExecCond(flp, reactKit),
         // Prep statements
         nullptr,
-        // Work statements
-        [&]() -> AstNodeStmt* {
-            if (reactKit.empty()) return nullptr;
-            // Invoke the 'react' function
-            AstNodeStmt* workp = util::callVoidFunc(reactKit.m_funcp);
-            // Clear the 'react' triggers
-            workp = AstNode::addNext(workp, trigKit.newClearCall(reactKit.m_vscp));
-            return workp;
-        }());
+        // Work statements: invoke the 'react' function
+        reactKit.empty() ? nullptr : util::callVoidFunc(reactKit.m_funcp),
+        // Clear the 'react' triggers
+        [&](AstVarScope*) -> AstNodeStmt* {
+            return reactKit.empty() ? nullptr : trigKit.newClearCall(reactKit.m_vscp);
+        });
 }
 
 }  // namespace
