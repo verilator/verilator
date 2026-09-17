@@ -21,14 +21,14 @@
 #else
 extern "C" {
 extern void set_value(const svBitVecVal* v);
-extern void poke_value(int i);
+extern int poke_value(int i);
 }
 #endif
 
 //======================================================================
 
 // Called from our Verilog code to run the tests
-void poke_value(int i) {
+int poke_value(int i) {
     printf("poke_value(%d)\n", i);
     const char* const scopeNamep = svGetNameFromScope(svGetScope());
     printf("svGetNameFromScope=\"%s\"\n", scopeNamep);
@@ -47,7 +47,7 @@ void poke_value(int i) {
     const svScope scope = svGetScopeFromName("top.t.a");
     if (scope == NULL) {
         printf("%%Error: null scope for top.t.a\n");
-        return;
+        return 1;
     }
 
     svSetScope(scope);
@@ -55,4 +55,5 @@ void poke_value(int i) {
     val[0] = i;
     val[1] = 0;
     set_value(val);
+    return 0;
 }
