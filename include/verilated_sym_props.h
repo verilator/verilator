@@ -158,7 +158,18 @@ public:
     VerilatedVarFlags vldir() const {
         return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR);
     }
-    uint32_t entSize() const VL_MT_SAFE;
+    uint32_t entSize() const VL_MT_SAFE {
+        if (m_entSize) return m_entSize;
+        switch (vltype()) {
+        case VLVT_PTR: return sizeof(void*);
+        case VLVT_UINT8: return sizeof(CData);
+        case VLVT_UINT16: return sizeof(SData);
+        case VLVT_UINT32: return sizeof(IData);
+        case VLVT_UINT64: return sizeof(QData);
+        case VLVT_WDATA: return VL_WORDS_I(entBits()) * sizeof(IData);
+        default: return 0;  // LCOV_EXCL_LINE
+        }
+    }
     uint32_t entBits() const VL_MT_SAFE {
         uint32_t bits = 1;
         for (auto it : m_packed) bits *= it.elements();
@@ -214,7 +225,11 @@ public:
                                                        : 0;
     }
     // Total size in bytes (note DPI limited to 4GB)
-    size_t totalSize() const;
+    size_t totalSize() const {
+        size_t size = entSize();
+        for (int udim = 0; udim < udims(); ++udim) size *= m_unpacked[udim].elements();
+        return size;
+    }
     // Adjust a data pointer to access a given array element, NULL if something goes bad
     void* datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE;
 };
