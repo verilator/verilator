@@ -39,7 +39,7 @@ jobs:
         && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter')) ||
       (github.event_name == 'workflow_dispatch') ||
       (github.event_name == 'push')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       old-sha: ${{ steps.start.outputs.old-sha }}
       cases: ${{ steps.cases.outputs.cases }}
@@ -70,7 +70,7 @@ jobs:
       cc: gcc
       ccwarn: false
       install: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       sha: ${{ github.sha }}
 
   build-clang-new:
@@ -81,7 +81,7 @@ jobs:
       cc: clang
       ccwarn: false
       install: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       sha: ${{ github.sha }}
 
   build-gcc-old:
@@ -93,7 +93,7 @@ jobs:
       cc: gcc
       ccwarn: false
       install: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   build-clang-old:
@@ -105,7 +105,7 @@ jobs:
       cc: clang
       ccwarn: false
       install: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   run-gcc:
@@ -121,7 +121,7 @@ jobs:
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: gcc
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       cc: gcc
       verilator-archive-new: ${{ needs.build-gcc-new.outputs.archive }}
       verilator-archive-old: ${{ needs.build-gcc-old.outputs.archive }}
@@ -148,7 +148,7 @@ jobs:
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: clang
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       cc: clang
       verilator-archive-new: ${{ needs.build-clang-new.outputs.archive }}
       verilator-archive-old: ${{ needs.build-clang-old.outputs.archive }}
@@ -175,7 +175,7 @@ jobs:
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: gcc-hier
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       cc: gcc
       verilator-archive-new: ${{ needs.build-gcc-new.outputs.archive }}
       verilator-archive-old: ${{ needs.build-gcc-old.outputs.archive }}
@@ -200,7 +200,7 @@ jobs:
                (github.event_name == 'pull_request' && (contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure')))
             || (github.event_name != 'pull_request' && (contains(needs.*.result, 'success') ||  contains(needs.*.result, 'failure')))
           )}}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       # The run tags, derived from the 'run-*' dependency job names
       run-tags: ${{ steps.tags.outputs.tags }}
@@ -283,7 +283,7 @@ jobs:
     # dashboard UI currently assumes there is only one data point per
     # calendar day. Results from reruns can be imported manually if needed.
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && contains(needs.*.result, 'success') && !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Download combined results
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
@@ -334,7 +334,7 @@ jobs:
     name: Prepare Pull Request results
     needs: combine-results
     if: ${{ github.event_name == 'pull_request' && github.repository == 'verilator/verilator' && needs.combine-results.result == 'success' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       actions: read
     steps:
@@ -391,7 +391,7 @@ jobs:
     name: Create issue on failure
     needs: publish-scheduled-results
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       # Creating issues requires elevated privilege
       - name: Generate access token
