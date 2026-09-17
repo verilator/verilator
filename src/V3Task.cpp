@@ -1036,6 +1036,13 @@ class TaskVisitor final : public VNVisitor {
         callp->add(");");
         // Call the user function
         funcp->addStmtsp(callp);
+        if (v3Global.usesTiming()) {
+            // Control came into the model from outside its own evaluation, so anything the
+            // user function left behind -- a fired event, a written variable somebody waits
+            // on, a spawned process -- is invisible to whoever decided when to evaluate us
+            // next. Say so; with --sc this is what lets the model be re-armed.
+            funcp->addStmtsp(new AstCStmt{flp, "vlScheduleChanged();\n"});
+        }
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {

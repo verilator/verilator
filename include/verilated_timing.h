@@ -184,6 +184,16 @@ public:
 enum class VlDelayPhase : bool { ACTIVE, INACTIVE };
 
 //=============================================================================
+// Notification that the model's schedule has changed: a coroutine was put in a queue,
+// and whoever decides when to evaluate the model may now be waiting for the wrong time.
+// Set by the SystemC wrapper; a no-op everywhere else.
+
+using VlScheduleChangedCb = void (*)(void*);
+
+void vlSetScheduleChangedCb(VlScheduleChangedCb cb, void* userp) VL_MT_UNSAFE;
+void vlScheduleChanged() VL_MT_UNSAFE;
+
+//=============================================================================
 // VlDelayScheduler stores coroutines to be resumed at a certain simulation time. If the current
 // time is equal to a coroutine's resume time, the coroutine gets resumed.
 
@@ -249,6 +259,7 @@ public:
                 } else {
                     queueZeroDelay.emplace_back(VlCoroutineHandle{coro, process, fileline});
                 }
+                vlScheduleChanged();
             }
             void await_resume() const {}
         };

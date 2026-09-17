@@ -1072,6 +1072,10 @@ void EmitCSyms::emitSymHdr() {
         }
         puts("}\n");
         puts("event.fire();\n");
+        putsDecoration(nullptr,
+                       "// The schedule may now be wrong for whoever decides when to\n"
+                       "// evaluate this model -- an event fired outside evaluation\n");
+        puts("vlScheduleChanged();\n");
         puts("}\n");
         puts("void clearTriggeredEvents() {\n");
         if (v3Global.assignsEvents()) {

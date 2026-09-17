@@ -164,6 +164,18 @@ void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription) {
     std::swap(m_fired, m_toResume);
 }
 
+static VlScheduleChangedCb s_scheduleChangedCb = nullptr;
+static void* s_scheduleChangedUserp = nullptr;
+
+void vlSetScheduleChangedCb(VlScheduleChangedCb cb, void* userp) VL_MT_UNSAFE {
+    s_scheduleChangedCb = cb;
+    s_scheduleChangedUserp = userp;
+}
+
+void vlScheduleChanged() VL_MT_UNSAFE {
+    if (s_scheduleChangedCb) s_scheduleChangedCb(s_scheduleChangedUserp);
+}
+
 void VlTriggerScheduler::ready(const char* eventDescription) {
 #ifdef VL_DEBUG
     if (!m_awaiting.empty()) {
@@ -183,9 +195,13 @@ void VlTriggerScheduler::ready(const char* eventDescription) {
     }
     const size_t expectedSize = m_fired.size() + m_awaiting.size();
     if (m_fired.capacity() < expectedSize) m_fired.reserve(expectedSize * 2);
+    const bool anythingFired = !m_awaiting.empty();
     m_fired.insert(m_fired.end(), std::make_move_iterator(m_awaiting.begin()),
                    std::make_move_iterator(m_awaiting.end()));
     m_awaiting.clear();
+    // Somebody may now be waiting for the wrong time: this queue has work in it that was
+    // not there when the model last decided when to evaluate itself.
+    if (anythingFired) vlScheduleChanged();
 }
 
 #ifdef VL_DEBUG
