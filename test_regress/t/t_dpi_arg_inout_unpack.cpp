@@ -25,7 +25,7 @@
 #include "svdpi.h"
 
 #if defined(VERILATOR)  // Verilator
-# include "Vt_dpi_arg_inout_unpack__Dpi.h"
+# include VM_PREFIX_INCLUDE_DPI
 typedef long long sv_longint_t;
 typedef unsigned long long sv_longint_unsigned_t;
 # define NO_SHORTREAL

@@ -668,6 +668,13 @@ public:
         of.putSet("VM_PREFIX", v3Global.opt.prefix());
         of.puts("# Module prefix (from --prefix)\n");
         of.putSet("VM_MODPREFIX", v3Global.opt.modPrefix());
+        of.puts("# Design header include, for '#include VM_PREFIX_INCLUDE' (from --prefix)\n");
+        of.putSet("VM_PREFIX_INCLUDE", "<" + v3Global.opt.prefix() + ".h>");
+        if (v3Global.dpi()) {
+            of.puts("# DPI header include, for '#include VM_PREFIX_INCLUDE_DPI';"
+                    " undefined if no DPI\n");
+            of.putSet("VM_PREFIX_INCLUDE_DPI", "<" + v3Global.opt.prefix() + "__Dpi.h>");
+        }
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
@@ -713,6 +720,8 @@ public:
             of.puts("include " + v3Global.opt.prefix() + "_hier.mk\n");
         }
         of.puts("# Include global rules\n");
+        // verilated.mk gates -DVM_PREFIX_INCLUDE* behind ifneq, evaluated at parse time, so those
+        // variables must be set above this include
         of.puts("include $(VERILATOR_ROOT)/include/verilated.mk\n");
 
         if (v3Global.opt.exe()) {

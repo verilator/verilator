@@ -20,11 +20,7 @@
 
 // clang-format off
 #if defined(VERILATOR)
-# ifdef T_DPI_THREADS_COLLIDE
-#  include "Vt_dpi_threads_collide__Dpi.h"
-# else
-#  include "Vt_dpi_threads__Dpi.h"
-# endif
+# include VM_PREFIX_INCLUDE_DPI
 #elif defined(VCS)
 # include "../vc_hdrs.h"
 #elif defined(CADENCE)

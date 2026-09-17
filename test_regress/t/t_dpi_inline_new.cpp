@@ -6,7 +6,7 @@
 
 // Include the Verilator-generated DPI header so the C prototype matches
 // the SystemVerilog import expectations.
-#include "Vt_dpi_inline_new__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 
 #ifdef __cplusplus
 extern "C" {

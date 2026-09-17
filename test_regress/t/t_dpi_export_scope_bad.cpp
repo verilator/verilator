@@ -10,7 +10,7 @@
 
 //======================================================================
 
-#include "Vt_dpi_export_scope_bad__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 
 #ifdef NEED_EXTERNS
 extern "C" {

@@ -18,13 +18,7 @@
 
 // clang-format off
 #if defined(VERILATOR)
-# if defined(T_DPI_SHORTCIRCUIT)
-#  include "Vt_dpi_shortcircuit__Dpi.h"
-# elif defined(T_DPI_SHORTCIRCUIT2)
-#  include "Vt_dpi_shortcircuit2__Dpi.h"
-# else
-#  error "Unknown test"
-# endif
+# include VM_PREFIX_INCLUDE_DPI
 #elif defined(VCS)
 # include "../vc_hdrs.h"
 #elif defined(CADENCE)
