@@ -36,6 +36,7 @@
 #include "verilated_cov_model.h"
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <initializer_list>
 #include <memory>
@@ -429,7 +430,7 @@ class VlCovergroupInst final {
     // unlinked, so the slot would be dead.  VlCovergroupType sets it.
     uint32_t m_slot = 0;  // Index into m_typep->m_insts; unlink-by-swap rewrites
 #endif
-    uint32_t m_attachCount = 1;  // SV handles bound here; 1 from construction
+    std::atomic<uint32_t> m_attachCount{1};  // SV handles bound here; 1 from construction
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
     // Reads m_items to fold the residue; owns m_slot and m_retained.
@@ -458,11 +459,13 @@ public:
     }
 
     // ---- attach counting (from VlCovInstHandle) ----
-    void attachInc() { ++m_attachCount; }
+    void attachInc() VL_MT_SAFE { m_attachCount.fetch_add(1, std::memory_order_relaxed); }
     // Drops one handle; true if it was the last and the caller must retire the
     // node.  Retiring is the caller's job because VlCovergroupType is incomplete
     // here, and because it frees 'this'.
-    bool attachDec() { return --m_attachCount == 0; }
+    bool attachDec() VL_MT_SAFE {
+        return m_attachCount.fetch_sub(1, std::memory_order_acq_rel) == 1;
+    }
 
     // ---- introspection ----
     VlCovergroupType* typep() const { return m_typep; }
@@ -504,15 +507,20 @@ class VlCovergroupType final {
     // MEMBERS
     // Live nodes, and -- under VM_COVERAGE -- retired-but-retained ones.  Slot
     // order is creation order only until the first unlink-by-swap.
-    std::vector<std::unique_ptr<VlCovergroupInst>> m_insts;
-    uint32_t m_createdInsts = 0;  // Instances ever created; never decremented
-    uint32_t m_nextInstId = 0;  // Monotonic; slots are reused, ids never are
-    VlCovRetiredAvg m_retired;  // Contribution of every instance that has died
+    // Lock order: registry mutex, then type mutex. Retirement takes only this lock.
+    mutable VerilatedMutex m_mutex;
+    std::vector<std::unique_ptr<VlCovergroupInst>> m_insts VL_GUARDED_BY(m_mutex);
+    uint32_t m_createdInsts VL_GUARDED_BY(m_mutex)
+        = 0;  // Instances ever created; never decremented
+    uint32_t m_nextInstId VL_GUARDED_BY(m_mutex)
+        = 0;  // Monotonic; slots are reused, ids never are
+    VlCovRetiredAvg
+        m_retired VL_GUARDED_BY(m_mutex);  // Contribution of every instance that has died
 
     // PRIVATE METHODS
     // Harvest instp's contribution into m_retired.  Must run before instp is
     // unlinked: it reads the instance's items.
-    void foldResidue(const VlCovergroupInst* instp);
+    void foldResidue(const VlCovergroupInst* instp) VL_REQUIRES(m_mutex);
 
 public:
     // CONSTRUCTORS
@@ -520,14 +528,14 @@ public:
     VL_UNCOPYABLE(VlCovergroupType);
 
     // METHODS
-    VlCovergroupInst* newInstance();
+    VlCovergroupInst* newInstance() VL_MT_SAFE_EXCLUDES(m_mutex);
     // Called when the last handle to instp drops.  Folds the residue, then
     // unlinks and frees the node -- except under VM_COVERAGE, where the coverage
     // database still holds raw pointers into it and it is only marked retained.
-    void retire(VlCovergroupInst* instp);
+    void retire(VlCovergroupInst* instp) VL_MT_SAFE_EXCLUDES(m_mutex);
     // True if any node here still has an SV handle bound to it, and so can be
     // retired again after the registry is destroyed.  See ~VlCovRegistry.
-    bool anyAttached() const;
+    bool anyAttached() const VL_MT_SAFE_EXCLUDES(m_mutex);
 
     // ---- introspection ----
     // Test and debug only; generated code never calls these, and SV reaches them
@@ -536,14 +544,20 @@ public:
     //
     // Instance nodes still reachable from SV.  Under VM_COVERAGE this is smaller
     // than m_insts.size(), which also holds retained (dead) nodes.
-    uint32_t liveInstanceCount() const;
+    uint32_t liveInstanceCount() const VL_MT_SAFE_EXCLUDES(m_mutex);
     // Instances ever created, live or not.  Wraps after 4G instances, which no
     // introspection use cares about.
-    uint32_t createdInstanceCount() const { return m_createdInsts; }
+    uint32_t createdInstanceCount() const VL_MT_SAFE_EXCLUDES(m_mutex) {
+        const VerilatedLockGuard lock{m_mutex};
+        return m_createdInsts;
+    }
     // Instances that have died and contributed to the residue.
-    uint32_t retiredInstanceCount() const { return static_cast<uint32_t>(m_retired.count); }
+    uint32_t retiredInstanceCount() const VL_MT_SAFE_EXCLUDES(m_mutex) {
+        const VerilatedLockGuard lock{m_mutex};
+        return static_cast<uint32_t>(m_retired.count);
+    }
     // Mean coverage over the retired instances only, in 0..100; -1.0 if none.
-    double retiredCoverage() const;
+    double retiredCoverage() const VL_MT_SAFE_EXCLUDES(m_mutex);
 };
 
 //=============================================================================
@@ -555,11 +569,16 @@ public:
 
 class VlCovRegistry final : public VerilatedVirtualBase {
     // MEMBERS
-    std::vector<std::unique_ptr<VlCovergroupType>> m_types;  // Creation order
-    std::unordered_map<std::string, VlCovergroupType*> m_byName;  // Lookup, borrowed
+    // Acquired before a type mutex; never acquired by retirement.
+    mutable VerilatedMutex m_mutex;
+    std::vector<std::unique_ptr<VlCovergroupType>>
+        m_types VL_GUARDED_BY(m_mutex);  // Creation order
+    std::unordered_map<std::string, VlCovergroupType*>
+        m_byName VL_GUARDED_BY(m_mutex);  // Lookup, borrowed
 
     // PRIVATE METHODS
-    VlCovergroupType* findType(const char* typeName) const;  // nullptr if unknown
+    VlCovergroupType* findType(const char* typeName) const
+        VL_REQUIRES(m_mutex);  // nullptr if unknown
 
 public:
     // CONSTRUCTORS
@@ -571,17 +590,21 @@ public:
     // Find-or-create the type node, then add an instance to it.  typeName is the
     // generated covergroup class name, already --protect-ids obfuscated, and is
     // the same string that keys the coverage database's hier/page.
-    VlCovergroupInst* newCovergroupInst(const char* typeName);
+    VlCovergroupInst* newCovergroupInst(const char* typeName) VL_MT_SAFE_EXCLUDES(m_mutex);
 
     // ---- introspection (see VlCovergroupType) ----
     // typeName is the obfuscated generated name, so a test using these under
     // --protect-ids must pass the obfuscated string; the no-argument form does not.
-    uint32_t liveInstanceCount() const;  // Summed over every type
-    uint32_t createdInstanceCount() const;  // Summed over every type
-    uint32_t liveInstanceCount(const char* typeName) const;  // 0 if type unknown
-    uint32_t createdInstanceCount(const char* typeName) const;  // 0 if type unknown
-    uint32_t retiredInstanceCount(const char* typeName) const;  // 0 if type unknown
-    double retiredCoverage(const char* typeName) const;  // -1.0 if type unknown or none
+    uint32_t liveInstanceCount() const VL_MT_SAFE_EXCLUDES(m_mutex);  // Summed over every type
+    uint32_t createdInstanceCount() const VL_MT_SAFE_EXCLUDES(m_mutex);  // Summed over every type
+    uint32_t liveInstanceCount(const char* typeName) const
+        VL_MT_SAFE_EXCLUDES(m_mutex);  // 0 if type unknown
+    uint32_t createdInstanceCount(const char* typeName) const
+        VL_MT_SAFE_EXCLUDES(m_mutex);  // 0 if type unknown
+    uint32_t retiredInstanceCount(const char* typeName) const
+        VL_MT_SAFE_EXCLUDES(m_mutex);  // 0 if type unknown
+    double retiredCoverage(const char* typeName) const
+        VL_MT_SAFE_EXCLUDES(m_mutex);  // -1.0 if type unknown or none
 };
 
 //=============================================================================

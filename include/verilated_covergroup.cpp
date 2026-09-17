@@ -415,6 +415,7 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
 // VlCovergroupType / VlCovRegistry
 
 VlCovergroupInst* VlCovergroupType::newInstance() {
+    const VerilatedLockGuard lock{m_mutex};
     VlCovergroupInst* const instp = new VlCovergroupInst{this, m_nextInstId++};
     m_insts.emplace_back(instp);
 #if !VM_COVERAGE
@@ -444,6 +445,7 @@ void VlCovergroupType::foldResidue(const VlCovergroupInst* instp) {
 // type teardown leaked to keep this valid (see ~VlCovRegistry).  That late case
 // needs no special handling: the leaked type is self-consistent.
 void VlCovergroupType::retire(VlCovergroupInst* instp) {
+    const VerilatedLockGuard lock{m_mutex};
     foldResidue(instp);  // Before unlink: reads instp's items, freed below
 
 #if VM_COVERAGE
@@ -465,6 +467,7 @@ void VlCovergroupType::retire(VlCovergroupInst* instp) {
 }
 
 uint32_t VlCovergroupType::liveInstanceCount() const {
+    const VerilatedLockGuard lock{m_mutex};
     uint32_t live = 0;
     // Under VM_COVERAGE m_insts also holds retained (dead) nodes; otherwise
     // retained() is never set and this equals m_insts.size().
@@ -475,13 +478,15 @@ uint32_t VlCovergroupType::liveInstanceCount() const {
 }
 
 bool VlCovergroupType::anyAttached() const {
+    const VerilatedLockGuard lock{m_mutex};
     for (const auto& instp : m_insts) {
-        if (instp->m_attachCount > 0) return true;
+        if (instp->m_attachCount.load(std::memory_order_acquire) > 0) return true;
     }
     return false;
 }
 
 double VlCovergroupType::retiredCoverage() const {
+    const VerilatedLockGuard lock{m_mutex};
     if (m_retired.count == 0) return -1.0;
     return m_retired.sumCoverage / static_cast<double>(m_retired.count);
 }
@@ -491,18 +496,13 @@ double VlCovergroupType::retiredCoverage() const {
 // Mirrors VerilatedContext::coveragep(), which lives in verilated_cov.cpp for the same reason.
 VlCovRegistry* VerilatedContext::covergroupRegistryp() VL_MT_SAFE {
     static VerilatedMutex s_mutex;
-    // cppcheck-suppress identicalInnerCondition
-    if (VL_UNLIKELY(!m_covergroupsp)) {
-        const VerilatedLockGuard lock{s_mutex};
-        // cppcheck-suppress identicalInnerCondition
-        if (VL_LIKELY(!m_covergroupsp)) {  // LCOV_EXCL_LINE // Not redundant, prevents race
-            m_covergroupsp.reset(new VlCovRegistry{});
-        }
-    }
+    const VerilatedLockGuard lock{s_mutex};
+    if (VL_UNLIKELY(!m_covergroupsp)) m_covergroupsp.reset(new VlCovRegistry{});
     return static_cast<VlCovRegistry*>(m_covergroupsp.get());
 }
 
 VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
+    const VerilatedLockGuard lock{m_mutex};
     VlCovergroupType*& typep = m_byName[typeName];
     if (!typep) {  // First instance of this type
         m_types.emplace_back(new VlCovergroupType{});
@@ -520,6 +520,7 @@ VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
 // attached node, keeping the type, its nodes and their items valid; the late
 // retire() then frees the nodes itself, so only the type object leaks.
 VlCovRegistry::~VlCovRegistry() {
+    const VerilatedLockGuard lock{m_mutex};
     for (auto& typep : m_types) {
         // Normally nothing is still attached; if something is, the model
         // outlived its context and those handles still reach this type.
@@ -536,33 +537,39 @@ VlCovergroupType* VlCovRegistry::findType(const char* typeName) const {
 }
 
 uint32_t VlCovRegistry::liveInstanceCount() const {
+    const VerilatedLockGuard lock{m_mutex};
     uint32_t total = 0;
     for (const auto& typep : m_types) total += typep->liveInstanceCount();
     return total;
 }
 
 uint32_t VlCovRegistry::createdInstanceCount() const {
+    const VerilatedLockGuard lock{m_mutex};
     uint32_t total = 0;
     for (const auto& typep : m_types) total += typep->createdInstanceCount();
     return total;
 }
 
 uint32_t VlCovRegistry::liveInstanceCount(const char* typeName) const {
+    const VerilatedLockGuard lock{m_mutex};
     const VlCovergroupType* const typep = findType(typeName);
     return typep ? typep->liveInstanceCount() : 0;
 }
 
 uint32_t VlCovRegistry::createdInstanceCount(const char* typeName) const {
+    const VerilatedLockGuard lock{m_mutex};
     const VlCovergroupType* const typep = findType(typeName);
     return typep ? typep->createdInstanceCount() : 0;
 }
 
 uint32_t VlCovRegistry::retiredInstanceCount(const char* typeName) const {
+    const VerilatedLockGuard lock{m_mutex};
     const VlCovergroupType* const typep = findType(typeName);
     return typep ? typep->retiredInstanceCount() : 0;
 }
 
 double VlCovRegistry::retiredCoverage(const char* typeName) const {
+    const VerilatedLockGuard lock{m_mutex};
     const VlCovergroupType* const typep = findType(typeName);
     return typep ? typep->retiredCoverage() : -1.0;
 }
