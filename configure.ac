@@ -360,6 +360,32 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
     _MY_CXX_CHECK_IFELSE($2, $1="$$1 $2")
    ])
 
+# _MY_CXX_CHECK_IS_CLANG_VERSION(variable,min-version,max-version)
+# Check if the C++ compiler is Clang, with version >= min-version and
+# < max-version. Versions are given as 'major.minor.patch'. An empty
+# bound means unbounded at that end.
+# Set variable to yes or no accordingly.
+AC_DEFUN([_MY_CXX_CHECK_IS_CLANG_VERSION],
+   [AC_MSG_CHECKING([whether $CXX is Clang >= m4_default([$2],[any]) and < m4_default([$3],[any])])
+    AC_COMPILE_IFELSE(
+       [AC_LANG_SOURCE([[
+#if !defined(__clang__)
+# error "Not Clang"
+#endif
+#define _MY_VER(maj, min, pat) ((maj) * 1000000 + (min) * 1000 + (pat))
+#define _MY_CLANG_VER _MY_VER(__clang_major__, __clang_minor__, __clang_patchlevel__)
+#if _MY_CLANG_VER < _MY_VER(]]m4_quote(m4_translit(m4_default([$2],[0.0.0]),[.],[,]))[[)
+# error "Clang older than min-version"
+#endif
+#if _MY_CLANG_VER >= _MY_VER(]]m4_quote(m4_translit(m4_default([$3],[99999.0.0]),[.],[,]))[[)
+# error "Clang not older than max-version"
+#endif
+]])],
+       [$1=yes],
+       [$1=no])
+    AC_MSG_RESULT($$1)
+   ])
+
 AC_DEFUN([_MY_CXX_CHECK_CORO_SET],
    [# _MY_CXX_CHECK_CORO_SET(variable,option)
     # Check if compiler supports coroutines with specific option. If it does,
@@ -444,6 +470,8 @@ AC_DEFUN([_MY_LDLIBS_CHECK_SET],
        _MY_LDLIBS_CHECK_IFELSE($2, $1="$2")
     fi
    ])
+
+_MY_CXX_CHECK_IS_CLANG_VERSION(CXX_IS_CLANG_18, 18.0.0, 19.0.0)
 
 # Add the coverage flags early as they influence later checks.
 if test "$CFG_WITH_DEV_GCOV" = "yes"; then
@@ -630,7 +658,13 @@ m4_foreach([cflag],[
     # CMake will test what flags work itself, so pass all flags through to it
     CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE cflag"
     ])
+if test "$CXX_IS_CLANG_18" = "yes"; then
+  # Clang 18 only: disable the SLP vectorizer; see verilator/verilator#8379
+  _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_ALWAYS,-fno-slp-vectorize)
+  CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE -fno-slp-vectorize"
+fi
 AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
+AC_SUBST(CFG_CXXFLAGS_ALWAYS)
 AC_SUBST(CFG_CXX_FLAGS_CMAKE)
 
 # Find multithread linker flags
