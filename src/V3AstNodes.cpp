@@ -1957,15 +1957,10 @@ const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
     // Only true parents are followed.
     AstNode* const abovep = nodep->aboveTailp();
     const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
-    // Only nodes brokeExists() can check.
-    if (nodep->maybePointedTo()) m_containingModules[nodep] = modp;
+    m_containingModules[nodep] = modp;
     return modp;
 }
 const char* AstNetlist::broken() const {
-    for (const auto& pair : m_containingModules) {
-        BROKEN_RTN(!pair.first || !pair.first->brokeExists());
-        BROKEN_RTN(pair.second && !pair.second->brokeExists());
-    }
     for (const AstVar* const varp : m_deferredParamVarps) {
         BROKEN_RTN(!varp || !varp->brokeExists());
     }

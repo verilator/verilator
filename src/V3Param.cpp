@@ -3628,6 +3628,8 @@ void V3Param::param(AstNetlist* rootp) {
 
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("before V3Param");
     { ParamTop{rootp}; }
+    // The memo is only good while parameterizing, and the tree moves after.
+    rootp->clearContainingModules();
     V3LinkDotIfaceCapture::purgeStaleRefs();
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("after V3Param");
 
