@@ -7169,9 +7169,8 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
                 coverage_option                         { $$ = $1; }
         //                      // Can't use wildcardE as results in conflicts
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, false, false};
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, false, false, false, $8};
                           if ($3) binp->isArray(true);
-                          binp->iffp($8);
                           $$ = binp; }
         |       yBINS idAny/*bin_identifier*/ '[' cgexpr ']' iffE
                         { // Check for automatic bins: bins auto[N]
@@ -7185,14 +7184,12 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
                           }
                         }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, true, false};
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, true, false, false, $8};
                           if ($3) binp->isArray(true);
-                          binp->iffp($8);
                           $$ = binp; }
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, false, true};
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, false, true, false, $8};
                           if ($3) binp->isArray(true);
-                          binp->iffp($8);
                           $$ = binp; }
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, false, false};
@@ -7213,17 +7210,11 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>6, "Unsupported: 'with' in cover bin"); DEL($8, $10); }
         |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $7, false, false, true};
-                          binp->iffp($9);
-                          $$ = binp; }
+                        { $$ = new AstCoverBin{$<fl>3, *$3, $7, false, false, true, $9}; }
         |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $7, true, false, true};
-                          binp->iffp($9);
-                          $$ = binp; }
+                        { $$ = new AstCoverBin{$<fl>3, *$3, $7, true, false, true, $9}; }
         |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $7, false, true, true};
-                          binp->iffp($9);
-                          $$ = binp; }
+                        { $$ = new AstCoverBin{$<fl>3, *$3, $7, false, true, true, $9}; }
         |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>9, "Unsupported: 'with' in wildcard cover bin"); DEL($7, $11, $13); }
         |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE

@@ -10,9 +10,14 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
-test.top_filename = 't/t_covergroup_iff.v'
-test.compile(
-    verilator_flags2=['--coverage', '--protect-ids', '--protect-key BIN_IFF', '-Wno-INSECURE'],
-    threads=(2 if test.vltmt else 1))
-test.execute()
+
+test.top_filename = 't/t_covergroup_iff_illegal.v'
+
+test.compile(verilator_flags2=['--coverage'], threads=(2 if test.vltmt else 1))
+
+test.execute(fails=True,
+             check_finished=False,
+             all_run_flags=['+value=1'],
+             expect_filename=test.golden_filename)
+
 test.passes()

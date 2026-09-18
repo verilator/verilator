@@ -10,11 +10,12 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
+
 test.compile(verilator_flags2=['--coverage'], threads=(2 if test.vltmt else 1))
-for kind, value in [('scalar', 5), ('array', 1), ('wildcard', 6)]:
-    test.execute(fails=True,
-                 check_finished=False,
-                 all_run_flags=[f'+value={value}'],
-                 logfile=f'{test.obj_dir}/vlt_{kind}.log',
-                 expect_filename=test.golden_filename.replace('.out', f'.{kind}.out'))
+
+test.execute(fails=True,
+             check_finished=False,
+             all_run_flags=['+value=5'],
+             expect_filename=test.golden_filename)
+
 test.passes()

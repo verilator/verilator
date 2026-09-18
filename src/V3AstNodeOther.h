@@ -1067,7 +1067,7 @@ class AstCoverBin final : public AstNode {
 
 public:
     AstCoverBin(FileLine* fl, const string& name, AstNode* rangesp, bool isIgnore, bool isIllegal,
-                bool isWildcard = false)
+                bool isWildcard = false, AstNodeExpr* iffp = nullptr)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
         , m_binsType{isIllegal ? VCoverBinsType::BINS_ILLEGAL
@@ -1076,6 +1076,7 @@ public:
                                                          : VCoverBinsType::BINS_USER))}
         , m_isWildcard{isWildcard} {
         addRangesp(rangesp);
+        this->iffp(iffp);
     }
     // Constructor for automatic bins
     AstCoverBin(FileLine* fl, const string& name, AstNodeExpr* arraySizep)
