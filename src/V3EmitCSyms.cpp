@@ -739,12 +739,40 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void buildIfaceRefTable() {
         if (m_ifaceRefs.empty()) return;
         const std::string symClass = symClassName();
-        for (const IfaceRefData& ird : m_ifaceRefs) {
+        // Scopes by the path they are registered under, to find each reference's parent
+        std::map<std::string, std::string> symByPath;  // prettyName -> symName
+        for (const auto& itpair : m_scopeNames) {
+            symByPath.emplace(itpair.second.m_prettyName, itpair.second.m_symName);
+        }
+        // Sorted by path, as VPI iteration yields references in table order
+        std::vector<const IfaceRefData*> irds;
+        for (const IfaceRefData& ird : m_ifaceRefs) irds.push_back(&ird);
+        std::stable_sort(irds.begin(), irds.end(),
+                         [](const IfaceRefData* ap, const IfaceRefData* bp) {
+                             return ap->m_suffix < bp->m_suffix;
+                         });
+        for (const IfaceRefData* const irdp : irds) {
+            const IfaceRefData& ird = *irdp;
             const std::string scopeSym = scopeSymString(ird.m_scopep->name());
             // Only reference scopes that actually made it into the scope table
             if (m_scopeNames.find(scopeSym) == m_scopeNames.end()) continue;
+            // The scope declaring the reference is its path less the port name. If that
+            // scope is not in the table the reference stays reachable by name only.
+            std::string parentOffset = "VL_IFACEREF_NO_PARENT";
+            const std::string dotName = "." + ird.m_name;
+            if (ird.m_suffix.length() > dotName.length()
+                && VString::endsWith(ird.m_suffix, dotName)) {
+                const std::string parentPath
+                    = ird.m_suffix.substr(0, ird.m_suffix.length() - dotName.length());
+                const auto it = symByPath.find(parentPath);
+                if (it != symByPath.end()) {
+                    parentOffset
+                        = "offsetof(" + symClass + ", " + protect("__Vscopep_" + it->second) + ")";
+                }
+            }
             std::string row
-                = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + scopeSym) + "), \"";
+                = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + scopeSym) + "), ";
+            row += parentOffset + ", \"";
             row += V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(ird.m_name, true));
             row += "\", \"";
             row += V3OutFormatter::quoteNameControls(
