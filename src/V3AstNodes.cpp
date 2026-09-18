@@ -1550,7 +1550,6 @@ void AstIfaceGenericDType::dumpSmall(std::ostream& str) const {
 }
 void AstIfaceRefDType::dump(std::ostream& str) const {
     Super::dump(str);
-    if (isPortDecl()) str << " [PORTDECL]";
     if (isVirtual()) str << " [VIRT]";
     if (cellName() != "") str << " cell=" << cellName();
     if (ifaceName() != "") str << " if=" << ifaceName();
@@ -1566,7 +1565,6 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
     }
 }
 void AstIfaceRefDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, isPortDecl);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonStrFunc(str, cellName);
     dumpJsonStrFunc(str, ifaceName);

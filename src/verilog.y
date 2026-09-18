@@ -1988,7 +1988,6 @@ port_declaration<nodep>:        // ==IEEE: port_declaration
         |       id/*interface*/ '.' idAny/*modport*/
         /*mid*/         { VARRESET_NONLIST(VVarType::IFACEREF);
                           AstIfaceRefDType* const dtp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
-                          dtp->isPortDecl(true);
                           VARDTYPE(dtp); }
         /*cont*/    mpInstnameList
                         { $$ = VARDONEP($5, nullptr, nullptr); DEL($5); }

@@ -983,7 +983,6 @@ class AstIfaceRefDType final : public AstNodeDType {
     string m_cellName;  // "" = no cell, such as when connects to 'input' iface
     string m_ifaceName;  // Interface name
     string m_modportName;  // "" = no modport
-    bool m_portDecl = false;  // Interface_port_declaration
     bool m_virtual = false;  // True if virtual interface
 public:
     AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName)
@@ -1018,8 +1017,6 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
     int widthAlignBytes() const override { return 0; }
     int widthTotalBytes() const override { return 0; }
-    bool isPortDecl() const { return m_portDecl; }
-    void isPortDecl(bool flag) { m_portDecl = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) {
         m_virtual = flag;
