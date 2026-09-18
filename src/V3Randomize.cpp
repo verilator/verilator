@@ -5272,7 +5272,7 @@ class RandomizeVisitor final : public VNVisitor {
                                       AstVar* bucketVarp,
                                       const std::vector<AstNodeExpr*>& cumSums) {
         FileLine* const fl = distp->fileline();
-        AstNode* chainp = nullptr;
+        AstNodeExpr* chainp = nullptr;
         for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
             AstNodeExpr* constraintExprp;
             const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange);
@@ -5287,17 +5287,19 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstEq{fl, distExprCopyp, buckets[i].rangep->cloneTreePure(false)};
                 constraintExprp->user1(true);
             }
-            AstConstraintExpr* const thenp = new AstConstraintExpr{fl, constraintExprp};
-            thenp->isSoft(true);
             if (!chainp) {
-                chainp = thenp;
+                chainp = constraintExprp;
             } else {
                 AstNodeExpr* const condp
                     = new AstLte{fl, new AstVarRef{fl, bucketVarp, VAccess::READ}, cumSums[i]};
-                chainp = new AstConstraintIf{fl, condp, thenp, chainp};
+                condp->user1(true);
+                chainp = new AstCond{fl, condp, constraintExprp, chainp};
+                chainp->user1(true);
             }
         }
-        return chainp;
+        AstConstraintExpr* chainExprp = new AstConstraintExpr{fl, chainp};
+        chainExprp->isSoft(true);
+        return chainExprp;
     }
 
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
