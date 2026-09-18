@@ -194,7 +194,9 @@ class TraceDriver final : public DfgVisitor {
     // exactly the result of tracing 'm_tailp' at the updated [m_msb:m_lsb]. 'trace'
     // resolves these iteratively. Use RETURN_RESULT_TAIL below!
     DfgVertex* m_tailp = nullptr;
-    DfgVertex* m_defaultp = nullptr;  // When tracing a variable, this is its 'defaultp', if any
+    // When tracing a splice, this is the corresponding 'defaultp' of the variable it drives
+    DfgVertex* m_defaultp = nullptr;
+    DfgVertex* m_splicep = nullptr;  // The splice vertex being traced, just for assertions
     // Result cache for reusing already traced vertices
     std::unordered_map<CacheKey, DfgVertex*, CacheKey::Hash, CacheKey::Equal> m_cache;
 
@@ -265,6 +267,7 @@ class TraceDriver final : public DfgVisitor {
         while (true) {
             UASSERT_OBJ(vtxp->isPacked(), vtxp, "Can only trace packed type vertices");
             UASSERT_OBJ(vtxp->size() > msb, vtxp, "Traced Vertex too narrow");
+            UASSERT_OBJ(!m_defaultp || vtxp == m_splicep, vtxp, "Tracing wrong vertex");
 
             // Get the cache entry, which is the resulting driver that is not part of
             // the same component as vtxp
@@ -279,9 +282,11 @@ class TraceDriver final : public DfgVisitor {
                 // If already traced this vtxp/msb/lsb, just use the result.
                 // This is important to avoid combinatorial explosion when the
                 // same sub-expression is needed multiple times.
-            } else if (m_sccInfo.get(*vtxp) != m_component) {
+            } else if (m_sccInfo.get(*vtxp) != m_component && !m_defaultp) {
                 // If the currently traced vertex is in a different component,
-                // then we found what we were looking for.
+                // then we found what we were looking for. But if it's a splice
+                // with a corresponding default, we need to keep going as the
+                // splice does not fully define the value we are seeking.
                 respr = vtxp;
                 // If the result is a splice, we need to insert a temporary for it
                 // as a splice cannot be fed into arbitray logic
@@ -461,6 +466,11 @@ class TraceDriver final : public DfgVisitor {
     }  // LCOV_EXCL_STOP
 
     void visit(DfgSplicePacked* vtxp) override {
+        UASSERT_OBJ(m_splicep == vtxp, vtxp, "Unexpected trace of DfgSplicePacked");
+        DfgVertex* defaultp = m_defaultp;
+        m_defaultp = nullptr;
+        m_splicep = nullptr;
+
         struct Driver final {
             DfgVertex* m_vtxp;
             uint32_t m_lsb;  // LSB of driven range (internal, not Verilog)
@@ -474,7 +484,7 @@ class TraceDriver final : public DfgVisitor {
         std::vector<Driver> drivers;
 
         // Look at all the drivers, one might cover the whole range, but also gather all drivers
-        bool tryWholeDefault = m_defaultp;
+        bool tryWholeDefault = defaultp;
         DfgVertex* coverp = nullptr;  // Driver covering the whole searched range, if any
         uint32_t coverLsb = 0;  // LSB of the range driven by 'coverp'
         vtxp->foreachDriver([&](DfgVertex& src, uint32_t lsb) {
@@ -494,7 +504,7 @@ class TraceDriver final : public DfgVisitor {
         if (coverp) RETURN_RESULT_TAIL(coverp, m_msb - coverLsb, m_lsb - coverLsb);
 
         // Trace the default driver if no other drivers cover the searched range
-        if (tryWholeDefault) RETURN_RESULT_TAIL(m_defaultp, m_msb, m_lsb);
+        if (tryWholeDefault) RETURN_RESULT_TAIL(defaultp, m_msb, m_lsb);
 
         // Hard case: We need to combine multiple drivers to produce the searched bit range
 
@@ -513,8 +523,8 @@ class TraceDriver final : public DfgVisitor {
             if (driver.m_lsb > m_msb) break;
             // Gap below this driver, trace default to fill it
             if (driver.m_lsb > lsb) {
-                UASSERT_OBJ(m_defaultp, vtxp, "Should have a default driver if needs tracing");
-                termps.emplace_back(trace(m_defaultp, driver.m_lsb - 1, lsb));
+                UASSERT_OBJ(defaultp, vtxp, "Should have a default driver if needs tracing");
+                termps.emplace_back(trace(defaultp, driver.m_lsb - 1, lsb));
                 lsb = driver.m_lsb;
             }
             // Driver covers searched range, pick the needed/available bits
@@ -523,8 +533,8 @@ class TraceDriver final : public DfgVisitor {
             lsb = lim + 1;
         }
         if (m_msb >= lsb) {
-            UASSERT_OBJ(m_defaultp, vtxp, "Should have a default driver if needs tracing");
-            termps.emplace_back(trace(m_defaultp, m_msb, lsb));
+            UASSERT_OBJ(defaultp, vtxp, "Should have a default driver if needs tracing");
+            termps.emplace_back(trace(defaultp, m_msb, lsb));
         }
 
         // The earlier cheks cover the case when either a whole driver or the default covers
@@ -544,10 +554,36 @@ class TraceDriver final : public DfgVisitor {
     }
 
     void visit(DfgSpliceArray* vtxp) override {
+        UASSERT_OBJ(m_splicep == vtxp, vtxp, "Unexpected trace of DfgSpliceArray");
+        // DfgVertex* defaultp = m_defaultp;
+        m_defaultp = nullptr;
+        m_splicep = nullptr;
+
         // Explicit per-element driver (a UnitArray wrapping the element value)
-        if (DfgVertex* const driverp = vtxp->driverAt(m_idxs.back())) {
+        const uint32_t idx = m_idxs.back();
+        if (DfgVertex* const driverp = vtxp->driverAt(idx)) {
+            DfgVertex* const srcp = driverp->as<DfgUnitArray>()->srcp();
+            // TODO: this is unreachable today, but with e.g. #8316 it wouldn't be
+            // // TODO: replace DfgSplice with DfgInsert modeling
+            // // Annoying corner case: If the element itself is a splice, we need
+            // // a defaultp for that element if there was one for the whole array.
+            // // Make one up by selecting out of the default. It will be removed
+            // // later if unused. Pretend it's in the same component as the array
+            // // default as trace needs to continue in that case.
+            // if (defaultp && srcp->is<DfgVertexSplice>()) {
+            //     DfgArraySel* const aselp = new DfgArraySel{m_dfg,
+            //                                    vtxp->fileline(), srcp->dtype()};
+            //     m_sccInfo.add(*aselp, m_sccInfo.get(*defaultp));
+            //     DfgConst* const idxp = make<DfgConst>(vtxp, 32);
+            //     idxp->num().setLong(idx);
+            //     aselp->fromp(defaultp);
+            //     aselp->bitp(idxp);
+            //     m_defaultp = aselp;
+            //     m_splicep = srcp;
+            // }
             // Consume this index, then trace the element value
-            RETURN_RESULT(tracePopIdx(driverp->as<DfgUnitArray>()->srcp()));
+            if (srcp->is<DfgVertexSplice>()) m_splicep = srcp;
+            RETURN_RESULT(tracePopIdx(srcp));
         }
         // TODO: this is unreachable, as syntheis can't create it today.
         // // Element not driven explicitly, so it comes from the default array. Keep the
@@ -559,9 +595,17 @@ class TraceDriver final : public DfgVisitor {
 
     void visit(DfgVertexVar* vtxp) override {
         UASSERT_OBJ(!vtxp->isVolatile(), vtxp, "Should not trace through volatile variable");
-        VL_RESTORER(m_defaultp);
-        m_defaultp = vtxp->defaultp();
-        DfgVertex* const drvp = vtxp->srcp() ? vtxp->srcp() : m_defaultp;
+        DfgVertex* const srcp = vtxp->srcp();
+        DfgVertex* const defaultp = vtxp->defaultp();
+        DfgVertex* const drvp = srcp ? srcp : defaultp;
+        // If we are about to trace a splice, set the defaultp to the corresponding default
+        if (srcp && srcp->is<DfgVertexSplice>()) {
+            // Unreachable today: getting an array into a fixable cycle needs multiple
+            // assignments in a process, which V3DfgSynthesize rejects ("Can't do arrays yet").
+            UASSERT_OBJ(!defaultp || vtxp->isPacked(), vtxp, "Array variable with defaultp");
+            m_defaultp = defaultp;
+            m_splicep = srcp;
+        }
         UASSERT_OBJ(drvp, vtxp, "Should not have to trace undriven variable");
         // Packed variable: trace the driver. Array variable: continue navigating it at
         // the pending element (both at the same bit range).
