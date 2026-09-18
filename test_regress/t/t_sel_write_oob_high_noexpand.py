@@ -10,12 +10,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+test.top_filename = "t/t_sel_write_oob_high.v"
 
 # AddressSanitizer is incompatible with ThreadSanitizer.
 sanitize = [] if test.tsan else ["-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address"]
 
-test.compile(verilator_flags2=sanitize)
+test.compile(verilator_flags2=sanitize + ['-fno-expand'])
 test.execute()
 
 test.passes()
