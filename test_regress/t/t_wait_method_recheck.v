@@ -32,6 +32,7 @@ module t;
             child = process::self();
             #5;
             state.value = 3;
+            #3;
           end
           begin
             #20;
@@ -41,12 +42,13 @@ module t;
       end
       begin
         #1;
-        wait (state.ready());
-        `checkd($time, 5)
-        child.await();
-        `checkd($time, 5)
-        `checkd(child.status(), process::FINISHED)
-        completed = 1;
+        wait (state.ready()) begin
+          `checkd($time, 5)
+          child.await();
+          `checkd($time, 8)
+          `checkd(child.status(), process::FINISHED)
+          completed = 1;
+        end
       end
     join
     fork
