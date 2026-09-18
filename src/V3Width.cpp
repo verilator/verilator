@@ -7037,7 +7037,7 @@ class WidthVisitor final : public VNVisitor {
     // Copy a parameter's data type with this instance's parameter overrides substituted in
     AstNodeDType* instanceParamDTypep(AstNodeDType* templateDtp, const AstPin* pinsp) {
         if (!templateDtp->exists(
-                [](const AstVarRef* refp) { return refp->varp() && refp->varp()->isGParam(); })) {
+                [](const AstVarRef* refp) { return refp->varp() && refp->varp()->isParam(); })) {
             return nullptr;
         }
         AstNodeDType* const clonep = templateDtp->cloneTree(false);

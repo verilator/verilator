@@ -159,6 +159,35 @@ module dut8 #(
   assign o_sum = sum;
 endmodule
 
+// The array's size is a localparam that depends on an overridden parameter, so
+// substitution has to inline the localparam as well as the parameter it chains through
+module dut9 #(
+    parameter int DIMS = 2,
+    localparam int LEN = DIMS * 2 + 1,
+    parameter int ARRAY_PARAM[LEN] = '{default: 1}
+) (
+    output int o_sum
+);
+  int sum;
+  always_comb begin
+    sum = 0;
+    for (int i = 0; i < LEN; ++i) sum += ARRAY_PARAM[i];
+  end
+  assign o_sum = sum;
+endmodule
+
+// Same, but the sized parameter is a packed array, so its override folds to a
+// constant checked by V3Param rather than a pattern widthed by V3Width
+module dut10 #(
+    parameter int DIMS = 2,
+    localparam int LEN = DIMS * 2 + 1,
+    parameter bit [LEN-1:0] PACKED_PARAM = '0
+) (
+    output int o_sum
+);
+  assign o_sum = $countones(PACKED_PARAM);
+endmodule
+
 // Same, for an interface
 interface Ifc #(
     parameter int ARRAY_LEN = 3,
@@ -198,6 +227,8 @@ module t;
   int o_pkglen;
   int o_locallen;
   int o_unpackedlen;
+  int o_lplen;
+  int o_lppacked;
 
   localparam int LOCAL_LEN = 3;
 
@@ -317,6 +348,23 @@ module t;
       .o_sum(o_unpackedlen)
   );
 
+  // Size is a localparam that chains through the overridden DIMS, so substitution must
+  // inline the localparam too (unpacked array widthed against a per-instance dtype copy)
+  dut9 #(
+      .DIMS(1),
+      .ARRAY_PARAM('{10, 20, 30})
+  ) u_lplen (
+      .o_sum(o_lplen)
+  );
+
+  // Same, but the sized parameter is packed, so its override is checked by V3Param
+  dut10 #(
+      .DIMS(1),
+      .PACKED_PARAM(3'b101)
+  ) u_lppacked (
+      .o_sum(o_lppacked)
+  );
+
   // Virtual interface handle to a parameterized interface, a distinct path from
   // the interface instantiation above
   virtual Ifc #(
@@ -347,6 +395,8 @@ module t;
     if (o_pkglen !== 15) $stop;
     if (o_locallen !== 6) $stop;
     if (o_unpackedlen !== 6) $stop;
+    if (o_lplen !== 60) $stop;
+    if (o_lppacked !== 2) $stop;
     if (i_default.getSum() !== 8) $stop;
     if (i_wide.getSum() !== 10) $stop;
     v_wide = i_wide;

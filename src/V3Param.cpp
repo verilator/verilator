@@ -3831,7 +3831,7 @@ public:
             bool any = false;
             nodep->foreach([this, &any](AstVarRef* refp) {
                 AstVar* const targetp = refp->varp();
-                if (!targetp || !targetp->isGParam()) return;
+                if (!targetp || !targetp->isParam()) return;
                 AstNode* const valuep = paramValuep(targetp);
                 if (!valuep) return;
                 refp->replaceWith(valuep->cloneTree(false));
