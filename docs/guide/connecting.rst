@@ -55,9 +55,9 @@ header includes, so user C++ need not hard-code the :vlopt:`--prefix`:
    #include VM_PREFIX_INCLUDE_DPI  // e.g. <Vtop__Dpi.h>
 
 ``VM_PREFIX_INCLUDE_DPI`` is defined only when Verilator generates the
-:file:`{prefix}__Dpi.h` header, which is the case for designs with DPI
-and also for public-signal access such as :vlopt:`--public-flat-rw`.
-Using it otherwise is a compile-time error.
+:file:`{prefix}__Dpi.h` header, which is the case for designs with DPI and
+also for public-signal access such as :vlopt:`--public-flat-rw`. Using it
+otherwise is a compile-time error.
 
 A target built from several models defines each macro once, naming the
 first model, as one target has one set of preprocessor definitions. Code
@@ -231,8 +231,8 @@ command line, or the link), you'd then:
    #include "Vour__Dpi.h"
    int add(int a, int b) { return a+b; }
 
-Rather than hard-coding the prefix, ``#include VM_PREFIX_INCLUDE_DPI``
-may be used instead; see :ref:`Model Header Include Macros`.
+Rather than hard-coding the prefix, ``#include VM_PREFIX_INCLUDE_DPI`` may
+be used instead; see :ref:`Model Header Include Macros`.
 
 
 DPI System Task/Functions
