@@ -2361,6 +2361,7 @@ template <std::size_t N_Depth>
 inline WDataOutP VL_PACK_W_UQ(int obits, int lbits, WDataOutP owp,
                               const VlUnpacked<QData, N_Depth>& q) {
     VL_MEMSET_ZERO_W(owp, VL_WORDS_I(obits));
+    if (VL_UNLIKELY(obits < N_Depth * lbits)) return owp;  // Though is illegal for q to be larger
     for (size_t i = 0; i < N_Depth; ++i)
         _vl_insert_WQ(owp, q[N_Depth - 1 - i], i * lbits + lbits - 1, i * lbits);
     return owp;
@@ -2745,9 +2746,9 @@ inline QData VL_SHIFTRS_QQQ(int obits, int lbits, int rbits, QData lhs, QData rh
 
 inline IData VL_BITSEL_IWII(int lbits, WDataInP const lwp, IData rd) VL_MT_SAFE {
     const int word = VL_BITWORD_E(rd);
-    if (VL_UNLIKELY(rd > static_cast<IData>(lbits))) {
-        return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
-        // We return all 1's as that's more likely to find bugs (?) than 0's.
+    //  We return 0's to remain consistent w/ V3Expand.cpp
+    if (VL_UNLIKELY(rd >= static_cast<IData>(lbits))) {
+        return 0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
     }
     return (lwp[word] >> VL_BITBIT_E(rd));
 }
@@ -2794,38 +2795,41 @@ inline IData VL_SEL_IRII(int lbits, const VlQueue<VlWide<N_Words>>& lhs, IData l
     return val;
 }
 
+// Word 'word' of an 'lwords' word source, or zero if past its end
+static inline EData _vl_sel_word(WDataInP const lwp, int lwords, int word) VL_MT_SAFE {
+    // Requires padding bits at the end of `lwp[lwords-1]` to be 0 if not part
+    // of the logical width of the vector. 
+    return VL_LIKELY(word < lwords) ? lwp[word] : 0;
+}
+
 inline IData VL_SEL_IWII(int lbits, WDataInP const lwp, IData lsb, IData width) VL_MT_SAFE {
     const int msb = lsb + width - 1;
-    if (VL_UNLIKELY(msb >= lbits)) {
-        return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
+    const int lwords = VL_WORDS_I(lbits);
+    const int lword = VL_BITWORD_E(static_cast<int>(lsb));
+    if (VL_UNLIKELY(static_cast<int>(lsb) >= lbits)) {
+        return 0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
     }
-    if (VL_BITWORD_E(msb) == VL_BITWORD_E(static_cast<int>(lsb))) {
-        return VL_BITRSHIFT_W(lwp, lsb);
-    }
+    const IData lo = _vl_sel_word(lwp, lwords, lword) >> VL_BITBIT_E(lsb);
+    if (VL_BITWORD_E(msb) == lword) return lo;
     // 32 bit extraction may span two words
     const int nbitsfromlow = VL_EDATASIZE - VL_BITBIT_E(lsb);  // bits that come from low word
-    return ((lwp[VL_BITWORD_E(msb)] << nbitsfromlow) | VL_BITRSHIFT_W(lwp, lsb));
+    return ((_vl_sel_word(lwp, lwords, VL_BITWORD_E(msb)) << nbitsfromlow) | lo);
 }
 
 inline QData VL_SEL_QWII(int lbits, WDataInP const lwp, IData lsb, IData width) VL_MT_SAFE {
     const int msb = lsb + width - 1;
-    if (VL_UNLIKELY(msb > lbits)) {
-        return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
+    const int lwords = VL_WORDS_I(lbits);
+    const int lword = VL_BITWORD_E(static_cast<int>(lsb));
+    if (VL_UNLIKELY(static_cast<int>(lsb) >= lbits)) {
+        return 0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
     }
-    if (VL_BITWORD_E(msb) == VL_BITWORD_E(static_cast<int>(lsb))) {
-        return VL_BITRSHIFT_W(lwp, lsb);
-    }
-    if (VL_BITWORD_E(msb) == 1 + VL_BITWORD_E(static_cast<int>(lsb))) {
-        const int nbitsfromlow = VL_EDATASIZE - VL_BITBIT_E(lsb);
-        const QData hi = (lwp[VL_BITWORD_E(msb)]);
-        const QData lo = VL_BITRSHIFT_W(lwp, lsb);
-        return (hi << nbitsfromlow) | lo;
-    }
-    // 64 bit extraction may span three words
+    const QData lo = _vl_sel_word(lwp, lwords, lword) >> VL_BITBIT_E(lsb);
+    if (VL_BITWORD_E(msb) == lword) return lo;
     const int nbitsfromlow = VL_EDATASIZE - VL_BITBIT_E(lsb);
-    const QData hi = (lwp[VL_BITWORD_E(msb)]);
-    const QData mid = (lwp[VL_BITWORD_E(lsb) + 1]);
-    const QData lo = VL_BITRSHIFT_W(lwp, lsb);
+    const QData hi = _vl_sel_word(lwp, lwords, VL_BITWORD_E(msb));
+    if (VL_BITWORD_E(msb) == 1 + lword) return (hi << nbitsfromlow) | lo;
+    // 64 bit extraction may span three words
+    const QData mid = _vl_sel_word(lwp, lwords, lword + 1);
     return (hi << (nbitsfromlow + VL_EDATASIZE)) | (mid << nbitsfromlow) | lo;
 }
 
@@ -2833,23 +2837,23 @@ inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataInP const
                              IData width) VL_MT_SAFE {
     const int msb = lsb + width - 1;
     const int word_shift = VL_BITWORD_E(lsb);
-    if (VL_UNLIKELY(msb > lbits)) {  // Outside bounds,
-        for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) owp[i] = ~0;
-        owp[VL_WORDS_I(obits) - 1] = VL_MASK_E(obits);
+    const int lwords = VL_WORDS_I(lbits);
+    if (VL_UNLIKELY(static_cast<int>(lsb) >= lbits)) {  // Entirely outside bounds,
+        for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
     } else if (VL_BITBIT_E(lsb) == 0) {
         // Just a word extract
-        for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = lwp[i + word_shift];
+        for (int i = 0; i < VL_WORDS_I(obits); ++i)
+            owp[i] = _vl_sel_word(lwp, lwords, i + word_shift);
     } else {
-        // Not a _vl_insert because the bits come from any bit number and goto bit 0
+        // Have to ensure alignment is handled properly
         const int loffset = lsb & VL_SIZEBITS_E;
-        const int nbitsfromlow = VL_EDATASIZE - loffset;  // bits that end up in lword (know
-                                                          // loffset!=0) Middle words
+        const int nbitsfromlow = VL_EDATASIZE - loffset; 
         const int words = VL_WORDS_I(msb - lsb + 1);
         for (int i = 0; i < words; ++i) {
-            owp[i] = lwp[i + word_shift] >> loffset;
+            owp[i] = _vl_sel_word(lwp, lwords, i + word_shift) >> loffset;
             const int upperword = i + word_shift + 1;
             if (upperword <= static_cast<int>(VL_BITWORD_E(msb))) {
-                owp[i] |= lwp[upperword] << nbitsfromlow;
+                owp[i] |= _vl_sel_word(lwp, lwords, upperword) << nbitsfromlow;
             }
         }
         for (int i = words; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
@@ -3338,7 +3342,8 @@ inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) VL_MT_SA
     if (lsb < 0) {
         VL_SET_WQ(owp, mantissa >> -lsb);
     } else if (lsb < obits) {
-        _vl_insert_WQ(owp, mantissa, lsb + 52, lsb);
+        const int hbit = lsb + 52 < obits ? lsb + 52 : obits - 1;
+        _vl_insert_WQ(owp, mantissa, hbit, lsb);
     }
     if (lhs < 0) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
     return owp;
@@ -3368,12 +3373,17 @@ inline void VL_ASSIGNSEL_QQ(int rbits, int obits, int lsb, QData& lhsr, QData rh
 inline void VL_ASSIGNSEL_WI(int rbits, int obits, int lsb, WDataOutP iowp, IData rhs) VL_MT_SAFE {
     _vl_insert_WI(iowp, rhs, lsb + obits - 1, lsb, rbits);
 }
+// Clip a partially out-of-range select to the last word of an 'rbits' wide destination
+static inline int _vl_insert_clip_hbit(int hbit, int rbits) VL_PURE {
+    const int maxhbit = rbits - 1;
+    return VL_UNLIKELY(hbit > maxhbit) ? maxhbit : hbit;
+}
 inline void VL_ASSIGNSEL_WQ(int rbits, int obits, int lsb, WDataOutP iowp, QData rhs) VL_MT_SAFE {
-    _vl_insert_WQ(iowp, rhs, lsb + obits - 1, lsb, rbits);
+    _vl_insert_WQ(iowp, rhs, _vl_insert_clip_hbit(lsb + obits - 1, rbits), lsb, rbits);
 }
 inline void VL_ASSIGNSEL_WW(int rbits, int obits, int lsb, WDataOutP iowp,
                             WDataInP const rwp) VL_MT_SAFE {
-    _vl_insert_WW(iowp, rwp, lsb + obits - 1, lsb, rbits);
+    _vl_insert_WW(iowp, rwp, _vl_insert_clip_hbit(lsb + obits - 1, rbits), lsb, rbits);
 }
 
 //====================================================
