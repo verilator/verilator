@@ -792,7 +792,7 @@ module Vt_debug_emitv_t;
     covergroup Vt_debug_emitv_cg_basic;
     function new;
         cp_sig: coverpoint cg_sig {
-            bins low = {['sh0:'sh3]};
+            bins low = {['sh0:'sh3]} iff (cg_sig2[0]);
             bins high = {['sh4:'sh6]};
             bins multi = {'sh0, 'sh1, 'sh2};
             bins dflt = default;

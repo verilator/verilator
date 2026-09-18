@@ -2101,7 +2101,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstCoverBin* nodep) override {
         widthCovergroupRanges(nodep->rangesp());
-        userIterateAndNext(nodep->iffp(), nullptr);
+        if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->arraySizep(), nullptr);
         userIterateAndNext(nodep->transp(), nullptr);
     }
