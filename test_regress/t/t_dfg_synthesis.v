@@ -679,6 +679,39 @@ module t (
   `signal(ARRAY_RETAINED, {array_retained[3], array_retained[2], array_retained[1],
                            array_retained[0], array_retained_before});
 
+  logic [6:0] array_disjoint[4];
+  always_comb begin
+    array_disjoint[3] = rand_a[6:0];
+    array_disjoint[1] = rand_b[6:0];
+  end
+  always_comb begin
+    array_disjoint[0] = rand_a[13:7];
+    array_disjoint[2] = rand_b[13:7];
+  end
+  `signal(ARRAY_DISJOINT, {array_disjoint[3], array_disjoint[2], array_disjoint[1],
+                           array_disjoint[0]});
+
+  // verilator lint_off MULTIDRIVEN
+  // Identical overlapping values avoid depending on process order.
+  logic [6:0] array_multidriven[3];
+  always_comb begin  // revert
+    array_multidriven[0] = rand_a[6:0];
+    array_multidriven[1] = rand_b[6:0];
+  end
+  always_comb begin  // revert
+    array_multidriven[0] = rand_a[6:0];
+    array_multidriven[2] = rand_a[13:7];
+  end
+  // verilator lint_on MULTIDRIVEN
+  `signal(ARRAY_MULTIDRIVEN, {array_multidriven[2], array_multidriven[1], array_multidriven[0]});
+
+  logic [6:0] array_large[33];
+  always_comb begin  // nosynth
+    /*verilator unroll_full*/
+    for (int k = 0; k < 33; ++k) array_large[k] = 7'(rand_a >> k) ^ 7'(k);
+  end
+  `signal(ARRAY_LARGE, {array_large[32], array_large[16], array_large[0]});
+
   logic [6:0] array_final_read[2];
   logic [6:0] array_final_value;
   always_comb begin  // nosynth

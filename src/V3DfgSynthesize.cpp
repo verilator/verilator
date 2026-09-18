@@ -1341,11 +1341,14 @@ class AstToDfgSynthesize final {
     bool computePropagatedArrayDrivers(const std::vector<Driver>& newDrivers,
                                        DfgVertexVar* const oldp,
                                        std::vector<Driver>& propagatedDrivers) {
-        const std::vector<Driver> oldDrivers = gatherDrivers(oldp->srcp()->as<DfgVertexSplice>());
-        UASSERT_OBJ(!oldDrivers.empty(), oldp, "Should have a proper driver");
+        // Bound quadratic vertex growth: array drivers cannot be coalesced.
+        static constexpr uint32_t MAX_ARRAY_ELEMENTS = 32;
+        if (oldp->size() > MAX_ARRAY_ELEMENTS) return false;
         for (const Driver& driver : newDrivers) {
             if (!driverCoversWholeElement(driver)) return false;
         }
+        const std::vector<Driver> oldDrivers = gatherDrivers(oldp->srcp()->as<DfgVertexSplice>());
+        UASSERT_OBJ(!oldDrivers.empty(), oldp, "Should have a proper driver");
         for (const Driver& driver : oldDrivers) {
             if (!driverCoversWholeElement(driver)) return false;
         }

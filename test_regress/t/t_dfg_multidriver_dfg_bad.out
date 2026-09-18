@@ -84,27 +84,34 @@
                       t/t_dfg_multidriver_dfg_bad.v:60:18: ... Location of offending driver
    60 |   assign z[10:7] = i[10:7];
       |                  ^
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:76:16: Bits [5:2] of signal 't.sub_1.a' have multiple combinational drivers. This can cause performance degradation.
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:87:16: Bits [5:2] of signal 't.sub_1.a' have multiple combinational drivers. This can cause performance degradation.
                       t/t_dfg_multidriver_dfg_bad.v:63:18: ... Location of offending driver
    63 |   assign sub_1.a = i;
       |                  ^
-                      t/t_dfg_multidriver_dfg_bad.v:77:17: ... Location of offending driver
-   77 |   assign a[5:2] = i[5:2];
+                      t/t_dfg_multidriver_dfg_bad.v:88:17: ... Location of offending driver
+   88 |   assign a[5:2] = i[5:2];
       |                 ^
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:76:16: Bits [3:2] of signal 't.sub_2.a' have multiple combinational drivers. This can cause performance degradation.
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:87:16: Bits [3:2] of signal 't.sub_2.a' have multiple combinational drivers. This can cause performance degradation.
                       t/t_dfg_multidriver_dfg_bad.v:67:23: ... Location of offending driver
    67 |   assign sub_2.a[3:0] = i[3:0];
       |                       ^
-                      t/t_dfg_multidriver_dfg_bad.v:77:17: ... Location of offending driver
-   77 |   assign a[5:2] = i[5:2];
+                      t/t_dfg_multidriver_dfg_bad.v:88:17: ... Location of offending driver
+   88 |   assign a[5:2] = i[5:2];
       |                 ^
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:76:16: Bit [5] of signal 't.sub_2.a' have multiple combinational drivers. This can cause performance degradation.
-                      t/t_dfg_multidriver_dfg_bad.v:77:17: ... Location of offending driver
-   77 |   assign a[5:2] = i[5:2];
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:87:16: Bit [5] of signal 't.sub_2.a' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_dfg_multidriver_dfg_bad.v:88:17: ... Location of offending driver
+   88 |   assign a[5:2] = i[5:2];
       |                 ^
                       t/t_dfg_multidriver_dfg_bad.v:66:24: ... Location of offending driver
    66 |   assign sub_2.a[10:5] = i[10:5];
       |                        ^
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:72:16: Element [0] of signal 't.array_always' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_dfg_multidriver_dfg_bad.v:74:17: ... Location of offending driver
+   74 |     array_always[0] = i;
+      |                 ^
+                      t/t_dfg_multidriver_dfg_bad.v:78:17: ... Location of offending driver
+   78 |     array_always[0] = k[0];
+      |                 ^
 %Error: Internal Error: t/t_dfg_multidriver_dfg_bad.v:48:12: ../V3Gate.cpp:#: Concat on LHS of assignment; V3Const should have deleted it
    48 |     {y[1:0], y[2:1]} = i[3:0] + 4'd5;
       |            ^

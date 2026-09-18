@@ -66,7 +66,18 @@ module t (
   assign sub_2.a[10:5] = i[10:5];
   assign sub_2.a[3:0] = i[3:0];
 
-  assign o = a ^ u[3] ^ v[3] ^ w[3] ^ x[3] ^ y ^ z ^ sub_1.a ^ sub_2.a;
+  assign o = a ^ u[3] ^ v[3] ^ w[3] ^ x[3] ^ y ^ z ^ sub_1.a ^ sub_2.a
+             ^ array_always[0] ^ array_always[1] ^ array_always[2];
+
+  logic [10:0] array_always[3];
+  always_comb begin
+    array_always[0] = i;
+    array_always[1] = j[1];
+  end
+  always_comb begin
+    array_always[0] = k[0];
+    array_always[2] = j[2];
+  end
 
 endmodule
 
