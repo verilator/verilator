@@ -73,6 +73,19 @@ module t (
   endproperty
   cover property (p_init_local);
 
+  // --- Scenario 7: match item whose expression is a real ---
+  // The expression is 64 bit, so the conversion must reduce only the
+  // AstExprStmt's resultp(); rewriting the container would drop the match item.
+  real real_one = 1.0;
+  int real_fail = 0;
+  property p_real_match;
+    int snap;
+    @(posedge clk)
+    (real_one, snap = cyc) |=> (cyc == snap + 1);
+  endproperty
+  assert property (p_real_match)
+  else real_fail++;
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     counter_x <= counter_x + 1;
@@ -84,6 +97,7 @@ module t (
     if (cyc == 100) begin
       if (overlap_fail > 0) $stop;
       if (nonoverlap_fail > 0) $stop;
+      if (real_fail > 0) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
     end
