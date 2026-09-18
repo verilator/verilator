@@ -1545,10 +1545,10 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                                   + depp->arrayVarp->nameProtect() + ") + "
                                   + cvtToStr(depp->slot * 8);
                         }
-                        // Cone is zero, so only the two minority shapes cost table text
+                        // Cone is zero, so keep the majority of table rows short
                         const std::string reconFlags
-                            = !hasSrc ? "" : (funcp ? ", VLVF_LAZY_FOLD" : ", VLVF_LAZY_COPY");
-                        reconFns.emplace_back("{" + fn + ", " + src + reconFlags + "}");
+                            = !hasSrc ? "0" : (funcp ? "VLVF_LAZY_FOLD" : "VLVF_LAZY_COPY");
+                        reconFns.emplace_back("{" + fn + ", " + src + ", " + reconFlags + "}");
                     }
                     break;
                 case TableEntryKind::FORCEABLE_RESIDUAL: {
