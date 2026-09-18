@@ -67,11 +67,12 @@ std::string VlCoverpoint::normalBinName(uint32_t crossIdx) const {
 }
 
 const VlCovNamer& VlCoverpoint::namerFor(uint32_t i) const {
-    // Namers are appended in ascending order covering [0, m_total),
-    for (const VlCovNamer& nm : m_namers) {
-        if (i < nm.base() + nm.count()) return nm;
-    }
-    VL_UNREACHABLE;  // LCOV_EXCL_LINE
+    // Namers are appended in ascending order covering [0, m_total).
+    const auto it = std::upper_bound(
+        m_namers.begin(), m_namers.end(), i,
+        [](uint32_t bin, const VlCovNamer& namer) { return bin < namer.base(); });
+    assert(it != m_namers.begin());
+    return *std::prev(it);
 }
 
 std::string VlCoverpoint::binName(uint32_t i) const {
