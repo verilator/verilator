@@ -230,9 +230,14 @@ class LiftExprVisitor final : public VNVisitor {
 
     // VISITORS - statements
     void visit(AstWait* nodep) override {
-        // The condition is reevaluated while suspended. Hoisting calls before
-        // the wait would freeze their results, including process::status().
-        // V3Task can retain these calls inside expression statements instead.
+        if (nodep->user1SetOnce()) return;
+        VL_RESTORER(m_doNotLiftp);
+        m_doNotLiftp = nullptr;
+        // Keep lifted statements inside the repeatedly evaluated condition.
+        if (AstNode* const newStmtps = lift(nodep->condp())) {
+            AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
+            nodep->condp(new AstExprStmt{nodep->fileline(), newStmtps, condp});
+        }
         iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstNodeStmt* nodep) override {
