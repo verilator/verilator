@@ -19,7 +19,7 @@ test.execute()
 
 syms = test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp"
 test.file_grep(syms, r'\{&\S+__Vlazy_reconstruct\S*, offsetof\(\S+ __Vlazydep\) \+ \d+,'
-                     r' 0\}')
+               r' 0\}')
 
 # RAM and regs: write-only retention (no reconstruction), via the floor.
 test.file_grep(test.stats, r'VPI, lazy floor residual, sequential\s+(\d+)', 3)
