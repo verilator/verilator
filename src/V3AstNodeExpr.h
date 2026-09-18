@@ -66,13 +66,16 @@ public:
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
     // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
     virtual bool isMultiCycleSva() const { return false; }
-
-    // TODO: consolidate cLValueTargetp, isLValue, baseFromp
-    // If the expression is a valid C++ LValue, return the target reference, else nullptr
-    // This always returns either AstVarRef, AstMemberSel, or nullptr
-    AstNodeExpr* cLValueTargetp();
+    const AstNodeExpr* getVAccessTargetRecurse() const;
+    AstNodeExpr* getVAccessTargetRecurse() {
+        return const_cast<AstNodeExpr*>(  // casting constness away is safe since this function is
+                                          // non-const itself therefore, caller guarantees that
+                                          // this object is non-const
+            static_cast<const AstNodeExpr*>(this)->getVAccessTargetRecurse());
+    }
+    VAccess getVAccessRecurse() const;
     // TODO: this actually means it's a write or RW, not that it's an LValue
-    bool isLValue() const;
+    bool isLValue() const { return getVAccessRecurse().isWriteOrRW(); }
     // Return base var (or const) nodep dereferences
     AstNode* baseFromp(bool overMembers);
 
@@ -529,7 +532,6 @@ public:
     }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
-    static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
 };
 
 // === Concrete node types =====================================================

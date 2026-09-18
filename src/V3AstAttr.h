@@ -1328,6 +1328,17 @@ public:
         }
         return "VerilatedTraceSigDirection::NONE";
     }
+    VAccess pinAccess() const {
+        switch (m_e) {
+        case NONE: return VAccess::NOCHANGE;
+        case INPUT:
+        case CONSTREF: return VAccess::READ;
+        case OUTPUT: return VAccess::WRITE;
+        case INOUT:
+        case REF: return VAccess::READWRITE;
+        }
+        v3fatalSrc("Unhandled VDirection");
+    }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) VL_MT_SAFE {
     return lhs.m_e == rhs.m_e;

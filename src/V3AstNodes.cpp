@@ -2577,50 +2577,47 @@ AstNode* AstNodeExpr::baseFromp(bool overMembers) {
     }
     return nodep;
 }
-AstNodeExpr* AstNodeExpr::cLValueTargetp() {
-    // Leaves
-    if (AstVarRef* const refp = VN_CAST(this, VarRef)) {  //
-        return refp;
-    }
-    if (AstMemberSel* const selp = VN_CAST(this, MemberSel)) {  //
-        return selp;
-    }
-
-    // Recursive
-    if (AstSel* const selp = VN_CAST(this, Sel)) {  //
-        return selp->fromp()->cLValueTargetp();
-    }
-    if (AstStructSel* const selp = VN_CAST(this, StructSel)) {  //
-        return selp->fromp()->cLValueTargetp();
-    }
-    if (AstNodeSel* const selp = VN_CAST(this, NodeSel)) {  // Array, Assoc, Wildcard, Word
-        return selp->fromp()->cLValueTargetp();
-    }
-
-    // Not an LValue
-    return nullptr;
-}
 void AstNodeExpr::dump(std::ostream& str) const { Super::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-bool AstNodeExpr::isLValue() const {
-    if (const AstNodeVarRef* const varrefp = VN_CAST(this, NodeVarRef)) {
-        return varrefp->access().isWriteOrRW();
-    } else if (const AstMemberSel* const memberselp = VN_CAST(this, MemberSel)) {
-        return memberselp->access().isWriteOrRW();
-    } else if (const AstStructSel* const structselp = VN_CAST(this, StructSel)) {
-        return structselp->fromp()->isLValue();
-    } else if (const AstSel* const selp = VN_CAST(this, Sel)) {
-        return selp->fromp()->isLValue();
-    } else if (const AstNodeSel* const nodeSelp = VN_CAST(this, NodeSel)) {
-        return nodeSelp->fromp()->isLValue();
-    } else if (const AstConcat* const concatp = VN_CAST(this, Concat)) {
-        // Enough to check only one side, as both must be same otherwise malformed
-        return concatp->lhsp()->isLValue();
-    } else if (const AstCMethodHard* const cMethodHardp = VN_CAST(this, CMethodHard)) {
-        // Used for things like Queue/AssocArray/DynArray
-        return cMethodHardp->fromp()->isLValue();
+VAccess AstNodeExpr::getVAccessRecurse() const {
+    const AstNodeExpr* const exprp = getVAccessTargetRecurse();
+    if (!exprp) return VAccess::READ;  // nothing found so, it is rvalue
+    if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
+        return varrefp->access();
     }
-    return false;
+    if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+        return memberSelp->access();
+    }
+    if (const AstSelBit* const selpBitp = VN_CAST(exprp, SelBit)) return selpBitp->access();
+    exprp->v3fatalSrc("Unexpected expression type");
+    // Maybe getVAccessTargetRecurse() has been updated and this function didn't?
+}
+const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
+    // Given an expression, recurse to find the expression which decides about VAccess etc.
+    if (VN_IS(this, NodeVarRef)) return this;
+    if (VN_IS(this, MemberSel)) return this;
+    if (VN_IS(this, SelBit)) return this;
+    if (const AstNodeSel* const anodep = VN_CAST(this, NodeSel)) {
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    if (const AstSel* const anodep = VN_CAST(this, Sel)) {
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    if (const AstArraySel* const anodep = VN_CAST(this, ArraySel)) {
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    if (const AstStructSel* const anodep = VN_CAST(this, StructSel)) {
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    if (const AstConcat* const anodep = VN_CAST(this, Concat)) {
+        // Enough to check only one side, as both must be same otherwise malformed
+        return anodep->lhsp()->getVAccessTargetRecurse();
+    }
+    if (const AstCMethodHard* const anodep = VN_CAST(this, CMethodHard)) {
+        // Used for things like Queue/AssocArray/DynArray
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    return nullptr;  // nothing found
 }
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
@@ -2935,26 +2932,6 @@ void AstNodeVarRef::dump(std::ostream& str) const {
 void AstNodeVarRef::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "access", access().ascii());
     dumpJsonGen(str);
-}
-AstNodeVarRef* AstNodeVarRef::varRefLValueRecurse(AstNode* nodep) {
-    // Given a (possible) lvalue expression, recurse to find the being-set NodeVarRef, else nullptr
-    if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) return anodep;
-    if (const AstNodeSel* const anodep = VN_CAST(nodep, NodeSel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    if (const AstSel* const anodep = VN_CAST(nodep, Sel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    if (const AstArraySel* const anodep = VN_CAST(nodep, ArraySel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    if (const AstMemberSel* const anodep = VN_CAST(nodep, MemberSel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    if (const AstStructSel* const anodep = VN_CAST(nodep, StructSel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    return nullptr;
 }
 const char* AstNot::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
