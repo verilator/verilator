@@ -2798,7 +2798,7 @@ inline IData VL_SEL_IRII(int lbits, const VlQueue<VlWide<N_Words>>& lhs, IData l
 // Word 'word' of an 'lwords' word source, or zero if past its end
 static inline EData _vl_sel_word(WDataInP const lwp, int lwords, int word) VL_MT_SAFE {
     // Requires padding bits at the end of `lwp[lwords-1]` to be 0 if not part
-    // of the logical width of the vector. 
+    // of the logical width of the vector.
     return VL_LIKELY(word < lwords) ? lwp[word] : 0;
 }
 
@@ -2847,7 +2847,7 @@ inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataInP const
     } else {
         // Have to ensure alignment is handled properly
         const int loffset = lsb & VL_SIZEBITS_E;
-        const int nbitsfromlow = VL_EDATASIZE - loffset; 
+        const int nbitsfromlow = VL_EDATASIZE - loffset;
         const int words = VL_WORDS_I(msb - lsb + 1);
         for (int i = 0; i < words; ++i) {
             owp[i] = _vl_sel_word(lwp, lwords, i + word_shift) >> loffset;

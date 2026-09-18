@@ -662,7 +662,7 @@ class ExpandVisitor final : public VNVisitor {
             if (!mIdxp) mIdxp = mNeeded ? wordIdx(mMsbOffset) : nullptr;
             if (!hIdxp) hIdxp = hNeeded ? wordIdx(hMsbOffset) : nullptr;
 
-            // Return word 'idxp' of 'fromp', without consuming 'idxp'.  
+            // Return word 'idxp' of 'fromp', without consuming 'idxp'.
             // With 'mayOverflow', yield zero if 'idxp' is past the end of 'fromp'.
             const auto wordSel = [&](AstNodeExpr* idxp, bool mayOverflow) -> AstNodeExpr* {
                 AstNodeExpr* const clonep = idxp->cloneTreePure(false);
