@@ -1202,6 +1202,7 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     formatAttr = numericAttr;
                 } else if (enump && !enump->empty()) {
                     formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
+                    if (fmt == 'd') formatAttr = numericAttr;
                     thingp = const_cast<std::string*>(enump);
                 } else if (fmt == 'p' && widthSet && width == 0) {
                     output += "'h";
@@ -4097,7 +4098,8 @@ void VerilatedEvalLoop::evalImpl() {
         m_profilerp->sectionPush("eval");
     }
 
-    m_model.evalBegin();
+    // Consumed unconditionally, as the time 0 settle already propagates any earlier deposit
+    const bool needsSettle = m_model.evalBegin();
 
     // Initialization on first time step only
     if (VL_UNLIKELY(!m_model.m_didInit)) {
@@ -4112,6 +4114,13 @@ void VerilatedEvalLoop::evalImpl() {
             checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
         } while (m_model.evalStl(stlIterCount == 1));
         m_model.m_didInit = true;
+    } else if (VL_UNLIKELY(needsSettle)) {
+        // Re-settle a --vpi-lazy deposit into a retained signal before anything samples it
+        VL_DEBUG_IF(VL_DBG_MSGF("+ Settle (--vpi-lazy deposit)\n"););
+        uint32_t stlIterCount = 0;
+        do {
+            checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
+        } while (m_model.evalStl(stlIterCount == 1));
     }
 
     // Sampled values are collected before anything can read them
@@ -4282,15 +4291,46 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
-void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
-                                         void* basep) VL_MT_UNSAFE {
+void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                                         VerilatedVarLazyDatap* lazyBasep,
+                                         const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
     for (size_t i = 0; i < n; ++i) {
         const VlVarTableEntry& e = entp[i];
-        void* const datap = base + e.byteOffset;
-        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
+        void* datap;
+        if (e.lazyIdx >= 0) {
+            const VlLazyReconEntry& recon = lazyReconsp[e.lazyIdx];
+            VerilatedVarLazyDatap& desc = lazyBasep[e.lazyIdx];
+            desc.refreshp = recon.refreshp;
+            desc.selfp = base;
+            desc.stamp = 0;  // Neither stamp encoding can be zero, so the row reads as stale
+            desc.storageOffset = static_cast<uint32_t>(e.byteOffset);
+            // Narrowed from size_t, and a silent wrap would point the row at another signal.
+            // V3EmitCSyms emits a static_assert capping sizeof(Syms), which contains every
+            // instance, at 0x7fffffff, so this can only fire on a mismatched emitter's table.
+            if (VL_UNCOVERABLE(desc.storageOffset != e.byteOffset)) {
+                VL_FATAL_MT(__FILE__, __LINE__, e.namep,  // LCOV_EXCL_LINE
+                            "Internal: --vpi-lazy storage offset exceeds 32 bits");
+            }
+            desc.srcOffset = recon.srcByteOffset;
+            // A cone row's srcOffset is a __Vlazydep word datapClaimDeposit() WRITES, so a
+            // stale -1 or a misaligned value would stamp arbitrary bytes of the instance.
+            // VLVF_LAZY_CONE is the zero shape, what a flags mismatch decays to, hence
+            // unconditional rather than under VL_DEBUG.
+            if (VL_UNCOVERABLE((recon.vlflags & VLVF_LAZY_SHAPE_MASK) == VLVF_LAZY_CONE
+                               && (desc.srcOffset < 0 || (desc.srcOffset & 7) != 0))) {
+                VL_FATAL_MT(__FILE__, __LINE__, e.namep,  // LCOV_EXCL_LINE
+                            "Internal: --vpi-lazy cone row has no deposit word");
+            }
+            datap = &desc;
+        } else {
+            datap = base + e.byteOffset;
+        }
+        // Per-scope table: the VlVarTableEntry rows are module-relative and shared.
+        const uint32_t reconFlags = e.lazyIdx >= 0 ? lazyReconsp[e.lazyIdx].vlflags : 0;
+        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
         VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
         for (int d = 0; d < e.udims; ++d) {
             var.m_unpacked[d].m_left = e.dims[2 * d];

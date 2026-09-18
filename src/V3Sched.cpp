@@ -553,7 +553,8 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
             auto it = inp2changedp.find(vscp);
             if (it != inp2changedp.end()) {
                 out.push_back(it->second);
-            } else if (varp->isPrimaryInish() || varp->isSigUserRWPublic() || varp->sampled()) {
+            } else if (varp->isPrimaryInish() || varp->sampled()
+                       || varp->isSigExternallyWrittenAsync()) {
                 out.push_back(firstIterTriggerp);
             }
             // Add other triggers

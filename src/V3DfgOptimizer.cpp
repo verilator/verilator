@@ -82,6 +82,7 @@ class DataflowOptimize final {
                 const bool hasExtRd =  //
                     varp->isPrimaryIO()  // Top level port - readable
                     || varp->isSigUserRdPublic()  // Readable by user
+                    || varp->isSigVpiLazyRetained()  // Read by VPI; keeps the driver alive
                     || varp->constPoolEntry()  // Stored in AstConstPool hashmap, but read only
                     ;
                 const bool hasExtWr =  //

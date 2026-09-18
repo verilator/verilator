@@ -21,8 +21,13 @@
 #include "verilated_vcd_c.h"
 #include "verilated_vpi.h"
 
+#ifdef T_VPI_MEMORY_LAZY
+#include "Vt_vpi_memory_lazy.h"
+#include "Vt_vpi_memory_lazy__Dpi.h"
+#else
 #include "Vt_vpi_memory.h"
 #include "Vt_vpi_memory__Dpi.h"
+#endif
 #include "svdpi.h"
 
 #endif

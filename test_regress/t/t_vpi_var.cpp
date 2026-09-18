@@ -29,6 +29,9 @@
 #elif defined(T_VPI_FORCEABLE_VAR)
 #include "Vt_vpi_forceable_var.h"
 #include "Vt_vpi_forceable_var__Dpi.h"
+#elif defined(T_VPI_VAR_LAZY)
+#include "Vt_vpi_var_lazy.h"
+#include "Vt_vpi_var_lazy__Dpi.h"
 #else
 #include "Vt_vpi_var.h"
 #include "Vt_vpi_var__Dpi.h"
