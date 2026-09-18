@@ -1,0 +1,19 @@
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_ftask_call_bad.v:23:30: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'foo'
+                                                                 : ... note: In instance 't'
+                      t/t_lint_multidriven_ftask_call_bad.v:23:30: 
+   23 |   always_ff @(posedge reset) foo <= 1'b0;   
+      |                              ^~~
+                      t/t_lint_multidriven_ftask_call_bad.v:21:28: ... Location of other write
+   21 |   always_ff @(posedge clk) request_foo();   
+      |                            ^~~~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_ftask_call_bad.v:33:15: Variable written to in always_comb also written by other process (IEEE 1800-2023 9.2.2.2): 'bar'
+                                                                 : ... note: In instance 't'
+                      t/t_lint_multidriven_ftask_call_bad.v:33:15: 
+   33 |   always_comb bar = 1'b0;   
+      |               ^~~
+                      t/t_lint_multidriven_ftask_call_bad.v:31:15: ... Location of other write
+   31 |   always_comb set_bar();   
+      |               ^~~~~~~
+%Error: Exiting due to
