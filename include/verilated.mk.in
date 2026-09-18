@@ -38,8 +38,6 @@ CFG_CXXFLAGS_STD = @CFG_CXXFLAGS_STD@
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
-# Compiler flags to always use
-CFG_CXXFLAGS_ALWAYS = @CFG_CXXFLAGS_ALWAYS@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 # Compiler flags that enable coroutine support
@@ -100,7 +98,16 @@ VK_CPPFLAGS_ALWAYS += \
   -DVM_TRACE_SAIF=$(VM_TRACE_SAIF) \
   -DVM_VPI=$(VM_VPI) \
   $(CFG_CXXFLAGS_NO_UNUSED) \
-  $(CFG_CXXFLAGS_ALWAYS) \
+
+# Left undefined when there is no generated model, so misuse fails at compile time
+ifneq ($(VM_PREFIX_INCLUDE),)
+  VK_CPPFLAGS_ALWAYS += -DVM_PREFIX_INCLUDE="$(VM_PREFIX_INCLUDE)"
+endif
+
+# Left undefined when the design has no DPI, so misuse fails at compile time
+ifneq ($(VM_PREFIX_INCLUDE_DPI),)
+  VK_CPPFLAGS_ALWAYS += -DVM_PREFIX_INCLUDE_DPI="$(VM_PREFIX_INCLUDE_DPI)"
+endif
 
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
   VK_CPPFLAGS_WALL += -Wall $(CFG_CXXFLAGS_WEXTRA) -Werror
