@@ -40,8 +40,8 @@ for f in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "__Syms__ctor__*.c
 # grep above: re-declaring these per split TU was 21% of VeeR-EL2's generated lines.
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__Syms.h", r'extern const VlVarTableEntry')
 # glob_some() errors when a pattern matches nothing, and a design need not split its dtor.
-for f in (test.glob_some(test.obj_dir + "/" + test.vm_prefix + "__Syms__ctor__*.cpp")
-          + glob.glob(test.obj_dir + "/" + test.vm_prefix + "__Syms__dtor__*.cpp")):
+for f in (test.glob_some(test.obj_dir + "/" + test.vm_prefix + "__Syms__ctor__*.cpp") +
+          glob.glob(test.obj_dir + "/" + test.vm_prefix + "__Syms__dtor__*.cpp")):
     test.file_grep_not(f, r'extern const VlVarTableEntry \S+\[\];')
 
 # The reconstruct body was split, so the memo must not live inside it.

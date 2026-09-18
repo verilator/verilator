@@ -427,9 +427,9 @@ Lazy VPI Signal Access
 ----------------------
 
 The :vlopt:`--vpi-lazy` option declares all variables, ports, and wires VPI
-accessible by their flat name, as :vlopt:`--public-flat-rw` does, but, where
-possible, reconstructing them on demand when VPI reads them instead of
-pinning them as model state on the evaluation path. It implies
+accessible by their flat name, as :vlopt:`--public-flat-rw` does, but,
+where possible, reconstructing them on demand when VPI reads them instead
+of pinning them as model state on the evaluation path. It implies
 :vlopt:`--vpi`; combined with an explicit :vlopt:`--no-vpi <--vpi>` it is
 ignored with a :option:`NOEFFECT` warning, since the lazy symbol tables are
 reachable only through VPI. A global :vlopt:`--public-flat-rw` is likewise
@@ -442,46 +442,46 @@ Signals that cannot be reconstructed keep ordinary storage, as
 :vlopt:`--public-flat-rw` gives them all, so the set of visible signals is
 never smaller than what that option exposes.
 
-Deposits are accepted except on signals an explicit ``public_flat_rd`` keeps
-read-only, and every value format that stores into a variable deposits. A
-put that cannot be honored is rejected outright, as it is without
-:vlopt:`--vpi-lazy`, and stores nothing. Three properties of a deposit into
-a reconstructed signal differ from a deposit under
+Deposits are accepted except on signals an explicit ``public_flat_rd``
+keeps read-only, and every value format that stores into a variable
+deposits. A put that cannot be honored is rejected outright, as it is
+without :vlopt:`--vpi-lazy`, and stores nothing. Three properties of a
+deposit into a reconstructed signal differ from a deposit under
 :vlopt:`--public-flat-rw`, and a testbench that assumes otherwise will
 misbehave silently:
 
-* **It is observational.** A reconstructed signal has no reader in the model
-  and its drivers are untouched, so the design evaluates as though the
-  deposit had not been made. What changes is the value VPI reads back, for
-  that signal and for the reconstructions that resolve from it. A deposit
-  into a signal that kept storage does change model state; where
-  :vlopt:`--vpi-lazy` is what kept that storage, the deposit also requests a
-  settle at the next evaluation, while a signal kept by an explicit
+- **It is observational.** A reconstructed signal has no reader in the
+  model and its drivers are untouched, so the design evaluates as though
+  the deposit had not been made. What changes is the value VPI reads back,
+  for that signal and for the reconstructions that resolve from it. A
+  deposit into a signal that kept storage does change model state; where
+  :vlopt:`--vpi-lazy` is what kept that storage, the deposit also requests
+  a settle at the next evaluation, while a signal kept by an explicit
   ``public_flat_rw`` metacomment behaves exactly as it does under
   :vlopt:`--public-flat-rw`, with no settle.
 
-* **It is retired by the next evaluation, not by the next time step.** A
+- **It is retired by the next evaluation, not by the next time step.** A
   deposit made between evaluations survives however long the client leaves
-  the model unevaluated, but a client that calls ``eval()`` several times at
-  one simulation time loses the deposit on the first of them, whether or not
-  time advanced and whether or not that signal's drivers changed. Until then
-  the override survives every VPI read and every further deposit.
+  the model unevaluated, but a client that calls ``eval()`` several times
+  at one simulation time loses the deposit on the first of them, whether or
+  not time advanced and whether or not that signal's drivers changed. Until
+  then the override survives every VPI read and every further deposit.
 
-* **It covers the whole variable, not the bit or the array element.** A
+- **It covers the whole variable, not the bit or the array element.** A
   deposit narrower than the signal, such as a single ``vpiMemoryWord``
-  element or a ``vpi_put_value_array`` write of part of an array, freezes all
-  of it until the override is retired: bits the client did not write hold
-  their reconstructed value rather than tracking their drivers.
+  element or a ``vpi_put_value_array`` write of part of an array, freezes
+  all of it until the override is retired: bits the client did not write
+  hold their reconstructed value rather than tracking their drivers.
 
 A reconstructed signal resolves when VPI reads it, not when the model last
 evaluated, so its value is meaningful where the model is settled. Every
 ``vpi_put_value`` accounts for itself, so a client that drives the model
-through VPI never observes anything :vlopt:`--public-flat-rw` would not; but
-model state moved by any other route, such as a write to a member of the
-generated class before the ``eval()`` that consumes it, is invisible to the
-caching, and a read taken in that window may resolve against the new state
-where :vlopt:`--public-flat-rw` would return the last evaluated value. Read
-through VPI, or after ``eval()``, not between the two.
+through VPI never observes anything :vlopt:`--public-flat-rw` would not;
+but model state moved by any other route, such as a write to a member of
+the generated class before the ``eval()`` that consumes it, is invisible to
+the caching, and a read taken in that window may resolve against the new
+state where :vlopt:`--public-flat-rw` would return the last evaluated
+value. Read through VPI, or after ``eval()``, not between the two.
 
 Any deposit invalidates every cached reconstruction, so a client that
 deposits and then reads many signals pays to rebuild each of their cones.
@@ -491,24 +491,24 @@ later rebuild forced by some other deposit still resolves from it. Only
 ``vpi_put_value`` takes the flag; ``vpi_put_value_array`` rejects it as an
 unsupported flag with or without :vlopt:`--vpi-lazy`.
 
-``vpiForceFlag`` and ``vpiReleaseFlag`` are unaffected. They require a signal
-marked ``forceable``, which keeps its storage, so a reconstructed signal
-cannot hold a force; a force on one is rejected as a force on a
+``vpiForceFlag`` and ``vpiReleaseFlag`` are unaffected. They require a
+signal marked ``forceable``, which keeps its storage, so a reconstructed
+signal cannot hold a force; a force on one is rejected as a force on a
 non-forceable signal, as it is without :vlopt:`--vpi-lazy`.
 
-Call VPI from the thread that evaluates the model, as VPI asks anyway: a lazy
-read resolves by running the model's own reconstruction code, so a read
-issued from another thread while the model is evaluating races it. A
+Call VPI from the thread that evaluates the model, as VPI asks anyway: a
+lazy read resolves by running the model's own reconstruction code, so a
+read issued from another thread while the model is evaluating races it. A
 ``cbReadWriteSynch``, ``cbReadOnlySynch`` or ``cbNextSimTime`` callback is
 dispatched on the evaluating thread and is the answer to both that and to
 region ordering. :vlopt:`--vpi-lazy` is combinable with :vlopt:`--threads`,
 as :vlopt:`--vpi` and :vlopt:`--public-flat-rw` are.
 
-:vlopt:`--public-flat-rw` remains preferable where signals are read directly
-as members of the generated C++ model rather than through VPI, or where a
-client reads many signals on every time step, since a reconstructed read
-costs more than a load from storage. Marking only the signals that need
-public access is typically better performing than either option.
+:vlopt:`--public-flat-rw` remains preferable where signals are read
+directly as members of the generated C++ model rather than through VPI, or
+where a client reads many signals on every time step, since a reconstructed
+read costs more than a load from storage. Marking only the signals that
+need public access is typically better performing than either option.
 
 
 .. _vpi example:
