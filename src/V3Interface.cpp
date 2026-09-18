@@ -69,7 +69,7 @@ class InlineIntfRefVisitor final : public VNVisitor {
             const AstIfaceRefDType* const portIrdtp = VN_CAST(varp->dtypep(), IfaceRefDType);
             const string modportName = portIrdtp ? portIrdtp->modportName() : irdtp->modportName();
             FileLine* const flp = pinp->fileline();
-            cellp->addIntfRefsp(new AstIntfRef{flp, alias, pinp->name(), modportName});
+            cellp->addIntfRefsp(new AstIntfRef{flp, alias, m_scope, pinp->name(), modportName});
         }
 
         iterateChildrenConst(modp);

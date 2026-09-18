@@ -3790,28 +3790,33 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
     return &(impp()->m_impdatap->m_nameMap);
 }
 
-void VerilatedContextImp::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE {
+const VerilatedIfaceRef*
+VerilatedContextImp::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE {
     // Slow ok - called once/interface-reference at construction
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    m_impdatap->m_ifaceRefMap.emplace(ifaceRef.fullname(), ifaceRef);
+    const auto it = m_impdatap->m_ifaceRefMap.emplace(ifaceRef.fullname(), ifaceRef);
+    return &it->second;
 }
 void VerilatedContextImp::ifaceRefErase(const std::string& fullname,
                                         const VerilatedScope* scopep) VL_MT_SAFE {
     // Slow ok - called once/interface-reference at destruction
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    const auto it = m_impdatap->m_ifaceRefMap.find(fullname);
-    // Models sharing an instance name collide on the key; only erase our own,
-    // so tearing one down leaves another's live reference registered
-    if (it != m_impdatap->m_ifaceRefMap.end() && it->second.scopep() == scopep) {
-        m_impdatap->m_ifaceRefMap.erase(it);
+    const auto range = m_impdatap->m_ifaceRefMap.equal_range(fullname);
+    // Each model owns its entries, even when instance names collide.
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second.scopep() == scopep) {
+            m_impdatap->m_ifaceRefMap.erase(it);
+            break;
+        }
     }
 }
 const VerilatedIfaceRef*
 VerilatedContext::ifaceRefFind(const char* namep) const VL_MT_SAFE_POSTINIT {
     // Thread safe only assuming this is called only after model construction completed
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    const auto& it = m_impdatap->m_ifaceRefMap.find(namep);
-    if (VL_UNLIKELY(it == m_impdatap->m_ifaceRefMap.end())) return nullptr;
+    // Keep name lookup deterministic when live models share an instance name.
+    const auto it = m_impdatap->m_ifaceRefMap.lower_bound(namep);
+    if (VL_UNLIKELY(it == m_impdatap->m_ifaceRefMap.end() || it->first != namep)) return nullptr;
     return &it->second;
 }
 
@@ -4227,7 +4232,16 @@ VerilatedScope::~VerilatedScope() {
     VL_DO_DANGLING(delete[] m_namep, m_namep);
     VL_DO_DANGLING(delete[] m_callbacksp, m_callbacksp);
     VL_DO_DANGLING(delete m_varsp, m_varsp);
+    VL_DO_DANGLING(delete m_ifaceRefsp, m_ifaceRefsp);
     VL_DEBUG_IFDEF(m_funcnumMax = 0;);
+}
+
+void VerilatedScope::ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE {
+    // Slowpath - called once/scope*reference at construction
+    // Appended in table order; the emitter sorts the table by path, so VPI
+    // iteration is deterministic and sorted
+    if (VL_UNLIKELY(!m_ifaceRefsp)) m_ifaceRefsp = new std::vector<const VerilatedIfaceRef*>;
+    m_ifaceRefsp->emplace_back(ifaceRefp);
 }
 
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
@@ -4335,6 +4349,11 @@ static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* s
     return out;
 }
 
+static VerilatedScope* vl_ifaceRefParentp(uint8_t* basep, const VlIfaceRefTableEntry& e) {
+    if (e.parentPtrOffset == VL_IFACEREF_NO_PARENT) return nullptr;
+    return *reinterpret_cast<VerilatedScope**>(basep + e.parentPtrOffset);
+}
+
 void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
                                               VerilatedSyms* symsp) VL_MT_UNSAFE {
     // Use the model's own context; at destruction threadContextp() may be another's
@@ -4344,8 +4363,14 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        impp->ifaceRefInsert(
-            VerilatedIfaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp), e.modportp});
+        const VerilatedIfaceRef ifaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp),
+                                         e.modportp};
+        const VerilatedIfaceRef* const refp = impp->ifaceRefInsert(ifaceRef);
+        // Map nodes remain stable until this model's teardown. The scope only owns
+        // the pointer vector; destroying it does not dereference the erased entries.
+        if (VerilatedScope* const parentp = vl_ifaceRefParentp(base, e)) {
+            parentp->ifaceRefInsert(refp);
+        }
     }
 }
 

@@ -73,12 +73,8 @@ public:
 };
 
 // Map of sorted interface reference names to the concrete interface they refer to
+// Stable nodes own references; duplicate names allow independently owned model instances.
 // Keyed by value, as the full name is built at construction
-// This is a class instead of typedef/using to allow forward declaration in verilated.h
-class VerilatedIfaceRefMap final : public std::map<std::string, VerilatedIfaceRef, std::less<>> {
-public:
-    VerilatedIfaceRefMap() = default;
-    ~VerilatedIfaceRefMap() = default;
-};
+using VerilatedIfaceRefMap = std::multimap<std::string, VerilatedIfaceRef, std::less<>>;
 
 #endif  // Guard
