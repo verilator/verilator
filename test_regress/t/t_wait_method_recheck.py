@@ -10,6 +10,9 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+
 test.compile(verilator_flags2=["--binary"])
+
 test.execute()
+
 test.passes()
