@@ -43,6 +43,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -192,6 +193,12 @@ public:
     int32_t num() const { return m_num; }
 };
 
+// Not MT safe: eval() writes the epoch
+static VerilatedLazyStamps vlLazyStamps(const VerilatedScope* scopep) VL_MT_UNSAFE_ONE {
+    const VerilatedSyms* const symsp = scopep->symsp();
+    return VerilatedLazyStamps{symsp->__Vm_lazyEpoch << 1, symsp->__Vm_lazyDepStamp};
+}
+
 class VerilatedVpioVarBase VL_NOT_FINAL : public VerilatedVpio {
 protected:
     const VerilatedVar* m_varp = nullptr;
@@ -253,34 +260,48 @@ public:
         if (m_fullname.empty()) m_fullname = std::string{m_scopep->name()} + '.' + m_varp->name();
         return m_fullname.c_str();
     }
-    virtual void* readDatap() const { return m_varp->datap(); }
-    CData* readCDatap() const {
+
+protected:
+    // Not public: paired with datapRefresh() it would hand a handler a mutable pointer into a
+    // lazy row without a VlVpiWriteAccess, which is the only thing that claims a deposit
+    VerilatedLazyStamps lazyStamps() const { return vlLazyStamps(m_scopep); }
+
+public:
+    // Read view of the variable's storage. Const, so a store cannot be spelled without a
+    // VlVpiWriteAccess; that guard is the only thing that materialises a --vpi-lazy row before
+    // a partial store and claims it as a deposit afterwards. A const_cast here defeats that.
+    // Guarded: else a non-lazy model pays two dependent loads per VPI access for nothing.
+    virtual const void* readDatap() const {
+        return VL_UNLIKELY(m_varp->isLazyPublicRW()) ? m_varp->datapRefresh(lazyStamps())
+                                                     : m_varp->datap();
+    }
+    const CData* readCDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT8););
-        return static_cast<CData*>(readDatap());
+        return static_cast<const CData*>(readDatap());
     }
-    SData* readSDatap() const {
+    const SData* readSDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT16););
-        return static_cast<SData*>(readDatap());
+        return static_cast<const SData*>(readDatap());
     }
-    IData* readIDatap() const {
+    const IData* readIDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT32););
-        return static_cast<IData*>(readDatap());
+        return static_cast<const IData*>(readDatap());
     }
-    QData* readQDatap() const {
+    const QData* readQDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT64););
-        return static_cast<QData*>(readDatap());
+        return static_cast<const QData*>(readDatap());
     }
-    EData* readEDatap() const {
+    const EData* readEDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_WDATA););
-        return static_cast<EData*>(readDatap());
+        return static_cast<const EData*>(readDatap());
     }
-    double* readRealDatap() const {
+    const double* readRealDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_REAL););
-        return static_cast<double*>(readDatap());
+        return static_cast<const double*>(readDatap());
     }
-    std::string* readStringDatap() const {
+    const std::string* readStringDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_STRING););
-        return static_cast<std::string*>(readDatap());
+        return static_cast<const std::string*>(readDatap());
     }
     virtual uint32_t bitOffset() const { return 0; }
 };
@@ -390,16 +411,26 @@ class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     int32_t m_partselBits = -1;  // Part-select width, -1 means no part-select active
     std::string m_name;
     std::string m_fullNameOverride;
+    // Storage address, adjusted for array entries. Private because a store reached other than
+    // through VlVpiWriteAccess would skip the --vpi-lazy deposit claim.
+    void* m_varDatap = nullptr;
+    friend class VlVpiWriteAccess;
+    // Storage address without reconstructing: a handle's value is rebuilt when it is read, not
+    // when the handle is made, so a handle taken before the first eval() is harmless
+    static void* storagep(const VerilatedVar* varp) {
+        if (VL_LIKELY(!varp->isLazyPublicRW())) return varp->datap();
+        const VerilatedVarLazyDatap* const lazyDatap = varp->lazyDatap();
+        return static_cast<uint8_t*>(lazyDatap->selfp) + lazyDatap->storageOffset;
+    }
 
 protected:
-    void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
     std::vector<int32_t> m_index;
 
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
         : VerilatedVpioVarBase{varp, scopep} {
         m_entSize = varp->entSize();
-        m_varDatap = varp->datap();
+        m_varDatap = storagep(varp);
         if (_vl_vpi_find_unescaped_dot(varp->name())) {
             m_name = _vl_vpi_member_local_name(varp->name());
         }
@@ -412,9 +443,11 @@ public:
         m_name = name;
         m_fullNameOverride = fullname;
     }
+    // Handle onto the whole variable with an overridden name; delegates so that storagep()
+    // need not be reachable from outside this class
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep,
                      const std::string& name, const std::string& fullname)
-        : VerilatedVpioVar{varp, scopep, varp->datap(), name, fullname} {}
+        : VerilatedVpioVar{varp, scopep, storagep(varp), name, fullname} {}
     explicit VerilatedVpioVar(const VerilatedVpioVar* vop)
         : VerilatedVpioVarBase{vop} {
         if (vop) {
@@ -511,16 +544,18 @@ public:
         const std::string memberName = memberVarp->name();
         const size_t parentLen = std::strlen(parentName);
 
-        void* const parentDatap = varp()->datap();
-        void* const memberDatap = memberVarp->datap();
+        void* const parentDatap = storagep(varp());
+        void* const memberDatap = storagep(memberVarp);
         if (VL_UNLIKELY(!parentDatap) || VL_UNLIKELY(!memberDatap)) return nullptr;
         const auto offset
             = static_cast<uint8_t*>(memberDatap) - static_cast<uint8_t*>(parentDatap);
 
         const std::string localName = _vl_vpi_member_local_name(memberVarp->name());
 
+        // m_varDatap, not readDatap(): the member handle's value is reconstructed when it is
+        // read, and this offset is the same whether or not the shadow holds fresh data
         return new VerilatedVpioVar{memberVarp, scopep(),
-                                    static_cast<uint8_t*>(readDatap()) + offset, localName,
+                                    static_cast<uint8_t*>(m_varDatap) + offset, localName,
                                     std::string{fullname()} + memberName.substr(parentLen)};
     }
     uint32_t type() const override {
@@ -545,13 +580,95 @@ public:
         return m_fullname.c_str();
     }
     uint8_t* prevDatap() const { return m_prevDatap; }
-    void* readDatap() const override { return m_varDatap; }
+    // Un-reconstructed storage address, for tracing only; const so it cannot become a store
+    const void* storageAddrp() const { return storagep(varp()); }
+    const void* readDatap() const override {
+        // Refresh, but return m_varDatap rather than the refreshed base: an element handle
+        // (vpiMemoryWord) carries its offset into the shadow here
+        if (VL_UNLIKELY(m_varp->isLazyPublicRW())) m_varp->datapRefresh(lazyStamps());
+        return m_varDatap;
+    }
     void createPrevDatap() {
         if (VL_UNLIKELY(!m_prevDatap)) {
             m_prevDatap = new uint8_t[entSize()];
-            std::memcpy(prevDatap(), m_varDatap, entSize());
+            // readDatap(), not m_varDatap: the baseline must not be a stale reconstruction
+            std::memcpy(prevDatap(), readDatap(), entSize());
         }
     }
+};
+
+// Sole route from a vpiHandle to a mutable pointer into a variable's storage, and so the sole
+// route by which VPI stores. Construction is the pre-store hook: it materialises a --vpi-lazy
+// row, so a partial store does not land in a stale shadow. Destruction is the post-store hook:
+// it claims the row as this eval step's deposit and bumps the epoch, so the cones that resolve
+// from the row re-resolve. Every other route from a handle to the data is const, so a handler
+// cannot bypass the guard by accident; deliberate routes out of it remain, as in any C++ API.
+// Scope-local and never allocated; on a non-lazy variable each end is one not-taken branch.
+class VlVpiWriteAccess final {
+    const VerilatedVpioVar* const m_vop;
+    const bool m_propagate;  // False for a put carrying vpiPropagateOff
+
+    // Out of line and cold, so each end of the guard inlines to a flag load, a test and a
+    // not-taken branch; inlined, datapRefresh() alone is large enough to push the constructor
+    // out of line and cost a non-lazy put a call and return instead.
+    VL_ATTR_NOINLINE VL_ATTR_COLD static void refreshRow(const VerilatedVpioVar* vop) {
+        vop->varp()->datapRefresh(vlLazyStamps(vop->scopep()));
+    }
+    VL_ATTR_NOINLINE VL_ATTR_COLD static void claimRow(const VerilatedVpioVar* vop,
+                                                       bool propagate) {
+        vop->varp()->datapClaimDeposit(vlLazyStamps(vop->scopep()));
+        // Bump last: the rebuild it invites must see both the deposit and the claim
+        if (VL_LIKELY(propagate)) ++vop->scopep()->symsp()->__Vm_lazyEpoch;
+    }
+
+public:
+    VL_ATTR_ALWINLINE VlVpiWriteAccess(const VerilatedVpioVar* vop, bool propagate)
+        : m_vop{vop}
+        , m_propagate{propagate} {
+        // A partial store into a stale shadow would leave old bits behind, so materialise first
+        if (VL_UNLIKELY(vop->varp()->isLazyPublicRW())) refreshRow(vop);
+    }
+    VL_ATTR_ALWINLINE ~VlVpiWriteAccess() {
+        if (VL_LIKELY(!m_vop->varp()->isLazyPublicRW())) return;
+        claimRow(m_vop, m_propagate);
+    }
+    const VerilatedVpioVar* vop() const { return m_vop; }
+    // Untyped view, for the stores that deliberately do not match vltype: the masked
+    // read-modify-write funnel, which dispatches on vltype itself, and vpiBinStrVal, which
+    // addresses any packed type a byte at a time
+    template <typename T>
+    T* datap() const {
+        return reinterpret_cast<T*>(m_vop->m_varDatap);
+    }
+    CData* cDatap() const {
+        VL_DEBUG_IFDEF(assert(m_vop->varp()->vltype() == VLVT_UINT8););
+        return datap<CData>();
+    }
+    SData* sDatap() const {
+        VL_DEBUG_IFDEF(assert(m_vop->varp()->vltype() == VLVT_UINT16););
+        return datap<SData>();
+    }
+    IData* iDatap() const {
+        VL_DEBUG_IFDEF(assert(m_vop->varp()->vltype() == VLVT_UINT32););
+        return datap<IData>();
+    }
+    QData* qDatap() const {
+        VL_DEBUG_IFDEF(assert(m_vop->varp()->vltype() == VLVT_UINT64););
+        return datap<QData>();
+    }
+    EData* eDatap() const {
+        VL_DEBUG_IFDEF(assert(m_vop->varp()->vltype() == VLVT_WDATA););
+        return datap<EData>();
+    }
+    double* realDatap() const {
+        VL_DEBUG_IFDEF(assert(m_vop->varp()->vltype() == VLVT_REAL););
+        return datap<double>();
+    }
+    std::string& strRef() const {
+        VL_DEBUG_IFDEF(assert(m_vop->varp()->vltype() == VLVT_STRING););
+        return *datap<std::string>();
+    }
+    VL_UNCOPYABLE(VlVpiWriteAccess);
 };
 
 class VerilatedVpioVarIter final : public VerilatedVpio {
@@ -1127,24 +1244,43 @@ struct VerilatedVpiTimedCbsCmp final {
 };
 
 class VerilatedVpiError;
-void vl_vpi_put_word(const VerilatedVpioVar* vop, QData word, size_t bitCount, size_t addOffset);
+void vl_vpi_put_word(const VlVpiWriteAccess& wa, QData word, size_t bitCount, size_t addOffset);
 
 // Information about how to access packed array data.
 // If underlying type is multi-word (VLVT_WDATA), the packed element might straddle word
 // boundaries, in which case m_maskHi != 0.
+// T carries the direction: a read view is VarAccessInfo<const T> and comes from a handle, a
+// write view is VarAccessInfo<T> and comes only from a VlVpiWriteAccess.
 template <typename T>
 struct VarAccessInfo final {
+    using Word = typename std::remove_const<T>::type;
     T* m_datap;  // Typed pointer to packed array base address
     size_t m_bitOffset;  // Data start location (bit offset)
     size_t m_wordOffset;  // Data start location (word offset, VLVT_WDATA only)
-    T m_maskLo;  // Access mask for m_datap[m_wordOffset]
-    T m_maskHi;  // Access mask for m_datap[m_wordOffset + 1] (VLVT_WDATA only)
+    Word m_maskLo;  // Access mask for m_datap[m_wordOffset]
+    Word m_maskHi;  // Access mask for m_datap[m_wordOffset + 1] (VLVT_WDATA only)
+    // Same element and masks over a different, caller-owned buffer: cbValueChange's
+    // previous-value copy. Takes the new pointer rather than casting const off this one, so a
+    // read view can never become a write view into model storage.
+    template <typename U>
+    VarAccessInfo<U> rebound(U* datap) const {
+        VarAccessInfo<U> info;
+        info.m_datap = datap;
+        info.m_bitOffset = m_bitOffset;
+        info.m_wordOffset = m_wordOffset;
+        info.m_maskLo = m_maskLo;
+        info.m_maskHi = m_maskHi;
+        return info;
+    }
 };
 template <typename T>
-VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
+VarAccessInfo<const T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
+                                              size_t addOffset);
+template <typename T>
+VarAccessInfo<T> vl_vpi_var_access_info(const VlVpiWriteAccess& wa, size_t bitCount,
                                         size_t addOffset);
 template <typename T>
-T vl_vpi_get_word_gen(VarAccessInfo<T> info);
+typename std::remove_const<T>::type vl_vpi_get_word_gen(VarAccessInfo<T> info);
 
 template <typename T>
 void vl_vpi_put_word_gen(VarAccessInfo<T> info, T word);
@@ -1293,18 +1429,17 @@ public:
     }
     template <typename T>
     static bool valueDiffersFromPrev(VerilatedVpioVar* varop) {
-        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p size=%d\n",
-                                    varop->fullname(), *(static_cast<CData*>(varop->readDatap())),
-                                    *(varop->prevDatap()), varop->readDatap(), varop->prevDatap(),
-                                    varop->entSize()););
+        VL_DEBUG_IF_PLI(
+            VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p size=%d\n", varop->fullname(),
+                        *(static_cast<const CData*>(varop->readDatap())), *(varop->prevDatap()),
+                        varop->readDatap(), varop->prevDatap(), varop->entSize()););
         if (varop->bitSize() == 1) {
-            T* const prevDatap = reinterpret_cast<T*>(
+            const T* const prevDatap = reinterpret_cast<const T*>(
                 varop->prevDatap());  // Was malloced when we added the callback
-            const VarAccessInfo<T> currInfo
+            const VarAccessInfo<const T> currInfo
                 = vl_vpi_var_access_info<T>(varop, varop->bitSize(), 0);
-            VarAccessInfo<T> prevInfo = currInfo;
-            prevInfo.m_datap = prevDatap;
-            return vl_vpi_get_word_gen(currInfo) != vl_vpi_get_word_gen(prevInfo);
+            return vl_vpi_get_word_gen(currInfo)
+                   != vl_vpi_get_word_gen(currInfo.rebound(prevDatap));
         }
         return std::memcmp(varop->prevDatap(), varop->readDatap(), varop->entSize()) != 0;
     }
@@ -1328,13 +1463,13 @@ public:
     template <typename T>
     static void updatePrev(const VerilatedVpioVar* const varop) {
         if (varop->bitSize() == 1) {
-            const VarAccessInfo<T> currInfo
+            const VarAccessInfo<const T> currInfo
                 = vl_vpi_var_access_info<T>(varop, varop->bitSize(), 0);
-            VarAccessInfo<T> prevInfo = currInfo;
             T* const prevDatap = reinterpret_cast<T*>(varop->prevDatap());
-            prevInfo.m_datap = prevDatap;
             const T currWord = vl_vpi_get_word_gen(currInfo);
-            vl_vpi_put_word_gen(prevInfo, currWord);
+            // Stores into the handle's own previous-value buffer, not into model storage, so no
+            // deposit is owed and no VlVpiWriteAccess is involved
+            vl_vpi_put_word_gen(currInfo.rebound(prevDatap), currWord);
             assert(std::memcmp(varop->prevDatap(), varop->readDatap(), varop->entSize()) == 0);
         } else {
             std::memcpy(varop->prevDatap(), varop->readDatap(), varop->entSize());
@@ -1378,7 +1513,7 @@ public:
             if (valueDiffersFromPrev(varop)) {
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" PRId64 " %s v[0]=%d\n",
                                             ho.id(), varop->fullname(),
-                                            *(static_cast<CData*>(varop->readDatap()))););
+                                            *(static_cast<const CData*>(varop->readDatap()))););
                 update.insert(varop);
                 vpi_get_value(ho.cb_datap()->obj, ho.cb_datap()->value);
                 (ho.cb_rtnp())(ho.cb_datap());
@@ -1416,20 +1551,20 @@ public:
                              size_t bitOffset);
 
     static std::size_t vlTypeSize(VerilatedVarType vltype);
-    static void setAllBitsToValue(const VerilatedVpioVar* vop, uint8_t bitValue) {
+    static void setAllBitsToValue(const VlVpiWriteAccess& wa, uint8_t bitValue) {
         assert(bitValue == 0 || bitValue == 1);
         const uint64_t word = (bitValue == 1) ? -1ULL : 0ULL;
-        const std::size_t wordSize = vlTypeSize(vop->varp()->vltype());
+        const std::size_t wordSize = vlTypeSize(wa.vop()->varp()->vltype());
         assert(wordSize > 0);
-        const uint32_t varBits = vop->bitSize();
+        const uint32_t varBits = wa.vop()->bitSize();
         const std::size_t numChunks = (varBits / wordSize);
         for (std::size_t i{0}; i < numChunks; ++i) {
-            vl_vpi_put_word(vop, word, wordSize, i * wordSize);
+            vl_vpi_put_word(wa, word, wordSize, i * wordSize);
         }
         // addOffset == varBits would trigger assertion in vl_vpi_var_access_info even if
         // bitCount == 0, so first check if there is a remainder
         if (varBits % wordSize != 0)
-            vl_vpi_put_word(vop, word, varBits % wordSize, numChunks * wordSize);
+            vl_vpi_put_word(wa, word, varBits % wordSize, numChunks * wordSize);
     }
 };
 
@@ -3399,6 +3534,19 @@ PLI_INT32 vl_get_vltype_format(VerilatedVarType vlType) {
     }  // LCOV_EXCL_STOP
 }
 
+// Deliberately not folded into VlVpiWriteAccess: a put can open several guards (a forceable put
+// writes __VforceVal, __VforceRd and __VforceEn) and an epoch bump retires every memoised cone
+// in the model, so it must happen once per put, not once per guard.
+static void vl_vpi_note_write(const VerilatedVpioVar* vop, bool propagate) {
+    const VerilatedVar* const varp = vop->varp();
+    VerilatedSyms* const symsp = vop->scopep()->symsp();
+    if (varp->isLazyRetained()) symsp->__Vm_vpiLazyWritten = true;
+    // A lazy row's bump is the one VlVpiWriteAccess makes after claiming the deposit, so that
+    // the rebuild it forces sees the claim; making it here as well would only cost an epoch.
+    // Only the epoch moves, so deposits made earlier in this eval step still stand.
+    if (VL_LIKELY(!varp->isLazyPublicRW() && propagate)) ++symsp->__Vm_lazyEpoch;
+}
+
 static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_list args;
     va_list args_copy;
@@ -3419,13 +3567,16 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_end(args);
 }
 
+// Mask/offset computation, shared by the read and write views. T is const-qualified for a read
+// view, which is what keeps the two apart all the way down to the store.
 template <typename T>
-VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
-                                        size_t addOffset) {
-    // VarAccessInfo generation
+static VarAccessInfo<T> vl_vpi_var_access_info_gen(const VerilatedVpioVarBase* vop, T* datap,
+                                                   size_t bitCount, size_t addOffset) {
     // vop - variable to access (already indexed)
+    // datap - storage base address, already reconstructed if the variable is --vpi-lazy
     // bitCount - how many bits to write/read
     // addOffset - additional offset to apply (within the packed array element)
+    using Word = typename std::remove_const<T>::type;
 
     const size_t wordBits = sizeof(T) * 8;
     uint32_t varBits = vop->bitSize();
@@ -3438,7 +3589,7 @@ VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t 
                          bitCount, varBits - addOffset});
 
     VarAccessInfo<T> info;
-    info.m_datap = static_cast<T*>(vop->readDatap());
+    info.m_datap = datap;
     if (vop->varp()->vltype() == VLVT_WDATA) {
         assert(sizeof(T) == sizeof(EData));
         assert(bitCount <= wordBits);
@@ -3447,34 +3598,50 @@ VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t 
         if (bitCount + info.m_bitOffset <= wordBits) {
             // within single word
             if (bitCount == wordBits)
-                info.m_maskLo = ~static_cast<T>(0);
+                info.m_maskLo = ~static_cast<Word>(0);
             else
-                info.m_maskLo = (static_cast<T>(1) << bitCount) - 1;
+                info.m_maskLo = (static_cast<Word>(1) << bitCount) - 1;
             info.m_maskLo = info.m_maskLo << info.m_bitOffset;
             info.m_maskHi = 0;
         } else {
             // straddles word boundary
-            info.m_maskLo = (static_cast<T>(1) << (wordBits - info.m_bitOffset)) - 1;
+            info.m_maskLo = (static_cast<Word>(1) << (wordBits - info.m_bitOffset)) - 1;
             info.m_maskLo = info.m_maskLo << info.m_bitOffset;
-            info.m_maskHi = (static_cast<T>(1) << (bitCount + info.m_bitOffset - wordBits)) - 1;
+            info.m_maskHi = (static_cast<Word>(1) << (bitCount + info.m_bitOffset - wordBits)) - 1;
         }
     } else {
         info.m_wordOffset = 0;
         info.m_bitOffset = vop->bitOffset() + addOffset;
         assert(bitCount + info.m_bitOffset <= wordBits);
         if (bitCount < wordBits) {
-            info.m_maskLo = (static_cast<T>(1) << bitCount) - 1;
+            info.m_maskLo = (static_cast<Word>(1) << bitCount) - 1;
             info.m_maskLo = info.m_maskLo << info.m_bitOffset;
         } else {
-            info.m_maskLo = ~static_cast<T>(0);
+            info.m_maskLo = ~static_cast<Word>(0);
         }
         info.m_maskHi = 0;
     }
     return info;
 }
 
+// Read view: a handle alone is enough, and yields a pointer nothing can store through
 template <typename T>
-T vl_vpi_get_word_gen(VarAccessInfo<T> info) {
+VarAccessInfo<const T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
+                                              size_t addOffset) {
+    return vl_vpi_var_access_info_gen<const T>(vop, static_cast<const T*>(vop->readDatap()),
+                                               bitCount, addOffset);
+}
+
+// Write view: only a VlVpiWriteAccess yields one, so every store below has already materialised
+// its --vpi-lazy row and will claim it as a deposit when that guard leaves scope
+template <typename T>
+VarAccessInfo<T> vl_vpi_var_access_info(const VlVpiWriteAccess& wa, size_t bitCount,
+                                        size_t addOffset) {
+    return vl_vpi_var_access_info_gen<T>(wa.vop(), wa.datap<T>(), bitCount, addOffset);
+}
+
+template <typename T>
+typename std::remove_const<T>::type vl_vpi_get_word_gen(VarAccessInfo<T> info) {
     const size_t wordBits = sizeof(T) * 8;
     if (info.m_maskHi) {
         return ((info.m_datap[info.m_wordOffset] & info.m_maskLo) >> info.m_bitOffset)
@@ -3503,8 +3670,8 @@ void vl_vpi_put_word_gen(VarAccessInfo<T> info, T word) {
 }
 
 template <typename T>
-void vl_vpi_put_word_gen(const VerilatedVpioVar* vop, T word, size_t bitCount, size_t addOffset) {
-    vl_vpi_put_word_gen(vl_vpi_var_access_info<T>(vop, bitCount, addOffset), word);
+void vl_vpi_put_word_gen(const VlVpiWriteAccess& wa, T word, size_t bitCount, size_t addOffset) {
+    vl_vpi_put_word_gen(vl_vpi_var_access_info<T>(wa, bitCount, addOffset), word);
 }
 
 // bitCount: maximum number of bits to read, will stop earlier if it reaches the var bounds
@@ -3526,22 +3693,22 @@ QData vl_vpi_get_word(const VerilatedVpioVarBase* vop, size_t bitCount, size_t a
 // word: data to be written
 // bitCount: maximum number of bits to write, will stop earlier if it reaches the var bounds
 // addOffset: additional write bitoffset
-void vl_vpi_put_word(const VerilatedVpioVar* vop, QData word, size_t bitCount, size_t addOffset) {
-    switch (vop->varp()->vltype()) {
-    case VLVT_UINT8: vl_vpi_put_word_gen<CData>(vop, word, bitCount, addOffset); break;
-    case VLVT_UINT16: vl_vpi_put_word_gen<SData>(vop, word, bitCount, addOffset); break;
-    case VLVT_UINT32: vl_vpi_put_word_gen<IData>(vop, word, bitCount, addOffset); break;
-    case VLVT_UINT64: vl_vpi_put_word_gen<QData>(vop, word, bitCount, addOffset); break;
-    case VLVT_WDATA: vl_vpi_put_word_gen<EData>(vop, word, bitCount, addOffset); break;
+void vl_vpi_put_word(const VlVpiWriteAccess& wa, QData word, size_t bitCount, size_t addOffset) {
+    switch (wa.vop()->varp()->vltype()) {
+    case VLVT_UINT8: vl_vpi_put_word_gen<CData>(wa, word, bitCount, addOffset); break;
+    case VLVT_UINT16: vl_vpi_put_word_gen<SData>(wa, word, bitCount, addOffset); break;
+    case VLVT_UINT32: vl_vpi_put_word_gen<IData>(wa, word, bitCount, addOffset); break;
+    case VLVT_UINT64: vl_vpi_put_word_gen<QData>(wa, word, bitCount, addOffset); break;
+    case VLVT_WDATA: vl_vpi_put_word_gen<EData>(wa, word, bitCount, addOffset); break;
     default:
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vltype (%d)", __func__,
-                      vop->varp()->vltype());
+                      wa.vop()->varp()->vltype());
     }
 }
 
 void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
     const VerilatedVar* const varp = vop->varp();
-    void* const varDatap = vop->readDatap();
+    const void* const varDatap = vop->readDatap();
 
     if (!vl_check_format(vop, valuep, true)) return;
     // string data type is dynamic and may vary in size during simulation
@@ -3582,7 +3749,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         return;
     } else if (valuep->format == vpiBinStrVal) {
         t_outDynamicStr.resize(varBits);
-        const CData* datap = static_cast<CData*>(varDatap);
+        const CData* datap = static_cast<const CData*>(varDatap);
         for (size_t i = 0; i < varBits; ++i) {
             const size_t pos = i + vop->bitOffset();
             const char val = (datap[pos >> 3] >> (pos & 7)) & 1;
@@ -3627,7 +3794,9 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
     } else if (valuep->format == vpiStringVal) {
         if (varp->vltype() == VLVT_STRING) {
             if (varp->isParam()) {
-                valuep->value.str = static_cast<char*>(varDatap);
+                // s_vpi_value::str is char*, so the VPI API forces the cast; a param is never
+                // --vpi-lazy and vpi_put_value rejects it, so nothing can store through it
+                valuep->value.str = const_cast<char*>(static_cast<const char*>(varDatap));
                 return;
             }
             t_outDynamicStr = *vop->readStringDatap();
@@ -3735,12 +3904,6 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     const PLI_INT32 delay_mode = flags & 0xfff;
     const PLI_INT32 forceFlag = flags & 0xfff;
     if (const VerilatedVpioVar* const baseSignalVop = VerilatedVpioVar::castp(object)) {
-        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n",
-                                    baseSignalVop->fullname(), valuep->format,
-                                    valuep->value.integer);
-                        VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n",
-                                    baseSignalVop->varp()->datap(), baseSignalVop->readDatap()););
-
         if (VL_UNLIKELY(!baseSignalVop->varp()->isPublicRW())) {
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "vpi_put_value was used on signal marked read-only,"
@@ -3758,6 +3921,12 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return nullptr;
         }
         if (!vl_check_format(baseSignalVop, valuep, false)) return nullptr;
+        // Traced here, past the checks: readDatap() reconstructs, which a rejected put must not
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n",
+                                    baseSignalVop->fullname(), valuep->format,
+                                    valuep->value.integer);
+                        VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", baseSignalVop->storageAddrp(),
+                                    baseSignalVop->readDatap()););
         if (delay_mode == vpiInertialDelay) {
             if (!VerilatedVpiPutHolder::canInertialDelay(valuep)) {
                 VL_VPI_WARNING_(
@@ -3769,6 +3938,11 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             VerilatedVpiImp::inertialDelay(baseSignalVop, valuep);
             return object;
         }
+        // vpiPropagateOff is outside the 0xfff mask above; honoured only as "do not re-resolve
+        // the reconstructions that read this signal", which is all --vpi-lazy can offer - the
+        // model's own logic reads a deposit into stored state at the next eval either way.
+        const bool lazyPropagate = (flags & vpiPropagateOff) == 0;
+        vl_vpi_note_write(baseSignalVop, lazyPropagate);
         VerilatedVpiImp::evalNeeded(true);
         const int varBits = baseSignalVop->bitSize();
 
@@ -3812,55 +3986,62 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         const VerilatedVpioVar* const valueVop
             = (forceFlag == vpiForceFlag) ? forceValueSignalVop : baseSignalVop;
 
-        const auto updateVforceRd
-            = [forceEnableSignalVop, forceValueSignalVop, forceReadSignalVop, baseSignalVop]() {
-                  if (baseSignalVop->varp()->vltype() == VLVT_REAL) {
-                      const double readData = VerilatedVpiImp::getReadDataWord<double>(
-                          baseSignalVop, forceEnableSignalVop, forceValueSignalVop, 64, 0);
-                      *forceReadSignalVop->readRealDatap() = readData;
-                      return;
-                  }
+        // __VforceEn/__VforceVal/__VforceRd are synthetic and never --vpi-lazy (V3VpiLazy pins
+        // forceable storage), so the guards below are a not-taken branch each. They are here
+        // because a store cannot be spelled without one, not because a deposit is expected.
+        const auto updateVforceRd = [forceEnableSignalVop, forceValueSignalVop, forceReadSignalVop,
+                                     baseSignalVop, lazyPropagate]() {
+            const VlVpiWriteAccess readWa{forceReadSignalVop, lazyPropagate};
+            if (baseSignalVop->varp()->vltype() == VLVT_REAL) {
+                const double readData = VerilatedVpiImp::getReadDataWord<double>(
+                    baseSignalVop, forceEnableSignalVop, forceValueSignalVop, 64, 0);
+                *readWa.realDatap() = readData;
+                return;
+            }
 
-                  const std::size_t wordSize
-                      = 8ULL * VerilatedVpiImp::vlTypeSize(forceReadSignalVop->varp()->vltype());
-                  assert(wordSize > 0);
-                  const uint32_t varBits = baseSignalVop->bitSize();
-                  const std::size_t numChunks = (varBits / wordSize);
-                  for (std::size_t i{0}; i < numChunks; ++i) {
-                      const QData readData = VerilatedVpiImp::getReadDataWord<QData>(
-                          baseSignalVop, forceEnableSignalVop, forceValueSignalVop, wordSize,
-                          i * wordSize);
-                      vl_vpi_put_word(forceReadSignalVop, readData, wordSize, i * wordSize);
-                  }
-                  // addOffset == varBits would trigger assertion in vl_vpi_var_access_info even if
-                  // bitCount == 0, so first check if there is a remainder
-                  if (varBits % wordSize != 0) {
-                      const QData readData = VerilatedVpiImp::getReadDataWord<QData>(
-                          baseSignalVop, forceEnableSignalVop, forceValueSignalVop,
-                          varBits % wordSize, numChunks * wordSize);
-                      vl_vpi_put_word(forceReadSignalVop, readData, varBits % wordSize,
-                                      numChunks * wordSize);
-                  }
-              };
-
-        const std::function<void(const VerilatedVpioVar*, QData, size_t, size_t)>
-            putForceableSignalWord
-            = [forceEnableSignalVop, forceValueSignalVop, forceReadSignalVop,
-               baseSignalVop](const VerilatedVpioVar* valueVop, QData word, size_t bitCount,
-                              size_t addOffset) -> void {
-            vl_vpi_put_word(valueVop, word, bitCount, addOffset);
-            const QData readData = VerilatedVpiImp::getReadDataWord<QData>(
-                baseSignalVop, forceEnableSignalVop, forceValueSignalVop, bitCount, addOffset);
-            vl_vpi_put_word(forceReadSignalVop, readData, bitCount, addOffset);
-            return;
+            const std::size_t wordSize
+                = 8ULL * VerilatedVpiImp::vlTypeSize(forceReadSignalVop->varp()->vltype());
+            assert(wordSize > 0);
+            const uint32_t varBits = baseSignalVop->bitSize();
+            const std::size_t numChunks = (varBits / wordSize);
+            for (std::size_t i{0}; i < numChunks; ++i) {
+                const QData readData = VerilatedVpiImp::getReadDataWord<QData>(
+                    baseSignalVop, forceEnableSignalVop, forceValueSignalVop, wordSize,
+                    i * wordSize);
+                vl_vpi_put_word(readWa, readData, wordSize, i * wordSize);
+            }
+            // addOffset == varBits would trigger assertion in vl_vpi_var_access_info even if
+            // bitCount == 0, so first check if there is a remainder
+            if (varBits % wordSize != 0) {
+                const QData readData = VerilatedVpiImp::getReadDataWord<QData>(
+                    baseSignalVop, forceEnableSignalVop, forceValueSignalVop, varBits % wordSize,
+                    numChunks * wordSize);
+                vl_vpi_put_word(readWa, readData, varBits % wordSize, numChunks * wordSize);
+            }
         };
 
-        const std::function<void(const VerilatedVpioVar*, QData, size_t, size_t)> put_word
-            = baseSignalVop->varp()->isForceable() ? putForceableSignalWord : vl_vpi_put_word;
+        using PutWordFn = std::function<void(const VlVpiWriteAccess&, QData, size_t, size_t)>;
+        const PutWordFn putForceableSignalWord
+            = [forceEnableSignalVop, forceValueSignalVop, forceReadSignalVop, baseSignalVop,
+               lazyPropagate](const VlVpiWriteAccess& wa, QData word, size_t bitCount,
+                              size_t addOffset) -> void {
+            vl_vpi_put_word(wa, word, bitCount, addOffset);
+            const QData readData = VerilatedVpiImp::getReadDataWord<QData>(
+                baseSignalVop, forceEnableSignalVop, forceValueSignalVop, bitCount, addOffset);
+            const VlVpiWriteAccess readWa{forceReadSignalVop, lazyPropagate};
+            vl_vpi_put_word(readWa, readData, bitCount, addOffset);
+        };
+
+        // No lazy arm: the deposit is the caller's guard, which spans the whole format handler
+        // rather than one word, so a wide store refreshes and claims once instead of per word
+        const PutWordFn put_word = baseSignalVop->varp()->isForceable()
+                                       ? putForceableSignalWord
+                                       : PutWordFn{vl_vpi_put_word};
 
         if (forceFlag == vpiForceFlag) {
             // Enable __VforceEn
-            VerilatedVpiImp::setAllBitsToValue(forceEnableSignalVop, 1);
+            const VlVpiWriteAccess enableWa{forceEnableSignalVop, lazyPropagate};
+            VerilatedVpiImp::setAllBitsToValue(enableWa, 1);
         }
         if (forceFlag == vpiReleaseFlag) {
             // If signal is continuously assigned, first clear the force enable bits, then get the
@@ -3868,7 +4049,10 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             // enable bits.
 
             if (baseSignalVop->varp()->isContinuously()) {
-                VerilatedVpiImp::setAllBitsToValue(forceEnableSignalVop, 0);
+                {
+                    const VlVpiWriteAccess enableWa{forceEnableSignalVop, lazyPropagate};
+                    VerilatedVpiImp::setAllBitsToValue(enableWa, 0);
+                }
                 updateVforceRd();
             }
 
@@ -3910,7 +4094,10 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             }  // LCOV_EXCL_STOP
 
             if (!baseSignalVop->varp()->isContinuously()) {
-                VerilatedVpiImp::setAllBitsToValue(forceEnableSignalVop, 0);
+                {
+                    const VlVpiWriteAccess enableWa{forceEnableSignalVop, lazyPropagate};
+                    VerilatedVpiImp::setAllBitsToValue(enableWa, 0);
+                }
 
                 // If the signal is not continuously assigned, it should keep the forced value
                 // until the next time it is assigned in the simulation, so the forced value is
@@ -3921,25 +4108,32 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return object;
         }
 
+        // Each arm opens its write access immediately around its stores, after whatever it
+        // needs to validate: a put rejected before its arm's guard exists cannot claim a
+        // deposit, and one guard per arm means a wide store refreshes, claims and bumps once.
         if (valuep->format == vpiVectorVal) {
             if (VL_UNLIKELY(!valuep->value.vector)) return nullptr;
+            const VlVpiWriteAccess wa{valueVop, lazyPropagate};
             if (valueVop->varp()->vltype() == VLVT_WDATA) {
                 const int words = VL_WORDS_I(varBits);
                 for (int i = 0; i < words; ++i)
-                    put_word(valueVop, valuep->value.vector[i].aval, 32, i * 32);
+                    put_word(wa, valuep->value.vector[i].aval, 32, i * 32);
                 return object;
             } else if (valueVop->varp()->vltype() == VLVT_UINT64 && varBits > 32) {
                 const QData val = (static_cast<QData>(valuep->value.vector[1].aval) << 32)
                                   | static_cast<QData>(valuep->value.vector[0].aval);
-                put_word(valueVop, val, 64, 0);
+                put_word(wa, val, 64, 0);
                 return object;
             } else {
-                put_word(valueVop, valuep->value.vector[0].aval, 32, 0);
+                put_word(wa, valuep->value.vector[0].aval, 32, 0);
                 return object;
             }
         } else if (valuep->format == vpiBinStrVal) {
             const int len = std::strlen(valuep->value.str);
-            CData* const datap = static_cast<CData*>(valueVop->readDatap());
+            const VlVpiWriteAccess wa{valueVop, lazyPropagate};
+            // Addresses any packed vltype a byte at a time, so no typed accessor fits; that and
+            // the host-endian assumption below are pre-existing
+            CData* const datap = wa.datap<CData>();
             for (int i = 0; i < varBits; ++i) {
                 const bool set = (i < len) && (valuep->value.str[len - i - 1] == '1');
                 const size_t pos = valueVop->bitOffset() + i;
@@ -3953,6 +4147,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return object;
         } else if (valuep->format == vpiOctStrVal) {
             const int len = std::strlen(valuep->value.str);
+            const VlVpiWriteAccess wa{valueVop, lazyPropagate};
             for (int i = 0; i < len; ++i) {
                 unsigned char digit = valuep->value.str[len - i - 1] - '0';
                 if (digit > 7) {  // If str was < '0', then as unsigned, digit > 7
@@ -3963,7 +4158,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                                     valueVop->fullname());
                     digit = 0;
                 }
-                put_word(valueVop, digit, 3, i * 3);
+                put_word(wa, digit, 3, i * 3);
             }
             return object;
         } else if (valuep->format == vpiDecStrVal) {
@@ -3984,7 +4179,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                     __func__, remainder, valuep->value.str,
                     VerilatedVpiError::strFromVpiVal(valuep->format), valueVop->fullname());
             }
-            put_word(valueVop, val, 64, 0);
+            const VlVpiWriteAccess wa{valueVop, lazyPropagate};
+            put_word(wa, val, 64, 0);
             return object;
         } else if (valuep->format == vpiHexStrVal) {
             const int chars = (varBits + 3) >> 2;
@@ -3992,6 +4188,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             // skip hex ident if one is detected at the start of the string
             if (val[0] == '0' && (val[1] == 'x' || val[1] == 'X')) val += 2;
             const int len = std::strlen(val);
+            const VlVpiWriteAccess wa{valueVop, lazyPropagate};
             for (int i = 0; i < chars; ++i) {
                 char hex;
                 // compute hex digit value
@@ -4015,35 +4212,41 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                     hex = 0;
                 }
                 // assign hex digit value to destination
-                put_word(valueVop, hex, 4, i * 4);
+                put_word(wa, hex, 4, i * 4);
             }
             return object;
         } else if (valuep->format == vpiStringVal) {
             if (valueVop->varp()->vltype() == VLVT_STRING) {
                 // Does not use valueVop, because strings are not forceable anyway
-                *(baseSignalVop->readStringDatap()) = valuep->value.str;
+                const VlVpiWriteAccess wa{baseSignalVop, lazyPropagate};
+                wa.strRef() = valuep->value.str;
                 return object;
             }
             const int chars = VL_BYTES_I(varBits);
             const int len = std::strlen(valuep->value.str);
+            const VlVpiWriteAccess wa{valueVop, lazyPropagate};
             for (int i = 0; i < chars; ++i) {
                 // prepend with 0 values before placing string the least significant bytes
                 const char c = (i < len) ? valuep->value.str[len - i - 1] : 0;
-                put_word(valueVop, c, 8, i * 8);
+                put_word(wa, c, 8, i * 8);
             }
 
             return object;
         } else if (valuep->format == vpiIntVal) {
-            put_word(valueVop, valuep->value.integer, 64, 0);
+            const VlVpiWriteAccess wa{valueVop, lazyPropagate};
+            put_word(wa, valuep->value.integer, 64, 0);
             return object;
         } else if (valuep->format == vpiRealVal) {
             if (valueVop->varp()->vltype() == VLVT_REAL) {
-                *(valueVop->readRealDatap()) = valuep->value.real;
+                const VlVpiWriteAccess wa{valueVop, lazyPropagate};
+                *wa.realDatap() = valuep->value.real;
                 if (baseSignalVop->varp()->isForceable()) updateVforceRd();
                 return object;
             }
+            // A vpiRealVal put to a non-real var falls out to the error below, before any guard
         } else if (valuep->format == vpiScalarVal) {
-            put_word(valueVop, (valuep->value.scalar == vpi1 ? 1 : 0), 1, 0);
+            const VlVpiWriteAccess wa{valueVop, lazyPropagate};
+            put_word(wa, (valuep->value.scalar == vpi1 ? 1 : 0), 1, 0);
             return object;
         }
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for '%s'",
@@ -4083,7 +4286,7 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         case VLVT_UINT8:
         case VLVT_UINT16:
         case VLVT_UINT32: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
         break;
     case vpiRawTwoStateVal:
@@ -4101,7 +4304,7 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         switch (varp->vltype()) {
         case VLVT_UINT8:
         case VLVT_UINT16: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
         break;
     case vpiLongIntVal:
@@ -4110,7 +4313,7 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         case VLVT_UINT16:
         case VLVT_UINT32:
         case VLVT_UINT64: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
         break;
     default:;
@@ -4483,9 +4686,11 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
     vl_get_value_array(object, arrayvalue_p, index_p, num);
 }
 
-void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const PLI_INT32* index_p,
-                        PLI_UINT32 num) {
-    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+// Format and bounds are checked by vpi_put_value_array before it opens the write access, so
+// everything from here stores; the tail is the drift guard master carries.
+void vl_put_value_array(VlVpiWriteAccess& wa, p_vpi_arrayvalue arrayvalue_p,
+                        const PLI_INT32* index_p, PLI_UINT32 num) {
+    const VerilatedVpioVar* const vop = wa.vop();
     const VerilatedVar* const varp = vop->varp();
     const int size = vop->size();
 
@@ -4499,11 +4704,11 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         if (varp->vltype() == VLVT_UINT8) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, shortintsp,
-                                         vop->readCDatap());
+                                         wa.cDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, shortintsp,
-                                         vop->readSDatap());
+                                         wa.sDatap());
             return;
         }
     } else if (arrayvalue_p->format == vpiIntVal) {
@@ -4511,15 +4716,15 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         if (varp->vltype() == VLVT_UINT8) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, integersp,
-                                         vop->readCDatap());
+                                         wa.cDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, integersp,
-                                         vop->readSDatap());
+                                         wa.sDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, integersp,
-                                         vop->readIDatap());
+                                         wa.iDatap());
             return;
         }
     } else if (arrayvalue_p->format == vpiLongIntVal) {
@@ -4527,19 +4732,19 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         if (varp->vltype() == VLVT_UINT8) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, longintsp,
-                                         vop->readCDatap());
+                                         wa.cDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, longintsp,
-                                         vop->readSDatap());
+                                         wa.sDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, longintsp,
-                                         vop->readIDatap());
+                                         wa.iDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_put_value_array_integrals(index, num, size, varp->entBits(), leftIsLow, longintsp,
-                                         vop->readQDatap());
+                                         wa.qDatap());
             return;
         }
     } else if (arrayvalue_p->format == vpiVectorVal) {
@@ -4547,23 +4752,23 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         if (varp->vltype() == VLVT_UINT8) {
             vl_put_value_array_vectors(index, num, size, varp->entBits(), leftIsLow, true,
-                                       vectorsp, vop->readCDatap());
+                                       vectorsp, wa.cDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_put_value_array_vectors(index, num, size, varp->entBits(), leftIsLow, true,
-                                       vectorsp, vop->readSDatap());
+                                       vectorsp, wa.sDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
             vl_put_value_array_vectors(index, num, size, varp->entBits(), leftIsLow, true,
-                                       vectorsp, vop->readIDatap());
+                                       vectorsp, wa.iDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_put_value_array_vectors(index, num, size, varp->entBits(), leftIsLow, true,
-                                       vectorsp, vop->readQDatap());
+                                       vectorsp, wa.qDatap());
             return;
         } else if (varp->vltype() == VLVT_WDATA) {
             vl_put_value_array_vectors(index, num, size, varp->entBits(), leftIsLow, true,
-                                       vectorsp, vop->readEDatap());
+                                       vectorsp, wa.eDatap());
             return;
         }
     } else if (arrayvalue_p->format == vpiRawFourStateVal) {
@@ -4571,23 +4776,23 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         if (varp->vltype() == VLVT_UINT8) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, true, valuep,
-                                       vop->readCDatap());
+                                       wa.cDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, true, valuep,
-                                       vop->readSDatap());
+                                       wa.sDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, true, valuep,
-                                       vop->readIDatap());
+                                       wa.iDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, true, valuep,
-                                       vop->readQDatap());
+                                       wa.qDatap());
             return;
         } else if (varp->vltype() == VLVT_WDATA) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, true, valuep,
-                                       vop->readEDatap());
+                                       wa.eDatap());
             return;
         }
     } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
@@ -4595,23 +4800,23 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
         if (varp->vltype() == VLVT_UINT8) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, false, valuep,
-                                       vop->readCDatap());
+                                       wa.cDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, false, valuep,
-                                       vop->readSDatap());
+                                       wa.sDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, false, valuep,
-                                       vop->readIDatap());
+                                       wa.iDatap());
             return;
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, false, valuep,
-                                       vop->readQDatap());
+                                       wa.qDatap());
             return;
         } else if (varp->vltype() == VLVT_WDATA) {
             vl_put_value_array_rawvals(index, num, size, varp->entBits(), leftIsLow, false, valuep,
-                                       vop->readEDatap());
+                                       wa.eDatap());
             return;
         }
     }
@@ -4685,8 +4890,15 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
                       size);
         return;
     }
+
+    // Storing nothing is not a write: claiming the row would pin a deposit no store made
     if (num == 0) return;
-    vl_put_value_array(object, arrayvalue_p, index_p, num);
+
+    // Hoisted above the write access so a rejected put never opens one; vpiPropagateOff is
+    // rejected above, so this put always propagates
+    vl_vpi_note_write(vop, true);
+    VlVpiWriteAccess wa{vop, true};
+    vl_put_value_array(wa, arrayvalue_p, index_p, num);
 }
 
 // time processing

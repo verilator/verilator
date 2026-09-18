@@ -100,6 +100,7 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+class VerilatedSyms;
 class VerilatedIfaceRef;
 class VerilatedIfaceRefMap;
 struct VlIfaceRefTableEntry;
@@ -161,7 +162,72 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
     VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
-    VLVF_NET = (1 << 15)  // Net object
+    VLVF_NET = (1 << 15),  // Net object
+    VLVF_LAZY_PUBLIC_RW = (1 << 16),  // VPI public_rw storage resolved on demand
+    VLVF_LAZY_RETAINED = (1 << 17),  // --vpi-lazy signal kept with storage, written only by VPI
+    // --vpi-lazy descriptor shape, two bits; see VerilatedVarLazyDatap
+    VLVF_LAZY_SHAPE_MASK = (3 << 18),
+    VLVF_LAZY_CONE = (0 << 18),  // Zero, so only the two minority shapes are emitted
+    VLVF_LAZY_COPY = (1 << 18),
+    VLVF_LAZY_FOLD = (2 << 18)
+};
+
+// Descriptor a --vpi-lazy VerilatedVar's datap points at. Three shapes:
+//
+//   shape           | meaning
+//   ----------------+-------------------------------------------------------------------
+//   VLVF_LAZY_CONE  | refreshp writes this row's storage
+//   VLVF_LAZY_COPY  | memcpy from srcOffset once per epoch; the source holds storage
+//   VLVF_LAZY_FOLD  | call refreshp, then memcpy the cone shadow it wrote
+//
+// The shape is stated in the flags rather than inferred from which fields are set: a copy row
+// whose source is in another scope of the same Syms carries a signed delta that can land on any
+// value, sentinel included, so there is nothing to infer it from.
+//
+// A deposit is recorded per shape, because only a cone has a generated body that could commit
+// over it: a cone's deposit generation lives in the model's own __Vlazydep word, which that
+// body reads and skips on, while a copy or fold row keeps it in 'stamp' below.
+//
+// Element size is a simulation-time lever even when VPI is never read: 56 bytes measured +2.2%
+// slower on XuanTie-E902. Hence the cross-scope signed offset and flag, not a source pointer,
+// and hence one stamp word carrying both of the generations a copy row is matched against.
+struct VerilatedVarLazyDatap final {
+    // Null when the source is plain storage eval() maintains; on a fold it refreshes the source
+    void (*refreshp)(void* selfp);
+    void* selfp;  // Owning module instance; the offsets below are from here
+    // Copy and fold rows only. Encoded generation, see VerilatedLazyStamps: (epoch << 1) is the
+    // epoch this row last copied at, __Vm_lazyDepStamp the deposit generation VPI last deposited
+    // into it at. Zero, so neither, at construction. A cone row does not use this field: its
+    // deposit generation is in __Vlazydep (below) and it memoises in __Vlazyepoch.
+    uint64_t stamp;
+    uint32_t storageOffset;
+    // Cone: byte offset of this row's __Vlazydep word, which datapClaimDeposit() WRITES and the
+    // generated cone body reads. Copy/fold: byte offset of the copy source, read only, and
+    // signed because a cross-scope source may precede selfp.
+    int32_t srcOffset;
+};
+
+// ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
+static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpectedly grew");
+
+// What a VPI access compares a --vpi-lazy row's generation words against. Both are stored and
+// neither derived: a derivation the emitter and the runtime each had to reproduce is what let a
+// deposit be silently recomputed away. 'refreshed' is even and 'deposited' odd, so one stamp
+// word can hold either and a zero word can be neither.
+struct VerilatedLazyStamps final {
+    uint64_t refreshed;  // Row's shadow was rebuilt at the current epoch (copy/fold rows)
+    uint64_t deposited;  // Row's shadow holds a deposit made in the current eval step
+};
+
+// One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyIdx
+struct VlLazyReconEntry final {
+    void (*refreshp)(void* selfp);  // null when the source is plain storage
+    // Becomes VerilatedVarLazyDatap::srcOffset, so it is the copy source on a copy or fold row
+    // and the row's __Vlazydep word on a cone. varsInsertFromTable() rejects a cone row that
+    // still carries the -1 of an emitter that does not allocate deposit words.
+    int32_t srcByteOffset;
+    // The row's shape (VLVF_LAZY_COPY/FOLD); zero, VLVF_LAZY_CONE, on the majority
+    uint32_t vlflags;
 };
 
 // One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
@@ -171,9 +237,10 @@ struct VlVarTableEntry final {
     const char* namep;  // VPI-facing (protected) variable name, string literal
     size_t byteOffset;  // offsetof of storage member from module instance base
     VerilatedVarType vltype;
-    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
+    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_PUBLIC_RW
     uint8_t udims;  // udims + pdims <= kMaxDims
     uint8_t pdims;
+    int32_t lazyIdx;  // -1: normal; else module-relative --vpi-lazy slot
     // (left,right) pairs: unpacked dims first, then packed; int32_t since large
     // unpacked memories exceed int16 range
     int32_t dims[kMaxDims * 2];
@@ -345,7 +412,8 @@ private:
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 
     // Entry points called by VerilatedEvalLoop
-    virtual void evalBegin() = 0;
+    // Returns a pending settle request: only --vpi-lazy makes one, and consumes it here
+    virtual bool evalBegin() = 0;
     virtual void evalEnd() = 0;
     virtual void evalStatic() = 0;
     virtual void evalInitial() = 0;
@@ -902,6 +970,26 @@ public:  // But for internal use only
     // Keep first so is at zero offset for fastest code
     VerilatedContext* const _vm_contextp__;  // Context for current model
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
+    // --vpi-lazy: reconstruction generation. Memos equal to it are fresh; starts at 1 so zero
+    // stamps are stale. Every VPI deposit bumps it too, whatever row it lands on, and that
+    // wholesale miss is what makes a dependent reconstructed signal see the override.
+    uint64_t __Vm_lazyEpoch = 1;
+    // --vpi-lazy: deposit generation, the value a deposited row's word holds. Only
+    // lazyEvalEnd() moves it, so depositing into one row never retires another's deposit, and
+    // it is odd, so it never equals a zero-initialized word or an (epoch << 1) one.
+    uint64_t __Vm_lazyDepStamp = 3;
+    bool __Vm_vpiLazyWritten = false;  // --vpi-lazy deposit awaiting a settle
+    // --vpi-lazy: retire an eval step's reconstruction state. The epoch bump retires every cone
+    // memo, the deposit bump every deposit, both in O(1) however many rows were deposited.
+    // Called from the generated evalEnd(), so retirement is per EVAL step, not per time step: a
+    // deposit survives zero eval()s and is retired by each of several eval()s at one simulation
+    // time. That is a conservative reading of 38.34's "until one of the drivers of the net
+    // changes value" - eval is when drivers may have changed - and errs toward the true
+    // resolved value; per-net driver tracking is the work the lazy scheme exists to avoid.
+    void lazyEvalEnd() VL_MT_UNSAFE_ONE {
+        ++__Vm_lazyEpoch;
+        __Vm_lazyDepStamp += 2;
+    }
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
     VL_UNCOPYABLE(VerilatedSyms);
@@ -978,7 +1066,10 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
-    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    // lazyBasep/lazyReconsp are null when the table has no lazy rows; both keyed by lazyIdx
+    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                             VerilatedVarLazyDatap* lazyBasep,
+                             const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;
     static void ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,

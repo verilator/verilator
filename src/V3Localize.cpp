@@ -185,6 +185,7 @@ class LocalizeVisitor final : public VNVisitor {
     void visit(AstVarScope* nodep) override {
         if (!nodep->varp()->isPrimaryIO()  // Not an IO the user wants to interact with
             && !nodep->varp()->isSigPublic()  // Not something the user wants to interact with
+            && !nodep->varp()->isSigVpiLazyRetained()  // Not retained for VPI
             && !nodep->varp()->isFuncLocal()  // Not already a function local (e.g.: argument)
             && !nodep->varp()->isStatic()  // Not a static variable
             && !nodep->varp()->isClassMember()  // Statically exists in design hierarchy

@@ -651,6 +651,9 @@ casez
 casted
 castro
 cb
+cbNextSimTime
+cbReadOnlySynch
+cbReadWriteSynch
 cbValueChange
 ccache
 ccall
@@ -1280,11 +1283,15 @@ vluint
 vpi
 vpiConstType
 vpiDefName
+vpiForceFlag
 vpiInertialDelay
 vpiInstance
 vpiIntVal
 vpiLeftRange
+vpiMemoryWord
 vpiModule
+vpiPropagateOff
+vpiReleaseFlag
 vpiSigned
 vpiSize
 vpiSuppressVal

@@ -56,6 +56,7 @@
 // Forward declarations
 class V3Graph;
 class ExecMTask;
+class V3VpiLazyContext;
 
 //######################################################################
 
