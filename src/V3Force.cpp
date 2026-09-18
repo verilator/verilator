@@ -56,7 +56,7 @@ public:
         int m_forceId = 0;  // Unique (per signal) variable of this force assignment
         bool m_hasArraySel = false;  // If this has an array select on LHS
         bool m_isExternal = false;  // Synthetic force for the public force controls
-        bool m_skipRdRefresh = false;  // Another force in the same always block refreshes forceRd
+        bool m_skipRdRefresh = false;  // finalizeRhsVars's force-rd-update block refreshes forceRd
         AstVarScope* m_rhsVarVscp = nullptr;  // Scope of the var containing RHSID
         AstNodeExpr* m_rhsExprp = nullptr;  // Expression on RHS of this force assignment
 
@@ -919,9 +919,6 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
         FileLine* const flp = varp->fileline();
         const int innerWidth = leafDtypep->width();
 
-        int totalElements = 1;
-        for (const AstUnpackArrayDType* const d : dims) totalElements *= d->elementsConst();
-
         ForceState::VarForceInfo& info = m_state.getOrCreateVarInfo(nodep);
         AstVarScope* const enVscp = info.m_forceEnVscp;
         AstVarScope* const valVscp = info.m_forceValVscp;
@@ -953,12 +950,10 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                 rhsClonep->foreach([varp](AstVarRef* const r) {
                     if (r->varp() == varp) ForceState::markNonReplaceable(r);
                 });
-                // Only the last element needs to refresh forceRd; avoids O(elements^2).
                 m_state.addForceAssignment(varp, nodep, rhsClonep, forceAssignp,
                                            /*rangeLsb=*/flat, /*rangeMsb=*/flat,
                                            /*padLsb=*/0, /*padMsb=*/innerWidth - 1,
-                                           /*hasArraySel=*/true,
-                                           /*skipRdRefresh=*/flat != totalElements - 1);
+                                           /*hasArraySel=*/true, /*skipRdRefresh=*/true);
                 return forceAssignp;
             });
         activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, alwaysBodyHeadp});
