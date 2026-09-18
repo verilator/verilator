@@ -664,10 +664,10 @@ public:
         of.putSet("VM_SC_TARGET_ARCH", V3Options::getenvSYSTEMC_ARCH());
 
         of.puts("\n### Vars...\n");
-        of.puts("# Design prefix (from --prefix)\n");
-        of.putSet("VM_PREFIX", v3Global.opt.prefix());
         of.puts("# Module prefix (from --prefix)\n");
         of.putSet("VM_MODPREFIX", v3Global.opt.modPrefix());
+        of.puts("# Design prefix (from --prefix)\n");
+        of.putSet("VM_PREFIX", v3Global.opt.prefix());
         of.puts("# Design header include, for '#include VM_PREFIX_INCLUDE' (from --prefix)\n");
         of.putSet("VM_PREFIX_INCLUDE", "<" + v3Global.opt.prefix() + ".h>");
         if (v3Global.dpi()) {
@@ -720,8 +720,6 @@ public:
             of.puts("include " + v3Global.opt.prefix() + "_hier.mk\n");
         }
         of.puts("# Include global rules\n");
-        // verilated.mk gates -DVM_PREFIX_INCLUDE* behind ifneq, evaluated at parse time, so those
-        // variables must be set above this include
         of.puts("include $(VERILATOR_ROOT)/include/verilated.mk\n");
 
         if (v3Global.opt.exe()) {
