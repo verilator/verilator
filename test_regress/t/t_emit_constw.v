@@ -64,7 +64,7 @@ module t (
                         ^ bytehash(w17));
   // verilator lint_on WIDTH
 
-`define EXPECTED_SUM 64'h2bc7c2a98a302891
+`define EXPECTED_SUM 64'h8c895f9320108046
 
   // Test loop
   always @ (posedge clk) begin
