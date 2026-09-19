@@ -8,7 +8,7 @@
   assign #1 bar = foo; \
 \
   always @(foo, bar) begin \
-    $display("%d foo %x, bar %x", $time, foo, bar); \
+    $display("[%0d] foo %x, bar %x", $time, foo, bar); \
   end \
 \
   initial begin \

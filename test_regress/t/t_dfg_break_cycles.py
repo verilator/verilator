@@ -25,7 +25,7 @@ expectedLines = set()
 with open(test.root + "/src/V3DfgBreakCycles.cpp", 'r', encoding="utf8") as fd:
     for lineno, line in enumerate(fd, 1):
         line = line.split("//")[0]
-        if re.match(r'^[^#]*SET_RESULT', line):
+        if re.match(r'^[^#]*RETURN_RESULT', line):
             expectedLines.add(lineno)
         if re.match(r'^[^#]*MASK', line):
             expectedLines.add(lineno)
@@ -84,6 +84,7 @@ test.compile(verilator_flags2=[
     "--stats",
     "--build",
     "--exe",
+    "-fdfg-synthesize-all",
     "-fno-const-before-dfg",
     "-fno-gate",
     "+incdir+" + test.obj_dir,

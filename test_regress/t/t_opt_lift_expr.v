@@ -13,6 +13,9 @@
 
 module t;
 
+  import "DPI-C" function logic impure_0();
+  import "DPI-C" function logic impure_1();
+
   function automatic int one();
     return 1;
   endfunction
@@ -30,6 +33,73 @@ module t;
   initial begin
     `checkh(C::i, 2);
     `checkh(C::j, 3);
+    // Expr
+    `checkh(|$urandom_range(2,1), 1'b1);
+    // LogAnd
+    `checkh(impure_0() && 1'b0, 1'b0);
+    `checkh(impure_0() && 1'b1, 1'b0);
+    `checkh(impure_1() && 1'b0, 1'b0);
+    `checkh(impure_1() && 1'b1, 1'b1);
+    `checkh(1'b0 && impure_0(), 1'b0);
+    `checkh(1'b0 && impure_1(), 1'b0);
+    `checkh(1'b1 && impure_0(), 1'b0);
+    `checkh(1'b1 && impure_1(), 1'b1);
+    `checkh(impure_0() && impure_0(), 1'b0);
+    `checkh(impure_0() && impure_1(), 1'b0);
+    `checkh(impure_1() && impure_0(), 1'b0);
+    `checkh(impure_1() && impure_1(), 1'b1);
+    // LogOr
+    `checkh(impure_0() || 1'b0, 1'b0);
+    `checkh(impure_0() || 1'b1, 1'b1);
+    `checkh(impure_1() || 1'b0, 1'b1);
+    `checkh(impure_1() || 1'b1, 1'b1);
+    `checkh(1'b0 || impure_0(), 1'b0);
+    `checkh(1'b0 || impure_1(), 1'b1);
+    `checkh(1'b1 || impure_0(), 1'b1);
+    `checkh(1'b1 || impure_1(), 1'b1);
+    `checkh(impure_0() || impure_0(), 1'b0);
+    `checkh(impure_0() || impure_1(), 1'b1);
+    `checkh(impure_1() || impure_0(), 1'b1);
+    `checkh(impure_1() || impure_1(), 1'b1);
+    // LogIf
+    `checkh(impure_0() -> 1'b0, 1'b1);
+    `checkh(impure_0() -> 1'b1, 1'b1);
+    `checkh(impure_1() -> 1'b0, 1'b0);
+    `checkh(impure_1() -> 1'b1, 1'b1);
+    `checkh(1'b0 -> impure_0(), 1'b1);
+    `checkh(1'b0 -> impure_1(), 1'b1);
+    `checkh(1'b1 -> impure_0(), 1'b0);
+    `checkh(1'b1 -> impure_1(), 1'b1);
+    `checkh(impure_0() -> impure_0(), 1'b1);
+    `checkh(impure_0() -> impure_1(), 1'b1);
+    `checkh(impure_1() -> impure_0(), 1'b0);
+    `checkh(impure_1() -> impure_1(), 1'b1);
+    // Cond
+    `checkh(impure_0() ? 1'b0 : 1'b0, 1'b0);
+    `checkh(impure_0() ? 1'b0 : 1'b1, 1'b1);
+    `checkh(impure_0() ? 1'b1 : 1'b0, 1'b0);
+    `checkh(impure_0() ? 1'b1 : 1'b1, 1'b1);
+    `checkh(impure_1() ? 1'b0 : 1'b0, 1'b0);
+    `checkh(impure_1() ? 1'b0 : 1'b1, 1'b0);
+    `checkh(impure_1() ? 1'b1 : 1'b0, 1'b1);
+    `checkh(impure_1() ? 1'b1 : 1'b1, 1'b1);
+    `checkh(impure_0() ? impure_0() : 1'b0, 1'b0);
+    `checkh(impure_0() ? impure_0() : 1'b1, 1'b1);
+    `checkh(impure_0() ? impure_1() : 1'b0, 1'b0);
+    `checkh(impure_0() ? impure_1() : 1'b1, 1'b1);
+    `checkh(impure_1() ? impure_0() : 1'b0, 1'b0);
+    `checkh(impure_1() ? impure_0() : 1'b1, 1'b0);
+    `checkh(impure_1() ? impure_1() : 1'b0, 1'b1);
+    `checkh(impure_1() ? impure_1() : 1'b1, 1'b1);
+    `checkh(impure_0() ? 1'b0 : impure_0(), 1'b0);
+    `checkh(impure_0() ? 1'b0 : impure_1(), 1'b1);
+    `checkh(impure_0() ? 1'b1 : impure_0(), 1'b0);
+    `checkh(impure_0() ? 1'b1 : impure_1(), 1'b1);
+    `checkh(impure_1() ? 1'b0 : impure_0(), 1'b0);
+    `checkh(impure_1() ? 1'b0 : impure_1(), 1'b0);
+    `checkh(impure_1() ? 1'b1 : impure_0(), 1'b1);
+    `checkh(impure_1() ? 1'b1 : impure_1(), 1'b1);
+    // End test
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -88,9 +88,16 @@ venv/bin/python3 $SCRIPT_DIR/ci-rtlmeter-report.py ${SUMMARY_ARGS[@]} > $TMP_DIR
 # Print it
 cat $TMP_DIR/summary.txt
 
-# Create notification comment content
-NOTIFICATION=$TMP_DIR/notification.txt
-cat > $NOTIFICATION <<NOTIFICATION_TEMPLATE
+REPORT_URL=https://${PAGES_OWNER}.github.io/${PAGES_NAME}/rtlmeter-reports/${RUN_ID}/index.html
+
+###############################################################################
+# Create the PR notification
+###############################################################################
+
+NOTIFICATION_DIR=$TMP_DIR/notification
+mkdir -p $NOTIFICATION_DIR
+
+cat > ${NOTIFICATION_DIR}/body.txt <<NOTIFICATION_TEMPLATE
 Performance metrics for PR workflow [#$RUN_NUM]($RUN_URL), comparing:
 - target branch commit [${REF_SHA:0:9}](https://github.com/${PAGES_OWNER}/${PAGES_NAME}/commit/${REF_SHA}) (A)
 - with PR merge commit [${RUN_SHA:0:9}](https://github.com/${PAGES_OWNER}/${PAGES_NAME}/commit/${RUN_SHA}) (B)
@@ -106,10 +113,15 @@ The reported numbers are the geometric means of the ratios of the metrics over a
 less than 1 is a regression, greater than 1 is an improvement.
 The jobs run on variable and noisy runners, so some variance is expected between runs.
 
-Detailed report: [${RUN_ID}](https://${PAGES_OWNER}.github.io/${PAGES_NAME}/rtlmeter-reports/${RUN_ID}/index.html)
+Detailed report: [${RUN_ID}](${REPORT_URL})
 NOTIFICATION_TEMPLATE
 
+echo "Workflow [#$RUN_NUM]($RUN_URL) report: [${RUN_ID}](${REPORT_URL})" > ${NOTIFICATION_DIR}/hist.txt
+
+###############################################################################
 # Create detailed report
+###############################################################################
+
 REPORT=$TMP_DIR/body.html
 cat > $REPORT <<SUMMARY_TEMPLATE
 <h3>Summary of all runs</h3>

@@ -35,7 +35,7 @@ test.files_identical(test.obj_dir + "/coverage.info", "t/" + test.name + ".info.
 
 # If installed
 nout = test.run_capture("lcov --version", check=False)
-version_match = re.search(r'version ([0-9.]+)', nout, re.IGNORECASE)
+version_match = re.search(r'version ([0-9]+\.[0-9]+)', nout, re.IGNORECASE)
 if not version_match:
     test.skip("lcov or genhtml not installed")
 

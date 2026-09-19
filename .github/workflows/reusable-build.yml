@@ -90,7 +90,9 @@ jobs:
             ${{ env.CACHE_KEY }}
 
       - name: Install packages for build
-        run: ./ci/ci-install.bash build
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: build
 
       - name: Build
         run: |

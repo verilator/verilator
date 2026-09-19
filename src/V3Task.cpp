@@ -300,6 +300,10 @@ private:
         iterateChildren(nodep);
         if (m_underPortVar) return;
         AstVar* const varp = nodep->varp();
+        // Reading a generated constant table does not depend on external runtime state.
+        if (nodep->access().isReadOnly() && varp->isTemp() && varp->isConst()
+            && VN_IS(varp->valuep(), InitArray))
+            return;
         if (varp->user4u().toGraphVertex() != m_curVxp) {
             if (m_curVxp->pure() && !varp->isXTemp() && !varp->isParam()) m_curVxp->impure(nodep);
         }
@@ -514,22 +518,31 @@ class TaskVisitor final : public VNVisitor {
         AstNodeExpr* postRhsp = new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ};
         if (AstResizeLValue* soutPinp = VN_CAST(outPinp, ResizeLValue)) {
             outPinp = soutPinp->lhsp();
-            if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, Extend)) {
-                outPinp = aoutPinp->lhsp();
-            } else if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, ExtendS)) {
-                outPinp = aoutPinp->lhsp();
-            } else if (AstSel* aoutPinp = VN_CAST(outPinp, Sel)) {
-                outPinp = aoutPinp->fromp();
-            } else {
-                outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
-            }
-            if (outPinp->width() < portp->width()) {
-                postRhsp = new AstSel{pinp->fileline(), postRhsp, 0, pinp->width()};
-            } else {  // pin width > port width
-                if (pinp->isSigned() && postRhsp->isSigned()) {
-                    postRhsp = new AstExtendS{pinp->fileline(), postRhsp};
+            if (VN_IS(outPinp, RToIRoundS) || VN_IS(outPinp, RToIS)) {
+                outPinp = VN_AS(outPinp, NodeUniop)->lhsp();
+                if (postRhsp->isSigned()) {
+                    postRhsp = new AstISToRD{pinp->fileline(), postRhsp};
                 } else {
-                    postRhsp = new AstExtend{pinp->fileline(), postRhsp};
+                    postRhsp = new AstIToRD{pinp->fileline(), postRhsp};
+                }
+            } else {
+                if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, Extend)) {
+                    outPinp = aoutPinp->lhsp();
+                } else if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, ExtendS)) {
+                    outPinp = aoutPinp->lhsp();
+                } else if (AstSel* aoutPinp = VN_CAST(outPinp, Sel)) {
+                    outPinp = aoutPinp->fromp();
+                } else {
+                    outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
+                }
+                if (outPinp->width() < portp->width()) {
+                    postRhsp = new AstSel{pinp->fileline(), postRhsp, 0, pinp->width()};
+                } else {  // pin width > port width
+                    if (pinp->isSigned() && postRhsp->isSigned()) {
+                        postRhsp = new AstExtendS{pinp->fileline(), postRhsp};
+                    } else {
+                        postRhsp = new AstExtend{pinp->fileline(), postRhsp};
+                    }
                 }
             }
             postRhsp->dtypeFrom(outPinp);
@@ -989,7 +1002,7 @@ class TaskVisitor final : public VNVisitor {
             vscp->varp()->protect(false);
             portp->protect(false);
             // Add argument to call
-            const VAccess access = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+            const VAccess access = portp->direction().pinAccess();
             callp->add(", ");
             callp->add(new AstVarRef{portp->fileline(), vscp, access});
             return vscp;
@@ -1351,6 +1364,10 @@ class TaskVisitor final : public VNVisitor {
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->recursive(nodep->recursive());
+        // Hardcoded based on UVM usage; TODO make a verilated_std.vlt control for these
+        cfuncp->unlikely(nodep->name() == "uvm_report_error" || nodep->name() == "uvm_report_info"
+                         || nodep->name() == "uvm_report_fatal"
+                         || nodep->name() == "uvm_report_warning");
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
             cfuncp->isLoose(true);
@@ -1366,7 +1383,8 @@ class TaskVisitor final : public VNVisitor {
         if (cfuncp->dpiImportWrapper()) cfuncp->cname(nodep->cname());
 
         const bool needSyms
-            = (!nodep->dpiImport() && !nodep->taskPublic()) || v3Global.opt.profExec();
+            = nodep->needsSyms()
+              && ((!nodep->dpiImport() && !nodep->taskPublic()) || v3Global.opt.profExec());
         if (needSyms) cfuncp->argTypes(EmitCUtil::symClassVar());
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
@@ -1742,10 +1760,6 @@ class TaskVisitor final : public VNVisitor {
                 nodep->v3error("Cannot mix DPI import, DPI export, class methods, and/or public "
                                "on same function: "
                                << nodep->prettyNameQ());
-            }
-
-            if (nodep->isStatic() && nodep->isVirtual()) {
-                nodep->v3error("Static methods cannot be virtual");
             }
 
             const bool noInline = m_statep->ftaskNoInline(nodep);
@@ -2199,7 +2213,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         } else {  // Defaulting arg
             AstNodeExpr* const valuep = VN_AS(portp->valuep(), NodeExpr);
             if ((portp->isRef() || portp->isConstRef()) && VN_IS(valuep, VarRef)) {
-                const VAccess refAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+                const VAccess refAccess = portp->direction().pinAccess();
                 AstVarRef* const refp = VN_AS(valuep->cloneTree(false), VarRef);
                 refp->access(refAccess);
                 AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(), refp};
@@ -2222,9 +2236,9 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             }
         }
         oldNewVars.emplace(portp, newPortp);
-        const VAccess pinAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
-        AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(),
-                                           new AstVarRef{portp->fileline(), newPortp, pinAccess}};
+        AstArg* const newArgp = new AstArg{
+            portp->fileline(), portp->name(),
+            new AstVarRef{portp->fileline(), newPortp, portp->direction().pinAccess()}};
         newCallp->addArgsp(newArgp);
     }
     // Create wrapper call to original, passing arguments, adding setting of return value

@@ -4,12 +4,9 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-
-  input clk;
 
   bit [3:0] val = 0;
   event e1;
@@ -55,9 +52,7 @@ module t (  /*AUTOARG*/
 
   integer action_hits = 0;
 
-  assert property (@(posedge clk) ##1 1'b1)
-    action_hits++;
+  assert property (@(posedge clk) ##1 1'b1) action_hits++;
 
-  assert property (@(posedge clk) (val[0] ##1 val[1]) |-> 1'b1)
-    action_hits++;
+  assert property (@(posedge clk) (val[0] ##1 val[1]) |-> 1'b1) action_hits++;
 endmodule

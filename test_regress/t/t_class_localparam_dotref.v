@@ -37,7 +37,7 @@ typedef C#(1) inst1;
 typedef C#(4) chain_a;
 typedef chain_a chain_b;
 
-module t (  /*AUTOARG*/);
+module t;
 
   // Wilson's exact case: typedef-aliased paramed class lparam.
   localparam int LP_TYPEDEF_LPARAM = inst0::b;

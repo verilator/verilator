@@ -7,8 +7,7 @@
 # SPDX-FileCopyrightText: 2024 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-test.run(fails=False,
-         cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator", "--help", "--valgrind"],
+test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator", "--help", "--valgrind"],
          tee=False,
          verilator_run=True)
 

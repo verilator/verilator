@@ -46,6 +46,19 @@ AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow) {
     return funcp;
 }
 
+AstVarScope* newArgument(AstCFunc* funcp, AstNodeDType* dtypep, const string& name,
+                         VDirection direction) {
+    FileLine* const flp = funcp->fileline();
+    AstScope* const scopep = funcp->scopep();
+    AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
+    varp->funcLocal(true);
+    varp->direction(direction);
+    funcp->addArgsp(varp);
+    AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
+    scopep->addVarsp(vscp);
+    return vscp;
+}
+
 AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow) {
     AstCFunc* const funcp = makeSubFunction(netlistp, name, slow);
     funcp->entryPoint(true);
@@ -75,31 +88,6 @@ AstNodeStmt* callVoidFunc(AstCFunc* funcp) {
     AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
     callp->dtypeSetVoid();
     return callp->makeStmt();
-}
-
-AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
-                                 AstNodeStmt* dumpCallp) {
-    FileLine* const flp = netlistp->fileline();
-
-    // If we exceeded the iteration limit, die
-    const uint32_t limit = v3Global.opt.convergeLimit();
-    AstVarRef* const counterRefp = new AstVarRef{flp, counterp, VAccess::READ};
-    AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
-    constp->num().setLong(limit);
-    AstNodeExpr* const condp = new AstGt{flp, counterRefp, constp};
-    AstIf* const ifp = new AstIf{flp, condp};
-    ifp->branchPred(VBranchPred::BP_UNLIKELY);
-    if (dumpCallp) ifp->addThensp(dumpCallp);
-    AstCStmt* const stmtp = new AstCStmt{flp};
-    ifp->addThensp(stmtp);
-    const FileLine* const locp = netlistp->topModulep()->fileline();
-    const std::string& file = VIdProtect::protect(locp->filename());
-    const std::string& line = std::to_string(locp->lineno());
-    stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-               + ", \"\", \"DIDNOTCONVERGE: " + name
-               + " region did not converge after '--converge-limit' of " + std::to_string(limit)
-               + " tries\");");
-    return ifp;
 }
 
 static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
@@ -260,4 +248,5 @@ AstIf* createIfFromSenTree(AstSenTree* senTreep) {
 }
 
 }  // namespace util
+
 }  // namespace V3Sched

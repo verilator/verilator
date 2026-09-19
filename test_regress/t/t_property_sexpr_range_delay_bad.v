@@ -36,4 +36,13 @@ module t;
   a7: assert property (@(posedge clk) a |-> ##[1:32'h80000000] b);
   a8: assert property (@(posedge clk) a |-> ##[32'h80000000:$] b);
 
+  localparam int unsigned MAX = 32'h7fffffff;
+  localparam int unsigned MAX_M1 = 32'h7ffffffe;
+  localparam int unsigned MAX_M3 = 32'h7ffffffc;
+  a9: assert property (@(posedge clk) a |-> ##MAX b);
+  a10: assert property (@(posedge clk) a |-> ##[0:MAX_M1] b);
+  a11: assert property (@(posedge clk) a |-> ##[MAX_M3:$] b);
+  a12: assert property (@(posedge clk) (a ##MAX_M3 b ##4 a) intersect (a ##MAX_M3 b ##4 a));
+  a13: assert property (@(posedge clk) a within (a ##MAX_M3 b));
+
 endmodule

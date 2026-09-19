@@ -15,6 +15,7 @@ module t (
   integer cyc = 0;
   logic [127:0] sig;
   logic [127:0] publicSig  /*verilator public_flat_rw*/;
+  logic [127:0] selfSig  /* verilator forceable */ = 128'h1111_1111_1111_1111_2222_2222_2222_2222;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
@@ -28,8 +29,10 @@ module t (
       force sig[32] = 1'b1;
       force publicSig[31] = 1'b1;
       force publicSig[32] = 1'b1;
+      force selfSig[63:0] = selfSig[127:64];
     end
     else if (cyc == 3) begin
+      `checkh(selfSig[63:0], 64'h1111_1111_1111_1111);
       `checkh(sig[33:26], 8'h60);  // width <= 8
       `checkh(sig[39:24], 16'h180);  // 8 < width <= 16
       `checkh(sig[40:20], 21'h1800);  // 16 < width <= 32

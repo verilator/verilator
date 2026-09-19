@@ -372,6 +372,7 @@ private:
 
     void knownBadNodeType(AstNode* nodep) {
         // Call for node types we know we can't handle
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         if (optimizable()) {
             clearOptimizable(nodep, "Known unhandled node type "s + nodep->typeName());
@@ -426,7 +427,7 @@ private:
         if (const AstInitArray* const avaluep = VN_CAST(valuep, InitArray)) {
             string result = "'{";
             string comma;
-            if (VN_IS(nodep->dtypep(), AssocArrayDType)) {
+            if (VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
                 if (avaluep->defaultp()) {
                     result += comma + "default:" + toStringRecurse(avaluep->defaultp());
                     comma = ", ";
@@ -438,7 +439,7 @@ private:
                     comma = ", ";
                 }
             } else if (const AstUnpackArrayDType* const dtypep
-                       = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+                       = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
                 for (int n = 0; n < dtypep->elementsConst(); ++n) {
                     result += comma + toStringRecurse(avaluep->getIndexDefaultedValuep(n));
                     comma = ", ";
@@ -1260,7 +1261,8 @@ private:
 
     void visit(AstSFormatArg* nodep) override {
         checkNodeInfo(nodep);
-        iterateChildrenConst(nodep);
+        // Constant enum names come from the dtype, not the runtime lookup.
+        iterateAndNextConstNull(nodep->exprp());
     }
     void visit(AstSFormatF* nodep) override {
         if (jumpingOver()) return;
@@ -1304,7 +1306,9 @@ private:
                         break;
                     }
                     const string pformat = "%"s + width + pos[0];
-                    result += constp->num().displayed(nodep, pformat, formatAttr);
+                    result += formatAttr.isEnum()
+                                  ? constp->num().displayedEnum(fargp, pformat)
+                                  : constp->num().displayed(nodep, pformat, formatAttr);
                 } else {
                     switch (std::tolower(pos[0])) {
                     case '%': result += "%"; break;
@@ -1365,14 +1369,11 @@ private:
         // Some CMethods such as size() on queues could be supported, but
         // instead we should change those methods to new Ast types so we can
         // properly dispatch them
-        if (jumpingOver()) return;
         knownBadNodeType(nodep);
     }
-    void visit(AstMemberSel* nodep) override {
-        if (jumpingOver()) return;
-        knownBadNodeType(nodep);
-    }
-    void visit(AstGetInitialRandomSeed* nodep) override { badNodeType(nodep); }
+    void visit(AstGetInitialRandomSeed* nodep) override { knownBadNodeType(nodep); }
+    void visit(AstMemberSel* nodep) override { knownBadNodeType(nodep); }
+    void visit(AstSampled* nodep) override { knownBadNodeType(nodep); }
     // ====
     // default
     // These types are definitely not reducible

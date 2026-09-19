@@ -1,0 +1,6 @@
+%Error-NOTIMING: t/t_property_s_until_nfa.v:25:25: s_until requires --timing
+                                                 : ... note: In instance 't'
+   25 |     @(posedge clk) 1'b1 s_until 1'b1;
+      |                         ^~~~~~~
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
+%Error: Exiting due to

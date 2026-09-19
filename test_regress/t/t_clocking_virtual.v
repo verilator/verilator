@@ -16,6 +16,16 @@ interface Iface;
   assign out2 = out;
 endinterface
 
+interface IfaceT (
+    input bit clk
+);
+  logic data = 1'b1;
+
+  clocking cb @(posedge clk);
+    input data;
+  endclocking
+endinterface
+
 module main;
   initial begin
     #6;
@@ -47,8 +57,20 @@ module main;
   end
 endmodule
 
+module main_typedef;
+  initial begin
+    #1 t.clk = 1'b1;
+    #1 if (t.vift.cb.data != 1'b1) $stop;
+  end
+endmodule
+
 module t;
+  bit clk = 1'b0;
+  typedef virtual IfaceT VifT;
+  IfaceT ift (clk);
+  VifT vift = ift;
   main main1 ();
+  main_typedef main2 ();
   Iface mod0 ();
   virtual Iface mod1 = mod0;
 endmodule

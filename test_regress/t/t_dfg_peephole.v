@@ -410,6 +410,19 @@ module t (
   end
   `signal(PUSH_SEL_THROUGH_SPLICE, sel_from_partial_tmp[1:0]);
 
+  /* verilator lint_off MULTIDRIVEN */
+  logic [2:0] sel_from_default_var;
+  /* verilator lint_on MULTIDRIVEN */
+  logic [2:0] sel_from_default_cond;
+  logic sel_from_default_bit;
+  always_comb sel_from_default_var[2] = rand_a[1];
+  always_comb begin
+    sel_from_default_var[1:0] = rand_b[1:0];
+    sel_from_default_cond = rand_a[0] ? sel_from_default_var : rand_b[2:0];
+    sel_from_default_bit = sel_from_default_cond[2];
+  end
+  `signal(PUSH_SEL_THROUGH_DEFAULT, sel_from_default_bit);
+
   `signal(REPLACE_SHIFTL_CAT, {31'd0, rand_a[42 +: 7]} << 31);
   `signal(REPLACE_SHIFTRL_CAT, {rand_a[13 +: 7], rand_b[8 +: 27]} >> 27 << 27);
 

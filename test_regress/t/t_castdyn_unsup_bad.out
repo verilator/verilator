@@ -1,7 +1,17 @@
-%Error-UNSUPPORTED: t/t_castdyn_unsup_bad.v:13:5: Unsupported: $cast to 'string$[$]' from 'int$[string]'
+%Error-UNSUPPORTED: t/t_castdyn_unsup_bad.v:22:5: Unsupported: $cast to 'string$[$]' from 'int$[string]'
                                                 : ... note: In instance 't'
                                                 : ... Suggest try static cast
-   13 |     $cast(q, aarray);
+   22 |     $cast(q, aarray);
       |     ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_castdyn_unsup_bad.v:23:5: Unsupported: $cast to 'IFACEREFDTYPE' from 'IFACEREFDTYPE'
+                                                : ... note: In instance 't'
+                                                : ... Suggest try static cast
+   23 |     $cast(monitored, intf);
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_castdyn_unsup_bad.v:24:5: Unsupported: $cast to 'IFACEREFDTYPE$[0:1]' from 'IFACEREFDTYPE$[0:1]'
+                                                : ... note: In instance 't'
+                                                : ... Suggest try static cast
+   24 |     $cast(vifaces, ifaces);
+      |     ^~~~~
 %Error: Exiting due to

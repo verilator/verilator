@@ -20,8 +20,18 @@ defaults:
     shell: bash
 
 concurrency:
-  # At most 1 job per branch. Auto cancel all but scheduled jobs
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # At most 1 job per branch. Auto cancel all but scheduled jobs.
+  # Label events that do not concern the 'pr: dev-coverage' label are given a
+  # unique concurrency group, so they do not cancel a run that is in progress.
+  # This way adding the label starts a run, removing it cancels the in-progress
+  # run, and any other label change has no effect. Note such an event still
+  # creates a run of this workflow, which is skipped, and would then hide the
+  # one in progress on the pull request. 'pr-run-cleanup.yml' deletes those.
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}-${{
+    (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+    && github.event.label.name != 'pr: dev-coverage'
+    && github.run_id || 'shared' }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
@@ -29,13 +39,17 @@ jobs:
   build:
     name: Build
     # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
-    # Only run pull request jobs if labelled as needing an coverage run
+    # Only run pull request jobs if labelled as needing a coverage run
     # Always run workflow dispatch jobs
     if: |
       (github.event_name == 'schedule'
         && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
       (github.event_name == 'pull_request'
-        && contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')) ||
+        && ((github.event.action == 'labeled'
+             && github.event.label.name == 'pr: dev-coverage')
+            || (github.event.action != 'labeled'
+                && github.event.action != 'unlabeled'
+                && contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')))) ||
       (github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/reusable-build.yml
     with:
@@ -116,8 +130,9 @@ jobs:
           ls -lsha
 
       - name: Install dependencies
-        working-directory: repo
-        run: ./ci/ci-install.bash coverage
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: coverage
 
       - name: Download code coverage data
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
@@ -131,53 +146,40 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ls -lsha obj_coverage
-          # Combine reports from test jobs
-          nodist/fastcov.py -C obj_coverage/verilator-*.info --lcov -o obj_coverage/verilator.info
-          # For a PR, report patch coverage against the merge-base between the head of the PR and the target branch
+          ci/ci-coverage-report.bash \
+            ${{ github.run_id }} \
+            "${{ github.event_name == 'pull_request' && github.event.number || '' }}" \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}"
+          # Create the report artifact. Note there is no report if the patch is empty.
+          mkdir ../report-artifact
+          [ ! -d obj_coverage/report ] || mv obj_coverage/report ../report-artifact/
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            COVERAGE_BASE=$(git rev-parse --short $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}))
-            make coverage-report COVERAGE_BASE=${COVERAGE_BASE} |& tee ${{ github.workspace }}/make-coverage-report.log
-          else
-            make coverage-report
-          fi
-          # Remove data files
-          rm -f obj_coverage/verilator*.info
-          # Some extra work for PRs only
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # Save PR number in report
-            echo ${{ github.event.number }} > obj_coverage/pr-number.txt
-            # Generate notification comment content
-            mkdir -p notification
-            echo ${{ github.event.number }} > notification/pr-number.txt
-            NUM=$(gh run view ${{ github.run_id }} --json number --jq ".number")
-            URL=$(gh run view ${{ github.run_id }} --json url    --jq ".url")
-            echo "Patch coverage from PR workflow [#$NUM]($URL) (code coverage of lines changed relative to ${COVERAGE_BASE}):" > notification/body.txt
-            if [[ ! -f obj_coverage/empty-patch ]]; then
-              echo "<pre>" >> notification/body.txt
-              grep -E "(lines|branches)\.*:" ${{ github.workspace }}/make-coverage-report.log | sed "s/\.*:/:/" >> notification/body.txt || true
-              echo "</pre>" >> notification/body.txt
-              echo "Report: [${{ github.run_id }}](https://${{ github.repository_owner }}.github.io/verilator/coverage-reports/${{ github.run_id }}/index.html)" >> notification/body.txt
-              echo "" >> notification/body.txt
-              echo "Please get to 100% line coverage, and understand all branches; see https://github.com/verilator/verilator/blob/master/docs/internals.rst#code-coverage-results" >> notification/body.txt
-            else
-              echo "Patch contains no code changes" >> notification/body.txt
-            fi
-            cat notification/body.txt
+            echo ${{ github.event.number }} > ../report-artifact/pr-number.txt
           fi
 
       - name: Upload report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
-          path: repo/obj_coverage
+          path: report-artifact
           name: coverage-report
 
-      - name: Upload notification
+      - name: Upload coverage status
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
+          path: repo/coverage-status.txt
+          name: coverage-status
+          overwrite: true
+          # Not written if the coverage could not be read, see the script above
+          if-no-files-found: ignore
+
+      - name: Upload PR notification
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: ./repo/.github/actions/upload-pr-notification
+        with:
           path: repo/notification
-          name: pr-notification
+          key: coverage
 
   # Create GitHub issue for failed scheduled jobs
   # This should always be the last job (we want an issue if anything breaks)

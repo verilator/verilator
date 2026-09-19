@@ -19,6 +19,7 @@
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
 #include "V3File.h"
+#include "V3MemberMap.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -34,6 +35,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class EmitCHeader final : public EmitCConstInit {
     V3UniqueNames m_names;
+    VMemberMap m_memberMap;
     // METHODS
 
     class CoverCountVisitor final : public VNVisitorConst {
@@ -78,7 +80,7 @@ class EmitCHeader final : public EmitCConstInit {
         const auto emitCurrentList = [this, &first, &varList, &lastAnon]() {
             if (varList.empty()) return;
 
-            decorateFirst(first, "\n// DESIGN SPECIFIC STATE\n");
+            decorateFirst(first, "\n// DESIGN-SPECIFIC STATE\n");
 
             if (lastAnon) {  // Output as anons
                 const int anonMembers = varList.size();
@@ -118,7 +120,7 @@ class EmitCHeader final : public EmitCConstInit {
                 // Leftovers, just in case off by one error somewhere above
                 for (; it != varList.cend(); ++it) emitVarDecl(*it);
             } else {  // Output as nonanons
-                for (const auto& pair : varList) emitVarDecl(pair);
+                for (const AstVar* const varp : varList) emitVarDecl(varp);
             }
 
             varList.clear();
@@ -144,7 +146,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             if (classp->needRNG()) {
                 putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
-                puts("VlRNG __Vm_rng;\n");
+                puts("VlRNGReseeds __Vm_rng;\n");
             }
         } else {  // not class
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
@@ -209,7 +211,9 @@ class EmitCHeader final : public EmitCConstInit {
 
         if (!VN_IS(modp, Class)) {
             decorateFirst(first, section);
-            puts("void " + protect("__Vconfigure") + "(bool first);\n");
+            if (v3Global.opt.coverage()) {
+                puts("void " + protect("__Vconfigure") + "(bool first);\n");
+            }
         } else {
             decorateFirst(first, section);
             const std::string name = V3OutFormatter::quoteNameControls(
@@ -268,12 +272,19 @@ class EmitCHeader final : public EmitCConstInit {
                         }
                     });
                 const string className = EmitCUtil::prefixNameProtect(classp);
-                if (embeddedCovergroupVars.empty()) {
+                if (embeddedCovergroupVars.empty() && !classp->hasRandVarsUpdate()) {
                     putns(classp,
                           "VlClass* clone() const { return new " + className + "(*this); }\n");
                 } else {
                     putns(classp, "VlClass* clone() const { " + className + "* const clonep = new "
                                       + className + "(*this); ");
+                    if (classp->hasRandVarsUpdate()) {
+                        const string updateName = "__VnoInFunc___VupdateRandVars";
+                        AstCFunc* const updatep
+                            = VN_AS(m_memberMap.findMember(classp, updateName), CFunc);
+                        UASSERT_OBJ(updatep, classp, "Missing updateRandVars method");
+                        puts("clonep->" + updatep->nameProtect() + "();\n");
+                    }
                     for (const EmbeddedCovergroupVar& item : embeddedCovergroupVars) {
                         puts("clonep->" + EmitCUtil::prefixNameProtect(item.first)
                              + "::" + item.second->nameProtect() + " = VlNull{}; ");

@@ -69,12 +69,22 @@ fi
 if [ "$OPT_ASAN" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-dev-asan"
   CXX="$CXX -DVL_LEAK_CHECKS"
+  # Replaces VNUser's union with a std::variant to validate type usage.
+  # Only takes effect when the build is C++17 or newer.
+  CXX="$CXX -DVL_USER_TYPE_CHECKS"
 fi
 if [ "$OPT_GCOV" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-dev-gcov"
 fi
 if [ "$OPT_LIGHT_DEBUG" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-light-debug"
+fi
+if [ "$(uname -s)" = Darwin ]; then
+  # Force the use of the Homebrew flex over the one included as part of the
+  # Apple SDK that's preinstalled on the MacOS Github Action runners.
+  FLEX_PREFIX=$(brew --prefix flex)
+  export LEX="$FLEX_PREFIX/bin/flex"
+  export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$FLEX_PREFIX/include"
 fi
 autoconf
 ./configure $CONFIGURE_ARGS CXX="$CXX"

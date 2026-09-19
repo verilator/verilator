@@ -47,10 +47,10 @@ class Base;
   function :final int get_f_i; return 1; endfunction
   function :final int get_f_if; return 1; endfunction
   function :final int get_f_f; return 1; endfunction
-
 endclass
-
-class Cls extends Base;
+class Mid extends Base;
+endclass
+class Cls extends Mid;
   // _X = non-existant
   function int get_x_n; return 1; endfunction
   function :extends int get_x_e; return 1; endfunction  // Bad

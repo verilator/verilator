@@ -1,4 +1,4 @@
-%Error-NOTIMING: t/t_disable_fork_notiming.v:8:11: Support for disable fork statement requires --timing
+%Error-NOTIMING: t/t_disable_fork_notiming.v:8:11: Support for 'disable fork' statement requires --timing
                                                  : ... note: In instance 't'
     8 |   initial disable fork;
       |           ^~~~~~~

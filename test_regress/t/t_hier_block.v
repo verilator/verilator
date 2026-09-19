@@ -259,8 +259,8 @@ module sub3 #(
   /* verilator lint_off ASSIGNIN */
 
   always @(posedge clk) begin
-    $display("%d %m child input  ports: %d %d", $time, i_sub4_0.in, i_sub4_1.in);
-    $display("%d %m child output ports: %d %d", $time, i_sub4_0.out, i_sub4_1.out);
+    $display("[%0d] %m child input  ports: %d %d", $time, i_sub4_0.in, i_sub4_1.in);
+    $display("[%0d] %m child output ports: %d %d", $time, i_sub4_0.out, i_sub4_1.out);
   end
 endmodule
 

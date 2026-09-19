@@ -61,6 +61,18 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_timeunit{timeunit}
             , m_type{type} {}
     };
+    struct IfaceRefData final {
+        const AstScope* const m_scopep;  // Concrete interface scope referred to
+        const std::string m_suffix;  // Path relative to the model instance
+        const std::string m_name;  // Name of the reference port
+        const std::string m_modportName;  // "" = no modport
+        IfaceRefData(const AstScope* scopep, const std::string& suffix, const std::string& name,
+                     const std::string& modportName)
+            : m_scopep{scopep}
+            , m_suffix{suffix}
+            , m_name{name}
+            , m_modportName{modportName} {}
+    };
     struct ScopeFuncData final {
         const AstScopeName* const m_scopep;
         const AstCFunc* const m_cfuncp;
@@ -102,6 +114,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     ScopeNames m_scopeNames;  // Each unique AstScopeName. Dpi scopes added later
     ScopeNames m_dpiScopeNames;  // Each unique AstScopeName for DPI export
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
+    std::vector<IfaceRefData> m_ifaceRefs;  // Each interface reference, for VPI
     // The actual hierarchy of scopes
     std::map<const std::string, std::vector<std::string>> m_vpiScopeHierarchy;
     int m_coverBins = 0;  // Global coverage bin number for non-object helper functions
@@ -117,6 +130,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
+    std::string m_ifaceRefTableName;
+    std::vector<std::string> m_ifaceRefTableRows;
 
     // METHODS
     void emitSymHdr();
@@ -406,13 +421,19 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += protect("__Vscopep_" + svd.m_scopeName);
         stmt += needsEntSize ? "->varInsertSized(\"" : "->varInsert(\"";
         stmt += V3OutFormatter::quoteNameControls(prettyName) + '"';
-        stmt += ", &(";
-        stmt += VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
-        stmt += ".";
-        stmt += cName;
-        stmt += "), false, ";
         const std::string varName
             = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        // A parameter is emitted 'static const', so its members are const too and
+        // need the same cast the whole-parameter insert uses.
+        if (svd.m_varp->isParam()) {
+            stmt += ", const_cast<void*>(static_cast<const void*>(&(";
+            stmt += varName;
+            stmt += "))), true, ";
+        } else {
+            stmt += ", &(";
+            stmt += varName;
+            stmt += "), false, ";
+        }
         const std::string entSize
             = needsEntSize
                   ? "sizeof(" + varName + ") / " + std::to_string(getUnpackedElements(dtypep))
@@ -489,18 +510,19 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 + "__VforceRd" + '"';
         stmt += ", {";
 
-        // Find __VforceEn
-        {
-            const std::string enableSignalKey = getKeyName(scopep, varp->name() + "__VforceEn");
+        for (const std::string forceControlSuffix : {"__VforceEn", "__VforceVal"}) {
+            const std::string enableSignalKey
+                = getKeyName(scopep, varp->name() + forceControlSuffix);
             const std::map<const std::string, ScopeVarData>::const_iterator itpair
                 = m_scopeVars.find(enableSignalKey);
 
             if (itpair == m_scopeVars.end()) {
-                varp->v3fatalSrc("Signal " << varp->prettyNameQ()
-                                           << " is marked forceable, but the force enable signal '"
-                                           << varp->name() << "__VforceEn"
-                                           << "' can not be found in m_scopeVars with key '"
-                                           << enableSignalKey << "'.");
+                varp->v3fatalSrc("Signal "
+                                 << varp->prettyNameQ()
+                                 << " is marked forceable, but the force control signal '"
+                                 << varp->name() << forceControlSuffix
+                                 << "' can not be found in m_scopeVars with key '"
+                                 << enableSignalKey << "'.");
             }
 
             const ScopeVarData& svd = itpair->second;
@@ -509,28 +531,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const VarDims dims = dimsFor(svd);
             stmt
                 += insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, boundsString(dims));
-        }
-        stmt += ",";
-        // Find __VforceVal
-        {
-            const std::string valueSignalKey = getKeyName(scopep, varp->name() + "__VforceVal");
-            const std::map<const std::string, ScopeVarData>::const_iterator itpair
-                = m_scopeVars.find(valueSignalKey);
-
-            if (itpair == m_scopeVars.end()) {
-                varp->v3fatalSrc("Signal " << varp->prettyNameQ()
-                                           << " is marked forceable, but the force value signal '"
-                                           << varp->name() << "__VforceVal"
-                                           << "' can not be found in m_scopeVars with key '"
-                                           << valueSignalKey << "'.");
-            }
-
-            const ScopeVarData& svd = itpair->second;
-            const AstScope* const scopep = svd.m_scopep;
-            const AstVar* const varp = svd.m_varp;
-            const VarDims dims = dimsFor(svd);
-            stmt
-                += insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, boundsString(dims));
+            if (forceControlSuffix == "__VforceEn") stmt += ",";
         }
 
         stmt += "}";
@@ -544,7 +545,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     static std::string getKeyName(const AstScope* const scopep, const std::string& signal_name) {
-        // Copies the process from `varsExpand` which created the keys in the first place, in order
+        // Copies the process from `addScopeVarEntry` which created the keys in the first place, in
+        // order
         // signal can be found.
         std::string whole = scopep->name() + "__DOT__" + signal_name;
         std::string scpName;
@@ -660,6 +662,38 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
     }
 
+    void addScopeVarEntry(const AstScope* const scopep, const AstNodeModule* const modp,
+                          const AstVar* const varp) {
+        // Need to split the module + var name into the original-ish full scope
+        // and variable name under that scope. The module instance name is
+        // included later, when we know the scopes this module is under.
+        std::string whole = scopep->name() + "__DOT__" + varp->name();
+        if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
+        const std::string::size_type dpos = whole.rfind("__DOT__");
+        UASSERT_OBJ(dpos != std::string::npos, varp,
+                    "Scope/variable name lost its appended __DOT__ separator");
+        const std::string scpName = whole.substr(0, dpos);
+        const std::string varBase = whole.substr(dpos + std::strlen("__DOT__"));
+        // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
+        // << scpName << "Var " << varBase);
+        const std::string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
+        const std::string scpPretty = AstNode::prettyName(VName::dehash(scpName));
+        const std::string scpSym = scopeSymString(VName::dehash(scpName));
+        // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
+        // << scpSym);
+        if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
+
+        m_scopeNames.emplace(  //
+            std::piecewise_construct,  //
+            std::forward_as_tuple(scpSym),  //
+            std::forward_as_tuple(varp, scpSym, scpPretty, "<null>", 0, "SCOPE_OTHER"));
+
+        m_scopeVars.emplace(  //
+            std::piecewise_construct,  //
+            std::forward_as_tuple(scpSym + " " + varp->name()),  //
+            std::forward_as_tuple(scpSym, varBasePretty, varp, modp, scopep));
+    }
+
     void varsExpand() {
         // We didn't have all m_scopes loaded when we encountered variables, so expand them now
         // It would be less code if each module inserted its own variables.
@@ -671,42 +705,57 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 const AstNodeModule* const modp = mvPair.first;
                 const AstVar* const varp = mvPair.second;
                 if (modp != smodp) continue;
-
-                // Need to split the module + var name into the
-                // original-ish full scope and variable name under that scope.
-                // The module instance name is included later, when we
-                // know the scopes this module is under
-                std::string whole = scopep->name() + "__DOT__" + varp->name();
-                std::string scpName;
-                std::string varBase;
-                if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
-                const std::string::size_type dpos = whole.rfind("__DOT__");
-                if (dpos != std::string::npos) {
-                    scpName = whole.substr(0, dpos);
-                    varBase = whole.substr(dpos + std::strlen("__DOT__"));
-                } else {
-                    varBase = whole;
-                }
-                // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
-                // << scpName << "Var " << varBase);
-                const std::string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
-                const std::string scpPretty = AstNode::prettyName(VName::dehash(scpName));
-                const std::string scpSym = scopeSymString(VName::dehash(scpName));
-                // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
-                // << scpSym);
-                if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
-
-                m_scopeNames.emplace(  //
-                    std::piecewise_construct,  //
-                    std::forward_as_tuple(scpSym),  //
-                    std::forward_as_tuple(varp, scpSym, scpPretty, "<null>", 0, "SCOPE_OTHER"));
-
-                m_scopeVars.emplace(  //
-                    std::piecewise_construct,  //
-                    std::forward_as_tuple(scpSym + " " + varp->name()),  //
-                    std::forward_as_tuple(scpSym, varBasePretty, varp, modp, scopep));
+                addScopeVarEntry(scopep, modp, varp);
             }
         }
+    }
+
+    void collectIfaceRefs(const AstScope* nodep) {
+        const AstCell* const cellp = nodep->aboveCellp();
+        // Exclude classes inside interfaces; the cell's modp is the interface, not the Class
+        if (!cellp || !VN_IS(cellp->modp(), Iface) || !VN_IS(nodep->modp(), Iface)) return;
+
+        // vpiName() to match the scope table these are looked up alongside. Inlining
+        // flattens the hierarchy but leaves the inlined levels in the scope name, which
+        // therefore carries the full enclosing path.
+        const std::string path = AstNode::vpiName(nodep->name());
+        const std::string instName = AstNode::vpiName(cellp->origName());
+        UASSERT_OBJ(path.length() > instName.length() && VString::endsWith(path, instName), nodep,
+                    "Interface scope name " << path << " does not end with instance name "
+                                            << instName);
+        const std::string parentPath = path.substr(0, path.length() - instName.length());
+
+        for (AstIntfRef* intfRefp = cellp->intfRefsp(); intfRefp;
+             intfRefp = VN_AS(intfRefp->nextp(), IntfRef)) {
+            const std::string refName = AstNode::vpiName(intfRefp->name());
+            // Assume only references under the same parent scope reference the
+            // same interface. Same limitation as the trace path in V3TraceDecl.
+            if (!VString::startsWith(refName, parentPath)) continue;
+            m_ifaceRefs.emplace_back(nodep, refName, AstNode::vpiName(intfRefp->baseName()),
+                                     intfRefp->modportName());
+        }
+    }
+
+    void buildIfaceRefTable() {
+        if (m_ifaceRefs.empty()) return;
+        const std::string symClass = symClassName();
+        for (const IfaceRefData& ird : m_ifaceRefs) {
+            const std::string scopeSym = scopeSymString(ird.m_scopep->name());
+            // Only reference scopes that actually made it into the scope table
+            if (m_scopeNames.find(scopeSym) == m_scopeNames.end()) continue;
+            std::string row
+                = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + scopeSym) + "), \"";
+            row += V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(ird.m_name, true));
+            row += "\", \"";
+            row += V3OutFormatter::quoteNameControls(
+                VIdProtect::protectWordsIf(ird.m_suffix, true));
+            row += "\", \"";
+            row += V3OutFormatter::quoteNameControls(
+                VIdProtect::protectWordsIf(ird.m_modportName, true));
+            row += "\"}";
+            m_ifaceRefTableRows.emplace_back(std::move(row));
+        }
+        if (!m_ifaceRefTableRows.empty()) m_ifaceRefTableName = symClass + "__VpiIfaceRefTable";
     }
 
     void buildVpiHierarchy() {
@@ -798,6 +847,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             const std::string type = VN_IS(nodep->modp(), Package) ? "SCOPE_PACKAGE"  //
+                                     : VN_IS(nodep->modp(), Iface) ? "SCOPE_INTERFACE"  //
                                                                    : "SCOPE_MODULE";
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(  //
@@ -806,6 +856,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 std::forward_as_tuple(nodep, scopeSymString(nodep->name()),
                                       AstNode::vpiName(nodep->shortName()),
                                       nodep->modp()->origName(), timeunit, type));
+            collectIfaceRefs(nodep);
         }
         iterateChildrenConst(nodep);
     }
@@ -946,7 +997,7 @@ void EmitCSyms::emitSymHdr() {
         }
     }
     if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
-    puts("bool __Vm_didInit = false;\n");
+    puts("bool& __Vm_didInit;\n");
 
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
@@ -1066,19 +1117,22 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // So split ctor sub-functions in other translation units can reference
     // the VPI variable tables defined below.
-    if (!m_varTables.empty() || !m_scopeTableRows.empty()) {
+    if (!m_varTables.empty() || !m_scopeTableRows.empty() || !m_ifaceRefTableRows.empty()) {
         for (const auto& kv : m_varTables) {
             puts("extern const VlVarTableEntry " + kv.first + "[];\n");
         }
         if (!m_scopeTableRows.empty()) {
             puts("extern const VlScopeTableEntry " + m_scopeTableName + "[];\n");
         }
+        if (!m_ifaceRefTableRows.empty()) {
+            puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[];\n");
+        }
         puts("\n");
     }
 }
 
 void EmitCSyms::emitVarTables() {
-    if (m_varTables.empty() && m_scopeTableRows.empty()) return;
+    if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
     // offsetof on the (non-standard-layout) generated module/Syms classes is well
     // defined on all supported compilers but warns; suppress just here.
@@ -1098,6 +1152,15 @@ void EmitCSyms::emitVarTables() {
     if (!m_scopeTableRows.empty()) {
         puts("extern const VlScopeTableEntry " + m_scopeTableName + "[] = {\n");
         for (const std::string& row : m_scopeTableRows) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
+    if (!m_ifaceRefTableRows.empty()) {
+        puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[] = {\n");
+        for (const std::string& row : m_ifaceRefTableRows) {
             ofp()->putsNoTracking("    ");
             ofp()->putsNoTracking(row);
             ofp()->putsNoTracking(",\n");
@@ -1220,15 +1283,17 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
         add(stmt);
     }
 
-    add("// Setup each module's pointer back to symbol table (for public functions)");
-    for (const ScopeModPair& i : m_scopes) {
-        const AstScope* const scopep = i.first;
-        AstNodeModule* const modp = i.second;
-        // first is used by AstCoverDecl's call to __vlCoverInsert
-        const bool first = !modp->user1();
-        modp->user1(true);
-        add(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
-            + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");");
+    if (v3Global.opt.coverage()) {
+        add("// Setup each module's pointer back to symbol table (for public functions)");
+        for (const ScopeModPair& i : m_scopes) {
+            const AstScope* const scopep = i.first;
+            AstNodeModule* const modp = i.second;
+            // first is used by AstCoverDecl's call to __vlCoverInsert
+            const bool first = !modp->user1();
+            modp->user1(true);
+            add(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
+                + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");");
+        }
     }
 
     // Every scope has the same construction shape, so all fold into one table with no
@@ -1255,6 +1320,14 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
         m_scopeTableName = symClass + "__VpiScopeTable";
         add("VerilatedScope::scopesConstructFromTable(" + m_scopeTableName + ", "
             + std::to_string(m_scopeNames.size()) + ", this);");
+    }
+
+    // After the scopes above, as each row points at an already-built VerilatedScope
+    buildIfaceRefTable();
+    if (!m_ifaceRefTableRows.empty()) {
+        add("// Setup interface references");
+        add("VerilatedScope::ifaceRefsInsertFromTable(" + m_ifaceRefTableName + ", "
+            + std::to_string(m_ifaceRefTableRows.size()) + ", this);");
     }
 
     emitScopeHier(stmts, false);
@@ -1394,6 +1467,13 @@ std::vector<std::string> EmitCSyms::getSymDtorStmts() {
         add("_vm_pgoProfiler.write(\"" + topClassName()
             + "\", _vm_contextp__->profVltFilename());");
     }
+    // Before the scopes below, as each row names a scope being torn down
+    if (!m_ifaceRefTableRows.empty()) {
+        add("// Tear down interface references");
+        add("VerilatedScope::ifaceRefsEraseFromTable(" + m_ifaceRefTableName + ", "
+            + std::to_string(m_ifaceRefTableRows.size()) + ", this);");
+    }
+
     add("// Tear down scopes");
     for (const auto& itpair : m_scopeNames) {
         const ScopeData& sd = itpair.second;
@@ -1501,6 +1581,7 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
     puts("    : VerilatedSyms{contextp}\n");
     puts("    // Setup internal state of the Syms class\n");
     puts("    , __Vm_modelp{modelp}\n");
+    puts("    , __Vm_didInit{modelp->m_didInit}\n");
     if (v3Global.opt.mtasks()) {
         puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp())}\n");
     }

@@ -43,6 +43,7 @@ namespace V3Order {
 std::unique_ptr<OrderGraph> buildOrderGraph(AstNetlist* netlistp,  //
                                             const std::vector<V3Sched::LogicByScope*>& coll,  //
                                             const TrigToSenMap& trigToSen,  //
+                                            const V3Sched::CovergroupRefBindings& cgRefBindings,
                                             bool parallel);
 
 void orderOrderGraph(OrderGraph& graph, const std::string& tag);

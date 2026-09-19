@@ -1194,12 +1194,14 @@ inline WDataOutP VL_MUL_W(int words, WDataOutP owp, WDataInP const lwp,
 inline IData VL_MULS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     const int32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
     const int32_t rhs_signed = VL_EXTENDS_II(32, lbits, rhs);
-    return lhs_signed * rhs_signed;
+    // Signed int overflow is undefined behavior, so cast to unsigned first.
+    return static_cast<uint32_t>(lhs_signed) * static_cast<uint32_t>(rhs_signed);
 }
 inline QData VL_MULS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     const int64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     const int64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
-    return lhs_signed * rhs_signed;
+    // Signed int overflow is undefined behavior, so cast to unsigned first.
+    return static_cast<uint64_t>(lhs_signed) * static_cast<uint64_t>(rhs_signed);
 }
 
 inline WDataOutP VL_MULS_WWW(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
@@ -1436,8 +1438,8 @@ inline void _vl_insert_WI(WDataOutP iowp, IData ld, int hbit, int lbit, int rbit
             const int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             iowp[lword] = (iowp[lword] & ~linsmask) | ((lde << loffset) & linsmask);
             // Prevent unsafe write where lword was final writable location and hword is
-            // out-of-bounds.
-            if (VL_LIKELY(!(hword == rword && roffset == 0))) {
+            // out-of-bounds.  rbits==0 means the caller guarantees bounds.
+            if (VL_LIKELY(!(rbits && hword >= VL_WORDS_I(rbits)))) {
                 iowp[hword]
                     = (iowp[hword] & ~hinsmask) | ((lde >> nbitsonright) & (hinsmask & cleanmask));
             }

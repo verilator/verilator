@@ -17,11 +17,7 @@
 
 // clang-format off
 #if defined(VERILATOR)
-# ifdef T_DPI_CONTEXT_NOOPT
-#  include "Vt_dpi_context_noopt__Dpi.h"
-# else
-#  include "Vt_dpi_context__Dpi.h"
-# endif
+# include VM_PREFIX_INCLUDE_DPI
 #elif defined(VCS)
 # include "../vc_hdrs.h"
 #elif defined(CADENCE)

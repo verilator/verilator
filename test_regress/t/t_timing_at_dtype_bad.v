@@ -31,6 +31,9 @@ module t;
 
   any_monitor #(q_t, q_t) imon;
 
-  initial $stop;
+  initial begin
+    imon.run_phase();
+    $stop;
+  end
 
 endmodule

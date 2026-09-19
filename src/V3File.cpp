@@ -768,6 +768,8 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
             if (wordstart && m_lang == LA_VERILOG && !notstart && tokenStart(cp)) indentInc();
             if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
         }
+        const bool wasInBackslash = m_inBackslash;
+        m_inBackslash = false;
         switch (*cp) {
         case '\n':
             ++m_lineno;
@@ -785,7 +787,11 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
         case '\t': wordstart = true; break;
         case '"':
             wordstart = false;
-            m_inStringLiteral = !m_inStringLiteral;
+            if (!wasInBackslash) m_inStringLiteral = !m_inStringLiteral;
+            break;
+        case '\\':
+            wordstart = false;
+            if (!wasInBackslash) m_inBackslash = true;
             break;
         case '/':
             if (m_lang == LA_C || m_lang == LA_VERILOG) {

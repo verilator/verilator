@@ -25,6 +25,7 @@ for s in [
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
         'Expecting define formal arguments. Found:',  # Instead define syntax error
         'Need $SYSTEMC_INCLUDE in environment or when Verilator configured,',  # Would need ./configure
+        'Running subcommands is not supported on this platform:',  # Only hit on e.g. wasm
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         'exited with',  # Is hit; driver.py filters out

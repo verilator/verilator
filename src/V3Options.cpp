@@ -1088,7 +1088,7 @@ void V3Options::notify() VL_MT_DISABLED {
     if (timing().isSetTrue()) V3PreShell::defineCmdLine("VERILATOR_TIMING", "1");
 
     // If VPI is used, and no explicit ico change detect option was passed, disable it by default
-    if (m_vpi && m_fIcoChangeDetect.isDefault()) m_fIcoChangeDetect.setTrueOrFalse(false);
+    if (m_vpi.isTrue() && m_fIcoChangeDetect.isDefault()) m_fIcoChangeDetect.setTrueOrFalse(false);
 
     // === Leave last
     // Mark options as available
@@ -1303,7 +1303,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_assertCase = flag;
     });
     DECL_OPTION("-assert-case", OnOff, &m_assertCase);
-    DECL_OPTION("-assert-unroll-limit", Set, &m_assertUnrollLimit);
+    DECL_OPTION("-assert-unroll-limit", CbVal, [fl](const char*) {
+        fl->v3warn(DEPRECATED, "Option '--assert-unroll-limit' is deprecated and has no effect.");
+    }).notForRerun();
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
 
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);
@@ -1474,6 +1476,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fconst-eager", FOnOff, &m_fConstEager);
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
+    DECL_OPTION("-fdead-methods", FOnOff, &m_fDeadMethods);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", CbFOnOff, [fl](bool) {
@@ -1515,7 +1518,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
-    DECL_OPTION("-flift-expr", FOnOff, &m_fLiftExpr);
+    DECL_OPTION("-flift-expr", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-lift-expr' is deprecated and has no effect");
+    });
     DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);
     DECL_OPTION("-fmerge-cond", FOnOff, &m_fMergeCond);
     DECL_OPTION("-fmerge-cond-motion", FOnOff, &m_fMergeCondMotion);
@@ -1771,10 +1776,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-std-package", OnOff, &m_stdPackage);
     DECL_OPTION("-std-waiver", OnOff, &m_stdWaiver);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
-    DECL_OPTION("-structs-packed", CbOnOff, [this, fl](bool flag) {
-        m_structsPacked = flag;
-        fl->v3warn(DEPRECATED, "Option --structs-packed is deprecated, avoid use");
-    }).undocumented();
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
 
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
@@ -2384,6 +2385,7 @@ void V3Options::optimize(int level) {
     m_fDfg = flag;
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
+    m_fDeadMethods = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;

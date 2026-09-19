@@ -1,0 +1,28 @@
+---
+# Build and push verilator docker image when tags are pushed to the repository.
+# The following variable(s) must be configured in the github repository:
+# DOCKER_HUB_NAMESPACE: docker hub namespace.
+# The following secrets must be configured in the github repository:
+# DOCKER_HUB_USER: user name for logging into docker hub
+# DOCKER_HUB_ACCESS_TOKEN: docker hub access token.
+name: Maintainance - PR conflict check
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request_target:
+    types: [synchronize]
+permissions: {}
+
+jobs:
+  main:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: check if prs are dirty
+        uses: eps1lon/actions-label-merge-conflict@0273be72a0bbd58fcd71d0d6c02c209b50d1e5e1  # 3.1.0
+        with:
+          dirtyLabel: "pr-blocked: needs-rebase"
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"

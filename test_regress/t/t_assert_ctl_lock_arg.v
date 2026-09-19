@@ -31,11 +31,18 @@ module t;
   always #5 clk = ~clk;
 
   // posedge clk at t = 5, 15, 25, 35, 45, 55, 65, 75, 85, 95
-  always @(posedge clk) imm_assert : assert (fals) else imm_fails = imm_fails + 1;
+  always @(posedge clk)
+    imm_assert :
+    assert (fals)
+    else imm_fails = imm_fails + 1;
 
-  conc_assert : assert property (@(posedge clk) fals) else conc_fails = conc_fails + 1;
+  conc_assert :
+  assert property (@(posedge clk) fals)
+  else conc_fails = conc_fails + 1;
 
-  conc_assume : assume property (@(posedge clk) fals) else assume_fails = assume_fails + 1;
+  conc_assume :
+  assume property (@(posedge clk) fals)
+  else assume_fails = assume_fails + 1;
 
   initial begin
     #6;  // t=6

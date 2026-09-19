@@ -55,6 +55,7 @@ public:
         // Boolean information we track per-line, but aren't errors
         I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
+        I_ERRORING,     // Node created to handle earlier error; suppress new errors
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         I_LINT,         // All lint messages
         I_STYLE,        // All style messages
@@ -137,6 +138,7 @@ public:
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTIDRIVENPROC,  // Driven from multiple plain always blocks
         MULTITOP,       // Multiple top level modules
+        NEVERMATCH,     // Sequence can never match
         NEWERSTD,       // Newer language standard required
         NOEFFECT,       // Statement has no effect
         NOLATCH,        // No latch detected in always_latch block
@@ -219,8 +221,8 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALMANY", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_STYLE",
-            " I_TIMING", " I_TRACING",
+            " I_CELLDEFINE", " I_COVERAGE", " I_ERRORING", " I_DEF_NETTYPE_WIRE", " I_LINT",
+            " I_STYLE", " I_TIMING", " I_TRACING",
             // Errors
             "CONTASSINIT", "CONSTWRITTEN", "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT",
             "TASKNSVAR", "UNSUPPORTED",
@@ -235,8 +237,8 @@ public:
             "IEEEMAYDEPRECATE", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT",
             "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY",
             "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
-            "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC", "MULTITOP", "NEWERSTD", "NOEFFECT",
-            "NOLATCH", "NONSTD", "NORETURN", "NOTREDOP", "NULLPORT", "PARAMNODEFAULT",
+            "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC", "MULTITOP", "NEVERMATCH", "NEWERSTD",
+            "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NOTREDOP", "NULLPORT", "PARAMNODEFAULT",
             "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL",
             "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
             "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
@@ -251,7 +253,7 @@ public:
     }
     // Warnings that default to off
     bool defaultsOff() const VL_MT_SAFE {
-        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || styleError());
+        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING || styleError());
     }
     // Warnings that warn about nasty side effects
     bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
@@ -781,11 +783,10 @@ void v3errorEndFatal(std::ostringstream& sstr)
         } \
     } while (false)
 /// Check self test values for expected value.  Safe from side-effects.
-// Type argument can be removed when go to C++11 (use auto).
-#define UASSERT_SELFTEST(Type, got, exp) \
+#define UASSERT_SELFTEST(got, exp) \
     do { \
-        Type g = (got); \
-        Type e = (exp); \
+        const auto g = (got); \
+        const decltype(g) e{exp}; \
         UASSERT(g == e, "Self-test failed '" #got "==" #exp "'" \
                         " got=" \
                             << g << " expected=" << e); \

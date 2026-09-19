@@ -82,7 +82,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 # endif
 #else
 # include <sys/time.h>
-# include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
+# ifndef __wasi__
+#  include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
+# endif
 # include <unistd.h>  // usleep
 #endif
 // clang-format on
@@ -445,6 +447,12 @@ string V3Os::trueRandom(size_t size) VL_MT_SAFE {
     if (VL_UNCOVERABLE(!BCRYPT_SUCCESS(hr))) {
         v3fatal("Could not acquire random data. Try specifying a key instead.");  // LCOV_EXCL_LINE
     }
+#elif defined(__wasi__)
+    // WASI has no /dev/urandom. getentropy() rejects sizes over 256 bytes,
+    // which is more than any caller asks for, and errors rather than truncates.
+    if (VL_UNCOVERABLE(getentropy(data, size))) {
+        v3fatal("Could not acquire random data. Try specifying a key instead.");  // LCOV_EXCL_LINE
+    }
 #else
     std::ifstream is{"/dev/urandom", std::ios::in | std::ios::binary};
     // This read uses the size of the buffer.
@@ -492,6 +500,11 @@ void V3Os::u_sleep(int64_t usec) {
 // METHODS (sub command)
 
 int V3Os::system(const string& command) {
+#ifdef __wasi__
+    // WASI has no process spawning
+    v3fatal("Running subcommands is not supported on this platform: " << command);
+    return -1;
+#else
     UINFO(1, "Running system: " << command);
     const int ret = ::system(command.c_str());
     if (VL_UNCOVERABLE(ret == -1)) {
@@ -504,46 +517,47 @@ int V3Os::system(const string& command) {
     UINFO(1, command << " returned exit code of " << exit_code);
     UASSERT(exit_code >= 0, "exit code must not be negative");
     return exit_code;
+#endif
 }
 
 void V3Os::selfTest() {
 #ifdef VL_DEBUG
-    UASSERT_SELFTEST(const string, filenameCleanup(""), "");
-    UASSERT_SELFTEST(const string, filenameCleanup("."), ".");
-    UASSERT_SELFTEST(const string, filenameCleanup(".."), "..");
-    UASSERT_SELFTEST(const string, filenameCleanup("/"), "/");
-    UASSERT_SELFTEST(const string, filenameCleanup("../"), "..");
-    UASSERT_SELFTEST(const string, filenameCleanup("//"), "/");
-    UASSERT_SELFTEST(const string, filenameCleanup("//."), "/.");
-    UASSERT_SELFTEST(const string, filenameCleanup("./"), ".");
-    UASSERT_SELFTEST(const string, filenameCleanup("././"), ".");
-    UASSERT_SELFTEST(const string, filenameCleanup(".///"), ".");
-    UASSERT_SELFTEST(const string, filenameCleanup("a"), "a");
-    UASSERT_SELFTEST(const string, filenameCleanup("a/"), "a");
-    UASSERT_SELFTEST(const string, filenameCleanup("a/b"), "a/b");
-    UASSERT_SELFTEST(const string, filenameCleanup("././//./a/b"), "a/b");
-    UASSERT_SELFTEST(const string, filenameCleanup(".//./a///"), "a");
-    UASSERT_SELFTEST(const string, filenameCleanup("///a/./b///."), "/a/./b/.");
-    UASSERT_SELFTEST(const string, filenameCleanup("aaa/bbb/ccc/"), "aaa/bbb/ccc");
-    UASSERT_SELFTEST(const string, filenameCleanup("./aaa/bbb/ccc/"), "aaa/bbb/ccc");
-    UASSERT_SELFTEST(const string, filenameCleanup("../aaa/bbb/ccc/"), "../aaa/bbb/ccc");
-    UASSERT_SELFTEST(const string, filenameDir("a.a/b.b/f.e"), "a.a/b.b");
-    UASSERT_SELFTEST(const string, filenameExt("a.a/b.b/f"), "");
-    UASSERT_SELFTEST(const string, filenameExt("a.a/b.b/f.e"), ".e");
-    UASSERT_SELFTEST(const string, filenameNonDirExt("a.a/b.b/f.e"), "f");
-    UASSERT_SELFTEST(const string, filenameRelativePath("/a/b", "/a/b"), ".");
-    UASSERT_SELFTEST(const string, filenameRelativePath("/a/b", "/a/b/c"), "..");
-    UASSERT_SELFTEST(const string, filenameRelativePath("/a/b", "/a/b/c/d"), "../..");
-    UASSERT_SELFTEST(const string, filenameRelativePath("/a/b/x", "/a/b/c/d"), "../../x");
-    UASSERT_SELFTEST(const string, filenameRelativePath("/a/b/x/y", "/"), "a/b/x/y");
-    UASSERT_SELFTEST(const string, filenameRelativePath("/a/b/x/y", "/a/b"), "x/y");
-    UASSERT_SELFTEST(const string, filenameRelativePath("/a/b/x/y", "/a/q"), "../b/x/y");
-    UASSERT_SELFTEST(const string, filenameRelativePath("a/b", "a/b"), ".");
-    UASSERT_SELFTEST(const string, filenameRelativePath("a/b", "a/b/c"), "..");
-    UASSERT_SELFTEST(const string, filenameRelativePath("a/b", "a/b/c/d"), "../..");
-    UASSERT_SELFTEST(const string, filenameRelativePath("a/b/x", "a/b/c/d"), "../../x");
-    UASSERT_SELFTEST(const string, filenameRelativePath("a/b/x/y", ""), "a/b/x/y");
-    UASSERT_SELFTEST(const string, filenameRelativePath("a/b/x/y", "a/b"), "x/y");
-    UASSERT_SELFTEST(const string, filenameRelativePath("a/b/x/y", "a/q"), "../b/x/y");
+    UASSERT_SELFTEST(filenameCleanup(""), "");
+    UASSERT_SELFTEST(filenameCleanup("."), ".");
+    UASSERT_SELFTEST(filenameCleanup(".."), "..");
+    UASSERT_SELFTEST(filenameCleanup("/"), "/");
+    UASSERT_SELFTEST(filenameCleanup("../"), "..");
+    UASSERT_SELFTEST(filenameCleanup("//"), "/");
+    UASSERT_SELFTEST(filenameCleanup("//."), "/.");
+    UASSERT_SELFTEST(filenameCleanup("./"), ".");
+    UASSERT_SELFTEST(filenameCleanup("././"), ".");
+    UASSERT_SELFTEST(filenameCleanup(".///"), ".");
+    UASSERT_SELFTEST(filenameCleanup("a"), "a");
+    UASSERT_SELFTEST(filenameCleanup("a/"), "a");
+    UASSERT_SELFTEST(filenameCleanup("a/b"), "a/b");
+    UASSERT_SELFTEST(filenameCleanup("././//./a/b"), "a/b");
+    UASSERT_SELFTEST(filenameCleanup(".//./a///"), "a");
+    UASSERT_SELFTEST(filenameCleanup("///a/./b///."), "/a/./b/.");
+    UASSERT_SELFTEST(filenameCleanup("aaa/bbb/ccc/"), "aaa/bbb/ccc");
+    UASSERT_SELFTEST(filenameCleanup("./aaa/bbb/ccc/"), "aaa/bbb/ccc");
+    UASSERT_SELFTEST(filenameCleanup("../aaa/bbb/ccc/"), "../aaa/bbb/ccc");
+    UASSERT_SELFTEST(filenameDir("a.a/b.b/f.e"), "a.a/b.b");
+    UASSERT_SELFTEST(filenameExt("a.a/b.b/f"), "");
+    UASSERT_SELFTEST(filenameExt("a.a/b.b/f.e"), ".e");
+    UASSERT_SELFTEST(filenameNonDirExt("a.a/b.b/f.e"), "f");
+    UASSERT_SELFTEST(filenameRelativePath("/a/b", "/a/b"), ".");
+    UASSERT_SELFTEST(filenameRelativePath("/a/b", "/a/b/c"), "..");
+    UASSERT_SELFTEST(filenameRelativePath("/a/b", "/a/b/c/d"), "../..");
+    UASSERT_SELFTEST(filenameRelativePath("/a/b/x", "/a/b/c/d"), "../../x");
+    UASSERT_SELFTEST(filenameRelativePath("/a/b/x/y", "/"), "a/b/x/y");
+    UASSERT_SELFTEST(filenameRelativePath("/a/b/x/y", "/a/b"), "x/y");
+    UASSERT_SELFTEST(filenameRelativePath("/a/b/x/y", "/a/q"), "../b/x/y");
+    UASSERT_SELFTEST(filenameRelativePath("a/b", "a/b"), ".");
+    UASSERT_SELFTEST(filenameRelativePath("a/b", "a/b/c"), "..");
+    UASSERT_SELFTEST(filenameRelativePath("a/b", "a/b/c/d"), "../..");
+    UASSERT_SELFTEST(filenameRelativePath("a/b/x", "a/b/c/d"), "../../x");
+    UASSERT_SELFTEST(filenameRelativePath("a/b/x/y", ""), "a/b/x/y");
+    UASSERT_SELFTEST(filenameRelativePath("a/b/x/y", "a/b"), "x/y");
+    UASSERT_SELFTEST(filenameRelativePath("a/b/x/y", "a/q"), "../b/x/y");
 #endif
 }

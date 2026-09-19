@@ -1,0 +1,74 @@
+---
+# DESCRIPTION: Github actions composite action
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: Upload PR notification
+description: >-
+  Upload the 'pr-notification' artifact, holding a comment for 'pages.yml' to
+  post on a pull request. The given directory must hold the content of the
+  comment in 'body.txt', and its single line summary in 'hist.txt'.
+
+inputs:
+  path:
+    description: "Directory holding the notification contents"
+    required: true
+  key:
+    description: "Unique key for combining comments"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate
+      shell: bash
+      env:
+        NOTIFICATION_DIR: ${{ inputs.path }}
+        EVENT_NAME: ${{ github.event_name }}
+      run: |
+        # The notification is posted on the pull request of the triggering event
+        if [ "${EVENT_NAME}" != "pull_request" ]; then
+          echo "This action can only be used on a 'pull_request' run, but event is '${EVENT_NAME}'" >&2
+          exit 1
+        fi
+        # The content of the comment, and its single line summary
+        for f in body.txt hist.txt; do
+          if [ ! -f "${NOTIFICATION_DIR}/${f}" ]; then
+            echo "No '${f}' in '${NOTIFICATION_DIR}'" >&2
+            exit 1
+          fi
+        done
+        # Nothing else, so the artifact holds only what this action puts in it
+        EXTRA=$(find "${NOTIFICATION_DIR}" -mindepth 1 -not -name body.txt -not -name hist.txt)
+        if [ -n "${EXTRA}" ]; then
+          echo "Unexpected content in '${NOTIFICATION_DIR}':" >&2
+          echo "${EXTRA}" >&2
+          exit 1
+        fi
+        # 'ci-pages-notify.bash' stashes 'hist.txt' in an HTML comment, and later
+        # shows it in the history of the notifications superseding this one, so
+        # it must be a single line, and must neither open nor close an HTML comment
+        if [ $(wc -l < "${NOTIFICATION_DIR}/hist.txt") -ne 1 ]; then
+          echo "'hist.txt' must hold exactly one line" >&2
+          exit 1
+        fi
+        if grep -q -e '<!--' -e '-->' "${NOTIFICATION_DIR}/hist.txt"; then
+          echo "'hist.txt' must not contain '<!--' or '-->'" >&2
+          exit 1
+        fi
+
+    - name: Add metadata
+      shell: bash
+      env:
+        NOTIFICATION_DIR: ${{ inputs.path }}
+        NOTIFICATION_KEY: ${{ inputs.key }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        echo "${NOTIFICATION_KEY}" > "${NOTIFICATION_DIR}/key.txt"
+        echo "${PR_NUMBER}" > "${NOTIFICATION_DIR}/pr-number.txt"
+        ls -lsha "${NOTIFICATION_DIR}"
+
+    - name: Upload notification
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+      with:
+        path: ${{ inputs.path }}
+        name: pr-notification

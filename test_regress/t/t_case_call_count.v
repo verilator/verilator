@@ -20,10 +20,24 @@ class Cls;
   function int getPure();
     return callCount2;
   endfunction
+  function int sel();
+    case (get())
+      5: return 15;
+      6: return 16;
+      default: return 17;
+    endcase
+  endfunction
 endclass
 
 module t;
   Cls c;
+  function automatic int sel2();
+    case (c.get2())
+      5: return 25;
+      6: return 26;
+      default: return 27;
+    endcase
+  endfunction
   initial begin
     bit called;
     c = new;
@@ -50,6 +64,10 @@ module t;
     endcase
     if (!called) $stop;
     if (c.callCount2 != 1) $stop;
+    if (c.sel() != 16) $stop;
+    if (c.callCount != 2) $stop;
+    if (sel2() != 26) $stop;
+    if (c.callCount2 != 2) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -19,6 +19,10 @@ module t (
 
   logic [4:0] cyc = 0;
   logic [2:0] opcode;
+  bit static_init = 1'b1;
+  bit static_uninit;
+  wire logic net_value = 1'b1;
+  event ev;
 
   int hit_untyped = 0;
   int hit_logic = 0;
@@ -51,6 +55,15 @@ module t (
   assert property (@(posedge clk) $sampled(OP_WILD) === OP_WILD) hit_wild_samp++;
 
   always @(posedge clk) begin
+    ->ev;
+    if (cyc == 0) begin
+      `checkd($past(static_init), 1);
+      `checkd($past(static_uninit), 0);
+      `checkd($past(clk === 1'bx), 1);
+      `checkd($past(net_value === 1'bx), 1);
+      `checkd($past(ev.triggered), 0);
+      `checkd($past(!ev.triggered), 1);
+    end
     if (cyc == 24) begin
       `checkd(hit_untyped, 2);
       `checkd(hit_logic, 2);
@@ -60,12 +73,12 @@ module t (
       `checkd(hit_wild_samp, 24);
       `checkd(hit_nofell, 24);
 
-      `checkd(hit_past, 23);
-      `checkd(hit_stable, 23);
-      `checkd(hit_norose, 23);
-      `checkd(hit_nochanged, 23);
+      `checkd(hit_past, 24);
+      `checkd(hit_stable, 24);
+      `checkd(hit_norose, 24);
+      `checkd(hit_nochanged, 24);
 
-      `checkd(hit_past_n, 21);
+      `checkd(hit_past_n, 24);
       $write("*-* All Finished *-*\n");
       $finish;
     end

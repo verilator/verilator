@@ -19,13 +19,37 @@
                                                   : ... note: In instance 't'
    34 |   a6: assert property (@(posedge clk) a |-> ##[NEG:$] b);
       |                                             ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:36:45: Unsupported: SVA cycle delay exceeds implementation limit of 2147483647
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:36:45: Unsupported: SVA cycle delay exceeds implementation limit of 2147483615 (host arithmetic limit)
                                                               : ... note: In instance 't'
    36 |   a7: assert property (@(posedge clk) a |-> ##[1:32'h80000000] b);
       |                                             ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:37:45: Unsupported: SVA cycle delay exceeds implementation limit of 2147483647
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:37:45: Unsupported: SVA cycle delay exceeds implementation limit of 2147483615 (host arithmetic limit)
                                                               : ... note: In instance 't'
    37 |   a8: assert property (@(posedge clk) a |-> ##[32'h80000000:$] b);
       |                                             ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:42:45: Unsupported: SVA cycle delay exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                                              : ... note: In instance 't'
+   42 |   a9: assert property (@(posedge clk) a |-> ##MAX b);
+      |                                             ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:43:46: Unsupported: SVA cycle delay exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                                              : ... note: In instance 't'
+   43 |   a10: assert property (@(posedge clk) a |-> ##[0:MAX_M1] b);
+      |                                              ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:44:46: Unsupported: SVA cycle delay exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                                              : ... note: In instance 't'
+   44 |   a11: assert property (@(posedge clk) a |-> ##[MAX_M3:$] b);
+      |                                              ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:45:43: Unsupported: SVA cycle delay exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                                              : ... note: In instance 't'
+   45 |   a12: assert property (@(posedge clk) (a ##MAX_M3 b ##4 a) intersect (a ##MAX_M3 b ##4 a));
+      |                                           ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:45:74: Unsupported: SVA cycle delay exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                                              : ... note: In instance 't'
+   45 |   a12: assert property (@(posedge clk) (a ##MAX_M3 b ##4 a) intersect (a ##MAX_M3 b ##4 a));
+      |                                                                          ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_range_delay_bad.v:46:52: Unsupported: SVA cycle delay exceeds implementation limit of 2147483615 (host arithmetic limit)
+                                                              : ... note: In instance 't'
+   46 |   a13: assert property (@(posedge clk) a within (a ##MAX_M3 b));
+      |                                                    ^~
 %Error: Exiting due to

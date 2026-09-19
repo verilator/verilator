@@ -90,23 +90,26 @@ static double _vl_dbase_chi_square(IData& seedr, int32_t deg_of_free) VL_MT_SAFE
     return x;
 }
 
+static IData _vl_round_to_int32(double r) VL_PURE {
+    int32_t i;
+    if (r >= 0) {
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
+    } else {
+        r = -r;
+        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
+        i = -i;
+    }
+    return static_cast<IData>(i);
+}
+
 IData VL_DIST_CHI_SQUARE(IData& seedr, IData udf) VL_MT_SAFE {
     const int32_t df = static_cast<int32_t>(udf);
     if (VL_UNLIKELY(df <= 0)) {
         // Chi_square distribution must have positive degree of freedom
         return 0;
     }
-    double r = _vl_dbase_chi_square(seedr, df);
-    int32_t i;
-    if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
-    } else {
-        r = -r;  // LCOV_EXCL_LINE
-        i = static_cast<int32_t>(
-            r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding  // LCOV_EXCL_LINE
-        i = -i;  // LCOV_EXCL_LINE
-    }
-    return static_cast<IData>(i);
+    const double r = _vl_dbase_chi_square(seedr, df);
+    return _vl_round_to_int32(r);
 }
 
 IData VL_DIST_ERLANG(IData& seedr, IData uk, IData umean) VL_MT_SAFE {
@@ -120,16 +123,8 @@ IData VL_DIST_ERLANG(IData& seedr, IData uk, IData umean) VL_MT_SAFE {
     for (int32_t i = 1; i <= k; ++i) x = x * _vl_dbase_uniform(seedr, 0, 1);
     const double a = static_cast<double>(mean);
     const double b = static_cast<double>(k);
-    double r = -a * log(x) / b;
-    int32_t i;
-    if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
-    } else {
-        r = -r;
-        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
-        i = -i;
-    }
-    return static_cast<IData>(i);
+    const double r = -a * log(x) / b;
+    return _vl_round_to_int32(r);
 }
 
 IData VL_DIST_EXPONENTIAL(IData& seedr, IData umean) VL_MT_SAFE {
@@ -139,31 +134,15 @@ IData VL_DIST_EXPONENTIAL(IData& seedr, IData umean) VL_MT_SAFE {
         return 0;
     }
     int32_t i;
-    double r = _vl_dbase_exponential(seedr, mean);
-    if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
-    } else {
-        r = -r;  // LCOV_EXCL_LINE
-        i = static_cast<int32_t>(
-            r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding // LCOV_EXCL_LINE
-        i = -i;  // LCOV_EXCL_LINE
-    }
-    return static_cast<IData>(i);
+    const double r = _vl_dbase_exponential(seedr, mean);
+    return _vl_round_to_int32(r);
 }
 
 IData VL_DIST_NORMAL(IData& seedr, IData umean, IData usd) VL_MT_SAFE {
     const int32_t mean = static_cast<int32_t>(umean);
     const int32_t sd = static_cast<int32_t>(usd);
-    double r = _vl_dbase_normal(seedr, mean, sd);
-    int32_t i;
-    if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
-    } else {
-        r = -r;
-        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
-        i = -i;
-    }
-    return static_cast<IData>(i);
+    const double r = _vl_dbase_normal(seedr, mean, sd);
+    return _vl_round_to_int32(r);
 }
 
 IData VL_DIST_POISSON(IData& seedr, IData umean) VL_MT_SAFE {
@@ -192,16 +171,8 @@ IData VL_DIST_T(IData& seedr, IData udf) VL_MT_SAFE {
     const double chi2 = _vl_dbase_chi_square(seedr, df);
     const double div = chi2 / static_cast<double>(df);
     const double root = std::sqrt(div);
-    double r = _vl_dbase_normal(seedr, 0, 1) / root;
-    int32_t i;
-    if (r >= 0) {
-        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
-    } else {
-        r = -r;
-        i = static_cast<int32_t>(r + 0.5);  // cppcheck-suppress bugprone-incorrect-rounding
-        i = -i;
-    }
-    return static_cast<IData>(i);
+    const double r = _vl_dbase_normal(seedr, 0, 1) / root;
+    return _vl_round_to_int32(r);
 }
 
 IData VL_DIST_UNIFORM(IData& seedr, IData ustart, IData uend) VL_MT_SAFE {

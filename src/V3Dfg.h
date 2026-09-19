@@ -49,6 +49,7 @@
 #include <new>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #ifndef VL_NOT_FINAL
@@ -120,6 +121,28 @@ public:
 };
 
 //------------------------------------------------------------------------------
+// Input edge storage of a fixed arity vertices, embedded in the vertex itself.
+template <uint32_t N_Edges>
+class DfgInlineEdgeStorage final {
+    static_assert(N_Edges > 0, "'DfgInlineEdgeStorage' must hold at least one edge");
+    VL_UNCOPYABLE(DfgInlineEdgeStorage);
+    VL_UNMOVABLE(DfgInlineEdgeStorage);
+
+public:
+    union {  // Union, for manual memory management, so DfgEdge need no implicit constructor
+        DfgEdge m_edges[N_Edges];  // The input edges of the owning vertex
+    };
+
+    explicit DfgInlineEdgeStorage(DfgVertex* vtxp) {
+        for (uint32_t i = 0; i < N_Edges; ++i) new (&m_edges[i]) DfgEdge{vtxp};
+    }
+    ~DfgInlineEdgeStorage() {
+        for (uint32_t i = 0; i < N_Edges; ++i) m_edges[i].~DfgEdge();
+    }
+    DfgInlineEdgeStorage() = delete;
+};
+
+//------------------------------------------------------------------------------
 // Dataflow graph vertex
 class DfgVertex VL_NOT_FINAL {
     friend class DfgGraph;
@@ -127,10 +150,12 @@ class DfgVertex VL_NOT_FINAL {
     friend class DfgVisitor;
     template <typename, bool>
     friend class DfgUserMap;
+    friend class DfgVertexVariadic;
 
     // STATE
     V3ListLinks<DfgVertex> m_links;  // V3List links in the DfgGraph
-    std::vector<std::unique_ptr<DfgEdge>> m_inputps;  // Input edges, as vector, for fast indexing
+    DfgEdge* const m_inlineInputsp;  // Input edges stored inline in the vertex (iff fixed arity)
+    uint32_t m_nInputs;  // Number of input edges
     DfgEdge::List m_sinks;  // List of sink edges of this vertex
 
     FileLine* const m_filelinep;  // Source location
@@ -160,25 +185,22 @@ public:
 
 protected:
     // CONSTRUCTOR
-    DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dt) VL_MT_DISABLED;
+    DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dt,
+              DfgEdge* inlineInputsp, uint32_t nInputs) VL_MT_DISABLED;
     // Use unlinkDelete instead
     virtual ~DfgVertex() VL_MT_DISABLED = default;
 
-    // Create a new input edge and return it
-    DfgEdge* newInput() {
-        m_inputps.emplace_back(new DfgEdge{this});
-        return m_inputps.back().get();
-    }
+private:
+    // Get input edge 'i'
+    inline DfgEdge* inputEdgep(size_t i) const;
 
 public:
     // Get input 'i'
-    DfgVertex* inputp(size_t i) const { return m_inputps[i]->srcp(); }
+    DfgVertex* inputp(size_t i) const { return inputEdgep(i)->srcp(); }
     // Relink input 'i'
-    void inputp(size_t i, DfgVertex* vtxp) { m_inputps[i]->relinkSrcp(vtxp); }
+    void inputp(size_t i, DfgVertex* vtxp) { inputEdgep(i)->relinkSrcp(vtxp); }
     // The number of inputs this vertex has. Some might be unconnected.
-    size_t nInputs() const { return m_inputps.size(); }
-    // Unlink all inputs and reset to no inputs - use very carefully
-    void resetInputs() { m_inputps.clear(); }
+    size_t nInputs() const { return m_nInputs; }
 
     // The type of this vertex
     VDfgType type() const { return m_type; }
@@ -247,9 +269,12 @@ public:
     // Calls given function 'f' for each source vertex of this vertex. If 'f'
     // returns true, further sources are not iterated and this method returns
     // true itself. Unconnected source edges are not iterated.
-    bool foreachSource(std::function<bool(DfgVertex&)> f) {
-        for (const std::unique_ptr<DfgEdge>& edgep : m_inputps) {
-            if (DfgVertex* const srcp = edgep->srcp()) {
+    template <typename T_Callable>
+    bool foreachSource(T_Callable&& f) {
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, DfgVertex&>::value,
+                      "T_Callable 'f' must have a signature compatible with 'bool(DfgVertex&)'");
+        for (size_t i = 0; i < m_nInputs; ++i) {
+            if (DfgVertex* const srcp = inputEdgep(i)->srcp()) {
                 if (f(*srcp)) return true;
             }
         }
@@ -259,9 +284,13 @@ public:
     // Calls given function 'f' for each source vertex of this vertex. If 'f'
     // returns true, further sources are not iterated and this method returns
     // true itself. Unconnected source edges are not iterated.
-    bool foreachSource(std::function<bool(const DfgVertex&)> f) const {
-        for (const std::unique_ptr<DfgEdge>& edgep : m_inputps) {
-            if (DfgVertex* const srcp = edgep->srcp()) {
+    template <typename T_Callable>
+    bool foreachSource(T_Callable&& f) const {
+        static_assert(
+            vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&>::value,
+            "T_Callable 'f' must have a signature compatible with 'bool(const DfgVertex&)'");
+        for (size_t i = 0; i < m_nInputs; ++i) {
+            if (const DfgVertex* const srcp = inputEdgep(i)->srcp()) {
                 if (f(*srcp)) return true;
             }
         }
@@ -272,7 +301,10 @@ public:
     // returns true, further sinks are not iterated and this method returns
     // true itself. Unlinking/deleting the given sink during iteration is safe,
     // but not other sinks of this vertex.
-    bool foreachSink(std::function<bool(DfgVertex&)> f) {
+    template <typename T_Callable>
+    bool foreachSink(T_Callable&& f) {
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, DfgVertex&>::value,
+                      "T_Callable 'f' must have a signature compatible with 'bool(DfgVertex&)'");
         for (const DfgEdge* const edgep : m_sinks.unlinkable()) {
             if (f(*edgep->dstp())) return true;
         }
@@ -282,7 +314,11 @@ public:
     // Calls given function 'f' for each sink vertex of this vertex. If 'f'
     // returns true, further sinks are not iterated and this method returns
     // true itself.
-    bool foreachSink(std::function<bool(const DfgVertex&)> f) const {
+    template <typename T_Callable>
+    bool foreachSink(T_Callable&& f) const {
+        static_assert(
+            vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&>::value,
+            "T_Callable 'f' must have a signature compatible with 'bool(const DfgVertex&)'");
         for (const DfgEdge& edge : m_sinks) {
             if (f(*edge.dstp())) return true;
         }
@@ -810,6 +846,14 @@ void DfgEdge::relinkSrcp(DfgVertex* srcp) {
 // }}}
 
 // DfgVertex {{{
+
+DfgEdge* DfgVertex::inputEdgep(size_t i) const {
+    UDEBUGONLY(UASSERT_OBJ(i < m_nInputs, this, "Input index out of range"););
+    if (VL_LIKELY(m_inlineInputsp)) return m_inlineInputsp + i;
+    // 'm_inlineInputsp' is null exactly for a DfgVertexVariadic
+    UDEBUGONLY(UASSERT_OBJ(is<DfgVertexVariadic>(), this, "Vertex without input edge storage"););
+    return static_cast<const DfgVertexVariadic*>(this)->m_edgeps[i].get();
+}
 
 bool DfgVertex::isCheaperThanLoad() const {
     // Constants

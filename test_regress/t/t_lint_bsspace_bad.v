@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2017 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Fake binary character here '', so is treated as binary and
+// Fake binary character here '', so is treated as binary and
 // don't get whitespace violation.
 
 `define FOO   blak \ 

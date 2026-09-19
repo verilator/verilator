@@ -28,11 +28,24 @@ class ahb_seq_item;
 
 endclass
 
-
 module top;
+
+  class c;
+    string m_buf;
+
+    // Issue #8198
+    function void f(string s);
+      m_buf = "\"";
+      if (s[0] == "\"") m_buf = "\\\"";
+    endfunction
+  endclass
 
   initial begin
     ahb_seq_item tr;
+
+    automatic c o = new();
+    o.f("a");
+    $display("%0s", o.m_buf);
 
     tr = new();
     tr.data = '{'h11, 'h22, 'h33, 'h44, 'h55, 'h66};

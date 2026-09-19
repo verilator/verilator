@@ -32,6 +32,7 @@ Bagri
 Balboni
 Baltazar
 Bardsley
+Barua
 Benchmarking
 Berman
 Bhagavatula
@@ -198,6 +199,7 @@ Holme
 Homebrew
 Hornung
 Hossell
+Hsieh
 Hsu
 Huggett
 Hutt
@@ -389,6 +391,7 @@ Preprocess
 Pretet
 Pretl
 Pringlemeir
+Prithayan
 Priyadharshini
 Pullup
 Pulver
@@ -513,6 +516,7 @@ Ueno
 Uints
 Undefine
 Undefines
+Unigen
 Unsized
 Uppal
 Urbach
@@ -623,6 +627,7 @@ benchmarking
 biguint
 binToOneHot
 bindir
+binsof
 biops
 bisonpre
 bitOpTree
@@ -943,6 +948,7 @@ makefile
 makefiles
 malloc
 manpages
+memoization
 metacomment
 metacomments
 miree
@@ -1000,6 +1006,7 @@ noprivate
 noreturn
 notif
 nullptr
+num
 numactl
 onehot
 ooo
@@ -1177,6 +1184,7 @@ systemc
 taskify
 tcmalloc
 tcmalloc
+teardown
 tenghtt
 testbench
 testbenches

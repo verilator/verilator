@@ -24,7 +24,9 @@ jobs:
           path: repo
 
       - name: Install dependencies
-        run: ./ci/ci-install.bash lint-py
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: lint-py
 
       - name: Configure
         run: |

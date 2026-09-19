@@ -7,6 +7,20 @@ cg_mixed.opcode.load: 1
 cg_mixed.opcode.nop: 1
 cg_mixed.opcode.other: 1
 cg_mixed.opcode.store: 1
+cg_namers.cp.first: 1
+cg_namers.cp.ignored[0] [ignore]: 1
+cg_namers.cp.ignored[1] [ignore]: 1
+cg_namers.cp.illegal [illegal]: 0
+cg_namers.cp.last: 5
+cg_namers.cp.middle[0]: 2
+cg_namers.cp.middle[1]: 3
+cg_namers.cp.middle[2]: 4
+cg_namers.cp_tag.zero: 17
+cg_namers.cx.first_x_zero [cross]: 1
+cg_namers.cx.last_x_zero [cross]: 5
+cg_namers.cx.middle[0]_x_zero [cross]: 2
+cg_namers.cx.middle[1]_x_zero [cross]: 3
+cg_namers.cx.middle[2]_x_zero [cross]: 4
 cg_sel.cp.hi: 1
 cg_sel.cp.lo: 1
 cg_unbounded.cp.lo: 1

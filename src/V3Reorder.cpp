@@ -293,7 +293,6 @@ class ReorderVisitor final : public VNVisitor {
         for (AstNode* currp = nodep; currp; currp = currp->nextp()) {
             ReorderLogicVertex* const vtxp = currp->user3u().to<ReorderLogicVertex*>();
             const uint32_t color = vtxp->color();
-            UASSERT_OBJ(color, currp, "No node color assigned");
             if (lastOfColor[color]) new ReorderStrictEdge{m_graphp, lastOfColor[color], vtxp};
             lastOfColor[color] = vtxp;
         }
@@ -321,7 +320,7 @@ class ReorderVisitor final : public VNVisitor {
 
         // Is the current ordering OK?
         bool leaveAlone = true;
-        int newOrder = 0;  // New sequence number of assignment
+        uint64_t newOrder = 0;  // New sequence number of assignment
         for (const auto& item : rankMap) {
             const AstNode* const nextp = item.second;
             if (++newOrder != nextp->user4()) leaveAlone = false;
@@ -427,6 +426,15 @@ class ReorderVisitor final : public VNVisitor {
     void visit(AstJumpGo* nodep) override {
         if (!m_graphp || m_noReorderWhy) return;
         m_noReorderWhy = "JumpGo";
+        iterateChildren(nodep);
+    }
+
+    void visit(AstNodeCCall* nodep) override {
+        if (!m_graphp || m_noReorderWhy) return;
+        // The callee is not inlined, so the variables it reads and writes carry no VarRef at
+        // the call site, and the scoreboard would let assignments to them move across the
+        // call. Treat any such call as a barrier.
+        m_noReorderWhy = "CCall";
         iterateChildren(nodep);
     }
 

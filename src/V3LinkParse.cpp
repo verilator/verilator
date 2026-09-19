@@ -298,6 +298,12 @@ class LinkParseVisitor final : public VNVisitor {
         v3Global.useRandomizeMethods(true);
         iterateChildren(nodep);
     }
+    void visit(AstConstraintForeach* nodep) override {
+        if (nodep->isSoft()) {
+            nodep->v3warn(NONSTD, "Non-standard soft foreach");
+            nodep->foreach([](AstConstraintExpr* exprp) { exprp->isSoft(true); });
+        }
+    }
     void visit(AstEnumDType* nodep) override {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
@@ -345,6 +351,11 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         cleanFileline(nodep);
         UINFO(9, "VAR " << nodep);
+        const AstClass* const classp = VN_CAST(m_modp, Class);
+        if (classp && classp->isCovergroup() && nodep->isClassMember() && !nodep->isFuncLocal()
+            && (nodep->declDirection().isRef() || nodep->declDirection().isConstRef())) {
+            nodep->covergroupRefMember(true);
+        }
         if (nodep->valuep()) nodep->hasUserInit(true);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
         // responsible for marking those.
@@ -1145,17 +1156,18 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Append, for each arg in argsp, an INPUT parameter plus a "this.<member> = <param>"
+    // Append, for each arg in argsp, a parameter plus a "this.<member> = <param>"
     // assignment to funcp.  The parameter is a clone of the covergroup member and so shares its
     // name; 'this.' on the LHS targets the member, otherwise the same-named local parameter
     // shadows it and the assignment self-assigns the parameter, leaving the member unwritten.
     // argsp may be null (no args appended).
-    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp) {
+    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp, bool readOnlyRefs) {
         for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
             paramp->funcLocal(true);
-            paramp->direction(VDirection::INPUT);
+            paramp->direction(origVarp->direction());
+            if (readOnlyRefs && origVarp->isRef()) paramp->direction(VDirection::CONSTREF);
             funcp->addStmtsp(paramp);
             AstNodeExpr* const lhsp = new AstDot{
                 origVarp->fileline(), false, new AstParseRef{origVarp->fileline(), "this"},
@@ -1184,7 +1196,7 @@ class LinkParseVisitor final : public VNVisitor {
             // before the coverage body, then re-append the body.
             AstNode* const existingBodyp = newFuncp->stmtsp();
             if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
-            addArgMemberCopies(newFuncp, argsp);
+            addArgMemberCopies(newFuncp, argsp, true);
             if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
         }
 
@@ -1213,9 +1225,10 @@ class LinkParseVisitor final : public VNVisitor {
         // IEEE: function void sample([arguments])
         {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            addArgMemberCopies(funcp, sampleArgsp);
+            addArgMemberCopies(funcp, sampleArgsp, false);
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
+            funcp->keepAlive(true);  // TODO create AstFuncRef and hold until findMethod("sample")
             nodep->addMembersp(funcp);
         }
 
@@ -1272,6 +1285,23 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
 
+    bool dropDeprecatedCoverageOption(AstCgOptionAssign* const nodep) {
+        if (!(nodep->optType() == VCoverOptionType::CROSS_AUTO_BIN_MAX)) return false;
+        cleanFileline(nodep);
+        nodep->v3warn(NONSTD, "Coverage option 'option."
+                                  << nodep->optType().ascii()
+                                  << "' is deprecated and ignored; it was removed from the "
+                                     "IEEE LRM because it was poorly defined.");
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        return true;
+    }
+
+    void visit(AstCgOptionAssign* nodep) override {
+        if (dropDeprecatedCoverageOption(nodep)) return;
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+
     void visit(AstCovergroup* nodep) override {
         // AstCovergroup can only appear inside a module/class/package; never at root level.
         UASSERT_OBJ(m_modp, nodep, "AstCovergroup not under module");
@@ -1299,16 +1329,33 @@ class LinkParseVisitor final : public VNVisitor {
         // Convert constructor args to member variables
         for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
+            if (origVarp->direction() == VDirection::OUTPUT
+                || origVarp->direction() == VDirection::INOUT) {
+                origVarp->v3error("Covergroup formal arguments cannot be output or inout"
+                                  " (IEEE 1800-2012 19.3)");
+                origVarp->direction(VDirection::INPUT);
+            }
+            if ((origVarp->isRef() || origVarp->isConstRef()) && origVarp->valuep()) {
+                origVarp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: default value on ref or const ref covergroup "
+                                 "formal argument");
+            }
             AstVar* const memberp = origVarp->cloneTree(false);
             memberp->varType(VVarType::MEMBER);
             memberp->funcLocal(false);
             memberp->direction(VDirection::NONE);
+            if (origVarp->isRef() || origVarp->isConstRef()) memberp->noReset(true);
             cgClassp->addMembersp(memberp);
         }
 
         // Convert sample args to member variables
         for (AstNode* argp = nodep->sampleArgsp(); argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
+            if (!origVarp->isInput()) {
+                origVarp->v3error("Covergroup sample formal argument must have input direction "
+                                  "(IEEE 1800-2012 19.8.1).");
+                origVarp->direction(VDirection::INPUT);
+            }
             AstVar* const memberp = origVarp->cloneTree(false);
             memberp->varType(VVarType::MEMBER);
             memberp->funcLocal(false);
@@ -1371,10 +1418,11 @@ class LinkParseVisitor final : public VNVisitor {
         for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
+                if (dropDeprecatedCoverageOption(optp)) continue;
                 optp->unlinkFrBack();
-                if (optp->optionType() == VCoverOptionType::AT_LEAST
-                    || optp->optionType() == VCoverOptionType::AUTO_BIN_MAX) {
-                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optionType(),
+                if (optp->optType() == VCoverOptionType::AT_LEAST
+                    || optp->optType() == VCoverOptionType::AUTO_BIN_MAX) {
+                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optType(),
                                                           optp->valuep()->cloneTree(false)});
                 } else {
                     optp->v3warn(COVERIGN,
@@ -1386,17 +1434,57 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstCoverBinsof* nodep) override {
+        cleanFileline(nodep);
+        AstCoverpointRef* const refp = nodep->pointp();
+        const AstParseRef* pointp = VN_CAST(refp->exprp(), ParseRef);
+        const AstParseRef* binp = nullptr;
+        const AstDot* const dotp = VN_CAST(refp->exprp(), Dot);
+        if (dotp) {
+            pointp = VN_CAST(dotp->lhsp(), ParseRef);
+            binp = VN_CAST(dotp->rhsp(), ParseRef);
+        }
+        if (!pointp || (dotp && !binp)) {
+            nodep->v3warn(COVERIGN, "Unsupported: 'binsof' in coverage select expression");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        // These names belong to the coverage namespace, not the sampled variables.
+        if (binp) nodep->name(binp->name());
+        refp->replaceWith(new AstCoverpointRef{pointp->fileline(), pointp->name()});
+        VL_DO_DANGLING(pushDeletep(refp), refp);
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverCrossBin* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        if (!nodep->selectp()) {
+            nodep->v3warn(COVERIGN, "Unsupported: explicit coverage cross bins");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        }
+    }
+
+    void visit(AstCoverCrossSelect* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        if (!nodep->lhsp()
+            || !nodep->rhsp()) {  // Due to earlier Unsupported errors dropping only one operand
+                                  // would silently change the selected set.
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        }
+    }
+
     void visit(AstCoverCross* nodep) override {
         cleanFileline(nodep);
-        // Distribute the parse-time raw cross_body list (rawBodyp, op3) into the
-        // typed optionsp slot.  The grammar produces AstCgOptionAssign nodes for
-        // option.* items; convert them to AstCoverOption exactly as visit(AstCoverpoint*)
-        // does.  Other items (functions, unsupported bin selectors) are discarded.
-        for (AstNode *itemp = nodep->rawBodyp(), *nextp; itemp; itemp = nextp) {
+        // Move options out of the mixed parse-time body, leaving only cross bins.
+        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
-            itemp->unlinkFrBack();
+            if (VN_IS(itemp, CoverCrossBin)) continue;
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
-            const VCoverOptionType optType = optp->optionType();
+            if (dropDeprecatedCoverageOption(optp)) continue;
+            itemp->unlinkFrBack();
+            const VCoverOptionType optType = optp->optType();
             optp->v3warn(COVERIGN,
                          "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             // Always preserve the option node so V3Coverage can track its source line

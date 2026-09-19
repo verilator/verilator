@@ -19,11 +19,7 @@
 //======================================================================
 
 #if defined(VERILATOR)
-#ifdef T_DPI_EXPORT_NOOPT
-#include "Vt_dpi_export_noopt__Dpi.h"
-#else
-#include "Vt_dpi_export__Dpi.h"
-#endif
+#include VM_PREFIX_INCLUDE_DPI
 #elif defined(VCS)
 #include "../vc_hdrs.h"
 #elif defined(CADENCE)

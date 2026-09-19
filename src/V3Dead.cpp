@@ -37,12 +37,206 @@
 
 #include "V3Dead.h"
 
+#include "V3Graph.h"
 #include "V3Stats.h"
 
 #include <queue>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+//######################################################################
+// Dead tracking graph
+
+class DeadVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(DeadVertex, V3GraphVertex)
+    AstNode* const m_nodep;  // Node that created vertex
+    uint64_t m_workPos = 0;  // Position on DeadWorkList, 0 = not on list
+    bool m_removable = false;  // Subject to dead removal
+    bool m_isVirtual = false;  // Virtual node, indirection
+
+public:
+    DeadVertex(V3Graph* graphp, AstNode* nodep)
+        : V3GraphVertex{graphp}
+        , m_nodep{nodep} {}
+    ~DeadVertex() override = default;
+    string dotShape() const override {
+        return isVirtual() ? "diamond" : removable() ? "rectangle" : "ellipse";
+    }
+    AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
+    string name() const override VL_MT_STABLE {
+        return (isVirtual()   ? "[VIRT] "
+                : removable() ? "[R] "s
+                              : "[NR] ")
+               + nodep()->typeName() + ' ' + cvtToHex(nodep()) + ' ' + nodep()->name();
+    }
+    bool removable() const { return m_removable; }
+    void removable(bool flag) { m_removable = flag; }
+    bool isVirtual() const { return m_isVirtual; }
+    void isVirtual(bool flag) { m_isVirtual = flag; }
+    uint64_t workPos() const { return m_workPos; }
+    void workPos(uint64_t value) { m_workPos = value; }
+};
+
+// Work list which keeps ordering of elements (so stable), adds always to
+// the end of the queue, and allows arbitrary removal
+class DeadWorkList final {
+    // MEMBERS
+    static uint64_t s_sequence;  // Sequence number, inc each push
+    std::map<uint64_t, DeadVertex*> m_works;  // Work list by sequence
+public:
+    // METHODS
+    bool empty() const { return m_works.empty(); }
+    void push(DeadVertex* vtxp) {
+        if (vtxp->workPos()) return;  // Already on list
+        const uint64_t id = ++s_sequence;
+        vtxp->workPos(id);
+        m_works.emplace(id, vtxp);
+        UINFO(9, "Worklist.push " << vtxp);
+    }
+    void erase(DeadVertex* vtxp) {
+        const uint64_t id = vtxp->workPos();
+        if (!id) return;
+        UINFO(9, "Worklist.erase " << vtxp);
+        const auto it = m_works.find(id);
+        UASSERT_OBJ(it != m_works.end(), vtxp->nodep(),
+                    "vertex thought to be on work list but not");
+        m_works.erase(it);
+        vtxp->workPos(0);
+    }
+    DeadVertex* getPopFront() {
+        UDEBUGONLY(UASSERT(!empty(), "Front invalid to call on empty list"););
+        const auto it = m_works.begin();
+        DeadVertex* const vtxp = it->second;
+        m_works.erase(it);
+        vtxp->workPos(0);
+        UINFO(9, "Worklist.getPopFront " << vtxp);
+        return vtxp;
+    }
+};
+
+uint64_t DeadWorkList::s_sequence = 0;
+
+class DeadGraph final : public V3Graph {
+    // NODE STATE
+    //  AstNodeFTask::user2p()  -> DeadVertex* for this node
+    //  See const VNUser2InUse m_inuser2; inside DeadVisitor
+    // MEMBERS
+    DeadWorkList m_funcs;  // Functions eligble for deletion
+    // Each virtual vertex by the ftask name()
+    std::unordered_map<std::string, DeadVertex*> m_virtualVtxsp;
+
+    void newEdge(DeadVertex* fromp, DeadVertex* top) {
+        new V3GraphEdge{this, fromp, top, 1, false};
+        if (top->removable()) m_funcs.erase(top);  // Now has an input edge
+    }
+    void pushWorkMaybe(DeadVertex* vtxp, bool allowSize1) {
+        if (vtxp->removable()) {
+            if (VN_IS(vtxp->nodep(), NodeFTask)
+                && (vtxp->inEmpty() || (allowSize1 && vtxp->inSize1())))
+                m_funcs.push(vtxp);
+        }
+    }
+
+public:
+    // METHODS
+    DeadGraph() = default;
+    ~DeadGraph() override = default;
+    DeadVertex* findNewVertex(AstNode* nodep) {
+        DeadVertex* vtxp = nodep->user2u().to<DeadVertex*>();
+        if (!vtxp) {
+            vtxp = new DeadVertex{this, nodep};
+            nodep->user2p(vtxp);
+            pushWorkMaybe(vtxp, false);
+        }
+        UASSERT_OBJ(vtxp->nodep() == nodep, nodep, "Vertex points at different node");
+        return vtxp;
+    }
+    DeadVertex* findVirtualVertex(AstNode* nodep) {
+        const auto it = m_virtualVtxsp.find(nodep->name());
+        DeadVertex* vtxp;
+        if (it != m_virtualVtxsp.end()) {
+            vtxp = it->second;
+        } else {
+            vtxp = new DeadVertex{this, nodep};
+            vtxp->removable(true);
+            vtxp->isVirtual(true);
+            pushWorkMaybe(vtxp, false);
+            m_virtualVtxsp.emplace(nodep->name(), vtxp);
+        }
+        return vtxp;
+    }
+    void findNewRemovableVertex(AstNode* nodep, bool removable) {
+        DeadVertex* const vtxp = findNewVertex(nodep);
+        // Wasn't removable before (due to earlier insert), make removable now
+        if (removable && !vtxp->removable()) {
+            vtxp->removable(true);
+            pushWorkMaybe(vtxp, false);
+        }
+    }
+    void deleteNodeVertex(AstNode* nodep) {
+        if (DeadVertex* const vtxp = nodep->user2u().to<DeadVertex*>()) deleteVertex(vtxp);
+    }
+    void deleteVertex(DeadVertex* vtxp) {
+        UINFO(9, "Delete vertex " << vtxp->name());
+        // Mark all about-to-empty downstream vertices onto worklist
+        for (const V3GraphEdge& oedge : vtxp->outEdges()) {
+            DeadVertex* const toVtxp = static_cast<DeadVertex*>(oedge.top());
+            pushWorkMaybe(toVtxp, true);  // size1 ok as about to delete below
+        }
+        // Node shouldn't be looking at user2p later as node being deleting, but in case
+        if (!vtxp->isVirtual()) vtxp->nodep()->user2p(nullptr);
+        if (vtxp->removable()) m_funcs.erase(vtxp);
+        VL_DO_DANGLING(vtxp->unlinkDelete(this), vtxp);
+    }
+    // This only tracks usage dependancy, not "containership",
+    // When all needs disappear the related node is eligble for deletion
+    void needs(AstNode* nodep, AstNode* parentp) {
+        if (parentp == nodep) return;  // No need for tracking needs itself (recursion)
+        UINFO(9, "Edge node " << nodep << " -> " << parentp);
+        DeadVertex* const parentVtxp = findNewVertex(parentp);
+        DeadVertex* const nodeVtxp = findNewVertex(nodep);
+        UINFO(9, "Edge need " << parentVtxp << " -> " << nodeVtxp);
+        newEdge(parentVtxp, nodeVtxp);
+    }
+    void needsVirtual(AstNodeFTask* nodep, AstNode* parentp) {
+        // Virtual call can be to any function in the call hierarchy.
+        // For simplicity rather than tracking possible multiple base
+        // classes (due to 'implements' classes there can be more than
+        // one), we simply assume all virtual functions of the same name
+        // can call any other virtual function of the same name
+        // Track via an intermediate node.
+        //  All calling parents' verticies -> Virtual Vertex -> all ftasks verticies
+        if (parentp == nodep) return;  // No need for tracking needs itself (recursion)
+        DeadVertex* const parentVtxp = findNewVertex(parentp);
+        DeadVertex* const virtualVtxp = findVirtualVertex(nodep);
+        UINFO(9, "Edge needVirtual " << parentVtxp << " -> " << virtualVtxp);
+        newEdge(parentVtxp, virtualVtxp);
+    }
+    void funcVirtual(AstNodeFTask* nodep) {
+        //  Virtual Vertex -> all ftasks verticies
+        DeadVertex* const virtualVtxp = findVirtualVertex(nodep);
+        DeadVertex* const nodeVtxp = findNewVertex(nodep);
+        UINFO(9, "Edge funcvirtual " << virtualVtxp << " -> " << nodeVtxp);
+        newEdge(virtualVtxp, nodeVtxp);
+    }
+    bool funcsEmpty() const { return m_funcs.empty(); }
+    AstNode* funcsGetPopFront() {
+        DeadVertex* const vtxp = m_funcs.getPopFront();
+        UASSERT_OBJ(vtxp->inEmpty(), vtxp->nodep(), "Non-empty node on work list");
+        UASSERT_OBJ(vtxp->removable(), vtxp->nodep(), "Non-removable node on work list");
+        if (vtxp->isVirtual()) {
+            // Emptied (no inbound edge) virtual wrapper; all
+            // destinations verticies are now unused too (e.g. all virtual
+            // functions of this name may be deleted)
+            UINFO(9, "Removing virtual " << vtxp);
+            deleteVertex(vtxp);
+            return nullptr;  // Caller will search again
+        }
+        AstNode* const nodep = vtxp->nodep();
+        return nodep;
+    }
+};
 
 //######################################################################
 // Dead state, as a visitor of each AstNode
@@ -54,8 +248,8 @@ class DeadVisitor final : public VNVisitor {
     //  AstVar::user1()         -> int. Count of number of references
     //  AstVarScope::user1()    -> int. Count of number of references
     //  AstNodeDType::user1()   -> int. Count of number of references
-    //  AstNodeFTask::user1()   -> int. Count of number of references (via AstNodeFTaskRefs)
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;  // For usage information see DeadGraph
 
     // TYPES
     using AssignMap = std::multimap<AstVarScope*, AstNodeAssign*>;
@@ -64,6 +258,9 @@ class DeadVisitor final : public VNVisitor {
     const bool m_elimUserVars;  // Allow removal of user's vars
     const bool m_elimDTypes;  // Allow removal of DTypes
     const bool m_elimCells;  // Allow removal of Cells
+
+    DeadGraph m_graph;  // Tracking graph
+
     // List of all encountered to avoid another loop through tree
     std::vector<AstVar*> m_varsp;
     std::vector<AstNode*> m_dtypeElimsp;  // Data types might eliminate
@@ -73,7 +270,6 @@ class DeadVisitor final : public VNVisitor {
     std::vector<AstCell*> m_cellsp;
     std::vector<AstClass*> m_classesp;
     std::vector<AstTypedef*> m_typedefsp;
-    std::queue<AstNodeFTask*> m_tasksp;  // All the tasks that could be removed if not called
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
 
@@ -82,14 +278,19 @@ class DeadVisitor final : public VNVisitor {
     AstNodeDType* m_curDTypep = nullptr;  // Current NodeDType
     AstNodeModule* m_modp = nullptr;  // Current module
     AstForeachHeader* m_foreachHeaderp = nullptr;  // Current foreach header
+    AstNode* m_containingFTaskRefp = nullptr;  // Parent of ftaskref (e.g. task/module)
 
     // STATE - Statistic tracking
-    VDouble0 m_statFTasksDeadified;
+    VDouble0 m_statFTasksDemoted;
+    VDouble0 m_statFTasksMDeadified;
+    VDouble0 m_statFTasksNMDeadified;
+    VDouble0 m_statFTasksVirtDeadified;
 
     // METHODS
 
     void deleting(AstNode* nodep) {
         UINFO(9, "  deleting " << nodep);
+        m_graph.deleteNodeVertex(nodep);
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
@@ -118,12 +319,22 @@ class DeadVisitor final : public VNVisitor {
         if (AstNode* const subnodep = nodep->virtRefDTypep()) subnodep->user1Inc();
         if (AstNode* const subnodep = nodep->virtRefDType2p()) subnodep->user1Inc();
     }
+    void needsTask(AstNodeFTask* taskp, AstNode* containerp) {
+        if (!taskp) return;  // Unlinked
+        if (taskp->isVirtual()) {
+            m_graph.needsVirtual(taskp, containerp);
+        } else {
+            m_graph.needs(taskp, containerp);
+        }
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         if (m_modp) m_modp->user1Inc();  // e.g. Class under Package
         VL_RESTORER(m_modp);
         m_modp = nodep;
+        VL_RESTORER(m_containingFTaskRefp);
+        m_containingFTaskRefp = nodep;
         if (nodep->dead()) return;
         if (nodep->modPublic()) m_modp->user1Inc();
         iterateChildren(nodep);
@@ -175,7 +386,7 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!m_sideEffect && !nodep->isPure()) m_sideEffect = true;
         checkAll(nodep);
-        if (nodep->taskp()) nodep->taskp()->user1Inc();
+        needsTask(nodep->taskp(), m_containingFTaskRefp);
         if (nodep->classOrPackagep()) {
             if (m_elimCells) {
                 nodep->classOrPackagep(nullptr);
@@ -187,7 +398,7 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstModportFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->ftaskp()) nodep->ftaskp()->user1Inc();
+        needsTask(nodep->ftaskp(), m_containingFTaskRefp);
     }
     void visit(AstRefDType* nodep) override {
         iterateChildren(nodep);
@@ -235,6 +446,11 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
+    }
+    void visit(AstEnumDType* nodep) override {
+        // Widthing during parameter evaluation may have populated the cache.
+        nodep->tableMap().clear();
+        visit(static_cast<AstNodeDType*>(nodep));
     }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
@@ -327,13 +543,19 @@ class DeadVisitor final : public VNVisitor {
         if (assignInAssign) m_sideEffect = true;  // Parent assign shouldn't optimize
     }
     void visit(AstNodeFTask* nodep) override {
+        const bool removable = !(nodep->taskPublic() || nodep->dpiExport() || nodep->dpiImport()
+                                 || nodep->keepAlive() || nodep->isConstructor()
+                                 || (!v3Global.opt.fDeadMethods() && nodep->classMethod()));
+        m_graph.findNewRemovableVertex(nodep, removable);
+        //
+        VL_RESTORER(m_containingFTaskRefp);
+        m_containingFTaskRefp = nodep;
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->taskPublic() || nodep->dpiExport() || nodep->dpiImport()) {
+        if (nodep->isVirtual()) m_graph.funcVirtual(nodep);
+        if (!removable) {
             if (m_modp && !m_modp->dead() && !m_modp->verilatorLib())
                 m_modp->user1Inc();  // Keep container
-        } else {
-            m_tasksp.push(nodep);
         }
         if (nodep->classOrPackagep()) {
             if (m_elimCells) {
@@ -374,19 +596,41 @@ class DeadVisitor final : public VNVisitor {
     }
 
     void deadCheckTasks() {
-        while (!m_tasksp.empty()) {
-            AstNodeFTask* taskp = m_tasksp.front();
-            m_tasksp.pop();
-            if (taskp->user1() == 0 && !taskp->classMethod()) {
-                taskp->foreach([this](AstNodeFTaskRef* ftaskrefp) {
-                    AstNodeFTask* task2p = ftaskrefp->taskp();
-                    if (!task2p) return;
-                    task2p->user1Inc(-1);
-                    if (task2p->user1() == 0) m_tasksp.push(task2p);
-                });
-                taskp->user1(-1);  // we don't want to try deleting twice
-                deleting(taskp);
-                ++m_statFTasksDeadified;
+        while (!m_graph.funcsEmpty()) {
+            AstNode* const nodep = m_graph.funcsGetPopFront();
+            if (!nodep) continue;
+            UINFO(9, "Dead " << nodep);
+            if (AstNodeFTask* const taskp = VN_CAST(nodep, NodeFTask)) {
+                if (taskp->isVirtual()) {
+                    ++m_statFTasksVirtDeadified;
+                } else if (taskp->classMethod()) {
+                    ++m_statFTasksMDeadified;
+                } else {
+                    ++m_statFTasksNMDeadified;
+                }
+            }
+            deleting(nodep);
+        }
+    }
+
+    void deadCheckDemote() {
+        for (V3GraphVertex& gvtx : m_graph.vertices()) {
+            DeadVertex* const vtxp = gvtx.cast<DeadVertex>();
+            // A isVirtual vertex with single out means there's only one target virtual function
+            // that can be virtually called, so can make it non-virtual for faster execution
+            // (UVM benefits from this)
+            if (!vtxp->outSize1()) continue;
+            if (!vtxp->isVirtual()) continue;
+            for (V3GraphEdge& edge : vtxp->outEdges()) {  // Always a single one
+                AstNode* const nodep = edge.top()->as<DeadVertex>()->nodep();
+                AstNodeFTask* const funcp = VN_AS(nodep, NodeFTask);
+                UASSERT_OBJ(funcp->isVirtual(), funcp,
+                            "Only virtual ftasks should be under DeadVirtualVertex");
+                if (v3Global.opt.fDeadMethods()) {
+                    funcp->isVirtual(false);
+                    UINFO(9, "Demote to non-virtual " << funcp);
+                    ++m_statFTasksDemoted;
+                }
             }
         }
     }
@@ -400,7 +644,10 @@ class DeadVisitor final : public VNVisitor {
             AstNodeModule* nextmodp;
             for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp = nextmodp) {
                 nextmodp = VN_AS(modp->nextp(), NodeModule);
-                if (modp->dead() || (!modp->isTop() && modp->user1() == 0 && !modp->internal())) {
+                // Keep $unit until m_elimCells stages. Note v3Global.opt.serializeOnly()
+                // won't reach this stage, and will always have an empty $unit. That's ok.
+                const bool keep = !m_elimCells && modp == v3Global.rootp()->dollarUnitPkgp();
+                if (modp->dead() || (!modp->isTop() && modp->user1() == 0 && !keep)) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
                     UINFO(4, "  Dead module " << modp);
                     // And its children may now be killable too; correct counts
@@ -409,6 +656,9 @@ class DeadVisitor final : public VNVisitor {
                         modp->foreach([](const AstCell* cellp) {  //
                             cellp->modp()->user1Inc(-1);
                         });
+                    }
+                    if (modp == v3Global.rootp()->dollarUnitPkgp()) {
+                        v3Global.rootp()->dollarUnitPkgp(nullptr);
                     }
                     deleting(modp);
                     retry = true;
@@ -566,9 +816,11 @@ public:
                 bool elimCells, bool elimTopIfaces, bool elimTasks)
         : m_elimUserVars{elimUserVars}
         , m_elimDTypes{elimDTypes}
-        , m_elimCells{elimCells} {
+        , m_elimCells{elimCells}
+        , m_containingFTaskRefp{nodep} {
         // Prepare to remove some datatypes
         nodep->typeTablep()->clearCache();
+
         // Operate on whole netlist
         iterate(nodep);
 
@@ -582,6 +834,11 @@ public:
             if (itr.first->user1()) itr.second->user1Inc();
         }
 
+        // Simplify redundant edges (e.g. function calls another function many times)
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
+        if (dumpGraphLevel() >= 9 || debug() >= 9)
+            m_graph.dumpDotFilePrefixed("dead_graph", false);
+
         if (elimTasks) deadCheckTasks();
         deadCheckTypedefs();
         deadCheckVar();
@@ -594,13 +851,22 @@ public:
         if (!elimTopIfaces) preserveTopIfaces(nodep);
         deadCheckMod();
 
+        // After deleting as much as can, demote some virtual functions
+        if (elimTasks) deadCheckDemote();
+
         // We may have removed some datatypes, cleanup
         nodep->typeTablep()->repairCache();
         VIsCached::clearCacheTree();  // Removing assignments may affect isPure
         nodep->constPoolp()->rebuildVarScopesAndCache();
     }
     ~DeadVisitor() override {
-        V3Stats::addStatSum("Optimizations, deadified FTasks", m_statFTasksDeadified);
+        V3Stats::addStatSum("Optimizations, FTasks, virtual-to-nonvirtual demotion",
+                            m_statFTasksDemoted);
+        V3Stats::addStatSum("Optimizations, FTasks, deadified, methods", m_statFTasksMDeadified);
+        V3Stats::addStatSum("Optimizations, FTasks, deadified, non-methods",
+                            m_statFTasksNMDeadified);
+        V3Stats::addStatSum("Optimizations, FTasks, deadified, virtual",
+                            m_statFTasksVirtDeadified);
     };
 };
 

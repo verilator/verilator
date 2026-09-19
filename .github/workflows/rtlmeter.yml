@@ -22,8 +22,18 @@ defaults:
     shell: bash
 
 concurrency:
-  # At most 1 job per branch. Auto cancel all but scheduled jobs
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # At most 1 job per branch. Auto cancel all but scheduled jobs.
+  # Label events that do not concern the 'pr: rtlmeter' label are given a
+  # unique concurrency group, so they do not cancel a run that is in progress.
+  # This way adding the label starts a run, removing it cancels the in-progress
+  # run, and any other label change has no effect. Note such an event still
+  # creates a run of this workflow, which is skipped, and would then hide the
+  # one in progress on the pull request. 'pr-run-cleanup.yml' deletes those.
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}-${{
+    (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+    && github.event.label.name != 'pr: rtlmeter'
+    && github.run_id || 'shared' }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
@@ -36,10 +46,14 @@ jobs:
       (github.event_name == 'schedule'
         && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
       (github.event_name == 'pull_request'
-        && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter')) ||
+        && ((github.event.action == 'labeled'
+             && github.event.label.name == 'pr: rtlmeter')
+            || (github.event.action != 'labeled'
+                && github.event.action != 'unlabeled'
+                && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter')))) ||
       (github.event_name == 'workflow_dispatch') ||
       (github.event_name == 'push')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       old-sha: ${{ steps.start.outputs.old-sha }}
       cases: ${{ steps.cases.outputs.cases }}
@@ -70,7 +84,7 @@ jobs:
       cc: gcc
       ccwarn: false
       install: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       sha: ${{ github.sha }}
 
   build-clang-new:
@@ -81,7 +95,7 @@ jobs:
       cc: clang
       ccwarn: false
       install: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       sha: ${{ github.sha }}
 
   build-gcc-old:
@@ -93,7 +107,7 @@ jobs:
       cc: gcc
       ccwarn: false
       install: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   build-clang-old:
@@ -105,7 +119,7 @@ jobs:
       cc: clang
       ccwarn: false
       install: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       sha: ${{ needs.start.outputs.old-sha }}
 
   run-gcc:
@@ -121,7 +135,7 @@ jobs:
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: gcc
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       cc: gcc
       verilator-archive-new: ${{ needs.build-gcc-new.outputs.archive }}
       verilator-archive-old: ${{ needs.build-gcc-old.outputs.archive }}
@@ -148,7 +162,7 @@ jobs:
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: clang
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       cc: clang
       verilator-archive-new: ${{ needs.build-clang-new.outputs.archive }}
       verilator-archive-old: ${{ needs.build-clang-old.outputs.archive }}
@@ -175,7 +189,7 @@ jobs:
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
       tag: gcc-hier
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       cc: gcc
       verilator-archive-new: ${{ needs.build-gcc-new.outputs.archive }}
       verilator-archive-old: ${{ needs.build-gcc-old.outputs.archive }}
@@ -200,7 +214,7 @@ jobs:
                (github.event_name == 'pull_request' && (contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure')))
             || (github.event_name != 'pull_request' && (contains(needs.*.result, 'success') ||  contains(needs.*.result, 'failure')))
           )}}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       # The run tags, derived from the 'run-*' dependency job names
       run-tags: ${{ steps.tags.outputs.tags }}
@@ -283,7 +297,7 @@ jobs:
     # dashboard UI currently assumes there is only one data point per
     # calendar day. Results from reruns can be imported manually if needed.
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && contains(needs.*.result, 'success') && !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Download combined results
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
@@ -334,7 +348,7 @@ jobs:
     name: Prepare Pull Request results
     needs: combine-results
     if: ${{ github.event_name == 'pull_request' && github.repository == 'verilator/verilator' && needs.combine-results.result == 'success' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       actions: read
     steps:
@@ -369,10 +383,6 @@ jobs:
           mkdir ../report-artifact
           mv rtlmeter-report/report ../report-artifact/
           echo ${{ github.event.number }} > ../report-artifact/pr-number.txt
-          # Create the notification artifact
-          mkdir ../notification-artifact
-          mv rtlmeter-report/notification.txt ../notification-artifact/body.txt
-          echo ${{ github.event.number }} > ../notification-artifact/pr-number.txt
 
       - name: Upload report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
@@ -380,11 +390,11 @@ jobs:
           path: report-artifact
           name: rtlmeter-report
 
-      - name: Upload notification
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+      - name: Upload PR notification
+        uses: ./verilator/.github/actions/upload-pr-notification
         with:
-          path: notification-artifact
-          name: pr-notification
+          path: verilator/rtlmeter-report/notification
+          key: rtlmeter
 
       - name: Report status
         run: exit ${{ steps.report.outputs.status }}
@@ -395,7 +405,7 @@ jobs:
     name: Create issue on failure
     needs: publish-scheduled-results
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       # Creating issues requires elevated privilege
       - name: Generate access token
