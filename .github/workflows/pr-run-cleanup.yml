@@ -37,6 +37,6 @@ jobs:
       - name: Delete run
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
+        run: |-
           echo "Deleting skipped '${{ github.event.workflow_run.name }}' run #${{ github.event.workflow_run.run_number }}"
           gh api --method DELETE "repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}"
