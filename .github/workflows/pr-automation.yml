@@ -1,0 +1,63 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+# Drives the automation of a pull request.
+
+name: Maintenance - PR automation
+
+on:
+  pull_request_target:  # 'pull_request' can have no write permissions
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+# Single job, to avoid startup churn. Use separate gated steps for actions
+jobs:
+  automate:
+    name: Automate
+    runs-on: ubuntu-slim
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: "Add 'pr: regression' label on open"
+        if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
+        run: |-
+          gh pr edit "${{ github.event.number }}" \
+            --repo "${{ github.repository }}" \
+            --add-label 'pr: regression'
+
+      - name: "Optionally add 'pr: dev-coverage' label on open"
+        if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
+        run: |-
+          # Grab changed files
+          FILES=$(gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${{ github.event.number }}/files" \
+            --jq '.[].filename')
+          echo "Files changed:"
+          echo "${FILES}"
+          # Add label if src or include chagned
+          if grep -q -E '^(src|include)/' <<< "${FILES}"; then
+            gh pr edit "${{ github.event.number }}" \
+              --repo "${{ github.repository }}" \
+              --add-label 'pr: dev-coverage'
+          fi
+
+      - name: "Remove all 'pr*' labels on close"
+        if: ${{ github.event.action == 'closed' }}
+        run: |-
+          # Filter in 'jq', so an empty result is not an error, as it is with 'grep'
+          LABELS=$(gh api \
+            "repos/${{ github.repository }}/issues/${{ github.event.number }}/labels?per_page=100" \
+            --jq '[.[].name | select(startswith("pr"))] | join(",")')
+          if [ -n "${LABELS}" ]; then
+            echo "Removing labels: ${LABELS}"
+            gh pr edit "${{ github.event.number }}" \
+              --repo "${{ github.repository }}" \
+              --remove-label "${LABELS}"
+          fi
