@@ -252,6 +252,7 @@ public:
     void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(AstNode* nodep, const string& pointer);
     std::string dereferenceString(const std::string& pointer) const;
+    std::string selfReferenceString(const std::string& pointer) const;
     void emitCvtPackStr(AstNode* nodep);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
@@ -432,6 +433,18 @@ public:
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
+                m_usevlSelfRef = true;
+                // The model is passed by reference (vlSelfRef), which gives the C++
+                // compiler dereferenceable hints, which can help to reduce the need
+                // for branch instructions in the generated code to allow the
+                // compiler to generate load store after the if condition (including
+                // short-circuit evaluation) speculatively and also reduce the data
+                // cache pollution when executing in the wrong path to make
+                // Verilated code faster. Keep vlSelf as a pointer to it for code
+                // that needs a pointer.
+                puts((nodep->isConst().trueKnown() ? "const " : "")
+                     + EmitCUtil::prefixNameProtect(m_modp)
+                     + "* const vlSelf VL_ATTR_UNUSED = &vlSelfRef;\n");
                 if (!VN_IS(m_modp, Class)) {
                     puts(EmitCUtil::symClassAssign());  // Uses vlSelf
                 } else {
@@ -467,18 +480,6 @@ public:
             if (AstVar* const varp = VN_CAST(subnodep, Var)) {
                 if (varp->isFuncReturn()) emitVarDecl(varp);
             }
-        }
-
-        if (m_useSelfForThis) {
-            m_usevlSelfRef = true;
-            // Using reference to the vlSelf pointer will help the C++
-            // compiler to have dereferenceable hints, which can help to
-            // reduce the need for branch instructions in the generated
-            // code to allow the compiler to generate load store after the
-            // if condition (including short-circuit evaluation)
-            // speculatively and also reduce the data cache pollution when
-            // executing in the wrong path to make Verilated code faster.
-            puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
         if (nodep->varsp()) {
