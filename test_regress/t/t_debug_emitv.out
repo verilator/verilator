@@ -53,8 +53,8 @@ module Vt_debug_emitv_t;
                 $write("");
             end
             $display("%p", $_EXPRSTMT(
-                    __Venum_h4d326b97__0 = (in);
-                    , __Venum_h4d326b97__0);
+                    __Venum_h4be52e02__0 = (in);
+                    , __Venum_h4be52e02__0);
             );
             if ($value$plusargs("TEST=%d", i1)) begin
                 $display("value was %d", i1);
@@ -1033,7 +1033,7 @@ module Vt_debug_emitv_t;
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
-    } __Venum_h4d326b97__0;
+    } __Venum_h4be52e02__0;
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
