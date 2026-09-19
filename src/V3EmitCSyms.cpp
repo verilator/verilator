@@ -1177,9 +1177,9 @@ void EmitCSyms::emitVarTables() {
             auto& table = tables[i];
             puts("const " + table.typeName + " " + table.tableName + "[] = {\n");
             for (const std::string& row : table.rows) {
-                puts("    ");
-                puts(row);
-                puts(",\n");
+                ofp()->putsNoTracking("    ");
+                ofp()->putsNoTracking(row);
+                ofp()->putsNoTracking(",\n");
             }
             puts("};\n");
 
