@@ -98,3 +98,36 @@ SUMMARY_TEMPLATE
 
   echo "Workflow [#${RUN_NUM}](${RUN_URL}) report: [${RUN_ID}](${REPORT_URL})" > ${NOTIFICATION_DIR}/hist.txt
 fi
+
+###############################################################################
+# Create the coverage status
+###############################################################################
+
+# 'pr-automation.yml' labels the pull request from this. Note it is only
+# written when the coverage could actually be determined, so that a report we
+# could not read leaves the labels of the pull request alone.
+
+if [ -f ${COVERAGE_DIR}/empty-patch ]; then
+  # Nothing to cover, so count it as covered
+  COVERED=true
+else
+  # Take the counts, and not the percentage, which is rounded. The line reads
+  # for example "  lines......: 100.00% (60 of 60 lines)"
+  COUNTS=$(sed -nE 's/^ *lines\.*: *[0-9.]+% \(([0-9]+) of ([0-9]+) lines\).*/\1 \2/p' \
+             ${MAKE_LOG} | tail -n 1)
+  HIT=${COUNTS%% *}
+  TOTAL=${COUNTS##* }
+  if [ -z "${TOTAL}" ]; then
+    echo "Could not read the line coverage from ${MAKE_LOG}" >&2
+    COVERED=
+  elif [ "${HIT}" = "${TOTAL}" ]; then
+    COVERED=true
+  else
+    COVERED=false
+  fi
+fi
+
+if [ -n "${COVERED}" ]; then
+  echo "Line coverage complete: ${COVERED}"
+  echo "${PR_NUMBER} ${COVERED}" > coverage-status.txt
+fi

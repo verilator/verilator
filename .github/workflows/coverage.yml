@@ -164,6 +164,16 @@ jobs:
           path: report-artifact
           name: coverage-report
 
+      - name: Upload coverage status
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          path: repo/coverage-status.txt
+          name: coverage-status
+          overwrite: true
+          # Not written if the coverage could not be read, see the script above
+          if-no-files-found: ignore
+
       - name: Upload PR notification
         if: ${{ github.event_name == 'pull_request' }}
         uses: ./repo/.github/actions/upload-pr-notification

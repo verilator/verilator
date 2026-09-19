@@ -10,7 +10,7 @@ on:
   pull_request_target:  # 'pull_request' can have no write permissions
     types: [opened, synchronize, reopened, closed]
   workflow_run:  # To react to the result of a workflow on a pull request
-    workflows: ["Regression"]
+    workflows: ["Code coverage", "Regression"]
     types: [completed]
 
 permissions:
@@ -109,6 +109,54 @@ jobs:
             gh pr edit "${PR}" --repo "${{ github.repository }}" --add-label "${LABEL}"
           elif [ "${FAILED}" = false ] && [ "${LABELLED}" = true ]; then
             echo "Regression succeeded, unblocking PR #${PR}"
+            gh pr edit "${PR}" --repo "${{ github.repository }}" --remove-label "${LABEL}"
+          else
+            echo "No change to PR #${PR}"
+          fi
+
+  coverage-complete:
+    name: Coverage complete
+    if: |
+      github.event_name == 'workflow_run'
+      && github.event.workflow_run.name == 'Code coverage'
+      && github.event.workflow_run.event == 'pull_request'
+      && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-slim
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: "Set the 'pr-blocked: improve-coverage' label from the result"
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          LABEL: "pr-blocked: improve-coverage"
+        run: |-
+          # The run tells us which pull request it was for, and whether every
+          # line its patch touches is covered
+          if ! gh run download "${{ github.event.workflow_run.id }}" --name coverage-status; then
+            echo "Run has no 'coverage-status' artifact"
+            exit 0
+          fi
+          STATUS=$(cat coverage-status.txt)
+          PR=${STATUS%% *}
+          COVERED=${STATUS##* }
+          # Its state and head as they are now, and whether it carries the
+          # label already
+          read -r STATE HEAD LABELLED < <(gh pr view "${PR}" \
+            --repo "${{ github.repository }}" \
+            --json state,headRefOid,labels \
+            --jq '"\(.state) \(.headRefOid) \(any(.labels[]; .name == env.LABEL))"')
+          # Only act on a change, so a run does not reapply what is already set
+          if [ "${STATE}" != OPEN ]; then
+            # Closing removes all 'pr*' labels, do not put one back on
+            echo "PR #${PR} is ${STATE}"
+          elif [ "${HEAD}" != "${SHA}" ]; then
+            # Pushed to since, so this result is stale and a new run will decide
+            echo "PR #${PR} has moved on from ${SHA}"
+          elif [ "${COVERED}" = false ] && [ "${LABELLED}" = false ]; then
+            echo "Line coverage incomplete, blocking PR #${PR}"
+            gh pr edit "${PR}" --repo "${{ github.repository }}" --add-label "${LABEL}"
+          elif [ "${COVERED}" = true ] && [ "${LABELLED}" = true ]; then
+            echo "Line coverage complete, unblocking PR #${PR}"
             gh pr edit "${PR}" --repo "${{ github.repository }}" --remove-label "${LABEL}"
           else
             echo "No change to PR #${PR}"
