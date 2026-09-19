@@ -129,5 +129,5 @@ fi
 
 if [ -n "${COVERED}" ]; then
   echo "Line coverage complete: ${COVERED}"
-  echo "${PR_NUMBER} ${COVERED}" > coverage-status.txt
+  echo "${COVERED}" > coverage-status.txt
 fi

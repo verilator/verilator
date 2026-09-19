@@ -58,6 +58,18 @@ jobs:
       old-sha: ${{ steps.start.outputs.old-sha }}
       cases: ${{ steps.cases.outputs.cases }}
     steps:
+      - name: Save the pull request number
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "${{ github.event.number }}" > pr-number.txt
+
+      - name: Upload the pull request number
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: pr-number
+          path: pr-number.txt
+          overwrite: true
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
