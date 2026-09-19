@@ -171,9 +171,8 @@ jobs:
 
   passed:
     name: Regression passed  # This job is used as a required status check on PRs
-    if: ${{ !cancelled() && needs.start.result != 'skipped' }}
+    if: ${{ !cancelled() }}
     needs:
-      - start
       - build-2604-gcc
       - build-2604-clang
       - build-2404-gcc
