@@ -16,7 +16,7 @@ name: Maintenance - PR run cleanup
 
 on:
   workflow_run:
-    workflows: ["Code coverage", "RTLMeter"]
+    workflows: ["Code coverage", "Regression", "RTLMeter"]
     types: [completed]
 
 permissions:
