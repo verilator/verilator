@@ -1017,6 +1017,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                                           + " hit in coverpoint "
                                                           + coverpointp->prettyNameQ()));
         }
+        if (binp->iffp()) condp = new AstLogAnd{fl, binp->iffp()->cloneTree(false), condp};
         AstNodeExpr* const guardedp = applyCoverpointIffCondition(coverpointp, fl, condp);
         UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for coverpoint");
         m_sampleFuncp->addStmtsp(new AstIf{fl, guardedp, actionp, nullptr});
