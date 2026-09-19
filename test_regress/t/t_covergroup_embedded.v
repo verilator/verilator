@@ -232,6 +232,50 @@ class LeafMonitor extends MiddleMonitor;
   endfunction
 endclass
 
+class ConstructorMonitor extends RootMonitor;
+  bit [3:0] value;
+
+  // IEEE 1800-2023 19.3: input captures a value; ref tracks the actual variable.
+  covergroup constructor_cg(input bit [3:0] snapshot, ref bit [3:0] live, input bit [3:0] bias = 1);
+    cp_snapshot: coverpoint snapshot {
+      bins zero = {0};
+      bins one = {1};
+    }
+    cp_live: coverpoint live {
+      bins zero = {0};
+      bins one = {1};
+    }
+    cp_parent: coverpoint root_value {
+      bins zero = {0};
+      bins one = {1};
+    }
+    cp_bias: coverpoint bias {
+      bins one = {1};
+      bins two = {2};
+    }
+  endgroup
+
+  function new(int mode);
+    value = 0;
+    root_value = 0;
+    // IEEE 1800-2023 13.5.3 and 13.5.4: defaults and positional/named bindings.
+    case (mode)
+      0: constructor_cg = new(value, value);
+      1: constructor_cg = new(.live(value), .snapshot(value));
+      2: constructor_cg = new(value, value, 4'd2);
+      3: constructor_cg = new(.bias(4'd2), .snapshot(value), .live(value));
+      4: constructor_cg = new(value, .bias(4'd2), .live(value));
+      default: `stop;
+    endcase
+  endfunction
+
+  function void observe(bit [3:0] next_value);
+    value = next_value;
+    root_value = next_value;
+    constructor_cg.sample();
+  endfunction
+endclass
+
 class ParameterizedBaseMonitor #(
     int WIDTH = 4
 );
@@ -572,6 +616,7 @@ module t;
   NestedContainer nested_container;
   NestedContainer::NestedMonitor nested_mon;
   UnconstructedMonitor unconstructed_mon;
+  ConstructorMonitor constructor_monitors[5];
   int i;
 
   initial begin
@@ -601,6 +646,13 @@ module t;
     nested_mon = new(nested_container);
     unconstructed_mon = new;
     `checkd(unconstructed_mon.unconstructed_cg == null, 1);
+
+    for (int mode = 0; mode < 5; ++mode) begin
+      constructor_monitors[mode] = new(mode);
+      constructor_monitors[mode].observe(0);
+      constructor_monitors[mode].observe(1);
+      `checkd(int'(constructor_monitors[mode].constructor_cg.get_inst_coverage()), 75);
+    end
 
     for (i = 0; i < 16; ++i) begin
       mon.observe(i[3:0], i[7:0] * 17, i[1:0], i[3:0]);

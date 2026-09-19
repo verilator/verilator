@@ -2736,9 +2736,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // in coverpoint expressions").  The covergroup is lowered into a sibling class with
         // no implicit handle to the enclosing object, so such references would emit
         // uncompilable C++.  Add an explicit back-pointer member to the enclosing instance,
-        // route the member references through it, and initialize it right after the
-        // 'cgvar = new' construction.  The enclosing member values are only read in
-        // sample(), which runs after construction, so this ordering is safe.  Returns an invalid
+        // route member references through it, and pass it into the constructor so
+        // coverage initialization can read enclosing members. Returns an invalid
         // reference if an outer class member cannot be reached; otherwise returns an empty result.
         if (!m_enclosingClassp) return nullptr;  // Offending refs require an enclosing class
 
@@ -2786,21 +2785,27 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const handleVarp
             = new AstVar{fl, VVarType::MEMBER, "__Vcg_enclosingp", enclDTypep};
         m_covergroupp->addMembersp(handleVarp);
+        AstVar* const argumentp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vcg_parentp", enclDTypep};
+        argumentp->direction(VDirection::INPUT);
+        argumentp->declDirection(VDirection::INPUT);
+        argumentp->funcLocal(true);
+        argumentp->noReset(true);
+        argumentp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        m_constructorp->addStmtsp(argumentp);
+        m_constructorp->stmtsp()->addHereThisAsNext(
+            new AstAssign{fl, memberRef(fl, handleVarp, VAccess::WRITE),
+                          new AstVarRef{fl, argumentp, VAccess::READ}});
 
         // Route each enclosing-member reference through the back-pointer: 'm' -> 'h.m'.
         for (AstVarRef* const refp : refsToRewrite) { rewriteVarRef(refp, handleVarp); }
         for (AstThisRef* const refp : thisRefsToRewrite) { rewriteThisRef(refp, handleVarp); }
 
-        // Initialize the raw back-pointer after each construction.  With no construction site,
-        // the embedded covergroup handle remains null, so no back-pointer is observed.
+        // Append a named hidden argument to preserve positional and defaulted user arguments.
         for (AstNodeAssign* const constructp : constructps) {
             FileLine* const cfl = constructp->fileline();
-            AstMemberSel* const lhsp
-                = new AstMemberSel{cfl, constructp->lhsp()->cloneTree(false), handleVarp};
-            lhsp->access(VAccess::WRITE);
             AstCExpr* const thisp = new AstCExpr{cfl, "this"};
             thisp->dtypep(enclDTypep);
-            constructp->addNextHere(new AstAssign{cfl, lhsp, thisp});
+            VN_AS(constructp->rhsp(), New)->addArgsp(new AstArg{cfl, argumentp->name(), thisp});
         }
         return nullptr;
     }
