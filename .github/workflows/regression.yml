@@ -168,3 +168,27 @@ jobs:
   lint-py:
     name: Lint Python
     uses: ./.github/workflows/reusable-lint-py.yml
+
+  passed:
+    name: Regression passed  # This job is used as a required status check on PRs
+    if: ${{ !cancelled() && needs.start.result != 'skipped' }}
+    needs:
+      - start
+      - build-2604-gcc
+      - build-2604-clang
+      - build-2404-gcc
+      - build-2404-clang
+      - build-2204-gcc
+      - build-macos-26-clang
+      - build-windows
+      - test-2604-gcc
+      - test-2604-clang
+      - test-2404-gcc
+      - test-2404-clang
+      - test-2204-gcc
+      - lint-py
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check all needed jobs succeeded
+        working-directory: .
+        run: jq -e 'all(.result == "success")' <<< '${{ toJSON(needs) }}'
