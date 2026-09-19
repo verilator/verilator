@@ -1,0 +1,52 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+# Fails while a pull request carries a 'pr-blocked:*' label, so that it can be
+# used as a required status check to hold up the merge. The labels themselves
+# are set by hand, or by 'pr-automation.yml'.
+#
+# Note this runs from the pull request's own merge commit, so a pull request
+# can change the check itself, but any such change shows up in its review.
+#
+# It also runs on a push, and not only on a label change, as a check run is
+# reported against the head commit, and so every head needs one of its own.
+
+name: Maintenance - PR blocked
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  pull-requests: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  not-blocked:
+    name: Not blocked
+    runs-on: ubuntu-slim
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: "Check for 'pr-blocked:*' labels"
+        run: |-
+          # Note these are the labels the pull request has now, and not the ones
+          # in 'github.event', which is a snapshot that can be stale when
+          # several are changed in one go
+          BLOCKED=$(gh pr view "${{ github.event.number }}" \
+            --repo "${{ github.repository }}" \
+            --json labels \
+            --jq '[.labels[].name | select(startswith("pr-blocked:"))] | join(", ")')
+          if [ -n "${BLOCKED}" ]; then
+            echo "::error::${BLOCKED}"
+            exit 1
+          fi
+          echo "Not blocked"
