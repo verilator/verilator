@@ -22,7 +22,7 @@
 
 // clang-format off
 #if defined(VERILATOR)
-# include "Vt_dpi_open_oob_bad__Dpi.h"
+# include VM_PREFIX_INCLUDE_DPI
 #else
 # error "Unknown simulator for DPI test"
 #endif

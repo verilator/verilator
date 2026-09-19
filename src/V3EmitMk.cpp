@@ -664,10 +664,17 @@ public:
         of.putSet("VM_SC_TARGET_ARCH", V3Options::getenvSYSTEMC_ARCH());
 
         of.puts("\n### Vars...\n");
-        of.puts("# Design prefix (from --prefix)\n");
-        of.putSet("VM_PREFIX", v3Global.opt.prefix());
         of.puts("# Module prefix (from --prefix)\n");
         of.putSet("VM_MODPREFIX", v3Global.opt.modPrefix());
+        of.puts("# Design prefix (from --prefix)\n");
+        of.putSet("VM_PREFIX", v3Global.opt.prefix());
+        of.puts("# Design header include, for '#include VM_PREFIX_INCLUDE' (from --prefix)\n");
+        of.putSet("VM_PREFIX_INCLUDE", "<" + v3Global.opt.prefix() + ".h>");
+        if (v3Global.dpi()) {
+            of.puts("# DPI header include, for '#include VM_PREFIX_INCLUDE_DPI';"
+                    " undefined if no DPI\n");
+            of.putSet("VM_PREFIX_INCLUDE_DPI", "<" + v3Global.opt.prefix() + "__Dpi.h>");
+        }
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");

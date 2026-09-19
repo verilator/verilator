@@ -11,7 +11,14 @@ vpi_chk_error: vl_check_array_format: Unsupported format (*undefined*) as reques
 vpi_chk_error: vpi_put_value_array: Unsupported flags (4000)
 vpi_chk_error: vl_check_array_format: Unsupported format (vpiShortIntVal) as requested for 'test.write_words'
 vpi_chk_error: vpi_put_value_array: Unsupported flags (4000)
-vpi_chk_error: vl_put_value_array: Requested elements to set (5) exceed array size (4)
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiShortIntVal) as requested for 'test.write_longs'
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiShortIntVal) as requested for 'test.write_customs'
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiIntVal) as requested for 'test.write_longs'
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiIntVal) as requested for 'test.write_customs'
+vpi_chk_error: vl_check_array_format: Unsupported format (vpiLongIntVal) as requested for 'test.write_customs'
+vpi_chk_error: vpi_put_value_array: Requested elements to set (5) exceed array size (4)
+vpi_chk_error: vpi_put_value_array: Requested elements to set (5) exceed array size (4)
+vpi_chk_error: vpi_put_value_array: Requested elements to set (5) exceed array size (4)
 vpi_chk_error: Ignoring vpi_get_value_array with null value pointer
 vpi_chk_error: Ignoring vpi_get_value_array with null index pointer
 *-* All Finished *-*

@@ -154,9 +154,7 @@ public:
     // ---- VlCoverpointIf ----
     uint32_t binCount() const override { return m_total; }
     std::string binName(uint32_t i) const override;
-    // Deliberately not on VlCoverpointIf: only registerBins() needs it, via the
-    // concrete coverpoint.  A cross has all-Normal bins and exposes no kind, so the
-    // interface omits it; add it back only if a writer needs it polymorphically.
+    // Deliberately not on VlCoverpointIf: only coverage-database registration needs it.
     VlCovBinKind binKind(uint32_t i) const { return namerFor(i).set(); }
     void coverageParts(double& covered, double& total) const override {
         // Count Normal bins that reached option.at_least on demand, so the hot
@@ -230,6 +228,7 @@ protected:
         const char* filep;  // Bin declaration file
         int line;  // Bin declaration line
         int col;  // Bin declaration column
+        VlCovBinKind kind = VlCovBinKind::KIND_NORMAL;  // Normal, ignore, or illegal bin
         uint32_t count = 0;  // Samples matching the selection and guard
         uint32_t numWords = 0;  // Number of nonzero selection-word indices
         const uint32_t* wordIndicesp = nullptr;  // Slice of the packed selection-word indices
@@ -261,6 +260,7 @@ protected:
         View<uint32_t> binWords;  // Nonzero selection words, grouped by bin
         uint64_t* selectionp;  // [bins.size() * ceil(m_numAutoBins / 64)]
         uint32_t numBins = 0;  // Bins configured by addBin()
+        uint32_t normalBins = 0;  // Explicit bins contributing to coverage
         uint32_t minBinWords = 0;  // Minimum nonzero-word count across explicit bins
         uint32_t numTouchedWords = 0;  // Active prefix of wordsp[].touchedWord
     };
@@ -289,6 +289,7 @@ private:
     void incrementAuto(uint32_t idx) {
         if (m_flatCountsp[idx]++ == 0) ++m_numCovered;
     }
+    void incrementBin(Bin& bin);
     template <bool T_RecordHits>
     void incrementTuple(uint32_t idx) {
         Explicit& data = *m_explicitp;
@@ -334,8 +335,8 @@ public:
     void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
               int line, int col);
     /// Add a cross bin using a verilation-time bitmap of selected Normal-bin tuples.
-    void addBin(std::initializer_list<uint64_t> selection, const char* namep, const char* filep,
-                int line, int col);
+    void addBin(VlCovBinKind kind, std::initializer_list<uint64_t> selection, const char* namep,
+                const char* filep, int line, int col);
     /// Retain only automatic cross bins not selected by any explicit bin.
     void finalizeBins();
     void registerBins(VerilatedCovContext* covcontextp, const char* page);
@@ -346,7 +347,7 @@ public:
     void sample(const bool* binIffs = nullptr);
 
     // ---- VlCoverpointIf ----
-    // Explicit bins precede retained automatic bins; all are Normal bins.
+    // Explicit bins (including ignore/illegal) precede retained automatic bins.
     uint32_t binCount() const override {
         return hasExplicitBins()
                    ? static_cast<uint32_t>(m_explicitp->bins.size() + m_explicitp->autoBins.size())
@@ -355,7 +356,8 @@ public:
     std::string binName(uint32_t i) const override;
     void coverageParts(double& covered, double& total) const override {
         covered = m_numCovered;
-        total = binCount();
+        total = hasExplicitBins() ? m_explicitp->normalBins + m_explicitp->autoBins.size()
+                                  : m_numAutoBins;
     }
 };
 

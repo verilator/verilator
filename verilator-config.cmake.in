@@ -468,6 +468,7 @@ function(verilate TARGET)
         json_get_list(JOPTIONS_LDFLAGS "${MANIFEST}" options ldflags)
         json_get_bool(JOPTIONS_SYSTEM_C "${MANIFEST}" options system_c)
         json_get_bool(JOPTIONS_COVERAGE "${MANIFEST}" options coverage)
+        json_get_bool(JOPTIONS_DPI "${MANIFEST}" options dpi)
         json_get_bool(JOPTIONS_USE_TIMING "${MANIFEST}" options use_timing)
         json_get_int(JOPTIONS_THREADS "${MANIFEST}" options threads)
         json_get_bool(JOPTIONS_TRACE_FST "${MANIFEST}" options trace_fst)
@@ -505,6 +506,8 @@ function(verilate TARGET)
             "set(${VERILATE_PREFIX}_SC ${JOPTIONS_SYSTEM_C})\n"
             "# Coverage output mode?  0/1 (from --coverage)\n"
             "set(${VERILATE_PREFIX}_COVERAGE ${JOPTIONS_COVERAGE})\n"
+            "# DPI generated?  0/1\n"
+            "set(${VERILATE_PREFIX}_DPI ${JOPTIONS_DPI})\n"
             "# Timing mode?  0/1\n"
             "set(${VERILATE_PREFIX}_TIMING ${JOPTIONS_USE_TIMING})\n"
             "# Threaded output mode?  1/N threads (from --threads)\n"
@@ -741,6 +744,23 @@ function(verilate TARGET)
             VM_TRACE_FST=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_FST>>
             VM_TRACE_SAIF=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_SAIF>>
     )
+    # verilate() may be called repeatedly on one target, each call with its own
+    # prefix, so only the first model defines these; redefining them would warn
+    # (error under -Werror) on every translation unit of the target
+    get_target_property(VERILATE_DEFINITIONS ${TARGET} COMPILE_DEFINITIONS)
+    if(NOT VERILATE_DEFINITIONS MATCHES "(^|;)VM_PREFIX_INCLUDE=")
+        target_compile_definitions(
+            ${TARGET}
+            PRIVATE "VM_PREFIX_INCLUDE=<${VERILATE_PREFIX}.h>"
+        )
+        if(${VERILATE_PREFIX}_DPI)
+            # Left undefined when the design has no DPI, so misuse fails at compile time
+            target_compile_definitions(
+                ${TARGET}
+                PRIVATE "VM_PREFIX_INCLUDE_DPI=<${VERILATE_PREFIX}__Dpi.h>"
+            )
+        endif()
+    endif()
 
     target_link_libraries(${TARGET} PUBLIC ${${VERILATE_PREFIX}_USER_LDLIBS})
 

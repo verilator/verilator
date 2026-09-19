@@ -335,6 +335,7 @@ class SvaNfaBuilder final {
     bool m_isCoverSeq = false;
     // Unsupported endpoint topology must reject, not ignore, or the wait hangs
     bool m_isSeqEvent = false;
+    bool m_inSequencePrefix = false;  // Prefix composition does not preserve every endpoint
 
     struct RangeDelayRejectInfo final {
         SvaStateVertex* startp = nullptr;
@@ -585,10 +586,13 @@ class SvaNfaBuilder final {
     // Build NFA for an SExpr. finalCond = RHS (not yet added as a vertex).
     // isTopLevelStep: marks outermost required boolean check as rejectOnFail.
     // Apply a range delay `##[M:N]` to currentp. Returns true on success. On
-    // failure, sets outErrorEmitted per semantic-error policy and returns false.
-    bool applyRangeDelay(AstDelay* delayp, AstNodeExpr* rhsExprp, SvaStateVertex*& currentp,
-                         std::vector<SvaStateVertex*>& midSources, FileLine* flp,
-                         bool& outErrorEmitted, RangeDelayRejectInfo* rangeRejectInfop = nullptr) {
+    // failure, emits a diagnostic and returns false.
+    bool applyRangeDelay(AstSExpr* sexprp, SvaStateVertex*& currentp,
+                         std::vector<SvaStateVertex*>& midSources,
+                         RangeDelayRejectInfo* rangeRejectInfop = nullptr) {
+        FileLine* const flp = sexprp->fileline();
+        AstDelay* const delayp = VN_AS(sexprp->delayp(), Delay);
+        AstNodeExpr* const rhsExprp = sexprp->exprp();
         const unsigned minDelay = getConstUInt(delayp->lhsp());
         if (delayp->isUnbounded()) {
             // `##[M:$]`: wait M cycles, then retain every matured attempt in a
@@ -613,62 +617,42 @@ class SvaNfaBuilder final {
         }
         const unsigned range = maxDelay - minDelay;
         currentp = addDelayChain(currentp, minDelay, flp);
-        // kChainLimit bounds per-attempt unrolled vertices. Above this, a
-        // ring buffer (constant-size state) is used instead, so the vertex
-        // count is O(1) in range regardless of user input; no adversarial N
-        // blowup is possible.
-        constexpr unsigned kChainLimit = 256;
-        // IEEE 1800-2023 16.14.3: only a small bounded range before a plain
-        // boolean enumerates every end-of-match below. The large-range ring uses
-        // first-match clearing and the nested-sequence merge collapses ends, so
-        // reject those for a cover sequence rather than under-count.
-        if (m_isCoverSeq && (range > kChainLimit || VN_IS(rhsExprp, SExpr))) {
+        const bool multiCycleRhs = rhsExprp->isMultiCycleSva();
+        const AstNodeExpr* const preExprp = sexprp->preExprp();
+        // Prefix and nested-sequence composition can lose endpoints or their multiplicity
+        // required by cover sequence (IEEE 1800-2023 16.14.3), regardless of the range width.
+        if (m_isCoverSeq
+            && (multiCycleRhs || m_inSequencePrefix
+                || (preExprp && preExprp->isMultiCycleSva()))) {
             warnEndpointUnsupported(flp, "this ranged cycle delay");
-            outErrorEmitted = true;
             return false;
         }
-        if (range > kChainLimit) {
-            currentp = addDelayChain(currentp, range + 1U, flp, false,
-                                     rhsExprp->isMultiCycleSva() ? nullptr : rhsExprp);
-        } else if (VN_IS(rhsExprp, SExpr)) {
-            // Nested-SExpr RHS: merge all [M,N] positions. Candidate-local misses
-            // are not assertion rejects while a later position can still match.
+        if (m_inSequencePrefix) {
+            flp->v3warn(E_UNSUPPORTED,
+                        "Unsupported: Bounded ranged cycle delay in a sequence prefix");
+            return false;
+        }
+        if (multiCycleRhs) {
+            // Launch a candidate at every eligible tick. Candidate-local misses are not
+            // assertion rejects while a later position can still match.
             if (rangeRejectInfop) {
                 const int rhsLen = fixedLength(rhsExprp);
                 if (rhsLen >= 0) *rangeRejectInfop = {currentp, range, rhsLen};
             }
+            SvaStateVertex* const tailp = addDelayChain(currentp, range + 1U, flp, false);
             SvaStateVertex* const mergeVtxp = scopedCreateVertex();
             mergeVtxp->m_isUnbounded = true;
             guardedLink(currentp, mergeVtxp, flp);
-            for (unsigned i = 0; i < range; ++i) {
-                SvaStateVertex* const nextVtxp = scopedCreateVertex();
-                guardedEdge(currentp, nextVtxp, flp);
-                guardedLink(nextVtxp, mergeVtxp, flp);
-                currentp = nextVtxp;
-            }
+            guardedLink(tailp, mergeVtxp, flp);
             currentp = mergeVtxp;
             m_inUnboundedScope = true;
         } else {
-            // Pure boolean RHS: register chain. Each mid-position links to
-            // match (match-only); last position is the reject source.
-            // For cover_sequence (IEEE 1800-2023 16.14.3) the advance edge is
-            // unconditional so every (start, end) pair fires independently --
-            // dropping NOT(b) turns "first-match-wins" into "every end fires".
-            AstVar* const hoistVarp
-                = m_isCoverSeq ? nullptr : tryHoistSampled(rhsExprp, flp, range);
+            // The first eligible tick is explicit. The ring retains attempts for the
+            // remaining ticks and exposes the final tick for rejection. Only properties
+            // clear on success, since cover sequence counts every endpoint.
             midSources.push_back(currentp);
-            for (unsigned i = 0; i < range; ++i) {
-                SvaStateVertex* const nextVtxp = scopedCreateVertex();
-                if (m_isCoverSeq) {
-                    guardedEdge(currentp, nextVtxp, flp);
-                } else {
-                    AstNodeExpr* const notExprp
-                        = new AstLogNot{flp, sampledRefOrClone(hoistVarp, rhsExprp, flp)};
-                    guardedEdge(currentp, nextVtxp, notExprp, flp);
-                }
-                if (i < range - 1) midSources.push_back(nextVtxp);
-                currentp = nextVtxp;
-            }
+            currentp = addDelayChain(currentp, range + 1U, flp, false,
+                                     m_isCoverSeq ? nullptr : rhsExprp);
         }
         return true;
     }
@@ -687,14 +671,11 @@ class SvaNfaBuilder final {
                 = result.finalCondp ? sampled(result.finalCondp->cloneTreePure(false)) : nullptr;
             SvaStateVertex* const successNowp = scopedCreateVertex();
             guardedLink(srcp, successNowp, condp, flp);
-            SvaStateVertex* stagep = successNowp;
-            guardedLink(stagep, expiryMatchp, flp);
-            for (unsigned i = 0; i < info.range; ++i) {
-                SvaStateVertex* const nextp = scopedCreateVertex();
-                guardedEdge(stagep, nextp, flp);
-                stagep = nextp;
-                guardedLink(stagep, expiryMatchp, flp);
-            }
+            // Retain a success through the latest deadline it can satisfy.
+            SvaStateVertex* const historyp
+                = addDelayChain(successNowp, info.range + 1U, flp, false);
+            guardedLink(successNowp, expiryMatchp, flp);
+            guardedLink(historyp, expiryMatchp, flp);
         }
 
         SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
@@ -715,6 +696,8 @@ class SvaNfaBuilder final {
         // Handle LHS (preExpr)
         SvaStateVertex* currentp = entryVtxp;
         if (AstNodeExpr* const preExprp = sexprp->preExprp()) {
+            VL_RESTORER(m_inSequencePrefix);
+            m_inSequencePrefix = true;
             const BuildResult pre = buildExpr(preExprp, currentp, isTopLevelStep);
             if (!pre.valid()) return BuildResult::fail(pre.errorEmitted);  // LCOV_EXCL_LINE
             if (pre.finalCondp) {
@@ -737,10 +720,9 @@ class SvaNfaBuilder final {
         RangeDelayRejectInfo rangeRejectInfo;
         const bool addRangeReject = isTopLevelStep && !m_inUnboundedScope;
         if (delayp->isRangeDelay()) {
-            bool errorEmitted = false;
-            if (!applyRangeDelay(delayp, sexprp->exprp(), currentp, rangeMidSources, flp,
-                                 errorEmitted, addRangeReject ? &rangeRejectInfo : nullptr)) {
-                return BuildResult::fail(errorEmitted);
+            if (!applyRangeDelay(sexprp, currentp, rangeMidSources,
+                                 addRangeReject ? &rangeRejectInfo : nullptr)) {
+                return BuildResult::failWithError();
             }
         } else {
             const unsigned delayCycles = getConstUInt(delayp->lhsp());
@@ -3343,10 +3325,10 @@ class AssertNfaVisitor final : public VNVisitor {
     // Recursively walk a consequent. Returns cycle length consumed and
     // substitutes each VarRef to a captured local var with $past(rhs, K)
     // (or rhs inline when K == 0). Reports E_UNSUPPORTED on non-constant
-    // delays or composite sequence operators.
-    int walkSubstituteMatchItems(AstNodeExpr* nodep, unsigned K,
-                                 const std::unordered_map<const AstVar*, AstNodeExpr*>& matchItems,
-                                 bool& errorEmitted) {
+    // delays or composite sequence operators and returns -1 on failure.
+    int
+    walkSubstituteMatchItems(AstNodeExpr* nodep, unsigned K,
+                             const std::unordered_map<const AstVar*, AstNodeExpr*>& matchItems) {
         if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
             // IEEE 1800-2023 16.9.2: cycle_delay's lhsp is a constant_expression
             // and the delay form in a sequence is always `##N`, folded by
@@ -3359,25 +3341,23 @@ class AssertNfaVisitor final : public VNVisitor {
                 sexprp->v3warn(E_UNSUPPORTED, "Unsupported: property local variable used across "
                                               "non-constant cycle delay in consequent"
                                               " (IEEE 1800-2023 16.10)");
-                errorEmitted = true;
                 return -1;
             }
             const unsigned delayCycles = VN_AS(delayp->lhsp(), Const)->toUInt();
             int preLen = 0;
             if (AstNodeExpr* const prep = sexprp->preExprp()) {
-                preLen = walkSubstituteMatchItems(prep, K, matchItems, errorEmitted);
-                if (errorEmitted) return -1;
+                preLen = walkSubstituteMatchItems(prep, K, matchItems);
+                if (preLen < 0) return -1;
             }
-            const int bodyLen = walkSubstituteMatchItems(sexprp->exprp(), K + preLen + delayCycles,
-                                                         matchItems, errorEmitted);
-            if (errorEmitted) return -1;
+            const int bodyLen
+                = walkSubstituteMatchItems(sexprp->exprp(), K + preLen + delayCycles, matchItems);
+            if (bodyLen < 0) return -1;
             return preLen + delayCycles + bodyLen;
         }
         if (nodep->isMultiCycleSva()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: property local variable used across "
                                          "composite sequence operator in consequent"
                                          " (IEEE 1800-2023 16.10)");
-            errorEmitted = true;
             return -1;
         }
         std::vector<AstVarRef*> refs;
@@ -3409,12 +3389,11 @@ class AssertNfaVisitor final : public VNVisitor {
             matchItems[lhsRefp->varp()] = assignp->rhsp();
         }
         const unsigned startK = parts.isOverlapped ? 0 : 1;
-        bool errorEmitted = false;
-        walkSubstituteMatchItems(seqBodyp, startK, matchItems, errorEmitted);
+        const int length = walkSubstituteMatchItems(seqBodyp, startK, matchItems);
         // Match-item substitution / strip mutates ancestor purity. Release
         // builds don't auto-clear caches on edits, so refresh here.
         VIsCached::clearCacheTree();
-        if (errorEmitted) return true;
+        if (length < 0) return true;
         AstNodeExpr* const antBoolp = exprStmtp->resultp()->unlinkFrBack();
         exprStmtp->replaceWith(antBoolp);
         VL_DO_DANGLING(pushDeletep(exprStmtp), exprStmtp);

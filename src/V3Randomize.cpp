@@ -4583,6 +4583,43 @@ class RandomizeVisitor final : public VNVisitor {
         return resExprp;
     }
 
+    void addUpdateRandVarsBody(AstClass* const nodep, AstFunc* const randomizep) {
+        UASSERT_OBJ(!nodep->hasRandVarsUpdate(), nodep, "__VupdateRandVars already exists");
+        AstFunc* const updatep
+            = new AstFunc{nodep->fileline(), "__VupdateRandVars", nullptr, nullptr};
+        updatep->classMethod(true);
+        updatep->isVirtual(true);
+        updatep->keepAlive(true);
+        updatep->needsSyms(false);
+        nodep->addMembersp(updatep);
+        nodep->hasRandVarsUpdate(true);
+
+        for (AstClass* classp = nodep; classp;
+             classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
+            AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
+            for (AstNode* stmtp = newp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                AstStmtExpr* const stmtExprp = VN_CAST(stmtp, StmtExpr);
+                if (!stmtExprp) continue;
+                AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
+                if (!methodp || methodp->method() != VCMethod::RANDOMIZER_WRITE_VAR) continue;
+
+                AstNodeVarRef* const varRefp = VN_AS(methodp->pinsp(), NodeVarRef);
+                if (varRefp->varp()->lifetime().isStatic()) {
+                    // There is no need to update pointer to a static variable
+                    continue;
+                }
+                AstCMethodHard* const updateMethodp = new AstCMethodHard{
+                    methodp->fileline(), methodp->fromp()->cloneTreePure(false),
+                    VCMethod::RANDOMIZER_UPDATE_VAR, varRefp->cloneTreePure(false)};
+                updateMethodp->dtypeSetVoid();
+                AstNodeExpr* const namep = VN_AS(varRefp->nextp()->nextp(), NodeExpr);
+                updateMethodp->addPinsp(namep->cloneTreePure(false));
+                updateMethodp->method(VCMethod::RANDOMIZER_UPDATE_VAR);
+                updatep->addStmtsp(updateMethodp->makeStmt());
+            }
+        }
+    }
+
     void addBasicRandomizeBody(AstFunc* const basicRandomizep, AstClass* const nodep,
                                AstVar* randModeVarp) {
         UINFO(9, "addBasicRTB " << nodep);
@@ -5235,7 +5272,7 @@ class RandomizeVisitor final : public VNVisitor {
                                       AstVar* bucketVarp,
                                       const std::vector<AstNodeExpr*>& cumSums) {
         FileLine* const fl = distp->fileline();
-        AstNode* chainp = nullptr;
+        AstNodeExpr* chainp = nullptr;
         for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
             AstNodeExpr* constraintExprp;
             const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange);
@@ -5250,17 +5287,19 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstEq{fl, distExprCopyp, buckets[i].rangep->cloneTreePure(false)};
                 constraintExprp->user1(true);
             }
-            AstConstraintExpr* const thenp = new AstConstraintExpr{fl, constraintExprp};
-            thenp->isSoft(true);
             if (!chainp) {
-                chainp = thenp;
+                chainp = constraintExprp;
             } else {
                 AstNodeExpr* const condp
                     = new AstLte{fl, new AstVarRef{fl, bucketVarp, VAccess::READ}, cumSums[i]};
-                chainp = new AstConstraintIf{fl, condp, thenp, chainp};
+                condp->user1(true);
+                chainp = new AstCond{fl, condp, constraintExprp, chainp};
+                chainp->user1(true);
             }
         }
-        return chainp;
+        AstConstraintExpr* chainExprp = new AstConstraintExpr{fl, chainp};
+        chainExprp->isSoft(true);
+        return chainExprp;
     }
 
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
@@ -5781,6 +5820,8 @@ class RandomizeVisitor final : public VNVisitor {
         } else {
             beginValp = new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
         }
+
+        addUpdateRandVarsBody(nodep, randomizep);
 
         AstFunc* const basicRandomizep
             = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
@@ -6337,9 +6378,10 @@ class RandomizeVisitor final : public VNVisitor {
                             = newResizeConstrainedArrayTask(classp, m_constraintp->name());
                         m_constraintp->user3p(resizerTaskp);
                     }
+                    AstVarRef* const sizeVarRefp = new AstVarRef{
+                        fl, VN_AS(sizeVarp->user2p(), NodeModule), sizeVarp, VAccess::READ};
                     AstCMethodHard* const resizep = new AstCMethodHard{
-                        fl, nodep->fromp()->unlinkFrBack(), VCMethod::DYN_RESIZE,
-                        new AstVarRef{fl, sizeVarp, VAccess::READ}};
+                        fl, nodep->fromp()->unlinkFrBack(), VCMethod::DYN_RESIZE, sizeVarRefp};
                     resizep->dtypep(nodep->findVoidDType());
                     resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});
                 }
@@ -6348,7 +6390,8 @@ class RandomizeVisitor final : public VNVisitor {
                 // to make sure it is always >= 0.
                 m_constraintp->addItemsp(createSizeGteZeroConstraint(fl, sizeVarp));
             }
-            AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
+            AstVarRef* const sizeVarRefp = new AstVarRef{fl, VN_AS(sizeVarp->user2p(), NodeModule),
+                                                         sizeVarp, VAccess::READ};
             sizeVarRefp->user1(true);
             nodep->replaceWith(sizeVarRefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);

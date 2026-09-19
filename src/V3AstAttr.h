@@ -932,6 +932,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  "r") \
     macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  "rr") \
     macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  "rrr") \
+    macro(RANDOMIZER_UPDATE_VAR,              "update_var",             false,  "TODO") \
     macro(RANDOMIZER_WRITE_VAR,               "write_var",              false,  "TODO") \
     macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false,  "r") \
     macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false,  "r") \
@@ -1176,8 +1177,8 @@ public:
         : m_e{_e} {}
     constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
-        static const char* const names[]
-            = {"user", "array", "auto", "ignore", "illegal", "default", "wildcard", "transition"};
+        static const char* const names[] = {"array",        "auto",       "default", "ignore_bins",
+                                            "illegal_bins", "transition", "bins",    "wildcard"};
         return names[m_e];
     }
     // VlCovBinKind enumerator naming the bin's set
@@ -1327,6 +1328,17 @@ public:
             return "VerilatedTraceSigDirection::INPUT";
         }
         return "VerilatedTraceSigDirection::NONE";
+    }
+    VAccess pinAccess() const {
+        switch (m_e) {
+        case NONE: return VAccess::NOCHANGE;
+        case INPUT:
+        case CONSTREF: return VAccess::READ;
+        case OUTPUT: return VAccess::WRITE;
+        case INOUT:
+        case REF: return VAccess::READWRITE;
+        }
+        v3fatalSrc("Unhandled VDirection");
     }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) VL_MT_SAFE {

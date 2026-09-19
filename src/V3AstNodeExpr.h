@@ -66,13 +66,16 @@ public:
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
     // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
     virtual bool isMultiCycleSva() const { return false; }
-
-    // TODO: consolidate cLValueTargetp, isLValue, baseFromp
-    // If the expression is a valid C++ LValue, return the target reference, else nullptr
-    // This always returns either AstVarRef, AstMemberSel, or nullptr
-    AstNodeExpr* cLValueTargetp();
+    const AstNodeExpr* getVAccessTargetRecurse() const;
+    AstNodeExpr* getVAccessTargetRecurse() {
+        return const_cast<AstNodeExpr*>(  // casting constness away is safe since this function is
+                                          // non-const itself therefore, caller guarantees that
+                                          // this object is non-const
+            static_cast<const AstNodeExpr*>(this)->getVAccessTargetRecurse());
+    }
+    VAccess getVAccessRecurse() const;
     // TODO: this actually means it's a write or RW, not that it's an LValue
-    bool isLValue() const;
+    bool isLValue() const { return getVAccessRecurse().isWriteOrRW(); }
     // Return base var (or const) nodep dereferences
     AstNode* baseFromp(bool overMembers);
 
@@ -529,7 +532,6 @@ public:
     }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
-    static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
 };
 
 // === Concrete node types =====================================================
@@ -2406,6 +2408,7 @@ class AstSFormatArg final : public AstNodeExpr {
     // used to pass to (potentially) runtime decoding of format arguments
     // PARENT: SFormatF (or next list of expressions)
     // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := namep : Optional[AstNodeExpr] // Runtime enum name lookup
     VFormatAttr m_formatAttr;  // How to format expression
 
 public:
@@ -2428,6 +2431,7 @@ public:
     bool cleanOut() const override { return true; }
     const char* broken() const override {
         BROKEN_RTN(!VN_IS(backp(), SFormatF) && firstAbovep());  // In list under SFormatF
+        BROKEN_RTN(formatAttr().isEnum() != static_cast<bool>(namep()));
         return nullptr;
     }
     VFormatAttr formatAttr() const { return m_formatAttr; }

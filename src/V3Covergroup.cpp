@@ -1998,6 +1998,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
         ctx.tuples = tuples;
         layout.tuples = tuples;
+        CrossSelection occupied;
         CrossSelection excluded;
         std::set<std::string> names;
         for (AstNode* itemp = crossp->binsp(); itemp; itemp = itemp->nextp()) {
@@ -2014,16 +2015,37 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 })) {
                 continue;
             }
-            if (excluded.empty()) excluded.resize(selection.size(), 0);
+            if (occupied.empty()) {
+                occupied.resize(selection.size(), 0);
+                excluded.resize(selection.size(), 0);
+            }
             for (size_t i = 0; i < selection.size(); ++i) {
-                excluded[i] |= selection[i];
-                if (selection[i]) ++layout.binWords;
+                occupied[i] |= selection[i];
+                if (!binp->binsType().binIsNormal()) excluded[i] |= selection[i];
             }
             layout.bins.push_back({binp, std::move(selection)});
         }
         if (!layout.bins.empty()) {
+            // IEEE 1800-2023 19.6.2/19.6.3: exclusions also remove tuples from named
+            // bins, independently of declaration order and sampling guards.
+            for (ResolvedCrossBin& resolved : layout.bins) {
+                for (size_t i = 0; i < resolved.selection.size(); ++i) {
+                    if (resolved.binp->binsType().binIsNormal()) {
+                        resolved.selection[i] &= ~excluded[i];
+                    }
+                    if (resolved.selection[i]) ++layout.binWords;
+                }
+            }
+            layout.bins.erase(std::remove_if(layout.bins.begin(), layout.bins.end(),
+                                             [](const ResolvedCrossBin& resolved) {
+                                                 return std::all_of(
+                                                     resolved.selection.begin(),
+                                                     resolved.selection.end(),
+                                                     [](uint64_t word) { return word == 0; });
+                                             }),
+                              layout.bins.end());
             layout.autoBins = layout.tuples;
-            for (const uint64_t word : excluded) {
+            for (const uint64_t word : occupied) {
                 layout.autoBins -= static_cast<uint32_t>(std::bitset<VL_QUADSIZE>{word}.count());
             }
         }
@@ -2058,7 +2080,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             mask += "}";
             m_constructorp->addStmtsp(
                 itemCall(fl, cxVarp, VCMethod::COVERGROUP_ADD_BIN,
-                         {ctext(fl, mask),
+                         {ctext(fl, binp->binsType().binSetEnum()), ctext(fl, mask),
                           ctext(fl, quoted(VIdProtect::protectWordsIf(binp->name(), prot))),
                           ctext(fl, quoted(VIdProtect::protectIf(fl->filename(), prot))),
                           cnum(fl, static_cast<uint32_t>(fl->lineno())),

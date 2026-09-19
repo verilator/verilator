@@ -22,15 +22,7 @@
 #include "verilated_vpi.h"
 
 #include VM_PREFIX_INCLUDE
-#ifdef T_VPI_PUBLIC_DEPTH
-#include "Vt_vpi_public_depth__Dpi.h"
-#elif defined(T_VPI_PUBLIC_DEPTH_OFF)
-#include "Vt_vpi_public_depth_off__Dpi.h"
-#elif defined(T_VPI_PUBLIC_OFF)
-#include "Vt_vpi_public_off__Dpi.h"
-#else
-#error "Bad test"
-#endif
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 #endif
