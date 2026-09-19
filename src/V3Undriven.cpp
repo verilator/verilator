@@ -150,8 +150,11 @@ public:
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
     void drivenWhole(const AstNodeVarRef* nodep, bool ftaskDef) {
-        m_ftaskDriven = ftaskDef && !isDrivenWhole();
         drivenWhole(nodep);
+        // A write inside a task/function definition is not an executed process, so it must
+        // never replace a real write as the recorded other-write for MULTIDRIVEN reporting.
+        if (ftaskDef && m_nodep && !m_ftaskDriven) return;
+        m_ftaskDriven = ftaskDef;
         m_nodep = nodep;
     }
     void drivenAlwaysCombWhole(const AstAlways* alwCombp) {
@@ -622,7 +625,9 @@ class UndrivenVisitor final : public VNVisitorConst {
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp));
                     warnAlwCombOrder(nodep, entryp->firstUsedNotDrivenp());
                 }
-                const AstNodeVarRef* const otherVarRefp = entryp->getNodep();
+                // Definition-body write is not a driver, use the call site instead
+                const AstNodeVarRef* const otherVarRefp
+                    = entryp->isFtaskDriven() ? nullptr : entryp->getNodep();
                 const AstNode* const otherWritep = otherVarRefp
                                                        ? static_cast<const AstNode*>(otherVarRefp)
                                                        : entryp->callNodep();
@@ -632,8 +637,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 const bool multidrivenCommon
                     = entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                       && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType) && !sameFileLine
-                      && !entryp->isUnderGen() && otherWritep && !entryp->isFtaskDriven()
-                      && !ftaskDef && !m_inSelLhs;
+                      && !entryp->isUnderGen() && otherWritep && !ftaskDef && !m_inSelLhs;
                 // The two warnings are gated independently on the variable
                 // declaration's fileline, as v3warn suppression will check
                 // the driving fileline and still warn even if the warning
