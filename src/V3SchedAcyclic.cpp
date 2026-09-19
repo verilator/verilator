@@ -35,6 +35,7 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "V3Cfg.h"
 #include "V3EmitV.h"
 #include "V3File.h"
 #include "V3Graph.h"
@@ -147,6 +148,20 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
             // Can safely ignore Postponed as we generate them all
             if (VN_IS(nodep, AlwaysPostponed)) continue;
 
+            V3Sched::util::VarScopeSet liveInVscps;
+            bool haveLiveAnalysis = false;
+
+            if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
+                std::unique_ptr<CfgGraph> cfgp = CfgGraph::build(procp->stmtsp());
+                if (cfgp) {
+                    std::unique_ptr<std::vector<AstVarScope*>> livep = V3Cfg::liveVarScopes(*cfgp);
+                    if (livep) {
+                        haveLiveAnalysis = true;
+                        liveInVscps.insert(livep->begin(), livep->end());
+                    }
+                }
+            }
+
             SchedAcyclicLogicVertex* const lvtxp
                 = new SchedAcyclicLogicVertex{graphp.get(), nodep, scopep};
             const VNUser2InUse user2InUse;
@@ -165,9 +180,10 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
                     && !vscp->user2SetOnce())
                     addEdge(lvtxp, vvtxp, weight, true);
                 // If read, add var -> logic edge
-                // Note: Use same heuristic as ordering does to ignore written variables
-                // TODO: Use live variable analysis.
-                if (refp->access().isReadOrRW() && !vscp->user3SetOnce() && !vscp->user2()
+                // Preserve reads of variables that are live on entry, even if the same
+                // variable was written earlier in this combinational process.
+                if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
+                    && (!vscp->user2() || (haveLiveAnalysis && liveInVscps.count(vscp)))
                     && !forceReadEdgeIgnores.count(vscp))
                     addEdge(vvtxp, lvtxp, weight, true);
             });
