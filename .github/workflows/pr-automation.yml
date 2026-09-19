@@ -10,9 +10,10 @@ on:
   pull_request_target:  # 'pull_request' can have no write permissions
     types: [opened, synchronize, reopened, closed]
   workflow_run:  # To react to the result of a workflow on a pull request
-    workflows: ["Code coverage", "Regression"]
+    workflows: ["Code coverage", "RTLMeter", "Regression"]
     types: [completed]
-permissions: {}  # Everything below uses the CI app token instead
+permissions:
+  contents: read  # To check out the local action, everything else uses the CI app token
 
 defaults:
   run:
@@ -102,50 +103,42 @@ jobs:
           permission-actions: read
           permission-pull-requests: write
 
-      - name: "Set the 'pr-blocked: fix-regression' label from the result"
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          sparse-checkout: .github/actions/update-pr-label
+
+      - name: Get the pull request number
+        id: pr
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
-          LABEL: "pr-blocked: fix-regression"
-          FAILED: ${{ github.event.workflow_run.conclusion == 'failure' }}
         run: |-
           # The run tells us which pull request it was for
           if ! gh run download "${{ github.event.workflow_run.id }}" --name pr-number; then
             echo "Run has no 'pr-number' artifact"
             exit 0
           fi
-          PR=$(cat pr-number.txt)
-          # Its state and head as they are now, and whether it carries the
-          # label already
-          read -r STATE HEAD LABELLED < <(gh pr view "${PR}" \
-            --repo "${{ github.repository }}" \
-            --json state,headRefOid,labels \
-            --jq '"\(.state) \(.headRefOid) \(any(.labels[]; .name == env.LABEL))"')
-          # Only act on a change, so a run does not reapply what is already set
-          if [ "${STATE}" != OPEN ]; then
-            # Closing removes all 'pr*' labels, do not put one back on
-            echo "PR #${PR} is ${STATE}"
-          elif [ "${HEAD}" != "${SHA}" ]; then
-            # Pushed to since, so this result is stale and a new run will decide
-            echo "PR #${PR} has moved on from ${SHA}"
-          elif [ "${FAILED}" = true ] && [ "${LABELLED}" = false ]; then
-            echo "Regression failed, blocking PR #${PR}"
-            gh pr edit "${PR}" --repo "${{ github.repository }}" --add-label "${LABEL}"
-          elif [ "${FAILED}" = false ] && [ "${LABELLED}" = true ]; then
-            echo "Regression succeeded, unblocking PR #${PR}"
-            gh pr edit "${PR}" --repo "${{ github.repository }}" --remove-label "${LABEL}"
-          else
-            echo "No change to PR #${PR}"
-          fi
+          echo "number=$(cat pr-number.txt)" >> "$GITHUB_OUTPUT"
 
-  coverage-complete:
-    name: Coverage complete
+      - name: "Update the 'pr-blocked: fix-regression' label"
+        if: ${{ steps.pr.outputs.number }}
+        uses: ./.github/actions/update-pr-label
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          pr-number: ${{ steps.pr.outputs.number }}
+          head-sha: ${{ github.event.workflow_run.head_sha }}
+          label: "pr-blocked: fix-regression"
+          set: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+  rtlmeter-complete:
+    name: RTLMeter complete
     if: |
       github.repository == 'verilator/verilator'
       && github.event_name == 'workflow_run'
-      && github.event.workflow_run.name == 'Code coverage'
+      && github.event.workflow_run.name == 'RTLMeter'
       && github.event.workflow_run.event == 'pull_request'
-      && github.event.workflow_run.conclusion == 'success'
+      && (github.event.workflow_run.conclusion == 'success'
+          || github.event.workflow_run.conclusion == 'failure')
     runs-on: ubuntu-slim
     steps:
       # Label as the CI app, and not with 'github.token', as events from the
@@ -159,40 +152,101 @@ jobs:
           permission-actions: read
           permission-pull-requests: write
 
-      - name: "Set the 'pr-blocked: improve-coverage' label from the result"
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          sparse-checkout: .github/actions/update-pr-label
+
+      - name: Get the pull request number
+        id: pr
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
-          LABEL: "pr-blocked: improve-coverage"
         run: |-
-          # The run tells us which pull request it was for, and whether every
-          # line its patch touches is covered
+          # The run tells us which pull request it was for
+          if ! gh run download "${{ github.event.workflow_run.id }}" --name pr-number; then
+            echo "Run has no 'pr-number' artifact"
+            exit 0
+          fi
+          echo "number=$(cat pr-number.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: "Update the 'pr-blocked: fix-rtlmeter' label"
+        if: ${{ steps.pr.outputs.number }}
+        uses: ./.github/actions/update-pr-label
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          pr-number: ${{ steps.pr.outputs.number }}
+          head-sha: ${{ github.event.workflow_run.head_sha }}
+          label: "pr-blocked: fix-rtlmeter"
+          set: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+  coverage-complete:
+    name: Coverage complete
+    if: |
+      github.repository == 'verilator/verilator'
+      && github.event_name == 'workflow_run'
+      && github.event.workflow_run.name == 'Code coverage'
+      && github.event.workflow_run.event == 'pull_request'
+      && (github.event.workflow_run.conclusion == 'success'
+          || github.event.workflow_run.conclusion == 'failure')
+    runs-on: ubuntu-slim
+    steps:
+      # Label as the CI app, and not with 'github.token', as events from the
+      # latter do not create workflow runs, so the labels would drive nothing
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-actions: read
+          permission-pull-requests: write
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          sparse-checkout: .github/actions/update-pr-label
+
+      - name: Get the pull request number
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          # The run tells us which pull request it was for
+          if ! gh run download "${{ github.event.workflow_run.id }}" --name pr-number; then
+            echo "Run has no 'pr-number' artifact"
+            exit 0
+          fi
+          echo "number=$(cat pr-number.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: "Update the 'pr-blocked: fix-dev-coverage' label"
+        if: ${{ steps.pr.outputs.number }}
+        uses: ./.github/actions/update-pr-label
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          pr-number: ${{ steps.pr.outputs.number }}
+          head-sha: ${{ github.event.workflow_run.head_sha }}
+          label: "pr-blocked: fix-dev-coverage"
+          set: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+      - name: Get the line coverage
+        id: coverage
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          # Whether every line the patch touches is covered
           if ! gh run download "${{ github.event.workflow_run.id }}" --name coverage-status; then
             echo "Run has no 'coverage-status' artifact"
             exit 0
           fi
-          STATUS=$(cat coverage-status.txt)
-          PR=${STATUS%% *}
-          COVERED=${STATUS##* }
-          # Its state and head as they are now, and whether it carries the
-          # label already
-          read -r STATE HEAD LABELLED < <(gh pr view "${PR}" \
-            --repo "${{ github.repository }}" \
-            --json state,headRefOid,labels \
-            --jq '"\(.state) \(.headRefOid) \(any(.labels[]; .name == env.LABEL))"')
-          # Only act on a change, so a run does not reapply what is already set
-          if [ "${STATE}" != OPEN ]; then
-            # Closing removes all 'pr*' labels, do not put one back on
-            echo "PR #${PR} is ${STATE}"
-          elif [ "${HEAD}" != "${SHA}" ]; then
-            # Pushed to since, so this result is stale and a new run will decide
-            echo "PR #${PR} has moved on from ${SHA}"
-          elif [ "${COVERED}" = false ] && [ "${LABELLED}" = false ]; then
-            echo "Line coverage incomplete, blocking PR #${PR}"
-            gh pr edit "${PR}" --repo "${{ github.repository }}" --add-label "${LABEL}"
-          elif [ "${COVERED}" = true ] && [ "${LABELLED}" = true ]; then
-            echo "Line coverage complete, unblocking PR #${PR}"
-            gh pr edit "${PR}" --repo "${{ github.repository }}" --remove-label "${LABEL}"
-          else
-            echo "No change to PR #${PR}"
-          fi
+          echo "covered=$(cat coverage-status.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: "Update the 'pr-blocked: improve-coverage' label"
+        if: ${{ steps.pr.outputs.number && steps.coverage.outputs.covered }}
+        uses: ./.github/actions/update-pr-label
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          pr-number: ${{ steps.pr.outputs.number }}
+          head-sha: ${{ github.event.workflow_run.head_sha }}
+          label: "pr-blocked: improve-coverage"
+          set: ${{ steps.coverage.outputs.covered != 'true' }}
