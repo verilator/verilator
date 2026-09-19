@@ -255,6 +255,8 @@ class ConstructorMonitor extends RootMonitor;
     }
   endgroup
 
+  type(constructor_cg) saved_cg;
+
   function new(int mode);
     value = 0;
     root_value = 0;
@@ -272,7 +274,8 @@ class ConstructorMonitor extends RootMonitor;
   function void observe(bit [3:0] next_value);
     value = next_value;
     root_value = next_value;
-    constructor_cg.sample();
+    saved_cg = constructor_cg;
+    saved_cg.sample();
   endfunction
 endclass
 

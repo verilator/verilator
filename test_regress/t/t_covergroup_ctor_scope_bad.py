@@ -8,12 +8,9 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
-import coverage_covergroup_common
 
-test.scenarios('vlt_all')
+test.scenarios('vlt')
 
-# Exercise synchronous event callbacks, which can sample the new covergroup before
-# caller-side context initialization. With --timing, the callback runs later.
-coverage_covergroup_common.run(test,
-                               verilator_flags2=['--no-timing'],
-                               threads=(2 if test.vltmt else 1))
+test.compile(verilator_flags2=['--timing'], fails=True, expect_filename=test.golden_filename)
+
+test.passes()
