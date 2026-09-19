@@ -93,7 +93,25 @@ if(OBJCACHE_ENABLED)
 endif()
 
 find_package(BISON)
-find_package(FLEX)
+# Prefer the header installed with the selected generator, including through
+# symlinks such as Homebrew's bin/flex. Explicit cache entries take precedence.
+find_program(FLEX_EXECUTABLE NAMES flex win-flex win_flex DOC "Path to the flex executable")
+if(NOT FLEX_EXECUTABLE)
+    message(FATAL_ERROR "Cannot find Flex; set FLEX_EXECUTABLE to its executable path")
+endif()
+get_filename_component(flex_real_executable "${FLEX_EXECUTABLE}" REALPATH)
+get_filename_component(flex_bin_dir "${flex_real_executable}" DIRECTORY)
+find_path(
+    FLEX_INCLUDE_DIR FlexLexer.h
+    PATHS "${flex_bin_dir}/../include" "${flex_bin_dir}"
+    NO_DEFAULT_PATH
+    DOC "Path to the flex headers"
+)
+find_path(FLEX_INCLUDE_DIR FlexLexer.h)
+if(NOT FLEX_INCLUDE_DIR)
+    message(FATAL_ERROR "Cannot find FlexLexer.h; set FLEX_INCLUDE_DIR to its directory")
+endif()
+mark_as_advanced(FLEX_EXECUTABLE FLEX_INCLUDE_DIR)
 
 # Build
 #set_property(GLOBAL PROPERTY JOB_POOLS one_job=1)
