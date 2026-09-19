@@ -1049,6 +1049,41 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs(const LiveNodes& liveNodes) {
     }
 }
 
+void V3LinkDotIfaceCapture::verifyNoDeadIfaceVarRefs(const LiveNodes& liveNodes) {
+    // Same invariant and shape as verifyNoDeadRefs() above, but for
+    // AstNodeVarRef (AstVarRef/AstVarXRef) whose varp() targets an interface
+    // companion var (isIfaceRef()) rather than for AstRefDType.  This
+    // check is deliberately NOT gated behind debug()>=9 the way
+    // verifyNoDeadRefs() is: it is the only thing that catches this specific
+    // class today, walks only AstNodeVarRef nodes (not every pointer field on
+    // every node the way V3Broken does), and fires exactly once per compile
+    // right before the dangling pointer would otherwise be created, so the
+    // error points directly at the offending pin instead of at whatever
+    // unrelated pass happens to dereference it later.
+    for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
+        if (AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) {
+            if (modp->dead()) continue;
+            modp->foreach([&](AstNodeVarRef* refp) {
+                AstVar* const varp = refp->varp();
+                if (!varp || !varp->isIfaceRef()) return;
+                UASSERT_OBJ(liveNodes.count(varp), refp,
+                            "VARREF '" << refp->prettyNameQ() << "' in live module '"
+                                       << modp->prettyNameQ()
+                                       << "' has a dangling varp to an interface var (freed "
+                                          "IFACEREF var never retargeted after cloning)");
+                AstNodeModule* const ownerModp = findOwnerModuleIfLive(varp, liveNodes);
+                UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
+                            "VARREF '" << refp->prettyNameQ() << "' in live module '"
+                                       << modp->prettyNameQ()
+                                       << "' has varp pointing to interface var '"
+                                       << varp->prettyNameQ() << "' owned by dead module '"
+                                       << ownerModp->prettyNameQ()
+                                       << "' (IFACEREF var never retargeted after cloning)");
+            });
+        }
+    }
+}
+
 void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     if (!s_enabled) return;
     UINFO(4, "finalizeIfaceCapture: fixing remaining cross-interface refs");
@@ -1091,8 +1126,15 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     V3Stats::addStat("IfaceCapture, Dead refs fixed in modules", moduleFixed);
     V3Stats::addStat("IfaceCapture, Captured refs resolved", capturedFixed);
 
+    // Unlike the audit below, this is unconditional: nothing else fixes up
+    // (or even checks) AstNodeVarRef -> dead-IFACEREF-var links,
+    // gating it behind a debug level would mean the corruption below still
+    // ships silently in every normal compile.
+    verifyNoDeadIfaceVarRefs(liveNodes);
+
     // Independent debug-only audit of the repairs above; kept separate from the
     // repair traversal so it can catch omissions in that repair.
     if (debug() >= 9) verifyNoDeadRefs(liveNodes);
+
     reset();
 }
