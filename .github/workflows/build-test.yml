@@ -69,12 +69,12 @@ jobs:
       runs-on: ubuntu-22.04
       sha: ${{ github.sha }}
 
-  build-macos-15-clang:
-    name: Build | macos-15 | clang
+  build-macos-26-clang:
+    name: Build | macos-26 | clang
     uses: ./.github/workflows/reusable-build.yml
     with:
       cc: clang
-      runs-on: macos-15
+      runs-on: macos-26
       sha: ${{ github.sha }}
 
   build-windows:
