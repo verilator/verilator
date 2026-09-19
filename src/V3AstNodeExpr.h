@@ -1815,7 +1815,7 @@ private:
     // dist-ast-dump-suppress  // Dumped using dumpInitList
     KeyItemMap m_map;  // Node value for each array index
     // METHODS
-    void dumpInitList(std::ostream& str) const;
+    void dumpInitList(std::ostream& str, bool full = false) const;
 
 public:
     AstInitArray(FileLine* fl, AstNodeDType* newDTypep, AstNodeExpr* defaultp)

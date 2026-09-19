@@ -127,6 +127,20 @@ Summary:
 
    Defaults to 1024. Increase if a design needs larger repetition counts.
 
+.. option:: --ast-pre-codegen <filename>
+
+   Write the JSON AST to the specified filename immediately after the optional
+   sampled-value lowering pass, then stop processing before scheduling and C++
+   generation. The file is also written when no sampled values are present.
+   Unlike :vlopt:`--json-only`, this runs the normal lowering and optimization
+   passes up to this point. No :vlopt:`--cc` option is required.
+
+   Companion metadata is written to ``<filename>.meta.json``. JSON formatting
+   options, including :vlopt:`--json-full-tables`, apply to this output.
+   This option cannot be combined with :vlopt:`--build`, :vlopt:`--binary`,
+   :vlopt:`-E`, :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`,
+   :vlopt:`--json-only`, or :vlopt:`--hierarchical`.
+
 .. option:: --autoflush
 
    After every $display or $fdisplay, flush the output stream. This ensures
@@ -710,6 +724,16 @@ Summary:
 
 .. option:: -fno-dedup
 
+.. option:: -fno-delayed
+
+   Skip nonblocking assignment lowering (``V3Delayed``), retaining nonblocking
+   assignments in the exported AST instead of introducing delayed-value,
+   index, and write-enable temporaries. Requires :vlopt:`--ast-pre-codegen`,
+   since subsequent scheduling and C++ generation require this lowering.
+   Active-domain normalization and optional sampled-value lowering still run.
+   The pass is enabled by default; ``-fdelayed`` re-enables it explicitly.
+   This setting is independent of optimization levels such as ``-O0``.
+
 .. option:: -fno-dfg
 
    Rarely needed. Disable the DFG-based combinational logic optimizer.
@@ -1063,6 +1087,15 @@ Summary:
 
    Don't dump edit number in .tree.json files. This may make the file more
    run-to-run stable for easier comparison.
+
+.. option:: --json-full-tables
+
+   Include every array initializer entry in the ``initList`` field of JSON
+   tree output, including lookup tables produced by optimization. By default,
+   this field is abbreviated after six entries. This applies to both
+   :vlopt:`--json-only` and :vlopt:`--dump-tree-json`; text tree dumps retain
+   their abbreviated summaries. Use ``--no-json-full-tables`` to restore the
+   default behavior.
 
 .. option:: --no-json-ids
 
@@ -1807,6 +1840,24 @@ Summary:
    Specifies SystemVerilog language features should be enabled; equivalent
    to :vlopt:`--language 1800-2023 <--language>`. This option is selected
    by default; it exists for compatibility with other simulators.
+
+.. option:: --sva-preserve
+
+   Experimental, for internal use only. Lower each named ``assert``, ``assume``,
+   and ``cover`` property into a public one-bit internal signal that remains
+   visible in late tree dumps. Signal names begin with ``__Vsva_assert_``,
+   ``__Vsva_assume_``, or ``__Vsva_cover_`` and include the property
+   name. Assert signals indicate a violation, assume signals indicate that the
+   constraint holds, and cover signals indicate a match. Runtime assertion
+   controls and user action blocks are omitted for these properties.
+   Failure diagnostic templates are retained in the signal's ``tag`` metadata
+   in tree dumps, including format placeholders but excluding runtime argument
+   expressions. Multiple messages are joined in source order; their action-block
+   conditions are not retained. A default failure template is supplied when the
+   assertion has no action blocks.
+
+   Disabled by default. Use ``--no-sva-preserve`` to disable it explicitly.
+   Without this option, assertion and coverage lowering is unchanged.
 
 .. option:: +systemverilogext+<ext>
 

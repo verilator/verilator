@@ -2,13 +2,13 @@
  "modulesp": [
   {"type":"MODULE","name":"m","addr":"(F)","loc":"d,12:8,12:9","origName":"m","verilogName":"m","level":1,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
-    {"type":"VAR","name":"clk_ip","addr":"(G)","loc":"d,13:11,13:17","dtypep":"(H)","origName":"clk_ip","verilogName":"clk_ip","isPrimaryIO":true,"direction":"INPUT","declDirection":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
+    {"type":"VAR","name":"clk_ip","addr":"(G)","loc":"d,13:11,13:17","dtypep":"(H)","tag":"clk_ip","origName":"clk_ip","verilogName":"clk_ip","isPrimaryIO":true,"direction":"INPUT","declDirection":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
     {"type":"VAR","name":"rst_ip","addr":"(I)","loc":"d,14:11,14:17","dtypep":"(H)","origName":"rst_ip","verilogName":"rst_ip","isPrimaryIO":true,"direction":"INPUT","declDirection":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
-    {"type":"VAR","name":"foo_op","addr":"(J)","loc":"d,15:12,15:18","dtypep":"(H)","origName":"foo_op","verilogName":"foo_op","isPrimaryIO":true,"direction":"OUTPUT","declDirection":"OUTPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
+    {"type":"VAR","name":"foo_op","addr":"(J)","loc":"d,15:12,15:18","dtypep":"(H)","tag":"foo_op","origName":"foo_op","verilogName":"foo_op","isPrimaryIO":true,"direction":"OUTPUT","declDirection":"OUTPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
     {"type":"TYPEDEF","name":"my_struct","addr":"(K)","loc":"d,25:5,25:14","dtypep":"(L)"},
     {"type":"CELL","name":"itop","addr":"(M)","loc":"d,29:7,29:11","modName":"ifc","origName":"itop","verilogName":"itop","modp":"(N)"},
     {"type":"VAR","name":"itop","addr":"(O)","loc":"d,29:7,29:11","dtypep":"(P)","origName":"itop__Viftop","verilogName":"itop__Viftop","direction":"NONE","declDirection":"NONE","lifetime":"VSTATICI","varType":"IFACEREF"},
-    {"type":"VAR","name":"this_struct","addr":"(Q)","loc":"d,31:13,31:24","dtypep":"(R)","origName":"this_struct","verilogName":"this_struct","direction":"NONE","declDirection":"NONE","lifetime":"VSTATICI","varType":"VAR"},
+    {"type":"VAR","name":"this_struct","addr":"(Q)","loc":"d,31:13,31:24","dtypep":"(R)","tag":"this_struct","origName":"this_struct","verilogName":"this_struct","direction":"NONE","declDirection":"NONE","lifetime":"VSTATICI","varType":"VAR"},
     {"type":"VAR","name":"dotted","addr":"(S)","loc":"d,33:15,33:21","dtypep":"(T)","origName":"dotted","verilogName":"dotted","direction":"NONE","declDirection":"NONE","icoMaybeWritten":true,"lifetime":"VSTATICI","varType":"WIRE","dtypeName":"logic"},
     {"type":"ALWAYS","addr":"(U)","loc":"d,33:22,33:23","keyword":"cont_assign",
      "stmtsp": [

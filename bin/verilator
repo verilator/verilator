@@ -401,6 +401,7 @@ detailed descriptions of these arguments.
     --no-assert                 Disable all assertions
     --no-assert-case            Disable unique/unique0/priority-case assertions
     --assert-unroll-limit <iter> Max SVA assertion repetition before erroring
+    --ast-pre-codegen <filename>  Write JSON after sampled lowering, then stop
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
@@ -461,6 +462,7 @@ detailed descriptions of these arguments.
      -F <file>                  Parse arguments from a file, relatively
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
+     -fno-delayed              Skip nonblocking assignment lowering for AST export
     --flatten                   Force inlining of all modules, tasks and functions
     --fourstate                 Enable fourstate logic
     --no-fourstate              Disable fourstate logic
@@ -490,6 +492,7 @@ detailed descriptions of these arguments.
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -j <jobs>                  Parallelism for --build-jobs/--verilate-jobs
     --no-json-edit-nums         Don't dump editNum in .tree.json files
+    --json-full-tables         Include all table entries in .tree.json files
     --no-json-ids               Don't use short identifiers instead of addresses/paths in .tree.json
     --json-only                 Create JSON parser output (.tree.json and .meta.json)
     --json-only-meta-output <filename>  Set .tree.meta.json output filename
@@ -572,6 +575,7 @@ detailed descriptions of these arguments.
     --no-std-waiver             Prevent parsing standard lint waivers
     --no-stop-fail              Do not call $stop when assertion fails
      -sv                        Enable SystemVerilog parsing
+    --sva-preserve              Preserve SVA property results as public signals
      +systemverilogext+<ext>    Synonym for +1800-2023ext+<ext>
     --threads <threads>         Enable multithreading
     --threads-dpi <mode>        Enable multithreaded DPI
