@@ -9,6 +9,7 @@ on:
     branches-ignore:
       - 'dependabot/**'  # Avoid duplicates: only run the PR, not the push
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * 0'  # weekly
@@ -22,14 +23,47 @@ defaults:
     working-directory: repo
 
 concurrency:
-  # At most 1 job per branch. Auto cancel on pull requests and on all forks
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # At most 1 job per branch. Auto cancel on pull requests and on all forks.
+  # Label events that do not concern the 'pr: regression' label are given a
+  # unique concurrency group, so they do not cancel a run that is in progress.
+  # This way adding the label starts a run, removing it cancels the in-progress
+  # run, and any other label change has no effect. Note such an event still
+  # creates a run of this workflow, which is skipped, and would then hide the
+  # one in progress on the pull request. 'pr-run-cleanup.yml' deletes those.
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}-${{
+    (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+    && github.event.label.name != 'pr: regression'
+    && github.run_id || 'shared' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'verilator/verilator' }}
 
 jobs:
 
+  start:
+    name: Start
+    # Only run pull request jobs if labelled as needing a regression run.
+    # Always run push, workflow dispatch and scheduled jobs
+    if: |
+      (github.event_name == 'pull_request'
+        && ((github.event.action == 'labeled'
+             && github.event.label.name == 'pr: regression')
+            || (github.event.action != 'labeled'
+                && github.event.action != 'unlabeled'
+                && contains(github.event.pull_request.labels.*.name, 'pr: regression')))) ||
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'schedule')
+    runs-on: ubuntu-slim
+    defaults:
+      run:
+        working-directory: .  # The workflow default is not checked out here
+    steps:
+      - name: Enabled
+        run: echo "Regression is enabled for this run"
+
   build-2604-gcc:
     name: Build | 26.04 | gcc
+    needs: start
     uses: ./.github/workflows/reusable-build.yml
     with:
       cc: gcc
@@ -38,6 +72,7 @@ jobs:
 
   build-2604-clang:
     name: Build | 26.04 | clang
+    needs: start
     uses: ./.github/workflows/reusable-build.yml
     with:
       cc: clang
@@ -47,6 +82,7 @@ jobs:
 
   build-2404-gcc:
     name: Build | 24.04 | gcc
+    needs: start
     uses: ./.github/workflows/reusable-build.yml
     with:
       cc: gcc
@@ -55,6 +91,7 @@ jobs:
 
   build-2404-clang:
     name: Build | 24.04 | clang
+    needs: start
     uses: ./.github/workflows/reusable-build.yml
     with:
       cc: clang
@@ -63,6 +100,7 @@ jobs:
 
   build-2204-gcc:
     name: Build | 22.04 | gcc
+    needs: start
     uses: ./.github/workflows/reusable-build.yml
     with:
       cc: gcc
@@ -71,6 +109,7 @@ jobs:
 
   build-macos-26-clang:
     name: Build | macos-26 | clang
+    needs: start
     uses: ./.github/workflows/reusable-build.yml
     with:
       cc: clang
@@ -79,6 +118,7 @@ jobs:
 
   build-windows:
     name: Build | windows-2025-vs2026 | msvc
+    needs: start
     runs-on: windows-2025-vs2026
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -167,12 +207,14 @@ jobs:
 
   lint-py:
     name: Lint Python
+    needs: start
     uses: ./.github/workflows/reusable-lint-py.yml
 
   passed:
     name: Regression passed  # This job is used as a required status check on PRs
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.start.result != 'skipped' }}
     needs:
+      - start
       - build-2604-gcc
       - build-2604-clang
       - build-2404-gcc
