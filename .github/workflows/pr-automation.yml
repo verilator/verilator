@@ -12,10 +12,7 @@ on:
   workflow_run:  # To react to the result of a workflow on a pull request
     workflows: ["Code coverage", "Regression"]
     types: [completed]
-
-permissions:
-  actions: read  # To download the artifacts of the triggering run
-  pull-requests: write
+permissions: {}  # Everything below uses the CI app token instead
 
 defaults:
   run:
@@ -25,12 +22,24 @@ defaults:
 jobs:
   pr-event:
     name: PR event
-    if: ${{ github.event_name == 'pull_request_target' }}
+    if: |
+      github.repository == 'verilator/verilator'
+      && github.event_name == 'pull_request_target'
     runs-on: ubuntu-slim
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
+      # Label as the CI app, and not with 'github.token', as events from the
+      # latter do not create workflow runs, so the labels would drive nothing
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-pull-requests: write
+
       - name: "Add 'pr: regression' label on open"
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
         run: |-
           gh pr edit "${{ github.event.number }}" \
@@ -39,6 +48,8 @@ jobs:
 
       - name: "Optionally add 'pr: dev-coverage' label on open"
         if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |-
           # Grab changed files
           FILES=$(gh api --paginate \
@@ -55,6 +66,8 @@ jobs:
 
       - name: "Remove all 'pr*' labels on close"
         if: ${{ github.event.action == 'closed' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |-
           # Filter in 'jq', so an empty result is not an error, as it is with 'grep'
           LABELS=$(gh api \
@@ -70,17 +83,28 @@ jobs:
   regression-complete:
     name: Regression complete
     if: |
-      github.event_name == 'workflow_run'
+      github.repository == 'verilator/verilator'
+      && github.event_name == 'workflow_run'
       && github.event.workflow_run.name == 'Regression'
       && github.event.workflow_run.event == 'pull_request'
       && (github.event.workflow_run.conclusion == 'success'
           || github.event.workflow_run.conclusion == 'failure')
     runs-on: ubuntu-slim
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
+      # Label as the CI app, and not with 'github.token', as events from the
+      # latter do not create workflow runs, so the labels would drive nothing
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-actions: read
+          permission-pull-requests: write
+
       - name: "Set the 'pr-blocked: fix-regression' label from the result"
         env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
           SHA: ${{ github.event.workflow_run.head_sha }}
           LABEL: "pr-blocked: fix-regression"
           FAILED: ${{ github.event.workflow_run.conclusion == 'failure' }}
@@ -117,16 +141,27 @@ jobs:
   coverage-complete:
     name: Coverage complete
     if: |
-      github.event_name == 'workflow_run'
+      github.repository == 'verilator/verilator'
+      && github.event_name == 'workflow_run'
       && github.event.workflow_run.name == 'Code coverage'
       && github.event.workflow_run.event == 'pull_request'
       && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-slim
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
+      # Label as the CI app, and not with 'github.token', as events from the
+      # latter do not create workflow runs, so the labels would drive nothing
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-actions: read
+          permission-pull-requests: write
+
       - name: "Set the 'pr-blocked: improve-coverage' label from the result"
         env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
           SHA: ${{ github.event.workflow_run.head_sha }}
           LABEL: "pr-blocked: improve-coverage"
         run: |-
