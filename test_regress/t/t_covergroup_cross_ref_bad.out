@@ -1,0 +1,22 @@
+%Error: t/t_covergroup_cross_ref_bad.v:15:22: Cross selection 'missing' may only name its enclosing cross 'cx' (IEEE 1800-2023 19.6.1.2).
+                                            : ... note: In instance 't'
+   15 |       bins unknown = missing;
+      |                      ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_cross_ref_bad.v:16:26: Cross selection 'other' may only name its enclosing cross 'cx' (IEEE 1800-2023 19.6.1.2).
+                                            : ... note: In instance 't'
+   16 |       bins wrong_cross = other;
+      |                          ^~~~~
+%Error: t/t_covergroup_cross_ref_bad.v:17:26: Cross selection 'cp_a' may only name its enclosing cross 'cx' (IEEE 1800-2023 19.6.1.2).
+                                            : ... note: In instance 't'
+   17 |       bins wrong_point = cp_a;
+      |                          ^~~~
+%Error: t/t_covergroup_cross_ref_bad.v:18:27: Cross selection 'missing' may only name its enclosing cross 'cx' (IEEE 1800-2023 19.6.1.2).
+                                            : ... note: In instance 't'
+   18 |       bins invalid_left = missing && cx;
+      |                           ^~~~~~~
+%Error: t/t_covergroup_cross_ref_bad.v:19:34: Cross selection 'other' may only name its enclosing cross 'cx' (IEEE 1800-2023 19.6.1.2).
+                                            : ... note: In instance 't'
+   19 |       bins invalid_right = cx || other;
+      |                                  ^~~~~
+%Error: Exiting due to

@@ -53,8 +53,8 @@ module Vt_debug_emitv_t;
                 $write("");
             end
             $display("%p", $_EXPRSTMT(
-                    __Venum_h4d326b97__0 = (in);
-                    , __Venum_h4d326b97__0);
+                    __Venum_hf6514fb1__0 = (in);
+                    , __Venum_hf6514fb1__0);
             );
             if ($value$plusargs("TEST=%d", i1)) begin
                 $display("value was %d", i1);
@@ -959,6 +959,7 @@ module Vt_debug_emitv_t;
         };
       cx: cross cp_x, cp_y iff ((cg_sig[0] == cg_sig2[0]));
         cx_select: cross cp_x, cp_y {
+            bins entire = cx_select;
             bins plain = binsof(cp_x);
             bins named = binsof(cp_x.x0);
             bins filtered = binsof(cp_x) intersect {'sh0, ['sh1:'sh2]};
@@ -1033,7 +1034,7 @@ module Vt_debug_emitv_t;
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
-    } __Venum_h4d326b97__0;
+    } __Venum_hf6514fb1__0;
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;

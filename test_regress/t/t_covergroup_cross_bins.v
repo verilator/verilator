@@ -46,6 +46,21 @@ module t (
     }
   endgroup
 
+  covergroup cg_static_cross with function sample (bit a, bit b, bit enabled);
+    cp_a: coverpoint a;
+    cp_b: coverpoint b;
+    xx: cross cp_a, cp_b{
+      bins entire = xx;
+      bins zero = xx && binsof (cp_a) intersect {0};
+      bins one = binsof (cp_a) intersect {1} && xx;
+      bins union_left = xx || binsof (cp_a) intersect {0};
+      bins union_right = binsof (cp_b) intersect {1} || xx;
+      bins grouped = (xx && binsof (cp_a) intersect {0}) || (binsof (cp_b) intersect {1} && (xx));
+      bins guarded = xx iff (enabled);
+    }
+    \cross.ref : cross cp_a, cp_b{bins entire = \cross.ref ;}
+  endgroup
+
   covergroup cg_overlap with function sample (bit [1:0] a, bit b);
     cp_a: coverpoint a {
       bins low = {[0 : 1]};
@@ -59,6 +74,7 @@ module t (
     }
     cx: cross cp_a, cp_b{
       bins combined = binsof (cp_a);
+      bins entire = cx;
       bins empty = binsof (cp_a.low) && binsof (cp_b.zero);
       ignore_bins ignored = binsof (cp_a.low);
       illegal_bins forbidden = binsof (cp_a.high) && binsof (cp_b.one) iff (0);
@@ -70,6 +86,10 @@ module t (
       bins values[] = {[0 : 64]};
     }
     cp_b: coverpoint b;
+    whole: cross cp_a, cp_b{
+      bins entire = whole;
+      bins tail = whole && binsof (cp_a) intersect {64};
+    }
     cx: cross cp_a, cp_b{
       bins combined = binsof (cp_a);
       bins partial = binsof (cp_a) intersect {[30 : 34]};
@@ -86,9 +106,9 @@ module t (
     }
     cp_b: coverpoint b;
     cx: cross cp_a, cp_b{
-      bins empty = binsof (cp_a);
-      ignore_bins ignored = binsof (cp_a);
-      illegal_bins forbidden = binsof (cp_a) iff (0);
+      bins empty = cx;
+      ignore_bins ignored = cx;
+      illegal_bins forbidden = cx iff (0);
     }
   endgroup
 
@@ -112,6 +132,7 @@ module t (
     }
     cp_b: coverpoint b;
     cx: cross cp_a, cp_b{
+      bins empty = cx;
       ignore_bins ignored = binsof (cp_b);
       illegal_bins forbidden = binsof (cp_b);
     }
@@ -136,6 +157,7 @@ module t (
 
   cg_order order_cov = new;
   cg_auto auto_cov = new;
+  cg_static_cross static_cov = new;
   cg_overlap overlap_cov = new;
   cg_wide wide_cov = new;
   cg_empty empty_cov = new;
@@ -147,6 +169,7 @@ module t (
     if (cyc < 8) begin
       order_cov.sample(2'(cyc / 2), 1'(cyc), cyc < 6 && 1'(cyc));
       auto_cov.sample(2'(cyc / 2), 1'(cyc), cyc < 6 && 1'(cyc));
+      static_cov.sample(1'(cyc / 2), 1'(cyc), cyc < 4);
       overlap_cov.sample(2'(cyc / 2), 1'(cyc));
       empty_cov.sample(2'(cyc / 2), 1'(cyc));
       trans_cov.sample(1'(cyc), 1'(cyc / 2));
@@ -168,6 +191,7 @@ module t (
     else begin
       `checkr(order_cov.get_inst_coverage(), 100.0);
       `checkr(auto_cov.get_inst_coverage(), 100.0);
+      `checkr(static_cov.get_inst_coverage(), 100.0);
       `checkr(overlap_cov.get_inst_coverage(), 100.0);
       `checkr(wide_cov.get_inst_coverage(), 100.0);
       `checkr(empty_cov.get_inst_coverage(), 100.0);

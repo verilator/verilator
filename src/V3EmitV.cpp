@@ -380,6 +380,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(";\n");
     }
+    void visit(AstCoverCrossRef* nodep) override { putfs(nodep, nodep->name()); }
     void visit(AstCoverCrossSelect* nodep) override {
         putfs(nodep, "(");
         iterateConstNull(nodep->lhsp());

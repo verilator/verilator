@@ -1991,6 +1991,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     CrossSelection crossSelection(AstNode* nodep, CrossSelectionContext& ctx) {
+        if (const AstCoverCrossRef* const refp = VN_CAST(nodep, CoverCrossRef)) {
+            if (refp->name() != ctx.crossp->name()) {
+                refp->v3error("Cross selection "
+                              << refp->prettyNameQ() << " may only name its enclosing cross "
+                              << ctx.crossp->prettyNameQ() << " (IEEE 1800-2023 19.6.1.2).");
+                ctx.valid = false;
+                return {};
+            }
+            CrossSelection result((static_cast<uint64_t>(ctx.tuples) + 63) / 64, 0);
+            setCrossSelectionRange(result, 0, ctx.tuples);
+            return result;
+        }
         if (AstCoverCrossSelect* const opp = VN_CAST(nodep, CoverCrossSelect)) {
             CrossSelection lhs = crossSelection(opp->lhsp(), ctx);
             const CrossSelection rhs = crossSelection(opp->rhsp(), ctx);

@@ -436,6 +436,7 @@ module t (/*AUTOARG*/
     }
     cx: cross cp_x, cp_y iff (cg_sig[0] == cg_sig2[0]);
     cx_select: cross cp_x, cp_y{
+      bins entire = cx_select;
       bins plain = binsof (cp_x);
       bins named = binsof (cp_x.x0);
       bins filtered = binsof (cp_x) intersect {0, [1 : 2]};
