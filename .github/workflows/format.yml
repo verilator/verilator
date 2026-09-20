@@ -15,6 +15,13 @@ defaults:
   run:
     working-directory: repo
 
+concurrency:
+  # At most 1 run per branch: the job pushes what 'make format' changed, so
+  # concurrent runs on the same branch race on that push. Cancel the run in
+  # progress, as the newer one formats a tree that already holds its commits.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   format:
     runs-on: ubuntu-24.04
