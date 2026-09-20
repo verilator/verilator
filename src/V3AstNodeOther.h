@@ -1162,6 +1162,20 @@ public:
         return m_name == asamep->m_name && m_binsType.m_e == asamep->m_binsType.m_e;
     }  // LCOV_EXCL_STOP
 };
+class AstCoverCrossRef final : public AstNode {
+    // The complete bin-tuple space of the enclosing cross
+    const string m_name;  // Referenced cross name
+
+public:
+    AstCoverCrossRef(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_CoverCrossRef(fl)
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstCoverCrossRef;
+    string name() const override VL_MT_STABLE { return m_name; }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
+        return m_name == VN_DBG_AS(samep, CoverCrossRef)->m_name;
+    }  // LCOV_EXCL_STOP
+};
 class AstCoverCrossSelect final : public AstNode {
     // Intersection or union of two cross-bin selections
     // @astgen op1 := lhsp : Optional[AstNode]  // Null for an unsupported selection

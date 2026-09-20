@@ -1984,13 +1984,26 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         while (first < end) {
             const unsigned bit = first % 64;
             const unsigned bits = std::min<uint64_t>(64 - bit, end - first);
-            selection[first / 64] |= (bits == 64 ? ~uint64_t{0} : (uint64_t{1} << bits) - 1)
-                                     << bit;
+            selection[VL_BITWORD_Q(first)]
+                |= (bits == 64 ? ~uint64_t{0} : (uint64_t{1} << bits) - 1) << bit;
             first += bits;
         }
     }
 
     CrossSelection crossSelection(AstNode* nodep, CrossSelectionContext& ctx) {
+        if (const AstCoverCrossRef* const refp = VN_CAST(nodep, CoverCrossRef)) {
+            if (refp->name() != ctx.crossp->name()) {
+                refp->v3error("Cross selection "
+                              << refp->prettyNameQ() << " may only name its enclosing cross "
+                              << ctx.crossp->prettyNameQ() << " (IEEE 1800-2023 19.6.1.2).");
+                ctx.valid = false;
+                return {};
+            }
+            CrossSelection result(
+                VL_BITWORD_Q(static_cast<uint64_t>(ctx.tuples) + VL_QUADSIZE - 1), 0);
+            setCrossSelectionRange(result, 0, ctx.tuples);
+            return result;
+        }
         if (AstCoverCrossSelect* const opp = VN_CAST(nodep, CoverCrossSelect)) {
             CrossSelection lhs = crossSelection(opp->lhsp(), ctx);
             const CrossSelection rhs = crossSelection(opp->rhsp(), ctx);
@@ -2028,7 +2041,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const std::vector<bool> selected
             = selectCoverpointBins(selectp, bins, first, count, ctx.valid);
         if (!ctx.valid) return {};
-        CrossSelection result((static_cast<uint64_t>(ctx.tuples) + 63) / 64, 0);
+        CrossSelection result(VL_BITWORD_Q(static_cast<uint64_t>(ctx.tuples) + VL_QUADSIZE - 1),
+                              0);
         const uint64_t stride = ctx.strides[dim];
         const uint64_t period = stride * bins.total;
         for (uint64_t base = 0; base < ctx.tuples; base += period) {
