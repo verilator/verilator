@@ -30,8 +30,12 @@ concurrency:
   # run, and any other label change has no effect. Note such an event still
   # creates a run of this workflow, which is skipped, and would then hide the
   # one in progress on the pull request. 'pr-run-cleanup.yml' deletes those.
+  # Key pull request runs on the number: 'github.ref' is the base branch once
+  # the pull request is closed, so unlabel events would cancel base runs.
   group: >-
-    ${{ github.workflow }}-${{ github.ref }}-${{
+    ${{ github.workflow }}-${{
+    github.event_name == 'pull_request'
+    && format('pr-{0}', github.event.number) || github.ref }}-${{
     (github.event.action == 'labeled' || github.event.action == 'unlabeled')
     && github.event.label.name != 'pr: regression'
     && github.run_id || 'shared' }}
