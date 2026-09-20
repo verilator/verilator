@@ -272,7 +272,9 @@ class TraceDriver final : public DfgVisitor {
             UASSERT_OBJ(!m_defaultp || vtxp == m_splicep, vtxp, "Tracing wrong vertex");
 
             // If the currently traced vertex is in a different component,
-            // then we found what we were looking for. Check if it's cached.
+            // then we found what we were looking for. But if it's a splice
+            // with a corresponding default, we need to keep going as the
+            // splice does not fully define the value we are seeking.
             if (m_sccInfo.get(*vtxp) != m_component && !m_defaultp) {
                 DfgVertex*& respr
                     = m_boundaryCache
