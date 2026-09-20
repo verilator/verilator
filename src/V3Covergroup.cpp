@@ -1984,8 +1984,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         while (first < end) {
             const unsigned bit = first % 64;
             const unsigned bits = std::min<uint64_t>(64 - bit, end - first);
-            selection[first / 64] |= (bits == 64 ? ~uint64_t{0} : (uint64_t{1} << bits) - 1)
-                                     << bit;
+            selection[VL_BITWORD_Q(first)]
+                |= (bits == 64 ? ~uint64_t{0} : (uint64_t{1} << bits) - 1) << bit;
             first += bits;
         }
     }
@@ -1999,7 +1999,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 ctx.valid = false;
                 return {};
             }
-            CrossSelection result((static_cast<uint64_t>(ctx.tuples) + 63) / 64, 0);
+            CrossSelection result(
+                VL_BITWORD_Q(static_cast<uint64_t>(ctx.tuples) + VL_QUADSIZE - 1), 0);
             setCrossSelectionRange(result, 0, ctx.tuples);
             return result;
         }
@@ -2040,7 +2041,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const std::vector<bool> selected
             = selectCoverpointBins(selectp, bins, first, count, ctx.valid);
         if (!ctx.valid) return {};
-        CrossSelection result((static_cast<uint64_t>(ctx.tuples) + 63) / 64, 0);
+        CrossSelection result(VL_BITWORD_Q(static_cast<uint64_t>(ctx.tuples) + VL_QUADSIZE - 1),
+                              0);
         const uint64_t stride = ctx.strides[dim];
         const uint64_t period = stride * bins.total;
         for (uint64_t base = 0; base < ctx.tuples; base += period) {
