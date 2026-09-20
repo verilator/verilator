@@ -1139,8 +1139,11 @@ void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
 
     struct TableInfo final {
-        std::string typeName;
-        std::string tableName;
+        // type of the element of the table
+        const std::string typeName;
+        // identifier of the table
+        const std::string tableName;
+        // contents of the table
         const std::vector<std::string>& rows;
 
         TableInfo(std::string typeName, std::string tableName,
@@ -1162,11 +1165,12 @@ void EmitCSyms::emitVarTables() {
         tables.emplace_back("VlIfaceRefTableEntry", m_ifaceRefTableName, m_ifaceRefTableRows);
     }
 
-    constexpr static size_t maxCost = 50000;
+    const size_t maxCost = v3Global.opt.outputSplitSyms() ? v3Global.opt.outputSplitSyms()
+                                                          : std::numeric_limits<size_t>::max();
 
     size_t i = 0;
     for (size_t nFile = 0; i < tables.size(); nFile++) {
-        std::string funcName = symClassName() + "__tables__" + std::to_string(nFile);
+        const std::string funcName = symClassName() + "__Vtables_" + std::to_string(nFile);
         openNewOutputSourceFile(funcName, true, true, "Variable/scope tables");
         emitSymImpPreamble();
 
