@@ -22,8 +22,18 @@ defaults:
     shell: bash
 
 concurrency:
-  # At most 1 job per branch. Auto cancel all but scheduled jobs
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # At most 1 job per branch. Auto cancel all but scheduled jobs.
+  # Label events that do not concern the 'pr: rtlmeter' label are given a
+  # unique concurrency group, so they do not cancel a run that is in progress.
+  # This way adding the label starts a run, removing it cancels the in-progress
+  # run, and any other label change has no effect. Note such an event still
+  # creates a run of this workflow, which is skipped, and would then hide the
+  # one in progress on the pull request. 'pr-run-cleanup.yml' deletes those.
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}-${{
+    (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+    && github.event.label.name != 'pr: rtlmeter'
+    && github.run_id || 'shared' }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
@@ -36,7 +46,11 @@ jobs:
       (github.event_name == 'schedule'
         && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
       (github.event_name == 'pull_request'
-        && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter')) ||
+        && ((github.event.action == 'labeled'
+             && github.event.label.name == 'pr: rtlmeter')
+            || (github.event.action != 'labeled'
+                && github.event.action != 'unlabeled'
+                && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter')))) ||
       (github.event_name == 'workflow_dispatch') ||
       (github.event_name == 'push')
     runs-on: ubuntu-26.04
@@ -44,6 +58,18 @@ jobs:
       old-sha: ${{ steps.start.outputs.old-sha }}
       cases: ${{ steps.cases.outputs.cases }}
     steps:
+      - name: Save the pull request number
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "${{ github.event.number }}" > pr-number.txt
+
+      - name: Upload the pull request number
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: pr-number
+          path: pr-number.txt
+          overwrite: true
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
