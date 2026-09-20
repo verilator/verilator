@@ -167,12 +167,12 @@ class CCtorsVisitor final : public VNVisitor {
 
         if (v3Global.opt.coverage()) {
             V3CCtorsBuilder configure_coverage{nodep, "_configure_coverage", VCtorType::COVERAGE};
-            for (AstNode* np = nodep->stmtsp(); np; np = np->nextp()) {
+            for (AstNode *np = nodep->stmtsp(), *nextp; np; np = nextp) {
+                nextp = np->nextp();
                 if (AstNodeCoverDecl* const coverp = VN_CAST(np, NodeCoverDecl)) {
                     // ... else we don't have a static VlSym to be able to coverage insert
                     UASSERT_OBJ(!VN_IS(nodep, Class), coverp,
                                 "NodeCoverDecl should be in class's package, not class itself");
-                    np = coverp->backp();
                     configure_coverage.add(coverp->unlinkFrBack());
                 }
             }
