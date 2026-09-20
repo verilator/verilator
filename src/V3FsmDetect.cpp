@@ -2194,7 +2194,6 @@ class FsmLowerVisitor final {
                                         graph.stateVarName(),
                                         "",
                                         statep->label()};
-            declp->hier(scopep->prettyName());
             modp->addStmtsp(declp);
             AstNodeExpr* const guardp
                 = andExpr(flp,
@@ -2231,7 +2230,6 @@ class FsmLowerVisitor final {
                                             fromVertexp->label(),
                                             toStatep->label(),
                                             fsmTag};
-                declp->hier(scopep->prettyName());
                 modp->addStmtsp(declp);
                 AstNodeExpr* guardp = nullptr;
                 if (fromVertexp->isResetAny()) {
