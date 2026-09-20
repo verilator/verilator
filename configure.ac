@@ -280,7 +280,12 @@ import sys
 print(pathlib.Path(shutil.which(sys.argv@<:@1@:>@) or sys.argv@<:@1@:>@).resolve().parent.parent / "include")
 ' "$LEX")
 if test -f "$flex_include/FlexLexer.h"; then
-   CPPFLAGS="$CPPFLAGS -I$flex_include"
+   if test -n "$MSYSTEM"; then
+      # Search MSYS Flex headers after the active toolchain's system headers.
+      CPPFLAGS="$CPPFLAGS -idirafter $flex_include"
+   else
+      CPPFLAGS="$CPPFLAGS -I$flex_include"
+   fi
 fi
 
 AC_CHECK_PROG(YACC,bison,bison)
