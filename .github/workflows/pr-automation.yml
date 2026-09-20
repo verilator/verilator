@@ -12,6 +12,8 @@ on:
   workflow_run:  # To react to the result of a workflow on a pull request
     workflows: ["Code coverage", "RTLMeter", "Regression"]
     types: [completed]
+  push:  # A pull request can start conflicting when its base branch moves
+    branches: [master]
 permissions:
   contents: read  # To check out the local action, everything else uses the CI app token
 
@@ -80,6 +82,33 @@ jobs:
               --repo "${{ github.repository }}" \
               --remove-label "${LABELS}"
           fi
+
+  conflicting:
+    name: Conflict check
+    # A pull request can start conflicting when its own head moves, or when the
+    # base branch moves under it, so sweep the open pull requests on both.
+    if: |
+      github.repository == 'verilator/verilator'
+      && (github.event_name == 'push'
+          || (github.event_name == 'pull_request_target'
+              && github.event.action == 'synchronize'))
+    runs-on: ubuntu-slim
+    steps:
+      # Label as the CI app, and not with 'github.token', as events from the
+      # latter do not create workflow runs, so the labels would drive nothing
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-pull-requests: write
+
+      - name: "Update the 'pr-blocked: needs-rebase' label"
+        uses: eps1lon/actions-label-merge-conflict@0273be72a0bbd58fcd71d0d6c02c209b50d1e5e1  # 3.1.0
+        with:
+          dirtyLabel: "pr-blocked: needs-rebase"
+          repoToken: ${{ steps.generate-token.outputs.token }}
 
   regression-complete:
     name: Regression complete
