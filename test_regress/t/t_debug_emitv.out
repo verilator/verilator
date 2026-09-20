@@ -1023,6 +1023,59 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
+    covergroup Vt_debug_emitv_cg_live_cross;
+    function new;
+        cp_x: coverpoint cg_sig {
+            ignore_bins removed = {'sh0};
+        };
+        cp_y: coverpoint cg_sig2;
+      cx: cross cp_x, cp_y {
+            bins all = cx;
+        }
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
     Vt_debug_emitv_cg_basic cg_basic_instVt_debug_emitv_cg_basic;
     cg_basic_inst = new();
     Vt_debug_emitv_cg_clocked cg_clocked_instVt_debug_emitv_cg_clocked;
@@ -1031,6 +1084,8 @@ module Vt_debug_emitv_t;
     cg_trans_inst = new();
     Vt_debug_emitv_cg_cross cg_cross_instVt_debug_emitv_cg_cross;
     cg_cross_inst = new();
+    Vt_debug_emitv_cg_live_cross cg_live_cross_instVt_debug_emitv_cg_live_cross;
+    cg_live_cross_inst = new();
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1

@@ -42,7 +42,7 @@ module t;
       bins b_range2 = {[0:size_var]}; // non-constant regular bin range (rhs non-const)
       bins b2 = {size_var};  // non-constant simple bin value
       ignore_bins ign = {size_var};  // non-constant ignore_bins value
-      ignore_bins ign_range = {[0:size_var]};  // non-constant ignore_bins range (rhs non-const)
+      ignore_bins ign_range = {[0:size_var]};
     }
   endgroup
 
@@ -59,7 +59,7 @@ module t;
       bins b_xz = {[4'bxxxx:4'hF]};  // four-state lower bound (match-code path)
       ignore_bins ign_xz_lo = {[4'bxxxx:4'hF]};  // four-state lower bound (range-enum path)
       ignore_bins ign_xz_hi = {[4'h0:4'bzzzz]};  // four-state upper bound (range-enum path)
-      ignore_bins ign_nclo = {[size_var:4]};  // non-constant lower bound
+      ignore_bins ign_nclo = {[size_var:4]};
       bins b_nc_ub = {[size_var:$]};  // non-constant lower bound, open-ended '$' upper
       bins b_xz_ub = {[4'bxxxx:$]};  // four-state lower bound, open-ended '$' upper
       bins b_xz_arr[] = {[4'bxxxx:4'hF]};  // four-state lower bound (array-bins path)
@@ -172,45 +172,6 @@ module t;
     }
   endgroup
 
-  logic [29:0] complex_value;
-  localparam logic [29:0] ANY = 30'bx;
-
-  covergroup cgx_binsof_complex;
-    cp_a: coverpoint complex_value {
-      bins whole = {[0:30'h3fffffff]};
-      // Six pigeons in five holes: a deliberately hard union of excluded assignments.
-      wildcard ignore_bins no_hole = {
-        (ANY & ~30'h0000001f), (ANY & ~30'h000003e0), (ANY & ~30'h00007c00),
-        (ANY & ~30'h000f8000), (ANY & ~30'h01f00000), (ANY & ~30'h3e000000)
-      };
-      wildcard ignore_bins shared_hole = {
-        (ANY | 30'h00000021), (ANY | 30'h00000401), (ANY | 30'h00008001), (ANY | 30'h00100001),
-        (ANY | 30'h02000001), (ANY | 30'h00000420), (ANY | 30'h00008020), (ANY | 30'h00100020),
-        (ANY | 30'h02000020), (ANY | 30'h00008400), (ANY | 30'h00100400), (ANY | 30'h02000400),
-        (ANY | 30'h00108000), (ANY | 30'h02008000), (ANY | 30'h02100000), (ANY | 30'h00000042),
-        (ANY | 30'h00000802), (ANY | 30'h00010002), (ANY | 30'h00200002), (ANY | 30'h04000002),
-        (ANY | 30'h00000840), (ANY | 30'h00010040), (ANY | 30'h00200040), (ANY | 30'h04000040),
-        (ANY | 30'h00010800), (ANY | 30'h00200800), (ANY | 30'h04000800), (ANY | 30'h00210000),
-        (ANY | 30'h04010000), (ANY | 30'h04200000), (ANY | 30'h00000084), (ANY | 30'h00001004),
-        (ANY | 30'h00020004), (ANY | 30'h00400004), (ANY | 30'h08000004), (ANY | 30'h00001080),
-        (ANY | 30'h00020080), (ANY | 30'h00400080), (ANY | 30'h08000080), (ANY | 30'h00021000),
-        (ANY | 30'h00401000), (ANY | 30'h08001000), (ANY | 30'h00420000), (ANY | 30'h08020000),
-        (ANY | 30'h08400000), (ANY | 30'h00000108), (ANY | 30'h00002008), (ANY | 30'h00040008),
-        (ANY | 30'h00800008), (ANY | 30'h10000008), (ANY | 30'h00002100), (ANY | 30'h00040100),
-        (ANY | 30'h00800100), (ANY | 30'h10000100), (ANY | 30'h00042000), (ANY | 30'h00802000),
-        (ANY | 30'h10002000), (ANY | 30'h00840000), (ANY | 30'h10040000), (ANY | 30'h10800000),
-        (ANY | 30'h00000210), (ANY | 30'h00004010), (ANY | 30'h00080010), (ANY | 30'h01000010),
-        (ANY | 30'h20000010), (ANY | 30'h00004200), (ANY | 30'h00080200), (ANY | 30'h01000200),
-        (ANY | 30'h20000200), (ANY | 30'h00084000), (ANY | 30'h01004000), (ANY | 30'h20004000),
-        (ANY | 30'h01080000), (ANY | 30'h20080000), (ANY | 30'h21000000)
-      };
-    }
-    cp_b: coverpoint cp_expr;
-    xc: cross cp_a, cp_b {
-      bins selected = binsof(cp_a.whole) intersect {[0:30'h3fffffff]} && binsof(cp_b);
-    }
-  endgroup
-
   covergroup cgx_binsof_many_values;
     cp_a: coverpoint cp_wide {
       bins whole[] = {[0:767]};
@@ -256,7 +217,6 @@ module t;
   cgx_binsof cgx_binsof_inst = new;
   cgx_binsof_large cgx_binsof_large_inst = new;
   cgx_binsof_excluded cgx_binsof_excluded_inst = new;
-  cgx_binsof_complex cgx_binsof_complex_inst = new;
   cgx_binsof_many_values cgx_binsof_many_values_inst = new;
 
   initial $finish;

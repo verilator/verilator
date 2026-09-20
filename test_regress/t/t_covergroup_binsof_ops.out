@@ -11,7 +11,6 @@ cg_excluded_four_state.cp_a.states: 0
 cg_excluded_four_state.cp_a.xstate [ignore]: 0
 cg_excluded_four_state.cp_b.auto_0: 0
 cg_excluded_four_state.cp_b.auto_1: 0
-cg_excluded_four_state.selected.kept [cross]: 0
 cg_excluded_four_state.selected.numeric [cross]: 0
 cg_excluded_many.cp_a.whole: 2
 cg_excluded_many.cp_a.zero_bit [ignore]: 0

@@ -452,10 +452,22 @@ module t (/*AUTOARG*/
     }
   endgroup
 
+  covergroup cg_live_cross;
+    option.auto_bin_max = 4;
+    cp_x: coverpoint cg_sig {
+      ignore_bins removed = {0};
+    }
+    cp_y: coverpoint cg_sig2;
+    cx: cross cp_x, cp_y{
+      bins all = cx;
+    }
+  endgroup
+
   cg_basic   cg_basic_inst   = new;
   cg_clocked cg_clocked_inst = new;
   cg_trans   cg_trans_inst   = new;
   cg_cross   cg_cross_inst   = new;
+  cg_live_cross cg_live_cross_inst = new;
 endmodule
 
 module sub(input logic clk);

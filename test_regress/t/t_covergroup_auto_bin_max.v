@@ -97,23 +97,25 @@ module t;
 
     // Sample valid (non-ignored) values for cg4
     // cg4: auto_bin_max=4 creates 4 bins [0:3],[4:7],[8:11],[12:15].
-    // ignore_bins ign={[0:3]} excludes [0:3] values; Verilator keeps all 4 bins in denominator.
-    // 3 of 4 bins hit -> 75% (the [0:3] bin is included in denominator but can never be hit)
+    // The empty [0:3] bin is excluded from the denominator (IEEE 1800-2023 19.11.1).
     data4 = 4;
     cg4_inst.sample();  // [4:7] bin
     data4 = 8;
     cg4_inst.sample();  // [8:11] bin
     data4 = 12;
     cg4_inst.sample();  // [12:15] bin
-    `checkr(cg4_inst.get_inst_coverage(), 75.0);
+    `checkr(cg4_inst.get_inst_coverage(), 100.0);
 
-    // Sample cg5: 64-bit coverpoint - SKIP: Verilator 64-bit bin boundary bug causes 100% at first sample
+    // Sample cg5: the full 64-bit domain is partitioned into four bins.
     data64 = 64'h0;
     cg5_inst.sample();
+    `checkr(cg5_inst.get_inst_coverage(), 25.0);
     data64 = 64'h1111111111111111;
     cg5_inst.sample();
+    `checkr(cg5_inst.get_inst_coverage(), 25.0);
     data64 = 64'hffffffffffffffff;
     cg5_inst.sample();
+    `checkr(cg5_inst.get_inst_coverage(), 50.0);
 
     data3 = 0;
     cg6_inst.sample();

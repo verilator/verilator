@@ -1,0 +1,20 @@
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:13:26: Unsupported: non-constant or non-integral values in coverage bin exclusions.
+                                                           : ... note: In instance 't'
+   13 |       bins real_bound = {2.0};
+      |                          ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:20:35: Unsupported: non-integral value in a wildcard coverage bin.
+                                                           : ... note: In instance 't'
+   20 |       wildcard bins real_bound = {2.0};
+      |                                   ^~~
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:32:59: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                          : ... note: In instance 't'
+   32 |     static_cross: cross cp_real, cp_plain{bins selected = binsof (cp_real) intersect {1};}
+      |                                                           ^~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:33:62: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                          : ... note: In instance 't'
+   33 |     dynamic_cross: cross cp_real, cp_dynamic{bins selected = binsof (cp_real) intersect {1};}
+      |                                                              ^~~~~~
+%Error: Exiting due to

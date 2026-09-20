@@ -691,22 +691,24 @@ public:
     bool isCompound() const override { return false; }
 };
 class AstCoverCrossDType final : public AstNodeDType {
-    // Borrowed pointer to VlCoverCrossT<dimensions, tuples, bins, autoBins, binWords>.
+    // Borrowed pointer to VlCoverCrossT<...> or construction-time VlCoverCrossDyn.
     const uint32_t m_dimensions;
     const uint32_t m_tuples;  // Fixed capacity number of cross tuples (VlCoverCrossT's Tuples)
     const uint32_t m_bins;  // Fixed capacity number of explicit bins (VlCoverCrossT's Bins)
     const uint32_t m_autoBins;  // Fixed capacity number of auto bins (VlCoverCrossT's AutoBins)
     const uint64_t m_binWords;  // Fixed capacity selection words (VlCoverCrossT's BinWords)
+    const bool m_dynamic;  // Bin layout is determined at covergroup construction
 
 public:
     AstCoverCrossDType(FileLine* fl, uint32_t dimensions, uint32_t tuples, uint32_t bins,
-                       uint32_t autoBins, uint64_t binWords)
+                       uint32_t autoBins, uint64_t binWords, bool dynamic = false)
         : ASTGEN_SUPER_CoverCrossDType(fl)
         , m_dimensions{dimensions}
         , m_tuples{tuples}
         , m_bins{bins}
         , m_autoBins{autoBins}
-        , m_binWords{binWords} {
+        , m_binWords{binWords}
+        , m_dynamic{dynamic} {
         dtypep(this);
     }
     ASTGEN_MEMBERS_AstCoverCrossDType;
@@ -714,11 +716,12 @@ public:
         BROKEN_RTN(m_dimensions == 0);
         return nullptr;
     }
-    bool sameNode(const AstNode* samep) const override {
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
         const AstCoverCrossDType* const sp = VN_DBG_AS(samep, CoverCrossDType);
         return dimensions() == sp->dimensions() && tuples() == sp->tuples() && bins() == sp->bins()
-               && autoBins() == sp->autoBins() && binWords() == sp->binWords();
-    }
+               && autoBins() == sp->autoBins() && binWords() == sp->binWords()
+               && isDynamic() == sp->isDynamic();
+    }  // LCOV_EXCL_STOP
     bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -728,6 +731,7 @@ public:
     uint32_t bins() const { return m_bins; }
     uint32_t autoBins() const { return m_autoBins; }
     uint64_t binWords() const { return m_binWords; }
+    bool isDynamic() const { return m_dynamic; }
     string cppTemplateArgs() const;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     int widthAlignBytes() const override { return sizeof(void*); }

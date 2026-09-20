@@ -1,0 +1,148 @@
+cg_cross.aa.auto_1: 4
+cg_cross.aa.auto_2: 5
+cg_cross.aa.high [illegal]: 0
+cg_cross.aa.low [ignore]: 0
+cg_cross.automatic_cross.auto_1_x_values[0] [cross]: 1
+cg_cross.automatic_cross.auto_1_x_values[2] [cross]: 1
+cg_cross.automatic_cross.auto_1_x_values[3] [cross]: 1
+cg_cross.automatic_cross.auto_2_x_values[0] [cross]: 1
+cg_cross.automatic_cross.auto_2_x_values[2] [cross]: 2
+cg_cross.automatic_cross.auto_2_x_values[3] [cross]: 1
+cg_cross.bb.ignored [ignore]: 2
+cg_cross.bb.values[0]: 2
+cg_cross.bb.values[2]: 3
+cg_cross.bb.values[3]: 2
+cg_cross.xx.all [cross]: 2
+cg_cross.xx.column [cross]: 1
+cg_cross.xx.forbidden [illegal,cross]: 0
+cg_cross.xx.grouped [cross]: 3
+cg_cross.xx.ignored [ignore,cross]: 1
+cg_cross.xx.row [cross]: 1
+cg_empty.aa.ignored [ignore]: 0
+cg_empty.bb.auto_0: 0
+cg_empty.bb.auto_1: 1
+cg_empty.bb.auto_2: 1
+cg_empty.bb.auto_3: 0
+cg_explicit.cp.all: 5
+cg_explicit.cp.forbidden [illegal]: 0
+cg_explicit.cp.ignored[0] [ignore]: 1
+cg_explicit.cp.ignored[1] [ignore]: 1
+cg_explicit.cp.mixed: 1
+cg_explicit.cp.values[1]: 1
+cg_explicit.cp.values[2]: 1
+cg_partition.cp.auto_1: 2
+cg_partition.cp.auto_2: 1
+cg_partition.cp.auto_3: 1
+cg_partition.cp.ignored [ignore]: 4
+cg_pattern_carry.cp_signed.ignored [ignore]: 1
+cg_pattern_carry.cp_signed.patterned: 4
+cg_pattern_carry.cp_unsigned.ignored [ignore]: 1
+cg_pattern_carry.cp_unsigned.patterned: 4
+cg_pattern_carry.other.auto_0: 8
+cg_pattern_carry.other.auto_1: 8
+cg_pattern_carry.signed_cross.carry [cross]: 4
+cg_pattern_carry.unsigned_cross.carry [cross]: 4
+cg_projection.negative.keep: 1
+cg_projection.negative.positive [ignore]: 1
+cg_projection.positive.keep: 1
+cg_projection.positive.negative [ignore]: 1
+cg_signed.cp.auto_1: 1
+cg_signed.cp.auto_2: 1
+cg_signed.cp.ignored [ignore]: 1
+cg_signed_wide.cp.auto_1: 2
+cg_signed_wide.cp.auto_2: 1
+cg_signed_wide.cp.auto_3: 1
+cg_signed_wide.cp.ignored [ignore]: 1
+cg_signed_wide.cx.auto_2_x_auto_0 [cross]: 1
+cg_signed_wide.cx.auto_2_x_auto_1 [cross]: 0
+cg_signed_wide.cx.auto_3_x_auto_0 [cross]: 0
+cg_signed_wide.cx.negative [cross]: 2
+cg_signed_wide.cx.positive [cross]: 1
+cg_signed_wide.other.auto_0: 3
+cg_signed_wide.other.auto_1: 2
+cg_source_width.cp.ignored [ignore]: 0
+cg_source_width.cp.keep: 2
+cg_unsigned_pattern.cp.all_values: 1
+cg_unsigned_pattern.cp.ignored [ignore]: 0
+cg_unsigned_pattern.cp.negative: 1
+cg_unsigned_pattern.cp.negative_pair: 1
+cg_wide.cp.auto_1: 1
+cg_wide.cp.auto_2: 1
+cg_wide.cp.auto_3: 1
+cg_wide.cp.ignored [ignore]: 1
+cg_wide_cross.aa.all: 129
+cg_wide_cross.aa.high[0]: 2
+cg_wide_cross.aa.high[10]: 2
+cg_wide_cross.aa.high[11]: 2
+cg_wide_cross.aa.high[12]: 2
+cg_wide_cross.aa.high[13]: 2
+cg_wide_cross.aa.high[14]: 2
+cg_wide_cross.aa.high[15]: 2
+cg_wide_cross.aa.high[16]: 2
+cg_wide_cross.aa.high[17]: 2
+cg_wide_cross.aa.high[18]: 2
+cg_wide_cross.aa.high[19]: 2
+cg_wide_cross.aa.high[1]: 2
+cg_wide_cross.aa.high[20]: 2
+cg_wide_cross.aa.high[21]: 2
+cg_wide_cross.aa.high[22]: 2
+cg_wide_cross.aa.high[23]: 2
+cg_wide_cross.aa.high[24]: 2
+cg_wide_cross.aa.high[25]: 2
+cg_wide_cross.aa.high[26]: 2
+cg_wide_cross.aa.high[27]: 2
+cg_wide_cross.aa.high[28]: 2
+cg_wide_cross.aa.high[29]: 2
+cg_wide_cross.aa.high[2]: 2
+cg_wide_cross.aa.high[30]: 2
+cg_wide_cross.aa.high[31]: 2
+cg_wide_cross.aa.high[3]: 2
+cg_wide_cross.aa.high[4]: 2
+cg_wide_cross.aa.high[5]: 2
+cg_wide_cross.aa.high[6]: 2
+cg_wide_cross.aa.high[7]: 2
+cg_wide_cross.aa.high[8]: 2
+cg_wide_cross.aa.high[9]: 2
+cg_wide_cross.aa.ignored [ignore]: 2
+cg_wide_cross.aa.low[10]: 2
+cg_wide_cross.aa.low[11]: 2
+cg_wide_cross.aa.low[12]: 2
+cg_wide_cross.aa.low[13]: 2
+cg_wide_cross.aa.low[14]: 2
+cg_wide_cross.aa.low[15]: 2
+cg_wide_cross.aa.low[16]: 2
+cg_wide_cross.aa.low[17]: 2
+cg_wide_cross.aa.low[18]: 2
+cg_wide_cross.aa.low[19]: 2
+cg_wide_cross.aa.low[1]: 3
+cg_wide_cross.aa.low[20]: 2
+cg_wide_cross.aa.low[21]: 2
+cg_wide_cross.aa.low[22]: 2
+cg_wide_cross.aa.low[23]: 2
+cg_wide_cross.aa.low[24]: 2
+cg_wide_cross.aa.low[25]: 2
+cg_wide_cross.aa.low[26]: 2
+cg_wide_cross.aa.low[27]: 2
+cg_wide_cross.aa.low[28]: 2
+cg_wide_cross.aa.low[29]: 2
+cg_wide_cross.aa.low[2]: 2
+cg_wide_cross.aa.low[30]: 2
+cg_wide_cross.aa.low[31]: 2
+cg_wide_cross.aa.low[32]: 2
+cg_wide_cross.aa.low[3]: 2
+cg_wide_cross.aa.low[4]: 2
+cg_wide_cross.aa.low[5]: 2
+cg_wide_cross.aa.low[6]: 2
+cg_wide_cross.aa.low[7]: 2
+cg_wide_cross.aa.low[8]: 2
+cg_wide_cross.aa.low[9]: 2
+cg_wide_cross.aa.middle: 129
+cg_wide_cross.bb.auto_0: 66
+cg_wide_cross.bb.auto_1: 65
+cg_wide_cross.xx.disabled [cross]: 0
+cg_wide_cross.xx.enabled_bin [cross]: 128
+cg_wide_cross.xx.tail [cross]: 128
+cg_wild.cp.ignored [ignore]: 1
+cg_wild.cp.odd_values: 2
+cg_wild_empty.cp.even_values [ignore]: 2
+cg_wild_empty.cp.odd_values [ignore]: 2

@@ -874,6 +874,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  "r+") \
     macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  "") \
     macro(COVERGROUP_ADD_CROSS,               "addCross",               false,  "") \
+    macro(COVERGROUP_ADD_CROSS_DYN,           "addCrossDyn",            false,  "") \
     macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  "r+") \
     macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
     macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
@@ -886,6 +887,23 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rr") \
     macro(COVERGROUP_SAMPLE,                  "sample",                 false,  "") \
     macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  "r") \
+    macro(COVERGROUP_SELECT_ALL,              "selectAll",              false,  "") \
+    macro(COVERGROUP_SELECT_AND,              "selectAnd",              false,  "") \
+    macro(COVERGROUP_SELECT_BIN,              "selectBin",              false,  "r+") \
+    macro(COVERGROUP_SELECT_DIM,              "selectDim",              false,  "r+") \
+    macro(COVERGROUP_SELECT_DIM_END,          "selectDimEnd",           false,  "") \
+    macro(COVERGROUP_SELECT_OR,               "selectOr",               false,  "") \
+    macro(COVERGROUP_SELECT_RANGE,            "selectRange",            false,  "rr") \
+    macro(COVERGROUP_SELECT_RANGE_W,          "selectRangeW",           false,  "rr") \
+    macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
+    macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
+    macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  "") \
+    macro(COVERGROUP_VALUE_PATTERN,           "valuePattern",           false,  "r+") \
+    macro(COVERGROUP_VALUE_PATTERN_W,         "valuePatternW",          false,  "r+") \
+    macro(COVERGROUP_VALUE_RANGE,             "valueRange",             false,  "rrr") \
+    macro(COVERGROUP_VALUE_RANGE_W,           "valueRangeW",            false,  "rrr") \
+    macro(COVERGROUP_VALUE_TRANSITION,        "valueTransition",        false,  "r") \
+    macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  "rr") \
     macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
     macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \
     macro(DYN_CLEAR,                          "clear",                  false,  "") \
