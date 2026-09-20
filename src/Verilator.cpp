@@ -33,6 +33,7 @@
 #include "V3Cast.h"
 #include "V3Class.h"
 #include "V3Clean.h"
+#include "V3Coalesce.h"
 #include "V3Combine.h"
 #include "V3Common.h"
 #include "V3Const.h"
@@ -352,6 +353,9 @@ static void process() {
 
             // Module inlining
             if (v3Global.opt.fInline()) V3Inline::inlineAll(v3Global.rootp());
+
+            // Coalesce variables that are always the same
+            if (v3Global.opt.fCoalesce()) V3Coalesce::coalesceAll(v3Global.rootp());
 
             // Relocate classes (after linkDot)
             V3Class::classAll(v3Global.rootp());

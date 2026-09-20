@@ -445,6 +445,7 @@ private:
     bool m_fCaseDecoder; // main switch: -fno-case-decoder: case decoder conversion
     bool m_fCaseTable;   // main switch: -fno-case-table: case table conversion
     bool m_fCaseTree;    // main switch: -fno-case-tree: case tree conversion
+    bool m_fCoalesce;    // main switch: -fno-coalesce: coalesce copied variables
     bool m_fCombine;     // main switch: -fno-combine: common icode packing
     bool m_fConst;       // main switch: -fno-const: constant folding
     bool m_fConstBeforeDfg = true;  // main switch: -fno-const-before-dfg for testing only!
@@ -795,6 +796,7 @@ public:
     bool fCaseDecoder() const { return m_fCaseDecoder; }
     bool fCaseTable() const { return m_fCaseTable; }
     bool fCaseTree() const { return m_fCaseTree; }
+    bool fCoalesce() const { return m_fCoalesce; }
     bool fCombine() const { return m_fCombine; }
     bool fConst() const { return m_fConst; }
     bool fConstBeforeDfg() const { return m_fConstBeforeDfg; }

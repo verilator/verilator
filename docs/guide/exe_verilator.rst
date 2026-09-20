@@ -831,6 +831,8 @@ Summary:
 
    Rarely needed. Disable converting case statements into bit-wise branch trees.
 
+.. option:: -fno-coalesce
+
 .. option:: -fno-combine
 
    Rarely needed. Disable combining identical C++ functions into single
