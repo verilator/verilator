@@ -1344,9 +1344,13 @@ class LinkDotFindVisitor final : public VNVisitor {
             iterateChildren(nodep);
             nodep->user2(false);
             nodep->user4(true);
-            // Interfaces need another pass when signals are resolved
-            if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
-                m_statep->insertIfaceModSym(ifacep, m_curSymp);
+            // Interfaces need another pass when signals are resolved. When creating
+            // scopes this is done from the AstScopes in LinkDotScopeVisitor instead, as
+            // only those entries hold the AstVarScopes the modport items resolve against.
+            if (!m_statep->forScopeCreation()) {
+                if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
+                    m_statep->insertIfaceModSym(ifacep, m_curSymp);
+                }
             }
         } else if (isHierBlockWrapper(nodep->name())) {
             UINFO(5, "Module is hierarchical block, must not be dead: " << nodep);
@@ -2684,6 +2688,11 @@ private:
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_scopep);
         m_modSymp = m_statep->getScopeSym(nodep);
+        // Interfaces need another pass when signals are resolved. Register the scope's
+        // entry, as that is the one holding the AstVarScopes.
+        if (AstIface* const ifacep = VN_CAST(nodep->modp(), Iface)) {
+            m_statep->insertIfaceModSym(ifacep, m_modSymp);
+        }
         m_scopep = nodep;
         iterateChildren(nodep);
     }
