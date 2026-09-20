@@ -105,12 +105,12 @@
                       t/t_dfg_multidriver_dfg_bad.v:66:24: ... Location of offending driver
    66 |   assign sub_2.a[10:5] = i[10:5];
       |                        ^
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:72:16: Element [0] of signal 't.array_always' have multiple combinational drivers. This can cause performance degradation.
-                      t/t_dfg_multidriver_dfg_bad.v:74:17: ... Location of offending driver
-   74 |     array_always[0] = i;
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:69:16: Element [0] of signal 't.array_always' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_dfg_multidriver_dfg_bad.v:71:17: ... Location of offending driver
+   71 |     array_always[0] = i;
       |                 ^
-                      t/t_dfg_multidriver_dfg_bad.v:78:17: ... Location of offending driver
-   78 |     array_always[0] = k[0];
+                      t/t_dfg_multidriver_dfg_bad.v:75:17: ... Location of offending driver
+   75 |     array_always[0] = k[0];
       |                 ^
 %Error: Internal Error: t/t_dfg_multidriver_dfg_bad.v:48:12: ../V3Gate.cpp:#: Concat on LHS of assignment; V3Const should have deleted it
    48 |     {y[1:0], y[2:1]} = i[3:0] + 4'd5;

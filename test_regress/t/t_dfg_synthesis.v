@@ -692,7 +692,8 @@ module t (
                            array_disjoint[0]});
 
   // verilator lint_off MULTIDRIVEN
-  // Identical overlapping values avoid depending on process order.
+  // Both blocks write the same value to element 0 so the equivalence check
+  // does not depend on their execution order.
   logic [6:0] array_multidriven[3];
   always_comb begin  // revert
     array_multidriven[0] = rand_a[6:0];
@@ -704,6 +705,13 @@ module t (
   end
   // verilator lint_on MULTIDRIVEN
   `signal(ARRAY_MULTIDRIVEN, {array_multidriven[2], array_multidriven[1], array_multidriven[0]});
+
+  logic [6:0] array_at_limit[32];
+  always_comb begin
+    /*verilator unroll_full*/
+    for (int k = 0; k < 32; ++k) array_at_limit[k] = 7'(rand_a >> k) ^ 7'(k);
+  end
+  `signal(ARRAY_AT_LIMIT, {array_at_limit[31], array_at_limit[16], array_at_limit[0]});
 
   logic [6:0] array_large[33];
   always_comb begin  // nosynth
