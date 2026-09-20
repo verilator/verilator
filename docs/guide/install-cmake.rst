@@ -28,7 +28,7 @@ Quick Install
    and install.
 #. For build on Windows using MSVC set environment variable WIN_FLEX_BISON
    to install directory. For build on Windows/Linux/OS-X using ninja set
-   the environment variable FLEX_INCLUDE to the directory containing
+   the CMake variable FLEX_INCLUDE_DIR to the directory containing
    FlexLexer.h and ensure that flex/bison is available within the PATH.
 
 To obtain Verilator sources download

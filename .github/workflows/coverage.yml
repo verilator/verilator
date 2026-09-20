@@ -20,23 +20,54 @@ defaults:
     shell: bash
 
 concurrency:
-  # At most 1 job per branch. Auto cancel all but scheduled jobs
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # At most 1 job per branch. Auto cancel all but scheduled jobs.
+  # Label events that do not concern the 'pr: dev-coverage' label are given a
+  # unique concurrency group, so they do not cancel a run that is in progress.
+  # This way adding the label starts a run, removing it cancels the in-progress
+  # run, and any other label change has no effect. Note such an event still
+  # creates a run of this workflow, which is skipped, and would then hide the
+  # one in progress on the pull request. 'pr-run-cleanup.yml' deletes those.
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}-${{
+    (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+    && github.event.label.name != 'pr: dev-coverage'
+    && github.run_id || 'shared' }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
 
-  build:
-    name: Build
+  start:
+    name: Start
     # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
-    # Only run pull request jobs if labelled as needing an coverage run
+    # Only run pull request jobs if labelled as needing a coverage run
     # Always run workflow dispatch jobs
     if: |
       (github.event_name == 'schedule'
         && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
       (github.event_name == 'pull_request'
-        && contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')) ||
+        && ((github.event.action == 'labeled'
+             && github.event.label.name == 'pr: dev-coverage')
+            || (github.event.action != 'labeled'
+                && github.event.action != 'unlabeled'
+                && contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')))) ||
       (github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-slim
+    steps:
+      - name: Save the pull request number
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "${{ github.event.number }}" > pr-number.txt
+
+      - name: Upload the pull request number
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: pr-number
+          path: pr-number.txt
+          overwrite: true
+
+  build:
+    name: Build
+    needs: start
     uses: ./.github/workflows/reusable-build.yml
     with:
       cc: gcc
@@ -149,6 +180,16 @@ jobs:
         with:
           path: report-artifact
           name: coverage-report
+
+      - name: Upload coverage status
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          path: repo/coverage-status.txt
+          name: coverage-status
+          overwrite: true
+          # Not written if the coverage could not be read, see the script above
+          if-no-files-found: ignore
 
       - name: Upload PR notification
         if: ${{ github.event_name == 'pull_request' }}

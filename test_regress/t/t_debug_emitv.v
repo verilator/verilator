@@ -395,7 +395,7 @@ module t (/*AUTOARG*/
     option.per_instance = 1;
     option.weight = 2;
     cp_sig: coverpoint cg_sig {
-      bins low    = {[0:3]};
+      bins low    = {[0:3]} iff (cg_sig2[0]);
       bins high   = {[4:6]};
       bins multi  = {0, 1, 2};   // multiple values in one bins (exercises EmitV range loop)
       bins dflt   = default;

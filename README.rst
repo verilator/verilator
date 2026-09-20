@@ -23,8 +23,8 @@
 .. |badge5| image:: https://img.shields.io/docker/pulls/verilator/verilator
    :target: https://hub.docker.com/r/verilator/verilator
 
-.. |badge7| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/build-test.yml?branch=master&label=regressions
-   :target: https://github.com/verilator/verilator/actions/workflows/build-test.yml
+.. |badge7| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/regression.yml?branch=master&label=regression
+   :target: https://github.com/verilator/verilator/actions/workflows/regression.yml
 
 .. |badge8| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/rtlmeter.yml?branch=master&event=schedule&label=benchmarks
    :target: https://verilator.github.io/verilator-rtlmeter-results

@@ -27,6 +27,7 @@
 #include "V3Covergroup.h"
 
 #include "V3Const.h"
+#include "V3Error.h"
 #include "V3File.h"
 #include "V3MemberMap.h"
 
@@ -38,6 +39,72 @@
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+//######################################################################
+// Embedded covergroup assignment validation
+
+class CovergroupAssignValidVisitor final : public VNVisitorConst {
+    VMemberMap m_memberMap;
+    std::map<const AstVar*, const AstNodeFTask*>
+        m_constructors;  // Implicit instance -> constructor
+    const AstNodeFTask* m_ftaskp = nullptr;
+    bool m_collecting = true;
+    bool m_valid = true;
+
+    void visit(AstClass* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nullptr;
+        if (m_collecting) {
+            const AstNodeFTask* const constructorp
+                = VN_CAST(m_memberMap.findMember(nodep, "new"), NodeFTask);
+            for (const AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
+                const AstVar* const varp = VN_CAST(itemp, Var);
+                // Only the implicit instance is restricted, not explicitly typed aliases.
+                if (!varp || !varp->isClassMember() || varp->isDeclTyped()) continue;
+                const AstClassRefDType* const refp
+                    = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+                if (refp && refp->classp()->covergroupEnclosingClassp() == nodep) {
+                    m_constructors.emplace(varp, constructorp);
+                }
+            }
+        }
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNodeAssign* nodep) override {
+        if (!m_collecting) {
+            const AstVar* varp = nullptr;
+            if (const AstNodeVarRef* const refp = VN_CAST(nodep->lhsp(), NodeVarRef)) {
+                varp = refp->varp();
+            } else if (const AstMemberSel* const selp = VN_CAST(nodep->lhsp(), MemberSel)) {
+                varp = selp->varp();
+            }
+            const auto it = m_constructors.find(varp);
+            if (it != m_constructors.end() && (!m_ftaskp || m_ftaskp != it->second)) {
+                m_valid = false;
+                nodep->v3error("Embedded covergroup variable "
+                               << varp->prettyNameQ()
+                               << " may only be assigned in the enclosing class's 'new' method "
+                                  "(IEEE 1800-2023 19.4).");
+            }
+        }
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+public:
+    explicit CovergroupAssignValidVisitor(AstNetlist* nodep) {
+        // Uses can precede their enclosing class in the tree.
+        iterateConst(nodep);
+        m_collecting = false;
+        if (!m_constructors.empty()) iterateConst(nodep);
+    }
+    bool valid() const { return m_valid; }
+};
 
 //######################################################################
 // Covergroup expression validation visitor
@@ -1017,6 +1084,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                                           + " hit in coverpoint "
                                                           + coverpointp->prettyNameQ()));
         }
+        if (binp->iffp()) condp = new AstLogAnd{fl, binp->iffp()->cloneTree(false), condp};
         AstNodeExpr* const guardedp = applyCoverpointIffCondition(coverpointp, fl, condp);
         UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for coverpoint");
         m_sampleFuncp->addStmtsp(new AstIf{fl, guardedp, actionp, nullptr});
@@ -2421,7 +2489,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     bool isEmbeddedCovergroupVar(const AstVar* varp) const {
-        if (!varp || !varp->isClassMember()) return false;
+        if (!varp || !varp->isClassMember() || varp->isDeclTyped()) return false;
         const AstClassRefDType* const refp = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
         return refp && refp->classp() == m_covergroupp;
     }
@@ -2451,26 +2519,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (refp && refp->classp() == m_covergroupp) foundps.push_back(asgnp);
         });
         return foundps;
-    }
-
-    AstNodeAssign* findInvalidEmbeddedCovergroupAssignment() {
-        if (!m_embeddedVarp) return nullptr;
-        std::set<const AstNodeAssign*> constructorAssignps;
-        AstFunc* const enclosingNewp
-            = VN_CAST(m_memberMap.findMember(m_enclosingClassp, "new"), Func);
-        if (enclosingNewp) {
-            enclosingNewp->foreach([&](AstNodeAssign* asgnp) {
-                const AstVarRef* const refp = VN_CAST(asgnp->lhsp(), VarRef);
-                if (refp && refp->varp() == m_embeddedVarp) constructorAssignps.insert(asgnp);
-            });
-        }
-        AstNodeAssign* invalidp = nullptr;
-        m_enclosingClassp->foreach([&](AstNodeAssign* asgnp) {
-            if (invalidp || constructorAssignps.count(asgnp)) return;
-            const AstVarRef* const refp = VN_CAST(asgnp->lhsp(), VarRef);
-            if (refp && refp->varp() == m_embeddedVarp) invalidp = asgnp;
-        });
-        return invalidp;
     }
 
     std::set<const AstVar*> enclosingInstanceVars() const {
@@ -2735,9 +2783,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // in coverpoint expressions").  The covergroup is lowered into a sibling class with
         // no implicit handle to the enclosing object, so such references would emit
         // uncompilable C++.  Add an explicit back-pointer member to the enclosing instance,
-        // route the member references through it, and initialize it right after the
-        // 'cgvar = new' construction.  The enclosing member values are only read in
-        // sample(), which runs after construction, so this ordering is safe.  Returns an invalid
+        // route member references through it, and pass it into the constructor so
+        // coverage initialization can read enclosing members. Returns an invalid
         // reference if an outer class member cannot be reached; otherwise returns an empty result.
         if (!m_enclosingClassp) return nullptr;  // Offending refs require an enclosing class
 
@@ -2785,21 +2832,27 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const handleVarp
             = new AstVar{fl, VVarType::MEMBER, "__Vcg_enclosingp", enclDTypep};
         m_covergroupp->addMembersp(handleVarp);
+        AstVar* const argumentp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vcg_parentp", enclDTypep};
+        argumentp->direction(VDirection::INPUT);
+        argumentp->declDirection(VDirection::INPUT);
+        argumentp->funcLocal(true);
+        argumentp->noReset(true);
+        argumentp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        m_constructorp->addStmtsp(argumentp);
+        m_constructorp->stmtsp()->addHereThisAsNext(
+            new AstAssign{fl, memberRef(fl, handleVarp, VAccess::WRITE),
+                          new AstVarRef{fl, argumentp, VAccess::READ}});
 
         // Route each enclosing-member reference through the back-pointer: 'm' -> 'h.m'.
         for (AstVarRef* const refp : refsToRewrite) { rewriteVarRef(refp, handleVarp); }
         for (AstThisRef* const refp : thisRefsToRewrite) { rewriteThisRef(refp, handleVarp); }
 
-        // Initialize the raw back-pointer after each construction.  With no construction site,
-        // the embedded covergroup handle remains null, so no back-pointer is observed.
+        // Append a named hidden argument to preserve positional and defaulted user arguments.
         for (AstNodeAssign* const constructp : constructps) {
             FileLine* const cfl = constructp->fileline();
-            AstMemberSel* const lhsp
-                = new AstMemberSel{cfl, constructp->lhsp()->cloneTree(false), handleVarp};
-            lhsp->access(VAccess::WRITE);
             AstCExpr* const thisp = new AstCExpr{cfl, "this"};
             thisp->dtypep(enclDTypep);
-            constructp->addNextHere(new AstAssign{cfl, lhsp, thisp});
+            VN_AS(constructp->rhsp(), New)->addArgsp(new AstArg{cfl, argumentp->name(), thisp});
         }
         return nullptr;
     }
@@ -2835,20 +2888,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     if (hasEnclosingEventRef(cgp)) {
                         UASSERT_OBJ(m_embeddedVarp, cgp,
                                     "Embedded covergroup event has no instance variable");
-                        // IEEE 1800-2023 19.4 permits assignment to an embedded covergroup
-                        // variable only in the enclosing class's new method.
-                        if (AstNodeAssign* const invalidp
-                            = findInvalidEmbeddedCovergroupAssignment()) {
-                            invalidp->v3error(
-                                "Embedded covergroup variable "
-                                << m_embeddedVarp->prettyNameQ()
-                                << " may only be assigned in the enclosing class's 'new' method "
-                                   "(IEEE 1800-2023 19.4).");
-                            hasUnsupportedEvent = true;
-                            VL_DO_DANGLING(pushDeletep(cgp->unlinkFrBack()), cgp);
-                            itemp = nextp;
-                            continue;
-                        }
                         if (v3Global.opt.timing().isSetTrue()) {
                             embeddedEventForkp = cgp->eventp()->unlinkFrBack();
                         } else {
@@ -2959,6 +2998,7 @@ constexpr size_t FunctionalCoverageVisitor::CROSS_MATCH_WORK_LIMIT;
 
 void V3Covergroup::covergroup(AstNetlist* nodep) {
     UINFO(4, __FUNCTION__ << ": ");
+    if (!CovergroupAssignValidVisitor{nodep}.valid()) V3Error::abortIfErrors();
     { FunctionalCoverageVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coveragefunc", 0, dumpTreeEitherLevel() >= 3);
 }
