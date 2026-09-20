@@ -569,7 +569,10 @@ set_target_properties(
 
 if(MINGW)
     # Search MSYS Flex headers after the active toolchain's system headers.
-    target_compile_options(${verilator} PRIVATE -idirafter "${FLEX_INCLUDE_DIR}")
+    target_compile_options(
+        ${verilator}
+        PRIVATE -idirafter "${FLEX_INCLUDE_DIR}"
+    )
 else()
     target_include_directories(${verilator} PRIVATE "${FLEX_INCLUDE_DIR}")
 endif()
