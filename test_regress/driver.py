@@ -121,6 +121,13 @@ class VtOs:
         return str(proc.stdout)
 
     @staticmethod
+    def system(command: str, debug=None) -> None:
+        """Run os.system, optionally showing command printed"""
+        if Args.verbose or debug:
+            print("\t" + command)
+        os.system(command)
+
+    @staticmethod
     def unlink_ok(filename: str) -> None:
         """Unlink a file, no error if fails"""
         try:
@@ -1085,17 +1092,17 @@ class VlTest:
     def clean(self, for_rerun=False) -> None:
         """Called on a --driver-clean or rerun to cleanup files."""
         if self.clean_command:
-            os.system(self.clean_command)
-        os.system('/bin/rm -rf ' + self.obj_dir + '__fail1')
+            VtOs.system(self.clean_command)
+        VtOs.system('/bin/rm -rf ' + self.obj_dir + '__fail1')
         if for_rerun:
             # Prevents false-failures when switching compilers
             # Remove old results to force hard rebuild
-            os.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
+            VtOs.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
         else:
-            os.system('/bin/rm -rf ' + self.obj_dir)
+            VtOs.system('/bin/rm -rf ' + self.obj_dir)
 
     def clean_objs(self) -> None:
-        os.system("/bin/rm -rf " + ' '.join(glob.glob(self.obj_dir + "/*")))
+        VtOs.system("/bin/rm -rf " + ' '.join(glob.glob(self.obj_dir + "/*")))
 
     def _checkflags(self, param):
         checkflags = (
