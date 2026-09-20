@@ -38,7 +38,8 @@ concurrency:
   # NOTE: The last part of the group expression must be kept in sync with the
   # 'start' job condition below: it maps to 'shared' exactly those events that
   # satisfy that condition, plus the 'unlabeled' event of the gating label.
-  group: "${{
+  group: |-
+    ${{
       github.workflow
     }}-${{
       (github.event_name == 'pull_request')
@@ -51,7 +52,7 @@ concurrency:
                && github.event.action != 'unlabeled'
                && !contains(github.event.pull_request.labels.*.name, 'pr: regression'))))
       && github.run_id || 'shared'
-    }}"
+    }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'verilator/verilator' }}
 
 jobs:
