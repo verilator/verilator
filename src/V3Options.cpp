@@ -1689,9 +1689,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-output-split-syms", CbVal, [this, fl](const char* valp) {
         m_outputSplitSyms = std::atoi(valp);
-        if (m_outputSplitSyms < 0) {
-            fl->v3error("--output-split-syms must be >= 0: " << valp);
-        }
+        if (m_outputSplitSyms < 0) { fl->v3error("--output-split-syms must be >= 0: " << valp); }
     });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);
