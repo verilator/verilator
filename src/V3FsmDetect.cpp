@@ -1001,28 +1001,19 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
+    // Match 'state = reset ? CONST : next', an active high reset folded into the commit
     static AstNodeAssign* directCondStateVarAssign(AstNode* nodep, AstVarScope*& stateVscp,
                                                    AstVarScope*& fromVscp, AstNodeExpr*& condp,
-                                                   bool& resetActiveLow,
                                                    FsmStateValue& resetValue) {
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
         AstVarRef* const lhsp = VN_CAST(assp->lhsp()->baseFromp(true), VarRef);
         AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
         if (!rhsp || !lhsp) return nullptr;
-        if (AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef)) {
-            if (constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK)
-                return nullptr;
-            fromVscp = elsep->varScopep();
-            resetActiveLow = false;
-        } else if (AstVarRef* const thenp = VN_CAST(rhsp->thenp(), VarRef)) {
-            if (constValueStatus(rhsp->elsep(), resetValue) != ConstValueStatus::OK)
-                return nullptr;
-            fromVscp = thenp->varScopep();
-            resetActiveLow = true;
-        } else {
-            return nullptr;
-        }
+        AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef);
+        if (!elsep) return nullptr;
+        if (constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK) return nullptr;
+        fromVscp = elsep->varScopep();
         stateVscp = lhsp->varScopep();
         condp = rhsp->condp();
         return assp;
@@ -1435,19 +1426,12 @@ class FsmDetectVisitor final : public VNVisitor {
             cand.hasResetCond(cand.resetCond().varScopep != nullptr);
         } else {
             AstNodeExpr* resetCondp = nullptr;
-            bool resetActiveLow = false;
             FsmStateValue resetValue;
-            if (AstNodeAssign* const assp = directCondStateVarAssign(
-                    nodep, stateVscp, nextVscp, resetCondp, resetActiveLow, resetValue)) {
-                // Inlined wrappers can normalize into a compact active-low
-                // assignment form that earlier direct-register FSM support did
-                // not accept. The pre-inline marker is the architectural fence:
-                // it lets wrapper-derived registers use that shape without
-                // changing the meaning of unrelated legacy RTL.
-                if (resetActiveLow && !stateVscp->varp()->attrFsmRegisterWrapper()) return false;
+            // Note the active low 'reset ? next : CONST' form is not accepted
+            if (AstNodeAssign* const assp
+                = directCondStateVarAssign(nodep, stateVscp, nextVscp, resetCondp, resetValue)) {
                 cand.resetArcs().emplace_back(resetValue, assp);
                 cand.resetCond() = describeResetCond(resetCondp);
-                cand.resetCond().activeLow = resetActiveLow;
                 cand.hasResetCond(cand.resetCond().varScopep != nullptr);
             } else if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) {
                 return false;
@@ -2193,6 +2177,8 @@ class FsmLowerVisitor final {
                                         graph.stateVarName(),
                                         "",
                                         statep->label()};
+            // We run after scoping, so this is declared for one instance only
+            declp->perInstance(true);
             modp->addStmtsp(declp);
             AstNodeExpr* const guardp
                 = andExpr(flp,
@@ -2229,6 +2215,8 @@ class FsmLowerVisitor final {
                                             fromVertexp->label(),
                                             toStatep->label(),
                                             fsmTag};
+                // We run after scoping, so this is declared for one instance only
+                declp->perInstance(true);
                 modp->addStmtsp(declp);
                 AstNodeExpr* guardp = nullptr;
                 if (fromVertexp->isResetAny()) {
@@ -2291,47 +2279,7 @@ public:
     }
 };
 
-// Wrapper FSM support has two architectural paths. If V3Inline removes the
-// wrapper, the main detector will later see an ordinary parent-scope always_ff;
-// this pre-inline visitor leaves just enough provenance on the q-side state
-// variable for that direct path to accept wrapper-specific normalized shapes.
-// If the wrapper survives, this marker is harmless and the cell-path detector
-// builds a register candidate from the instance itself.
-class FsmWrapperMarkerVisitor final : public VNVisitor {
-    static AstPin* findPin(AstCell* cellp, const string& name) {
-        for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            if (pinp->name() == name) return pinp;
-        }
-        return nullptr;
-    }
-
-    void visit(AstCell* cellp) override {
-        if (const V3Control::FsmRegisterWrapper* const descp = fsmRegisterWrapperDesc(cellp)) {
-            AstPin* const qp = findPin(cellp, descp->q);
-            if (qp && VN_IS(qp->exprp(), VarRef)) {
-                AstVarRef* const qrefp = VN_AS(qp->exprp(), VarRef);
-                // The q-side parent variable is the point where the wrapper
-                // abstraction collapses into direct RTL after inlining.
-                // Marking only that variable keeps the provenance narrow:
-                // transition detection still has to prove the d/q FSM pair.
-                qrefp->varp()->attrFsmRegisterWrapper(true);
-            }
-        }
-        iterateChildren(cellp);
-    }
-
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    explicit FsmWrapperMarkerVisitor(AstNetlist* rootp) { iterate(rootp); }
-};
-
 }  // namespace
-
-void V3FsmDetect::markWrapperStateVars(AstNetlist* rootp) {
-    UINFO(2, __FUNCTION__ << ":");
-    FsmWrapperMarkerVisitor marker{rootp};
-}
 
 void V3FsmDetect::detect(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ":");

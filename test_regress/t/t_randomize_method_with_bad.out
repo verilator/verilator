@@ -1,4 +1,5 @@
 %Error: t/t_randomize_method_with_bad.v:18:52: Can't find definition of task/function: 'in_mod_function'
+                                             : ... note: In instance '$unit.Foo'
    18 |     automatic int res = foo.randomize() with { v < in_mod_function(); };
       |                                                    ^~~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
