@@ -21,21 +21,34 @@ defaults:
 
 concurrency:
   # At most 1 job per branch. Auto cancel all but scheduled jobs.
-  # Label events that do not concern the 'pr: dev-coverage' label are given a
-  # unique concurrency group, so they do not cancel a run that is in progress.
+  # Of the pull request events, only one that starts a run, or that removes the
+  # 'pr: dev-coverage' label to cancel one, shares the group. The rest are
+  # skipped (a change of another label, or a payload that does not carry the
+  # label, like an 'opened' delivered after it was added), and a skipped run
+  # must not cancel the one in progress, so they are given a unique group.
   # This way adding the label starts a run, removing it cancels the in-progress
-  # run, and any other label change has no effect. Note such an event still
-  # creates a run of this workflow, which is skipped, and would then hide the
-  # one in progress on the pull request. 'pr-run-cleanup.yml' deletes those.
+  # run, and anything else has no effect. Note such an event still creates a
+  # run of this workflow, which is skipped, and would then hide the one in
+  # progress on the pull request. 'pr-run-cleanup.yml' deletes those.
   # Key pull request runs on the number: 'github.ref' is the base branch once
   # the pull request is closed, so unlabel events would cancel base runs.
-  group: >-
-    ${{ github.workflow }}-${{
-    github.event_name == 'pull_request'
-    && format('pr-{0}', github.event.number) || github.ref }}-${{
-    (github.event.action == 'labeled' || github.event.action == 'unlabeled')
-    && github.event.label.name != 'pr: dev-coverage'
-    && github.run_id || 'shared' }}
+  # NOTE: The last part of the group expression must be kept in sync with the
+  # 'start' job condition below: it maps to 'shared' exactly those events that
+  # satisfy that condition, plus the 'unlabeled' event of the gating label.
+  group: "${{
+      github.workflow
+    }}-${{
+      (github.event_name == 'pull_request')
+      && format('pr-{0}', github.event.number) || github.ref
+    }}-${{
+      (github.event_name == 'pull_request'
+       && (((github.event.action == 'labeled' || github.event.action == 'unlabeled')
+            && github.event.label.name != 'pr: dev-coverage')
+           || (github.event.action != 'labeled'
+               && github.event.action != 'unlabeled'
+               && !contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage'))))
+      && github.run_id || 'shared'
+    }}"
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
