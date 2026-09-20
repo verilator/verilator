@@ -12,17 +12,19 @@
        "varsp": [
         {"type":"VARSCOPE","name":"i_clk","addr":"(N)","loc":"d,11:24,11:29","dtypep":"(I)","isTrace":true,"scopep":"(M)","varp":"(H)"},
         {"type":"VARSCOPE","name":"top.i_clk","addr":"(O)","loc":"d,11:24,11:29","dtypep":"(I)","isTrace":true,"scopep":"(M)","varp":"(K)"},
-        {"type":"ALWAYS","addr":"(P)","loc":"d,11:24,11:29","keyword":"cont_assign",
+        {"type":"VARSCOPE","name":"top.f.i_clk","addr":"(P)","loc":"d,7:24,7:29","dtypep":"(I)","isTrace":true,"scopep":"(M)","varp":"(L)"}
+      ],
+       "blocksp": [
+        {"type":"ALWAYS","addr":"(Q)","loc":"d,11:24,11:29","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(Q)","loc":"d,11:24,11:29","dtypep":"(I)",
+          {"type":"ASSIGNW","addr":"(R)","loc":"d,11:24,11:29","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"i_clk","addr":"(R)","loc":"d,11:24,11:29","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(N)"}
+            {"type":"VARREF","name":"i_clk","addr":"(S)","loc":"d,11:24,11:29","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(N)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"top.i_clk","addr":"(S)","loc":"d,11:24,11:29","dtypep":"(I)","access":"WR","varp":"(K)","varScopep":"(O)"}
+            {"type":"VARREF","name":"top.i_clk","addr":"(T)","loc":"d,11:24,11:29","dtypep":"(I)","access":"WR","varp":"(K)","varScopep":"(O)"}
           ]}
         ]},
-        {"type":"VARSCOPE","name":"top.f.i_clk","addr":"(T)","loc":"d,7:24,7:29","dtypep":"(I)","isTrace":true,"scopep":"(M)","varp":"(L)"},
         {"type":"ALWAYS","addr":"(U)","loc":"d,7:24,7:29","keyword":"cont_assign",
          "stmtsp": [
           {"type":"ASSIGNW","addr":"(V)","loc":"d,7:24,7:29","dtypep":"(I)",
@@ -30,7 +32,7 @@
             {"type":"VARREF","name":"i_clk","addr":"(W)","loc":"d,7:24,7:29","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(N)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"top.f.i_clk","addr":"(X)","loc":"d,7:24,7:29","dtypep":"(I)","access":"WR","varp":"(L)","varScopep":"(T)"}
+            {"type":"VARREF","name":"top.f.i_clk","addr":"(X)","loc":"d,7:24,7:29","dtypep":"(I)","access":"WR","varp":"(L)","varScopep":"(P)"}
           ]}
         ]}
       ]}
