@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+if test.have_dev_gcov:
+    test.skip("Too slow with code coverage")
+
 test.compile(verilator_flags2=["--binary"])
 
 test.execute()
