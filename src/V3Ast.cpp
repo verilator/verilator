@@ -147,9 +147,8 @@ AstNode* AstNode::abovep() const {
 AstNode* AstNode::aboveLoopp() const {
     // Returns parent node. Avoid using this, may have performance issues.
     const AstNode* nodep = this;
-    // Backwards over peers (versus parents)
-    while (nodep->backp() && nodep->backp()->nextp() == nodep) nodep = nodep->backp();
-    return nodep->backp();
+    while (nodep->nextp()) nodep = nodep->nextp();
+    return nodep->abovep();
 }
 
 string AstNode::encodeName(const string& namein) {
