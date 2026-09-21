@@ -763,6 +763,7 @@ GENHTML_OPT += --rc branch_coverage=1
 GENHTML_OPT += --rc genhtml_hi_limit=100
 GENHTML_OPT += --ignore-errors negative
 GENHTML_OPT += --ignore-errors inconsistent
+GENHTML_OPT += --ignore-errors empty
 ifeq ($(COVERAGE_REF_BASE),)
 GENHTML_OPT += --header-title "Code coverage for Verilator $(shell git describe --dirty)"
 else

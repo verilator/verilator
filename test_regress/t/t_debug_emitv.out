@@ -1228,64 +1228,9 @@ package Vt_debug_emitv___024unit;
             disable label3;
         end
     endfunction
-    string __Venumtab_enum_name34[1:0];
+    string __Venumtab_enum_name36[1:0];
 endpackage
 package Vt_debug_emitv_std;
-    class Vt_debug_emitv_semaphore;
-        int signed m_keyCount;
-        int signed m_nextKeyCount;
-        m_nextKeyCount = 32'hffffffff;
-        longint m_ticket;
-        m_ticket = 64'h0;
-        longint m_nextTicket;
-        m_nextTicket = 64'h0;
-        function new;
-            input int signed keyCount;
-            m_keyCount = keyCount;
-        endfunction
-        task put;
-            input int signed keyCount;
-            m_keyCount = (m_keyCount + keyCount);
-        endtask
-        task get;
-            longint __Vincrement1;
-            input int signed keyCount;
-            longint ticket;
-            begin : label4
-                ticket = /*CRESET*/;
-                if (((m_keyCount >= keyCount) && (m_nextKeyCount 
-                                                  > 
-                                                  m_keyCount))) begin
-                    begin
-                        m_keyCount = (m_keyCount - 
-                                      keyCount);
-                        disable label4;
-                    end
-                end
-                __Vincrement1 = m_nextTicket;
-                m_nextTicket = (m_nextTicket + 64'h1);
-                ticket = __Vincrement1;
-                wait((m_ticket == ticket));
-                m_nextKeyCount = keyCount;
-                wait((m_keyCount >= keyCount));
-                m_keyCount = (m_keyCount - keyCount);
-                m_ticket = (m_ticket + 64'h1);
-            end
-        endtask
-        function try_get;
-            input int signed keyCount;
-            begin : label5
-                try_get = /*CRESET*/;
-                if ((m_keyCount < keyCount)) begin
-                    try_get = 'sh0;
-                    disable label5;
-                end
-                m_keyCount = (m_keyCount - keyCount);
-                try_get = 'sh1;
-                disable label5;
-            end
-        endfunction
-    endclass
     class Vt_debug_emitv_process;
         typedef enum int signed{
             FINISHED = 32'h0,
@@ -1297,12 +1242,12 @@ package Vt_debug_emitv_std;
         VlProcessRef m_process;
         function self;
             Vt_debug_emitv_process pVt_debug_emitv_process;
-            begin : label6
+            begin : label4
                 self = /*CRESET*/;
                 p = new();
                 $c(p.m_process = vlProcess;);
                 self = p;
-                disable label6;
+                disable label4;
             end
         endfunction
         task set_status;
@@ -1310,10 +1255,10 @@ package Vt_debug_emitv_std;
             $c(m_process->state(s););
         endtask
         function status;
-            begin : label7
+            begin : label5
                 status = /*CRESET*/;
                 status = ($c(m_process->state()));
-                disable label7;
+                disable label5;
             end
         endfunction
         task kill;
@@ -1385,12 +1330,12 @@ package Vt_debug_emitv_std;
         ???? // SYSTEMCSECTION
         function get_randstate;
             string s;
-            begin : label8
+            begin : label6
                 get_randstate = /*CRESET*/;
                 s = string'($c(0));
                 $c(s = m_process->randstate(););
                 get_randstate = s;
-                disable label8;
+                disable label6;
             end
         endfunction
         task set_randstate;
@@ -1400,6 +1345,85 @@ package Vt_debug_emitv_std;
         function new;
         endfunction
         process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITINGendclass
+    class Vt_debug_emitv_semaphore;
+        typedef struct {
+            Vt_debug_emitv_process proc;
+            int signed reqKeys;
+        } procKeys;
+        struct {
+            Vt_debug_emitv_process proc;
+            int signed reqKeys;
+        } m_queue[$];
+        int signed m_keyCount;
+        task dropKilled;
+            while (((m_queue.size() > 'sh0) && (status() 
+                                                == 
+                                                process::
+                                                KILLED))) begin
+                m_queue.pop_front();
+            end
+        endtask
+        function new;
+            input int signed keyCount;
+            m_keyCount = keyCount;
+        endfunction
+        task put;
+            input int signed keyCount;
+            m_keyCount = (m_keyCount + keyCount);
+        endtask
+        task get;
+            input int signed keyCount;
+            begin : label7
+                dropKilled();
+                if (((m_keyCount >= keyCount) && ((
+                                                   m_queue.size() 
+                                                   == 
+                                                   'sh0) 
+                                                  || (m_queue.at(
+                                                                 'sh0).reqKeys 
+                                                      > 
+                                                      keyCount)))) begin
+                    begin
+                        m_keyCount = (m_keyCount - 
+                                      keyCount);
+                        disable label7;
+                    end
+                end
+                m_queue.push_back(
+                    ???? // CONSPACKUORSTRUCT
+
+                    ???? // CONSPACKMEMBER
+                    self()
+                    ???? // CONSPACKMEMBER
+                    keyCount);
+                while ((m_queue.at('sh0).proc != self())) begin
+                    begin
+                        wait(((status() == process::
+                               KILLED) || (m_queue.at(
+                                                      'sh0).proc 
+                                           == self())));
+                        dropKilled();
+                    end
+                end
+                wait((m_keyCount >= keyCount));
+                m_keyCount = (m_keyCount - keyCount);
+                m_queue.pop_front();
+            end
+        endtask
+        function try_get;
+            input int signed keyCount;
+            begin : label8
+                try_get = /*CRESET*/;
+                if ((m_keyCount < keyCount)) begin
+                    try_get = 'sh0;
+                    disable label8;
+                end
+                m_keyCount = (m_keyCount - keyCount);
+                try_get = 'sh1;
+                disable label8;
+            end
+        endfunction
+    endclass
     function randomize;
         randomize = 'sh0;
     endfunction

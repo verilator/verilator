@@ -444,13 +444,13 @@
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.read
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.write
 %000001     cross cp_a, cp_c;  // no label: reported under the default cross name
--000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a0_x_read
+-000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross9.a0_x_read
         //  cross: [a0, read]
--000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a0_x_write
+-000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross9.a0_x_write
         //  cross: [a0, write]
--000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a1_x_read
+-000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross9.a1_x_read
         //  cross: [a1, read]
--000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a1_x_write
+-000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross9.a1_x_write
         //  cross: [a1, write]
           endgroup
         
