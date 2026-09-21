@@ -38,185 +38,185 @@
          "stmtsp": [
           {"type":"ASSIGNW","addr":"(FC)","loc":"d,27:23,27:24","dtypep":"(K)",
            "rhsp": [
-            {"type":"EQ","addr":"(GC)","loc":"d,27:32,27:34","dtypep":"(HC)",
+            {"type":"EQ","addr":"(GC)","loc":"d,27:32,27:34","dtypep":"(K)",
              "lhsp": [
-              {"type":"CONST","name":"2'h0","addr":"(IC)","loc":"d,27:35,27:41","dtypep":"(HB)","origParamName":"S_IDLE"}
+              {"type":"CONST","name":"2'h0","addr":"(HC)","loc":"d,27:35,27:41","dtypep":"(HB)","origParamName":"S_IDLE"}
             ],
              "rhsp": [
-              {"type":"SEL","addr":"(JC)","loc":"d,27:26,27:27","dtypep":"(HB)","widthConst":2,"declRange":"[3:0]","declElWidth":1,
+              {"type":"SEL","addr":"(IC)","loc":"d,27:26,27:27","dtypep":"(HB)","widthConst":2,"declRange":"[3:0]","declElWidth":1,
                "fromp": [
-                {"type":"VARREF","name":"d","addr":"(KC)","loc":"d,27:25,27:26","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
+                {"type":"VARREF","name":"d","addr":"(JC)","loc":"d,27:25,27:26","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
               ],
                "lsbp": [
-                {"type":"CONST","name":"2'h0","addr":"(LC)","loc":"d,27:29,27:30","dtypep":"(MC)"}
+                {"type":"CONST","name":"2'h0","addr":"(KC)","loc":"d,27:29,27:30","dtypep":"(LC)"}
               ]}
             ]}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.direct_named","addr":"(NC)","loc":"d,27:10,27:22","dtypep":"(K)","access":"WR","varp":"(BB)","varScopep":"(AB)"}
+            {"type":"VARREF","name":"t.direct_named","addr":"(MC)","loc":"d,27:10,27:22","dtypep":"(K)","access":"WR","varp":"(BB)","varScopep":"(AB)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(OC)","loc":"d,28:25,28:26","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(NC)","loc":"d,28:25,28:26","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(PC)","loc":"d,28:25,28:26","dtypep":"(K)",
+          {"type":"ASSIGNW","addr":"(OC)","loc":"d,28:25,28:26","dtypep":"(K)",
            "rhsp": [
-            {"type":"EQ","addr":"(QC)","loc":"d,28:34,28:36","dtypep":"(HC)",
+            {"type":"EQ","addr":"(PC)","loc":"d,28:34,28:36","dtypep":"(K)",
              "lhsp": [
-              {"type":"CONST","name":"2'h2","addr":"(RC)","loc":"d,28:37,28:43","dtypep":"(HB)","origParamName":"S_EXEC"}
+              {"type":"CONST","name":"2'h2","addr":"(QC)","loc":"d,28:37,28:43","dtypep":"(HB)","origParamName":"S_EXEC"}
             ],
              "rhsp": [
-              {"type":"SEL","addr":"(SC)","loc":"d,28:28,28:29","dtypep":"(HB)","widthConst":2,"declRange":"[3:0]","declElWidth":1,
+              {"type":"SEL","addr":"(RC)","loc":"d,28:28,28:29","dtypep":"(HB)","widthConst":2,"declRange":"[3:0]","declElWidth":1,
                "fromp": [
-                {"type":"VARREF","name":"d","addr":"(TC)","loc":"d,28:27,28:28","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
+                {"type":"VARREF","name":"d","addr":"(SC)","loc":"d,28:27,28:28","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
               ],
                "lsbp": [
-                {"type":"CONST","name":"2'h0","addr":"(UC)","loc":"d,28:31,28:32","dtypep":"(MC)"}
+                {"type":"CONST","name":"2'h0","addr":"(TC)","loc":"d,28:31,28:32","dtypep":"(LC)"}
               ]}
             ]}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.computed_named","addr":"(VC)","loc":"d,28:10,28:24","dtypep":"(K)","access":"WR","varp":"(DB)","varScopep":"(CB)"}
+            {"type":"VARREF","name":"t.computed_named","addr":"(UC)","loc":"d,28:10,28:24","dtypep":"(K)","access":"WR","varp":"(DB)","varScopep":"(CB)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(WC)","loc":"d,29:25,29:26","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(VC)","loc":"d,29:25,29:26","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(XC)","loc":"d,29:25,29:26","dtypep":"(K)",
+          {"type":"ASSIGNW","addr":"(WC)","loc":"d,29:25,29:26","dtypep":"(K)",
            "rhsp": [
-            {"type":"EQ","addr":"(YC)","loc":"d,29:34,29:36","dtypep":"(HC)",
+            {"type":"EQ","addr":"(XC)","loc":"d,29:34,29:36","dtypep":"(K)",
              "lhsp": [
-              {"type":"CONST","name":"2'h2","addr":"(ZC)","loc":"d,29:46,29:47","dtypep":"(AD)"}
+              {"type":"CONST","name":"2'h2","addr":"(YC)","loc":"d,29:46,29:47","dtypep":"(ZC)"}
             ],
              "rhsp": [
-              {"type":"SEL","addr":"(BD)","loc":"d,29:28,29:29","dtypep":"(HB)","widthConst":2,"declRange":"[3:0]","declElWidth":1,
+              {"type":"SEL","addr":"(AD)","loc":"d,29:28,29:29","dtypep":"(HB)","widthConst":2,"declRange":"[3:0]","declElWidth":1,
                "fromp": [
-                {"type":"VARREF","name":"d","addr":"(CD)","loc":"d,29:27,29:28","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
+                {"type":"VARREF","name":"d","addr":"(BD)","loc":"d,29:27,29:28","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
               ],
                "lsbp": [
-                {"type":"CONST","name":"2'h0","addr":"(DD)","loc":"d,29:31,29:32","dtypep":"(MC)"}
+                {"type":"CONST","name":"2'h0","addr":"(CD)","loc":"d,29:31,29:32","dtypep":"(LC)"}
               ]}
             ]}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.anonymous_expr","addr":"(ED)","loc":"d,29:10,29:24","dtypep":"(K)","access":"WR","varp":"(FB)","varScopep":"(EB)"}
+            {"type":"VARREF","name":"t.anonymous_expr","addr":"(DD)","loc":"d,29:10,29:24","dtypep":"(K)","access":"WR","varp":"(FB)","varScopep":"(EB)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(FD)","loc":"d,16:21,16:22","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(ED)","loc":"d,16:21,16:22","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(GD)","loc":"d,16:21,16:22","dtypep":"(I)",
+          {"type":"ASSIGNW","addr":"(FD)","loc":"d,16:21,16:22","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"q","addr":"(HD)","loc":"d,16:21,16:22","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(P)"}
+            {"type":"VARREF","name":"q","addr":"(GD)","loc":"d,16:21,16:22","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(P)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.q","addr":"(ID)","loc":"d,16:21,16:22","dtypep":"(I)","access":"WR","varp":"(T)","varScopep":"(S)"}
+            {"type":"VARREF","name":"t.q","addr":"(HD)","loc":"d,16:21,16:22","dtypep":"(I)","access":"WR","varp":"(T)","varScopep":"(S)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(JD)","loc":"d,14:9,14:12","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(ID)","loc":"d,14:9,14:12","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(KD)","loc":"d,14:9,14:12","dtypep":"(K)",
+          {"type":"ASSIGNW","addr":"(JD)","loc":"d,14:9,14:12","dtypep":"(K)",
            "rhsp": [
-            {"type":"VARREF","name":"clk","addr":"(LD)","loc":"d,14:9,14:12","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(Q)"}
+            {"type":"VARREF","name":"clk","addr":"(KD)","loc":"d,14:9,14:12","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(Q)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.clk","addr":"(MD)","loc":"d,14:9,14:12","dtypep":"(K)","access":"WR","varp":"(V)","varScopep":"(U)"}
+            {"type":"VARREF","name":"t.clk","addr":"(LD)","loc":"d,14:9,14:12","dtypep":"(K)","access":"WR","varp":"(V)","varScopep":"(U)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(ND)","loc":"d,15:15,15:16","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(MD)","loc":"d,15:15,15:16","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(OD)","loc":"d,15:15,15:16","dtypep":"(I)",
+          {"type":"ASSIGNW","addr":"(ND)","loc":"d,15:15,15:16","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"d","addr":"(PD)","loc":"d,15:15,15:16","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
+            {"type":"VARREF","name":"d","addr":"(OD)","loc":"d,15:15,15:16","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.d","addr":"(QD)","loc":"d,15:15,15:16","dtypep":"(I)","access":"WR","varp":"(X)","varScopep":"(W)"}
+            {"type":"VARREF","name":"t.d","addr":"(PD)","loc":"d,15:15,15:16","dtypep":"(I)","access":"WR","varp":"(X)","varScopep":"(W)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(RD)","loc":"d,18:15,18:22","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(QD)","loc":"d,18:15,18:22","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(SD)","loc":"d,18:15,18:22","dtypep":"(I)",
+          {"type":"ASSIGNW","addr":"(RD)","loc":"d,18:15,18:22","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"t.cell1.q","addr":"(TD)","loc":"d,18:15,18:22","dtypep":"(I)","access":"RD","varp":"(BC)","varScopep":"(AC)"}
+            {"type":"VARREF","name":"t.cell1.q","addr":"(SD)","loc":"d,18:15,18:22","dtypep":"(I)","access":"RD","varp":"(BC)","varScopep":"(AC)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.between","addr":"(UD)","loc":"d,18:15,18:22","dtypep":"(I)","access":"WR","varp":"(Z)","varScopep":"(Y)"}
+            {"type":"VARREF","name":"t.between","addr":"(TD)","loc":"d,18:15,18:22","dtypep":"(I)","access":"WR","varp":"(Z)","varScopep":"(Y)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(VD)","loc":"d,67:12,67:13","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(UD)","loc":"d,67:12,67:13","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(WD)","loc":"d,67:12,67:13","dtypep":"(I)",
+          {"type":"ASSIGNW","addr":"(VD)","loc":"d,67:12,67:13","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"t.cell1.q","addr":"(XD)","loc":"d,67:14,67:15","dtypep":"(I)","access":"RD","varp":"(BC)","varScopep":"(AC)"}
+            {"type":"VARREF","name":"t.cell1.q","addr":"(WD)","loc":"d,67:14,67:15","dtypep":"(I)","access":"RD","varp":"(BC)","varScopep":"(AC)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"q","addr":"(YD)","loc":"d,67:10,67:11","dtypep":"(I)","access":"WR","varp":"(H)","varScopep":"(P)"}
+            {"type":"VARREF","name":"q","addr":"(XD)","loc":"d,67:10,67:11","dtypep":"(I)","access":"WR","varp":"(H)","varScopep":"(P)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(ZD)","loc":"d,62:11,62:14","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(YD)","loc":"d,62:11,62:14","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(AE)","loc":"d,62:11,62:14","dtypep":"(K)",
+          {"type":"ASSIGNW","addr":"(ZD)","loc":"d,62:11,62:14","dtypep":"(K)",
            "rhsp": [
-            {"type":"VARREF","name":"clk","addr":"(BE)","loc":"d,62:11,62:14","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(Q)"}
+            {"type":"VARREF","name":"clk","addr":"(AE)","loc":"d,62:11,62:14","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(Q)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.cell2.clk","addr":"(CE)","loc":"d,62:11,62:14","dtypep":"(K)","access":"WR","varp":"(OB)","varScopep":"(NB)"}
+            {"type":"VARREF","name":"t.cell2.clk","addr":"(BE)","loc":"d,62:11,62:14","dtypep":"(K)","access":"WR","varp":"(OB)","varScopep":"(NB)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(DE)","loc":"d,63:17,63:18","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(CE)","loc":"d,63:17,63:18","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(EE)","loc":"d,63:17,63:18","dtypep":"(I)",
+          {"type":"ASSIGNW","addr":"(DE)","loc":"d,63:17,63:18","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"t.cell1.q","addr":"(FE)","loc":"d,63:17,63:18","dtypep":"(I)","access":"RD","varp":"(BC)","varScopep":"(AC)"}
+            {"type":"VARREF","name":"t.cell1.q","addr":"(EE)","loc":"d,63:17,63:18","dtypep":"(I)","access":"RD","varp":"(BC)","varScopep":"(AC)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.cell2.d","addr":"(GE)","loc":"d,63:17,63:18","dtypep":"(I)","access":"WR","varp":"(QB)","varScopep":"(PB)"}
+            {"type":"VARREF","name":"t.cell2.d","addr":"(FE)","loc":"d,63:17,63:18","dtypep":"(I)","access":"WR","varp":"(QB)","varScopep":"(PB)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(HE)","loc":"d,64:23,64:24","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(GE)","loc":"d,64:23,64:24","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(IE)","loc":"d,64:23,64:24","dtypep":"(I)",
+          {"type":"ASSIGNW","addr":"(HE)","loc":"d,64:23,64:24","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"q","addr":"(JE)","loc":"d,64:23,64:24","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(P)"}
+            {"type":"VARREF","name":"q","addr":"(IE)","loc":"d,64:23,64:24","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(P)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.cell2.q","addr":"(KE)","loc":"d,64:23,64:24","dtypep":"(I)","access":"WR","varp":"(SB)","varScopep":"(RB)"}
+            {"type":"VARREF","name":"t.cell2.q","addr":"(JE)","loc":"d,64:23,64:24","dtypep":"(I)","access":"WR","varp":"(SB)","varScopep":"(RB)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(LE)","loc":"d,57:3,57:9","keyword":"always",
+        {"type":"ALWAYS","addr":"(KE)","loc":"d,57:3,57:9","keyword":"always",
          "sentreep": [
-          {"type":"SENTREE","addr":"(ME)","loc":"d,57:10,57:11",
+          {"type":"SENTREE","addr":"(LE)","loc":"d,57:10,57:11",
            "sensesp": [
-            {"type":"SENITEM","addr":"(NE)","loc":"d,57:12,57:19","edgeType":"POS",
+            {"type":"SENITEM","addr":"(ME)","loc":"d,57:12,57:19","edgeType":"POS",
              "sensp": [
-              {"type":"VARREF","name":"clk","addr":"(OE)","loc":"d,57:20,57:23","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(Q)"}
+              {"type":"VARREF","name":"clk","addr":"(NE)","loc":"d,57:20,57:23","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(Q)"}
             ]}
           ]}
         ],
          "stmtsp": [
-          {"type":"ASSIGNDLY","addr":"(PE)","loc":"d,57:27,57:29","dtypep":"(I)",
+          {"type":"ASSIGNDLY","addr":"(OE)","loc":"d,57:27,57:29","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"d","addr":"(QE)","loc":"d,57:30,57:31","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
+            {"type":"VARREF","name":"d","addr":"(PE)","loc":"d,57:30,57:31","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.cell1.q","addr":"(RE)","loc":"d,57:25,57:26","dtypep":"(I)","access":"WR","varp":"(BC)","varScopep":"(AC)"}
+            {"type":"VARREF","name":"t.cell1.q","addr":"(QE)","loc":"d,57:25,57:26","dtypep":"(I)","access":"WR","varp":"(BC)","varScopep":"(AC)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(SE)","loc":"d,50:11,50:14","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(RE)","loc":"d,50:11,50:14","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(TE)","loc":"d,50:11,50:14","dtypep":"(K)",
+          {"type":"ASSIGNW","addr":"(SE)","loc":"d,50:11,50:14","dtypep":"(K)",
            "rhsp": [
-            {"type":"VARREF","name":"clk","addr":"(UE)","loc":"d,50:11,50:14","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(Q)"}
+            {"type":"VARREF","name":"clk","addr":"(TE)","loc":"d,50:11,50:14","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(Q)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.cell1.clk","addr":"(VE)","loc":"d,50:11,50:14","dtypep":"(K)","access":"WR","varp":"(XB)","varScopep":"(WB)"}
+            {"type":"VARREF","name":"t.cell1.clk","addr":"(UE)","loc":"d,50:11,50:14","dtypep":"(K)","access":"WR","varp":"(XB)","varScopep":"(WB)"}
           ]}
         ]},
-        {"type":"ALWAYS","addr":"(WE)","loc":"d,51:23,51:24","keyword":"cont_assign",
+        {"type":"ALWAYS","addr":"(VE)","loc":"d,51:23,51:24","keyword":"cont_assign",
          "stmtsp": [
-          {"type":"ASSIGNW","addr":"(XE)","loc":"d,51:23,51:24","dtypep":"(I)",
+          {"type":"ASSIGNW","addr":"(WE)","loc":"d,51:23,51:24","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"d","addr":"(YE)","loc":"d,51:23,51:24","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
+            {"type":"VARREF","name":"d","addr":"(XE)","loc":"d,51:23,51:24","dtypep":"(I)","access":"RD","varp":"(L)","varScopep":"(R)"}
           ],
            "lhsp": [
-            {"type":"VARREF","name":"t.cell1.d","addr":"(ZE)","loc":"d,51:23,51:24","dtypep":"(I)","access":"WR","varp":"(ZB)","varScopep":"(YB)"}
+            {"type":"VARREF","name":"t.cell1.d","addr":"(YE)","loc":"d,51:23,51:24","dtypep":"(I)","access":"WR","varp":"(ZB)","varScopep":"(YB)"}
           ]}
         ]}
       ]}
@@ -230,47 +230,45 @@
     {"type":"VAR","name":"t.anonymous_expr","addr":"(FB)","loc":"d,21:9,21:23","dtypep":"(K)","origName":"anonymous_expr","verilogName":"anonymous_expr","direction":"NONE","declDirection":"NONE","icoMaybeWritten":true,"lifetime":"VSTATICI","varType":"VAR","dtypeName":"logic"},
     {"type":"VAR","name":"t.S_IDLE","addr":"(IB)","loc":"d,23:26,23:32","dtypep":"(HB)","origName":"S_IDLE","verilogName":"S_IDLE","direction":"NONE","declDirection":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"LPARAM","dtypeName":"logic","isParam":true,"hasUserInit":true,
      "valuep": [
-      {"type":"CONST","name":"2'h0","addr":"(AF)","loc":"d,23:35,23:40","dtypep":"(AD)"}
+      {"type":"CONST","name":"2'h0","addr":"(ZE)","loc":"d,23:35,23:40","dtypep":"(ZC)"}
     ]},
     {"type":"VAR","name":"t.S_FETCH","addr":"(KB)","loc":"d,24:26,24:33","dtypep":"(HB)","origName":"S_FETCH","verilogName":"S_FETCH","direction":"NONE","declDirection":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"LPARAM","dtypeName":"logic","isParam":true,"hasUserInit":true,
      "valuep": [
-      {"type":"CONST","name":"2'h1","addr":"(BF)","loc":"d,24:36,24:41","dtypep":"(AD)"}
+      {"type":"CONST","name":"2'h1","addr":"(AF)","loc":"d,24:36,24:41","dtypep":"(ZC)"}
     ]},
     {"type":"VAR","name":"t.S_EXEC","addr":"(MB)","loc":"d,25:26,25:32","dtypep":"(HB)","origName":"S_EXEC","verilogName":"S_EXEC","direction":"NONE","declDirection":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"LPARAM","dtypeName":"logic","isParam":true,"hasUserInit":true,
      "valuep": [
-      {"type":"CONST","name":"2'h2","addr":"(CF)","loc":"d,25:43,25:44","dtypep":"(HB)"}
+      {"type":"CONST","name":"2'h2","addr":"(BF)","loc":"d,25:43,25:44","dtypep":"(ZC)"}
     ]},
     {"type":"VAR","name":"t.cell2.clk","addr":"(OB)","loc":"d,62:11,62:14","dtypep":"(K)","origName":"clk","verilogName":"clk","direction":"NONE","declDirection":"INPUT","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
     {"type":"VAR","name":"t.cell2.d","addr":"(QB)","loc":"d,63:17,63:18","dtypep":"(I)","origName":"d","verilogName":"d","direction":"NONE","declDirection":"INPUT","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
     {"type":"VAR","name":"t.cell2.q","addr":"(SB)","loc":"d,64:23,64:24","dtypep":"(I)","origName":"q","verilogName":"q","direction":"NONE","declDirection":"OUTPUT","icoMaybeWritten":true,"lifetime":"VSTATICI","varType":"WIRE","dtypeName":"logic"},
-    {"type":"VAR","name":"t.cell1.WIDTH","addr":"(VB)","loc":"d,48:15,48:20","dtypep":"(UB)","origName":"WIDTH","verilogName":"WIDTH","direction":"NONE","declDirection":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"GPARAM","dtypeName":"logic","isGParam":true,"isParam":true,"hasUserInit":true,
+    {"type":"VAR","name":"t.cell1.WIDTH","addr":"(VB)","loc":"d,48:15,48:20","dtypep":"(UB)","origName":"WIDTH","verilogName":"WIDTH","direction":"NONE","declDirection":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"GPARAM","dtypeName":"bit","isGParam":true,"isParam":true,"hasUserInit":true,
      "valuep": [
-      {"type":"CONST","name":"32'sh4","addr":"(DF)","loc":"d,32:14,32:15","dtypep":"(EF)"}
+      {"type":"CONST","name":"32'sh4","addr":"(CF)","loc":"d,32:14,32:15","dtypep":"(UB)"}
     ]},
     {"type":"VAR","name":"t.cell1.clk","addr":"(XB)","loc":"d,50:11,50:14","dtypep":"(K)","origName":"clk","verilogName":"clk","direction":"NONE","declDirection":"INPUT","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
     {"type":"VAR","name":"t.cell1.d","addr":"(ZB)","loc":"d,51:23,51:24","dtypep":"(I)","origName":"d","verilogName":"d","direction":"NONE","declDirection":"INPUT","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
     {"type":"VAR","name":"t.cell1.q","addr":"(BC)","loc":"d,52:30,52:31","dtypep":"(I)","origName":"q","verilogName":"q","direction":"NONE","declDirection":"OUTPUT","icoMaybeWritten":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
-    {"type":"VAR","name":"t.cell1.IGNORED","addr":"(DC)","loc":"d,55:14,55:21","dtypep":"(UB)","origName":"IGNORED","verilogName":"IGNORED","direction":"NONE","declDirection":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"LPARAM","dtypeName":"logic","isParam":true,"hasUserInit":true,
+    {"type":"VAR","name":"t.cell1.IGNORED","addr":"(DC)","loc":"d,55:14,55:21","dtypep":"(UB)","origName":"IGNORED","verilogName":"IGNORED","direction":"NONE","declDirection":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"LPARAM","dtypeName":"bit","isParam":true,"hasUserInit":true,
      "valuep": [
-      {"type":"CONST","name":"32'sh1","addr":"(FF)","loc":"d,55:24,55:25","dtypep":"(EF)"}
+      {"type":"CONST","name":"32'sh1","addr":"(DF)","loc":"d,55:24,55:25","dtypep":"(UB)"}
     ]}
   ]},
   {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","verilogName":"\\$unit ","level":3,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"},
   {"type":"PACKAGE","name":"__Vconstpool","addr":"(D)","loc":"a,0:0,0:0","origName":"__Vconstpool","verilogName":"__Vconstpool","level":3,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
-    {"type":"SCOPE","name":"__Vconstpool","addr":"(GF)","loc":"a,0:0,0:0","aboveScopep":"(O)","aboveCellp":"(N)","modp":"(D)"}
+    {"type":"SCOPE","name":"__Vconstpool","addr":"(EF)","loc":"a,0:0,0:0","aboveScopep":"(O)","aboveCellp":"(N)","modp":"(D)"}
   ]}
 ],
  "miscsp": [
   {"type":"TYPETABLE","addr":"(C)","loc":"a,0:0,0:0",
    "typesp": [
-    {"type":"BASICDTYPE","name":"bit","addr":"(AD)","loc":"d,23:35,23:40","dtypep":"(AD)","keyword":"bit","range":"1:0","generic":true},
+    {"type":"BASICDTYPE","name":"bit","addr":"(ZC)","loc":"d,23:35,23:40","dtypep":"(ZC)","keyword":"bit","range":"1:0","generic":true},
     {"type":"BASICDTYPE","name":"logic","addr":"(K)","loc":"d,27:32,27:34","dtypep":"(K)","keyword":"logic","generic":true},
     {"type":"BASICDTYPE","name":"logic","addr":"(HB)","loc":"d,23:14,23:19","dtypep":"(HB)","keyword":"logic","range":"1:0","generic":true},
-    {"type":"BASICDTYPE","name":"logic","addr":"(UB)","loc":"d,48:15,48:20","dtypep":"(UB)","keyword":"logic","range":"31:0","generic":true,"signed":true},
     {"type":"BASICDTYPE","name":"logic","addr":"(I)","loc":"d,16:15,16:16","dtypep":"(I)","keyword":"logic","range":"3:0","generic":true},
-    {"type":"BASICDTYPE","name":"logic","addr":"(MC)","loc":"d,27:26,27:27","dtypep":"(MC)","keyword":"logic","range":"1:0","generic":true,"signed":true},
-    {"type":"BASICDTYPE","name":"bit","addr":"(HC)","loc":"d,27:32,27:34","dtypep":"(HC)","keyword":"bit","generic":true},
-    {"type":"BASICDTYPE","name":"bit","addr":"(EF)","loc":"d,29:48,29:49","dtypep":"(EF)","keyword":"bit","range":"31:0","generic":true,"signed":true}
+    {"type":"BASICDTYPE","name":"bit","addr":"(LC)","loc":"d,27:26,27:27","dtypep":"(LC)","keyword":"bit","range":"1:0","generic":true,"signed":true},
+    {"type":"BASICDTYPE","name":"bit","addr":"(UB)","loc":"d,29:48,29:49","dtypep":"(UB)","keyword":"bit","range":"31:0","generic":true,"signed":true}
   ]}
 ]}

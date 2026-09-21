@@ -1087,7 +1087,7 @@ class ExpandVisitor final : public VNVisitor {
             if (lhswidth == 1) {
                 newp = new AstNegate{fl, lhsp->cloneTreePure(true)};
                 // Replicate always unsigned
-                newp->dtypeSetLogicSized(VL_EDATASIZE, VSigning::UNSIGNED);
+                newp->dtypeChgWidthSigned(VL_EDATASIZE, VL_EDATASIZE, VSigning::UNSIGNED);
             } else {
                 newp = newAstWordSelClone(lhsp, w);
                 FileLine* const rfl = rhsp->fileline();
