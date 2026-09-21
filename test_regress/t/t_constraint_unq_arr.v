@@ -19,13 +19,12 @@ class C extends Subclass;
     sub_arr = new[10];
   endfunction
 
-  function bit check_unique();
+  function void check_unique();
       // dynamic array inside class
       for (int i = 0; i < $size(arr); i++) begin
         for (int j = i + 1; j < $size(arr); j++) begin
           if (arr[i] == arr[j]) begin
             $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
-            return 0;
           end
         end
       end
@@ -34,11 +33,9 @@ class C extends Subclass;
         for (int j = i + 1; j < $size(sub_arr); j++) begin
           if (sub_arr[i] == sub_arr[j]) begin
             $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
-            return 0;
           end
         end
       end
-      return 1;
   endfunction
 
   constraint c {
@@ -54,6 +51,7 @@ module t;
     rand bit [15:0] queue[$];
     rand bit [15:0] queue_c[$:3];
     rand bit [15:0] assoc[int];
+    rand bit [3:0] multiarr0[4], multiarr1[4];
 
     constraint c {
       unique {arr};
@@ -61,6 +59,7 @@ module t;
       unique {queue};
       unique {queue_c};
       unique {assoc};
+      unique {multiarr0, multiarr1};
     }
 
     function new;
@@ -70,13 +69,12 @@ module t;
       assoc = '{0: 0, 1: 0, 3: 0, 5: 0};
     endfunction
 
-    function bit check_unique();
+    function void check_unique();
       // static array
       for (int i = 0; i < $size(arr); i++) begin
         for (int j = i + 1; j < $size(arr); j++) begin
           if (arr[i] == arr[j]) begin
             $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
-            return 0;
           end
         end
       end
@@ -85,7 +83,6 @@ module t;
         for (int j = i + 1; j < darr.size(); j++) begin
           if (darr[i] == darr[j]) begin
             $error("UNIQUENESS VIOLATION: darr[%0d] == darr[%0d] == 0x%h", i, j, darr[i]);
-            return 0;
           end
         end
       end
@@ -94,7 +91,6 @@ module t;
         for (int j = i + 1; j < queue.size(); j++) begin
           if (queue[i] == queue[j]) begin
             $error("UNIQUENESS VIOLATION: queue[%0d] == queue[%0d] == 0x%h", i, j, queue[i]);
-            return 0;
           end
         end
       end
@@ -103,7 +99,6 @@ module t;
         for (int j = i + 1; j < queue_c.size(); j++) begin
           if (queue_c[i] == queue_c[j]) begin
             $error("UNIQUENESS VIOLATION: queue_c[%0d] == queue_c[%0d] == 0x%h", i, j, queue_c[i]);
-            return 0;
           end
         end
       end
@@ -115,11 +110,37 @@ module t;
           end
           if (assoc[i] == assoc[j]) begin
             $error("UNIQUENESS VIOLATION: assoc[%0d] == assoc[%0d] == 0x%h", i, j, assoc[i]);
-            return 0;
           end
         end
       end
-      return 1;
+      // multiple arrays
+      foreach (multiarr0[i]) begin
+        foreach (multiarr0[j]) begin
+          if (i == j) begin
+            continue;
+          end
+          if (multiarr0[i] == multiarr0[j]) begin
+            $error("UNIQUENESS VIOLATION: multiarr0[%0d] == multiarr0[%0d] == 0x%h", i, j, multiarr0[i]);
+          end
+        end
+      end
+      foreach (multiarr1[i]) begin
+        foreach (multiarr1[j]) begin
+          if (i == j) begin
+            continue;
+          end
+          if (multiarr1[i] == multiarr1[j]) begin
+            $error("UNIQUENESS VIOLATION: multiarr1[%0d] == multiarr1[%0d] == 0x%h", i, j, multiarr1[i]);
+          end
+        end
+      end
+      foreach (multiarr1[i]) begin
+        foreach (multiarr0[j]) begin
+          if (multiarr0[i] == multiarr1[j]) begin
+            $error("UNIQUENESS VIOLATION: multiarr0[%0d] == multiarr1[%0d] == 0x%h", i, j, multiarr0[i]);
+          end
+        end
+      end
     endfunction
 
   endclass : UniqueMultipleArray
@@ -131,8 +152,8 @@ module t;
     cc.randomize();
     a.randomize();
 
-    assert(cc.check_unique());
-    assert(a.check_unique());
+    repeat(20) cc.check_unique();
+    repeat(20) a.check_unique();
 
     $write("*-* All Finished *-*\n");
     $finish;
