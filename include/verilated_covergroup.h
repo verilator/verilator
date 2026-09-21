@@ -100,7 +100,7 @@ public:
 // path; the cross holds VlCoverpoint* and reads via hitCount()/hitList().
 class VlCoverpoint VL_NOT_FINAL : public VlCoverpointIf {
     struct ValueData;
-    std::unique_ptr<ValueData> m_valuesp;
+    std::unique_ptr<ValueData> m_valuesp;  // Optional value metadata and exclusion state
     friend class VlCoverCrossDyn;
 
 protected:
@@ -229,7 +229,7 @@ public:
 /// built on demand for automatic bins; explicit bins select sets of tuples
 /// and replace the corresponding automatic cross bins.  Explicit selections
 /// are intersected with hit-tuple words once per sample.
-/// VlCoverCrossT owns the fixed arrays. This shared core does not allocate bin
+/// VlCoverCrossT and VlCoverCrossDyn own their storage. This shared core does not allocate bin
 /// storage, and its borrowed storage pointers remain valid for the instance.
 
 class VlCoverCross VL_NOT_FINAL : public VlCoverpointIf {
@@ -241,7 +241,7 @@ protected:
         uint32_t stride;  // Flat-index stride
     };
     struct Bin final {
-        const uint64_t* selectionp;  // Slice of the fixed selection storage
+        const uint64_t* selectionp;  // Slice of the cross's selection storage
         const char* namep;  // Explicit bin name
         const char* filep;  // Bin declaration file
         int line;  // Bin declaration line
@@ -297,7 +297,7 @@ private:
     // storable anyway: m_flatCountsp alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
     uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
-    Dimension* m_dimensionsp = nullptr;  // [m_dims], owned by VlCoverCrossT
+    Dimension* m_dimensionsp = nullptr;  // [m_dims], owned by the concrete cross runtime
     uint32_t* m_flatCountsp = nullptr;  // [m_numAutoBins] Per-bin hit counts
     Explicit* m_explicitp = nullptr;  // Absent for automatic-only crosses
 
@@ -434,7 +434,7 @@ public:
 /// Construction-time cross layout over finalized coverpoints, sharing the sampling core.
 class VlCoverCrossDyn final : public VlCoverCross {
     struct Layout;
-    std::unique_ptr<Layout> m_layoutp;
+    std::unique_ptr<Layout> m_layoutp;  // Owned cross storage and construction-time selections
 
 public:
     VlCoverCrossDyn();

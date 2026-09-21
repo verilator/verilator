@@ -2480,9 +2480,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstNodeExpr* buildWildcardCondition(AstCoverBin* binp, AstNodeExpr* exprp, AstConst* constp) {
         FileLine* const fl = binp->fileline();
 
-        if (!exprp->dtypep()->skipRefp()->isIntegralOrPacked()) {
-            binp->v3error("Wildcard bins require an integral coverpoint "
-                          "(IEEE 1800-2023 19.5.4).");
+        const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
+        if (!dtypep->isIntegralOrPacked()) {
+            exprp->v3error("Cannot use a wildcard bin on a coverpoint of type "
+                           << dtypep->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.4).\n"
+                           << exprp->warnContextPrimary() << '\n'
+                           << binp->warnOther() << "... Location of wildcard bin\n"
+                           << binp->warnContextSecondary());
             return new AstConst{fl, AstConst::BitFalse{}};
         }
         const int width = std::max(exprp->width(), constp->width()) + 1;

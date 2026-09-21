@@ -1,5 +1,8 @@
-%Error: t/t_covergroup_wild_real_bad.v:12:21: Wildcard bins require an integral coverpoint (IEEE 1800-2023 19.5.4).
-                                            : ... note: In instance 't'
+%Error: t/t_covergroup_wild_real_bad.v:11:9: Cannot use a wildcard bin on a coverpoint of type 'real' (IEEE 1800-2023 19.5.4).
+                                           : ... note: In instance 't'
+   11 |     cp: coverpoint value {
+      |         ^~~~~~~~~~
+        t/t_covergroup_wild_real_bad.v:12:21: ... Location of wildcard bin
    12 |       wildcard bins one = {1};
       |                     ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
