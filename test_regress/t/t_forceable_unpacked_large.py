@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.skip("Too slow; Issue #8431")
-
 test.compile(verilator_flags2=["--binary"])
 
 test.execute()

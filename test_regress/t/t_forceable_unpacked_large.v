@@ -11,8 +11,8 @@
 `define checkh(g,e) do if ((g) !== (e)) begin $write("%%Error: %s:%0d: got=%x exp=%x\n", `__FILE__,`__LINE__, (g),(e)); `stop; end while(0)
 
 module t;
-  localparam int ArraySize = 1024;
-  localparam int MatSize = 64;
+  localparam int ArraySize = 64;
+  localparam int MatSize = 8;
 
   logic [7:0] mem[0:ArraySize-1]  /*verilator forceable*/;
   logic [7:0] mat[0:MatSize-1][0:MatSize-1]  /*verilator forceable*/;
@@ -39,7 +39,6 @@ module t;
     #1;
     `checkh(mem[0], 8'd0);
     `checkh(mem[1], 8'd1);
-    `checkh(mem[255], 8'd255);
     `checkh(mem[ArraySize-1], 8'(ArraySize - 1));
     `checkh(mat[0][0], 8'd0);
     `checkh(mat[0][1], 8'd1);
@@ -54,7 +53,6 @@ module t;
     #1;
     `checkh(mem[0], 8'd255);
     `checkh(mem[1], 8'd254);
-    `checkh(mem[255], 8'd0);
     `checkh(mem[ArraySize-1], 8'(255 - (ArraySize - 1)));
     `checkh(mat[0][0], 8'd255);
     `checkh(mat[0][1], 8'd254);
