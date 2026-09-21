@@ -1284,7 +1284,7 @@ package Vt_debug_emitv_std;
             end
         endfunction
         task kill;
-            set_status(process::KILLED);
+            $c(m_process->disable(););
         endtask
         task suspend;
             $error("std::process::suspend() not supported");
