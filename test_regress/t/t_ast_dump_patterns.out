@@ -36,7 +36,7 @@ AST patterns with depth 1
             4 (CONST #A):(G/str)
             4 (NEGATE _:a/1):a/b
             4 (SHIFTL _:a/a (CONST #A):b/b):a/a
-            3 (AND (VARREF):a/a (CONST #A):b/b):a/a
+            3 (AND (VARREF):a/a (CONST #A):b/b):b/b
             3 (ARRAYSEL (VARREF):(w64)u[1:0] (CONST #A):a/a):b/b
             3 (CONST #A):a/1
             3 (CRESET):(w64)u[0:0]

@@ -445,12 +445,7 @@ bool AstBasicDType::sameNode(const AstNode* samep) const {
 bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
     if (sameNode(samep)) return true;
     const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
-    if (!(m.m_keyword == sp->m.m_keyword
-          || (m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT
-              && sp->m.m_keyword == VBasicDTypeKwd::LOGIC)
-          || (m.m_keyword == VBasicDTypeKwd::LOGIC
-              && sp->m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT)))
-        return false;
+    if (!m.m_keyword.isSameish(sp->m.m_keyword)) return false;
     // IEEE 1800-2023 6.22.2: equivalent by bit width, not range direction
     if (m.m_nrange.ranged() != sp->m.m_nrange.ranged()) return false;
     if (m.m_nrange.elements() != sp->m.m_nrange.elements()) return false;
@@ -927,18 +922,51 @@ void AstCompareNN::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, ignoreCase);
     dumpJsonGen(str);
 }
-AstCond::AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
-    : ASTGEN_SUPER_Cond(fl, condp, thenp, elsep) {
-    UASSERT_OBJ(thenp, this, "No thenp expression");
-    UASSERT_OBJ(elsep, this, "No elsep expression");
-    if (thenp->isClassHandleValue() && elsep->isClassHandleValue()) {
+bool AstCond::tryInferDType() {
+    if (!thenp()->dtypep() || !elsep()->dtypep()) return false;
+    if (thenp()->isClassHandleValue() && elsep()->isClassHandleValue()) {
         // Get the most-deriving class type that both arguments can be casted to.
-        AstNodeDType* const commonClassTypep = getCommonClassTypep(thenp, elsep);
+        AstNodeDType* const commonClassTypep = getCommonClassTypep(thenp(), elsep());
         UASSERT_OBJ(commonClassTypep, this, "No common base class exists");
         dtypep(commonClassTypep);
+    } else if (thenp()->isDouble() || elsep()->isDouble()) {
+        dtypeSetDouble();
+    } else if (thenp()->isString() || elsep()->isString()) {
+        // There is a specific case:
+        // strings and how they should be handled when condp() is 'x
+        // ('x ? "Option1" : "Option2") === "Option0"
+        // ('x ? "Option1" : "Option2") ===
+        // 56'b010011110111000001110100011010010110111101101110001100xx
+        dtypeSetString();
     } else {
-        dtypeFrom(thenp);
+        const bool isAnyResultFourstate = thenp()->dtypep()->skipRefp()->isFourstate()
+                                          || elsep()->dtypep()->skipRefp()->isFourstate();
+        if (!isAnyResultFourstate && !condp()->dtypep()) return false;
+        if (thenp()->dtypep()->AstNodeDType::similarDType(elsep()->dtypep())) {
+            if ((isAnyResultFourstate || isTwostateDTypeNull(condp())
+                 // if enum is two-state we have to check condp() - because if it is
+                 // four-state the result must be four-state as well
+                 )) {
+                dtypeFrom(thenp());
+                return true;
+            }
+            // This is similar case to what happens with strings
+            // So, to avoid cases where:
+            // enum int {A, B} type_t;
+            // logic'(foo) ? A : B
+            // throws an ENUMVALUE error for this error is disabled for this expression
+            // This is a result of how Verilator's type system works - to avoid such situations
+            // Verilator would need to either treat everything as four-state or separate idea of
+            // type and values domain - since four-state values are casted to two-state only
+            // with explicit casts or with assignments
+            fileline()->warnOff(V3ErrorCode::ENUMVALUE, true);
+        }
+        dtypeSetBitOrLogicUnsized(std::max(thenp()->width(), elsep()->width()),
+                                  std::max(thenp()->widthMin(), elsep()->widthMin()),
+                                  VSigning::fromBool(thenp()->isSigned() && elsep()->isSigned()),
+                                  isAnyResultFourstate || !isTwostateDTypeNull(condp()));
     }
+    return true;
 }
 void AstConfig::dump(std::ostream& str) const {
     Super::dump(str);
@@ -3069,6 +3097,26 @@ string AstPin::prettyOperatorName() const {
                ? ((modVarp()->direction().isAny() ? modVarp()->direction().prettyName() + " " : "")
                   + "port connection " + modVarp()->prettyNameQ())
                : "port connection";
+}
+bool AstPowSS::tryInferDType() {
+    if (lhsp()->dtypep() && rhsp()->dtypep()) {
+        bool isTwostate = lhsp()->isNeqZero();
+        if (const AstConst* const constp = VN_CAST(rhsp(), Const)) {
+            isTwostate |= !constp->num().isNegative();
+        }
+        return tryDeduceDTypeWidthFromLSignL(0, !isTwostate);
+    }
+    return false;
+}
+bool AstPowUS::tryInferDType() {
+    if (lhsp()->dtypep() && rhsp()->dtypep()) {
+        bool isTwostate = lhsp()->isNeqZero();
+        if (const AstConst* const constp = VN_CAST(rhsp(), Const)) {
+            isTwostate |= !constp->num().isNegative();
+        }
+        return tryDeduceDTypeWidthFromLSignL(0, !isTwostate);
+    }
+    return false;
 }
 void AstPragma::dump(std::ostream& str) const {
     Super::dump(str);
