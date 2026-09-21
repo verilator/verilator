@@ -28,6 +28,7 @@ module t;
 
   initial begin
     enum_t e;
+    inte_t inte;
     e = VAL01;
     if (e != VAL01) $stop;
 
@@ -35,6 +36,9 @@ module t;
     if (PARAMVAL1CONST != VAL1) $stop;
 
     if (I_PARAM != I_ONE) $stop;
+
+    inte = e == VAL01 ? I_ONE : I_TWO;
+    if (inte === I_TWO) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

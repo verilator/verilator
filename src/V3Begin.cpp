@@ -579,11 +579,11 @@ static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subf
     AstNodeExpr* const firstp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
                              new AstVarRef{fl, next_varp, VAccess::READWRITE}};
-    firstp->dtypeSetInteger();
+    firstp->dtypeSetInt();
     AstNodeExpr* const nextp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_NEXT,
                              new AstVarRef{fl, next_varp, VAccess::READWRITE}};
-    nextp->dtypeSetInteger();
+    nextp->dtypeSetInt();
 
     // _Vmore = array.first(__Vnext)
     loopp->addNext(new AstAssign{fl, new AstVarRef{fl, more_varp, VAccess::WRITE},

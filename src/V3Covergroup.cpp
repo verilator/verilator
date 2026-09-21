@@ -1978,9 +1978,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                       ->makeStmt());
         // The candidates count in the coverpoint's width, and the filter reads each as 'item',
         // of the coverpoint's type, so that a filter changing 'item' cannot change the loop
-        AstNodeDType* const valueDTypep
-            = exprp->findLogicDType(exprp->width(), exprp->width(),
-                                    exprp->isSigned() ? VSigning::SIGNED : VSigning::UNSIGNED);
+        AstNodeDType* const valueDTypep = exprp->dtypep();
         AstVar* const valuep = constructorTemp(fl, prefix + "_value", valueDTypep);
         AstVar* const lastp = constructorTemp(fl, prefix + "_last", valueDTypep);
         AstVar* const firstp = constructorTemp(fl, prefix + "_first", valueDTypep);
@@ -2107,7 +2105,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const CrossValueRange domain
             = crossValueDomain(rangep, exprp->width(), exprp->isSigned(), width);
         AstVar* const lop = constructorTemp(fl, prefix + "_lo", exprp->dtypep());
-        lop->dtypeSetLogicSized(width, VSigning::SIGNED);
+        lop->dtypeSetBitSized(width, VSigning::SIGNED);
         AstVar* const hip = constructorTemp(fl, prefix + "_hi", lop->dtypep());
         const auto bound = [&](AstNodeExpr* boundp, const V3Number& limit) -> AstNodeExpr* {
             if (unbounded(boundp)) {
@@ -2156,7 +2154,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // A run spans at most 2^width values, so offsets in it are unsigned width-bit numbers
         AstNodeExpr* indexp
             = new AstSub{fl, exprp->cloneTree(false), newValueConst(fl, run.m_lo, exprp)};
-        indexp->dtypeSetLogicSized(width, VSigning::UNSIGNED);
+        indexp->dtypeSetBitSized(width, VSigning::UNSIGNED);
         V3Number stride{fl, width, 0};
         stride.opAssign(run.m_stride);
         if (stride.countOnes() != 1) {

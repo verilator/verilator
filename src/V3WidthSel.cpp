@@ -169,13 +169,12 @@ class WidthSelVisitor final : public VNVisitor {
     }
     AstNodeExpr* newMulConst(FileLine* fl, uint32_t elwidth, AstNodeExpr* indexp) {
         AstNodeExpr* extendp;
+        const int widthMin = std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin());
         if (indexp->width() > 32) {
-            extendp = new AstSel{fl, indexp, 0, 32};
+            extendp = new AstSel{fl, indexp, 0, 32, widthMin};
         } else {
-            extendp = new AstExtend{fl, indexp};
+            extendp = new AstExtend{fl, indexp, 32, widthMin};
         }
-        extendp->dtypeSetLogicUnsized(
-            32, std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin()), VSigning::UNSIGNED);
         AstNodeExpr* const mulp
             = new AstMul{fl, new AstConst{fl, AstConst::Unsized32{}, elwidth},
                          // Extend needed as index might be e.g. 3 bits but constant e.g. 5 bits
