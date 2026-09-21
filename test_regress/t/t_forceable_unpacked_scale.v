@@ -10,6 +10,8 @@ module t (
   parameter int ArraySize = 512;
 
   logic [7:0] mem[0:ArraySize-1]  /*verilator forceable*/;
+  logic [7:0] mat[0:ArraySize/8-1][0:7]  /*verilator forceable*/;
 
   always @(posedge go) force mem = mem;
+  always @(posedge go) force mat = mat;
 endmodule
