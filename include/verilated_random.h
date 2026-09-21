@@ -492,7 +492,7 @@ public:
     typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        modifyMembers(var, var.memberIndices(), name);
+        modifyMembers(var, var.memberIndices(), name, randmodeIdx);
     }
 
     // Register queue of non-struct types
@@ -517,7 +517,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     write_var(VlQueue<T, N_MaxSize>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
+        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
     // Register unpacked array of non-struct types
     template <typename T, std::size_t N_Depth>
@@ -543,7 +543,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
+        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
 
     // Register associative array of non-struct types
@@ -571,7 +571,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T_Value>::value, void>::type
     write_var(VlAssocArray<T_Key, T_Value>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
+        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
 
     // ---  Record Arrays: flat and struct  ---
@@ -702,7 +702,8 @@ public:
     template <typename T>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     record_struct_arr(T& var, const std::string& name, int /*dimension*/,
-                      std::vector<IData> indices, std::vector<size_t> idxWidths) {
+                      std::vector<IData> indices, std::vector<size_t> idxWidths,
+                      std::uint32_t randmodeIdx) {
         std::ostringstream oss;
         for (size_t i = 0; i < indices.size(); ++i) {
             oss << std::hex << std::setw(int(idxWidths[i] / 4)) << std::setfill('0')
@@ -710,7 +711,8 @@ public:
             if (i < indices.size() - 1) oss << ".";
         }
         write_var(var, 1ULL,
-                  oss.str().length() > 0 ? (name + "." + oss.str()).c_str() : name.c_str(), 1ULL);
+                  oss.str().length() > 0 ? (name + "." + oss.str()).c_str() : name.c_str(), 1ULL,
+                  randmodeIdx);
     }
 
     template <typename T>
@@ -722,13 +724,15 @@ public:
     // Recursively process VlUnpacked of structs
     template <typename T, std::size_t N_Depth>
     void record_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string& name, int dimension,
-                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
+                           std::vector<IData> indices, std::vector<size_t> idxWidths,
+                           std::uint32_t randmodeIdx) {
         if (dimension > 0 && N_Depth != 0) {
             constexpr size_t idx_width = 1 << VL_CLOG2_CE_Q(VL_CLOG2_CE_Q(N_Depth) + 1);
             idxWidths.push_back(idx_width);
             for (size_t i = 0; i < N_Depth; ++i) {
                 indices.push_back(i);
-                record_struct_arr(var.operator[](i), name, dimension - 1, indices, idxWidths);
+                record_struct_arr(var.operator[](i), name, dimension - 1, indices, idxWidths,
+                                  randmodeIdx);
                 indices.pop_back();
             }
         }
@@ -748,12 +752,14 @@ public:
     // Recursively process VlQueue of structs
     template <typename T, size_t N_MaxSize>
     void record_struct_arr(VlQueue<T, N_MaxSize>& var, const std::string& name, int dimension,
-                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
+                           std::vector<IData> indices, std::vector<size_t> idxWidths,
+                           std::uint32_t randmodeIdx) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
             for (size_t i = 0; i < var.size(); ++i) {
                 indices.push_back(i);
-                record_struct_arr(var.atWrite(i), name, dimension - 1, indices, idxWidths);
+                record_struct_arr(var.atWrite(i), name, dimension - 1, indices, idxWidths,
+                                  randmodeIdx);
                 indices.pop_back();
             }
         }
@@ -773,7 +779,7 @@ public:
     template <typename T_Key, typename T_Value>
     void record_struct_arr(VlAssocArray<T_Key, T_Value>& var, const std::string& name,
                            int dimension, const std::vector<IData>& indices,
-                           const std::vector<size_t>& idxWidths) {
+                           const std::vector<size_t>& idxWidths, std::uint32_t randmodeIdx) {
         if ((dimension > 0) && (!var.empty())) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
@@ -791,7 +797,7 @@ public:
                 std::string result = oss.str();
                 result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
                 record_struct_arr(var.atWrite(key), name + "." + result, dimension - 1, indices,
-                                  idxWidths);
+                                  idxWidths, randmodeIdx);
             }
         }
     }
@@ -821,11 +827,13 @@ public:
 
     // Helper: Register all members of a user-defined struct
     template <typename T, std::size_t... I>
-    void modifyMembers(T& obj, std::index_sequence<I...>, const std::string& baseName) {
+    void modifyMembers(T& obj, std::index_sequence<I...>, const std::string& baseName,
+                       std::uint32_t randmodeIdx) {
         // Use the indices to access each member via std::get
         (void)std::initializer_list<int>{
             (write_var(std::get<I>(obj.getMembers(obj)), obj.memberWidth()[I],
-                       (baseName + "." + obj.memberNames()[I]).c_str(), obj.memberDimension()[I]),
+                       (baseName + "." + obj.memberNames()[I]).c_str(), obj.memberDimension()[I],
+                       randmodeIdx),
              0)...};
     }
 
