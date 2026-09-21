@@ -988,6 +988,33 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_exe && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
     }
+    // Latch before --vpi-lazy may imply --vpi below, so later diagnostics can name the flag the
+    // user actually passed
+    const bool vpiUserSet = m_vpi.isSetTrue();
+    if (m_vpiLazy) {
+        // The lazy tables are reachable only through VPI, so imply --vpi; an explicit --no-vpi
+        // wins instead of being silently reversed, and then leaves nothing for --vpi-lazy to do
+        if (m_vpi.isSetFalse()) {
+            cmdfl->v3warn(NOEFFECT,
+                          "--vpi-lazy is ignored when --no-vpi is set; the lazy symbol tables are "
+                          "reachable only through VPI\n"
+                              + cmdfl->warnMore() + "... Suggest remove --no-vpi.");
+            m_vpiLazy = false;
+        } else if (m_vpi.isDefault()) {
+            m_vpi = VOptionBool::OPT_TRUE;
+        }
+    }
+    if (m_vpiLazy && m_publicFlatRW) {
+        // Warn rather than error so a caller that injects --public-flat-rw unconditionally
+        // (e.g. cocotb) can get past this with -Wno-NOEFFECT
+        cmdfl->v3warn(NOEFFECT,
+                      "--public-flat-rw is ignored when --vpi-lazy is set; --vpi-lazy makes the "
+                      "same signals VPI accessible, but does not pin them as model members\n"
+                          + cmdfl->warnMore()
+                          + "... Suggest mark individual signals with a public_flat_rw attribute"
+                            " to keep their storage.");
+        m_publicFlatRW = false;
+    }
 
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_makeJson) m_gmake = true;
@@ -1026,7 +1053,9 @@ void V3Options::notify() VL_MT_DISABLED {
         if (vpi()) {
             cmdfl->v3warn(INSECURE,
                           "Using --protect-ids with --vpi may expose private design details\n"
-                              + cmdfl->warnMore() + "... Suggest remove --vpi.");
+                              + cmdfl->warnMore()
+                              + (vpiUserSet ? "... Suggest remove --vpi."
+                                            : "... Suggest remove --vpi-lazy."));
         }
     }
 
@@ -1897,6 +1926,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         v3Global.vlExit(0);
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
+    DECL_OPTION("-vpi-lazy", OnOff, &m_vpiLazy);
 
     DECL_OPTION("-Wall", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::I_LINT, false); });
     DECL_OPTION("-Werror-", CbPartialMatch, [this, fl](const char* optp) {

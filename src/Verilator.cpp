@@ -115,6 +115,7 @@
 #include "V3Unknown.h"
 #include "V3Unroll.h"
 #include "V3VariableOrder.h"
+#include "V3VpiLazy.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
 #include "V3WidthCommit.h"
@@ -435,6 +436,9 @@ static void process() {
             // directly from force discovery to assign/deassign lowering without rediscovery.
             V3Force::forceAndAssignAll(v3Global.rootp());
 
+            // Capture reconstructable lazy VPI signals before the optimizer deletes them
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::prepare(v3Global.rootp());
+
             // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());
 
@@ -455,6 +459,8 @@ static void process() {
             // Remove unused vars
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAllScoped(v3Global.rootp());
+
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::verifyRetention(v3Global.rootp());
 
             // Reorder assignments in pipelined blocks
             if (v3Global.opt.fReorder()) V3Reorder::reorderAll(v3Global.rootp());
@@ -484,6 +490,9 @@ static void process() {
             // Schedule the logic
             V3Sched::schedule(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
+
+            // Split the cold reconstruction functions, their size now settled
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::finalize(v3Global.rootp());
 
             // Post scheduling transformations - TODO: this should at least be renamed
             V3Clock::clockAll(v3Global.rootp());
@@ -643,6 +652,9 @@ static void process() {
             && !v3Global.opt.dpiHdrOnly()) {
             // emitcInlines is first, as it may set needHInlines which other emitters read
             V3EmitC::emitcInlines();
+            // Must follow V3Descope, which makes the sources module members, and the last
+            // V3Dead, which may delete them; emitcSyms reads the result
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::resolveCrossScopeSrcs(v3Global.rootp());
             V3EmitC::emitcSyms();
             V3EmitC::emitcConstPool();
             V3EmitC::emitcModel();

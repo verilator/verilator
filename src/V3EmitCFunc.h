@@ -432,6 +432,7 @@ public:
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
+                if (nodep->voidSelfArg()) puts(EmitCUtil::voidSelfAssign(m_modp));
                 if (!VN_IS(m_modp, Class)) {
                     puts(EmitCUtil::symClassAssign());  // Uses vlSelf
                 } else {
