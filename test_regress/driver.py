@@ -618,7 +618,7 @@ class Runner:
             print("==SUMMARY: " + self.sprint_summary(), file=sys.stderr)
 
             if (self._last_proc_finish_time != 0
-                    and ((time.time() - self._last_proc_finish_time) > 15)):
+                    and ((time.time() - self._last_proc_finish_time) >= 25)):
                 self._last_proc_finish_time = time.time()
                 other = ""
                 for proc in forker.running():
