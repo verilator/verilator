@@ -29,6 +29,7 @@ Verilator 5.053 devel
 * Support logic and set operations on binsof (#8306). [Marco Bartoli]
 * Support `illegal_bins` and `ignore_bins` for cross bins (#8372). [Marco Bartoli]
 * Support `iff` in covergroup bins (#8406) (#8407). [Marco Bartoli]
+* Support enclosing cross identifiers in bin selections (#8416). [Marco Bartoli]
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
 * Optimize recursion depth in DFG circular driver tracing (#8272). [Drew Risinger]
 * Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
@@ -47,6 +48,7 @@ Verilator 5.053 devel
 * Optimize wide four-state constant operations in V3Number (#8333). [CatalpaEel]
 * Optimize split pass (#8385). [Geza Lore, Testorrent USA, Inc.]
 * Optimize covergroup bin metadata lookup (#8404). [Marco Bartoli]
+* Optimize away dead ports (#8426). [Geza Lore, Testorrent USA, Inc.]
 * Fix array slice crash when used as a bare value (#5132) (#8262). [Marco Frank]
 * Fix pattern type matching against nested aggregates (#7304).
 * Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
@@ -59,6 +61,7 @@ Verilator 5.053 devel
 * Fix assignment pattern default fill of an array of unpacked structs (#8289). [Nick Brereton]
 * Fix escape strings in pattern formatting (#8297). [Marco Bartoli]
 * Fix DECLFILENAME warning on nested declarations (#8302). [Martijn Wobbes]
+* Fix cache of boundary vertices in DFG cycle-breaking (#8308). [Shriyans Sahoo]
 * Fix property and sequence line coverage (#8314). [Andrii, Antmicro Ltd.]
 * Fix wide typed pattern formatting primitives (#8325). [Marco Bartoli]
 * Fix parameterized class nested in a parameterized interface (#8328) (#8329). [Kristof Marien]
@@ -82,6 +85,10 @@ Verilator 5.053 devel
 * Fix compile-time blowup forcing large unpacked arrays (#8395). [Jonathan Drolet]
 * Fix covergroup constructor initialization (#8410). [Marco Bartoli]
 * Fix issues with configuring flex during build on MacOS (#8412). [Kaleb Barrett]
+* Fix interface modport resolution against non-scope symbol tables (#8420). [Geza Lore, Testorrent USA, Inc.]
+* Fix FSM coverage hierarchy being emitted as an absolute path (#8421). [Geza Lore, Testorrent USA, Inc.]
+* Fix MSYS header include search to be after toolchain headers (#8422). [Kaleb Barrett]
+* Fix losing coverage declarations if first in a module body (#8425). [Geza Lore, Testorrent USA, Inc.]
 
 
 Verilator 5.052 2026-09-05
