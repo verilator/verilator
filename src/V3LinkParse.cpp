@@ -1332,7 +1332,7 @@ class LinkParseVisitor final : public VNVisitor {
             if (origVarp->direction() == VDirection::OUTPUT
                 || origVarp->direction() == VDirection::INOUT) {
                 origVarp->v3error("Covergroup formal arguments cannot be output or inout"
-                                  " (IEEE 1800-2012 19.3)");
+                                  " (IEEE 1800-2023 19.3)");
                 origVarp->direction(VDirection::INPUT);
             }
             if ((origVarp->isRef() || origVarp->isConstRef()) && origVarp->valuep()) {
@@ -1353,7 +1353,7 @@ class LinkParseVisitor final : public VNVisitor {
             AstVar* const origVarp = VN_AS(argp, Var);
             if (!origVarp->isInput()) {
                 origVarp->v3error("Covergroup sample formal argument must have input direction "
-                                  "(IEEE 1800-2012 19.8.1).");
+                                  "(IEEE 1800-2023 19.8.1).");
                 origVarp->direction(VDirection::INPUT);
             }
             AstVar* const memberp = origVarp->cloneTree(false);

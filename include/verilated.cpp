@@ -4478,7 +4478,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     const std::string msg = ("Testbench C called '"s + VerilatedImp::exportName(funcnum)
                              + "' but scope wasn't set, perhaps due to dpi import call without "
-                             + "'context', or missing svSetScope. See IEEE 1800-2023 35.5.3.");
+                             + "'context', or missing svSetScope (IEEE 1800-2023 35.5.3)");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return nullptr;
 }

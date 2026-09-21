@@ -129,43 +129,43 @@
                                             : ... note: In instance 't'
   118 |     cp_a: coverpoint cp_expr {bins x[] = {size_var};}
       |                                    ^
-%Error: t/t_covergroup_autobins_bad.v:133:28: binsof coverpoint 'missing' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:133:28: binsof coverpoint 'missing' is not an item of cross 'xc' (IEEE 1800-2023 19.6.1).
                                             : ... note: In instance 't'
   133 |       bins missing_point = binsof(missing);
       |                            ^~~~~~
-%Error: t/t_covergroup_autobins_bad.v:134:30: binsof coverpoint 'cp_other' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:134:30: binsof coverpoint 'cp_other' is not an item of cross 'xc' (IEEE 1800-2023 19.6.1).
                                             : ... note: In instance 't'
   134 |       bins uncrossed_point = binsof(cp_other);
       |                              ^~~~~~
-%Error: t/t_covergroup_autobins_bad.v:135:26: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:135:26: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2023 19.6.1).
                                             : ... note: In instance 't'
   135 |       bins missing_bin = binsof(cp_a.missing);
       |                          ^~~~~~
-%Error: t/t_covergroup_autobins_bad.v:137:7: Duplicate cross bin 'duplicate' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:137:7: Duplicate cross bin 'duplicate' (IEEE 1800-2023 19.6.1).
                                            : ... note: In instance 't'
   137 |       bins duplicate = binsof(cp_b);
       |       ^~~~
-%Error: t/t_covergroup_autobins_bad.v:138:7: Duplicate cross bin 'duplicate' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:138:7: Duplicate cross bin 'duplicate' (IEEE 1800-2023 19.6.1).
                                            : ... note: In instance 't'
   138 |       ignore_bins duplicate = binsof(cp_a);
       |       ^~~~~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:139:7: Duplicate cross bin 'duplicate' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:139:7: Duplicate cross bin 'duplicate' (IEEE 1800-2023 19.6.1).
                                            : ... note: In instance 't'
   139 |       illegal_bins duplicate = binsof(cp_b);
       |       ^~~~~~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:141:7: Duplicate cross bin 'ignored_duplicate' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:141:7: Duplicate cross bin 'ignored_duplicate' (IEEE 1800-2023 19.6.1).
                                            : ... note: In instance 't'
   141 |       illegal_bins ignored_duplicate = binsof(cp_b);
       |       ^~~~~~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:143:7: Duplicate cross bin 'illegal_duplicate' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:143:7: Duplicate cross bin 'illegal_duplicate' (IEEE 1800-2023 19.6.1).
                                            : ... note: In instance 't'
   143 |       bins illegal_duplicate = binsof(cp_b);
       |       ^~~~
-%Error: t/t_covergroup_autobins_bad.v:144:36: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:144:36: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2023 19.6.1).
                                             : ... note: In instance 't'
   144 |       ignore_bins missing_ignore = binsof(cp_a.missing);
       |                                    ^~~~~~
-%Error: t/t_covergroup_autobins_bad.v:145:40: binsof coverpoint 'cp_other' is not an item of cross 'xc' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_autobins_bad.v:145:40: binsof coverpoint 'cp_other' is not an item of cross 'xc' (IEEE 1800-2023 19.6.1).
                                             : ... note: In instance 't'
   145 |       illegal_bins uncrossed_illegal = binsof(cp_other);
       |                                        ^~~~~~

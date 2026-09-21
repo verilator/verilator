@@ -157,13 +157,13 @@ class CovergroupExprValidVisitor final : public VNVisitor {
             nodep->v3error("Covergroup sample formal argument "
                            << nodep->varp()->prettyNameQ()
                            << " may only be used in a coverpoint or conditional guard "
-                              "expression (IEEE 1800-2012 19.8.1).");
+                              "expression (IEEE 1800-2023 19.8.1).");
         }
         if (m_inCoverageExpression && m_constructorRefMembers.count(nodep->varp())) {
             nodep->v3error("Ref covergroup constructor formal argument "
                            << nodep->varp()->prettyNameQ()
                            << " may not be used in a covergroup expression "
-                              "(IEEE 1800-2012 19.5).");
+                              "(IEEE 1800-2023 19.5).");
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
@@ -180,7 +180,7 @@ class CovergroupExprValidVisitor final : public VNVisitor {
                 nodep->v3error("Function " << nodep->taskp()->prettyNameQ()
                                            << " called in a covergroup expression has an "
                                               "output, inout, or non-const ref argument "
-                                              "(IEEE 1800-2012 19.5).");
+                                              "(IEEE 1800-2023 19.5).");
             }
         }
         iterateChildren(nodep);
@@ -2018,7 +2018,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (dimIt == ctx.dimensions.end()) {
             selectp->v3error("binsof coverpoint "
                              << selectp->pointp()->prettyNameQ() << " is not an item of cross "
-                             << ctx.crossp->prettyNameQ() << " (IEEE 1800-2012 19.6.1).");
+                             << ctx.crossp->prettyNameQ() << " (IEEE 1800-2023 19.6.1).");
             ctx.valid = false;
             return {};
         }
@@ -2031,7 +2031,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (binIt == bins.spans.end()) {
                 selectp->v3error("Cannot find bin " << selectp->prettyNameQ() << " in coverpoint "
                                                     << selectp->pointp()->prettyNameQ()
-                                                    << " (IEEE 1800-2012 19.6.1).");
+                                                    << " (IEEE 1800-2023 19.6.1).");
                 ctx.valid = false;
                 return {};
             }
@@ -2087,7 +2087,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstCoverCrossBin* const binp = VN_AS(itemp, CoverCrossBin);
             if (!names.emplace(binp->name()).second) {
                 binp->v3error("Duplicate cross bin " << binp->prettyNameQ()
-                                                     << " (IEEE 1800-2012 19.6.1).");
+                                                     << " (IEEE 1800-2023 19.6.1).");
                 continue;
             }
             ctx.valid = true;
