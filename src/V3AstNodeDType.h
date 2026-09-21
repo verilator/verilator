@@ -425,6 +425,10 @@ public:
         : ASTGEN_SUPER_BasicDType(fl) {
         init(VBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr);
     }
+    AstBasicDType(FileLine* fl, VFlagLogic2StatePacked, int wantwidth)
+        : ASTGEN_SUPER_BasicDType(fl) {
+        init(VBasicDTypeKwd::LOGIC2STATE, VSigning::NOSIGN, wantwidth, -1, nullptr);
+    }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER_BasicDType(fl) {
         init(VBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr);

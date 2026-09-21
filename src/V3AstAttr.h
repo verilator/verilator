@@ -36,6 +36,7 @@
 class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
 class VFlagLogicPacked {};
+class VFlagLogic2StatePacked {};
 
 // ######################################################################
 
@@ -489,11 +490,17 @@ public:
         EVENT,
         INT,
         INTEGER,
+        INTEGER2STATE,  // The same as above but with two-state domain (to preserve info about
+                        // original DType)
         LOGIC,
+        LOGIC2STATE,  // The same as above but with two-state domain (to preserve info about
+                      // original DType)
         LONGINT,
         DOUBLE,
         SHORTINT,
         TIME,
+        TIME2STATE,  // The same as above but with two-state domain (to preserve info about
+                     // original DType)
         // Closer to a class type, but limited usage
         STRING,
         // Property / Sequence argument type
@@ -528,10 +535,13 @@ public:
                                                       "event",
                                                       "int",
                                                       "integer",
+                                                      "integer",
+                                                      "logic",
                                                       "logic",
                                                       "longint",
                                                       "real",
                                                       "shortint",
+                                                      "time",
                                                       "time",
                                                       "string",
                                                       "untyped",
@@ -561,10 +571,13 @@ public:
                                                       "char",
                                                       "int",
                                                       "%E-integer",
+                                                      "%E-integer",
+                                                      "svLogic",
                                                       "svLogic",
                                                       "long long",
                                                       "double",
                                                       "short",
+                                                      "%E-time",
                                                       "%E-time",
                                                       "const char*",
                                                       "%E-untyped",
@@ -607,11 +620,14 @@ public:
         case EVENT: return 1;
         case INT: return 32;
         case INTEGER: return 32;
+        case INTEGER2STATE: return 32;
         case LOGIC: return 1;  // scalar, can't bit extract unless ranged
+        case LOGIC2STATE: return 1;  // scalar, can't bit extract unless ranged
         case LONGINT: return 64;
         case DOUBLE: return 64;  // opaque
         case SHORTINT: return 16;
         case TIME: return 64;
+        case TIME2STATE: return 64;
         case STRING: return 64;  // opaque  // Just the pointer, for today
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque
@@ -631,11 +647,12 @@ public:
     }
     bool isSigned() const {
         return m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
-               || m_e == DOUBLE;
+               || m_e == INTEGER2STATE || m_e == DOUBLE;
     }
     bool isUnsigned() const {
         return m_e == CHANDLE || m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
-               || m_e == UINT32 || m_e == UINT64 || m_e == BIT || m_e == LOGIC || m_e == TIME;
+               || m_e == UINT32 || m_e == UINT64 || m_e == BIT || m_e == LOGIC
+               || m_e == LOGIC2STATE || m_e == TIME || m_e == TIME2STATE;
     }
     bool isFourstate() const {
         return m_e == INTEGER || m_e == LOGIC || m_e == LOGIC_IMPLICIT || m_e == TIME;
@@ -645,16 +662,17 @@ public:
                 || m_e == LONGINT || m_e == SHORTINT || m_e == STRING || m_e == DOUBLE);
     }
     bool isIntNumeric() const {  // Enum increment supported
-        return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
-                || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64
-                || m_e == TIME);
+        return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == INTEGER2STATE
+                || m_e == LOGIC || m_e == LOGIC2STATE || m_e == LONGINT || m_e == SHORTINT
+                || m_e == UINT32 || m_e == UINT64 || m_e == TIME || m_e == TIME2STATE);
     }
     bool isBit() const { return m_e == BIT; }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
-        return (m_e == LOGIC || m_e == BIT);
+        return (m_e == LOGIC || m_e == LOGIC2STATE || m_e == BIT);
     }
     bool isDpiUnsignable() const {  // Can add "unsigned" to DPI
-        return (m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER);
+        return (m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
+                || m_e == INTEGER2STATE);
     }
     bool isDpiCLayout() const {  // Uses standard C layout, for DPI runtime access
         return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == INT || m_e == LONGINT
@@ -672,6 +690,18 @@ public:
     bool isEvent() const { return m_e == EVENT; }
     bool isString() const VL_MT_SAFE { return m_e == STRING; }
     bool isMTaskState() const VL_MT_SAFE { return m_e == MTASKSTATE; }
+    bool isSameish(const VBasicDTypeKwd& other) const VL_MT_SAFE {
+        switch (other.m_e) {
+        case LOGIC:
+        case LOGIC2STATE:
+        case LOGIC_IMPLICIT: return m_e == LOGIC || m_e == LOGIC2STATE || m_e == LOGIC_IMPLICIT;
+        case INTEGER:
+        case INTEGER2STATE: return m_e == INTEGER || m_e == INTEGER2STATE;
+        case TIME:
+        case TIME2STATE: return m_e == TIME || m_e == TIME2STATE;
+        default: return m_e == other.m_e;
+        }
+    }
     // Does this represent a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_SAFE {
         switch (m_e) {
@@ -680,7 +710,9 @@ public:
         case CHANDLE:
         case INT:
         case INTEGER:
+        case INTEGER2STATE:
         case LOGIC:
+        case LOGIC2STATE:
         case LONGINT:
         case DOUBLE:
         case SHORTINT:
@@ -703,11 +735,14 @@ public:
             /* EVENT:                     */ "EVENT",
             /* INT:                       */ "INT",
             /* INTEGER:                   */ "INTEGER",
+            /* INTEGER2STATE              */ "INTEGER",
             /* LOGIC:                     */ "LOGIC",
+            /* LOGIC2STATE:               */ "LOGIC",
             /* LONGINT:                   */ "LONGINT",
             /* DOUBLE:                    */ "DOUBLE",
             /* SHORTINT:                  */ "SHORTINT",
             /* TIME:                      */ "TIME",
+            /* TIME2STATE                 */ "TIME",
             /* STRING:                    */ "",
             /* UNTYPED:                   */ "",  // Should not be traced
             /* SCOPEPTR:                  */ "",  // Should not be traced
