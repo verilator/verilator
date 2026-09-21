@@ -838,16 +838,17 @@ class ConstraintExprVisitor final : public VNVisitor {
                 VCMethod::RANDOMIZER_WRITE_VAR};
             methodp->dtypeSetVoid();
 
-            methodp->addPinsp(m_topNestedArrayMemberSelp); // Variable
+            methodp->addPinsp(m_topNestedArrayMemberSelp);  // Variable
 
-            const AstNodeDType* const dtypep = varp->dtypep(); // Width
+            const AstNodeDType* const dtypep = varp->dtypep();  // Width
             const size_t width = m_topNestedArrayMemberSelp->varp()->dtypep()->width();
             methodp->addPinsp(new AstConst{dtypep->fileline(), AstConst::Unsized64{}, width});
 
-            methodp->addPinsp(m_nestedNameFormatTopp); // Solver name
+            methodp->addPinsp(m_nestedNameFormatTopp);  // Solver name
             m_nestedNameFormatp = nullptr;
 
-            methodp->addPinsp(new AstConst{dtypep->fileline(), AstConst::Unsized64{}, 0}); // Dimension
+            methodp->addPinsp(
+                new AstConst{dtypep->fileline(), AstConst::Unsized64{}, 0});  // Dimension
 
             m_topNestedArrayMemberSelp = nullptr;
             initTaskp->addStmtsp(methodp->makeStmt());
