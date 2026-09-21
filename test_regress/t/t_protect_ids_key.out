@@ -50,7 +50,6 @@
   <map from="PSMRXn" to="_trigger_anySet__act"/>
   <map from="PSBKaZ" to="_trigger_clear__act"/>
   <map from="PSB9K0" to="_trigger_orInto__act_vec_vec"/>
-  <map from="PScyq8" to="clk"/>
   <map from="PSEUqF" to="firstIteration"/>
   <map from="PSawda" to="in"/>
   <map from="PSMlYB" to="n"/>
