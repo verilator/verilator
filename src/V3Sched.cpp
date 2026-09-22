@@ -721,7 +721,6 @@ void createActRegion(AstNetlist* netlistp, const TriggerKit& trigKit, const Eval
             //
             return workp;
         }());
-
 }
 
 // Create the 'nba' region evaluation function
@@ -761,7 +760,6 @@ void createNbaRegion(AstNetlist* netlistp, const TriggerKit& trigKit, const Eval
             ifp->addThensp(firep->makeStmt());
             return AstNode::addNext(clearp, ifp);
         });
-
 }
 
 void createEval(AstNetlist* netlistp,  //
