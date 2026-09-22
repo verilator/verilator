@@ -780,6 +780,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
     bool m_structSel = false;  // Marks when inside structSel
                                // (used to format "%s.%s" for struct arrays and nested structs)
+    bool m_deferRandModeHoist = false;  // Wait for the complete struct member path
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
@@ -2167,6 +2168,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstStructSel* nodep) override {
         if (editFormat(nodep)) return;
+        const bool outermost = !m_deferRandModeHoist;
+        AstNodeExpr* const origp = outermost ? nodep->cloneTree(false) : nullptr;
         VL_RESTORER(m_structSel);
         m_structSel = true;
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
@@ -2193,20 +2196,28 @@ class ConstraintExprVisitor final : public VNVisitor {
                 structp->markConstrainedRand(true);
             }
         }
-        iterateChildren(nodep);
+        {
+            VL_RESTORER(m_deferRandModeHoist);
+            m_deferRandModeHoist = true;
+            iterateChildren(nodep);
+        }
         FileLine* const fl = nodep->fileline();
         AstSFormatF* newp = nullptr;
         if (VN_AS(nodep->fromp(), SFormatF)->name() == "%s.%s") {
             newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
-                newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
+            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0) {
+                newp->exprsp()->nextp()->name("%x");  // for #x%x to %x
+            }
         } else {
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        if (origp && !hoistRandModeOverSelectAndMember(newp, origp)) {
+            VL_DO_DANGLING(origp->deleteTree(), origp);
+        }
     }
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
@@ -2351,6 +2362,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     // Lift a rand_mode Cond above the (select ...) chain of a frozen array element.
     bool hoistRandModeOverSelectAndMember(AstSFormatF* newp, AstNodeExpr* origp) {
+        if (m_deferRandModeHoist) return false;
         // Only for selects yielding a non-array element (full chains)
         if (VN_IS(origp->dtypep()->skipRefp(), UnpackArrayDType)) return false;
         // Walk nested "(select %s %s)" frames down to a mode-gating AstCond
