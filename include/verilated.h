@@ -583,6 +583,8 @@ protected:
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
     unsigned m_threads = VlOs::getProcessDefaultParallelism();
+    // True if m_threads was set by the user, rather than being the default
+    bool m_threadsSet = false;
     // Use numa automatic CPU-to-thread assignment
     bool m_useNumaAssign = false;
     // Number of threads in added models
@@ -829,7 +831,9 @@ public:
 
     // Internal: Model and thread setup
     void addModel(const VerilatedModel* modelp);
-    VerilatedVirtualBase* threadPoolp();
+    // Get the thread pool, creating it if needed. 'modelThreads' is the parallelism of the model
+    // being constructed, so that the context can grow to the number of threads it requires.
+    VerilatedVirtualBase* threadPoolp(unsigned modelThreads = 1);
     void prepareClone();
     VerilatedVirtualBase* threadPoolpOnClone();
     VerilatedVirtualBase*
