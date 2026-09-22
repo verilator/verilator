@@ -634,7 +634,7 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     class RegisterAlwaysAnalyzer final {
-        AstScope* const m_scopep;
+        AstScope* const m_scopep;  // Scope containing the always block(s) being analyzed
 
     public:
         explicit RegisterAlwaysAnalyzer(AstScope* scopep)

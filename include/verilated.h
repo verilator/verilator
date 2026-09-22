@@ -261,7 +261,7 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 private:
-    VerilatedMutex& m_mutexr;
+    VerilatedMutex& m_mutexr;  // Mutex protecting the guard
 
 public:
     /// Construct and hold given mutex lock until destruction or unlock()
@@ -380,8 +380,7 @@ class VerilatedEvalLoop final {
     const uint32_t m_convergeLimit;  // --converge-limit from compiler command line
     // Where to record --prof-exec sections, or null if not profiling
     VlExecutionProfilerBase* m_profilerp = nullptr;
-    // Whether this is the top level model during profiling
-    bool m_profTopLevel = false;
+    bool m_profTopLevel = false;  // Top level model during profiling
 
 public:
     // CONSTRUCTORS
@@ -607,9 +606,8 @@ protected:
     // List of free descriptors in the MCT region [4, 32)
     std::vector<IData> m_fdFreeMct VL_GUARDED_BY(m_fdMutex);
 
-    // Magic to check for bad construction
     static constexpr uint64_t MAGIC = 0xC35F9A6E5298EE6EULL;  // SHA256 "VerilatedContext"
-    uint64_t m_magic = MAGIC;
+    uint64_t m_magic = MAGIC;  // Magic to check for bad construction
 
 private:
     // CONSTRUCTORS

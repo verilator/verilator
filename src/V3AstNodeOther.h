@@ -2107,10 +2107,10 @@ class AstTypedef final : public AstNode {
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
 
-    string m_name;
+    string m_name;  // Name of the typedef
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     uint32_t m_declTokenNum;  // Declaration token number
-    bool m_attrPublic = false;
+    bool m_attrPublic = false;  // Marked with public; keep even if unused
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_isUnderClass : 1;  // Underneath class
@@ -2747,10 +2747,10 @@ class AstCoverOtherDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
     // Used for other than toggle types of coverage
     string m_linescov;
-    string m_fsmVar;
-    string m_fsmFrom;
-    string m_fsmTo;
-    string m_fsmTag;
+    string m_fsmVar;  // FSM state variable name
+    string m_fsmFrom;  // FSM source state label
+    string m_fsmTo;  // FSM destination state label
+    string m_fsmTag;  // FSM arc kind tag (e.g. reset, reset_include, default)
     int m_offset;  // Offset column numbers to uniq-ify IFs
 public:
     AstCoverOtherDecl(FileLine* fl, const string& page, const string& comment,

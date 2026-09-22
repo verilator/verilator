@@ -257,9 +257,9 @@ class AstToDfgConverter final : public VNVisitor {
         // Represents a DFG assignment contributed by the AST assignment with the above 'lhsp'.
         // There might be multiple of these if 'lhsp' is a concatenation.
         struct Assignment final {
-            DfgVertexSplice* m_lhsp;
-            uint32_t m_idx;
-            DfgVertex* m_rhsp;
+            DfgVertexSplice* m_lhsp;  // Splice vertex being driven
+            uint32_t m_idx;  // Position (bit or array index) within m_lhsp being driven
+            DfgVertex* m_rhsp;  // Vertex driving that position
             Assignment() = delete;
             Assignment(DfgVertexSplice* lhsp, uint32_t idx, DfgVertex* rhsp)
                 : m_lhsp{lhsp}
