@@ -284,6 +284,7 @@ class DynScopeVisitor final : public VNVisitor {
     uint64_t m_forkDepth = 0;  // Number of asynchronous forks we are currently under
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
                                         // process
+    bool m_assigned = false;  // Marks when processed nodes are inside AstAssign node
     size_t m_id = 0;  // Unique ID for a frame
     size_t m_class_id = 0;  // Unique ID for a frame class
 
@@ -434,6 +435,7 @@ class DynScopeVisitor final : public VNVisitor {
     void visit(AstVarRef* nodep) override {
         ForkDynScopeFrame* const framep = frameOf(nodep->varp());
         if (!framep) return;
+        if (m_assigned && nodep->isClassHandleValue()) nodep->user2(true);
         if (needsDynScope(nodep)) {
             bool isEvent = false;
             if (AstBasicDType* const dtypep = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType)) {
@@ -455,9 +457,8 @@ class DynScopeVisitor final : public VNVisitor {
         bindNodeToDynScope(nodep, framep);
     }
     void visit(AstAssign* nodep) override {
-        if (VN_IS(nodep->lhsp(), VarRef) && nodep->lhsp()->isClassHandleValue()) {
-            nodep->lhsp()->user2(true);
-        }
+        VL_RESTORER(m_assigned);
+        m_assigned = true;
         visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstAssignDly* nodep) override {
