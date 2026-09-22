@@ -500,10 +500,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             V3Number low{coverpointp, arithmeticWidth};
             V3Number high{coverpointp, arithmeticWidth};
             low.opMul(stride, ordinal);
-            if (bin + 1 == count)
+            if (bin + 1 == count) {
                 high = total;
-            else
+            } else {
                 high.opMul(stride, nextOrdinal);
+            }
             V3Number adjusted{coverpointp, arithmeticWidth};
             adjusted.opSub(high, one);
             high = adjusted;

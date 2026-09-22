@@ -510,11 +510,7 @@ public:
         m_items.emplace_back(cxp);
         return cxp;  // borrowed by the generated class
     }
-    VlCoverCrossDyn* addCrossDyn() {
-        VlCoverCrossDyn* const cxp = new VlCoverCrossDyn{};
-        m_items.emplace_back(cxp);
-        return cxp;
-    }
+    VlCoverCrossDyn* addCrossDyn();
 
     // ---- attach counting (from VlCovInstHandle) ----
     void attachInc() { ++m_attachCount; }

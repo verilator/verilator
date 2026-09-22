@@ -73,37 +73,35 @@ struct VlCoverpoint::ValueData final {
     uint32_t m_regularExclusions = 0;  // Length of the merged interval prefix in m_exclusions
     // Shared ordered decisions avoid expanding the complement of wildcard exclusions.
     std::vector<Decision> m_decisions{{0, 0, 0, 1}, {0, 1, 1, 0}};  // Nodes; 0=false, 1=true
-    std::map<std::tuple<uint32_t, uint32_t, uint32_t>, uint32_t>
-        m_unique;  // (Position, low, high) -> canonical node ID
+    // (Position, low, high) -> canonical node ID
+    std::map<std::tuple<uint32_t, uint32_t, uint32_t>, uint32_t> m_unique;
     std::map<std::pair<uint32_t, uint32_t>, uint32_t> m_combined;  // Cached intersection roots
     const VlCovNamer* m_queryNamerp = nullptr;  // Borrowed namer for query-limit error locations
     uint32_t m_queryWork = 0;  // Graph steps consumed by the current query
     bool m_failed = false;  // A query exceeded a limit; subsequent queries must stop
 
-    ValueData(uint32_t bits_, bool signed_, uint32_t bins)
-        : m_bits{bits_}
-        , m_words{VL_WORDS_I(bits_)}
-        , m_isSigned{signed_}
+    ValueData(uint32_t bits, bool isSigned, uint32_t bins)
+        : m_bits{bits}
+        , m_words{VL_WORDS_I(bits)}
+        , m_isSigned{isSigned}
         , m_values{bins} {
         assert(m_bits);
     }
     static WDataInP view(const Value& value) { return WDataInP::external(value.data()); }
     Value read(WDataInP valuep) const {
         Value result(valuep.datap(), valuep.datap() + m_words);
-        result.back() &= VL_MASK_E(m_bits);
         return result;
     }
+    // Operands have already been cleaned to m_bits.
     bool less(WDataInP lhs, WDataInP rhs) const {
         if (m_isSigned) {
-            const EData mask = VL_MASK_E(m_bits);
-            const EData leftSign = VL_SIGN_E(m_bits, lhs[m_words - 1] & mask);
-            const EData rightSign = VL_SIGN_E(m_bits, rhs[m_words - 1] & mask);
+            const EData leftSign = VL_SIGN_E(m_bits, lhs[m_words - 1]);
+            const EData rightSign = VL_SIGN_E(m_bits, rhs[m_words - 1]);
             if (leftSign != rightSign) return leftSign;
         }
         for (uint32_t i = m_words; i > 0; --i) {
-            const EData mask = i == m_words ? VL_MASK_E(m_bits) : ~EData{0};
-            const EData left = lhs[i - 1] & mask;
-            const EData right = rhs[i - 1] & mask;
+            const EData left = lhs[i - 1];
+            const EData right = rhs[i - 1];
             if (left != right) return left < right;
         }
         return false;
@@ -120,10 +118,11 @@ struct VlCoverpoint::ValueData final {
     bool contains(const Range& range, WDataInP value) const {
         if (less(value, range.m_lo) || less(range.m_hi, value)) return false;
         if (!range.m_mask.empty()) {
+            EData mismatch = 0;
             for (uint32_t i = 0; i < m_words; ++i) {
-                if ((value[i] & range.m_mask[i]) != (range.m_lo[i] & range.m_mask[i]))
-                    return false;
+                mismatch |= (value[i] & range.m_mask[i]) ^ (range.m_lo[i] & range.m_mask[i]);
             }
+            return mismatch == 0;
         }
         return true;
     }
@@ -227,10 +226,11 @@ struct VlCoverpoint::ValueData final {
         bool fixed = false;
         bool contiguous = true;
         for (uint32_t bit = 0; bit < m_bits; ++bit) {
-            if (VL_BITISSET_W(result.m_mask, bit))
+            if (VL_BITISSET_W(result.m_mask, bit)) {
                 fixed = true;
-            else if (fixed)
+            } else if (fixed) {
                 contiguous = false;
+            }
         }
         if (contiguous) result.m_mask.clear();
         return clip(result, read(lop), read(hip));
@@ -1063,6 +1063,15 @@ void VlCoverCrossDyn::finalizeBins() {
     VlCoverCross::finalizeBins();
     data.m_selected.clear();
     data.m_stack.clear();
+}
+
+//=============================================================================
+// VlCovergroupInst
+
+VlCoverCrossDyn* VlCovergroupInst::addCrossDyn() {
+    VlCoverCrossDyn* const cxp = new VlCoverCrossDyn{};
+    m_items.emplace_back(cxp);
+    return cxp;
 }
 
 //=============================================================================
