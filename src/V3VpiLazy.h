@@ -51,8 +51,6 @@ public:
                                                   const AstVar* shadowVarp) VL_MT_DISABLED;
     // Preserve reconstructable lazy signals before optimisation.
     static void prepare(AstNetlist* nodep) VL_MT_DISABLED;
-    // Check prepare()'s storage forecast after optimisation.
-    static void verifyRetention(AstNetlist* nodep) VL_MT_DISABLED;
     // Split reconstruction functions after optimisation.
     static void finalize(AstNetlist* nodep) VL_MT_DISABLED;
     // AstNetlist owns this opaque context.

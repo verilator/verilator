@@ -460,8 +460,6 @@ static void process() {
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAllScoped(v3Global.rootp());
 
-            if (v3Global.opt.vpiLazy()) V3VpiLazy::verifyRetention(v3Global.rootp());
-
             // Reorder assignments in pipelined blocks
             if (v3Global.opt.fReorder()) V3Reorder::reorderAll(v3Global.rootp());
 

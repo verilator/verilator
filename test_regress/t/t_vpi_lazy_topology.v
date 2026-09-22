@@ -133,12 +133,12 @@ module t (
 
   always_ff @(posedge clk) cyc_boundary <= cyc_boundary + 7'h1;
 
-  // aliascycle: each side is a whole-net alias of the other, so Bail::ALIAS_CYCLE rather
-  // than a comb cycle
+  // instcycle: a comb cycle closed through two inlined instances. The return leg ORs in a
+  // constant so the pair neither const-folds to 'wire x = x' nor fails to settle
   logic [6:0] alc_x;
   logic [6:0] alc_y;
   t_vpi_lazy_topology_pass u_pass1 (.i(alc_x), .o(alc_y));
-  t_vpi_lazy_topology_pass u_pass2 (.i(alc_y), .o(alc_x));
+  t_vpi_lazy_topology_pass u_pass2 (.i(alc_y | 7'h0a), .o(alc_x));
 
   // creset
   swap_if #(.DBW(8)) intf ();

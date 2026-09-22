@@ -891,13 +891,11 @@ private:
     // 'skipp' is an assignment's LHS base ref, whose read is checked apart.
     static bool readsUndefined(AstNode* nodep, const AstVarRef* skipp, const Group* g,
                                const Defined& defined) {
-        bool bad = false;
-        nodep->foreach([&](AstVarRef* refp) {
-            if (refp == skipp || refp->access().isWriteOnly()) return;
-            AstVarScope* const u = refp->varScopep();
-            if (g->members.count(u) && !defined.count(u)) bad = true;
+        return nodep->exists([&](AstNode* childp) {
+            AstVarRef* const refp = VN_CAST(childp, VarRef);
+            if (!refp || refp == skipp || refp->access().isWriteOnly()) return false;
+            return g->members.count(refp->varScopep()) && !defined.count(refp->varScopep());
         });
-        return bad;
     }
 
     bool walkStmts(AstNode* stmtsp, const Group* g, Defined& defined, Bail& whyr) const {
@@ -984,9 +982,9 @@ private:
                 whyr = Bail::IMPURE;
                 return false;
             }
-            bool selfRead = false;
-            awp->rhsp()->foreach([&](AstVarRef* refp) {
-                if (g->members.count(refp->varScopep())) selfRead = true;
+            const bool selfRead = awp->rhsp()->exists([&](AstNode* nodep) {
+                const AstVarRef* const refp = VN_CAST(nodep, VarRef);
+                return refp && g->members.count(refp->varScopep());
             });
             if (selfRead) {
                 whyr = Bail::READ_BEFORE_WRITE;
@@ -1790,9 +1788,9 @@ private:
         if (VN_IS(stmtp, Comment)) return false;
         if (VN_IS(stmtp, JumpGo)) return true;
         if (AstNodeAssign* const asgnp = VN_CAST(stmtp, NodeAssign)) {
-            bool live = false;
-            asgnp->lhsp()->foreach([&](AstVarRef* refp) {
-                if (!refp->access().isReadOnly() && neededr.count(refp->varScopep())) live = true;
+            const bool live = asgnp->lhsp()->exists([&](AstNode* nodep) {
+                const AstVarRef* const refp = VN_CAST(nodep, VarRef);
+                return refp && !refp->access().isReadOnly() && neededr.count(refp->varScopep());
             });
             if (!live) return false;
             stmtRefs(asgnp, neededr);
@@ -2335,6 +2333,8 @@ public:
     std::vector<AstVar*> m_order;  // Temp shadows in encounter order (determinism)
     std::unordered_map<AstVar*, Use> m_useOf;
     std::vector<AstCFunc*> m_reconFuncps;  // Encounter order (determinism)
+    std::unordered_set<const AstVar*> m_writtenps;
+    std::vector<const AstVarScope*> m_lazyVscps;
     int m_depGuardsSurvived = 0;
 
 private:
@@ -2367,6 +2367,7 @@ private:
     }
     void visit(AstNodeVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
+        if (!nodep->access().isReadOnly()) m_writtenps.emplace(varp);
         if (m_inReconFunc && VN_IS(nodep, VarRef) && varp->name() == DEP_NAME) {
             ++m_depGuardsSurvived;
         }
@@ -2381,6 +2382,10 @@ private:
                 pair.first->second.m_firstUsep = m_stmtp;  // LCOV_EXCL_LINE
             }
         }
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstVarScope* nodep) override {
+        if (nodep->varp()->isSigVpiLazyRWPublic()) m_lazyVscps.push_back(nodep);
         iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -2410,46 +2415,13 @@ int localizeTempShadows(const FinalizeVisitor& uses) {
     return localized;
 }
 
-// Which variables the surviving tree writes, and every un-retained lazy VarScope left in it.
-class RetentionGatherVisitor final : public VNVisitorConst {
-public:
-    // STATE
-    std::unordered_set<const AstVar*> m_writtenps;
-    std::vector<const AstVarScope*> m_lazyVscps;  // Encounter order (determinism)
-
-private:
-    // VISITORS
-    void visit(AstNodeVarRef* nodep) override {
-        if (!nodep->access().isReadOnly()) m_writtenps.emplace(nodep->varp());
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstVarScope* nodep) override {
-        if (nodep->varp()->isSigVpiLazyRWPublic()) m_lazyVscps.push_back(nodep);
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit RetentionGatherVisitor(AstNetlist* nodep) { iterateConst(nodep); }
-};
-
-}  // namespace
-
-// prepare() runs before V3Gate and V3Dead, so storagePinnedElsewhere() is a forecast. A wrong one
-// is silent: a VPI row pointing at storage nothing writes, reading zero for ever.
-void V3VpiLazy::verifyRetention(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ":");
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+void verifyRetention(const FinalizeVisitor& gather, const V3VpiLazyContext* ctxp) {
     if (!ctxp || ctxp->m_residualNames.empty()) return;
-
-    const RetentionGatherVisitor gather{nodep};
 
     std::set<std::string> livenames;
     for (const AstVarScope* const vscp : gather.m_lazyVscps) {
         const AstVar* const varp = vscp->varp();
         livenames.emplace(vscp->name());
-        // A primary port is written by the model's caller, not through any VarRef in here.
         if (varp->isPrimaryIO()) continue;
         if (gather.m_writtenps.count(varp)) continue;
         varp->v3fatalSrc("--vpi-lazy left '"
@@ -2467,12 +2439,16 @@ void V3VpiLazy::verifyRetention(AstNetlist* nodep) {
     }
 }
 
+}  // namespace
+
 //######################################################################
 
 void V3VpiLazy::finalize(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
 
     const FinalizeVisitor visitor{nodep};
+    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+    verifyRetention(visitor, ctxp);
 
     const int localized = localizeTempShadows(visitor);
     if (v3Global.opt.stats()) V3Stats::addStat("VPI, lazy localized temps", localized);
@@ -2480,7 +2456,6 @@ void V3VpiLazy::finalize(AstNetlist* nodep) {
     // A guard reads a variable nothing in the tree assigns - only the VPI runtime writes the
     // deposit array - so an optimizer may fold the guards away and silently restore the defect
     // they fix. Counted, not matched one for one: V3Const may merge two adjacent guards.
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
     if (ctxp && ctxp->m_depGuards) {
         const int survived = visitor.m_depGuardsSurvived;
         if (!survived) {
