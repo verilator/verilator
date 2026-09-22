@@ -161,6 +161,17 @@ module t;
     auto_only: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
   endgroup
 
+  // Live bins only shrink a runtime cross, so its declared product is checked the same way.
+  covergroup cgx_dynamic_large;
+    cp_a: coverpoint cp_wide {ignore_bins removed = {0};}
+    cp_b: coverpoint cp_wide;
+    cp_c: coverpoint cp_wide;
+    cp_d: coverpoint cp_wide;
+    cp_e: coverpoint cp_wide;
+    cp_f: coverpoint cp_wide;
+    xc: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
+  endgroup
+
   covergroup cgx_binsof_excluded;
     cp_a: coverpoint cp_expr {
       bins normal = {0};
@@ -216,6 +227,7 @@ module t;
   cgx_arr_open cgx_arr_open_inst = new;
   cgx_binsof cgx_binsof_inst = new;
   cgx_binsof_large cgx_binsof_large_inst = new;
+  cgx_dynamic_large cgx_dynamic_large_inst = new;
   cgx_binsof_excluded cgx_binsof_excluded_inst = new;
   cgx_binsof_many_values cgx_binsof_many_values_inst = new;
 

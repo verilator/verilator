@@ -102,12 +102,8 @@ cg_fixed_words.selected.all_values [cross]: 16
 cg_fixed_words.sparse.all_values [cross]: 16
 cg_fixed_words.sparse.subset [cross]: 4
 cg_four_state.cp_a.known: 0
-cg_four_state.cp_a.xstate: 0
-cg_four_state.cp_a.zstate: 0
 cg_four_state.cp_b.auto_0: 0
 cg_four_state.cp_b.auto_1: 0
-cg_four_state.selected.exact_x [cross]: 0
-cg_four_state.selected.exact_z [cross]: 0
 cg_four_state.selected.not_x [cross]: 0
 cg_guards.cp_a.zero: 8
 cg_guards.cp_b.zero: 8

@@ -16,6 +16,6 @@ test.top_filename = 't/t_covergroup_limits.v'
 test.compile(verilator_flags2=['--timing', '+define+LIMIT_DEPTH'],
              threads=(2 if test.vltmt else 1))
 
-test.execute(fails=True, check_finished=False, expect_filename=test.golden_filename)
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()

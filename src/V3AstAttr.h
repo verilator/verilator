@@ -898,11 +898,10 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
     macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
     macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  "") \
-    macro(COVERGROUP_VALUE_PATTERN,           "valuePattern",           false,  "r+") \
-    macro(COVERGROUP_VALUE_PATTERN_W,         "valuePatternW",          false,  "r+") \
-    macro(COVERGROUP_VALUE_RANGE,             "valueRange",             false,  "rrr") \
-    macro(COVERGROUP_VALUE_RANGE_W,           "valueRangeW",            false,  "rrr") \
-    macro(COVERGROUP_VALUE_TRANSITION,        "valueTransition",        false,  "r") \
+    macro(COVERGROUP_VALUE_PATTERNS,          "valuePatterns",          false,  "r") \
+    macro(COVERGROUP_VALUE_RANGES,            "valueRanges",            false,  "r") \
+    macro(COVERGROUP_VALUE_RELEASE,           "valueRelease",           false,  "") \
+    macro(COVERGROUP_VALUE_TRANSITIONS,       "valueTransitions",       false,  "r") \
     macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  "rr") \
     macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
     macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \

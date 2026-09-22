@@ -124,6 +124,10 @@ private:
     const VlCovNamer& namerFor(uint32_t i) const;  // obtain the bin-specific name producer
     void addNamer(VlCovBinKind set, uint32_t count, VlCovBinNaming naming, const char* name,
                   const char* file, int line, int col);
+    // Declared bin index of the i-th bin reported through VlCoverpointIf
+    uint32_t reportedBin(uint32_t i) const;
+    std::string declaredBinName(uint32_t bin) const;  // Name of a declared bin index
+    bool liveBin(uint32_t bin) const;  // Normal bin keeps a value outside the exclusions
 
 public:
     // CONSTRUCTORS
@@ -144,16 +148,16 @@ public:
 
     /// Configure construction-time value metadata for exclusions and cross selections.
     void valueType(uint32_t bits, bool isSigned);
-    /// Describe an existing bin's values without enumerating its ranges.
-    void valueRange(uint32_t bin, QData lo, QData hi);
-    void valueRangeW(uint32_t bin, WDataInP lop, WDataInP hip);
-    /// Describe a wildcard pattern and its source-width bounds.
-    void valuePattern(uint32_t bin, QData value, QData mask, QData lo, QData hi);
-    void valuePatternW(uint32_t bin, WDataInP valuep, WDataInP maskp, WDataInP lop, WDataInP hip);
-    /// State exclusions do not remove values from transition bins.
-    void valueTransition(uint32_t bin);
+    /// Describe bin values as {bin, low words, high words} entries, without enumerating them.
+    void valueRanges(std::initializer_list<EData> entries);
+    /// Describe wildcard patterns as {bin, value words, mask words, low words, high words}.
+    void valuePatterns(std::initializer_list<EData> entries);
+    /// State exclusions do not remove values from these transition bins.
+    void valueTransitions(std::initializer_list<uint32_t> bins);
     /// Apply exclusions and freeze the live Normal-bin index space used by crosses.
     void valueFinalize();
+    /// Drop the per-bin values once every cross has been built; sampling needs only exclusions.
+    void valueRelease();
     /// Test state exclusions independently of sampling-time iff guards.
     bool valueExcluded(QData value) const;
     bool valueExcludedW(WDataInP valuep) const;
@@ -173,10 +177,11 @@ public:
     std::string normalBinName(uint32_t crossIdx) const;  // name of the crossIdx-th Normal bin
 
     // ---- VlCoverpointIf ----
-    uint32_t binCount() const override { return m_total; }
+    /// Bins removed for having no value (IEEE 1800-2023 19.11.1) are not reported.
+    uint32_t binCount() const override;
     std::string binName(uint32_t i) const override;
     // Deliberately not on VlCoverpointIf: only coverage-database registration needs it.
-    VlCovBinKind binKind(uint32_t i) const { return namerFor(i).set(); }
+    VlCovBinKind binKind(uint32_t i) const { return namerFor(reportedBin(i)).set(); }
     void coverageParts(double& covered, double& total) const override {
         // Count Normal bins that reached option.at_least on demand, so the hot
         // path (incrementBin) stays a plain counter bump.
@@ -357,13 +362,13 @@ public:
 
     // METHODS
     // ---- configuration (from generated constructor, after coverpoints init'd) ----
-    void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-              int line, int col);
+    virtual void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
+                      int line, int col);
     /// Add a cross bin using a verilation-time bitmap of selected Normal-bin tuples.
     void addBin(VlCovBinKind kind, std::initializer_list<uint64_t> selection, const char* namep,
                 const char* filep, int line, int col);
     /// Retain only automatic cross bins not selected by any explicit bin.
-    void finalizeBins();
+    virtual void finalizeBins();
     void registerBins(VerilatedCovContext* covcontextp, const char* page);
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
@@ -442,12 +447,13 @@ public:
     ~VlCoverCrossDyn() override;
 
     // METHODS
-    // Initialize after all feeding coverpoints have finalized their live bins.
+    /// Initialize after all feeding coverpoints have finalized their live bins.
     void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-              int line, int col);
-    // Build cross-bin selections in postfix order.
+              int line, int col) override;
+    /// Build cross-bin selections in postfix order.
     void selectAll();
-    void selectDim(uint32_t dim, const char* binp, bool negated, bool intersect);
+    /// Start a binsof term over the live bins declared in [first, end) of dimension 'dim'.
+    void selectDim(uint32_t dim, uint32_t first, uint32_t end, bool negated, bool intersect);
     void selectRange(QData lo, QData hi);
     void selectRangeW(WDataInP lop, WDataInP hip);
     void selectDimEnd();
@@ -456,8 +462,8 @@ public:
     // Save a selection without renumbering guards when empty bins are removed.
     void selectBin(VlCovBinKind kind, const char* namep, const char* filep, int line, int col,
                    uint32_t iffIndex);
-    // Apply cross exclusions and bind finalized storage to the sampling core.
-    void finalizeBins();
+    /// Apply cross exclusions and bind finalized storage to the sampling core.
+    void finalizeBins() override;
 };
 
 class VlCovergroupType;

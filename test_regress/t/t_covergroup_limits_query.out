@@ -1,2 +1,2 @@
-%Error: t/t_covergroup_limits.v:35: Coverage bin exclusions exceed the decision-graph work limit
-Aborting...
+%Warning: t/t_covergroup_limits.v:65: Cross bin selection exceeds the decision-graph work limit; bin ignored
+*-* All Finished *-*

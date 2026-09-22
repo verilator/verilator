@@ -32,6 +32,7 @@
 #include "V3MemberMap.h"
 
 #include <bitset>
+#include <cmath>
 #include <set>
 #include <tuple>
 #include <unordered_map>
@@ -240,14 +241,19 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstCoverBin* binp;  // Declaration owning this Normal bin
         AstNodeExpr* valuep;  // Individual array-bin value, or nullptr for a scalar bin
     };
+    struct BinSpan final {
+        uint32_t first;  // First Normal index of the bin declaration
+        uint32_t count;  // Number of Normal bins of the declaration
+        uint32_t declared;  // First runtime bin index, across all bin kinds
+    };
     struct CoverpointBins final {
         uint32_t total = 0;  // Number of Normal bins
         AstNodeExpr* exprp = nullptr;  // Sampled expression, for the value domain
         std::vector<CrossBinValues> values;  // Values in runtime Normal-bin index order
-        std::unordered_map<std::string, std::pair<uint32_t, uint32_t>>
-            spans;  // Declared bin name -> first Normal index and number of bins
+        std::unordered_map<std::string, BinSpan> spans;  // Declared bin name -> index span
     };
     std::map<AstVar*, CoverpointBins> m_cpBins;  // Runtime coverpoint -> binsof index ranges
+    std::vector<AstNodeExpr*> m_detachedValues;  // Array-bin values m_cpBins refers to
     std::set<AstCoverCross*>
         m_droppedCrosses;  // Crosses with a bare-variable item: drop (COVERIGN)
     std::map<uint32_t, AstCoverpointDType*> m_cpDTypes;  // Hit-list bound -> interned dtype
@@ -295,7 +301,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         std::map<AstCoverCross*, std::vector<AstCoverpoint*>> inputs;
         for (AstCoverpoint* const cpp : m_coverpoints) {
             if (!cpp->exprp()->dtypep()->skipRefp()->isIntegralOrPacked()) continue;
-            if (!coverpointHasStateExclusions(cpp)) continue;
+            // Bins without values leave the report (IEEE 1800-2023 19.11.1), exclusions or not.
+            if (!coverpointHasStateExclusions(cpp) && !coverpointHasEmptyBins(cpp)) continue;
             m_runtimePoints.insert(cpp);
             pending.push_back(cpp);
         }
@@ -336,6 +343,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // For each cross, generate sampling code
         for (AstCoverCross* crossp : m_coverCrosses) generateCrossCode(crossp);
 
+        // Every cross has been built, so runtime points only need their exclusions from here.
+        for (AstCoverpoint* const cpp : m_coverpoints) {
+            if (!m_runtimePoints.count(cpp)) continue;
+            m_constructorp->addStmtsp(itemCall(cpp->fileline(), m_cpVarMap.at(cpp->name()),
+                                               VCMethod::COVERGROUP_VALUE_RELEASE)
+                                          ->makeStmt());
+        }
+        for (AstNodeExpr* valuep : m_detachedValues) VL_DO_DANGLING(pushDeletep(valuep), valuep);
+        m_detachedValues.clear();
+
         // Generate coverage computation code (even for empty covergroups).  Bin registration
         // with the coverage database is handled per coverpoint/cross by their runtime
         // registerBins() calls (emitted in generateCoverpoint/generateCross).
@@ -351,6 +368,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     static constexpr int COVER_BINS_LIMIT
         = 1000;  // Sanity limit to avoid hangs from e.g. signed underflow
+    static constexpr size_t VALUE_LIST_ENTRIES = 256;  // Metadata entries per constructor call
 
     void expandAutomaticBins(AstCoverpoint* coverpointp, AstNodeExpr* exprp) {
         // Find and expand any automatic bins
@@ -667,6 +685,27 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return false;
     }
 
+    // True if a Normal state bin, or an array-bin element, has no value of the coverpoint's
+    // type (IEEE 1800-2023 19.5.7).  Array ranges enumerate in-type values, so cannot vanish.
+    static bool coverpointHasEmptyBins(const AstCoverpoint* coverpointp) {
+        AstNodeExpr* const exprp = coverpointp->exprp();
+        for (AstNode* nodep = coverpointp->binsp(); nodep; nodep = nodep->nextp()) {
+            const AstCoverBin* const binp = VN_AS(nodep, CoverBin);
+            if (!binp->binsType().binIsNormal() || binp->transp() || !binp->rangesp()) continue;
+            bool empty = true;
+            for (AstNode* valuep = binp->rangesp(); valuep; valuep = valuep->nextp()) {
+                if (binp->isArray() && VN_IS(valuep, InsideRange)) continue;
+                CrossValueRange range{valuep, resolveWidth(valuep, exprp)};
+                const bool none = resolveValue(valuep, exprp, true, binp->isWildcard(), range)
+                                  && crossRangeEmpty(range);
+                if (binp->isArray() && none) return true;
+                empty &= none;
+            }
+            if (empty && !binp->isArray()) return true;
+        }
+        return false;
+    }
+
     // True if a coverpoint has any transition bin.  Used to decide whether sample() emits the
     // end-of-sample previous-value update that transition matching needs.
     static bool coverpointHasTransition(AstCoverpoint* coverpointp) {
@@ -969,14 +1008,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return values;
     }
 
-    // Emit a 'this->m_cp->addSingleNamer/addArrayNamer(...)' statement for one bin
-    AstNodeStmt* makeNamer(AstVar* cpVarp, AstCoverBin* binp, int count,
+    // Emit a 'this->m_cp->addSingleNamer/addArrayNamer(...)' statement for one bin whose first
+    // runtime bin index is 'declared'
+    AstNodeStmt* makeNamer(AstVar* cpVarp, AstCoverBin* binp, int count, uint32_t declared,
                            const std::vector<AstNodeExpr*>& values = {}) {
         FileLine* const fl = binp->fileline();
         CoverpointBins& bins = m_cpBins.at(cpVarp);
         const uint32_t normalCount
             = binp->binsType().binIsNormal() ? static_cast<uint32_t>(count < 0 ? 1 : count) : 0;
-        bins.spans.emplace(binp->name(), std::make_pair(bins.total, normalCount));
+        bins.spans.emplace(binp->name(), BinSpan{bins.total, normalCount, declared});
         bins.total += normalCount;
         for (uint32_t i = 0; i < normalCount; ++i) {
             bins.values.push_back({binp, values.empty() ? nullptr : values[i]});
@@ -1128,7 +1168,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 // them as one runtime bin incremented by any matching sequence.  The sequence
                 // matching is generated as a state machine, with the hit routed to this bin's
                 // runtime slot.
-                namerStmts.push_back(makeNamer(cpVarp, cbinp, -1));
+                namerStmts.push_back(makeNamer(cpVarp, cbinp, -1, static_cast<uint32_t>(idx)));
                 const ConvBinTarget tgt{cpVarp, idx, cbinp->binsType().binIsNormal()};
                 for (AstNode* sp = cbinp->transp(); sp; sp = sp->nextp())
                     generateSingleTransitionCode(coverpointp, cbinp, exprp, tgt,
@@ -1143,20 +1183,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 bool unsupported = false;
                 std::vector<AstNodeExpr*> values = extractArrayValues(cbinp, exprp, unsupported);
                 if (unsupported) continue;  // bin ignored (COVERIGN emitted); reserve no slot
-                namerStmts.push_back(
-                    makeNamer(cpVarp, cbinp, static_cast<int>(values.size()), values));
+                namerStmts.push_back(makeNamer(cpVarp, cbinp, static_cast<int>(values.size()),
+                                               static_cast<uint32_t>(idx), values));
                 for (AstNodeExpr* valuep : values) {
+                    // The cross selections of this covergroup still read the value.
+                    m_detachedValues.push_back(valuep);
+                    emitConvHitIf(coverpointp, cbinp, cpVarp, idx,
+                                  buildValueCondition(cbinp, exprp, valuep));
                     if (dynamic && V3Error::errorCount() == errorsBefore) {
                         metadata.emplace_back(cbinp, idx, valuep);
                     }
-                    // TODO: A 4-state bin value (e.g. bins b[] = {2'b0x}) must match with ===
-                    // (AstEqCase) per IEEE 1800-2023 19.5.4. == is equivalent under 2-state sim
-                    // (x/z collapse to 0); switch to AstEqCase when 4-state sim support lands.
-                    emitConvHitIf(coverpointp, cbinp, cpVarp, idx++,
-                                  new AstEq{cbinp->fileline(), exprp->cloneTree(false), valuep});
+                    ++idx;
                 }
             } else {
-                namerStmts.push_back(makeNamer(cpVarp, cbinp, -1));
+                namerStmts.push_back(makeNamer(cpVarp, cbinp, -1, static_cast<uint32_t>(idx)));
                 // buildBinCondition is null for 'ignore_bins = default' (no ranges); the bin
                 // still gets a reserved slot (recorded, never incremented).
                 if (AstNodeExpr* const condp = buildBinCondition(cbinp, exprp))
@@ -1168,7 +1208,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
         }
         for (AstCoverBin* const defBinp : defaultBins) {
-            namerStmts.push_back(makeNamer(cpVarp, defBinp, -1));
+            namerStmts.push_back(makeNamer(cpVarp, defBinp, -1, static_cast<uint32_t>(idx)));
             emitConvHitIf(coverpointp, defBinp, cpVarp, idx++,
                           buildDefaultCondition(coverpointp, exprp, defBinp->fileline()));
         }
@@ -1202,10 +1242,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 itemCall(fl, cpVarp, VCMethod::COVERGROUP_VALUE_TYPE,
                          {cnum(fl, exprp->width()), cnum(fl, exprp->isSigned())})
                     ->makeStmt());
+            ValueLists lists;
             for (const auto& entry : metadata) {
-                generateValueMetadata(cpVarp, std::get<0>(entry), std::get<1>(entry),
-                                      std::get<2>(entry));
+                collectValueMetadata(lists, exprp, std::get<0>(entry), std::get<1>(entry),
+                                     std::get<2>(entry));
             }
+            emitValueList(fl, cpVarp, VCMethod::COVERGROUP_VALUE_RANGES, lists.m_ranges);
+            emitValueList(fl, cpVarp, VCMethod::COVERGROUP_VALUE_PATTERNS, lists.m_patterns);
+            emitValueList(fl, cpVarp, VCMethod::COVERGROUP_VALUE_TRANSITIONS, lists.m_transitions);
             m_constructorp->addStmtsp(
                 itemCall(fl, cpVarp, VCMethod::COVERGROUP_VALUE_FINALIZE)->makeStmt());
         }
@@ -1356,6 +1400,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return constp;
     }
 
+    // A real copy of a real or integral range bound, for comparing with a real coverpoint.
+    static AstConst* newRealConst(AstConst* constp) {
+        if (constp->num().isDouble()) return constp->cloneTree(false);
+        V3Number real{&constp->num(), 64};
+        real.opIToRD(constp->num(), constp->isSigned());
+        return new AstConst{constp->fileline(), real};
+    }
+
     // Clone a constant node, widening to targetWidth if needed (zero-extend).
     // Used to ensure comparisons use matching widths after V3Width has run.
     static AstConst* widenConst(FileLine* fl, AstConst* constp, int targetWidth) {
@@ -1373,6 +1425,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const int exprWidth = exprp->widthMin();
         AstConst* const minConstp = VN_AS(minp, Const);
         AstConst* const maxConstp = VN_AS(maxp, Const);
+        if (exprp->isDouble()) {
+            // A real coverpoint has no finite domain bounds to omit.
+            return new AstAnd{fl,
+                              new AstGteD{fl, exprp->cloneTree(false), newRealConst(minConstp)},
+                              new AstLteD{fl, exprp->cloneTree(false), newRealConst(maxConstp)}};
+        }
         // Widen constants to match expression width so post-V3Width nodes use correct macros
         AstConst* const minWidep = widenConst(fl, minConstp, exprWidth);
         AstConst* const maxWidep = widenConst(fl, maxConstp, exprWidth);
@@ -1576,12 +1634,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         uint32_t m_dimension = 0;  // Coverpoint index within the cross
         uint32_t m_first = 0;  // First declared normal bin in the selected span
         uint32_t m_count = 0;  // Number of declared normal bins in the selected span
+        uint32_t m_declaredFirst = 0;  // First runtime bin index of the selected span
+        uint32_t m_declaredEnd = UINT32_MAX;  // One past the last runtime bin index
     };
     struct CrossValueRange final {
         V3Number lo;  // Inclusive lower bound, sign-extended to the comparison width
         V3Number hi;  // Inclusive upper bound
         V3Number pattern;  // Allowed bit values; all X for an ordinary interval
-        bool singleton = false;  // A single value, possibly a wildcard pattern
         bool wildcard = false;  // A wildcard singleton rather than an exact four-state value
 
         CrossValueRange(AstNode* nodep, int width)
@@ -1624,8 +1683,32 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return !result.opLtS(lhs, rhs).isEqZero();
     }
 
+    // Round a real bound inward to the nearest coverpoint value (IEEE 1800-2023 19.5.7).  Sets
+    // 'empty' if the domain has no value on the bound's side.
+    static void crossRealBound(const AstConst* constp, AstNodeExpr* exprp, bool upper,
+                               const CrossValueRange& domain, V3Number& result, bool& empty) {
+        const double value = constp->num().toDouble();
+        const double bound = upper ? std::floor(value) : std::ceil(value);
+        // Powers of two are exact, so the integral bound compares exactly with the domain edges.
+        const double limit
+            = std::ldexp(1.0, exprp->isSigned() ? exprp->width() - 1 : exprp->width());
+        const double minimum = exprp->isSigned() ? -limit : 0.0;
+        if (std::isnan(bound) || (upper ? bound < minimum : bound >= limit)) {
+            empty = true;
+            result = domain.lo;
+        } else if (bound < minimum) {
+            result = domain.lo;
+        } else if (bound >= limit) {
+            result = domain.hi;
+        } else {
+            V3Number real{&result, 64};
+            real.setDouble(bound);
+            result.opRToIRoundS(real);
+        }
+    }
+
     static bool crossRangeBound(AstNode* nodep, AstNodeExpr* exprp, bool upper, bool binValue,
-                                V3Number& result) {
+                                const CrossValueRange& domain, V3Number& result, bool& empty) {
         if (VN_IS(nodep, Unbounded)) {
             V3Number limit{nodep, exprp->width()};
             if (upper) limit.setAllBits1();
@@ -1638,7 +1721,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return true;
         }
         const AstConst* const constp = VN_CAST(nodep, Const);
-        if (!constp || constp->num().isOpaque()) return false;
+        if (!constp) return false;
+        if (constp->num().isDouble()) {
+            crossRealBound(constp, exprp, upper, domain, result, empty);
+            return true;
+        }
+        if (constp->num().isString()) return false;
         if (binValue && exprp->isSigned() && constp->width() <= exprp->width()) {
             // Bin bit patterns use the coverpoint's effective type (IEEE 1800-2023 19.5.7).
             // Wider values and intersect filters retain their values for domain clipping.
@@ -1682,16 +1770,22 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     static bool crossValueRange(AstNode* nodep, AstNodeExpr* exprp, bool binValue, bool wildcard,
                                 const CrossValueRange& domain, CrossValueRange& range) {
+        bool empty = false;
+        const AstConst* const constp = VN_CAST(nodep, Const);
         if (const AstInsideRange* const rangep = VN_CAST(nodep, InsideRange)) {
-            if (!crossRangeBound(rangep->lhsp(), exprp, false, binValue, range.lo)
-                || !crossRangeBound(rangep->rhsp(), exprp, true, binValue, range.hi)
+            if (!crossRangeBound(rangep->lhsp(), exprp, false, binValue, domain, range.lo, empty)
+                || !crossRangeBound(rangep->rhsp(), exprp, true, binValue, domain, range.hi, empty)
                 || range.lo.isFourState() || range.hi.isFourState()) {
                 return false;
             }
+        } else if (constp && constp->num().isDouble()) {
+            // A real value participates only if integral; it has no wildcard bits.
+            crossRealBound(constp, exprp, false, domain, range.lo, empty);
+            crossRealBound(constp, exprp, true, domain, range.hi, empty);
         } else {
-            range.singleton = true;
-            if (!crossRangeBound(nodep, exprp, false, binValue, range.lo)) return false;
-            const AstConst* const constp = VN_CAST(nodep, Const);
+            if (!crossRangeBound(nodep, exprp, false, binValue, domain, range.lo, empty)) {
+                return false;
+            }
             if (binValue && exprp->isSigned() && constp && !constp->isSigned()
                 && constp->width() > exprp->width()) {
                 bool representable = true;
@@ -1718,10 +1812,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
             }
         }
+        if (empty) {
+            range.lo = domain.hi;
+            range.hi = domain.lo;
+            return true;
+        }
         if (!range.lo.isFourState()) intersectCrossRange(range, domain);
         if (range.wildcard && exprp->isSigned()) {
             const int sign = exprp->width() - 1;
-            const AstConst* const constp = VN_CAST(nodep, Const);
             if (constp && !constp->isSigned() && constp->width() > exprp->width()) {
                 // Unsigned equality preserves every target bit pattern if discarded bits are zero.
                 for (int bit = exprp->width(); bit < constp->width(); ++bit) {
@@ -1798,10 +1896,31 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return states != 0;
     }
 
+    // True if no coverpoint value participates in a resolved value or range.  A value with x
+    // or z bits participates only as a wildcard pattern (IEEE 1800-2023 19.5.7).
+    static bool crossRangeEmpty(const CrossValueRange& range) {
+        if (range.lo.isFourState()) return true;
+        return crossValueLess(range.hi, range.lo)
+               || (range.wildcard && !crossWildcardIntersects(range));
+    }
+
+    // Comparison width that holds both the coverpoint's and a bin or intersect value's range.
+    static int resolveWidth(AstNode* nodep, const AstNodeExpr* exprp) {
+        return std::max(exprp->width(), crossRangeWidth(nodep)) + 1;
+    }
+
+    // Resolve a bin or intersect value to coverpoint values (IEEE 1800-2023 19.5.7), in the
+    // width 'range' was created with.  False if the value is not a constant integral or real.
+    static bool resolveValue(AstNode* nodep, AstNodeExpr* exprp, bool binValue, bool wildcard,
+                             CrossValueRange& range) {
+        const CrossValueRange domain
+            = crossValueDomain(nodep, exprp->width(), exprp->isSigned(), range.lo.width());
+        return crossValueRange(nodep, exprp, binValue, wildcard, domain, range);
+    }
+
     static bool crossRangesIntersect(const CrossValueRange& bin, const CrossValueRange& filter) {
-        if (filter.lo.isFourState() || bin.lo.isFourState()) {
-            return bin.singleton && filter.singleton && bin.lo.isCaseEq(filter.lo);
-        }
+        // Values with x or z bits do not participate, even in an identical filter.
+        if (bin.lo.isFourState() || filter.lo.isFourState()) return false;
         CrossValueRange match = bin;
         intersectCrossRange(match, filter);
         return !crossValueLess(match.hi, match.lo)
@@ -1882,68 +2001,59 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return selected;
     }
 
-    template <typename T_Action>
-    bool emitValueRange(AstNode* rangep, AstNodeExpr* exprp, bool wildcard, const T_Action& action,
-                        bool binValue = true) {
-        const int width = std::max(exprp->width(), crossRangeWidth(rangep)) + 1;
-        const CrossValueRange domain
-            = crossValueDomain(rangep, exprp->width(), exprp->isSigned(), width);
-        CrossValueRange range{rangep, width};
-        if (!crossValueRange(rangep, exprp, binValue, wildcard, domain, range)) return false;
-        if (crossValueLess(range.hi, range.lo)) return true;
-        FileLine* const fl = rangep->fileline();
-        AstConst* const lop = newValueConst(fl, range.lo, exprp);
-        AstConst* const hip = newValueConst(fl, range.hi, exprp);
-        if (range.wildcard) {
-            if (!crossWildcardIntersects(range)) {
-                VL_DO_DANGLING(pushDeletep(lop), lop);
-                VL_DO_DANGLING(pushDeletep(hip), hip);
-                return true;
-            }
-            V3Number value{rangep, exprp->width()};
-            V3Number mask{rangep, exprp->width()};
-            mask.opBitsNonXZ(range.pattern);
-            value.opBitsOne(range.pattern);
-            AstConst* const valuep = newValueConst(fl, value, exprp);
-            AstConst* const maskp = newValueConst(fl, mask, exprp);
-            m_constructorp->addStmtsp(action(valuep, maskp, true, lop, hip));
-        } else {
-            m_constructorp->addStmtsp(action(lop, hip, false, nullptr, nullptr));
+    // Constructor-time value metadata of one coverpoint, as C++ list entries
+    struct ValueLists final {
+        std::vector<std::string> m_ranges;  // Bin, then low and high words
+        std::vector<std::string> m_patterns;  // Bin, then value, mask, low, and high words
+        std::vector<std::string> m_transitions;  // Transition bin
+    };
+
+    // Append a value's words, in the coverpoint's width, to a C++ list entry.
+    static void appendWords(std::string& text, const V3Number& value, const AstNodeExpr* exprp) {
+        V3Number narrowed{&value, exprp->width()};
+        narrowed.opAssign(value);
+        for (int word = 0; word < exprp->widthWords(); ++word) {
+            text += ", " + cvtToStr(narrowed.edataWord(word)) + "U";
         }
-        return true;
     }
 
-    void generateValueMetadata(AstVar* cpp, AstCoverBin* binp, uint32_t index,
-                               AstNodeExpr* valuep) {
-        if (binp->transp()) {
-            m_constructorp->addStmtsp(itemCall(binp->fileline(), cpp,
-                                               VCMethod::COVERGROUP_VALUE_TRANSITION,
-                                               {cnum(binp->fileline(), index)})
-                                          ->makeStmt());
-        }
-        AstNodeExpr* const exprp = m_cpBins.at(cpp).exprp;
+    void collectValueMetadata(ValueLists& lists, AstNodeExpr* exprp, AstCoverBin* binp,
+                              uint32_t index, AstNodeExpr* valuep) {
+        const std::string bin = cvtToStr(index) + "U";
+        if (binp->transp()) lists.m_transitions.push_back(bin);
         for (AstNode* const sourcep : crossBinValues({binp, valuep})) {
-            const bool valid = emitValueRange(
-                sourcep, exprp, binp->isWildcard(),
-                [&](AstNodeExpr* lop, AstNodeExpr* hip, bool pattern, AstNodeExpr* lowerp,
-                    AstNodeExpr* upperp) {
-                    const VCMethod method = pattern           ? exprp->isWide()
-                                                                    ? VCMethod::COVERGROUP_VALUE_PATTERN_W
-                                                                    : VCMethod::COVERGROUP_VALUE_PATTERN
-                                            : exprp->isWide() ? VCMethod::COVERGROUP_VALUE_RANGE_W
-                                                              : VCMethod::COVERGROUP_VALUE_RANGE;
-                    std::vector<AstNodeExpr*> args{cnum(sourcep->fileline(), index), lop, hip};
-                    if (pattern) {
-                        args.push_back(lowerp);
-                        args.push_back(upperp);
-                    }
-                    return itemCall(sourcep->fileline(), cpp, method, args)->makeStmt();
-                });
-            if (!valid) {
-                sourcep->v3warn(E_UNSUPPORTED,
-                                "Unsupported: non-constant or non-integral values in coverage "
-                                "bin exclusions.");
+            CrossValueRange range{sourcep, resolveWidth(sourcep, exprp)};
+            if (!resolveValue(sourcep, exprp, true, binp->isWildcard(), range)) {
+                // Sampling already resolved every state bin value, so only transitions remain.
+                sourcep->v3warn(E_UNSUPPORTED, "Unsupported: non-integral value in a transition "
+                                               "bin of a coverpoint with exclusions.");
+                continue;
             }
+            if (crossRangeEmpty(range)) continue;
+            std::string entry = bin;
+            if (range.wildcard) {
+                V3Number value{sourcep, exprp->width()};
+                V3Number mask{sourcep, exprp->width()};
+                mask.opBitsNonXZ(range.pattern);
+                value.opBitsOne(range.pattern);
+                appendWords(entry, value, exprp);
+                appendWords(entry, mask, exprp);
+            }
+            appendWords(entry, range.lo, exprp);
+            appendWords(entry, range.hi, exprp);
+            (range.wildcard ? lists.m_patterns : lists.m_ranges).push_back(entry);
+        }
+    }
+
+    // Emit one batched metadata list, bounding the size of each call's temporary list.
+    void emitValueList(FileLine* fl, AstVar* cpVarp, VCMethod method,
+                       const std::vector<std::string>& entries) {
+        for (size_t first = 0; first < entries.size(); first += VALUE_LIST_ENTRIES) {
+            const size_t end = std::min(entries.size(), first + VALUE_LIST_ENTRIES);
+            std::string text = "{" + entries[first];
+            for (size_t i = first + 1; i < end; ++i) text += ", " + entries[i];
+            m_constructorp->addStmtsp(
+                itemCall(fl, cpVarp, method, {ctext(fl, text + "}")})->makeStmt());
         }
     }
 
@@ -1984,7 +2094,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 return {};
             }
             target.m_first = bin->second.first;
-            target.m_count = bin->second.second;
+            target.m_count = bin->second.count;
+            target.m_declaredFirst = bin->second.declared;
+            target.m_declaredEnd = bin->second.declared + bin->second.count;
         }
         return target;
     }
@@ -2021,26 +2133,25 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
         m_constructorp->addStmtsp(
             itemCall(fl, cxp, VCMethod::COVERGROUP_SELECT_DIM,
-                     {cnum(fl, target.m_dimension),
-                      ctext(fl, quoted(VIdProtect::protectWordsIf(selectp->name(),
-                                                                  v3Global.opt.protectIds()))),
-                      cnum(fl, selectp->isNegated()), cnum(fl, selectp->rangesp() != nullptr)})
+                     {cnum(fl, target.m_dimension), cnum(fl, target.m_declaredFirst),
+                      cnum(fl, target.m_declaredEnd), cnum(fl, selectp->isNegated()),
+                      cnum(fl, selectp->rangesp() != nullptr)})
                 ->makeStmt());
         for (AstNode* rangep = selectp->rangesp(); rangep; rangep = rangep->nextp()) {
-            if (!emitValueRange(
-                    rangep, bins.exprp, false,
-                    [&](AstNodeExpr* lop, AstNodeExpr* hip, bool, AstNodeExpr*, AstNodeExpr*) {
-                        return itemCall(fl, cxp,
-                                        bins.exprp->isWide() ? VCMethod::COVERGROUP_SELECT_RANGE_W
-                                                             : VCMethod::COVERGROUP_SELECT_RANGE,
-                                        {lop, hip})
-                            ->makeStmt();
-                    },
-                    false)) {
+            CrossValueRange range{rangep, resolveWidth(rangep, bins.exprp)};
+            if (!resolveValue(rangep, bins.exprp, false, false, range)) {
                 bool valid = true;
                 unsupportedCrossRange(selectp, valid);
                 return false;
             }
+            if (crossRangeEmpty(range)) continue;
+            m_constructorp->addStmtsp(itemCall(fl, cxp,
+                                               bins.exprp->isWide()
+                                                   ? VCMethod::COVERGROUP_SELECT_RANGE_W
+                                                   : VCMethod::COVERGROUP_SELECT_RANGE,
+                                               {newValueConst(fl, range.lo, bins.exprp),
+                                                newValueConst(fl, range.hi, bins.exprp)})
+                                          ->makeStmt());
         }
         m_constructorp->addStmtsp(
             itemCall(fl, cxp, VCMethod::COVERGROUP_SELECT_DIM_END)->makeStmt());
@@ -2135,27 +2246,37 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return result;
     }
 
+    // Size the Cartesian product of the declared Normal bins, with each dimension's flat-index
+    // stride.  Live runtime bins only shrink it.  Warns and returns false if it is too large.
+    bool crossShape(AstCoverCross* crossp, const std::vector<AstVar*>& cpVars,
+                    std::vector<uint32_t>& strides, uint32_t& tuples) const {
+        uint64_t product = std::any_of(cpVars.begin(), cpVars.end(),
+                                       [this](AstVar* varp) { return !m_cpBins.at(varp).total; })
+                               ? 0
+                               : 1;
+        strides.resize(cpVars.size());
+        for (size_t d = cpVars.size(); d > 0; --d) {
+            strides[d - 1] = static_cast<uint32_t>(product);
+            product *= m_cpBins.at(cpVars[d - 1]).total;
+            if (product > UINT32_MAX) {
+                crossp->v3warn(COVERIGN,
+                               "Unsupported: cross coverage with more than 2^32-1 tuples.");
+                return false;
+            }
+        }
+        tuples = static_cast<uint32_t>(product);
+        return true;
+    }
+
     CrossLayout resolveCrossLayout(AstCoverCross* crossp, const std::vector<AstVar*>& cpVars,
                                    const std::map<std::string, uint32_t>& dimensions) {
         CrossLayout layout;
         CrossSelectionContext ctx{crossp, cpVars, dimensions, 0, {}};
-        uint64_t tuples = std::any_of(cpVars.begin(), cpVars.end(),
-                                      [this](AstVar* varp) { return !m_cpBins.at(varp).total; })
-                              ? 0
-                              : 1;
-        ctx.strides.resize(cpVars.size());
-        for (size_t d = cpVars.size(); d > 0; --d) {
-            ctx.strides[d - 1] = tuples;
-            tuples *= m_cpBins.at(cpVars[d - 1]).total;
-            if (tuples > UINT32_MAX) {
-                crossp->v3warn(COVERIGN,
-                               "Unsupported: cross coverage with more than 2^32-1 tuples.");
-                layout.valid = false;
-                return layout;
-            }
+        if (!crossShape(crossp, cpVars, ctx.strides, ctx.tuples)) {
+            layout.valid = false;
+            return layout;
         }
-        ctx.tuples = tuples;
-        layout.tuples = tuples;
+        layout.tuples = ctx.tuples;
         CrossSelection occupied;
         CrossSelection excluded;
         std::set<std::string> names;
@@ -2280,8 +2401,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             itemp = nextp;
         }
         const int dims = static_cast<int>(cpVars.size());
-        const CrossLayout layout
-            = dynamic ? CrossLayout{} : resolveCrossLayout(crossp, cpVars, dimensions);
+        CrossLayout layout;
+        if (dynamic) {
+            // The runtime sizes the layout from live bins; only check the declared bound here.
+            std::vector<uint32_t> strides;
+            uint32_t tuples = 0;
+            layout.valid = crossShape(crossp, cpVars, strides, tuples);
+        } else {
+            layout = resolveCrossLayout(crossp, cpVars, dimensions);
+        }
         if (!layout.valid) return;
 
         AstVar* const cxVarp
@@ -2384,8 +2512,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstNode* const rangep = binp->rangesp();
         if (!rangep) return nullptr;
 
-        // Check if this is a wildcard bin
-        const bool isWildcard = binp->isWildcard();
+        // Integral values resolve to the coverpoint's type, as its runtime metadata does
+        const bool integral = exprp->dtypep()->skipRefp()->isIntegralOrPacked();
+        // No value form of a wildcard bin is allowed on a real coverpoint (IEEE 1800-2023 19.5.4)
+        if (binp->isWildcard() && !integral) return wildcardTypeError(binp, exprp);
 
         // Build condition by OR-ing all ranges together
         AstNodeExpr* fullCondp = nullptr;
@@ -2417,6 +2547,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                      "range bounds must be two-state constants");
                         if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                         return nullptr;
+                    } else if (integral) {
+                        rangeCondp = buildValueCondition(binp, exprp, irp);
                     } else {
                         rangeCondp = makeOpenRangeCondition(irp->fileline(), exprp, boundp,
                                                             /*isLowerBound=*/hiUnbounded);
@@ -2431,27 +2563,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                  "range bounds must be two-state constants");
                     if (fullCondp) VL_DO_DANGLING(pushDeletep(fullCondp), fullCondp);
                     return nullptr;
-                } else if (minConstp->num().isCaseEq(maxConstp->num())) {
-                    // Single value
-                    if (isWildcard) {
-                        rangeCondp = buildWildcardCondition(binp, exprp, minConstp);
-                    } else {
-                        rangeCondp = new AstEq{binp->fileline(), exprp->cloneTree(false),
-                                               minExprp->cloneTree(false)};
-                    }
+                } else if (integral) {
+                    rangeCondp = buildValueCondition(binp, exprp, irp);
                 } else {
                     rangeCondp = makeRangeCondition(irp->fileline(), exprp, minExprp, maxExprp);
                 }
             } else if (AstConst* constp = VN_CAST(currRangep, Const)) {
-                if (isWildcard) {
-                    rangeCondp = buildWildcardCondition(binp, exprp, constp);
-                } else {
-                    // TODO: A 4-state bin value (e.g. bins b = {2'b0x}) must match with ===
-                    // (AstEqCase) per IEEE 1800-2023 19.5.4. == is equivalent under 2-state sim
-                    // (x/z collapse to 0); switch to AstEqCase when 4-state sim support lands.
-                    rangeCondp = new AstEq{binp->fileline(), exprp->cloneTree(false),
-                                           constp->cloneTree(false)};
-                }
+                rangeCondp = buildValueCondition(binp, exprp, constp);
             } else {
                 currRangep->v3error("Non-constant expression in bin range; values must be "
                                     "constants (IEEE 1800-2023 19.5)");
@@ -2467,46 +2585,54 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return fullCondp;
     }
 
-    // Match a wildcard's value bits and the representable source-value bounds.
-    // Non-owning: exprp is cloned internally; caller retains ownership.
-    AstNodeExpr* buildWildcardCondition(AstCoverBin* binp, AstNodeExpr* exprp, AstConst* constp) {
-        FileLine* const fl = binp->fileline();
-
+    // Wildcard bits have no meaning for a non-integral coverpoint.
+    static AstNodeExpr* wildcardTypeError(AstCoverBin* binp, AstNodeExpr* exprp) {
         const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
-        if (!dtypep->isIntegralOrPacked()) {
-            exprp->v3error("Cannot use a wildcard bin on a coverpoint of type "
-                           << dtypep->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.4).\n"
-                           << exprp->warnContextPrimary() << '\n'
-                           << binp->warnOther() << "... Location of wildcard bin\n"
-                           << binp->warnContextSecondary());
+        exprp->v3error("Cannot use a wildcard bin on a coverpoint of type "
+                       << dtypep->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.4).\n"
+                       << exprp->warnContextPrimary() << '\n'
+                       << binp->warnOther() << "... Location of wildcard bin\n"
+                       << binp->warnContextSecondary());
+        return new AstConst{binp->fileline(), AstConst::BitFalse{}};
+    }
+
+    // Match one bin value, range, or wildcard pattern.  Integral coverpoints first resolve the
+    // value to their type (IEEE 1800-2023 19.5.7).  Non-owning: clones what it uses.
+    AstNodeExpr* buildValueCondition(AstCoverBin* binp, AstNodeExpr* exprp, AstNode* valuep) {
+        FileLine* const fl = valuep->fileline();
+        if (!exprp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+            return new AstEq{fl, exprp->cloneTree(false),
+                             VN_AS(valuep, NodeExpr)->cloneTree(false)};
+        }
+        CrossValueRange range{valuep, resolveWidth(valuep, exprp)};
+        if (!resolveValue(valuep, exprp, true, binp->isWildcard(), range)) {
+            valuep->v3warn(E_UNSUPPORTED,
+                           "Unsupported: non-integral value in a coverage bin of an "
+                           "integral coverpoint.");
             return new AstConst{fl, AstConst::BitFalse{}};
         }
-        const int width = std::max(exprp->width(), constp->width()) + 1;
-        const CrossValueRange domain
-            = crossValueDomain(constp, exprp->width(), exprp->isSigned(), width);
-        CrossValueRange range{constp, width};
-        if (!crossValueRange(constp, exprp, true, true, domain, range)) {
-            constp->v3warn(E_UNSUPPORTED,
-                           "Unsupported: non-integral value in a wildcard coverage bin.");
-            return new AstConst{fl, AstConst::BitFalse{}};
+        if (crossRangeEmpty(range)) return new AstConst{fl, AstConst::BitFalse{}};
+        AstConst* const lop = newValueConst(fl, range.lo, exprp);
+        AstConst* const hip = newValueConst(fl, range.hi, exprp);
+        AstNodeExpr* condp = nullptr;
+        if (lop->num().isCaseEq(hip->num())) {
+            condp = new AstEq{fl, exprp->cloneTree(false), lop};
+        } else {
+            condp = makeRangeCondition(fl, exprp, lop, hip);
+            VL_DO_DANGLING(pushDeletep(lop), lop);
         }
-        if (crossValueLess(range.hi, range.lo) || !crossWildcardIntersects(range)) {
-            return new AstConst{fl, AstConst::BitFalse{}};
-        }
-        V3Number mask{constp, exprp->width()};
-        V3Number value{constp, exprp->width()};
+        VL_DO_DANGLING(pushDeletep(hip), hip);
+        if (!range.wildcard) return condp;
+        // Match the pattern's value bits within the source-value bounds.
+        V3Number mask{valuep, exprp->width()};
+        V3Number value{valuep, exprp->width()};
         mask.opBitsNonXZ(range.pattern);
         value.opBitsOne(range.pattern);
         AstConst* const maskConstp = newValueConst(fl, mask, exprp);
         AstConst* const valueConstp = newValueConst(fl, value, exprp);
         AstNodeExpr* const exprMasked = new AstAnd{fl, exprp->cloneTree(false), maskConstp};
         AstNodeExpr* const valueMasked = new AstAnd{fl, valueConstp, maskConstp->cloneTree(false)};
-        AstConst* const lop = newValueConst(fl, range.lo, exprp);
-        AstConst* const hip = newValueConst(fl, range.hi, exprp);
-        AstNodeExpr* const boundsp = makeRangeCondition(fl, exprp, lop, hip);
-        VL_DO_DANGLING(pushDeletep(lop), lop);
-        VL_DO_DANGLING(pushDeletep(hip), hip);
-        return new AstLogAnd{fl, boundsp, new AstEq{fl, exprMasked, valueMasked}};
+        return new AstLogAnd{fl, condp, new AstEq{fl, exprMasked, valueMasked}};
     }
 
     void generateCoverageComputationCode() {

@@ -7,17 +7,25 @@
 module t;
   bit [3:0] value;
   real real_value;
+  localparam string TEXT = "a";
 
   covergroup cg_values;
     cp: coverpoint value {
-      bins real_bound = {2.0};
+      bins text = {TEXT};
       ignore_bins ignored = {0};
     }
   endgroup
 
   covergroup cg_wild;
     cp: coverpoint value {
-      wildcard bins real_bound = {2.0};
+      wildcard bins text = {TEXT};
+    }
+  endgroup
+
+  covergroup cg_transition;
+    cp: coverpoint value {
+      bins text = (1 => TEXT);
+      ignore_bins ignored = {0};
     }
   endgroup
 
@@ -35,6 +43,7 @@ module t;
 
   cg_values values_cov = new;
   cg_wild wild_cov = new;
+  cg_transition transition_cov = new;
   cg_cross cross_cov = new;
 
   initial $finish;

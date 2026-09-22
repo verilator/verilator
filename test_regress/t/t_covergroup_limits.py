@@ -13,6 +13,6 @@ test.scenarios('vlt_all')
 
 test.compile(verilator_flags2=['--timing'], threads=(2 if test.vltmt else 1))
 
-test.execute(fails=True, check_finished=False, expect_filename=test.golden_filename)
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()

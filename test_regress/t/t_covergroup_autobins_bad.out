@@ -181,8 +181,12 @@
                                                        : ... note: In instance 't'
   161 |     auto_only: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
       |                ^~~~~
-%Error: t/t_covergroup_autobins_bad.v:167:34: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:172:9: Unsupported: cross coverage with more than 2^32-1 tuples.
+                                                      : ... note: In instance 't'
+  172 |     xc: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
+      |         ^~~~~
+%Error: t/t_covergroup_autobins_bad.v:178:34: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
                                             : ... note: In instance 't'
-  167 |       ignore_bins nonconstant = {size_var};
+  178 |       ignore_bins nonconstant = {size_var};
       |                                  ^~~~~~~~
 %Error: Exiting due to

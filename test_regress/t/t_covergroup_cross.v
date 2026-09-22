@@ -171,7 +171,8 @@ module t;
   // Crossed coverpoint with a four-state literal in a non-wildcard array bin
   // (bins av[] = {2'b0x}): LRM 1800-2023 19.5.4 permits 4-state values in a bin definition.
   // The hit-list sizing cannot statically analyze a 4-state value, so it falls back to the
-  // safe slot count.  Under Verilator's 2-state simulation the value matches addr=0.
+  // safe slot count.  A value with x or z bits does not participate (IEEE 1800-2023 19.5.7),
+  // so av[0] and its cross bins have no values and leave the coverage computation.
   covergroup cg_arr_4state;
     cp_addr: coverpoint addr {bins av[] = {2'b0x};}
     cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
@@ -204,9 +205,10 @@ module t;
     orc: cross cp_addr, cp_cmd;
   endgroup
 
-  // Crossed coverpoint with an inverted range bin (lo bound > hi bound): the bin matches no
-  // value, so the hit-list sizing rejects it (lo > hi) and falls back to the safe slot count.
-  // The 'inv' bin and its cross bins are therefore never hit (coverage stays at 40%).
+  // Crossed coverpoint with an inverted range bin (lo bound > hi bound): the range is empty
+  // (IEEE 1800-2023 11.4.13), so the hit-list sizing rejects it (lo > hi) and falls back to the
+  // safe slot count.  A bin without values, and its cross bins, leave the coverage computation
+  // (IEEE 1800-2023 19.11.1).
   covergroup cg_inv;
     cp_addr: coverpoint addr {bins inv = {[3 : 0]};}  // inverted -> never matches
     cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
@@ -486,11 +488,11 @@ module t;
     addr = 0; cmd = 1; cg_wild_solo_inst.sample();
     `checkr(cg_wild_solo_inst.get_inst_coverage(), 100.0);  // 5/5
 
-    // Sample cg_arr_4state: 4-state literal bin {2'b0x} matches addr=0 (2-state sim); cross 1x2
-    // cg_arr_4state: 1+2+2=5 bins; sample both cmd values -> 100%
+    // Sample cg_arr_4state: 4-state literal bin {2'b0x} has no value, so addr=0 hits no bin
+    // cg_arr_4state: 0+2+0=2 bins; sample both cmd values -> 100%
     addr = 0; cmd = 0; cg_arr_4state_inst.sample();
     addr = 0; cmd = 1; cg_arr_4state_inst.sample();
-    `checkr(cg_arr_4state_inst.get_inst_coverage(), 100.0);  // 5/5
+    `checkr(cg_arr_4state_inst.get_inst_coverage(), 100.0);  // 2/2
 
     // Sample cg_overlap: overlapping range bins lo={0,1}, hi={1,2}; cross 2x2
     // cg_overlap: 2+2+4=8 bins; cover lo/hi via addr 0 and 2, plus addr=1 double-hits both
@@ -517,11 +519,11 @@ module t;
     addr = 2; cmd = 1; cg_openrange_inst.sample();  // hi x write
     `checkr(cg_openrange_inst.get_inst_coverage(), 100.0);  // 8/8
 
-    // Sample cg_inv: inverted range bin never matches; only cmd bins are hittable
-    // cg_inv: 1+2+2=5 bins; inv and its 2 cross bins never hit -> 2/5=40%
+    // Sample cg_inv: the empty inverted range bin and its cross bins are not counted
+    // cg_inv: 0+2+0=2 bins -> read + write give 2/2=100%
     addr = 0; cmd = 0; cg_inv_inst.sample();  // read
     addr = 1; cmd = 1; cg_inv_inst.sample();  // write
-    `checkr(cg_inv_inst.get_inst_coverage(), 40.0);  // 2/5: read + write only
+    `checkr(cg_inv_inst.get_inst_coverage(), 100.0);  // 2/2: read + write only
 
     // Sample cg_noNormal: coverpoint has no Normal bins; cross product is empty
     // cg_noNormal: 0+2+0=2 bins (cmd only); both hit -> 100%

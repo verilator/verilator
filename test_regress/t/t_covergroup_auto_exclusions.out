@@ -30,6 +30,8 @@ cg_explicit.cp.ignored[1] [ignore]: 1
 cg_explicit.cp.mixed: 1
 cg_explicit.cp.values[1]: 1
 cg_explicit.cp.values[2]: 1
+cg_many_values.cp.ignored [ignore]: 0
+cg_many_values.cp.odd: 2
 cg_partition.cp.auto_1: 2
 cg_partition.cp.auto_2: 1
 cg_partition.cp.auto_3: 1
@@ -46,6 +48,39 @@ cg_projection.negative.keep: 1
 cg_projection.negative.positive [ignore]: 1
 cg_projection.positive.keep: 1
 cg_projection.positive.negative [ignore]: 1
+cg_real_point.cp.low: 1
+cg_real_point.cp.middle: 1
+cg_real_point.cp.three: 1
+cg_real_values.cp.high: 1
+cg_real_values.cp.ignored [ignore]: 1
+cg_real_values.cp.low: 1
+cg_real_values.cp.middle: 2
+cg_real_values.cp.two: 1
+cg_real_values.plain.middle: 2
+cg_real_values.plain.two: 1
+cg_resolution.cp.clipped: 4
+cg_resolution.cp.kept: 4
+cg_resolution.cp.rest [default]: 4
+cg_resolution.cp.values[0]: 2
+cg_resolution.cx.clipped_x_auto_0 [cross]: 2
+cg_resolution.cx.clipped_x_auto_1 [cross]: 2
+cg_resolution.cx.kept_values [cross]: 4
+cg_resolution.cx.values[0]_x_auto_0 [cross]: 1
+cg_resolution.cx.values[0]_x_auto_1 [cross]: 1
+cg_resolution.other.auto_0: 7
+cg_resolution.other.auto_1: 7
+cg_resolution_excl.cp.clipped: 4
+cg_resolution_excl.cp.kept: 4
+cg_resolution_excl.cp.rest [default]: 4
+cg_resolution_excl.cp.unused [ignore]: 0
+cg_resolution_excl.cp.values[0]: 2
+cg_resolution_excl.cx.clipped_x_auto_0 [cross]: 2
+cg_resolution_excl.cx.clipped_x_auto_1 [cross]: 2
+cg_resolution_excl.cx.kept_values [cross]: 4
+cg_resolution_excl.cx.values[0]_x_auto_0 [cross]: 1
+cg_resolution_excl.cx.values[0]_x_auto_1 [cross]: 1
+cg_resolution_excl.other.auto_0: 7
+cg_resolution_excl.other.auto_1: 7
 cg_signed.cp.auto_1: 1
 cg_signed.cp.auto_2: 1
 cg_signed.cp.ignored [ignore]: 1

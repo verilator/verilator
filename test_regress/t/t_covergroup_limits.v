@@ -4,32 +4,39 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d: got=%f exp=%f\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while (0);
+// verilog_format: on
+
+// A bin whose exclusions exceed a search limit is retained, and a cross bin whose selection
+// exceeds one is ignored, each with a runtime warning; sampling still applies the exclusions.
 module t (
     input clk
 );
   int cyc = 0;
 
 `ifdef LIMIT_DEPTH
-  covergroup cg with function sample (bit [1024:0] value);
+  localparam bit [1024:0] VALUE = 1;
+  localparam real EXCLUDED_COVERAGE = 100.0 * 1.0 / 3.0;
+  covergroup cg with function sample (bit [1024:0] value, bit side);
     cp: coverpoint value {
       bins whole = {[$ : $]};
       ignore_bins endpoints = {1025'b0, {1025{1'b1}}};
     }
-  endgroup
-`elsif LIMIT_PRODUCT
-  covergroup cg with function sample (bit [5:0] value);
-    a: coverpoint value {
-      ignore_bins removed = {0};
+    other: coverpoint side {
+      bins zero = {0};
     }
-    b: coverpoint value;
-    c: coverpoint value;
-    d: coverpoint value;
-    e: coverpoint value;
-    f: coverpoint value;
-    cx: cross a, b, c, d, e, f;
+    cx: cross cp, other{bins selected = binsof (cp) intersect {[0 : $]};}
   endgroup
 `else
   localparam logic [63:0] ANY = 64'bx;
+  localparam bit [63:0] VALUE = 64'h0000_0000_00ff_ffff;
+`ifdef LIMIT_QUERY
+  localparam real EXCLUDED_COVERAGE = 100.0 * 1.0 / 3.0;
+`else
+  localparam real EXCLUDED_COVERAGE = 50.0;
+`endif
   covergroup cg with function sample (bit [63:0] value, bit side);
     cp: coverpoint value {
       bins whole = {[$ : $]};
@@ -51,10 +58,10 @@ module t (
       ignore_bins endpoint = {64'hffffffffffffffff};
 `endif
     }
-`ifdef LIMIT_QUERY
     other: coverpoint side {
       bins zero = {0};
     }
+`ifdef LIMIT_QUERY
     cx: cross cp, other{bins selected = binsof (cp) intersect {[0 : 64'hfffffffefffffffe]};}
 `endif
   endgroup
@@ -65,6 +72,13 @@ module t (
   always @(posedge clk) begin
     ++cyc;
     if (cyc == 3) cov = new;
-    if (cyc == 4) $fatal(1, "Expected a covergroup construction limit");
+    if (cyc == 4) begin
+      cov.sample(0, 0);  // Excluded
+      `checkr(cov.get_inst_coverage(), EXCLUDED_COVERAGE);
+      cov.sample(VALUE, 0);
+      `checkr(cov.get_inst_coverage(), 100.0);
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
   end
 endmodule

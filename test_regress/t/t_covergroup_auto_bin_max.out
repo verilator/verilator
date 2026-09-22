@@ -24,3 +24,6 @@ cg6.cp_data3.auto_0: 1
 cg6.cp_data3.auto_1: 0
 cg6.cp_data3.auto_2: 0
 cg6.cp_data3.auto_3: 1
+cg7.cp_sdata3.auto_0: 1
+cg7.cp_sdata3.auto_1: 1
+cg7.cp_sdata3.auto_2: 2

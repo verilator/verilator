@@ -16,6 +16,7 @@ module t;
   logic [2:0] data3;
   logic [3:0] data4;
   logic [63:0] data64;  // 64-bit signal
+  logic signed [2:0] sdata3;
 
   // Test 1: auto_bin_max default (64) - creates 8 bins for 3-bit signal
   covergroup cg1;
@@ -58,6 +59,13 @@ module t;
     cp_data3: coverpoint data3;
   endgroup
 
+  // Test 7: signed values are partitioned in value order, the last bin taking the remainder:
+  // [-4:-3],[-2:-1],[0:3]
+  covergroup cg7;
+    option.auto_bin_max = 3;
+    cp_sdata3: coverpoint sdata3;
+  endgroup
+
   initial begin
     cg1 cg1_inst;
     cg2 cg2_inst;
@@ -65,6 +73,7 @@ module t;
     cg4 cg4_inst;
     cg5 cg5_inst;
     cg6 cg6_inst;
+    cg7 cg7_inst;
 
     cg1_inst = new;
     cg2_inst = new;
@@ -72,6 +81,7 @@ module t;
     cg4_inst = new;
     cg5_inst = new;
     cg6_inst = new;
+    cg7_inst = new;
 
     data3 = 0;
     cg1_inst.sample();
@@ -123,6 +133,17 @@ module t;
     data3 = 7;
     cg6_inst.sample();
     `checkr(cg6_inst.get_inst_coverage(), 50.0);  // 2/4 bins hit: [0:1],[6:7]
+
+    sdata3 = -4;
+    cg7_inst.sample();  // [-4:-3]
+    sdata3 = 3;
+    cg7_inst.sample();  // [0:3]
+    `checkr(cg7_inst.get_inst_coverage(), 100.0 * 2.0 / 3.0);
+    sdata3 = 0;
+    cg7_inst.sample();  // [0:3]
+    sdata3 = -1;
+    cg7_inst.sample();  // [-2:-1]
+    `checkr(cg7_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
