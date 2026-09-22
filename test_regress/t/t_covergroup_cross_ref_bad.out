@@ -31,15 +31,15 @@
                                             : ... note: In instance 't'
    35 |       bins invalid_right = cx || missing;
       |                                  ^~~~~~~
-%Error: t/t_covergroup_cross_ref_bad.v:36:26: binsof coverpoint 'cp_other' is not an item of cross 'cx' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_cross_ref_bad.v:36:26: binsof coverpoint 'cp_other' is not an item of cross 'cx' (IEEE 1800-2023 19.6.1).
                                             : ... note: In instance 't'
    36 |       bins wrong_point = binsof (cp_other);
       |                          ^~~~~~
-%Error: t/t_covergroup_cross_ref_bad.v:37:24: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_cross_ref_bad.v:37:24: Cannot find bin 'missing' in coverpoint 'cp_a' (IEEE 1800-2023 19.6.1).
                                             : ... note: In instance 't'
    37 |       bins wrong_bin = binsof (cp_a.missing);
       |                        ^~~~~~
-%Error: t/t_covergroup_cross_ref_bad.v:39:7: Duplicate cross bin 'duplicate' (IEEE 1800-2012 19.6.1).
+%Error: t/t_covergroup_cross_ref_bad.v:39:7: Duplicate cross bin 'duplicate' (IEEE 1800-2023 19.6.1).
                                            : ... note: In instance 't'
    39 |       bins duplicate = binsof (cp_b);
       |       ^~~~

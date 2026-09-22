@@ -244,12 +244,12 @@ protected:
         const uint64_t* selectionp;  // Slice of the cross's selection storage
         const char* namep;  // Explicit bin name
         const char* filep;  // Bin declaration file
+        const uint32_t* wordIndicesp = nullptr;  // Slice of the packed selection-word indices
         int line;  // Bin declaration line
         int col;  // Bin declaration column
         VlCovBinKind kind = VlCovBinKind::KIND_NORMAL;  // Normal, ignore, or illegal bin
         uint32_t count = 0;  // Samples matching the selection and guard
         uint32_t numWords = 0;  // Number of nonzero selection-word indices
-        const uint32_t* wordIndicesp = nullptr;  // Slice of the packed selection-word indices
         uint32_t iffIndex = 0;  // Original guard index, including bins removed during finalization
     };
     struct Word final {
@@ -431,18 +431,21 @@ public:
     }
 };
 
-/// Construction-time cross layout over finalized coverpoints, sharing the sampling core.
+// Construction-time cross layout over finalized coverpoints, sharing the sampling core.
 class VlCoverCrossDyn final : public VlCoverCross {
-    struct Layout;
+    class Layout;
     std::unique_ptr<Layout> m_layoutp;  // Owned cross storage and construction-time selections
 
 public:
+    // CONSTRUCTORS
     VlCoverCrossDyn();
     ~VlCoverCrossDyn() override;
-    /// Initialize after all feeding coverpoints have finalized their live bins.
+
+    // METHODS
+    // Initialize after all feeding coverpoints have finalized their live bins.
     void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
               int line, int col);
-    /// Build cross-bin selections in postfix order.
+    // Build cross-bin selections in postfix order.
     void selectAll();
     void selectDim(uint32_t dim, const char* binp, bool negated, bool intersect);
     void selectRange(QData lo, QData hi);
@@ -450,10 +453,10 @@ public:
     void selectDimEnd();
     void selectAnd();
     void selectOr();
-    /// Save a selection without renumbering guards when empty bins are removed.
+    // Save a selection without renumbering guards when empty bins are removed.
     void selectBin(VlCovBinKind kind, const char* namep, const char* filep, int line, int col,
                    uint32_t iffIndex);
-    /// Apply cross exclusions and bind finalized storage to the sampling core.
+    // Apply cross exclusions and bind finalized storage to the sampling core.
     void finalizeBins();
 };
 

@@ -42,6 +42,10 @@
 #endif
 
 struct VlCoverpoint::ValueData final {
+    // CONSTANTS
+    static constexpr uint32_t QUERY_WORK_LIMIT = 1U << 20;  // Maximum graph steps per query
+    static constexpr uint32_t QUERY_DEPTH_LIMIT = 1024;  // Max width for recursive queries
+
     using Value = std::vector<EData>;
     struct Range final {
         Value m_lo;  // Inclusive lower bound and fixed-bit values for wildcard patterns
@@ -72,8 +76,6 @@ struct VlCoverpoint::ValueData final {
     std::map<std::tuple<uint32_t, uint32_t, uint32_t>, uint32_t>
         m_unique;  // (Position, low, high) -> canonical node ID
     std::map<std::pair<uint32_t, uint32_t>, uint32_t> m_combined;  // Cached intersection roots
-    static constexpr uint32_t QUERY_WORK_LIMIT = 1U << 20;  // Maximum graph steps per query
-    static constexpr uint32_t QUERY_DEPTH_LIMIT = 1024;  // Max width for recursive queries
     const VlCovNamer* m_queryNamerp = nullptr;  // Borrowed namer for query-limit error locations
     uint32_t m_queryWork = 0;  // Graph steps consumed by the current query
     bool m_failed = false;  // A query exceeded a limit; subsequent queries must stop
@@ -92,12 +94,16 @@ struct VlCoverpoint::ValueData final {
         return result;
     }
     bool less(WDataInP lhs, WDataInP rhs) const {
+        if (m_isSigned) {
+            const EData mask = VL_MASK_E(m_bits);
+            const EData leftSign = VL_SIGN_E(m_bits, lhs[m_words - 1] & mask);
+            const EData rightSign = VL_SIGN_E(m_bits, rhs[m_words - 1] & mask);
+            if (leftSign != rightSign) return leftSign;
+        }
         for (uint32_t i = m_words; i > 0; --i) {
-            const EData sign
-                = m_isSigned && i == m_words ? EData{1} << VL_BITBIT_E(m_bits - 1) : 0;
             const EData mask = i == m_words ? VL_MASK_E(m_bits) : ~EData{0};
-            const EData left = (lhs[i - 1] & mask) ^ sign;
-            const EData right = (rhs[i - 1] & mask) ^ sign;
+            const EData left = lhs[i - 1] & mask;
+            const EData right = rhs[i - 1] & mask;
             if (left != right) return left < right;
         }
         return false;
@@ -158,6 +164,14 @@ struct VlCoverpoint::ValueData final {
                || std::any_of(m_exclusions.begin() + m_regularExclusions, m_exclusions.end(),
                               [&](const Range& range) { return contains(range, value); });
     }
+    // Value bits, unlike wildcard mask bits, flip the sign bit for signed ordering.
+    bool orderBit(const Value& value, uint32_t bit) const {
+        return (VL_BITISSET_W(value, bit) != 0) ^ (m_isSigned && bit == m_bits - 1);
+    }
+    void setOrderBit(Value& value, uint32_t bit, bool ordered) const {
+        VL_ASSIGNBIT_II(bit, value[VL_BITWORD_E(bit)],
+                        ordered ^ (m_isSigned && bit == m_bits - 1));
+    }
     bool patternAtLeast(const Range& range, const Value& lower, Value& result) const {
         if (range.m_mask.empty()) {
             result = lower;
@@ -168,36 +182,22 @@ struct VlCoverpoint::ValueData final {
         bool greater = false;
         for (uint32_t pos = m_bits; pos > 0;) {
             const uint32_t bit = --pos;
-            const uint32_t word = VL_BITWORD_E(bit);
-            const EData mask = EData{1} << VL_BITBIT_E(bit);
-            const bool sign = m_isSigned && bit == m_bits - 1;
-            const bool fixed = (range.m_mask[word] & mask) != 0;
-            const bool low = ((lower[word] & mask) != 0) ^ sign;
-            const bool chosen = fixed     ? ((range.m_lo[word] & mask) != 0) ^ sign
-                                : greater ? false
-                                          : low;
+            const bool fixed = VL_BITISSET_W(range.m_mask, bit);
+            const bool low = orderBit(lower, bit);
+            const bool chosen = fixed ? orderBit(range.m_lo, bit) : greater ? false : low;
             if (!greater && fixed && !chosen && low) {
                 if (carry < 0) return false;
-                const uint32_t carryWord = VL_BITWORD_E(carry);
-                const EData carryMask = EData{1} << VL_BITBIT_E(carry);
-                if (m_isSigned && static_cast<uint32_t>(carry) == m_bits - 1) {
-                    result[carryWord] &= ~carryMask;
-                } else {
-                    result[carryWord] |= carryMask;
-                }
+                setOrderBit(result, static_cast<uint32_t>(carry), true);
                 for (uint32_t tail = 0; tail < static_cast<uint32_t>(carry); ++tail) {
                     const uint32_t w = VL_BITWORD_E(tail);
-                    const EData m = EData{1} << VL_BITBIT_E(tail);
-                    result[w] = (result[w] & ~m) | (range.m_lo[w] & range.m_mask[w] & m);
+                    VL_ASSIGNBIT_II(tail, result[w],
+                                    VL_BITISSET_E(range.m_lo[w] & range.m_mask[w], tail) != 0);
                 }
                 return true;
             }
             if (!greater && !fixed && !chosen) carry = static_cast<int32_t>(bit);
             if (chosen != low) greater |= chosen && !low;
-            if (chosen ^ sign)
-                result[word] |= mask;
-            else
-                result[word] &= ~mask;
+            setOrderBit(result, bit, chosen);
         }
         return true;
     }
@@ -220,15 +220,14 @@ struct VlCoverpoint::ValueData final {
             result.m_hi[i] |= ~result.m_mask[i];
         }
         result.m_hi.back() &= VL_MASK_E(m_bits);
-        const EData sign = EData{1} << VL_BITBIT_E(m_bits - 1);
-        if (m_isSigned && !(result.m_mask.back() & sign)) {
-            result.m_lo.back() |= sign;
-            result.m_hi.back() &= ~sign;
+        if (m_isSigned && !VL_SIGN_E(m_bits, result.m_mask.back())) {
+            VL_ASSIGNBIT_IO(m_bits - 1, result.m_lo.back());
+            VL_ASSIGNBIT_II(m_bits - 1, result.m_hi.back(), 0);
         }
         bool fixed = false;
         bool contiguous = true;
         for (uint32_t bit = 0; bit < m_bits; ++bit) {
-            if (result.m_mask[VL_BITWORD_E(bit)] & (EData{1} << VL_BITBIT_E(bit)))
+            if (VL_BITISSET_W(result.m_mask, bit))
                 fixed = true;
             else if (fixed)
                 contiguous = false;
@@ -310,14 +309,11 @@ struct VlCoverpoint::ValueData final {
         uint32_t& cached = cache[position][bounds];
         if (cached != UINT32_MAX) return cached;
         const uint32_t bit = position - 1;
-        const uint32_t word = VL_BITWORD_E(bit);
-        const EData mask = EData{1} << VL_BITBIT_E(bit);
-        const bool sign = m_isSigned && position == m_bits;
-        const uint32_t lower = ((range.m_lo[word] & mask) != 0) ^ sign;
-        const uint32_t upper = ((range.m_hi[word] & mask) != 0) ^ sign;
+        const uint32_t lower = orderBit(range.m_lo, bit);
+        const uint32_t upper = orderBit(range.m_hi, bit);
         uint32_t children[2] = {0, 0};
         for (uint32_t value = 0; value < 2; ++value) {
-            if ((!range.m_mask.empty() && (range.m_mask[word] & mask) && value != lower)
+            if ((!range.m_mask.empty() && VL_BITISSET_W(range.m_mask, bit) && value != lower)
                 || ((bounds & 1U) && value < lower) || ((bounds & 2U) && value > upper)) {
                 continue;
             }
@@ -380,9 +376,11 @@ void VlCoverpoint::valueType(uint32_t bits, bool isSigned) {
 }
 
 void VlCoverpoint::valueRange(uint32_t bin, QData lo, QData hi) {
-    const EData low[2] = {static_cast<EData>(lo), static_cast<EData>(lo >> VL_EDATASIZE)};
-    const EData high[2] = {static_cast<EData>(hi), static_cast<EData>(hi >> VL_EDATASIZE)};
-    valueRangeW(bin, WDataInP::external(low), WDataInP::external(high));
+    VlWide<VL_WQ_WORDS_E> low;
+    VlWide<VL_WQ_WORDS_E> high;
+    VL_SET_WQ(low, lo);
+    VL_SET_WQ(high, hi);
+    valueRangeW(bin, low, high);
 }
 
 void VlCoverpoint::valueRangeW(uint32_t bin, WDataInP lop, WDataInP hip) {
@@ -392,12 +390,15 @@ void VlCoverpoint::valueRangeW(uint32_t bin, WDataInP lop, WDataInP hip) {
 }
 
 void VlCoverpoint::valuePattern(uint32_t bin, QData value, QData mask, QData lo, QData hi) {
-    const EData values[2] = {static_cast<EData>(value), static_cast<EData>(value >> VL_EDATASIZE)};
-    const EData masks[2] = {static_cast<EData>(mask), static_cast<EData>(mask >> VL_EDATASIZE)};
-    const EData low[2] = {static_cast<EData>(lo), static_cast<EData>(lo >> VL_EDATASIZE)};
-    const EData high[2] = {static_cast<EData>(hi), static_cast<EData>(hi >> VL_EDATASIZE)};
-    valuePatternW(bin, WDataInP::external(values), WDataInP::external(masks),
-                  WDataInP::external(low), WDataInP::external(high));
+    VlWide<VL_WQ_WORDS_E> values;
+    VlWide<VL_WQ_WORDS_E> masks;
+    VlWide<VL_WQ_WORDS_E> low;
+    VlWide<VL_WQ_WORDS_E> high;
+    VL_SET_WQ(values, value);
+    VL_SET_WQ(masks, mask);
+    VL_SET_WQ(low, lo);
+    VL_SET_WQ(high, hi);
+    valuePatternW(bin, values, masks, low, high);
 }
 
 void VlCoverpoint::valuePatternW(uint32_t bin, WDataInP valuep, WDataInP maskp, WDataInP lop,
@@ -456,8 +457,9 @@ void VlCoverpoint::valueFinalize() {
 }
 
 bool VlCoverpoint::valueExcluded(QData value) const {
-    const EData words[2] = {static_cast<EData>(value), static_cast<EData>(value >> VL_EDATASIZE)};
-    return valueExcludedW(WDataInP::external(words));
+    VlWide<VL_WQ_WORDS_E> words;
+    VL_SET_WQ(words, value);
+    return valueExcludedW(words);
 }
 
 bool VlCoverpoint::valueExcludedW(WDataInP valuep) const { return m_valuesp->excluded(valuep); }
@@ -849,7 +851,9 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
 //=============================================================================
 // VlCoverCrossDyn
 
-struct VlCoverCrossDyn::Layout final {
+class VlCoverCrossDyn::Layout final {
+    friend class VlCoverCrossDyn;
+
     using Mask = std::vector<uint64_t>;
     struct Selected final {
         Bin m_info{};  // Declaration metadata, bin kind, and original iff index
@@ -958,9 +962,11 @@ void VlCoverCrossDyn::selectDim(uint32_t dim, const char* binp, bool negated, bo
 }
 
 void VlCoverCrossDyn::selectRange(QData lo, QData hi) {
-    const EData low[2] = {static_cast<EData>(lo), static_cast<EData>(lo >> VL_EDATASIZE)};
-    const EData high[2] = {static_cast<EData>(hi), static_cast<EData>(hi >> VL_EDATASIZE)};
-    m_layoutp->range(WDataInP::external(low), WDataInP::external(high));
+    VlWide<VL_WQ_WORDS_E> low;
+    VlWide<VL_WQ_WORDS_E> high;
+    VL_SET_WQ(low, lo);
+    VL_SET_WQ(high, hi);
+    m_layoutp->range(low, high);
 }
 
 void VlCoverCrossDyn::selectRangeW(WDataInP lop, WDataInP hip) { m_layoutp->range(lop, hip); }
