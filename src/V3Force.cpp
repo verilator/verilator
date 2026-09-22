@@ -792,7 +792,9 @@ public:
                     = new AstSenItem{flp, VEdgeType::ET_CHANGED, origSenRefp};
                 if (!itemsp) varp->v3fatalSrc("force-rd-update missing force-enable sen item");
                 itemsp->addNext(origItemp);
-                for (ForceInfo* const finfop : forceps) addSenItem(finfop->m_rhsVarVscp);
+                for (ForceInfo* const finfop : forceps) {
+                    if (!finfop->m_isExternal) addSenItem(finfop->m_rhsVarVscp);
+                }
 
                 AstActive* const activep
                     = new AstActive{flp, "force-rd-update", new AstSenTree{flp, itemsp}};
