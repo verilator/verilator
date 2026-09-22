@@ -411,8 +411,8 @@ public:
     V3DfgAstToDfgContext m_ast2DfgContext;
     V3DfgBinToOneHotContext m_binToOneHotContext;  // Statistics context for V3DfgBinToOneHot
     V3DfgBreakCyclesContext m_breakCyclesContext;  // Statistics context for V3DfgBreakCycles
-    V3DfgCseContext m_cseContext0{"1st"};
-    V3DfgCseContext m_cseContext1{"2nd"};
+    V3DfgCseContext m_cseContext0{"1st"};  // Statistics context for CSE stage 1
+    V3DfgCseContext m_cseContext1{"2nd"};  // Statistics context for CSE stage 2
     V3DfgDfgToAstContext m_dfg2AstContext;  // Statistics context for V3DfgDfgToAst
     V3DfgPeepholeContext m_peepholeContext;  // Statistics context for V3DfgPeephole
     V3DfgPushDownSelsContext m_pushDownSelsContext;  // Statistics context for V3DfgPushDownSels

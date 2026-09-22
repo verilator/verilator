@@ -501,20 +501,18 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        std::atomic<uint32_t> m_assertOn{
-            std::numeric_limits<uint32_t>::max()};  // Enabled assertions,
-                                                    // for each VerilatedAssertType we store
-                                                    // 3-bits, one for each directive type. Last
-                                                    // bit guards internal directive types.
+        // Enabled assertions, for each VerilatedAssertType we store 3-bits, one for each directive
+        // type. Last bit guards internal directive types.
+        std::atomic<uint32_t> m_assertOn{std::numeric_limits<uint32_t>::max()};
         std::atomic<uint32_t> m_assertLock{0};  // Locked assertion bits (IEEE 1800-2023 20.11
                                                 // Lock/Unlock); same layout as m_assertOn. While
                                                 // a bit is locked, On/Off/Kill leave it unchanged.
-        std::atomic<uint32_t> m_assertPassOnVacuous{
-            std::numeric_limits<uint32_t>::max()};  // Enabled vacuous pass actions
-        std::atomic<uint32_t> m_assertPassOnNonvacuous{
-            std::numeric_limits<uint32_t>::max()};  // Enabled nonvacuous pass actions
-        std::atomic<uint32_t> m_assertFailOn{
-            std::numeric_limits<uint32_t>::max()};  // Enabled fail actions
+        // Enabled vacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnVacuous{std::numeric_limits<uint32_t>::max()};
+        // Enabled nonvacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnNonvacuous{std::numeric_limits<uint32_t>::max()};
+        // Enabled fail actions
+        std::atomic<uint32_t> m_assertFailOn{std::numeric_limits<uint32_t>::max()};
         std::array<std::atomic<uint32_t>, ASSERT_CONTROL_SLOT_COUNT> m_assertKill{};
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
@@ -548,8 +546,7 @@ protected:
         // A worker queues $finish before the main thread callback can set m_gotFinish.
         std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
         std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
-        std::atomic<bool> m_assertCtlsLocked{
-            false};  // When true, all assertion-control updates are ignored
+        std::atomic<bool> m_assertCtlsLocked{false};  // All assertion-control updates are ignored
         int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
