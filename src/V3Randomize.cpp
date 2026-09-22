@@ -5531,8 +5531,10 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
+        VL_RESTORER_COPY(m_randArrayUniqueNames);
         m_modp = nodep;
         m_randCaseNum = 0;
+        m_randArrayUniqueNames.reset();
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
