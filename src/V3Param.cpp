@@ -880,10 +880,12 @@ class ParamProcessor final {
             V3LinkDotIfaceCapture::forEach([&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
                 if (!entry.refp) return;
                 if (entry.cloneCellPath != cloneCP) return;
-                UASSERT_OBJ(
-                    entry.ownerModp
-                        && (entry.ownerModp == newModp || entry.ownerModp->name() == srcName),
-                    entry.refp, "clone ledger entry for '" << cloneCP << "' has unexpected owner");
+                // Owner may also be a class nested in newModp (e.g. a covergroup).
+                const AstNodeModule* const ownerp = entry.ownerModp;
+                UASSERT_OBJ(ownerp == newModp || ownerp->name() == srcName
+                                || ownerp->aboveLoopp() == newModp,
+                            entry.refp,
+                            "clone ledger entry for '" << cloneCP << "' has unexpected owner");
                 if (entry.cellPath.empty()) return;
 
                 AstRefDType* const refp = entry.refp;
@@ -1022,12 +1024,15 @@ class ParamProcessor final {
                     if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
                         // Use newname (unique specialized module name) as cloneCellPath.
                         const string cloneCP = newname;
-                        // A cloned captured ref lives inside srcModp's tree, so its owner
-                        // is srcModp (SV has no nested module definitions).
-                        UASSERT_OBJ(
-                            entry.ownerModp == srcModp, clonedRefp,
-                            "cloned captured RefDType owner is not the specialized module");
-                        AstNodeModule* const clonedOwnerp = newModp;
+                        // Owner is srcModp or a class nested in it (e.g. a covergroup);
+                        // cloneTree() populated clonep() for the nested case.
+                        AstNodeModule* clonedOwnerp = newModp;
+                        if (entry.ownerModp != srcModp) {
+                            clonedOwnerp = entry.ownerModp->clonep();
+                            UASSERT_OBJ(clonedOwnerp, clonedRefp,
+                                        "captured RefDType owner was not cloned with the "
+                                        "specialized module");
+                        }
                         const V3LinkDotIfaceCapture::TemplateKey tkey{
                             entry.ownerModp ? entry.ownerModp->name() : "", entry.refp->name(),
                             entry.cellPath};
