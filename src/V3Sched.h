@@ -342,7 +342,7 @@ public:
 
     // Helpers for code generation - lazy construct relevant functions
     AstNodeStmt* newAndNotCall(AstVarScope* op, AstVarScope* ap, AstVarScope* bp) const;
-    AstNodeExpr* newAnySetCall(AstVarScope* vscp) const;
+    AstNodeExpr* newAnySetCall(AstVarScope* vscp, AstVarScope* maskp) const;
     AstNodeStmt* newClearCall(AstVarScope* vscp) const;
     AstNodeStmt* newOrIntoCall(AstVarScope* op, AstVarScope* ip) const;
     // Helpers for code generation
@@ -518,6 +518,8 @@ AstNodeStmt* callVoidFunc(AstCFunc* funcp);
 void splitCheck(AstCFunc* ofuncp);
 // Build an AstIf conditional on the given SenTree being triggered
 AstIf* createIfFromSenTree(AstSenTree* senTreep);
+// Constant pool table of the same type as 'vscp' holding 'mask'
+AstVarScope* newMaskTable(AstVarScope* vscp, const std::vector<uint64_t>& mask);
 }  // namespace util
 
 void beforeTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,

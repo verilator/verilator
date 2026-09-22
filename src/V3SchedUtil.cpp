@@ -230,6 +230,17 @@ void splitCheck(AstCFunc* const ofuncp) {
     if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
 }
 
+AstVarScope* newMaskTable(AstVarScope* vscp, const std::vector<uint64_t>& mask) {
+    FileLine* const flp = vscp->fileline();
+    AstInitArray* const initp = new AstInitArray{flp, vscp->dtypep(), nullptr};
+    for (const uint64_t word : mask) {
+        initp->addValuep(new AstConst{flp, AstConst::Unsized64{}, word});
+    }
+    AstVarScope* const tablep = v3Global.rootp()->constPoolp()->findTable(initp);
+    VL_DO_DANGLING(initp->deleteTree(), initp);
+    return tablep;
+}
+
 // Build an AstIf conditional on the given SenTree being triggered
 AstIf* createIfFromSenTree(AstSenTree* senTreep) {
     senTreep = VN_AS(V3Const::constifyExpensiveEdit(senTreep), SenTree);
