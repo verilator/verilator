@@ -49,24 +49,40 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
 # define _VL_SOLVER_PIPE  // Allow pipe SMT solving.  Needs fork()
+# define _VL_SOLVER_PIPE_UNIX
+#elif defined(_WIN32) || defined(__MINGW32__)
+# define _VL_SOLVER_PIPE  // Allow pipe SMT solving.  Uses CreateProcess
+# define _VL_SOLVER_PIPE_WIN
 #endif
 
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_UNIX
 # include <sys/wait.h>
 # include <csignal>
 # include <fcntl.h>
 #endif
 
-#if defined(_WIN32) || defined(__MINGW32__)
-# include <io.h>  // open, read, write, close
+#ifdef _VL_SOLVER_PIPE_WIN
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+# endif
+# ifndef NOMINMAX
+#  define NOMINMAX
+# endif
+# include <windows.h>  // CreatePipe, CreateProcessA, TerminateProcess
+# include <fcntl.h>  // _O_BINARY, _O_WRONLY, _O_RDONLY
+# include <io.h>  // _open_osfhandle, read, write, close
+# include <cstdlib>
+# include <cstring>
 #endif
 // clang-format on
 
 class VlRProcess final : private std::streambuf, public std::iostream {
     static constexpr int BUFFER_SIZE = 4096;
     const char* const* m_cmd = nullptr;  // fork() process argv
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_UNIX
     pid_t m_pid = 0;  // fork() process id
+#elif defined(_VL_SOLVER_PIPE_WIN)
+    HANDLE m_pid = nullptr;  // Child process handle
 #else
     int m_pid = 0;  // fork() process id - always zero as disabled
 #endif
@@ -130,21 +146,32 @@ public:
 
     // Kill and reap a solver that is still running, so no child is left behind
     void terminate() {
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_UNIX
         if (!m_pidExited) {
             ::kill(m_pid, SIGKILL);
             waitpid(m_pid, &m_pidStatus, 0);
         }
 #endif
+#ifdef _VL_SOLVER_PIPE_WIN
+        if (!m_pidExited && m_pid) {
+            TerminateProcess(m_pid, EXIT_FAILURE);
+            WaitForSingleObject(m_pid, INFINITE);
+            CloseHandle(m_pid);
+        }
+#endif
         m_pidExited = true;
+#ifdef _VL_SOLVER_PIPE_WIN
+        m_pid = nullptr;
+#else
         m_pid = 0;
+#endif
         closeFds();
     }
 
     void wait_report() {
         if (m_pidExited) return;
         bool reaped = true;
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_UNIX
         const pid_t rc = waitpid(m_pid, &m_pidStatus, WNOHANG);
         if (rc != m_pid) m_pidStatus = 0;
         reaped = rc != 0;  // Zero means still running, so terminate() reaps it
@@ -161,11 +188,34 @@ public:
             const std::string str = msg.str();
             VL_WARN_MT("", 0, "VlRProcess", str.c_str());
         }
-#endif
         if (reaped) {
             m_pidExited = true;
             m_pid = 0;
         }
+#endif
+#ifdef _VL_SOLVER_PIPE_WIN
+        if (m_pid) {
+            if (WaitForSingleObject(m_pid, 0) == WAIT_OBJECT_0) {
+                DWORD exitCode = 0;
+                GetExitCodeProcess(m_pid, &exitCode);
+                m_pidStatus = static_cast<int>(exitCode);
+                if (m_pidStatus) {
+                    std::stringstream msg;
+                    msg << "Subprocess command `" << m_cmd[0];
+                    for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
+                    msg << "' failed: ";
+                    msg << "exit status " << m_pidStatus;
+                    const std::string str = msg.str();
+                    VL_WARN_MT("", 0, "VlRProcess", str.c_str());
+                }
+                CloseHandle(m_pid);
+                m_pid = nullptr;
+            } else {
+                reaped = false;  // Still running, so terminate() reaps it
+            }
+        }
+        if (reaped) m_pidExited = true;
+#endif
         closeFds();
     }
 
@@ -184,7 +234,104 @@ public:
         clear();
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_WIN
+        if (!cmd || !cmd[0]) return false;
+        m_cmd = cmd;
+        if (!m_logTried) {
+            m_logTried = true;
+            logOpen();
+        }
+        SECURITY_ATTRIBUTES sa;
+        sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+        sa.lpSecurityDescriptor = nullptr;
+        sa.bInheritHandle = TRUE;  // The child must inherit the pipe ends
+        HANDLE fd_stdin_rd = nullptr;  // Pipe end the child reads (we write)
+        HANDLE fd_stdin_wr = nullptr;
+        HANDLE fd_stdout_rd = nullptr;  // Pipe end the child writes (we read)
+        HANDLE fd_stdout_wr = nullptr;
+        if (VL_UNLIKELY(!CreatePipe(&fd_stdin_rd, &fd_stdin_wr, &sa, 0))) {
+            fprintf(stderr, "VlRProcess::open: CreatePipe failed\n");
+            return false;
+        }
+        if (VL_UNLIKELY(!CreatePipe(&fd_stdout_rd, &fd_stdout_wr, &sa, 0))) {
+            fprintf(stderr, "VlRProcess::open: CreatePipe failed\n");
+            CloseHandle(fd_stdin_rd);
+            CloseHandle(fd_stdin_wr);
+            return false;
+        }
+        // The parent's pipe ends must not be inherited, else the child holds
+        // copies of them and the pipes never reach EOF after we close our side
+        SetHandleInformation(fd_stdin_wr, HANDLE_FLAG_INHERIT, 0);
+        SetHandleInformation(fd_stdout_rd, HANDLE_FLAG_INHERIT, 0);
+
+        // Pass the parent's stderr through to the child, like the Unix version
+        HANDLE stderrOrig = GetStdHandle(STD_ERROR_HANDLE);
+        HANDLE stderrInheritable = nullptr;
+        if (stderrOrig && (stderrOrig != INVALID_HANDLE_VALUE)) {
+            DuplicateHandle(GetCurrentProcess(), stderrOrig, GetCurrentProcess(),
+                            &stderrInheritable, 0, TRUE /* inheritable */,
+                            DUPLICATE_SAME_ACCESS);
+        }
+
+        // Build the command line string; quote arguments containing whitespace
+        std::string cmdline;
+        for (const char* const* arg = cmd; *arg; ++arg) {
+            if (arg != cmd) cmdline += ' ';
+            if (strpbrk(*arg, " \t")) cmdline += '"';
+            for (const char* p = *arg; *p; ++p) {
+                if (*p == '"') cmdline += '\\';
+                cmdline += *p;
+            }
+            if (strpbrk(*arg, " \t")) cmdline += '"';
+        }
+
+        STARTUPINFOA si;
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        si.dwFlags = STARTF_USESTDHANDLES;
+        si.hStdInput = fd_stdin_rd;
+        si.hStdOutput = fd_stdout_wr;
+        si.hStdError = stderrInheritable ? stderrInheritable : fd_stdout_wr;
+        PROCESS_INFORMATION pi;
+        ZeroMemory(&pi, sizeof(pi));
+        log("", "# Open: "s + cmd[0]);
+        const BOOL procOk
+            = CreateProcessA(nullptr, &cmdline[0], nullptr, nullptr, TRUE /* inherit */,
+                             CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
+        // The child's ends are consumed by the child; close our references
+        CloseHandle(fd_stdin_rd);
+        CloseHandle(fd_stdout_wr);
+        if (stderrInheritable) CloseHandle(stderrInheritable);
+        if (VL_UNLIKELY(!procOk)) {
+            std::stringstream msg;
+            msg << "VlRProcess::open: CreateProcess(" << cmd[0] << ") error "
+                << GetLastError();
+            const std::string str = msg.str();
+            fprintf(stderr, "%s\n", str.c_str());
+            CloseHandle(fd_stdin_wr);
+            CloseHandle(fd_stdout_rd);
+            return false;
+        }
+        CloseHandle(pi.hThread);  // Only the process handle is of interest
+        m_pid = pi.hProcess;
+        m_pidExited = false;
+        m_pidStatus = 0;
+        // Hand the pipe ends to the C runtime as file descriptors, so the
+        // streambuf overflow/underflow read/write code is platform independent
+        m_writeFd = _open_osfhandle(reinterpret_cast<intptr_t>(fd_stdin_wr),
+                                    _O_WRONLY | _O_BINARY);
+        m_readFd = _open_osfhandle(reinterpret_cast<intptr_t>(fd_stdout_rd),
+                                   _O_RDONLY | _O_BINARY);
+        if (VL_UNLIKELY(m_writeFd == -1 || m_readFd == -1)) {
+            // A handle taken by _open_osfhandle is owned by its descriptor and
+            // closed by closeFds; close only the one the CRT did not take
+            if (m_writeFd == -1) CloseHandle(fd_stdin_wr);
+            if (m_readFd == -1) CloseHandle(fd_stdout_rd);
+            terminate();
+            return false;
+        }
+        return true;
+#elif defined(_VL_SOLVER_PIPE)
         if (!cmd || !cmd[0]) return false;
         m_cmd = cmd;
         if (!m_logTried) {
