@@ -9,8 +9,10 @@ import vltest_bootstrap
 
 test.scenarios("vlt_all", "xrun")
 
-test.compile(make_top_shell=False, make_pli=True,
-             verilator_flags2=["--binary", "--vpi", "--no-l2name", "--public-flat-rw", test.pli_filename])
+test.compile(
+    make_top_shell=False,
+    make_pli=True,
+    verilator_flags2=["--binary", "--vpi", "--no-l2name", "--public-flat-rw", test.pli_filename])
 
 test.execute(use_libvpi=True)
 
