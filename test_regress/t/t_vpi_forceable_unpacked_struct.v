@@ -15,10 +15,7 @@ typedef struct {
 module t;
   response_t forceable_response  /* verilator forceable */;
 
-  bit run_mon_check;
   initial begin
-    run_mon_check = 1'b1;
-    #1;
     $write("*-* All Finished *-*\n");
     $finish;
   end

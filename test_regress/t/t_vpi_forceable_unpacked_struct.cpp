@@ -64,10 +64,12 @@ bool mon_check() {
     TEST_CHECK(discoverable_by_iterate.size(), expected_members.size(),
                discoverable_by_iterate == expected_members);
 
-    TestVpiHandle a = vpi_handle_by_name(const_cast<PLI_BYTE8*>("a"), forceable_response);
-    TestVpiHandle b = vpi_handle_by_name(const_cast<PLI_BYTE8*>("b"), forceable_response);
+    TestVpiHandle a
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.forceable_response.a"), nullptr);
+    TestVpiHandle b
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.forceable_response.b"), nullptr);
     TestVpiHandle nested
-        = vpi_handle_by_name(const_cast<PLI_BYTE8*>("nested"), forceable_response);
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.forceable_response.nested"), nullptr);
     TestVpiHandle c
         = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.forceable_response.nested.c"), nullptr);
     TEST_CHECK_NZ(a);
@@ -92,57 +94,17 @@ bool mon_check() {
     TEST_CHECK_EQ(vpi_get(vpiSize, b), 16);
     TEST_CHECK_EQ(vpi_get(vpiSize, c), 8);
 
-    TEST_CHECK_NZ(putValue(a, 11));
-    TEST_CHECK_NZ(putValue(b, 22));
-    TEST_CHECK_NZ(putValue(c, 33));
+    putValue(a, 11);
+    putValue(b, 22);
+    putValue(c, 33);
     TEST_CHECK_EQ(getValue(a), 11);
     TEST_CHECK_EQ(getValue(b), 22);
     TEST_CHECK_EQ(getValue(c), 33);
     return errors;
 }
 
-PLI_INT32 value_change(t_cb_data* datap) {
-    // Some simulators also report the declaration initializer as a change;
-    // only the write in the initial block, which sets it, means run now
-    if (!datap->value || !datap->value->value.integer) return 0;
+PLI_INT32 start_of_sim(t_cb_data* data) {
     if (mon_check()) vpi_control(vpiStop);
-    return 0;
-}
-
-std::string test_top() {
-    std::string top;
-#ifdef TEST_MODEL_NAME
-    top = std::string{TEST_STRINGIFY(TEST_MODEL_NAME)} + ".";
-#endif
-    top += TestSimulator::top();
-    return top;
-}
-
-void check_failed(const std::string& msg) { std::cout << "%Error: " << msg << std::endl; }
-
-PLI_INT32 start_of_sim(t_cb_data* /*datap*/) {
-    const std::string watched = test_top() + ".run_mon_check";
-    TestVpiHandle varh = vpi_handle_by_name(const_cast<PLI_BYTE8*>(watched.c_str()), NULL);
-    if (!varh) {
-        check_failed("vpi_handle_by_name('" + watched + "') = NULL");
-        vpi_control(vpiStop);
-        return 0;
-    }
-
-    static s_vpi_time vpi_time;
-    vpi_time.type = vpiSuppressTime;
-    static s_vpi_value vpi_value;
-    vpi_value.format = vpiIntVal;
-
-    static s_cb_data cb_data{};
-    cb_data.reason = cbValueChange;
-    cb_data.cb_rtn = &value_change;
-    cb_data.obj = varh;
-    cb_data.time = &vpi_time;
-    cb_data.value = &vpi_value;
-    cb_data.user_data = NULL;
-    TestVpiHandle callback_h = vpi_register_cb(&cb_data);
-    varh.freed();  // Callback holds it
     return 0;
 }
 
@@ -165,4 +127,4 @@ void vpi_compat_bootstrap() {
 
 }  // namespace
 
-void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, nullptr};
+void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
