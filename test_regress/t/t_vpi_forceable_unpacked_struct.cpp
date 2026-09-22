@@ -9,10 +9,10 @@
 //
 //*************************************************************************
 
-#include VM_PREFIX_INCLUDE
-
 #include "verilated.h"
 
+#include "TestCheck.h"
+#include "TestSimulator.h"
 #include "TestVpi.h"
 #include "sv_vpi_user.h"
 #include "vpi_user.h"
@@ -43,23 +43,14 @@ bool expectForceable(vpiHandle handle) {
     return std::string{error.message}.find("non-forceable") == std::string::npos;
 }
 
-}  // namespace
+int errors = 0;
 
-int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
-    contextp->fatalOnVpiError(false);
-
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(), ""}};
-    topp->eval();
+bool mon_check() {
 
     TestVpiHandle forceable_response
-        = vpi_handle_by_name(const_cast<PLI_BYTE8*>("top.forceable_response"), nullptr);
-    if (!forceable_response) {
-        vl_fatal(__FILE__, __LINE__, "", "'forceable_response' not discoverable");
-    }
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.forceable_response"), nullptr);
+    TEST_CHECK_NZ(forceable_response);
+    if (errors) return true;
 
     std::unordered_set<std::string> discoverable_by_iterate;
     if (TestVpiHandle members = vpi_iterate(vpiMember, forceable_response)) {
@@ -68,21 +59,22 @@ int main(int argc, char** argv) {
         }
         members.freed();
     }
-    const std::unordered_set<std::string> expected_members = {
-        "top.forceable_response.a", "top.forceable_response.b", "top.forceable_response.nested"};
-    if (discoverable_by_iterate != expected_members) {
-        vl_fatal(__FILE__, __LINE__, "", "Signals not discoverable by 'vpi_iterate'");
-    }
+    const std::unordered_set<std::string> expected_members
+        = {"t.forceable_response.a", "t.forceable_response.b", "t.forceable_response.nested"};
+    TEST_CHECK(discoverable_by_iterate.size(), expected_members.size(),
+               discoverable_by_iterate == expected_members);
 
     TestVpiHandle a = vpi_handle_by_name(const_cast<PLI_BYTE8*>("a"), forceable_response);
     TestVpiHandle b = vpi_handle_by_name(const_cast<PLI_BYTE8*>("b"), forceable_response);
     TestVpiHandle nested
         = vpi_handle_by_name(const_cast<PLI_BYTE8*>("nested"), forceable_response);
     TestVpiHandle c
-        = vpi_handle_by_name(const_cast<PLI_BYTE8*>("top.forceable_response.nested.c"), nullptr);
-    if (!a || !b || !nested || !c) {
-        vl_fatal(__FILE__, __LINE__, "", "Signals not discoverable by 'vpi_handle_by_name'");
-    }
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.forceable_response.nested.c"), nullptr);
+    TEST_CHECK_NZ(a);
+    TEST_CHECK_NZ(b);
+    TEST_CHECK_NZ(nested);
+    TEST_CHECK_NZ(c);
+    if (errors) return true;
 
     std::unordered_set<std::string> nested_members;
     if (TestVpiHandle members = vpi_iterate(vpiMember, nested)) {
@@ -91,22 +83,86 @@ int main(int argc, char** argv) {
         }
         members.freed();
     }
-    if (nested_members != std::unordered_set<std::string>{"top.forceable_response.nested.c"}) {
-        vl_fatal(__FILE__, __LINE__, "", "Nested signal not discoverable by 'vpi_iterate'");
-    }
+    const std::unordered_set<std::string> expected_nested_members
+        = {"t.forceable_response.nested.c"};
+    TEST_CHECK(nested_members.size(), expected_nested_members.size(),
+               nested_members == expected_nested_members);
 
-    if (vpi_get(vpiSize, a) != 32 || vpi_get(vpiSize, b) != 16 || vpi_get(vpiSize, c) != 8) {
-        vl_fatal(__FILE__, __LINE__, "", "Signal width mismatch");
-    }
+    TEST_CHECK_EQ(vpi_get(vpiSize, a), 32);
+    TEST_CHECK_EQ(vpi_get(vpiSize, b), 16);
+    TEST_CHECK_EQ(vpi_get(vpiSize, c), 8);
 
-    if (!putValue(a, 11) || !putValue(b, 22) || !putValue(c, 33) || getValue(a) != 11
-        || getValue(b) != 22 || getValue(c) != 33) {
-        vl_fatal(__FILE__, __LINE__, "", "Member deposit failed");
-    }
+    TEST_CHECK_NZ(putValue(a, 11));
+    TEST_CHECK_NZ(putValue(b, 22));
+    TEST_CHECK_NZ(putValue(c, 33));
+    TEST_CHECK_EQ(getValue(a), 11);
+    TEST_CHECK_EQ(getValue(b), 22);
+    TEST_CHECK_EQ(getValue(c), 33);
+    return errors;
+}
 
-    if (!expectForceable(forceable_response)) {
-        vl_fatal(__FILE__, __LINE__, "", "Struct is not forceable");
-    }
-
+PLI_INT32 value_change(t_cb_data* datap) {
+    // Some simulators also report the declaration initializer as a change;
+    // only the write in the initial block, which sets it, means run now
+    if (!datap->value || !datap->value->value.integer) return 0;
+    if (mon_check()) vpi_control(vpiStop);
     return 0;
 }
+
+std::string test_top() {
+    std::string top;
+#ifdef TEST_MODEL_NAME
+    top = std::string{TEST_STRINGIFY(TEST_MODEL_NAME)} + ".";
+#endif
+    top += TestSimulator::top();
+    return top;
+}
+
+void check_failed(const std::string& msg) { std::cout << "%Error: " << msg << std::endl; }
+
+PLI_INT32 start_of_sim(t_cb_data* /*datap*/) {
+    const std::string watched = test_top() + ".run_mon_check";
+    TestVpiHandle varh = vpi_handle_by_name(const_cast<PLI_BYTE8*>(watched.c_str()), NULL);
+    if (!varh) {
+        check_failed("vpi_handle_by_name('" + watched + "') = NULL");
+        vpi_control(vpiStop);
+        return 0;
+    }
+
+    static s_vpi_time vpi_time;
+    vpi_time.type = vpiSuppressTime;
+    static s_vpi_value vpi_value;
+    vpi_value.format = vpiIntVal;
+
+    static s_cb_data cb_data{};
+    cb_data.reason = cbValueChange;
+    cb_data.cb_rtn = &value_change;
+    cb_data.obj = varh;
+    cb_data.time = &vpi_time;
+    cb_data.value = &vpi_value;
+    cb_data.user_data = NULL;
+    TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+    varh.freed();  // Callback holds it
+    return 0;
+}
+
+void vpi_compat_bootstrap() {
+    static s_vpi_time vpi_time;
+    vpi_time.high = 0;
+    vpi_time.low = 0;
+    vpi_time.type = vpiSimTime;
+
+    s_cb_data cb_data{};
+    cb_data.reason = cbStartOfSimulation;
+    cb_data.cb_rtn = &start_of_sim;
+    cb_data.obj = NULL;
+    cb_data.time = &vpi_time;
+    cb_data.value = NULL;
+    cb_data.index = 0;
+    cb_data.user_data = NULL;
+    TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+}
+
+}  // namespace
+
+void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, nullptr};
