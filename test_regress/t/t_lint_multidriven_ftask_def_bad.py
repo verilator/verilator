@@ -9,12 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('linter')
 
-test.skip("Too slow; Issue #8431")
-
-test.compile(verilator_flags2=["--binary"])
-
-test.execute()
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

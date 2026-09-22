@@ -222,7 +222,7 @@ class TraceVisitor final : public VNVisitor {
         m_ifaceMemberVscps;
 
     class TraceInitDeclCollector final : public VNVisitor {
-        std::vector<AstTraceDecl*>& m_declps;
+        std::vector<AstTraceDecl*>& m_declps;  // Output: trace declarations found so far
         std::set<const AstCFunc*> m_seenFuncps;
 
         void visit(AstTraceDecl* nodep) override { m_declps.push_back(nodep); }

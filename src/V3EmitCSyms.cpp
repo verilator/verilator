@@ -48,11 +48,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
     // TYPES
     struct ScopeData final {
-        const AstNode* m_nodep;
-        const std::string m_symName;
-        const std::string m_prettyName;
-        const std::string m_defName;
-        const int m_timeunit;
+        const AstNode* m_nodep;  // Scope symbol-table entry corresponds to
+        const std::string m_symName;  // Mangled name used to build __Vscopep_ variable
+        const std::string m_prettyName;  // Pretty (unprotected) name for display
+        const std::string m_defName;  // Name registered for this scope
+        const int m_timeunit;  // Timeunit of this scope
         std::string m_type;  // TODO: this should be an enum
         ScopeData(const AstNode* nodep, const std::string& symName, const std::string& prettyName,
                   const std::string& defName, int timeunit, const std::string& type)
@@ -76,20 +76,20 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_modportName{modportName} {}
     };
     struct ScopeFuncData final {
-        const AstScopeName* const m_scopep;
-        const AstCFunc* const m_cfuncp;
-        const AstNodeModule* const m_modp;
+        const AstScopeName* const m_scopep;  // Scope the DPI export function is registered under
+        const AstCFunc* const m_cfuncp;  // DPI export function
+        const AstNodeModule* const m_modp;  // Module containing the DPI export function
         ScopeFuncData(const AstScopeName* scopep, const AstCFunc* funcp, const AstNodeModule* modp)
             : m_scopep{scopep}
             , m_cfuncp{funcp}
             , m_modp{modp} {}
     };
     struct ScopeVarData final {
-        const std::string m_scopeName;
-        const std::string m_varBasePretty;
-        const AstVar* const m_varp;
-        const AstNodeModule* const m_modp;
-        const AstScope* const m_scopep;
+        const std::string m_scopeName;  // Full name of the scope containing the variable
+        const std::string m_varBasePretty;  // Pretty base name of the variable, without scope
+        const AstVar* const m_varp;  // Public variable
+        const AstNodeModule* const m_modp;  // Module containing the variable
+        const AstScope* const m_scopep;  // Scope containing the variable
         ScopeVarData(const std::string& scopeName, const std::string& varBasePretty,
                      const AstVar* varp, const AstNodeModule* modp, const AstScope* scopep)
             : m_scopeName{scopeName}

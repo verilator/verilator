@@ -3872,7 +3872,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 }
 string AstVar::dpiTmpVarType(const string& varName) const {
     class converter final : public DpiTypesToStringConverter {
-        const string m_name;
+        const string m_name;  // Variable name
         string arraySuffix(const AstVar* varp, size_t n) const {
             if (const AstUnpackArrayDType* const unpackp
                 = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType)) {

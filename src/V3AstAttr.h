@@ -928,7 +928,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false,  "r") \
     macro(RANDOMIZER_HARD,                    "hard",                   false,  "r+") \
     macro(RANDOMIZER_SOFT,                    "soft",                   false,  "rrrr") \
-    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "r") \
+    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "rr") \
     macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  "r") \
     macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  "rr") \
     macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  "rrr") \
@@ -1764,8 +1764,8 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 class VNumRange final {
 public:
-    int m_left = 0;
-    int m_right = 0;
+    int m_left = 0;  // Left side of range (pre-':')
+    int m_right = 0;  // Right side of range (post-':')
     bool m_ranged = false;  // Has a range
     bool operator==(const VNumRange& rhs) const {
         return m_left == rhs.m_left && m_right == rhs.m_right && m_ranged == rhs.m_ranged;

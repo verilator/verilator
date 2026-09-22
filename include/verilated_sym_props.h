@@ -39,8 +39,8 @@
 
 // See also V3Ast::VNumRange
 class VerilatedRange final {
-    int m_left = 0;
-    int m_right = 0;
+    int m_left = 0;  // Left side of range (pre-':')
+    int m_right = 0;  // Right side of range (post-':')
 
 protected:
     friend class VerilatedVarProps;
@@ -289,7 +289,7 @@ class VerilatedVar final : public VerilatedVarProps {
         m_forceControlSignals;  // Force control signals
 
 protected:
-    const bool m_isParam;
+    const bool m_isParam;  // From a parameter
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,

@@ -101,9 +101,9 @@ private:
     // We want to re-use allocated constants across calls to clear(), but we want to be able
     // to 'clear()' fast, so we use a generation number based allocator.
     struct ConstAllocator final {
-        size_t m_generation = 0;
-        size_t m_nextFree = 0;
-        std::deque<AstConst*> m_constps;
+        size_t m_generation = 0;  // Generation as of last clear(); invalidates m_nextFree cheaply
+        size_t m_nextFree = 0;  // Index of the next unused constant in m_constps
+        std::deque<AstConst*> m_constps;  // Pool of allocated constants, reused across generations
         AstConst* allocate(size_t currentGeneration, AstNode* nodep) {
             if (m_generation != currentGeneration) {
                 m_generation = currentGeneration;

@@ -1,0 +1,33 @@
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_ftask_def_bad.v:22:30: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'v'
+                                                                : ... note: In instance 't'
+                      t/t_lint_multidriven_ftask_def_bad.v:22:30: 
+   22 |   always_ff @(posedge reset) v <= 1'b1;   
+      |                              ^
+                      t/t_lint_multidriven_ftask_def_bad.v:16:28: ... Location of other write
+   16 |   always_ff @(posedge clk) v <= 1'b0;   
+      |                            ^
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_ftask_def_bad.v:32:30: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'w'
+                                                                : ... note: In instance 't'
+                      t/t_lint_multidriven_ftask_def_bad.v:32:30: 
+   32 |   always_ff @(posedge reset) w <= 1'b0;   
+      |                              ^
+                      t/t_lint_multidriven_ftask_def_bad.v:26:28: ... Location of other write
+   26 |   always_ff @(posedge clk) set_w();   
+      |                            ^~~~~
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_ftask_def_bad.v:10:18: Signal has multiple driving blocks with different clocking: 'v'
+                      t/t_lint_multidriven_ftask_def_bad.v:16:28: ... Location of first driving block
+   16 |   always_ff @(posedge clk) v <= 1'b0;   
+      |                            ^
+                      t/t_lint_multidriven_ftask_def_bad.v:22:30: ... Location of other driving block
+   22 |   always_ff @(posedge reset) v <= 1'b1;   
+      |                              ^
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_ftask_def_bad.v:11:18: Signal has multiple driving blocks with different clocking: 'w'
+                      t/t_lint_multidriven_ftask_def_bad.v:29:5: ... Location of first driving block
+   29 |     w <= 1'b1;
+      |     ^
+                      t/t_lint_multidriven_ftask_def_bad.v:32:30: ... Location of other driving block
+   32 |   always_ff @(posedge reset) w <= 1'b0;   
+      |                              ^
+%Error: Exiting due to
