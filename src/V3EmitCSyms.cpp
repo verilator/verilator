@@ -391,8 +391,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         const std::string vlEnumType = varp->vlEnumType();
         if (!isLazy) {
-            if (needsEmittedEntSize(vlEnumType))
-                return TableEntryKind::PLAIN_RESIDUAL;
+            if (needsEmittedEntSize(vlEnumType)) return TableEntryKind::PLAIN_RESIDUAL;
             if (varp->isParam()) return TableEntryKind::PLAIN_RESIDUAL;
         }
 

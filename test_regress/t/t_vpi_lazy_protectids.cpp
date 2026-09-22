@@ -11,9 +11,8 @@
 
 #include "verilated.h"
 
-#include "vpi_user.h"
-
 #include "TestCheck.h"
+#include "vpi_user.h"
 
 #include <cstdio>
 #include <fstream>
@@ -55,9 +54,7 @@ vpiHandle mustFind(const char* name) {
         const std::string rooted = std::string{"top."} + name;
         handle = vpi_handle_by_name((PLI_BYTE8*)rooted.c_str(), nullptr);
     }
-    if (!handle) {
-        TEST_CHECK_NZ_LABEL(name, handle);
-    }
+    if (!handle) { TEST_CHECK_NZ_LABEL(name, handle); }
     return handle;
 }
 

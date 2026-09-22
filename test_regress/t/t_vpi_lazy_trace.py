@@ -15,9 +15,11 @@ test.scenarios('simulator')
 test.compile(
     make_top_shell=False,
     make_pli=True,
-    verilator_flags2=["--exe --vpi --vpi-lazy --timing --trace --no-l2name --stats +define+T_VPI_LAZY_TRACE",
-                      test.pli_filename],
-    )
+    verilator_flags2=[
+        "--exe --vpi --vpi-lazy --timing --trace --no-l2name --stats +define+T_VPI_LAZY_TRACE",
+        test.pli_filename
+    ],
+)
 
 test.execute(use_libvpi=True)
 
@@ -38,8 +40,7 @@ if test.vlt:
                  make_pli=True,
                  verilator_flags2=[
                      "--exe --vpi --vpi-lazy --timing --coverage --no-l2name --debug --dump-tree=9"
-                     " +define+T_VPI_LAZY_TRACE",
-                     test.pli_filename
+                     " +define+T_VPI_LAZY_TRACE", test.pli_filename
                  ])
     test.execute(executable=test.obj_dir + "/" + test.vm_prefix, use_libvpi=True)
 

@@ -9,9 +9,8 @@
 //
 //*************************************************************************
 
-#include "vpi_user.h"
-
 #include "TestCheck.h"
+#include "vpi_user.h"
 
 #include <string>
 
@@ -20,7 +19,8 @@ namespace {
 int errors = 0;
 
 vpiHandle findHandle(const char* const name) {
-    if (vpiHandle handle = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name), nullptr)) return handle;
+    if (vpiHandle handle = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name), nullptr))
+        return handle;
     const std::string rooted = std::string{"top."} + name;
     return vpi_handle_by_name(const_cast<PLI_BYTE8*>(rooted.c_str()), nullptr);
 }
@@ -62,10 +62,10 @@ PLI_INT32 checkTraceVpi(PLI_BYTE8*) {
 
 extern "C" int vpi_lazy_trace_check() { return checkTrace(nullptr); }
 
-static s_vpi_systf_data vpiSystfData[] = {
-    {vpiSysFunc, vpiIntFunc, const_cast<PLI_BYTE8*>("$vpi_lazy_trace_check"), checkTraceVpi, 0,
-     0, 0},
-    {0, 0, 0, 0, 0, 0, 0}};
+static s_vpi_systf_data vpiSystfData[]
+    = {{vpiSysFunc, vpiIntFunc, const_cast<PLI_BYTE8*>("$vpi_lazy_trace_check"), checkTraceVpi, 0,
+        0, 0},
+       {0, 0, 0, 0, 0, 0, 0}};
 
 void vpi_compat_bootstrap() {
     for (p_vpi_systf_data systfp = &vpiSystfData[0]; systfp->type; ++systfp) {

@@ -13,9 +13,8 @@
 #include "verilated_vpi.h"
 
 #include VM_PREFIX_INCLUDE
-#include "vpi_user.h"
-
 #include "TestCheck.h"
+#include "vpi_user.h"
 
 #include <cstdio>
 #include <cstring>
@@ -152,9 +151,7 @@ int main(int argc, char** argv) {
             vpiHandle pah = mustFind("t.pa_comb");
             vpiHandle e0 = vpi_handle_by_index(pah, 0);
             TEST_CHECK_NZ_LABEL("t.pa_comb[0]", e0);
-            if (e0) {
-                checkInt("t.pa_comb[0]", e0, (in0 - 1) & 0xff);
-            }
+            if (e0) { checkInt("t.pa_comb[0]", e0, (in0 - 1) & 0xff); }
         }
         checkInt("t.mem", mustFind("t.mem"), in0);  // element 0
         checkInt("t.mem_part", mustFind("t.mem_part"), in0 ^ 0x27);  // element 0
