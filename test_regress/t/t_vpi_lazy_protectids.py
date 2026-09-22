@@ -16,14 +16,14 @@ test.top_filename = "t/t_vpi_lazy_trace.v"
 
 # -Wno-INSECURE: --protect-ids + --vpi intentional.
 test.compile(make_top_shell=False,
-             make_main=False,
              verilator_flags2=[
-                 "--exe --vpi --vpi-lazy --protect-ids"
-                 " --protect-key SECRET_KEY --no-l2name --stats -Wno-INSECURE", test.pli_filename
+                 "--exe --vpi --vpi-lazy --timing --protect-ids"
+                 " --protect-key SECRET_KEY --no-l2name --stats -Wno-INSECURE"
+                 " +define+T_VPI_LAZY_PROTECTIDS", test.pli_filename
              ])
 
 test.execute()
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 7)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 5)
 
 test.passes()

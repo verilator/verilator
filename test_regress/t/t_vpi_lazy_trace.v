@@ -5,14 +5,27 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Reconstruction + alias + register; verify --vpi-lazy + --trace.
+`ifdef T_VPI_LAZY_TRACE
+import "DPI-C" function int vpi_lazy_trace_check();
+`elsif T_VPI_LAZY_PROTECTIDS
+import "DPI-C" function int vpi_lazy_protectids_check();
+`endif
+
 module t (
-  input logic clk,
-  input logic rst,
   output logic [6:0] obs
 );
 
+`ifdef T_VPI_LAZY_TRACE
+`systemc_header
+extern "C" int vpi_lazy_trace_check();
+`verilog
+`elsif T_VPI_LAZY_PROTECTIDS
+`systemc_header
+extern "C" int vpi_lazy_protectids_check();
+`verilog
+`endif
+
   logic [6:0] keep;
-  logic [6:0] result;
 
   // Reconstructed cmb; alias1 aliases keep.
   logic [6:0] cmb;
@@ -30,16 +43,19 @@ module t (
   wire [6:0] cmb_ali;
   assign cmb_ali = cmb;
 
-  always_ff @(posedge clk) begin
-    if (rst) begin
-      keep <= 7'h0;
-      result <= 7'h0;
-    end else begin
-      keep <= keep + 7'h3;
-      result <= cmb;
-    end
-  end
+  assign obs = keep ^ alias1 ^ cmb_net ^ cmb_ali;
 
-  assign obs = result ^ alias1 ^ cmb_net ^ cmb_ali;
+initial begin
+    keep = 7'h2d;
+    #0;
+`ifdef T_VPI_LAZY_TRACE
+    if ($c32("vpi_lazy_trace_check()")) $fatal(1, "VPI lazy trace check failed");
+`elsif T_VPI_LAZY_PROTECTIDS
+    if ($c32("vpi_lazy_protectids_check()")) $fatal(1, "VPI lazy protect-ids check failed");
+`else
+    if ($vpi_lazy_trace_check()) $fatal(1, "VPI lazy trace check failed");
+`endif
+    $finish;
+  end
 
 endmodule

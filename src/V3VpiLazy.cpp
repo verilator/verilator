@@ -142,52 +142,29 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// Reconstruction function stem; suffixed with the group id to cap name size
 static const char* const RECONSTRUCT_FUNC_NAME = "__Vlazy_reconstruct";
-// Shadow member prefix; suffixed with that same group id and the target's slot
 static const char* const SHADOW_PREFIX = "__Vlazyrecon__";
-// Per-module freshness stamp array, indexed by the group's module-local epoch slot
 static const char* const EPOCH_NAME = "__Vlazyepoch";
-// Per-module deposit generation array, indexed by a reconstructed row's module-local deposit
-// slot. One word per guarded row per instance; see V3VpiLazy::DepWord.
 static const char* const DEP_NAME = "__Vlazydep";
-// Separate from the epoch guard, so --output-split-cfuncs can chop the statements up.
 static const char* const RECONSTRUCT_BODY_FUNC_NAME = "__Vlazy_reconstruct_body";
 
 //######################################################################
-// What the pass carries between its entry points, owned by the AstNetlist it was prepared on.
-// prepare() runs before V3Gate and V3Dead and the queries run at emit, so this outlives every
-// pass-local structure; it is a netlist member rather than a file static so that two netlists
-// may be verilated at once.
-
 class V3VpiLazyContext final {
 public:
-    // A cross-scope copy row as prepare() recorded it: a shadow in one scope whose source lives
-    // in another, for which V3EmitCSyms emits an offsetof delta. Names, not pointers: these rows
-    // are written before V3Gate and V3Dead and read after, and a freed AstVar's slot can be
-    // reused.
+    // Names survive the intervening optimisation passes.
     struct CrossScopeSrcNames final {
-        std::string m_dstScopeName;  // Scope holding the shadow
-        std::string m_dstVarName;  // The shadow, which names the descriptor slot
+        std::string m_dstScopeName;
+        std::string m_dstVarName;
         std::string m_srcScopeName;
         std::string m_srcVarName;
     };
 
-    // Left flagged lazy-RW-public by prepare(), by scope-qualified name; verifyRetention's input.
     std::set<std::string> m_residualNames;
     std::vector<CrossScopeSrcNames> m_crossScopeSrcs;
-    // m_crossScopeSrcs bound to the surviving tree by V3VpiLazy::resolveCrossScopeSrcs(). Keyed
-    // by node, not by name: nothing deletes a variable between that call and emit, and
-    // V3EmitCSyms looks this up once per lazy descriptor slot, so the key must not cost a string
-    // build.
     std::map<std::pair<const AstScope*, const AstVar*>, V3VpiLazy::CrossScopeSrc>
         m_crossScopeResolved;
     bool m_crossScopeResolvedDone = false;
-    // Deposit slot of each guarded row, by shadow name: the same reason as above, and shadow
-    // names are design-global (the group id is), so the name identifies the row across every
-    // instance.
     std::unordered_map<std::string, int> m_depSlotOfShadowName;
-    // m_depSlotOfShadowName bound to the surviving tree by V3VpiLazy::resolveCrossScopeSrcs().
     std::map<const AstVar*, V3VpiLazy::DepWord> m_depWordResolved;
     // Guards emitted, against which finalize() checks that the optimizer did not fold them away.
     int m_depGuards = 0;

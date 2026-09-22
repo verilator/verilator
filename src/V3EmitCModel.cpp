@@ -49,7 +49,7 @@ class EmitCModel final : public EmitCFunc {
         return funcps;
     }
 
-    // Whether the model reports a pending --vpi-lazy deposit, which the eval loop settles
+    // Report pending lazy deposit to the eval loop.
     static bool emitVpiLazySettleRequest() {
         return v3Global.opt.vpiLazy() && v3Global.hasVpiLazyRetained();
     }
@@ -447,7 +447,6 @@ class EmitCModel final : public EmitCFunc {
         puts("m_evalLoop.eval();\n");
         puts("}\n");
 
-        // ::evalBegin - prepare the model for a time step, and report a pending deposit
         puts("\nbool " + EmitCUtil::topClassName() + "::evalBegin() {\n");
         puts("#ifdef VL_DEBUG\n");
         putsDecoration(nullptr, "// Debug assertions\n");
@@ -461,7 +460,7 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.hasClasses()) puts("vlSymsp->__Vm_deleter.deleteAll();\n");
 
         if (emitVpiLazySettleRequest()) {
-            putsDecoration(nullptr, "// Report and consume a pending --vpi-lazy deposit\n");
+            putsDecoration(nullptr, "// Consume pending lazy deposit\n");
             puts("const bool needsSettle = vlSymsp->__Vm_vpiLazyWritten;\n");
             puts("vlSymsp->__Vm_vpiLazyWritten = false;\n");
             puts("return needsSettle;\n");
@@ -479,8 +478,7 @@ class EmitCModel final : public EmitCFunc {
             puts(delaySchedp->nameProtect());
             puts(".cleanupForevered();\n");
         }
-        // Retires both memos and deposits, so the next VPI read reconstructs from fresh
-        // model state and no override outlives the eval that may have changed its drivers
+        // Retire lazy state after evaluation.
         if (v3Global.opt.vpiLazy()) puts("vlSymsp->lazyEvalEnd();\n");
 
         puts("}\n");

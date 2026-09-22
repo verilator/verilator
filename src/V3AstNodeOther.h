@@ -540,8 +540,8 @@ class AstCFunc final : public AstNode {
                          // so adding/removing loose functions doesn't recompile everything.
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
-    bool m_vpiLazyReconstruct : 1;  // --vpi-lazy reconstruct cone, shared by all instances
-    bool m_voidSelfArg : 1;  // Takes 'void* voidSelf' and recovers vlSelf itself
+    bool m_vpiLazyReconstruct : 1;  // Shared --vpi-lazy reconstruct cone
+    bool m_voidSelfArg : 1;  // Receives untyped self pointer
     bool m_dpiPure : 1;  // Pure DPI function
     bool m_dpiContext : 1;  // Declared as 'context' DPI import/export function
     bool m_dpiExportDispatcher : 1;  // This is the DPI export entry point (i.e.: called by user)
@@ -1585,7 +1585,7 @@ class AstNetlist final : public AstNode {
     std::array<AstCFunc*, VEval::_ENUM_END> m_evalFuncps{};
     // The trigger dump function of each region if exists, otherwise nullptr
     std::array<AstCFunc*, VEval::_ENUM_END> m_dumpTriggersFuncps{};
-    // --vpi-lazy pass state, spanning V3VpiLazy::prepare() through emit. Null unless that ran.
+    // --vpi-lazy pass state
     V3VpiLazyContext* m_vpiLazyContextp = nullptr;
 
 public:
@@ -1605,7 +1605,7 @@ public:
         return modulesp();  // First one in the list, for now
     }
     V3VpiLazyContext* vpiLazyContextp() const { return m_vpiLazyContextp; }
-    V3VpiLazyContext& createVpiLazyContext();  // Discards any existing context
+    V3VpiLazyContext& createVpiLazyContext();
     AstTypeTable* typeTablep() { return m_typeTablep; }
     AstConstPool* constPoolp() { return m_constPoolp; }
     string astConstOrigParamName(const AstConst* nodep) const;
@@ -2281,12 +2281,12 @@ class AstVar final : public AstNode {
     bool m_sigModPublic : 1;  // User C code accesses this signal and module
     bool m_sigUserRdPublic : 1;  // User C code accesses this signal, read only
     bool m_sigUserRWPublic : 1;  // User C code accesses this signal, read-write
-    // Shadow refreshed by copying this variable's storage, rather than by a cone func
+    // Source storage for a copied shadow
     // @astgen ptr := m_lazyCopySrcp : Optional[AstVar]
-    // Shadow vars only: the loose func that refreshes this shadow's cone
+    // Reconstruct function for a shadow
     // @astgen ptr := m_lazyReconFuncp : Optional[AstCFunc]
-    bool m_lazyShadowNet : 1;  // Shadow of a net: the shadow itself is a MODULETEMP
-    VVpiLazyRole m_vpiLazyRole : 3;  // --vpi-lazy role; one of, never several
+    bool m_lazyShadowNet : 1;  // Net shadow is a MODULETEMP
+    VVpiLazyRole m_vpiLazyRole : 3;  // --vpi-lazy role
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_funcLocal : 1;  // Local variable for a function
@@ -2681,8 +2681,7 @@ public:
     bool isSigExternallyRWPublic() const {
         return isSigUserRWPublic() || isSigVpiLazyRWPublic() || isSigVpiLazyRetained();
     }
-    // Written from outside at a point the scheduler does not control. A --vpi-lazy retained
-    // signal is not: its deposit is picked up by the settle re-run instead.
+    // Retained lazy deposits are consumed by settle.
     bool isSigExternallyWrittenAsync() const {
         return isSigUserRWPublic() || isSigVpiLazyRWPublic();
     }

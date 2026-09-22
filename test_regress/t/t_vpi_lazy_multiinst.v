@@ -4,18 +4,14 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Multi-instance / multi-scope --vpi-lazy dedup and correctness checks.
-
-// multiinst: `val` is driven from the parent with a different cone per instance, so no
-// shared reconstruct function fits and all three retain; `derived` still reconstructs.
+// Multi-instance and cross-scope --vpi-lazy cases.
 interface iface_t;
   logic [6:0] val;
   logic [6:0] derived;
   assign derived = val + 7'h1;
 endinterface
 
-// V3Inst leaves a non-VPI-visible `__Vcellinp__` temp per instance rooting the port alias
-// chain: it must become a shared helper target rather than be pinned with storage.
+// Port-alias helper target.
 module sub (
   input  logic [6:0] din,
   output logic [6:0] dout
@@ -25,14 +21,11 @@ module sub (
   assign dout = din_copy ^ 7'h0f;
 endmodule
 
-// multiinst2: member 'b' is driven by a different same-scope expression per instance, so an
-// operand-only shareability test would wrongly call both shareable.
+// Different per-instance expressions prevent sharing.
 interface iface2_t;
   logic [6:0] a;
   logic [6:0] b;
 endinterface
-
-// xscope: a same-scope driver reconstructs; a cross-scope driver retains.
 
 // Non-inlined module shared as one C++ class.
 module child (
@@ -41,12 +34,11 @@ module child (
 );
   /*verilator no_inline_module*/
   logic [7:0] cy;
-  assign cy = din ^ 8'hA5;  // Same-scope driver: reconstructs
+  assign cy = din ^ 8'hA5;
   logic [7:0] cflop;
   always_ff @(posedge clk) cflop <= din ^ 8'h5a;
 endmodule
 
-// Non-inlined module shared as one C++ class.
 module parent (
   input logic clk,
   input logic [7:0] din
@@ -54,10 +46,8 @@ module parent (
   /*verilator no_inline_module*/
   child uc (.clk(clk), .din(din));
   logic [7:0] py;
-  assign py = uc.cy + 8'h03;  // Cross-scope driver: retains
-  // Alias whose canonical is a boundary in another scope, in a module with two instances: the
-  // entry cannot name the canonical (one selfp plus an offset reaches only this scope), so the
-  // alias must keep its own storage or its row is lost, or worse taken from another instance.
+  assign py = uc.cy + 8'h03;
+  // A cross-scope boundary alias needs local storage.
   logic [7:0] xali;
   assign xali = uc.cflop;
 endmodule

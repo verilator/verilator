@@ -98,8 +98,7 @@ string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNo
 string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     // Return argument list for given C function
     string args;
-    // voidSelfArg keeps the self pointer (so V3Descope still emits relative refs) but takes it
-    // untyped, for a function whose address is stored outside the model
+    // Address-taken functions receive an untyped self pointer.
     if (nodep->isLoose() && !nodep->isStatic() && !nodep->voidSelfArg()) {
         if (nodep->isConst().trueKnown()) args += "const ";
         args += EmitCUtil::prefixNameProtect(EmitCParentModule::get(nodep));

@@ -169,8 +169,7 @@ public:
                 vVtxp->clearReducibleAndDedupable("SigPublic");
                 vVtxp->setConsumed("SigPublic");
             } else if (vscp->varp()->isSigVpiLazyRetained()) {
-                // Stays reducible, as a deposit is undone by the driver re-running first.
-                // Dedup is not: it severs the variable from the driver VPI must still see.
+                // Dedup would sever VPI from the driver.
                 vVtxp->clearDedupable("SigVpiLazyRetained");
                 vVtxp->setConsumed("SigVpiLazyRetained");
             }
@@ -739,7 +738,7 @@ class GateInline final {
             for (V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
-                // One reconstruct func serves every instance, so it must read the variable
+                // One reconstruct function serves every instance.
                 if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
                     if (cfuncp->vpiLazyReconstruct()) continue;
                 }
@@ -798,8 +797,7 @@ class GateInline final {
                 ++m_statRefs;
             }
 
-            // If removed all usage; a --vpi-lazy retained variable keeps its driver even
-            // with no readers, so VPI still sees the driven value
+            // Retained variables keep their drivers for VPI.
             if (vVtxp->outEmpty() && !vscp->varp()->isSigVpiLazyRetained()) {
                 // Remove Variable vertex
                 VL_DO_DANGLING(vVtxp->unlinkDelete(&m_graph), vVtxp);

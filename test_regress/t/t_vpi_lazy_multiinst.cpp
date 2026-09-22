@@ -15,19 +15,18 @@
 #include VM_PREFIX_INCLUDE
 #include "vpi_user.h"
 
+#include "TestCheck.h"
+
 #include <cstdio>
 #include <memory>
 
-namespace {
-
 int errors = 0;
+
+namespace {
 
 vpiHandle mustFind(const char* name) {
     vpiHandle handle = vpi_handle_by_name((PLI_BYTE8*)name, nullptr);
-    if (!handle) {
-        std::printf("%%Error: failed to find %s\n", name);
-        ++errors;
-    }
+    TEST_CHECK_NZ_LABEL(name, handle);
     return handle;
 }
 
@@ -40,10 +39,7 @@ int readInt(vpiHandle handle) {
 
 void checkInt(const char* name, vpiHandle handle, int expected) {
     const int got = readInt(handle);
-    if (got != expected) {
-        std::printf("%%Error: %s expected %0d, got %0d\n", name, expected, got);
-        ++errors;
-    }
+    TEST_CHECK_EQ_LABEL(name, got, expected);
 }
 
 int m8(int v) { return v & 0xff; }

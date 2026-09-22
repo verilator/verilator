@@ -102,8 +102,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     using ScopeModPair = std::pair<const AstScope*, AstNodeModule*>;
     using ModVarPair = std::pair<const AstNodeModule*, const AstVar*>;
 
-    // Vars with more dims take the residual per-statement path.
-    // Shared with V3VpiLazy so lazy classification cannot diverge from this cutoff.
+    // Shared lazy-table dimension limit.
     static constexpr int VPI_TABLE_MAX_DIMS = V3VpiLazy::VPI_TABLE_MAX_DIMS;
 
     // STATE
@@ -125,9 +124,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // on each module object so no-inline instances keep independent counters
     // when forcePerInstance is used.
     int m_modCoverBins = 0;  // Per-module coverage bin number
-    int m_statVpiLazyVars = 0;  // Lazy VPI vars surviving optimization
-    bool m_lazyCrossScopeRows = false;  // A lazy copy row holds a Syms-relative source delta
-    AstNetlist* const m_netlistp;  // Netlist being emitted; owns the --vpi-lazy pass context
+    int m_statVpiLazyVars = 0;
+    bool m_lazyCrossScopeRows = false;
+    AstNetlist* const m_netlistp;
     const bool m_dpiHdrOnly;  // Only emit the DPI header
     std::vector<std::string> m_splitFuncNames;  // Split file names
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
@@ -136,10 +135,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
-    // Descriptor slots in __Vm_lazyReconstructDatap[], totalled by getSymCtorStmts(), which
-    // emitSymImp() runs before emitSymHdr() declares the array
     size_t m_nLazyReconVars = 0;
-    // name -> recon function pointer initializers, built in getSymCtorStmts()
     std::vector<std::pair<std::string, std::vector<std::string>>> m_lazyReconFnTables;
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
@@ -374,7 +370,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         PLAIN_RESIDUAL,  // Residual, via insertVarStatement() (+ struct/array expansion)
     };
 
-    // Null when the source is plain storage eval() maintains
     static const AstCFunc* lazyRefreshFuncp(const AstVar* varp) {
         if (const AstVar* const srcp = varp->lazyCopySrc()) return srcp->lazyReconFuncp();
         return varp->lazyReconFuncp();
@@ -397,19 +392,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string vlEnumType = varp->vlEnumType();
         if (!isLazy) {
             if (needsEmittedEntSize(vlEnumType))
-                return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
-            // Params are often 'static constexpr' (offsetof is invalid on those);
-            // string params also need a runtime .c_str().
+                return TableEntryKind::PLAIN_RESIDUAL;
             if (varp->isParam()) return TableEntryKind::PLAIN_RESIDUAL;
         }
 
         const std::string name = V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty));
-        // nameProtect() (not protect(name())) so the offsetof member matches the
-        // emitted struct field: a primary I/O port keeps its unprotected name
-        // under --protect-ids, whereas protect() would always hash it.
+        // Must match the emitted member under --protect-ids.
         const std::string member = varp->nameProtect();
-        // VLVF_PUB_RW passes the runtime isPublicRW() gate; VLVF_LAZY_PUBLIC_RW makes a
-        // write deposit into the refreshed shadow rather than a direct store
         const std::string dir = varp->vlEnumDir();
         const std::string flags = isLazy ? "(" + dir + ")|VLVF_PUB_RW|VLVF_LAZY_PUBLIC_RW" : dir;
         // Flat dim (left,right) ints in varInsert() order: unpacked then packed.
@@ -688,7 +677,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
     }
 
-    // 'vpiVarName', 'keyVarName' and 'storageVarp' differ for lazy shadows
     void addScopeVarEntry(const AstScope* const scopep, const AstNodeModule* const modp,
                           const std::string& vpiVarName, const std::string& keyVarName,
                           const AstVar* const storageVarp) {
@@ -704,13 +692,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                     "Scope/variable name lost its appended __DOT__ separator");
         scpName = whole.substr(0, dpos);
         varBase = whole.substr(dpos + std::strlen("__DOT__"));
-        // UINFO(9, "For " << scopep->name() << " - " << vpiVarName << "  Scp "
-        // << scpName << "Var " << varBase);
         const std::string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
         const std::string scpPretty = AstNode::prettyName(VName::dehash(scpName));
         const std::string scpSym = scopeSymString(VName::dehash(scpName));
-        // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
-        // << scpSym);
         if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
 
         m_scopeNames.emplace(  //
@@ -736,9 +720,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 const AstVar* const varp = mvPair.second;
                 if (modp != smodp) continue;
 
-                // Helper shadow: read by the copies of it, never a row of its own
                 if (varp->isLazyReconstructHelper()) continue;
-                // A lazy signal lives in a renamed shadow member but presents its original name
                 const std::string vpiVarName
                     = varp->isLazyReconstructShadow() ? varp->origName() : varp->name();
                 addScopeVarEntry(scopep, modp, vpiVarName, varp->name(), varp);
@@ -1091,7 +1073,7 @@ void EmitCSyms::emitSymHdr() {
 
     const size_t nLazyReconVars = m_nLazyReconVars;
     if (nLazyReconVars) {
-        puts("\n// LAZY VPI RECONSTRUCTED SIGNALS\n");
+        puts("\n");
         puts("VerilatedVarLazyDatap __Vm_lazyReconstructDatap[" + std::to_string(nLazyReconVars)
              + "];\n");
     }
@@ -1143,8 +1125,7 @@ void EmitCSyms::emitSymHdr() {
     }
     puts("};\n");
 
-    // Loose reconstruct funcs are reached only by address, so V3EmitCHeaders emits no
-    // prototype; declare here, in a header every split ctor TU includes. One per module var.
+    // Address-taken reconstruct functions need split-TU declarations.
     if (nLazyReconVars) {
         std::set<std::string> emitted;
         for (const auto& itpair : m_scopeVars) {
@@ -1152,18 +1133,16 @@ void EmitCSyms::emitSymHdr() {
             const AstVar* const varp = svd.m_varp;
             if (!varp->isLazyReconstructShadow()) continue;
             const AstCFunc* const funcp = lazyRefreshFuncp(varp);
-            if (!funcp) continue;  // Copy from plain storage: the runtime refreshes it
+            if (!funcp) continue;
             const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
             const std::string sym = modClassName + "__" + funcp->nameProtect();
-            // Matches newReconFunc: a void* self arg, so the table can take its address
             if (emitted.insert(sym).second) puts("void " + sym + "(void*);\n");
         }
     }
 
-    // Declare the VPI tables defined in the main Syms file once here, not per split TU
     if (!m_varTables.empty() || !m_scopeTableRows.empty() || !m_ifaceRefTableRows.empty()
         || !m_lazyReconFnTables.empty()) {
-        puts("\n// VPI VARIABLE/SCOPE TABLES\n");
+        puts("\n");
         for (const auto& kv : m_varTables) {
             puts("extern const VlVarTableEntry " + kv.first + "[];\n");
         }
@@ -1237,7 +1216,6 @@ void EmitCSyms::emitVarTables() {
         }
         puts("};\n");
     }
-    // Copy rows hold an offsetof, so these stay inside the suppressed region
     for (const auto& kv : m_lazyReconFnTables) {
         puts("extern const VlLazyReconEntry " + kv.first + "[] = {\n");
         for (const std::string& ent : kv.second) {
@@ -1251,8 +1229,7 @@ void EmitCSyms::emitVarTables() {
     puts("# pragma GCC diagnostic pop\n");
     puts("#endif\n");
     if (m_lazyCrossScopeRows) {
-        // Every cross-scope delta is between two members of this one object, so bounding its
-        // size bounds them all; the exact per-row test would run to tens of thousands of asserts
+        // Bounds every Syms-relative source offset.
         puts("static_assert(sizeof(" + symClassName() + ") <= 0x7fffffffULL,\n");
         puts("              \"Symbol table too large for a 32 bit --vpi-lazy copy offset\");\n");
     }
@@ -1455,10 +1432,9 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
         // Keyed by '\0'-joined row text so identical rows share one table.
         std::unordered_map<std::string, std::string> tableByRows;
         int tableCounter = 0;
-        int reconArrCounter = 0;  // Uniquifies generated per-signal recon-fn arrays
-        // Rows are module-relative, so instances of one module share a table.
+        int reconArrCounter = 0;
         std::unordered_map<std::string, std::string> reconTableByRows;
-        size_t lazyBaseRunning = 0;  // Running base into __Vm_lazyReconstructDatap[]
+        size_t lazyBaseRunning = 0;
 
         auto it = m_scopeVars.cbegin();
         while (it != m_scopeVars.cend()) {
@@ -1469,10 +1445,9 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
 
             std::vector<std::string> rows;
             std::vector<std::string> residual;
-            std::vector<std::string> reconFns;  // VlLazyReconEntry rows, lazyIdx order
-            int lazyRel = 0;  // Module-relative lazy descriptor index
-            // Rows sharing a shadow var share its descriptor slot and refresh func;
-            // only their reported name/bounds/flags differ
+            std::vector<std::string> reconFns;
+            int lazyRel = 0;
+            // Rows sharing a shadow share one descriptor.
             std::unordered_map<const AstVar*, int> lazyIdxOfShadow;
 
             for (; it != m_scopeVars.cend() && it->second.m_scopeName == scopeName; ++it) {
@@ -1513,21 +1488,16 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                     if (newLazySlot) {
                         lazyIdxOfShadow.emplace(varp, lazyRel++);
                         const AstCFunc* const funcp = lazyRefreshFuncp(varp);
-                        // Already void(*)(void*): newReconFunc gives it a void* self arg
                         const std::string fn
                             = funcp ? "&" + modClassName + "__" + funcp->nameProtect() : "nullptr";
                         std::string src;
                         bool hasSrc = true;
                         if (const AstVar* const srcp = varp->lazyCopySrc()) {
-                            // nameProtect(), not protect(name()): the offsetof member must
-                            // match the emitted declaration
+                            // Must match the emitted member under --protect-ids.
                             src = "offsetof(" + modClassName + ", " + srcp->nameProtect() + ")";
                         } else if (const V3VpiLazy::CrossScopeSrc* const xsp
                                    = V3VpiLazy::crossScopeCopySrc(m_netlistp, scopep, varp)) {
-                            // Both scopes are members of one Syms object, so the delta is a
-                            // constant, and this table is per scope so it can hold it. Widen
-                            // before subtracting: offsetof is unsigned, so a source ahead of
-                            // the target would wrap. emitVarTables() bounds the narrowing.
+                            // Widen unsigned offsets before subtracting.
                             src = "(int32_t)((std::ptrdiff_t)" + symsMemberOffset(xsp->scopep)
                                   + " + (std::ptrdiff_t)offsetof("
                                   + EmitCUtil::prefixNameProtect(xsp->scopep->modp()) + ", "
@@ -1536,8 +1506,6 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                             m_lazyCrossScopeRows = true;
                         } else {
                             hasSrc = false;
-                            // VlUnpacked's array is its only member, so the element sits at
-                            // offsetof(array) + slot * sizeof(QData)
                             const V3VpiLazy::DepWord* const depp
                                 = V3VpiLazy::depWordOf(m_netlistp, varp);
                             UASSERT_OBJ(depp, varp, "--vpi-lazy cone row has no deposit word");
@@ -1545,14 +1513,12 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                                   + depp->arrayVarp->nameProtect() + ") + "
                                   + cvtToStr(depp->slot * 8);
                         }
-                        // Cone is zero, so keep the majority of table rows short
                         const std::string reconFlags
                             = !hasSrc ? "0" : (funcp ? "VLVF_LAZY_FOLD" : "VLVF_LAZY_COPY");
                         reconFns.emplace_back("{" + fn + ", " + src + ", " + reconFlags + "}");
                     }
                     break;
                 case TableEntryKind::FORCEABLE_RESIDUAL: {
-                    // Lazy shadows are plain packed scalars and always table-eligible.
                     UASSERT_OBJ(!isLazy, varp, "lazy reconstruct shadow must be table-eligible");
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(insertForceableVarStatement(svd, scopep, varp, dims.udim,
@@ -1605,7 +1571,6 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                       + VIdProtect::protectIf(instScopep->nameDotless(), instScopep->protect())
                       + "), ";
                 if (lazyRel > 0) {
-                    // Per-signal reconstruct-method array, indexed by module-relative lazyIdx
                     std::string reconKey;
                     for (const std::string& r : reconFns) {
                         reconKey += r;
@@ -1619,8 +1584,6 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                         fnsName
                             = modClassName + "__VlazyReconFns" + std::to_string(reconArrCounter++);
                         reconTableByRows.emplace(std::move(reconKey), fnsName);
-                        // 'extern' elsewhere: the referencing call may land in another
-                        // --output-split-cfuncs file
                         m_lazyReconFnTables.emplace_back(fnsName, std::move(reconFns));
                     }
                     call += "&__Vm_lazyReconstructDatap[" + std::to_string(lazyBaseRunning) + "], "

@@ -1202,7 +1202,6 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                     formatAttr = numericAttr;
                 } else if (enump && !enump->empty()) {
                     formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
-                    if (fmt == 'd') formatAttr = numericAttr;
                     thingp = const_cast<std::string*>(enump);
                 } else if (fmt == 'p' && widthSet && width == 0) {
                     output += "'h";

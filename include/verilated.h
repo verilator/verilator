@@ -163,70 +163,37 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_SIGNED = (1 << 13),  // Signed integer
     VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
     VLVF_NET = (1 << 15),  // Net object
-    VLVF_LAZY_PUBLIC_RW = (1 << 16),  // VPI public_rw storage resolved on demand
-    VLVF_LAZY_RETAINED = (1 << 17),  // --vpi-lazy signal kept with storage, written only by VPI
-    // --vpi-lazy descriptor shape, two bits; see VerilatedVarLazyDatap
+    VLVF_LAZY_PUBLIC_RW = (1 << 16),
+    VLVF_LAZY_RETAINED = (1 << 17),
     VLVF_LAZY_SHAPE_MASK = (3 << 18),
-    VLVF_LAZY_CONE = (0 << 18),  // Zero, so only the two minority shapes are emitted
+    VLVF_LAZY_CONE = (0 << 18),
     VLVF_LAZY_COPY = (1 << 18),
     VLVF_LAZY_FOLD = (2 << 18)
 };
 
-// Descriptor a --vpi-lazy VerilatedVar's datap points at. Three shapes:
-//
-//   shape           | meaning
-//   ----------------+-------------------------------------------------------------------
-//   VLVF_LAZY_CONE  | refreshp writes this row's storage
-//   VLVF_LAZY_COPY  | memcpy from srcOffset once per epoch; the source holds storage
-//   VLVF_LAZY_FOLD  | call refreshp, then memcpy the cone shadow it wrote
-//
-// The shape is stated in the flags rather than inferred from which fields are set: a copy row
-// whose source is in another scope of the same Syms carries a signed delta that can land on any
-// value, sentinel included, so there is nothing to infer it from.
-//
-// A deposit is recorded per shape, because only a cone has a generated body that could commit
-// over it: a cone's deposit generation lives in the model's own __Vlazydep word, which that
-// body reads and skips on, while a copy or fold row keeps it in 'stamp' below.
-//
-// Element size is a simulation-time lever even when VPI is never read: 56 bytes measured +2.2%
-// slower on XuanTie-E902. Hence the cross-scope signed offset and flag, not a source pointer,
-// and hence one stamp word carrying both of the generations a copy row is matched against.
+// --vpi-lazy descriptor. srcOffset is signed for cross-scope copy rows.
 struct VerilatedVarLazyDatap final {
-    // Null when the source is plain storage eval() maintains; on a fold it refreshes the source
     void (*refreshp)(void* selfp);
-    void* selfp;  // Owning module instance; the offsets below are from here
-    // Copy and fold rows only. Encoded generation, see VerilatedLazyStamps: (epoch << 1) is the
-    // epoch this row last copied at, __Vm_lazyDepStamp the deposit generation VPI last deposited
-    // into it at. Zero, so neither, at construction. A cone row does not use this field: its
-    // deposit generation is in __Vlazydep (below) and it memoises in __Vlazyepoch.
+    void* selfp;
     uint64_t stamp;
     uint32_t storageOffset;
-    // Cone: byte offset of this row's __Vlazydep word, which datapClaimDeposit() WRITES and the
-    // generated cone body reads. Copy/fold: byte offset of the copy source, read only, and
-    // signed because a cross-scope source may precede selfp.
+    // Deposit word for cones; copy source for copy/fold rows.
     int32_t srcOffset;
 };
 
 // ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
 static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpectedly grew");
 
-// What a VPI access compares a --vpi-lazy row's generation words against. Both are stored and
-// neither derived: a derivation the emitter and the runtime each had to reproduce is what let a
-// deposit be silently recomputed away. 'refreshed' is even and 'deposited' odd, so one stamp
-// word can hold either and a zero word can be neither.
+// Refreshed is even and deposited odd, so zero matches neither.
 struct VerilatedLazyStamps final {
-    uint64_t refreshed;  // Row's shadow was rebuilt at the current epoch (copy/fold rows)
-    uint64_t deposited;  // Row's shadow holds a deposit made in the current eval step
+    uint64_t refreshed;
+    uint64_t deposited;
 };
 
 // One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyIdx
 struct VlLazyReconEntry final {
-    void (*refreshp)(void* selfp);  // null when the source is plain storage
-    // Becomes VerilatedVarLazyDatap::srcOffset, so it is the copy source on a copy or fold row
-    // and the row's __Vlazydep word on a cone. varsInsertFromTable() rejects a cone row that
-    // still carries the -1 of an emitter that does not allocate deposit words.
+    void (*refreshp)(void* selfp);
     int32_t srcByteOffset;
-    // The row's shape (VLVF_LAZY_COPY/FOLD); zero, VLVF_LAZY_CONE, on the majority
     uint32_t vlflags;
 };
 

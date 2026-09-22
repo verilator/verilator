@@ -41,11 +41,40 @@ static const bool verbose = false;
 #define TEST_CHECK_NE(got, exp) TEST_CHECK(got, exp, ((got) != (exp)));
 #define TEST_CHECK_CSTR(got, exp) TEST_CHECK(got, exp, 0 == std::strcmp((got), (exp)));
 
+#define TEST_CHECK_CSTR_LABEL(label, got, exp) \
+    do { \
+        if (0 != std::strcmp((got), (exp))) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": " \
+                      << (label) << ": GOT = '" << (got) << "'   EXP = '" << (exp) << "'" \
+                      << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
+#define TEST_CHECK_EQ_LABEL(label, got, exp) \
+    do { \
+        if ((got) != (exp)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": " \
+                      << (label) << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
 #define TEST_CHECK_HEX_EQ(got, exp) \
     do { \
         if ((got) != (exp)) { \
             std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
                       << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
+#define TEST_CHECK_HEX_EQ_LABEL(label, got, exp) \
+    do { \
+        if ((got) != (exp)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": " \
+                      << (label) << std::hex << ": GOT=" << (got) << "   EXP=" << (exp) \
+                      << std::endl; \
             ++errors; \
         } \
     } while (0)
@@ -73,6 +102,15 @@ static const bool verbose = false;
         if (!(got)) { \
             std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
                       << ": GOT= NULL   EXP!=NULL" << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
+#define TEST_CHECK_NZ_LABEL(label, got) \
+    do { \
+        if (!(got)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": " \
+                      << (label) << ": GOT = NULL   EXP != NULL" << std::endl; \
             ++errors; \
         } \
     } while (0)

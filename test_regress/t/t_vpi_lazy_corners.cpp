@@ -15,20 +15,19 @@
 #include VM_PREFIX_INCLUDE
 #include "vpi_user.h"
 
+#include "TestCheck.h"
+
 #include <cstdio>
 #include <cstring>
 #include <memory>
 
-namespace {
-
 int errors = 0;
+
+namespace {
 
 vpiHandle mustFind(const char* name) {
     vpiHandle handle = vpi_handle_by_name((PLI_BYTE8*)name, nullptr);
-    if (!handle) {
-        std::printf("%%Error: failed to find %s\n", name);
-        ++errors;
-    }
+    TEST_CHECK_NZ_LABEL(name, handle);
     return handle;
 }
 
@@ -41,30 +40,22 @@ int readInt(vpiHandle handle) {
 
 void checkInt(const char* name, vpiHandle handle, int expected) {
     const int got = readInt(handle);
-    if (got != expected) {
-        std::printf("%%Error: %s expected %0d, got %0d\n", name, expected, got);
-        ++errors;
-    }
+    TEST_CHECK_EQ_LABEL(name, got, expected);
 }
 
 void checkReal(const char* name, vpiHandle handle, double expected) {
     s_vpi_value value{};
     value.format = vpiRealVal;
     vpi_get_value(handle, &value);
-    if (value.value.real != expected) {
-        std::printf("%%Error: %s expected %g, got %g\n", name, expected, value.value.real);
-        ++errors;
-    }
+    const double got = value.value.real;
+    TEST_CHECK_EQ_LABEL(name, got, expected);
 }
 
 void checkString(const char* name, vpiHandle handle, const char* expected) {
     s_vpi_value value{};
     value.format = vpiStringVal;
     vpi_get_value(handle, &value);
-    if (std::strcmp(value.value.str, expected) != 0) {
-        std::printf("%%Error: %s expected '%s', got '%s'\n", name, expected, value.value.str);
-        ++errors;
-    }
+    TEST_CHECK_CSTR_LABEL(name, value.value.str, expected);
 }
 
 // Walk a two-dimensional unpacked array by index value, lowest first in each dimension: a
@@ -73,28 +64,21 @@ void checkString(const char* name, vpiHandle handle, const char* expected) {
 void checkElems(const char* name, vpiHandle arrayp, int outerLo, int outerN, int innerLo,
                 int innerN, const int* expected, int mask = -1) {
     for (int i = 0; i < outerN; ++i) {
+        char rowName[64];
+        std::snprintf(rowName, sizeof(rowName), "%s[%0d]", name, outerLo + i);
         vpiHandle rowp = vpi_handle_by_index(arrayp, outerLo + i);
-        if (!rowp) {
-            std::printf("%%Error: failed to index %s[%0d]\n", name, outerLo + i);
-            ++errors;
-            continue;
-        }
+        TEST_CHECK_NZ_LABEL(rowName, rowp);
+        if (!rowp) continue;
         for (int j = 0; j < innerN; ++j) {
+            char elemName[80];
+            std::snprintf(elemName, sizeof(elemName), "%s[%0d]", rowName, innerLo + j);
             vpiHandle elemp = vpi_handle_by_index(rowp, innerLo + j);
-            if (!elemp) {
-                std::printf("%%Error: failed to index %s[%0d][%0d]\n", name, outerLo + i,
-                            innerLo + j);
-                ++errors;
-                continue;
-            }
+            TEST_CHECK_NZ_LABEL(elemName, elemp);
+            if (!elemp) continue;
             const int m = (i || j) ? -1 : mask;
             const int got = readInt(elemp) & m;
             const int want = expected[i * innerN + j] & m;
-            if (got != want) {
-                std::printf("%%Error: %s[%0d][%0d] expected %0d, got %0d\n", name, outerLo + i,
-                            innerLo + j, want, got);
-                ++errors;
-            }
+            TEST_CHECK_EQ_LABEL(elemName, got, want);
         }
     }
 }
@@ -167,10 +151,8 @@ int main(int argc, char** argv) {
         {
             vpiHandle pah = mustFind("t.pa_comb");
             vpiHandle e0 = vpi_handle_by_index(pah, 0);
-            if (!e0) {
-                std::printf("%%Error: failed to index t.pa_comb[0]\n");
-                ++errors;
-            } else {
+            TEST_CHECK_NZ_LABEL("t.pa_comb[0]", e0);
+            if (e0) {
                 checkInt("t.pa_comb[0]", e0, (in0 - 1) & 0xff);
             }
         }

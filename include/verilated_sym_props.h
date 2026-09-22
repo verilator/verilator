@@ -159,7 +159,6 @@ public:
     VerilatedVarFlags vldir() const {
         return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR);
     }
-    // Inline: VerilatedVar::datapRefresh's copy/fold path calls totalSize() per VPI access.
     uint32_t entSize() const VL_MT_SAFE {
         if (m_entSize) return m_entSize;
         switch (vltype()) {

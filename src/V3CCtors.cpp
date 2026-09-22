@@ -204,7 +204,6 @@ class CCtorsVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    // --vpi-lazy shadows are fully written by the reconstruct function before any read
     static bool needsNoLazyReset(const AstVar* nodep) {
         if (!v3Global.opt.vpiLazy() || nodep->isFuncLocal()) return false;
         return nodep->isLazyReconstructShadow() || nodep->isLazyReconstructHelper()

@@ -10,35 +10,37 @@
 import vltest_bootstrap
 import os
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
 test.compile(
     make_top_shell=False,
-    make_main=False,
-    verilator_flags2=["--exe --vpi --vpi-lazy --trace --no-l2name --stats", test.pli_filename],
-    make_flags=["-B"])
+    make_pli=True,
+    verilator_flags2=["--exe --vpi --vpi-lazy --timing --trace --no-l2name --stats +define+T_VPI_LAZY_TRACE",
+                      test.pli_filename],
+    )
 
-test.execute()
+test.execute(use_libvpi=True)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 7)
+if test.vlt:
+    if not os.path.exists(test.trace_filename):
+        test.error("VCD file was not created: " + test.trace_filename)
+    elif os.stat(test.trace_filename).st_size == 0:
+        test.error("VCD file is empty: " + test.trace_filename)
+    else:
+        test.file_grep(test.trace_filename, r'\$var')
+        test.file_grep(test.trace_filename, r'keep')
 
-if not os.path.exists(test.trace_filename):
-    test.error("VCD file was not created: " + test.trace_filename)
-elif os.stat(test.trace_filename).st_size == 0:
-    test.error("VCD file is empty: " + test.trace_filename)
-else:
-    test.file_grep(test.trace_filename, r'\$var')
-    test.file_grep(test.trace_filename, r'keep')
+    test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 5)
 
-# --vpi-lazy + --coverage used to abort at compile. --debug --dump-tree reaches the dump code.
-test.vm_prefix = "Vt_vpi_lazy_trace_cov"
-test.compile(make_top_shell=False,
-             make_main=False,
-             verilator_flags2=[
-                 "--exe --vpi --vpi-lazy --coverage --no-l2name --debug --dump-tree=9",
-                 test.pli_filename
-             ],
-             make_flags=["-B"])
-test.execute(executable=test.obj_dir + "/" + test.vm_prefix)
+    # --vpi-lazy + --coverage used to abort at compile. --debug --dump-tree reaches the dump code.
+    test.vm_prefix = "Vt_vpi_lazy_trace_cov"
+    test.compile(make_top_shell=False,
+                 make_pli=True,
+                 verilator_flags2=[
+                     "--exe --vpi --vpi-lazy --timing --coverage --no-l2name --debug --dump-tree=9"
+                     " +define+T_VPI_LAZY_TRACE",
+                     test.pli_filename
+                 ])
+    test.execute(executable=test.obj_dir + "/" + test.vm_prefix, use_libvpi=True)
 
 test.passes()

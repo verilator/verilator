@@ -31,7 +31,7 @@ class StackCountVisitor final : public VNVisitorConst {
 
     // MEMBERS
     uint64_t m_stackSize = 0;  // Running count of instructions
-    uint64_t m_maxLazyCallee = 0;  // Deepest --vpi-lazy reconstruct callee, not their sum
+    uint64_t m_maxLazyCallee = 0;
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_ignoreRemaining = false;  // Ignore remaining statements in the block
     bool m_inCFunc = false;  // Inside function
@@ -179,12 +179,11 @@ private:
             m_inCFunc = true;
             const VisitBase vb{this, nodep};
             iterateChildrenConst(nodep);
-            // Only the deepest reconstruct callee is ever on the stack with us
+            // Only one reconstruct callee is active at a time.
             nodep->user2(m_stackSize + m_maxLazyCallee + 1);
         }
         const uint64_t cost = nodep->user2() - 1;
-        // --vpi-lazy cones share operands, so summing sibling reconstruct calls counts paths
-        // through the call graph rather than its depth, and predicts a stack of hundreds of MB
+        // Shared cone operands make sibling sums incorrect.
         if (nodep->vpiLazyReconstruct()) {
             m_maxLazyCallee = std::max(m_maxLazyCallee, cost);
         } else {

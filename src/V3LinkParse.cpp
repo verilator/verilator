@@ -482,10 +482,8 @@ class LinkParseVisitor final : public VNVisitor {
             && nodep->varType().isVPIAccessible()) {
             if (v3Global.opt.vpiLazy()) {
                 if (nodep->isParam()) {
-                    // Params need no lazy machinery, as with --public-params
                     nodep->sigUserRWPublic(true);
                 } else {
-                    // Reconciled below against any explicit public_flat_rw metacomment
                     nodep->vpiLazyRole(VVpiLazyRole::RECONSTRUCTED);
                 }
             } else if (v3Global.opt.publicFlatRW()) {
@@ -512,7 +510,6 @@ class LinkParseVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
         m_varp = nullptr;
-        // Explicit public_flat_rw/rd pins the signal against DCE, so it wins over lazy
         if (nodep->isSigVpiLazyRWPublic()
             && (nodep->isSigUserRWPublic() || nodep->isSigUserRdPublic()))
             nodep->vpiLazyRole(VVpiLazyRole::NONE);

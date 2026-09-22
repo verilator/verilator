@@ -4,19 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// --vpi-lazy: deposit semantics for a signal whose only driver lives in ANOTHER scope.
-//
-// Both pairs of ports are tied one-to-one to a single net in the parent, which is the shape
-// every SV interface port takes, and differ only in what that net is. 'canon' is a cone, so
-// it holds no storage and its ports would have to be cross-scope *folds* - which one selfp
-// per descriptor cannot express, leaving them floor-retained. 'canonr' holds storage, so
-// each port is a cross-scope copy, named as a compile-time offset difference between two
-// Syms members; that is why each such instance gets its own VlLazyReconEntry table while
-// the two share one VlVarTableEntry row.
-//
-// Whichever disposition the pass gives them, the --public-flat-rw semantics must hold: a
-// driver and its two ports are three distinct nets, a deposit into one is invisible through
-// the others, and the next evaluation overwrites it.
+// Cross-scope ports must retain independent deposit semantics.
 
 module t (
   input logic clk,
@@ -47,9 +35,7 @@ module t (
 
   always_comb canon = acc ^ 32'h5a5a_5a5a;
 
-  // Same stored-driver shape as 'canonr', but real and string. A cross-scope copy row is a
-  // memcpy of a fixed width, which neither type has - a descriptor would refresh zero bytes,
-  // and a std::string cannot be raw-copied - so these ports must land on the floor instead.
+  // Real and string ports cannot use a cross-scope memcpy row.
   real   rcanonr;
   string scanonr;
   always_ff @(posedge clk) begin
@@ -57,7 +43,6 @@ module t (
     scanonr <= accn[0] ? "odd" : "even";
   end
 
-  // One-to-one pin connections, so the port itself is the alias: no __Vcellinp temp
   xsub u_a(.p(canon), .q(qa));
   xsub u_b(.p(canon), .q(qb));
   xsubr u_c(.p(canonr), .q(qc));
@@ -71,8 +56,7 @@ module t (
 
 endmodule
 
-// Not inlined, so 'p' stays a port with a driver in the parent's scope. One module class per
-// driver shape: the disposition of 'p' is settled for the class, so a class instantiated
+// Not inlined so the port keeps its parent-scope driver.
 // against both drivers would retain for all of them and cover neither.
 module xsub (
   input logic [31:0] p,

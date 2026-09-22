@@ -3832,8 +3832,7 @@ void AstVar::combineType(const AstVar* otherp) {
     if (otherp->isSigModPublic()) sigModPublic(true);
     if (otherp->isSigUserRdPublic()) sigUserRdPublic(true);
     if (otherp->isSigUserRWPublic()) sigUserRWPublic(true);
-    // Only NONE/RECONSTRUCTED exist this early; merging two different roles would have meant
-    // one variable in two states, which the old pair of independent bools could express
+    // Roles cannot be merged.
     if (m_vpiLazyRole == VVpiLazyRole::NONE) {
         m_vpiLazyRole = otherp->m_vpiLazyRole;
     } else {
@@ -4132,7 +4131,7 @@ string AstVar::vlEnumDir() const {
     //
     if (isSigExternallyRWPublic()) {
         out += "|VLVF_PUB_RW";
-        // All emission paths route through here, so the write gate sees every retained signal
+        // All emission paths use this write gate.
         if (isSigVpiLazyRetained()) out += "|VLVF_LAZY_RETAINED";
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
@@ -4149,7 +4148,7 @@ string AstVar::vlEnumDir() const {
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
         if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
     }
-    // A shadow is a MODULETEMP, so its net-ness comes from the signal it reconstructs
+    // Shadows are MODULETEMPs; inherit net-ness from their signal.
     if (isNet() || isLazyShadowNet()) out += "|VLVF_NET";
     return out;
 }

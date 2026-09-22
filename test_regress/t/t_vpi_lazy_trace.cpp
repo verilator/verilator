@@ -9,101 +9,68 @@
 //
 //*************************************************************************
 
-#include "verilated.h"
-#include "verilated_vcd_c.h"
-#include "verilated_vpi.h"
-
-#include VM_PREFIX_INCLUDE
 #include "vpi_user.h"
 
-#include <cstdio>
-#include <memory>
+#include "TestCheck.h"
+
+#include <string>
 
 namespace {
 
 int errors = 0;
 
-vpiHandle mustFind(const char* name) {
-    vpiHandle handle = vpi_handle_by_name((PLI_BYTE8*)name, nullptr);
-    if (!handle) {
-        std::printf("%%Error: failed to find %s\n", name);
-        ++errors;
-    }
-    return handle;
+vpiHandle findHandle(const char* const name) {
+    if (vpiHandle handle = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name), nullptr)) return handle;
+    const std::string rooted = std::string{"top."} + name;
+    return vpi_handle_by_name(const_cast<PLI_BYTE8*>(rooted.c_str()), nullptr);
 }
 
-void checkInt(const char* name, vpiHandle handle, int expected) {
+int readInt(vpiHandle handle) {
     s_vpi_value value{};
     value.format = vpiIntVal;
     vpi_get_value(handle, &value);
-    if (value.value.integer != expected) {
-        std::printf("%%Error: %s expected %0d, got %0d\n", name, expected, value.value.integer);
-        ++errors;
-    }
+    return value.value.integer;
+}
+
+PLI_INT32 checkTrace(PLI_BYTE8*) {
+    const vpiHandle keeph = findHandle("t.keep");
+    const vpiHandle cmbh = findHandle("t.cmb");
+    const vpiHandle alias1h = findHandle("t.alias1");
+    TEST_CHECK_NZ_LABEL("t.keep", keeph);
+    TEST_CHECK_NZ_LABEL("t.cmb", cmbh);
+    TEST_CHECK_NZ_LABEL("t.alias1", alias1h);
+    if (errors) return 1;
+
+    const int keep = readInt(keeph);
+    const int cmb = readInt(cmbh);
+    const int alias1 = readInt(alias1h);
+    TEST_CHECK_EQ_LABEL("t.keep", keep, 0x2d);
+    TEST_CHECK_EQ_LABEL("t.cmb", cmb, 0x2e);
+    TEST_CHECK_EQ_LABEL("t.alias1", alias1, 0x2d);
+    return errors ? 1 : 0;
+}
+
+PLI_INT32 checkTraceVpi(PLI_BYTE8*) {
+    s_vpi_value value{};
+    value.format = vpiIntVal;
+    value.value.integer = checkTrace(nullptr);
+    vpi_put_value(vpi_handle(vpiSysTfCall, nullptr), &value, nullptr, vpiNoDelay);
+    return 0;
 }
 
 }  // namespace
 
-int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->commandArgs(argc, argv);
+extern "C" int vpi_lazy_trace_check() { return checkTrace(nullptr); }
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(), ""}};
+static s_vpi_systf_data vpiSystfData[] = {
+    {vpiSysFunc, vpiIntFunc, const_cast<PLI_BYTE8*>("$vpi_lazy_trace_check"), checkTraceVpi, 0,
+     0, 0},
+    {0, 0, 0, 0, 0, 0, 0}};
 
-#if VM_TRACE
-    contextp->traceEverOn(true);
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-    topp->trace(tfp, 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
-#endif
-
-    uint64_t simTime = 0;
-    const auto cycle = [&]() {
-        topp->clk = 0;
-        topp->eval();
-#if VM_TRACE
-        tfp->dump(simTime++);
-#endif
-        topp->clk = 1;
-        topp->eval();
-#if VM_TRACE
-        tfp->dump(simTime++);
-#endif
-    };
-
-    topp->rst = 1;
-    topp->clk = 0;
-    topp->eval();
-#if VM_TRACE
-    tfp->dump(simTime++);
-#endif
-    cycle();
-    topp->rst = 0;
-
-    vpiHandle keeph = mustFind("t.keep");
-    vpiHandle cmbh = mustFind("t.cmb");
-    vpiHandle alias1h = mustFind("t.alias1");
-    if (errors) return 10;
-
-    int keep = 0;  // value after reset
-    for (int i = 0; i < 4; ++i) {
-        cycle();
-        keep = (keep + 0x3) & 0x7f;
-        checkInt("t.keep", keeph, keep);
-        checkInt("t.cmb", cmbh, (keep + 0x1) & 0x7f);
-        checkInt("t.alias1", alias1h, keep);
+void vpi_compat_bootstrap() {
+    for (p_vpi_systf_data systfp = &vpiSystfData[0]; systfp->type; ++systfp) {
+        vpi_register_systf(systfp);
     }
-
-    topp->final();
-#if VM_TRACE
-    tfp->dump(simTime++);
-    tfp->close();
-#endif
-
-    if (errors) {
-        std::printf("%%Error: %0d failures\n", errors);
-        return 1;
-    }
-    std::printf("*-* All Finished *-*\n");
-    return 0;
 }
+
+void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};

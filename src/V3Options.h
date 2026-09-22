@@ -313,7 +313,7 @@ private:
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
     bool m_verilate = true;         // main switch: --verilate
     VOptionBool m_vpi;              // main switch: --vpi
-    bool m_vpiLazy = false;  // main switch: --vpi-lazy
+    bool m_vpiLazy = false;
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
 

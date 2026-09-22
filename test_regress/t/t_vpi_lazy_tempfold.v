@@ -4,14 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// --vpi-lazy: a copy may only fold onto a group TARGET, never onto a group temp.
-//
-// A group's map of solely-written variables covers its temps too. 'o' is a module port, so
-// it never becomes a target, but the group's block is its only writer, which makes it a
-// solely-written temp; 'mix' reads it, which keeps it in the pruned cone and gives it a
-// temp shadow. That shadow is refreshed only by 'mix's reconstruct function and
-// has none of its own, so a copy folded onto it reads a shadow nothing refreshes: a stale
-// value through VPI, with no error anywhere.
+// Copies may fold only onto group targets, never group temporaries.
 
 module t (
   input logic clk,
@@ -32,7 +25,7 @@ module t (
 
 endmodule
 
-// Not inlined, so 'o' stays a port and can never be a reconstruction target.
+// Not inlined so 'o' remains a port.
 module tempsrc (
   input logic [31:0] i,
   output logic [31:0] o,
@@ -44,13 +37,13 @@ module tempsrc (
   logic [31:0] cpy_a;
   logic [31:0] cpy_c;
 
-  // Multi-statement, so 'o' is a temp of this group and 'mix' its only target
+  // 'o' is a group temporary; 'mix' is the target.
   always_comb begin
     o = i ^ 32'h5a5a_0000;
     mix = o + 32'd3;
   end
 
-  // One-statement copies of that temp, in both group shapes: a fold must refuse each
+  // Both copy shapes must refuse the temporary.
   always_comb cpy_a = o;
   assign cpy_c = o;
 

@@ -436,7 +436,7 @@ static void process() {
             // directly from force discovery to assign/deassign lowering without rediscovery.
             V3Force::forceAndAssignAll(v3Global.rootp());
 
-            // Capture reconstructable lazy VPI signals before the optimizer deletes them
+            // Preserve reconstructable lazy signals before optimisation.
             if (v3Global.opt.vpiLazy()) V3VpiLazy::prepare(v3Global.rootp());
 
             // DFG optimization
@@ -491,7 +491,7 @@ static void process() {
             V3Sched::schedule(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
 
-            // Split the cold reconstruction functions, their size now settled
+            // Split reconstruction functions after optimisation.
             if (v3Global.opt.vpiLazy()) V3VpiLazy::finalize(v3Global.rootp());
 
             // Post scheduling transformations - TODO: this should at least be renamed
@@ -652,8 +652,7 @@ static void process() {
             && !v3Global.opt.dpiHdrOnly()) {
             // emitcInlines is first, as it may set needHInlines which other emitters read
             V3EmitC::emitcInlines();
-            // Must follow V3Descope, which makes the sources module members, and the last
-            // V3Dead, which may delete them; emitcSyms reads the result
+            // Bind surviving cross-scope sources before emission.
             if (v3Global.opt.vpiLazy()) V3VpiLazy::resolveCrossScopeSrcs(v3Global.rootp());
             V3EmitC::emitcSyms();
             V3EmitC::emitcConstPool();
