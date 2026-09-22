@@ -27,8 +27,7 @@ def compile_stats(size):
     test.compile(verilator_flags2=["--stats", "--no-debug-check", "-GArraySize=" + str(size)],
                  make_main=False,
                  verilator_make_gmake=False)
-    with open(test.stats, "r", encoding="utf-8") as fh:
-        stats = fh.read()
+    stats = test.file_contents(test.stats)
     times = re.findall(r'Stage, Elapsed time \(sec\), \d+_sched\S*\s+(\S+)', stats)
     peak = re.search(r'Peak Memory Usage \(MB\)\s+(\S+)', stats)
     if not times or not peak:
