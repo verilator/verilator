@@ -3853,6 +3853,7 @@ class WidthVisitor final : public VNVisitor {
         UINFO(5, "   IFACEREF " << nodep);
         userIterateChildren(nodep, m_vup);
         nodep->dtypep(nodep);
+        if (nodep->isVirtual()) nodep->ifaceViaCellp()->setHasVirtualRef();
         UINFO(4, "dtWidthed " << nodep);
     }
     void visit(AstNodeUOrStructDType* nodep) override {

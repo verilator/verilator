@@ -2759,7 +2759,20 @@ private:
         UINFOTREE(9, nodep, "", "alias");
         AstVarScope* aliasVscp = nullptr;
         for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
-            AstVarScope* const vscp = VN_AS(itemp, VarRef)->varScopep();
+            AstVarScope* vscp = nullptr;
+            if (const AstVarRef* const refp = VN_CAST(itemp, VarRef)) {
+                vscp = refp->varScopep();
+            } else {
+                // Reaches into the scope of an instance, look it up by name
+                const AstVarXRef* const xrefp = VN_AS(itemp, VarXRef);
+                const string scopename = xrefp->dotted() + "." + xrefp->name();
+                string baddot;
+                VSymEnt* okSymp;
+                VSymEnt* const symp = m_statep->findDotted(xrefp->fileline(), m_modSymp, scopename,
+                                                           baddot, okSymp, false);
+                UASSERT_OBJ(symp, nodep, "No symbol for alias item: " << scopename);
+                vscp = VN_CAST(symp->nodep(), VarScope);
+            }
             UASSERT_OBJ(vscp, nodep, "VarScope unset");
             if (aliasVscp) {
                 setAliasVarScope(aliasVscp, vscp);
