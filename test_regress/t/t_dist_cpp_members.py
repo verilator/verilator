@@ -53,7 +53,7 @@ def check():
                 if test.verbose:
                     print("? " + line)
                 m = re.match(
-                    r'^\s+(const\s+|static\s+)?[a-zA-Z0-9_]\S+\s+(const\s+)?(m_[a-zA-Z0-9_]+)(;| = )',
+                    r'^\s+(const\s+|static\s+)?[a-zA-Z0-9_]\S+\s+(const\s+)?(m_[a-zA-Z0-9_]+)(;|{| = )',
                     line)
                 if m:
                     name = m.group(3)
