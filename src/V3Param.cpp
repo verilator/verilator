@@ -880,20 +880,11 @@ class ParamProcessor final {
             V3LinkDotIfaceCapture::forEach([&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
                 if (!entry.refp) return;
                 if (entry.cloneCellPath != cloneCP) return;
-                // Owner may be a class nested in newModp or the template (e.g. a covergroup).
-                bool ownerOk = entry.ownerModp
-                               && (entry.ownerModp == newModp
-                                   || entry.ownerModp->name() == srcName);
-                if (!ownerOk && entry.ownerModp) {
-                    for (AstNode* nodep = entry.ownerModp->backp(); nodep;
-                         nodep = nodep->backp()) {
-                        if (AstNodeModule* const enclp = VN_CAST(nodep, NodeModule)) {
-                            ownerOk = (enclp == newModp || enclp->name() == srcName);
-                            break;
-                        }
-                    }
-                }
-                UASSERT_OBJ(ownerOk, entry.refp,
+                // Owner may also be a class nested in newModp (e.g. a covergroup).
+                const AstNodeModule* const ownerp = entry.ownerModp;
+                UASSERT_OBJ(ownerp == newModp || ownerp->name() == srcName
+                                || ownerp->aboveLoopp() == newModp,
+                            entry.refp,
                             "clone ledger entry for '" << cloneCP << "' has unexpected owner");
                 if (entry.cellPath.empty()) return;
 

@@ -35,15 +35,25 @@ package cov_pkg;
       }
     endgroup
 
+    // A second covergroup, so one nested class is preceded by another
+    covergroup cg2 with function sample(ins_t ins);
+      cp_insn: coverpoint ins.current.insn {
+        bins ebreak = {32'h00100073};
+      }
+    endgroup
+
     function new(virtual trace_if #(ILEN, XLEN) vif);
       this.vif = vif;
       cg = new();
+      cg2 = new();
     endfunction
 
     function void do_sample();
       ins_t ins = new();
       ins.current.insn = 32'h00000073;
       cg.sample(ins);
+      ins.current.insn = 32'h00100073;
+      cg2.sample(ins);
     endfunction
   endclass
 
