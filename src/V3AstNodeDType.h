@@ -250,8 +250,8 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     //
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package emitted with
     string m_name;  // Name from upper typedef, if any
-    const int m_uniqueNum;
-    bool m_packed;
+    const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
+    bool m_packed;  // Packed struct/union, else unpacked
     bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
     bool m_constrainedRand = false;  // True if struct has constraint expression
     bool m_emitToString = false;  // Generate to_string() for this struct/union if set
@@ -319,7 +319,7 @@ public:
 class AstEnumItem final : public AstNode {
     // @astgen op1 := rangep : Optional[AstRange] // Range for name appending
     // @astgen op2 := valuep : Optional[AstNodeExpr]
-    string m_name;
+    string m_name;  // Name of item
 
 public:
     // Parents: ENUM
@@ -693,10 +693,10 @@ public:
 class AstCoverCrossDType final : public AstNodeDType {
     // Borrowed pointer to VlCoverCrossT<dimensions, tuples, bins, autoBins, binWords>.
     const uint32_t m_dimensions;
-    const uint32_t m_tuples;
-    const uint32_t m_bins;
-    const uint32_t m_autoBins;
-    const uint64_t m_binWords;
+    const uint32_t m_tuples;  // Fixed capacity number of cross tuples (VlCoverCrossT's Tuples)
+    const uint32_t m_bins;  // Fixed capacity number of explicit bins (VlCoverCrossT's Bins)
+    const uint32_t m_autoBins;  // Fixed capacity number of auto bins (VlCoverCrossT's AutoBins)
+    const uint64_t m_binWords;  // Fixed capacity selection words (VlCoverCrossT's BinWords)
 
 public:
     AstCoverCrossDType(FileLine* fl, uint32_t dimensions, uint32_t tuples, uint32_t bins,
@@ -767,8 +767,8 @@ class AstDefImplicitDType final : public AstNodeDType {
     // This allows "var enum {...} a,b" to share the enum definition for both variables
     // After link, these become typedefs
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-    string m_name;
-    const int m_uniqueNum;
+    string m_name;  // Data type name
+    const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
 
 public:
     AstDefImplicitDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
@@ -883,7 +883,7 @@ public:
 
 private:
     string m_name;  // Name from upper typedef, if any
-    const int m_uniqueNum;
+    const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
     // dist-ast-dump-suppress  // Skip dumping cache
     TableMap m_tableMap;  // Created table for V3Width only to remove duplicates
 
@@ -1051,7 +1051,7 @@ class AstMemberDType final : public AstNodeDType {
     string m_name;  // Name of variable
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
-    bool m_constrainedRand = false;
+    bool m_constrainedRand = false;  // Member has a constraint expression
     VRandAttr m_rand;  // Randomizability of this member (rand, randc, etc)
 public:
     AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp,

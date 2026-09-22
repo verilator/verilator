@@ -39,7 +39,7 @@ class EmitCHeader final : public EmitCConstInit {
     // METHODS
 
     class CoverCountVisitor final : public VNVisitorConst {
-        int m_bins = 0;
+        int m_bins = 0;  // Running total of coverage bins counted so far
 
         void visit(AstNodeCoverDecl* nodep) override {
             // Each module class owns the counters for declarations it emits;

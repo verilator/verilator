@@ -131,7 +131,7 @@ private:
         // The entry comes first, so it starts the slot whatever its alignment.
         // It is a union so it is alive only while the slot is occupied.
         union {
-            Entry m_entry;
+            Entry m_entry;  // Stored entry; alive only while the slot is occupied
         };
         size_t m_hash = 0;  // Hash of the entry, or zero when the slot is free
 

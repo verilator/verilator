@@ -2258,7 +2258,7 @@ class ParamProcessor final {
     // deparameterize a class and delete its parameter pins, so no pointer to a
     // child may remain pending when its parent is resolved.
     class DeferredResolverVisitor final : public VNVisitor {
-        ParamProcessor& m_processor;
+        ParamProcessor& m_processor;  // Processor used to resolve deferred references
         std::set<const AstNode*> m_reachedDecls;
 
         bool firstReach(const AstNode* const declp) { return m_reachedDecls.insert(declp).second; }

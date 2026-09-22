@@ -371,7 +371,7 @@ public:
     void add(AstSel* nodep) { m_sels.insert(nodep); }
     void remove(AstNode* nodep) {
         struct Visitor final : public VNVisitor {
-            RefsInModule& m_parent;
+            RefsInModule& m_parent;  // RefsInModule instance to remove entries from
             void visit(AstNode* nodep) override { iterateChildren(nodep); }
             void visit(AstVar* nodep) override { m_parent.m_vars.erase(nodep); }
             void visit(AstVarRef* nodep) override { m_parent.m_refs.erase(nodep); }
@@ -406,18 +406,18 @@ public:
 
 struct SplitVarRefs final {
     std::map<AstNodeModule*, RefsInModule, AstNodeComparator> m_refs;
-    std::unordered_set<AstVar*> m_hasXref;
+    std::unordered_set<AstVar*> m_hasXref;  // Vars also referenced via a hierarchical AstVarXRef
 };
 
 class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     using VarSet = std::set<AstVar*, AstNodeComparator>;
-    VarSet m_foundTargetVar;
-    UnpackRefMap m_refs;
-    AstNodeModule* m_modp = nullptr;
+    VarSet m_foundTargetVar;  // Target-of-split variables found so far in the current context
+    UnpackRefMap m_refs;  // References to unpacked-array variables, collected for splitting
+    AstNodeModule* m_modp = nullptr;  // Module currently being visited
     // AstNodeStmt, AstCell, or AstAlways(Public) for sensitivity
     AstNode* m_contextp = nullptr;
-    const AstNodeFTask* m_inFTaskp = nullptr;
-    size_t m_numSplit = 0;
+    const AstNodeFTask* m_inFTaskp = nullptr;  // Task/function currently being visited, if any
+    size_t m_numSplit = 0;  // Number of variables split so far
     // List for SplitPackedVarVisitor
     SplitVarRefs m_forPackedSplit;
     V3UniqueNames m_tempNames;  // For generating unique temporary variable names
@@ -816,7 +816,7 @@ public:
 // Split variable
 class SplitNewVar final {
     const int m_lsb;  // LSB in the original bitvector
-    const int m_bitwidth;
+    const int m_bitwidth;  // Width of this split-out piece
     AstVar* m_varp;  // The LSB of this variable is always 0, not m_lsb
 public:
     SplitNewVar(int lsb, int bitwidth, AstVar* varp = nullptr)

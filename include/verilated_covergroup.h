@@ -240,8 +240,8 @@ protected:
     };
     template <typename T>
     class View final {
-        T* m_beginp;
-        T* m_endp;
+        T* m_beginp;  // First element of the viewed slice
+        T* m_endp;  // One past the last element of the viewed slice
 
     public:
         View(T* datap, uint64_t size)

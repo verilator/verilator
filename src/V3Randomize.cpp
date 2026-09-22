@@ -1501,10 +1501,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
             sizep = new AstConst{fl, static_cast<uint32_t>(arraySize)};
         } else {
-            AstVarRef* const arraySizeRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
-            arraySizeRef->classOrPackagep(classOrPackagep);
+            AstVarRef* const arraySizeRefp = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+            arraySizeRefp->classOrPackagep(classOrPackagep);
             AstCMethodHard* const dynSizep
-                = new AstCMethodHard{fl, arraySizeRef, VCMethod::DYN_SIZE, nullptr};
+                = new AstCMethodHard{fl, arraySizeRefp, VCMethod::DYN_SIZE, nullptr};
             dynSizep->dtypeSetUInt32();
             sizep = dynSizep;
         }

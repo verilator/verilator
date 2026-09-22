@@ -152,9 +152,9 @@ class TraceDriver final : public DfgVisitor {
     // TYPES
     // Key for caching the result of a trace
     struct CacheKey final {
-        DfgVertex* m_vtxp;
-        uint32_t m_lsb;
-        uint32_t m_msb;
+        DfgVertex* m_vtxp;  // Vertex being traced
+        uint32_t m_lsb;  // LSB of the range within m_vtxp being traced
+        uint32_t m_msb;  // MSB of the range within m_vtxp being traced
 
         CacheKey() = delete;
         CacheKey(DfgVertex* vtxp, uint32_t lsb, uint32_t msb)
@@ -484,7 +484,7 @@ class TraceDriver final : public DfgVisitor {
         m_splicep = nullptr;
 
         struct Driver final {
-            DfgVertex* m_vtxp;
+            DfgVertex* m_vtxp;  // Vertex driving this range
             uint32_t m_lsb;  // LSB of driven range (internal, not Verilog)
             uint32_t m_msb;  // MSB of driven range (internal, not Verilog)
             Driver() = delete;
