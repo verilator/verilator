@@ -545,10 +545,7 @@ class TransformForksVisitor final : public VNVisitor {
         // Replace the body of the begin with a call to the newly created function
         nodep->addStmtsp(callp->makeStmt());
         // Propagate if needs process
-        if (nodep->needProcess()) {
-            newfuncp->setNeedProcess();
-            newfuncp->addStmtsp(new AstCStmt{flp, "vlProcess->state(VlProcess::FINISHED);"});
-        }
+        if (nodep->needProcess()) newfuncp->setNeedProcess();
         remapLocals(newfuncp, callp);
     }
     void visit(AstCAwait* nodep) override {

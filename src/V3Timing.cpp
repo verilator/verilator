@@ -1463,6 +1463,10 @@ class TimingControlVisitor final : public VNVisitor {
 
             // Name the begin (later the name will be used for a new function)
             itemp->name(nodep->name() + "__" + std::to_string(idx++));
+            if (itemp->needProcess()) {
+                itemp->addStmtsp(
+                    new AstCStmt{itemp->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
+            }
         }
         if (!nodep->joinType().joinNone()) makeForkJoin(nodep);
     }
