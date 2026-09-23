@@ -1782,7 +1782,7 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         if (!newp) {
-            pushDeletep(nodep->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         nodep->replaceWith(new AstAlways{newp});
@@ -2316,7 +2316,7 @@ class WidthVisitor final : public VNVisitor {
     // Delete a subtree after removing any saved references that point into it.
     static void deleteTreeCaptured(AstNode* nodep) {
         V3LinkDotIfaceCapture::purgeDeletedSubtree(nodep);
-        nodep->deleteTree();
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
@@ -2477,7 +2477,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const declDtp = [&]() {
                 if (m_ftaskp->fvarp()) return m_ftaskp->fvarp()->dtypep();
                 AstNodeDType* const voidp = new AstVoidDType{m_ftaskp->fileline()};
-                pushDeletep(voidp);
+                pushDeletep(voidp);  // Note voidp used past here
                 return voidp;
             }();
             if (!similarDTypeRecurse(protoDtp, declDtp)) {
@@ -5854,9 +5854,9 @@ class WidthVisitor final : public VNVisitor {
                 AstPatMember* patp = nullptr;
                 if (it == patmap.end()) {  // Default or default_type assignment
                     patp = defaultPatp_patternUOrStruct(nodep, memp, vdtypep, defaultp, dtypemap);
-                    pushDeletep(patp);
+                    pushDeletep(patp);  // patp used below
                     patp = defaultPatp_forDType(patp, memp->virtRefDTypep(), dtypemap);
-                    pushDeletep(patp);
+                    pushDeletep(patp);  // patp used below
                 } else {
                     patp = it->second;  // Member assignment
                 }
@@ -6868,7 +6868,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->foreach([this](AstScopeName* nodep) {  //
                 nodep->replaceWith(
                     new AstConst{nodep->fileline(), AstConst::String{}, "<scope-unavailable>"});
-                pushDeletep(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             });
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
             string text = VString::dequotePercent(nodep->fmtp()->text());

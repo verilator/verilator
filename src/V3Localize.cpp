@@ -104,7 +104,7 @@ class LocalizeVisitor final : public VNVisitor {
 
             // Yank the VarScope from it's parent and schedule them for deletion. Leave the Var
             // for now, as not all VarScopes referencing this Var might be localized.
-            pushDeletep(nodep->unlinkFrBack());
+            pushDeletep(nodep->unlinkFrBack());  // TODO nodep used past here
 
             // In each referencing function, create a replacement local variable
             AstVar* const oldVarp = nodep->varp();

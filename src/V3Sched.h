@@ -112,7 +112,7 @@ struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>>
                 }
             }
             if (activep->backp()) activep->unlinkFrBack();
-            activep->deleteTree();
+            VL_DO_DANGLING(activep->deleteTree(), activep);
         }
         clear();
     };

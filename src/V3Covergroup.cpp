@@ -3011,7 +3011,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     bindp->add(" = &");
                     bindp->add(rhsp->unlinkFrBack());
                     assignp->replaceWith(bindp->makeStmt());
-                    pushDeletep(assignp);
+                    VL_DO_DANGLING(pushDeletep(assignp), assignp);
                     ++rewrittenBindings;
                 }
             }

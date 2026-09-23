@@ -1605,12 +1605,12 @@ static void assignAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& h
         assignp->replaceWith(new AstAssignForce{assignp->fileline(),
                                                 assignp->lhsp()->unlinkFrBack(),
                                                 assignp->rhsp()->unlinkFrBack()});
-        assignp->deleteTree();
+        VL_DO_DANGLING(assignp->deleteTree(), assignp);
     }
     for (AstDeassign* const deassignp : deassignps) {
         deassignp->replaceWith(
             new AstRelease{deassignp->fileline(), deassignp->lhsp()->cloneTreePure(true)});
-        deassignp->deleteTree();
+        VL_DO_DANGLING(deassignp->deleteTree(), deassignp);
     }
     ForceState state{true, helperVars, permanentlyProtected, forceRdUpdateBuilt};
     { ForceDiscoveryVisitor{nodep, state}; }

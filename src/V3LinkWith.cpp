@@ -116,7 +116,7 @@ class LinkWithVisitor final : public VNVisitor {
             AstNodeExpr* const newp
                 = new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false};
             prevFromp->replaceWith(newp);
-            pushDeletep(prevFromp);
+            VL_DO_DANGLING(pushDeletep(prevFromp), prevFromp);
         }
         iterateChildren(nodep);
     }

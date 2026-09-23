@@ -639,7 +639,7 @@ private:
                 }
                 if (prevp) {
                     pinVarp->replaceWith(prevp);
-                    pushDeletep(pinVarp);
+                    VL_DO_DANGLING(pushDeletep(pinVarp), pinVarp);
                 }
                 nodep->replaceWith(prevPinp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -713,7 +713,7 @@ private:
             }
             if (prevp) {
                 pinVarp->replaceWith(prevp);
-                pushDeletep(pinVarp);
+                VL_DO_DANGLING(pushDeletep(pinVarp), pinVarp);
             }  // else pinVarp already unlinked when another instance did this step
             nodep->replaceWith(prevPinp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);

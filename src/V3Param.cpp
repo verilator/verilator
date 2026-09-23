@@ -1209,7 +1209,7 @@ class ParamProcessor final {
         if (constp && !constp->num().isString()) {
             constp->replaceWith(
                 new AstConst{constp->fileline(), AstConst::String{}, constp->num().toString()});
-            constp->deleteTree();
+            VL_DO_DANGLING(constp->deleteTree(), constp);
         }
     }
 
@@ -2113,7 +2113,7 @@ class ParamProcessor final {
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
                 UINFO(8, "    Created clone " << nodeCopyp);
-                m_deleter.pushDeletep(nodeCopyp);
+                m_deleter.pushDeletep(nodeCopyp);  // nodeCopyp used past here
                 srcModp->user3p(nodeCopyp);
                 storeOriginalParams(nodeCopyp);
             }
@@ -2155,7 +2155,7 @@ class ParamProcessor final {
         genericInterfaceVarSetup(paramsp, pinsp);
 
         // Delete the parameters from the cell; they're not relevant any longer.
-        if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
+        if (paramsp) VL_DO_DANGLING(paramsp->unlinkFrBackWithNext()->deleteTree(), paramsp);
         return newModp;
     }
 

@@ -596,7 +596,7 @@ class TaskVisitor final : public VNVisitor {
                 m_scopep->addVarsp(newvscp);
                 AstVarRef* const repp = new AstVarRef{pinp->fileline(), newvscp, VAccess::WRITE};
                 pinp->replaceWith(repp);
-                pushDeletep(pinp);
+                VL_DO_DANGLING(pushDeletep(pinp), pinp);
                 pinp = repp;
             }
             if (inlineTask) {
