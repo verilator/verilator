@@ -49,9 +49,11 @@ private:
     // NODE STATE
     // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
     // AstClockingItem::user2p()         // AstVar*.      Flag set by drives of output clockvar
+    // AstClockingItem::user3p()         // AstClocking*. Clocking block of the item
     // AstPExpr::user1()                 // bool.         Created from AstUntil
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
     // STATE
     // Current context:
     AstNetlist* const m_netlistp = nullptr;  // Current netlist
@@ -100,25 +102,89 @@ private:
         }
         return VN_AS(itemp->user2p(), Var);
     }
-    // Assignment setting the drive flag of a driven clockvar, referenced like the clockvar
-    AstAssign* newDrivenSetp(FileLine* flp, const SynchDrive& drive) {
-        AstVar* const varp = getCreateDrivenVarp(drive.itemp);
-        AstNodeExpr* refp;
+    // Reference to a variable in the scope of a driven clockvar, made like the clockvar's
+    static AstNodeExpr* newDriveRefp(FileLine* flp, const SynchDrive& drive, AstVar* varp,
+                                     const VAccess& access) {
         if (const AstVarXRef* const xrefp = VN_CAST(drive.refp, VarXRef)) {
-            refp = new AstVarXRef{flp, varp, xrefp->dotted(), VAccess::WRITE};
+            return new AstVarXRef{flp, varp, xrefp->dotted(), access};
         } else if (const AstMemberSel* const selp = VN_CAST(drive.refp, MemberSel)) {
-            // The interface expression is evaluated again for the flag, so it must not have side
-            // effects; cloneTreePure warns if it has any
+            // The interface expression is evaluated again, so it must not have side effects;
+            // cloneTreePure warns if it has any
             AstMemberSel* const newSelp
                 = new AstMemberSel{flp, selp->fromp()->cloneTreePure(false), varp};
-            newSelp->access(VAccess::WRITE);
-            refp = newSelp;
-        } else {
-            refp = new AstVarRef{flp, varp, VAccess::WRITE};
+            newSelp->access(access);
+            return newSelp;
         }
-        AstAssign* const setp = new AstAssign{flp, refp, new AstConst{flp, AstConst::BitTrue{}}};
+        return new AstVarRef{flp, varp, access};
+    }
+    // Assignment setting the drive flag of a driven clockvar
+    AstAssign* newDrivenSetp(FileLine* flp, const SynchDrive& drive) {
+        AstVar* const varp = getCreateDrivenVarp(drive.itemp);
+        AstAssign* const setp = new AstAssign{flp, newDriveRefp(flp, drive, varp, VAccess::WRITE),
+                                              new AstConst{flp, AstConst::BitTrue{}}};
         setp->user1(true);
         return setp;
+    }
+    // Clocking block of a clocking item
+    static AstClocking* clockingOf(AstClockingItem* itemp) {
+        if (!itemp->user3p()) {
+            // Find the clocking block above the list of items once for all its items
+            AstClocking* const clockingp = VN_AS(itemp->aboveLoopp(), Clocking);
+            for (AstNode* nodep = clockingp->itemsp(); nodep; nodep = nodep->nextp()) {
+                if (AstClockingItem* const citemp = VN_CAST(nodep, ClockingItem)) {
+                    citemp->user3p(clockingp);
+                }
+            }
+        }
+        return VN_AS(itemp->user3p(), Clocking);
+    }
+    // Clocking event of a driven clockvar, referenced from the drive like the clockvar, or
+    // nullptr if the event has a hierarchical reference, which is relative to the clocking block
+    AstSenItem* newDriveSensesp(const SynchDrive& drive) {
+        AstSenItem* const origp = clockingOf(drive.itemp)->sensesp();
+        if (VN_IS(drive.refp, VarRef)) return origp->cloneTree(false);
+        if (origp->exists([](const AstVarXRef*) { return true; })) return nullptr;
+        AstSenItem* const sensesp = origp->cloneTree(false);
+        std::vector<AstVarRef*> refps;
+        sensesp->foreach([&](AstVarRef* refp) {
+            if (!refp->classOrPackagep()) refps.push_back(refp);
+        });
+        for (AstVarRef* const refp : refps) {
+            AstNodeExpr* const newp
+                = newDriveRefp(refp->fileline(), drive, refp->varp(), refp->access());
+            if (const AstMemberSel* const selp = VN_CAST(newp, MemberSel)) {
+                // Make the event sensitive to the variable through the interface, as V3Width
+                // does for an event control on an interface member
+                if (const AstIfaceRefDType* const dtypep
+                    = VN_CAST(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType)) {
+                    refp->varp()->sensIfacep(dtypep->ifaceViaCellp());
+                }
+            }
+            refp->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(refp), refp);
+        }
+        const AstMemberSel* const selp = VN_CAST(drive.refp, MemberSel);
+        if (selp && !VN_IS(m_modp, Class)) guardNullIface(sensesp, selp->fromp());
+        return sensesp;
+    }
+    // Make a clocking event through an interface false while the interface is null, as
+    // processes outside classes evaluate their events also when not waiting, possibly before
+    // the interface is set
+    static void guardNullIface(AstSenItem* sensesp, AstNodeExpr* ifacep) {
+        FileLine* const flp = sensesp->fileline();
+        if (sensesp->sensp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
+            // Other values, e.g. events, are not guarded
+            AstNodeExpr* const sensp = sensesp->sensp()->unlinkFrBack();
+            sensesp->sensp(new AstCond{flp, newNotNullp(flp, ifacep), sensp,
+                                       new AstConst{flp, AstConst::DTyped{}, sensp->dtypep()}});
+        }
+        if (AstNodeExpr* const condp = sensesp->condp()) {
+            condp->unlinkFrBack();
+            sensesp->condp(new AstLogAnd{flp, newNotNullp(flp, ifacep), condp});
+        }
+    }
+    static AstNodeExpr* newNotNullp(FileLine* flp, AstNodeExpr* ifacep) {
+        return new AstNeq{flp, ifacep->cloneTreePure(false), new AstConst{flp, AstConst::Null{}}};
     }
 
     static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp) {
@@ -535,7 +601,19 @@ private:
             return;
         }
         AstSenItem* sensesp = nullptr;
-        if (!m_defaultClockingp) {
+        if (!m_drives.empty()) {
+            // Count the cycles of the driven clockvar's clocking block (IEEE 1800-2023 14.16),
+            // of the first one if several are driven, as in a concatenation
+            sensesp = newDriveSensesp(m_drives.front());
+            if (!sensesp) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in synchronous drive to"
+                                             " clockvar in another scope, whose clocking event"
+                                             " has a hierarchical reference");
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                VL_DO_DANGLING(valuep->deleteTree(), valuep);
+                return;
+            }
+        } else if (!m_defaultClockingp) {
             if (!m_pexprp) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
@@ -543,12 +621,12 @@ private:
                 VL_DO_DANGLING(valuep->deleteTree(), valuep);
                 return;
             }
-            sensesp = m_senip;
+            sensesp = m_senip->cloneTree(false);
         } else {
-            sensesp = m_defaultClockingp->sensesp();
+            sensesp = m_defaultClockingp->sensesp()->cloneTree(false);
         }
-        AstEventControl* const controlp = new AstEventControl{
-            nodep->fileline(), new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr};
+        AstEventControl* const controlp
+            = new AstEventControl{nodep->fileline(), new AstSenTree{flp, sensesp}, nullptr};
         const std::string delayName = m_cycleDlyNames.get(nodep);
         AstNodeExpr* throughoutp
             = nodep->throughoutp() ? nodep->throughoutp()->unlinkFrBack() : nullptr;
