@@ -2121,12 +2121,12 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->optionsp(), nullptr);
     }
     void widthCovergroupRanges(AstNode* rangesp, int fillWidth) {
-        // Width each plain single-value entry self-determined so a referenced parameter
-        // acquires a dtype, then constify so the reference folds to the AstConst value that
-        // V3Covergroup requires.  AstInsideRange entries fold their own bounds in
-        // visit(AstInsideRange).  In a coverpoint bin, whose values are converted to the
-        // coverpoint type (IEEE 1800-2023 19.5.7), '0/'1 entries and bounds then fill to the
-        // coverpoint width (fillWidth).
+        // Bin range/value entries are self-determined expressions (IEEE 1800-2023
+        // 19.5).  Width each plain single-value entry self-determined so a referenced
+        // parameter acquires a dtype, then constify so the reference folds to the AstConst
+        // value that V3Covergroup requires.  AstInsideRange entries fold their own bounds in
+        // visit(AstInsideRange).
+        // '0/'1 entries then fill to fillWidth, the coverpoint width (IEEE 1800-2023 19.5.7).
         const auto fill = [&](AstNode* nodep) {
             if (!fillWidth) return;
             AstNodeExpr* exprp = VN_AS(nodep, NodeExpr);
