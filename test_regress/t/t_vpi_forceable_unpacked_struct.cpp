@@ -36,13 +36,6 @@ PLI_INT32 getValue(vpiHandle handle) {
     return value.value.integer;
 }
 
-bool expectForceable(vpiHandle handle) {
-    putValue(handle, 1, vpiForceFlag);
-    s_vpi_error_info error{};
-    if (!vpi_chk_error(&error) || !error.message) return true;
-    return std::string{error.message}.find("non-forceable") == std::string::npos;
-}
-
 int errors = 0;
 
 bool mon_check() {
