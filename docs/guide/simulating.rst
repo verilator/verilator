@@ -153,7 +153,7 @@ experience depends on the use case, and some experimentation can pay
 dividends. For a speedy debug cycle during development, especially on large
 designs where C++ compilation speed can dominate, consider using lower
 optimization to get to an executable faster. For throughput-oriented use
-cases, for example, regressions, it is usually worth spending extra
+cases, for example, regression testing, it is usually worth spending extra
 compilation time to reduce total CPU time.
 
 If you will be running many simulations on a single model, you can
