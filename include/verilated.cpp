@@ -1832,8 +1832,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     return got;
 
 done:
-    // Scan stopped early, return parsed or EOF
-    if (_vl_vsss_eof(fp, floc)) return -1;
+    // Scan stopped early; EOF only if input ended before the first conversion
+    if (got == 0 && _vl_vsss_eof(fp, floc)) return -1;
     return got;
 }
 

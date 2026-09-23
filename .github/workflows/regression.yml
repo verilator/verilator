@@ -241,7 +241,7 @@ jobs:
     uses: ./.github/workflows/reusable-lint-py.yml
 
   passed:
-    name: Regression passed  # This job is used as a required status check on PRs
+    name: Regression tests passed  # This job is used as a required status check on PRs
     if: ${{ !cancelled() && needs.start.result != 'skipped' }}
     needs:
       - start
