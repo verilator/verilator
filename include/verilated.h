@@ -375,18 +375,35 @@ private:
 class VerilatedEvalLoop final {
     VL_UNCOPYABLE(VerilatedEvalLoop);
 
+public:
+    /// Evaluation regions that may contain work in this model.
+    enum Region : uint32_t {
+        REGION_SAMPLE = 1U << 0,
+        REGION_ACT = 1U << 1,
+        REGION_INACT = 1U << 2,
+        REGION_NBA = 1U << 3,
+        REGION_OBS = 1U << 4,
+        REGION_REACT = 1U << 5,
+        REGION_POSTPONED = 1U << 6,
+        REGION_ALL = (1U << 7) - 1U
+    };
+
+private:
     // MEMBERS
     VerilatedModel& m_model;  // The model this loop evaluates
     const uint32_t m_convergeLimit;  // --converge-limit from compiler command line
+    const uint32_t m_liveRegions;  // Compiler-proven set of potentially active regions
     // Where to record --prof-exec sections, or null if not profiling
     VlExecutionProfilerBase* m_profilerp = nullptr;
     bool m_profTopLevel = false;  // Top level model during profiling
 
 public:
     // CONSTRUCTORS
-    VerilatedEvalLoop(VerilatedModel& model, uint32_t convergeLimit)
+    VerilatedEvalLoop(VerilatedModel& model, uint32_t convergeLimit,
+                      uint32_t liveRegions = REGION_ALL)
         : m_model{model}
-        , m_convergeLimit{convergeLimit} {}
+        , m_convergeLimit{convergeLimit}
+        , m_liveRegions{liveRegions} {}
 
     // METHODS
     // Evaluate a single time step of the SV scheduling model
