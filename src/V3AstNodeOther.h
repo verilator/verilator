@@ -2472,7 +2472,7 @@ public:
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
                      bool asRef = false, bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
-    string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
+    string vlEnumDir(bool forMember = false) const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }

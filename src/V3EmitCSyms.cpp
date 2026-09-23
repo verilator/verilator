@@ -309,14 +309,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     static std::string memberVlEnumDir(const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
-        std::string out
-            = "((" + varp->vlEnumDir() + ") & ~(VLVF_FORCEABLE|VLVF_SIGNED|VLVF_BITVAR))";
+        std::string out = '(' + varp->vlEnumDir(/*forMember=*/true);
         const AstNodeDType* const skipDTypep = dtypep->skipRefp();
         if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
         if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
             if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
         }
-        return out;
+        return out + ')';
     }
 
     static std::string insertVarStatement(const ScopeVarData& svd, const AstScope* const scopep,

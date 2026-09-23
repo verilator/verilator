@@ -4086,7 +4086,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
-string AstVar::vlEnumDir() const {
+string AstVar::vlEnumDir(bool forMember) const {
     string out;
     if (isInout()) {
         out = "VLVD_INOUT";
@@ -4103,17 +4103,17 @@ string AstVar::vlEnumDir() const {
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
-    if (isForceable()) out += "|VLVF_FORCEABLE";
+    if (isForceable() && !forMember) out += "|VLVF_FORCEABLE";
     if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
     }
     //
-    if (dtypep()->skipRefp()->isSigned()) out += "|VLVF_SIGNED";
+    if (dtypep()->skipRefp()->isSigned() && !forMember) out += "|VLVF_SIGNED";
     //
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
-        if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
+        if (basicp->keyword() == VBasicDTypeKwd::BIT && !forMember) out += "|VLVF_BITVAR";
     }
     if (isNet()) out += "|VLVF_NET";
     return out;
