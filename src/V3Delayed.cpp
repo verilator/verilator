@@ -300,6 +300,7 @@ class DelayedVisitor final : public VNVisitor {
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
     bool m_inNonCombLogic = false;  // We are in non-combinational logic
     bool m_needsInitialTrigger = false;  // Whether a NodeProcedure needs a initial trigger
+    std::vector<AstSenTree*> m_nbaEventSenTreeps;  // Sensitivities of '->>' in the process
     AstVarRef* m_currNbaLhsRefp = nullptr;  // Current NBA LHS variable reference
 
     // STATE - during NBA conversion (after visit)
@@ -1190,6 +1191,7 @@ class DelayedVisitor final : public VNVisitor {
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_needsInitialTrigger);
+        VL_RESTORER_CLEAR(m_nbaEventSenTreeps);
         const size_t firstNBAAddedIndex = m_nbas.size();
         {
             VL_RESTORER(m_inSuspendableOrFork);
@@ -1241,6 +1243,9 @@ class DelayedVisitor final : public VNVisitor {
         for (size_t i = firstNBAAddedIndex; i < m_nbas.size(); ++i) {
             m_vscpInfo(m_nbas[i].vscp).addSensitivity(senItemp);
         }
+        for (AstSenTree* const senTreep : m_nbaEventSenTreeps) {
+            senTreep->addSensesp(senItemp->cloneTree(true));
+        }
         // Done with these
         VL_DO_DANGLING(senItemp->deleteTree(), senItemp);
     }
@@ -1276,20 +1281,36 @@ class DelayedVisitor final : public VNVisitor {
                 return new AstVarRef{flp, dlyvscp, access};
             };
 
-            AstAlwaysPre* const prep = new AstAlwaysPre{flp};
-            prep->addStmtsp(new AstAssign{flp, dlyRef(VAccess::WRITE),
-                                          new AstConst{flp, AstConst::BitFalse{}}});
             AstAlwaysPost* const postp = new AstAlwaysPost{flp};
-            {
-                AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
-                postp->addStmtsp(ifp);
-                ifp->addThensp(newp);
-            }
+            AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
+            postp->addStmtsp(ifp);
 
             UASSERT_OBJ(m_activep, nodep, "No active to handle FireEvent");
-            AstActive* const activep = new AstActive{flp, "nba-event", m_activep->sentreep()};
+            AstSenTree* senTreep = m_activep->sentreep();
+            AstActive* activep = nullptr;
+            if (m_inSuspendableOrFork && (senTreep->hasInitial() || senTreep->hasClocked())
+                && !vrefp->varp()->isClassMember()) {
+                // Suspendable code can trigger whenever it resumes, so fire when its NBAs are
+                // committed (see visit(AstNodeProcedure*)), clearing the flag like
+                // Scheme::FlagUnique
+                senTreep = new AstSenTree{
+                    flp, senTreep->hasClocked() ? senTreep->sensesp()->cloneTree(true) : nullptr};
+                m_nbaEventSenTreeps.push_back(senTreep);
+                m_needsInitialTrigger |= m_timingDomains.empty();
+                dlyvscp->varp()->setIgnorePostWrite();
+                ifp->addThensp(new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                             new AstConst{flp, AstConst::BitFalse{}}});
+                activep = new AstActive{flp, "nba-event", senTreep};
+                activep->senTreeStorep(senTreep);
+            } else {
+                activep = new AstActive{flp, "nba-event", senTreep};
+                AstAlwaysPre* const prep = new AstAlwaysPre{flp};
+                prep->addStmtsp(new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                              new AstConst{flp, AstConst::BitFalse{}}});
+                activep->addStmtsp(prep);
+            }
+            ifp->addThensp(newp);
             m_activep->addNextHere(activep);
-            activep->addStmtsp(prep);
             activep->addStmtsp(postp);
 
             newp = new AstAssign{flp, dlyRef(VAccess::WRITE),
