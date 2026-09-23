@@ -284,7 +284,7 @@ static void process() {
             // should be after constifyAllLint() which flattens to 1D bit vector
             V3SplitVar::splitVariable(v3Global.rootp());
 
-            // Remove cell arrays (must be between V3Width and scoping)
+            // Remove interface arrays (must be between V3Width and scoping)
             V3Inst::dearrayAll(v3Global.rootp());
             V3LinkDot::linkDotArrayed(v3Global.rootp());
 

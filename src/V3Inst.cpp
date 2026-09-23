@@ -364,6 +364,8 @@ private:
         m_deModVars.main(nodep->modp());
         //
         if (nodep->rangep()) {
+            // Only interface arrays, V3Param expanded other instance arrays
+            UASSERT_OBJ(VN_IS(nodep->modp(), Iface), nodep, "Unexpanded instance array");
             // Collect the full range chain (outer first).
             std::vector<const AstRange*> rangesp;
             for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
@@ -510,15 +512,6 @@ private:
                                                          << m_cellRangep->rightConst() << "]");
                 }
                 AstNodeExpr* exprp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
-                const bool inputPin = nodep->modVarp()->isNonOutput();
-                if (!inputPin
-                    && !VN_IS(exprp, VarRef)
-                    // V3Const will collapse the SEL with the one we're about to make
-                    && !VN_IS(exprp, Concat) && !VN_IS(exprp, Replicate) && !VN_IS(exprp, Sel)) {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Per-bit array instantiations "
-                                                 "with output connections to non-wires.");
-                    // Note spec allows more complicated matches such as slices and such
-                }
                 exprp = new AstSel{exprp->fileline(), exprp, modwidth * m_instSelNum, modwidth};
                 nodep->exprp(exprp);
             } else {

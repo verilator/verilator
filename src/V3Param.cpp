@@ -40,6 +40,10 @@
 //          Then process all modules called by that cell.
 //          (Cells never referenced after parameters expanded must be ignored.)
 //
+//      Arrayed instances of modules are expanded into their elements before
+//      the above, each element knowing its position in the array (for V3Width
+//      to select its part of the port connections).
+//
 //   After we complete parameters, the varp's will be wrong (point to old module)
 //   and must be relinked.
 //
@@ -3045,6 +3049,35 @@ class ParamVisitor final : public VNVisitor {
         return false;
     }
 
+    // Add the elements of instance array 'arrayedCellp' in the dimensions from 'rangep' inwards.
+    // 'suffix' and 'idx' are the name suffix and row-major position (each dimension counted from
+    // the left) of the dimensions outside 'rangep'.
+    void expandCellArrayDimensions(AstCell* arrayedCellp, const AstRange* rangep,
+                                   const std::string& suffix, int idx) {
+        // Base case: insert the element when no dimensions left
+        if (!rangep) {
+            AstCell* const elemp = arrayedCellp->cloneTree(false);
+            elemp->name(arrayedCellp->name() + suffix);
+            elemp->origName(arrayedCellp->origName() + suffix);
+            elemp->arrayIdx(idx);
+            arrayedCellp->addNextHere(elemp);
+            return;
+        }
+
+        // Enumerate the current dimension given by 'rangep'
+        // Each element is added right after 'arrayedCellp', so go from right to left,
+        // to end with an enumeration from the left index to the right index.
+        const int left = rangep->leftConst();
+        const int right = rangep->rightConst();
+        const int step = rangep->ascending() ? 1 : -1;
+        idx = (idx + 1) * rangep->elementsConst();
+        const AstRange* const subRangep = VN_AS(rangep->nextp(), Range);
+        for (int n = right; n != left - step; n -= step) {
+            const std::string s = suffix + "__BRA__" + AstNode::encodeNumber(n) + "__KET__";
+            expandCellArrayDimensions(arrayedCellp, subRangep, s, --idx);
+        }
+    }
+
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
@@ -3145,6 +3178,18 @@ class ParamVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCell* nodep) override {
+        // Interface arrays are still expanded in V3Inst
+        if (nodep->rangep() && nodep->arrayIdx() < 0 && !VN_IS(nodep->modp(), Iface)) {
+            // Expand the instance array into its elements
+            for (AstRange* rangep = nodep->rangep(); rangep;
+                 rangep = VN_AS(rangep->nextp(), Range)) {
+                rangep = VN_AS(V3Width::widthParamsEdit(rangep), Range);
+            }
+            expandCellArrayDimensions(nodep, nodep->rangep(), "", 0);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            // The elements replaced the arrayed cell in place, so will be iterated next.
+            return;
+        }
         checkParamNotHierRecurse(nodep->paramsp());
         if (VN_IS(nodep->modp(), Iface)) m_ifaceInstCells.emplace(nodep->name(), nodep);
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
