@@ -2479,6 +2479,16 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
     // Not resolved
     return nullptr;
 }
+string AstNodeDType::vlEnumPackedAgg() const {
+    // Packed struct/union element, so VPI can select its members
+    const AstNodeDType* dtypep = skipRefp();
+    while (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
+        dtypep = adtypep->subDTypep()->skipRefp();
+    }
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
+    if (!sdtypep || !sdtypep->packed()) return "";
+    return VN_IS(sdtypep, UnionDType) ? "|VLVF_PACKED_AGG|VLVF_PACKED_UNION" : "|VLVF_PACKED_AGG";
+}
 string AstNodeDType::vlEnumType() const {
     string arg;
     const AstNodeDType* dtypep = skipRefp();
@@ -4119,6 +4129,7 @@ string AstVar::vlEnumDir() const {
         if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
     }
     if (isNet()) out += "|VLVF_NET";
+    out += dtypep()->vlEnumPackedAgg();
     return out;
 }
 string AstVar::vlEnumType() const { return dtypep()->vlEnumType(); }

@@ -309,12 +309,14 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     static std::string memberVlEnumDir(const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
-        std::string out = "((" + varp->vlEnumDir() + ") & ~(VLVF_SIGNED|VLVF_BITVAR))";
+        std::string out = "((" + varp->vlEnumDir()
+                          + ") & ~(VLVF_SIGNED|VLVF_BITVAR|VLVF_PACKED_AGG|VLVF_PACKED_UNION))";
         const AstNodeDType* const skipDTypep = dtypep->skipRefp();
         if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
         if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
             if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
         }
+        out += skipDTypep->vlEnumPackedAgg();
         return out;
     }
 
@@ -457,6 +459,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             stmts.emplace_back(insertDTypeVarStatement(svd, scopep, prettyName, cName, itemDTypep,
                                                        dims.udim, dims.pdim, boundsString(dims))
                                + ";");
+            addPackedAggMemberVars(stmts, svd, scopep, prettyName, cName, itemDTypep);
             if (const AstNodeUOrStructDType* const subp
                 = VN_CAST(itemDTypep->skipRefp(), NodeUOrStructDType)) {
                 if (!subp->packed())
@@ -483,6 +486,80 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             if (!sdtypep->packed())
                 addUOrStructMemberVars(stmts, svd, scopep, prettyPrefix, cPrefix, sdtypep);
         }
+    }
+
+    // Packed struct/union members have no storage of their own; each is registered as a bit
+    // slice of the parent's storage 'cName', with the parent's storage type and entSize, and its
+    // bit offset within the parent's element 0. VPI adds any packed/unpacked index offset.
+    static void addPackedMemberVars(std::vector<std::string>& stmts, const ScopeVarData& svd,
+                                    const AstScope* const scopep, const std::string& prettyPrefix,
+                                    const std::string& cName, const std::string& vlEnumType,
+                                    const std::string& entSize,
+                                    const AstNodeUOrStructDType* const sdtypep,
+                                    const int parentBitOffset) {
+        const std::string varName
+            = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            const AstNodeDType* const itemDTypep = itemp->dtypep();
+            const std::string prettyName
+                = prettyPrefix + "." + AstNode::vpiName(itemp->shortName());
+            // Union members all have lsb 0, so share the parent's offset
+            const int bitOffset = parentBitOffset + itemp->lsb();
+            const VarDims dims = getVarDims(itemDTypep);
+            UASSERT_OBJ(dims.udim == 0, itemp, "Unpacked dimension in packed struct/union");
+            std::string stmt;
+            stmt += protect("__Vscopep_" + svd.m_scopeName);
+            stmt += "->varInsertMember(\"";
+            stmt += V3OutFormatter::quoteNameControls(prettyName) + '"';
+            // A parameter is emitted 'static const', see insertDTypeVarStatement
+            if (svd.m_varp->isParam()) {
+                stmt
+                    += ", const_cast<void*>(static_cast<const void*>(&(" + varName + "))), true, ";
+            } else {
+                stmt += ", &(" + varName + "), false, ";
+            }
+            stmt += vlEnumType + ", ";
+            stmt += memberVlEnumDir(svd.m_varp, itemDTypep) + ", ";
+            stmt += std::to_string(bitOffset) + ", ";
+            stmt += entSize + ", ";
+            stmt += std::to_string(dims.pdim);
+            stmt += boundsString(dims);
+            stmt += ");";
+            stmts.emplace_back(stmt);
+            // Nested packed struct/union, or packed array of them: register the members of
+            // the element at index offset 0
+            const AstNodeDType* subDTypep = itemDTypep->skipRefp();
+            while (const AstPackArrayDType* const adtypep = VN_CAST(subDTypep, PackArrayDType)) {
+                subDTypep = adtypep->subDTypep()->skipRefp();
+            }
+            if (const AstNodeUOrStructDType* const subp = VN_CAST(subDTypep, NodeUOrStructDType)) {
+                addPackedMemberVars(stmts, svd, scopep, prettyName, cName, vlEnumType, entSize,
+                                    subp, bitOffset);
+            }
+        }
+    }
+
+    // If 'dtypep' (the type of storage 'cName') has packed struct/union elements, register the
+    // members of its element 0
+    static void addPackedAggMemberVars(std::vector<std::string>& stmts, const ScopeVarData& svd,
+                                       const AstScope* const scopep,
+                                       const std::string& prettyPrefix, const std::string& cName,
+                                       const AstNodeDType* const dtypep) {
+        std::string elemCName = cName;
+        const AstNodeDType* elemDTypep = dtypep->skipRefp();
+        while (const AstNodeArrayDType* const adtypep = VN_CAST(elemDTypep, NodeArrayDType)) {
+            if (VN_IS(adtypep, UnpackArrayDType)) elemCName += "[0]";
+            elemDTypep = adtypep->subDTypep()->skipRefp();
+        }
+        const AstNodeUOrStructDType* const sdtypep = VN_CAST(elemDTypep, NodeUOrStructDType);
+        if (!sdtypep || !sdtypep->packed()) return;
+        const std::string varName
+            = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        const std::string entSize
+            = "sizeof(" + varName + ") / " + std::to_string(getUnpackedElements(dtypep));
+        addPackedMemberVars(stmts, svd, scopep, prettyPrefix, elemCName, dtypep->vlEnumType(),
+                            entSize, sdtypep, 0);
     }
 
     std::string insertForceableVarStatement(const ScopeVarData& svd, const AstScope* const scopep,
@@ -1396,7 +1473,11 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                 const TableEntryKind kind
                     = tryBuildTableEntry(svd, varp, scopep, modClassName, dims, row);
                 switch (kind) {
-                case TableEntryKind::TABLE_ROW: rows.emplace_back(row); break;
+                case TableEntryKind::TABLE_ROW:
+                    rows.emplace_back(row);
+                    addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                           varp->nameProtect(), varp->dtypep());
+                    break;
                 case TableEntryKind::FORCEABLE_RESIDUAL: {
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(insertForceableVarStatement(svd, scopep, varp, dims.udim,
@@ -1419,6 +1500,8 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                                                             svd.m_varBasePretty,
                                                             protect(varp->name()), varp->dtypep());
                     }
+                    addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                           varp->nameProtect(), varp->dtypep());
                     break;
                 }
                 default: v3fatalSrc("Bad case");

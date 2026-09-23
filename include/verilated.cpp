@@ -4382,6 +4382,32 @@ VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, boo
     return &(m_varsp->find(namep)->second);
 }
 
+VerilatedVar* VerilatedScope::varInsertMember(const char* namep, void* datap, bool isParam,
+                                              VerilatedVarType vltype, int vlflags,
+                                              uint32_t bitOffset, uint32_t entSize,
+                                              int pdims...) VL_MT_UNSAFE {
+    // Member is a bit slice of the parent: datap/vltype/entSize are the parent's
+    // Parent is always inserted first; guard kept for parity with the other inserters
+    if (VL_UNCOVERABLE(!m_varsp)) {
+        m_varsp = new VerilatedVarNameMap;  // LCOV_EXCL_LINE
+    }
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), 0, pdims,
+                     isParam, entSize, bitOffset);
+
+    va_list ap;
+    va_start(ap, pdims);
+    for (int i = 0; i < pdims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        var.m_packed[i].m_left = msb;
+        var.m_packed[i].m_right = lsb;
+    }
+    va_end(ap);
+
+    m_varsp->emplace(namep, std::move(var));
+    return &(m_varsp->find(namep)->second);
+}
+
 VerilatedVar*
 VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
                                    VerilatedVarType vltype, int vlflags, void* forceReadSignalData,
