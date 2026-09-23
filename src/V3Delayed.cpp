@@ -538,6 +538,23 @@ class DelayedVisitor final : public VNVisitor {
             arrSelp->bitp(captureVal(scopep, insertp, arrSelp->bitp()->unlinkFrBack(), tmpName));
             nodep = arrSelp->fromp();
         }
+        // Capture the handle of a virtual interface selecting the target (IEEE 1800-2023 10.4.2)
+        if (AstMemberSel* const mselp = VN_CAST(nodep, MemberSel)) {
+            AstNodeExpr* const handlep = mselp->fromp()->unlinkFrBack();
+            // The handle is only read
+            handlep->foreach([](AstNode* const np) {
+                if (AstNodeVarRef* const refp = VN_CAST(np, NodeVarRef)) {
+                    refp->access(VAccess::READ);
+                } else if (AstMemberSel* const selp = VN_CAST(np, MemberSel)) {
+                    selp->access(VAccess::READ);
+                }
+            });
+            AstNodeExpr* const capturedp
+                = captureVal(scopep, insertp, handlep, "__VdlyHandle" + baseName);
+            // Like the handle it replaces, mark the one selecting the target written
+            VN_AS(capturedp, VarRef)->access(VAccess::WRITE);
+            mselp->fromp(capturedp);
+        }
         // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
         if (const AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
             UASSERT_OBJ(aselp->fromp()->isPure() && aselp->bitp()->isPure(), lhsp,

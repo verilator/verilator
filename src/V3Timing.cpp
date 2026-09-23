@@ -499,6 +499,7 @@ class TimingControlVisitor final : public VNVisitor {
     V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
     V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
+    V3UniqueNames m_driveTempNames{"__VdriveTemp"};  // Local drive temporary var names
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
     V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
     // Module level temporary variables, shared by instances
@@ -748,6 +749,73 @@ class TimingControlVisitor final : public VNVisitor {
         AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
         m_scopep->addVarsp(vscp);
         return vscp;
+    }
+    // Whether the target of an NBA is evaluated with its RHS, by a non-constant index or a handle
+    // (IEEE 1800-2023 10.4.2), so pending updates of the statement can have different targets
+    static bool hasEvaluatedTarget(const AstNodeExpr* const lhsp) {
+        return lhsp->exists([](const AstNode* const nodep) {
+            if (const AstSel* const selp = VN_CAST(nodep, Sel)) return !VN_IS(selp->lsbp(), Const);
+            if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+                return !VN_IS(selp->bitp(), Const);
+            }
+            return VN_IS(nodep, MemberSel);
+        });
+    }
+    // Make a handle (with its indices), evaluated before an update or event it selects, only read
+    static void accessRead(AstNode* const nodep) {
+        nodep->foreach([](AstNode* const np) {
+            if (AstNodeVarRef* const refp = VN_CAST(np, NodeVarRef)) {
+                refp->access(VAccess::READ);
+            } else if (AstMemberSel* const selp = VN_CAST(np, MemberSel)) {
+                selp->access(VAccess::READ);
+            }
+        });
+    }
+    // A cycle delay of a drive (Begin from V3AssertPre) writes block temporaries: its counter, and
+    // those of functions inlined in its count. Outside tasks, V3Begin lifted them to the module.
+    // Make them local to the forked process, so pending drives do not share them.
+    void localizeDriveTemps(AstBegin* const beginp) {
+        std::vector<AstVarScope*> vscps;  // Lifted temporaries, in order of reference
+        std::map<const AstVarScope*, AstVarScope*> localps;  // Lifted temporary -> local one
+        beginp->foreach([&](const AstVarRef* refp) {
+            const AstVar* const varp = refp->varp();
+            if (varp->varType() != VVarType::BLOCKTEMP || varp->isFuncLocal()) return;
+            if (!refp->access().isWriteOrRW()) return;
+            if (localps.emplace(refp->varScopep(), nullptr).second) {
+                vscps.push_back(refp->varScopep());
+            }
+        });
+        for (AstVarScope* const vscp : vscps) {
+            localps[vscp] = createTemp(vscp->fileline(), m_driveTempNames.get(beginp),
+                                       vscp->varp()->dtypep(), beginp->stmtsp());
+        }
+        beginp->foreach([&](AstVarRef* const refp) {
+            const auto it = localps.find(refp->varScopep());
+            if (it == localps.end()) return;
+            refp->varScopep(it->second);
+            refp->varp(it->second->varp());
+        });
+    }
+    // The cycle delay of a drive (Begin from V3AssertPre) references the handle selecting the
+    // target, for its clocking event and driven flag. Use the handle evaluated with the drive.
+    void replaceDriveHandle(AstBegin* const beginp, const AstNodeExpr* const handlep,
+                            AstVarScope* const vscp) {
+        beginp->foreach([&](AstMemberSel* const selp) {
+            AstNodeExpr* const fromp = selp->fromp();
+            if (!fromp->sameTree(handlep)) return;
+            // Like the handle it replaces, mark one selecting a written member written
+            fromp->replaceWith(new AstVarRef{fromp->fileline(), vscp, selp->access()});
+            VL_DO_DANGLING(pushDeletep(fromp), fromp);
+        });
+        // Other references, guarding against a null handle
+        std::vector<AstNodeExpr*> refps;
+        beginp->foreach([&](AstNodeExpr* const exprp) {
+            if (exprp->sameTree(handlep)) refps.push_back(exprp);
+        });
+        for (AstNodeExpr* const refp : refps) {
+            refp->replaceWith(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
+            VL_DO_DANGLING(pushDeletep(refp), refp);
+        }
     }
     // Add a done() call on the fork sync
     void addForkDone(AstBegin* const beginp, AstVarScope* const forkVscp) const {
@@ -1209,28 +1277,47 @@ class TimingControlVisitor final : public VNVisitor {
             return;
         }
         // Insert new vars before the timing control if we're in a function; in a process we can't
-        // do that. These intra-assignment vars will later be passed to forked processes by value.
+        // do that, except before the fork of an NBA. These intra-assignment vars will later be
+        // passed to forked processes by value.
         AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
+        AstBegin* driveBeginp = nullptr;  // Cycle delay of a drive, if any
         // Special case for NBA
         if (inAssignDly) {
             // Put it in a fork so it doesn't block
             // Could already be the only thing directly under a fork, reuse that if possible
             AstFork* forkp = !nodep->nextp() ? VN_CAST(nodep->firstAbovep(), Fork) : nullptr;
             if (!forkp) forkp = new AstFork{flp, VJoinType::JOIN_NONE};
-            if (!m_underProcedure) {
-                // If it's in a function, it won't be handled by V3Delayed
+            if (!m_underProcedure || hasEvaluatedTarget(nodep->lhsp())) {
+                if (m_underProcedure) {
+                    // V3Delayed would update the target from variables of the statement, which
+                    // its pending updates, maturing together, would share. Update each target.
+                    AstAssign* const assignp
+                        = new AstAssign{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                        nodep->rhsp()->unlinkFrBack()};
+                    assignp->user1(true);
+                    nodep->replaceWith(assignp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    nodep = assignp;
+                }
+                // If it's in a function, or converted above, it won't be handled by V3Delayed
                 // Put it behind an additional named event that gets triggered in the NBA region
                 AstEventControl* const nbaEventControlp = createNbaEventControl(flp);
                 AstAssign* const trigAssignp = createNbaEventTriggerAssignment(flp);
                 nodep->replaceWith(trigAssignp);
                 trigAssignp->addNextHere(nbaEventControlp);
                 nbaEventControlp->addStmtsp(nodep);
-                insertBeforep = forkp;
                 if (!controlp) controlp = nbaEventControlp;
             }
+            // Pending updates keep their own values, even if their process schedules more
+            insertBeforep = forkp;
             controlp->replaceWith(forkp);
             AstBegin* beginp = VN_CAST(controlp, Begin);
-            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
+            if (beginp) {
+                localizeDriveTemps(beginp);
+                driveBeginp = beginp;
+            } else {
+                beginp = new AstBegin{nodep->fileline(), "", controlp, false};
+            }
             forkp->addForksp(beginp);
             addFlags(beginp, T_NBA_UPDATE);
             controlp = forkp;
@@ -1247,6 +1334,7 @@ class TimingControlVisitor final : public VNVisitor {
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
             controlp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
+            return newvscp;
         };
         // NBAs with delays evaluate LHS indices immediately
         if (inAssignDly) {
@@ -1263,6 +1351,18 @@ class TimingControlVisitor final : public VNVisitor {
             nodep->lhsp()->foreach([&](AstNodeSel* selp) {
                 if (VN_IS(selp->bitp(), Const)) return;
                 replaceWithIntermediate(selp->bitp(), m_intraIndexNames.get(nodep));
+            });
+            // Also a handle of a class or virtual interface selecting the target (IEEE 1800-2023
+            // 10.4.2). The cycle delay of a drive references it too, for its clocking event and
+            // driven flag, so use the handle evaluated now also there.
+            nodep->lhsp()->foreach([&](AstMemberSel* selp) {
+                AstNodeExpr* const fromp = selp->fromp();
+                AstVarScope* const vscp
+                    = replaceWithIntermediate(fromp, m_intraValueNames.get(nodep));
+                // Like the handle it replaces, mark one selecting a written member written
+                VN_AS(selp->fromp(), VarRef)->access(selp->access());
+                if (driveBeginp) replaceDriveHandle(driveBeginp, fromp, vscp);
+                accessRead(fromp);
             });
         }
         // Replace the RHS with an intermediate value var
@@ -1287,13 +1387,7 @@ class TimingControlVisitor final : public VNVisitor {
             AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(), forkp);
             valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
             // Unlike an event, a handle selecting one is only read
-            valuep->foreach([](AstNode* const np) {
-                if (AstNodeVarRef* const refp = VN_CAST(np, NodeVarRef)) {
-                    refp->access(VAccess::READ);
-                } else if (AstMemberSel* const selp = VN_CAST(np, MemberSel)) {
-                    selp->access(VAccess::READ);
-                }
-            });
+            accessRead(valuep);
             forkp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, valuep});
         };
