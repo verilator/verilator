@@ -9418,6 +9418,14 @@ class WidthVisitor final : public VNVisitor {
                                                      : "")
                                              << " bits.");
                 }
+            }
+            // Reduce to one bit even when the width is not reported, such as an unsized
+            // (b & 1), so later passes see a 1-bit condition
+            if (AstExprStmt* const exprStmtp = VN_CAST(underp, ExprStmt)) {
+                // Reduce only the result, leaving the statements in place
+                fixWidthReduce(exprStmtp->resultp());
+                exprStmtp->dtypeFrom(exprStmtp->resultp());
+            } else if (underp->width() != 1) {
                 VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
             }
         }
