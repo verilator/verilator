@@ -284,7 +284,6 @@ class WidthVisitor final : public VNVisitor {
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     bool m_streamConcat = false;  // True if visiting arguments of stream concatenation
-    int m_coverpointWidth = 0;  // Width of current coverpoint expression, 0 if none
     int m_dtTables = 0;  // Number of created data type tables
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
@@ -2116,17 +2115,10 @@ class WidthVisitor final : public VNVisitor {
         // with a context so a bit/part-select (AstSel) is sized here; otherwise it would
         // reach assertAtExpr() with m_vup==null and fail as an internal error.
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
-        {
-            // Bin values compare against the coverpoint, so '0/'1 fill to its width
-            VL_RESTORER(m_coverpointWidth);
-            m_coverpointWidth = nodep->exprp()->isDouble() ? 0 : nodep->exprp()->width();
-            userIterateAndNext(nodep->binsp(), nullptr);
-        }
+        // Bin values compare against the coverpoint expression
+        userIterateAndNext(nodep->binsp(), WidthVP{nodep->exprp()->dtypep(), FINAL}.p());
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->optionsp(), nullptr);
-    }
-    void fixCoverBinAutoExtend(AstNodeExpr* nodep) {
-        if (m_coverpointWidth) fixAutoExtend(nodep /*ref*/, m_coverpointWidth);
     }
     void widthCovergroupRanges(AstNode* rangesp) {
         // Bin range/value entries are self-determined expressions (IEEE 1800-2023
@@ -2140,7 +2132,7 @@ class WidthVisitor final : public VNVisitor {
                 userIterate(itemp, nullptr);
             } else {
                 itemp = userIterateSubtreeReturnEdits(itemp, WidthVP{SELF, BOTH}.p());
-                fixCoverBinAutoExtend(V3Const::constifyEdit(VN_AS(itemp, NodeExpr)));
+                V3Const::constifyEdit(itemp);
             }
         }
     }
@@ -2150,6 +2142,22 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstCoverBin* nodep) override {
         widthCovergroupRanges(nodep->rangesp());
+        // '0 and '1 values and range bounds fill to the width of the coverpoint, when the
+        // bin is within one
+        const int expWidth = m_vup ? m_vup->dtypep()->width() : 0;
+        for (AstNode *nextp, *itemp = expWidth ? nodep->rangesp() : nullptr; itemp;
+             itemp = nextp) {
+            nextp = itemp->nextp();
+            if (AstInsideRange* const rangep = VN_CAST(itemp, InsideRange)) {
+                AstNodeExpr* lhsp = rangep->lhsp();
+                fixAutoExtend(lhsp /*ref*/, expWidth);
+                AstNodeExpr* rhsp = rangep->rhsp();
+                fixAutoExtend(rhsp /*ref*/, expWidth);
+            } else {
+                AstNodeExpr* valuep = VN_AS(itemp, NodeExpr);
+                fixAutoExtend(valuep /*ref*/, expWidth);
+            }
+        }
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->arraySizep(), nullptr);
         userIterateAndNext(nodep->transp(), nullptr);
@@ -3831,8 +3839,8 @@ class WidthVisitor final : public VNVisitor {
             // preserves the now-present dtype, so no bound reaches V3WidthCommit without one.
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
-            fixCoverBinAutoExtend(V3Const::constifyEdit(nodep->lhsp()));  // lhsp may change
-            fixCoverBinAutoExtend(V3Const::constifyEdit(nodep->rhsp()));  // rhsp may change
+            V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
+            V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
         } else {
             if (m_vup->prelim()) {
                 userIterateAndNext(nodep->lhsp(), m_vup);
