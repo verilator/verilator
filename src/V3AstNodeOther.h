@@ -1567,6 +1567,7 @@ class AstNetlist final : public AstNode {
     // scheduler
     // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
     // @astgen ptr := m_nbaEventTriggerp : Optional[AstVarScope]  // NBA event trigger
+    // @astgen ptr := m_nbaEventSchedulerp : Optional[AstVarScope]  // NBA event scheduler
     // @astgen ptr := m_topScopep : Optional[AstTopScope]  // Singleton AstTopScope
     // @astgen ptr := m_stlFirstIterationp: Optional[AstVarScope]  // Settle first iteration flag
     VTimescale m_timeunit;  // Global time unit
@@ -1621,6 +1622,8 @@ public:
     void nbaEventp(AstVarScope* const varScopep) { m_nbaEventp = varScopep; }
     AstVarScope* nbaEventTriggerp() const { return m_nbaEventTriggerp; }
     void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
+    AstVarScope* nbaEventSchedulerp() const { return m_nbaEventSchedulerp; }
+    void nbaEventSchedulerp(AstVarScope* const varScopep) { m_nbaEventSchedulerp = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
     void stdPackageProcessp(AstClass* const classp) { m_stdPackageProcessp = classp; }

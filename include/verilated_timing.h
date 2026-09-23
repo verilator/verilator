@@ -360,8 +360,12 @@ public:
             }
             void await_resume() const {}
         };
-        Queue& queue = m_queues[Verilated::threadContextp()->inReactive()];
-        return Awaitable{ready ? queue.m_fired : queue.m_awaiting, process,
+        const bool reactive = Verilated::threadContextp()->inReactive();
+        Queue& queue = m_queues[reactive];
+        // Reactive resumption does not wait for trigger activity, so an immediately ready 'wait'
+        // would spin while its condition is false. Its trigger was evaluated just before
+        // suspending, so waiting for the next change there is equivalent.
+        return Awaitable{ready && !reactive ? queue.m_fired : queue.m_awaiting, process,
                          VlFileLineDebug{filename, lineno}};
     }
 };

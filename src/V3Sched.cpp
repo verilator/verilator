@@ -624,6 +624,25 @@ void createEval(AstNetlist* netlistp,  //
         = reactiveTriggeredp
               ? netlistp->topScopep()->scopep()->createTemp("__VreactEvalTriggers", 1)
               : nullptr;
+    // Resume the processes waiting on a trigger scheduler in the given region set
+    const auto newResumeScheduler = [flp](AstVarScope* schedulerp, const std::string& description,
+                                          bool reactive) {
+        AstNodeStmt* stmtsp = nullptr;
+        for (const VCMethod method : {VCMethod::SCHED_READY, VCMethod::SCHED_MOVE_TO_RESUME_QUEUE,
+                                      VCMethod::SCHED_RESUME}) {
+            AstCMethodHard* const callp = new AstCMethodHard{
+                flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, method};
+            callp->dtypeSetVoid();
+            AstCExpr* const descriptionp = new AstCExpr{flp, '"' + description + '"'};
+            descriptionp->dtypeSetString();
+            callp->addPinsp(descriptionp);
+            if (method != VCMethod::SCHED_READY) {
+                callp->addPinsp(new AstConst{flp, AstConst::BitTrue{}, reactive});
+            }
+            stmtsp = AstNode::addNext(stmtsp, callp->makeStmt());
+        }
+        return stmtsp;
+    };
 
     // Create the 'act' region
     createEvalRegion(  //
@@ -768,15 +787,35 @@ void createEval(AstNetlist* netlistp,  //
         // Extra work (not conditional on having had a fired trigger)
         newNbaEventWork);
 
-    createEvalRegion(netlistp, VEval::RENBA, 0, trigKit, nullptr, nullptr, nullptr, nullptr,
-                     [&](AstVarScope* continuep) -> AstNodeStmt* {
-                         if (!reactiveEvalp) return nullptr;
-                         AstNodeStmt* const workp = newNbaEventWork(continuep);
-                         if (workp) VN_AS(workp, If)->addThensp(util::setVar(reactiveEvalp, 1));
-                         return workp;
-                     });
+    createEvalRegion(
+        netlistp, VEval::RENBA, 0, trigKit, nullptr, nullptr, nullptr, nullptr,
+        [&](AstVarScope* continuep) -> AstNodeStmt* {
+            AstNodeStmt* workp = nullptr;
+            // Apply the NBA updates of reactive code in execution order, before anything reacts
+            // to this region's updates (IEEE 1800-2023 4.6)
+            if (reactiveEvalp) {
+                if (AstIf* const ifp = VN_AS(newNbaEventWork(continuep), If)) {
+                    if (AstVarScope* const schedulerp = netlistp->nbaEventSchedulerp()) {
+                        ifp->addThensp(newResumeScheduler(schedulerp, "Re-NBA", true));
+                    }
+                    ifp->addThensp(util::setVar(reactiveEvalp, 1));
+                    workp = ifp;
+                }
+            }
+            if (!reactKit.empty()) {
+                // Clocking drives mature after coincident reactive code (IEEE 1800-2023 14.16)
+                AstIf* const ifp = new AstIf{flp, trigKit.newAnySetCall(reactKit.m_vscp)};
+                ifp->addThensp(util::setVar(continuep, 1));
+                ifp->addThensp(util::callVoidFunc(reactKit.m_funcp));
+                ifp->addThensp(trigKit.newClearCall(reactKit.m_vscp));
+                if (reactiveEvalp) ifp->addThensp(util::setVar(reactiveEvalp, 1));
+                workp = AstNode::addNext(workp, ifp);
+            }
+            return workp;
+        });
     netlistp->nbaEventp(nullptr);
     netlistp->nbaEventTriggerp(nullptr);
+    netlistp->nbaEventSchedulerp(nullptr);
 
     // Create the 'obs' region
     createEvalRegion(  //
@@ -802,16 +841,17 @@ void createEval(AstNetlist* netlistp,  //
         }());
 
     AstVarScope* const schedulerp = netlistp->reactiveSchedulerp();
-    const auto newSchedulerNotEmpty = [flp, schedulerp]() -> AstNodeExpr* {
+    AstNodeExpr* condp = nullptr;
+    if (schedulerp) {
         AstCMethodHard* const emptyp = new AstCMethodHard{
             flp, new AstVarRef{flp, schedulerp, VAccess::READ}, VCMethod::SCHED_EMPTY};
         emptyp->dtypeSetBit();
-        return new AstLogNot{flp, emptyp};
-    };
-    AstNodeExpr* condp = reactKit.empty() ? nullptr : trigKit.newAnySetCall(reactKit.m_vscp);
-    if (schedulerp) {
-        AstNodeExpr* const notEmptyp = newSchedulerNotEmpty();
-        condp = condp ? new AstLogOr{flp, condp, notEmptyp} : notEmptyp;
+        condp = new AstLogNot{flp, emptyp};
+    }
+    if (!reactKit.empty()) {
+        // Dump 'react' triggers if the Reactive loop fails to converge, although 'renba' uses them
+        netlistp->dumpTriggersFuncp(VEval::REACT)
+            ->addStmtsp(trigKit.newDumpCall(reactKit.m_vscp, VEval{VEval::REACT}.tag(), false));
     }
     // Create the 'react' region
     createEvalRegion(  //
@@ -827,6 +867,11 @@ void createEval(AstNetlist* netlistp,  //
             }
             // Keep design events pending until the reactive region set has drained.
             prep = AstNode::addNext(prep, trigKit.newOrIntoCall(trigKit.vscAccp(), actKit.m_vscp));
+            // Let 'renba' commit clocking drives written by reactive code.
+            if (!reactKit.empty()) {
+                prep = AstNode::addNext(prep,
+                                        trigKit.newOrIntoCall(reactKit.m_vscp, actKit.m_vscp));
+            }
             AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, reactiveEvalp, VAccess::READ}};
             ifp->addThensp(util::setVar(reactiveEvalp, 0));
             ifp->addThensp(prep);
@@ -834,33 +879,11 @@ void createEval(AstNetlist* netlistp,  //
         }(),
         // Work statements
         [&]() -> AstNodeStmt* {
-            AstNodeStmt* workp = nullptr;
-            if (!reactKit.empty()) {
-                AstIf* const ifp = new AstIf{flp, trigKit.newAnySetCall(reactKit.m_vscp)};
-                ifp->addThensp(util::callVoidFunc(reactKit.m_funcp));
-                ifp->addThensp(trigKit.newClearCall(reactKit.m_vscp));
-                workp = ifp;
-            }
-            if (schedulerp) {
-                AstIf* const ifp = new AstIf{flp, newSchedulerNotEmpty()};
-                for (const VCMethod method :
-                     {VCMethod::SCHED_READY, VCMethod::SCHED_MOVE_TO_RESUME_QUEUE,
-                      VCMethod::SCHED_RESUME}) {
-                    AstCMethodHard* const callp = new AstCMethodHard{
-                        flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, method};
-                    callp->dtypeSetVoid();
-                    AstCExpr* const descriptionp = new AstCExpr{flp, "\"program initialization\""};
-                    descriptionp->dtypeSetString();
-                    callp->addPinsp(descriptionp);
-                    if (method != VCMethod::SCHED_READY) {
-                        callp->addPinsp(new AstConst{flp, AstConst::BitFalse{}});
-                    }
-                    ifp->addThensp(callp->makeStmt());
-                }
-                ifp->addThensp(util::setVar(reactiveTriggeredp, 1));
-                workp = AstNode::addNext(workp, ifp);
-            }
-            return workp;
+            if (!schedulerp) return nullptr;
+            // Start program initial procedures in the reactive region set
+            AstNodeStmt* const workp
+                = newResumeScheduler(schedulerp, "program initialization", false);
+            return AstNode::addNext(workp, util::setVar(reactiveTriggeredp, 1));
         }(),
         [&](AstVarScope* continuep) -> AstNodeStmt* {
             AstNodeStmt* workp = nullptr;

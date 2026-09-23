@@ -4090,6 +4090,10 @@ void VerilatedEvalLoop::didNotConverge(const char* namep,
 template <bool Profiling>
 void VerilatedEvalLoop::evalImpl() {
     VL_DEBUG_IF(VL_DBG_MSGF("+ Eval\n"););
+    // A nested model may be evaluated from the reactive region set of its parent
+    VerilatedContext* const contextp = m_model.contextp();
+    const bool parentReactive = contextp->inReactive();
+    contextp->inReactive(false);
 
     if VL_CONSTEXPR_CXX17 (Profiling) {
         // Advance the profiling window
@@ -4160,7 +4164,7 @@ void VerilatedEvalLoop::evalImpl() {
         } while (m_model.evalObs());
         if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop obs
 
-        m_model.contextp()->inReactive(true);
+        contextp->inReactive(true);
         reactiveWork = false;
         uint32_t renbaIterCount = 0;
         if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop renba");
@@ -4185,7 +4189,7 @@ void VerilatedEvalLoop::evalImpl() {
             reactiveWork = true;
         }
         if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop renba
-        m_model.contextp()->inReactive(false);
+        contextp->inReactive(false);
     } while (reactiveWork);
     if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop react
 
@@ -4193,6 +4197,7 @@ void VerilatedEvalLoop::evalImpl() {
     m_model.evalPostponed();
 
     m_model.evalEnd();
+    contextp->inReactive(parentReactive);
 
     if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // eval
 }

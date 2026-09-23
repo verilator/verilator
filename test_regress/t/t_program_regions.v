@@ -70,6 +70,11 @@ module t;
   int comb_changes;
   int clock_rises;
   int clock_falls;
+  bit wait_flag;
+  event wait_event;
+  bit wait_reactive;
+  int wait_value;
+  string wait_seq;
 
   region_module m ();
   region_program p ();
@@ -93,6 +98,11 @@ module t;
       task_order = {task_order, "b"};
       #0 task_order = {task_order, "c"};
     end
+  endtask
+
+  task automatic wait_task(string tag);
+    wait (wait_value == 3);
+    wait_seq = {wait_seq, tag};
   endtask
 
   task automatic shared_event(bit reactive_thread);
@@ -151,6 +161,16 @@ module t;
     #28 ->ifc.wake;
     #1 ->ifc.wake;
   end
+  initial wait_task("M");
+  initial begin
+    wait (wait_flag);
+    wait_seq = {wait_seq, "m"};
+  end
+  initial begin
+    #28 wait_value = 3;
+    #2 wait_flag = 1;
+    #1 ->wait_event;
+  end
 
   initial begin
     #6;
@@ -174,6 +194,7 @@ module t;
     `checkd(fork_module, 1)
     `checkd(ifc.stage, 3)
     `checkd(ifc.wake_time, 29)
+    `checks(wait_seq, "rMPmpe")
     $write("*-* All Finished *-*\n");
     $finish;
   end
@@ -258,4 +279,22 @@ program region_program;
   end
 
   initial #27 t.ifc.run();
+
+  // Level-sensitive waits must not spin while pending in the reactive region set
+  initial t.wait_task("P");
+  initial begin
+    wait (t.wait_flag);
+    `checkd(int'($time), 30)
+    t.wait_seq = {t.wait_seq, "p"};
+    wait (t.wait_flag);
+    wait (t.wait_event.triggered);
+    `checkd(int'($time), 31)
+    t.wait_seq = {t.wait_seq, "e"};
+  end
+  initial begin
+    wait (t.wait_reactive);
+    `checkd(int'($time), 25)
+    t.wait_seq = {t.wait_seq, "r"};
+  end
+  initial #25 t.wait_reactive = 1;
 endprogram

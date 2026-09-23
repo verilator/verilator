@@ -241,11 +241,12 @@ class AwaitVisitor final : public VNVisitor {
 
     // STATE
     bool m_inProcess = false;  // Are we in a process?
+    bool m_inReactiveProc = false;  // Are we in an AlwaysReactive process?
     bool m_gatherVars = false;  // Should we gather vars in m_writtenBySuspendable?
     AstScope* const m_scopeTopp;  // Scope at the top
     LogicByScope& m_lbs;  // Timing resume actives
     AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
-    bool& m_hasReactive;  // Design contains reactive processes
+    bool& m_hasReactive;  // Design contains processes suspending in the reactive region set
     // Additional var sensitivities
     std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
     std::unique_ptr<V3ClassGraph>
@@ -377,7 +378,8 @@ class AwaitVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_inProcess && !m_gatherVars && m_processDomains.empty()
                         && m_writtenBySuspendable.empty(),
                     nodep, "Process in process?");
-        if (VN_IS(nodep, AlwaysReactive)) m_hasReactive = true;
+        VL_RESTORER(m_inReactiveProc);
+        m_inReactiveProc = VN_IS(nodep, AlwaysReactive);
         m_inProcess = true;
         m_gatherVars = nodep->isSuspendable();  // Only gather vars in a suspendable
         iterateChildren(nodep);
@@ -393,6 +395,8 @@ class AwaitVisitor final : public VNVisitor {
     void visit(AstFork* nodep) override {
         VL_RESTORER(m_gatherVars);
         if (m_inProcess) m_gatherVars = true;
+        // Skewed clocking drives fork processes from the reactive region set
+        if (m_inReactiveProc) m_hasReactive = true;
         // If not in a process, we don't need to gather variables or domains
         iterateChildren(nodep);
     }

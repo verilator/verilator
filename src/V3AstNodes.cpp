@@ -1978,6 +1978,7 @@ void AstNetlist::deleteContents() {
     m_reactiveSchedulerp = nullptr;
     m_nbaEventp = nullptr;
     m_nbaEventTriggerp = nullptr;
+    m_nbaEventSchedulerp = nullptr;
     m_topScopep = nullptr;
     m_evalFuncps.fill(nullptr);
     m_dumpTriggersFuncps.fill(nullptr);

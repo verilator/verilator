@@ -88,6 +88,7 @@ enum NodeFlag : uint8_t {
     T_FORCES_PROC = 1 << 3,  // Forces VlProcess allocation
     T_NEEDS_PROC = 1 << 4,  // Needs access to VlProcess if it's allocated
     T_HAS_PROC = 1 << 5,  // Has VlProcess argument in the signature
+    T_NBA_UPDATE = 1 << 6,  // Fork branch of a pending NBA update, which is not a subprocess
 };
 
 enum ForkType : uint8_t {
@@ -481,7 +482,7 @@ class TimingControlVisitor final : public VNVisitor {
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     bool m_hasProcess = false;  // True if current scope has a VlProcess handle available
-    bool m_inProgram = false;  // Current procedure is declared in a program block
+    bool m_reactiveProc = false;  // Current procedure runs in the reactive region set
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
@@ -497,6 +498,7 @@ class TimingControlVisitor final : public VNVisitor {
     V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
     V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
+    V3UniqueNames m_inReactiveNames{"__VinReactive"};  // Saved region set var names
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
     V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
 
@@ -646,6 +648,11 @@ class TimingControlVisitor final : public VNVisitor {
             }
             return !nodep->isPure();
         });
+    }
+    // Is this the sensitivity to the global NBA event (see createNbaEventControl)
+    bool isNbaEvent(const AstSenTree* const sentreep) const {
+        const AstNodeVarRef* const refp = sentreep->sensesp()->varrefp();
+        return m_netlistp->nbaEventp() && refp && refp->varScopep() == m_netlistp->nbaEventp();
     }
     // Creates a trigger scheduler variable
     AstVarScope* getCreateTriggerSchedulerp(AstSenTree* const sentreep) {
@@ -929,10 +936,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
-        VL_RESTORER(m_inProgram);
+        VL_RESTORER(m_reactiveProc);
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
-        m_inProgram = nodep->inProgram();
+        m_reactiveProc = nodep->inProgram() || VN_IS(nodep, AlwaysReactive);
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
         iterateChildren(nodep);
@@ -1127,7 +1134,9 @@ class TimingControlVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         // Relink child statements after the event control
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
-        if (needDynamicTrigger(nodep->sentreep())) {
+        // The NBA event is global, and a single scheduler keeps NBA updates in execution order
+        const bool nbaEvent = isNbaEvent(nodep->sentreep());
+        if (!nbaEvent && needDynamicTrigger(nodep->sentreep())) {
             // Create the trigger variable and init it with 0
             AstVarScope* const trigvscp
                 = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
@@ -1205,10 +1214,12 @@ class TimingControlVisitor final : public VNVisitor {
             auto* const sentreep = m_finder.getSenTree(nodep->sentreep());
             nodep->sentreep()->unlinkFrBack()->deleteTree();
             // Get this sentree's trigger scheduler
+            AstVarScope* const schedulerp = getCreateTriggerSchedulerp(sentreep);
+            // Re-NBA resumes the reactive NBA updates directly from this scheduler
+            if (nbaEvent) m_netlistp->nbaEventSchedulerp(schedulerp);
             // Replace self with a 'co_await trigSched.trigger()'
             auto* const triggerMethodp = new AstCMethodHard{
-                flp, new AstVarRef{flp, getCreateTriggerSchedulerp(sentreep), VAccess::WRITE},
-                VCMethod::SCHED_TRIGGER};
+                flp, new AstVarRef{flp, schedulerp, VAccess::WRITE}, VCMethod::SCHED_TRIGGER};
             triggerMethodp->dtypeSetVoid();
             // If it should be committed immediately, pass true, otherwise false
             triggerMethodp->addPinsp(nodep->user2() ? new AstConst{flp, AstConst::BitTrue{}}
@@ -1226,13 +1237,15 @@ class TimingControlVisitor final : public VNVisitor {
         if (nodep->user1SetOnce()) return;
         UINFO(9, "control-visit " << nodep);
         FileLine* const flp = nodep->fileline();
+        // Only a synchronous drive can have a cycle delay (Begin from V3AssertPre)
+        const bool cycleDelayedDrive = VN_IS(nodep->timingControlp(), Begin);
         AstNode* controlp = factorOutTimingControl(nodep);
         const bool inAssignDly = VN_IS(nodep, AssignDly);
         // Handle the intra assignment timing control
         // Transform if:
         // * there's a timing control in the assignment
-        // * the assignment is an AssignDly in a non-inlined function or program
-        if (!controlp && (!inAssignDly || (m_underProcedure && !m_inProgram))) {
+        // * the assignment is an AssignDly in a non-inlined function or reactive procedure
+        if (!controlp && (!inAssignDly || (m_underProcedure && !m_reactiveProc))) {
             iterateChildren(nodep);
             return;
         }
@@ -1245,7 +1258,7 @@ class TimingControlVisitor final : public VNVisitor {
             // Could already be the only thing directly under a fork, reuse that if possible
             AstFork* forkp = !nodep->nextp() ? VN_CAST(nodep->firstAbovep(), Fork) : nullptr;
             if (!forkp) forkp = new AstFork{flp, VJoinType::JOIN_NONE};
-            if (!m_underProcedure || m_inProgram) {
+            if (!m_underProcedure || m_reactiveProc) {
                 // Resume in NBA or Re-NBA according to the calling thread's region set.
                 AstEventControl* const nbaEventControlp = createNbaEventControl(flp);
                 AstAssign* const trigAssignp = createNbaEventTriggerAssignment(flp);
@@ -1259,6 +1272,7 @@ class TimingControlVisitor final : public VNVisitor {
             AstBegin* beginp = VN_CAST(controlp, Begin);
             if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
             forkp->addForksp(beginp);
+            addFlags(beginp, T_NBA_UPDATE);
             controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
@@ -1293,11 +1307,27 @@ class TimingControlVisitor final : public VNVisitor {
         }
         // Replace the RHS with an intermediate value var
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
-        if (inAssignDly && m_underProcedure && m_inProgram) {
-            // Do not schedule this program update a second time in V3Delayed.
+        if (inAssignDly && m_underProcedure && m_reactiveProc) {
+            // Do not schedule this reactive update a second time in V3Delayed.
             nodep->replaceWith(
                 new AstAssign{flp, nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+        if (cycleDelayedDrive && (!m_underProcedure || m_reactiveProc)) {
+            // The drive matures at its clocking event, so drives executed by reactive code after
+            // that event take precedence (IEEE 1800-2023 14.16.2). Start the process in the active
+            // region set, where it counts the cycles and updates the clockvar before the event.
+            AstVarScope* const reactivep = createTemp(flp, m_inReactiveNames.get(controlp),
+                                                      controlp->findBitDType(), insertBeforep);
+            controlp->addHereThisAsNext(
+                new AstAssign{flp, new AstVarRef{flp, reactivep, VAccess::WRITE},
+                              new AstCExpr{flp, "vlSymsp->_vm_contextp__->inReactive()", 1}});
+            controlp->addHereThisAsNext(
+                new AstCStmt{flp, "vlSymsp->_vm_contextp__->inReactive(false);"});
+            AstCStmt* const restorep = new AstCStmt{flp, "vlSymsp->_vm_contextp__->inReactive("};
+            restorep->add(new AstVarRef{flp, reactivep, VAccess::READ});
+            restorep->add(");");
+            controlp->addNextHere(restorep);
         }
     }
     void visit(AstAssignW* nodep) override {
@@ -1481,6 +1511,9 @@ class TimingControlVisitor final : public VNVisitor {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
         m_hasProcess |= hasFlags(nodep, T_HAS_PROC);
+        // A pending NBA update is not a subprocess of the process that scheduled it, so it is
+        // unaffected by 'disable fork' and 'wait fork' (IEEE 1800-2023 9.6.1, 9.6.3)
+        if (hasFlags(nodep, T_NBA_UPDATE)) m_hasProcess = false;
         m_procp = nodep;
         if (m_hasProcess) nodep->setNeedProcess();
         iterateChildren(nodep);

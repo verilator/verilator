@@ -326,52 +326,50 @@ private:
                                    skewedReadRefp->cloneTreePure(false)}};
             m_modp->addStmtsp(prevVarp);
             m_modp->addStmtsp(initPrevClockvarp);
-            // Assign the clockvar to the actual var; only do it if the clockvar's value has
-            // changed
-            AstAssign* const assignp
-                = new AstAssign{flp, exprp->cloneTreePure(false), skewedReadRefp};
-            AstIf* const ifp
-                = new AstIf{flp,
-                            new AstNeq{flp, new AstVarRef{flp, prevVarp, VAccess::READ},
-                                       skewedReadRefp->cloneTreePure(false)},
-                            assignp};
-            ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, prevVarp, VAccess::WRITE},
-                                         skewedReadRefp->cloneTree(false)});
-            if (skewp->isZero()) {
-                // Drive the var in Re-NBA (IEEE 1800-2023 14.16)
-                AstSenTree* senTreep
-                    = new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)};
-                senTreep->addSensesp(
-                    new AstSenItem{flp, VEdgeType::ET_CHANGED, skewedReadRefp->cloneTree(false)});
-                AstCMethodHard* const trigp = new AstCMethodHard{
-                    nodep->fileline(),
-                    new AstVarRef{flp, m_clockingp->ensureEventp(), VAccess::READ},
-                    VCMethod::EVENT_IS_TRIGGERED};
-                trigp->dtypeSetBit();
-                ifp->condp(new AstLogAnd{flp, ifp->condp()->unlinkFrBack(), trigp});
-                m_clockingp->addNextHere(new AstAlwaysReactive{flp, senTreep, ifp});
-            } else if (skewp->fileline()->timingOn()) {
-                // Create a fork so that this AlwaysObserved can be retriggered before the
-                // assignment happens. Also then it can be combo, avoiding the need for creating
-                // new triggers.
+            // Commit a changed clockvar in Re-NBA of the clocking event, after drives from
+            // coincident reactive code (IEEE 1800-2023 14.16). Where timing is turned off, the
+            // skew is ignored like other timing controls.
+            const bool skewed = !skewp->isZero() && skewp->fileline()->timingOn();
+            AstNode* drivep = nullptr;
+            if (skewed && v3Global.opt.timing().isSetTrue()) {
+                // Update the signal in Re-NBA after the skew, without blocking the commit logic
+                AstAssignDly* const assignp
+                    = new AstAssignDly{flp, exprp->cloneTreePure(false), skewedReadRefp};
+                AstDelay* const delayp = new AstDelay{flp, skewp->unlinkFrBack(), false};
+                delayp->timeunit(m_modp->timeunit());
+                assignp->timingControlp(delayp);
                 AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
-                forkp->addForksp(new AstBegin{flp, "", ifp, true});
-                // Use Observed for this to make sure we do not miss the event
-                m_clockingp->addNextHere(new AstAlwaysObserved{
-                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, forkp});
-                if (v3Global.opt.timing().isSetTrue()) {
-                    AstDelay* const delayp = new AstDelay{flp, skewp->unlinkFrBack(), false};
-                    delayp->timeunit(m_modp->timeunit());
-                    assignp->timingControlp(delayp);
-                } else if (v3Global.opt.timing().isSetFalse()) {
-                    nodep->v3warn(E_NOTIMING,
-                                  "Clocking output skew greater than #0 requires --timing");
-                } else {
-                    nodep->v3warn(E_NEEDTIMINGOPT,
-                                  "Use --timing or --no-timing to specify how "
-                                  "clocking output skew greater than #0 should be handled");
+                forkp->addForksp(new AstBegin{flp, "", assignp, true});
+                drivep = forkp;
+            } else {
+                if (skewed) {
+                    if (v3Global.opt.timing().isSetFalse()) {
+                        nodep->v3warn(E_NOTIMING,
+                                      "Clocking output skew greater than #0 requires --timing");
+                    } else {
+                        nodep->v3warn(E_NEEDTIMINGOPT,
+                                      "Use --timing or --no-timing to specify how "
+                                      "clocking output skew greater than #0 should be handled");
+                    }
                 }
+                drivep = new AstAssign{flp, exprp->cloneTreePure(false), skewedReadRefp};
             }
+            AstCMethodHard* const trigp = new AstCMethodHard{
+                nodep->fileline(), new AstVarRef{flp, m_clockingp->ensureEventp(), VAccess::READ},
+                VCMethod::EVENT_IS_TRIGGERED};
+            trigp->dtypeSetBit();
+            AstNodeExpr* const changedp
+                = new AstNeq{flp, new AstVarRef{flp, prevVarp, VAccess::READ},
+                             skewedReadRefp->cloneTreePure(false)};
+            AstIf* const ifp = new AstIf{flp, new AstLogAnd{flp, changedp, trigp}, drivep};
+            // Record the committed value now, so later drives are not lost during the skew
+            ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, prevVarp, VAccess::WRITE},
+                                         skewedReadRefp->cloneTreePure(false)});
+            AstSenTree* const senTreep
+                = new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)};
+            senTreep->addSensesp(
+                new AstSenItem{flp, VEdgeType::ET_CHANGED, skewedReadRefp->cloneTreePure(false)});
+            m_clockingp->addNextHere(new AstAlwaysReactive{flp, senTreep, ifp});
         } else if (nodep->direction() == VDirection::INPUT) {
             // Ref to the clockvar
             AstVarRef* const refp = new AstVarRef{flp, varp, VAccess::WRITE};
@@ -660,9 +658,9 @@ private:
             iterate(nodep->lhsp());
         }
         iterate(nodep->rhsp());
-        if (nodep->timingControlp()) {
-            iterate(nodep->timingControlp());
-        } else if (m_inSynchDrive) {
+        if (nodep->timingControlp()) iterate(nodep->timingControlp());
+        // Without a cycle delay (also after removing '##0'), a drive updates the clockvar now
+        if (m_inSynchDrive && !nodep->timingControlp()) {
             AstAssign* const assignp = new AstAssign{
                 nodep->fileline(), nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()};
             assignp->user1(true);
