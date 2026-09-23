@@ -1955,7 +1955,7 @@ const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
     const auto it = m_containingModules.find(nodep);
     if (it != m_containingModules.end()) return it->second;
     // Only true parents are followed.
-    AstNode* const abovep = nodep->aboveTailp();
+    AstNode* const abovep = nodep->aboveLoopp();
     const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
     m_containingModules[nodep] = modp;
     return modp;

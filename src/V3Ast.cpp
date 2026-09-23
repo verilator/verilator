@@ -151,13 +151,6 @@ AstNode* AstNode::aboveLoopp() const {
     while (nodep->backp() && nodep->backp()->nextp() == nodep) nodep = nodep->backp();
     return nodep->backp();
 }
-AstNode* AstNode::aboveTailp() const {
-    // Returns parent node. Faster than aboveLoopp() when near the end of a list.
-    const AstNode* nodep = this;
-    // Forwards over peers (versus parents)
-    while (nodep->nextp()) nodep = nodep->nextp();
-    return nodep->abovep();
-}
 
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
