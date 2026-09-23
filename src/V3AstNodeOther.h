@@ -1202,6 +1202,28 @@ public:
         return m_optType.m_e == asamep->m_optType.m_e && m_typeOption == asamep->m_typeOption;
     }  // LCOV_EXCL_STOP
 };
+class AstCoverToggle final : public AstNode {
+    // Toggle analysis of given signal
+    // Parents:  MODULE
+    // @astgen op1 := incp : AstCoverInc
+    // @astgen op2 := origp : AstNodeExpr
+    // @astgen op3 := changep : AstNodeExpr
+public:
+    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNodeExpr* origp, AstNodeExpr* changep)
+        : ASTGEN_SUPER_CoverToggle(fl) {
+        this->incp(incp);
+        this->origp(origp);
+        this->changep(changep);
+    }
+    ASTGEN_MEMBERS_AstCoverToggle;
+    int instrCount() const override { return 3 + INSTR_COUNT_BRANCH + INSTR_COUNT_LD; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return true; }
+    bool isOutputter() override {
+        return false;  // Though the AstCoverInc under this is an outputter
+    }
+};
 class AstCoverTransItem final : public AstNode {
     // Represents a single transition item: value or value[*N] or value[->N] or value[=N]
     // @astgen op1 := valuesp : List[AstNode]
