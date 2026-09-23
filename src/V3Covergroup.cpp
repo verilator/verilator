@@ -1059,8 +1059,19 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     void emitConvHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp, int idx,
                        AstNodeExpr* condp) {
+        emitConvHitIf(coverpointp, binp, cpVarp,
+                      cnum(binp->fileline(), static_cast<uint32_t>(idx)), condp);
+    }
+    // As above, with the bin index computed from the sampled value
+    void emitConvHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp,
+                       AstNodeExpr* idxp, AstNodeExpr* condp) {
         FileLine* const fl = binp->fileline();
-        AstNode* actionp = makeRuntimeBinHit(fl, {cpVarp, idx, binp->binsType().binIsNormal()});
+        AstNode* actionp
+            = itemCall(fl, cpVarp,
+                       binp->binsType().binIsNormal() ? VCMethod::COVERGROUP_INCREMENT_BIN
+                                                      : VCMethod::COVERGROUP_RECORD_HIT,
+                       {idxp})
+                  ->makeStmt();
         if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
             actionp->addNext(makeIllegalBinAction(fl, "Illegal bin " + binp->prettyNameQ()
                                                           + " hit in coverpoint "
@@ -1077,6 +1088,37 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstNodeExpr* const guardedp = applyCoverpointIffCondition(coverpointp, fl, condp);
         UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for coverpoint");
         m_sampleFuncp->addStmtsp(new AstIf{fl, guardedp, actionp, nullptr});
+    }
+
+    // Number of constants starting at values[first] that increase by one
+    static size_t consecutiveRun(const std::vector<AstNodeExpr*>& values, size_t first) {
+        const AstConst* prevp = VN_AS(values[first], Const);
+        if (prevp->num().isAnyXZ()) return 1;
+        size_t run = 1;
+        while (first + run < values.size()) {
+            const AstConst* const nextp = VN_AS(values[first + run], Const);
+            if (nextp->num().isAnyXZ() || nextp->toUQuad() != prevp->toUQuad() + 1) break;
+            prevp = nextp;
+            ++run;
+        }
+        return run;
+    }
+
+    // Emit 'if (lo <= v && v <= hi) m_cp.incrementBin(idx + (v - lo));' for a run of
+    // consecutive array-bin values starting at bin idx.
+    void emitArrayRunHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp,
+                           AstNodeExpr* exprp, int idx, AstConst* lop, AstConst* hip) {
+        FileLine* const fl = binp->fileline();
+        AstConst* const loValuep = newValueConst(fl, lop->num(), exprp);
+        AstConst* const hiValuep = newValueConst(fl, hip->num(), exprp);
+        AstNodeExpr* const condp = makeRangeCondition(fl, exprp, loValuep, hiValuep);
+        AstSub* const offsetp = new AstSub{fl, exprp->cloneTree(false), loValuep};
+        offsetp->dtypeFrom(exprp);
+        AstAdd* const idxp
+            = new AstAdd{fl, cnum(fl, static_cast<uint32_t>(idx)), new AstCCast{fl, offsetp, 32}};
+        idxp->dtypeSetUInt32();
+        VL_DO_DANGLING(pushDeletep(hiValuep), hiValuep);
+        emitConvHitIf(coverpointp, binp, cpVarp, idxp, condp);
     }
 
     // Emit a transition bin's hit action into sample():
@@ -1185,11 +1227,29 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 if (unsupported) continue;  // bin ignored (COVERIGN emitted); reserve no slot
                 namerStmts.push_back(makeNamer(cpVarp, cbinp, static_cast<int>(values.size()),
                                                static_cast<uint32_t>(idx), values));
+                // A run of consecutive values lands in consecutive bins: test the run as one
+                // range and index the bin by the value's offset into it.  runs[i] is the length
+                // of the run starting at value i, or 0 inside a run.
+                std::vector<size_t> runs(values.size(), 1);
+                if (!exprp->isSigned() && !exprp->isWide()) {
+                    for (size_t i = 0; i < values.size(); i += runs[i]) {
+                        runs[i] = consecutiveRun(values, i);
+                        for (size_t j = i + 1; j < i + runs[i]; ++j) runs[j] = 0;
+                    }
+                }
+                const int firstIdx = idx;
                 for (AstNodeExpr* valuep : values) {
                     // The cross selections of this covergroup still read the value.
                     m_detachedValues.push_back(valuep);
-                    emitConvHitIf(coverpointp, cbinp, cpVarp, idx,
-                                  buildValueCondition(cbinp, exprp, valuep));
+                    const size_t i = static_cast<size_t>(idx - firstIdx);
+                    if (runs[i] > 1) {
+                        emitArrayRunHitIf(coverpointp, cbinp, cpVarp, exprp, idx,
+                                          VN_AS(valuep, Const),
+                                          VN_AS(values[i + runs[i] - 1], Const));
+                    } else if (runs[i] == 1) {
+                        emitConvHitIf(coverpointp, cbinp, cpVarp, idx,
+                                      buildValueCondition(cbinp, exprp, valuep));
+                    }
                     if (dynamic && V3Error::errorCount() == errorsBefore) {
                         metadata.emplace_back(cbinp, idx, valuep);
                     }

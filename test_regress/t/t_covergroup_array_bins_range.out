@@ -1,0 +1,33 @@
+cg.cp_iff.g[0]: 0
+cg.cp_iff.g[1]: 0
+cg.cp_mode.m: 4
+cg.cp_runs.ig[0] [ignore]: 0
+cg.cp_runs.ig[1] [ignore]: 1
+cg.cp_runs.ig[2] [ignore]: 0
+cg.cp_runs.il[0] [illegal]: 0
+cg.cp_runs.il[1] [illegal]: 0
+cg.cp_runs.lo[0]: 0
+cg.cp_runs.lo[1]: 1
+cg.cp_runs.lo[2]: 1
+cg.cp_runs.lo[3]: 0
+cg.cp_runs.mixed[0]: 0
+cg.cp_runs.mixed[1]: 0
+cg.cp_runs.mixed[2]: 1
+cg.cp_runs.mixed[3]: 0
+cg.cp_runs.mixed[4]: 1
+cg.cp_signed.s[0]: 0
+cg.cp_signed.s[1]: 6
+cg.cp_signed.s[2]: 0
+cg.cp_wide.w[0]: 0
+cg.cp_wide.w[1]: 6
+cg.cp_xz.v[1]: 0
+cg.cp_xz.v[2]: 6
+cg.cx.m_x_lo[0] [cross]: 0
+cg.cx.m_x_lo[1] [cross]: 0
+cg.cx.m_x_lo[2] [cross]: 1
+cg.cx.m_x_lo[3] [cross]: 0
+cg.cx.m_x_mixed[0] [cross]: 0
+cg.cx.m_x_mixed[1] [cross]: 0
+cg.cx.m_x_mixed[2] [cross]: 1
+cg.cx.m_x_mixed[3] [cross]: 0
+cg.cx.m_x_mixed[4] [cross]: 1
