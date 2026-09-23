@@ -660,9 +660,9 @@ private:
             iterate(nodep->lhsp());
         }
         iterate(nodep->rhsp());
-        if (nodep->timingControlp()) {
-            iterate(nodep->timingControlp());
-        } else if (m_inSynchDrive) {
+        if (nodep->timingControlp()) iterate(nodep->timingControlp());
+        // A drive without a cycle delay, also after removing '##0', updates the clockvar now
+        if (m_inSynchDrive && !nodep->timingControlp()) {
             AstAssign* const assignp = new AstAssign{
                 nodep->fileline(), nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()};
             assignp->user1(true);
