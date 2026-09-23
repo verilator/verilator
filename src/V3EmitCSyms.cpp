@@ -1583,7 +1583,8 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
     puts("    , __Vm_modelp{modelp}\n");
     puts("    , __Vm_didInit{modelp->m_didInit}\n");
     if (v3Global.opt.mtasks()) {
-        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp())}\n");
+        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp("
+             "modelp->threads()))}\n");
     }
     if (v3Global.opt.profExec()) {
         puts("    , __Vm_executionProfilerp{static_cast<VlExecutionProfiler*>(contextp->"
