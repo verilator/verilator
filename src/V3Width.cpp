@@ -7833,6 +7833,19 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             if (!allow) {
+                // An embedded covergroup may call methods of its enclosing class
+                // (IEEE 1800-2023 19.4); V3Covergroup routes the call through its handle.
+                const AstClass* const cgClassp = m_containingClassFinder.find(nodep);
+                if (cgClassp && cgClassp->covergroupEnclosingClassp()) {
+                    const AstClass* calleeClassp = VN_CAST(nodep->classOrPackagep(), Class);
+                    if (!calleeClassp) {
+                        calleeClassp = m_containingClassFinder.find(nodep->taskp());
+                    }
+                    allow = AstClass::isClassExtendedFrom(cgClassp->covergroupEnclosingClassp(),
+                                                          calleeClassp);
+                }
+            }
+            if (!allow) {
                 nodep->v3error("Cannot call non-static member function "
                                << nodep->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
             }
