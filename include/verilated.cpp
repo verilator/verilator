@@ -4103,6 +4103,10 @@ void VerilatedEvalLoop::didNotConverge(const char* namep,
 template <bool Profiling>
 void VerilatedEvalLoop::evalImpl() {
     VL_DEBUG_IF(VL_DBG_MSGF("+ Eval\n"););
+    // A nested model may be evaluated from the reactive region set of its parent
+    VerilatedContext* const contextp = m_model.contextp();
+    const bool parentReactive = contextp->inReactive();
+    contextp->inReactive(false);
 
     if VL_CONSTEXPR_CXX17 (Profiling) {
         // Advance the profiling window
@@ -4141,12 +4145,12 @@ void VerilatedEvalLoop::evalImpl() {
         if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop ico
     }
 
-    // The remaining regions are nested: each iteration of a region's loop
-    // re-runs the loops of all regions that precede it in the scheduling order.
+    // Drain each region set before switching to the other (IEEE 1800-2023 4.5).
     if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop react");
-    uint32_t reactIterCount = 0;
+    uint32_t regionIterCount = 0;
+    bool reactiveWork;
     do {
-        checkConvergence(++reactIterCount, "Reactive", &VerilatedModel::dumpTriggersReact);
+        checkConvergence(++regionIterCount, "Reactive", &VerilatedModel::dumpTriggersReact);
         if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop obs");
         uint32_t obsIterCount = 0;
         do {
@@ -4172,13 +4176,41 @@ void VerilatedEvalLoop::evalImpl() {
             if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop nba
         } while (m_model.evalObs());
         if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop obs
-    } while (m_model.evalReact());
+
+        contextp->inReactive(true);
+        reactiveWork = false;
+        uint32_t renbaIterCount = 0;
+        if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop renba");
+        while (true) {
+            checkConvergence(++renbaIterCount, "Re-NBA");
+            uint32_t reinactIterCount = 0;
+            if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPush("loop reinact");
+            while (true) {
+                checkConvergence(++reinactIterCount, "Re-Inactive");
+                uint32_t reactIterCount = 0;
+                while (true) {
+                    checkConvergence(++reactIterCount, "Reactive",
+                                     &VerilatedModel::dumpTriggersReact);
+                    if (!m_model.evalReact()) break;
+                    reactiveWork = true;
+                }
+                if (!m_model.evalReinact()) break;
+                reactiveWork = true;
+            }
+            if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop reinact
+            if (!m_model.evalRenba()) break;
+            reactiveWork = true;
+        }
+        if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop renba
+        contextp->inReactive(false);
+    } while (reactiveWork);
     if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop react
 
     // The 'Postponed' region runs once, at the end of the time step
     m_model.evalPostponed();
 
     m_model.evalEnd();
+    contextp->inReactive(parentReactive);
 
     if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // eval
 }

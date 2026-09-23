@@ -28,6 +28,7 @@
 
 #include "verilated.h"
 
+#include <array>
 #include <limits>
 #include <vector>
 
@@ -190,11 +191,14 @@ class VlDelayScheduler final {
     // TYPES
     // Time-sorted queue of timestamps and handles
     using VlDelayedCoroutineQueue = std::multimap<uint64_t, VlCoroutineHandle>;
+    struct Queue final {
+        VlDelayedCoroutineQueue m_delayed;  // Coroutines waiting for a simulation time
+        std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
+    };
 
     // MEMBERS
     VerilatedContext& m_context;
-    VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
-    std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
+    std::array<Queue, 2> m_queues;  // Active and reactive region sets
     // Coroutines that waited for #0 and are being resumed now. As member to avoid reallocations
     std::vector<VlCoroutineHandle> m_zeroDelayesSwap;
     std::vector<VlCoroutineHandle>
@@ -217,14 +221,20 @@ public:
     // coroutines)
     uint64_t nextTimeSlot() const;
     // Are there no delayed coroutines awaiting?
-    bool empty() const { return m_queue.empty() && m_zeroDelayed.empty(); }
+    bool empty() const {
+        return m_queues[0].m_delayed.empty() && m_queues[0].m_zeroDelayed.empty()
+               && m_queues[1].m_delayed.empty() && m_queues[1].m_zeroDelayed.empty();
+    }
     // Are there coroutines to resume at the current simulation time?
     bool awaitingCurrentTime() const {
+        const VlDelayedCoroutineQueue& queue = m_queues[m_context.inReactive()].m_delayed;
         return !m_context.gotFinish()
-               && (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()));
+               && (!queue.empty() && (queue.cbegin()->first <= m_context.time()));
     }
-    // Are there coroutines to resume in the inactive region after a #0 delay?
-    bool awaitingZeroDelay() const { return !m_context.gotFinish() && !m_zeroDelayed.empty(); }
+    // Are there coroutines to resume in the current region set after a #0 delay?
+    bool awaitingZeroDelay() const {
+        return !m_context.gotFinish() && !m_queues[m_context.inReactive()].m_zeroDelayed.empty();
+    }
     void cleanupForevered() { m_forevered.clear(); };
 #ifdef VL_DEBUG
     void dump() const;
@@ -260,9 +270,13 @@ public:
         } else {
             phase = VlDelayPhase::INACTIVE;
         }
-        return Awaitable{process,       m_queue,
-                         m_zeroDelayed, m_context.time() + delay,
-                         phase,         VlFileLineDebug{filename, lineno}};
+        Queue& queue = m_queues[m_context.inReactive()];
+        return Awaitable{process,
+                         queue.m_delayed,
+                         queue.m_zeroDelayed,
+                         m_context.time() + delay,
+                         phase,
+                         VlFileLineDebug{filename, lineno}};
     }
 
     // Helper awaitable func for suspending coroutines forever.
@@ -298,27 +312,36 @@ public:
 class VlTriggerScheduler final {
     // TYPES
     using VlCoroutineVec = std::vector<VlCoroutineHandle>;
+    struct Queue final {
+        VlCoroutineVec m_awaiting;  // Coroutines suspended before ready()
+        VlCoroutineVec m_fired;  // Triggered coroutines moved by ready()
+        VlCoroutineVec m_toResume;  // Coroutines moved by moveToResumeQueue()
+    };
 
     // MEMBERS
-    VlCoroutineVec m_awaiting;  // Coroutines suspended before ready() was called
-                                // (not resumable)
-    VlCoroutineVec m_fired;  // Coroutines that were triggered (all coros from m_awaiting are moved
-                             // here in ready())
-    VlCoroutineVec m_toResume;  // Coroutines to resume in next resumePrep()
-                                // - moved here in commit()
+    std::array<Queue, 2> m_queues;  // Active and reactive region sets
 
 public:
     // METHODS
     // Resumes all coroutines from the m_toResume
-    void resume(const char* eventDescription = VL_UNKNOWN);
+    void resume(const char* eventDescription = VL_UNKNOWN, bool reactive = false);
     // Moves all coroutines from m_fired to m_toResume
-    void moveToResumeQueue(const char* eventDescription = VL_UNKNOWN);
+    void moveToResumeQueue(const char* eventDescription = VL_UNKNOWN, bool reactive = false);
     // Moves all coroutines from m_awaiting to m_fired
     void ready(const char* eventDescription = VL_UNKNOWN);
     // Are there no coroutines awaiting?
-    bool empty() const { return m_fired.empty() && m_awaiting.empty(); }
+    bool empty() const {
+        return m_queues[0].m_fired.empty() && m_queues[0].m_awaiting.empty()
+               && m_queues[0].m_toResume.empty() && m_queues[1].m_fired.empty()
+               && m_queues[1].m_awaiting.empty() && m_queues[1].m_toResume.empty();
+    }
+    // Are triggered coroutines waiting to resume in the current region set?
+    bool awaitingResumption() const {
+        const Queue& queue = m_queues[Verilated::threadContextp()->inReactive()];
+        return !queue.m_fired.empty() || !queue.m_toResume.empty();
+    }
 #ifdef VL_DEBUG
-    void dump(const char* eventDescription) const;
+    void dump(const char* eventDescription, bool reactive = false) const;
 #endif
     // Used by coroutines for co_awaiting a certain trigger
     auto trigger(bool ready, VlProcessRef process, const char* eventDescription = VL_UNKNOWN,
@@ -336,7 +359,13 @@ public:
             }
             void await_resume() const {}
         };
-        return Awaitable{ready ? m_fired : m_awaiting, process, VlFileLineDebug{filename, lineno}};
+        const bool reactive = Verilated::threadContextp()->inReactive();
+        Queue& queue = m_queues[reactive];
+        // Reactive resumption does not wait for trigger activity, so an immediately ready 'wait'
+        // would spin while its condition is false. Its trigger was evaluated just before
+        // suspending, so waiting for the next change there is equivalent.
+        return Awaitable{ready && !reactive ? queue.m_fired : queue.m_awaiting, process,
+                         VlFileLineDebug{filename, lineno}};
     }
 };
 
@@ -364,11 +393,10 @@ class VlDynamicTriggerScheduler final {
 
     // MEMBERS
     bool m_anyTriggered = false;  // If true, at least one trigger was set
-    VlCoroutineVec m_suspended;  // Suspended coroutines awaiting trigger evaluation
+    std::array<VlCoroutineVec, 2> m_suspended;  // Active/reactive trigger evaluation waiters
     VlCoroutineVec m_evaluated;  // Coroutines currently being evaluated (for evaluate())
-    VlCoroutineVec m_triggered;  // Coroutines whose triggers were set, and are awaiting resumption
-    VlCoroutineVec m_post;  // Coroutines awaiting the post update step (only relevant for triggers
-                            // with destructive post updates, e.g. named events)
+    std::array<VlCoroutineVec, 2> m_triggered;  // Active/reactive resumption waiters
+    std::array<VlCoroutineVec, 2> m_post;  // Active/reactive destructive post-update waiters
 
     // METHODS
     auto awaitable(VlProcessRef process, VlCoroutineVec& queue, const char* filename, int lineno) {
@@ -395,6 +423,10 @@ public:
     void doPostUpdates();
     // Resumes all coroutines whose triggers are set (those that co_await resumption())
     void resume();
+    // Are triggered coroutines waiting to resume in the current region set?
+    bool awaitingResumption() const {
+        return !m_triggered[Verilated::threadContextp()->inReactive()].empty();
+    }
 #ifdef VL_DEBUG
     void dump() const;
 #endif
@@ -403,7 +435,8 @@ public:
                     int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
-        return awaitable(process, m_suspended, filename, lineno);
+        return awaitable(process, m_suspended[Verilated::threadContextp()->inReactive()], filename,
+                         lineno);
     }
     // Used by coroutines for co_awaiting the trigger post update step
     auto postUpdate(VlProcessRef process, const char* eventDescription, const char* filename,
@@ -411,14 +444,16 @@ public:
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting the post update step\n",
                         eventDescription, filename, lineno););
-        return awaitable(process, m_post, filename, lineno);
+        return awaitable(process, m_post[Verilated::threadContextp()->inReactive()], filename,
+                         lineno);
     }
     // Used by coroutines for co_awaiting the resumption step (in 'act' eval)
     auto resumption(VlProcessRef process, const char* eventDescription, const char* filename,
                     int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting resumption\n",
                                 eventDescription, filename, lineno););
-        return awaitable(process, m_triggered, filename, lineno);
+        return awaitable(process, m_triggered[Verilated::threadContextp()->inReactive()], filename,
+                         lineno);
     }
 };
 

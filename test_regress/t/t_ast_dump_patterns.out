@@ -17,6 +17,7 @@ AST patterns with depth 1
            12 (VARREF):(w64)u[0:0]
            12 (VARREF):a/1
            11 (OR _:a/a _:a/b):a/c
+            9 (CONST ZERO):a/1
             9 (OR _:a/a _:a/1):a/b
             9 (VARREF):(G/str)
             8 (CCAST _:a/a):a/a
@@ -24,7 +25,6 @@ AST patterns with depth 1
             8 (CRESET):a/a
             8 (NOT _:a/a):a/a
             8 (REDXOR _:a/b):a/1
-            7 (CONST ZERO):a/1
             7 (SHIFTL _:a/b (CONST #A):a/a):a/a
             6 (AND _:a/b _:a/b):a/b
             6 (OR _:a/a _:a/a):a/a

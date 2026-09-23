@@ -959,14 +959,16 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(RNG_SET_RANDSTATE,                  "__Vm_rng.set_randstate", false,  "r") \
     macro(SCHED_ANY_TRIGGERED,                "anyTriggered",           false,  "r") \
     macro(SCHED_AWAITING_CURRENT_TIME,        "awaitingCurrentTime",    PURE,   "") \
+    macro(SCHED_AWAITING_RESUMPTION,          "awaitingResumption",     PURE,   "") \
     macro(SCHED_AWAITING_ZERO_DELAY,          "awaitingZeroDelay",      PURE,   "") \
-    macro(SCHED_READY,                        "ready",                  false,  "r") \
-    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false,  "r") \
     macro(SCHED_DELAY,                        "delay",                  false,  "rrrr") \
     macro(SCHED_DO_POST_UPDATES,              "doPostUpdates",          false,  "") \
+    macro(SCHED_EMPTY,                        "empty",                  PURE,   "") \
     macro(SCHED_EVALUATE,                     "evaluate",               false,  "") \
     macro(SCHED_EVALUATION,                   "evaluation",             false,  "rrrr") \
+    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false,  "rr") \
     macro(SCHED_POST_UPDATE,                  "postUpdate",             false,  "rrrr") \
+    macro(SCHED_READY,                        "ready",                  false,  "r") \
     macro(SCHED_RESUME,                       "resume",                 false,  "TODO") \
     macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false,  "") \
     macro(SCHED_RESUMPTION,                   "resumption",             false,  "rrrr") \
@@ -1546,6 +1548,8 @@ constexpr bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs 
     macro(NBA,       true,      true,     false,   false) \
     macro(OBS,       true,      true,     false,   false) \
     macro(REACT,     true,      true,     false,   false) \
+    macro(REINACT,   true,      false,    false,   false) \
+    macro(RENBA,     true,      false,    false,   false) \
     macro(POSTPONED, false,     false,    false,   false) \
     macro(FINAL,     false,     false,    false,   true)
 // clang-format on

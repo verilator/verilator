@@ -59,6 +59,8 @@ module t (/*AUTOARG*/
   input clk;
   input in;
 
+  reactive_program prog ();
+
   // verilator lint_off UNPACKED
 
   typedef enum [2:0] {
@@ -494,3 +496,10 @@ endmodule
 package p;
   logic pkgvar;
 endpackage
+
+program reactive_program;
+  initial begin
+    #1;
+    #0 $write("Program reactive delay");
+  end
+endprogram

@@ -961,7 +961,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
 
         // Check whether it is a CAwait for a VCMethod::SCHED_TRIGGER
         if (const AstCMethodHard* const cMethodHardp = VN_CAST(nodep->exprp(), CMethodHard)) {
-            if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
+            if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER && nodep->sentreep()) {
                 AstCCall* const beforeTrigp = getBeforeTriggerStmt(nodep->sentreep());
 
                 // Add eventDescription argument value to a CCall - it is used for --runtime-debug

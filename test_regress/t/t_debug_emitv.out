@@ -1492,6 +1492,15 @@ endmodule
 package Vt_debug_emitv_p;
     logic pkgvar;
 endpackage
+program Vt_debug_emitv_reactive_program;
+initial begin
+    begin
+        #1;
+        #0;
+        $write("Program reactive delay");
+    end
+end
+endprogram
 package Vt_debug_emitv_Pkg;
     logic signed [31:0]  PKG_PARAM;
     typedef enum int signed{

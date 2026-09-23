@@ -35,6 +35,8 @@ internalsDump:
 -V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_obs
 -V{t#,#}+    Vt_verilated_debug___024root___eval_react
+-V{t#,#}+    Vt_verilated_debug___024root___eval_reinact
+-V{t#,#}+    Vt_verilated_debug___024root___eval_renba
 -V{t#,#}+    Vt_verilated_debug___024root___eval_postponed
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_verilated_debug::eval_step
@@ -71,6 +73,8 @@ internalsDump:
 -V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_obs
 -V{t#,#}+    Vt_verilated_debug___024root___eval_react
+-V{t#,#}+    Vt_verilated_debug___024root___eval_reinact
+-V{t#,#}+    Vt_verilated_debug___024root___eval_renba
 -V{t#,#}+    Vt_verilated_debug___024root___eval_postponed
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+    Vt_verilated_debug___024root___eval_final

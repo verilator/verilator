@@ -43,6 +43,8 @@
   <map from="PS3ty8" to="_eval_obs"/>
   <map from="PSIOZr" to="_eval_postponed"/>
   <map from="PSU5m9" to="_eval_react"/>
+  <map from="PSr8N4" to="_eval_reinact"/>
+  <map from="PSWmKB" to="_eval_renba"/>
   <map from="PSNS3N" to="_eval_sample"/>
   <map from="PS0mmd" to="_eval_static"/>
   <map from="PSOo5Y" to="_eval_stl"/>

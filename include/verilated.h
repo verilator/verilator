@@ -357,6 +357,8 @@ private:
     virtual bool evalNba() = 0;
     virtual bool evalObs() = 0;
     virtual bool evalReact() = 0;
+    virtual bool evalReinact() = 0;
+    virtual bool evalRenba() = 0;
     virtual void evalPostponed() = 0;
     virtual void dumpTriggersStl() = 0;
     virtual void dumpTriggersIco() = 0;
@@ -549,6 +551,7 @@ protected:
         std::atomic<bool> m_assertCtlsLocked{false};  // All assertion-control updates are ignored
         int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
+        bool m_inReactive = false;  // Executing the reactive region set
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
@@ -699,6 +702,10 @@ public:
     bool executingFinal() const VL_MT_SAFE;
     /// Set if generated final() code is executing
     void executingFinal(bool flag) VL_MT_SAFE;
+    /// For internal use: whether the reactive region set is executing.
+    bool inReactive() const VL_MT_UNSAFE { return m_ns.m_inReactive; }
+    /// For internal use: select the currently executing region set.
+    void inReactive(bool flag) VL_MT_UNSAFE { m_ns.m_inReactive = flag; }
     /// Return if quiet enabled
     bool quiet() const VL_MT_SAFE { return m_s.m_quiet; }
     /// Enable quiet (also prevents need for OS calls to get CPU time)
