@@ -1948,16 +1948,6 @@ void AstNetlist::astConstOrigParamName(const AstConst* nodep, const string& name
 void AstNetlist::astConstOrigParamNameErase(const AstConst* nodep) {
     m_constOrigParamNames.erase(nodep);
 }
-const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
-    if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp;
-    const auto it = m_containingModules.find(nodep);
-    if (it != m_containingModules.end()) return it->second;
-    // Only true parents are followed.
-    AstNode* const abovep = nodep->aboveLoopp();
-    const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
-    m_containingModules[nodep] = modp;
-    return modp;
-}
 const char* AstNetlist::broken() const {
     for (const AstVar* const varp : m_deferredParamVarps) {
         BROKEN_RTN(!varp || !varp->brokeExists());
@@ -1972,6 +1962,16 @@ const char* AstNetlist::broken() const {
         BROKEN_RTN(dumpp && !VEval{i}.hasTriggers());
     }
     return nullptr;
+}
+const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
+    if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp;
+    const auto it = m_containingModules.find(nodep);
+    if (it != m_containingModules.end()) return it->second;
+    // Only true parents are followed.
+    AstNode* const abovep = nodep->aboveLoopp();
+    const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
+    m_containingModules[nodep] = modp;
+    return modp;
 }
 void AstNetlist::createTopScope(AstScope* scopep) {
     UASSERT(scopep, "Must not be nullptr");
