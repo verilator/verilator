@@ -72,7 +72,7 @@ top-of-file comment.
 - Build in the source tree: `autoconf && ./configure && make -j8`. Configure with
   `--enable-ccwarn` so a new compiler warning stops the build.
 - Run one test from the repository root: `test_regress/t/t_<name>.py`.
-- Run the full regression with `make test`. The complete suite requires
+- Run the full regression tests with `make test`. The complete suite requires
   configuring with `--enable-longtests` (works on every OS, including macOS).
 
 ______________________________________________________________________
@@ -93,8 +93,8 @@ ______________________________________________________________________
 - [ ] Ran `make format` (clang-format), `make cppcheck`, and `make lint-py`;
   self-reviewed the diff for leftover debug code, stale comments, and
   copy-paste errors.
-- [ ] Ran the full regression on at least one OS before submitting. Partial runs
-  are fine during development, but the submitted PR is expected to pass every
+- [ ] Ran the full regression tests on at least one OS before submitting. Partial
+  runs are fine during development, but the submitted PR is expected to pass every
   test.
 - [ ] Validated the code changes against recommendations in the AGENTS.md files.
 - [ ] Did not edit `docs/CONTRIBUTORS` (humans only) or `Changes` (maintainer
