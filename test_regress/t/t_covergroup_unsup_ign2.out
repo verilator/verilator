@@ -114,9 +114,6 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:98:18: Ignoring unsupported coverage cross option: 'comment'
    98 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
       |                  ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:98:44: Ignoring unsupported coverage cross option: 'weight'
-   98 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
-      |                                            ^~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:98:64: Ignoring unsupported coverage cross option: 'per_instance'
    98 |     cross a, b { option.comment = "cross"; option.weight = 12; option.per_instance = 1; }
       |                                                                ^~~~~~
@@ -150,6 +147,10 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:176:7: Unsupported: explicit coverage cross bins
   176 |       illegal_bins lib_cross = binsof(a) with (a);
       |       ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:46:5: Ignoring unsupported: 'type_option.merge_instances'; type coverage is the weighted average of the instances
+                                              : ... note: In instance 't'
+   46 |     type_option.merge_instances = 1;   
+      |     ^~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_covergroup_unsup.v:76:5: Logical operator COVERPOINT 'a' expects 1 bit on the iff condition, but iff condition's VARREF 'b' generates 32 bits.
                                                 : ... note: In instance 't'
    76 |     coverpoint a iff (b);

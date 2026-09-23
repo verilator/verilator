@@ -50,6 +50,9 @@ enum class VlCovBinKind : uint8_t {
 /// Bounded bin count, so random access by index is the primary usage.
 
 class VlCoverpointIf VL_NOT_FINAL {
+    // MEMBERS
+    int32_t m_weight = 1;  // option.weight, as the signed SV 'int' it was assigned from
+
 public:
     // CONSTRUCTORS
     virtual ~VlCoverpointIf() = default;
@@ -62,6 +65,10 @@ public:
     virtual std::string binName(uint32_t i) const = 0;
     // Bins covered / effective total (Normal set only) for the coverage calc
     virtual void coverageParts(double& covered, double& total) const = 0;
+    /// Weight of this item in its covergroup instance's coverage (option.weight,
+    /// IEEE 1800-2023 19.11)
+    int32_t weight() const { return m_weight; }
+    void weight(uint32_t value) { m_weight = static_cast<int32_t>(value); }
 };
 
 #endif  // Guard

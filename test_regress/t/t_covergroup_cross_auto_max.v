@@ -40,10 +40,11 @@ module t;
     for (int i = 0; i < 4; ++i) begin
       group_cov.sample(1'(i / 2), 1'(i));
       cross_cov.sample(1'(i / 2), 1'(i));
+      // IEEE 1800-2023 19.11: the mean of cp_a, cp_b, and the 4-bin cross
       case (i)
-        0: check_coverage(37.5);
-        1: check_coverage(62.5);
-        2: check_coverage(87.5);
+        0: check_coverage((50.0 + 50.0 + 25.0) / 3);
+        1: check_coverage((50.0 + 100.0 + 50.0) / 3);
+        2: check_coverage((100.0 + 100.0 + 75.0) / 3);
         3: check_coverage(100.0);
         default: `stop;
       endcase

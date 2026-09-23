@@ -81,8 +81,13 @@ module t (
       empty_cov.sample(1'(cyc / 2), 1'(cyc));
       if (cyc < 6) trans_cov.sample(7'(cyc % 3), 1'(cyc / 3));
       if (cyc == 0) begin
-        `checkr(cov.get_inst_coverage(), 20.0);
-        `checkr(auto_cov.get_inst_coverage(), 60.0);
+        // IEEE 1800-2023 19.11: the mean of the items' coverage.  cp_a 1/4, cp_b 2/3,
+        // all_products 1/1, named 1/10, other_axis 2/9, array_bins 2/7, overlapping 2/8,
+        // guarded 0/11, and empty_selection 2/12
+        `checkr(cov.get_inst_coverage(),
+                (25.0 + 200.0 / 3 + 100.0 + 10.0 + 200.0 / 9 + 200.0 / 7 + 25.0 + 0.0 + 200.0 / 12)
+                / 9);
+        `checkr(auto_cov.get_inst_coverage(), (50.0 + 50.0 + 100.0) / 3);
       end
     end
     else begin

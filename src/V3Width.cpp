@@ -2075,12 +2075,44 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
+    // Width a 'weight' coverage option as the signed 'int' member it sets (IEEE 1800-2023
+    // 19.10); a weight is a non-negative integral value, constant for type_option (19.7)
+    template <typename T_Option>
+    void widthCoverWeight(T_Option* nodep) {
+        iterateCheckSigned32(nodep, "weight", nodep->valuep(), BOTH);
+        V3Const::constifyEdit(nodep->valuep());
+        AstNodeExpr* const valuep = nodep->valuep();
+        const std::string optName
+            = std::string{nodep->typeOption() ? "type_option" : "option"} + ".weight";
+        if (const AstConst* const constp = VN_CAST(valuep, Const)) {
+            if (!constp->num().isNegative()) return;
+            valuep->v3error("Coverage option '" << optName << "' is set to negative value '"
+                                                << constp->toSInt()
+                                                << "'; weights must be non-negative"
+                                                   " (IEEE 1800-2023 19.7)");
+        } else if (nodep->typeOption()) {
+            valuep->v3error("Coverage option '" << optName
+                                                << "' requires a constant expression"
+                                                   " (IEEE 1800-2023 19.7.1)");
+        } else {
+            return;
+        }
+        // Continue with the default weight
+        valuep->replaceWith(new AstConst{valuep->fileline(), AstConst::Signed32{}, 1});
+        VL_DO_DANGLING(pushDeletep(valuep), valuep);
+    }
     void visit(AstCgOptionAssign* nodep) override {
         // Recursive function widthing can reach a covergroup constructor without first visiting
         // its class, so find the owning covergroup structurally instead of using visit context.
         AstClass* const cgClassp = m_containingClassFinder.find(nodep);
         UASSERT_OBJ(cgClassp && cgClassp->isCovergroup(), nodep,
                     "Covergroup option is not under a covergroup class");
+
+        // V3Covergroup stores the weight into the covergroup's option or type_option
+        if (nodep->optType() == VCoverOptionType::WEIGHT) {
+            widthCoverWeight(nodep);
+            return;
+        }
 
         // Extract covergroup option values and store in AstClass before deleting.
         if (nodep->optType() == VCoverOptionType::AUTO_BIN_MAX) {
@@ -2094,11 +2126,26 @@ class WidthVisitor final : public VNVisitor {
                 nodep->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant "
                                                   "'option.auto_bin_max'; using default value");
             }
+        } else if (nodep->optType() == VCoverOptionType::MERGE_INSTANCES) {
+            // get_coverage() always averages the instances (IEEE 1800-2023 19.11.3)
+            const AstConst* const constp = VN_CAST(nodep->valuep(), Const);
+            if (!constp || !constp->num().isEqZero()) {
+                nodep->v3warn(COVERIGN, "Ignoring unsupported: 'type_option.merge_instances';"
+                                        " type coverage is the weighted average of the"
+                                        " instances");
+            }
         }
-        // Add more options here as needed (weight, goal, at_least, per_instance, comment)
+        // Add more options here as needed (goal, at_least, per_instance, comment)
 
         // Delete the assignment node (we've extracted the value)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    void visit(AstCoverOption* nodep) override {
+        if (nodep->optType() == VCoverOptionType::WEIGHT) {
+            widthCoverWeight(nodep);
+            return;
+        }
+        userIterateChildren(nodep, nullptr);
     }
     void visit(AstCoverCross* nodep) override {
         userIterateAndNext(nodep->itemsp(), nullptr);

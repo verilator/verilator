@@ -1214,17 +1214,24 @@ class AstCoverOption final : public AstNode {
     // Coverage-option assignment
     // @astgen op1 := valuep : AstNodeExpr
     const VCoverOptionType m_optType;  // Option being assigned
+    const bool m_typeOption;  // type_option (vs option)
 
 public:
-    AstCoverOption(FileLine* fl, VCoverOptionType optType, AstNodeExpr* valuep)
+    AstCoverOption(FileLine* fl, bool typeOption, VCoverOptionType optType, AstNodeExpr* valuep)
         : ASTGEN_SUPER_CoverOption(fl)
-        , m_optType{optType} {
+        , m_optType{optType}
+        , m_typeOption{typeOption} {
         this->valuep(valuep);
     }
     ASTGEN_MEMBERS_AstCoverOption;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     VCoverOptionType optType() const { return m_optType; }
+    bool typeOption() const { return m_typeOption; }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
+        const AstCoverOption* const asamep = VN_DBG_AS(samep, CoverOption);
+        return m_optType.m_e == asamep->m_optType.m_e && m_typeOption == asamep->m_typeOption;
+    }  // LCOV_EXCL_STOP
 };
 class AstCoverTransItem final : public AstNode {
     // Represents a single transition item: value or value[*N] or value[->N] or value[=N]

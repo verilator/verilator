@@ -217,7 +217,8 @@ module t;
     cg_namers_inst.sample();
     cg_empty_namers_inst.sample();
     `checkr(cg_namers_inst.get_inst_coverage(), 100.0);
-    `checkr(cg_empty_namers_inst.get_inst_coverage(), 100.0);
+    // Only empty bins: nothing contributes, so a nonzero weight gives 0 (IEEE 1800-2023 19.11)
+    `checkr(cg_empty_namers_inst.get_inst_coverage(), 0.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

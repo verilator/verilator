@@ -490,6 +490,10 @@ class VlCovergroupInst final {
     uint32_t m_slot = 0;  // Index into m_typep->m_insts; unlink-by-swap rewrites
 #endif
     uint32_t m_attachCount = 1;  // SV handles bound here; 1 from construction
+    // option.weight of the SV object that created this node, while that object
+    // lives; borrowed through VlCovInstHandle::lendWeight().
+    const IData* m_weightp = nullptr;
+    IData m_weight = 1;  // Last option.weight observed; kept once the object is gone
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
     // Reads m_items to fold the residue; owns m_slot and m_retained.
@@ -525,35 +529,46 @@ public:
     // here, and because it frees 'this'.
     bool attachDec() { return --m_attachCount == 0; }
 
+    // ---- instance weight (from VlCovInstHandle) ----
+    void lendWeight(const IData* weightp) {
+        m_weightp = weightp;
+        m_weight = *weightp;
+    }
+    // The lending object is being destroyed.  Its members may already be gone, so
+    // the weight is not read again; the last observed value stays in effect.
+    void unlendWeight(const IData* weightp) {
+        if (m_weightp == weightp) m_weightp = nullptr;
+    }
+    /// Weight of this instance in its type's coverage (option.weight, IEEE
+    /// 1800-2023 19.11.3).  Procedural assignments take effect immediately.
+    int32_t weight() {
+        if (m_weightp) m_weight = *m_weightp;
+        return static_cast<int32_t>(m_weight);
+    }
+
     // ---- introspection ----
     VlCovergroupType* typep() const { return m_typep; }
     uint32_t instId() const { return m_instId; }
     // True once retired but kept alive because the coverage database holds raw
     // pointers into this node's bin counts (VM_COVERAGE); see retire().
     bool retained() const { return m_retained; }
-    // Sum of the instance's items' covered/total bin counts.  Matches what the
-    // generated get_inst_coverage() computes; see foldResidue().
-    void coverageParts(double& covered, double& total) const {
-        covered = 0.0;
-        total = 0.0;
-        for (const auto& itemp : m_items) {
-            double c = 0.0;
-            double t = 0.0;
-            itemp->coverageParts(c, t);
-            covered += c;
-            total += t;
-        }
-    }
+    /// IEEE 1800-2023 19.11 sums over the items whose coverage has a nonzero
+    /// denominator: 'weighted' is the sum of each item's option.weight times its
+    /// coverage (0..100), and 'weights' the sum of those weights.
+    void coverageSums(double& weighted, double& weights) const;
+    /// Instance coverage, as returned by get_inst_coverage(), in 0..100.
+    double coverage();
 };
 
 //=============================================================================
 // VlCovRetiredAvg
 /// Per-type residue: what survives an instance's death.  Fixed size, so it does
-/// not grow with churn.  Weight is 1 everywhere until option.weight is plumbed.
+/// not grow with churn.  Each instance contributes with its option.weight.
 
 struct VlCovRetiredAvg final {
     uint64_t count = 0;  // Retired instances that contributed (nonzero denominator)
-    double sumCoverage = 0.0;  // Sigma of per-instance coverage, each in 0..100
+    double sumCoverage = 0.0;  // Sigma of per-instance weight * coverage (0..100)
+    double sumWeight = 0.0;  // Sigma of per-instance weight
 };
 
 //=============================================================================
@@ -573,7 +588,7 @@ class VlCovergroupType final {
     // PRIVATE METHODS
     // Harvest instp's contribution into m_retired.  Must run before instp is
     // unlinked: it reads the instance's items.
-    void foldResidue(const VlCovergroupInst* instp);
+    void foldResidue(VlCovergroupInst* instp);
 
 public:
     // CONSTRUCTORS
@@ -589,6 +604,11 @@ public:
     // True if any node here still has an SV handle bound to it, and so can be
     // retired again after the registry is destroyed.  See ~VlCovRegistry.
     bool anyAttached() const;
+    /// Type coverage, as returned by get_coverage(), in 0..100: the average of
+    /// every instance's coverage, weighted by its option.weight (IEEE 1800-2023
+    /// 19.11.3, type_option.merge_instances false).  typeWeight is
+    /// type_option.weight, which decides the result when no instance contributes.
+    double coverage(int32_t typeWeight);
 
     // ---- introspection ----
     // Test and debug only; generated code never calls these, and SV reaches them
@@ -603,7 +623,8 @@ public:
     uint32_t createdInstanceCount() const { return m_createdInsts; }
     // Instances that have died and contributed to the residue.
     uint32_t retiredInstanceCount() const { return static_cast<uint32_t>(m_retired.count); }
-    // Mean coverage over the retired instances only, in 0..100; -1.0 if none.
+    // Weighted mean coverage over the retired instances only, in 0..100; -1.0 if
+    // none contributed or their weights sum to zero.
     double retiredCoverage() const;
 };
 
@@ -633,6 +654,9 @@ public:
     // generated covergroup class name, already --protect-ids obfuscated, and is
     // the same string that keys the coverage database's hier/page.
     VlCovergroupInst* newCovergroupInst(const char* typeName);
+    /// Type coverage of a covergroup type (get_coverage()); see
+    /// VlCovergroupType::coverage().  typeWeight is its type_option.weight.
+    double typeCoverage(const char* typeName, IData typeWeight);
 
     // ---- introspection (see VlCovergroupType) ----
     // typeName is the obfuscated generated name, so a test using these under
@@ -658,18 +682,21 @@ public:
 class VlCovInstHandle final {
     // MEMBERS
     VlCovergroupInst* m_p = nullptr;  // Attach-counted; the registry owns the node
+    const IData* m_weightp = nullptr;  // Owning object's option.weight, if lent to m_p
 
     // PRIVATE METHODS
     // Drop one attach count, retiring the node if that was the last handle.
     // Nothing may touch instp afterwards: retire() may have freed it.
-    static void release(VlCovergroupInst* instp) {
+    static void release(VlCovergroupInst* instp, const IData* weightp) {
         if (VL_UNCOVERABLE(!instp)) return;  // Never attach()ed; codegen always does
+        instp->unlendWeight(weightp);
         if (instp->attachDec()) instp->typep()->retire(instp);
     }
 
 public:
     // CONSTRUCTORS
     VlCovInstHandle() = default;
+    // The copy's owning object lends no weight; the node keeps reading the lender's.
     VlCovInstHandle(const VlCovInstHandle& o)
         : m_p{o.m_p} {
         if (VL_UNCOVERABLE(!m_p)) return;  // Unbound source; see release above
@@ -678,12 +705,18 @@ public:
     // Deleted, not implemented: nothing generates an assignment, and the
     // implicit one would copy m_p raw -- no attachInc, no release.
     VlCovInstHandle& operator=(const VlCovInstHandle&) = delete;
-    ~VlCovInstHandle() { release(m_p); }
+    ~VlCovInstHandle() { release(m_p, m_weightp); }
 
     // METHODS
     // Bind to a freshly created node, taking over the attach count of 1 it was
     // created with.  Called once, from the generated covergroup constructor.
     void attach(VlCovergroupInst* p) { m_p = p; }
+    // Let the node read the owning object's option.weight until this handle is
+    // destroyed.  Called once, from the generated constructor, after attach().
+    void lendWeight(const IData* weightp) {
+        m_weightp = weightp;
+        m_p->lendWeight(weightp);
+    }
     VlCovergroupInst* p() const { return m_p; }
 };
 

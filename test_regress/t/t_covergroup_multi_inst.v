@@ -53,13 +53,15 @@ module t;
 
     // inst_none is never sampled.
 
-    // Today: raw covered/total over all bins of all items.
-    // inst_full  6/6 -> 100.0
-    // inst_part  2/6 ->  33.333  (weighted average over items would be 37.5)
-    // inst_none  0/6 ->   0.0
+    // Instance coverage is the average of the items (IEEE 1800-2023 19.11); type coverage
+    // is the average of the instances (IEEE 1800-2023 19.11.3), all at the default weight 1.
+    // inst_full  cp_a 4/4, cp_b 2/2 -> 100.0
+    // inst_part  cp_a 1/4, cp_b 1/2 ->  37.5  (the raw covered/total sum would be 33.333)
+    // inst_none  cp_a 0/4, cp_b 0/2 ->   0.0
     `checkr(inst_full.get_inst_coverage(), 100.0);
-    `checkr(inst_part.get_inst_coverage(), 33.333);
+    `checkr(inst_part.get_inst_coverage(), 37.5);
     `checkr(inst_none.get_inst_coverage(), 0.0);
+    `checkr(cg_mi::get_coverage(), (100.0 + 37.5 + 0.0) / 3);
 
     $write("*-* All Finished *-*\n");
     $finish;
