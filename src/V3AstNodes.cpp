@@ -1224,6 +1224,7 @@ string AstCoverCrossDType::cppTemplateArgs() const {
 void AstCoverCrossDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [" << cppTemplateArgs() << "]";
+    if (isDynamic()) str << " [DYNAMIC]";
 }
 void AstCoverCrossDType::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, dimensions);
@@ -1231,6 +1232,7 @@ void AstCoverCrossDType::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, bins);
     dumpJsonNumFunc(str, autoBins);
     dumpJsonNumFunc(str, binWords);
+    dumpJsonBoolFuncIf(str, isDynamic);
     dumpJsonGen(str);
 }
 void AstCoverCrossDType::dumpSmall(std::ostream& str) const {
@@ -2182,7 +2184,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type += ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverCrossDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
-        info.m_type = "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
+        info.m_type = adtypep->isDynamic() ? "VlCoverCrossDyn*"
+                                           : "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverpointDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = "VlCoverpointT<" + cvtToStr(adtypep->hitBound()) + ">*";

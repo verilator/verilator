@@ -9,8 +9,20 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('vlt_all')
 
-test.lint(verilator_flags2=['--coverage'], fails=True, expect_filename=test.golden_filename)
+test.top_filename = 't/t_covergroup_auto_exclusions.v'
+
+test.compile(verilator_flags2=[
+    '--coverage-user', '--protect-ids', '--protect-key AUTO_EXCLUSION_KEY', '-Wno-INSECURE'
+],
+             threads=(2 if test.vltmt else 1))
+
+test.execute()
+
+test.file_grep_not(
+    test.coverage_filename,
+    r'cg_partition|cg_explicit|cg_projection|cg_wide_cross|t_covergroup_auto_exclusions|enabled_bin'
+)
 
 test.passes()

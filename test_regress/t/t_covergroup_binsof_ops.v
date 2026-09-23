@@ -303,7 +303,8 @@ module t;
     }
   endgroup
 
-  // Check four-state bin identities without relying on four-state sampling.
+  // Values with x or z bits do not participate in bins or selections (IEEE 1800-2023 19.5.7),
+  // so the x/z bins and the selections of x/z values have no values and are not reported.
   covergroup cg_four_state with function sample (logic [2:0] a, bit b);
     cp_a: coverpoint a {
       bins known = {3'b001};

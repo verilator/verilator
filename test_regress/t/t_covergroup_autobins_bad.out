@@ -11,14 +11,6 @@
                                            : ... note: In instance 't'
    32 |       bins auto[1001];
       |            ^~~~
-%Error: t/t_covergroup_autobins_bad.v:44:26: Non-constant expression in bin value list; values must be constants (IEEE 1800-2023 19.5)
-                                           : ... note: In instance 't'
-   44 |       ignore_bins ign = {size_var};   
-      |                          ^~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:45:32: Non-constant expression in bin range; range bounds must be constants (IEEE 1800-2023 19.5)
-                                           : ... note: In instance 't'
-   45 |       ignore_bins ign_range = {[0:size_var]};   
-      |                                ^
 %Error: t/t_covergroup_autobins_bad.v:39:12: Non-constant expression in array bins range; range bounds must be constants (IEEE 1800-2023 19.5)
                                            : ... note: In instance 't'
    39 |       bins b[] = {[size_var:size_var]};   
@@ -43,16 +35,16 @@
                                            : ... note: In instance 't'
    44 |       ignore_bins ign = {size_var};   
       |                          ^~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:45:32: Non-constant expression in bin range; range bounds must be constants (IEEE 1800-2023 19.5)
+                                           : ... note: In instance 't'
+   45 |       ignore_bins ign_range = {[0:size_var]};
+      |                                ^
 %Warning-COVERIGN: t/t_covergroup_autobins_bad.v:52:25: Ignoring unsupported: non-constant 'option.at_least'; using default value
                                                       : ... note: In instance 't'
    52 |       option.at_least = size_var;   
       |                         ^~~~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Error: t/t_covergroup_autobins_bad.v:62:31: Non-constant expression in bin range; range bounds must be constants (IEEE 1800-2023 19.5)
-                                           : ... note: In instance 't'
-   62 |       ignore_bins ign_nclo = {[size_var:4]};   
-      |                               ^
 %Error: t/t_covergroup_autobins_bad.v:59:20: Four-state (x/z) value in bin range bound; range bounds must be two-state constants
                                            : ... note: In instance 't'
    59 |       bins b_xz = {[4'bxxxx:4'hF]};   
@@ -65,6 +57,10 @@
                                            : ... note: In instance 't'
    61 |       ignore_bins ign_xz_hi = {[4'h0:4'bzzzz]};   
       |                                ^
+%Error: t/t_covergroup_autobins_bad.v:62:31: Non-constant expression in bin range; range bounds must be constants (IEEE 1800-2023 19.5)
+                                           : ... note: In instance 't'
+   62 |       ignore_bins ign_nclo = {[size_var:4]};
+      |                               ^
 %Error: t/t_covergroup_autobins_bad.v:63:23: Non-constant expression in bin range; range bounds must be constants (IEEE 1800-2023 19.5)
                                            : ... note: In instance 't'
    63 |       bins b_nc_ub = {[size_var:$]};   
@@ -185,20 +181,12 @@
                                                        : ... note: In instance 't'
   161 |     auto_only: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
       |                ^~~~~
-%Error: t/t_covergroup_autobins_bad.v:167:34: Non-constant expression in bin value list; values must be constants (IEEE 1800-2023 19.5)
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:172:9: Unsupported: cross coverage with more than 2^32-1 tuples.
+                                                      : ... note: In instance 't'
+  172 |     xc: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
+      |         ^~~~~
+%Error: t/t_covergroup_autobins_bad.v:178:34: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
                                             : ... note: In instance 't'
-  167 |       ignore_bins nonconstant = {size_var};
+  178 |       ignore_bins nonconstant = {size_var};
       |                                  ^~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:167:34: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
-                                            : ... note: In instance 't'
-  167 |       ignore_bins nonconstant = {size_var};
-      |                                  ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:171:23: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
-                                                       : ... note: In instance 't'
-  171 |       bins selected = binsof(cp_a) intersect {0};
-      |                       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:210:23: Unsupported: 'intersect' exclusion matching exceeds the selection work limit.
-                                                       : ... note: In instance 't'
-  210 |       bins selected = binsof(cp_a.whole) intersect {[0:30'h3fffffff]} && binsof(cp_b);
-      |                       ^~~~~~
 %Error: Exiting due to

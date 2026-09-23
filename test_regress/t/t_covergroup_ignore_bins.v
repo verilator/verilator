@@ -27,7 +27,7 @@ module t;
     }
   endgroup
 
-  // cg2: ignore_bins using a range - auto-bins are created only for values not in the range.
+  // cg2: ignore_bins using a range - empty auto-bins are omitted after partitioning.
   // Also tests range-boundary conditions: when lo==0 or hi==maxVal, the range check simplifies.
   // Also tests ignore_bins with a transition list.
   covergroup cg2;
@@ -87,10 +87,10 @@ module t;
     data2 = 0;
     cg3_inst.sample();  // lb (ignored)
     data2 = 2;
-    cg3_inst.sample();  // auto_0
+    cg3_inst.sample();  // auto_2
     `checkr(cg3_inst.get_inst_coverage(), 50.0);
     data2 = 3;
-    cg3_inst.sample();  // auto_1
+    cg3_inst.sample();  // auto_3
     `checkr(cg3_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");

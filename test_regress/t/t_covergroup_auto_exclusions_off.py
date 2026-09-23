@@ -9,8 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('vlt_all')
 
-test.lint(verilator_flags2=['--coverage'], fails=True, expect_filename=test.golden_filename)
+test.top_filename = 't/t_covergroup_auto_exclusions.v'
+
+test.compile(verilator_flags2=['--timing'], threads=(2 if test.vltmt else 1))
+
+test.execute()
 
 test.passes()

@@ -9,8 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('vlt_all')
 
-test.lint(verilator_flags2=['--coverage'], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--timing'], threads=(2 if test.vltmt else 1))
+
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()
