@@ -1,0 +1,18 @@
+cg.cp_call.auto[A]: 0
+cg.cp_call.auto[B]: 0
+cg.cp_call.auto[C]: 2
+cg.cp_max.auto[A]: 0
+cg.cp_max.auto[B]: 1
+cg.cp_max.auto[C]: 1
+cg.cp_var.auto[A]: 0
+cg.cp_var.auto[B]: 1
+cg.cp_var.auto[C]: 1
+cg.cx.auto[A]_x_auto[A] [cross]: 0
+cg.cx.auto[A]_x_auto[B] [cross]: 0
+cg.cx.auto[A]_x_auto[C] [cross]: 0
+cg.cx.auto[B]_x_auto[A] [cross]: 0
+cg.cx.auto[B]_x_auto[B] [cross]: 0
+cg.cx.auto[B]_x_auto[C] [cross]: 1
+cg.cx.auto[C]_x_auto[A] [cross]: 0
+cg.cx.auto[C]_x_auto[B] [cross]: 0
+cg.cx.auto[C]_x_auto[C] [cross]: 1
