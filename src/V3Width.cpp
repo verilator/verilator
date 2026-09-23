@@ -2115,39 +2115,49 @@ class WidthVisitor final : public VNVisitor {
         // with a context so a bit/part-select (AstSel) is sized here; otherwise it would
         // reach assertAtExpr() with m_vup==null and fail as an internal error.
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
-        userIterateAndNext(nodep->binsp(), nullptr);
+        // Bin values compare against the coverpoint expression
+        userIterateAndNext(nodep->binsp(), WidthVP{nodep->exprp()->dtypep(), BOTH}.p());
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->optionsp(), nullptr);
     }
-    void widthCovergroupRanges(AstNode* rangesp) {
+    void widthCovergroupRanges(AstNode* rangesp, int fillWidth) {
         // Bin range/value entries are self-determined expressions (IEEE 1800-2023
         // 19.5).  Width each plain single-value entry self-determined so a referenced
         // parameter acquires a dtype, then constify so the reference folds to the AstConst
         // value that V3Covergroup requires.  AstInsideRange entries fold their own bounds in
         // visit(AstInsideRange).
+        // '0/'1 entries then fill to fillWidth, the coverpoint width (IEEE 1800-2023 19.5.7).
+        const auto fill = [&](AstNode* nodep) {
+            if (!fillWidth) return;
+            AstNodeExpr* exprp = VN_AS(nodep, NodeExpr);
+            fixAutoExtend(exprp /*ref*/, fillWidth);
+        };
         for (AstNode *nextp, *itemp = rangesp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
-            if (VN_IS(itemp, InsideRange)) {
-                userIterate(itemp, nullptr);
+            if (AstInsideRange* const rangep = VN_CAST(itemp, InsideRange)) {
+                userIterate(rangep, nullptr);
+                fill(rangep->lhsp());
+                fill(rangep->rhsp());
             } else {
                 itemp = userIterateSubtreeReturnEdits(itemp, WidthVP{SELF, BOTH}.p());
-                V3Const::constifyEdit(itemp);
+                fill(V3Const::constifyEdit(itemp));
             }
         }
     }
     void visit(AstCoverBinsof* nodep) override {
         userIterateAndNext(nodep->pointp(), nullptr);
-        widthCovergroupRanges(nodep->rangesp());
+        widthCovergroupRanges(nodep->rangesp(), 0);
     }
     void visit(AstCoverBin* nodep) override {
-        widthCovergroupRanges(nodep->rangesp());
+        // No m_vup for a bin directly in a covergroup body (unsupported, already warned)
+        widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->arraySizep(), nullptr);
-        userIterateAndNext(nodep->transp(), nullptr);
+        userIterateAndNext(nodep->transp(), m_vup);
     }
-    void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), nullptr); }
+    void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), m_vup); }
     void visit(AstCoverTransItem* nodep) override {
-        userIterateAndNext(nodep->valuesp(), WidthVP{SELF, BOTH}.p());
+        widthCovergroupRanges(nodep->valuesp(), m_vup ? m_vup->dtypep()->width() : 0);
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
