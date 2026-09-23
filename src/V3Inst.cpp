@@ -926,7 +926,9 @@ public:
                    && connBasicp->width() == pinVarp->width()) {
             // Done. One to one interconnect won't need a temporary variable.
         } else if (!alwaysCvt && !forTristate && VN_IS(pinp->exprp(), Const)) {
-            // Done. Constant.
+            // Done. Constant. Still check for driving an output, like below.
+            V3Inst::checkOutputShort(pinp);
+            if (!pinp->exprp()) return nullptr;
         } else {
             // Make a new temp wire
             // UINFOTREE(9, pinp, "", "in_pin");

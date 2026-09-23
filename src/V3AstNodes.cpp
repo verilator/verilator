@@ -2099,6 +2099,7 @@ bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
 void AstNodeCoverDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (localBinNum()) str << " lbin=" << localBinNum();
+    if (perInstance()) str << " [PERINST]";
     if (!page().empty()) str << " page=" << page();
     if (!hier().empty()) str << " hier=" << hier();
     if (this->dataDeclNullp()) {
@@ -2118,6 +2119,7 @@ void AstNodeCoverDecl::dump(std::ostream& str) const {
 void AstNodeCoverDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, binNum);
     dumpJsonNumFunc(str, localBinNum);
+    dumpJsonBoolFuncIf(str, perInstance);
     dumpJsonStrFunc(str, page);
     dumpJsonStrFunc(str, hier);
     dumpJsonGen(str);
