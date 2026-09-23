@@ -313,7 +313,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void generateItemWeight(FileLine* fl, AstVar* itemVarp, AstNode* optionsp) {
         for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
-            if (optp->optType() != VCoverOptionType::WEIGHT || optp->typeOption()) continue;
+            if (!(optp->optType() == VCoverOptionType::WEIGHT) || optp->typeOption()) continue;
             m_constructorp->addStmtsp(itemCall(fl, itemVarp, VCMethod::COVERGROUP_WEIGHT,
                                                {optp->valuep()->cloneTree(false)})
                                           ->makeStmt());

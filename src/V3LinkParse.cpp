@@ -1489,7 +1489,7 @@ class LinkParseVisitor final : public VNVisitor {
             if (dropDeprecatedCoverageOption(optp)) continue;
             itemp->unlinkFrBack();
             const VCoverOptionType optType = optp->optType();
-            if (optType != VCoverOptionType::WEIGHT) {
+            if (!(optType == VCoverOptionType::WEIGHT)) {
                 optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             }
