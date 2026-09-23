@@ -2718,6 +2718,23 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(refp), refp);
     }
 
+    void rewriteFuncRef(AstFuncRef* refp, AstVar* handleVarp) {
+        FileLine* const fl = refp->fileline();
+        AstArg* const argsp = refp->argsp() ? refp->argsp()->unlinkFrBackWithNext() : nullptr;
+        AstMethodCall* const callp = new AstMethodCall{
+            fl, new AstVarRef{fl, handleVarp, VAccess::READ}, refp->name(), argsp};
+        callp->taskp(refp->taskp());
+        callp->dtypeFrom(refp);
+        refp->replaceWith(callp);
+        VL_DO_DANGLING(pushDeletep(refp), refp);
+    }
+
+    // True if funcp is an instance method of the enclosing class or one of its bases
+    bool isEnclosingInstanceFunc(const AstNodeFTask* funcp) const {
+        if (!funcp->classMethod() || funcp->isStatic()) return false;
+        return AstClass::isClassExtendedFrom(m_enclosingClassp, VN_AS(funcp->aboveLoopp(), Class));
+    }
+
     bool isEmbeddedCovergroupVar(const AstVar* varp) const {
         if (!varp || !varp->isClassMember() || varp->isDeclTyped()) return false;
         const AstClassRefDType* const refp = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
@@ -3027,6 +3044,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const std::set<const AstVar*> enclosingVars = enclosingInstanceVars();
         std::vector<AstVarRef*> refsToRewrite;
         std::vector<AstThisRef*> thisRefsToRewrite;
+        std::vector<AstFuncRef*> funcRefsToRewrite;
         const auto scan = [&](AstNode* rootp) {
             rootp->foreach([&](AstVarRef* refp) {
                 if (invalidp) return;
@@ -3047,6 +3065,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     thisRefsToRewrite.push_back(refp);
                     if (!offenderp) offenderp = refp;
                 }
+            });
+            rootp->foreach([&](AstFuncRef* refp) {
+                if (!isEnclosingInstanceFunc(refp->taskp())) return;
+                funcRefsToRewrite.push_back(refp);
+                if (!offenderp) offenderp = refp;
             });
         };
         for (AstCoverpoint* const cpp : m_coverpoints) scan(cpp);
@@ -3076,6 +3099,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Route each enclosing-member reference through the back-pointer: 'm' -> 'h.m'.
         for (AstVarRef* const refp : refsToRewrite) { rewriteVarRef(refp, handleVarp); }
         for (AstThisRef* const refp : thisRefsToRewrite) { rewriteThisRef(refp, handleVarp); }
+        for (AstFuncRef* const refp : funcRefsToRewrite) { rewriteFuncRef(refp, handleVarp); }
 
         // Append a named hidden argument to preserve positional and defaulted user arguments.
         for (AstNodeAssign* const constructp : constructps) {
