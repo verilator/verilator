@@ -10,6 +10,14 @@ __vlAnonCG_cg.cp_method.b[0]: 0
 __vlAnonCG_cg.cp_method.b[1]: 0
 __vlAnonCG_cg.cp_method.b[2]: 1
 __vlAnonCG_cg.cp_method.b[3]: 1
+__vlAnonCG_cg.cp_nested.b[0]: 0
+__vlAnonCG_cg.cp_nested.b[1]: 0
+__vlAnonCG_cg.cp_nested.b[2]: 0
+__vlAnonCG_cg.cp_nested.b[3]: 1
+__vlAnonCG_cg.cp_nested.b[4]: 1
+__vlAnonCG_cg.cp_nested.b[5]: 0
+__vlAnonCG_cg.cp_nested.b[6]: 0
+__vlAnonCG_cg.cp_nested.b[7]: 0
 __vlAnonCG_cg.cp_noarg.b[0]: 2
 __vlAnonCG_cg.cp_noarg.b[1]: 0
 __vlAnonCG_cg.cp_noarg.b[2]: 0

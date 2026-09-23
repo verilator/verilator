@@ -8,6 +8,9 @@
 
 package pkg;
   function automatic int pkg_val(int x);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
     return x + 2;
   endfunction
 endpackage
@@ -15,6 +18,9 @@ endpackage
 class Base;
   int offset = 1;
   function int base_val(int x);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
     return x + offset;
   endfunction
 endclass
@@ -23,16 +29,38 @@ class Cov extends Base;
   int state;
   static int s_offset = 1;
   function int get_val(int sel);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
     return state + sel;
   endfunction
+  function int get_nested(int sel);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
+    return get_val(sel) + 1;
+  endfunction
   function int get_zero();
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
     return state - 1;
   endfunction
   static function int s_val(int x);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
     return x + s_offset;
   endfunction
+  task do_sample(int x);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
+    cg.sample(x);
+  endtask
   covergroup cg with function sample(int x);
     cp_method: coverpoint get_val(x) {bins b[] = {[0 : 3]};}
+    cp_nested: coverpoint get_nested(x) {bins b[] = {[0 : 7]};}
     cp_base: coverpoint base_val(x) {bins b[] = {[0 : 3]};}
     cp_iff: coverpoint x iff (get_val(x) == 3) {bins b[] = {[0 : 3]};}
     cp_noarg: coverpoint get_zero() {bins b[] = {[0 : 3]};}
@@ -52,6 +80,9 @@ endclass
 class ParamCov #(int W = 4);
   int state;
   function int get_val(int sel);
+`ifdef TEST_NOINLINE
+    // verilator no_inline_task
+`endif
     return state + sel + W;
   endfunction
   covergroup cg with function sample(int x);
@@ -69,7 +100,7 @@ module t;
     c = new;
     c.state = 1;
     c.cg.sample(1);
-    c.cg.sample(2);
+    c.do_sample(2);
     c.cg2.sample();
     pc = new;
     pc.cg.sample(1);
