@@ -2215,7 +2215,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         if (origp && !hoistRandModeOverSelectAndMember(newp, origp)) {
-            VL_DO_DANGLING(origp->deleteTree(), origp);
+            VL_DO_DANGLING(pushDeletep(origp), origp);
         }
     }
     void visit(AstAssocSel* nodep) override {

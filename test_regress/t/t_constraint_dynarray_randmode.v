@@ -23,12 +23,14 @@ module t;
   initial begin
     automatic Container obj = new;
     automatic int randomize_result;
-    obj.items = new[1];
-    obj.items[0].value = 0;
-    obj.items.rand_mode(0);
-    randomize_result = obj.randomize();
-    `checkd(randomize_result, 1)
-    `checkd(obj.items.size(), 1)
+    repeat(20) begin
+      obj.items = new[1];
+      obj.items[0].value = 0;
+      obj.items.rand_mode(0);
+      randomize_result = obj.randomize();
+      `checkd(randomize_result, 1)
+      `checkd(obj.items.size(), 1)
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end
