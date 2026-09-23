@@ -135,6 +135,12 @@ private:
     static void clearModuleCache();
     static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
     static string extractIfacePortName(const string& dotText);
+    // True if this module is a copy of that one.
+    static bool isCloneOfModule(const AstNodeModule* modp, const AstNodeModule* templateModp);
+    // Point a reference at a typedef and fix its other links.
+    static void retargetRefToTypedef(AstRefDType* refp, AstTypedef* typedefp);
+    // Same, for a parameter type.
+    static void retargetRefToParamType(AstRefDType* refp, AstParamTypeDType* paramTypep);
     static AstNodeModule* findCloneViaHierarchy(AstNodeModule* containingModp,
                                                 AstNodeModule* deadTargetModp, int depth = 0);
     static AstNodeModule* findLiveCloneOf(AstNodeModule* deadTargetModp,
