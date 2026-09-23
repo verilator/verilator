@@ -19,6 +19,7 @@
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
 #include "V3File.h"
+#include "V3MemberMap.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -34,10 +35,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class EmitCHeader final : public EmitCConstInit {
     V3UniqueNames m_names;
+    VMemberMap m_memberMap;
     // METHODS
 
     class CoverCountVisitor final : public VNVisitorConst {
-        int m_bins = 0;
+        int m_bins = 0;  // Running total of coverage bins counted so far
 
         void visit(AstNodeCoverDecl* nodep) override {
             // Each module class owns the counters for declarations it emits;
@@ -270,12 +272,19 @@ class EmitCHeader final : public EmitCConstInit {
                         }
                     });
                 const string className = EmitCUtil::prefixNameProtect(classp);
-                if (embeddedCovergroupVars.empty()) {
+                if (embeddedCovergroupVars.empty() && !classp->hasRandVarsUpdate()) {
                     putns(classp,
                           "VlClass* clone() const { return new " + className + "(*this); }\n");
                 } else {
                     putns(classp, "VlClass* clone() const { " + className + "* const clonep = new "
                                       + className + "(*this); ");
+                    if (classp->hasRandVarsUpdate()) {
+                        const string updateName = "__VnoInFunc___VupdateRandVars";
+                        AstCFunc* const updatep
+                            = VN_AS(m_memberMap.findMember(classp, updateName), CFunc);
+                        UASSERT_OBJ(updatep, classp, "Missing updateRandVars method");
+                        puts("clonep->" + updatep->nameProtect() + "();\n");
+                    }
                     for (const EmbeddedCovergroupVar& item : embeddedCovergroupVars) {
                         puts("clonep->" + EmitCUtil::prefixNameProtect(item.first)
                              + "::" + item.second->nameProtect() + " = VlNull{}; ");

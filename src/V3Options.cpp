@@ -1088,7 +1088,7 @@ void V3Options::notify() VL_MT_DISABLED {
     if (timing().isSetTrue()) V3PreShell::defineCmdLine("VERILATOR_TIMING", "1");
 
     // If VPI is used, and no explicit ico change detect option was passed, disable it by default
-    if (m_vpi && m_fIcoChangeDetect.isDefault()) m_fIcoChangeDetect.setTrueOrFalse(false);
+    if (m_vpi.isTrue() && m_fIcoChangeDetect.isDefault()) m_fIcoChangeDetect.setTrueOrFalse(false);
 
     // === Leave last
     // Mark options as available
@@ -1518,7 +1518,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
-    DECL_OPTION("-flift-expr", FOnOff, &m_fLiftExpr);
+    DECL_OPTION("-flift-expr", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-lift-expr' is deprecated and has no effect");
+    });
     DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);
     DECL_OPTION("-fmerge-cond", FOnOff, &m_fMergeCond);
     DECL_OPTION("-fmerge-cond-motion", FOnOff, &m_fMergeCondMotion);

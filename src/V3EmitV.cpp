@@ -352,6 +352,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             }
             puts("}");
         }
+        if (nodep->iffp()) {
+            puts(" iff (");
+            iterateConst(nodep->iffp());
+            puts(")");
+        }
         puts(";\n");
     }
     void visit(AstCoverBinsof* nodep) override {
@@ -366,7 +371,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
     }
     void visit(AstCoverCrossBin* nodep) override {
-        putfs(nodep, "bins " + nodep->name() + " = ");
+        putfs(nodep, nodep->verilogKwd() + " " + nodep->name() + " = ");
         iterateConstNull(nodep->selectp());
         if (nodep->iffp()) {
             puts(" iff (");
@@ -375,6 +380,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(";\n");
     }
+    void visit(AstCoverCrossRef* nodep) override { putfs(nodep, nodep->name()); }
     void visit(AstCoverCrossSelect* nodep) override {
         putfs(nodep, "(");
         iterateConstNull(nodep->lhsp());

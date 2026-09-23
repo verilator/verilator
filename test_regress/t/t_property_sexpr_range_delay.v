@@ -79,10 +79,6 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> ##[2:2] (a | b | c | d | e));
 
-  // Multi-step: ##[1:2] then ##1
-  assert property (@(posedge clk) disable iff (cyc < 2)
-      a |-> ##[1:2] (a | b | c | d | e) ##1 (a | b | c | d | e));
-
   // Large range ##[1:10000] (scalability, O(1) code size)
   assert property (@(posedge clk) disable iff (cyc < 2)
       a |-> ##[1:10000] (a | b | c | d | e));

@@ -337,7 +337,8 @@
 %000000        // [fsm_state t.nested_bitand_guard_u.state_q::S2] *** UNCOVERED ***
               if (choose) state_d = S1;
               else state_d = S0;
-            end else if (state_q == S1) state_d = S2;
+            end
+            else if (state_q == S1) state_d = S2;
             else if (state_q == S2) state_d = S0;
           end
         
@@ -549,7 +550,8 @@
             if (rst) begin
               state_q <= S0;
               other_q <= S0;
-            end else begin
+            end
+            else begin
               state_q <= state_d;
               other_q <= other_d;
             end
@@ -573,24 +575,84 @@
           int cyc;
           state_t state  /*verilator fsm_reset_arc*/;
         
-          fsm_if_enum_oneblock enum_oneblock_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_enum_twoproc enum_twoproc_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_localparam localparam_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_parameter parameter_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_literal_forced literal_forced_u (.clk(clk), .rst(rst));
-          fsm_if_guard_state_first guard_state_first_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_guard_first guard_first_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_local_alias local_alias_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_continuous_alias continuous_alias_u (.clk(clk), .rst(rst), .start(start));
+          fsm_if_enum_oneblock enum_oneblock_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_enum_twoproc enum_twoproc_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_localparam localparam_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_parameter parameter_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_literal_forced literal_forced_u (
+              .clk(clk),
+              .rst(rst)
+          );
+          fsm_if_guard_state_first guard_state_first_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_guard_first guard_first_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_local_alias local_alias_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_continuous_alias continuous_alias_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
           fsm_if_nested_bitand_guard nested_bitand_guard_u (
-              .clk(clk), .rst(rst), .start(start), .choose(choose));
-          fsm_if_default_incl default_incl_u (.clk(clk), .rst(rst), .start(start));
+              .clk(clk),
+              .rst(rst),
+              .start(start),
+              .choose(choose)
+          );
+          fsm_if_default_incl default_incl_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
           fsm_if_oneblock_late_continuous_alias oneblock_late_continuous_alias_u (
-              .clk(clk), .rst(rst), .start(start));
-          fsm_if_nextstate_compare nextstate_compare_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_reversed_compare reversed_compare_u (.clk(clk), .rst(rst));
-          fsm_if_duplicate_alias duplicate_alias_u (.clk(clk), .rst(rst), .start(start));
-          fsm_if_case_priority case_priority_u (.clk(clk), .rst(rst));
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_nextstate_compare nextstate_compare_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_reversed_compare reversed_compare_u (
+              .clk(clk),
+              .rst(rst)
+          );
+          fsm_if_duplicate_alias duplicate_alias_u (
+              .clk(clk),
+              .rst(rst),
+              .start(start)
+          );
+          fsm_if_case_priority case_priority_u (
+              .clk(clk),
+              .rst(rst)
+          );
         
           initial begin
             rst = 1'b1;

@@ -547,23 +547,19 @@ module t (
       cdata_q = cdata_q_t'(
           256'h00010203_04050607_08090a0b_0c0d0e0f_10111213_14151617_18191a1b_1c1d1e1f);
       p256 = {>>{cdata_q}};
-      `checkh(p256,
-              256'h00010203_04050607_08090a0b_0c0d0e0f_10111213_14151617_18191a1b_1c1d1e1f);
+      `checkh(p256, 256'h00010203_04050607_08090a0b_0c0d0e0f_10111213_14151617_18191a1b_1c1d1e1f);
       cdata_q = cdata_q_t'(64'h00010203_04050607);
       p256 = {>>{cdata_q}};
-      `checkh(p256,
-              256'h00010203_04050607_00000000_00000000_00000000_00000000_00000000_00000000);
+      `checkh(p256, 256'h00010203_04050607_00000000_00000000_00000000_00000000_00000000_00000000);
 
       // 64-bit elements
       qdata_q = qdata_logic_q_t'(
           256'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888);
       p256 = {>>{qdata_q}};
-      `checkh(p256,
-              256'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888);
+      `checkh(p256, 256'hdeadbeef_cafebabe_feedface_12345678_11112222_33334444_55556666_77778888);
       qdata_q = qdata_logic_q_t'(128'hdeadbeef_cafebabe_feedface_12345678);
       p256 = {>>{qdata_q}};
-      `checkh(p256,
-              256'hdeadbeef_cafebabe_feedface_12345678_00000000_00000000_00000000_00000000);
+      `checkh(p256, 256'hdeadbeef_cafebabe_feedface_12345678_00000000_00000000_00000000_00000000);
 
       // 128-bit (VlWide) elements
       wide_q = wide_q_t'(

@@ -99,6 +99,16 @@ VK_CPPFLAGS_ALWAYS += \
   -DVM_VPI=$(VM_VPI) \
   $(CFG_CXXFLAGS_NO_UNUSED) \
 
+# Left undefined when there is no generated model, so misuse fails at compile time
+ifneq ($(VM_PREFIX_INCLUDE),)
+  VK_CPPFLAGS_ALWAYS += -DVM_PREFIX_INCLUDE="$(VM_PREFIX_INCLUDE)"
+endif
+
+# Left undefined when the design has no DPI, so misuse fails at compile time
+ifneq ($(VM_PREFIX_INCLUDE_DPI),)
+  VK_CPPFLAGS_ALWAYS += -DVM_PREFIX_INCLUDE_DPI="$(VM_PREFIX_INCLUDE_DPI)"
+endif
+
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
   VK_CPPFLAGS_WALL += -Wall $(CFG_CXXFLAGS_WEXTRA) -Werror
 endif

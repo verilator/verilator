@@ -84,6 +84,7 @@ test.compile(verilator_flags2=[
     "--stats",
     "--build",
     "--exe",
+    "-fdfg-synthesize-all",
     "-fno-const-before-dfg",
     "-fno-gate",
     "+incdir+" + test.obj_dir,

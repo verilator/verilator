@@ -1180,23 +1180,28 @@ void _vl_vsformat(std::string& output, const std::string& format, int argc,
                 if (fmt != 'p' && fmt != 'x') fmt = 's';  // Override
             } else if (formatAttr == VL_VFORMATATTR_ENUM
                        || formatAttr == VL_VFORMATATTR_ENUM_SIGNED) {
-                // Always <= VL_QUADSIZE; emit uses non-ENUM format for wider enums
                 const int numericAttr = formatAttr == VL_VFORMATATTR_ENUM_SIGNED
                                             ? VL_VFORMATATTR_SIGNED
                                             : VL_VFORMATATTR_UNSIGNED;
                 lbits = va_arg(ap, int);
-                ld = VL_VA_ARG_Q_(ap, lbits);
-                strwide.resize(2);
-                WDataOutP strwidep = WDataOutP::external(strwide.data());
-                VL_SET_WQ(strwidep, ld);
-                lwp = strwidep;
+                if (lbits <= VL_QUADSIZE) {
+                    ld = VL_VA_ARG_Q_(ap, lbits);
+                    strwide.resize(2);
+                    WDataOutP strwidep = WDataOutP::external(strwide.data());
+                    VL_SET_WQ(strwidep, ld);
+                    lwp = strwidep;
+                } else {
+                    lwp = WDataInP::external(va_arg(ap, const EData*));
+                    ld = VL_SET_QW(lwp);
+                }
                 lsb = lbits - 1;
                 ++argn;  // Enum value is followed by the generated name string argument
                 static_cast<void>(va_arg(ap, int));  // VL_VFORMATATTR_STRING
                 enump = va_arg(ap, std::string*);
-                if (enump && !enump->empty()) {
+                if (fmt != 'p' && fmt != 's') {
+                    formatAttr = numericAttr;
+                } else if (enump && !enump->empty()) {
                     formatAttr = (fmt == 'p') ? VL_VFORMATATTR_COMPLEX : VL_VFORMATATTR_STRING;
-                    if (fmt == 'd') formatAttr = numericAttr;
                     thingp = const_cast<std::string*>(enump);
                 } else if (fmt == 'p' && widthSet && width == 0) {
                     output += "'h";
@@ -1827,8 +1832,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     return got;
 
 done:
-    // Scan stopped early, return parsed or EOF
-    if (_vl_vsss_eof(fp, floc)) return -1;
+    // Scan stopped early; EOF only if input ended before the first conversion
+    if (got == 0 && _vl_vsss_eof(fp, floc)) return -1;
     return got;
 }
 
@@ -4180,28 +4185,6 @@ std::unique_ptr<VerilatedTraceConfig> VerilatedModel::traceConfig() const { retu
 //======================================================================
 // VerilatedVar:: Methods
 
-// cppcheck-suppress unusedFunction  // Used by applications
-uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
-    if (m_entSize) return m_entSize;
-    uint32_t size = 1;
-    switch (vltype()) {
-    case VLVT_PTR: size = sizeof(void*); break;
-    case VLVT_UINT8: size = sizeof(CData); break;
-    case VLVT_UINT16: size = sizeof(SData); break;
-    case VLVT_UINT32: size = sizeof(IData); break;
-    case VLVT_UINT64: size = sizeof(QData); break;
-    case VLVT_WDATA: size = VL_WORDS_I(entBits()) * sizeof(IData); break;
-    default: size = 0; break;  // LCOV_EXCL_LINE
-    }
-    return size;
-}
-
-size_t VerilatedVarProps::totalSize() const {
-    size_t size = entSize();
-    for (int udim = 0; udim < udims(); ++udim) size *= m_unpacked[udim].elements();
-    return size;
-}
-
 void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE {
     if (VL_UNLIKELY(dim <= 0 || dim > udims())) return nullptr;
     if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return nullptr;
@@ -4495,7 +4478,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     const std::string msg = ("Testbench C called '"s + VerilatedImp::exportName(funcnum)
                              + "' but scope wasn't set, perhaps due to dpi import call without "
-                             + "'context', or missing svSetScope. See IEEE 1800-2023 35.5.3.");
+                             + "'context', or missing svSetScope (IEEE 1800-2023 35.5.3)");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return nullptr;
 }

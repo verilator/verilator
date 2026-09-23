@@ -1,0 +1,148 @@
+cg_auto.cp_a.values[0]: 2
+cg_auto.cp_a.values[1]: 2
+cg_auto.cp_a.values[2]: 2
+cg_auto.cp_a.values[3]: 2
+cg_auto.cp_b.auto_0: 4
+cg_auto.cp_b.auto_1: 4
+cg_auto.cx.forbidden [illegal,cross]: 0
+cg_auto.cx.ignored [ignore,cross]: 1
+cg_auto.cx.values[1]_x_auto_0 [cross]: 1
+cg_auto.cx.values[1]_x_auto_1 [cross]: 1
+cg_auto.cx.values[2]_x_auto_0 [cross]: 1
+cg_auto.cx.values[2]_x_auto_1 [cross]: 1
+cg_empty.cp_a.values[0]: 2
+cg_empty.cp_a.values[1]: 2
+cg_empty.cp_a.values[2]: 2
+cg_empty.cp_a.values[3]: 2
+cg_empty.cp_b.auto_0: 4
+cg_empty.cp_b.auto_1: 4
+cg_empty.cx.forbidden [illegal,cross]: 0
+cg_empty.cx.ignored [ignore,cross]: 8
+cg_order.cp_a.values[0]: 2
+cg_order.cp_a.values[1]: 2
+cg_order.cp_a.values[2]: 2
+cg_order.cp_a.values[3]: 2
+cg_order.cp_b.auto_0: 4
+cg_order.cp_b.auto_1: 4
+cg_order.exclusions_first.combined [cross]: 4
+cg_order.exclusions_first.forbidden [illegal,cross]: 0
+cg_order.exclusions_first.ignored [ignore,cross]: 1
+cg_order.normal_first.combined [cross]: 4
+cg_order.normal_first.forbidden [illegal,cross]: 0
+cg_order.normal_first.ignored [ignore,cross]: 1
+cg_overlap.cp_a.either: 8
+cg_overlap.cp_a.high: 4
+cg_overlap.cp_a.low: 4
+cg_overlap.cp_b.either: 8
+cg_overlap.cp_b.one: 4
+cg_overlap.cp_b.zero: 4
+cg_overlap.cx.combined [cross]: 8
+cg_overlap.cx.entire [cross]: 8
+cg_overlap.cx.forbidden [illegal,cross]: 0
+cg_overlap.cx.ignored [ignore,cross]: 4
+cg_static_cross.cp_a.auto_0: 4
+cg_static_cross.cp_a.auto_1: 4
+cg_static_cross.cp_b.auto_0: 4
+cg_static_cross.cp_b.auto_1: 4
+cg_static_cross.cross__02eref.entire [cross]: 8
+cg_static_cross.xx.entire [cross]: 8
+cg_static_cross.xx.grouped [cross]: 6
+cg_static_cross.xx.guarded [cross]: 4
+cg_static_cross.xx.one [cross]: 4
+cg_static_cross.xx.union_left [cross]: 8
+cg_static_cross.xx.union_right [cross]: 8
+cg_static_cross.xx.zero [cross]: 4
+cg_three.cp_a.auto_0: 4
+cg_three.cp_a.auto_1: 4
+cg_three.cp_b.auto_0: 4
+cg_three.cp_b.auto_1: 4
+cg_three.cp_c.auto_0: 4
+cg_three.cp_c.auto_1: 4
+cg_three.cx.combined [cross]: 4
+cg_three.cx.forbidden [illegal,cross]: 0
+cg_three.cx.ignored [ignore,cross]: 3
+cg_transition.cp_a.one: 4
+cg_transition.cp_a.seq: 4
+cg_transition.cp_a.zero: 4
+cg_transition.cp_b.auto_0: 4
+cg_transition.cp_b.auto_1: 4
+cg_transition.cx.combined [cross]: 6
+cg_transition.cx.forbidden [illegal,cross]: 0
+cg_transition.cx.ignored [ignore,cross]: 4
+cg_wide.cp_a.values[0]: 2
+cg_wide.cp_a.values[10]: 2
+cg_wide.cp_a.values[11]: 2
+cg_wide.cp_a.values[12]: 2
+cg_wide.cp_a.values[13]: 2
+cg_wide.cp_a.values[14]: 2
+cg_wide.cp_a.values[15]: 2
+cg_wide.cp_a.values[16]: 2
+cg_wide.cp_a.values[17]: 2
+cg_wide.cp_a.values[18]: 2
+cg_wide.cp_a.values[19]: 2
+cg_wide.cp_a.values[1]: 2
+cg_wide.cp_a.values[20]: 2
+cg_wide.cp_a.values[21]: 2
+cg_wide.cp_a.values[22]: 2
+cg_wide.cp_a.values[23]: 2
+cg_wide.cp_a.values[24]: 2
+cg_wide.cp_a.values[25]: 2
+cg_wide.cp_a.values[26]: 2
+cg_wide.cp_a.values[27]: 2
+cg_wide.cp_a.values[28]: 2
+cg_wide.cp_a.values[29]: 2
+cg_wide.cp_a.values[2]: 2
+cg_wide.cp_a.values[30]: 2
+cg_wide.cp_a.values[31]: 2
+cg_wide.cp_a.values[32]: 2
+cg_wide.cp_a.values[33]: 2
+cg_wide.cp_a.values[34]: 2
+cg_wide.cp_a.values[35]: 2
+cg_wide.cp_a.values[36]: 2
+cg_wide.cp_a.values[37]: 2
+cg_wide.cp_a.values[38]: 2
+cg_wide.cp_a.values[39]: 2
+cg_wide.cp_a.values[3]: 2
+cg_wide.cp_a.values[40]: 2
+cg_wide.cp_a.values[41]: 2
+cg_wide.cp_a.values[42]: 2
+cg_wide.cp_a.values[43]: 2
+cg_wide.cp_a.values[44]: 2
+cg_wide.cp_a.values[45]: 2
+cg_wide.cp_a.values[46]: 2
+cg_wide.cp_a.values[47]: 2
+cg_wide.cp_a.values[48]: 2
+cg_wide.cp_a.values[49]: 2
+cg_wide.cp_a.values[4]: 2
+cg_wide.cp_a.values[50]: 2
+cg_wide.cp_a.values[51]: 2
+cg_wide.cp_a.values[52]: 2
+cg_wide.cp_a.values[53]: 2
+cg_wide.cp_a.values[54]: 2
+cg_wide.cp_a.values[55]: 2
+cg_wide.cp_a.values[56]: 2
+cg_wide.cp_a.values[57]: 2
+cg_wide.cp_a.values[58]: 2
+cg_wide.cp_a.values[59]: 2
+cg_wide.cp_a.values[5]: 2
+cg_wide.cp_a.values[60]: 2
+cg_wide.cp_a.values[61]: 2
+cg_wide.cp_a.values[62]: 2
+cg_wide.cp_a.values[63]: 2
+cg_wide.cp_a.values[64]: 2
+cg_wide.cp_a.values[6]: 2
+cg_wide.cp_a.values[7]: 2
+cg_wide.cp_a.values[8]: 2
+cg_wide.cp_a.values[9]: 2
+cg_wide.cp_b.auto_0: 65
+cg_wide.cp_b.auto_1: 65
+cg_wide.cx.combined [cross]: 122
+cg_wide.cx.forbidden [illegal,cross]: 0
+cg_wide.cx.ignored [ignore,cross]: 6
+cg_wide.cx.partial [cross]: 4
+cg_wide.cx.sparse [cross]: 2
+cg_wide.whole.entire [cross]: 130
+cg_wide.whole.tail [cross]: 2
+cg_zero_product.cp_a.ignored [ignore]: 8
+cg_zero_product.cp_b.auto_0: 4
+cg_zero_product.cp_b.auto_1: 4

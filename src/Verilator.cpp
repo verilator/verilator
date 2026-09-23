@@ -307,7 +307,7 @@ static void process() {
 
         if (!v3Global.opt.serializeOnly()) {
             // Lift expressions out of statements.
-            if (v3Global.opt.fLiftExpr()) V3LiftExpr::liftExprAll(v3Global.rootp());
+            V3LiftExpr::liftExprAll(v3Global.rootp());
 
             // Move assignments from X into MODULE temps.
             // (Before flattening, so each new X variable is shared between all scopes of that

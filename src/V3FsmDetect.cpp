@@ -599,8 +599,9 @@ class FsmDetectVisitor final : public VNVisitor {
             if (!fsmRegisterWrapperDesc(cellp)) return;
             UASSERT_OBJ(lhsVscp->varp()->isInput(), nodep,
                         "Child-side port alias lhs should be an input");
-            UASSERT_OBJ(rhsVscp->scopep() == m_scopep, nodep,
-                        "Child input port alias should connect from the parent scope");
+            // Note the connected variable can live in a scope further up, as V3Inst
+            // aliases a port connection, merging the port variable of an instance into
+            // whatever it is connected to
             m_cellPortAliases[cellp][lhsVscp->varp()->name()] = rhsVscp;
             m_cellPortChildAliases[cellp][lhsVscp->varp()->name()] = lhsVscp;
             addWrapperCell(m_scopep, cellp);
@@ -608,8 +609,6 @@ class FsmDetectVisitor final : public VNVisitor {
             if (!fsmRegisterWrapperDesc(cellp)) return;
             UASSERT_OBJ(rhsVscp->varp()->isWritable(), nodep,
                         "Child-side port alias rhs should be writable");
-            UASSERT_OBJ(lhsVscp->scopep() == m_scopep, nodep,
-                        "Child output port alias should connect into the parent scope");
             m_cellPortAliases[cellp][rhsVscp->varp()->name()] = lhsVscp;
             m_cellPortChildAliases[cellp][rhsVscp->varp()->name()] = rhsVscp;
             addWrapperCell(m_scopep, cellp);
@@ -634,7 +633,7 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     class RegisterAlwaysAnalyzer final {
-        AstScope* const m_scopep;
+        AstScope* const m_scopep;  // Scope containing the always block(s) being analyzed
 
     public:
         explicit RegisterAlwaysAnalyzer(AstScope* scopep)
@@ -2194,7 +2193,6 @@ class FsmLowerVisitor final {
                                         graph.stateVarName(),
                                         "",
                                         statep->label()};
-            declp->hier(scopep->prettyName());
             modp->addStmtsp(declp);
             AstNodeExpr* const guardp
                 = andExpr(flp,
@@ -2231,7 +2229,6 @@ class FsmLowerVisitor final {
                                             fromVertexp->label(),
                                             toStatep->label(),
                                             fsmTag};
-                declp->hier(scopep->prettyName());
                 modp->addStmtsp(declp);
                 AstNodeExpr* guardp = nullptr;
                 if (fromVertexp->isResetAny()) {

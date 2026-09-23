@@ -36,7 +36,8 @@ jobs:
       - name: Set up Python venv
         uses: ./repo/.github/actions/setup-venv
         with:
-          save: ${{ github.ref == 'refs/heads/master' }}
+          # Check the event too: 'github.ref' is the base branch on a closed pull request
+          save: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
 
       - name: Lint
         run: |-

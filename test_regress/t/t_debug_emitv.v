@@ -96,6 +96,7 @@ module t (/*AUTOARG*/
     if ($test$plusargs("HELLO")) $display("Hello argument found.");
     if (Pkg::FOO == 0) $write("");
     if (ZERO == 0) $write("");
+    $display("%p", e_t'(in));
     if ($value$plusargs("TEST=%d", i1))
       $display("value was %d", i1);
     else
@@ -394,7 +395,7 @@ module t (/*AUTOARG*/
     option.per_instance = 1;
     option.weight = 2;
     cp_sig: coverpoint cg_sig {
-      bins low    = {[0:3]};
+      bins low    = {[0:3]} iff (cg_sig2[0]);
       bins high   = {[4:6]};
       bins multi  = {0, 1, 2};   // multiple values in one bins (exercises EmitV range loop)
       bins dflt   = default;
@@ -435,6 +436,7 @@ module t (/*AUTOARG*/
     }
     cx: cross cp_x, cp_y iff (cg_sig[0] == cg_sig2[0]);
     cx_select: cross cp_x, cp_y{
+      bins entire = cx_select;
       bins plain = binsof (cp_x);
       bins named = binsof (cp_x.x0);
       bins filtered = binsof (cp_x) intersect {0, [1 : 2]};
@@ -445,6 +447,19 @@ module t (/*AUTOARG*/
       bins either = binsof (cp_x.x0) || binsof (cp_y.y0);
       bins both = binsof (cp_x.x1) && binsof (cp_y.y1) iff (cg_sig[1]);
       bins grouped = (binsof (cp_x.x0) || binsof (cp_y.y0)) && !binsof (cp_x.x1);
+      ignore_bins ignored = binsof (cp_x.x0) iff (cg_sig[0]);
+      illegal_bins forbidden = binsof (cp_y.y1);
+    }
+  endgroup
+
+  covergroup cg_live_cross;
+    option.auto_bin_max = 4;
+    cp_x: coverpoint cg_sig {
+      ignore_bins removed = {0};
+    }
+    cp_y: coverpoint cg_sig2;
+    cx: cross cp_x, cp_y{
+      bins all = cx;
     }
   endgroup
 
@@ -452,6 +467,7 @@ module t (/*AUTOARG*/
   cg_clocked cg_clocked_inst = new;
   cg_trans   cg_trans_inst   = new;
   cg_cross   cg_cross_inst   = new;
+  cg_live_cross cg_live_cross_inst = new;
 endmodule
 
 module sub(input logic clk);

@@ -66,13 +66,16 @@ public:
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
     // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
     virtual bool isMultiCycleSva() const { return false; }
-
-    // TODO: consolidate cLValueTargetp, isLValue, baseFromp
-    // If the expression is a valid C++ LValue, return the target reference, else nullptr
-    // This always returns either AstVarRef, AstMemberSel, or nullptr
-    AstNodeExpr* cLValueTargetp();
+    const AstNodeExpr* getVAccessTargetRecurse() const;
+    AstNodeExpr* getVAccessTargetRecurse() {
+        return const_cast<AstNodeExpr*>(  // casting constness away is safe since this function is
+                                          // non-const itself therefore, caller guarantees that
+                                          // this object is non-const
+            static_cast<const AstNodeExpr*>(this)->getVAccessTargetRecurse());
+    }
+    VAccess getVAccessRecurse() const;
     // TODO: this actually means it's a write or RW, not that it's an LValue
-    bool isLValue() const;
+    bool isLValue() const { return getVAccessRecurse().isWriteOrRW(); }
     // Return base var (or const) nodep dereferences
     AstNode* baseFromp(bool overMembers);
 
@@ -529,7 +532,6 @@ public:
     }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
-    static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
 };
 
 // === Concrete node types =====================================================
@@ -750,7 +752,7 @@ class AstCMethodHard final : public AstNodeExpr {
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
     // @astgen op3 := withp : Optional[AstWith] // With clause
     VCMethod m_method;  // Which method to call
-    bool m_pure = false;  // Pure optimizable
+    VIsCached m_purity;  // Pure optimizable
     bool m_usePtr = false;  // Use '->' not '.'
 public:
     AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, VCMethod method, AstNodeExpr* pinsp = nullptr)
@@ -758,7 +760,6 @@ public:
         , m_method{method} {
         this->fromp(fromp);
         addPinsp(pinsp);
-        setPurity();
     }
     ASTGEN_MEMBERS_AstCMethodHard;
     void dump(std::ostream& str) const override;
@@ -768,7 +769,10 @@ public:
         const AstCMethodHard* const asamep = VN_DBG_AS(samep, CMethodHard);
         return (m_method == asamep->m_method);
     }
-    bool isPure() override { return m_pure; }
+    bool isPure() override {
+        if (!m_purity.isCached()) m_purity.set(getPurity());
+        return m_purity.get();
+    }
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -779,7 +783,7 @@ public:
     void method(VCMethod value) { m_method = value; }
 
 private:
-    void setPurity();
+    bool getPurity();
 };
 class AstCReset final : public AstNodeExpr {
     // Reset variable at startup
@@ -1471,7 +1475,7 @@ class AstExprStmt final : public AstNodeExpr {
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := resultp : AstNodeExpr
 private:
-    bool m_hasResult = true;
+    bool m_hasResult = true;  // Returns result via resultp()
 
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
@@ -2031,7 +2035,7 @@ class AstParseRef final : public AstNodeExpr {
     // @astgen op1 := lhsp : Optional[AstNodeExpr]
     // @astgen op2 := ftaskrefp : Optional[AstNodeFTaskRef]
 
-    string m_name;
+    string m_name;  // Name of the variable/function/task
 
 public:
     AstParseRef(FileLine* fl, const string& name, AstNodeExpr* lhsp = nullptr,
@@ -2404,6 +2408,7 @@ class AstSFormatArg final : public AstNodeExpr {
     // used to pass to (potentially) runtime decoding of format arguments
     // PARENT: SFormatF (or next list of expressions)
     // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := namep : Optional[AstNodeExpr] // Runtime enum name lookup
     VFormatAttr m_formatAttr;  // How to format expression
 
 public:
@@ -2426,6 +2431,7 @@ public:
     bool cleanOut() const override { return true; }
     const char* broken() const override {
         BROKEN_RTN(!VN_IS(backp(), SFormatF) && firstAbovep());  // In list under SFormatF
+        BROKEN_RTN(formatAttr().isEnum() != static_cast<bool>(namep()));
         return nullptr;
     }
     VFormatAttr formatAttr() const { return m_formatAttr; }
@@ -2631,7 +2637,7 @@ class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports
     // Parents:  AstSFormatF, AstNodeFTaskRef, AstNodeFTask
     std::string m_scopeAttr;
-    std::string m_scopeEntr;
+    std::string m_scopeEntr;  // Scope path for the DPI import/export context name
     bool m_dpiExport = false;  // Is for dpiExport
     const bool m_forFormat;  // Is for a format %m
     static std::string scopeNameFormatter(const std::string& text);

@@ -16,6 +16,8 @@ module t;
   logic [3:0] data;
   logic [7:0] opcode;
   logic signed [3:0] sdata;
+  bit [6:0] named_value;
+  bit tag;
 
   typedef struct packed {bit [7:0] value;} f_t;
   f_t f1;
@@ -79,6 +81,32 @@ module t;
     }
   endgroup
 
+  covergroup cg_namers;
+    cp: coverpoint named_value {
+      // Empty groups share a base index with the following nonempty namer.
+      bins empty_first[] = {[3 : 1]};
+      bins first = {7};
+      ignore_bins ignored[] = {8, 9};
+      bins middle[] = {20, 21, 22};
+      bins empty_middle[] = {[3 : 1]};
+      bins empty_next[] = {[5 : 4]};
+      illegal_bins illegal = {30};
+      bins last = {31};
+      bins empty_last[] = {[3 : 1]};
+    }
+    cp_tag: coverpoint tag {
+      bins zero = {0};
+    }
+    cx: cross cp, cp_tag;
+  endgroup
+
+  covergroup cg_empty_namers;
+    cp: coverpoint named_value {
+      bins first[] = {[3 : 1]};
+      bins last[] = {[5 : 4]};
+    }
+  endgroup
+
   cg cg_inst;
   cg_mixed cg_mixed_inst;
   cg_db cg_db_inst;
@@ -87,6 +115,8 @@ module t;
   cg_unbounded_all cg_unbounded_all_inst;
   cg_unbounded_signed cg_unbounded_signed_inst;
   cg_sel cg_sel_inst;
+  cg_namers cg_namers_inst;
+  cg_empty_namers cg_empty_namers_inst;
 
   initial begin
     cg_inst = new;
@@ -97,6 +127,8 @@ module t;
     cg_unbounded_all_inst = new;
     cg_unbounded_signed_inst = new;
     cg_sel_inst = new;
+    cg_namers_inst = new;
+    cg_empty_namers_inst = new;
 
     data = 0;
     cg_inst.sample();  // zero: 1
@@ -168,6 +200,24 @@ module t;
     f1.value = 8'hF9;
     cg_sel_inst.sample();  // nibble 9 -> hi (upper bits F ignored)
     `checkr(cg_sel_inst.get_inst_coverage(), 100.0);
+
+    for (int i = 0; i < 5; ++i) begin
+      case (i)
+        0: named_value = 7;
+        1: named_value = 20;
+        2: named_value = 21;
+        3: named_value = 22;
+        default: named_value = 31;
+      endcase
+      repeat (i + 1) cg_namers_inst.sample();
+    end
+    named_value = 8;
+    cg_namers_inst.sample();
+    named_value = 9;
+    cg_namers_inst.sample();
+    cg_empty_namers_inst.sample();
+    `checkr(cg_namers_inst.get_inst_coverage(), 100.0);
+    `checkr(cg_empty_namers_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

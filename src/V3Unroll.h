@@ -30,7 +30,7 @@ class UnrollGenVisitor;
 
 class GenForUnroller final {
     // MEMBERS
-    UnrollGenVisitor* const m_unrollerp;
+    UnrollGenVisitor* const m_unrollerp;  // Unroller implementation class
 
 public:
     // CONSTRUCTOR

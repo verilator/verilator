@@ -46,11 +46,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
     // TYPES
     struct ScopeData final {
-        const AstNode* m_nodep;
-        const std::string m_symName;
-        const std::string m_prettyName;
-        const std::string m_defName;
-        const int m_timeunit;
+        const AstNode* m_nodep;  // Scope symbol-table entry corresponds to
+        const std::string m_symName;  // Mangled name used to build __Vscopep_ variable
+        const std::string m_prettyName;  // Pretty (unprotected) name for display
+        const std::string m_defName;  // Name registered for this scope
+        const int m_timeunit;  // Timeunit of this scope
         std::string m_type;  // TODO: this should be an enum
         ScopeData(const AstNode* nodep, const std::string& symName, const std::string& prettyName,
                   const std::string& defName, int timeunit, const std::string& type)
@@ -74,20 +74,20 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_modportName{modportName} {}
     };
     struct ScopeFuncData final {
-        const AstScopeName* const m_scopep;
-        const AstCFunc* const m_cfuncp;
-        const AstNodeModule* const m_modp;
+        const AstScopeName* const m_scopep;  // Scope the DPI export function is registered under
+        const AstCFunc* const m_cfuncp;  // DPI export function
+        const AstNodeModule* const m_modp;  // Module containing the DPI export function
         ScopeFuncData(const AstScopeName* scopep, const AstCFunc* funcp, const AstNodeModule* modp)
             : m_scopep{scopep}
             , m_cfuncp{funcp}
             , m_modp{modp} {}
     };
     struct ScopeVarData final {
-        const std::string m_scopeName;
-        const std::string m_varBasePretty;
-        const AstVar* const m_varp;
-        const AstNodeModule* const m_modp;
-        const AstScope* const m_scopep;
+        const std::string m_scopeName;  // Full name of the scope containing the variable
+        const std::string m_varBasePretty;  // Pretty base name of the variable, without scope
+        const AstVar* const m_varp;  // Public variable
+        const AstNodeModule* const m_modp;  // Module containing the variable
+        const AstScope* const m_scopep;  // Scope containing the variable
         ScopeVarData(const std::string& scopeName, const std::string& varBasePretty,
                      const AstVar* varp, const AstNodeModule* modp, const AstScope* scopep)
             : m_scopeName{scopeName}
@@ -421,13 +421,19 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += protect("__Vscopep_" + svd.m_scopeName);
         stmt += needsEntSize ? "->varInsertSized(\"" : "->varInsert(\"";
         stmt += V3OutFormatter::quoteNameControls(prettyName) + '"';
-        stmt += ", &(";
-        stmt += VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
-        stmt += ".";
-        stmt += cName;
-        stmt += "), false, ";
         const std::string varName
             = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        // A parameter is emitted 'static const', so its members are const too and
+        // need the same cast the whole-parameter insert uses.
+        if (svd.m_varp->isParam()) {
+            stmt += ", const_cast<void*>(static_cast<const void*>(&(";
+            stmt += varName;
+            stmt += "))), true, ";
+        } else {
+            stmt += ", &(";
+            stmt += varName;
+            stmt += "), false, ";
+        }
         const std::string entSize
             = needsEntSize
                   ? "sizeof(" + varName + ") / " + std::to_string(getUnpackedElements(dtypep))
@@ -539,7 +545,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     static std::string getKeyName(const AstScope* const scopep, const std::string& signal_name) {
-        // Copies the process from `varsExpand` which created the keys in the first place, in order
+        // Copies the process from `addScopeVarEntry` which created the keys in the first place, in
+        // order
         // signal can be found.
         std::string whole = scopep->name() + "__DOT__" + signal_name;
         std::string scpName;
@@ -655,6 +662,38 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
     }
 
+    void addScopeVarEntry(const AstScope* const scopep, const AstNodeModule* const modp,
+                          const AstVar* const varp) {
+        // Need to split the module + var name into the original-ish full scope
+        // and variable name under that scope. The module instance name is
+        // included later, when we know the scopes this module is under.
+        std::string whole = scopep->name() + "__DOT__" + varp->name();
+        if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
+        const std::string::size_type dpos = whole.rfind("__DOT__");
+        UASSERT_OBJ(dpos != std::string::npos, varp,
+                    "Scope/variable name lost its appended __DOT__ separator");
+        const std::string scpName = whole.substr(0, dpos);
+        const std::string varBase = whole.substr(dpos + std::strlen("__DOT__"));
+        // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
+        // << scpName << "Var " << varBase);
+        const std::string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
+        const std::string scpPretty = AstNode::prettyName(VName::dehash(scpName));
+        const std::string scpSym = scopeSymString(VName::dehash(scpName));
+        // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
+        // << scpSym);
+        if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
+
+        m_scopeNames.emplace(  //
+            std::piecewise_construct,  //
+            std::forward_as_tuple(scpSym),  //
+            std::forward_as_tuple(varp, scpSym, scpPretty, "<null>", 0, "SCOPE_OTHER"));
+
+        m_scopeVars.emplace(  //
+            std::piecewise_construct,  //
+            std::forward_as_tuple(scpSym + " " + varp->name()),  //
+            std::forward_as_tuple(scpSym, varBasePretty, varp, modp, scopep));
+    }
+
     void varsExpand() {
         // We didn't have all m_scopes loaded when we encountered variables, so expand them now
         // It would be less code if each module inserted its own variables.
@@ -666,40 +705,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 const AstNodeModule* const modp = mvPair.first;
                 const AstVar* const varp = mvPair.second;
                 if (modp != smodp) continue;
-
-                // Need to split the module + var name into the
-                // original-ish full scope and variable name under that scope.
-                // The module instance name is included later, when we
-                // know the scopes this module is under
-                std::string whole = scopep->name() + "__DOT__" + varp->name();
-                std::string scpName;
-                std::string varBase;
-                if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
-                const std::string::size_type dpos = whole.rfind("__DOT__");
-                if (dpos != std::string::npos) {
-                    scpName = whole.substr(0, dpos);
-                    varBase = whole.substr(dpos + std::strlen("__DOT__"));
-                } else {
-                    varBase = whole;
-                }
-                // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
-                // << scpName << "Var " << varBase);
-                const std::string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
-                const std::string scpPretty = AstNode::prettyName(VName::dehash(scpName));
-                const std::string scpSym = scopeSymString(VName::dehash(scpName));
-                // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
-                // << scpSym);
-                if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
-
-                m_scopeNames.emplace(  //
-                    std::piecewise_construct,  //
-                    std::forward_as_tuple(scpSym),  //
-                    std::forward_as_tuple(varp, scpSym, scpPretty, "<null>", 0, "SCOPE_OTHER"));
-
-                m_scopeVars.emplace(  //
-                    std::piecewise_construct,  //
-                    std::forward_as_tuple(scpSym + " " + varp->name()),  //
-                    std::forward_as_tuple(scpSym, varBasePretty, varp, modp, scopep));
+                addScopeVarEntry(scopep, modp, varp);
             }
         }
     }

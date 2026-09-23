@@ -110,12 +110,12 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
     class LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
         // MEMBERS
-        bool m_polarity = true;
+        bool m_polarity = true;  // Invert result due to NOT
         int m_lsb = 0;  // LSB of actually used bit of m_refp->varp()
         int m_msb = 0;  // MSB of actually used bit of m_refp->varp()
         int m_wordIdx = -1;  // -1 means AstWordSel is not used.
-        AstVarRef* m_refp = nullptr;
-        const AstConst* m_constp = nullptr;
+        AstVarRef* m_refp = nullptr;  // Leaf's variable reference
+        const AstConst* m_constp = nullptr;  // Leaf's constant
 
     public:
         // CONSTRUCTORS
@@ -187,9 +187,9 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     struct BitPolarityEntry final {  // Found bit polarity during iterate()
-        LeafInfo m_info;
-        bool m_polarity = false;
-        int m_bit = 0;
+        LeafInfo m_info;  // Leaf (variable or constant) bit polarity was found on
+        bool m_polarity = false;  // Polarity the bit must have to match
+        int m_bit = 0;  // Bit index within the leaf that was tested
         BitPolarityEntry(const LeafInfo& info, bool pol, int bit)
             : m_info{info}
             , m_polarity{pol}
@@ -198,8 +198,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     struct FrozenNodeInfo final {  // Context when a frozen node is found
-        bool m_polarity;
-        int m_lsb;
+        bool m_polarity;  // Polarity the frozen node must match
+        int m_lsb;  // LSB position of the frozen node
         bool operator<(const FrozenNodeInfo& other) const {
             if (m_lsb != other.m_lsb) return m_lsb < other.m_lsb;
             return m_polarity < other.m_polarity;
@@ -207,12 +207,12 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     class Restorer final {  // Restore the original state unless disableRestore() is called
-        ConstBitOpTreeVisitor& m_visitor;
-        const size_t m_polaritiesSize;
-        const size_t m_frozenSize;
-        const unsigned m_ops;
-        const bool m_polarity;
-        bool m_restore = true;
+        ConstBitOpTreeVisitor& m_visitor;  // Visitor whose state is saved and restored
+        const size_t m_polaritiesSize;  // Saved m_visitor.m_bitPolarities size to truncate back to
+        const size_t m_frozenSize;  // Saved m_visitor.m_frozenNodes size to truncate back to
+        const unsigned m_ops;  // Saved m_visitor.m_ops to restore
+        const bool m_polarity;  // Saved m_visitor.m_polarity to restore
+        bool m_restore = true;  // Whether the destructor still needs to restore state
 
     public:
         explicit Restorer(ConstBitOpTreeVisitor& visitor)
@@ -3969,7 +3969,12 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }
-    void visit(AstSFormatArg* nodep) override { iterateChildren(nodep); }
+    void visit(AstSFormatArg* nodep) override {
+        // Skip namep(): requiring its runtime lookup to be constant can reject valid
+        // enum-valued constant-function calls in parameters. displayedEnum() resolves
+        // the name from the folded exprp() value and enum dtype instead.
+        iterateAndNextNull(nodep->exprp());
+    }
     void visit(AstSFormatF* nodep) override {
         // Substitute constants into displays.  The main point of this is to
         // simplify assertion methodologies which call functions with display's.
@@ -4033,7 +4038,9 @@ class ConstVisitor final : public VNVisitor {
                                       : VFormatAttr{};
                             if (VN_IS(subargp, Const)) {  // Convert it
                                 const string out
-                                    = constNumV(subargp).displayed(nodep, fmt, formatAttr);
+                                    = formatAttr.isEnum()
+                                          ? constNumV(subargp).displayedEnum(fargp, fmt)
+                                          : constNumV(subargp).displayed(nodep, fmt, formatAttr);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
                                                             << subargp);
                                 // fmt = out w/ replace % with %% as it must later when

@@ -813,6 +813,10 @@ Summary:
 
 .. option:: -fno-lift-expr
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.054: Disable lifting of expressions out of statements.
+
 .. option:: -fno-localize
 
 .. option:: -fno-merge-cond

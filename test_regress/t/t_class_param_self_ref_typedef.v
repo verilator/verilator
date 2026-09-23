@@ -16,11 +16,15 @@
 // verilog_format: on
 
 package pkg;
-  class item_base #(type DATA = int);
+  class item_base #(
+      type DATA = int
+  );
     DATA value;
   endclass
 
-  class holder #(type FIN = int);
+  class holder #(
+      type FIN = int
+  );
     typedef item_base#(FIN) my_item_t;
 
     virtual function holder::my_item_t get_bare();
@@ -30,11 +34,15 @@ package pkg;
   endclass
 
   // Same, but the typedef is inherited from a base class instead.
-  class base_holder #(type FIN = int);
+  class base_holder #(
+      type FIN = int
+  );
     typedef item_base#(FIN) my_item_t;
   endclass
 
-  class derived #(type FIN = int) extends base_holder#(FIN);
+  class derived #(
+      type FIN = int
+  ) extends base_holder #(FIN);
     virtual function derived::my_item_t get_bare();
       my_item_t item;
       return item;
@@ -47,12 +55,12 @@ module t;
 
   // Non-default parameters, so the specialization differs from the template
   // default and the bug is observable.
-  holder#(byte) h;
-  derived#(shortint) d;
+  holder #(byte) h;
+  derived #(shortint) d;
 
   initial begin
-    automatic holder#(byte)::my_item_t got;
-    automatic derived#(shortint)::my_item_t got_inherited;
+    automatic holder #(byte)::my_item_t got;
+    automatic derived #(shortint)::my_item_t got_inherited;
     h = new;
     got = h.get_bare();
     `checkd($bits(got.value), 8);

@@ -11,9 +11,9 @@
 // (acyclic) bits through the whole Concat chain.
 
 module prim (
-  input logic i,
-  output logic o
-  );
+    input logic i,
+    output logic o
+);
   assign o = !(!i);
 endmodule
 
@@ -37,7 +37,10 @@ module t;
     for (genvar i = 0; i < WIDTH; ++i) begin : gen_width
       assign arr[i][0] = din[i];
       for (genvar j = 0; j < DEPTH; ++j) begin : gen_depth
-        prim u_prim (.i(arr[i][j]), .o(arr[i][j+1]));
+        prim u_prim (
+            .i(arr[i][j]),
+            .o(arr[i][j+1])
+        );
       end
     end
   endgenerate
@@ -54,7 +57,7 @@ module t;
   always @(posedge clk) begin
     cyc <= cyc + 1;
     din <= WIDTH'(cyc);
-    for (int i = 0; i < WIDTH; ++i) sel[i] <= $clog2(DEPTH+1)'((cyc * 7 + i) % (DEPTH + 1));
+    for (int i = 0; i < WIDTH; ++i) sel[i] <= $clog2(DEPTH + 1)'((cyc * 7 + i) % (DEPTH + 1));
     // The chain is a buffer, so every element equals the driving input bit
     if (cyc > 1) begin
       if (dout !== din) begin

@@ -92,7 +92,8 @@ jobs:
       - name: Set up Python venv
         uses: ./repo/.github/actions/setup-venv
         with:
-          save: ${{ github.ref == 'refs/heads/master' }}
+          # Check the event too: 'github.ref' is the base branch on a closed pull request
+          save: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
 
       - name: Test
         id: run-test
@@ -125,7 +126,7 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.ccache.outputs.key }}
           # Keep master's cache around longer; PR/branch caches churn faster
-          retention-days: ${{ github.ref == 'refs/heads/master' && 7 || 3 }}
+          retention-days: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && 7 || 3 }}
 
       - name: Fail job if a test failed
         if: ${{ steps.run-test.outcome == 'failure' && !cancelled() }}

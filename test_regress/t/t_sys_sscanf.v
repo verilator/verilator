@@ -35,6 +35,20 @@ module t;
     `checks(token, "\0\0\0Hello");
     `checkh(idx, 1);
 
+    // Input ends after some conversions: return the number assigned, not EOF
+    code = $sscanf("Hi 5", "%s %d %d", token, idx, val);
+    `checkh(code, 2);
+    `checks(token, "\0\0\0\0\0\0Hi");
+    `checkh(idx, 5);
+
+    // Matching failure before the first conversion: 0
+    code = $sscanf("Hi", "%d", idx);
+    `checkh(code, 0);
+
+    // Input ends before the first conversion: EOF
+    code = $sscanf("", "%d", idx);
+    `checkh(code, -1);
+
     $finish;
   end
 

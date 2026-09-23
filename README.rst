@@ -23,8 +23,8 @@
 .. |badge5| image:: https://img.shields.io/docker/pulls/verilator/verilator
    :target: https://hub.docker.com/r/verilator/verilator
 
-.. |badge7| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/build-test.yml?branch=master&label=regressions
-   :target: https://github.com/verilator/verilator/actions/workflows/build-test.yml
+.. |badge7| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/regression.yml?branch=master&label=regression
+   :target: https://github.com/verilator/verilator/actions/workflows/regression.yml
 
 .. |badge8| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/rtlmeter.yml?branch=master&event=schedule&label=benchmarks
    :target: https://verilator.github.io/verilator-rtlmeter-results
@@ -35,7 +35,7 @@ Welcome to Verilator
 .. list-table::
 
    - - **Welcome to Verilator, the fastest Verilog/SystemVerilog simulator.**
-          - Accepts Verilog or SystemVerilog
+          - Accepts Verilog or SystemVerilog, including UVM
           - Performs lint code-quality checks
           - Compiles into multithreaded C++, or SystemC
           - Creates JSON to front-end your own tools
@@ -75,14 +75,14 @@ instantiate the model. The resulting Verilated executable performs the
 design simulation. Verilator also supports linking Verilator-generated
 libraries, optionally encrypted, into other simulators.
 
-Verilator supports all design constructs, most verification constructs,
-intra-assignment delays (e.g, `#10`), and events. Tristate-bus (`z`) and
-unknowns (`x`) are handled in limited contexts, in a special manor for
-performance. It currently may not be the best choice if you are expecting a
-full-featured replacement for a closed-source Verilog simulator, performing
-SDF annotation, or mixed-signal simulation. However, if you are looking for
-a path to migrate SystemVerilog to C++/SystemC, or want high-speed
-simulation, Verilator is the tool for you.
+Verilator supports all design constructs, most verification constructs
+including UVM, intra-assignment delays (e.g, `#10`), and events.
+Tristate-bus (`z`) and unknowns (`x`) are handled in limited contexts, in a
+special manor for performance. It currently may not be the best choice if
+you are expecting a full-featured replacement for a closed-source Verilog
+simulator, performing SDF annotation, or mixed-signal simulation. However,
+if you are looking for a path to migrate SystemVerilog to C++/SystemC, or
+want high-speed simulation, Verilator is the tool for you.
 
 Performance
 ===========

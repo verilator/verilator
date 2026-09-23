@@ -312,7 +312,7 @@ private:
     bool m_traceUnderscore = false; // main switch: --trace-underscore
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
     bool m_verilate = true;         // main switch: --verilate
-    bool m_vpi = false;             // main switch: --vpi
+    VOptionBool m_vpi;              // main switch: --vpi
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
 
@@ -424,7 +424,6 @@ private:
     bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
     bool m_fLife;        // main switch: -fno-life: variable lifetime
     bool m_fLifePost;    // main switch: -fno-life-post: delayed assignment elimination
-    bool m_fLiftExpr = true;   // main switch: -fno-lift-expr: lift expressions out of statements
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
     bool m_fMergeCond;   // main switch: -fno-merge-cond: merge conditionals
     bool m_fMergeCondMotion = true; // main switch: -fno-merge-cond-motion: perform code motion
@@ -614,7 +613,7 @@ public:
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
-    bool vpi() const { return m_vpi; }
+    bool vpi() const { return m_vpi.isTrue(); }
     bool waiverMultiline() const { return m_waiverMultiline; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool serializeOnly() const { return m_jsonOnly; }
@@ -765,7 +764,6 @@ public:
     bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }
     bool fLife() const { return m_fLife; }
     bool fLifePost() const { return m_fLifePost; }
-    bool fLiftExpr() const { return m_fLiftExpr; }
     bool fLocalize() const { return m_fLocalize; }
     bool fMergeCond() const { return m_fMergeCond; }
     bool fMergeCondMotion() const { return m_fMergeCondMotion; }
