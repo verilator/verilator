@@ -408,8 +408,8 @@ private:
     template <bool Profiling>
     void evalImpl();
     // Check the iteration convergence
-    void checkConvergence(uint32_t iterCount, const char* namep,
-                          void (VerilatedModel::*dumpTriggersp)() = nullptr) {
+    VL_ATTR_ALWINLINE void checkConvergence(uint32_t iterCount, const char* namep,
+                                            void (VerilatedModel::*dumpTriggersp)() = nullptr) {
         if (VL_UNLIKELY(iterCount > m_convergeLimit)) didNotConverge(namep, dumpTriggersp);
     }
     // Dump the region's triggers, if it has any, then report non-convergence and abort
