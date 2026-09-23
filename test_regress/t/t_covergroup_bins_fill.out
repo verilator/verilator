@@ -2,8 +2,11 @@ cg.cp_b8.hi: 1
 cg.cp_b8.lo: 1
 cg.cp_insn.one: 0
 cg.cp_insn.ones: 1
+cg.cp_insn.rise: 1
 cg.cp_insn.zeros: 1
 cg.cp_mode.m: 2
+cg.cp_sb.m1: 2
 cg.cx.m_x_one [cross]: 0
 cg.cx.m_x_ones [cross]: 1
+cg.cx.m_x_rise [cross]: 1
 cg.cx.m_x_zeros [cross]: 1
