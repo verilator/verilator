@@ -240,11 +240,11 @@ class TraceDriver final : public DfgVisitor {
     // Create temporary capable of holding the result of 'vtxp'
     DfgVertexVar* createTmp(const char* prefix, DfgVertex* vtxp) {
         AstNode* nodep = v3Global.rootp();
-        const std::string name = m_dfg.makeUniqueName(prefix, nodep->user2Inc());
         FileLine* const flp = vtxp->fileline();
         DfgVertex::ScopeCache scopeCache;
         AstScope* const scopep = vtxp->scopep(scopeCache);
-        DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
+        DfgVertexVar* const varp
+            = m_dfg.makeNewVar(flp, prefix, nodep->user2Inc(), vtxp->dtype(), scopep);
         varp->vscp()->varp()->isInternal(true);
         varp->tmpForp(varp->vscp());
         m_sccInfo.add(*varp, 0);

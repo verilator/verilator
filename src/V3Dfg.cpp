@@ -21,6 +21,7 @@
 #include "V3Ast.h"
 #include "V3EmitV.h"
 #include "V3File.h"
+#include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -31,6 +32,8 @@ DfgGraph::DfgGraph(const string& name)
     : m_name{name} {}
 
 DfgGraph::~DfgGraph() {
+    V3Stats::addStatSum("Optimizations, DFG, temporary declarations reused",
+                        static_cast<double>(m_tempDeclarationsReused));
     forEachVertex([&](DfgVertex& vtx) { vtx.unlinkDelete(*this); });
 }
 
@@ -112,12 +115,21 @@ std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
     return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(n);
 }
 
-DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name,
+DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix, size_t n,
                                    const DfgDataType& dtype, AstScope* scopep) {
-    // Create AstVar
-    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtype.astDtypep()};
-    // Add AstVar to the scope's module
-    scopep->modp()->addStmtsp(varp);
+    // AstVar declarations outlive all DFG graphs. Splitting or merging graphs
+    // does not transfer slots: each graph creates globally unique declarations.
+    TempDeclarations& temps = m_temporaries[scopep->modp()][{prefix, dtype.astDtypep()}];
+    const size_t slot = temps.m_scopeCounts[scopep]++;
+    AstVar* varp;
+    if (slot == temps.m_declps.size()) {
+        varp = new AstVar{flp, VVarType::MODULETEMP, makeUniqueName(prefix, n), dtype.astDtypep()};
+        scopep->modp()->addStmtsp(varp);
+        temps.m_declps.emplace_back(varp);
+    } else {
+        varp = temps.m_declps[slot];
+        ++m_tempDeclarationsReused;
+    }
     // Create AstVarScope
     AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
     // Add to scope

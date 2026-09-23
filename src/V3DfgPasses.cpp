@@ -419,8 +419,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             // If there is an existing result variable, use that
             if (DfgVertexVar* const vp = srcp->getResultVar()) return vp->as<DfgVarPacked>();
             // Otherwise create a new variable
-            const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
-            DfgVertexVar* const vtxp = dfg.makeNewVar(flp, name, idxDType, scopep);
+            DfgVertexVar* const vtxp
+                = dfg.makeNewVar(flp, "BinToOneHot_Idx", nTables, idxDType, scopep);
             vtxp->vscp()->varp()->isInternal(true);
             vtxp->srcp(srcp);
             return vtxp->as<DfgVarPacked>();
@@ -428,8 +428,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         AstVarScope* const idxVscp = idxVtxp->vscp();
         // The previous index variable - we don't need a vertex for this
         AstVarScope* const preVscp = [&]() {
-            const std::string name = dfg.makeUniqueName("BinToOneHot_Pre", nTables);
-            DfgVertexVar* const vtxp = dfg.makeNewVar(flp, name, idxDType, scopep);
+            DfgVertexVar* const vtxp
+                = dfg.makeNewVar(flp, "BinToOneHot_Pre", nTables, idxDType, scopep);
             AstVarScope* const vscp = vtxp->vscp();
             VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
             vscp->varp()->isInternal(true);
@@ -439,8 +439,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         }();
         // The table variable
         DfgVarArray* const tabVtxp = [&]() {
-            const std::string name = dfg.makeUniqueName("BinToOneHot_Tab", nTables);
-            DfgVertexVar* const varp = dfg.makeNewVar(flp, name, tabDType, scopep);
+            DfgVertexVar* const varp
+                = dfg.makeNewVar(flp, "BinToOneHot_Tab", nTables, tabDType, scopep);
             varp->vscp()->varp()->isInternal(true);
             varp->vscp()->varp()->noReset(true);
             varp->setHasModWrRefs();

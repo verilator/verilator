@@ -497,8 +497,7 @@ public:
     // Create temporay variable capable of holding the given type
     DfgVertexVar* createTmp(DfgLogic& logic, FileLine* flp, const DfgDataType& dtype,
                             const std::string& prefix, size_t tmpCount) {
-        const std::string name = m_dfg.makeUniqueName(prefix, tmpCount);
-        DfgVertexVar* const vtxp = m_dfg.makeNewVar(flp, name, dtype, logic.scopep());
+        DfgVertexVar* const vtxp = m_dfg.makeNewVar(flp, prefix, tmpCount, dtype, logic.scopep());
         logic.synth().emplace_back(vtxp);
         vtxp->vscp()->varp()->isInternal(true);
         vtxp->tmpForp(vtxp->vscp());

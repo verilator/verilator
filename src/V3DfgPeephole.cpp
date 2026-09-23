@@ -2181,9 +2181,8 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSplicePacked* const sp = new DfgSplicePacked{m_dfg, flp, vtxp->dtype()};
                     m_vInfo[sp].m_id = ++m_lastId;
                     sp->addDriver(catp, lsb, flp);
-                    const std::string name = m_dfg.makeUniqueName("PeepholeNarrow", m_nTemps++);
-                    DfgVertexVar* const varp
-                        = m_dfg.makeNewVar(flp, name, vtxp->dtype(), m_tmpScopep);
+                    DfgVertexVar* const varp = m_dfg.makeNewVar(flp, "PeepholeNarrow", m_nTemps++,
+                                                                vtxp->dtype(), m_tmpScopep);
                     varp->tmpForp(varp->vscp());
                     m_vInfo[varp].m_id = ++m_lastId;
                     varp->vscp()->varp()->isInternal(true);

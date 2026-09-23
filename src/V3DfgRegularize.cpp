@@ -208,10 +208,10 @@ class DfgRegularize final {
                 if (!needsTemporary(*vtxp, *vtxp)) continue;
                 // Need to create an intermediate variable
                 ++m_ctx.m_temporariesIntroduced;
-                const std::string name = m_dfg.makeUniqueName("Regularize", m_nTmps);
                 FileLine* const flp = vtxp->fileline();
                 AstScope* const scopep = vtxp->scopep(scopeCache);
-                DfgVertexVar* const newp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
+                DfgVertexVar* const newp
+                    = m_dfg.makeNewVar(flp, "Regularize", m_nTmps, vtxp->dtype(), scopep);
                 ++m_nTmps;
                 // Replace vertex with the variable, make it drive the variable
                 vtxp->replaceWith(newp);

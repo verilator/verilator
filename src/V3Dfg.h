@@ -46,6 +46,7 @@
 #include <algorithm>
 #include <array>
 #include <functional>
+#include <map>
 #include <new>
 #include <type_traits>
 #include <unordered_map>
@@ -430,6 +431,16 @@ class DfgGraph final {
     const std::string m_name;  // Name of graph - need not be unique
     std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
 
+    // Slots are local to this graph and prefix, so passes may attach different
+    // attributes to their temporaries. Each scope consumes each slot at most once.
+    struct TempDeclarations final {
+        std::map<AstScope*, size_t> m_scopeCounts;  // Next slot for each instance
+        std::vector<AstVar*> m_declps;  // Declarations indexed by slot
+    };
+    std::map<AstNodeModule*, std::map<std::pair<std::string, AstNodeDType*>, TempDeclarations>>
+        m_temporaries;  // Shared slots indexed by module, purpose, and type
+    uint64_t m_tempDeclarationsReused = 0;  // Declarations shared across instance scopes
+
     // The only way to access thes is via DfgUserMap, so mutable is appropriate,
     // the map can change while the graph is const.
     mutable bool m_vertexUserInUse = false;  // Vertex user data currently in use
@@ -531,10 +542,10 @@ public:
     // must be unique (as a pair) in each invocation for this graph.
     std::string makeUniqueName(const std::string& prefix, size_t n) VL_MT_DISABLED;
 
-    // Create a new variable with the given name and data type. For a Scoped
-    // Dfg, the AstScope where the corresponding AstVarScope will be inserted
-    // must be provided
-    DfgVertexVar* makeNewVar(FileLine*, const std::string& name, const DfgDataType&,
+    // Create a new scoped variable. Instances of a module share temporary
+    // declarations of the same prefix and type, but have independent storage.
+    // The prefix and n pair must be unique in each invocation for this graph.
+    DfgVertexVar* makeNewVar(FileLine*, const std::string& prefix, size_t n, const DfgDataType&,
                              AstScope*) VL_MT_DISABLED;
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).
