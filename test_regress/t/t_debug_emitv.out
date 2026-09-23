@@ -40,7 +40,10 @@ module Vt_debug_emitv_t;
             disable label0;
         end
     endfunction
-    Iface the_ifaces[3:0] ();
+    Iface the_ifaces[3] ();
+    Iface the_ifaces[2] ();
+    Iface the_ifaces[1] ();
+    Iface the_ifaces[0] ();
     initial begin
         begin
             if ((| $test$plusargs("HELLO"))) begin

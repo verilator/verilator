@@ -14,13 +14,34 @@ interface a_if ();
   string s;
 endinterface
 
-// TODO: V3Inst only handles a one-dimensional interface array element as a pin connection
 module sub (
     output string s
-    // , a_if i
 );
   initial s = $sformatf("%m");
-  // initial i.s = $sformatf("%m-iface");
+endmodule
+
+module isub (
+    output string s,
+    a_if i
+);
+  initial s = $sformatf("%m");
+  initial i.s = $sformatf("%m-iface");
+endmodule
+
+// Writes each element of its interface array port
+module awrite (
+    a_if p[3]
+);
+  for (genvar k = 0; k < 3; ++k) begin : g
+    initial p[k].s = $sformatf("%m");
+  end
+endmodule
+
+// Passes a slice of its interface array port down
+module amid (
+    a_if p[4]
+);
+  awrite i_w (.p(p[1:3]));
 endmodule
 
 module pass (
@@ -51,7 +72,7 @@ module t;
 
   a_if iface[3:1][1:0] ();
 
-  sub i_sub[3:1][1:0] (.s(str) /*, .i(iface)*/);
+  isub i_sub[3:1][1:0] (.s(str), .i(iface));
 
   // Hierarchical references to elements, with genvar indices
   for (genvar a = 1; a < 4; ++a) begin : g_a
@@ -103,6 +124,26 @@ module t;
   logic [3:0] uo3[1:0];
   usub i_u[1:0] (.a(ux), .o0(uo0), .o3(uo3));
 
+  // Elements of a module instance array with an interface array port, connected to a
+  // two-dimensional interface array, in opposite directions: connect left to left
+  a_if i2d[2:1][2:0] ();
+  awrite i_aw[1:2] (.p(i2d));
+
+  // One row of a two-dimensional interface array connected to an interface array port
+  a_if irow[1:0][0:2] ();
+  awrite i_row (.p(irow[1]));
+
+  // A slice of one row of a two-dimensional interface array connected to an interface array
+  // port, and an element of one connected to an interface port
+  a_if irs[1:0][0:3] ();
+  awrite i_rsl (.p(irs[1][1:3]));
+  string elstr;
+  isub i_el (.s(elstr), .i(irs[0][2]));
+
+  // A slice of an interface array port passed down
+  a_if i4[4] ();
+  amid i_mid (.p(i4));
+
   // Ref port connected to an element of an unpacked array
   string rstr[1:0];
   rsub i_ref[1:0] (.r(rstr));
@@ -142,6 +183,27 @@ module t;
     `checkh(uo0[0], 4'h9);
     `checkh(uo3[1], 4'h6);
     `checkh(uo3[0], 4'h6);
+    // i_aw[1] is the left element, i2d[2]; port element p[0] is the left element, [2]
+    `checks(i2d[2][2].s, "t.i_aw[1].g[0]");
+    `checks(i2d[2][1].s, "t.i_aw[1].g[1]");
+    `checks(i2d[2][0].s, "t.i_aw[1].g[2]");
+    `checks(i2d[1][2].s, "t.i_aw[2].g[0]");
+    `checks(i2d[1][1].s, "t.i_aw[2].g[1]");
+    `checks(i2d[1][0].s, "t.i_aw[2].g[2]");
+    `checks(irow[1][0].s, "t.i_row.g[0]");
+    `checks(irow[1][1].s, "t.i_row.g[1]");
+    `checks(irow[1][2].s, "t.i_row.g[2]");
+    `checks(irow[0][0].s, "");
+    `checks(irs[1][0].s, "");
+    `checks(irs[1][1].s, "t.i_rsl.g[0]");
+    `checks(irs[1][2].s, "t.i_rsl.g[1]");
+    `checks(irs[1][3].s, "t.i_rsl.g[2]");
+    `checks(irs[0][2].s, "t.i_el-iface");
+    `checks(irs[0][1].s, "");
+    `checks(i4[0].s, "");
+    `checks(i4[1].s, "t.i_mid.i_w.g[0]");
+    `checks(i4[2].s, "t.i_mid.i_w.g[1]");
+    `checks(i4[3].s, "t.i_mid.i_w.g[2]");
     `checks(rstr[1], "t.i_ref[1]");
     `checks(rstr[0], "t.i_ref[0]");
     `checks(str[1][0], "t.i_sub[1][0]");
@@ -150,13 +212,12 @@ module t;
     `checks(str[2][1], "t.i_sub[2][1]");
     `checks(str[3][0], "t.i_sub[3][0]");
     `checks(str[3][1], "t.i_sub[3][1]");
-    // TODO: enable with the interface port of 'sub'
-    // `checks(iface[1][0].s, "t.i_sub[1][0]-iface");
-    // `checks(iface[1][1].s, "t.i_sub[1][1]-iface");
-    // `checks(iface[2][0].s, "t.i_sub[2][0]-iface");
-    // `checks(iface[2][1].s, "t.i_sub[2][1]-iface");
-    // `checks(iface[3][0].s, "t.i_sub[3][0]-iface");
-    // `checks(iface[3][1].s, "t.i_sub[3][1]-iface");
+    `checks(iface[1][0].s, "t.i_sub[1][0]-iface");
+    `checks(iface[1][1].s, "t.i_sub[1][1]-iface");
+    `checks(iface[2][0].s, "t.i_sub[2][0]-iface");
+    `checks(iface[2][1].s, "t.i_sub[2][1]-iface");
+    `checks(iface[3][0].s, "t.i_sub[3][0]-iface");
+    `checks(iface[3][1].s, "t.i_sub[3][1]-iface");
     $write("*-* All Finished *-*\n");
     $finish;
   end

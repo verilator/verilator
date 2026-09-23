@@ -7,6 +7,11 @@
 interface A;
 endinterface
 
+module sub (
+    A p
+);
+endmodule
+
 typedef virtual A a_t;
 typedef a_t a_array_t[6];
 
@@ -15,24 +20,23 @@ class C;
 endclass
 
 module tb_top ();
-  A a[6] (), b[7] (), f[6] ();
-  C c, d, e;
-  a_array_t g;
+  A a[6] (), f[6] ();
+  C d;
+
+  // Bad: no such instances
+  sub s_oob_hi (.p(a[6]));
+  sub s_oob_lo (.p(a[-1]));
 
   initial begin
     a = f;
-
-    c = new();
-    c.vif = b;
+    a[0:1] = f[0:1];
+    a[2] = f[2];
 
     d = new();
 
     for (int i = 0; i < 6; ++i) begin
       d.vif[i] = a[i];
     end
-
-    e = new();
-    e.vif = b[0:5];
 
     $write("*-* All Finished *-*\n");
     $finish;

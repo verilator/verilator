@@ -7,4 +7,8 @@
                                             : ... note: In instance 't'
    24 |       ifaces[i].value = 8'(i);
       |             ^
+%Error: t/t_interface_array_loop_bad.v:24:17: Can't find definition of 'ifaces[??]'
+                                            : ... note: In instance 't'
+   24 |       ifaces[i].value = 8'(i);
+      |                 ^~~~~
 %Error: Exiting due to

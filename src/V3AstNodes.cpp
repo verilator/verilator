@@ -3922,6 +3922,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isConst()) str << " [CONST]";
     if (isPullup()) str << " [PULLUP]";
     if (isPulldown()) str << " [PULLDOWN]";
+    if (isIfaceArraySplit()) str << " [IFACEARRAYSPLIT]";
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
@@ -3966,6 +3967,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConst);
     dumpJsonBoolFuncIf(str, isPullup);
     dumpJsonBoolFuncIf(str, isPulldown);
+    dumpJsonBoolFuncIf(str, isIfaceArraySplit);
     dumpJsonBoolFuncIf(str, isSigPublic);
     dumpJsonBoolFuncIf(str, isLatched);
     dumpJsonBoolFuncIf(str, isUsedLoopIdx);

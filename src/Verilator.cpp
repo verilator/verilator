@@ -284,8 +284,8 @@ static void process() {
             // should be after constifyAllLint() which flattens to 1D bit vector
             V3SplitVar::splitVariable(v3Global.rootp());
 
-            // Remove interface arrays (must be between V3Width and scoping)
-            V3Inst::dearrayAll(v3Global.rootp());
+            // Nothing to relink, but LinkDot names blocks created since V3Width,
+            // e.g. by V3AssertNfa. TODO: get rid of this
             V3LinkDot::linkDotArrayed(v3Global.rootp());
 
             if (v3Global.opt.timing().isSetTrue()) {
