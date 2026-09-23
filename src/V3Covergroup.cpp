@@ -311,12 +311,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // 19.11).  type_option.weight only weighs type coverage merged over the instances, which
     // type_option.merge_instances would select; without that, it has no effect.
     void generateItemWeight(FileLine* fl, AstVar* itemVarp, AstNode* optionsp) {
+        const bool prot = v3Global.opt.protectIds();
         for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (!(optp->optType() == VCoverOptionType::WEIGHT) || optp->typeOption()) continue;
-            m_constructorp->addStmtsp(itemCall(fl, itemVarp, VCMethod::COVERGROUP_WEIGHT,
-                                               {optp->valuep()->cloneTree(false)})
-                                          ->makeStmt());
+            // Where the runtime reports a weight that is negative only at run time
+            FileLine* const optFl = optp->fileline();
+            m_constructorp->addStmtsp(
+                itemCall(fl, itemVarp, VCMethod::COVERGROUP_WEIGHT,
+                         {optp->valuep()->cloneTree(false),
+                          ctext(fl, quoted(VIdProtect::protectIf(optFl->filename(), prot))),
+                          cnum(fl, static_cast<uint32_t>(optFl->lineno()))})
+                    ->makeStmt());
         }
     }
 
@@ -828,12 +834,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                     + quoted(registryTypeName()) + ")")},
                      /*usePtr=*/false)
                 ->makeStmt());
-        // The node reads option.weight in place, so procedural assignments take effect
+        // The node reads option.weight in place, so procedural assignments take effect, and
+        // reports a negative one at the covergroup declaration
         AstCExpr* const weightAddrp = new AstCExpr{fl, "&"};
         weightAddrp->add(newWeightSel(fl, optionVar(false), VAccess::READ));
-        m_constructorp->addStmtsp(itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_LEND_WEIGHT,
-                                           {weightAddrp}, /*usePtr=*/false)
-                                      ->makeStmt());
+        m_constructorp->addStmtsp(
+            itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_LEND_WEIGHT,
+                     {weightAddrp,
+                      ctext(fl, quoted(VIdProtect::protectIf(fl->filename(),
+                                                             v3Global.opt.protectIds()))),
+                      cnum(fl, static_cast<uint32_t>(fl->lineno()))},
+                     /*usePtr=*/false)
+                ->makeStmt());
     }
 
     // A '__Vcg_inst.p()-><method>()' call on the covergroup's instance node
@@ -2738,6 +2750,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             = new AstCMethodHard{typeFl, registryp, VCMethod::COVERGROUP_TYPE_COVERAGE};
         typeCallp->addPinsp(ctext(typeFl, quoted(registryTypeName())));
         typeCallp->addPinsp(newWeightSel(typeFl, optionVar(true), VAccess::READ));
+        // Where the runtime reports a negative type_option.weight
+        FileLine* const cgFl = m_covergroupp->fileline();
+        typeCallp->addPinsp(ctext(
+            typeFl, quoted(VIdProtect::protectIf(cgFl->filename(), v3Global.opt.protectIds()))));
+        typeCallp->addPinsp(cnum(typeFl, static_cast<uint32_t>(cgFl->lineno())));
         typeCallp->usePtr(true);
         typeCallp->dtypeSetDouble();
         getCoveragep->addStmtsp(new AstAssign{

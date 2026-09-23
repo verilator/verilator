@@ -51,7 +51,7 @@ enum class VlCovBinKind : uint8_t {
 
 class VlCoverpointIf VL_NOT_FINAL {
     // MEMBERS
-    int32_t m_weight = 1;  // option.weight, as the signed SV 'int' it was assigned from
+    int32_t m_weight = 1;  // option.weight; never negative
 
 public:
     // CONSTRUCTORS
@@ -68,7 +68,9 @@ public:
     /// Weight of this item in its covergroup instance's coverage (option.weight,
     /// IEEE 1800-2023 19.11)
     int32_t weight() const { return m_weight; }
-    void weight(uint32_t value) { m_weight = static_cast<int32_t>(value); }
+    /// Set option.weight, as evaluated at filep:line by the covergroup constructor.  A
+    /// negative weight is reported as an error, and counts as zero.
+    void weight(uint32_t value, const char* filep, int line);
 };
 
 #endif  // Guard

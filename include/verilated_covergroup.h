@@ -494,6 +494,8 @@ class VlCovergroupInst final {
     // lives; borrowed through VlCovInstHandle::lendWeight().
     const IData* m_weightp = nullptr;
     IData m_weight = 1;  // Last option.weight observed; kept once the object is gone
+    const char* m_filep = "";  // Covergroup declaration, where a negative weight is reported
+    int m_line = 0;  // Line of the covergroup declaration in m_filep
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
     // Reads m_items to fold the residue; owns m_slot and m_retained.
@@ -530,9 +532,12 @@ public:
     bool attachDec() { return --m_attachCount == 0; }
 
     // ---- instance weight (from VlCovInstHandle) ----
-    void lendWeight(const IData* weightp) {
+    // filep:line is the covergroup declaration, where a negative weight is reported.
+    void lendWeight(const IData* weightp, const char* filep, int line) {
         m_weightp = weightp;
-        m_weight = *weightp;
+        m_filep = filep;
+        m_line = line;
+        static_cast<void>(weight());  // Report a negative weight set by the constructor
     }
     // The lending object is being destroyed.  Its members may already be gone, so
     // the weight is not read again; the last observed value stays in effect.
@@ -540,11 +545,9 @@ public:
         if (m_weightp == weightp) m_weightp = nullptr;
     }
     /// Weight of this instance in its type's coverage (option.weight, IEEE
-    /// 1800-2023 19.11.3).  Procedural assignments take effect immediately.
-    int32_t weight() {
-        if (m_weightp) m_weight = *m_weightp;
-        return static_cast<int32_t>(m_weight);
-    }
+    /// 1800-2023 19.11.3).  Procedural assignments take effect immediately.  A
+    /// negative weight is reported as an error when first observed, and counts as zero.
+    int32_t weight();
 
     // ---- introspection ----
     VlCovergroupType* typep() const { return m_typep; }
@@ -584,6 +587,7 @@ class VlCovergroupType final {
     uint32_t m_createdInsts = 0;  // Instances ever created; never decremented
     uint32_t m_nextInstId = 0;  // Monotonic; slots are reused, ids never are
     VlCovRetiredAvg m_retired;  // Contribution of every instance that has died
+    IData m_typeWeight = 1;  // Last type_option.weight observed by coverage()
 
     // PRIVATE METHODS
     // Harvest instp's contribution into m_retired.  Must run before instp is
@@ -607,8 +611,9 @@ public:
     /// Type coverage, as returned by get_coverage(), in 0..100: the average of
     /// every instance's coverage, weighted by its option.weight (IEEE 1800-2023
     /// 19.11.3, type_option.merge_instances false).  typeWeight is
-    /// type_option.weight, which decides the result when no instance contributes.
-    double coverage(int32_t typeWeight);
+    /// type_option.weight, which decides the result when no instance contributes;
+    /// if negative, it is reported at filep:line when first observed, and counts as zero.
+    double coverage(IData typeWeight, const char* filep, int line);
 
     // ---- introspection ----
     // Test and debug only; generated code never calls these, and SV reaches them
@@ -642,6 +647,7 @@ class VlCovRegistry final : public VerilatedVirtualBase {
 
     // PRIVATE METHODS
     VlCovergroupType* findType(const char* typeName) const;  // nullptr if unknown
+    VlCovergroupType* findOrCreateType(const char* typeName);
 
 public:
     // CONSTRUCTORS
@@ -655,8 +661,9 @@ public:
     // the same string that keys the coverage database's hier/page.
     VlCovergroupInst* newCovergroupInst(const char* typeName);
     /// Type coverage of a covergroup type (get_coverage()); see
-    /// VlCovergroupType::coverage().  typeWeight is its type_option.weight.
-    double typeCoverage(const char* typeName, IData typeWeight);
+    /// VlCovergroupType::coverage().  typeWeight is its type_option.weight, and
+    /// filep:line the covergroup declaration.
+    double typeCoverage(const char* typeName, IData typeWeight, const char* filep, int line);
 
     // ---- introspection (see VlCovergroupType) ----
     // typeName is the obfuscated generated name, so a test using these under
@@ -712,10 +719,11 @@ public:
     // created with.  Called once, from the generated covergroup constructor.
     void attach(VlCovergroupInst* p) { m_p = p; }
     // Let the node read the owning object's option.weight until this handle is
-    // destroyed.  Called once, from the generated constructor, after attach().
-    void lendWeight(const IData* weightp) {
+    // destroyed.  Called once, from the generated constructor, after attach();
+    // filep:line is the covergroup declaration.
+    void lendWeight(const IData* weightp, const char* filep, int line) {
         m_weightp = weightp;
-        m_p->lendWeight(weightp);
+        m_p->lendWeight(weightp, filep, line);
     }
     VlCovergroupInst* p() const { return m_p; }
 };

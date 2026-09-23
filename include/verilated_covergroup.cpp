@@ -1159,10 +1159,42 @@ void VlCoverCrossDyn::finalizeBins() {
 // covergroup's weight is zero
 static double _vl_cov_empty_coverage(int32_t weight) VL_PURE { return weight ? 0.0 : 100.0; }
 
+// IEEE 1800-2023 19.7: a weight shall be non-negative.  A negative constant is rejected when
+// verilating; a weight that is negative only at run time is reported by _vl_cov_check_weight,
+// and counts as zero, so that coverage stays within 0..100.
+static int32_t _vl_cov_weight(IData value) VL_PURE {
+    const int32_t weight = static_cast<int32_t>(value);
+    return weight < 0 ? 0 : weight;
+}
+
+static void _vl_cov_check_weight(const char* optionp, IData value, const char* filep,
+                                 int line) VL_MT_SAFE {
+    const int32_t weight = static_cast<int32_t>(value);
+    if (VL_LIKELY(weight >= 0)) return;
+    VL_PRINTF_MT("%%Error: %s:%d: Coverage option '%s' is set to negative value '%d';"
+                 " weights must be non-negative (IEEE 1800-2023 19.7)\n",
+                 filep, line, optionp, static_cast<int>(weight));
+    VL_STOP_MT(filep, line, "");
+}
+
+void VlCoverpointIf::weight(uint32_t value, const char* filep, int line) {
+    _vl_cov_check_weight("option.weight", value, filep, line);
+    m_weight = _vl_cov_weight(value);
+}
+
 VlCoverCrossDyn* VlCovergroupInst::addCrossDyn() {
     VlCoverCrossDyn* const cxp = new VlCoverCrossDyn{};
     m_items.emplace_back(cxp);
     return cxp;
+}
+
+int32_t VlCovergroupInst::weight() {
+    // Checked only when the lender's value changes, so each negative value is reported once
+    if (m_weightp && *m_weightp != m_weight) {
+        m_weight = *m_weightp;
+        _vl_cov_check_weight("option.weight", m_weight, m_filep, m_line);
+    }
+    return _vl_cov_weight(m_weight);
 }
 
 void VlCovergroupInst::coverageSums(double& weighted, double& weights) const {
@@ -1179,10 +1211,11 @@ void VlCovergroupInst::coverageSums(double& weighted, double& weights) const {
 }
 
 double VlCovergroupInst::coverage() {
+    const int32_t cgWeight = weight();  // Read even if unused, to report a negative weight
     double weighted = 0.0;
     double weights = 0.0;
     coverageSums(weighted, weights);
-    if (weights == 0.0) return _vl_cov_empty_coverage(weight());
+    if (weights == 0.0) return _vl_cov_empty_coverage(cgWeight);
     return weighted / weights;
 }
 
@@ -1208,7 +1241,9 @@ void VlCovergroupType::foldResidue(VlCovergroupInst* instp) {
     // and folds as 0%.
     if (weights == 0.0) return;
     // The same weighted average of the items as get_inst_coverage(), so that a live
-    // instance and the same instance one delta after death never disagree.
+    // instance and the same instance one delta after death never disagree.  The object
+    // that lent option.weight is gone, so weight() reports nothing here -- this can run
+    // after ~VerilatedContext (see ~VlCovRegistry).
     const int32_t weight = instp->weight();
     m_retired.sumCoverage += weight * (weighted / weights);
     m_retired.sumWeight += weight;
@@ -1256,21 +1291,26 @@ bool VlCovergroupType::anyAttached() const {
     return false;
 }
 
-double VlCovergroupType::coverage(int32_t typeWeight) {
+double VlCovergroupType::coverage(IData typeWeight, const char* filep, int line) {
+    // Checked only when type_option.weight changes, so each negative value is reported once
+    if (typeWeight != m_typeWeight) {
+        m_typeWeight = typeWeight;
+        _vl_cov_check_weight("type_option.weight", typeWeight, filep, line);
+    }
     // Instances that have died still count: their contribution is the residue
     double sumCoverage = m_retired.sumCoverage;
     double sumWeight = m_retired.sumWeight;
     for (const auto& instp : m_insts) {
         if (instp->retained()) continue;  // Already folded into the residue
+        const int32_t weight = instp->weight();  // Read even if unused, as in coverage()
         double weighted = 0.0;
         double weights = 0.0;
         instp->coverageSums(weighted, weights);
         if (weights == 0.0) continue;  // A covergroup without coverage does not contribute
-        const int32_t weight = instp->weight();
         sumCoverage += weight * (weighted / weights);
         sumWeight += weight;
     }
-    if (sumWeight == 0.0) return _vl_cov_empty_coverage(typeWeight);
+    if (sumWeight == 0.0) return _vl_cov_empty_coverage(_vl_cov_weight(typeWeight));
     return sumCoverage / sumWeight;
 }
 
@@ -1295,20 +1335,23 @@ VlCovRegistry* VerilatedContext::covergroupRegistryp() VL_MT_SAFE {
     return static_cast<VlCovRegistry*>(m_covergroupsp.get());
 }
 
-VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
+VlCovergroupType* VlCovRegistry::findOrCreateType(const char* typeName) {
     VlCovergroupType*& typep = m_byName[typeName];
-    if (!typep) {  // First instance of this type
+    if (!typep) {  // First use of this type
         m_types.emplace_back(new VlCovergroupType{});
         typep = m_types.back().get();
     }
-    return typep->newInstance();
+    return typep;
 }
 
-double VlCovRegistry::typeCoverage(const char* typeName, IData typeWeight) {
-    const int32_t weight = static_cast<int32_t>(typeWeight);
-    VlCovergroupType* const typep = findType(typeName);
-    if (!typep) return _vl_cov_empty_coverage(weight);  // Never instantiated
-    return typep->coverage(weight);
+VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
+    return findOrCreateType(typeName)->newInstance();
+}
+
+double VlCovRegistry::typeCoverage(const char* typeName, IData typeWeight, const char* filep,
+                                   int line) {
+    // Also for a type never instantiated, whose node then remembers type_option.weight
+    return findOrCreateType(typeName)->coverage(typeWeight, filep, line);
 }
 
 // A covergroup object can outlive the registry: models must be destroyed before
