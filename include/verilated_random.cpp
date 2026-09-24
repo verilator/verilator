@@ -269,8 +269,7 @@ public:
         HANDLE stderrInheritable = nullptr;
         if (stderrOrig && (stderrOrig != INVALID_HANDLE_VALUE)) {
             DuplicateHandle(GetCurrentProcess(), stderrOrig, GetCurrentProcess(),
-                            &stderrInheritable, 0, TRUE /* inheritable */,
-                            DUPLICATE_SAME_ACCESS);
+                            &stderrInheritable, 0, TRUE /* inheritable */, DUPLICATE_SAME_ACCESS);
         }
 
         // Build the command line string; quote arguments containing whitespace
@@ -304,8 +303,7 @@ public:
         if (stderrInheritable) CloseHandle(stderrInheritable);
         if (VL_UNLIKELY(!procOk)) {
             std::stringstream msg;
-            msg << "VlRProcess::open: CreateProcess(" << cmd[0] << ") error "
-                << GetLastError();
+            msg << "VlRProcess::open: CreateProcess(" << cmd[0] << ") error " << GetLastError();
             const std::string str = msg.str();
             fprintf(stderr, "%s\n", str.c_str());
             CloseHandle(fd_stdin_wr);
@@ -318,10 +316,10 @@ public:
         m_pidStatus = 0;
         // Hand the pipe ends to the C runtime as file descriptors, so the
         // streambuf overflow/underflow read/write code is platform independent
-        m_writeFd = _open_osfhandle(reinterpret_cast<intptr_t>(fd_stdin_wr),
-                                    _O_WRONLY | _O_BINARY);
-        m_readFd = _open_osfhandle(reinterpret_cast<intptr_t>(fd_stdout_rd),
-                                   _O_RDONLY | _O_BINARY);
+        m_writeFd
+            = _open_osfhandle(reinterpret_cast<intptr_t>(fd_stdin_wr), _O_WRONLY | _O_BINARY);
+        m_readFd
+            = _open_osfhandle(reinterpret_cast<intptr_t>(fd_stdout_rd), _O_RDONLY | _O_BINARY);
         if (VL_UNLIKELY(m_writeFd == -1 || m_readFd == -1)) {
             // A handle taken by _open_osfhandle is owned by its descriptor and
             // closed by closeFds; close only the one the CRT did not take
