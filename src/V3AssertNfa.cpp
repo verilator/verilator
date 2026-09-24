@@ -2894,6 +2894,7 @@ class AssertNfaVisitor final : public VNVisitor {
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
+    V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
 
     template <typename T_Node>
@@ -3276,13 +3277,12 @@ class AssertNfaVisitor final : public VNVisitor {
             // IEEE 1800-2023 16.12 requires one action-block evaluation per failed
             // thread. AstAssert handles the first, so replay the rest here.
             AstVar* const remainingFailCountVarp
-                = new AstVar{flp, VVarType::BLOCKTEMP, "__VnfaRemainingFailCount",
+                = new AstVar{flp, VVarType::MODULETEMP, m_failCountNames.get(""),
                              m_modp->findBasicDType(VBasicDTypeKwd::UINT32)};
-            remainingFailCountVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            AstBegin* const replayBlockp = new AstBegin{flp, "", remainingFailCountVarp, true};
-            replayBlockp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE},
-                              threadFailCountp});
+            remainingFailCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(remainingFailCountVarp);
+            AstNode* const replayStmtsp = new AstAssign{
+                flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE}, threadFailCountp};
             AstLoop* const replayLoopp = new AstLoop{flp};
             replayLoopp->addStmtsp(new AstLoopTest{
                 flp, replayLoopp,
@@ -3296,9 +3296,9 @@ class AssertNfaVisitor final : public VNVisitor {
             replayLoopp->addStmtsp(
                 new AstAssign{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE},
                               decrementedFailCountp});
-            replayBlockp->addStmtsp(replayLoopp);
+            replayStmtsp->addNext(replayLoopp);
             m_modp->addStmtsp(
-                new AstAlways{flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayBlockp});
+                new AstAlways{flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp});
         }
     }
 

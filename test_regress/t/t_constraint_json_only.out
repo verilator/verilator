@@ -500,7 +500,7 @@
       ]},
       {"type":"TASK","name":"arr_uniq_setup_constraint","addr":"(KJ)","loc":"d,7:1,7:6","method":true,"lifetime":"NONE","cname":"arr_uniq_setup_constraint",
        "stmtsp": [
-        {"type":"BEGIN","addr":"(LJ)","loc":"d,42:5,42:12","implied":true,"unnamed":true,
+        {"type":"BEGIN","name":"__VrandBlock__0","addr":"(LJ)","loc":"d,42:5,42:12","implied":true,
          "stmtsp": [
           {"type":"FOREACH","addr":"(MJ)","loc":"d,42:5,42:12",
            "headerp": [

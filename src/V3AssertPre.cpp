@@ -68,6 +68,7 @@ private:
     V3UniqueNames m_gotoRepNames{"__VgotoRep"};  // Goto repetition counter name generator
     V3UniqueNames m_nonConsRepNames{"__VnonConsRep"};  // Nonconsecutive rep name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
+    V3UniqueNames m_blockNames{"__VassertBlock"};  // Names of blocks with temporaries
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     V3UniqueNames m_activeNames{"__VassertsActive"};  // Active asserts map name generator
     bool m_inAssign = false;  // True if in an AssignNode
@@ -562,8 +563,7 @@ private:
         }
         if (m_disableSeqIfp && remainp) {
             AstIf* const disableSeqIfp = m_disableSeqIfp->cloneTree(false);
-            // Keep continuation statements in a proper statement-list container.
-            disableSeqIfp->addThensp(new AstBegin{flp, "", remainp, true});
+            disableSeqIfp->addThensp(remainp);
             remainp = disableSeqIfp;
         }
         if (remainp) {
@@ -878,7 +878,7 @@ private:
             = getProcessAssocArrayDelete(new AstVarRef{flp, activep, VAccess::WRITE});
 
         // Main assertion block
-        AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+        AstBegin* const bodyp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
         bodyp->addStmtsp(incrementp);
         bodyp->addStmtsp(loopp);
         bodyp->addStmtsp(clausep);
@@ -907,7 +907,7 @@ private:
                                      new AstConst{flp, 1}}});
 
         // Final assertion block
-        AstBegin* const finalp = new AstBegin{flp, "", nullptr, true};
+        AstBegin* const finalp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
         finalp->addStmtsp(activeCountp);
         finalp->addStmtsp(initActiveCountp);
         finalp->addStmtsp(finalLoopp);
@@ -1073,15 +1073,13 @@ private:
             windowp->addStmtsp(new AstLoopTest{
                 flp, windowp, new AstNot{flp, new AstVarRef{flp, doneVarp, VAccess::READ}}});
             // if (expr) { fail; done = 1; } -- window closed, expr true again
-            AstBegin* const failBlockp = new AstBegin{flp, "", nullptr, true};
-            failBlockp->addStmtsp(new AstPExprClause{flp, false});
-            failBlockp->addStmtsp(setDone());
-            windowp->addStmtsp(new AstIf{flp, exprp->cloneTreePure(false), failBlockp});
+            AstNode* const failsp = new AstPExprClause{flp, false};
+            failsp->addNext(setDone());
+            windowp->addStmtsp(new AstIf{flp, exprp->cloneTreePure(false), failsp});
             // if (rhs) { pass; done = 1; } -- consequent true at this !expr endpoint
-            AstBegin* const passBlockp = new AstBegin{flp, "", nullptr, true};
-            passBlockp->addStmtsp(new AstPExprClause{flp, true});
-            passBlockp->addStmtsp(setDone());
-            windowp->addStmtsp(new AstIf{flp, rhsp, passBlockp});
+            AstNode* const passsp = new AstPExprClause{flp, true};
+            passsp->addNext(setDone());
+            windowp->addStmtsp(new AstIf{flp, rhsp, passsp});
             // @(clk) -- advance to next cycle in window
             windowp->addStmtsp(
                 new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
@@ -1295,7 +1293,7 @@ private:
             // */ }
             AstBegin* const bodyp = pexprp->bodyp();
             AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
-            AstIf* const guardp = new AstIf{flp, condp, new AstBegin{flp, "", origStmtsp, true}};
+            AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);
             // Don't iterate pexprp here -- it was already iterated when created
@@ -1369,10 +1367,9 @@ private:
             loopp->addStmtsp(new AstLoopTest{
                 flp, loopp, new AstLogNot{flp, new AstVarRef{flp, donep, VAccess::READ}}});
             {
-                AstBegin* const passp = new AstBegin{flp, "", nullptr, true};
-                passp->addStmtsp(new AstPExprClause{flp});
-                passp->addStmtsp(decrementVar);
-                passp->addStmtsp(setDone());
+                AstNode* const passp = new AstPExprClause{flp};
+                passp->addNext(decrementVar);
+                passp->addNext(setDone());
                 AstNodeExpr* passCondp = rhsp;
                 if (nodep->isOverlapping()) {
                     passCondp = new AstLogAnd{flp, lhsp->cloneTreePure(false), passCondp};
@@ -1380,10 +1377,9 @@ private:
                 loopp->addStmtsp(new AstIf{flp, passCondp, passp});
             }
             {
-                AstBegin* const failp = new AstBegin{flp, "", nullptr, true};
-                failp->addStmtsp(new AstPExprClause{flp, false});
-                failp->addStmtsp(decrementVar->cloneTree(false));
-                failp->addStmtsp(setDone());
+                AstNode* const failp = new AstPExprClause{flp, false};
+                failp->addNext(decrementVar->cloneTree(false));
+                failp->addNext(setDone());
                 loopp->addStmtsp(new AstIf{
                     flp,
                     new AstLogAnd{flp,
@@ -1397,7 +1393,7 @@ private:
                 flp, new AstLogNot{flp, new AstVarRef{flp, donep, VAccess::READ}}, delayp});
 
             // Main assertion block
-            AstBegin* const bodyp = new AstBegin{flp, "", nullptr, true};
+            AstBegin* const bodyp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
             bodyp->addStmtsp(donep);
             bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, donep, VAccess::WRITE},
                                            new AstConst{flp, AstConst::BitFalse{}}});
@@ -1429,7 +1425,7 @@ private:
                                          new AstConst{flp, 1}}});
 
             // Final assertion block
-            AstBegin* const finalp = new AstBegin{flp, "", nullptr, true};
+            AstBegin* const finalp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
             finalp->addStmtsp(activeCountp);
             finalp->addStmtsp(initActiveCountp);
             finalp->addStmtsp(finalLoopp);
@@ -1460,7 +1456,7 @@ private:
         AstNodeExpr* const passCondp
             = nodep->isOverlapping() ? new AstLogAnd{flp, lhsp->cloneTreePure(false), rhsCopyp}
                                      : rhsCopyp;
-        AstBegin* const beginp = new AstBegin{flp, "", loopp, true};
+        AstBegin* const beginp = new AstBegin{flp, m_blockNames.get(""), loopp, true};
         beginp->addStmtsp(
             new AstIf{flp, passCondp, new AstPExprClause{flp}, new AstPExprClause{flp, false}});
 
@@ -1578,6 +1574,7 @@ private:
                 = new AstAssign{flp, new AstVarRef{flp, initialCntp, VAccess::WRITE},
                                 readCntRefp->cloneTree(false)};
             // Prepend to the sequence body to keep statement list structure valid.
+            UASSERT_OBJ(!bodyp->name().empty(), bodyp, "Sequence body should be named");
             AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
             bodyp->addStmtsp(initialCntp);
             initialCntp->addNextHere(assignp);
