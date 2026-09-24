@@ -1508,9 +1508,9 @@ class WidthVisitor final : public VNVisitor {
                 AstInitArray* const newp = new AstInitArray{nodep->fileline(), newDtp, nullptr};
                 const VNumRange range = nodep->declRange();
                 for (int n = 0; n < range.elements(); ++n) {
-                    // If out of range, reported above
-                    AstNodeExpr* const ep = newIfaceArrayElement(nodep->fromp(), range.lo() + n);
-                    if (!ep) break;
+                    AstNodeExpr* ep = newIfaceArrayElement(nodep->fromp(), range.lo() + n);
+                    // If out of range, reported above, so use any element to continue
+                    if (!ep) ep = newIfaceArrayElement(nodep->fromp(), 0);
                     newp->addIndexValuep(n, ep);
                 }
                 nodep->replaceWith(newp);
@@ -6636,7 +6636,7 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LHS be unsized?");
             // An interface instance, or an array or slice of them, is not a variable
             if (const AstIfaceRefDType* const irefp
-                = VN_CAST(unpackedArrayLeafDTypep(nodep->lhsp()->dtypep()), IfaceRefDType)) {
+                = VN_CAST(nodep->lhsp()->dtypep()->elemDTypep(), IfaceRefDType)) {
                 if (!irefp->isVirtual()) {
                     nodep->v3error(
                         "Illegal assignment to an interface instance (IEEE 1800-2023 10.4)");
@@ -7298,9 +7298,9 @@ class WidthVisitor final : public VNVisitor {
             // An interface port, or an array of them, needs interface instances, not virtual
             // interfaces
             if (const AstIfaceRefDType* const modIrefp
-                = VN_CAST(unpackedArrayLeafDTypep(modDTypep), IfaceRefDType)) {
+                = VN_CAST(modDTypep->elemDTypep(), IfaceRefDType)) {
                 const AstIfaceRefDType* const conIrefp
-                    = VN_CAST(unpackedArrayLeafDTypep(conDTypep), IfaceRefDType);
+                    = VN_CAST(conDTypep->elemDTypep(), IfaceRefDType);
                 if (!modIrefp->isVirtual() && conIrefp && conIrefp->isVirtual()) {
                     nodep->v3error("Illegal " << nodep->prettyOperatorName()
                                               << ", interface port connected to a virtual"
@@ -7366,8 +7366,7 @@ class WidthVisitor final : public VNVisitor {
                 // TODO Simple dtype checking, should be a more general check
                 const AstNodeArrayDType* const exprArrayp = VN_CAST(conDTypep, UnpackArrayDType);
                 const AstNodeArrayDType* const modArrayp = VN_CAST(modDTypep, UnpackArrayDType);
-                if (exprArrayp && modArrayp
-                    && VN_IS(unpackedArrayLeafDTypep(conDTypep), IfaceRefDType)
+                if (exprArrayp && modArrayp && VN_IS(conDTypep->elemDTypep(), IfaceRefDType)
                     && unpackedArraySize(conDTypep) != unpackedArraySize(modDTypep)) {
                     nodep->v3error("Illegal "
                                    << nodep->prettyOperatorName() << ","
@@ -10653,18 +10652,8 @@ class WidthVisitor final : public VNVisitor {
     // True if an unpacked array of non-virtual interfaces
     static bool isIfaceArrayDType(const AstNodeDType* dtypep) {
         if (!VN_IS(dtypep->skipRefp(), UnpackArrayDType)) return false;
-        const AstIfaceRefDType* const irefp
-            = VN_CAST(unpackedArrayLeafDTypep(dtypep), IfaceRefDType);
+        const AstIfaceRefDType* const irefp = VN_CAST(dtypep->elemDTypep(), IfaceRefDType);
         return irefp && !irefp->isVirtual();
-    }
-
-    // Element type of all unpacked dimensions of 'dtypep'
-    static const AstNodeDType* unpackedArrayLeafDTypep(const AstNodeDType* dtypep) {
-        dtypep = dtypep->skipRefp();
-        while (const AstUnpackArrayDType* const arrp = VN_CAST(dtypep, UnpackArrayDType)) {
-            dtypep = arrp->subDTypep()->skipRefp();
-        }
-        return dtypep;
     }
 
     // Number of elements of each unpacked dimension of 'dtypep', from the left, e.g. "2x3"

@@ -37,6 +37,7 @@ module tb_top ();
     for (int i = 0; i < 6; ++i) begin
       d.vif[i] = a[i];
     end
+    d.vif = a[3:8];
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -856,10 +856,10 @@ class ParamProcessor final {
         const size_t lastDot = cellPath.rfind('.');
         const string lastComp
             = (lastDot == string::npos) ? cellPath : cellPath.substr(lastDot + 1);
-        const size_t braPos = lastComp.find("__BRA__");
-        const string lastCompBase
-            = (braPos == string::npos) ? lastComp : lastComp.substr(0, braPos);
-        if (lastComp != cloneCellp->name() && lastCompBase != cloneCellp->name()) return false;
+        if (lastComp != cloneCellp->name()
+            && AstNode::nameNoArray(lastComp) != cloneCellp->name()) {
+            return false;
+        }
         // No parent portion to verify - startModp itself must be the expected parent
         if (lastDot == string::npos) return startModp == expectModp;
         const string parentPath = cellPath.substr(0, lastDot);
@@ -3055,36 +3055,22 @@ class ParamVisitor final : public VNVisitor {
         return false;
     }
 
-    // Innermost data type of an interface reference variable, possibly an array
-    static AstIfaceRefDType* ifaceRefLeafp(AstVar* varp) {
-        AstNodeDType* dtypep = varp->subDTypep();
-        while (AstUnpackArrayDType* const arrp = VN_CAST(dtypep, UnpackArrayDType)) {
-            dtypep = arrp->subDTypep();
-        }
-        return VN_AS(dtypep, IfaceRefDType);
-    }
-
-    // Interface array port
-    static bool isIfaceArrayPort(const AstVar* varp) {
-        return varp->isIfaceRef() && !varp->isIfaceParent()
-               && (VN_IS(varp->subDTypep(), UnpackArrayDType)
-                   || VN_IS(varp->subDTypep(), BracketArrayDType));
-    }
-
     // Split interface array port 'portp' into a variable for each of its elements, in the
     // dimensions of 'dtypep' inwards. 'suffix' is the name suffix of the dimensions outside
     // 'dtypep'.
     void expandIfaceArrayPortDimensions(AstVar* portp, AstNodeDType* dtypep,
                                         const std::string& suffix) {
-        const AstUnpackArrayDType* const arrp = VN_CAST(dtypep, UnpackArrayDType);
+        const AstUnpackArrayDType* const arrp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
         // Base case: add the element variable when no dimensions left
         if (!arrp) {
             AstVar* const varp = portp->cloneTree(false);
             varp->name(portp->name() + suffix);
             varp->origName(portp->origName() + suffix);
-            if (AstNodeDType* const oldp = varp->childDTypep()) oldp->unlinkFrBack()->deleteTree();
+            if (AstNodeDType* const oldp = varp->childDTypep()) {
+                VL_DO_DANGLING(pushDeletep(oldp->unlinkFrBack()), oldp);
+            }
             varp->dtypep(nullptr);
-            varp->childDTypep(ifaceRefLeafp(portp)->cloneTree(false));
+            varp->childDTypep(portp->subDTypep()->elemDTypep()->cloneTree(false));
             portp->addNextHere(varp);
             return;
         }
@@ -3116,7 +3102,8 @@ class ParamVisitor final : public VNVisitor {
             elemp->arrayIdx(idx);
             arrayedCellp->addNextHere(elemp);
             if (ifaceVarp) {
-                AstIfaceRefDType* const irefp = ifaceRefLeafp(ifaceVarp)->cloneTree(false);
+                AstIfaceRefDType* const irefp
+                    = VN_AS(ifaceVarp->subDTypep()->elemDTypep(), IfaceRefDType)->cloneTree(false);
                 irefp->cellp(elemp);
                 irefp->cellName(elemp->name());
                 // Named like the variable of any interface cell (see V3LinkCells)
@@ -3124,7 +3111,7 @@ class ParamVisitor final : public VNVisitor {
                 varp->name(elemp->name() + "__Viftop");
                 varp->origName(elemp->origName() + "__Viftop");
                 if (AstNodeDType* const oldp = varp->childDTypep()) {
-                    oldp->unlinkFrBack()->deleteTree();
+                    VL_DO_DANGLING(pushDeletep(oldp->unlinkFrBack()), oldp);
                 }
                 varp->dtypep(nullptr);
                 varp->childDTypep(irefp);
@@ -3260,12 +3247,6 @@ class ParamVisitor final : public VNVisitor {
                 AstVar* const varp = VN_CAST(nodep->nextp(), Var);
                 UASSERT_OBJ(varp && varp->name() == nodep->name() + "__Viftop", nodep,
                             "No __Viftop variable for interface array");
-                // Width its ranges too
-                AstNodeDType* dtypep = varp->subDTypep();
-                while (AstUnpackArrayDType* const arrp = VN_CAST(dtypep, UnpackArrayDType)) {
-                    V3Width::widthParamsEdit(arrp->rangep());
-                    dtypep = arrp->subDTypep();
-                }
                 return varp;
             }();
             // Expand the instance array into its elements
@@ -3275,8 +3256,10 @@ class ParamVisitor final : public VNVisitor {
                 // Until V3Width removes it, the whole array variable refers to the first
                 // element, which is also used for accessing the parameters of the array
                 AstCell* const firstp = VN_AS(nodep->nextp(), Cell);
-                ifaceRefLeafp(ifaceVarp)->cellp(firstp);
-                ifaceRefLeafp(ifaceVarp)->cellName(firstp->name());
+                AstIfaceRefDType* const irefp
+                    = VN_AS(ifaceVarp->subDTypep()->elemDTypep(), IfaceRefDType);
+                irefp->cellp(firstp);
+                irefp->cellName(firstp->name());
                 m_ifaceInstCells.emplace(nodep->name(), firstp);
             }
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -3376,7 +3359,10 @@ class ParamVisitor final : public VNVisitor {
     // Make sure all parameters are constantified
     void visit(AstVar* nodep) override {
         if (nodep->user2SetOnce()) return;  // Process once
-        if (isIfaceArrayPort(nodep)) {
+        // Interface array port: split it into its elements
+        if (nodep->isIfaceRef() && !nodep->isIfaceParent()
+            && (VN_IS(nodep->subDTypep()->skipRefp(), UnpackArrayDType)
+                || VN_IS(nodep->subDTypep()->skipRefp(), BracketArrayDType))) {
             // Also converts any C-style [N] dimensions, the ranges must be constant
             V3Width::widthParamsEdit(nodep->subDTypep());
             expandIfaceArrayPortDimensions(nodep, nodep->subDTypep(), "");
@@ -3514,11 +3500,8 @@ class ParamVisitor final : public VNVisitor {
                 if (const AstVar* const varp = VN_CAST(backp, Var)) {
                     if (!varp->isIfaceRef()) continue;
                     // Through all dimensions of an array
-                    const AstNodeDType* typep = varp->subDTypep();
-                    while (VN_IS(typep, UnpackArrayDType) || VN_IS(typep, BracketArrayDType)) {
-                        typep = typep->subDTypep();
-                    }
-                    const AstIfaceRefDType* const ifacerefp = VN_CAST(typep, IfaceRefDType);
+                    const AstIfaceRefDType* const ifacerefp
+                        = VN_CAST(varp->subDTypep()->elemDTypep(), IfaceRefDType);
                     if (!ifacerefp) continue;
                     // Interfaces passed in on the port map have ifaces
                     if (const AstIface* const ifacep = ifacerefp->ifacep()) {

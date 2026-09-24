@@ -23,4 +23,8 @@
                                          : ... note: In instance 'tb_top'
    38 |       d.vif[i] = a[i];
       |                    ^
+%Error: t/t_interface_dearray_bad.v:40:14: Slice selection index '[3:8]' outside data type's '[0:5]'
+                                         : ... note: In instance 'tb_top'
+   40 |     d.vif = a[3:8];
+      |              ^
 %Error: Exiting due to
