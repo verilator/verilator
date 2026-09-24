@@ -1,0 +1,8 @@
+%Error: t/t_dynarray_unpacked_unsup.v:15:13: VARREF 't.queue' is not an unpacked array, but is in an unpacked array context
+   15 |     fixed = queue;   
+      |             ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_dynarray_unpacked_unsup.v:17:13: VARREF 't.dynamic' is not an unpacked array, but is in an unpacked array context
+   17 |     fixed = dynamic;   
+      |             ^~~~~~~
+%Error: Exiting due to

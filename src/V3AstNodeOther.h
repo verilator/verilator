@@ -698,8 +698,10 @@ class AstCell final : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
     // @astgen op1 := pinsp : List[AstPin] // List of port assignments
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
-    // @astgen op3 := rangep : List[AstRange] // Range(s) for arrayed instances; multi-dim chains
-    // via nextp()
+    // Pre V3Param: Range(s) for arrayed instances.
+    // From V3Param to V3Width: ranges of the arrayed cell this element cell was expanded from
+    // After V3Width: nullptr, except for interface arrays
+    // @astgen op3 := rangep : List[AstRange]
     // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing/VPI
     //
     // @astgen ptr := m_modp : Optional[AstNodeModule]  // [AfterLink] Pointer to module instanced
@@ -707,6 +709,7 @@ class AstCell final : public AstNode {
     string m_name;  // Cell name
     string m_origName;  // Original name before dot addition
     string m_modName;  // Module the cell instances
+    int m_arrayIdx = -1;  // Row-major position in instance array, from the left (V3Param-V3Width)
     bool m_hasIfaceVar : 1;  // True if a Var has been created for this cell
     bool m_recursive : 1;  // Self-recursive module
     bool m_trace : 1;  // Trace this cell
@@ -741,6 +744,8 @@ public:
     FileLine* modNameFileline() const { return m_modNameFileline; }
     AstNodeModule* modp() const { return m_modp; }  // [AfterLink] = Pointer to module instantiated
     void modp(AstNodeModule* nodep) { m_modp = nodep; }
+    int arrayIdx() const { return m_arrayIdx; }
+    void arrayIdx(int idx) { m_arrayIdx = idx; }
     bool hasIfaceVar() const { return m_hasIfaceVar; }
     void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
     void trace(bool flag) { m_trace = flag; }

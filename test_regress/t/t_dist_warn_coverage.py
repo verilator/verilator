@@ -98,7 +98,6 @@ for s in [
         'Unsupported: Non-constant default value in missing argument',
         'Unsupported: Non-constant index when passing interface to module',
         'Unsupported: Only one PSL clock allowed per assertion',
-        'Unsupported: Per-bit array instantiations',
         'Unsupported: Public functions with >64 bit outputs;',
         'Unsupported: Public functions with return > 64 bits wide.',
         'Unsupported: Replication to form',
