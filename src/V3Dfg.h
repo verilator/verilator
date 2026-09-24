@@ -432,8 +432,10 @@ class DfgGraph final {
     std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
     size_t m_tmpNameCount = 0;  // Sequence number for newly created temporary declarations
 
-    // Slots are local to this graph and prefix, so passes may attach different
-    // attributes to their temporaries. Each scope consumes each slot at most once.
+    // Slots are local to this graph and keyed by module, prefix and type.
+    // Different prefixes may carry different AstVar attributes, but temporaries
+    // with the same prefix may share an AstVar, so they must have identical ones.
+    // Each scope consumes each slot at most once.
     struct TempDeclarations final {
         std::map<AstScope*, size_t> m_scopeCounts;  // Next slot for each instance
         std::vector<AstVar*> m_declps;  // Declarations indexed by slot
