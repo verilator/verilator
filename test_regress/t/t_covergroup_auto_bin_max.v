@@ -138,7 +138,7 @@ module t;
     cg7_inst.sample();  // [-4:-3]
     sdata3 = 3;
     cg7_inst.sample();  // [0:3]
-    `checkr(cg7_inst.get_inst_coverage(), 100.0 * 2.0 / 3.0);
+    `checkr(cg7_inst.get_inst_coverage(), 100.0 * (2.0 / 3.0));
     sdata3 = 0;
     cg7_inst.sample();  // [0:3]
     sdata3 = -1;

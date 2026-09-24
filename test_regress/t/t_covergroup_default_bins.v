@@ -134,7 +134,9 @@ module t;
     data = 2;
     cg_inst.sample();
     cg2_inst.sample();
-    `checkr(cg2_inst.get_inst_coverage(), 100.0);  // cg2 has 1 bin (default) -> 100% after first sample
+    // A default bin never counts toward coverage (IEEE 1800-2023 19.5), so nothing in cg2
+    // contributes, and its nonzero weight gives 0 (IEEE 1800-2023 19.11)
+    `checkr(cg2_inst.get_inst_coverage(), 0.0);
 
     // Hit high bin
     data = 14;
@@ -152,7 +154,7 @@ module t;
     cg_inst.sample();
     cg2_inst.sample();
     `checkr(cg_inst.get_inst_coverage(), 100.0);
-    `checkr(cg2_inst.get_inst_coverage(), 100.0);
+    `checkr(cg2_inst.get_inst_coverage(), 0.0);
 
     // Sample cg3: verify ignore/illegal bins do not contribute to coverage
     data = 2;

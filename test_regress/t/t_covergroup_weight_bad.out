@@ -1,0 +1,30 @@
+%Error: t/t_covergroup_weight_bad.v:13:21: Coverage option 'option.weight' is set to negative value '-1'; weights must be non-negative (IEEE 1800-2023 19.7)
+                                         : ... note: In instance 't'
+   13 |     option.weight = -1;   
+      |                     ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_weight_bad.v:14:26: Coverage option 'type_option.weight' is set to negative value '-2'; weights must be non-negative (IEEE 1800-2023 19.7)
+                                         : ... note: In instance 't'
+   14 |     type_option.weight = -2;   
+      |                          ^
+%Error: t/t_covergroup_weight_bad.v:16:23: Coverage option 'option.weight' is set to negative value '-3'; weights must be non-negative (IEEE 1800-2023 19.7)
+                                         : ... note: In instance 't'
+   16 |       option.weight = -3;   
+      |                       ^
+%Error: t/t_covergroup_weight_bad.v:19:28: Coverage option 'type_option.weight' is set to negative value '-4'; weights must be non-negative (IEEE 1800-2023 19.7)
+                                         : ... note: In instance 't'
+   19 |       type_option.weight = -4;   
+      |                            ^
+%Error: t/t_covergroup_weight_bad.v:21:41: Coverage option 'option.weight' is set to negative value '-5'; weights must be non-negative (IEEE 1800-2023 19.7)
+                                         : ... note: In instance 't'
+   21 |     x: cross cpa, cpb{option.weight = 2 - 7;}   
+      |                                         ^
+%Error: t/t_covergroup_weight_bad.v:26:26: Coverage option 'type_option.weight' requires a constant expression (IEEE 1800-2023 19.7.1)
+                                         : ... note: In instance 't'
+   26 |     type_option.weight = w;   
+      |                          ^
+%Error: t/t_covergroup_weight_bad.v:28:28: Coverage option 'type_option.weight' requires a constant expression (IEEE 1800-2023 19.7.1)
+                                         : ... note: In instance 't'
+   28 |       type_option.weight = w;   
+      |                            ^
+%Error: Exiting due to

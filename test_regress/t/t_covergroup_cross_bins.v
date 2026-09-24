@@ -175,13 +175,15 @@ module t (
       trans_cov.sample(1'(cyc), 1'(cyc / 2));
       three_cov.sample(1'(cyc / 4), 1'(cyc / 2), 1'(cyc));
       zero_cov.sample(1'(cyc / 2), 1'(cyc));
+      // IEEE 1800-2023 19.11: the mean of cp_a (4 bins), cp_b (2 bins), and the crosses.
+      // Each cg_order cross keeps only 'combined'; cg_auto's cross keeps 4 automatic bins.
       if (cyc == 1) begin
-        `checkr(order_cov.get_inst_coverage(), 37.5);
-        `checkr(auto_cov.get_inst_coverage(), 30.0);
+        `checkr(order_cov.get_inst_coverage(), (25.0 + 100.0 + 0.0 + 0.0) / 4);
+        `checkr(auto_cov.get_inst_coverage(), (25.0 + 100.0 + 0.0) / 3);
       end
       if (cyc == 5) begin
-        `checkr(order_cov.get_inst_coverage(), 87.5);
-        `checkr(auto_cov.get_inst_coverage(), 90.0);
+        `checkr(order_cov.get_inst_coverage(), (75.0 + 100.0 + 100.0 + 100.0) / 4);
+        `checkr(auto_cov.get_inst_coverage(), (75.0 + 100.0 + 100.0) / 3);
       end
     end
     if (cyc < 65) begin

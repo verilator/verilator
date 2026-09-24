@@ -1262,10 +1262,12 @@ void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstCoverOption::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_optType.ascii();
+    if (typeOption()) str << " [TYPEOPT]";
 }
 void AstCoverOption::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     str << ", \"optType\": \"" << m_optType.ascii() << "\"";
+    dumpJsonBoolFuncIf(str, typeOption);
 }
 void AstCoverOtherDecl::dump(std::ostream& str) const {
     Super::dump(str);

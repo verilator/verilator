@@ -1213,12 +1213,14 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->addMembersp(varp);
         }
         {
+            // IEEE 1800-2023 19.10: type_option is a static member, shared by all instances
             AstVar* const varp
                 = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option", VFlagChildDType{},
                              new AstRefDType{nodep->fileline(), "vl_covergroup_type_options_t",
                                              new AstClassOrPackageRef{nodep->fileline(), "std",
                                                                       nullptr, nullptr},
                                              nullptr}};
+            varp->lifetime(VLifetime::STATIC_EXPLICIT);
             nodep->addMembersp(varp);
         }
 
@@ -1421,8 +1423,10 @@ class LinkParseVisitor final : public VNVisitor {
                 if (dropDeprecatedCoverageOption(optp)) continue;
                 optp->unlinkFrBack();
                 if (optp->optType() == VCoverOptionType::AT_LEAST
-                    || optp->optType() == VCoverOptionType::AUTO_BIN_MAX) {
-                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optType(),
+                    || optp->optType() == VCoverOptionType::AUTO_BIN_MAX
+                    || optp->optType() == VCoverOptionType::WEIGHT) {
+                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->typeOption(),
+                                                          optp->optType(),
                                                           optp->valuep()->cloneTree(false)});
                 } else {
                     optp->v3warn(COVERIGN,
@@ -1485,12 +1489,14 @@ class LinkParseVisitor final : public VNVisitor {
             if (dropDeprecatedCoverageOption(optp)) continue;
             itemp->unlinkFrBack();
             const VCoverOptionType optType = optp->optType();
-            optp->v3warn(COVERIGN,
-                         "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
+            if (!(optType == VCoverOptionType::WEIGHT)) {
+                optp->v3warn(COVERIGN,
+                             "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
+            }
             // Always preserve the option node so V3Coverage can track its source line
             // for coverage annotation, even when the option itself is unsupported.
-            nodep->addOptionsp(
-                new AstCoverOption{optp->fileline(), optType, optp->valuep()->cloneTree(false)});
+            nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->typeOption(), optType,
+                                                  optp->valuep()->cloneTree(false)});
             VL_DO_DANGLING(optp->deleteTree(), optp);
         }
         iterateChildren(nodep);
