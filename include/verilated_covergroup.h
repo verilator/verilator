@@ -41,6 +41,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 class VerilatedCovContext;
@@ -493,9 +494,9 @@ class VlCovergroupInst final {
     // option.weight of the SV object that created this node, while that object
     // lives; borrowed through VlCovInstHandle::lendWeight().
     const IData* m_weightp = nullptr;
-    IData m_weight = 1;  // Last option.weight observed; kept once the object is gone
-    const char* m_filep = "";  // Covergroup declaration, where a negative weight is reported
-    int m_line = 0;  // Line of the covergroup declaration in m_filep
+    IData m_loadedWeight = 1;  // Last option.weight loaded through m_weightp
+    int32_t m_weight = 1;  // Weight in use, never negative; kept once the object is gone
+    VlFileLineDebug m_fileline;  // Covergroup declaration, where a negative weight is reported
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
     // Reads m_items to fold the residue; owns m_slot and m_retained.
@@ -532,22 +533,24 @@ public:
     bool attachDec() { return --m_attachCount == 0; }
 
     // ---- instance weight (from VlCovInstHandle) ----
-    // filep:line is the covergroup declaration, where a negative weight is reported.
-    void lendWeight(const IData* weightp, const char* filep, int line) {
+    void lendWeight(const IData* weightp, VlFileLineDebug fileline) {
         m_weightp = weightp;
-        m_filep = filep;
-        m_line = line;
-        static_cast<void>(weight());  // Report a negative weight set by the constructor
+        m_fileline = fileline;
+        loadWeight();
     }
     // The lending object is being destroyed.  Its members may already be gone, so
-    // the weight is not read again; the last observed value stays in effect.
+    // the weight is not read again; the last loaded value stays in effect.
     void unlendWeight(const IData* weightp) {
         if (m_weightp == weightp) m_weightp = nullptr;
     }
+    /// Load option.weight from the lending object.  SV writes the member directly
+    /// (assignments, ref and output arguments, $value$plusargs, ...), so this is
+    /// where a new value is seen, and checked once: a negative weight is reported as
+    /// an error, and counts as zero.
+    void loadWeight();
     /// Weight of this instance in its type's coverage (option.weight, IEEE
-    /// 1800-2023 19.11.3).  Procedural assignments take effect immediately.  A
-    /// negative weight is reported as an error when first observed, and counts as zero.
-    int32_t weight();
+    /// 1800-2023 19.11.3), as last loaded; never negative.
+    int32_t weight() const { return m_weight; }
 
     // ---- introspection ----
     VlCovergroupType* typep() const { return m_typep; }
@@ -556,9 +559,9 @@ public:
     // pointers into this node's bin counts (VM_COVERAGE); see retire().
     bool retained() const { return m_retained; }
     /// IEEE 1800-2023 19.11 sums over the items whose coverage has a nonzero
-    /// denominator: 'weighted' is the sum of each item's option.weight times its
-    /// coverage (0..100), and 'weights' the sum of those weights.
-    void coverageSums(double& weighted, double& weights) const;
+    /// denominator: {the sum of each item's option.weight times its coverage
+    /// (0..100), the sum of those weights}.
+    std::pair<double, double> coverageSums() const;
     /// Instance coverage, as returned by get_inst_coverage(), in 0..100.
     double coverage();
 };
@@ -587,7 +590,8 @@ class VlCovergroupType final {
     uint32_t m_createdInsts = 0;  // Instances ever created; never decremented
     uint32_t m_nextInstId = 0;  // Monotonic; slots are reused, ids never are
     VlCovRetiredAvg m_retired;  // Contribution of every instance that has died
-    IData m_typeWeight = 1;  // Last type_option.weight observed by coverage()
+    IData m_loadedTypeWeight = 1;  // Last type_option.weight loaded by coverage()
+    int32_t m_typeWeight = 1;  // type_option.weight in use, never negative
 
     // PRIVATE METHODS
     // Harvest instp's contribution into m_retired.  Must run before instp is
@@ -612,8 +616,8 @@ public:
     /// every instance's coverage, weighted by its option.weight (IEEE 1800-2023
     /// 19.11.3, type_option.merge_instances false).  typeWeight is
     /// type_option.weight, which decides the result when no instance contributes;
-    /// if negative, it is reported at filep:line when first observed, and counts as zero.
-    double coverage(IData typeWeight, const char* filep, int line);
+    /// like option.weight, it is checked as it is loaded.
+    double coverage(IData typeWeight, VlFileLineDebug fileline);
 
     // ---- introspection ----
     // Test and debug only; generated code never calls these, and SV reaches them
@@ -661,9 +665,8 @@ public:
     // the same string that keys the coverage database's hier/page.
     VlCovergroupInst* newCovergroupInst(const char* typeName);
     /// Type coverage of a covergroup type (get_coverage()); see
-    /// VlCovergroupType::coverage().  typeWeight is its type_option.weight, and
-    /// filep:line the covergroup declaration.
-    double typeCoverage(const char* typeName, IData typeWeight, const char* filep, int line);
+    /// VlCovergroupType::coverage().  typeWeight is its type_option.weight.
+    double typeCoverage(const char* typeName, IData typeWeight, VlFileLineDebug fileline);
 
     // ---- introspection (see VlCovergroupType) ----
     // typeName is the obfuscated generated name, so a test using these under
@@ -719,11 +722,10 @@ public:
     // created with.  Called once, from the generated covergroup constructor.
     void attach(VlCovergroupInst* p) { m_p = p; }
     // Let the node read the owning object's option.weight until this handle is
-    // destroyed.  Called once, from the generated constructor, after attach();
-    // filep:line is the covergroup declaration.
-    void lendWeight(const IData* weightp, const char* filep, int line) {
+    // destroyed.  Called once, from the generated constructor, after attach().
+    void lendWeight(const IData* weightp, VlFileLineDebug fileline) {
         m_weightp = weightp;
-        m_p->lendWeight(weightp, filep, line);
+        m_p->lendWeight(weightp, fileline);
     }
     VlCovergroupInst* p() const { return m_p; }
 };

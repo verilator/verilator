@@ -28,6 +28,8 @@
 #include <cstdint>
 #include <string>
 
+class VlFileLineDebug;
+
 // Per-bin classification.  A bin's kind is which set it lives in (structural),
 // not a per-bin field.  Only Normal feeds coverage(); the rest are recorded.
 // Enumerators are 'KIND_'-prefixed because the bare LRM terms collide with
@@ -68,9 +70,9 @@ public:
     /// Weight of this item in its covergroup instance's coverage (option.weight,
     /// IEEE 1800-2023 19.11)
     int32_t weight() const { return m_weight; }
-    /// Set option.weight, as evaluated at filep:line by the covergroup constructor.  A
-    /// negative weight is reported as an error, and counts as zero.
-    void weight(uint32_t value, const char* filep, int line);
+    /// Load option.weight, as evaluated by the covergroup constructor.  A negative
+    /// weight is reported as an error, and counts as zero.
+    void weight(uint32_t value, VlFileLineDebug fileline);
 };
 
 #endif  // Guard

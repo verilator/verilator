@@ -9,9 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
+test.scenarios('vlt')
 
-test.compile(threads=(2 if test.vltmt else 1))
+test.compile()
 
 test.execute(all_run_flags=['+verilator+error+limit+100'], expect_filename=test.golden_filename)
 

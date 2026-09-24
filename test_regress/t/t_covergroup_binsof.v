@@ -85,8 +85,8 @@ module t (
         // all_products 1/1, named 1/10, other_axis 2/9, array_bins 2/7, overlapping 2/8,
         // guarded 0/11, and empty_selection 2/12
         `checkr(cov.get_inst_coverage(),
-                (25.0 + 200.0 / 3 + 100.0 + 10.0 + 200.0 / 9 + 200.0 / 7 + 25.0 + 0.0 + 200.0 / 12)
-                / 9);
+                100.0 * (1.0 / 4 + 2.0 / 3 + 1.0 + 1.0 / 10 + 2.0 / 9 + 2.0 / 7 + 2.0 / 8 + 0.0
+                         + 2.0 / 12) / 9);
         `checkr(auto_cov.get_inst_coverage(), (50.0 + 50.0 + 100.0) / 3);
       end
     end

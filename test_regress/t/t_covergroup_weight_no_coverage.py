@@ -12,9 +12,13 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = 't/t_covergroup_weight.v'
 
-# Without --coverage, instances are freed when their last handle drops
-test.compile()
+# Without --coverage, instances are freed when their last handle drops.  Under --protect-ids,
+# get_coverage() must find the instances under the same obfuscated type name.
+test.compile(verilator_flags2=['--protect-ids', '--protect-key WEIGHT_KEY', '-Wno-INSECURE'])
 
 test.execute()
+
+for filename in test.glob_some(test.obj_dir + '/*.cpp'):
+    test.file_grep_not(filename, r'cg_type|cg_never|cg_item')
 
 test.passes()

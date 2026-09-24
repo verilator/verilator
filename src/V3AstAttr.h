@@ -883,7 +883,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  "r") \
     macro(COVERGROUP_INIT,                    "init",                   false,  "r+") \
     macro(COVERGROUP_INST_P,                  "p",                      PURE,   "") \
-    macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  "rrr") \
+    macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  "rr") \
     macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  "r") \
     macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rr") \
     macro(COVERGROUP_SAMPLE,                  "sample",                 false,  "") \
@@ -896,7 +896,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_SELECT_OR,               "selectOr",               false,  "") \
     macro(COVERGROUP_SELECT_RANGE,            "selectRange",            false,  "rr") \
     macro(COVERGROUP_SELECT_RANGE_W,          "selectRangeW",           false,  "rr") \
-    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrrr") \
+    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrr") \
     macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
     macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
     macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  "") \
@@ -905,7 +905,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_VALUE_RELEASE,           "valueRelease",           false,  "") \
     macro(COVERGROUP_VALUE_TRANSITIONS,       "valueTransitions",       false,  "r") \
     macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  "rr") \
-    macro(COVERGROUP_WEIGHT,                  "weight",                 false,  "rrr") \
+    macro(COVERGROUP_WEIGHT,                  "weight",                 false,  "rr") \
     macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
     macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \
     macro(DYN_CLEAR,                          "clear",                  false,  "") \

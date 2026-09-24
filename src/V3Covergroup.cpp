@@ -311,17 +311,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // 19.11).  type_option.weight only weighs type coverage merged over the instances, which
     // type_option.merge_instances would select; without that, it has no effect.
     void generateItemWeight(FileLine* fl, AstVar* itemVarp, AstNode* optionsp) {
-        const bool prot = v3Global.opt.protectIds();
         for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (!(optp->optType() == VCoverOptionType::WEIGHT) || optp->typeOption()) continue;
-            // Where the runtime reports a weight that is negative only at run time
-            FileLine* const optFl = optp->fileline();
             m_constructorp->addStmtsp(
                 itemCall(fl, itemVarp, VCMethod::COVERGROUP_WEIGHT,
-                         {optp->valuep()->cloneTree(false),
-                          ctext(fl, quoted(VIdProtect::protectIf(optFl->filename(), prot))),
-                          cnum(fl, static_cast<uint32_t>(optFl->lineno()))})
+                         {optp->valuep()->cloneTree(false), fileLineDebug(optp->fileline())})
                     ->makeStmt());
         }
     }
@@ -808,10 +803,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return typep;
     }
 
-    // The name keying the covergroup type in the per-context coverage registry: the covergroup
-    // type name, the same string that keys this covergroup's coverage-database hierarchy, so it
-    // is exactly as unique.  Obfuscated the same way, so --protect-ids exposes no new identifier.
-    std::string registryTypeName() const {
+    std::string covergroupProtectedName() const {
         return VIdProtect::protectWordsIf(m_covergroupp->name(), v3Global.opt.protectIds());
     }
 
@@ -831,21 +823,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_ATTACH,
                      {ctext(fl, "vlSymsp->_vm_contextp__->covergroupRegistryp()"
                                 "->newCovergroupInst("
-                                    + quoted(registryTypeName()) + ")")},
+                                    + quoted(covergroupProtectedName()) + ")")},
                      /*usePtr=*/false)
                 ->makeStmt());
-        // The node reads option.weight in place, so procedural assignments take effect, and
-        // reports a negative one at the covergroup declaration
+        // The node reads option.weight in place, so procedural assignments take effect
         AstCExpr* const weightAddrp = new AstCExpr{fl, "&"};
         weightAddrp->add(newWeightSel(fl, optionVar(false), VAccess::READ));
-        m_constructorp->addStmtsp(
-            itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_LEND_WEIGHT,
-                     {weightAddrp,
-                      ctext(fl, quoted(VIdProtect::protectIf(fl->filename(),
-                                                             v3Global.opt.protectIds()))),
-                      cnum(fl, static_cast<uint32_t>(fl->lineno()))},
-                     /*usePtr=*/false)
-                ->makeStmt());
+        m_constructorp->addStmtsp(itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_LEND_WEIGHT,
+                                           {weightAddrp, fileLineDebug(fl)}, /*usePtr=*/false)
+                                      ->makeStmt());
     }
 
     // A '__Vcg_inst.p()-><method>()' call on the covergroup's instance node
@@ -1032,8 +1018,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // A literal C++ argument with no AST equivalent: a 'const char*' string literal (an SV
     // string AstConst emits '"..."s', a std::string temporary the runtime cannot borrow), a
-    // VlCovBinKind enum token, a constant selection-word initializer list, or a '__V' temporary
-    // declared by the enclosing AstCStmt.
+    // VlCovBinKind enum token, a constant selection-word initializer list, a VlFileLineDebug, or
+    // a '__V' temporary declared by the enclosing AstCStmt.
     static AstCExpr* ctext(FileLine* fl, const std::string& text) {
         return new AstCExpr{fl, text};
     }
@@ -1043,6 +1029,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // SV escaped identifier may hold a quote or backslash.
     static std::string quoted(const std::string& text) {
         return "\"" + V3OutFormatter::quoteNameControls(text) + "\"";
+    }
+
+    // A 'VlFileLineDebug' argument: where the runtime reports an error about fl's construct
+    static AstCExpr* fileLineDebug(FileLine* fl) {
+        const std::string filename
+            = VIdProtect::protectIf(fl->filename(), v3Global.opt.protectIds());
+        return ctext(fl, "VlFileLineDebug{" + quoted(filename) + ", "
+                             + std::to_string(fl->lineno()) + "}");
     }
 
     // Individual equality targets of an array bin (bins b[] = {values/ranges}), in order.
@@ -2748,13 +2742,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         registryp->dtypeSetVoid();  // Opaque receiver; only ever the 'fromp' of the call below
         AstCMethodHard* const typeCallp
             = new AstCMethodHard{typeFl, registryp, VCMethod::COVERGROUP_TYPE_COVERAGE};
-        typeCallp->addPinsp(ctext(typeFl, quoted(registryTypeName())));
+        typeCallp->addPinsp(ctext(typeFl, quoted(covergroupProtectedName())));
         typeCallp->addPinsp(newWeightSel(typeFl, optionVar(true), VAccess::READ));
-        // Where the runtime reports a negative type_option.weight
-        FileLine* const cgFl = m_covergroupp->fileline();
-        typeCallp->addPinsp(ctext(
-            typeFl, quoted(VIdProtect::protectIf(cgFl->filename(), v3Global.opt.protectIds()))));
-        typeCallp->addPinsp(cnum(typeFl, static_cast<uint32_t>(cgFl->lineno())));
+        typeCallp->addPinsp(fileLineDebug(m_covergroupp->fileline()));
         typeCallp->usePtr(true);
         typeCallp->dtypeSetDouble();
         getCoveragep->addStmtsp(new AstAssign{
