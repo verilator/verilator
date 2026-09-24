@@ -403,7 +403,6 @@ void V3LinkDotIfaceCapture::purgeDeletedSubtree(AstNode* nodep) {
     }
 }
 
-// LCOV_EXCL_START
 void V3LinkDotIfaceCapture::dumpEntries(const string& label) {
     UINFO(9, "========== iface capture dumpEntries: " << label << " (entries=" << s_map.size()
                                                       << ") ==========");
@@ -422,7 +421,6 @@ void V3LinkDotIfaceCapture::dumpEntries(const string& label) {
     }
     UINFO(9, "========== end iface capture dumpEntries ==========");
 }
-// LCOV_EXCL_STOP
 
 void V3LinkDotIfaceCapture::add(AstRefDType* refp, const string& cellPath,
                                 AstNodeModule* ownerModp, AstTypedef* typedefp,
