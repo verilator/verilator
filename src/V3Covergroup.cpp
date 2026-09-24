@@ -493,11 +493,30 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // IEEE 1800-2023 19.5.3/19.11.1: partition first, then apply exclusions.
+    // IEEE 1800-2023 19.5.2: an enum coverpoint has one automatic bin per enumeration value
+    void createEnumAutoBins(AstCoverpoint* coverpointp, AstNodeExpr* exprp,
+                            const AstEnumDType* enump) {
+        FileLine* const fl = coverpointp->fileline();
+        for (const AstEnumItem* itemp = enump->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            AstConst* const lop = newValueConst(fl, VN_AS(itemp->valuep(), Const)->num(), exprp);
+            AstInsideRange* const rangep = new AstInsideRange{fl, lop, lop->cloneTree(false)};
+            rangep->dtypeFrom(exprp);
+            coverpointp->addBinsp(
+                new AstCoverBin{fl, "auto[" + itemp->name() + "]", rangep, false, false});
+        }
+    }
+
     void createImplicitAutoBins(AstCoverpoint* coverpointp, AstNodeExpr* exprp, int autoBinMax) {
         for (AstNode* nodep = coverpointp->binsp(); nodep; nodep = nodep->nextp()) {
             const VCoverBinsType kind = VN_AS(nodep, CoverBin)->binsType();
             if (kind != VCoverBinsType::BINS_IGNORE && kind != VCoverBinsType::BINS_ILLEGAL)
                 return;
+        }
+        if (const AstEnumDType* const enump
+            = VN_CAST(exprp->dtypep()->skipRefToEnump(), EnumDType)) {
+            createEnumAutoBins(coverpointp, exprp, enump);
+            return;
         }
         const int width = exprp->width();
         const int arithmeticWidth = width + 1;
