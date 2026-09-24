@@ -13,3 +13,58 @@ cg_4bit_excl.data4.auto[1]: 0
 cg_4bit_excl.data4.auto[2]: 1
 cg_4bit_excl.data4.auto[3]: 0
 cg_4bit_excl.data4.bad [ignore]: 0
+cg_70bit.data70.auto[0]: 2
+cg_70bit.data70.auto[1]: 1
+cg_70bit.data70.auto[2]: 1
+cg_70bit.data70.auto[3]: 1
+cg_70bit.data70.auto[4]: 1
+cg_70bit_excl.data70.all_of_1 [ignore]: 0
+cg_70bit_excl.data70.auto[0]: 1
+cg_70bit_excl.data70.auto[2]: 0
+cg_70bit_excl.data70.auto[3]: 0
+cg_70bit_excl.data70.auto[4]: 0
+cg_cross_auto.cp_a.auto_0: 0
+cg_cross_auto.cp_a.auto_1: 0
+cg_cross_auto.cp_a.auto_2: 1
+cg_cross_auto.cp_a.auto_3: 0
+cg_cross_auto.cp_a.auto_4: 0
+cg_cross_auto.cp_a.auto_5: 1
+cg_cross_auto.cp_a.auto_6: 0
+cg_cross_auto.cp_a.auto_7: 0
+cg_cross_auto.cp_ax.auto_1: 0
+cg_cross_auto.cp_ax.auto_2: 1
+cg_cross_auto.cp_ax.auto_3: 0
+cg_cross_auto.cp_ax.auto_4: 0
+cg_cross_auto.cp_ax.auto_5: 1
+cg_cross_auto.cp_ax.auto_6: 0
+cg_cross_auto.cp_ax.auto_7: 0
+cg_cross_auto.cp_ax.zero [ignore]: 0
+cg_cross_auto.cp_b.one: 2
+cg_cross_auto.x.auto_0_x_one [cross]: 0
+cg_cross_auto.x.auto_1_x_one [cross]: 0
+cg_cross_auto.x.auto_3_x_one [cross]: 0
+cg_cross_auto.x.auto_4_x_one [cross]: 0
+cg_cross_auto.x.auto_5_x_one [cross]: 1
+cg_cross_auto.x.auto_6_x_one [cross]: 0
+cg_cross_auto.x.auto_7_x_one [cross]: 0
+cg_cross_auto.x.sel [cross]: 1
+cg_cross_auto.xx.auto_1_x_one [cross]: 0
+cg_cross_auto.xx.auto_3_x_one [cross]: 0
+cg_cross_auto.xx.auto_4_x_one [cross]: 0
+cg_cross_auto.xx.auto_5_x_one [cross]: 1
+cg_cross_auto.xx.auto_6_x_one [cross]: 0
+cg_cross_auto.xx.auto_7_x_one [cross]: 0
+cg_cross_auto.xx.sel [cross]: 1
+cg_many.data.auto[0]: 0
+cg_many.data.auto[1]: 0
+cg_many.data.auto[2]: 0
+cg_many.data.auto[3]: 0
+cg_many.data.auto[4]: 0
+cg_many.data.auto[5]: 0
+cg_many.data.auto[6]: 0
+cg_many.data.auto[7]: 1
+cg_signed.sdata.auto[0]: 2
+cg_signed.sdata.auto[1]: 1
+cg_signed.sdata.auto[2]: 1
+cg_signed.sdata.auto[3]: 1
+cg_signed.sdata.auto[4]: 1

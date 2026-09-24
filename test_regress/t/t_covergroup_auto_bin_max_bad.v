@@ -8,6 +8,7 @@
 module t;
   int size_var;
   logic [3:0] cp_expr;
+  logic [31:0] cp_32bit;
 
   // Error: option.auto_bin_max must be a constant expression (group level)
   covergroup cg;
@@ -15,6 +16,13 @@ module t;
     cp: coverpoint cp_expr;
   endgroup
 
+  // Warning (COVERIGN): more automatic bins than COVER_BINS_LIMIT (1048576)
+  covergroup cg_limit;
+    option.auto_bin_max = 2000000;
+    cp: coverpoint cp_32bit;
+  endgroup
+
   cg cg_i = new;
+  cg_limit cg_limit_i = new;
   initial $finish;
 endmodule

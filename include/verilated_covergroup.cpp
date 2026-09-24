@@ -140,6 +140,17 @@ struct VlCoverpoint::ValueData final {
         }
         value.back() &= VL_MASK_E(m_bits);
     }
+    // Add in m_bits-wide modular arithmetic, which orders correctly within a run of bins
+    void add(Value& value, const Value& addend) const {
+        EData carry = 0;
+        for (uint32_t i = 0; i < m_words; ++i) {
+            const EData partial = value[i] + addend[i];
+            const EData sum = partial + carry;
+            carry = (partial < addend[i]) || (sum < partial);
+            value[i] = sum;
+        }
+        value.back() &= VL_MASK_E(m_bits);
+    }
     bool contains(const Range& range, WDataInP value) const {
         if (less(value, range.m_lo) || less(range.m_hi, value)) return false;
         if (!range.m_mask.empty()) {
@@ -441,6 +452,30 @@ void VlCoverpoint::valueRanges(std::initializer_list<EData> entries) {
     }
 }
 
+void VlCoverpoint::valueRuns(std::initializer_list<EData> entries) {
+    ValueData& data = *m_valuesp;
+    assert(!data.m_frozen);
+    const uint32_t words = data.m_words;
+    assert(entries.size() % (2 + 3 * words) == 0);
+    for (const EData* entryp = entries.begin(); entryp != entries.end(); entryp += 2 + 3 * words) {
+        const uint32_t first = entryp[0];
+        const uint32_t count = entryp[1];
+        ValueData::Value lo = data.read(WDataInP::external(entryp + 2));
+        const ValueData::Value span = data.read(WDataInP::external(entryp + 2 + words));
+        const ValueData::Value hi = data.read(WDataInP::external(entryp + 2 + 2 * words));
+        for (uint32_t k = 0; k < count; ++k) {
+            ValueData::Value last = hi;
+            if (k + 1 < count) {
+                last = lo;
+                data.add(last, span);
+            }
+            data.m_values[first + k].m_ranges.push_back({lo, last, {}});
+            lo = last;
+            data.increment(lo);
+        }
+    }
+}
+
 void VlCoverpoint::valuePatterns(std::initializer_list<EData> entries) {
     ValueData& data = *m_valuesp;
     assert(!data.m_frozen);
@@ -567,6 +602,7 @@ std::string VlCoverpoint::declaredBinName(uint32_t bin) const {
     const VlCovNamer& nm = namerFor(bin);
     std::string name = nm.name();
     if (nm.naming() == VlCovBinNaming::Array) name += '[' + std::to_string(bin - nm.base()) + ']';
+    if (nm.naming() == VlCovBinNaming::Numbered) name += '_' + std::to_string(bin - nm.base());
     return name;
 }
 

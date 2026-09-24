@@ -875,6 +875,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  "") \
     macro(COVERGROUP_ADD_CROSS,               "addCross",               false,  "") \
     macro(COVERGROUP_ADD_CROSS_DYN,           "addCrossDyn",            false,  "") \
+    macro(COVERGROUP_ADD_NUMBERED_NAMER,      "addNumberedNamer",       false,  "r+") \
     macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  "r+") \
     macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
     macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
@@ -903,6 +904,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_VALUE_PATTERNS,          "valuePatterns",          false,  "r") \
     macro(COVERGROUP_VALUE_RANGES,            "valueRanges",            false,  "r") \
     macro(COVERGROUP_VALUE_RELEASE,           "valueRelease",           false,  "") \
+    macro(COVERGROUP_VALUE_RUNS,              "valueRuns",              false,  "r") \
     macro(COVERGROUP_VALUE_TRANSITIONS,       "valueTransitions",       false,  "r") \
     macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  "rr") \
     macro(COVERGROUP_WEIGHT,                  "weight",                 false,  "rr") \
@@ -1181,7 +1183,8 @@ class VCoverBinsType final {
 public:
     enum en : uint8_t {
         BINS_ARRAY,  // Array of bins with user-speciifed size
-        BINS_AUTO,  // Auto-sized array of bins (eg auto_bin_max)
+        BINS_AUTO,  // Automatic bins of a 'bins auto[N]' declaration
+        BINS_AUTO_IMPLICIT,  // Automatic bins of a coverpoint without bins (IEEE 1800-2023 19.5.3)
         BINS_DEFAULT,  // Default bin
         BINS_IGNORE,  // Ignore bin
         BINS_ILLEGAL,  // Illegal bin
@@ -1197,8 +1200,9 @@ public:
         : m_e{_e} {}
     constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
-        static const char* const names[] = {"array",        "auto",       "default", "ignore_bins",
-                                            "illegal_bins", "transition", "bins",    "wildcard"};
+        static const char* const names[]
+            = {"array",        "auto",       "auto_implicit", "default", "ignore_bins",
+               "illegal_bins", "transition", "bins",          "wildcard"};
         return names[m_e];
     }
     // VlCovBinKind enumerator naming the bin's set

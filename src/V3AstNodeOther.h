@@ -1091,10 +1091,11 @@ public:
         this->iffp(iffp);
     }
     // Constructor for automatic bins
-    AstCoverBin(FileLine* fl, const string& name, AstNodeExpr* arraySizep)
+    AstCoverBin(FileLine* fl, const string& name, AstNodeExpr* arraySizep,
+                VCoverBinsType type = VCoverBinsType::BINS_AUTO)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_binsType{VCoverBinsType::BINS_AUTO}
+        , m_binsType{type}
         , m_isArray{true} {
         this->arraySizep(arraySizep);
     }

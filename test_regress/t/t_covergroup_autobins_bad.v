@@ -11,6 +11,8 @@ module t;
   int size_var;
   logic [3:0] cp_expr;
   logic [15:0] cp_wide;
+  logic [31:0] cp_32bit;
+  real cp_real;
 
   // Error: array size must be a constant
   covergroup cg1;
@@ -26,10 +28,10 @@ module t;
     }
   endgroup
 
-  // Error: array size exceeds limit of 1000
+  // Error: array size exceeds limit of 1048576
   covergroup cg2b;
     cp1: coverpoint cp_expr {
-      bins auto[1001];
+      bins auto[1048577];
     }
   endgroup
 
@@ -69,8 +71,8 @@ module t;
 
   // Warning (COVERIGN): array bins range exceeds COVER_BINS_LIMIT
   covergroup cg6;
-    cp1: coverpoint cp_wide {
-      bins b_huge[] = {[0:$]};  // open '[lo:$]' over 16-bit coverpoint exceeds bin limit
+    cp1: coverpoint cp_32bit {
+      bins b_huge[] = {[0:$]};  // open '[lo:$]' over 32-bit coverpoint exceeds bin limit
     }
   endgroup
   covergroup cg_nonconst_transition;
@@ -148,6 +150,20 @@ module t;
     }
   endgroup
 
+  // Error: the implicit automatic bins of a coverpoint are selected by their reported names
+  covergroup cgx_binsof_auto;
+    cp_imp: coverpoint cp_expr;  // auto_0 .. auto_15
+    cp_a: coverpoint cp_expr {bins a = {0};}
+    xc: cross cp_imp, cp_a {
+      bins last_bin = binsof(cp_imp.auto_15);  // OK
+      bins out_of_range = binsof(cp_imp.auto_16);
+      bins leading_zero = binsof(cp_imp.auto_01);
+      bins not_a_number = binsof(cp_imp.auto_x);
+      bins no_index = binsof(cp_imp.auto_);
+      bins declaration = binsof(cp_imp.auto);
+    }
+  endgroup
+
   covergroup cgx_binsof_large;
     cp_a: coverpoint cp_wide;
     cp_b: coverpoint cp_wide;
@@ -211,6 +227,35 @@ module t;
     }
   endgroup
 
+  // Exactly COVER_BINS_LIMIT (1048576) bins are accepted, e.g. every value of a 20-bit range
+  covergroup cg_limit;
+    cp_auto: coverpoint cp_32bit {
+      bins auto[1048576];
+    }
+    cp_open: coverpoint cp_32bit {
+      bins all[] = {[32'hfff00000 : $]};
+    }
+    cp_range: coverpoint cp_32bit {
+      bins at_limit[] = {[0 : 1048575]};
+      bins split_at_limit[] = {[0 : 524287], [524288 : 1048575]};
+      bins over_limit[] = {[0 : 1048576]};  // Warning (COVERIGN): 1048577 values
+      bins split_over_limit[] = {[0 : 524287], [524288 : 1048576]};  // Warning (COVERIGN)
+    }
+  endgroup
+
+  // Error: automatic bins are not allowed on a coverpoint of a real expression.  Its array
+  // bins generate a comparison per value, so are limited to 1024 values.
+  covergroup cg_real;
+    cp_implicit: coverpoint cp_real;
+    cp_explicit: coverpoint cp_real {
+      bins auto[4];
+    }
+    cp_array: coverpoint cp_real {
+      bins at_limit[] = {[0 : 1023]};
+      bins over_limit[] = {[0 : 1024]};  // Warning (COVERIGN): 1025 values
+    }
+  endgroup
+
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
   cg2b cg2b_inst = new;
@@ -226,10 +271,13 @@ module t;
   cgx_arr_ncval cgx_arr_ncval_inst = new;
   cgx_arr_open cgx_arr_open_inst = new;
   cgx_binsof cgx_binsof_inst = new;
+  cgx_binsof_auto cgx_binsof_auto_inst = new;
   cgx_binsof_large cgx_binsof_large_inst = new;
   cgx_dynamic_large cgx_dynamic_large_inst = new;
   cgx_binsof_excluded cgx_binsof_excluded_inst = new;
   cgx_binsof_many_values cgx_binsof_many_values_inst = new;
+  cg_limit cg_limit_inst = new;
+  cg_real cg_real_inst = new;
 
   initial $finish;
 endmodule

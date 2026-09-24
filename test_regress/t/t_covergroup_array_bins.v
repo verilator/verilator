@@ -15,6 +15,7 @@ module t;
   bit [7:0] data;
   bit [1:0] sel;
   bit [63:0] wide;
+  bit signed [7:0] sdata;
 
   covergroup cg;
     coverpoint data {
@@ -77,20 +78,58 @@ module t;
     }
   endgroup
 
-  // cg9: two ranges that are each under COVER_BINS_LIMIT (1000) but whose
+  // cg9: two ranges that are each under COVER_BINS_LIMIT (1048576) but whose
   // cumulative size exceeds it.  The first range populates the value list, the
   // second trips the running-total guard -> COVERIGN, the whole bin is ignored.
-  // cpA is crossed, so it is non-convertible and routes through the legacy
-  // per-bin generateArrayBins() path (exercising its unsupported-bin guard).
+  // cpA is crossed, so the guard also runs for a cross-fed coverpoint.
   covergroup cg9;
     cpA: coverpoint wide {
-      bins cumulative[] = {[0 : 500], [0 : 500]};
+      bins cumulative[] = {[0 : 600000], [0 : 600000]};
       bins ok = {5};
     }
     cpB: coverpoint sel {
       bins lo = {1};
     }
     cross cpA, cpB;
+  endgroup
+
+  // cg10: a signed range holds signed values: 7 bins for -3..3
+  covergroup cg10;
+    cp: coverpoint sdata {
+      bins near_zero[] = {[-3 : 3]};
+    }
+  endgroup
+
+  // cg11: a range holds only the values of the coverpoint type (IEEE 1800-2023 19.5.7):
+  // 6 bins for 250..255
+  covergroup cg11;
+    cp: coverpoint data {
+      bins top[] = {[250 : 260]};
+    }
+  endgroup
+
+  // cg12: an intersect selects array elements by value: v[1] and v[2] hold 2 and 3
+  covergroup cg12;
+    cpX: coverpoint data {
+      bins v[] = {[1 : 4]};
+    }
+    cpY: coverpoint sel {
+      bins one = {1};
+    }
+    x: cross cpX, cpY{bins mid = binsof (cpX) intersect {[2 : 3]};}
+  endgroup
+
+  // cg13: [-1 : 3] holds only 0..3, like [0 : 3], so data 1 hits a[1], a[5] and b; each hit
+  // also reaches the cross
+  covergroup cg13;
+    cp: coverpoint data {
+      bins a[] = {[-1 : 3], [0 : 3]};
+      bins b = {[0 : 3]};
+    }
+    cps: coverpoint sel {
+      bins one = {1};
+    }
+    x: cross cp, cps;
   endgroup
 
   initial begin
@@ -103,6 +142,10 @@ module t;
     cg7 cg7_inst;
     cg8 cg8_inst;
     cg9 cg9_inst;
+    cg10 cg10_inst;
+    cg11 cg11_inst;
+    cg12 cg12_inst;
+    cg13 cg13_inst;
 
     cg_inst = new();
     cg2_inst = new();
@@ -113,6 +156,10 @@ module t;
     cg7_inst = new();
     cg8_inst = new();
     cg9_inst = new();
+    cg10_inst = new();
+    cg11_inst = new();
+    cg12_inst = new();
+    cg13_inst = new();
 
     // Hit first array bin value (1)
     data = 1;
@@ -192,10 +239,38 @@ module t;
     cg8_inst.sample();
     `checkr(cg8_inst.get_inst_coverage(), 50.0);
 
-    // Exercise cg9 (crossed cpA with an ignored cumulative array bin, legacy path)
+    // Exercise cg9 (crossed cpA with an ignored cumulative array bin)
     wide = 5;
     sel = 1;
     cg9_inst.sample();
+
+    // Hit cg10 signed bins (-3..3, 7 bins): cover 2 of 7
+    sdata = -3;
+    cg10_inst.sample();
+    sdata = 3;
+    cg10_inst.sample();
+    `checkr(cg10_inst.get_inst_coverage(), 100.0 * (2.0 / 7));
+
+    // Hit cg11 clipped bins (250..255, 6 bins): cover 3 of 6
+    data = 250;
+    cg11_inst.sample();
+    data = 252;
+    cg11_inst.sample();
+    data = 255;
+    cg11_inst.sample();
+    `checkr(cg11_inst.get_inst_coverage(), 50.0);
+
+    // Hit cg12: data 3 is in the 'mid' cross bin, data 4 in an automatic cross bin
+    sel = 1;
+    data = 3;
+    cg12_inst.sample();
+    data = 4;
+    cg12_inst.sample();
+
+    // Hit cg13: three bins of cp at once
+    sel = 1;
+    data = 1;
+    cg13_inst.sample();
 
     $write("*-* All Finished *-*\n");
     $finish;
