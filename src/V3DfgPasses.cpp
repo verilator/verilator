@@ -344,9 +344,6 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
     // Fast path exit if we surely don't need to convet anything
     if (nTerms < TERM_LIMIT) return;
 
-    // Sequence numbers for name generation
-    size_t nTables = 0;
-
     DfgVertex::ScopeCache scopeCache;
 
     // Create decoders for each srcp
@@ -419,8 +416,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             // If there is an existing result variable, use that
             if (DfgVertexVar* const vp = srcp->getResultVar()) return vp->as<DfgVarPacked>();
             // Otherwise create a new variable
-            DfgVertexVar* const vtxp
-                = dfg.makeNewVar(flp, "BinToOneHot_Idx", nTables, idxDType, scopep);
+            DfgVertexVar* const vtxp = dfg.makeNewVar(flp, "BinToOneHot_Idx", idxDType, scopep);
             vtxp->vscp()->varp()->isInternal(true);
             vtxp->srcp(srcp);
             return vtxp->as<DfgVarPacked>();
@@ -428,8 +424,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         AstVarScope* const idxVscp = idxVtxp->vscp();
         // The previous index variable - we don't need a vertex for this
         AstVarScope* const preVscp = [&]() {
-            DfgVertexVar* const vtxp
-                = dfg.makeNewVar(flp, "BinToOneHot_Pre", nTables, idxDType, scopep);
+            DfgVertexVar* const vtxp = dfg.makeNewVar(flp, "BinToOneHot_Pre", idxDType, scopep);
             AstVarScope* const vscp = vtxp->vscp();
             VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
             vscp->varp()->isInternal(true);
@@ -439,15 +434,13 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         }();
         // The table variable
         DfgVarArray* const tabVtxp = [&]() {
-            DfgVertexVar* const varp
-                = dfg.makeNewVar(flp, "BinToOneHot_Tab", nTables, tabDType, scopep);
+            DfgVertexVar* const varp = dfg.makeNewVar(flp, "BinToOneHot_Tab", tabDType, scopep);
             varp->vscp()->varp()->isInternal(true);
             varp->vscp()->varp()->noReset(true);
             varp->setHasModWrRefs();
             return varp->as<DfgVarArray>();
         }();
 
-        ++nTables;
         ++ctx.m_decodersCreated;
 
         // Initialize 'tab' and 'pre' variables statically

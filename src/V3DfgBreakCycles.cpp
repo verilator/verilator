@@ -239,12 +239,10 @@ class TraceDriver final : public DfgVisitor {
 
     // Create temporary capable of holding the result of 'vtxp'
     DfgVertexVar* createTmp(const char* prefix, DfgVertex* vtxp) {
-        AstNode* nodep = v3Global.rootp();
         FileLine* const flp = vtxp->fileline();
         DfgVertex::ScopeCache scopeCache;
         AstScope* const scopep = vtxp->scopep(scopeCache);
-        DfgVertexVar* const varp
-            = m_dfg.makeNewVar(flp, prefix, nodep->user2Inc(), vtxp->dtype(), scopep);
+        DfgVertexVar* const varp = m_dfg.makeNewVar(flp, prefix, vtxp->dtype(), scopep);
         varp->vscp()->varp()->isInternal(true);
         varp->tmpForp(varp->vscp());
         m_sccInfo.add(*varp, 0);
@@ -1653,9 +1651,6 @@ void breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
     const auto dump = [&](int level, const DfgGraph& dfg, const std::string& name) {
         if (dumpDfgLevel() >= level) dfg.dumpDotFilePrefixed("breakCycles-" + name);
     };
-
-    // AstNetlist/AstNodeModule user2 used as sequence numbers for temporaries
-    const VNUser2InUse user2InUse;
 
     // Show input for debugging
     dump(7, dfg, "input");

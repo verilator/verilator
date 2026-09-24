@@ -58,8 +58,6 @@ DfgArraySel* makeVertex<DfgArraySel, AstArraySel>(const AstArraySel* nodep, DfgG
 class AstToDfgConverter final : public VNVisitor {
     // NODE STATE
     // AstNodeExpr/AstVar/AstVarScope::user2p -> DfgVertex* for this Node
-    // AstVar::user3()                        -> int temporary counter for variable
-    const VNUser3InUse m_user3InUse;
 
     // STATE
     DfgGraph& m_dfg;  // The graph being built
@@ -73,8 +71,6 @@ class AstToDfgConverter final : public VNVisitor {
 
     bool m_foundUnhandled = false;  // Found node not implemented as DFG or not implemented 'visit'
     bool m_converting = false;  // We are trying to convert some logic at the moment
-
-    size_t m_nUnpack = 0;  // Sequence numbers for temporaries
 
     // METHODS
 
@@ -273,8 +269,7 @@ class AstToDfgConverter final : public VNVisitor {
         // Assigning compound expressions to a concatenated LHS requires a temporary
         // to avoid multiple use of the expression
         if (VN_IS(lhsp, Concat) && !vtxp->is<DfgVertexVar>() && !vtxp->is<DfgConst>()) {
-            const size_t n = ++m_nUnpack;
-            DfgVertexVar* const tmpp = createTmp(*m_logicp, flp, vtxp->dtype(), "Unpack", n);
+            DfgVertexVar* const tmpp = createTmp(*m_logicp, flp, vtxp->dtype(), "Unpack");
             tmpp->srcp(vtxp);
             vtxp = tmpp;
         }
@@ -496,8 +491,8 @@ public:
 
     // Create temporay variable capable of holding the given type
     DfgVertexVar* createTmp(DfgLogic& logic, FileLine* flp, const DfgDataType& dtype,
-                            const std::string& prefix, size_t tmpCount) {
-        DfgVertexVar* const vtxp = m_dfg.makeNewVar(flp, prefix, tmpCount, dtype, logic.scopep());
+                            const std::string& prefix) {
+        DfgVertexVar* const vtxp = m_dfg.makeNewVar(flp, prefix, dtype, logic.scopep());
         logic.synth().emplace_back(vtxp);
         vtxp->vscp()->varp()->isInternal(true);
         vtxp->tmpForp(vtxp->vscp());
@@ -510,8 +505,7 @@ public:
         FileLine* const flp = astVarp->fileline();
         const DfgDataType& dtype = *DfgDataType::fromAst(astVarp->dtypep());
         const std::string prfx = prefix + "_" + astVarp->name();
-        const size_t tmpCount = astVarp->user3Inc();
-        DfgVertexVar* const vtxp = createTmp(logic, flp, dtype, prfx, tmpCount);
+        DfgVertexVar* const vtxp = createTmp(logic, flp, dtype, prfx);
         vtxp->tmpForp(vscp);
         return vtxp;
     }
@@ -623,8 +617,6 @@ class AstToDfgSynthesize final {
     DfgGraph& m_dfg;  // The graph being built
     V3DfgSynthesisContext& m_ctx;  // The context for stats
     AstToDfgConverter m_converter;  // The convert instance to use for each construct
-    size_t m_nBranchCond = 0;  // Sequence numbers for temporaries
-    size_t m_nPathPred = 0;  // Sequence numbers for temporaries
     DfgWorklist m_toRevert{m_dfg};  // We need a worklist for reverting synthesis
 
     // STATE - for current DfgLogic being synthesized
@@ -1538,12 +1530,11 @@ class AstToDfgSynthesize final {
             return resp;
         }();
 
-        size_t n = m_nPathPred++;  // Sequence number for temporaries
         const DfgDataType& dtype = predp->dtype();
 
         const auto mkTmp = [&](FileLine* flp, const char* name, DfgVertex* srcp) {
             const std::string prefix = "_BB" + std::to_string(bb.id()) + "_" + name;
-            DfgVertexVar* const tmpp = m_converter.createTmp(*m_logicp, flp, dtype, prefix, n);
+            DfgVertexVar* const tmpp = m_converter.createTmp(*m_logicp, flp, dtype, prefix);
             tmpp->srcp(srcp);
             return tmpp;
         };
@@ -1716,8 +1707,7 @@ class AstToDfgSynthesize final {
                 FileLine* const flp = condp->fileline();
                 const DfgDataType& dtype = condp->dtype();
                 const std::string prefix = "_BB" + std::to_string(bb.id()) + "_Cond";
-                const size_t n = m_nBranchCond++;
-                DfgVertexVar* const vp = m_converter.createTmp(*m_logicp, flp, dtype, prefix, n);
+                DfgVertexVar* const vp = m_converter.createTmp(*m_logicp, flp, dtype, prefix);
                 vp->srcp(condp);
                 m_bbToCondp[bb] = vp;
             }

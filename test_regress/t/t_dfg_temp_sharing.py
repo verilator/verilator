@@ -13,5 +13,5 @@ test.scenarios('vlt', 'vltmt')
 
 test.compile(verilator_flags2=['--binary', '--stats'])
 test.execute()
-test.file_grep(test.stats, r'Optimizations, DFG, temporary declarations reused\s+(\d+)', 24)
+test.file_grep(test.stats, r'Optimizations, DFG, temporary declarations reused\s+(\d+)', 36)
 test.passes()

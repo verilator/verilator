@@ -430,6 +430,7 @@ class DfgGraph final {
     size_t m_size = 0;  // Number of vertices in the graph
     const std::string m_name;  // Name of graph - need not be unique
     std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
+    size_t m_tmpNameCount = 0;  // Sequence number for newly created temporary declarations
 
     // Slots are local to this graph and prefix, so passes may attach different
     // attributes to their temporaries. Each scope consumes each slot at most once.
@@ -445,6 +446,9 @@ class DfgGraph final {
     // the map can change while the graph is const.
     mutable bool m_vertexUserInUse = false;  // Vertex user data currently in use
     mutable uint32_t m_vertexUserGeneration = 0;  // Vertex user data generation counter
+
+    // Generate a globally unique name for a new temporary declaration.
+    std::string makeUniqueName(const std::string& prefix) VL_MT_DISABLED;
 
 public:
     // CONSTRUCTOR
@@ -538,14 +542,10 @@ public:
     // DfgVertexVar instances representing the same Ast variable are unified.
     void mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) VL_MT_DISABLED;
 
-    // Genarete a unique name. The provided 'prefix' and 'n' values will be part of the name, and
-    // must be unique (as a pair) in each invocation for this graph.
-    std::string makeUniqueName(const std::string& prefix, size_t n) VL_MT_DISABLED;
-
     // Create a new scoped variable. Instances of a module share temporary
     // declarations of the same prefix and type, but have independent storage.
-    // The prefix and n pair must be unique in each invocation for this graph.
-    DfgVertexVar* makeNewVar(FileLine*, const std::string& prefix, size_t n, const DfgDataType&,
+    // Each scope uses a declaration at most once; new declarations get unique names.
+    DfgVertexVar* makeNewVar(FileLine*, const std::string& prefix, const DfgDataType&,
                              AstScope*) VL_MT_DISABLED;
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).

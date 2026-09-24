@@ -19,6 +19,7 @@ module temp_leaf #(
     d_i,
     output [W-1:0] comb0_o,
     comb1_o,
+    output [W-3:0] comb2_o,
     output logic [W-1:0] state_o = 0
 );
   /* verilator no_inline_module */
@@ -33,6 +34,10 @@ module temp_leaf #(
   // Two live intermediates of the same type must occupy distinct slots.
   assign comb0_o = ((a_r + b_r) ^ c_r) + ((a_r + b_r) & d_r);
   assign comb1_o = ((a_r ^ b_r) + c_r) ^ ((a_r ^ b_r) | d_r);
+  // A different type in the same module needs a distinct declaration name,
+  // even when both types allocate the same slot number.
+  assign comb2_o = ((a_r[W-3:0] + c_r[W-3:0]) ^ b_r[W-3:0])
+      + ((a_r[W-3:0] + c_r[W-3:0]) & d_r[W-3:0]);
   always_ff @(negedge clk_i) state_o <= (a_r + b_r) ^ (state_o + c_r);
 endmodule
 
@@ -40,9 +45,11 @@ module t;
   for (genvar n = 0; n < 16; ++n) begin : g
     localparam W = (n % 4 == 0) ? 7 : (n % 4 == 1) ? 33 : (n % 4 == 2) ? 65 : 95;
     typedef logic [W-1:0] word_t;
+    typedef logic [W-3:0] narrow_t;
     bit clk = 0;
     word_t a = 0, b = 0, c = 0, d = 0;
     wire [W-1:0] comb0, comb1, state_value;
+    wire [W-3:0] comb2;
     temp_leaf #(
         .W(W)
     ) leaf (
@@ -53,11 +60,14 @@ module t;
         .d_i(d),
         .comb0_o(comb0),
         .comb1_o(comb1),
+        .comb2_o(comb2),
         .state_o(state_value)
     );
     initial begin
       automatic word_t expected0 = 0, expected1 = 0, expected_state = 0;
+      automatic narrow_t expected2 = 0;
       word_t sum, xored;
+      narrow_t narrow_sum;
       for (int cycle = 0; cycle < 200; ++cycle) begin
         a = W'({$random, $random, $random});
         b = W'({$random, $random, $random});
@@ -66,21 +76,26 @@ module t;
         #1;
         `checkh(comb0, expected0);
         `checkh(comb1, expected1);
+        `checkh(comb2, expected2);
         `checkh(state_value, expected_state);
         clk = 1;
         sum = a + b;
         xored = a ^ b;
         expected0 = (sum ^ c) + (sum & d);
         expected1 = (xored + c) ^ (xored | d);
+        narrow_sum = narrow_t'(a) + narrow_t'(c);
+        expected2 = (narrow_sum ^ narrow_t'(b)) + (narrow_sum & narrow_t'(d));
         #1;
         `checkh(comb0, expected0);
         `checkh(comb1, expected1);
+        `checkh(comb2, expected2);
         `checkh(state_value, expected_state);
         clk = 0;
         expected_state = sum ^ (expected_state + c);
         #1;
         `checkh(comb0, expected0);
         `checkh(comb1, expected1);
+        `checkh(comb2, expected2);
         `checkh(state_value, expected_state);
       end
     end

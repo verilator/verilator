@@ -209,7 +209,6 @@ class V3DfgPeephole final : public DfgVisitor {
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
     size_t m_currentGeneration = 0;  // Current generation number
     size_t m_lastId = 0;  // Last unique vertex ID assigned
-    size_t m_nTemps = 0;  // Number of temporary variables created
     // Scope for transient temporariy variables cerated in this pass. They should all be
     // eliminated wihtin this pass, so anything should be ok, pick the top scope as easy to find.
     AstScope* const m_tmpScopep = v3Global.rootp()->topScopep()->scopep();
@@ -2181,8 +2180,8 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSplicePacked* const sp = new DfgSplicePacked{m_dfg, flp, vtxp->dtype()};
                     m_vInfo[sp].m_id = ++m_lastId;
                     sp->addDriver(catp, lsb, flp);
-                    DfgVertexVar* const varp = m_dfg.makeNewVar(flp, "PeepholeNarrow", m_nTemps++,
-                                                                vtxp->dtype(), m_tmpScopep);
+                    DfgVertexVar* const varp
+                        = m_dfg.makeNewVar(flp, "PeepholeNarrow", vtxp->dtype(), m_tmpScopep);
                     varp->tmpForp(varp->vscp());
                     m_vInfo[varp].m_id = ++m_lastId;
                     varp->vscp()->varp()->isInternal(true);

@@ -30,7 +30,6 @@ class DfgRegularize final {
     // STATE
     DfgGraph& m_dfg;  // The graph being processed
     V3DfgRegularizeContext& m_ctx;  // The optimization context for stats
-    size_t m_nTmps = 0;  // Number of temporaries added to this graph - for variable names only
     VNDeleter m_deleter;  // Deletes replacement nodes at the end
 
     // METHODS
@@ -211,8 +210,7 @@ class DfgRegularize final {
                 FileLine* const flp = vtxp->fileline();
                 AstScope* const scopep = vtxp->scopep(scopeCache);
                 DfgVertexVar* const newp
-                    = m_dfg.makeNewVar(flp, "Regularize", m_nTmps, vtxp->dtype(), scopep);
-                ++m_nTmps;
+                    = m_dfg.makeNewVar(flp, "Regularize", vtxp->dtype(), scopep);
                 // Replace vertex with the variable, make it drive the variable
                 vtxp->replaceWith(newp);
                 newp->srcp(vtxp);

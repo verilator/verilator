@@ -101,7 +101,7 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
     }
 }
 
-std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
+std::string DfgGraph::makeUniqueName(const std::string& prefix) {
     // Construct the tmpNameStub if we have not done so yet
     if (m_tmpNameStub.empty()) {
         // Use the hash of the graph name (avoid long names and non-identifiers)
@@ -112,10 +112,10 @@ std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
         m_tmpNameStub += '_' + hash + '_' + std::to_string(s_multiplicity[hash]++) + '_';
     }
     // Assemble the globally unique name
-    return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(n);
+    return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(m_tmpNameCount++);
 }
 
-DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix, size_t n,
+DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix,
                                    const DfgDataType& dtype, AstScope* scopep) {
     // AstVar declarations outlive all DFG graphs. Splitting or merging graphs
     // does not transfer slots: each graph creates globally unique declarations.
@@ -123,7 +123,7 @@ DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix, siz
     const size_t slot = temps.m_scopeCounts[scopep]++;
     AstVar* varp;
     if (slot == temps.m_declps.size()) {
-        varp = new AstVar{flp, VVarType::MODULETEMP, makeUniqueName(prefix, n), dtype.astDtypep()};
+        varp = new AstVar{flp, VVarType::MODULETEMP, makeUniqueName(prefix), dtype.astDtypep()};
         scopep->modp()->addStmtsp(varp);
         temps.m_declps.emplace_back(varp);
     } else {
