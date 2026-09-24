@@ -6464,6 +6464,7 @@ class AstVarXRef final : public AstNodeVarRef {
     string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_containsGenBlock = false;  // Contains gen block reference
+    bool m_readOnlyModport = false;  // Linked via an input-only modport, until V3LinkLValue
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, const VAccess& access)
         : ASTGEN_SUPER_VarXRef(fl, nullptr, access)
@@ -6481,6 +6482,8 @@ public:
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
     bool containsGenBlock() const { return m_containsGenBlock; }
     void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
+    bool readOnlyModport() const { return m_readOnlyModport; }
+    void readOnlyModport(const bool flag) { m_readOnlyModport = flag; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

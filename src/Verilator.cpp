@@ -284,10 +284,6 @@ static void process() {
             // should be after constifyAllLint() which flattens to 1D bit vector
             V3SplitVar::splitVariable(v3Global.rootp());
 
-            // Nothing to relink, but LinkDot names blocks created since V3Width,
-            // e.g. by V3AssertNfa. TODO: get rid of this
-            V3LinkDot::linkDotArrayed(v3Global.rootp());
-
             if (v3Global.opt.timing().isSetTrue()) {
                 // Generate classes and tasks required to maintain proper lifetimes for references
                 // in forks

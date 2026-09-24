@@ -787,6 +787,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
                                           // (nullptr == always defined)
     uint32_t* m_uniqueConstraintId = nullptr;  // Current ID of unique call
+    V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
     AstNode* m_firstExpressionInsideIndexp = nullptr;
 
     class NestedAccessPath final {
@@ -1487,14 +1488,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstClass* const elemClassp = elemClassRefDtp->classp();
         AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
 
-        AstVar* const iterVarp
-            = new AstVar{fl, VVarType::BLOCKTEMP, "__Vi", varp->findUInt32DType()};
+        AstVar* const iterVarp = new AstVar{fl, VVarType::BLOCKTEMP, m_uniqueNames.get("__Vi"),
+                                            varp->findUInt32DType()};
         iterVarp->funcLocal(true);
         iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
-        AstNode* const stmtsp = iterVarp;
-        stmtsp->addNext(
-            new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}});
+        AstNode* const stmtsp
+            = new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}};
 
         AstNodeExpr* sizep;
         if (isUnpackedClassRefArray) {
@@ -1540,14 +1540,19 @@ class ConstraintExprVisitor final : public VNVisitor {
             fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
             new AstAdd{fl, new AstConst{fl, 1}, new AstVarRef{fl, iterVarp, VAccess::READ}}});
 
-        AstBegin* const beginp = new AstBegin{fl, "", stmtsp, true};
         varp->user3(true);
         AstNodeFTask* initTaskp = m_inlineInitTaskp;
         if (!initTaskp) {
             initTaskp = VN_AS(m_memberMap.findMember(varClassp, "new"), NodeFTask);
             UASSERT_OBJ(initTaskp, varClassp, "No new() in class");
         }
-        initTaskp->addStmtsp(beginp);
+        // At the beginning, so declared before referenced
+        if (AstNode* const initStmtsp = initTaskp->stmtsp()) {
+            initStmtsp->addHereThisAsNext(iterVarp);
+        } else {
+            initTaskp->addStmtsp(iterVarp);
+        }
+        initTaskp->addStmtsp(stmtsp);
     }
 
     void createSolverVarHandle(AstVar* const varp, const bool structSelOrCMeth,
@@ -2559,16 +2564,18 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstCExpr* const cexprp = new AstCExpr{fl};
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{
-                fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
+            cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
+                                     new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
+                                     true});
             cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
             iterateAndNextNull(nodep->bodyp());
             AstNode* const bodyp
                 = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
-            nodep->replaceWith(new AstBegin{
-                fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
+            nodep->replaceWith(
+                new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
+                             new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
         }
         UASSERT_OBJ(!nodep->user3p(), nodep, "Dist bucket preamble not injected into foreach");
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2915,7 +2922,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstCExpr* const cexprp = new AstCExpr{fl};
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
+            cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
+                                     new AstForeach{fl, headerp, cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3144,7 +3152,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstCExpr* const cexprp = new AstCExpr{fl};
                 cexprp->dtypeSetString();
                 cexprp->add("([&]{\nstd::string ret = \"" + identity + "\";\n");
-                cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
+                cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
+                                         new AstForeach{fl, headerp, cstmtp}, true});
                 cexprp->add("return ret;\n})()");
                 nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
             } else {
@@ -3152,7 +3161,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstCExpr* const cexprp = new AstCExpr{fl};
                 cexprp->dtypeSetString();
                 cexprp->add("([&]{\nstd::string ret;\n");
-                cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
+                cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
+                                         new AstForeach{fl, headerp, cstmtp}, true});
                 cexprp->add("return ret.empty() ? \"" + identity + "\" : \"(" + smtOp
                             + "\" + ret + \")\";\n})()");
                 nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
@@ -3342,7 +3352,7 @@ public:
     explicit ConstraintExprVisitor(AstClass* classp, VMemberMap& memberMap, AstNode* nodep,
                                    AstNodeFTask* inlineInitTaskp, AstVar* genp,
                                    AstVar* randModeVarp, std::set<std::string>& writtenVars,
-                                   uint32_t* uniqueConstraintId,
+                                   uint32_t* uniqueConstraintId, V3UniqueNames& uniqueNames,
                                    AstNodeFTask* memberselInitTaskp = nullptr,
                                    std::set<AstVar*>* sizeConstrainedArraysp = nullptr)
         : m_classp{classp}
@@ -3353,7 +3363,8 @@ public:
         , m_memberMap{memberMap}
         , m_writtenVars{writtenVars}
         , m_sizeConstrainedArraysp{sizeConstrainedArraysp}
-        , m_uniqueConstraintId{uniqueConstraintId} {
+        , m_uniqueConstraintId{uniqueConstraintId}
+        , m_uniqueNames{uniqueNames} {
         // Pre-pass before SMT lowering: extract conditional disable-soft
         // directives as runtime AstIf statements and append them to the
         // constraint-items chain so they reach the setup task body.  The SMT
@@ -3657,10 +3668,11 @@ class RandomizeVisitor final : public VNVisitor {
     V3UniqueNames m_modeUniqueNames{"__Vmode"};  // For generating unique rand/constraint
                                                  // mode state var names
     V3UniqueNames m_inlineUniqueStdName{"__VStdrand"};
+    V3UniqueNames m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     AstNodeModule* m_modp = nullptr;  // Current module
     std::unordered_map<AstNodeModule*, AstVar*> m_stdMap;  // Map from module/class to AST Var
-    const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
     AstDynArrayDType* m_dynarrayDtp = nullptr;  // Dynamic array type (for rand mode)
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
@@ -4107,8 +4119,8 @@ class RandomizeVisitor final : public VNVisitor {
         UASSERT_OBJ(newp, classp, "No new() in class");
         newp->addStmtsp(ifp);
     }
-    static AstNode* makeModeSetLoop(FileLine* const fl, AstNodeExpr* const lhsp,
-                                    AstNodeExpr* const rhsp, bool inTask) {
+    AstNode* makeModeSetLoop(FileLine* const fl, AstNodeExpr* const lhsp, AstNodeExpr* const rhsp,
+                             bool inTask) {
         AstVar* const iterVarp = new AstVar{fl, VVarType::BLOCKTEMP, "i", lhsp->findUInt32DType()};
         iterVarp->funcLocal(inTask);
         iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -4130,7 +4142,24 @@ class RandomizeVisitor final : public VNVisitor {
         loopp->addStmtsp(new AstAssign{
             fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
             new AstAdd{fl, new AstConst{fl, 1}, new AstVarRef{fl, iterVarp, VAccess::READ}}});
-        return new AstBegin{fl, "", stmtsp, true};
+        return new AstBegin{fl, m_uniqueNames.get("__VrandBlock"), stmtsp, true};
+    }
+    void addTempVarsp(AstVar* varsp) {
+        for (AstVar* varp = varsp; varp; varp = VN_AS(varp->nextp(), Var)) {
+            if (m_ftaskp) {
+                varp->funcLocal(true);
+            } else {
+                varp->varType(VVarType::MODULETEMP);
+                varp->lifetime(VLifetime::STATIC_EXPLICIT);
+            }
+        }
+        if (!m_ftaskp) {
+            m_modp->addStmtsp(varsp);
+        } else if (AstNode* const stmtsp = m_ftaskp->stmtsp()) {
+            stmtsp->addHereThisAsNext(varsp);
+        } else {
+            m_ftaskp->addStmtsp(varsp);
+        }
     }
     AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {
         const RandomizeMode rmode = {.asUQuad = varp->user1()};
@@ -4828,7 +4857,8 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstVarRef{memberVarp->fileline(), classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp, basicFvarp);
                 if (!refp->backp()) VL_DO_DANGLING(refp->deleteTree(), refp);
-                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp, false});
+                basicRandomizep->addStmtsp(
+                    new AstBegin{fl, m_uniqueNames.get("__VrandBlock"), stmtp, false});
             }
         });
     }
@@ -5020,12 +5050,13 @@ class RandomizeVisitor final : public VNVisitor {
             UASSERT_OBJ(storeStmtsp && setStmtsp && restoreStmtsp, nodep, "Should have stmts");
             VNRelinker relinker;
             m_stmtp->unlinkFrBack(&relinker);
-            AstNode* const stmtsp = tmpVarps;
-            stmtsp->addNext(storeStmtsp);
+            AstNode* const stmtsp = storeStmtsp;
             stmtsp->addNext(setStmtsp);
             stmtsp->addNext(m_stmtp);
             stmtsp->addNext(restoreStmtsp);
-            relinker.relink(new AstBegin{nodep->fileline(), "", stmtsp, true});
+            relinker.relink(stmtsp);
+            // After relinking, so the function body is complete
+            addTempVarsp(tmpVarps);
         }
     }
 
@@ -5746,8 +5777,9 @@ class RandomizeVisitor final : public VNVisitor {
                 }
                 std::set<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
                 ConstraintExprVisitor{
-                    classp,       m_memberMap,   constrp->itemsp(),     nullptr,    genp,
-                    randModeVarp, m_writtenVars, &m_uniqueConstraintId, randomizep, &sizeArrays};
+                    classp,        m_memberMap,  constrp->itemsp(), nullptr,
+                    genp,          randModeVarp, m_writtenVars,     &m_uniqueConstraintId,
+                    m_uniqueNames, randomizep,   &sizeArrays};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
@@ -6035,7 +6067,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstVar* const randVarp = new AstVar{fl, VVarType::BLOCKTEMP, name, sumDTypep};
         randVarp->noSubst(true);
         randVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        if (m_ftaskp) randVarp->funcLocal(true);
+        addTempVarsp(randVarp);
         AstNodeExpr* sump = new AstConst{fl, AstConst::WidthedValue{}, 64, 0};
         AstNodeIf* const firstIfsp
             = new AstIf{fl, new AstConst{fl, AstConst::BitFalse{}}, nullptr, nullptr};
@@ -6063,13 +6095,13 @@ class RandomizeVisitor final : public VNVisitor {
         dispp->fmtp()->timeunit(m_modp->timeunit());
         ifsp->addElsesp(dispp);
 
-        AstNode* const newp = randVarp;
         AstNodeExpr* randp = new AstRand{fl, nullptr, false};
         randp->dtypeSetUInt64();
         AstVarRef* const randVarRefp = new AstVarRef{fl, randVarp, VAccess::WRITE};
-        newp->addNext(new AstAssign{fl, randVarRefp,
-                                    new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1},
-                                               new AstModDiv{fl, randp, sump}}});
+        AstNode* const newp
+            = new AstAssign{fl, randVarRefp,
+                            new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1},
+                                       new AstModDiv{fl, randp, sump}}};
         newp->addNext(firstIfsp);
         if (debug() >= 9) newp->dumpTreeAndNext(cout, "-  rcnew: ");
         nodep->replaceWith(newp);
@@ -6230,7 +6262,7 @@ class RandomizeVisitor final : public VNVisitor {
                     expandUniqueElementList(capturedTreep);
                     ConstraintExprVisitor{
                         nullptr, m_memberMap,   capturedTreep,         randomizeFuncp, stdrand,
-                        nullptr, m_writtenVars, &m_uniqueConstraintId, nullptr};
+                        nullptr, m_writtenVars, &m_uniqueConstraintId, m_uniqueNames,  nullptr};
                 }
                 AstCExpr* const solverCallp = new AstCExpr{fl};
                 solverCallp->dtypeSetBit();
@@ -6446,9 +6478,9 @@ class RandomizeVisitor final : public VNVisitor {
 
         {
             expandUniqueElementList(capturedTreep);
-            ConstraintExprVisitor{classp,    m_memberMap,  capturedTreep, randomizeFuncp,
-                                  localGenp, randModeVarp, m_writtenVars, &m_uniqueConstraintId,
-                                  nullptr};
+            ConstraintExprVisitor{
+                classp,       m_memberMap,   capturedTreep,         randomizeFuncp, localGenp,
+                randModeVarp, m_writtenVars, &m_uniqueConstraintId, m_uniqueNames,  nullptr};
         }
 
         // Call the solver and set return value

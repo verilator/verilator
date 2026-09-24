@@ -25,7 +25,7 @@
 
 //============================================================================
 
-enum VLinkDotStep : uint8_t { LDS_PRIMARY, LDS_PARAMED, LDS_ARRAYED, LDS_SCOPED };
+enum VLinkDotStep : uint8_t { LDS_PRIMARY, LDS_PARAMED, LDS_SCOPED };
 
 class V3LinkDot final {
     static void dumpSubstep(const string& name) VL_MT_DISABLED;
@@ -34,7 +34,6 @@ class V3LinkDot final {
 public:
     static void linkDotPrimary(AstNetlist* nodep) VL_MT_DISABLED;
     static void linkDotParamed(AstNetlist* nodep) VL_MT_DISABLED;
-    static void linkDotArrayed(AstNetlist* nodep) VL_MT_DISABLED;
     static void linkDotScope(AstNetlist* nodep) VL_MT_DISABLED;
 };
 

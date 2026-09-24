@@ -48,6 +48,16 @@ class LinkLValueVisitor final : public VNVisitor {
         // VarRef: LValue its reference
         if (m_setIfRand && !(nodep->varp() && nodep->varp()->isRand())) return;
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
+        // Linked via an input-only modport by V3LinkDot, before it was known if written
+        if (AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
+            if (xrefp->readOnlyModport()) {
+                if (nodep->access().isWriteOrRW()) {
+                    nodep->v3error(
+                        "Attempt to drive input-only modport: " << nodep->prettyNameQ());
+                }
+                xrefp->readOnlyModport(false);
+            }
+        }
         if (nodep->varp() && nodep->access().isWriteOrRW()) {
             if (nodep->varp()->isParam()) {
                 // All parameters that did get constified happened before now
