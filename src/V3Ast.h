@@ -1321,6 +1321,17 @@ public:
     }
 };
 
+// Deleter for VNTreeUP
+struct VNTreeDeleter final {
+    void operator()(AstNode* nodep) const {
+        if (nodep) nodep->deleteTree();
+    }
+};
+
+// unique_ptr owning a detached AstNode subtree, freed with deleteTree() on scope exit
+template <typename T_Node>
+using VNTreeUP = std::unique_ptr<T_Node, VNTreeDeleter>;
+
 // Forward declarations of specializations defined in V3Ast.cpp
 template <>
 AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp);

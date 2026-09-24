@@ -76,6 +76,7 @@
 #include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
+#include "V3Param.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
@@ -272,6 +273,7 @@ class WidthVisitor final : public VNVisitor {
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
+    const AstPin* m_paramPinsp = nullptr;  // Parameter pin list of enclosing construct
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeModule* m_modep = nullptr;  // Current module
@@ -2750,7 +2752,11 @@ class WidthVisitor final : public VNVisitor {
             // We had to use AstRefDType for this construct as pointers to this type
             // in type table are still correct (which they wouldn't be if we replaced the node)
         }
-        userIterateChildren(nodep, nullptr);
+        {
+            VL_RESTORER(m_paramPinsp);
+            m_paramPinsp = nodep->paramsp();
+            userIterateChildren(nodep, nullptr);
+        }
         if (nodep->subDTypep()) {
             // Normally iterateEditMoveDTypep iterate would work, but the refs are under
             // the TypeDef which will upset iterateEditMoveDTypep as it can't find it under
@@ -3874,6 +3880,8 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstIfaceRefDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "   IFACEREF " << nodep);
+        VL_RESTORER(m_paramPinsp);
+        m_paramPinsp = nodep->paramsp();
         userIterateChildren(nodep, m_vup);
         nodep->dtypep(nodep);
         if (nodep->isVirtual()) nodep->ifaceViaCellp()->setHasVirtualRef();
@@ -3972,6 +3980,8 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
+        VL_RESTORER(m_paramPinsp);
+        m_paramPinsp = nodep->paramsp();
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstDot* nodep) override {
@@ -7186,6 +7196,20 @@ class WidthVisitor final : public VNVisitor {
         return true;
     }
 
+    // Copy a parameter's data type with this instance's parameter overrides substituted in
+    AstNodeDType* instanceParamDTypep(AstNodeDType* templateDtp, const AstPin* pinsp) {
+        if (!templateDtp->exists(
+                [](const AstVarRef* refp) { return refp->varp() && refp->varp()->isParam(); })) {
+            return nullptr;
+        }
+        AstNodeDType* const clonep = templateDtp->cloneTree(false);
+        const VNTreeUP<AstVar> holderp
+            = AstVar::newDTypeHolder(templateDtp->fileline(), "__Vpindtype", clonep);
+        V3Param::substituteParams(holderp.get(), pinsp);
+        AstNodeDType* const resultp = holderp->childDTypep();
+        resultp->unlinkFrBack();
+        return resultp;
+    }
     void visit(AstPin* nodep) override {
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
@@ -7194,12 +7218,28 @@ class WidthVisitor final : public VNVisitor {
             bool didWidth = false;
             if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
                 const AstVar* const modVarp = nodep->modVarp();
-                // Convert BracketArrayDType
-                userIterate(modVarp->childDTypep(),
-                            WidthVP{SELF, BOTH}.p());  // May relink pointed to node
-                AstNodeDType* const setDtp = modVarp->childDTypep();
-                if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
-                userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                // Width against a per-instance type copy, as the template's has defaults (#6284)
+                AstNodeDType* instDtp = nullptr;
+                if (!patternp->childDTypep() && m_paramPinsp) {
+                    instDtp = instanceParamDTypep(nodep->modVarp()->childDTypep(), m_paramPinsp);
+                }
+                if (patternp->childDTypep()) {
+                    userIterate(patternp->childDTypep(), WidthVP{SELF, BOTH}.p());
+                    userIterateChildren(nodep, WidthVP{patternp->childDTypep(), BOTH}.p());
+                } else if (instDtp) {
+                    // Hold under the Pattern so the type has a back pointer while widthed
+                    patternp->childDTypep(instDtp);
+                    // Convert BracketArrayDType
+                    userIterate(patternp->childDTypep(), WidthVP{SELF, BOTH}.p());
+                    userIterateChildren(nodep, WidthVP{patternp->childDTypep(), BOTH}.p());
+                } else {
+                    // Convert BracketArrayDType
+                    userIterate(modVarp->childDTypep(),
+                                WidthVP{SELF, BOTH}.p());  // May relink pointed to node
+                    AstNodeDType* const setDtp = modVarp->childDTypep();
+                    patternp->childDTypep(setDtp->cloneTree(false));
+                    userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                }
                 didWidth = true;
             }
             if (!didWidth) userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
@@ -7360,6 +7400,8 @@ class WidthVisitor final : public VNVisitor {
                 pushDeletep(nodep->rangep()->unlinkFrBackWithNext());
             }
         }
+        VL_RESTORER(m_paramPinsp);
+        m_paramPinsp = nodep->paramsp();
         userIterateAndNext(nodep->paramsp(), nullptr);
     }
     void visit(AstGatePin* nodep) override {

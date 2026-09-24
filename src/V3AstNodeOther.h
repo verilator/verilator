@@ -2448,6 +2448,12 @@ public:
         if (examplep->childDTypep()) childDTypep(examplep->childDTypep()->cloneTree(true));
         dtypeFrom(examplep);
     }
+    // Wrap a detached data type under a throwaway MODULETEMP var so edited nodes have a back
+    // pointer; the returned owner frees the holder with deleteTree() when it goes out of scope
+    static VNTreeUP<AstVar> newDTypeHolder(FileLine* fl, const string& name, AstNodeDType* dtp) {
+        return VNTreeUP<AstVar>{
+            new AstVar{fl, VVarType::MODULETEMP, name, VFlagChildDType{}, dtp}};
+    }
     ASTGEN_MEMBERS_AstVar;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
