@@ -1141,7 +1141,7 @@ class WidthVisitor final : public VNVisitor {
             const AstNode* basep = nodep->backp();
             while (VN_IS(basep, Range)) basep = basep->backp();
             if (nodep->ascending() && !VN_IS(basep, UnpackArrayDType)
-                && !VN_IS(basep, Cell)  // For cells we warn in V3Inst
+                && !VN_IS(basep, Cell)  // For cells we warn when connecting pins
                 && !m_paramsOnly  // Skip during parameter evaluation
                 && !inDeadModule && !inParameterizedTemplate && !inTypeTable) {
                 nodep->v3warn(ASCRANGE, "Ascending bit range vector: left < right of bit range: ["
@@ -1782,7 +1782,7 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         if (!newp) {
-            pushDeletep(nodep->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         nodep->replaceWith(new AstAlways{newp});
@@ -2115,39 +2115,49 @@ class WidthVisitor final : public VNVisitor {
         // with a context so a bit/part-select (AstSel) is sized here; otherwise it would
         // reach assertAtExpr() with m_vup==null and fail as an internal error.
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
-        userIterateAndNext(nodep->binsp(), nullptr);
+        // Bin values compare against the coverpoint expression
+        userIterateAndNext(nodep->binsp(), WidthVP{nodep->exprp()->dtypep(), BOTH}.p());
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->optionsp(), nullptr);
     }
-    void widthCovergroupRanges(AstNode* rangesp) {
+    void widthCovergroupRanges(AstNode* rangesp, int fillWidth) {
         // Bin range/value entries are self-determined expressions (IEEE 1800-2023
         // 19.5).  Width each plain single-value entry self-determined so a referenced
         // parameter acquires a dtype, then constify so the reference folds to the AstConst
         // value that V3Covergroup requires.  AstInsideRange entries fold their own bounds in
         // visit(AstInsideRange).
+        // '0/'1 entries then fill to fillWidth, the coverpoint width (IEEE 1800-2023 19.5.7).
+        const auto fill = [&](AstNode* nodep) {
+            if (!fillWidth) return;
+            AstNodeExpr* exprp = VN_AS(nodep, NodeExpr);
+            fixAutoExtend(exprp /*ref*/, fillWidth);
+        };
         for (AstNode *nextp, *itemp = rangesp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
-            if (VN_IS(itemp, InsideRange)) {
-                userIterate(itemp, nullptr);
+            if (AstInsideRange* const rangep = VN_CAST(itemp, InsideRange)) {
+                userIterate(rangep, nullptr);
+                fill(rangep->lhsp());
+                fill(rangep->rhsp());
             } else {
                 itemp = userIterateSubtreeReturnEdits(itemp, WidthVP{SELF, BOTH}.p());
-                V3Const::constifyEdit(itemp);
+                fill(V3Const::constifyEdit(itemp));
             }
         }
     }
     void visit(AstCoverBinsof* nodep) override {
         userIterateAndNext(nodep->pointp(), nullptr);
-        widthCovergroupRanges(nodep->rangesp());
+        widthCovergroupRanges(nodep->rangesp(), 0);
     }
     void visit(AstCoverBin* nodep) override {
-        widthCovergroupRanges(nodep->rangesp());
+        // No m_vup for a bin directly in a covergroup body (unsupported, already warned)
+        widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->arraySizep(), nullptr);
-        userIterateAndNext(nodep->transp(), nullptr);
+        userIterateAndNext(nodep->transp(), m_vup);
     }
-    void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), nullptr); }
+    void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), m_vup); }
     void visit(AstCoverTransItem* nodep) override {
-        userIterateAndNext(nodep->valuesp(), WidthVP{SELF, BOTH}.p());
+        widthCovergroupRanges(nodep->valuesp(), m_vup ? m_vup->dtypep()->width() : 0);
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
@@ -2306,7 +2316,7 @@ class WidthVisitor final : public VNVisitor {
     // Delete a subtree after removing any saved references that point into it.
     static void deleteTreeCaptured(AstNode* nodep) {
         V3LinkDotIfaceCapture::purgeDeletedSubtree(nodep);
-        nodep->deleteTree();
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
@@ -2350,6 +2360,19 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_SIZE: {
             AstNodeDType* const dtypep = fromDTypep(nodep->fromp());
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
+            // Only worth asking while parameters are still being worked out.
+            if (m_paramsOnly) {
+                // A module that is still being copied does not have its final sizes.
+                const AstNodeModule* const ownModp = v3Global.rootp()->containingModule(dtypep);
+                if (ownModp && ownModp->parameterizedTemplate() && !ownModp->dead()) {
+                    UINFO(9, "size deferred, type still on template " << ownModp->name());
+                    // These queries always give an int, so set that now and let the
+                    // value be worked out once the copy exists.
+                    nodep->dtypeSetInt();
+                    return;
+                }
+            }
+
             if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)) {
                 switch (nodep->attrType()) {
                 case VAttrType::DIM_SIZE: {
@@ -2454,7 +2477,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const declDtp = [&]() {
                 if (m_ftaskp->fvarp()) return m_ftaskp->fvarp()->dtypep();
                 AstNodeDType* const voidp = new AstVoidDType{m_ftaskp->fileline()};
-                pushDeletep(voidp);
+                pushDeletep(voidp);  // Note voidp used past here
                 return voidp;
             }();
             if (!similarDTypeRecurse(protoDtp, declDtp)) {
@@ -5831,9 +5854,9 @@ class WidthVisitor final : public VNVisitor {
                 AstPatMember* patp = nullptr;
                 if (it == patmap.end()) {  // Default or default_type assignment
                     patp = defaultPatp_patternUOrStruct(nodep, memp, vdtypep, defaultp, dtypemap);
-                    pushDeletep(patp);
+                    pushDeletep(patp);  // patp used below
                     patp = defaultPatp_forDType(patp, memp->virtRefDTypep(), dtypemap);
-                    pushDeletep(patp);
+                    pushDeletep(patp);  // patp used below
                 } else {
                     patp = it->second;  // Member assignment
                 }
@@ -6845,7 +6868,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->foreach([this](AstScopeName* nodep) {  //
                 nodep->replaceWith(
                     new AstConst{nodep->fileline(), AstConst::String{}, "<scope-unavailable>"});
-                pushDeletep(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             });
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
             string text = VString::dequotePercent(nodep->fmtp()->text());
@@ -7065,6 +7088,104 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
     }
+
+    // Select the part of a pin connection that belongs to an element of an instance array,
+    // one dimension at a time, starting with 'rangep'. 'idx' is the row-major position of the
+    // element in the dimensions from 'rangep' inwards, each counted from the left. The
+    // connection has had its PRELIM visit. Returns true if the pin needs nothing else (the
+    // selected connection matches the port, or there was an error), false if the pin still
+    // needs the usual checks.
+    bool pinInstArrayElement(AstPin* nodep, const AstRange* rangep, int idx) {
+        AstNodeDType* const modDTypep = nodep->modVarp()->dtypep()->skipRefp();
+        AstNodeDType* const conDTypep = nodep->exprp()->dtypep()->skipRefp();
+
+        // If types match, then nothing else to do
+        if (conDTypep == modDTypep || similarDTypeRecurse(conDTypep, modDTypep)) return true;
+        // Types don't match, but all dimensions done, still need the usual checks
+        if (!rangep) return false;
+
+        const AstRange* const subRangep = VN_AS(rangep->nextp(), Range);
+
+        // Number of dimensions from 'rangep' inwards, and of elements in those after 'rangep'
+        uint32_t nDims = 1;
+        int subElems = 1;
+        for (const AstRange* rp = subRangep; rp; rp = VN_AS(rp->nextp(), Range)) {
+            ++nDims;
+            subElems *= rp->elementsConst();
+        }
+        const int elements = rangep->elementsConst();
+        const int fromLeft = idx / subElems;
+
+        const AstUnpackArrayDType* const arrp = VN_CAST(conDTypep, UnpackArrayDType);
+        const uint32_t conDims = conDTypep->dimensions(false).second;
+        const uint32_t modDims = modDTypep->dimensions(false).second;
+
+        // Unpacked array with other than the port's number of unpacked dimensions: its slowest
+        // varying unpacked dimensions must match the instance array dimensions exactly in size,
+        // and the rest be those of the port. Connect its element at the same position, counted
+        // from the left. The inner dimensions then select from that element the same way.
+        if (arrp && conDims != modDims) {
+            if (conDims != nDims + modDims || arrp->elementsConst() != elements) {
+                nodep->v3error(ucfirst(nodep->prettyOperatorName())
+                               << " as part of a module instance array requires the connection's"
+                                  " leading unpacked dimensions to match the instance array"
+                                  " dimensions (IEEE 1800-2023 23.3.3.5)");
+                userIterateAndNext(nodep->exprp(),
+                                   WidthVP{conDTypep, FINAL, STREAM_USE_ASSIGN}.p());
+                return true;
+            }
+            // ArraySel index is counted from lo
+            const int bit = arrp->declRange().ascending() ? fromLeft : elements - 1 - fromLeft;
+            // Connection is self-determined
+            userIterateAndNext(nodep->exprp(), WidthVP{conDTypep, FINAL, STREAM_USE_ASSIGN}.p());
+            AstNodeExpr* const fromp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
+            AstArraySel* const selp = new AstArraySel{fromp->fileline(), fromp, bit};
+            selp->didWidth(true);
+            nodep->exprp(selp);
+            return pinInstArrayElement(nodep, subRangep, idx % subElems);
+        }
+
+        // Otherwise if not packed (including an unpacked array with the port's number of unpacked
+        // dimensions), connect it to every element, if it is compatible with the port
+        if (!conDTypep->isIntegralOrPacked() || !modDTypep->isIntegralOrPacked()) return false;
+
+        // Packed connection
+        const int modwidth = modDTypep->width();
+        const int conwidth = conDTypep->width();
+
+        // Connection has the width of the port, connect it to every element
+        if (conwidth == modwidth) return false;
+
+        // Connection has the width of all the elements, connect a slice to each element,
+        // leftmost element to the leftmost (most significant) slice
+        if (conwidth == modwidth * elements * subElems) {
+            if (rangep->ascending()) {
+                nodep->exprp()->v3warn(ASCRANGE, "Ascending instance range connecting to "
+                                                 "vector: left < right of instance range: ["
+                                                     << rangep->leftConst() << ":"
+                                                     << rangep->rightConst() << "]");
+            }
+            const int selwidth = modwidth * subElems;
+            // Connection is self-determined
+            userIterateAndNext(nodep->exprp(), WidthVP{conDTypep, FINAL, STREAM_USE_ASSIGN}.p());
+            AstNodeExpr* const fromp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
+            AstSel* const selp = new AstSel{fromp->fileline(), fromp,
+                                            selwidth * (elements - 1 - fromLeft), selwidth};
+            selp->didWidth(true);
+            nodep->exprp(selp);
+            return pinInstArrayElement(nodep, subRangep, idx % subElems);
+        }
+
+        // Otherwise it is an error, as it must connect to one element or to all of them
+        nodep->v3error(ucfirst(nodep->prettyOperatorName())
+                       << " as part of a module instance array" << " requires " << modwidth
+                       << " or " << modwidth * elements * subElems << " bits, but connection's "
+                       << nodep->exprp()->prettyTypeName() << " generates " << conwidth
+                       << " bits. (IEEE 1800-2023 23.3.3)");
+        userIterateAndNext(nodep->exprp(), WidthVP{conDTypep, FINAL, STREAM_USE_ASSIGN}.p());
+        return true;
+    }
+
     void visit(AstPin* nodep) override {
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
@@ -7107,12 +7228,13 @@ class WidthVisitor final : public VNVisitor {
             conDTypep = conDTypep->skipRefp();
             AstNodeDType* subDTypep = modDTypep;
             const int modwidth = modDTypep->width();
-            const int conwidth = conDTypep->width();
+            int conwidth = conDTypep->width();
             if (conDTypep == modDTypep  // If match, we're golden
                 || similarDTypeRecurse(conDTypep, modDTypep)) {
                 userIterateAndNext(nodep->exprp(),
                                    WidthVP{subDTypep, FINAL, STREAM_USE_ASSIGN}.p());
-            } else if (m_cellp->rangep()) {
+            } else if (m_cellp->rangep() && m_cellp->arrayIdx() < 0) {
+                // Interface instance array, expanded later in V3Inst
                 const int numInsts = m_cellp->rangep()->elementsConst();
                 if (conwidth == modwidth) {
                     // Arrayed instants: widths match so connect to each instance
@@ -7135,6 +7257,13 @@ class WidthVisitor final : public VNVisitor {
                 userIterateAndNext(nodep->exprp(),
                                    WidthVP{subDTypep, FINAL, STREAM_USE_ASSIGN}.p());
             } else {
+                if (m_cellp->arrayIdx() >= 0) {
+                    // Element of an instance array, select its part of the connection,
+                    // then check it like any other pin, unless that is all done already
+                    if (pinInstArrayElement(nodep, m_cellp->rangep(), m_cellp->arrayIdx())) return;
+                    conDTypep = nodep->exprp()->dtypep()->skipRefp();
+                    conwidth = conDTypep->width();
+                }
                 if (nodep->modVarp()->direction() == VDirection::REF) {
                     nodep->v3error("Ref connection "
                                    << nodep->modVarp()->prettyNameQ()
@@ -7225,6 +7354,11 @@ class WidthVisitor final : public VNVisitor {
             }
             if (nodep->rangep()) userIterateAndNext(nodep->rangep(), WidthVP{SELF, BOTH}.p());
             userIterateAndNext(nodep->pinsp(), nullptr);
+            // If element of an instance array, pins are now connected, no longer need the ranges
+            if (nodep->arrayIdx() >= 0) {
+                nodep->arrayIdx(-1);
+                pushDeletep(nodep->rangep()->unlinkFrBackWithNext());
+            }
         }
         userIterateAndNext(nodep->paramsp(), nullptr);
     }
@@ -7830,6 +7964,19 @@ class WidthVisitor final : public VNVisitor {
                         calleeClassp = m_containingClassFinder.find(nodep->taskp());
                     }
                     allow = AstClass::isClassExtendedFrom(callerClassp, calleeClassp);
+                }
+            }
+            if (!allow) {
+                // An embedded covergroup may call methods of its enclosing class
+                // (IEEE 1800-2023 19.4); V3Covergroup routes the call through its handle.
+                const AstClass* const cgClassp = m_containingClassFinder.find(nodep);
+                if (cgClassp && cgClassp->covergroupEnclosingClassp()) {
+                    const AstClass* calleeClassp = VN_CAST(nodep->classOrPackagep(), Class);
+                    if (!calleeClassp) {
+                        calleeClassp = m_containingClassFinder.find(nodep->taskp());
+                    }
+                    allow = AstClass::isClassExtendedFrom(cgClassp->covergroupEnclosingClassp(),
+                                                          calleeClassp);
                 }
             }
             if (!allow) {
@@ -9382,6 +9529,14 @@ class WidthVisitor final : public VNVisitor {
                                                      : "")
                                              << " bits.");
                 }
+            }
+            // Reduce to one bit even when the width is not reported, such as an unsized
+            // (b & 1), so later passes see a 1-bit condition
+            if (AstExprStmt* const exprStmtp = VN_CAST(underp, ExprStmt)) {
+                // Reduce only the result, leaving the statements in place
+                fixWidthReduce(exprStmtp->resultp());
+                exprStmtp->dtypeFrom(exprStmtp->resultp());
+            } else if (underp->width() != 1) {
                 VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
             }
         }

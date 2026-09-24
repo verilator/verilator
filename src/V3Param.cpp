@@ -40,6 +40,10 @@
 //          Then process all modules called by that cell.
 //          (Cells never referenced after parameters expanded must be ignored.)
 //
+//      Arrayed instances of modules are expanded into their elements before
+//      the above, each element knowing its position in the array (for V3Width
+//      to select its part of the port connections).
+//
 //   After we complete parameters, the varp's will be wrong (point to old module)
 //   and must be relinked.
 //
@@ -1209,7 +1213,7 @@ class ParamProcessor final {
         if (constp && !constp->num().isString()) {
             constp->replaceWith(
                 new AstConst{constp->fileline(), AstConst::String{}, constp->num().toString()});
-            constp->deleteTree();
+            VL_DO_DANGLING(constp->deleteTree(), constp);
         }
     }
 
@@ -2113,7 +2117,7 @@ class ParamProcessor final {
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
                 UINFO(8, "    Created clone " << nodeCopyp);
-                m_deleter.pushDeletep(nodeCopyp);
+                m_deleter.pushDeletep(nodeCopyp);  // nodeCopyp used past here
                 srcModp->user3p(nodeCopyp);
                 storeOriginalParams(nodeCopyp);
             }
@@ -2155,7 +2159,7 @@ class ParamProcessor final {
         genericInterfaceVarSetup(paramsp, pinsp);
 
         // Delete the parameters from the cell; they're not relevant any longer.
-        if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
+        if (paramsp) VL_DO_DANGLING(paramsp->unlinkFrBackWithNext()->deleteTree(), paramsp);
         return newModp;
     }
 
@@ -2771,6 +2775,8 @@ class ParamVisitor final : public VNVisitor {
             const auto itm = workQueue.cbegin();
             AstNodeModule* const modp = itm->second;
             workQueue.erase(itm);
+            // Starting a new module, so what was learned about the last one no longer holds.
+            v3Global.rootp()->clearContainingModules();
 
             // Process once; note user2 will be cleared on specialization, so we will do the
             // specialized module if needed
@@ -3043,6 +3049,35 @@ class ParamVisitor final : public VNVisitor {
         return false;
     }
 
+    // Add the elements of instance array 'arrayedCellp' in the dimensions from 'rangep' inwards.
+    // 'suffix' and 'idx' are the name suffix and row-major position (each dimension counted from
+    // the left) of the dimensions outside 'rangep'.
+    void expandCellArrayDimensions(AstCell* arrayedCellp, const AstRange* rangep,
+                                   const std::string& suffix, int idx) {
+        // Base case: insert the element when no dimensions left
+        if (!rangep) {
+            AstCell* const elemp = arrayedCellp->cloneTree(false);
+            elemp->name(arrayedCellp->name() + suffix);
+            elemp->origName(arrayedCellp->origName() + suffix);
+            elemp->arrayIdx(idx);
+            arrayedCellp->addNextHere(elemp);
+            return;
+        }
+
+        // Enumerate the current dimension given by 'rangep'
+        // Each element is added right after 'arrayedCellp', so go from right to left,
+        // to end with an enumeration from the left index to the right index.
+        const int left = rangep->leftConst();
+        const int right = rangep->rightConst();
+        const int step = rangep->ascending() ? 1 : -1;
+        idx = (idx + 1) * rangep->elementsConst();
+        const AstRange* const subRangep = VN_AS(rangep->nextp(), Range);
+        for (int n = right; n != left - step; n -= step) {
+            const std::string s = suffix + "__BRA__" + AstNode::encodeNumber(n) + "__KET__";
+            expandCellArrayDimensions(arrayedCellp, subRangep, s, --idx);
+        }
+    }
+
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
@@ -3143,6 +3178,18 @@ class ParamVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCell* nodep) override {
+        // Interface arrays are still expanded in V3Inst
+        if (nodep->rangep() && nodep->arrayIdx() < 0 && !VN_IS(nodep->modp(), Iface)) {
+            // Expand the instance array into its elements
+            for (AstRange* rangep = nodep->rangep(); rangep;
+                 rangep = VN_AS(rangep->nextp(), Range)) {
+                rangep = VN_AS(V3Width::widthParamsEdit(rangep), Range);
+            }
+            expandCellArrayDimensions(nodep, nodep->rangep(), "", 0);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            // The elements replaced the arrayed cell in place, so will be iterated next.
+            return;
+        }
         checkParamNotHierRecurse(nodep->paramsp());
         if (VN_IS(nodep->modp(), Iface)) m_ifaceInstCells.emplace(nodep->name(), nodep);
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
@@ -3829,6 +3876,8 @@ void V3Param::param(AstNetlist* rootp) {
 
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("before V3Param");
     { ParamTop{rootp}; }
+    // The memo is only good while parameterizing, and the tree moves after.
+    rootp->clearContainingModules();
     V3LinkDotIfaceCapture::purgeStaleRefs();
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("after V3Param");
 

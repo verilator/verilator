@@ -139,8 +139,8 @@ class UdpVisitor final : public VNVisitor {
                 } else if (valName == "x" || valName == "X") {
                     // No x inputs supported yet, so this whole table line
                     // can never match. Drop the whole thing.
-                    if (edgetrigp) pushDeletep(edgetrigp);
-                    if (logandp) pushDeletep(logandp);
+                    if (edgetrigp) VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
+                    if (logandp) VL_DO_DANGLING(pushDeletep(logandp), logandp);
                     return;
                 }
             }
@@ -157,8 +157,8 @@ class UdpVisitor final : public VNVisitor {
 
         string const oValName = nodep->udpIsCombo() ? oNodep->name() : oNodep->nextp()->name();
         if (oValName == "-") {
-            if (edgetrigp) pushDeletep(edgetrigp);
-            if (logandp) pushDeletep(logandp);
+            if (edgetrigp) VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
+            if (logandp) VL_DO_DANGLING(pushDeletep(logandp), logandp);
             return;
         }
 
@@ -173,8 +173,8 @@ class UdpVisitor final : public VNVisitor {
             } else if (oNodep->name() == "x" || oNodep->name() == "X") {
                 // No x inputs supported yet, so this whole table line
                 // can never match. Drop the whole thing.
-                if (edgetrigp) pushDeletep(edgetrigp);
-                if (logandp) pushDeletep(logandp);
+                if (edgetrigp) VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
+                if (logandp) VL_DO_DANGLING(pushDeletep(logandp), logandp);
                 return;
             }
         }
@@ -189,7 +189,7 @@ class UdpVisitor final : public VNVisitor {
                 oNodep->v3error("Illegal value for combinational UDP line output");
             }
             m_alwaysBlockp->addStmtsp(ifp);
-            if (edgetrigp) pushDeletep(edgetrigp);
+            if (edgetrigp) VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
             return;
         }
         if (!isSequentOutputSig(oValName)) {

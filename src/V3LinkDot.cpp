@@ -2076,7 +2076,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                         AstNodeDType* const oldDtp = nodep->childDTypep();
 
                         oldDtp->replaceWith(newDtp->cloneTree(false));
-                        oldDtp->deleteTree();
+                        VL_DO_DANGLING(oldDtp->deleteTree(), oldDtp);
                     }
                 }
             }
@@ -2781,7 +2781,7 @@ private:
             }
         }
         iterateChildren(nodep);
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstAliasScope* nodep) override {  // ScopeVisitor::
         // Defer AliasScope processing - must process outer scopes before inner ones
@@ -6364,7 +6364,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED, "Node of type "
                                                  << nodep->targetRefp()->prettyTypeName()
                                                  << " referenced by disable");
-                pushDeletep(nodep->unlinkFrBack());
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
             }
             if (nodep->targetp()) {
                 nodep->targetRefp()->unlinkFrBack()->deleteTree();

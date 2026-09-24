@@ -1839,7 +1839,7 @@ class SvaNfaLowering final {
         };
         UASSERT_OBJ(size > 0, idxExprp, "Ring size must be positive");
         if (size == 1) {
-            idxExprp->deleteTree();
+            VL_DO_DANGLING(idxExprp->deleteTree(), idxExprp);
             return u32Const(0);
         }
         // idx == size - 1 ? 0 : idx + 1

@@ -1974,8 +1974,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     }
                     newp = new AstAdd{nodep->fileline(), nodep, newp};
                 } else {
-                    // TODO: looks dubious that we still iterate this below...
-                    pushDeletep(nodep);
+                    pushDeletep(nodep);  // TODO: looks dubious that we still iterate this below...
                 }
                 UINFOTREE(9, newp, "", "countout");
                 relinkHandle.relink(newp);

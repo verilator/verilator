@@ -1,4 +1,5 @@
 %Warning-COVERIGN: t/t_cover_fsm_combo_same_warn_bad.v:28:19: Ignoring unsupported: FSM coverage on multiple supported case statements found in the same combinational always block. Only the first candidate will be instrumented.
+                                                            : ... note: In instance 't'
    28 |       S1: state_d = S2;
       |                   ^
                    t/t_cover_fsm_combo_same_warn_bad.v:24:19: ... Location of first supported candidate for 't.state_q'

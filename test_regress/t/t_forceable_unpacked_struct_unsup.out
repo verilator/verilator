@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_forceable_unpacked_struct_unsup.v:13:14: Unsupported: Forcing unpacked arrays of non-bitwise inner type: array_struct_top__DOT__response
+   13 |   response_t response[2]  /*verilator forceable*/;
+      |              ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

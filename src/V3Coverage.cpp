@@ -1053,7 +1053,7 @@ class CoverageVisitor final : public VNVisitor {
                 unrolledp = new T_Oper{fl, selp, unrolledp};
             }
             iterate(unrolledp);
-            pushDeletep(unrolledp);
+            VL_DO_DANGLING(pushDeletep(unrolledp), unrolledp);
         } else {
             iterateChildren(nodep);
             lineTrack(nodep);

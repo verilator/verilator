@@ -364,6 +364,8 @@ private:
         m_deModVars.main(nodep->modp());
         //
         if (nodep->rangep()) {
+            // Only interface arrays, V3Param expanded other instance arrays
+            UASSERT_OBJ(VN_IS(nodep->modp(), Iface), nodep, "Unexpanded instance array");
             // Collect the full range chain (outer first).
             std::vector<const AstRange*> rangesp;
             for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
@@ -510,15 +512,6 @@ private:
                                                          << m_cellRangep->rightConst() << "]");
                 }
                 AstNodeExpr* exprp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
-                const bool inputPin = nodep->modVarp()->isNonOutput();
-                if (!inputPin
-                    && !VN_IS(exprp, VarRef)
-                    // V3Const will collapse the SEL with the one we're about to make
-                    && !VN_IS(exprp, Concat) && !VN_IS(exprp, Replicate) && !VN_IS(exprp, Sel)) {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Per-bit array instantiations "
-                                                 "with output connections to non-wires.");
-                    // Note spec allows more complicated matches such as slices and such
-                }
                 exprp = new AstSel{exprp->fileline(), exprp, modwidth * m_instSelNum, modwidth};
                 nodep->exprp(exprp);
             } else {
@@ -639,7 +632,7 @@ private:
                 }
                 if (prevp) {
                     pinVarp->replaceWith(prevp);
-                    pushDeletep(pinVarp);
+                    VL_DO_DANGLING(pushDeletep(pinVarp), pinVarp);
                 }
                 nodep->replaceWith(prevPinp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -713,7 +706,7 @@ private:
             }
             if (prevp) {
                 pinVarp->replaceWith(prevp);
-                pushDeletep(pinVarp);
+                VL_DO_DANGLING(pushDeletep(pinVarp), pinVarp);
             }  // else pinVarp already unlinked when another instance did this step
             nodep->replaceWith(prevPinp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -926,7 +919,9 @@ public:
                    && connBasicp->width() == pinVarp->width()) {
             // Done. One to one interconnect won't need a temporary variable.
         } else if (!alwaysCvt && !forTristate && VN_IS(pinp->exprp(), Const)) {
-            // Done. Constant.
+            // Done. Constant. Still check for driving an output, like below.
+            V3Inst::checkOutputShort(pinp);
+            if (!pinp->exprp()) return nullptr;
         } else {
             // Make a new temp wire
             // UINFOTREE(9, pinp, "", "in_pin");

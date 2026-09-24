@@ -866,7 +866,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             , m_firstExpressionInsideIndexPointerp{pointerToFirstExprp} {}
         ~NestedAccessPath() {
             if (m_nestedNameFormatp) {
-                m_nestedNameFormatTopp->deleteTree();
+                VL_DO_CLEAR(m_nestedNameFormatTopp->deleteTree(),
+                            m_nestedNameFormatTopp = nullptr);
                 m_nestedNameFormatp = nullptr;
             }
         }
@@ -2621,7 +2622,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!genVarp) {
             // This shall be substituted with an assert when it will be supported
             nodep->v3warn(CONSTRAINTIGN, "Unsupported: Unique constraint in randomize() with {}");
-            pushDeletep(nodep->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         if (m_classp) {
@@ -3494,7 +3495,7 @@ class CaptureVisitor final : public VNVisitor {
                 = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
             notXVarRefp->classOrPackagep(nodep->classOrPackagep());
             nodep->replaceWith(notXVarRefp);
-            nodep->deleteTree();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             nodep = notXVarRefp;
         }
         m_ignore.emplace(nodep);
@@ -4884,7 +4885,7 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (appendStmtp) newStmtp->addNext(appendStmtp);
             m_stmtp->replaceWith(newStmtp);
-            pushDeletep(m_stmtp);
+            VL_DO_CLEAR(pushDeletep(m_stmtp), m_stmtp = nullptr);
         } else {
             UASSERT_OBJ(receiverp, ftaskRefp, "Should have receiver");
             UASSERT_OBJ(!appendStmtp, ftaskRefp, "Append path requires arg-form rand_mode");
@@ -4995,7 +4996,7 @@ class RandomizeVisitor final : public VNVisitor {
                     = AstNode::addNext(setStmtsp, new AstAssign{fl, setp, new AstConst{fl, 1}});
                 exprp = getFromp(exprp);
             }
-            argp->unlinkFrBack()->deleteTree();
+            VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
         }
         if (hasNullArg) {  // Re-point to the per-class __Vrandomize_null wrapper
             AstClass* targetClassp = nullptr;
@@ -6104,7 +6105,7 @@ class RandomizeVisitor final : public VNVisitor {
                             "Per-instance rand_mode var missing without static fallback");
                 UASSERT_OBJ(VN_IS(nodep->backp(), StmtExpr), nodep, "Should be a statement");
                 m_stmtp->replaceWith(classLevelStaticLoopp);
-                pushDeletep(m_stmtp);
+                VL_DO_CLEAR(pushDeletep(m_stmtp), m_stmtp = nullptr);
                 return;
             }
             AstNodeExpr* const lhsp = makeModeAssignLhs(nodep->fileline(), randModeTarget.classp,

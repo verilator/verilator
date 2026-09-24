@@ -679,6 +679,7 @@ string AstCase::pragmaString() const {
 void AstCell::dump(std::ostream& str) const {
     Super::dump(str);
     if (recursive()) str << " [RECURSIVE]";
+    if (arrayIdx() >= 0) str << " [ARRAYIDX=" << arrayIdx() << "]";
     if (modp()) {
         str << " -> ";
         modp()->dump(str);
@@ -691,6 +692,7 @@ void AstCell::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, recursive);
+    if (arrayIdx() >= 0) dumpJsonNumFunc(str, arrayIdx);
     dumpJsonGen(str);
 }
 void AstCellInline::dump(std::ostream& str) const {
@@ -1963,6 +1965,16 @@ const char* AstNetlist::broken() const {
     }
     return nullptr;
 }
+const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
+    if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp;
+    const auto it = m_containingModules.find(nodep);
+    if (it != m_containingModules.end()) return it->second;
+    // Only true parents are followed.
+    AstNode* const abovep = nodep->aboveLoopp();
+    const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
+    m_containingModules[nodep] = modp;
+    return modp;
+}
 void AstNetlist::createTopScope(AstScope* scopep) {
     UASSERT(scopep, "Must not be nullptr");
     UASSERT_OBJ(!m_topScopep, scopep, "TopScope already exits");
@@ -1980,6 +1992,7 @@ void AstNetlist::deleteContents() {
     m_nbaEventp = nullptr;
     m_nbaEventTriggerp = nullptr;
     m_topScopep = nullptr;
+    m_containingModules.clear();
     m_evalFuncps.fill(nullptr);
     m_dumpTriggersFuncps.fill(nullptr);
     if (op1p()) op1p()->unlinkFrBackWithNext()->deleteTree();
@@ -2099,6 +2112,7 @@ bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
 void AstNodeCoverDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (localBinNum()) str << " lbin=" << localBinNum();
+    if (perInstance()) str << " [PERINST]";
     if (!page().empty()) str << " page=" << page();
     if (!hier().empty()) str << " hier=" << hier();
     if (this->dataDeclNullp()) {
@@ -2118,6 +2132,7 @@ void AstNodeCoverDecl::dump(std::ostream& str) const {
 void AstNodeCoverDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, binNum);
     dumpJsonNumFunc(str, localBinNum);
+    dumpJsonBoolFuncIf(str, perInstance);
     dumpJsonStrFunc(str, page);
     dumpJsonStrFunc(str, hier);
     dumpJsonGen(str);
@@ -4089,7 +4104,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
-string AstVar::vlEnumDir() const {
+string AstVar::vlEnumDir(bool forMember) const {
     string out;
     if (isInout()) {
         out = "VLVD_INOUT";
@@ -4106,17 +4121,17 @@ string AstVar::vlEnumDir() const {
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
-    if (isForceable()) out += "|VLVF_FORCEABLE";
+    if (isForceable() && !forMember) out += "|VLVF_FORCEABLE";
     if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
     }
     //
-    if (dtypep()->skipRefp()->isSigned()) out += "|VLVF_SIGNED";
+    if (dtypep()->skipRefp()->isSigned() && !forMember) out += "|VLVF_SIGNED";
     //
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
-        if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
+        if (basicp->keyword() == VBasicDTypeKwd::BIT && !forMember) out += "|VLVF_BITVAR";
     }
     if (isNet()) out += "|VLVF_NET";
     return out;

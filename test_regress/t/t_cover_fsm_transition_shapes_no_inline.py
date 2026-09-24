@@ -7,16 +7,8 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# Same as t_cover_fsm_transition_shapes_multi, but without module inlining, so
-# the coverage declarations stay in the scope of the instance that owns them.
-# The emitted hierarchy is the scope name plus AstNodeCoverDecl::hier(), so hier
-# must be relative to that scope.
-#
-# Note this golden still differs from the inlined one, which reports the top
-# scope and '$root', because V3FsmDetect::detect runs after V3Inline and so only
-# ever sees the flattened design. Were it to run before, V3Inline would prefix
-# the instance names onto hier and both would report the same, at which point
-# this test should compare against t_cover_fsm_transition_shapes_multi.out.
+# Same as t_cover_fsm_transition_shapes_multi, but without module inlining,
+# which must not change the coverage output.
 
 import vltest_bootstrap
 
@@ -27,6 +19,6 @@ test.compile(verilator_flags2=['--cc --coverage-fsm', '-fno-inline'])
 
 test.execute()
 
-test.files_identical(test.obj_dir + "/coverage.dat", "t/" + test.name + ".out")
+test.files_identical(test.obj_dir + "/coverage.dat", "t/t_cover_fsm_transition_shapes_multi.out")
 
 test.passes()
