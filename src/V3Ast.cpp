@@ -208,6 +208,10 @@ string AstNode::dedotName(const string& namein) {
     return pretty;
 }
 
+string AstNode::nameNoArray(const string& namein) {
+    return namein.substr(0, namein.find("__BRA__"));
+}
+
 string AstNode::vcdName(const string& namein) {
     // VCD tracing expects space to separate hierarchy
     // Dots are reserved for dots the user put in the name

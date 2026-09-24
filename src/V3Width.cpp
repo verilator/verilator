@@ -272,6 +272,7 @@ class WidthVisitor final : public VNVisitor {
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
+    std::vector<AstVar*> m_splitIfaceArrayVarps;  // Interface arrays split by V3Param
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeModule* m_modep = nullptr;  // Current module
@@ -1301,6 +1302,26 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "Bit select", nodep->bitp(), SELF, BOTH);
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+            // Element of a whole array of interfaces
+            if (VN_IS(nodep->fromp(), InitArray) && isIfaceArrayDType(nodep->fromp()->dtypep())) {
+                V3Const::constifyParamsEdit(nodep->bitp());  // May relink pointed to node
+                if (const AstConst* const constp = VN_CAST(nodep->bitp(), Const)) {
+                    const int bit = constp->toSInt();
+                    AstNodeExpr* newp = newIfaceArrayElement(nodep->fromp(), bit);
+                    if (!newp) {
+                        // No such instance, so an error, unlike other out of range selects
+                        const AstUnpackArrayDType* const arrp
+                            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+                        nodep->v3error("Selection index out of range of interface array: "
+                                       << bit + arrp->lo() << " outside " << arrp->hi() << ":"
+                                       << arrp->lo() << " (IEEE 1800-2023 23.6)");
+                        newp = newIfaceArrayElement(nodep->fromp(), 0);
+                    }
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
             //
             int frommsb;
             int fromlsb;
@@ -1481,6 +1502,19 @@ class WidthVisitor final : public VNVisitor {
                                    << " has reversed range order versus data type's '"
                                    << adtypep->declRange() << "'");
                 }
+            }
+            // A slice of a whole array of interfaces is the array of the selected elements
+            if (VN_IS(nodep->fromp(), InitArray) && isIfaceArrayDType(nodep->fromp()->dtypep())) {
+                AstInitArray* const newp = new AstInitArray{nodep->fileline(), newDtp, nullptr};
+                const VNumRange range = nodep->declRange();
+                for (int n = 0; n < range.elements(); ++n) {
+                    AstNodeExpr* ep = newIfaceArrayElement(nodep->fromp(), range.lo() + n);
+                    // If out of range, reported above, so use any element to continue
+                    if (!ep) ep = newIfaceArrayElement(nodep->fromp(), 0);
+                    newp->addIndexValuep(n, ep);
+                }
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
     }
@@ -3172,6 +3206,8 @@ class WidthVisitor final : public VNVisitor {
         // Make sure dtype is sized
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
+        // Removed at the end, see mainAcceptEdit
+        if (!m_paramsOnly && nodep->isIfaceArraySplit()) m_splitIfaceArrayVarps.push_back(nodep);
         if (nodep->attrsp()) {
             nodep->attrsp()->foreach([this, nodep](AstAttrOf* attrp) {
                 if (attrp->attrType() == VAttrType::VAR_PORT_DTYPE) {
@@ -3344,6 +3380,10 @@ class WidthVisitor final : public VNVisitor {
         if (!nodep->varp()->didWidth()) {
             // Var hasn't been widthed, so make it so.
             userIterate(nodep->varp(), nullptr);
+        }
+        if (!m_paramsOnly && nodep->varp()->isIfaceArraySplit()) {
+            replaceSplitIfaceArrayRef(nodep);
+            return;
         }
         // UINFOTREE(9, nodep, "", "VRin");
         // UINFOTREE(9, nodep->varp(), "", "forvar");
@@ -3661,7 +3701,8 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {  // First stage evaluation
             AstNodeDType* const vdtypep = m_vup->dtypeNullp();
-            if (!nodep->dtypep() || vdtypep) {
+            // A whole array of interfaces keeps its type, for its connections to be checked
+            if (!nodep->dtypep() || (vdtypep && !isIfaceArrayDType(nodep->dtypep()))) {
                 UASSERT_OBJ(vdtypep, nodep,
                             "InitArray type not assigned by AstPattern/Var visitor");
                 nodep->dtypep(vdtypep);
@@ -4095,10 +4136,22 @@ class WidthVisitor final : public VNVisitor {
                     foundp = clockingp->ensureEventp();
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
-                    nodep->dtypep(foundp->dtypep());
-                    nodep->varp(varp);
                     AstIface* const ifacep = adtypep->ifaceViaCellp();
                     varp->sensIfacep(ifacep);
+                    // Member of a non-virtual interface reference, e.g. an element selected
+                    // from a whole array of interfaces: reference it through the interface,
+                    // as V3LinkDot does for 'iface.member'
+                    const AstVarRef* const refp = VN_CAST(nodep->fromp(), VarRef);
+                    if (refp && !adtypep->isVirtual() && refp->varp()->isIfaceRef()) {
+                        AstVarXRef* const newp = new AstVarXRef{nodep->fileline(), varp,
+                                                                refp->name(), nodep->access()};
+                        newp->didWidth(true);
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                        return;
+                    }
+                    nodep->dtypep(foundp->dtypep());
+                    nodep->varp(varp);
                     nodep->didWidth(true);
                     return;
                 }
@@ -6628,6 +6681,16 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LHS be untyped?");
             UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LHS be unsized?");
+            // An interface instance, or an array or slice of them, is not a variable
+            if (const AstIfaceRefDType* const irefp
+                = VN_CAST(nodep->lhsp()->dtypep()->elemDTypep(), IfaceRefDType)) {
+                if (!irefp->isVirtual()) {
+                    nodep->v3error(
+                        "Illegal assignment to an interface instance (IEEE 1800-2023 10.4)");
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
+                }
+            }
             nodep->dtypeFrom(nodep->lhsp());
             //
             // AstPattern needs to know the proposed data type of the lhs, so pass on the prelim
@@ -7186,9 +7249,14 @@ class WidthVisitor final : public VNVisitor {
             // Connection is self-determined
             userIterateAndNext(nodep->exprp(), WidthVP{conDTypep, FINAL, STREAM_USE_ASSIGN}.p());
             AstNodeExpr* const fromp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
-            AstArraySel* const selp = new AstArraySel{fromp->fileline(), fromp, bit};
-            selp->didWidth(true);
-            nodep->exprp(selp);
+            if (AstNodeExpr* const elemp = newIfaceArrayElement(fromp, bit)) {
+                nodep->exprp(elemp);
+                VL_DO_DANGLING(pushDeletep(fromp), fromp);
+            } else {
+                AstArraySel* const selp = new AstArraySel{fromp->fileline(), fromp, bit};
+                selp->didWidth(true);
+                nodep->exprp(selp);
+            }
             return pinInstArrayElement(nodep, subRangep, idx % subElems);
         }
 
@@ -7256,6 +7324,7 @@ class WidthVisitor final : public VNVisitor {
                 userIterate(nodep->modVarp(), nullptr);
             }
             if (!nodep->exprp()) {  // No-connect
+                if (nodep->modVarp()->isIfaceArraySplit()) expandIfaceArrayPin(nodep);
                 return;
             }
             // Very much like like an assignment, but which side is LH/RHS
@@ -7273,6 +7342,18 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(conDTypep, nodep, "Unlinked pin data type");
             modDTypep = modDTypep->skipRefp();
             conDTypep = conDTypep->skipRefp();
+            // An interface port, or an array of them, needs interface instances, not virtual
+            // interfaces
+            if (const AstIfaceRefDType* const modIrefp
+                = VN_CAST(modDTypep->elemDTypep(), IfaceRefDType)) {
+                const AstIfaceRefDType* const conIrefp
+                    = VN_CAST(conDTypep->elemDTypep(), IfaceRefDType);
+                if (!modIrefp->isVirtual() && conIrefp && conIrefp->isVirtual()) {
+                    nodep->v3error("Illegal " << nodep->prettyOperatorName()
+                                              << ", interface port connected to a virtual"
+                                                 " interface (IEEE 1800-2023 23.3.3.4)");
+                }
+            }
             AstNodeDType* subDTypep = modDTypep;
             const int modwidth = modDTypep->width();
             int conwidth = conDTypep->width();
@@ -7280,34 +7361,14 @@ class WidthVisitor final : public VNVisitor {
                 || similarDTypeRecurse(conDTypep, modDTypep)) {
                 userIterateAndNext(nodep->exprp(),
                                    WidthVP{subDTypep, FINAL, STREAM_USE_ASSIGN}.p());
-            } else if (m_cellp->rangep() && m_cellp->arrayIdx() < 0) {
-                // Interface instance array, expanded later in V3Inst
-                const int numInsts = m_cellp->rangep()->elementsConst();
-                if (conwidth == modwidth) {
-                    // Arrayed instants: widths match so connect to each instance
-                    subDTypep = conDTypep;  // = same expr dtype
-                } else if (conwidth == numInsts * modwidth) {
-                    // Arrayed instants: one bit for each of the instants (each
-                    // assign is 1 modwidth wide)
-                    subDTypep = conDTypep;  // = same expr dtype (but numInst*pin_dtype)
-                } else {
-                    // Must be a error according to spec
-                    // (Because we need to know if to connect to one or all instants)
-                    nodep->v3error(ucfirst(nodep->prettyOperatorName())
-                                   << " as part of a module instance array" << " requires "
-                                   << modwidth << " or " << modwidth * numInsts
-                                   << " bits, but connection's "
-                                   << nodep->exprp()->prettyTypeName() << " generates " << conwidth
-                                   << " bits. (IEEE 1800-2023 23.3.3)");
-                    subDTypep = conDTypep;  // = same expr dtype
-                }
-                userIterateAndNext(nodep->exprp(),
-                                   WidthVP{subDTypep, FINAL, STREAM_USE_ASSIGN}.p());
             } else {
                 if (m_cellp->arrayIdx() >= 0) {
                     // Element of an instance array, select its part of the connection,
                     // then check it like any other pin, unless that is all done already
-                    if (pinInstArrayElement(nodep, m_cellp->rangep(), m_cellp->arrayIdx())) return;
+                    if (pinInstArrayElement(nodep, m_cellp->rangep(), m_cellp->arrayIdx())) {
+                        if (nodep->modVarp()->isIfaceArraySplit()) expandIfaceArrayPin(nodep);
+                        return;
+                    }
                     conDTypep = nodep->exprp()->dtypep()->skipRefp();
                     conwidth = conDTypep->width();
                 }
@@ -7352,16 +7413,14 @@ class WidthVisitor final : public VNVisitor {
                 // TODO Simple dtype checking, should be a more general check
                 const AstNodeArrayDType* const exprArrayp = VN_CAST(conDTypep, UnpackArrayDType);
                 const AstNodeArrayDType* const modArrayp = VN_CAST(modDTypep, UnpackArrayDType);
-                if (exprArrayp && modArrayp && VN_IS(exprArrayp->subDTypep(), IfaceRefDType)
-                    && exprArrayp->declRange().elements() != modArrayp->declRange().elements()) {
-                    const int exprSize = exprArrayp->declRange().elements();
-                    const int modSize = modArrayp->declRange().elements();
+                if (exprArrayp && modArrayp && VN_IS(conDTypep->elemDTypep(), IfaceRefDType)
+                    && unpackedArraySize(conDTypep) != unpackedArraySize(modDTypep)) {
                     nodep->v3error("Illegal "
                                    << nodep->prettyOperatorName() << ","
                                    << " mismatch between port which is an interface array of size "
-                                   << modSize << ","
+                                   << unpackedArraySize(modDTypep) << ","
                                    << " and expression which is an interface array of size "
-                                   << exprSize << ".");
+                                   << unpackedArraySize(conDTypep) << ".");
                     UINFO(1, "    Related lo: " << modDTypep);
                     UINFO(1, "    Related hi: " << conDTypep);
                 } else if ((exprArrayp && !modArrayp) || (!exprArrayp && modArrayp)) {
@@ -7380,6 +7439,8 @@ class WidthVisitor final : public VNVisitor {
                 }
                 iterateCheckAssign(nodep, "pin connection", nodep->exprp(), FINAL, subDTypep);
             }
+            // Interface array port: connect its elements
+            if (nodep->modVarp()->isIfaceArraySplit()) expandIfaceArrayPin(nodep);
         }
         // UINFOTREE(1, nodep, "", "PinOut");
     }
@@ -10633,6 +10694,168 @@ class WidthVisitor final : public VNVisitor {
     }
 
     //----------------------------------------------------------------------
+    // METHODS - interface arrays
+
+    // True if an unpacked array of non-virtual interfaces
+    static bool isIfaceArrayDType(const AstNodeDType* dtypep) {
+        if (!VN_IS(dtypep->skipRefp(), UnpackArrayDType)) return false;
+        const AstIfaceRefDType* const irefp = VN_CAST(dtypep->elemDTypep(), IfaceRefDType);
+        return irefp && !irefp->isVirtual();
+    }
+
+    // Number of elements of each unpacked dimension of 'dtypep', from the left, e.g. "2x3"
+    static std::string unpackedArraySize(const AstNodeDType* dtypep) {
+        std::string size;
+        dtypep = dtypep->skipRefp();
+        while (const AstUnpackArrayDType* const arrp = VN_CAST(dtypep, UnpackArrayDType)) {
+            if (!size.empty()) size += "x";
+            size += std::to_string(arrp->elementsConst());
+            dtypep = arrp->subDTypep()->skipRefp();
+        }
+        return size;
+    }
+
+    // A whole array of interfaces is an AstInitArray of references to its elements, so select
+    // its element 'bit' (counted from lo) directly. Returns nullptr if not such an array, or
+    // 'bit' is out of range.
+    static AstNodeExpr* newIfaceArrayElement(AstNodeExpr* fromp, int bit) {
+        AstInitArray* const initp = VN_CAST(fromp, InitArray);
+        if (!initp || !isIfaceArrayDType(initp->dtypep())) return nullptr;
+        const AstUnpackArrayDType* const arrp
+            = VN_AS(initp->dtypep()->skipRefp(), UnpackArrayDType);
+        if (bit < 0 || bit >= arrp->elementsConst()) return nullptr;
+        return initp->getIndexDefaultedValuep(bit)->cloneTree(false);
+    }
+
+    // References to the element variables of the whole interface array referenced by 'refp', in
+    // the dimensions of 'dtypep' inwards. 'name' is the element name so far, the element
+    // variables being named 'name' + 'suffix'. 'elemVarpr' is the element variable of the
+    // leftmost element in the dimensions of 'dtypep', and is moved to the right past them.
+    // E.g. 'ifc' of dimensions [0:1][3:2] -> '{'{ifc[0][3], ifc[0][2]}, '{ifc[1][3], ifc[1][2]}}
+    static AstNodeExpr* newIfaceArrayInit(const AstNodeVarRef* refp, AstNodeDType* dtypep,
+                                          const std::string& name, const std::string& suffix,
+                                          AstVar*& elemVarpr) {
+        FileLine* const flp = refp->fileline();
+        AstUnpackArrayDType* const arrp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
+        // Base case: reference the element variable when no dimensions left
+        if (!arrp) {
+            AstVar* const varp = elemVarpr;
+            UASSERT_OBJ(varp && varp->name() == name + suffix, refp,
+                        "Missing element variable of interface array " << name);
+            elemVarpr = VN_CAST(varp->nextp(), Var);
+            if (const AstVarXRef* const xrefp = VN_CAST(refp, VarXRef)) {
+                return new AstVarXRef{flp, varp, xrefp->dotted(), refp->access()};
+            }
+            return new AstVarRef{flp, varp, refp->access()};
+        }
+
+        // Enumerate the current dimension given by 'arrp', from the left index to the right,
+        // as the element variables are in that order, indexed from lo
+        AstInitArray* const initp = new AstInitArray{flp, arrp, nullptr};
+        const VNumRange range = arrp->declRange();
+        for (int n = 0, i = range.left(); n < range.elements(); ++n, i += range.leftToRightInc()) {
+            const std::string s = name + "__BRA__" + AstNode::encodeNumber(i) + "__KET__";
+            initp->addIndexValuep(
+                i - range.lo(), newIfaceArrayInit(refp, arrp->subDTypep(), s, suffix, elemVarpr));
+        }
+        return initp;
+    }
+
+    // Replace a reference to a whole interface array variable (a __Viftop companion, or an
+    // interface array port) split by V3Param, with the AstInitArray of references to its
+    // elements, which is how whole arrays of interfaces are handled from here on
+    void replaceSplitIfaceArrayRef(AstNodeVarRef* nodep) {
+        AstVar* const varp = nodep->varp();
+        UASSERT_OBJ(varp->isIfaceArraySplit(), nodep, "Not a split interface array");
+        std::string name = varp->name();
+        std::string suffix;
+        if (varp->isIfaceParent()) {
+            name = name.substr(0, name.rfind("__Viftop"));
+            suffix = "__Viftop";
+        }
+        // The element variables follow the whole array variable in order (see V3Param)
+        AstVar* elemVarp = VN_CAST(varp->nextp(), Var);
+        AstNodeExpr* const newp = newIfaceArrayInit(nodep, varp->dtypep(), name, suffix, elemVarp);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        userIterate(newp, WidthVP{SELF, BOTH}.p());
+    }
+
+    // Add a pin for each element port of interface array port of pin 'nodep', split by V3Param,
+    // in the dimensions of 'dtypep' inwards, connected to the element at the same position,
+    // counted from the left, of 'conp', which is the corresponding (sub)array of the pin's
+    // connection, if any. 'suffix' is the name suffix of the dimensions outside 'dtypep'.
+    // 'elemVarpr' is the element port variable of the rightmost element in the dimensions of
+    // 'dtypep', and is moved to the left past them.
+    void expandIfaceArrayPinDimensions(AstPin* nodep, const AstNodeDType* dtypep,
+                                       AstNodeExpr* conp, const std::string& suffix,
+                                       AstVar*& elemVarpr) {
+        const AstUnpackArrayDType* const arrp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
+        // Base case: add the pin of the element port after 'nodep' when no dimensions left
+        if (!arrp) {
+            UASSERT_OBJ(elemVarpr && elemVarpr->name() == nodep->modVarp()->name() + suffix, nodep,
+                        "Missing element variable of interface array port " << suffix);
+            AstPin* const newp = nodep->cloneTree(false);
+            newp->name(nodep->name() + suffix);
+            newp->modVarp(elemVarpr);
+            elemVarpr = VN_CAST(elemVarpr->backp(), Var);
+            if (conp) newp->exprp(conp->cloneTree(false));
+            nodep->addNextHere(newp);
+            return;
+        }
+
+        // Enumerate the current dimension given by 'arrp'
+        // Each element is added right after 'nodep', so go from right to left,
+        // to end with an enumeration from the left index to the right index.
+        const VNumRange range = arrp->declRange();
+        for (int n = range.elements() - 1; n >= 0; --n) {
+            const int i = range.left() + n * range.leftToRightInc();
+            const std::string s = suffix + "__BRA__" + AstNode::encodeNumber(i) + "__KET__";
+            // Element of the connection, if any, which is only cloned at the leaves
+            AstNodeExpr* const elemConnp = [&]() -> AstNodeExpr* {
+                if (!conp) return nullptr;
+                const AstUnpackArrayDType* const conArrp
+                    = VN_AS(conp->dtypep()->skipRefp(), UnpackArrayDType);
+                const int elements = conArrp->elementsConst();
+                // Counted from lo
+                AstNodeExpr* const resultp
+                    = VN_AS(conp, InitArray)
+                          ->getIndexDefaultedValuep(
+                              conArrp->declRange().ascending() ? n : elements - 1 - n);
+                UASSERT_OBJ(resultp, conp, "Interface array connection of mismatched shape");
+                return resultp;
+            }();
+            expandIfaceArrayPinDimensions(nodep, arrp->subDTypep(), elemConnp, s, elemVarpr);
+        }
+    }
+
+    // Replace the given interface array port pin with a pin for each element port split by V3Param
+    void expandIfaceArrayPin(AstPin* nodep) {
+        AstVar* const portp = nodep->modVarp();
+        UASSERT_OBJ(portp->isIfaceArraySplit(), nodep, "Not a split interface array port");
+        // The element variables follow the port in order (see V3Param). Pins are added from the
+        // right, so start at the last.
+        AstVar* elemVarp = portp;
+        for (uint32_t n = portp->dtypep()->arrayUnpackedElements(); n; --n) {
+            elemVarp = VN_CAST(elemVarp->nextp(), Var);
+            UASSERT_OBJ(elemVarp, portp, "Missing element variables of interface array port");
+        }
+        // Remove the connection, so the element pins do not clone it all. Deletion is deferred,
+        // so its elements can still be cloned from.
+        AstNodeExpr* const exprp = VN_AS(nodep->exprp(), NodeExpr);
+        if (exprp) pushDeletep(exprp->unlinkFrBack());
+        // Connect nothing if not a whole array of interfaces of the shape of the port, which is
+        // reported elsewhere, so the element pins do not report it again
+        const bool connect
+            = exprp && isIfaceArrayDType(exprp->dtypep())
+              && unpackedArraySize(exprp->dtypep()) == unpackedArraySize(portp->dtypep());
+        expandIfaceArrayPinDimensions(nodep, portp->dtypep(), connect ? exprp : nullptr, "",
+                                      elemVarp);
+        UASSERT_OBJ(elemVarp == portp, portp, "Mismatched element port variable");
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+
+    //----------------------------------------------------------------------
     // METHODS - special iterators
     // These functions save/restore the AstNUser information so it can pass to child nodes.
 
@@ -10682,7 +10905,13 @@ public:
         , m_paramsOnly{paramsOnly}
         , m_doGenerate{doGenerate} {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
-        return userIterateSubtreeReturnEdits(nodep, WidthVP{SELF, BOTH}.p());
+        nodep = userIterateSubtreeReturnEdits(nodep, WidthVP{SELF, BOTH}.p());
+        // All references to the whole interface array variables split by V3Param are now replaced
+        for (AstVar* const varp : m_splitIfaceArrayVarps) {
+            VL_DO_DANGLING(pushDeletep(varp->unlinkFrBack()), varp);
+        }
+        m_splitIfaceArrayVarps.clear();
+        return nodep;
     }
     static bool lowerAsFixedAggregate(const AstNodeDType* const dtypep) {
         return dtypep->isStreamableFixedAggregate() && dtypep->containsUnpackedStruct();

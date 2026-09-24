@@ -540,13 +540,14 @@ AstNodeModule* V3LinkDotIfaceCapture::followCellPath(AstNodeModule* startModp,
             component = remaining.substr(0, dotPos);
             remaining = remaining.substr(dotPos + 1);
         }
-        const size_t braPos = component.find("__BRA__");
-        const string componentBase
-            = (braPos == string::npos) ? component : component.substr(0, braPos);
+        // Matched without any array index; the elements of an instance array (see V3Param) all
+        // instantiate the same module, so any of them will do
+        const string componentBase = AstNode::nameNoArray(component);
         AstNodeModule* nextModp = nullptr;
         for (AstNode* sp = curModp->stmtsp(); sp; sp = sp->nextp()) {
             if (AstCell* const cellp = VN_CAST(sp, Cell)) {
-                if ((cellp->name() == component || cellp->name() == componentBase)
+                if ((cellp->name() == component
+                     || AstNode::nameNoArray(cellp->name()) == componentBase)
                     && cellp->modp()) {
                     nextModp = cellp->modp();
                     break;
@@ -559,7 +560,8 @@ AstNodeModule* V3LinkDotIfaceCapture::followCellPath(AstNodeModule* startModp,
                     if (viftopPos != string::npos) {
                         varBaseName = varBaseName.substr(0, viftopPos);
                     }
-                    if (varBaseName == component || varBaseName == componentBase) {
+                    if (varBaseName == component
+                        || AstNode::nameNoArray(varBaseName) == componentBase) {
                         if (AstIfaceRefDType* const irefp
                             = ifaceRefFromVarDType(varp->subDTypep())) {
                             AstIface* const ifacep = irefp->ifaceViaCellp();

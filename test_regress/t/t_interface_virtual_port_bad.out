@@ -1,0 +1,14 @@
+%Error: t/t_interface_virtual_port_bad.v:26:15: Illegal port connection 'p', interface port connected to a virtual interface (IEEE 1800-2023 23.3.3.4)
+                                              : ... note: In instance 't'
+   26 |   sub i_sub (.p(vs));
+      |               ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_interface_virtual_port_bad.v:27:23: Illegal port connection 'p', interface port connected to a virtual interface (IEEE 1800-2023 23.3.3.4)
+                                              : ... note: In instance 't'
+   27 |   sub_arr i_sub_arr (.p(va));
+      |                       ^
+%Error: t/t_interface_virtual_port_bad.v:28:19: Illegal port connection 'p', interface port connected to a virtual interface (IEEE 1800-2023 23.3.3.4)
+                                              : ... note: In instance 't'
+   28 |   sub i_subs[2] (.p(va));
+      |                   ^
+%Error: Exiting due to

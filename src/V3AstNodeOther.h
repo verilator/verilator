@@ -700,7 +700,7 @@ class AstCell final : public AstNode {
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
     // Pre V3Param: Range(s) for arrayed instances.
     // From V3Param to V3Width: ranges of the arrayed cell this element cell was expanded from
-    // After V3Width: nullptr, except for interface arrays
+    // After V3Width: nullptr
     // @astgen op3 := rangep : List[AstRange]
     // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing/VPI
     //
@@ -2318,6 +2318,8 @@ class AstVar final : public AstNode {
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
     bool m_isIfaceParent : 1;  // dtype is reference to interface present in this module
+    bool m_isIfaceArraySplit : 1;  // Interface array that was split into element variables by
+                                   // V3Param, until V3Width removes it
     bool m_isInternal : 1;  // Internal state, don't add to method pinter
     bool m_isIfaceParam : 1;  // Parameter belongs to an interface/modport
     bool m_isDpiOpenArray : 1;  // DPI import open array
@@ -2382,6 +2384,7 @@ class AstVar final : public AstNode {
         m_isPulldown = false;
         m_isPullup = false;
         m_isIfaceParent = false;
+        m_isIfaceArraySplit = false;
         m_isInternal = false;
         m_isIfaceParam = false;
         m_isDpiOpenArray = false;
@@ -2543,6 +2546,7 @@ public:
     void isContinuously(bool flag) { m_isContinuously = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
+    void isIfaceArraySplit(bool flag) { m_isIfaceArraySplit = flag; }
     void isInternal(bool flag) { m_isInternal = flag; }
     void isIfaceParam(bool flag) { m_isIfaceParam = flag; }
     void funcLocal(bool flag) {
@@ -2630,6 +2634,7 @@ public:
         m_varType = VVarType::IFACEREF;
     }
     bool isIfaceParent() const { return m_isIfaceParent; }
+    bool isIfaceArraySplit() const { return m_isIfaceArraySplit; }
     bool isInternal() const { return m_isInternal; }
     bool isIfaceParam() const { return m_isIfaceParam; }
     bool isSignal() const { return varType().isSignal(); }

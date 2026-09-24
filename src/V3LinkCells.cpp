@@ -780,7 +780,6 @@ class LinkCellsVisitor final : public VNVisitor {
                 idtypep->cellp(nodep);  // Only set when real parent cell known.
                 AstVar* varp;
                 if (nodep->rangep()) {
-                    // For arrayed interfaces, we replace cellp when de-arraying in V3Inst.
                     // Multi-dim arrays wrap one UnpackArrayDType per range, innermost first.
                     std::vector<AstRange*> rangesp;
                     for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
