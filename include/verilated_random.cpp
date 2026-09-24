@@ -55,13 +55,11 @@
 # define _VL_SOLVER_PIPE_WIN
 #endif
 
-#ifdef _VL_SOLVER_PIPE_UNIX
+#if defined(_VL_SOLVER_PIPE_UNIX)
 # include <sys/wait.h>
 # include <csignal>
 # include <fcntl.h>
-#endif
-
-#ifdef _VL_SOLVER_PIPE_WIN
+#elif defined(_VL_SOLVER_PIPE_WIN)
 # ifndef WIN32_LEAN_AND_MEAN
 #  define WIN32_LEAN_AND_MEAN
 # endif
@@ -87,7 +85,6 @@ class VlRProcess final : private std::streambuf, public std::iostream {
     int m_pid = 0;  // fork() process id - always zero as disabled
 #endif
     bool m_pidExited = true;  // If subprocess has exited and can be opened
-    int m_pidStatus = 0;  // fork() process exit status, valid if m_pidExited
     int m_writeFd = -1;  // File descriptor TO subprocess
     int m_readFd = -1;  // File descriptor FROM subprocess
     char m_readBuf[BUFFER_SIZE];
@@ -146,13 +143,12 @@ public:
 
     // Kill and reap a solver that is still running, so no child is left behind
     void terminate() {
-#ifdef _VL_SOLVER_PIPE_UNIX
+#if defined(_VL_SOLVER_PIPE_UNIX)
         if (!m_pidExited) {
             ::kill(m_pid, SIGKILL);
-            waitpid(m_pid, &m_pidStatus, 0);
+            waitpid(m_pid, nullptr, 0);
         }
-#endif
-#ifdef _VL_SOLVER_PIPE_WIN
+#elif defined(_VL_SOLVER_PIPE_WIN)
         if (!m_pidExited && m_pid) {
             TerminateProcess(m_pid, EXIT_FAILURE);
             WaitForSingleObject(m_pid, INFINITE);
@@ -160,62 +156,50 @@ public:
         }
 #endif
         m_pidExited = true;
-#ifdef _VL_SOLVER_PIPE_WIN
-        m_pid = nullptr;
-#else
-        m_pid = 0;
-#endif
+        m_pid = 0;  // Zero is a valid null value for pid_t, HANDLE, and int alike
         closeFds();
     }
 
     void wait_report() {
         if (m_pidExited) return;
-        bool reaped = true;
-#ifdef _VL_SOLVER_PIPE_UNIX
-        const pid_t rc = waitpid(m_pid, &m_pidStatus, WNOHANG);
-        if (rc != m_pid) m_pidStatus = 0;
+        bool reaped = true;  // False when the subprocess is still running
+        int status = 0;  // Subprocess exit status, valid when reaped
+        std::string reason;  // Failure description, empty if exited cleanly
+#if defined(_VL_SOLVER_PIPE_UNIX)
+        const pid_t rc = waitpid(m_pid, &status, WNOHANG);
+        if (rc != m_pid) status = 0;
         reaped = rc != 0;  // Zero means still running, so terminate() reaps it
-        if (m_pidStatus) {
+        if (status) {
+            if (WIFSIGNALED(status))
+                reason = std::string{strsignal(WTERMSIG(status))}
+                         + (WCOREDUMP(status) ? " (core dumped)" : "");
+            else if (WIFEXITED(status))
+                reason = "exit status " + std::to_string(WEXITSTATUS(status));
+        }
+#elif defined(_VL_SOLVER_PIPE_WIN)
+        if (m_pid && (WaitForSingleObject(m_pid, 0) == WAIT_OBJECT_0)) {
+            DWORD exitCode = 0;
+            GetExitCodeProcess(m_pid, &exitCode);
+            status = static_cast<int>(exitCode);
+            CloseHandle(m_pid);
+            m_pid = nullptr;
+        } else if (m_pid) {
+            reaped = false;  // Still running, so terminate() reaps it
+        }
+        if (status) reason = "exit status " + std::to_string(status);
+#endif
+        if (reaped) {
+            m_pidExited = true;
+            m_pid = 0;  // Zero is a valid null value for pid_t, HANDLE, and int alike
+        }
+        if (status) {
             std::stringstream msg;
             msg << "Subprocess command `" << m_cmd[0];
             for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
-            msg << "' failed: ";
-            if (WIFSIGNALED(m_pidStatus))
-                msg << strsignal(WTERMSIG(m_pidStatus))
-                    << (WCOREDUMP(m_pidStatus) ? " (core dumped)" : "");
-            else if (WIFEXITED(m_pidStatus))
-                msg << "exit status " << WEXITSTATUS(m_pidStatus);
+            msg << "' failed: " << reason;
             const std::string str = msg.str();
             VL_WARN_MT("", 0, "VlRProcess", str.c_str());
         }
-        if (reaped) {
-            m_pidExited = true;
-            m_pid = 0;
-        }
-#endif
-#ifdef _VL_SOLVER_PIPE_WIN
-        if (m_pid) {
-            if (WaitForSingleObject(m_pid, 0) == WAIT_OBJECT_0) {
-                DWORD exitCode = 0;
-                GetExitCodeProcess(m_pid, &exitCode);
-                m_pidStatus = static_cast<int>(exitCode);
-                if (m_pidStatus) {
-                    std::stringstream msg;
-                    msg << "Subprocess command `" << m_cmd[0];
-                    for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
-                    msg << "' failed: ";
-                    msg << "exit status " << m_pidStatus;
-                    const std::string str = msg.str();
-                    VL_WARN_MT("", 0, "VlRProcess", str.c_str());
-                }
-                CloseHandle(m_pid);
-                m_pid = nullptr;
-            } else {
-                reaped = false;  // Still running, so terminate() reaps it
-            }
-        }
-        if (reaped) m_pidExited = true;
-#endif
         closeFds();
     }
 
@@ -234,13 +218,14 @@ public:
         clear();
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
-#ifdef _VL_SOLVER_PIPE_WIN
         if (!cmd || !cmd[0]) return false;
         m_cmd = cmd;
         if (!m_logTried) {
             m_logTried = true;
             logOpen();
         }
+        log("", "# Open: "s + cmd[0]);
+#if defined(_VL_SOLVER_PIPE_WIN)
         SECURITY_ATTRIBUTES sa;
         sa.nLength = sizeof(SECURITY_ATTRIBUTES);
         sa.lpSecurityDescriptor = nullptr;
@@ -272,16 +257,34 @@ public:
                             &stderrInheritable, 0, TRUE /* inheritable */, DUPLICATE_SAME_ACCESS);
         }
 
-        // Build the command line string; quote arguments containing whitespace
+        // Build the command line string, quoting for the Microsoft command-line
+        // parsing rules: 2n backslashes followed by a quote encode n backslashes
+        // plus a literal quote, so backslashes before a quote (and trailing
+        // backslashes inside the closing quote) must be doubled
         std::string cmdline;
         for (const char* const* arg = cmd; *arg; ++arg) {
             if (arg != cmd) cmdline += ' ';
-            if (strpbrk(*arg, " \t")) cmdline += '"';
+            // An empty argument, or one with whitespace or quotes, needs quoting
+            const bool needsQuote = (**arg == '\0') || strpbrk(*arg, " \t\"");
+            if (needsQuote) cmdline += '"';
+            size_t nBackslashes = 0;
             for (const char* p = *arg; *p; ++p) {
-                if (*p == '"') cmdline += '\\';
-                cmdline += *p;
+                if (*p == '\\') {
+                    ++nBackslashes;
+                } else {
+                    if (*p == '"')
+                        cmdline.append(2 * nBackslashes + 1, '\\');
+                    else
+                        cmdline.append(nBackslashes, '\\');
+                    cmdline += *p;
+                    nBackslashes = 0;
+                }
             }
-            if (strpbrk(*arg, " \t")) cmdline += '"';
+            if (needsQuote)
+                cmdline.append(2 * nBackslashes, '\\');
+            else
+                cmdline.append(nBackslashes, '\\');
+            if (needsQuote) cmdline += '"';
         }
 
         STARTUPINFOA si;
@@ -293,7 +296,6 @@ public:
         si.hStdError = stderrInheritable ? stderrInheritable : fd_stdout_wr;
         PROCESS_INFORMATION pi;
         ZeroMemory(&pi, sizeof(pi));
-        log("", "# Open: "s + cmd[0]);
         const BOOL procOk
             = CreateProcessA(nullptr, &cmdline[0], nullptr, nullptr, TRUE /* inherit */,
                              CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
@@ -313,7 +315,6 @@ public:
         CloseHandle(pi.hThread);  // Only the process handle is of interest
         m_pid = pi.hProcess;
         m_pidExited = false;
-        m_pidStatus = 0;
         // Hand the pipe ends to the C runtime as file descriptors, so the
         // streambuf overflow/underflow read/write code is platform independent
         m_writeFd
@@ -329,13 +330,7 @@ public:
             return false;
         }
         return true;
-#elif defined(_VL_SOLVER_PIPE)
-        if (!cmd || !cmd[0]) return false;
-        m_cmd = cmd;
-        if (!m_logTried) {
-            m_logTried = true;
-            logOpen();
-        }
+#elif defined(_VL_SOLVER_PIPE_UNIX)
         int fd_stdin[2];  // Can't use std::array
         int fd_stdout[2];  // Can't use std::array
         constexpr int P_RD = 0;
@@ -364,7 +359,6 @@ public:
             return false;
         }
 
-        log("", "# Open: "s + cmd[0]);
         const pid_t pid = fork();
         if (VL_UNLIKELY(pid < 0)) {
             perror("VlRProcess::open: fork");
@@ -392,7 +386,6 @@ public:
         // Parent
         m_pid = pid;
         m_pidExited = false;
-        m_pidStatus = 0;
         m_readFd = fd_stdout[P_RD];
         m_writeFd = fd_stdin[P_WR];
 
