@@ -3131,6 +3131,10 @@ class LinkDotIfaceVisitor final : public VNVisitor {
             nodep->v3error("Modport item is not a clocking block: " << nodep->prettyNameQ());
         }
     }
+    void visit(AstScope* nodep) override {  // IfaceVisitor::
+        if (nodep->user3SetOnce()) return;
+        iterateChildren(nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // IfaceVisitor::
 
 public:
@@ -3145,6 +3149,8 @@ public:
 };
 
 void LinkDotState::computeIfaceModSyms() {
+    //  AstScope::user3()  // bool. Already iterated by a LinkDotIfaceVisitor
+    const VNUser3InUse user3InUse;
     for (const auto& itr : m_ifaceModSyms) {
         AstIface* const nodep = itr.first;
         VSymEnt* const symp = itr.second;
