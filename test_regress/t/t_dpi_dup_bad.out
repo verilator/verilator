@@ -6,4 +6,11 @@
    12 |   import "DPI-C" dpii_fa_bit = function int oth_f_int1(input int i);
       |                                             ^~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_dpi_dup_bad.v:19:47: Duplicate declaration of DPI function with different signature: 'dpii_fa_void'
+   19 |   import "DPI-C" dpii_fa_void = function void oth_f_void2(
+      |                                               ^~~~~~~~~~~
+                               : ... New signature:      void dpii_fa_void (int, int)
+        t/t_dpi_dup_bad.v:18:47: ... Original signature: void dpii_fa_void (int)
+   18 |   import "DPI-C" dpii_fa_void = function void oth_f_void1(input int i);
+      |                                               ^~~~~~~~~~~
 %Error: Exiting due to

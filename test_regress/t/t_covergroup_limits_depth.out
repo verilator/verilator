@@ -1,0 +1,3 @@
+%Warning: t/t_covergroup_limits.v:24: Coverage bin exclusions exceed the decision-graph depth limit; bin retained
+%Warning: t/t_covergroup_limits.v:30: Cross bin selection exceeds the decision-graph depth limit; bin ignored
+*-* All Finished *-*

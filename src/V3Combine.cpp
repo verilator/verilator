@@ -44,8 +44,8 @@ class CombineVisitor final : VNVisitor {
     // TYPES
     using funcit_t = std::list<AstCFunc*>::iterator;
     struct CFuncs final {
-        std::list<AstCFunc*> m_fast;
-        std::list<AstCFunc*> m_slow;
+        std::list<AstCFunc*> m_fast;  // Functions that are not slow
+        std::list<AstCFunc*> m_slow;  // Functions marked for slow files
     };
 
     // STATE

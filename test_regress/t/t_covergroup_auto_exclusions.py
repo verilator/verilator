@@ -8,13 +8,12 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import coverage_covergroup_common
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 
-test.skip("Too slow; Issue #8431")
-
-test.compile(verilator_flags2=["--binary"])
-
-test.execute()
+coverage_covergroup_common.run(test,
+                               verilator_flags2=['--timing', '--dump-tree', '--dump-tree-json'],
+                               threads=(2 if test.vltmt else 1))
 
 test.passes()

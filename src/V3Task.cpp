@@ -596,7 +596,7 @@ class TaskVisitor final : public VNVisitor {
                 m_scopep->addVarsp(newvscp);
                 AstVarRef* const repp = new AstVarRef{pinp->fileline(), newvscp, VAccess::WRITE};
                 pinp->replaceWith(repp);
-                pushDeletep(pinp);
+                VL_DO_DANGLING(pushDeletep(pinp), pinp);
                 pinp = repp;
             }
             if (inlineTask) {
@@ -1629,6 +1629,18 @@ class TaskVisitor final : public VNVisitor {
         // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
+        if (m_statep->ftaskNoInline(nodep->taskp()) && !m_statep->ftaskCFuncp(nodep->taskp())) {
+            // An earlier error (e.g. a DPI import declared twice with conflicting
+            // signatures) prevented creating the function, so remove the call
+            UASSERT_OBJ(V3Error::errorCount(), nodep, "No non-inline task, but no error issued");
+            if (VN_IS(nodep->backp(), StmtExpr)) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            } else {
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
+            return;
+        }
         UINFO(4, " FTask REF   " << nodep);
         UINFOTREE(9, nodep, "", "inlfunc");
         UASSERT_OBJ(m_scopep, nodep, "func ref not under scope");

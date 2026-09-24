@@ -43,7 +43,7 @@ module Vt_debug_emitv_t;
     Iface the_ifaces[3:0] ();
     initial begin
         begin
-            if ($test$plusargs("HELLO")) begin
+            if ((| $test$plusargs("HELLO"))) begin
                 $display("Hello argument found.");
             end
             if ((Pkg::FOO == 'sh0)) begin
@@ -56,7 +56,7 @@ module Vt_debug_emitv_t;
                     __Venum_hf6514fb1__0 = (in);
                     , __Venum_hf6514fb1__0);
             );
-            if ($value$plusargs("TEST=%d", i1)) begin
+            if ((| $value$plusargs("TEST=%d", i1))) begin
                 $display("value was %d", i1);
             end
             else begin
@@ -190,7 +190,7 @@ module Vt_debug_emitv_t;
             sub.inc(fosum);
             sum = sub.f(sum);
             $display("[%0t] sum = %d", $time, sum);
-            $display("a?= %d", ($c('sh1) ? $c('sh14)
+            $display("a?= %d", ((| $c('sh1)) ? $c('sh14)
                                  : $c('sh1e)));
             $c(;);
             $display("%d", $c(0));
@@ -394,21 +394,21 @@ module Vt_debug_emitv_t;
     initial begin
         begin
             begin : assert_simple_immediate_else
-                assert ('sh0) begin
+                assert (1'h0) begin
                 end
                 else begin
                     $display("fail");
                 end
             end
             begin : assert_simple_immediate_stmt
-                assert ('sh0) begin
+                assert (1'h0) begin
                     $display("pass");
                 end
                 else begin
                 end
             end
             begin : assert_simple_immediate_stmt_else
-                assert ('sh0) begin
+                assert (1'h0) begin
                     $display("pass");
                 end
                 else begin
@@ -416,27 +416,27 @@ module Vt_debug_emitv_t;
                 end
             end
             begin : assume_simple_immediate
-                assume ('sh0) begin
+                assume (1'h0) begin
                 end
                 else begin
                 end
             end
             begin : assume_simple_immediate_else
-                assume ('sh0) begin
+                assume (1'h0) begin
                 end
                 else begin
                     $display("fail");
                 end
             end
             begin : assume_simple_immediate_stmt
-                assume ('sh0) begin
+                assume (1'h0) begin
                     $display("pass");
                 end
                 else begin
                 end
             end
             begin : assume_simple_immediate_stmt_else
-                assume ('sh0) begin
+                assume (1'h0) begin
                     $display("pass");
                 end
                 else begin
@@ -447,7 +447,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate
-            assert #0 ('sh0) begin
+            assert #0 (1'h0) begin
             end
             else begin
             end
@@ -455,7 +455,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate_else
-            assert #0 ('sh0) begin
+            assert #0 (1'h0) begin
             end
             else begin
                 $display("fail");
@@ -464,7 +464,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate_stmt
-            assert #0 ('sh0) begin
+            assert #0 (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -473,7 +473,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate_stmt_else
-            assert #0 ('sh0) begin
+            assert #0 (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -483,7 +483,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate
-            assume #0 ('sh0) begin
+            assume #0 (1'h0) begin
             end
             else begin
             end
@@ -491,7 +491,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate_else
-            assume #0 ('sh0) begin
+            assume #0 (1'h0) begin
             end
             else begin
                 $display("fail");
@@ -500,7 +500,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate_stmt
-            assume #0 ('sh0) begin
+            assume #0 (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -509,7 +509,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate_stmt_else
-            assume #0 ('sh0) begin
+            assume #0 (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -519,7 +519,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate
-            assert final ('sh0) begin
+            assert final (1'h0) begin
             end
             else begin
             end
@@ -527,7 +527,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate_else
-            assert final ('sh0) begin
+            assert final (1'h0) begin
             end
             else begin
                 $display("fail");
@@ -536,7 +536,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate_stmt
-            assert final ('sh0) begin
+            assert final (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -545,7 +545,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate_stmt_else
-            assert final ('sh0) begin
+            assert final (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -555,7 +555,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate
-            assume final ('sh0) begin
+            assume final (1'h0) begin
             end
             else begin
             end
@@ -563,7 +563,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate_else
-            assume final ('sh0) begin
+            assume final (1'h0) begin
             end
             else begin
                 $display("fail");
@@ -572,7 +572,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate_stmt
-            assume final ('sh0) begin
+            assume final (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -581,7 +581,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate_stmt_else
-            assume final ('sh0) begin
+            assume final (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -590,7 +590,7 @@ module Vt_debug_emitv_t;
         end
     end
     property prop;
-    @(posedge clk) 'sh0
+    @(posedge clk) 1'h0
     endproperty
     begin : assert_concurrent
         assert property ( prop
@@ -776,10 +776,10 @@ module Vt_debug_emitv_t;
     int signed ao;
     initial begin
         begin : assert_intrinsic
-            assert ((| $_EXPRSTMT(
-                        ao = (a);
-                        , 32'h1);
-                )) begin
+            assert ($_EXPRSTMT(
+                    ao = (a);
+                    , 1'h1);
+            ) begin
             end
             else begin
             end
@@ -1023,6 +1023,59 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
+    covergroup Vt_debug_emitv_cg_live_cross;
+    function new;
+        cp_x: coverpoint cg_sig {
+            ignore_bins removed = {'sh0};
+        };
+        cp_y: coverpoint cg_sig2;
+      cx: cross cp_x, cp_y {
+            bins all = cx;
+        }
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
     Vt_debug_emitv_cg_basic cg_basic_instVt_debug_emitv_cg_basic;
     cg_basic_inst = new();
     Vt_debug_emitv_cg_clocked cg_clocked_instVt_debug_emitv_cg_clocked;
@@ -1031,6 +1084,8 @@ module Vt_debug_emitv_t;
     cg_trans_inst = new();
     Vt_debug_emitv_cg_cross cg_cross_instVt_debug_emitv_cg_cross;
     cg_cross_inst = new();
+    Vt_debug_emitv_cg_live_cross cg_live_cross_instVt_debug_emitv_cg_live_cross;
+    cg_live_cross_inst = new();
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1

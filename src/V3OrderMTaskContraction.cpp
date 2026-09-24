@@ -429,9 +429,9 @@ class Contraction final {
         // functions are efficient enough and using more optimized methods (e.g.: sorting networks)
         // has no measurable benefit.
         struct alignas(16) SortingRecord final {
-            uint64_t m_cp;
-            uint32_t m_id;
-            uint8_t m_idx;
+            uint64_t m_cp;  // Critical path cost of the neighbor (primary sort key)
+            uint32_t m_id;  // Id of the neighbor (tiebreaker sort key)
+            uint8_t m_idx;  // Index of the neighbor within 'neighbors'
             static_assert(PART_SIBLING_EDGE_LIMIT <= std::numeric_limits<uint8_t>::max(),
                           "m_idx must fit all indices into 'neighbors'");
             bool operator<(const SortingRecord& that) const {

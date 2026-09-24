@@ -709,8 +709,8 @@ public:
 // Tracks what matches are known to hit against V3ControlScopeTraceEntries
 class V3ControlScopeTraceEntryMatch final {
 public:
-    const V3ControlScopeTraceEntry* m_entryp;
-    const string m_scopepart;
+    const V3ControlScopeTraceEntry* m_entryp;  // Entry the match refers to
+    const string m_scopepart;  // Scope prefix being matched against the entry
     V3ControlScopeTraceEntryMatch(const V3ControlScopeTraceEntry* entryp, const string& scopepart)
         : m_entryp{entryp}
         , m_scopepart{scopepart} {}
@@ -780,8 +780,8 @@ public:
 // Resolve modules and files in the design
 
 class V3ControlResolverHierWorkerEntry final {
-    const int m_workers;
-    FileLine* const m_flp;
+    const int m_workers;  // Number of workers requested for the hierarchical block
+    FileLine* const m_flp;  // Location the worker count was specified at
 
 public:
     explicit V3ControlResolverHierWorkerEntry(int workers, FileLine* flp)
@@ -798,9 +798,9 @@ class V3ControlResolver final {
     V3ControlScopeTraceResolver m_scopeTraces;  // Regexp to trace enables
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
-    uint8_t m_mode = NONE;
+    uint8_t m_mode = NONE;  // Kind of profile_data records is currently active
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
-    FileLine* m_profileFileLine = nullptr;
+    FileLine* m_profileFileLine = nullptr;  // Location profile_data was read from
 
     V3ControlResolver() = default;
     ~V3ControlResolver() = default;

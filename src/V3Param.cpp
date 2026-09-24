@@ -880,10 +880,12 @@ class ParamProcessor final {
             V3LinkDotIfaceCapture::forEach([&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
                 if (!entry.refp) return;
                 if (entry.cloneCellPath != cloneCP) return;
-                UASSERT_OBJ(
-                    entry.ownerModp
-                        && (entry.ownerModp == newModp || entry.ownerModp->name() == srcName),
-                    entry.refp, "clone ledger entry for '" << cloneCP << "' has unexpected owner");
+                // Owner may also be a class nested in newModp (e.g. a covergroup).
+                const AstNodeModule* const ownerp = entry.ownerModp;
+                UASSERT_OBJ(ownerp == newModp || ownerp->name() == srcName
+                                || ownerp->aboveLoopp() == newModp,
+                            entry.refp,
+                            "clone ledger entry for '" << cloneCP << "' has unexpected owner");
                 if (entry.cellPath.empty()) return;
 
                 AstRefDType* const refp = entry.refp;
@@ -1022,12 +1024,15 @@ class ParamProcessor final {
                     if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
                         // Use newname (unique specialized module name) as cloneCellPath.
                         const string cloneCP = newname;
-                        // A cloned captured ref lives inside srcModp's tree, so its owner
-                        // is srcModp (SV has no nested module definitions).
-                        UASSERT_OBJ(
-                            entry.ownerModp == srcModp, clonedRefp,
-                            "cloned captured RefDType owner is not the specialized module");
-                        AstNodeModule* const clonedOwnerp = newModp;
+                        // Owner is srcModp or a class nested in it (e.g. a covergroup);
+                        // cloneTree() populated clonep() for the nested case.
+                        AstNodeModule* clonedOwnerp = newModp;
+                        if (entry.ownerModp != srcModp) {
+                            clonedOwnerp = entry.ownerModp->clonep();
+                            UASSERT_OBJ(clonedOwnerp, clonedRefp,
+                                        "captured RefDType owner was not cloned with the "
+                                        "specialized module");
+                        }
                         const V3LinkDotIfaceCapture::TemplateKey tkey{
                             entry.ownerModp ? entry.ownerModp->name() : "", entry.refp->name(),
                             entry.cellPath};
@@ -1204,7 +1209,7 @@ class ParamProcessor final {
         if (constp && !constp->num().isString()) {
             constp->replaceWith(
                 new AstConst{constp->fileline(), AstConst::String{}, constp->num().toString()});
-            constp->deleteTree();
+            VL_DO_DANGLING(constp->deleteTree(), constp);
         }
     }
 
@@ -2108,7 +2113,7 @@ class ParamProcessor final {
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
                 UINFO(8, "    Created clone " << nodeCopyp);
-                m_deleter.pushDeletep(nodeCopyp);
+                m_deleter.pushDeletep(nodeCopyp);  // nodeCopyp used past here
                 srcModp->user3p(nodeCopyp);
                 storeOriginalParams(nodeCopyp);
             }
@@ -2150,7 +2155,7 @@ class ParamProcessor final {
         genericInterfaceVarSetup(paramsp, pinsp);
 
         // Delete the parameters from the cell; they're not relevant any longer.
-        if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
+        if (paramsp) VL_DO_DANGLING(paramsp->unlinkFrBackWithNext()->deleteTree(), paramsp);
         return newModp;
     }
 
@@ -2258,7 +2263,7 @@ class ParamProcessor final {
     // deparameterize a class and delete its parameter pins, so no pointer to a
     // child may remain pending when its parent is resolved.
     class DeferredResolverVisitor final : public VNVisitor {
-        ParamProcessor& m_processor;
+        ParamProcessor& m_processor;  // Processor used to resolve deferred references
         std::set<const AstNode*> m_reachedDecls;
 
         bool firstReach(const AstNode* const declp) { return m_reachedDecls.insert(declp).second; }
@@ -2766,6 +2771,8 @@ class ParamVisitor final : public VNVisitor {
             const auto itm = workQueue.cbegin();
             AstNodeModule* const modp = itm->second;
             workQueue.erase(itm);
+            // Starting a new module, so what was learned about the last one no longer holds.
+            v3Global.rootp()->clearContainingModules();
 
             // Process once; note user2 will be cleared on specialization, so we will do the
             // specialized module if needed
@@ -3824,6 +3831,8 @@ void V3Param::param(AstNetlist* rootp) {
 
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("before V3Param");
     { ParamTop{rootp}; }
+    // The memo is only good while parameterizing, and the tree moves after.
+    rootp->clearContainingModules();
     V3LinkDotIfaceCapture::purgeStaleRefs();
     if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("after V3Param");
 

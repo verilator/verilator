@@ -44,6 +44,7 @@ class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
     // Coverage counters are emitted in each module object, so duplicate
     // no-inline instances can keep independent counts for forcePerInstance.
     int m_localBinNum = 0;  // Per-module coverage bin offset
+    bool m_perInstance = false;  // Don't clone during inlining, already per instance
 public:
     AstNodeCoverDecl(VNType t, FileLine* fl, const string& page, const string& comment)
         : AstNode(t, fl)
@@ -65,6 +66,8 @@ public:
     void binNum(int flag) { m_binNum = flag; }
     int localBinNum() const { return m_localBinNum; }
     void localBinNum(int flag) { m_localBinNum = flag; }
+    bool perInstance() const { return m_perInstance; }
+    void perInstance(bool flag) { m_perInstance = flag; }
     virtual int size() const = 0;
     const string& comment() const { return m_text; }  // text to insert in code
     const string& page() const { return m_page; }
@@ -74,7 +77,8 @@ public:
     bool sameNode(const AstNode* samep) const override {
         const AstNodeCoverDecl* const asamep = VN_DBG_AS(samep, NodeCoverDecl);
         return (fileline() == asamep->fileline() && hier() == asamep->hier()
-                && comment() == asamep->comment() && page() == asamep->page());
+                && comment() == asamep->comment() && page() == asamep->page()
+                && perInstance() == asamep->perInstance());
     }
     bool isPredictOptimizable() const override { return false; }
     void dataDeclp(AstNodeCoverDecl* nodep) { m_dataDeclp = nodep; }
@@ -790,6 +794,9 @@ public:
     string name() const override VL_MT_STABLE { return m_cellp->name(); }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     AstScope* scopep() const VL_MT_STABLE { return m_scopep; }  // Pointer to scope it's under
+    void scopep(AstScope* nodep) { m_scopep = nodep; }
+    AstCellInline* cellp() const VL_MT_STABLE { return m_cellp; }  // Pointer to the CellInline
+    void cellp(AstCellInline* nodep) { m_cellp = nodep; }
     string origModName() const {
         return m_cellp->origModName();
     }  // * = modp()->origName() before inlining
@@ -1571,6 +1578,8 @@ class AstNetlist final : public AstNode {
     // AstConst itself, as AstConst is a very common node and only a small fraction carry this
     // name.
     std::unordered_map<const AstConst*, string> m_constOrigParamNames;
+    // Module each node is in, only good while the tree holds still
+    std::unordered_map<const AstNode*, const AstNodeModule*> m_containingModules;
     // The model's evaluation entry point functions
     std::array<AstCFunc*, VEval::_ENUM_END> m_evalFuncps{};
     // The trigger dump function of each region if exists, otherwise nullptr
@@ -1596,6 +1605,10 @@ public:
     string astConstOrigParamName(const AstConst* nodep) const;
     void astConstOrigParamName(const AstConst* nodep, const string& name);
     void astConstOrigParamNameErase(const AstConst* nodep);
+    // Find the module a node is in, remembering what it passed on the way.
+    const AstNodeModule* containingModule(const AstNode* nodep);
+    // Forget remembered modules, as the tree has moved.
+    void clearContainingModules() { m_containingModules.clear(); }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     void dollarUnitPkgp(AstPackage* const packagep) { m_dollarUnitPkgp = packagep; }
     AstCFunc* evalFuncp(VEval eval) const { return m_evalFuncps[eval]; }
@@ -1868,7 +1881,9 @@ public:
     AstNodeModule* modp() const { return m_modp; }
     //
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
+    void aboveScopep(AstScope* nodep) { m_aboveScopep = nodep; }
     AstCell* aboveCellp() const { return m_aboveCellp; }
+    void aboveCellp(AstCell* nodep) { m_aboveCellp = nodep; }
     bool isTop() const VL_MT_SAFE { return aboveScopep() == nullptr; }  // At top of hierarchy
     // Create new MODULETEMP variable under this scope
     AstVarScope* createTemp(const string& name, unsigned width);
@@ -2107,10 +2122,10 @@ class AstTypedef final : public AstNode {
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
 
-    string m_name;
+    string m_name;  // Name of the typedef
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     uint32_t m_declTokenNum;  // Declaration token number
-    bool m_attrPublic = false;
+    bool m_attrPublic = false;  // Marked with public; keep even if unused
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_isUnderClass : 1;  // Underneath class
@@ -2276,7 +2291,6 @@ class AstVar final : public AstNode {
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_attrFsmState : 1;  // declared with fsm_state metacomment
-    bool m_attrFsmRegisterWrapper : 1;  // connected to an fsm_register_wrapper instance
     bool m_attrFsmResetArc : 1;  // declared with fsm_reset_arc metacomment
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_constPoolEntry : 1;  // Constant pool variable
@@ -2341,7 +2355,6 @@ class AstVar final : public AstNode {
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_attrFsmState = false;
-        m_attrFsmRegisterWrapper = false;
         m_attrFsmResetArc = false;
         m_attrFsmArcInclCond = false;
         m_constPoolEntry = false;
@@ -2472,7 +2485,7 @@ public:
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
                      bool asRef = false, bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
-    string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
+    string vlEnumDir(bool forMember = false) const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
@@ -2492,7 +2505,6 @@ public:
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
     void attrFsmState(bool flag) { m_attrFsmState = flag; }
-    void attrFsmRegisterWrapper(bool flag) { m_attrFsmRegisterWrapper = flag; }
     void attrFsmResetArc(bool flag) { m_attrFsmResetArc = flag; }
     void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
     bool constPoolEntry() const { return m_constPoolEntry; }
@@ -2661,7 +2673,6 @@ public:
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrFsmState() const { return m_attrFsmState; }
-    bool attrFsmRegisterWrapper() const { return m_attrFsmRegisterWrapper; }
     bool attrFsmResetArc() const { return m_attrFsmResetArc; }
     bool attrFsmArcInclCond() const { return m_attrFsmArcInclCond; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
@@ -2685,13 +2696,6 @@ public:
         lifetime(fromp->lifetime());
     }
     void combineType(const AstVar* otherp);
-    void inlineAttrReset(const string& name) {
-        if (direction() == VDirection::INOUT && varType() == VVarType::WIRE) {
-            m_varType = VVarType::TRIWIRE;
-        }
-        m_direction = VDirection::NONE;
-        m_name = name;
-    }
     bool needsCReset() const {
         return !isIfaceParent() && !isIfaceRef() && !noReset() && !isParam() && !isStatementTemp()
                && !noCReset() && !(basicp() && basicp()->isEvent());
@@ -2734,6 +2738,7 @@ public:
     bool sameNode(const AstNode* samep) const override;
     bool hasDType() const override VL_MT_SAFE { return true; }
     AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
+    void varp(AstVar* nodep) { m_varp = nodep; }
     AstScope* scopep() const VL_MT_STABLE { return m_scopep; }  // Pointer to scope it's under
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     bool isTrace() const { return m_trace; }
@@ -2747,10 +2752,10 @@ class AstCoverOtherDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
     // Used for other than toggle types of coverage
     string m_linescov;
-    string m_fsmVar;
-    string m_fsmFrom;
-    string m_fsmTo;
-    string m_fsmTag;
+    string m_fsmVar;  // FSM state variable name
+    string m_fsmFrom;  // FSM source state label
+    string m_fsmTo;  // FSM destination state label
+    string m_fsmTag;  // FSM arc kind tag (e.g. reset, reset_include, default)
     int m_offset;  // Offset column numbers to uniq-ify IFs
 public:
     AstCoverOtherDecl(FileLine* fl, const string& page, const string& comment,

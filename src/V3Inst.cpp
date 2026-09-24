@@ -26,6 +26,7 @@
 #include "V3Inst.h"
 
 #include "V3Const.h"
+#include "V3Control.h"
 #include "V3Width.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -48,6 +49,56 @@ class InstVisitor final : public VNVisitor {
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell
 
+    // METHODS
+    // If appropriate, add an AstAlias to connect the given Cell pin to the given expression.
+    // Returns true if an alias was made, in which case there is nothing else to do for this pin.
+    bool tryAliasPin(AstPin* nodep, AstNodeExpr* exprp) {
+        AstVar* const modVarp = nodep->modVarp();
+        // An interface reference is aliased via AstAliasScope below, not as a variable
+        if (modVarp->isIfaceRef()) return false;
+        // Only a whole variable can be aliased, anything else needs the assignment
+        AstVarRef* const refp = VN_CAST(exprp, VarRef);
+        if (!refp) return false;
+        AstVar* const exprVarp = refp->varp();
+        // A ref port must become an alias
+        if (!modVarp->direction().isRef()) {
+            // V3FsmDetect recognizes the registers of an fsm_register_wrapper instance via
+            // the assignments of its pins, so leave those as assignments
+            AstNodeModule* const cellModp = m_cellp->modp();
+            if (V3Control::getFsmRegisterWrapper(cellModp->origName())
+                || V3Control::getFsmRegisterWrapper(cellModp->prettyDehashOrigOrName())) {
+                return false;
+            }
+            // A virtual interface method call is dispatched at run time, so the body of an
+            // interface reached that way must use the signals of the instance it is called
+            // on, not those of whichever instance this connection happens to be made to
+            if (const AstIface* const ifacep = VN_CAST(m_cellp->modp(), Iface)) {
+                if (ifacep->hasVirtualRef()) return false;
+            }
+            // Forced signals must keep their own storage, the two sides can be forced separately
+            if (modVarp->isForced() || exprVarp->isForced()) return false;
+            // Same for public
+            if (modVarp->isSigUserRWPublic() || exprVarp->isSigUserRWPublic()) return false;
+            // V3Tristate resolved the connected net already, and drives it from the
+            // resolution it built for it, so a port merged into it would be driven by
+            // the resolution of the instance as well
+            if (exprVarp->isTristate()) return false;
+        }
+        // They will become the same variable, so propagate file-line and attributes
+        exprVarp->fileline()->modifyStateInherit(modVarp->fileline());
+        modVarp->fileline()->modifyStateInherit(exprVarp->fileline());
+        exprVarp->propagateAttrFrom(modVarp);
+        modVarp->propagateAttrFrom(exprVarp);
+        // The port is named first, so the net it connects to is the one that survives
+        refp->access(VAccess::READWRITE);
+        FileLine* const flp = exprp->fileline();
+        AstNodeExpr* const itemsp
+            = new AstVarXRef{flp, modVarp, m_cellp->name(), VAccess::READWRITE};
+        itemsp->addNext(exprp);
+        m_cellp->addNextHere(new AstAlias{flp, itemsp});
+        return true;
+    }
+
     // VISITORS
     void visit(AstCell* nodep) override {
         UINFO(4, "  CELL   " << nodep);
@@ -57,6 +108,7 @@ class InstVisitor final : public VNVisitor {
         AstNode::user1ClearTree();
         iterateChildren(nodep);
     }
+
     void visit(AstPin* nodep) override {
         // PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
         //            or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
@@ -78,21 +130,25 @@ class InstVisitor final : public VNVisitor {
             if (nodep->modVarp()->isInout()) {
                 nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
             } else if (nodep->modVarp()->isWritable()) {
-                AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
-                                                         m_cellp->name(), VAccess::READ};
-                markContinuousLhs(exprp);
-                AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
-                m_cellp->addNextHere(new AstAlways{assp});
+                if (!tryAliasPin(nodep, exprp)) {
+                    AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
+                                                             m_cellp->name(), VAccess::READ};
+                    markContinuousLhs(exprp);
+                    AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
+                    m_cellp->addNextHere(new AstAlways{assp});
+                }
             } else if (nodep->modVarp()->isNonOutput()) {
-                // Don't bother moving constants now,
-                // we'll be pushing the const down to the cell soon enough.
-                AstVarXRef* const lhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
-                                                        m_cellp->name(), VAccess::WRITE};
+                if (!tryAliasPin(nodep, exprp)) {
+                    // Don't bother moving constants now,
+                    // we'll be pushing the const down to the cell soon enough.
+                    AstVarXRef* const lhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
+                                                            m_cellp->name(), VAccess::WRITE};
 
-                markContinuousLhs(lhsp);
-                AstAssignW* const assp = new AstAssignW{exprp->fileline(), lhsp, exprp};
-                m_cellp->addNextHere(new AstAlways{assp});
-                UINFOTREE(9, assp, "", "_new");
+                    markContinuousLhs(lhsp);
+                    AstAssignW* const assp = new AstAssignW{exprp->fileline(), lhsp, exprp};
+                    m_cellp->addNextHere(new AstAlways{assp});
+                    UINFOTREE(9, assp, "", "_new");
+                }
             } else if (nodep->modVarp()->isIfaceRef()
                        || (VN_IS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
                            && VN_IS(VN_AS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
@@ -127,7 +183,13 @@ class InstVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit InstVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit InstVisitor(AstNetlist* nodep) {
+        // Modules are level sorted, with the top module first. Visit them in reverse
+        // order, that is children before parents, so that the warning disables and the
+        // attributes of a port variable propagate all the way up through a chain of
+        // aliased port connections (see tryAliasPin).
+        iterateChildrenBackwardsConst(nodep);
+    }
     ~InstVisitor() override = default;
 };
 
@@ -577,7 +639,7 @@ private:
                 }
                 if (prevp) {
                     pinVarp->replaceWith(prevp);
-                    pushDeletep(pinVarp);
+                    VL_DO_DANGLING(pushDeletep(pinVarp), pinVarp);
                 }
                 nodep->replaceWith(prevPinp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -651,7 +713,7 @@ private:
             }
             if (prevp) {
                 pinVarp->replaceWith(prevp);
-                pushDeletep(pinVarp);
+                VL_DO_DANGLING(pushDeletep(pinVarp), pinVarp);
             }  // else pinVarp already unlinked when another instance did this step
             nodep->replaceWith(prevPinp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -864,7 +926,9 @@ public:
                    && connBasicp->width() == pinVarp->width()) {
             // Done. One to one interconnect won't need a temporary variable.
         } else if (!alwaysCvt && !forTristate && VN_IS(pinp->exprp(), Const)) {
-            // Done. Constant.
+            // Done. Constant. Still check for driving an output, like below.
+            V3Inst::checkOutputShort(pinp);
+            if (!pinp->exprp()) return nullptr;
         } else {
             // Make a new temp wire
             // UINFOTREE(9, pinp, "", "in_pin");

@@ -660,9 +660,9 @@ private:
             iterate(nodep->lhsp());
         }
         iterate(nodep->rhsp());
-        if (nodep->timingControlp()) {
-            iterate(nodep->timingControlp());
-        } else if (m_inSynchDrive) {
+        if (nodep->timingControlp()) iterate(nodep->timingControlp());
+        // A drive without a cycle delay, also after removing '##0', updates the clockvar now
+        if (m_inSynchDrive && !nodep->timingControlp()) {
             AstAssign* const assignp = new AstAssign{
                 nodep->fileline(), nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()};
             assignp->user1(true);
@@ -1549,7 +1549,7 @@ private:
                                  "Unsupported: $sampled inside disabled condition of a sequence");
                 m_disablep = new AstConst{m_disablep->fileline(), AstConst::BitFalse{}};
                 // always a copy is used, so remove it now
-                pushDeletep(m_disablep);
+                pushDeletep(m_disablep);  // m_disablep used later
             }
             FileLine* const flp = nodep->fileline();
             // Add counter which counts times the condition turned true
@@ -1587,7 +1587,7 @@ private:
                 = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},
                                            readCntRefp->cloneTree(false)}};
             // Delete it, because it is always copied before insetion to the AST
-            pushDeletep(m_disableSeqIfp);
+            pushDeletep(m_disableSeqIfp);  // m_disableSeqIfp used later
         }
         iterateChildren(nodep);
     }

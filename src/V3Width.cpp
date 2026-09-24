@@ -1782,7 +1782,7 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         if (!newp) {
-            pushDeletep(nodep->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         nodep->replaceWith(new AstAlways{newp});
@@ -2115,39 +2115,49 @@ class WidthVisitor final : public VNVisitor {
         // with a context so a bit/part-select (AstSel) is sized here; otherwise it would
         // reach assertAtExpr() with m_vup==null and fail as an internal error.
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
-        userIterateAndNext(nodep->binsp(), nullptr);
+        // Bin values compare against the coverpoint expression
+        userIterateAndNext(nodep->binsp(), WidthVP{nodep->exprp()->dtypep(), BOTH}.p());
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->optionsp(), nullptr);
     }
-    void widthCovergroupRanges(AstNode* rangesp) {
+    void widthCovergroupRanges(AstNode* rangesp, int fillWidth) {
         // Bin range/value entries are self-determined expressions (IEEE 1800-2023
         // 19.5).  Width each plain single-value entry self-determined so a referenced
         // parameter acquires a dtype, then constify so the reference folds to the AstConst
         // value that V3Covergroup requires.  AstInsideRange entries fold their own bounds in
         // visit(AstInsideRange).
+        // '0/'1 entries then fill to fillWidth, the coverpoint width (IEEE 1800-2023 19.5.7).
+        const auto fill = [&](AstNode* nodep) {
+            if (!fillWidth) return;
+            AstNodeExpr* exprp = VN_AS(nodep, NodeExpr);
+            fixAutoExtend(exprp /*ref*/, fillWidth);
+        };
         for (AstNode *nextp, *itemp = rangesp; itemp; itemp = nextp) {
             nextp = itemp->nextp();
-            if (VN_IS(itemp, InsideRange)) {
-                userIterate(itemp, nullptr);
+            if (AstInsideRange* const rangep = VN_CAST(itemp, InsideRange)) {
+                userIterate(rangep, nullptr);
+                fill(rangep->lhsp());
+                fill(rangep->rhsp());
             } else {
                 itemp = userIterateSubtreeReturnEdits(itemp, WidthVP{SELF, BOTH}.p());
-                V3Const::constifyEdit(itemp);
+                fill(V3Const::constifyEdit(itemp));
             }
         }
     }
     void visit(AstCoverBinsof* nodep) override {
         userIterateAndNext(nodep->pointp(), nullptr);
-        widthCovergroupRanges(nodep->rangesp());
+        widthCovergroupRanges(nodep->rangesp(), 0);
     }
     void visit(AstCoverBin* nodep) override {
-        widthCovergroupRanges(nodep->rangesp());
+        // No m_vup for a bin directly in a covergroup body (unsupported, already warned)
+        widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         userIterateAndNext(nodep->arraySizep(), nullptr);
-        userIterateAndNext(nodep->transp(), nullptr);
+        userIterateAndNext(nodep->transp(), m_vup);
     }
-    void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), nullptr); }
+    void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), m_vup); }
     void visit(AstCoverTransItem* nodep) override {
-        userIterateAndNext(nodep->valuesp(), WidthVP{SELF, BOTH}.p());
+        widthCovergroupRanges(nodep->valuesp(), m_vup ? m_vup->dtypep()->width() : 0);
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
@@ -2306,7 +2316,7 @@ class WidthVisitor final : public VNVisitor {
     // Delete a subtree after removing any saved references that point into it.
     static void deleteTreeCaptured(AstNode* nodep) {
         V3LinkDotIfaceCapture::purgeDeletedSubtree(nodep);
-        nodep->deleteTree();
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
@@ -2350,6 +2360,19 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_SIZE: {
             AstNodeDType* const dtypep = fromDTypep(nodep->fromp());
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
+            // Only worth asking while parameters are still being worked out.
+            if (m_paramsOnly) {
+                // A module that is still being copied does not have its final sizes.
+                const AstNodeModule* const ownModp = v3Global.rootp()->containingModule(dtypep);
+                if (ownModp && ownModp->parameterizedTemplate() && !ownModp->dead()) {
+                    UINFO(9, "size deferred, type still on template " << ownModp->name());
+                    // These queries always give an int, so set that now and let the
+                    // value be worked out once the copy exists.
+                    nodep->dtypeSetInt();
+                    return;
+                }
+            }
+
             if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)) {
                 switch (nodep->attrType()) {
                 case VAttrType::DIM_SIZE: {
@@ -2454,7 +2477,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const declDtp = [&]() {
                 if (m_ftaskp->fvarp()) return m_ftaskp->fvarp()->dtypep();
                 AstNodeDType* const voidp = new AstVoidDType{m_ftaskp->fileline()};
-                pushDeletep(voidp);
+                pushDeletep(voidp);  // Note voidp used past here
                 return voidp;
             }();
             if (!similarDTypeRecurse(protoDtp, declDtp)) {
@@ -3853,6 +3876,7 @@ class WidthVisitor final : public VNVisitor {
         UINFO(5, "   IFACEREF " << nodep);
         userIterateChildren(nodep, m_vup);
         nodep->dtypep(nodep);
+        if (nodep->isVirtual()) nodep->ifaceViaCellp()->setHasVirtualRef();
         UINFO(4, "dtWidthed " << nodep);
     }
     void visit(AstNodeUOrStructDType* nodep) override {
@@ -5830,9 +5854,9 @@ class WidthVisitor final : public VNVisitor {
                 AstPatMember* patp = nullptr;
                 if (it == patmap.end()) {  // Default or default_type assignment
                     patp = defaultPatp_patternUOrStruct(nodep, memp, vdtypep, defaultp, dtypemap);
-                    pushDeletep(patp);
+                    pushDeletep(patp);  // patp used below
                     patp = defaultPatp_forDType(patp, memp->virtRefDTypep(), dtypemap);
-                    pushDeletep(patp);
+                    pushDeletep(patp);  // patp used below
                 } else {
                     patp = it->second;  // Member assignment
                 }
@@ -6844,7 +6868,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->foreach([this](AstScopeName* nodep) {  //
                 nodep->replaceWith(
                     new AstConst{nodep->fileline(), AstConst::String{}, "<scope-unavailable>"});
-                pushDeletep(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             });
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
             string text = VString::dequotePercent(nodep->fmtp()->text());
@@ -7829,6 +7853,19 @@ class WidthVisitor final : public VNVisitor {
                         calleeClassp = m_containingClassFinder.find(nodep->taskp());
                     }
                     allow = AstClass::isClassExtendedFrom(callerClassp, calleeClassp);
+                }
+            }
+            if (!allow) {
+                // An embedded covergroup may call methods of its enclosing class
+                // (IEEE 1800-2023 19.4); V3Covergroup routes the call through its handle.
+                const AstClass* const cgClassp = m_containingClassFinder.find(nodep);
+                if (cgClassp && cgClassp->covergroupEnclosingClassp()) {
+                    const AstClass* calleeClassp = VN_CAST(nodep->classOrPackagep(), Class);
+                    if (!calleeClassp) {
+                        calleeClassp = m_containingClassFinder.find(nodep->taskp());
+                    }
+                    allow = AstClass::isClassExtendedFrom(cgClassp->covergroupEnclosingClassp(),
+                                                          calleeClassp);
                 }
             }
             if (!allow) {
@@ -9381,6 +9418,14 @@ class WidthVisitor final : public VNVisitor {
                                                      : "")
                                              << " bits.");
                 }
+            }
+            // Reduce to one bit even when the width is not reported, such as an unsized
+            // (b & 1), so later passes see a 1-bit condition
+            if (AstExprStmt* const exprStmtp = VN_CAST(underp, ExprStmt)) {
+                // Reduce only the result, leaving the statements in place
+                fixWidthReduce(exprStmtp->resultp());
+                exprStmtp->dtypeFrom(exprStmtp->resultp());
+            } else if (underp->width() != 1) {
                 VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
             }
         }

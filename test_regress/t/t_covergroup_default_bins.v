@@ -59,7 +59,7 @@ module t;
   endgroup
 
   // Auto-bins on a small range with one value excluded by ignore_bins -
-  // when the range is small enough, one auto-bin per valid value is created; the excluded value is skipped.
+  // the empty auto_2 bin is omitted without renumbering the remaining bins.
   covergroup cg4;
     cp_idx: coverpoint idx {
       ignore_bins skip = {2};  // value 2 excluded; auto-bins created for 0,1,3

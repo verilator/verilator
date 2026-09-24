@@ -16,7 +16,7 @@ cg_binsof.cp_a.arrayed[1]: 2
 cg_binsof.cp_a.high: 2
 cg_binsof.cp_a.ignored [ignore]: 2
 cg_binsof.cp_a.low: 4
-cg_binsof.cp_a.rest [default]: 8
+cg_binsof.cp_a.rest [default]: 6
 cg_binsof.cp_b.either: 18
 cg_binsof.cp_b.high: 9
 cg_binsof.cp_b.low: 9

@@ -1224,6 +1224,7 @@ string AstCoverCrossDType::cppTemplateArgs() const {
 void AstCoverCrossDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [" << cppTemplateArgs() << "]";
+    if (isDynamic()) str << " [DYNAMIC]";
 }
 void AstCoverCrossDType::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, dimensions);
@@ -1231,6 +1232,7 @@ void AstCoverCrossDType::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, bins);
     dumpJsonNumFunc(str, autoBins);
     dumpJsonNumFunc(str, binWords);
+    dumpJsonBoolFuncIf(str, isDynamic);
     dumpJsonGen(str);
 }
 void AstCoverCrossDType::dumpSmall(std::ostream& str) const {
@@ -1961,6 +1963,16 @@ const char* AstNetlist::broken() const {
     }
     return nullptr;
 }
+const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
+    if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp;
+    const auto it = m_containingModules.find(nodep);
+    if (it != m_containingModules.end()) return it->second;
+    // Only true parents are followed.
+    AstNode* const abovep = nodep->aboveLoopp();
+    const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
+    m_containingModules[nodep] = modp;
+    return modp;
+}
 void AstNetlist::createTopScope(AstScope* scopep) {
     UASSERT(scopep, "Must not be nullptr");
     UASSERT_OBJ(!m_topScopep, scopep, "TopScope already exits");
@@ -1978,6 +1990,7 @@ void AstNetlist::deleteContents() {
     m_nbaEventp = nullptr;
     m_nbaEventTriggerp = nullptr;
     m_topScopep = nullptr;
+    m_containingModules.clear();
     m_evalFuncps.fill(nullptr);
     m_dumpTriggersFuncps.fill(nullptr);
     if (op1p()) op1p()->unlinkFrBackWithNext()->deleteTree();
@@ -2097,6 +2110,7 @@ bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
 void AstNodeCoverDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (localBinNum()) str << " lbin=" << localBinNum();
+    if (perInstance()) str << " [PERINST]";
     if (!page().empty()) str << " page=" << page();
     if (!hier().empty()) str << " hier=" << hier();
     if (this->dataDeclNullp()) {
@@ -2116,6 +2130,7 @@ void AstNodeCoverDecl::dump(std::ostream& str) const {
 void AstNodeCoverDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, binNum);
     dumpJsonNumFunc(str, localBinNum);
+    dumpJsonBoolFuncIf(str, perInstance);
     dumpJsonStrFunc(str, page);
     dumpJsonStrFunc(str, hier);
     dumpJsonGen(str);
@@ -2182,7 +2197,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type += ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverCrossDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
-        info.m_type = "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
+        info.m_type = adtypep->isDynamic() ? "VlCoverCrossDyn*"
+                                           : "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverpointDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = "VlCoverpointT<" + cvtToStr(adtypep->hitBound()) + ">*";
@@ -3854,7 +3870,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 }
 string AstVar::dpiTmpVarType(const string& varName) const {
     class converter final : public DpiTypesToStringConverter {
-        const string m_name;
+        const string m_name;  // Variable name
         string arraySuffix(const AstVar* varp, size_t n) const {
             if (const AstUnpackArrayDType* const unpackp
                 = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
@@ -4086,7 +4102,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
-string AstVar::vlEnumDir() const {
+string AstVar::vlEnumDir(bool forMember) const {
     string out;
     if (isInout()) {
         out = "VLVD_INOUT";
@@ -4103,17 +4119,17 @@ string AstVar::vlEnumDir() const {
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
-    if (isForceable()) out += "|VLVF_FORCEABLE";
+    if (isForceable() && !forMember) out += "|VLVF_FORCEABLE";
     if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
     }
     //
-    if (dtypep()->skipRefp()->isSigned()) out += "|VLVF_SIGNED";
+    if (dtypep()->skipRefp()->isSigned() && !forMember) out += "|VLVF_SIGNED";
     //
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
-        if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
+        if (basicp->keyword() == VBasicDTypeKwd::BIT && !forMember) out += "|VLVF_BITVAR";
     }
     if (isNet()) out += "|VLVF_NET";
     return out;

@@ -420,13 +420,13 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     // TYPES
     struct RefStrength final {
-        AstNodeVarRef* m_varrefp;
+        AstNodeVarRef* m_varrefp;  // Variable reference this strength/enable info was found on
         AstNodeAssign* m_assignp;  // Assignment containing m_varrefp
         const AstNodeProcedure* m_procedurep;  // Process containing m_assignp, if procedural
         AstNodeExpr* m_enLhsp;  // Procedural enable LHS with same footprint as m_varrefp
         AstNodeVarRef* m_enVarrefp;  // Variable reference within m_enLhsp to retarget
         AstNodeExpr* m_enRhsp;  // Procedural enable value matching m_enLhsp
-        VStrength m_strength;
+        VStrength m_strength;  // Drive strength of the assignment/procedural write
         AstDelay* m_delayp;  // Explicit delay on the continuous assignment
         RefStrength(AstNodeVarRef* varrefp, AstNodeAssign* assignp,
                     const AstNodeProcedure* procedurep, AstNodeExpr* enLhsp,
@@ -442,13 +442,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             , m_delayp{delayp} {}
     };
     struct LhsProjection final {
-        AstNodeExpr* m_lhsp;
-        AstNodeVarRef* m_varrefp;
-        AstNodeExpr* m_enp;
+        AstNodeExpr* m_lhsp;  // LHS giving the enable assign
+        AstNodeVarRef* m_varrefp;  // Variable reference within m_lhsp to retarget to enable var
+        AstNodeExpr* m_enp;  // Procedural enable value to assign through m_lhsp
     };
     struct ProceduralEnable final {
-        AstNodeExpr* m_lhsp;
-        AstNodeExpr* m_rhsp;
+        AstNodeExpr* m_lhsp;  // Enable LHS piece to concat onto the combined assignment LHS
+        AstNodeExpr* m_rhsp;  // Enable value piece to concat onto the combined assignment RHS
     };
     using RefStrengthVec = std::vector<RefStrength>;
     using VarMap = std::map<AstVar*, RefStrengthVec*>;
@@ -1974,8 +1974,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     }
                     newp = new AstAdd{nodep->fileline(), nodep, newp};
                 } else {
-                    // TODO: looks dubious that we still iterate this below...
-                    pushDeletep(nodep);
+                    pushDeletep(nodep);  // TODO: looks dubious that we still iterate this below...
                 }
                 UINFOTREE(9, newp, "", "countout");
                 relinkHandle.relink(newp);

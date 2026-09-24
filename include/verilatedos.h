@@ -747,7 +747,7 @@ namespace vlstd {
 
 template <typename T>
 struct reverse_wrapper final {
-    const T& m_v;
+    const T& m_v;  // Pre-wrapped iterator
 
     explicit reverse_wrapper(const T& a_v)
         : m_v(a_v) {}  // Need () constructor

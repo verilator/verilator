@@ -46,9 +46,9 @@ class ForceState final {
 public:
     struct ForceRange VL_NOT_FINAL {
         int m_rangeLsb = 0;  // VlForceVec range: bit index or array element index
-        int m_rangeMsb = 0;
+        int m_rangeMsb = 0;  // VlForceVec range: bit index or array element index
         int m_padLsb = 0;  // Bit positions for RHS padding
-        int m_padMsb = 0;
+        int m_padMsb = 0;  // Bit positions for RHS padding
     };
 
     struct ForceInfo final : ForceRange {
@@ -75,13 +75,13 @@ public:
     };
 
     struct VarForceInfo final {
-        AstVarScope* m_forceVecVscp = nullptr;
-        AstVarScope* m_forceRdVscp = nullptr;
-        AstVarScope* m_forceEnVscp = nullptr;
-        AstVarScope* m_forceValVscp = nullptr;
-        AstVarScope* m_varVscp = nullptr;
-        AstVar* m_varp = nullptr;
-        AstScope* m_scopep = nullptr;
+        AstVarScope* m_forceVecVscp = nullptr;  // Scope of the __VforceVec (VlForceVec) variable
+        AstVarScope* m_forceRdVscp = nullptr;  // Scope of the __VforceRd (read-back) variable
+        AstVarScope* m_forceEnVscp = nullptr;  // Scope of the __VforceEn (force enable) variable
+        AstVarScope* m_forceValVscp = nullptr;  // Scope of the __VforceVal (force value) variable
+        AstVarScope* m_varVscp = nullptr;  // Scope of the forced (original) variable
+        AstVar* m_varp = nullptr;  // The forced (original) variable
+        AstScope* m_scopep = nullptr;  // Scope containing the forced variable
         std::unordered_map<AstAssignForce*, ForceInfo> m_forces;
         std::unordered_map<string, int> m_forcePathToIndex;
         int m_nextForcePathIndex = 1;  // Start at 1 so 0 can be the base path (whole signal)
@@ -125,19 +125,19 @@ public:
     };
 
     struct ForceHelperVars final {
-        AstVar* m_rdVarp = nullptr;
-        AstVar* m_enVarp = nullptr;
-        AstVar* m_valVarp = nullptr;
+        AstVar* m_rdVarp = nullptr;  // The __VforceRd (read-back) variable
+        AstVar* m_enVarp = nullptr;  // The __VforceEn (force enable) variable
+        AstVar* m_valVarp = nullptr;  // The __VforceVal (force value) variable
     };
 
     struct ArraySelInfo final {
-        std::vector<AstArraySel*> m_sels;
-        bool m_hasBitSel = false;
+        std::vector<AstArraySel*> m_sels;  // Array selects collected along the path, outer first
+        bool m_hasBitSel = false;  // Bit-select was found along the path too
     };
 
     struct ForceRangeInfo final : ForceRange {
-        bool m_hasArraySel = false;
-        ArraySelInfo m_arrayInfo;
+        bool m_hasArraySel = false;  // LHS has an array select
+        ArraySelInfo m_arrayInfo;  // Array-select information collected for the LHS
     };
 
 private:
@@ -792,7 +792,9 @@ public:
                     = new AstSenItem{flp, VEdgeType::ET_CHANGED, origSenRefp};
                 if (!itemsp) varp->v3fatalSrc("force-rd-update missing force-enable sen item");
                 itemsp->addNext(origItemp);
-                for (ForceInfo* const finfop : forceps) addSenItem(finfop->m_rhsVarVscp);
+                for (ForceInfo* const finfop : forceps) {
+                    if (!finfop->m_isExternal) addSenItem(finfop->m_rhsVarVscp);
+                }
 
                 AstActive* const activep
                     = new AstActive{flp, "force-rd-update", new AstSenTree{flp, itemsp}};
@@ -909,7 +911,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                     "buildForceableUnpackedArray called with non-unpacked dtype");
         const AstNodeDType* const leafDtypep = dims.back()->subDTypep()->skipRefp();
         const AstBasicDType* const innerBasicp = leafDtypep->basicp();
-        if (!ForceState::isBitwiseDType(innerBasicp)) {
+        if (!innerBasicp || !ForceState::isBitwiseDType(innerBasicp)) {
             varp->v3warn(E_UNSUPPORTED,
                          "Unsupported: Forcing unpacked arrays of non-bitwise inner type: "
                              << varp->name());  // (#4735)
@@ -1603,12 +1605,12 @@ static void assignAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& h
         assignp->replaceWith(new AstAssignForce{assignp->fileline(),
                                                 assignp->lhsp()->unlinkFrBack(),
                                                 assignp->rhsp()->unlinkFrBack()});
-        assignp->deleteTree();
+        VL_DO_DANGLING(assignp->deleteTree(), assignp);
     }
     for (AstDeassign* const deassignp : deassignps) {
         deassignp->replaceWith(
             new AstRelease{deassignp->fileline(), deassignp->lhsp()->cloneTreePure(true)});
-        deassignp->deleteTree();
+        VL_DO_DANGLING(deassignp->deleteTree(), deassignp);
     }
     ForceState state{true, helperVars, permanentlyProtected, forceRdUpdateBuilt};
     { ForceDiscoveryVisitor{nodep, state}; }

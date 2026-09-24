@@ -549,6 +549,7 @@ public:
     bool isOutputter() override { return true; }
     bool isPure() override { return false; }
     AstNodeCoverDecl* declp() const { return m_declp; }  // Where defined
+    void declp(AstNodeCoverDecl* nodep) { m_declp = nodep; }
 };
 class AstCoverToggle final : public AstNodeStmt {
     // Toggle analysis of given signal

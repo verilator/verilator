@@ -71,13 +71,12 @@
 class VlFileLineDebug final {
     // MEMBERS
 #ifdef VL_DEBUG
-    const char* m_filename = nullptr;
-    int m_lineno = 0;
+    const char* m_filename = nullptr;  // Filename from sources, nullptr for unlnown
+    int m_lineno = 0;  // Line number from sources
 #endif
 
 public:
     // CONSTRUCTORS
-    // Construct
     VlFileLineDebug() = default;
     VlFileLineDebug(const char* filename, int lineno)
 #ifdef VL_DEBUG
@@ -431,7 +430,7 @@ class VlForkSyncState final {
 public:
     size_t m_counter = 0;  // When reaches 0, resume suspended coroutine
     VlCoroutineHandle m_susp;  // Coroutine to resume
-    bool m_inited = false;
+    bool m_inited = false;  // Initialization complete
     size_t m_pendingDones = 0;  // done() calls seen before init() (e.g. early killed branch)
     bool m_inDone = false;  // Guard against re-entrant resume recursion from nested kills
     bool m_resumePending = false;  // Join reached zero again while inside done()

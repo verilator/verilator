@@ -46,11 +46,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
     // TYPES
     struct ScopeData final {
-        const AstNode* m_nodep;
-        const std::string m_symName;
-        const std::string m_prettyName;
-        const std::string m_defName;
-        const int m_timeunit;
+        const AstNode* m_nodep;  // Scope symbol-table entry corresponds to
+        const std::string m_symName;  // Mangled name used to build __Vscopep_ variable
+        const std::string m_prettyName;  // Pretty (unprotected) name for display
+        const std::string m_defName;  // Name registered for this scope
+        const int m_timeunit;  // Timeunit of this scope
         std::string m_type;  // TODO: this should be an enum
         ScopeData(const AstNode* nodep, const std::string& symName, const std::string& prettyName,
                   const std::string& defName, int timeunit, const std::string& type)
@@ -74,20 +74,20 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_modportName{modportName} {}
     };
     struct ScopeFuncData final {
-        const AstScopeName* const m_scopep;
-        const AstCFunc* const m_cfuncp;
-        const AstNodeModule* const m_modp;
+        const AstScopeName* const m_scopep;  // Scope the DPI export function is registered under
+        const AstCFunc* const m_cfuncp;  // DPI export function
+        const AstNodeModule* const m_modp;  // Module containing the DPI export function
         ScopeFuncData(const AstScopeName* scopep, const AstCFunc* funcp, const AstNodeModule* modp)
             : m_scopep{scopep}
             , m_cfuncp{funcp}
             , m_modp{modp} {}
     };
     struct ScopeVarData final {
-        const std::string m_scopeName;
-        const std::string m_varBasePretty;
-        const AstVar* const m_varp;
-        const AstNodeModule* const m_modp;
-        const AstScope* const m_scopep;
+        const std::string m_scopeName;  // Full name of the scope containing the variable
+        const std::string m_varBasePretty;  // Pretty base name of the variable, without scope
+        const AstVar* const m_varp;  // Public variable
+        const AstNodeModule* const m_modp;  // Module containing the variable
+        const AstScope* const m_scopep;  // Scope containing the variable
         ScopeVarData(const std::string& scopeName, const std::string& varBasePretty,
                      const AstVar* varp, const AstNodeModule* modp, const AstScope* scopep)
             : m_scopeName{scopeName}
@@ -309,13 +309,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     static std::string memberVlEnumDir(const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
-        std::string out = "((" + varp->vlEnumDir() + ") & ~(VLVF_SIGNED|VLVF_BITVAR))";
+        std::string out = '(' + varp->vlEnumDir(/*forMember=*/true);
         const AstNodeDType* const skipDTypep = dtypep->skipRefp();
         if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
         if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
             if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
         }
-        return out;
+        return out + ')';
     }
 
     static std::string insertVarStatement(const ScopeVarData& svd, const AstScope* const scopep,
@@ -1408,20 +1408,20 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(
                         insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, bounds) + ";");
-                    if (const AstNodeUOrStructDType* const sdtypep
-                        = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
-                        if (!sdtypep->packed()) {
-                            addUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
-                                                   protect(varp->name()), sdtypep);
-                        }
-                    } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-                        addUnpackedArrayUOrStructMemberVars(residual, svd, scopep,
-                                                            svd.m_varBasePretty,
-                                                            protect(varp->name()), varp->dtypep());
-                    }
                     break;
                 }
                 default: v3fatalSrc("Bad case");
+                }
+                if (kind == TableEntryKind::TABLE_ROW) continue;
+                if (const AstNodeUOrStructDType* const sdtypep
+                    = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
+                    if (!sdtypep->packed()) {
+                        addUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                               protect(varp->name()), sdtypep);
+                    }
+                } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+                    addUnpackedArrayUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                                        protect(varp->name()), varp->dtypep());
                 }
             }
 
@@ -1583,7 +1583,8 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
     puts("    , __Vm_modelp{modelp}\n");
     puts("    , __Vm_didInit{modelp->m_didInit}\n");
     if (v3Global.opt.mtasks()) {
-        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp())}\n");
+        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp("
+             "modelp->threads()))}\n");
     }
     if (v3Global.opt.profExec()) {
         puts("    , __Vm_executionProfilerp{static_cast<VlExecutionProfiler*>(contextp->"
