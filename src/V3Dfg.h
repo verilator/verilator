@@ -545,6 +545,8 @@ public:
     // Create a new scoped variable. Instances of a module share temporary
     // declarations of the same prefix and type, but have independent storage.
     // Each scope uses a declaration at most once; new declarations get unique names.
+    // As the AstVar may be shared, callers must set identical AstVar attributes
+    // on all temporaries created with the same prefix.
     DfgVertexVar* makeNewVar(FileLine*, const std::string& prefix, const DfgDataType&,
                              AstScope*) VL_MT_DISABLED;
 

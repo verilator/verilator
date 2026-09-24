@@ -11,7 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt', 'vltmt')
 
-test.compile(verilator_flags2=['--binary', '--stats'])
+# Disable V3Gate, which would otherwise inline the temporaries, so the
+# self-checks also exercise the shared declarations in the executed model.
+test.compile(verilator_flags2=['--binary', '--stats', '-fno-gate'])
 test.execute()
 test.file_grep(test.stats, r'Optimizations, DFG, temporary declarations reused\s+(\d+)', 36)
 test.passes()
