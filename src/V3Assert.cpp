@@ -284,6 +284,22 @@ public:
 //######################################################################
 // AssertVisitor
 
+// Collect diagnostic templates without retaining their runtime argument expressions.
+class SvaMessageVisitor final : public VNVisitorConst {
+    string m_message;
+
+    void visit(AstDisplay* nodep) override {
+        if (!m_message.empty() && m_message.back() != '\n') m_message += "\n";
+        m_message += nodep->fmtp()->text();
+    }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    explicit SvaMessageVisitor(AstNode* nodep) { iterateAndNextConstNull(nodep); }
+
+public:
+    static string apply(AstNode* nodep) { return SvaMessageVisitor{nodep}.m_message; }
+};
+
 class AssertVisitor final : public VNVisitor {
     // CONSTANTS
     static constexpr uint8_t ALL_ASSERT_TYPES
@@ -315,6 +331,7 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statPastVars;  // Statistic tracking
     VDouble0 m_statAssertOnCombined;  // Statistic tracking
     VDouble0 m_statAssertOnHoisted;  // Statistic tracking
+    VDouble0 m_statSvaPreserve;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
     bool m_inRestrict = false;  // True inside restrict assertion
     AstNode* m_passsp = nullptr;  // Current pass statement
@@ -324,6 +341,9 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     V3UniqueNames m_caseTempNames{"__VCase"};
+    V3UniqueNames m_svaAssertNames{"__Vsva_assert"};
+    V3UniqueNames m_svaAssumeNames{"__Vsva_assume"};
+    V3UniqueNames m_svaCoverNames{"__Vsva_cover"};
     // Maps from (expression, senTree) to the AstAlways that computes its delayed values.
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
@@ -361,6 +381,7 @@ class AssertVisitor final : public VNVisitor {
         case VAssertDirectiveType::ASSERT:
         case VAssertDirectiveType::COVER:
         case VAssertDirectiveType::ASSUME: {
+            if (v3Global.opt.svaPreserve()) { return new AstConst{fl, AstConst::BitTrue{}}; }
             if (v3Global.opt.assertOn()) {
                 return new AstCExpr{fl, AstCExpr::Pure{},
                                     assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
@@ -389,6 +410,7 @@ class AssertVisitor final : public VNVisitor {
     static AstNodeExpr* assertPassOnCond(FileLine* fl, VAssertType type,
                                          VAssertDirectiveType directiveType, bool vacuous) {
         if (!isControlled(directiveType)) return new AstConst{fl, AstConst::BitTrue{}};
+        if (v3Global.opt.svaPreserve()) return new AstConst{fl, AstConst::BitTrue{}};
         if (!v3Global.opt.assertOn()) return new AstConst{fl, AstConst::BitFalse{}};
         return new AstCExpr{fl, AstCExpr::Pure{},
                             assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType), 1};
@@ -396,6 +418,7 @@ class AssertVisitor final : public VNVisitor {
     static AstNodeExpr* assertFailOnCond(FileLine* fl, VAssertType type,
                                          VAssertDirectiveType directiveType) {
         if (!isControlled(directiveType)) return new AstConst{fl, AstConst::BitTrue{}};
+        if (v3Global.opt.svaPreserve()) return new AstConst{fl, AstConst::BitTrue{}};
         if (!v3Global.opt.assertOn()) return new AstConst{fl, AstConst::BitFalse{}};
         return new AstCExpr{fl, AstCExpr::Pure{},
                             assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType), 1};
@@ -448,6 +471,28 @@ class AssertVisitor final : public VNVisitor {
         AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), m_monitorOffVarp, access};
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
         return varrefp;
+    }
+    AstVar* newSvaPreserveWire(const AstNodeCoverOrAssert* nodep) {
+        const string& propertyName = nodep->name().empty() ? "unnamed" : nodep->name();
+        string name;
+        switch (nodep->directive()) {
+        case VAssertDirectiveType::ASSERT: name = m_svaAssertNames.get(propertyName); break;
+        case VAssertDirectiveType::ASSUME: name = m_svaAssumeNames.get(propertyName); break;
+        case VAssertDirectiveType::COVER: name = m_svaCoverNames.get(propertyName); break;
+        default: nodep->v3fatalSrc("Unexpected SVA directive");
+        }
+        AstVar* const varp
+            = new AstVar{nodep->fileline(), VVarType::MODULETEMP, name, nodep->findBitDType()};
+        varp->sigPublic(true);
+        m_modp->addStmtsp(varp);
+        ++m_statSvaPreserve;
+        return varp;
+    }
+    static AstAssign* newSvaPreserveAssign(const AstNode* nodep, AstVar* varp, bool value) {
+        FileLine* const flp = nodep->fileline();
+        AstConst* const valuep = value ? new AstConst{flp, AstConst::BitTrue{}}
+                                       : new AstConst{flp, AstConst::BitFalse{}};
+        return new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, valuep};
     }
     static AstIf* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
                                 VAssertType type = VAssertType::INTERNAL) {
@@ -681,7 +726,40 @@ class AssertVisitor final : public VNVisitor {
         const AstCover* const coverp = VN_CAST(nodep, Cover);
         // A sequence event control is not an assertion directive; no assertion control
         const bool seqEvent = coverp && coverp->isSeqEvent();
-        if (coverp) {
+        const bool svaPreserve = v3Global.opt.svaPreserve() && !seqEvent
+                                 && (nodep->directive() == VAssertDirectiveType::ASSERT
+                                     || nodep->directive() == VAssertDirectiveType::ASSUME
+                                     || nodep->directive() == VAssertDirectiveType::COVER);
+        AstNode* svaDefaultp = nullptr;
+        if (svaPreserve) {
+            AstVar* const varp = newSvaPreserveWire(nodep);
+            if (failsp) {
+                varp->tag(SvaMessageVisitor::apply(failsp));
+            } else if (!passsp && !coverp) {
+                varp->tag(assertDisplayMessage(nodep, "%%Error", "'assert' failed.",
+                                               VDisplayType::DT_ERROR));
+            }
+            const bool isAssume = nodep->directive() == VAssertDirectiveType::ASSUME;
+            svaDefaultp = newSvaPreserveAssign(nodep, varp, isAssume);
+            if (passsp) VL_DO_DANGLING(pushDeletep(passsp), passsp);
+            if (failsp) VL_DO_DANGLING(pushDeletep(failsp), failsp);
+            passsp = nullptr;
+            failsp = nullptr;
+            if (nodep->directive() == VAssertDirectiveType::ASSERT) {
+                failsp = newSvaPreserveAssign(nodep, varp, true);
+            } else if (isAssume) {
+                failsp = newSvaPreserveAssign(nodep, varp, false);
+            } else {
+                passsp = newSvaPreserveAssign(nodep, varp, true);
+            }
+            if (coverp) {
+                ++m_statCover;
+            } else if (nodep->immediate()) {
+                ++m_statAsImm;
+            } else {
+                ++m_statAsNotImm;
+            }
+        } else if (coverp) {
             ++m_statCover;
             if (seqEvent) {
                 // Keep the event-fire action, with no coverage bucket
@@ -768,6 +846,10 @@ class AssertVisitor final : public VNVisitor {
         }
         AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
+        if (svaDefaultp) {
+            svaDefaultp->addNext(bodysp);
+            bodysp = svaDefaultp;
+        }
         // Add assertOn check last, for better combining
         if (!seqEvent) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
         if (sentreep) bodysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, sentreep, bodysp};
@@ -1344,6 +1426,9 @@ class AssertVisitor final : public VNVisitor {
         m_modPastNum = 0;
         m_modStrobeNum = 0;
         m_finalp = nullptr;
+        m_svaAssertNames.reset();
+        m_svaAssumeNames.reset();
+        m_svaCoverNames.reset();
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
@@ -1395,6 +1480,7 @@ public:
         V3Stats::addStat("Assertions, $past variables", m_statPastVars);
         V3Stats::addStat("Assertions, assertOn checks combined", m_statAssertOnCombined);
         V3Stats::addStat("Assertions, assertOn checks hoisted", m_statAssertOnHoisted);
+        V3Stats::addStat("Assertions, preserved SVA signals", m_statSvaPreserve);
         V3Stats::addStat("Assertions, lifted impure case expressions", m_statLiftedCaseExprs);
         // Rewrites can change purity, e.g. by compiling out assertion statements with --no-assert
         VIsCached::clearCacheTree();

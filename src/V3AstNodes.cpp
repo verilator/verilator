@@ -1620,11 +1620,12 @@ void AstInitArray::dump(std::ostream& str) const {
     Super::dump(str);
     dumpInitList(str);
 }
-void AstInitArray::dumpInitList(std::ostream& str) const {
-    int n = 0;
+void AstInitArray::dumpInitList(std::ostream& str, bool full) const {
+    static constexpr unsigned SUMMARY_ENTRIES = 6;
+    unsigned n = 0;
     const auto& mapr = map();
     for (const auto& itr : mapr) {
-        if (n++ > 5) {
+        if (!full && n++ >= SUMMARY_ENTRIES) {
             str << " ...";
             break;
         }
@@ -1635,7 +1636,7 @@ void AstInitArray::dumpInitList(std::ostream& str) const {
 }
 void AstInitArray::dumpJson(std::ostream& str) const {
     str << ',' << '"' << "initList" << '"' << ':' << '"';
-    dumpInitList(str);
+    dumpInitList(str, v3Global.opt.jsonFullTables());
     str << '"';
     dumpJsonGen(str);
 }
@@ -3912,6 +3913,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 }
 void AstVar::dump(std::ostream& str) const {
     Super::dump(str);
+    if (!tag().empty()) str << " tag=\"" << V3OutFormatter::quoteNameControls(tag()) << "\"";
     if (isIO()) str << " " << direction().ascii();
     if (declDirection() != direction()) str << " dd=" << direction().ascii();
     if (constPoolEntry()) str << " [CONSTPOOL]";
@@ -3954,6 +3956,7 @@ void AstVar::dump(std::ostream& str) const {
     str << " " << varType();
 }
 void AstVar::dumpJson(std::ostream& str) const {
+    if (!tag().empty()) dumpJsonStrFunc(str, tag);
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, constPoolEntry);
