@@ -7,6 +7,8 @@ cg.cp_max.auto[C]: 1
 cg.cp_var.auto[A]: 0
 cg.cp_var.auto[B]: 1
 cg.cp_var.auto[C]: 1
+cg.cp_wide.auto[E01]: 0
+cg.cp_wide.auto[ELARGE]: 1
 cg.cx.auto[A]_x_auto[A] [cross]: 0
 cg.cx.auto[A]_x_auto[B] [cross]: 0
 cg.cx.auto[A]_x_auto[C] [cross]: 0
