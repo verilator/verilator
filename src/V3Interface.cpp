@@ -36,12 +36,11 @@ class InlineIntfRefVisitor final : public VNVisitor {
     // NODE STATE
     //   AstVar::user1p()   // AstCell which this Var points to
     const VNUser1InUse m_inuser1;
-    const VNUser2InUse m_inuser2;
 
     string m_scope;  // Scope name
 
     // VISITORS
-    void visit(AstNetlist* nodep) override { iterateChildren(nodep->topModulep()); }
+    void visit(AstNetlist* nodep) override { iterateChildrenConst(nodep->topModulep()); }
     void visit(AstCell* nodep) override {
         VL_RESTORER_COPY(m_scope);
         if (m_scope.empty()) {
@@ -56,60 +55,33 @@ class InlineIntfRefVisitor final : public VNVisitor {
             AstVar* const varp = pinp->modVarp();
             const AstVarRef* const varrefp = VN_CAST(pinp->exprp(), VarRef);
             if (!varrefp) continue;
+
             const AstVar* const fromVarp = varrefp->varp();
             const AstIfaceRefDType* const irdtp = VN_CAST(fromVarp->dtypep(), IfaceRefDType);
             if (!irdtp) continue;
 
-            AstCell* cellp;
-            if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
-                varp->user1p(cellp);
-                const string alias = m_scope + "__DOT__" + pinp->name();
-                // Prefer the port's own dtype; the source may have no modport
-                const AstIfaceRefDType* const portIrdtp = VN_CAST(varp->dtypep(), IfaceRefDType);
-                const string modportName
-                    = portIrdtp ? portIrdtp->modportName() : irdtp->modportName();
-                cellp->addIntfRefsp(
-                    new AstIntfRef{pinp->fileline(), alias, pinp->name(), modportName});
-            }
+            AstCell* cellp = VN_CAST(fromVarp->user1p(), Cell);
+            if (!cellp) cellp = irdtp->cellp();
+            if (!cellp) continue;
+            varp->user1p(cellp);
+            const string alias = m_scope + "__DOT__" + pinp->name();
+            // Prefer the port's own dtype; the source may have no modport
+            const AstIfaceRefDType* const portIrdtp = VN_CAST(varp->dtypep(), IfaceRefDType);
+            const string modportName = portIrdtp ? portIrdtp->modportName() : irdtp->modportName();
+            FileLine* const flp = pinp->fileline();
+            cellp->addIntfRefsp(new AstIntfRef{flp, alias, pinp->name(), modportName});
         }
 
-        iterateChildren(modp);
-    }
-    void visit(AstAliasScope* nodep) override {
-        // Reference
-        const AstVarRef* const reflp = VN_CAST(nodep->lhsp(), VarRef);
-        // What the reference refers to
-        const AstVarRef* const refrp = VN_CAST(nodep->rhsp(), VarRef);
-        if (!(reflp && refrp)) return;
-
-        const AstVar* const varlp = reflp->varp();
-        const AstVar* const varrp = refrp->varp();
-        if (!(varlp && varrp)) return;
-
-        AstCell* cellp = VN_CAST(varrp->user1p(), Cell);
-        if (!cellp) {
-            const AstIfaceRefDType* const irdtp = VN_CAST(varrp->dtypep(), IfaceRefDType);
-            if (!irdtp) return;
-
-            cellp = irdtp->cellp();
-        }
-        if (!cellp) return;
-        string alias;
-        if (!m_scope.empty()) alias = m_scope + "__DOT__";
-        alias += varlp->name();
-        const AstIfaceRefDType* const lirdtp = VN_CAST(varlp->dtypep(), IfaceRefDType);
-        const string modportName = lirdtp ? lirdtp->modportName() : "";
-        cellp->addIntfRefsp(
-            new AstIntfRef{varlp->fileline(), alias, varlp->origName(), modportName});
+        iterateChildrenConst(modp);
     }
     //--------------------
     void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNodeStmt*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit InlineIntfRefVisitor(AstNode* nodep) { iterate(nodep); }
+    explicit InlineIntfRefVisitor(AstNode* nodep) { iterateConst(nodep); }
     ~InlineIntfRefVisitor() override = default;
 };
 
