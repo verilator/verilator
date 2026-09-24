@@ -1104,33 +1104,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return run;
     }
 
-    // The value of a normal bin that matches one constant, or nullptr.  The value must be in the
-    // coverpoint's range, and non-negative for a signed coverpoint, so a run of them cannot wrap.
-    static AstConst* singleBinValue(AstCoverBin* binp, AstNodeExpr* exprp) {
-        if (binp->isArray() || binp->transp() || binp->iffp() || binp->isWildcard()
-            || !binp->binsType().binIsNormal())
-            return nullptr;
-        if (VL_UNCOVERABLE(!binp->rangesp())) return nullptr;  // A normal state bin has values
-        if (binp->rangesp()->nextp()) return nullptr;
-        AstConst* constp = VN_CAST(binp->rangesp(), Const);
-        if (AstInsideRange* const rangep = VN_CAST(binp->rangesp(), InsideRange)) {
-            AstConst* const lop = VN_CAST(rangep->lhsp(), Const);
-            AstConst* const hip = VN_CAST(rangep->rhsp(), Const);
-            if (lop && hip && lop->num().isCaseEq(hip->num())) constp = lop;
-        }
-        if (!constp || constp->num().isString() || constp->num().isDouble()
-            || constp->num().isAnyXZ() || constp->isWide() || exprp->isWide()
-            || (constp->isSigned() && constp->num().isNegative()))
-            return nullptr;
-        const int valueBits = exprp->isSigned() ? exprp->width() - 1 : exprp->width();
-        if (valueBits < 64 && (constp->toUQuad() >> valueBits)) return nullptr;
-        return constp;
-    }
-
     // Emit 'if (lo <= v && v <= hi) m_cp.incrementBin(idx + (v - lo));' for a run of
-    // consecutive values in consecutive bins starting at bin idx.
-    void emitRunHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp,
-                      AstNodeExpr* exprp, int idx, AstConst* lop, AstConst* hip) {
+    // consecutive array-bin values starting at bin idx.
+    void emitArrayRunHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp,
+                           AstNodeExpr* exprp, int idx, AstConst* lop, AstConst* hip) {
         FileLine* const fl = binp->fileline();
         AstConst* const loValuep = newValueConst(fl, lop->num(), exprp);
         AstConst* const hiValuep = newValueConst(fl, hip->num(), exprp);
@@ -1218,30 +1195,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         std::vector<AstNodeStmt*> namerStmts;
         std::vector<AstCoverBin*> defaultBins;
         std::vector<std::tuple<AstCoverBin*, uint32_t, AstNodeExpr*>> metadata;
-        // Adjacent single-value bins over consecutive values: the first bin of each run maps to
-        // the run's length and last value; the other bins of the run map to length 0.
-        std::map<const AstCoverBin*, std::pair<size_t, AstConst*>> singleRuns;
-        for (AstNode* binp = coverpointp->binsp(); binp;) {
-            AstConst* const firstp = singleBinValue(VN_AS(binp, CoverBin), exprp);
-            AstNode* nextp = binp->nextp();
-            if (!firstp) {
-                binp = nextp;
-                continue;
-            }
-            AstConst* lastp = firstp;
-            std::vector<const AstCoverBin*> rest;
-            for (; nextp; nextp = nextp->nextp()) {
-                AstConst* const valuep = singleBinValue(VN_AS(nextp, CoverBin), exprp);
-                if (!valuep || valuep->toUQuad() != lastp->toUQuad() + 1) break;
-                rest.push_back(VN_AS(nextp, CoverBin));
-                lastp = valuep;
-            }
-            if (!rest.empty()) {
-                singleRuns[VN_AS(binp, CoverBin)] = {rest.size() + 1, lastp};
-                for (const AstCoverBin* const restp : rest) singleRuns[restp] = {0, nullptr};
-            }
-            binp = nextp;
-        }
         int idx = 0;
         for (AstNode* binp = coverpointp->binsp(); binp; binp = binp->nextp()) {
             AstCoverBin* const cbinp = VN_AS(binp, CoverBin);
@@ -1290,8 +1243,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     m_detachedValues.push_back(valuep);
                     const size_t i = static_cast<size_t>(idx - firstIdx);
                     if (runs[i] > 1) {
-                        emitRunHitIf(coverpointp, cbinp, cpVarp, exprp, idx, VN_AS(valuep, Const),
-                                     VN_AS(values[i + runs[i] - 1], Const));
+                        emitArrayRunHitIf(coverpointp, cbinp, cpVarp, exprp, idx,
+                                          VN_AS(valuep, Const),
+                                          VN_AS(values[i + runs[i] - 1], Const));
                     } else if (runs[i] == 1) {
                         emitConvHitIf(coverpointp, cbinp, cpVarp, idx,
                                       buildValueCondition(cbinp, exprp, valuep));
@@ -1303,17 +1257,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
             } else {
                 namerStmts.push_back(makeNamer(cpVarp, cbinp, -1, static_cast<uint32_t>(idx)));
-                const auto runIt = singleRuns.find(cbinp);
-                if (runIt != singleRuns.end()) {
-                    // The first bin of a run tests the whole run; the rest need no test
-                    if (runIt->second.first) {
-                        emitRunHitIf(coverpointp, cbinp, cpVarp, exprp, idx,
-                                     singleBinValue(cbinp, exprp), runIt->second.second);
-                    }
-                }
                 // buildBinCondition is null for 'ignore_bins = default' (no ranges); the bin
                 // still gets a reserved slot (recorded, never incremented).
-                else if (AstNodeExpr* const condp = buildBinCondition(cbinp, exprp))
+                if (AstNodeExpr* const condp = buildBinCondition(cbinp, exprp))
                     emitConvHitIf(coverpointp, cbinp, cpVarp, idx, condp);
                 if (dynamic && V3Error::errorCount() == errorsBefore) {
                     metadata.emplace_back(cbinp, idx, nullptr);

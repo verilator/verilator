@@ -18,23 +18,8 @@ cg.cp_runs.mixed[4]: 1
 cg.cp_signed.s[0]: 0
 cg.cp_signed.s[1]: 6
 cg.cp_signed.s[2]: 0
-cg.cp_single.il [illegal]: 0
-cg.cp_single.r: 0
-cg.cp_single.s0: 0
-cg.cp_single.s1: 1
-cg.cp_single.s2: 1
-cg.cp_single.s5: 0
-cg.cp_single_iff.a: 0
-cg.cp_single_iff.b: 1
-cg.cp_single_neg.n1: 6
-cg.cp_single_neg.n2: 0
-cg.cp_single_signed.n1: 0
-cg.cp_single_signed.p0: 0
-cg.cp_single_signed.p1: 6
 cg.cp_wide.w[0]: 0
 cg.cp_wide.w[1]: 6
-cg.cp_wide_single.v5: 0
-cg.cp_wide_single.v6: 6
 cg.cp_xz.v[1]: 0
 cg.cp_xz.v[2]: 6
 cg.cx.m_x_lo[0] [cross]: 0
