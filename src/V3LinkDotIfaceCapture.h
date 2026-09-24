@@ -1,9 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Interface typedef capture helper.
-//   Stores (refp, typedefp, cellp, owners, pendingClone) so LinkDot can
-//   rebind refs when symbol lookup fails, and V3Param clones can retarget
-//   typedefs without legacy paths.
+//   Records RefDTypes that reach an interface typedef through a cell path, so
+//   V3Param clones can retarget them to the correct interface specialization.
 //
 // Code available from: https://verilator.org
 //
@@ -78,17 +77,10 @@ public:
         string cellPath;  // Template path (e.g. "cca_io.tlb_io") - immutable key component
         string cloneCellPath;  // Instance-specific path (e.g. "cca_io1.tlb_io") - set by
                                // propagateClone when V3Param clones; empty for original entries
-        AstClass* origClassp = nullptr;  // For CLASS captures
         // Module where the RefDType lives
         AstNodeModule* ownerModp = nullptr;
-        // Typedef definition being referenced
-        AstTypedef* typedefp = nullptr;
-        // For PARAMTYPEDTYPE
-        AstParamTypeDType* paramTypep = nullptr;
         // Name of the module/interface that owns the typedef (stable string)
         string typedefOwnerModName;
-        // Interface port variable for matching during cloning
-        AstVar* ifacePortVarp = nullptr;
         // Additional REFDTYPEs sharing the same key (e.g. from macro expansions
         // that produce multiple $bits() references to the same interface typedef).
         // The primary refp is stored above; extras are appended here so that
@@ -96,11 +88,7 @@ public:
         std::vector<AstRefDType*> extraRefps;
         // Clear template-specific targets that are stale in a clone context.
         // Called by propagateClone before inserting a clone entry.
-        void clearStaleRefs() {
-            paramTypep = nullptr;
-            typedefp = nullptr;
-            extraRefps.clear();
-        }
+        void clearStaleRefs() { extraRefps.clear(); }
         // Visit every AstNode* pointer field (analogous to AstNode::foreachLink).
         // The callback receives an AstNode* by reference; if it nulls the
         // pointer the typed member is nulled accordingly.
@@ -113,10 +101,6 @@ public:
             };
             callOnNode(refp);
             callOnNode(ownerModp);
-            callOnNode(typedefp);
-            callOnNode(paramTypep);
-            callOnNode(ifacePortVarp);
-            callOnNode(origClassp);
             for (auto& xrefp : extraRefps) callOnNode(xrefp);
         }
     };
@@ -134,7 +118,6 @@ private:
     static void reset();
     static void clearModuleCache();
     static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
-    static string extractIfacePortName(const string& dotText);
     // True if this module is a copy of that one.
     static bool isCloneOfModule(const AstNodeModule* modp, const AstNodeModule* templateModp);
     // Point a reference at a typedef and fix its other links.
@@ -170,17 +153,11 @@ public:
     // Retarget every live RefDType in an entry using only stable capture metadata.
     static bool retargetRefToModule(const CapturedEntry& entry, AstNodeModule* targetModp);
     static void add(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
-                    AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "",
-                    AstVar* ifacePortVarp = nullptr);
+                    AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "");
     static void addClass(AstRefDType* refp, AstClass* origClassp, AstNodeModule* ownerModp,
                          AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "");
     static void addParamType(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
-                             AstParamTypeDType* paramTypep, const string& paramTypeOwnerModName,
-                             AstVar* ifacePortVarp);
-    // Exact lookup by full key
-    static const CapturedEntry* find(const CaptureKey& key);
-    // Pointer-based lookup: linear scan with early exit (no std::function overhead)
-    static const CapturedEntry* find(const AstRefDType* refp);
+                             AstParamTypeDType* paramTypep, const string& paramTypeOwnerModName);
     static void forEach(const std::function<void(const CapturedEntry&)>& fn);
     static void forEachOwned(const AstNodeModule* ownerModp,
                              const std::function<void(const CapturedEntry&)>& fn);
@@ -198,9 +175,8 @@ public:
                                AstNodeModule* newOwnerModp, const string& cloneCellPath);
 
     static void captureTypedefContext(AstRefDType* refp, const char* stageLabel, int dotPos,
-                                      bool dotIsFinal, const std::string& dotText,
-                                      VSymEnt* dotSymp, VSymEnt* curSymp, AstNodeModule* modp,
-                                      AstNode* nodep,
+                                      const std::string& dotText, VSymEnt* dotSymp,
+                                      AstNodeModule* modp,
                                       const std::function<std::string()>& indentFn);
 
     // Null out ledger entries that point to freed nodes (not in the live AST).

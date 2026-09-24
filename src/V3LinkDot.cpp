@@ -3352,8 +3352,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     // Capture a ParamTypeDType reference for interface typedef retargeting.
     // Called when a RefDType resolves to a ParamTypeDType owned by an interface.
-    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp,
-                               const V3LinkDotIfaceCapture::CapturedEntry* capEntryp) {
+    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp) {
         if (!V3LinkDotIfaceCapture::enabled() || !m_statep->forPrimary()) return;
         AstNodeModule* const defOwnerModp = V3LinkDotIfaceCapture::findOwnerModule(defp);
         if (!defOwnerModp || !VN_IS(defOwnerModp, Iface)) return;
@@ -3363,8 +3362,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(9, indent() << "iface capture add paramtype " << nodep
                           << " iface=" << defOwnerModp->prettyNameQ());
         V3LinkDotIfaceCapture::addParamType(nodep, cellForCapture->name(), m_modp, defp,
-                                            defOwnerModp->name(),
-                                            capEntryp ? capEntryp->ifacePortVarp : nullptr);
+                                            defOwnerModp->name());
     }
 
     AstNodeStmt* addImplicitSuperNewCall(AstFunc* const nodep,
@@ -4768,9 +4766,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     refp->typedefp(defp);
 
                     V3LinkDotIfaceCapture::captureTypedefContext(
-                        refp, "typedef", static_cast<int>(m_ds.m_dotPos),
-                        m_ds.m_dotPos == DP_FINAL, m_ds.m_dotText, m_ds.m_dotSymp, m_curSymp,
-                        m_modp, nodep, [this]() { return indent(); });
+                        refp, "typedef", static_cast<int>(m_ds.m_dotPos), m_ds.m_dotText,
+                        m_ds.m_dotSymp, m_modp, [this]() { return indent(); });
 
                     if (VN_IS(nodep->backp(), SelExtract)) {
                         m_packedArrayDtp = refp;
@@ -4787,9 +4784,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     refp->refDTypep(defp);
 
                     V3LinkDotIfaceCapture::captureTypedefContext(
-                        refp, "paramtype", static_cast<int>(m_ds.m_dotPos),
-                        m_ds.m_dotPos == DP_FINAL, m_ds.m_dotText, m_ds.m_dotSymp, m_curSymp,
-                        m_modp, nodep, [this]() { return indent(); });
+                        refp, "paramtype", static_cast<int>(m_ds.m_dotPos), m_ds.m_dotText,
+                        m_ds.m_dotSymp, m_modp, [this]() { return indent(); });
 
                     if (VN_IS(nodep->backp(), SelExtract)) {
                         m_packedArrayDtp = refp;
@@ -6104,10 +6100,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
 
         // Resolve its reference
-        if (V3LinkDotIfaceCapture::find(nodep)) {
-            UINFO(9, indent() << "iface capture visit captured typedef ptr=" << nodep
-                              << " user2=" << nodep->user2p());
-        }
         if (m_statep->forParamed() && nodep->user3()) {
             if (V3LinkDotIfaceCapture::enabled() && nodep->user2p()) {
                 UINFO(9, indent() << "iface capture clear user3 for captured typedef name="
@@ -6191,8 +6183,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
 
-        const V3LinkDotIfaceCapture::CapturedEntry* capEntryp = V3LinkDotIfaceCapture::find(nodep);
-
         if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE)) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
@@ -6273,7 +6263,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     } else {
                         nodep->refDTypep(defp);
                         nodep->classOrPackagep(foundp->classOrPackagep());
-                        captureIfaceParamType(nodep, defp, capEntryp);
+                        captureIfaceParamType(nodep, defp);
                     }
                 } else if (AstClass* const defp
                            = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
