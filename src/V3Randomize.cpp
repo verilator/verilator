@@ -5745,8 +5745,8 @@ class RandomizeVisitor final : public VNVisitor {
         const VCMethod sizeMethod = VN_IS(arrVarp->dtypep()->skipRefp(), AssocArrayDType)
                                         ? VCMethod::ASSOC_SIZE
                                         : VCMethod::DYN_SIZE;
-        AstCMethodHard* const currentSizep
-            = new AstCMethodHard{fl, new AstVarRef{fl, arrClassp, arrVarp, VAccess::READ}, sizeMethod};
+        AstCMethodHard* const currentSizep = new AstCMethodHard{
+            fl, new AstVarRef{fl, arrClassp, arrVarp, VAccess::READ}, sizeMethod};
         currentSizep->dtypep(sizeVarp->dtypep());
         randomizep->addStmtsp(new AstAssign{fl, sizeWritep, currentSizep});
         AstNodeExpr* const modep = newModeBitRead(arrVarp, nullptr, randModeVarp, fl);
