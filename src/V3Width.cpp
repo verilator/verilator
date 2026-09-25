@@ -2233,7 +2233,12 @@ class WidthVisitor final : public VNVisitor {
         // No m_vup for a bin directly in a covergroup body (unsupported, already warned)
         widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
-        userIterateAndNext(nodep->arraySizep(), nullptr);
+        if (nodep->arraySizep()) {
+            // The size of 'bins auto[N]' is a self-determined constant expression, which
+            // V3Covergroup checks once folded
+            userIterateAndNext(nodep->arraySizep(), WidthVP{SELF, BOTH}.p());
+            V3Const::constifyEdit(nodep->arraySizep());  // arraySizep may change
+        }
         userIterateAndNext(nodep->transp(), m_vup);
     }
     void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), m_vup); }

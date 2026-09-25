@@ -50,6 +50,7 @@ class VerilatedCovContext;
 enum class VlCovBinNaming : uint8_t {
     Single,  // "<name>"      one bin
     Array,  // "<name>[i]"   bins b[N] value array
+    Numbered,  // "<name>_<i>" automatic bins of a coverpoint without bins
 };
 
 // Specifies the naming scheme for a range of bins, allowing the
@@ -145,12 +146,20 @@ public:
                        int line, int col) {
         addNamer(set, count, VlCovBinNaming::Array, name, file, line, col);
     }
+    void addNumberedNamer(VlCovBinKind set, uint32_t count, const char* name, const char* file,
+                          int line, int col) {
+        addNamer(set, count, VlCovBinNaming::Numbered, name, file, line, col);
+    }
     void registerBins(VerilatedCovContext* covcontextp, const char* page);
 
     /// Configure construction-time value metadata for exclusions and cross selections.
     void valueType(uint32_t bits, bool isSigned);
     /// Describe bin values as {bin, low words, high words} entries, without enumerating them.
     void valueRanges(std::initializer_list<EData> entries);
+    /// Describe runs of bins as {first bin, count, low words, span words, high words} entries:
+    /// bin k of a run holds [low + k * (span + 1), low + k * (span + 1) + span], and its last
+    /// bin extends to high.
+    void valueRuns(std::initializer_list<EData> entries);
     /// Describe wildcard patterns as {bin, value words, mask words, low words, high words}.
     void valuePatterns(std::initializer_list<EData> entries);
     /// State exclusions do not remove values from these transition bins.

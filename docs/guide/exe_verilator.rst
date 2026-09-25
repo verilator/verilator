@@ -316,6 +316,33 @@ Summary:
 
    Enables basic block line coverage analysis. See :ref:`Line Coverage`.
 
+.. option:: --coverage-max-bins <value>
+
+   Rarely needed. Specifies the maximum number of bins one covergroup bins
+   declaration of an integral coverpoint may create: an array of bins such
+   as ``bins b[] = {[0:$]}``, automatic bins ``bins auto[N]``, or the
+   automatic bins of a coverpoint from ``option.auto_bin_max``. Defaults to
+   1024, and may be at most 4294967295 (``2**32 - 1``).
+
+   A larger array of bins is ignored with a :option:`COVERIGN` warning, a
+   larger ``bins auto[N]`` is an error, and a larger
+   ``option.auto_bin_max`` is reduced to this limit with a
+   :option:`COVERIGN` warning. Increasing the limit increases the memory
+   the model uses for the bins. See also
+   :vlopt:`--coverage-max-real-bins`.
+
+.. option:: --coverage-max-real-bins <value>
+
+   Rarely needed. Specifies the maximum number of values of one array of
+   bins of a coverpoint of a ``real`` expression, such as
+   ``bins b[] = {[1:10]}``, each of which is a bin compared separately.
+   Defaults to 1024, and may be at most 4294967295 (``2**32 - 1``).
+
+   A larger array of bins is ignored with a :option:`COVERIGN` warning.
+   Increasing the limit increases the size of the generated code, which
+   grows with the number of these bins. See also
+   :vlopt:`--coverage-max-bins`.
+
 .. option:: --coverage-max-width <width>
 
    Rarely needed. Specify the maximum bit width of a signal subject to
