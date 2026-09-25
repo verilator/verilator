@@ -93,6 +93,7 @@
       ]}
     ]},
     {"type":"BASICDTYPE","name":"logic","addr":"(T)","loc":"d,33:8,33:9","dtypep":"(T)","keyword":"logic","range":"31:0","generic":true},
-    {"type":"BASICDTYPE","name":"string","addr":"(CB)","loc":"d,35:25,35:31","dtypep":"(CB)","keyword":"string","generic":true}
+    {"type":"BASICDTYPE","name":"string","addr":"(CB)","loc":"d,35:25,35:31","dtypep":"(CB)","keyword":"string","generic":true},
+    {"type":"BASICDTYPE","name":"logic","addr":"(DC)","loc":"d,20:11,20:17","dtypep":"(DC)","keyword":"logic","range":"3:0","generic":true}
   ]}
 ]}
