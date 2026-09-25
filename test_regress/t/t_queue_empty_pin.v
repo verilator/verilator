@@ -13,9 +13,14 @@ module t;
     if (q.size != 0) $stop;
   endtask
 
+  task dtsk(int q[]);
+    if (q.size != 0) $stop;
+  endtask
+
   initial begin
     tsk();
     qtsk({});
+    dtsk({});
 
     $write("*-* All Finished *-*\n");
     $finish;
