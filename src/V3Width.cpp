@@ -7955,6 +7955,9 @@ class WidthVisitor final : public VNVisitor {
                     handle.relink(newp);
                     pinp = newp;
                 }
+                if (portp->isWritable()) {
+                    V3LinkLValue::linkLValueSet(pinp, portp->direction().pinAccess());
+                }
                 // AstPattern requires assignments to pass datatype on PRELIM
                 VL_DO_DANGLING(userIterate(pinp, WidthVP{portp->dtypep(), PRELIM}.p()), pinp);
             }
@@ -8047,9 +8050,6 @@ class WidthVisitor final : public VNVisitor {
                     pinp->unlinkFrBack(&relinkHandle);
                     AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
                     relinkHandle.relink(newp);
-                }
-                if (portp->isWritable()) {
-                    V3LinkLValue::linkLValueSet(pinp, portp->direction().pinAccess());
                 }
                 if (portp->direction() != VDirection::REF
                     && !(portp->basicp()
