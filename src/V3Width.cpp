@@ -6241,14 +6241,15 @@ class WidthVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
     }
+    AstNodeExpr* newConsDynArrayOrQueue(FileLine* fileline, const AstNodeDType* dtypep) {
+        if (VN_IS(dtypep, DynArrayDType)) return new AstConsDynArray{fileline};
+        if (VN_IS(dtypep, QueueDType)) return new AstConsQueue{fileline};
+        return nullptr;
+    }
     void patternDynArrayOrQueue(AstPattern* nodep, AstNodeDType* arrayp) {
-        AstNodeExpr* newp = nullptr;
+        AstNodeExpr* newp = newConsDynArrayOrQueue(nodep->fileline(), arrayp);
+        UASSERT_OBJ(newp, nodep, "Expected dynamic array or queue data type");
         const bool isDynArray = VN_IS(arrayp, DynArrayDType);
-        if (isDynArray) {
-            newp = new AstConsDynArray{nodep->fileline()};
-        } else {
-            newp = new AstConsQueue{nodep->fileline()};
-        }
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
@@ -7883,12 +7884,8 @@ class WidthVisitor final : public VNVisitor {
                 if (!pinp) continue;  // Argument error we'll find later
                 AstNodeDType* const portDTypep = portp->dtypep()->skipRefToEnump();
                 if (VN_IS(pinp, EmptyQueue)) {
-                    AstNodeExpr* newp = nullptr;
-                    if (VN_IS(portDTypep, QueueDType)) {
-                        newp = new AstConsQueue{pinp->fileline()};
-                    } else if (VN_IS(portDTypep, DynArrayDType)) {
-                        newp = new AstConsDynArray{pinp->fileline()};
-                    } else {
+                    AstNodeExpr* newp = newConsDynArrayOrQueue(pinp->fileline(), portDTypep);
+                    if (!newp) {
                         pinp->v3warn(E_UNSUPPORTED,
                                      "Unsupported/Illegal: empty queue ('{}') in this context");
                         newp = new AstConst{pinp->fileline(), AstConst::Unsized32{}, 0};
