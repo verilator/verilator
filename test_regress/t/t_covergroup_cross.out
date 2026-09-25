@@ -169,10 +169,10 @@ cg_trans.cp_v.v5: 2
 cg_trans.cp_v.v6: 1
 cg_trans.tx.t01_x_v5 [cross]: 1
 cg_trans.tx.t01_x_v6 [cross]: 0
-cg_unnamed_cross.__cross8.a0_x_read [cross]: 1
-cg_unnamed_cross.__cross8.a0_x_write [cross]: 0
-cg_unnamed_cross.__cross8.a1_x_read [cross]: 0
-cg_unnamed_cross.__cross8.a1_x_write [cross]: 1
+cg_unnamed_cross.__cross9.a0_x_read [cross]: 1
+cg_unnamed_cross.__cross9.a0_x_write [cross]: 0
+cg_unnamed_cross.__cross9.a1_x_read [cross]: 0
+cg_unnamed_cross.__cross9.a1_x_write [cross]: 1
 cg_unnamed_cross.cp_a.a0: 1
 cg_unnamed_cross.cp_a.a1: 1
 cg_unnamed_cross.cp_c.read: 1
