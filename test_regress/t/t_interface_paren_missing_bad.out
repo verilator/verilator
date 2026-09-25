@@ -1,7 +1,53 @@
-%Error: t/t_interface_paren_missing_bad.v:13:3: Interface 'intf' not connected as parent's interface not connected
+%Error: t/t_interface_paren_missing_bad.v:37:8: Interface port declaration 'intf_t_not_port' doesn't have corresponding port
+                                              : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   37 |   intf intf_t_not_port;
+      |        ^~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_interface_paren_missing_bad.v:38:10: Interface port declaration 'intf_t_not_port_mod' doesn't have corresponding port
+                                               : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   38 |   intf.A intf_t_not_port_mod;
+      |          ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:39:20: Interface port declaration 'intf_no_instance_t_not_port' doesn't have corresponding port
+                                               : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   39 |   intf_no_instance intf_no_instance_t_not_port;
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:39:3: Interface 'intf_no_instance' not connected as parent's interface not connected
                                               : ... Perhaps caused by another error on the parent interface that needs resolving
                                               : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
-   13 |   intf intf_i;
-      |   ^~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+   39 |   intf_no_instance intf_no_instance_t_not_port;
+      |   ^~~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:23:8: Interface port declaration 'intf_b_not_port' doesn't have corresponding port
+                                              : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   23 |   intf intf_b_not_port;
+      |        ^~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:24:10: Interface port declaration 'intf_b_not_port_mod' doesn't have corresponding port
+                                               : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   24 |   intf.A intf_b_not_port_mod;
+      |          ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:25:20: Interface port declaration 'intf_no_instance_b_not_port' doesn't have corresponding port
+                                               : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   25 |   intf_no_instance intf_no_instance_b_not_port;
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:25:3: Interface 'intf_no_instance' not connected as parent's interface not connected
+                                              : ... Perhaps caused by another error on the parent interface that needs resolving
+                                              : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   25 |   intf_no_instance intf_no_instance_b_not_port;
+      |   ^~~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:30:8: Interface port declaration 'intf_d_not_port' doesn't have corresponding port
+                                              : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   30 |   intf intf_d_not_port;
+      |        ^~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:32:10: Interface port declaration 'intf_d_not_port_mod' doesn't have corresponding port
+                                               : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   32 |   intf.A intf_d_not_port_mod;
+      |          ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:33:20: Interface port declaration 'intf_no_instance_d_not_port' doesn't have corresponding port
+                                               : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   33 |   intf_no_instance intf_no_instance_d_not_port;
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_interface_paren_missing_bad.v:33:3: Interface 'intf_no_instance' not connected as parent's interface not connected
+                                              : ... Perhaps caused by another error on the parent interface that needs resolving
+                                              : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+   33 |   intf_no_instance intf_no_instance_d_not_port;
+      |   ^~~~~~~~~~~~~~~~
 %Error: Exiting due to

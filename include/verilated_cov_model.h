@@ -28,6 +28,8 @@
 #include <cstdint>
 #include <string>
 
+class VlFileLineDebug;
+
 // Per-bin classification.  A bin's kind is which set it lives in (structural),
 // not a per-bin field.  Only Normal feeds coverage(); the rest are recorded.
 // Enumerators are 'KIND_'-prefixed because the bare LRM terms collide with
@@ -50,6 +52,9 @@ enum class VlCovBinKind : uint8_t {
 /// Bounded bin count, so random access by index is the primary usage.
 
 class VlCoverpointIf VL_NOT_FINAL {
+    // MEMBERS
+    int32_t m_weight = 1;  // option.weight; never negative
+
 public:
     // CONSTRUCTORS
     virtual ~VlCoverpointIf() = default;
@@ -62,6 +67,12 @@ public:
     virtual std::string binName(uint32_t i) const = 0;
     // Bins covered / effective total (Normal set only) for the coverage calc
     virtual void coverageParts(double& covered, double& total) const = 0;
+    /// Weight of this item in its covergroup instance's coverage (option.weight,
+    /// IEEE 1800-2023 19.11)
+    int32_t weight() const { return m_weight; }
+    /// Load option.weight, as evaluated by the covergroup constructor.  A negative
+    /// weight is reported as an error, and counts as zero.
+    void weight(uint32_t value, VlFileLineDebug fileline);
 };
 
 #endif  // Guard

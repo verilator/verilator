@@ -541,6 +541,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
 
 #define VL_BITWORD_I(bit) ((bit) / VL_IDATASIZE)  ///< Word number for sv DPI vectors
+#define VL_BITWORD_Q(bit) ((bit) / VL_QUADSIZE)  ///< Quadword number for a bit
 #define VL_BITWORD_E(bit) ((bit) >> VL_EDATASIZE_LOG2)  ///< Word number for a wide quantity
 #define VL_BITBIT_I(bit) ((bit) & VL_SIZEBITS_I)  ///< Bit number for a bit in a long
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
@@ -746,7 +747,7 @@ namespace vlstd {
 
 template <typename T>
 struct reverse_wrapper final {
-    const T& m_v;
+    const T& m_v;  // Pre-wrapped iterator
 
     explicit reverse_wrapper(const T& a_v)
         : m_v(a_v) {}  // Need () constructor

@@ -305,6 +305,7 @@ Mahmoudy
 Makefile
 Makefiles
 Maksymenko
+Manzoni
 Marche
 Markley
 Marquet
@@ -1134,6 +1135,7 @@ shortint
 shortreal
 signame
 signedness
+slp
 sp
 specparam
 splitme
@@ -1258,6 +1260,7 @@ vcddiff
 vcoverage
 vdhotre
 vec
+vectorize
 ventana
 venv
 ver

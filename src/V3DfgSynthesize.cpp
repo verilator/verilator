@@ -257,9 +257,9 @@ class AstToDfgConverter final : public VNVisitor {
         // Represents a DFG assignment contributed by the AST assignment with the above 'lhsp'.
         // There might be multiple of these if 'lhsp' is a concatenation.
         struct Assignment final {
-            DfgVertexSplice* m_lhsp;
-            uint32_t m_idx;
-            DfgVertex* m_rhsp;
+            DfgVertexSplice* m_lhsp;  // Splice vertex being driven
+            uint32_t m_idx;  // Position (bit or array index) within m_lhsp being driven
+            DfgVertex* m_rhsp;  // Vertex driving that position
             Assignment() = delete;
             Assignment(DfgVertexSplice* lhsp, uint32_t idx, DfgVertex* rhsp)
                 : m_lhsp{lhsp}
@@ -699,6 +699,28 @@ class AstToDfgSynthesize final {
 
         // Done
         return drivers;
+    }
+
+    // Returns true if the driver supplies a complete array element.
+    static bool driverCoversWholeElement(const Driver& driver) {
+        const DfgUnitArray* const unitp = driver.m_vtxp->cast<DfgUnitArray>();
+        if (!unitp) return false;
+        if (DfgVertexSplice* const splicep = unitp->srcp()->cast<DfgVertexSplice>()) {
+            return splicep->wholep();
+        }
+        return true;
+    }
+
+    // Unlike 'wholep', several element drivers can collectively cover an array.
+    static bool spliceCoversWhole(DfgVertexSplice* const splicep) {
+        if (splicep->wholep()) return true;
+        if (splicep->isPacked()) return false;
+        uint32_t next = 0;
+        for (const Driver& driver : gatherDrivers(splicep)) {
+            if (driver.m_lo != next || !driverCoversWholeElement(driver)) return false;
+            next = driver.m_hi + 1;
+        }
+        return next == splicep->size();
     }
 
     // Returns true if the driver cone contains any variable introduced by
@@ -1313,6 +1335,42 @@ class AstToDfgSynthesize final {
         return propagatedDrivers;
     }
 
+    // Propagate whole elements with a linear walk over the sorted driver lists.
+    // Reads use the previous value temporary, preserving assignment-version bindings.
+    // Partial elements and non-unit drivers retain the nonsynthesized-process fallback.
+    bool computePropagatedArrayDrivers(const std::vector<Driver>& newDrivers,
+                                       DfgVertexVar* const oldp,
+                                       std::vector<Driver>& propagatedDrivers) {
+        // Bound quadratic vertex growth: array drivers cannot be coalesced.
+        static constexpr uint32_t MAX_ARRAY_ELEMENTS = 32;
+        if (oldp->size() > MAX_ARRAY_ELEMENTS) return false;
+        for (const Driver& driver : newDrivers) {
+            if (!driverCoversWholeElement(driver)) return false;
+        }
+        const std::vector<Driver> oldDrivers = gatherDrivers(oldp->srcp()->as<DfgVertexSplice>());
+        UASSERT_OBJ(!oldDrivers.empty(), oldp, "Should have a proper driver");
+        for (const Driver& driver : oldDrivers) {
+            if (!driverCoversWholeElement(driver)) return false;
+        }
+
+        propagatedDrivers.reserve(oldDrivers.size());
+        auto nIt = newDrivers.begin();
+        for (const Driver& oDriver : oldDrivers) {
+            while (nIt != newDrivers.end() && nIt->m_lo < oDriver.m_lo) ++nIt;
+            if (nIt != newDrivers.end() && nIt->m_lo == oDriver.m_lo) continue;
+
+            FileLine* const flp = oDriver.m_flp;
+            const DfgUnitArray* const oldUnitp = oDriver.m_vtxp->as<DfgUnitArray>();
+            DfgArraySel* const selp = make<DfgArraySel>(flp, oldUnitp->srcp()->dtype());
+            selp->fromp(oldp);
+            selp->bitp(make<DfgConst>(flp, static_cast<size_t>(VL_IDATASIZE), oDriver.m_lo));
+            DfgUnitArray* const newUnitp = make<DfgUnitArray>(flp, oldUnitp->dtype());
+            newUnitp->srcp(selp);
+            propagatedDrivers.emplace_back(newUnitp, oDriver.m_lo, flp);
+        }
+        return true;
+    }
+
     // Given the drivers of a variable after converting a single statement
     // 'newp', add drivers from 'oldp' that were not reassigned be drivers
     // in newp. This computes the total result of all previous assignments.
@@ -1328,17 +1386,11 @@ class AstToDfgSynthesize final {
         // If the old value is the real variable we just computed the new value for,
         // then it is the circular feedback into the synthesized block, add it as default driver.
         if (oldp->vscp() == vscp) {
-            if (!nSplicep->wholep()) newp->defaultp(oldp);
+            if (!spliceCoversWhole(nSplicep)) newp->defaultp(oldp);
             return true;
         }
 
         UASSERT_OBJ(oldp->srcp(), vscp, "Previously assigned variable has no driver");
-
-        // Can't do arrays yet
-        if (!newp->isPacked()) {
-            ++m_ctx.m_synt.nonSynArray;
-            return false;
-        }
 
         // Gather drivers of 'newp' - they are in incresing range order with no overlaps
         UASSERT_OBJ(!newp->defaultp(), newp, "Converted value should not have default");
@@ -1346,7 +1398,13 @@ class AstToDfgSynthesize final {
         UASSERT_OBJ(!nDrivers.empty(), newp, "Should have a proper driver");
 
         // Additional drivers of 'newp' propagated from 'oldp'
-        std::vector<Driver> pDrivers = computePropagatedDrivers(nDrivers, oldp);
+        std::vector<Driver> pDrivers;
+        if (newp->isPacked()) {
+            pDrivers = computePropagatedDrivers(nDrivers, oldp);
+        } else if (!computePropagatedArrayDrivers(nDrivers, oldp, pDrivers)) {
+            ++m_ctx.m_synt.nonSynArray;
+            return false;
+        }
 
         if (!pDrivers.empty()) {
             // Need to merge propagated sources, so reset the splice
@@ -1357,13 +1415,13 @@ class AstToDfgSynthesize final {
             std::merge(nDrivers.begin(), nDrivers.end(), pDrivers.begin(), pDrivers.end(),
                        std::back_inserter(drivers));
             // Coalesce adjacent ranges
-            coalesceDrivers(drivers);
+            if (newp->isPacked()) coalesceDrivers(drivers);
             // Reinsert drivers in order
             for (const Driver& d : drivers) nSplicep->addDriver(d.m_vtxp, d.m_lo, d.m_flp);
         }
 
         // If the old had a default, add to the new one too, unless redundant
-        if (oldp->defaultp() && !nSplicep->wholep()) newp->defaultp(oldp->defaultp());
+        if (oldp->defaultp() && !spliceCoversWhole(nSplicep)) newp->defaultp(oldp->defaultp());
 
         // Done
         return true;

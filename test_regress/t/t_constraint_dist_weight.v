@@ -42,6 +42,12 @@ class DistVarWeightRange;
   constraint c { x dist { [8'd0:8'd9] :/ w1, [8'd10:8'd19] :/ w2 }; }
 endclass
 
+class DistVarWeightWithExclusion;
+  rand bit [7:0] x;
+  constraint c { x dist { 8'd13 := 10, 8'd10 := 2 }; }
+  constraint excl { x != 8'd13; }
+endclass
+
 module t;
   initial begin
     DistScalar sc;
@@ -50,6 +56,7 @@ module t;
     DistAllZeroWeight azw;
     DistVarWeight vw;
     DistVarWeightRange vwr;
+    DistVarWeightWithExclusion vwwe;
     int count_high;
     int count_range_high;
     int total;
@@ -129,6 +136,13 @@ module t;
       end
     end
     `check_range(count_range_high, total * 60 / 100, total * 90 / 100);
+
+    vwwe = new;
+    repeat (total) begin
+      randomize_result = vwwe.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(vwwe.x, 8'd10);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;

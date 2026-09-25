@@ -201,8 +201,8 @@ private:
 // TODO use this wherever there is currently a "string m_name"
 
 class VName final {
-    string m_name;
-    string m_hashed;
+    string m_name;  // Pre-hashed symbol name
+    string m_hashed;  // Hashed version of symbol name
     static std::map<string, string> s_dehashMap;  // hashed -> original decoder
 
     static size_t s_maxLength;  // Length at which to start hashing

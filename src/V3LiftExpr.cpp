@@ -229,6 +229,17 @@ class LiftExprVisitor final : public VNVisitor {
     }
 
     // VISITORS - statements
+    void visit(AstWait* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        VL_RESTORER(m_doNotLiftp);
+        m_doNotLiftp = nullptr;
+        // Keep lifted statements inside the repeatedly evaluated condition.
+        if (AstNode* const newStmtps = lift(nodep->condp())) {
+            AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
+            nodep->condp(new AstExprStmt{nodep->fileline(), newStmtps, condp});
+        }
+        iterateAndNextNull(nodep->stmtsp());
+    }
     void visit(AstNodeStmt* nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_doNotLiftp);

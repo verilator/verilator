@@ -1,0 +1,15 @@
+$ verilator_coverage --report hierarchy --levels 3 coverage.dat
+Hierarchy Coverage Summary:
+  t
+    fsm_state : 70.0% ( 7/10)
+    fsm_arc   : 58.3% ( 7/12)
+  t.u1
+    fsm_state : 80.0% (4/5)
+    fsm_arc   : 66.7% (4/6)
+  t.u2
+    fsm_state : 60.0% (3/5)
+    fsm_arc   : 50.0% (3/6)
+Design Unit Coverage Summary:
+  fsm
+    fsm_state : 70.0% ( 7/10)
+    fsm_arc   : 58.3% ( 7/12)

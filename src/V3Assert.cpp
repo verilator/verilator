@@ -324,6 +324,7 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     V3UniqueNames m_caseTempNames{"__VCase"};
+    V3UniqueNames m_matchCountNames{"__VnfaRemainingMatchCount"};  // Match replay counter names
     // Maps from (expression, senTree) to the AstAlways that computes its delayed values.
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
@@ -749,11 +750,11 @@ class AssertVisitor final : public VNVisitor {
             // reaches zero.
             matchCountp->unlinkFrBack();
             AstVar* const remainingp = new AstVar{
-                flp, VVarType::BLOCKTEMP, "__VnfaRemainingMatchCount", matchCountp->dtypep()};
-            remainingp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            AstBegin* const replayp = new AstBegin{flp, "", remainingp, true};
-            replayp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, remainingp, VAccess::WRITE}, matchCountp});
+                flp, VVarType::MODULETEMP, m_matchCountNames.get(""), matchCountp->dtypep()};
+            remainingp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(remainingp);
+            AstNode* const replaysp
+                = new AstAssign{flp, new AstVarRef{flp, remainingp, VAccess::WRITE}, matchCountp};
             AstLoop* const loopp = new AstLoop{flp};
             loopp->addStmtsp(
                 new AstLoopTest{flp, loopp, new AstVarRef{flp, remainingp, VAccess::READ}});
@@ -763,8 +764,8 @@ class AssertVisitor final : public VNVisitor {
                               new AstSub{flp, new AstVarRef{flp, remainingp, VAccess::READ},
                                          new AstConst{flp, AstConst::WidthedValue{},
                                                       remainingp->dtypep()->width(), 1}}});
-            replayp->addStmtsp(loopp);
-            passsp = replayp;
+            replaysp->addNext(loopp);
+            passsp = replaysp;
         }
         AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};

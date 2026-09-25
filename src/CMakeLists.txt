@@ -565,8 +565,17 @@ set_target_properties(
         MSVC_RUNTIME_LIBRARY MultiThreaded$<IF:$<CONFIG:Release>,,DebugDLL>
         #JOB_POOL_LINK         one_job      # Linking takes lots of resources
         INTERPROCEDURAL_OPTIMIZATION_RELEASE $<IF:MINGW,FALSE,TRUE>
-        INCLUDE_DIRECTORIES ${FLEX_INCLUDE_DIR}
 )
+
+if(MINGW)
+    # Search MSYS Flex headers after the active toolchain's system headers.
+    target_compile_options(
+        ${verilator}
+        PRIVATE -idirafter "${FLEX_INCLUDE_DIR}"
+    )
+else()
+    target_include_directories(${verilator} PRIVATE "${FLEX_INCLUDE_DIR}")
+endif()
 
 add_dependencies(
     ${verilator}

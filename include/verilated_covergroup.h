@@ -41,6 +41,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 class VerilatedCovContext;
@@ -99,6 +100,10 @@ public:
 // VlCoverpointT<MaxHits> adds the inline hit-list array and the incrementBin write
 // path; the cross holds VlCoverpoint* and reads via hitCount()/hitList().
 class VlCoverpoint VL_NOT_FINAL : public VlCoverpointIf {
+    struct ValueData;
+    std::unique_ptr<ValueData> m_valuesp;  // Optional value metadata and exclusion state
+    friend class VlCoverCrossDyn;
+
 protected:
     // MEMBERS (protected so VlCoverpointT::incrementBin can update them)
     std::string m_hier;  // "covergroup.coverpoint"
@@ -120,10 +125,15 @@ private:
     const VlCovNamer& namerFor(uint32_t i) const;  // obtain the bin-specific name producer
     void addNamer(VlCovBinKind set, uint32_t count, VlCovBinNaming naming, const char* name,
                   const char* file, int line, int col);
+    // Declared bin index of the i-th bin reported through VlCoverpointIf
+    uint32_t reportedBin(uint32_t i) const;
+    std::string declaredBinName(uint32_t bin) const;  // Name of a declared bin index
+    bool liveBin(uint32_t bin) const;  // Normal bin keeps a value outside the exclusions
 
 public:
     // CONSTRUCTORS
-    VlCoverpoint() = default;
+    VlCoverpoint();
+    ~VlCoverpoint() override;
 
     // METHODS
     // ---- configuration (from generated constructor) ----
@@ -136,6 +146,22 @@ public:
         addNamer(set, count, VlCovBinNaming::Array, name, file, line, col);
     }
     void registerBins(VerilatedCovContext* covcontextp, const char* page);
+
+    /// Configure construction-time value metadata for exclusions and cross selections.
+    void valueType(uint32_t bits, bool isSigned);
+    /// Describe bin values as {bin, low words, high words} entries, without enumerating them.
+    void valueRanges(std::initializer_list<EData> entries);
+    /// Describe wildcard patterns as {bin, value words, mask words, low words, high words}.
+    void valuePatterns(std::initializer_list<EData> entries);
+    /// State exclusions do not remove values from these transition bins.
+    void valueTransitions(std::initializer_list<uint32_t> bins);
+    /// Apply exclusions and freeze the live Normal-bin index space used by crosses.
+    void valueFinalize();
+    /// Drop the per-bin values once every cross has been built; sampling needs only exclusions.
+    void valueRelease();
+    /// Test state exclusions independently of sampling-time iff guards.
+    bool valueExcluded(QData value) const;
+    bool valueExcludedW(WDataInP valuep) const;
 
     // ---- hot path (from generated sample()) ----
     // Clear the hit list at the start of each sample() for a cross-fed coverpoint.
@@ -152,19 +178,17 @@ public:
     std::string normalBinName(uint32_t crossIdx) const;  // name of the crossIdx-th Normal bin
 
     // ---- VlCoverpointIf ----
-    uint32_t binCount() const override { return m_total; }
+    /// Bins removed for having no value (IEEE 1800-2023 19.11.1) are not reported.
+    uint32_t binCount() const override;
     std::string binName(uint32_t i) const override;
     // Deliberately not on VlCoverpointIf: only coverage-database registration needs it.
-    VlCovBinKind binKind(uint32_t i) const { return namerFor(i).set(); }
+    VlCovBinKind binKind(uint32_t i) const { return namerFor(reportedBin(i)).set(); }
     void coverageParts(double& covered, double& total) const override {
         // Count Normal bins that reached option.at_least on demand, so the hot
         // path (incrementBin) stays a plain counter bump.
         uint32_t numCovered = 0;
-        for (const VlCovNamer& nm : m_namers) {
-            if (nm.set() != VlCovBinKind::KIND_NORMAL) continue;
-            for (uint32_t i = nm.base(); i < nm.base() + nm.count(); ++i) {
-                if (m_counts[i] >= m_atLeast) ++numCovered;
-            }
+        for (const uint32_t bin : m_crossToBin) {
+            if (m_counts[bin] >= m_atLeast) ++numCovered;
         }
         covered = numCovered;
         total = m_normal;
@@ -211,7 +235,7 @@ public:
 /// built on demand for automatic bins; explicit bins select sets of tuples
 /// and replace the corresponding automatic cross bins.  Explicit selections
 /// are intersected with hit-tuple words once per sample.
-/// VlCoverCrossT owns the fixed arrays. This shared core does not allocate bin
+/// VlCoverCrossT and VlCoverCrossDyn own their storage. This shared core does not allocate bin
 /// storage, and its borrowed storage pointers remain valid for the instance.
 
 class VlCoverCross VL_NOT_FINAL : public VlCoverpointIf {
@@ -223,15 +247,16 @@ protected:
         uint32_t stride;  // Flat-index stride
     };
     struct Bin final {
-        const uint64_t* selectionp;  // Slice of the fixed selection storage
+        const uint64_t* selectionp;  // Slice of the cross's selection storage
         const char* namep;  // Explicit bin name
         const char* filep;  // Bin declaration file
+        const uint32_t* wordIndicesp = nullptr;  // Slice of the packed selection-word indices
         int line;  // Bin declaration line
         int col;  // Bin declaration column
         VlCovBinKind kind = VlCovBinKind::KIND_NORMAL;  // Normal, ignore, or illegal bin
         uint32_t count = 0;  // Samples matching the selection and guard
         uint32_t numWords = 0;  // Number of nonzero selection-word indices
-        const uint32_t* wordIndicesp = nullptr;  // Slice of the packed selection-word indices
+        uint32_t iffIndex = 0;  // Original guard index, including bins removed during finalization
     };
     struct Word final {
         uint64_t autoExcluded = 0;  // Tuples replaced by explicit bins
@@ -240,8 +265,8 @@ protected:
     };
     template <typename T>
     class View final {
-        T* m_beginp;
-        T* m_endp;
+        T* m_beginp;  // First element of the viewed slice
+        T* m_endp;  // One past the last element of the viewed slice
 
     public:
         View(T* datap, uint64_t size)
@@ -278,7 +303,7 @@ private:
     // storable anyway: m_flatCountsp alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
     uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
-    Dimension* m_dimensionsp = nullptr;  // [m_dims], owned by VlCoverCrossT
+    Dimension* m_dimensionsp = nullptr;  // [m_dims], owned by the concrete cross runtime
     uint32_t* m_flatCountsp = nullptr;  // [m_numAutoBins] Per-bin hit counts
     Explicit* m_explicitp = nullptr;  // Absent for automatic-only crosses
 
@@ -326,19 +351,25 @@ protected:
         m_flatCountsp = countsp;
         m_explicitp = explicitp;
     }
+    void shape(uint32_t dims, uint32_t tuples) {
+        m_dims = dims;
+        m_numAutoBins = tuples;
+    }
+    void addBinImpl(VlCovBinKind kind, const uint64_t* selectionp, uint32_t words,
+                    const char* namep, const char* filep, int line, int col, uint32_t iffIndex);
 
 public:
     VL_UNCOPYABLE(VlCoverCross);
 
     // METHODS
     // ---- configuration (from generated constructor, after coverpoints init'd) ----
-    void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-              int line, int col);
+    virtual void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
+                      int line, int col);
     /// Add a cross bin using a verilation-time bitmap of selected Normal-bin tuples.
     void addBin(VlCovBinKind kind, std::initializer_list<uint64_t> selection, const char* namep,
                 const char* filep, int line, int col);
     /// Retain only automatic cross bins not selected by any explicit bin.
-    void finalizeBins();
+    virtual void finalizeBins();
     void registerBins(VerilatedCovContext* covcontextp, const char* page);
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
@@ -406,6 +437,36 @@ public:
     }
 };
 
+// Construction-time cross layout over finalized coverpoints, sharing the sampling core.
+class VlCoverCrossDyn final : public VlCoverCross {
+    class Layout;
+    std::unique_ptr<Layout> m_layoutp;  // Owned cross storage and construction-time selections
+
+public:
+    // CONSTRUCTORS
+    VlCoverCrossDyn();
+    ~VlCoverCrossDyn() override;
+
+    // METHODS
+    /// Initialize after all feeding coverpoints have finalized their live bins.
+    void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
+              int line, int col) override;
+    /// Build cross-bin selections in postfix order.
+    void selectAll();
+    /// Start a binsof term over the live bins declared in [first, end) of dimension 'dim'.
+    void selectDim(uint32_t dim, uint32_t first, uint32_t end, bool negated, bool intersect);
+    void selectRange(QData lo, QData hi);
+    void selectRangeW(WDataInP lop, WDataInP hip);
+    void selectDimEnd();
+    void selectAnd();
+    void selectOr();
+    // Save a selection without renumbering guards when empty bins are removed.
+    void selectBin(VlCovBinKind kind, const char* namep, const char* filep, int line, int col,
+                   uint32_t iffIndex);
+    /// Apply cross exclusions and bind finalized storage to the sampling core.
+    void finalizeBins() override;
+};
+
 class VlCovergroupType;
 
 //=============================================================================
@@ -430,6 +491,12 @@ class VlCovergroupInst final {
     uint32_t m_slot = 0;  // Index into m_typep->m_insts; unlink-by-swap rewrites
 #endif
     uint32_t m_attachCount = 1;  // SV handles bound here; 1 from construction
+    // option.weight of the SV object that created this node, while that object
+    // lives; borrowed through VlCovInstHandle::lendWeight().
+    const IData* m_weightp = nullptr;
+    IData m_loadedWeight = 1;  // Last option.weight loaded through m_weightp
+    int32_t m_weight = 1;  // Weight in use, never negative; kept once the object is gone
+    VlFileLineDebug m_fileline;  // Covergroup declaration, where a negative weight is reported
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
     // Reads m_items to fold the residue; owns m_slot and m_retained.
@@ -456,6 +523,7 @@ public:
         m_items.emplace_back(cxp);
         return cxp;  // borrowed by the generated class
     }
+    VlCoverCrossDyn* addCrossDyn();
 
     // ---- attach counting (from VlCovInstHandle) ----
     void attachInc() { ++m_attachCount; }
@@ -464,35 +532,49 @@ public:
     // here, and because it frees 'this'.
     bool attachDec() { return --m_attachCount == 0; }
 
+    // ---- instance weight (from VlCovInstHandle) ----
+    void lendWeight(const IData* weightp, VlFileLineDebug fileline) {
+        m_weightp = weightp;
+        m_fileline = fileline;
+        loadWeight();
+    }
+    // The lending object is being destroyed.  Its members may already be gone, so
+    // the weight is not read again; the last loaded value stays in effect.
+    void unlendWeight(const IData* weightp) {
+        if (m_weightp == weightp) m_weightp = nullptr;
+    }
+    /// Load option.weight from the lending object.  SV writes the member directly
+    /// (assignments, ref and output arguments, $value$plusargs, ...), so this is
+    /// where a new value is seen, and checked once: a negative weight is reported as
+    /// an error, and counts as zero.
+    void loadWeight();
+    /// Weight of this instance in its type's coverage (option.weight, IEEE
+    /// 1800-2023 19.11.3), as last loaded; never negative.
+    int32_t weight() const { return m_weight; }
+
     // ---- introspection ----
     VlCovergroupType* typep() const { return m_typep; }
     uint32_t instId() const { return m_instId; }
     // True once retired but kept alive because the coverage database holds raw
     // pointers into this node's bin counts (VM_COVERAGE); see retire().
     bool retained() const { return m_retained; }
-    // Sum of the instance's items' covered/total bin counts.  Matches what the
-    // generated get_inst_coverage() computes; see foldResidue().
-    void coverageParts(double& covered, double& total) const {
-        covered = 0.0;
-        total = 0.0;
-        for (const auto& itemp : m_items) {
-            double c = 0.0;
-            double t = 0.0;
-            itemp->coverageParts(c, t);
-            covered += c;
-            total += t;
-        }
-    }
+    /// IEEE 1800-2023 19.11 sums over the items whose coverage has a nonzero
+    /// denominator: {the sum of each item's option.weight times its coverage
+    /// (0..100), the sum of those weights}.
+    std::pair<double, double> coverageSums() const;
+    /// Instance coverage, as returned by get_inst_coverage(), in 0..100.
+    double coverage();
 };
 
 //=============================================================================
 // VlCovRetiredAvg
 /// Per-type residue: what survives an instance's death.  Fixed size, so it does
-/// not grow with churn.  Weight is 1 everywhere until option.weight is plumbed.
+/// not grow with churn.  Each instance contributes with its option.weight.
 
 struct VlCovRetiredAvg final {
     uint64_t count = 0;  // Retired instances that contributed (nonzero denominator)
-    double sumCoverage = 0.0;  // Sigma of per-instance coverage, each in 0..100
+    double sumCoverage = 0.0;  // Sigma of per-instance weight * coverage (0..100)
+    double sumWeight = 0.0;  // Sigma of per-instance weight
 };
 
 //=============================================================================
@@ -508,11 +590,13 @@ class VlCovergroupType final {
     uint32_t m_createdInsts = 0;  // Instances ever created; never decremented
     uint32_t m_nextInstId = 0;  // Monotonic; slots are reused, ids never are
     VlCovRetiredAvg m_retired;  // Contribution of every instance that has died
+    IData m_loadedTypeWeight = 1;  // Last type_option.weight loaded by coverage()
+    int32_t m_typeWeight = 1;  // type_option.weight in use, never negative
 
     // PRIVATE METHODS
     // Harvest instp's contribution into m_retired.  Must run before instp is
     // unlinked: it reads the instance's items.
-    void foldResidue(const VlCovergroupInst* instp);
+    void foldResidue(VlCovergroupInst* instp);
 
 public:
     // CONSTRUCTORS
@@ -528,6 +612,12 @@ public:
     // True if any node here still has an SV handle bound to it, and so can be
     // retired again after the registry is destroyed.  See ~VlCovRegistry.
     bool anyAttached() const;
+    /// Type coverage, as returned by get_coverage(), in 0..100: the average of
+    /// every instance's coverage, weighted by its option.weight (IEEE 1800-2023
+    /// 19.11.3, type_option.merge_instances false).  typeWeight is
+    /// type_option.weight, which decides the result when no instance contributes;
+    /// like option.weight, it is checked as it is loaded.
+    double coverage(IData typeWeight, VlFileLineDebug fileline);
 
     // ---- introspection ----
     // Test and debug only; generated code never calls these, and SV reaches them
@@ -542,7 +632,8 @@ public:
     uint32_t createdInstanceCount() const { return m_createdInsts; }
     // Instances that have died and contributed to the residue.
     uint32_t retiredInstanceCount() const { return static_cast<uint32_t>(m_retired.count); }
-    // Mean coverage over the retired instances only, in 0..100; -1.0 if none.
+    // Weighted mean coverage over the retired instances only, in 0..100; -1.0 if
+    // none contributed or their weights sum to zero.
     double retiredCoverage() const;
 };
 
@@ -560,6 +651,7 @@ class VlCovRegistry final : public VerilatedVirtualBase {
 
     // PRIVATE METHODS
     VlCovergroupType* findType(const char* typeName) const;  // nullptr if unknown
+    VlCovergroupType* findOrCreateType(const char* typeName);
 
 public:
     // CONSTRUCTORS
@@ -572,6 +664,9 @@ public:
     // generated covergroup class name, already --protect-ids obfuscated, and is
     // the same string that keys the coverage database's hier/page.
     VlCovergroupInst* newCovergroupInst(const char* typeName);
+    /// Type coverage of a covergroup type (get_coverage()); see
+    /// VlCovergroupType::coverage().  typeWeight is its type_option.weight.
+    double typeCoverage(const char* typeName, IData typeWeight, VlFileLineDebug fileline);
 
     // ---- introspection (see VlCovergroupType) ----
     // typeName is the obfuscated generated name, so a test using these under
@@ -597,18 +692,21 @@ public:
 class VlCovInstHandle final {
     // MEMBERS
     VlCovergroupInst* m_p = nullptr;  // Attach-counted; the registry owns the node
+    const IData* m_weightp = nullptr;  // Owning object's option.weight, if lent to m_p
 
     // PRIVATE METHODS
     // Drop one attach count, retiring the node if that was the last handle.
     // Nothing may touch instp afterwards: retire() may have freed it.
-    static void release(VlCovergroupInst* instp) {
+    static void release(VlCovergroupInst* instp, const IData* weightp) {
         if (VL_UNCOVERABLE(!instp)) return;  // Never attach()ed; codegen always does
+        instp->unlendWeight(weightp);
         if (instp->attachDec()) instp->typep()->retire(instp);
     }
 
 public:
     // CONSTRUCTORS
     VlCovInstHandle() = default;
+    // The copy's owning object lends no weight; the node keeps reading the lender's.
     VlCovInstHandle(const VlCovInstHandle& o)
         : m_p{o.m_p} {
         if (VL_UNCOVERABLE(!m_p)) return;  // Unbound source; see release above
@@ -617,12 +715,18 @@ public:
     // Deleted, not implemented: nothing generates an assignment, and the
     // implicit one would copy m_p raw -- no attachInc, no release.
     VlCovInstHandle& operator=(const VlCovInstHandle&) = delete;
-    ~VlCovInstHandle() { release(m_p); }
+    ~VlCovInstHandle() { release(m_p, m_weightp); }
 
     // METHODS
     // Bind to a freshly created node, taking over the attach count of 1 it was
     // created with.  Called once, from the generated covergroup constructor.
     void attach(VlCovergroupInst* p) { m_p = p; }
+    // Let the node read the owning object's option.weight until this handle is
+    // destroyed.  Called once, from the generated constructor, after attach().
+    void lendWeight(const IData* weightp, VlFileLineDebug fileline) {
+        m_weightp = weightp;
+        m_p->lendWeight(weightp, fileline);
+    }
     VlCovergroupInst* p() const { return m_p; }
 };
 

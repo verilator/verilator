@@ -234,18 +234,11 @@ private:
         const char* dp = descrp;
         for (AstNodeExpr* argp = argsp; argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
             if (argp->fileline()->erroringOn()) return;  // Intentionally skip all checks
-            const AstNodeExpr* const lvalp = argp->cLValueTargetp();
-            const VAccess access = [&]() -> VAccess {
-                if (const AstVarRef* const varrefp = VN_CAST(lvalp, VarRef)) {
-                    return varrefp->access();
-                }
-                if (const AstMemberSel* const memberselp = VN_CAST(lvalp, MemberSel)) {
-                    return memberselp->access();
-                }
-                UASSERT_OBJ(!lvalp, argp, "Unknown LValue expression");
-                // Not an LValue, so it's read-only
-                return VAccess::READ;
-            }();
+            const AstNodeExpr* const lvalp = argp->getVAccessTargetRecurse();
+            const VAccess access
+                = lvalp ? lvalp->getVAccessRecurse()  // Since we call it on a result of above call
+                                                      // there should be no recursion at all
+                        : VAccess{VAccess::READ};
             if (dp[0] == '+') --dp;  // Repeats the entry before it
             switch (dp[0]) {
             case 'r':

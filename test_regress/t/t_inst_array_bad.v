@@ -18,6 +18,16 @@ module t;
   wire [1:0] c;
   sub sub2 [9:8] (allbits,b,c);
 
+  // Multi-dimensional, 6 elements
+  reg  [6:0] sixbitbad;  // Wrongly sized
+  wire [5:0] sixbitout;
+  sub sub3 [1:0][2:0] (allbits, sixbitbad, sixbitout);
+
+  // Unpacked connection with fewer unpacked dimensions than the instance array
+  reg  onebits2[1:0];
+  wire [5:0] sixbitout2;
+  sub sub5 [1:0][2:0] (allbits, onebits2, sixbitout2);
+
 endmodule
 
 module sub (input [7:0] allbits, input onebit, output bitout);

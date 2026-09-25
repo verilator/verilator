@@ -328,6 +328,20 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(";\n");
     }
+    // An option or type_option assignment, from a covergroup, coverpoint, or cross
+    void emitCoverageOption(AstNode* nodep, bool typeOption, VCoverOptionType optType,
+                            AstNodeExpr* valuep) {
+        putfs(nodep,
+              std::string{typeOption ? "type_option." : "option."} + optType.ascii() + " = ");
+        iterateConst(valuep);
+        puts(";\n");
+    }
+    void visit(AstCgOptionAssign* nodep) override {
+        emitCoverageOption(nodep, nodep->typeOption(), nodep->optType(), nodep->valuep());
+    }
+    void visit(AstCoverOption* nodep) override {
+        emitCoverageOption(nodep, nodep->typeOption(), nodep->optType(), nodep->valuep());
+    }
     void visit(AstCoverBin* nodep) override {
         switch (nodep->binsType()) {
         case VCoverBinsType::BINS_IGNORE: putfs(nodep, "ignore_bins "); break;
@@ -352,6 +366,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             }
             puts("}");
         }
+        if (nodep->iffp()) {
+            puts(" iff (");
+            iterateConst(nodep->iffp());
+            puts(")");
+        }
         puts(";\n");
     }
     void visit(AstCoverBinsof* nodep) override {
@@ -375,6 +394,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(";\n");
     }
+    void visit(AstCoverCrossRef* nodep) override { putfs(nodep, nodep->name()); }
     void visit(AstCoverCrossSelect* nodep) override {
         putfs(nodep, "(");
         iterateConstNull(nodep->lhsp());
@@ -397,8 +417,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             iterateConst(nodep->iffp());
             puts(")");
         }
-        if (nodep->binsp()) {
+        if (nodep->binsp() || nodep->optionsp()) {
             puts(" {\n");
+            iterateAndNextConstNull(nodep->optionsp());
             iterateAndNextConstNull(nodep->binsp());
             puts("}\n");
         } else {

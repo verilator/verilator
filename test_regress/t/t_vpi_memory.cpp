@@ -22,7 +22,7 @@
 #include "verilated_vpi.h"
 
 #include "Vt_vpi_memory.h"
-#include "Vt_vpi_memory__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 #endif

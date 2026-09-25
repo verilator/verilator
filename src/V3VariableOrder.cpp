@@ -27,7 +27,6 @@
 #include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
 #include "V3ExecGraph.h"
-#include "V3ThreadPool.h"
 
 #include <algorithm>
 #include <vector>
@@ -215,7 +214,7 @@ class VariableOrder final {
 
 public:
     static void processModule(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
-                              std::vector<AstVar*>& varps) VL_MT_STABLE {
+                              std::vector<AstVar*>& varps) {
         VariableOrder{modp, mTaskAffinity, varps};
     }
 };
@@ -240,16 +239,9 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
 
     // Sort variables for each module
     std::unordered_map<AstNodeModule*, std::vector<AstVar*>> sortedVars;
-    {
-        V3ThreadScope threadScope;
-
-        for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-             modp = VN_AS(modp->nextp(), NodeModule)) {
-            std::vector<AstVar*>& varps = sortedVars[modp];
-            threadScope.enqueue([modp, &mTaskAffinity, &varps]() {
-                VariableOrder::processModule(modp, mTaskAffinity, varps);
-            });
-        }
+    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
+         modp = VN_AS(modp->nextp(), NodeModule)) {
+        VariableOrder::processModule(modp, mTaskAffinity, sortedVars[modp]);
     }
     if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-sort");
 

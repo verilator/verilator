@@ -70,7 +70,7 @@ class V3FileDependImp final {
     class DependFile final {
         // A single file
         const bool m_target;  // True if write, else read
-        bool m_exists = true;
+        bool m_exists = true;  // File exists
         const string m_filename;  // Filename
         struct stat m_stat;  // Stat information
         VHashSha256 m_hash;  // SHA hash of file contents
@@ -365,8 +365,8 @@ class VInFilterImp final {
 #else
     int m_pid = 0;  // fork() process id - always zero as disabled
 #endif
-    bool m_pidExited = false;
-    int m_pidStatus = 0;
+    bool m_pidExited = false;  //  waitpid() reaped the filter process
+    int m_pidStatus = 0;  // Exit status of the filter process
     int m_writeFd = 0;  // File descriptor TO filter
     int m_readFd = 0;  // File descriptor FROM filter
 

@@ -820,7 +820,7 @@ class DelayedVisitor final : public VNVisitor {
         m_prevVscp = vscp;
 
         // Delete original NBA
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     // Scheme::FlagUnique
@@ -870,7 +870,7 @@ class DelayedVisitor final : public VNVisitor {
         ifp->addThensp(new AstAssign{flp, capturedLhsp, capturedRhsp});
 
         // Delete original NBA
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     // Scheme::ValueQueuePartial/Scheme::ValueQueueWhole
@@ -1020,7 +1020,7 @@ class DelayedVisitor final : public VNVisitor {
         nodep->addHereThisAsNext(callp->makeStmt());
 
         // Delete original NBA
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     // Record where a variable is assigned

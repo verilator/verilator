@@ -1832,8 +1832,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     return got;
 
 done:
-    // Scan stopped early, return parsed or EOF
-    if (_vl_vsss_eof(fp, floc)) return -1;
+    // Scan stopped early; EOF only if input ended before the first conversion
+    if (got == 0 && _vl_vsss_eof(fp, floc)) return -1;
     return got;
 }
 
@@ -3386,6 +3386,15 @@ const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
     return vl_time_str(timeprecision());
 }
 
+static void warnThreadsOversubscribed(unsigned threads) VL_MT_SAFE {
+    const unsigned threadsAvailableToProcess = VlOs::getProcessDefaultParallelism();
+    if (threads > threadsAvailableToProcess) {
+        VL_PRINTF_MT("%%Warning: Process has %u hardware threads available, but simulation thread "
+                     "count set to %u. This will likely cause significant slowdown.\n",
+                     threadsAvailableToProcess, threads);
+    }
+}
+
 void VerilatedContext::threads(unsigned n) {
     if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "Simulation threads must be >= 1");
 
@@ -3396,14 +3405,10 @@ void VerilatedContext::threads(unsigned n) {
     }
 
     m_useNumaAssign = true;
+    m_threadsSet = true;
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
-    const unsigned threadsAvailableToProcess = VlOs::getProcessDefaultParallelism();
-    if (m_threads > threadsAvailableToProcess) {
-        VL_PRINTF_MT("%%Warning: Process has %u hardware threads available, but simulation thread "
-                     "count set to %u. This will likely cause significant slowdown.\n",
-                     threadsAvailableToProcess, m_threads);
-    }
+    warnThreadsOversubscribed(m_threads);
 }
 
 void VerilatedContext::useNumaAssign(bool flag) { m_useNumaAssign = flag; }
@@ -3469,7 +3474,15 @@ void VerilatedContext::addModel(const VerilatedModel* modelp) {
     }
 }
 
-VerilatedVirtualBase* VerilatedContext::threadPoolp() {
+VerilatedVirtualBase* VerilatedContext::threadPoolp(unsigned modelThreads) {
+    // The thread count defaults to the number of threads available to the process, which may be
+    // fewer than a model uses, e.g. a model Verilated with --threads 4 on a single core machine.
+    // Oversubscribing is slow but works, so grow to fit the model, unless the user picked the
+    // thread count themselves, in which case addModel() reports the mismatch instead.
+    if (VL_UNLIKELY(modelThreads > m_threads) && !m_threadsSet && !m_threadPool) {
+        m_threads = modelThreads;
+        warnThreadsOversubscribed(m_threads);
+    }
     if (m_threads == 1) return nullptr;
     if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
     return m_threadPool.get();
@@ -4185,28 +4198,6 @@ std::unique_ptr<VerilatedTraceConfig> VerilatedModel::traceConfig() const { retu
 //======================================================================
 // VerilatedVar:: Methods
 
-// cppcheck-suppress unusedFunction  // Used by applications
-uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
-    if (m_entSize) return m_entSize;
-    uint32_t size = 1;
-    switch (vltype()) {
-    case VLVT_PTR: size = sizeof(void*); break;
-    case VLVT_UINT8: size = sizeof(CData); break;
-    case VLVT_UINT16: size = sizeof(SData); break;
-    case VLVT_UINT32: size = sizeof(IData); break;
-    case VLVT_UINT64: size = sizeof(QData); break;
-    case VLVT_WDATA: size = VL_WORDS_I(entBits()) * sizeof(IData); break;
-    default: size = 0; break;  // LCOV_EXCL_LINE
-    }
-    return size;
-}
-
-size_t VerilatedVarProps::totalSize() const {
-    size_t size = entSize();
-    for (int udim = 0; udim < udims(); ++udim) size *= m_unpacked[udim].elements();
-    return size;
-}
-
 void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE {
     if (VL_UNLIKELY(dim <= 0 || dim > udims())) return nullptr;
     if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return nullptr;
@@ -4500,7 +4491,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     const std::string msg = ("Testbench C called '"s + VerilatedImp::exportName(funcnum)
                              + "' but scope wasn't set, perhaps due to dpi import call without "
-                             + "'context', or missing svSetScope. See IEEE 1800-2023 35.5.3.");
+                             + "'context', or missing svSetScope (IEEE 1800-2023 35.5.3)");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return nullptr;
 }

@@ -2272,7 +2272,7 @@ Summary:
      If using `--x-assign unique`, use the
      :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
      runtime option, and seed the runtime random number generator such that
-     each regression run gets a different randomization sequence with
+     each regression test run gets a different randomization sequence with
      :vlopt:`+verilator+seed+\<value\>`. You'll probably also want to print
      any seeds selected, and code to enable rerunning with that same seed,
      so you can reproduce bugs.
@@ -2301,7 +2301,7 @@ Summary:
      If using `--x-initial unique`, use the
      :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
      runtime option, and seed the runtime random number generator such that
-     each regression run gets a different randomization sequence with
+     each regression test run gets a different randomization sequence with
      :vlopt:`+verilator+seed+\<value\>`. You'll probably also want to print
      any seeds selected, and code to enable rerunning with that same seed,
      so you can reproduce bugs.

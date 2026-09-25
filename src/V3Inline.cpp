@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Add temporaries, such as for inline nodes
+// DESCRIPTION: Verilator: Module inlining
 //
 // Code available from: https://verilator.org
 //
@@ -18,9 +18,10 @@
 // Each module:
 //      Look for CELL... PRAGMA INLINE_MODULE
 //          Replicate the cell's module
-//              Convert pins to wires that make assignments
 //              Rename vars to include cell name
-//          Insert cell's module statements into the upper module
+//          Insert cell's module declarations into the upper module
+//          Merge each SCOPE of the cell's module into the SCOPE above it
+//          Reparent and rename the SCOPEs below the inlined instance
 //
 //*************************************************************************
 
@@ -30,10 +31,9 @@
 
 #include "V3AstUserAllocator.h"
 #include "V3Graph.h"
-#include "V3Inst.h"
 #include "V3Stats.h"
 
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -129,6 +129,7 @@ public:
         return m_flattenedSize;
     }
     // Total number of instances of this module in the whole hierarchy of the design
+    // Note this is the same as the number of AstScopes the module has.
     size_t instanceCount() const {
         if (!m_instanceCountValid) {
             m_instanceCountValid = true;
@@ -251,6 +252,7 @@ class InlineModGraphBuilder final : public VNVisitor {
     // STATE
     std::unique_ptr<InlineModGraph> m_graphp{new InlineModGraph};  // The graph being built
     InlineModModuleVertex* m_modVtxp = nullptr;  // Vertex of module currently being iterated
+    const AstScope* m_sizedScopep = nullptr;  // The scope of current module measured for size
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -263,8 +265,8 @@ class InlineModGraphBuilder final : public VNVisitor {
 
         // Check if the module itself is not inlineable
 
-        // Inlining an interface means we no longer have a cell handle to resolve to.
-        // If inlining moves post-scope this can perhaps be relaxed.
+        // TODO: All references are resolved by now, but AstIfaceRefDType::cellp and
+        // the AstIntfRef records still name the interface instance, so keep it.
         if (VN_IS(nodep, Iface)) vtxp->setNoInlineHard("Interface");
         // Never inline packages - TODO: conceptually fine, but why not?
         if (VN_IS(nodep, Package)) vtxp->setNoInlineHard("Package");
@@ -279,14 +281,24 @@ class InlineModGraphBuilder final : public VNVisitor {
 
         // Iterate children
         VL_RESTORER(m_modVtxp);
+        VL_RESTORER(m_sizedScopep);
         m_modVtxp = vtxp;
+        m_sizedScopep = nullptr;
         iterateChildrenConst(nodep);
     }
 
     void visit(AstClass* nodep) override {
         // TODO allow inlining of modules that contain classes
         if (m_modVtxp) m_modVtxp->setNoInlineHard("Contains class");
-        iterateChildrenConst(nodep);  // TODO: this is only needed or FTaskRef cleanup
+    }
+
+    void visit(AstScope* nodep) override {
+        // Every instance of a module holds an identical copy of the module body under
+        // its own AstScope, so only measure the size of one of them.
+        if (!m_sizedScopep) m_sizedScopep = nodep;
+        if (m_sizedScopep != nodep) return;
+        if (m_modVtxp) m_modVtxp->sizeInc();
+        iterateChildrenConst(nodep);
     }
 
     // Cells instantiate modules
@@ -328,18 +340,6 @@ class InlineModGraphBuilder final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
 
-    // TODO: Bit nasty to do this here, but historically present, and still necessary
-    void visit(AstNodeFTaskRef* nodep) override {
-        if (m_modVtxp) m_modVtxp->sizeInc();
-        // Remove link. V3LinkDot will reestablish it after inlining.
-        // MethodCalls not currently supported by inliner, so keep linked
-        if (!nodep->classOrPackagep() && !VN_IS(nodep, MethodCall)) {
-            nodep->taskp(nullptr);
-            VIsCached::clearCacheTree();
-        }
-        iterateChildrenConst(nodep);
-    }
-
     // Base node
     void visit(AstNode* nodep) override {
         if (m_modVtxp) m_modVtxp->sizeInc();
@@ -374,383 +374,170 @@ public:
 };
 
 //######################################################################
-// After cell is cloned, relink the new module's contents
-
-class InlineRelinkVisitor final : public VNVisitor {
-    // NODE STATE
-    //  Input:
-    //   See InlineVisitor
-
-    // STATE
-    std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
-    std::unordered_set<std::string>
-        m_priorInlinedCells;  // Cells previously inlined into the module being inlined here.
-                              // Used to recognize VarXRefs whose inlinedDots was stamped by a
-                              // prior V3Inline pass (vs. by V3Begin generate-block unrolling).
-    std::unordered_set<const AstVarXRef*>
-        m_pinSubstitutedXRefs;  // VarXRefs created by pin substitution in this relink pass.
-                                // Their dotted/inlinedDots already represent the parent's scope
-                                // and must not be rewritten on the immediate visit.
-    InlineModGraph& m_graph;  // The instance graph
-    AstNodeModule* const m_modp;  // The module we are inlining into
-    // The vertex of the module we are inlining into, for updating the graph
-    InlineModModuleVertex* const m_mVtxp = m_graph.getInlineModModuleVertexp(m_modp);
-    const AstCell* const m_cellp;  // The cell being inlined
-
-    size_t m_nPlaceholders = 0;  // Unique identifier sequence number for placeholder variables
-
-    // VISITORS
-    void visit(AstCellInline* nodep) override {
-        // Inlined cell under the inline cell, need to move to avoid conflicts
-        nodep->unlinkFrBack();
-        m_modp->addInlinesp(nodep);
-        // Rename
-        nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
-        UINFO(6, "    Inline " << nodep);
-        // Do CellInlines under this, but don't move them
-        iterateChildren(nodep);
-    }
-    void visit(AstCell* nodep) override {
-        // Cell under the inline cell, need to rename to avoid conflicts
-        nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
-        // Need to update graph
-        nodep->user4p(nullptr);  // clone copied user4p, reset to make new vertex
-        InlineModCellVertex* const vtxp = m_graph.getInlineModCellVertexp(nodep);
-        m_graph.addEdge(*m_mVtxp, *vtxp);
-        m_graph.addEdge(*vtxp, *m_graph.getInlineModModuleVertexp(nodep->modp()));
-        iterateChildren(nodep);
-    }
-    void visit(AstClass* nodep) override {
-        nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
-        iterateChildren(nodep);
-    }
-    void visit(AstModule* nodep) override {
-        m_renamedInterfaces.clear();
-        iterateChildren(nodep);
-    }
-    void visit(AstVar* nodep) override {
-        // Iterate won't hit AstIfaceRefDType directly as it is no longer underneath the module
-        if (AstIfaceRefDType* const ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
-            m_renamedInterfaces.insert(nodep->name());
-            // Each inlined cell that contain an interface variable need to
-            // copy the IfaceRefDType and point it to the newly cloned
-            // interface cell.
-            AstIfaceRefDType* const newdp = ifacerefp->cloneTree(false);
-            nodep->dtypep(newdp);
-            ifacerefp->addNextHere(newdp);
-            // Relink to point to newly cloned cell
-            if (newdp->cellp()) {
-                if (AstCell* const newcellp = VN_CAST(newdp->cellp()->user3p(), Cell)) {
-                    newdp->cellp(newcellp);
-                    newdp->cellName(newcellp->name());
-                    // Tag the old ifacerefp to ensure it leaves no stale
-                    // reference to the inlined cell.
-                    newdp->user1(false);
-                    ifacerefp->user1(true);
-                }
-            }
-        }
-        // Variable under the inline cell, need to rename to avoid conflicts
-        // Also clear I/O bits, as it is now local.
-        const string name = m_cellp->name() + "__DOT__" + nodep->name();
-        if (!nodep->isFuncLocal() && !nodep->isClassMember()) nodep->inlineAttrReset(name);
-        if (!m_cellp->isTrace()) nodep->trace(false);
-        UINFOTREE(9, nodep, "", "varchanged");
-    }
-    void visit(AstNodeFTask* nodep) override {
-        // Function under the inline cell, need to rename to avoid conflicts
-        nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
-        iterateChildren(nodep);
-    }
-    void visit(AstTypedef* nodep) override {
-        // Typedef under the inline cell, need to rename to avoid conflicts
-        nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
-        iterateChildren(nodep);
-    }
-    void visit(AstAlias* nodep) override {
-        // Don't replace port variable in the alias
-    }
-    void visit(AstVarRef* nodep) override {
-        // If the target port is being inlined, replace reference with the
-        // connected expression (a Const, VarRef, or VarXRef).
-        AstNode* const pinExpr = nodep->varp()->user2p();
-        if (!pinExpr) return;
-
-        // If it's a constant, inline it
-        if (AstConst* const constp = VN_CAST(pinExpr, Const)) {
-            // You might think we would not try to substitute a constant for
-            // a written variable, but we might need to do this if for example
-            // there is an assignment to an input port, and that input port
-            // is tied to a constant on the cell we are inlining. This does
-            // generate an ASSIGNIN warning, but that can be downgraded to
-            // a warning. (Also assigning to an input can has valid uses if
-            // e.g. done via a hierarchical reference from outside to an input
-            // unconnected on the instance, so we don't want ASSIGNIN fatal.)
-            // Same applies when there is a static initialzier for an input.
-            // To avoid having to special case malformed assignment, or worse
-            // yet emiting code like 0 = 0, we instead substitute a placeholder
-            // variable that will later be pruned (it will otherwise be unreferenced).
-            if (!nodep->access().isReadOnly()) {
-                AstVar* const varp = nodep->varp();
-                const std::string name
-                    = m_cellp->name() + "__vInlPlaceholder_" + std::to_string(++m_nPlaceholders);
-                AstVar* const holdep = new AstVar{varp->fileline(), VVarType::VAR, name, varp};
-                m_modp->addStmtsp(holdep);
-                AstVarRef* const newp = new AstVarRef{nodep->fileline(), holdep, nodep->access()};
-                nodep->replaceWith(newp);
-            } else {
-                nodep->replaceWith(constp->cloneTree(false));
-            }
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            return;
-        }
-
-        // Handle VarRef: simple retarget
-        if (const AstVarRef* const vrefp = VN_CAST(pinExpr, VarRef)) {
-            nodep->varp(vrefp->varp());
-            nodep->classOrPackagep(vrefp->classOrPackagep());
-            return;
-        }
-
-        // Handle VarXRef: replace VarRef with VarXRef (e.g., nested interface port)
-        const AstVarXRef* const xrefp = VN_AS(pinExpr, VarXRef);
-        AstVarXRef* const newp
-            = new AstVarXRef{nodep->fileline(), xrefp->name(), xrefp->dotted(), nodep->access()};
-        newp->varp(xrefp->varp());
-        // The pin expression came from m_modp (the parent we are inlining into), so its
-        // dotted/inlinedDots already describe a path in m_modp's scope. Record this xref
-        // so visit(AstVarXRef) leaves it alone on the immediate visit; later inline
-        // passes will prepend their cell names normally.
-        newp->inlinedDots(xrefp->inlinedDots());
-        m_pinSubstitutedXRefs.insert(newp);
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
-    void visit(AstVarXRef* nodep) override {
-        // VarXRefs just created by pin substitution in this pass already describe a path
-        // in m_modp's scope (the parent we are inlining into). Leave them untouched on
-        // this immediate visit; subsequent inline passes will prepend their cell names.
-        if (m_pinSubstitutedXRefs.erase(nodep)) {
-            iterateChildren(nodep);
-            return;
-        }
-        // Track what scope it was originally under so V3LinkDot can resolve it
-        const string origInlinedDots = nodep->inlinedDots();
-        nodep->inlinedDots(VString::dot(m_cellp->name(), ".", origInlinedDots));
-        // If origInlinedDots starts with the name of a previously-inlined cell, this
-        // VarXRef came from that cell's body and its dotted refers to that child's
-        // local scope; renaming it against m_renamedInterfaces would wrongly alias it
-        // to a coincidentally-named var in the current module (#5120). VarXRefs whose
-        // inlinedDots was stamped by V3Begin generate-block unrolling are unaffected,
-        // since V3Begin's CellInlines have origModName "__BEGIN__" and don't appear in
-        // m_priorInlinedCells.
-        const string::size_type firstDot = origInlinedDots.find('.');
-        const string firstSeg
-            = firstDot == string::npos ? origInlinedDots : origInlinedDots.substr(0, firstDot);
-        const bool fromPriorInline = m_priorInlinedCells.count(firstSeg);
-        for (string tryname = nodep->dotted(); true;) {
-            if (m_renamedInterfaces.count(tryname)) {
-                // matchIsRenamed: the matched name itself was created by a prior V3Inline
-                // rename (contains "__DOT__"). When true, we are following the chain of
-                // renames for the same var across nested inlines, so apply the rename
-                // even if the VarXRef came from a prior-inlined child.
-                const bool matchIsRenamed = tryname.find("__DOT__") != string::npos;
-                if (!fromPriorInline || matchIsRenamed) {
-                    nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
-                }
-                break;
-            }
-            // If foo.bar, and foo is an interface, then need to search again for foo
-            const string::size_type pos = tryname.rfind('.');
-            if (pos == string::npos || pos == 0) {
-                break;
-            } else {
-                tryname.resize(pos);
-            }
-        }
-        iterateChildren(nodep);
-    }
-    void visit(AstNodeFTaskRef* nodep) override {
-        // Track what scope it was originally under so V3LinkDot can resolve it
-        nodep->inlinedDots(VString::dot(m_cellp->name(), ".", nodep->inlinedDots()));
-        if (m_renamedInterfaces.count(nodep->dotted())) {
-            nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
-        }
-        UINFO(8, "   " << nodep);
-        iterateChildren(nodep);
-    }
-
-    // Not needed, as V3LinkDot doesn't care about typedefs
-    //  void visit(AstRefDType* nodep) override {}
-
-    void visit(AstScopeName* nodep) override {
-        // If there's a %m in the display text, we add a special node that will contain the name()
-        // Similar code in V3Begin
-        // To keep correct visual order, must add before exising
-        nodep->scopeAttr("__DOT__" + m_cellp->name() + nodep->scopeAttr());
-        nodep->scopeEntr("__DOT__" + m_cellp->name() + nodep->scopeEntr());
-        iterateChildren(nodep);
-    }
-    void visit(AstNodeCoverDecl* nodep) override {
-        // Fix path in coverage statements
-        nodep->hier(VString::dot(m_cellp->prettyName(), ".", nodep->hier()));
-        iterateChildren(nodep);
-    }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    InlineRelinkVisitor(AstNodeModule* cloneModp, AstNodeModule* oldModp, AstCell* cellp,
-                        InlineModGraph& graph)
-        : m_graph{graph}
-        , m_modp{oldModp}
-        , m_cellp{cellp} {
-        // CellInlines added by V3Begin for generate/named blocks have origModName
-        // "__BEGIN__"; only those added by prior V3Inline passes carry a real module
-        // name. Track the latter so visit(AstVarXRef) can distinguish VarXRefs
-        // originating from previously-inlined children.
-        for (AstNode* nodep = cloneModp->inlinesp(); nodep; nodep = nodep->nextp()) {
-            const AstCellInline* const cip = VN_CAST(nodep, CellInline);
-            if (cip && cip->origModName() != "__BEGIN__") {
-                m_priorInlinedCells.insert(cip->name());
-            }
-        }
-        iterate(cloneModp);
-    }
-    ~InlineRelinkVisitor() override = default;
-};
-
-//######################################################################
 // Module inliner
 
 namespace ModuleInliner {
 
-// A port variable in an inlined module can be connected 2 ways.
-// Either add a continuous assignment between the pin expression from
-// the instance and the port variable, or simply inline the pin expression
-// in place of the port variable. We will prefer to do the later whenever
-// possible (and sometimes required). When inlining, we need to create an
-// alias for the inlined variable, in order to resovle hierarchical references
-// against it later in V3Scope (and also for tracing, which is inserted
-//later). Returns ture iff the given port variable should be inlined,
-// and false if a continuous assignment should be used.
-bool inlinePort(const AstVar* nodep) {
-    // Interface references are always inlined
-    if (nodep->isIfaceRef()) return true;
-    // Ref ports must be always inlined
-    if (nodep->direction() == VDirection::REF) return true;
-    // Forced signals must not be inlined. The port signal can be
-    // forced separately from the connected signals.
-    if (nodep->isForced()) return false;
+// The scopes instantiated directly under each scope (that is parent -> children links)
+using ScopeChildren = std::unordered_map<const AstScope*, std::vector<AstScope*>>;
 
-    // Note: For singls marked 'public' (and not 'public_flat') inlining
-    // of their containing modules is disabled so they wont reach here.
-
-    // TODO: For now, writable public signals inside the cell cannot be
-    // eliminated as they are entered into the VerilatedScope, and
-    // changes would not propagate to it when assigned. (The alias created
-    // for them ensures they would be read correctly, but would not
-    // propagate any changes.) This can be removed when the VerialtedScope
-    // construction in V3EmitCSyms understands aliases.
-    if (nodep->isSigUserRWPublic()) return false;
-
-    // Otherwise we can repalce the variable
-    return true;
+// Record downward links from parent scopes to their child scopes
+void gatherScopes(const AstNodeModule* modp, ScopeChildren& children) {
+    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        if (AstScope* const scopep = VN_CAST(nodep, Scope)) {
+            // Note the top scope is held under the AstTopScope, so is not seen here
+            UASSERT_OBJ(scopep->aboveScopep(), scopep, "Instance scope should have a scope above");
+            children[scopep->aboveScopep()].push_back(scopep);
+        } else if (const AstNodeModule* const subModp = VN_CAST(nodep, NodeModule)) {
+            // An AstClass holds its scopes under itself
+            UASSERT_OBJ(VN_IS(subModp, Class), subModp, "Nested module should be a class");
+            gatherScopes(subModp, children);
+        }
+    }
 }
 
-// Connect the given port 'nodep' (being inlined into 'modp') to the given
-// expression (from the Cell Pin)
-void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
-    UINFO(6, "Connecting " << pinExprp);
-    UINFO(6, "        to " << nodep);
-
-    // Decide whether to inline the port variable or use continuous assignments
-    const bool inlineIt = inlinePort(nodep);
-
-    // If we deccided to inline it, record the expression to substitute this variable with
-    if (inlineIt) nodep->user2p(pinExprp);
-
-    FileLine* const flp = nodep->fileline();
-
-    // Helper to creates an AstVarRef reference to the port variable
-    const auto portRef = [&](VAccess access) { return new AstVarRef{flp, nodep, access}; };
-
-    // If the connected expression is a constant, add an assignment to set
-    // the port variable. The constant can still be inlined, in which case
-    // this is needed for tracing the inlined port variable.
-    if (AstConst* const pinp = VN_CAST(pinExprp, Const)) {
-        AstVarRef* const lhsp = portRef(VAccess::WRITE);
-        lhsp->varp()->isContinuously(true);
-        AstAssignW* const ap = new AstAssignW{flp, lhsp, pinp->cloneTree(false)};
-        modp->addStmtsp(new AstAlways{ap});
-        return;
+// Rename the given scope, and all scopes below it, after the scope named by 'oldPrefix'
+// (the original parent of 'scopep') has been inlined into the scope above it
+void renameScopes(AstScope* scopep, const std::string& oldPrefix, const std::string& newPrefix,
+                  const ScopeChildren& children) {
+    UASSERT_OBJ(VString::startsWith(scopep->name(), oldPrefix), scopep,
+                "Scope name should start with the name of the scope above it");
+    scopep->name(newPrefix + scopep->name().substr(oldPrefix.size()));
+    const auto it = children.find(scopep);
+    if (it == children.end()) return;
+    for (AstScope* const childp : it->second) {
+        renameScopes(childp, oldPrefix, newPrefix, children);
     }
+}
 
-    // Otherwise it must be a variable reference due to having called pinReconnectSimple
-    const AstNodeVarRef* const pinRefp = VN_AS(pinExprp, NodeVarRef);
+// Merge the given scope (instance) of the inlined cell into the scope above it
+void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
+                 AstCellInline* newCellInlinep, ScopeChildren& children) {
+    AstScope* const parentScopep = scopep->aboveScopep();
+    UASSERT_OBJ(parentScopep, scopep, "Inlined scope should have a scope above");
+    UINFO(6, "  Inline Scope " << scopep);
+    UINFO(6, "     into      " << parentScopep);
 
-    const auto pinRefAsVarRef = [&](VAccess access) -> AstVarRef* {
-        const AstVarRef* const vrp = VN_AS(pinRefp, VarRef);
-        AstVarRef* const newp = new AstVarRef{vrp->fileline(), vrp->varp(), access};
-        newp->classOrPackagep(vrp->classOrPackagep());
-        return newp;
-    };
-
-    const auto pinRefAsExpr = [&](VAccess access) -> AstNodeExpr* {
-        if (VN_IS(pinRefp, VarRef)) {
-            return pinRefAsVarRef(access);
-        } else {
-            const AstVarXRef* const xrp = VN_AS(pinRefp, VarXRef);
-            AstVarXRef* const newp
-                = new AstVarXRef{xrp->fileline(), xrp->name(), xrp->dotted(), access};
-            newp->varp(xrp->varp());
-            newp->inlinedDots(xrp->inlinedDots());
-            return newp;
+    // Move the variables of the inlined scope into the scope above
+    for (AstVarScope *vscp = scopep->varsp(), *nextp; vscp; vscp = nextp) {
+        nextp = VN_AS(vscp->nextp(), VarScope);
+        // Note V3Scope attaches variables of non-virtual interface references to the
+        // scope of the interface instance, so only update if it is this scope
+        if (vscp->scopep() == scopep) vscp->scopep(parentScopep);
+        // If the module was cloned, point to the cloned variable
+        if (AstVar* const newVarp = VN_CAST(vscp->varp()->user3p(), Var)) {
+            vscp->varp(newVarp);
+            vscp->dtypeFrom(newVarp);
         }
-    };
+        if (!cellp->isTrace()) vscp->trace(false);
+        parentScopep->addVarsp(vscp->unlinkFrBack());
+    }
 
-    // If it is being inlined, create the alias for it
-    if (inlineIt) {
-        UINFO(6, "Inlining port variable: " << nodep);
-        if (nodep->isIfaceRef()) {
-            modp->addStmtsp(
-                new AstAliasScope{flp, portRef(VAccess::WRITE), pinRefAsExpr(VAccess::READ)});
-        } else {
-            AstVarRef* const aliasArgsp = portRef(VAccess::WRITE);
-            aliasArgsp->addNext(pinRefAsVarRef(VAccess::READ));
-            modp->addStmtsp(new AstAlias{flp, aliasArgsp});
+    // Move the logic of the inlined scope into the scope above
+    for (AstNode *nodep = scopep->blocksp(), *nextp; nodep; nodep = nextp) {
+        nextp = nodep->nextp();
+        nodep->unlinkFrBack();
+        if (AstNodeFTask* const ftaskp = VN_CAST(nodep, NodeFTask)) {
+            ftaskp->name(prefix + ftaskp->name());
         }
-        // They will become the same variable, so propagate file-line and variable attributes
-        pinRefp->varp()->fileline()->modifyStateInherit(flp);
-        flp->modifyStateInherit(pinRefp->varp()->fileline());
-        pinRefp->varp()->propagateAttrFrom(nodep);
-        nodep->propagateAttrFrom(pinRefp->varp());
-        return;
+        // If the module was cloned, point coverage increments to the cloned declarations
+        if (v3Global.opt.coverage()) {
+            nodep->foreach([&](AstCoverInc* incp) {
+                AstNodeCoverDecl* const declp = incp->declp();
+                if (declp->perInstance()) {
+                    // Not cloned, fix up the path here, as only this scope refers to it
+                    declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    return;
+                }
+                if (AstNodeCoverDecl* const newDeclp = VN_CAST(declp->user3p(), NodeCoverDecl)) {
+                    incp->declp(newDeclp);
+                }
+            });
+        }
+        parentScopep->addBlocksp(nodep);
     }
 
-    // Otherwise create the continuous assignment between the port var and the pin expression
-    UINFO(6, "Not inlining port variable: " << nodep);
-    if (nodep->direction() == VDirection::INPUT) {
-        AstVarRef* const lhsp = portRef(VAccess::WRITE);
-        lhsp->varp()->isContinuously(true);
-        AstAssignW* const ap = new AstAssignW{flp, lhsp, pinRefAsExpr(VAccess::READ)};
-        modp->addStmtsp(new AstAlways{ap});
-    } else if (nodep->direction() == VDirection::OUTPUT) {
-        AstNodeVarRef* const lhsp = VN_AS(pinRefAsExpr(VAccess::WRITE), NodeVarRef);
-        lhsp->varp()->isContinuously(true);
-        AstAssignW* const ap = new AstAssignW{flp, lhsp, portRef(VAccess::READ)};
-        modp->addStmtsp(new AstAlways{ap});
-    } else {
-        pinExprp->v3fatalSrc("V3Tristate left INOUT port");
+    // Move the inline records of the inlined scope into the scope above
+    for (AstNode *nodep = scopep->inlinesp(), *nextp; nodep; nodep = nextp) {
+        nextp = nodep->nextp();
+        AstCellInlineScope* const cisp = VN_AS(nodep->unlinkFrBack(), CellInlineScope);
+        cisp->scopep(parentScopep);
+        // If the module was cloned, point to the cloned inline record
+        if (AstCellInline* const newCinlp = VN_CAST(cisp->cellp()->user3p(), CellInline)) {
+            cisp->cellp(newCinlp);
+        }
+        parentScopep->addInlinesp(cisp);
     }
+    // ... and add one for the instance we are inlining now
+    if (v3Global.opt.vpi()) {
+        parentScopep->addInlinesp(
+            new AstCellInlineScope{cellp->fileline(), parentScopep, newCellInlinep});
+    }
+
+    // Reparent and rename the scopes instantiated under the inlined scope
+    const std::string oldPrefix = scopep->name() + ".";
+    const std::string newPrefix = scopep->name() + "__DOT__";
+    std::vector<AstScope*> childScopeps;
+    {
+        const auto it = children.find(scopep);
+        if (it != children.end()) {
+            childScopeps = std::move(it->second);
+            children.erase(it);
+        }
+    }
+    for (AstScope* const childScopep : childScopeps) {
+        // A class scope would hang off the scope of the module declaring it, but modules
+        // containing classes are never inlined
+        UASSERT_OBJ(!VN_IS(childScopep->modp(), Class), childScopep,
+                    "Inlined scope should not contain a class scope");
+        if (AstCell* const newCellp = VN_CAST(childScopep->aboveCellp()->user3p(), Cell)) {
+            // If the module was cloned, point to the cloned cell
+            childScopep->aboveCellp(newCellp);
+        }
+        childScopep->aboveScopep(parentScopep);
+        renameScopes(childScopep, oldPrefix, newPrefix, children);
+    }
+    // Children of the inlined scope are now children of the scope above. Note this must
+    // come after the erase above, as inserting into 'children' can invalidate 'it'.
+    std::vector<AstScope*>& parentChildps = children[parentScopep];
+    parentChildps.erase(std::remove(parentChildps.begin(), parentChildps.end(), scopep),
+                        parentChildps.end());
+    parentChildps.insert(parentChildps.end(), childScopeps.begin(), childScopeps.end());
+
+    UASSERT_OBJ(!scopep->varsp() && !scopep->blocksp() && !scopep->inlinesp(), scopep,
+                "Inlined scope should be empty");
 }
 
 // Inline 'cellp' into 'modp'. 'last' indicatest this is tha last instance of the inlined module
-void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& graph) {
+void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& graph,
+                ScopeChildren& children) {
     UINFO(5, " Inline Cell  " << cellp);
     UINFO(5, " into Module  " << modp);
 
-    const VNUser2InUse user2InUse;
+    // NODE STATE
+    //  AstNode::user3p()  -> AstNode*. The clone of this module level declaration
+    const VNUser3InUse user3InUse;
+
+    VNDeleter deleter;
+    deleter.pushDeletep(cellp->unlinkFrBack());
+
+    AstNodeModule* const subModp = cellp->modp();  // The module being inlined
+
+    // Unlink all scopes of the instantiated module, so they are not cloned with it
+    std::vector<AstScope*> inlineScopeps;  // Scopes under 'cellp'
+    std::vector<AstScope*> otherScopeps;  // Scopes under some other instance
+    for (AstNode *nodep = subModp->stmtsp(), *nextp; nodep; nodep = nextp) {
+        nextp = nodep->nextp();
+        AstScope* const scopep = VN_CAST(nodep, Scope);
+        if (!scopep) continue;
+        scopep->unlinkFrBack();
+        if (scopep->aboveCellp() == cellp) {
+            inlineScopeps.push_back(scopep);
+            deleter.pushDeletep(scopep);
+        } else {
+            otherScopeps.push_back(scopep);
+        }
+    }
 
     // Important: If this is the last cell, then don't clone the instantiated module but
     // inline the original directly. While this requires some special casing, doing so
@@ -762,72 +549,106 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
     // worse if we put off deleting the inlined modules until the end. Not having to clone
     // large trees also improves speed.
 
-    // The module we will yank the contents out of and put into 'modp'
-    AstNodeModule* const inlinedp = last ? cellp->modp()->unlinkFrBack()  //
-                                         : cellp->modp()->cloneTree(false);
+    // The module we will yank the declarations out of and put into 'modp'
+    AstNodeModule* inlinedp;
+    if (last) {
+        inlinedp = subModp->unlinkFrBack();
+        // This is the only instantiation, so all scopes are being inlined
+        UASSERT_OBJ(otherScopeps.empty(), cellp, "Last instance, but has other scopes");
+    } else {
+        inlinedp = subModp->cloneTree(false);
+        // Compute map from the original module items to their clones
+        for (AstNode *ap = subModp->inlinesp(), *bp = inlinedp->inlinesp(); ap || bp;
+             ap = ap->nextp(), bp = bp->nextp()) {
+            UASSERT_OBJ(ap && bp, ap ? ap : bp, "Clone has different number of children");
+            ap->user3p(bp);
+        }
+        for (AstNode *ap = subModp->stmtsp(), *bp = inlinedp->stmtsp(); ap || bp;
+             ap = ap->nextp(), bp = bp->nextp()) {
+            UASSERT_OBJ(ap && bp, ap ? ap : bp, "Clone has different number of children");
+            ap->user3p(bp);
+        }
+        // Per instance coverage declarations must not be duplicated, drop the clones
+        if (v3Global.opt.coverageFsm()) {
+            for (AstNode *nodep = inlinedp->stmtsp(), *nextp; nodep; nodep = nextp) {
+                nextp = nodep->nextp();
+                const AstNodeCoverDecl* const declp = VN_CAST(nodep, NodeCoverDecl);
+                if (declp && declp->perInstance()) {
+                    VL_DO_DANGLING(deleter.pushDeletep(nodep->unlinkFrBack()), nodep);
+                }
+            }
+        }
+        // Put back the scopes of the instances we are not inlining this time
+        for (AstScope* const scopep : otherScopeps) subModp->addStmtsp(scopep);
+    }
+    deleter.pushDeletep(inlinedp);
 
-    // Compute map from original port variables and cells to their clones
-    for (AstNode *ap = cellp->modp()->stmtsp(), *bp = inlinedp->stmtsp(); ap || bp;
-         ap = ap->nextp(), bp = bp->nextp()) {
-        UASSERT_OBJ(ap && bp, ap ? ap : bp, "Clone has different number of children");
-        // We only care about AstVar and AstCell, but faster to just set them all
-        ap->user3p(bp);
+    // Prefix for renaming inlined declarations
+    const std::string prefix = cellp->name() + "__DOT__";
+
+    // Move the inline records of the inlined module, renaming to avoid conflicts
+    for (AstNode *nodep = inlinedp->inlinesp(), *nextp; nodep; nodep = nextp) {
+        nextp = nodep->nextp();
+        AstCellInline* const cinlp = VN_AS(nodep->unlinkFrBack(), CellInline);
+        cinlp->name(prefix + cinlp->name());
+        modp->addInlinesp(cinlp);
+    }
+    // Create inline record for resolving hierarchical references later
+    AstCellInline* const newCellInlinep
+        = new AstCellInline{cellp->fileline(), cellp->name(), subModp->origName()};
+    modp->addInlinesp(newCellInlinep);
+
+    // Move the module level declarations of the inlined module into 'modp'
+    InlineModModuleVertex* const mVtxp = graph.getInlineModModuleVertexp(modp);
+    for (AstNode *nodep = inlinedp->stmtsp(), *nextp; nodep; nodep = nextp) {
+        nextp = nodep->nextp();
+        nodep->unlinkFrBack();
+        UASSERT_OBJ(!VN_IS(nodep, Class), nodep,
+                    "Module containing a class should not be inlined");
+        if (AstVar* const varp = VN_CAST(nodep, Var)) {
+            varp->name(prefix + varp->name());
+            // Variable is now local to 'modp', rename to avoid conflicts and clear I/O bits
+            if (varp->direction() == VDirection::INOUT && varp->varType() == VVarType::WIRE) {
+                varp->varType(VVarType::TRIWIRE);
+            }
+            varp->direction(VDirection::NONE);
+            if (!cellp->isTrace()) varp->trace(false);
+        } else if (AstCell* const subCellp = VN_CAST(nodep, Cell)) {
+            subCellp->name(prefix + subCellp->name());
+            // Need to update graph. Note the vertex of the original cell was either
+            // deleted (if 'last'), or user4p is a copy made by cloneTree, so reset it.
+            subCellp->user4p(nullptr);
+            InlineModCellVertex* const vtxp = graph.getInlineModCellVertexp(subCellp);
+            graph.addEdge(*mVtxp, *vtxp);
+            graph.addEdge(*vtxp, *graph.getInlineModModuleVertexp(subCellp->modp()));
+        } else if (AstTypedef* const typedefp = VN_CAST(nodep, Typedef)) {
+            typedefp->name(prefix + typedefp->name());
+        } else if (AstNodeCoverDecl* const declp = VN_CAST(nodep, NodeCoverDecl)) {
+            // Fix path in coverage statements. Per instance ones are fixed in inlineScope.
+            if (!declp->perInstance()) {
+                declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+            }
+        }
+        modp->addStmtsp(nodep);
     }
 
-    // Create data for resolving hierarchical references later.
-    modp->addInlinesp(
-        new AstCellInline{cellp->fileline(), cellp->name(), cellp->modp()->origName()});
-
-    // Connect the pins on the instance
-    for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-        if (!pinp->exprp()) continue;
-        UINFO(6, "Connecting port " << pinp->modVarp());
-        UINFO(6, "   of instance " << cellp);
-
-        // Make sure the conneccted pin expression is always a VarRef or a Const
-        V3Inst::pinReconnectSimple(pinp, cellp, false);
-
-        // Warn
-        V3Inst::checkOutputShort(pinp);
-        if (!pinp->exprp()) continue;
-
-        // Pick up the old and new port variables signal (new is the same on last instance)
-        const AstVar* const oldModVarp = pinp->modVarp();
-        AstVar* const newModVarp = VN_AS(oldModVarp->user3p(), Var);
-        // Pick up the connected expression (a VarRef or Const due to pinReconnectSimple)
-        AstNodeExpr* const pinExprp = VN_AS(pinp->exprp(), NodeExpr);
-
-        // Connect up the port
-        connectPort(modp, newModVarp, pinExprp);
+    // Merge each scope (instance) of the inlined cell into the scope above it
+    for (AstScope* const scopep : inlineScopeps) {
+        inlineScope(scopep, cellp, prefix, newCellInlinep, children);
     }
-
-    // Cleanup var names, etc, to not conflict, relink replaced variables, adjust graph
-    { InlineRelinkVisitor{inlinedp, modp, cellp, graph}; }
-    // Move statements from the inlined module into the module we are inlining into
-    if (AstNode* const stmtsp = inlinedp->stmtsp()) {
-        modp->addStmtsp(stmtsp->unlinkFrBackWithNext());
-    }
-    // Delete the empty shell of the inlined module
-    VL_DO_DANGLING(inlinedp->deleteTree(), inlinedp);
-    // Remove the cell we just inlined
-    VL_DO_DANGLING(cellp->unlinkFrBack()->deleteTree(), cellp);
 }
 
 // Apply all inlining decisions
 void process(AstNetlist* netlistp, InlineModGraph& graph) {
-    // NODE STATE
-    // Cleared entire netlist
-    //   AstIfaceRefDType::user1()  // bool; Whether the cell pointed to by this
-    //                              // AstIfaceRefDType has been inlined
-    //   AstCell::user3p()      // AstCell*.  The clone
-    //   AstVar::user3p()       // AstVar*.  The clone
-    // Cleared each cell
-    //   AstVar::user2p()       // AstVarRef*/AstConst* This port is connected to (AstPin::expr())
-    const VNUser1InUse user1InUse;
-    const VNUser3InUse user3InUse;
-
     // Number of inlined instances, for statistics
     VDouble0 m_nInlined;
+
+    // Record the scope hierarchy - we need the downward links
+    ScopeChildren children;
+    for (AstNodeModule* modp = netlistp->modulesp(); modp;
+         modp = VN_AS(modp->nextp(), NodeModule)) {
+        gatherScopes(modp, children);
+    }
 
     // Gather all cells that need to be inlined (this is in topological order)
     std::vector<InlineModCellVertex*> cVtxps;
@@ -866,19 +687,18 @@ void process(AstNetlist* netlistp, InlineModGraph& graph) {
         }
 
         // Do it
-        inlineCell(mVtx.modp(), cellp, last, graph);
+        inlineCell(mVtx.modp(), cellp, last, graph, children);
         if (dumpGraphLevel() >= 9) graph.dumpDotFilePrefixed("inlinemod-cell");
     }
 
-    V3Stats::addStat("Optimizations, Inlined instances", m_nInlined);
-
-    // Clean up AstIfaceRefDType references
-    // If the cell has been removed let's make sure we don't leave a
-    // reference to it. This dtype may still be in use by the
-    // AstAliasScope created earlier but that'll get cleared up later
-    netlistp->typeTablep()->foreach([](AstIfaceRefDType* nodep) {
-        if (nodep->user1()) nodep->cellp(nullptr);
+    // Restore varp() == varScopep()->varp() on all references, as cloning modules for
+    // inlining repointed some AstVarScopes. Hierarchical references can be anywhere.
+    netlistp->foreach([](AstNodeVarRef* refp) {
+        AstVarScope* const vscp = refp->varScopep();
+        if (vscp && refp->varp() != vscp->varp()) refp->varp(vscp->varp());
     });
+
+    V3Stats::addStat("Optimizations, Inlined instances", m_nInlined);
 }
 
 }  //namespace ModuleInliner
@@ -945,7 +765,7 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     }
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("inlinemod-decision");
 
-    // Inline the modles we decided to inline
+    // Inline the modules we decided to inline
     ModuleInliner::process(nodep, *graphp);
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("inlinemod-inlined");
 

@@ -1,0 +1,10 @@
+%Error: t/t_covergroup_weight_run_bad.v:24: Coverage option 'option.weight' is set to negative value '-2'; weights must be non-negative (IEEE 1800-2023 19.7)
+-Info: t/t_covergroup_weight_run_bad.v:24: Verilog $stop, ignored due to +verilator+error+limit
+%Error: t/t_covergroup_weight_run_bad.v:24: Coverage option 'option.weight' is set to negative value '-2'; weights must be non-negative (IEEE 1800-2023 19.7)
+%Error: t/t_covergroup_weight_run_bad.v:37: Coverage option 'option.weight' is set to negative value '-1'; weights must be non-negative (IEEE 1800-2023 19.7)
+%Error: t/t_covergroup_weight_run_bad.v:41: Coverage option 'option.weight' is set to negative value '-1'; weights must be non-negative (IEEE 1800-2023 19.7)
+%Error: t/t_covergroup_weight_run_bad.v:41: Coverage option 'option.weight' is set to negative value '-3'; weights must be non-negative (IEEE 1800-2023 19.7)
+%Error: t/t_covergroup_weight_run_bad.v:41: Coverage option 'option.weight' is set to negative value '-4'; weights must be non-negative (IEEE 1800-2023 19.7)
+%Error: t/t_covergroup_weight_run_bad.v:46: Coverage option 'option.weight' is set to negative value '-5'; weights must be non-negative (IEEE 1800-2023 19.7)
+%Error: t/t_covergroup_weight_run_bad.v:49: Coverage option 'type_option.weight' is set to negative value '-6'; weights must be non-negative (IEEE 1800-2023 19.7)
+*-* All Finished *-*

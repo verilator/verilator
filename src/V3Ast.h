@@ -391,7 +391,7 @@ protected:
         RELINK_OP4
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
-    AstNode* m_backp = nullptr;
+    AstNode* m_backp = nullptr;  // Saved AstNode::m_backp of the unlinked node, to relink
     AstNode** m_iterpp = nullptr;
     RelinkWhatEn m_chg = RELINK_BAD;
 
@@ -658,6 +658,7 @@ public:
     string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
+    static string nameNoArray(const string& namein);  // Name with any array index removed
     static string prettyName(const string& namein) VL_PURE;  // Name for printing out to the user
     static string vpiName(const string& namein);  // Name for vpi access
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)

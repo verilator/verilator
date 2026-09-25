@@ -628,4 +628,128 @@ module t (
   end
   `signal(ARRAY_READ, array_read);
 
+  logic array_ready;
+  logic array_transfer_ready;
+  logic [1:0] array_status[2];
+  always_comb begin
+    array_ready = rand_a[0];
+    array_transfer_ready = array_ready && rand_b[0];
+    array_status[0] = {array_ready, array_transfer_ready};
+    array_status[1] = {array_transfer_ready, array_ready};
+  end
+  `signal(ARRAY_SEQUENTIAL, {array_status[1], array_status[0]});
+
+  typedef logic [6:0] array_element_t;
+  array_element_t array_descending[3:1];
+  array_element_t array_ascending[1:3];
+  always_comb begin
+    array_descending[2] = rand_a[6:0];
+    array_descending[3] = rand_b[6:0];
+    array_descending[1] = rand_a[13:7];
+    array_ascending[2] = rand_b[6:0];
+    array_ascending[1] = rand_a[6:0];
+    array_ascending[3] = rand_b[13:7];
+  end
+  `signal(ARRAY_BOUNDS, {array_descending[1], array_descending[2], array_descending[3],
+                         array_ascending[1], array_ascending[2], array_ascending[3]});
+
+  logic [6:0] array_intermediate[2];
+  logic [6:0] array_before;
+  logic [6:0] array_after;
+  always_comb begin
+    array_intermediate[0] = rand_a[6:0];
+    array_before = array_intermediate[0];
+    array_intermediate[1] = rand_b[6:0];
+    array_intermediate[0] = ~rand_a[6:0];
+    array_after = array_intermediate[0];
+    array_intermediate[1] = array_after ^ rand_b[6:0];
+  end
+  `signal(ARRAY_INTERMEDIATE, {array_intermediate[1], array_intermediate[0], array_before,
+                               array_after});
+
+  logic [6:0] array_retained[4];
+  logic [6:0] array_retained_before;
+  assign array_retained[1] = rand_b[6:0];
+  always @* begin
+    array_retained_before = array_retained[1];
+    {array_retained[3], array_retained[0]} = {rand_a[6:0], rand_a[13:7]};
+    array_retained[2] = array_retained[1] ^ rand_a[20:14];
+    {array_retained[3], array_retained[0]} = {array_retained_before ^ rand_a[6:0], ~rand_a[6:0]};
+  end
+  `signal(ARRAY_RETAINED, {array_retained[3], array_retained[2], array_retained[1],
+                           array_retained[0], array_retained_before});
+
+  logic [6:0] array_disjoint[4];
+  always_comb begin
+    array_disjoint[3] = rand_a[6:0];
+    array_disjoint[1] = rand_b[6:0];
+  end
+  always_comb begin
+    array_disjoint[0] = rand_a[13:7];
+    array_disjoint[2] = rand_b[13:7];
+  end
+  `signal(ARRAY_DISJOINT, {array_disjoint[3], array_disjoint[2], array_disjoint[1],
+                           array_disjoint[0]});
+
+  // verilator lint_off MULTIDRIVEN
+  // Both blocks write the same value to element 0 so the equivalence check
+  // does not depend on their execution order.
+  logic [6:0] array_multidriven[3];
+  always_comb begin  // revert
+    array_multidriven[0] = rand_a[6:0];
+    array_multidriven[1] = rand_b[6:0];
+  end
+  always_comb begin  // revert
+    array_multidriven[0] = rand_a[6:0];
+    array_multidriven[2] = rand_a[13:7];
+  end
+  // verilator lint_on MULTIDRIVEN
+  `signal(ARRAY_MULTIDRIVEN, {array_multidriven[2], array_multidriven[1], array_multidriven[0]});
+
+  logic [6:0] array_at_limit[32];
+  always_comb begin
+    /*verilator unroll_full*/
+    for (int k = 0; k < 32; ++k) array_at_limit[k] = 7'(rand_a >> k) ^ 7'(k);
+  end
+  `signal(ARRAY_AT_LIMIT, {array_at_limit[31], array_at_limit[16], array_at_limit[0]});
+
+  logic [6:0] array_large[33];
+  always_comb begin  // nosynth
+    /*verilator unroll_full*/
+    for (int k = 0; k < 33; ++k) array_large[k] = 7'(rand_a >> k) ^ 7'(k);
+  end
+  `signal(ARRAY_LARGE, {array_large[32], array_large[16], array_large[0]});
+
+  logic [6:0] array_final_read[2];
+  logic [6:0] array_final_value;
+  always_comb begin  // nosynth
+    array_final_read[0] = rand_a[6:0];
+    array_final_read[1] = rand_b[6:0];
+    array_final_value = array_final_read[0];
+  end
+  `signal(ARRAY_FINAL_READ, {array_final_read[1], array_final_read[0], array_final_value});
+
+  logic [6:0] array_partial_reassign[2];
+  always_comb begin  // nosynth
+    array_partial_reassign[0] = rand_a[6:0];
+    array_partial_reassign[1] = rand_b[6:0];
+    array_partial_reassign[1][2:0] = rand_a[2:0];
+  end
+  `signal(ARRAY_PARTIAL_REASSIGN, {array_partial_reassign[1], array_partial_reassign[0]});
+
+  logic [6:0] array_partial_previous[2];
+  always_comb begin  // nosynth
+    array_partial_previous[0][2:0] = rand_a[2:0];
+    array_partial_previous[1] = rand_b[6:0];
+    array_partial_previous[0][6:3] = rand_a[6:3];
+  end
+  `signal(ARRAY_PARTIAL_PREVIOUS, {array_partial_previous[1], array_partial_previous[0]});
+
+  logic [6:0] array_whole_previous[2];
+  always_comb begin  // nosynth
+    array_whole_previous = array_intermediate;
+    array_whole_previous[1] = rand_a[6:0];
+  end
+  `signal(ARRAY_WHOLE_PREVIOUS, {array_whole_previous[1], array_whole_previous[0]});
+
 endmodule

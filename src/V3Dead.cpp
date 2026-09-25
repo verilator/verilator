@@ -246,6 +246,7 @@ class DeadVisitor final : public VNVisitor {
     // Entire Netlist:
     //  AstNodeModule::user1()  -> int. Count of number of cells referencing this module.
     //  AstVar::user1()         -> int. Count of number of references
+    //  AstVar::user2()         -> bool. Is a formal function argument
     //  AstVarScope::user1()    -> int. Count of number of references
     //  AstNodeDType::user1()   -> int. Count of number of references
     const VNUser1InUse m_inuser1;
@@ -279,6 +280,7 @@ class DeadVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Current module
     AstForeachHeader* m_foreachHeaderp = nullptr;  // Current foreach header
     AstNode* m_containingFTaskRefp = nullptr;  // Parent of ftaskref (e.g. task/module)
+    bool m_inFTask = false;  // Under an AstNodeFTask
 
     // STATE - Statistic tracking
     VDouble0 m_statFTasksDemoted;
@@ -351,6 +353,16 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
+        // Keep formal arguments
+        for (AstVar* varp = nodep->argsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+            varp->user1Inc();
+            varp->user2(1);
+        }
+    }
+    void visit(AstPin* nodep) override {
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (nodep->modVarp()) nodep->modVarp()->user1Inc();
     }
     void visit(AstScope* nodep) override {
         iterateChildren(nodep);
@@ -399,6 +411,11 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkAll(nodep);
         needsTask(nodep->ftaskp(), m_containingFTaskRefp);
+    }
+    void visit(AstModportVarRef* nodep) override {
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (nodep->varp()) nodep->varp()->user1Inc();
     }
     void visit(AstRefDType* nodep) override {
         iterateChildren(nodep);
@@ -510,6 +527,11 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkAll(nodep);
         if (m_foreachHeaderp) nodep->user1Inc();
+        // Keep formal arguments
+        if (m_inFTask && nodep->isIO()) {
+            nodep->user1Inc();
+            nodep->user2(1);
+        }
         if (mightElimVar(nodep)) {
             m_varsp.push_back(nodep);
         } else {
@@ -549,7 +571,9 @@ class DeadVisitor final : public VNVisitor {
         m_graph.findNewRemovableVertex(nodep, removable);
         //
         VL_RESTORER(m_containingFTaskRefp);
+        VL_RESTORER(m_inFTask);
         m_containingFTaskRefp = nodep;
+        m_inFTask = true;
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->isVirtual()) m_graph.funcVirtual(nodep);
@@ -668,7 +692,7 @@ class DeadVisitor final : public VNVisitor {
     }
     bool mightElimVar(const AstVar* nodep) const {
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
-        if (nodep->isIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
+        if (nodep->isPrimaryIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
         return m_elimUserVars;  // Post-Trace can kill most anything
     }
@@ -720,6 +744,8 @@ class DeadVisitor final : public VNVisitor {
     void deadCheckVar() {
         // Delete any unused varscopes
         for (AstVarScope* vscp : m_vscsp) {
+            // Keep formal arguments
+            if (vscp->varp()->user2()) continue;
             if (vscp->user1() == 0) {
                 UINFO(4, "  Dead " << vscp);
                 const std::pair<AssignMap::iterator, AssignMap::iterator> eqrange

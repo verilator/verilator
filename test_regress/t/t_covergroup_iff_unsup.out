@@ -1,0 +1,21 @@
+%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:13:35: Unsupported: 'iff' in transition cover bin (guard ignored)
+   13 |       bins normal = (0 => 1) iff (enabled);
+      |                                   ^~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:14:43: Unsupported: 'iff' in transition cover bin (guard ignored)
+   14 |       ignore_bins ignored = (1 => 2) iff (!enabled);
+      |                                           ^
+%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:15:52: Unsupported: 'iff' in transition cover bin (guard ignored)
+   15 |       illegal_bins illegal = (2 => 3) iff (enabled && value != 0);
+      |                                                    ^~
+%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:18:36: Unsupported: 'iff' in default cover bin (guard ignored)
+   18 |       bins fallback = default iff (enabled);
+      |                                    ^~~~~~~
+%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:21:43: Unsupported: 'iff' in default cover bin (guard ignored)
+   21 |       ignore_bins fallback = default iff (!enabled);
+      |                                           ^
+%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:24:52: Unsupported: 'iff' in default cover bin (guard ignored)
+   24 |       illegal_bins fallback = default iff (enabled && value != 0);
+      |                                                    ^~
+%Error: Exiting due to

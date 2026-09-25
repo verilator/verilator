@@ -409,17 +409,18 @@ public:
 
     // Sub contexts - keep sorted by type
     V3DfgAstToDfgContext m_ast2DfgContext;
-    V3DfgBinToOneHotContext m_binToOneHotContext;
-    V3DfgBreakCyclesContext m_breakCyclesContext;
-    V3DfgCseContext m_cseContext0{"1st"};
-    V3DfgCseContext m_cseContext1{"2nd"};
-    V3DfgDfgToAstContext m_dfg2AstContext;
-    V3DfgPeepholeContext m_peepholeContext;
-    V3DfgPushDownSelsContext m_pushDownSelsContext;
-    V3DfgRegularizeContext m_regularizeContext;
-    V3DfgRemoveSelectsContext m_removeSelectsContext;
-    V3DfgRemoveUnobservableContext m_removeUnobservableContext;
-    V3DfgSynthesisContext m_synthContext;
+    V3DfgBinToOneHotContext m_binToOneHotContext;  // Statistics context for V3DfgBinToOneHot
+    V3DfgBreakCyclesContext m_breakCyclesContext;  // Statistics context for V3DfgBreakCycles
+    V3DfgCseContext m_cseContext0{"1st"};  // Statistics context for CSE stage 1
+    V3DfgCseContext m_cseContext1{"2nd"};  // Statistics context for CSE stage 2
+    V3DfgDfgToAstContext m_dfg2AstContext;  // Statistics context for V3DfgDfgToAst
+    V3DfgPeepholeContext m_peepholeContext;  // Statistics context for V3DfgPeephole
+    V3DfgPushDownSelsContext m_pushDownSelsContext;  // Statistics context for V3DfgPushDownSels
+    V3DfgRegularizeContext m_regularizeContext;  // Statistics context for V3DfgRegularize
+    V3DfgRemoveSelectsContext m_removeSelectsContext;  // Stats context for V3DfgRemoveSelects
+    V3DfgRemoveUnobservableContext
+        m_removeUnobservableContext;  // Stats context for V3DfgRemoveUnobservable
+    V3DfgSynthesisContext m_synthContext;  // Statistics context for V3DfgSynthesize
 
     // CONSTRUCTOR
     V3DfgContext() = default;

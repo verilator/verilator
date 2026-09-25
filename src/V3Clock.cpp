@@ -97,7 +97,7 @@ class ClockVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstSenTree* nodep) override {
-        pushDeletep(nodep->unlinkFrBack());  // No longer needed
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);  // No longer needed
     }
 
     //========== Move sampled assignments

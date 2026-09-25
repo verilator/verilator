@@ -35,6 +35,7 @@ module t;
     bit [3:0] value;
 
     covergroup cov_cplx @(posedge a or posedge mid.lvl.ev);
+      option.weight = 2;  // Dropped along with the covergroup
       coverpoint value {bins lo = {[0 : 7]}; bins hi = {[8 : 15]};}
     endgroup
 

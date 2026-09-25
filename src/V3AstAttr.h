@@ -874,18 +874,38 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  "r+") \
     macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  "") \
     macro(COVERGROUP_ADD_CROSS,               "addCross",               false,  "") \
+    macro(COVERGROUP_ADD_CROSS_DYN,           "addCrossDyn",            false,  "") \
     macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  "r+") \
     macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
     macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
-    macro(COVERGROUP_COVERAGE_PARTS,          "coverageParts",          false,  "TODO") \
+    macro(COVERGROUP_COVERAGE,                "coverage",               false,  "") \
     macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  "") \
     macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  "r") \
     macro(COVERGROUP_INIT,                    "init",                   false,  "r+") \
     macro(COVERGROUP_INST_P,                  "p",                      PURE,   "") \
+    macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  "rr") \
     macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  "r") \
     macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rr") \
     macro(COVERGROUP_SAMPLE,                  "sample",                 false,  "") \
     macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  "r") \
+    macro(COVERGROUP_SELECT_ALL,              "selectAll",              false,  "") \
+    macro(COVERGROUP_SELECT_AND,              "selectAnd",              false,  "") \
+    macro(COVERGROUP_SELECT_BIN,              "selectBin",              false,  "r+") \
+    macro(COVERGROUP_SELECT_DIM,              "selectDim",              false,  "r+") \
+    macro(COVERGROUP_SELECT_DIM_END,          "selectDimEnd",           false,  "") \
+    macro(COVERGROUP_SELECT_OR,               "selectOr",               false,  "") \
+    macro(COVERGROUP_SELECT_RANGE,            "selectRange",            false,  "rr") \
+    macro(COVERGROUP_SELECT_RANGE_W,          "selectRangeW",           false,  "rr") \
+    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrr") \
+    macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
+    macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
+    macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  "") \
+    macro(COVERGROUP_VALUE_PATTERNS,          "valuePatterns",          false,  "r") \
+    macro(COVERGROUP_VALUE_RANGES,            "valueRanges",            false,  "r") \
+    macro(COVERGROUP_VALUE_RELEASE,           "valueRelease",           false,  "") \
+    macro(COVERGROUP_VALUE_TRANSITIONS,       "valueTransitions",       false,  "r") \
+    macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  "rr") \
+    macro(COVERGROUP_WEIGHT,                  "weight",                 false,  "rr") \
     macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
     macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \
     macro(DYN_CLEAR,                          "clear",                  false,  "") \
@@ -928,10 +948,11 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false,  "r") \
     macro(RANDOMIZER_HARD,                    "hard",                   false,  "r+") \
     macro(RANDOMIZER_SOFT,                    "soft",                   false,  "rrrr") \
-    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "r") \
+    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "rr") \
     macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  "r") \
     macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  "rr") \
     macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  "rrr") \
+    macro(RANDOMIZER_UPDATE_VAR,              "update_var",             false,  "TODO") \
     macro(RANDOMIZER_WRITE_VAR,               "write_var",              false,  "TODO") \
     macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false,  "r") \
     macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false,  "r") \
@@ -1327,6 +1348,17 @@ public:
             return "VerilatedTraceSigDirection::INPUT";
         }
         return "VerilatedTraceSigDirection::NONE";
+    }
+    VAccess pinAccess() const {
+        switch (m_e) {
+        case NONE: return VAccess::NOCHANGE;
+        case INPUT:
+        case CONSTREF: return VAccess::READ;
+        case OUTPUT: return VAccess::WRITE;
+        case INOUT:
+        case REF: return VAccess::READWRITE;
+        }
+        v3fatalSrc("Unhandled VDirection");
     }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) VL_MT_SAFE {
@@ -1752,8 +1784,8 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 class VNumRange final {
 public:
-    int m_left = 0;
-    int m_right = 0;
+    int m_left = 0;  // Left side of range (pre-':')
+    int m_right = 0;  // Right side of range (post-':')
     bool m_ranged = false;  // Has a range
     bool operator==(const VNumRange& rhs) const {
         return m_left == rhs.m_left && m_right == rhs.m_right && m_ranged == rhs.m_ranged;

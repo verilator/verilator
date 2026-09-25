@@ -1,0 +1,30 @@
+%Error: t/t_covergroup_ctor_scope_bad.v:58:19: Embedded covergroup variable 'unclocked' may only be assigned in the enclosing class's 'new' method (IEEE 1800-2023 19.4).
+                                             : ... note: In instance 't'
+   58 |     mon.unclocked = new;
+      |                   ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_ctor_scope_bad.v:32:15: Embedded covergroup variable 'unclocked' may only be assigned in the enclosing class's 'new' method (IEEE 1800-2023 19.4).
+                                             : ... note: In instance 't'
+   32 |     unclocked = new;
+      |               ^
+%Error: t/t_covergroup_ctor_scope_bad.v:33:19: Embedded covergroup variable 'reconstructed' may only be assigned in the enclosing class's 'new' method (IEEE 1800-2023 19.4).
+                                             : ... note: In instance 't'
+   33 |     reconstructed = new;
+      |                   ^
+%Error: t/t_covergroup_ctor_scope_bad.v:34:20: Embedded covergroup variable 'constant_point' may only be assigned in the enclosing class's 'new' method (IEEE 1800-2023 19.4).
+                                             : ... note: In instance 't'
+   34 |     constant_point = new;
+      |                    ^
+%Error: t/t_covergroup_ctor_scope_bad.v:35:20: Embedded covergroup variable 'static_clocked' may only be assigned in the enclosing class's 'new' method (IEEE 1800-2023 19.4).
+                                             : ... note: In instance 't'
+   35 |     static_clocked = new;
+      |                    ^
+%Error: t/t_covergroup_ctor_scope_bad.v:39:19: Embedded covergroup variable 'reconstructed' may only be assigned in the enclosing class's 'new' method (IEEE 1800-2023 19.4).
+                                             : ... note: In instance 't'
+   39 |     reconstructed = null;
+      |                   ^
+%Error: t/t_covergroup_ctor_scope_bad.v:45:19: Embedded covergroup variable 'unclocked' may only be assigned in the enclosing class's 'new' method (IEEE 1800-2023 19.4).
+                                             : ... note: In instance 't'
+   45 |     mon.unclocked = new;
+      |                   ^
+%Error: Exiting due to

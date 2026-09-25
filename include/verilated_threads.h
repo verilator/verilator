@@ -140,7 +140,7 @@ class VlWorkerThread final {
     };
 
     // MEMBERS
-    mutable VerilatedMutex m_mutex;
+    mutable VerilatedMutex m_mutex;  // Protection mutex
     std::condition_variable_any m_cv;
     // Only notify the condition_variable if the worker is waiting
     bool m_waiting VL_GUARDED_BY(m_mutex) = false;

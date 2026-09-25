@@ -253,7 +253,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   // them as such currently, so named with a unique prefix
   typedef struct {
     string name;
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     int at_least;
@@ -266,7 +266,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_covergroup_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     int at_least;
@@ -275,7 +275,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_coverpoint_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     int at_least;
@@ -284,7 +284,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_cross_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     bit strobe;
@@ -294,14 +294,14 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_covergroup_type_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     real real_interval;
   } vl_coverpoint_type_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
   } vl_cross_type_options_t;

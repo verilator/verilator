@@ -679,6 +679,7 @@ string AstCase::pragmaString() const {
 void AstCell::dump(std::ostream& str) const {
     Super::dump(str);
     if (recursive()) str << " [RECURSIVE]";
+    if (arrayIdx() >= 0) str << " [ARRAYIDX=" << arrayIdx() << "]";
     if (modp()) {
         str << " -> ";
         modp()->dump(str);
@@ -691,6 +692,7 @@ void AstCell::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, recursive);
+    if (arrayIdx() >= 0) dumpJsonNumFunc(str, arrayIdx);
     dumpJsonGen(str);
 }
 void AstCellInline::dump(std::ostream& str) const {
@@ -735,6 +737,7 @@ void AstClass::dump(std::ostream& str) const {
     if (isPrintedFrom()) str << " [PRINTED]";
     if (isVirtual()) str << " [VIRT]";
     if (needRNG()) str << " [NRNG]";
+    if (hasRandVarsUpdate()) str << "[RANDVARUPD]";
     if (useVirtualPublic()) str << " [VIRPUB]";
     if (baseOverride().isAny()) str << " [" << baseOverride().ascii() << "]";
     if (cgAutoBinMax()) str << " cost=" << cgAutoBinMax();
@@ -747,6 +750,7 @@ void AstClass::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isPrintedFrom);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, needRNG);
+    dumpJsonBoolFuncIf(str, hasRandVarsUpdate);
     dumpJsonBoolFuncIf(str, useVirtualPublic);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonNumFunc(str, cgAutoBinMax);
@@ -1222,6 +1226,7 @@ string AstCoverCrossDType::cppTemplateArgs() const {
 void AstCoverCrossDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [" << cppTemplateArgs() << "]";
+    if (isDynamic()) str << " [DYNAMIC]";
 }
 void AstCoverCrossDType::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, dimensions);
@@ -1229,6 +1234,7 @@ void AstCoverCrossDType::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, bins);
     dumpJsonNumFunc(str, autoBins);
     dumpJsonNumFunc(str, binWords);
+    dumpJsonBoolFuncIf(str, isDynamic);
     dumpJsonGen(str);
 }
 void AstCoverCrossDType::dumpSmall(std::ostream& str) const {
@@ -1256,10 +1262,12 @@ void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstCoverOption::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_optType.ascii();
+    if (typeOption()) str << " [TYPEOPT]";
 }
 void AstCoverOption::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     str << ", \"optType\": \"" << m_optType.ascii() << "\"";
+    dumpJsonBoolFuncIf(str, typeOption);
 }
 void AstCoverOtherDecl::dump(std::ostream& str) const {
     Super::dump(str);
@@ -1548,7 +1556,6 @@ void AstIfaceGenericDType::dumpSmall(std::ostream& str) const {
 }
 void AstIfaceRefDType::dump(std::ostream& str) const {
     Super::dump(str);
-    if (isPortDecl()) str << " [PORTDECL]";
     if (isVirtual()) str << " [VIRT]";
     if (cellName() != "") str << " cell=" << cellName();
     if (ifaceName() != "") str << " if=" << ifaceName();
@@ -1564,7 +1571,6 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
     }
 }
 void AstIfaceRefDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, isPortDecl);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonStrFunc(str, cellName);
     dumpJsonStrFunc(str, ifaceName);
@@ -1961,6 +1967,16 @@ const char* AstNetlist::broken() const {
     }
     return nullptr;
 }
+const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
+    if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp;
+    const auto it = m_containingModules.find(nodep);
+    if (it != m_containingModules.end()) return it->second;
+    // Only true parents are followed.
+    AstNode* const abovep = nodep->aboveLoopp();
+    const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
+    m_containingModules[nodep] = modp;
+    return modp;
+}
 void AstNetlist::createTopScope(AstScope* scopep) {
     UASSERT(scopep, "Must not be nullptr");
     UASSERT_OBJ(!m_topScopep, scopep, "TopScope already exits");
@@ -1978,6 +1994,7 @@ void AstNetlist::deleteContents() {
     m_nbaEventp = nullptr;
     m_nbaEventTriggerp = nullptr;
     m_topScopep = nullptr;
+    m_containingModules.clear();
     m_evalFuncps.fill(nullptr);
     m_dumpTriggersFuncps.fill(nullptr);
     if (op1p()) op1p()->unlinkFrBackWithNext()->deleteTree();
@@ -2097,6 +2114,7 @@ bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
 void AstNodeCoverDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (localBinNum()) str << " lbin=" << localBinNum();
+    if (perInstance()) str << " [PERINST]";
     if (!page().empty()) str << " page=" << page();
     if (!hier().empty()) str << " hier=" << hier();
     if (this->dataDeclNullp()) {
@@ -2116,6 +2134,7 @@ void AstNodeCoverDecl::dump(std::ostream& str) const {
 void AstNodeCoverDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, binNum);
     dumpJsonNumFunc(str, localBinNum);
+    dumpJsonBoolFuncIf(str, perInstance);
     dumpJsonStrFunc(str, page);
     dumpJsonStrFunc(str, hier);
     dumpJsonGen(str);
@@ -2182,7 +2201,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type += ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverCrossDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
-        info.m_type = "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
+        info.m_type = adtypep->isDynamic() ? "VlCoverCrossDyn*"
+                                           : "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverpointDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = "VlCoverpointT<" + cvtToStr(adtypep->hitBound()) + ">*";
@@ -2577,50 +2597,47 @@ AstNode* AstNodeExpr::baseFromp(bool overMembers) {
     }
     return nodep;
 }
-AstNodeExpr* AstNodeExpr::cLValueTargetp() {
-    // Leaves
-    if (AstVarRef* const refp = VN_CAST(this, VarRef)) {  //
-        return refp;
-    }
-    if (AstMemberSel* const selp = VN_CAST(this, MemberSel)) {  //
-        return selp;
-    }
-
-    // Recursive
-    if (AstSel* const selp = VN_CAST(this, Sel)) {  //
-        return selp->fromp()->cLValueTargetp();
-    }
-    if (AstStructSel* const selp = VN_CAST(this, StructSel)) {  //
-        return selp->fromp()->cLValueTargetp();
-    }
-    if (AstNodeSel* const selp = VN_CAST(this, NodeSel)) {  // Array, Assoc, Wildcard, Word
-        return selp->fromp()->cLValueTargetp();
-    }
-
-    // Not an LValue
-    return nullptr;
-}
 void AstNodeExpr::dump(std::ostream& str) const { Super::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-bool AstNodeExpr::isLValue() const {
-    if (const AstNodeVarRef* const varrefp = VN_CAST(this, NodeVarRef)) {
-        return varrefp->access().isWriteOrRW();
-    } else if (const AstMemberSel* const memberselp = VN_CAST(this, MemberSel)) {
-        return memberselp->access().isWriteOrRW();
-    } else if (const AstStructSel* const structselp = VN_CAST(this, StructSel)) {
-        return structselp->fromp()->isLValue();
-    } else if (const AstSel* const selp = VN_CAST(this, Sel)) {
-        return selp->fromp()->isLValue();
-    } else if (const AstNodeSel* const nodeSelp = VN_CAST(this, NodeSel)) {
-        return nodeSelp->fromp()->isLValue();
-    } else if (const AstConcat* const concatp = VN_CAST(this, Concat)) {
-        // Enough to check only one side, as both must be same otherwise malformed
-        return concatp->lhsp()->isLValue();
-    } else if (const AstCMethodHard* const cMethodHardp = VN_CAST(this, CMethodHard)) {
-        // Used for things like Queue/AssocArray/DynArray
-        return cMethodHardp->fromp()->isLValue();
+VAccess AstNodeExpr::getVAccessRecurse() const {
+    const AstNodeExpr* const exprp = getVAccessTargetRecurse();
+    if (!exprp) return VAccess::READ;  // nothing found so, it is rvalue
+    if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
+        return varrefp->access();
     }
-    return false;
+    if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+        return memberSelp->access();
+    }
+    if (const AstSelBit* const selpBitp = VN_CAST(exprp, SelBit)) return selpBitp->access();
+    exprp->v3fatalSrc("Unexpected expression type");
+    // Maybe getVAccessTargetRecurse() has been updated and this function didn't?
+}
+const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
+    // Given an expression, recurse to find the expression which decides about VAccess etc.
+    if (VN_IS(this, NodeVarRef)) return this;
+    if (VN_IS(this, MemberSel)) return this;
+    if (VN_IS(this, SelBit)) return this;
+    if (const AstNodeSel* const anodep = VN_CAST(this, NodeSel)) {
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    if (const AstSel* const anodep = VN_CAST(this, Sel)) {
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    if (const AstArraySel* const anodep = VN_CAST(this, ArraySel)) {
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    if (const AstStructSel* const anodep = VN_CAST(this, StructSel)) {
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    if (const AstConcat* const anodep = VN_CAST(this, Concat)) {
+        // Enough to check only one side, as both must be same otherwise malformed
+        return anodep->lhsp()->getVAccessTargetRecurse();
+    }
+    if (const AstCMethodHard* const anodep = VN_CAST(this, CMethodHard)) {
+        // Used for things like Queue/AssocArray/DynArray
+        return anodep->fromp()->getVAccessTargetRecurse();
+    }
+    return nullptr;  // nothing found
 }
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
@@ -2935,26 +2952,6 @@ void AstNodeVarRef::dump(std::ostream& str) const {
 void AstNodeVarRef::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "access", access().ascii());
     dumpJsonGen(str);
-}
-AstNodeVarRef* AstNodeVarRef::varRefLValueRecurse(AstNode* nodep) {
-    // Given a (possible) lvalue expression, recurse to find the being-set NodeVarRef, else nullptr
-    if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) return anodep;
-    if (const AstNodeSel* const anodep = VN_CAST(nodep, NodeSel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    if (const AstSel* const anodep = VN_CAST(nodep, Sel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    if (const AstArraySel* const anodep = VN_CAST(nodep, ArraySel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    if (const AstMemberSel* const anodep = VN_CAST(nodep, MemberSel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    if (const AstStructSel* const anodep = VN_CAST(nodep, StructSel)) {
-        return varRefLValueRecurse(anodep->fromp());
-    }
-    return nullptr;
 }
 const char* AstNot::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
@@ -3877,7 +3874,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 }
 string AstVar::dpiTmpVarType(const string& varName) const {
     class converter final : public DpiTypesToStringConverter {
-        const string m_name;
+        const string m_name;  // Variable name
         string arraySuffix(const AstVar* varp, size_t n) const {
             if (const AstUnpackArrayDType* const unpackp
                 = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
@@ -3927,6 +3924,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isConst()) str << " [CONST]";
     if (isPullup()) str << " [PULLUP]";
     if (isPulldown()) str << " [PULLDOWN]";
+    if (isIfaceArraySplit()) str << " [IFACEARRAYSPLIT]";
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
@@ -3971,6 +3969,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConst);
     dumpJsonBoolFuncIf(str, isPullup);
     dumpJsonBoolFuncIf(str, isPulldown);
+    dumpJsonBoolFuncIf(str, isIfaceArraySplit);
     dumpJsonBoolFuncIf(str, isSigPublic);
     dumpJsonBoolFuncIf(str, isLatched);
     dumpJsonBoolFuncIf(str, isUsedLoopIdx);
@@ -4109,7 +4108,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
-string AstVar::vlEnumDir() const {
+string AstVar::vlEnumDir(bool forMember) const {
     string out;
     if (isInout()) {
         out = "VLVD_INOUT";
@@ -4126,17 +4125,17 @@ string AstVar::vlEnumDir() const {
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
-    if (isForceable()) out += "|VLVF_FORCEABLE";
+    if (isForceable() && !forMember) out += "|VLVF_FORCEABLE";
     if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
     }
     //
-    if (dtypep()->skipRefp()->isSigned()) out += "|VLVF_SIGNED";
+    if (dtypep()->skipRefp()->isSigned() && !forMember) out += "|VLVF_SIGNED";
     //
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
-        if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
+        if (basicp->keyword() == VBasicDTypeKwd::BIT && !forMember) out += "|VLVF_BITVAR";
     }
     if (isNet()) out += "|VLVF_NET";
     return out;
@@ -4264,6 +4263,7 @@ bool AstVarScope::sameNode(const AstNode* samep) const {
 void AstVarXRef::dump(std::ostream& str) const {
     Super::dump(str);
     if (containsGenBlock()) str << " [GENBLK]";
+    if (readOnlyModport()) str << " [ROMODPORT]";
     str << ".=" << dotted() << " ";
     if (inlinedDots() != "") str << " inline.=" << inlinedDots() << " - ";
     if (varScopep()) {
@@ -4276,6 +4276,7 @@ void AstVarXRef::dump(std::ostream& str) const {
 }
 void AstVarXRef::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, containsGenBlock);
+    dumpJsonBoolFuncIf(str, readOnlyModport);
     dumpJsonStrFunc(str, dotted);
     dumpJsonStrFunc(str, inlinedDots);
     dumpJsonGen(str);

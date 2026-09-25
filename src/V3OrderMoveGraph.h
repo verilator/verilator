@@ -110,8 +110,8 @@ class OrderMoveDomScope final {
 
     // Key type for map below
     class DomScopeMapKey final {
-        const AstSenTree* const m_domainp;
-        const AstScope* const m_scopep;
+        const AstSenTree* const m_domainp;  // Domain the vertices belong to
+        const AstScope* const m_scopep;  // Scope the vertices belong to
 
     public:
         DomScopeMapKey(const AstSenTree* domainp, const AstScope* scopep)

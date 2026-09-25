@@ -159,8 +159,7 @@ class DescopeVisitor final : public VNVisitor {
                         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
                                 AstVarRef* const newp = new AstVarRef{
-                                    portp->fileline(), portp,
-                                    portp->isWritable() ? VAccess::WRITE : VAccess::READ};
+                                    portp->fileline(), portp, portp->direction().pinAccess()};
                                 argsp = AstNode::addNext(argsp, newp);
                             }
                         }

@@ -105,9 +105,9 @@ private:
         int m_msb;  // Inclusive upper bit for scalar path or element index for unpacked
         int m_rhsLsb;  // Destination index that maps to RHS index 0
         const void* m_rhsDatap;  // Pointer to RHS storage
-        int m_bitLsb = 0;
-        int m_bitMsb = 0;
-        int m_elemWidth = 0;
+        int m_bitLsb = 0;  // Bit's LSB
+        int m_bitMsb = 0;  // Bit's MSB
+        int m_elemWidth = 0;  // Element width
     };
 
     std::vector<Entry> m_entries;  // Sorted by msb, non-overlapping

@@ -43,9 +43,6 @@ Hierarchy Coverage Summary:
     fsm_state : 100.0% ( 6/ 6)
     fsm_arc   : 85.7% ( 6/ 7)
 Design Unit Coverage Summary:
-  $root
-    fsm_state : 91.7% (11/12)
-    fsm_arc   : 71.4% (10/14)
   cluster
     line      : 100.0% ( 3/ 3)
     toggle    : 68.2% (15/22)
@@ -60,6 +57,8 @@ Design Unit Coverage Summary:
     line      : 75.0% (18/24)
     toggle    : 91.7% (44/48)
     branch    : 75.0% (12/16)
+    fsm_state : 91.7% (11/12)
+    fsm_arc   : 71.4% (10/14)
   tb
     line      : 100.0% (5/5)
     toggle    : 100.0% (4/4)

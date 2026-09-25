@@ -50,9 +50,9 @@ class InstrCountVisitor final : public VNVisitorConst {
     // Little class to cleanly call startVisitBase/endVisitBase
     class VisitBase final {
         // MEMBERS
-        uint32_t m_savedCount;
-        AstNode* const m_nodep;
-        InstrCountVisitor* const m_visitor;
+        uint32_t m_savedCount;  // Count before visit applied
+        AstNode* const m_nodep;  // Node helper is visiting
+        InstrCountVisitor* const m_visitor;  // Visitor whose start/endVisitBase are called
 
     public:
         // CONSTRUCTORS

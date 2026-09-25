@@ -581,7 +581,8 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
         util::callVoidFunc(icoFuncp));
 
     // Release temporary input change detect SenTrees
-    for (AstSenTree* const senTreep : icoChangeSenTreeps) senTreep->deleteTree();
+    for (AstSenTree* const senTreep : icoChangeSenTreeps)
+        VL_DO_DANGLING(senTreep->deleteTree(), senTreep);
     icoChangeSenTreeps.clear();
 }
 

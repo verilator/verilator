@@ -20,15 +20,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-class AstNetlist;
-class AstNode;
+#include "V3Ast.h"
 
 //============================================================================
 
 class V3LinkLValue final {
 public:
     static void linkLValue(AstNetlist* nodep) VL_MT_DISABLED;
-    static void linkLValueSet(AstNode* nodep, bool isLValue = true) VL_MT_DISABLED;
+    static void linkLValueSet(AstNode* nodep, VAccess access = VAccess::WRITE) VL_MT_DISABLED;
 };
 
 #endif  // Guard
