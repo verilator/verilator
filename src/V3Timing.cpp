@@ -88,6 +88,7 @@ enum NodeFlag : uint8_t {
     T_FORCES_PROC = 1 << 3,  // Forces VlProcess allocation
     T_NEEDS_PROC = 1 << 4,  // Needs access to VlProcess if it's allocated
     T_HAS_PROC = 1 << 5,  // Has VlProcess argument in the signature
+    T_NBA_UPDATE = 1 << 6,  // Fork branch of a pending NBA update, which is not a subprocess
 };
 
 enum ForkType : uint8_t {
@@ -1222,6 +1223,7 @@ class TimingControlVisitor final : public VNVisitor {
             AstBegin* beginp = VN_CAST(controlp, Begin);
             if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
             forkp->addForksp(beginp);
+            addFlags(beginp, T_NBA_UPDATE);
             controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
@@ -1438,6 +1440,9 @@ class TimingControlVisitor final : public VNVisitor {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
         m_hasProcess |= hasFlags(nodep, T_HAS_PROC);
+        // A pending NBA update is not a subprocess of the process that scheduled it, so it is
+        // unaffected by 'disable fork' and 'wait fork' (IEEE 1800-2023 9.6.1, 9.6.3)
+        if (hasFlags(nodep, T_NBA_UPDATE)) m_hasProcess = false;
         m_procp = nodep;
         if (m_hasProcess) nodep->setNeedProcess();
         iterateChildren(nodep);
