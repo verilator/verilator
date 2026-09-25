@@ -3285,6 +3285,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         AstVar* const newp
             = new AstVar{nodep->fileline(), VVarType::WIRE, nodep->name(), VFlagLogicPacked{}, 1};
+        newp->lifetime(VLifetime::STATIC_IMPLICIT);
         newp->trace(modp->modTrace());
         modp->addStmtsp(newp);
         // Link it to signal list, must add the variable under the module;
