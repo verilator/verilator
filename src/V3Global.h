@@ -185,6 +185,7 @@ class V3Global final {
     // Experimenting with always requiring heavy, see issue #2701
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
+    bool m_fourstateResolved = false;  // No four-state types should be preset in AST
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
@@ -258,6 +259,8 @@ public:
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const VL_MT_SAFE { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    bool fourstateResolved() const { return m_fourstateResolved; }
+    void fourstateResolved(bool flag) { m_fourstateResolved = flag; };
     bool assignsEvents() const { return m_assignsEvents; }
     void setAssignsEvents() { m_assignsEvents = true; }
     bool hasEvents() const { return m_hasEvents; }

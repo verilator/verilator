@@ -81,25 +81,22 @@ class CleanVisitor final : public VNVisitor {
     }
     void computeCppWidth(AstNode* nodep) {
         if (!nodep->user2() && nodep->hasDType()) {
+            AstNodeDType* const dtypep = nodep->dtypep()->skipRefp();
             if (VN_IS(nodep, Var)  //
                 || VN_IS(nodep, ConsPackMember)  //
                 || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
                 || VN_IS(nodep, NodeSel)  // Array selects should reflect variable widths
                 || VN_IS(nodep, SFormatArg)  // Retain the logical argument type, not storage width
-                || VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)  // Or arrays
-                || VN_IS(nodep->dtypep()->skipRefp(), WildcardArrayDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), DynArrayDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), ClassRefDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), QueueDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), StreamDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), CoverCrossDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), CoverpointDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
+                || VN_IS(dtypep, AssocArrayDType)  // Or arrays
+                || VN_IS(dtypep, WildcardArrayDType) || VN_IS(dtypep, DynArrayDType)
+                || VN_IS(dtypep, ClassRefDType) || VN_IS(dtypep, QueueDType)
+                || VN_IS(dtypep, StreamDType) || VN_IS(dtypep, UnpackArrayDType)
+                || VN_IS(dtypep, UnsizedArrayDType) || VN_IS(dtypep, CoverCrossDType)
+                || VN_IS(dtypep, CoverpointDType) || VN_IS(dtypep, VoidDType)) {
             } else {
-                const AstNodeUOrStructDType* const dtypep
-                    = VN_CAST(nodep->dtypep()->skipRefp(), NodeUOrStructDType);
-                if (!dtypep || dtypep->packed()) setCppWidth(nodep);
+                const AstNodeUOrStructDType* const uOrStructDTypep
+                    = VN_CAST(dtypep, NodeUOrStructDType);
+                if (!uOrStructDTypep || uOrStructDTypep->packed()) setCppWidth(nodep);
             }
         }
     }
