@@ -13,6 +13,7 @@
 // verilog_format: on
 
 module t;
+  localparam int N_AUTO = 5;
   logic [2:0] data;  // 3-bit: 0-7
   logic [3:0] data4;  // 4-bit signal
   logic [63:0] data64;  // 64-bit signal
@@ -91,6 +92,13 @@ module t;
     xx: cross cp_ax, cp_b{bins sel = binsof (cp_ax.auto_2);}
   endgroup
 
+  // A constant expression sizes automatic bins: 4 bins of 2 values
+  covergroup cg_expr_size;
+    coverpoint data {
+      bins auto[N_AUTO - 1];
+    }
+  endgroup
+
   // Automatic bins hold every value, leaving none to a default bin
   covergroup cg_auto_default;
     coverpoint data {
@@ -110,6 +118,7 @@ module t;
     automatic cg_70bit_excl cg70x_inst = new;
     automatic cg_many cgm_inst = new;
     automatic cg_cross_auto cgx_inst = new;
+    automatic cg_expr_size cge_inst = new;
     automatic cg_auto_default cgd_inst = new;
 
     // Sample 3-bit cg: one value per bin - 4 bins: [0:1],[2:3],[4:5],[6:7]
@@ -215,6 +224,11 @@ module t;
     data = 5;
     cgd_inst.sample();
     `checkr(cgd_inst.get_inst_coverage(), 100.0);
+
+    // Hit auto[1], which holds 2 and 3
+    data = 3;
+    cge_inst.sample();
+    `checkr(cge_inst.get_inst_coverage(), 25.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

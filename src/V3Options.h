@@ -319,6 +319,8 @@ private:
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
     int         m_convergeLimit = 10000;  // main switch: --converge-limit
+    uint32_t    m_coverageMaxBins = 1024;  // main switch: --coverage-max-bins
+    uint32_t    m_coverageMaxRealBins = 1024;  // main switch: --coverage-max-real-bins
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_debugAllocRandom = 0;  // main switch: --debug-alloc-random <seed>
     int         m_expandLimit = 256;  // main switch: --expand-limit
@@ -622,6 +624,8 @@ public:
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int coverageExprMax() const { return m_coverageExprMax; }
+    uint32_t coverageMaxBins() const { return m_coverageMaxBins; }
+    uint32_t coverageMaxRealBins() const { return m_coverageMaxRealBins; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
     int debugAllocRandom() const { return m_debugAllocRandom; }
     bool dumpTreeAddrids() const VL_MT_SAFE;

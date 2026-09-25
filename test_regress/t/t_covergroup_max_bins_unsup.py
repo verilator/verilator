@@ -9,10 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
+test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--coverage-max-bins 1048576'])
-
-test.execute()
+test.lint(verilator_flags2=['--coverage-max-bins 4294967295 --coverage-max-real-bins 2'],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()

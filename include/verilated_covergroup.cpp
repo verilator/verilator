@@ -142,13 +142,8 @@ struct VlCoverpoint::ValueData final {
     }
     // Add in m_bits-wide modular arithmetic, which orders correctly within a run of bins
     void add(Value& value, const Value& addend) const {
-        EData carry = 0;
-        for (uint32_t i = 0; i < m_words; ++i) {
-            const EData partial = value[i] + addend[i];
-            const EData sum = partial + carry;
-            carry = (partial < addend[i]) || (sum < partial);
-            value[i] = sum;
-        }
+        VL_ADD_W(static_cast<int>(m_words), WDataOutP::external(value.data()), view(value),
+                 view(addend));
         value.back() &= VL_MASK_E(m_bits);
     }
     bool contains(const Range& range, WDataInP value) const {
@@ -453,16 +448,29 @@ void VlCoverpoint::valueRanges(std::initializer_list<EData> entries) {
 }
 
 void VlCoverpoint::valueRuns(std::initializer_list<EData> entries) {
+    // The compiler describes each run of bins with one entry, rather than one per bin, so the
+    // constructor's code does not grow with the number of bins.  An entry holds the first bin
+    // and the bin count, then the low, span, and high values, each of 'words' words.
+    static constexpr uint32_t HEADER_WORDS = 2;  // First bin and bin count, before the values
+    static constexpr uint32_t VALUES = 3;  // Low, span, and high values
     ValueData& data = *m_valuesp;
     assert(!data.m_frozen);
     const uint32_t words = data.m_words;
-    assert(entries.size() % (2 + 3 * words) == 0);
-    for (const EData* entryp = entries.begin(); entryp != entries.end(); entryp += 2 + 3 * words) {
+    const uint32_t entryWords = HEADER_WORDS + VALUES * words;
+    const EData* const endp = entries.end();
+    for (const EData* entryp = entries.begin(); entryp != endp; entryp += entryWords) {
+        assert(static_cast<size_t>(endp - entryp) >= entryWords);  // Only whole entries
         const uint32_t first = entryp[0];
         const uint32_t count = entryp[1];
-        ValueData::Value lo = data.read(WDataInP::external(entryp + 2));
-        const ValueData::Value span = data.read(WDataInP::external(entryp + 2 + words));
-        const ValueData::Value hi = data.read(WDataInP::external(entryp + 2 + 2 * words));
+        const EData* const valuesp = entryp + HEADER_WORDS;
+        ValueData::Value lo = data.read(WDataInP::external(valuesp));
+        const ValueData::Value span = data.read(WDataInP::external(valuesp + words));
+        const ValueData::Value hi = data.read(WDataInP::external(valuesp + 2 * words));
+        // Expand the run into the value range of each of its bins, as valueRanges() gives them:
+        // until valueRelease(), valueFinalize() finds the bins exclusions leave without values,
+        // and runtime cross selections intersect their filters, from these ranges.  Each bin
+        // starts after the previous bin's last value and holds span + 1 values, except the last
+        // bin, which extends to the run's high value.
         for (uint32_t k = 0; k < count; ++k) {
             ValueData::Value last = hi;
             if (k + 1 < count) {
@@ -601,8 +609,11 @@ const VlCovNamer& VlCoverpoint::namerFor(uint32_t i) const {
 std::string VlCoverpoint::declaredBinName(uint32_t bin) const {
     const VlCovNamer& nm = namerFor(bin);
     std::string name = nm.name();
-    if (nm.naming() == VlCovBinNaming::Array) name += '[' + std::to_string(bin - nm.base()) + ']';
-    if (nm.naming() == VlCovBinNaming::Numbered) name += '_' + std::to_string(bin - nm.base());
+    if (nm.naming() == VlCovBinNaming::Array) {
+        name += '[' + std::to_string(bin - nm.base()) + ']';
+    } else if (nm.naming() == VlCovBinNaming::Numbered) {
+        name += '_' + std::to_string(bin - nm.base());
+    }
     return name;
 }
 

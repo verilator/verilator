@@ -80,13 +80,13 @@ module t;
     }
   endgroup
 
-  // cg9: two ranges that are each under COVER_BINS_LIMIT (1048576) but whose
+  // cg9: two ranges that are each under --coverage-max-bins (1024) but whose
   // cumulative size exceeds it.  The first range populates the value list, the
   // second trips the running-total guard -> COVERIGN, the whole bin is ignored.
   // cpA is crossed, so the guard also runs for a cross-fed coverpoint.
   covergroup cg9;
     cpA: coverpoint wide {
-      bins cumulative[] = {[0 : 600000], [0 : 600000]};
+      bins cumulative[] = {[0 : 600], [0 : 600]};
       bins ok = {5};
     }
     cpB: coverpoint sel {

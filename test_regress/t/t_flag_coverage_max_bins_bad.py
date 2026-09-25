@@ -9,10 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
+test.scenarios('vlt')
+test.top_filename = "t/t_flag_werror.v"
 
-test.compile(verilator_flags2=['--coverage-max-bins 1048576'])
-
-test.execute()
+test.lint(
+    fails=True,
+    verilator_flags=["--lint-only --coverage-max-bins 4294967296 --coverage-max-real-bins 0"],
+    expect_filename=test.golden_filename)
 
 test.passes()

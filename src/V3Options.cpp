@@ -1374,6 +1374,24 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
     DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
+    // Covergroup bins limits; the runtime indexes bins with 32 bits
+    const auto parseBinsLimit = [fl](const char* optp, const char* valp, uint32_t& limitr) {
+        char* endp = nullptr;
+        const unsigned long long value = std::strtoull(valp, &endp, 10);
+        if (*endp || value < 1 || value > std::numeric_limits<uint32_t>::max()) {
+            fl->v3error(optp << " requires an integer from 1 to "
+                             << std::numeric_limits<uint32_t>::max() << ", but '" << valp
+                             << "' was passed");
+            return;
+        }
+        limitr = static_cast<uint32_t>(value);
+    };
+    DECL_OPTION("-coverage-max-bins", CbVal, [this, parseBinsLimit](const char* valp) {
+        parseBinsLimit("--coverage-max-bins", valp, m_coverageMaxBins);
+    });
+    DECL_OPTION("-coverage-max-real-bins", CbVal, [this, parseBinsLimit](const char* valp) {
+        parseBinsLimit("--coverage-max-real-bins", valp, m_coverageMaxRealBins);
+    });
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
     DECL_OPTION("-coverage-per-instance", OnOff, &m_coveragePerInstance);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);

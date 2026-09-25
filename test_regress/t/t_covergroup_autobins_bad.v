@@ -11,7 +11,6 @@ module t;
   int size_var;
   logic [3:0] cp_expr;
   logic [15:0] cp_wide;
-  logic [31:0] cp_32bit;
   real cp_real;
 
   // Error: array size must be a constant
@@ -26,12 +25,15 @@ module t;
     cp1: coverpoint cp_expr {
       bins auto[0];
     }
+    cp2: coverpoint cp_expr {
+      bins auto[-1];  // Error: negative
+    }
   endgroup
 
-  // Error: array size exceeds limit of 1048576
+  // Error: array size exceeds limit of 1024
   covergroup cg2b;
     cp1: coverpoint cp_expr {
-      bins auto[1048577];
+      bins auto[1025];
     }
   endgroup
 
@@ -69,10 +71,10 @@ module t;
     }
   endgroup
 
-  // Warning (COVERIGN): array bins range exceeds COVER_BINS_LIMIT
+  // Warning (COVERIGN): array bins range exceeds --coverage-max-bins
   covergroup cg6;
-    cp1: coverpoint cp_32bit {
-      bins b_huge[] = {[0:$]};  // open '[lo:$]' over 32-bit coverpoint exceeds bin limit
+    cp1: coverpoint cp_wide {
+      bins b_huge[] = {[0:$]};  // open '[lo:$]' over 16-bit coverpoint exceeds bin limit
     }
   endgroup
   covergroup cg_nonconst_transition;
@@ -227,24 +229,24 @@ module t;
     }
   endgroup
 
-  // Exactly COVER_BINS_LIMIT (1048576) bins are accepted, e.g. every value of a 20-bit range
+  // Exactly --coverage-max-bins (1024) bins are accepted
   covergroup cg_limit;
-    cp_auto: coverpoint cp_32bit {
-      bins auto[1048576];
+    cp_auto: coverpoint cp_wide {
+      bins auto[1024];
     }
-    cp_open: coverpoint cp_32bit {
-      bins all[] = {[32'hfff00000 : $]};
+    cp_open: coverpoint cp_wide {
+      bins all[] = {[16'hfc00 : $]};
     }
-    cp_range: coverpoint cp_32bit {
-      bins at_limit[] = {[0 : 1048575]};
-      bins split_at_limit[] = {[0 : 524287], [524288 : 1048575]};
-      bins over_limit[] = {[0 : 1048576]};  // Warning (COVERIGN): 1048577 values
-      bins split_over_limit[] = {[0 : 524287], [524288 : 1048576]};  // Warning (COVERIGN)
+    cp_range: coverpoint cp_wide {
+      bins at_limit[] = {[0 : 1023]};
+      bins split_at_limit[] = {[0 : 511], [512 : 1023]};
+      bins over_limit[] = {[0 : 1024]};  // Warning (COVERIGN): 1025 values
+      bins split_over_limit[] = {[0 : 511], [512 : 1024]};  // Warning (COVERIGN)
     }
   endgroup
 
   // Error: automatic bins are not allowed on a coverpoint of a real expression.  Its array
-  // bins generate a comparison per value, so are limited to 1024 values.
+  // bins have their own limit, --coverage-max-real-bins (1024).
   covergroup cg_real;
     cp_implicit: coverpoint cp_real;
     cp_explicit: coverpoint cp_real {

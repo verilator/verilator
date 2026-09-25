@@ -16,7 +16,7 @@ module t;
     cp: coverpoint cp_expr;
   endgroup
 
-  // Warning (COVERIGN): more automatic bins than COVER_BINS_LIMIT (1048576)
+  // Warning (COVERIGN): more automatic bins than --coverage-max-bins (1024)
   covergroup cg_limit;
     option.auto_bin_max = 2000000;
     cp: coverpoint cp_32bit;

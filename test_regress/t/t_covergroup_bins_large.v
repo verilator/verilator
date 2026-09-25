@@ -4,8 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Array and automatic bins declarations of up to 1048576 bins, the limit of one
-// declaration.  Their sample() code must not grow with their number of bins.
+// Array and automatic bins declarations of up to 1048576 bins, with --coverage-max-bins
+// raising the limit of one declaration.  Their sample() code must not grow with their
+// number of bins.
 
 // verilog_format: off
 `define stop $stop

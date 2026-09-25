@@ -59,6 +59,10 @@ cg_cross_auto.xx.auto_5_x_one [cross]: 1
 cg_cross_auto.xx.auto_6_x_one [cross]: 0
 cg_cross_auto.xx.auto_7_x_one [cross]: 0
 cg_cross_auto.xx.sel [cross]: 1
+cg_expr_size.data.auto[0]: 0
+cg_expr_size.data.auto[1]: 1
+cg_expr_size.data.auto[2]: 0
+cg_expr_size.data.auto[3]: 0
 cg_many.data.auto[0]: 0
 cg_many.data.auto[1]: 0
 cg_many.data.auto[2]: 0

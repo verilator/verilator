@@ -1,0 +1,24 @@
+%Warning-COVERIGN: t/t_covergroup_max_bins_unsup.v:17:12: Unsupported: array 'bins' covering more than 4294967295 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin ignored
+                                                        : ... note: In instance 't'
+                                                        : ... Suggest a larger --coverage-max-bins
+   17 |       bins over_limit[] = {[0 : $]};
+      |            ^~~~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_max_bins_unsup.v:21:12: Automatic bins array size of 4294967296 exceeds limit of 4294967295
+                                             : ... note: In instance 't'
+                                             : ... Suggest a larger --coverage-max-bins
+   21 |       bins auto[33'd4294967296];
+      |            ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_covergroup_max_bins_unsup.v:24:15: Unsupported: coverpoint with more than 4294967295 bins
+                                                         : ... note: In instance 't'
+   24 |     cp_total: coverpoint data {
+      |               ^~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Warning-COVERIGN: t/t_covergroup_max_bins_unsup.v:30:12: Unsupported: array 'bins' of a real coverpoint covering more than 2 values; bin ignored.
+                                                        : ... note: In instance 't'
+                                                        : ... Suggest a larger --coverage-max-real-bins
+   30 |       bins over_limit[] = {[1 : 3]};   
+      |            ^~~~~~~~~~
+%Error: Exiting due to
