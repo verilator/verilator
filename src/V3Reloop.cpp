@@ -237,9 +237,8 @@ class ReloopVisitor final : public VNVisitor {
         }
         FileLine* const flp = firstp->fileline();
         // Create the loop variable
-        AstVar* const itp
-            = new AstVar{flp, VVarType::STMTTEMP, "__Vilp" + std::to_string(++m_nTemps),
-                         VFlagLogicPacked{}, 32};
+        AstVar* const itp = new AstVar{
+            flp, VVarType::STMTTEMP, "__Vilp" + std::to_string(++m_nTemps), VFlagBitPacked{}, 32};
         m_cfuncp->addVarsp(itp);
         // Replace the constants with the loop variable
         replaceConsts(itp);
