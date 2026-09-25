@@ -5329,8 +5329,9 @@ class RandomizeVisitor final : public VNVisitor {
             return newAccessGate(selp->fromp(), true, randModeVarp, fl);
         }
         if (const AstCMethodHard* const methodp = VN_CAST(nodep, CMethodHard)) {
-            if (methodp->method() == VCMethod::ARRAY_AT
-                || methodp->method() == VCMethod::ARRAY_AT_WRITE) {
+            if ((methodp->method() == VCMethod::ARRAY_AT
+                 || methodp->method() == VCMethod::ARRAY_AT_WRITE)
+                && VN_IS(methodp->fromp()->dtypep()->skipRefp(), DynArrayDType)) {
                 return newAccessGate(methodp->fromp(), true, randModeVarp, fl);
             }
         }
@@ -5359,8 +5360,9 @@ class RandomizeVisitor final : public VNVisitor {
             return newDistGate(selp->fromp(), randModeVarp, fl);
         }
         if (const AstCMethodHard* const methodp = VN_CAST(nodep, CMethodHard)) {
-            if (methodp->method() == VCMethod::ARRAY_AT
-                || methodp->method() == VCMethod::ARRAY_AT_WRITE) {
+            if ((methodp->method() == VCMethod::ARRAY_AT
+                 || methodp->method() == VCMethod::ARRAY_AT_WRITE)
+                && VN_IS(methodp->fromp()->dtypep()->skipRefp(), DynArrayDType)) {
                 return newDistGate(methodp->fromp(), randModeVarp, fl);
             }
         }
