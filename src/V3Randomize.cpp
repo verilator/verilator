@@ -186,8 +186,9 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         return;
     }
     if (const AstIfaceRefDType* const ifacep = VN_CAST(dtypep, IfaceRefDType)) {
-        // IEEE 1800-2023 does not allow randomization of a virtual
-        // interface. Generates code that does not compile.
+        // Not in 18.4's enumerated random-variable domain, same reasoning
+        // as chandle/string/event; also generates C++ that does not
+        // compile if left unchecked.
         if (ifacep->isVirtual()) {
             contextp->v3error("'rand'/'randc' on a virtual interface handle (not "
                               "in IEEE 1800-2023 18.4's random-variable type domain)");
@@ -806,6 +807,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         nodep->user2p(m_modp);
+        if (nodep->rand().isRandomizable()) {
+            checkRandTypeEligibility(nodep, nodep->dtypep(), nodep->rand().isRandC());
+        }
         iterateChildrenConst(nodep);
     }
     void visit(AstWith* nodep) override {
@@ -1784,6 +1788,9 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         AstMemberSel* memberselp = nullptr;
         bool structSelOrCMeth = false;
+        // Set below only when narrowing to one struct field/array element;
+        // staying null means "check varp's own type" (see its use further down).
+        AstNodeDType* selectedDtypep = nullptr;
         std::string smtName;
         if (m_nestedAccess) {
             m_nestedAccess->addVarNamePart(
@@ -1807,6 +1814,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             if (VN_IS(topNodep, StructSel) || VN_IS(topNodep, CMethodHard)) {
                 structSelOrCMeth = true;
+                selectedDtypep = VN_AS(topNodep, NodeExpr)->dtypep();
             }
 
             memberselp = VN_CAST(topNodep, MemberSel);
@@ -1822,9 +1830,10 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (memberselp) varp = memberselp->varp();
         // The SMT translation assumes bit-vector operands and does not
-        // type-check. A real value anywhere in this operand, even nested
-        // inside a struct field, would silently produce a malformed width.
-        if (dtypeContainsReal(varp->dtypep())) {
+        // type-check; embedding a real value produces a malformed width.
+        // Check the selected field/element's type, not the whole
+        // struct/array's -- a real sibling field elsewhere is irrelevant.
+        if (dtypeContainsReal(structSelOrCMeth ? selectedDtypep : varp->dtypep())) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: real value in this constraint expression");
             return;
         }
@@ -2127,6 +2136,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstConst* const zerop = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         nodep->replaceWith(zerop);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // So the constant is rendered as an SMT literal like every other
+        // folded constant here, instead of being left behind unconverted.
         iterate(zerop);
     }
     void handlePow(AstNodeBiop* nodep) {
@@ -6739,11 +6750,6 @@ public:
 
 void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    nodep->foreach([&](AstVar* varp) {
-        if (varp->rand().isRandomizable()) {
-            checkRandTypeEligibility(varp, varp->dtypep(), varp->rand().isRandC());
-        }
-    });
     {
         const RandomizeMarkVisitor markVisitor{nodep};
         const RandomizeVisitor randomizeVisitor{nodep};
