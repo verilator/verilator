@@ -1608,7 +1608,8 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstEmptyQueue* nodep) override {
         nodep->dtypeSetEmptyQueue();
-        if (!VN_IS(nodep->backp(), Assign) && !VN_IS(nodep->backp(), Var)) {
+        if (!VN_IS(nodep->backp(), Assign) && !VN_IS(nodep->backp(), Var)
+            && !VN_IS(nodep->backp(), Arg)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported/Illegal: empty queue ('{}') in this context");
         }
@@ -7878,9 +7879,25 @@ class WidthVisitor final : public VNVisitor {
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
                 const AstArg* const argp = tconnect.second;
-                AstNodeExpr* const pinp = argp->exprp();
+                AstNodeExpr* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 AstNodeDType* const portDTypep = portp->dtypep()->skipRefToEnump();
+                if (VN_IS(pinp, EmptyQueue)) {
+                    AstNodeExpr* newp = nullptr;
+                    if (VN_IS(portDTypep, QueueDType)) {
+                        newp = new AstConsQueue{pinp->fileline()};
+                    } else if (VN_IS(portDTypep, DynArrayDType)) {
+                        newp = new AstConsDynArray{pinp->fileline()};
+                    } else {
+                        pinp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported/Illegal: empty queue ('{}') in this context");
+                        newp = new AstConst{pinp->fileline(), AstConst::Unsized32{}, 0};
+                    }
+                    newp->dtypeFrom(portDTypep);
+                    pinp->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(pinp), pinp);
+                    pinp = newp;
+                }
                 const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefToEnump();
                 const AstIfaceRefDType* const portIfacep
                     = VN_CAST(portDTypep->elemDTypep(true), IfaceRefDType);
