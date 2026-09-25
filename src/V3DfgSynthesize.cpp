@@ -17,6 +17,32 @@
 // Synthesize DfgLogic vertices in as a graph, as created by V3DfgAstToDfg
 // into primitive vertices.
 //
+// Public writes require preserving when a process executes, not only its values:
+//
+//     always_comb begin
+//         a = x;
+//         y = a && z;
+//         a = 1'b0;
+//     end
+//
+// With --public-flat-rw, initialize x = z = 0 and evaluate, then write a = 1
+// externally and evaluate without changing inputs. The process restores a = 0.
+// Although y is independent of a's entry value, lowering the final store to
+// initialization would lose the rewrite.
+//
+//     logic a /*verilator public_flat_rw*/;
+//     wire b = z && a;
+//     always_comb begin
+//         a = x;
+//         y = a && b;
+//     end
+//
+// With selective public marking, initialize x = z = 0 and evaluate, then write
+// a = 1 externally and change z to 1. The process restores a = 0. Splitting out
+// a store sensitive only to x can lose that rewrite. Public writes alone need
+// not rerun a selectively marked variable's driver. These cases require the
+// conservative checkExtWrites guard; entry-value independence is insufficient.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
