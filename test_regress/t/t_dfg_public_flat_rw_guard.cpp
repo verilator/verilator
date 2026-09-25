@@ -16,108 +16,111 @@
 
 int errors = 0;
 
-void evaluate(Vref& ref, Vopt& opt) {
-    ref.eval();
-    opt.eval();
-    TEST_CHECK_EQ(+ref.constant_out, +opt.constant_out);
-    TEST_CHECK_EQ(+ref.feedback_out, +opt.feedback_out);
-    TEST_CHECK_EQ(+ref.packed_out, +opt.packed_out);
-    TEST_CHECK_EQ(+ref.array_out, +opt.array_out);
-    TEST_CHECK_EQ(+ref.rootp->t__DOT__constant_value, +opt.rootp->t__DOT__constant_value);
-    TEST_CHECK_EQ(+ref.rootp->t__DOT__feedback_value, +opt.rootp->t__DOT__feedback_value);
-    TEST_CHECK_EQ(+ref.rootp->t__DOT__packed_value, +opt.rootp->t__DOT__packed_value);
-    TEST_CHECK_EQ(+ref.rootp->t__DOT__array_value[0], +opt.rootp->t__DOT__array_value[0]);
-    TEST_CHECK_EQ(+ref.rootp->t__DOT__array_value[1], +opt.rootp->t__DOT__array_value[1]);
-    if (errors) std::exit(1);
-}
-
-int main(int, char**) {
+struct Fixture final {
     VerilatedContext ctx;
     Vref ref{&ctx};
     Vopt opt{&ctx};
-    ref.data = opt.data = 0;
-    ref.rootp->t__DOT__packed_value = opt.rootp->t__DOT__packed_value = 0;
-    ref.rootp->t__DOT__array_value[0] = opt.rootp->t__DOT__array_value[0] = 0;
-    ref.rootp->t__DOT__array_value[1] = opt.rootp->t__DOT__array_value[1] = 0;
+    const char* phasep = "initialization";
+
+#include "signals.h"
+
+    void check(const char* namep, QData got, QData expected) const {
+        if (got != expected) std::cout << "%Error: " << phasep << ": " << namep << '\n';
+        TEST_CHECK_EQ(got, expected);
+    }
+
+    void evaluate(const char* nextPhasep) {
+        phasep = nextPhasep;
+        ref.eval();
+        opt.eval();
+#include "checks.h"
+        if (errors) std::exit(1);
+    }
+};
+
+int main(int, char**) {
+    Fixture t;
+    t.data(0);
+    t.packed_value(0);
+    t.array_value_2(0);
+    t.array_value_3(0);
 
     for (uint32_t n = 0; n < 64; ++n) {
-        ref.x = opt.x = 0;
-        ref.z = opt.z = 0;
-        ref.rootp->t__DOT__constant_value = opt.rootp->t__DOT__constant_value = 0;
-        ref.rootp->t__DOT__feedback_value = opt.rootp->t__DOT__feedback_value = 0;
-        evaluate(ref, opt);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__constant_value, 0);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__feedback_value, 0);
+        t.x(0);
+        t.z(0);
+        t.constant_value(0);
+        t.feedback_value(0);
+        t.evaluate("initialize scalars");
+        t.expect_constant_value(0);
+        t.expect_feedback_value(0);
 
         // Public writes with unchanged ordinary inputs.
-        ref.rootp->t__DOT__constant_value = opt.rootp->t__DOT__constant_value = 1;
-        ref.rootp->t__DOT__feedback_value = opt.rootp->t__DOT__feedback_value = 1;
-        evaluate(ref, opt);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__constant_value, TEST_GLOBAL ? 0 : 1);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__feedback_value, TEST_GLOBAL ? 0 : 1);
+        t.constant_value(1);
+        t.feedback_value(1);
+        t.evaluate("write public scalars");
+        t.expect_constant_value(TEST_GLOBAL ? 0 : 1);
+        t.expect_feedback_value(TEST_GLOBAL ? 0 : 1);
 
         // Changing z causes both processes to overwrite the public values again.
-        ref.z = opt.z = 1;
-        evaluate(ref, opt);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__constant_value, 0);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__feedback_value, 0);
+        t.z(1);
+        t.evaluate("raise z");
+        t.expect_constant_value(0);
+        t.expect_feedback_value(0);
 
-        ref.rootp->t__DOT__constant_value = opt.rootp->t__DOT__constant_value = 1;
-        ref.z = opt.z = 0;
-        evaluate(ref, opt);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__constant_value, 0);
+        t.constant_value(1);
+        t.z(0);
+        t.evaluate("write constant and lower z");
+        t.expect_constant_value(0);
 
-        ref.x = opt.x = 1;
-        ref.z = opt.z = 1;
-        evaluate(ref, opt);
-        TEST_CHECK_EQ(+opt.constant_out, 1);
-        TEST_CHECK_EQ(+opt.feedback_out, 1);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__constant_value, 0);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__feedback_value, 1);
+        t.x(1);
+        t.z(1);
+        t.evaluate("raise x and z");
+        t.expect_constant_out(1);
+        t.expect_feedback_out(1);
+        t.expect_constant_value(0);
+        t.expect_feedback_value(1);
 
-        ref.rootp->t__DOT__constant_value = opt.rootp->t__DOT__constant_value = 0;
-        ref.rootp->t__DOT__feedback_value = opt.rootp->t__DOT__feedback_value = 0;
-        ref.z = opt.z = 0;
-        evaluate(ref, opt);
-        TEST_CHECK_EQ(+opt.constant_out, 0);
-        TEST_CHECK_EQ(+opt.feedback_out, 0);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__feedback_value, 1);
+        t.constant_value(0);
+        t.feedback_value(0);
+        t.z(0);
+        t.evaluate("write zero and lower z");
+        t.expect_constant_out(0);
+        t.expect_feedback_out(0);
+        t.expect_feedback_value(1);
         if (errors) return 1;
-        ctx.timeInc(1);
+        t.ctx.timeInc(1);
     }
 
     for (uint32_t n = 0; n < 256; ++n) {
         // Vary the incoming low bit independently of the driven bit.
         const CData incoming = (37 * n + 17 + (n >> 1)) & 0x7f;
-        ref.data = opt.data = (n ^ 0x55) & 0x7f;
-        ref.rootp->t__DOT__packed_value = opt.rootp->t__DOT__packed_value = incoming;
-        ref.rootp->t__DOT__array_value[0] = opt.rootp->t__DOT__array_value[0] = incoming;
-        ref.rootp->t__DOT__array_value[1] = opt.rootp->t__DOT__array_value[1] = incoming ^ 0x7f;
-        evaluate(ref, opt);
-        TEST_CHECK_EQ(+opt.packed_out, (incoming & 0x7e) | (opt.data & 1));
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__packed_value, (incoming & 0x7e) | ((~opt.data) & 1));
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__array_value[0], (~opt.data) & 0x7f);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__array_value[1], incoming ^ 0x7f);
-        TEST_CHECK_EQ(+opt.array_out, incoming ^ 0x7f);
+        t.data((n ^ 0x55) & 0x7f);
+        t.packed_value(incoming);
+        t.array_value_2(incoming);
+        t.array_value_3(incoming ^ 0x7f);
+        t.evaluate("write retained state and data");
+        t.expect_packed_out((incoming & 0x7e) | (t.data() & 1));
+        t.expect_packed_value((incoming & 0x7e) | ((~t.data()) & 1));
+        t.expect_array_value_2((~t.data()) & 0x7f);
+        t.expect_array_value_3(incoming ^ 0x7f);
+        t.expect_array_out(incoming ^ 0x7f);
 
         const CData retained = incoming ^ 0x7e;
-        const CData packedBefore = opt.packed_out;
-        const CData arrayBefore = opt.array_out;
-        ref.rootp->t__DOT__packed_value = opt.rootp->t__DOT__packed_value = retained;
-        ref.rootp->t__DOT__array_value[1] = opt.rootp->t__DOT__array_value[1] = retained;
-        evaluate(ref, opt);
+        const CData packedBefore = t.packed_out();
+        const CData arrayBefore = t.array_out();
+        t.packed_value(retained);
+        t.array_value_3(retained);
+        t.evaluate("write retained state only");
         // With selective marking, these writes alone do not rerun the processes.
-        TEST_CHECK_EQ(+opt.packed_out,
-                      TEST_GLOBAL ? ((retained & 0x7e) | (opt.data & 1)) : packedBefore);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__packed_value,
-                      TEST_GLOBAL ? ((retained & 0x7e) | ((~opt.data) & 1)) : retained);
-        TEST_CHECK_EQ(+opt.rootp->t__DOT__array_value[1], retained);
-        TEST_CHECK_EQ(+opt.array_out, TEST_GLOBAL ? retained : arrayBefore);
-        evaluate(ref, opt);
+        t.expect_packed_out(TEST_GLOBAL ? ((retained & 0x7e) | (t.data() & 1)) : packedBefore);
+        t.expect_packed_value(TEST_GLOBAL ? ((retained & 0x7e) | ((~t.data()) & 1)) : retained);
+        t.expect_array_value_3(retained);
+        t.expect_array_out(TEST_GLOBAL ? retained : arrayBefore);
+        t.evaluate("repeat unchanged evaluation");
         if (errors) return 1;
-        ctx.timeInc(1);
+        t.ctx.timeInc(1);
     }
-    ref.final();
-    opt.final();
+    t.ref.final();
+    t.opt.final();
     std::cout << "*-* All Finished *-*\n";
 }
