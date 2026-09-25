@@ -138,6 +138,22 @@ class PremitVisitor final : public VNVisitor {
         return varp;
     }
 
+    void replaceWithOvrShift(AstNodeBiop* nodep) {
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNodeExpr* newp = nullptr;
+        if (VN_IS(nodep, ShiftL)) {
+            newp = new AstShiftLOvr{flp, lhsp, rhsp};
+        } else if (VN_IS(nodep, ShiftR)) {
+            newp = new AstShiftROvr{flp, lhsp, rhsp};
+        } else {
+            newp = new AstShiftRSOvr{flp, lhsp, rhsp};
+        }
+        nodep->replaceWithKeepDType(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     void visitShift(AstNodeBiop* nodep) {
         UINFO(4, "  ShiftFix  " << nodep);
         UASSERT_OBJ(VN_IS(nodep, ShiftL) || VN_IS(nodep, ShiftR) || VN_IS(nodep, ShiftRS), nodep,
@@ -150,39 +166,37 @@ class PremitVisitor final : public VNVisitor {
             // Shift amount known to be constant. If oversized shift, replace with zero/msbs.
             // Otherwise we can leave the original shifts which have better constant folding
             // than the *Ovr versions.
-            const bool isOversized = shiftp->num().mostSetBitP1() > 32  //
-                                     || (shiftp->num().toSQuad() >= nodep->width());
+            const bool isOversized
+                = shiftp->num().mostSetBitP1() > 32
+                  || (shiftp->num().toUInt() >= static_cast<uint32_t>(nodep->width()));
             if (isOversized) {
-                AstNodeExpr* newp = nullptr;
+                // If signed shift, replace with replicated MSB
                 if (VN_IS(nodep, ShiftRS)) {
                     AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
-                    AstNodeExpr* const msbp = new AstSel{flp, lhsp, nodep->width() - 1, 1};
-                    newp = new AstExtendS{flp, msbp, nodep->width()};
-                } else {
-                    newp = new AstConst{flp, AstConst::DTyped{}, nodep->dtypep()};
+                    AstNodeExpr* const msbp = new AstSel{flp, lhsp, lhsp->widthMin() - 1, 1};
+                    nodep->replaceWithKeepDType(new AstExtendS{flp, msbp, nodep->width()});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
                 }
-                nodep->replaceWithKeepDType(newp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
+                // Unsigned. If pure, replace with zero
+                if (nodep->lhsp()->isPure()) {
+                    nodep->replaceWithKeepDType(
+                        new AstConst{flp, AstConst::DTyped{}, nodep->dtypep()});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+                // Impure. Keep shift
+                if (!nodep->isWide()) {
+                    replaceWithOvrShift(nodep);
+                    return;
+                }
             }
         } else {
             // Shift amount not known at compile time. Convert to *Ovr version. Don't need to do
             // if it would use a wide operation which works correctly at runtime, of if the max
             // value of the shift amount is less than the with of the shifted value.
-            if (nodep->widthMin() <= VL_QUADSIZE
-                && (nodep->width() < (1LL << nodep->rhsp()->widthMin()))) {
-                AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
-                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-                AstNodeExpr* newp = nullptr;
-                if (VN_IS(nodep, ShiftL)) {
-                    newp = new AstShiftLOvr{flp, lhsp, rhsp};
-                } else if (VN_IS(nodep, ShiftR)) {
-                    newp = new AstShiftROvr{flp, lhsp, rhsp};
-                } else {
-                    newp = new AstShiftRSOvr{flp, lhsp, rhsp};
-                }
-                nodep->replaceWithKeepDType(newp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (!nodep->isWide() && (nodep->width() < (1LL << nodep->rhsp()->widthMin()))) {
+                replaceWithOvrShift(nodep);
                 return;
             }
         }

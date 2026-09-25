@@ -115,6 +115,17 @@ module t (/*AUTOARG*/
     c_wleft_32  = rand_96 << 32;
   end
 
+  // Constant shift amount with its top bit set is still unsigned.
+  // Operand is impure so the oversized shift is not folded before V3Premit.
+  logic [7:0] bq[$] = '{8'h5a};
+  int iq[$] = '{32'h819b018a};
+  longint qq[$] = '{64'hf784bf8f_12734089};
+  initial begin
+    if ((bq.pop_front() << 7'd100) != 8'h0) $stop;
+    if ((iq.pop_front() >> 7'd100) != 32'h0) $stop;
+    if ((qq.pop_front() >> 8'd200) != 64'h0) $stop;
+  end
+
   integer cyc; initial cyc=1;
   always @ (posedge clk) begin
     if (cyc!=0) begin
