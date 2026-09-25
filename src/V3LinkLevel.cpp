@@ -237,20 +237,6 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                             }
                         }
                     }
-                    if (VN_IS(subtypep, UnpackArrayDType)) {
-                        const AstUnpackArrayDType* const arrp = VN_AS(subtypep, UnpackArrayDType);
-                        const AstNodeDType* const arrsubtypep = arrp->subDTypep();
-                        if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                            const AstIfaceRefDType* const ifacerefp
-                                = VN_AS(arrsubtypep, IfaceRefDType);
-                            if (!ifacerefp->cellp()) {
-                                if (!ioNames.insert(oldvarp->name()).second) {
-                                    // UINFO(8, "Multitop dup interface array found: " << oldvarp);
-                                    dupNames.insert(oldvarp->name());
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }

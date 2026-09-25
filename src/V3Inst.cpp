@@ -149,12 +149,7 @@ class InstVisitor final : public VNVisitor {
                     m_cellp->addNextHere(new AstAlways{assp});
                     UINFOTREE(9, assp, "", "_new");
                 }
-            } else if (nodep->modVarp()->isIfaceRef()
-                       || (VN_IS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
-                           && VN_IS(VN_AS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
-                                        ->subDTypep()
-                                        ->skipRefp(),
-                                    IfaceRefDType))) {
+            } else if (nodep->modVarp()->isIfaceRef()) {
                 // Create an AstAliasScope for Vars to Cells so we can
                 // link with their scope later
                 AstNodeExpr* const lhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
