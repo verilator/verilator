@@ -966,7 +966,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const stateVarp = new AstVar{
             fl, VVarType::MEMBER,
             m_seqposNames.get(sanitizeGeneratedName(coverpointp->name() + "__" + binp->name())),
-            VFlagLogicPacked{}, width};
+            VFlagBitPacked{}, width};
         m_covergroupp->addMembersp(stateVarp);
         m_constructorp->addStmtsp(
             new AstAssign{fl, new AstVarRef{fl, stateVarp, VAccess::WRITE},

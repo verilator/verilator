@@ -189,6 +189,22 @@ private:
                         "Broken link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
             UASSERT_OBJ(nodep->dtypep(), nodep,
                         "Non-dtype link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
+            if (v3Global.fourstateResolved()) {
+                if (const AstNodeDType* const dtypep = VN_CAST(nodep, NodeDType)) {
+                    UASSERT_OBJ(
+                        !dtypep->isFourstate() || VN_IS(nodep, BasicDType), nodep,
+                        "After resolving four-state signals in V3Tristate and V3Unknown no "
+                        "four-state signal should be present");
+                    UASSERT_OBJ(
+                        !dtypep->subDTypep() || !dtypep->subDTypep()->isFourstate(), nodep,
+                        "After resolving four-state signals in V3Tristate and V3Unknown no "
+                        "four-state signal should be present");
+                    UASSERT_OBJ(
+                        !dtypep->subDType2p() || !dtypep->subDType2p()->isFourstate(), nodep,
+                        "After resolving four-state signals in V3Tristate and V3Unknown no "
+                        "four-state signal should be present");
+                }
+            }
         }
         if (v3Global.assertDTypesResolved()) {
             if (nodep->hasDType()) {

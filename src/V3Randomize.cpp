@@ -4774,7 +4774,10 @@ class RandomizeVisitor final : public VNVisitor {
             return cexprp;
         }
 
-        return new AstRandRNG{fl, dtypep};
+        return new AstRandRNG{
+            fl, dtypep->skipRefp()->isFourstate()
+                    ? dtypep->findBitDType(dtypep->width(), dtypep->widthMin(), dtypep->numeric())
+                    : dtypep};
     }
     // Find pre_randomize/post_randomize task in class hierarchy (walks extendsp chain)
     AstTask* findPrePostTask(AstClass* classp, const string& name) {
