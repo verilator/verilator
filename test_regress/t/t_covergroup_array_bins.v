@@ -16,6 +16,8 @@ module t;
   bit [1:0] sel;
   bit [63:0] wide;
   bit signed [7:0] sdata;
+  bit [69:0] wide70;
+  real rdata;
 
   covergroup cg;
     coverpoint data {
@@ -132,6 +134,24 @@ module t;
     x: cross cp, cps;
   endgroup
 
+  // cg14: a crossed array bin with values beyond 64 bits
+  covergroup cg14;
+    cp: coverpoint wide70 {
+      bins w[] = {[70'h2_0000_0000_0000_0000 : 70'h2_0000_0000_0000_0001]};
+    }
+    cps: coverpoint sel {
+      bins one = {1};
+    }
+    x: cross cp, cps;
+  endgroup
+
+  // cg15: an array bin of a real coverpoint has one bin per value
+  covergroup cg15;
+    cp: coverpoint rdata {
+      bins v[] = {1.5, 2.5};
+    }
+  endgroup
+
   initial begin
     cg cg_inst;
     cg2 cg2_inst;
@@ -146,6 +166,8 @@ module t;
     cg11 cg11_inst;
     cg12 cg12_inst;
     cg13 cg13_inst;
+    cg14 cg14_inst;
+    cg15 cg15_inst;
 
     cg_inst = new();
     cg2_inst = new();
@@ -160,6 +182,8 @@ module t;
     cg11_inst = new();
     cg12_inst = new();
     cg13_inst = new();
+    cg14_inst = new();
+    cg15_inst = new();
 
     // Hit first array bin value (1)
     data = 1;
@@ -271,6 +295,16 @@ module t;
     sel = 1;
     data = 1;
     cg13_inst.sample();
+
+    // Hit cg14: w[1] and its cross bin
+    sel = 1;
+    wide70 = 70'h2_0000_0000_0000_0001;
+    cg14_inst.sample();
+
+    // Hit cg15: v[1] holds 2.5
+    rdata = 2.5;
+    cg15_inst.sample();
+    `checkr(cg15_inst.get_inst_coverage(), 50.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -23,6 +23,10 @@ cg_70bit_excl.data70.auto[0]: 1
 cg_70bit_excl.data70.auto[2]: 0
 cg_70bit_excl.data70.auto[3]: 0
 cg_70bit_excl.data70.auto[4]: 0
+cg_auto_default.data.auto[0]: 1
+cg_auto_default.data.auto[1]: 1
+cg_auto_default.data.one: 1
+cg_auto_default.data.other [default]: 0
 cg_cross_auto.cp_a.auto_0: 0
 cg_cross_auto.cp_a.auto_1: 0
 cg_cross_auto.cp_a.auto_2: 1

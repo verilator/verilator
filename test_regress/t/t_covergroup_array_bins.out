@@ -42,6 +42,13 @@ cg13.x.a[5]_x_one [cross]: 1
 cg13.x.a[6]_x_one [cross]: 0
 cg13.x.a[7]_x_one [cross]: 0
 cg13.x.b_x_one [cross]: 1
+cg14.cp.w[0]: 0
+cg14.cp.w[1]: 1
+cg14.cps.one: 1
+cg14.x.w[0]_x_one [cross]: 0
+cg14.x.w[1]_x_one [cross]: 1
+cg15.cp.v[0]: 0
+cg15.cp.v[1]: 1
 cg2.cp.range_arr[0]: 1
 cg2.cp.range_arr[1]: 1
 cg2.cp.range_arr[2]: 1

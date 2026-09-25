@@ -91,6 +91,15 @@ module t;
     xx: cross cp_ax, cp_b{bins sel = binsof (cp_ax.auto_2);}
   endgroup
 
+  // Automatic bins hold every value, leaving none to a default bin
+  covergroup cg_auto_default;
+    coverpoint data {
+      bins one = {1};
+      bins auto[2];
+      bins other = default;
+    }
+  endgroup
+
   initial begin
     automatic cg cg_inst = new;
     automatic cg_4bit cg4_inst = new;
@@ -101,6 +110,7 @@ module t;
     automatic cg_70bit_excl cg70x_inst = new;
     automatic cg_many cgm_inst = new;
     automatic cg_cross_auto cgx_inst = new;
+    automatic cg_auto_default cgd_inst = new;
 
     // Sample 3-bit cg: one value per bin - 4 bins: [0:1],[2:3],[4:5],[6:7]
     data = 0; cg_inst.sample();
@@ -198,6 +208,13 @@ module t;
     cgx_inst.sample();
     data = 5;
     cgx_inst.sample();
+
+    // Hit every bin but the default bin, which holds no value
+    data = 1;
+    cgd_inst.sample();
+    data = 5;
+    cgd_inst.sample();
+    `checkr(cgd_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

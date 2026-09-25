@@ -12,6 +12,7 @@ module t;
   covergroup cg_values;
     cp: coverpoint value {
       bins text = {TEXT};
+      bins text_array[] = {TEXT};
       ignore_bins ignored = {0};
     }
   endgroup
