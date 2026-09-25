@@ -309,6 +309,8 @@ class ParamProcessor final {
     // Guard against infinite recursion in classTypeMatchesDefaultClone slow path
     std::unordered_set<const AstClass*> m_defaultCloneInProgress;
 
+    std::vector<AstClass*> m_specializedClassps;  // Classes specialized since last drained
+
     // member names cached for fast lookup
     VMemberMap m_memberMap;
 
@@ -2143,6 +2145,14 @@ class ParamProcessor final {
         const bool cloned = (newModp != srcModp);
         UINFO(9, "nodeDeparamCommon result: " << newModp->prettyNameQ() << " cloned=" << cloned);
 
+        // ParamVisitor skips the body of a class still marked hasGParam(), relying on it
+        // being visited through a reference instead.  A class reached only by a deferred
+        // class-scoped reference (e.g. the 'C#(V)::t' default of a type parameter that the
+        // instantiation overrides) is never visited, so record specializations here.
+        // user2() is set once processWorkQ has elaborated the body, which needs no re-queue.
+        AstClass* const newClassp = VN_CAST(newModp, Class);
+        if (newClassp && !newClassp->user2()) m_specializedClassps.push_back(newClassp);
+
         // Link source class to its specialized version for later relinking of method references
         if (defaultsResolved) srcModp->user4p(newModp);
 
@@ -2453,6 +2463,13 @@ public:
         // if (debug() >= 10)
         // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param-out.tree"));
         return newModp;
+    }
+
+    // Return, and forget, the classes specialized since the previous call
+    std::vector<AstClass*> takeSpecializedClassps() {
+        std::vector<AstClass*> taken;
+        taken.swap(m_specializedClassps);
+        return taken;
     }
 
     // CONSTRUCTORS
@@ -2775,6 +2792,10 @@ class ParamVisitor final : public VNVisitor {
 
         // Visit all cells under module, recursively
         while (true) {
+            // Classes specialized since the last pass still need their bodies elaborated
+            for (AstClass* const classp : m_processor.takeSpecializedClassps()) {
+                m_state.m_workQueueNext.emplace(ParamState::WQKey{true, classp->level()}, classp);
+            }
             if (workQueue.empty()) std::swap(workQueue, m_state.m_workQueueNext);
             if (workQueue.empty()) break;
 
