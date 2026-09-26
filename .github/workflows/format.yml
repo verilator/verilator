@@ -27,11 +27,25 @@ jobs:
     runs-on: ubuntu-24.04
     name: Ubuntu 24.04 | format
     steps:
+      # On the main repository, push as the Verilator CI app.
+      # Forks do not have the app, so fall back to GITHUB_TOKEN there.
+      - name: Generate access token
+        id: generate-token
+        if: ${{ github.repository == 'verilator/verilator' }}
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          owner: verilator
+          repositories: verilator
+          permission-contents: write
+          permission-workflows: write
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
           path: repo
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.generate-token.outputs.token || secrets.GITHUB_TOKEN }}
 
       - name: Install packages for build
         uses: ./repo/.github/actions/install-deps
@@ -39,9 +53,18 @@ jobs:
           stage: format
 
       - name: Configure git identity
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_SLUG: ${{ steps.generate-token.outputs.app-slug }}
         run: |
-          git config --global user.email "action@example.com"
-          git config --global user.name "github action"
+          if [ -n "$APP_SLUG" ]; then
+            user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+            git config --global user.email "${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+            git config --global user.name "${APP_SLUG}[bot]"
+          else
+            git config --global user.email "action@example.com"
+            git config --global user.name "github action"
+          fi
 
       - name: Configure
         run: |
