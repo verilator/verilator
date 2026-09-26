@@ -4240,7 +4240,16 @@ VerilatedScope::~VerilatedScope() {
     VL_DO_DANGLING(delete[] m_namep, m_namep);
     VL_DO_DANGLING(delete[] m_callbacksp, m_callbacksp);
     VL_DO_DANGLING(delete m_varsp, m_varsp);
+    VL_DO_DANGLING(delete m_ifaceRefsp, m_ifaceRefsp);
     VL_DEBUG_IFDEF(m_funcnumMax = 0;);
+}
+
+void VerilatedScope::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_UNSAFE {
+    // Slowpath - called once/scope*reference at construction
+    // Appended in table order; the emitter sorts the table by path, so VPI
+    // iteration is deterministic and sorted
+    if (!m_ifaceRefsp) m_ifaceRefsp = new std::vector<VerilatedIfaceRef>;
+    m_ifaceRefsp->push_back(ifaceRef);
 }
 
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
@@ -4348,6 +4357,11 @@ static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* s
     return out;
 }
 
+static VerilatedScope* vl_ifaceRefParentp(uint8_t* basep, const VlIfaceRefTableEntry& e) {
+    if (e.parentPtrOffset == VL_IFACEREF_NO_PARENT) return nullptr;
+    return *reinterpret_cast<VerilatedScope**>(basep + e.parentPtrOffset);
+}
+
 void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
                                               VerilatedSyms* symsp) VL_MT_UNSAFE {
     // Use the model's own context; at destruction threadContextp() may be another's
@@ -4357,8 +4371,13 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        impp->ifaceRefInsert(
-            VerilatedIfaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp), e.modportp});
+        const VerilatedIfaceRef ifaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp),
+                                         e.modportp};
+        impp->ifaceRefInsert(ifaceRef);  // By name, for vpi_handle_by_name
+        // By declaring scope, for vpi_iterate; freed with that scope
+        if (VerilatedScope* const parentp = vl_ifaceRefParentp(base, e)) {
+            parentp->ifaceRefInsert(ifaceRef);
+        }
     }
 }
 
