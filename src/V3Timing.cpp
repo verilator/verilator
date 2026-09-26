@@ -1091,6 +1091,9 @@ class TimingControlVisitor final : public VNVisitor {
         // Relink child statements after the event control
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
         if (needDynamicTrigger(nodep->sentreep())) {
+            if (nodep->sentreep()->exists([](AstNode* const np) { return !np->isPure(); })) {
+                v3Global.setHasImpureTriggers();
+            }
             // Create the trigger variable and init it with 0
             AstVarScope* const trigvscp
                 = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);

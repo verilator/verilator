@@ -152,8 +152,9 @@ AstCFunc* TriggerKit::createAnySetFunc(AstUnpackArrayDType* const dtypep) const 
     funcp->isStatic(true);
     funcp->rtnType("bool");
 
-    // Add argument
+    // Add arguments
     AstVarScope* const iVscp = newArgument(funcp, dtypep, "in", VDirection::CONSTREF);
+    AstVarScope* const mVscp = newArgument(funcp, dtypep, "mask", VDirection::CONSTREF);
 
     // Add loop counter variable
     AstVarScope* const nVscp = newLocal(funcp, u32DTypep, "n");
@@ -169,7 +170,8 @@ AstCFunc* TriggerKit::createAnySetFunc(AstUnpackArrayDType* const dtypep) const 
 
     // Loop body
     const uint32_t nWords = dtypep->elementsConst();
-    AstNodeExpr* const condp = new AstArraySel{flp, rd(iVscp), rd(nVscp)};
+    AstNodeExpr* const condp = new AstAnd{flp, new AstArraySel{flp, rd(iVscp), rd(nVscp)},
+                                          new AstArraySel{flp, rd(mVscp), rd(nVscp)}};
     AstNodeStmt* const thenp = new AstCReturn{flp, new AstConst{flp, AstConst::BitTrue{}}};
     AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, nWords};
     loopp->addStmtsp(new AstIf{flp, condp, thenp});
@@ -261,9 +263,12 @@ AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const oDtypep,
     return funcp;
 }
 
-AstNodeExpr* TriggerKit::newAnySetCall(AstVarScope* const vscp) const {
+AstNodeExpr* TriggerKit::newAnySetCall(AstVarScope* const vscp, AstVarScope* const maskp) const {
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
     if (!m_nVecWords) return new AstConst{flp, AstConst::BitFalse{}};
+    UASSERT_OBJ(VN_AS(maskp->dtypep(), UnpackArrayDType)->elementsConst()
+                    == VN_AS(vscp->dtypep(), UnpackArrayDType)->elementsConst(),
+                maskp, "Mask must match trigger vector size");
 
     AstCFunc* funcp = nullptr;
     if (vscp->dtypep() == m_trigVecDTypep) {
@@ -277,6 +282,7 @@ AstNodeExpr* TriggerKit::newAnySetCall(AstVarScope* const vscp) const {
     }
     AstCCall* const callp = new AstCCall{flp, funcp};
     callp->addArgsp(new AstVarRef{flp, vscp, VAccess::WRITE});
+    callp->addArgsp(new AstVarRef{flp, maskp, VAccess::READ});
     callp->dtypeSetBit();
     return callp;
 }
@@ -659,7 +665,9 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 
     // Add a print to the dumping function if there are no triggers pending
     {
-        AstIf* const ifp = new AstIf{flp, new AstLogNot{flp, kit.newAnySetCall(dumpTrgp)}};
+        AstVarScope* const allp
+            = util::newMaskTable(dumpTrgp, std::vector<uint64_t>(kit.m_nVecWords, ~0ULL));
+        AstIf* const ifp = new AstIf{flp, new AstLogNot{flp, kit.newAnySetCall(dumpTrgp, allp)}};
         kit.m_dumpp->addStmtsp(ifp);
         AstCStmt* const cstmtp = new AstCStmt{flp};
         ifp->addThensp(cstmtp);

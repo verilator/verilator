@@ -182,6 +182,7 @@ class V3Global final {
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
+    bool m_hasImpureTriggers = false;  // A dynamic trigger condition may have side effects
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
     bool m_hasTable = false;  // Desgin has the UDP Table.
@@ -255,6 +256,8 @@ public:
     void setAssignsEvents() { m_assignsEvents = true; }
     bool hasEvents() const { return m_hasEvents; }
     void setHasEvents() { m_hasEvents = true; }
+    bool hasImpureTriggers() const { return m_hasImpureTriggers; }
+    void setHasImpureTriggers() { m_hasImpureTriggers = true; }
     bool hasClasses() const { return m_hasClasses; }
     void setHasClasses() { m_hasClasses = true; }
     bool hasSampled() const { return m_hasSampled; }
