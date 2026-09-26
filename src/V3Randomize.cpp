@@ -2876,8 +2876,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                     && m_prepareConstrainedArraysp) {
                     AstNodeExpr* const indexp = nodep->pinsp()->cloneTreePure(false);
                     AstNodeExpr* const arrayp = nodep->fromp()->cloneTreePure(false);
-                    AstCMethodHard* const currentSizep = new AstCMethodHard{
-                        fl, arrayp->cloneTreePure(false), VCMethod::DYN_SIZE};
+                    AstCMethodHard* const currentSizep
+                        = new AstCMethodHard{fl, arrayp->cloneTreePure(false), VCMethod::DYN_SIZE};
                     currentSizep->dtypeSetInt();
                     AstNodeExpr* const inRangeRequiredp = new AstLogAnd{
                         fl,
@@ -2885,9 +2885,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                                     new AstConst{fl, AstConst::WidthedValue{}, indexp->width(), 0},
                                     indexp->cloneTreePure(false)},
                         new AstGteS{fl, indexp->cloneTreePure(false), currentSizep}};
-                    AstCMethodHard* const resizep = new AstCMethodHard{
-                        fl, arrayp, VCMethod::DYN_RESIZE,
-                        new AstAdd{fl, indexp, new AstConst{fl, 1}}};
+                    AstCMethodHard* const resizep
+                        = new AstCMethodHard{fl, arrayp, VCMethod::DYN_RESIZE,
+                                             new AstAdd{fl, indexp, new AstConst{fl, 1}}};
                     resizep->dtypeSetVoid();
                     m_prepareConstrainedArraysp->addStmtsp(
                         new AstIf{fl, inRangeRequiredp, resizep->makeStmt()});
@@ -5859,7 +5859,7 @@ class RandomizeVisitor final : public VNVisitor {
                 ConstraintExprVisitor{
                     classp,        m_memberMap,  constrp->itemsp(), nullptr,
                     genp,          randModeVarp, m_writtenVars,     &m_uniqueConstraintId,
-                    m_uniqueNames, randomizep,   &sizeArrays,        prepareArraysTaskp};
+                    m_uniqueNames, randomizep,   &sizeArrays,       prepareArraysTaskp};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
@@ -6004,8 +6004,7 @@ class RandomizeVisitor final : public VNVisitor {
             }
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
             if (!sizeArrayVars.empty() && prepareArraysTaskp->stmtsp()) {
-                AstNodeStmt* const preparep
-                    = (new AstTaskRef{fl, prepareArraysTaskp})->makeStmt();
+                AstNodeStmt* const preparep = (new AstTaskRef{fl, prepareArraysTaskp})->makeStmt();
                 for (AstNode* stmtp = randomizep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                     bool writesArray = false;
                     stmtp->foreach([&](AstCMethodHard* methodp) {
