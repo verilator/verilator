@@ -1554,7 +1554,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                 nodep->name(name);
             }
         }
-        if (nodep->name() == "") {
+        const AstBegin* const beginp = VN_CAST(nodep, Begin);
+        if (nodep->name() == "" || (beginp && beginp->skipInHierName())) {
             iterateChildren(nodep);
         } else {
             VL_RESTORER(m_curSymp);
@@ -5637,7 +5638,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_curSymp);
             VL_RESTORER_COPY(m_ds);
-            if (nodep->name() != "") {
+            const AstBegin* const beginp = VN_CAST(nodep, Begin);
+            if (nodep->name() != "" && !(beginp && beginp->skipInHierName())) {
                 m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
                 UINFO(5, indent() << "cur=se" << cvtToHex(m_curSymp));
             }

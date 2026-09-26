@@ -1583,11 +1583,16 @@ class AstBegin final : public AstNodeBlock {
     // A 'begin'/'end' named block.
     bool m_needProcess : 1;  // Uses VlProcess
     const bool m_implied : 1;  // Not inserted by user
+    const bool m_skipInHierName : 1;  // If true, the block name should be skipped in
+                                      // hierarchical names
 public:
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
+        : AstBegin(fl, name, stmtsp, implied, false) {}
+    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied, bool skipInHierName)
         : ASTGEN_SUPER_Begin(fl, name)
         , m_needProcess{false}
-        , m_implied{implied} {
+        , m_implied{implied}
+        , m_skipInHierName{skipInHierName} {
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstBegin;
@@ -1596,6 +1601,7 @@ public:
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
+    bool skipInHierName() const { return m_skipInHierName; }
 };
 class AstFork final : public AstNodeBlock {
     // A 'fork'/'join*' named block. Note that this is a strict superset of
