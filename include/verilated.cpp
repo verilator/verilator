@@ -4110,6 +4110,13 @@ void VerilatedEvalLoop::evalImpl() {
         m_profilerp->sectionPush("eval");
     }
 
+// Preserve callbacks even when debugging is enabled after model construction.
+#ifdef VL_DEBUG
+    const uint32_t liveRegions = REGION_ALL;
+#else
+    const uint32_t liveRegions = m_liveRegions;
+#endif
+
     m_model.evalBegin();
 
     // Initialization on first time step only
@@ -4128,7 +4135,7 @@ void VerilatedEvalLoop::evalImpl() {
     }
 
     // Sampled values are collected before anything can read them
-    m_model.evalSample();
+    if (liveRegions & REGION_SAMPLE) m_model.evalSample();
 
     // The 'Input combinational' region updates combinational logic driven from primary inputs
     {
@@ -4164,19 +4171,19 @@ void VerilatedEvalLoop::evalImpl() {
                     do {
                         checkConvergence(++actIterCount, "Active",
                                          &VerilatedModel::dumpTriggersAct);
-                    } while (m_model.evalAct());
+                    } while ((liveRegions & REGION_ACT) && m_model.evalAct());
                     if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop act
-                } while (m_model.evalInact());
+                } while ((liveRegions & REGION_INACT) && m_model.evalInact());
                 if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop inact
-            } while (m_model.evalNba());
+            } while ((liveRegions & REGION_NBA) && m_model.evalNba());
             if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop nba
-        } while (m_model.evalObs());
+        } while ((liveRegions & REGION_OBS) && m_model.evalObs());
         if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop obs
-    } while (m_model.evalReact());
+    } while ((liveRegions & REGION_REACT) && m_model.evalReact());
     if VL_CONSTEXPR_CXX17 (Profiling) m_profilerp->sectionPop();  // loop react
 
     // The 'Postponed' region runs once, at the end of the time step
-    m_model.evalPostponed();
+    if (liveRegions & REGION_POSTPONED) m_model.evalPostponed();
 
     m_model.evalEnd();
 

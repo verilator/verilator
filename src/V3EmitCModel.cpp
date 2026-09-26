@@ -309,7 +309,8 @@ class EmitCModel final : public EmitCFunc {
                  + "(contextp(), _vcname__, this)}\n");
         }
         puts("    , m_evalLoop{*this, /*convergeLimit:*/ "s
-             + cvtToStr(v3Global.opt.convergeLimit()) + "}\n");
+             + cvtToStr(v3Global.opt.convergeLimit()) + ", /*liveRegions:*/ " + liveRegions()
+             + "}\n");
 
         // Set up IO references
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -494,6 +495,29 @@ class EmitCModel final : public EmitCFunc {
                  + "(&(vlSymsp->TOP));\n");
             puts("}\n");
         }
+    }
+
+    static bool isNoOpEvalFunc(const AstCFunc* funcp) {
+        if (funcp->argsp() || funcp->varsp() || funcp->scopeNamep()) return false;
+        const AstNode* const stmtp = funcp->stmtsp();
+        if (!stmtp) return true;
+        if (stmtp->nextp()) return false;
+        const AstCReturn* const returnp = VN_CAST(stmtp, CReturn);
+        if (!returnp) return false;
+        const AstConst* const constp = VN_CAST(returnp->lhsp(), Const);
+        return constp && constp->isZero();
+    }
+
+    static std::string liveRegions() {
+        std::string result;
+        for (const VEval eval : {VEval::SAMPLE, VEval::ACT, VEval::INACT, VEval::NBA, VEval::OBS,
+                                 VEval::REACT, VEval::POSTPONED}) {
+            const AstCFunc* const funcp = v3Global.rootp()->evalFuncp(eval);
+            if (funcp && isNoOpEvalFunc(funcp)) continue;
+            if (!result.empty()) result += " | ";
+            result += "VerilatedEvalLoop::REGION_"s + eval.ascii();
+        }
+        return result.empty() ? "0" : result;
     }
 
     void emitStandardMethods2(AstNodeModule* modp) {
