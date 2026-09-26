@@ -713,7 +713,12 @@ class AstExecGraph final : public AstNodeStmt {
     // execution of the graph. In `V3ExecGraph::implement`, we replace these
     // statements with statements that dispatch to the thread pool for
     // parallel execution.
+    //
+    // If 'parallelCondp' is present, it is true when a trigger fired whose logic is costly enough
+    // to run in parallel. Otherwise the MTasks run sequentially on the calling thread, avoiding
+    // the thread pool synchronization cost for passes that execute little logic.
     // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op2 := parallelCondp : Optional[AstNodeExpr]
     V3Graph* const m_depGraphp;  // contains ExecMTask vertices
     const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
 

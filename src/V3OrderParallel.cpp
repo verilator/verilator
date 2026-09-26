@@ -27,10 +27,14 @@
 #include "V3ExecGraph.h"
 #include "V3Graph.h"
 #include "V3GraphStream.h"
+#include "V3InstrCount.h"
 #include "V3OrderCFuncEmitter.h"
 #include "V3OrderInternal.h"
 #include "V3OrderMTaskGraph.h"
+#include "V3Stats.h"
 
+#include <algorithm>
+#include <array>
 #include <map>
 #include <memory>
 #include <unordered_map>
@@ -109,6 +113,119 @@ static void checkDataHazards(OrderMTaskGraph& mTaskGraph) {
     }
     // Fail if any hazards were found
     if (firstHazardp) firstHazardp->v3fatalSrc("Data hazards found");  // LCOV_EXCL_BR_LINE
+}
+
+//######################################################################
+// Serial fallback condition
+
+// One word of a trigger vector, with the cost of the logic each of its bits triggers
+struct TriggerWordCosts final {
+    AstVarScope* vscp;  // Trigger vector
+    int index;  // Word index in the trigger vector
+    int width;  // Width of the word
+    std::array<uint64_t, 64> costs;  // Logic cost triggered by each bit
+};
+
+// Decompose a trigger term built by TriggerKit::newTriggerSenTree, 'mask & vector[word]'. The
+// mask may have several bits if V3Const combined terms. Returns nullptr if the term has another
+// form, otherwise the mask.
+static const AstConst* decomposeTrigger(const AstNodeExpr* termp, AstVarScope*& vscpr,
+                                        int& indexr) {
+    const AstAnd* const andp = VN_CAST(termp, And);
+    if (!andp) return nullptr;
+    const AstConst* const maskp = VN_CAST(andp->lhsp(), Const);
+    const AstArraySel* const selp = VN_CAST(andp->rhsp(), ArraySel);
+    if (!maskp || !selp || maskp->width() > 64 || maskp->num().isOpaque()) return nullptr;
+    const AstVarRef* const refp = VN_CAST(selp->fromp(), VarRef);
+    const AstConst* const idxp = VN_CAST(selp->bitp(), Const);
+    if (!refp || !idxp) return nullptr;
+    vscpr = refp->varScopep();
+    indexr = idxp->toSInt();
+    return maskp;
+}
+
+// Returns the condition under which the graph should execute in parallel, or nullptr to always
+// execute it in parallel. Passes that only trigger nearly no logic run sequentially on the
+// calling thread instead, as dispatching them costs more than they do. Passes that trigger more
+// logic always run in parallel, as running them sequentially can lose more to moving data
+// between cores than it saves. 'domainCosts' is in first emitted order, which keeps the output
+// deterministic.
+static AstNodeExpr*
+parallelCondition(const std::vector<std::pair<AstSenTree*, uint64_t>>& domainCosts) {
+    // Logic cost a trigger must select for its passes to run in parallel (V3InstrCount units).
+    // Zero disables the serial fallback.
+    const uint64_t lightCost = v3Global.opt.threadsSerialCost();
+    if (!lightCost) return nullptr;
+    FileLine* const flp = v3Global.rootp()->fileline();
+    std::vector<TriggerWordCosts> words;
+    std::map<std::pair<const AstVarScope*, int>, size_t> wordIndex;
+    AstNodeExpr* condp = nullptr;
+    const auto addCond
+        = [&](AstNodeExpr* termp) { condp = condp ? new AstOr{flp, condp, termp} : termp; };
+    bool anyLight = false;
+    for (const auto& pair : domainCosts) {
+        // Attribute the cost of the domain to each trigger bit that can trigger it
+        std::vector<std::pair<size_t, int>> bits;
+        bool decomposed = true;
+        for (const AstSenItem* itemp = pair.first->sensesp(); itemp;
+             itemp = VN_AS(itemp->nextp(), SenItem)) {
+            AstVarScope* vscp = nullptr;
+            int index = 0;
+            const AstConst* const maskp = decomposeTrigger(itemp->sensp(), vscp, index);
+            if (!maskp) {
+                decomposed = false;
+                break;
+            }
+            const auto result = wordIndex.emplace(std::make_pair(vscp, index), words.size());
+            if (result.second) words.push_back(TriggerWordCosts{vscp, index, maskp->width(), {}});
+            for (int bit = 0; bit < maskp->width(); ++bit) {
+                if (maskp->num().bitIs1(bit)) bits.emplace_back(result.first->second, bit);
+            }
+        }
+        if (decomposed) {
+            for (const auto& wordBit : bits)
+                words[wordBit.first].costs[wordBit.second] += pair.second;
+        } else {
+            // Unknown form of trigger condition: parallel whenever it fires, unless nearly empty
+            UINFO(5, "Undecomposed trigger domain cost " << pair.second);
+            if (pair.second < lightCost) {
+                anyLight = true;
+                continue;
+            }
+            AstIf* const ifp = V3Sched::util::createIfFromSenTree(pair.first);
+            addCond(ifp->condp()->unlinkFrBack());
+            VL_DO_DANGLING(ifp->deleteTree(), ifp);
+        }
+    }
+    // Test the bits triggering more than nearly empty passes with a single mask per word
+    for (const TriggerWordCosts& word : words) {
+        AstConst* const maskp = new AstConst{flp, AstConst::WidthedValue{}, word.width, 0};
+        bool anyHeavy = false;
+        for (int bit = 0; bit < word.width; ++bit) {
+            const uint64_t cost = word.costs[bit];
+            if (!cost) continue;
+            UINFO(5, "Trigger " << word.vscp->name() << "[" << word.index << "] bit " << bit
+                                << " cost " << cost);
+            if (cost >= lightCost) {
+                maskp->num().setBit(bit, '1');
+                anyHeavy = true;
+            } else {
+                anyLight = true;
+            }
+        }
+        if (!anyHeavy) {
+            VL_DO_DANGLING(maskp->deleteTree(), maskp);
+            continue;
+        }
+        AstVarRef* const refp = new AstVarRef{flp, word.vscp, VAccess::READ};
+        addCond(new AstAnd{flp, maskp, new AstArraySel{flp, refp, word.index}});
+    }
+    // Always parallel unless some passes are nearly empty and others are not
+    if (!anyLight || !condp) {
+        if (condp) VL_DO_DANGLING(condp->deleteTree(), condp);
+        return nullptr;
+    }
+    return condp;
 }
 
 //######################################################################
@@ -248,6 +365,9 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
     std::unordered_map<const LogicMTask*, ExecMTask*> logicMTaskToExecMTask;
     OrderMoveGraphSerializer serializer{moveGraph};
     V3OrderCFuncEmitter emitter{tag, slow};
+    // Estimated cost of the logic in each sensitivity domain, in first emitted order
+    std::vector<std::pair<AstSenTree*, uint64_t>> domainCosts;
+    std::unordered_map<const AstSenTree*, size_t> domainIndex;
     // Sort LogicMTask vertices by their serial IDs.
     struct MTaskVxIdLessThan final {
         bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
@@ -283,6 +403,12 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
                 OrderMoveDomScope* const domScopep = &mVtxp->domScope();
                 if (domScopep != prevDomScopep) emitter.forceNewFunction();
                 prevDomScopep = domScopep;
+                // Account for the cost of this logic in its domain
+                AstSenTree* const domainp = logicp->domainp();
+                const auto result = domainIndex.emplace(domainp, domainCosts.size());
+                if (result.second) domainCosts.emplace_back(domainp, 0);
+                domainCosts[result.first->second].second
+                    += V3InstrCount::count(logicp->nodep(), false);
                 // Emit the logic under this vertex
                 emitter.emitLogic(logicp);
             }
@@ -315,6 +441,11 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
             if (fromp == mTaskGraphp->entryp()) continue;
             new V3GraphEdge{depGraphp, logicMTaskToExecMTask.at(fromp), execMTaskp, 1};
         }
+    }
+
+    // Record when parallel execution is worthwhile
+    if (AstNodeExpr* const condp = parallelCondition(domainCosts)) {
+        execGraphp->parallelCondp(condp);
     }
 
     // Delete the remaining variable vertices

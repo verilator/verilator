@@ -27,6 +27,7 @@
 #include "V3Os.h"
 #include "V3Stats.h"
 
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -1139,6 +1140,52 @@ void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& sc
     addThreadStartToExecGraph(execGraphp, funcps, schedule.id());
 }
 
+AstNode* createSerialStmts(AstExecGraph* const execGraphp) {
+    // Statements running the MTasks sequentially on the calling thread. MTask IDs are assigned
+    // in a topological order, so sorting by ID gives a valid sequential order.
+    FileLine* const flp = execGraphp->fileline();
+    std::vector<const ExecMTask*> mtaskps;
+    for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
+        mtaskps.push_back(vtx.as<const ExecMTask>());
+    }
+    std::sort(mtaskps.begin(), mtaskps.end(),
+              [](const ExecMTask* ap, const ExecMTask* bp) { return ap->id() < bp->id(); });
+    AstNode* serialp = nullptr;
+    if (v3Global.opt.profExec()) {
+        serialp = new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphBegin();"};
+    }
+    AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
+    for (const ExecMTask* const mtaskp : mtaskps) {
+        const std::string id = std::to_string(mtaskp->id());
+        if (v3Global.opt.profPgo()) {
+            serialp = AstNode::addNext(
+                serialp, new AstCStmt{flp, "vlSymsp->_vm_pgoProfiler.startCounter(" + id + ");"});
+        }
+        AstCCall* const callp = new AstCCall{flp, mtaskp->funcp()};
+        callp->selfPointer(VSelfPointerText{VSelfPointerText::VlSyms{}, scopep->nameDotless()});
+        callp->dtypeSetVoid();
+        serialp = AstNode::addNext(serialp, callp->makeStmt());
+        if (v3Global.opt.profPgo()) {
+            serialp = AstNode::addNext(
+                serialp, new AstCStmt{flp, "vlSymsp->_vm_pgoProfiler.stopCounter(" + id + ");"});
+        }
+    }
+    serialp = AstNode::addNext(serialp, new AstCStmt{flp, "Verilated::mtaskId(0);"});
+    if (v3Global.opt.profExec()) {
+        serialp = AstNode::addNext(
+            serialp, new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphEnd();"});
+    }
+    return serialp;
+}
+
+void addSerialFallback(AstExecGraph* const execGraphp, AstNodeExpr* const parallelCondp) {
+    // Run the MTasks sequentially on the calling thread unless 'parallelCondp' holds
+    AstNode* const parallelp = execGraphp->stmtsp()->unlinkFrBackWithNext();
+    execGraphp->addStmtsp(new AstIf{execGraphp->fileline(), parallelCondp, parallelp,
+                                    createSerialStmts(execGraphp)});
+    V3Stats::addStatSum("Optimizations, Thread serial fallbacks", 1);
+}
+
 // Called by Verilator top stage
 void implement(AstNetlist* netlistp) {
     // Gather all ExecGraphs
@@ -1151,6 +1198,9 @@ void implement(AstNetlist* netlistp) {
         // were used for code analysis until now. We will replace them with
         // statements that dispatch execution to the thread pool.
         if (execGraphp->stmtsp()) execGraphp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+        // Condition under which to execute in parallel, otherwise sequentially
+        AstNodeExpr* const parallelCondp
+            = execGraphp->parallelCondp() ? execGraphp->parallelCondp()->unlinkFrBack() : nullptr;
 
         // Some MTasks may have become empty after scheduling due to
         // optimizations after scheduling. Remove those.
@@ -1159,6 +1209,7 @@ void implement(AstNetlist* netlistp) {
         // In some very small test cases, we might end up with a completely
         // empty ExecGraph, if so just delete it.
         if (execGraphp->depGraphp()->empty()) {
+            if (parallelCondp) VL_DO_DANGLING(parallelCondp->deleteTree(), parallelCondp);
             VL_DO_DANGLING(execGraphp->unlinkFrBack()->deleteTree(), execGraphp);
             return;
         }
@@ -1190,6 +1241,8 @@ void implement(AstNetlist* netlistp) {
         }
 
         addThreadEndWrapper(execGraphp);
+
+        if (parallelCondp) addSerialFallback(execGraphp, parallelCondp);
     }
 }
 
