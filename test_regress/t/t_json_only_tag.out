@@ -1,4 +1,4 @@
-{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"(E)",
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolPkgp":"(D)","dollarUnitPkgp":"(E)",
  "modulesp": [
   {"type":"MODULE","name":"m","addr":"(F)","loc":"d,12:8,12:9","origName":"m","verilogName":"m","level":1,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
@@ -52,6 +52,7 @@
     ]}
   ]},
   {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","verilogName":"\\$unit ","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"},
+  {"type":"PACKAGE","name":"__Vconstpool","addr":"(D)","loc":"a,0:0,0:0","origName":"__Vconstpool","verilogName":"__Vconstpool","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"},
   {"type":"IFACE","name":"ifc","addr":"(N)","loc":"d,7:11,7:14","origName":"ifc","verilogName":"ifc","level":2,"depth":2,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
     {"type":"VAR","name":"value","addr":"(Y)","loc":"d,8:11,8:16","dtypep":"(X)","origName":"value","verilogName":"value","direction":"NONE","declDirection":"NONE","lifetime":"VSTATICI","varType":"VAR","dtypeName":"integer"},
@@ -93,12 +94,5 @@
     ]},
     {"type":"BASICDTYPE","name":"logic","addr":"(T)","loc":"d,33:8,33:9","dtypep":"(T)","keyword":"logic","range":"31:0","generic":true},
     {"type":"BASICDTYPE","name":"string","addr":"(CB)","loc":"d,35:25,35:31","dtypep":"(CB)","keyword":"string","generic":true}
-  ]},
-  {"type":"CONSTPOOL","addr":"(D)","loc":"a,0:0,0:0",
-   "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(DC)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"NONE",
-     "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(EC)","loc":"a,0:0,0:0","modp":"(DC)"}
-    ]}
   ]}
 ]}

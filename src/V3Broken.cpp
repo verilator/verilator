@@ -26,6 +26,8 @@
 
 #include "V3Broken.h"
 
+#include "V3ConstPool.h"
+
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -431,6 +433,10 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
 
         // Check every node in tree
         const BrokenCheckVisitor cvisitor{nodep};
+
+        // Check the constant pool lookup cache refers only to nodes in the tree
+        const char* const whyp = V3ConstPool::broken();
+        UASSERT_OBJ(!whyp, nodep, "Broken constant pool cache: " << whyp);
 
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();

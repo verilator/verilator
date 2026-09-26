@@ -453,7 +453,6 @@ class LinkCellsVisitor final : public VNVisitor {
                     << (suggest.empty() ? "" : V3Error::warnMore() + suggest));
         }
     }
-    void visit(AstConstPool* nodep) override {}
     void visit(AstNodeModule* nodep) override {
         // Module: Pick up modnames, so we can resolve cells later
         VL_RESTORER(m_modDepth);
@@ -469,7 +468,7 @@ class LinkCellsVisitor final : public VNVisitor {
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename(), nodep->libname())
                 && !VN_IS(nodep, NotFoundModule) && !nodep->recursiveClone()
-                && !nodep->isDollarUnit() && m_modDepth == 1) {
+                && !nodep->isDollarUnit() && !nodep->isConstPool() && m_modDepth == 1) {
                 // We only complain once per file, otherwise library-like files
                 // have a huge mess of warnings
                 const auto itFoundPair = m_declfnWarned.insert(nodep->fileline()->filename());

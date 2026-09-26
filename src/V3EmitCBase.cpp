@@ -35,7 +35,6 @@ EmitCParentModule::EmitCParentModule() {
     for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
         setAll(VN_AS(modp, NodeModule));
     }
-    setAll(v3Global.rootp()->constPoolp()->modp());
 }
 
 //######################################################################

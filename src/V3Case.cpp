@@ -38,6 +38,7 @@
 
 #include "V3Case.h"
 
+#include "V3ConstPool.h"
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -738,18 +739,15 @@ class CaseVisitor final : public VNVisitor {
             }
         }
 
-        // Create the table in the constant pool, unless using an inline table
-        AstVarScope* const tableVscp = [&]() -> AstVarScope* {
-            if (isTinyTable) return nullptr;
-            AstVarScope* vscp = v3Global.rootp()->constPoolp()->findConst(tablep, true);
+        // Create the lookup table reference, in the constant pool unless using an inline table
+        AstNodeExpr* const tableRefp = [&]() -> AstNodeExpr* {
+            if (isTinyTable) return tablep;
+            AstVarRef* const refp = V3ConstPool::findConst(tablep);
             VL_DO_DANGLING(tablep->deleteTree(), tablep);  // findConst clones
-            return vscp;
+            return refp;
         }();
 
-        // Create the lookup table reference and index
-        AstNodeExpr* const tableRefp
-            = tableVscp ? static_cast<AstNodeExpr*>(new AstVarRef{flp, tableVscp, VAccess::READ})
-                        : static_cast<AstNodeExpr*>(tablep);
+        // Create the lookup index
         AstNodeExpr* const caseExprp
             = new AstExtend{flp, nodep->exprp()->cloneTreePure(false), 32};
         AstNodeExpr* const scalep = new AstConst{flp, entryWidth};
@@ -855,15 +853,14 @@ class CaseVisitor final : public VNVisitor {
         }
 
         // Create the tables
-        AstVarScope* const matchVscp = v3Global.rootp()->constPoolp()->findConst(matchp, true);
-        AstVarScope* const tableVscp = v3Global.rootp()->constPoolp()->findTable(tablep);
+        AstVarRef* const matchRefp = V3ConstPool::findConst(matchp);
+        AstVarRef* const tableRefp = V3ConstPool::findTable(tablep);
         VL_DO_DANGLING(matchp->deleteTree(), matchp);
         VL_DO_DANGLING(tablep->deleteTree(), tablep);
 
         // AstMatchMasked produces the index of the matching entry
-        AstNodeExpr* const tableRefp = new AstVarRef{flp, tableVscp, VAccess::READ};
         AstNodeExpr* const caseExprp = nodep->exprp()->cloneTreePure(false);
-        AstMatchMasked* const indexp = new AstMatchMasked{flp, caseExprp, matchVscp};
+        AstMatchMasked* const indexp = new AstMatchMasked{flp, caseExprp, matchRefp};
         AstNodeExpr* const entryp = new AstArraySel{flp, tableRefp, indexp};
 
         return connectDecoderOutputs(nodep, entryp, "__VcaseDecoderOut");

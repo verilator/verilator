@@ -51,8 +51,9 @@
 //
 // Entries are referred to by iterators, as in the STL containers, but unlike
 // STL containers, the mapped value in a V3HashMap is not mutable through an
-// iterator. Iterators and entry addresses stay valid until the table grows or
-// an entry is erased; either invalidates all of them.
+// iterator. Iterators and entry addresses stay valid until the table grows,
+// an entry is erased, or the table is cleared; any of these invalidates all
+// of them.
 //
 // Erasure uses backward shift deletion: entries following the hole are moved
 // back over it where their probe run ran through it (no tombstones).
@@ -346,6 +347,14 @@ public:
                < count * V3HashTableInternals::LOAD_FACTOR_DEN)
             capacity *= 2;
         if (capacity > m_capacity) resize(capacity);
+    }
+
+    // Remove all entries. The table stays allocated. Invalidates every iterator.
+    void clear() {
+        for (size_t i = 0; i < m_capacity; ++i) {
+            if (!m_table[i].isFree()) m_table[i].destroy();
+        }
+        m_size = 0;
     }
 
     // Return iterator to the entry equal to the given key, or 'end()' if there

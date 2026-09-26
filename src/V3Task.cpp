@@ -28,6 +28,7 @@
 #include "V3Task.h"
 
 #include "V3Const.h"
+#include "V3ConstPool.h"
 #include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
@@ -467,10 +468,16 @@ class TaskVisitor final : public VNVisitor {
         m_scopep->addVarsp(newvscp);
         return newvscp;
     }
+    static AstVarScope* constPoolTable(AstVar* paramp) {
+        // Move array params in functions into constant pool, return the VarScope of the entry
+        AstVarRef* const refp = V3ConstPool::find(VN_AS(paramp->valuep(), InitArray));
+        AstVarScope* const vscp = refp->varScopep();
+        VL_DO_DANGLING(refp->deleteTree(), refp);
+        return vscp;
+    }
     AstVarScope* createVarScope(AstVar* invarp, const string& name) {
         if (invarp->isParam() && VN_IS(invarp->valuep(), InitArray)) {
-            // Move array params in functions into constant pool
-            return v3Global.rootp()->constPoolp()->findTable(VN_AS(invarp->valuep(), InitArray));
+            return constPoolTable(invarp);
         } else {
             // We could create under either the ref's scope or the ftask's scope.
             // It shouldn't matter, as they are only local variables.
@@ -1424,9 +1431,7 @@ class TaskVisitor final : public VNVisitor {
                     // Move array parameters in functions into constant pool
                     portp->unlinkFrBack();
                     pushDeletep(portp);
-                    AstNode* const tablep = v3Global.rootp()->constPoolp()->findTable(
-                        VN_AS(portp->valuep(), InitArray));
-                    portp->user2p(tablep);
+                    portp->user2p(constPoolTable(portp));
                 } else {
                     if (portp->isIO()) {
                         // Move it to new function

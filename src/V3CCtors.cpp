@@ -152,6 +152,7 @@ class CCtorsVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
+        if (nodep->isConstPool()) return;  // Special emit rules
         if (const AstClass* const classp = VN_CAST(nodep, Class)) {
             // Interface class may only have pure virtuals and params which do not need cctor reset
             if (classp->isInterfaceClass()) return;
@@ -219,7 +220,6 @@ class CCtorsVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstConstPool*) override {}
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

@@ -37,6 +37,7 @@
 
 #include "V3Ast.h"
 #include "V3Const.h"
+#include "V3ConstPool.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
@@ -3657,7 +3658,7 @@ class RandomizeVisitor final : public VNVisitor {
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
     //  AstVar::user2p()        -> AstNodeModule*. Pointer to containing module
     //  AstNodeFTask::user2p()  -> AstNodeModule*. Pointer to containing module
-    //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
+    //  AstEnumDType::user2()   -> AstVarRef*. Reference to table with enum values, to clone
     //  AstConstraint::user2p() -> AstTask*. Pointer to constraint setup procedure
     //  AstClass::user2p()      -> AstVar*.  Rand mode state variable
     //  AstVar::user3()         -> bool. Handled in constraints
@@ -3686,7 +3687,6 @@ class RandomizeVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
     AstDynArrayDType* m_dynarrayDtp = nullptr;  // Dynamic array type (for rand mode)
-    size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
     int m_distNum = 0;  // Dist bucket variable counter within a module for var naming
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
@@ -4197,23 +4197,16 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return stmtp;
     }
-    AstVar* enumValueTabp(AstEnumDType* const nodep) {
-        if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
-        UINFO(9, "Construct Venumvaltab " << nodep);
+    AstVarRef* enumValueTabRefp(AstEnumDType* const nodep) {
+        // Return a reference to a constant table of the values of the given enum. The reference
+        // is cached, so the table is built only once.
+        if (nodep->user2p()) return VN_AS(nodep->user2p(), VarRef)->cloneTree(false);
+        UINFO(9, "Construct enum value table " << nodep);
         AstNodeArrayDType* const vardtypep = new AstUnpackArrayDType{
             nodep->fileline(), nodep->dtypep(),
-            new AstRange{nodep->fileline(), static_cast<int>(nodep->itemCount()), 0}};
-        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
+            new AstRange{nodep->fileline(), static_cast<int>(nodep->itemCount()) - 1, 0}};
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-        AstVar* const varp
-            = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
-                         "__Venumvaltab_" + cvtToStr(m_enumValueTabCount++), vardtypep};
-        varp->isConst(true);
-        varp->isStatic(true);
-        varp->valuep(initp);
-        // Add to root, as don't know module we are in, and aids later structure sharing
-        v3Global.rootp()->dollarUnitPkgp()->addStmtsp(varp);
-
+        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -4221,8 +4214,12 @@ class RandomizeVisitor final : public VNVisitor {
             UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
             initp->addValuep(vconstp->cloneTree(false));
         }
-        nodep->user2p(varp);
-        return varp;
+        // Share identical tables via the constant pool
+        AstVarRef* const refp = V3ConstPool::findTable(initp);
+        VL_DO_DANGLING(initp->deleteTree(), initp);  // V3ConstPool::findTable clones it
+        pushDeletep(refp);  // Deleted with the visitor - always cloned
+        nodep->user2p(refp);
+        return refp->cloneTree(false);
     }
 
     AstCDType* findVlRandCDType(FileLine* const fl, uint64_t items) {
@@ -4382,9 +4379,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
                                                               : exprp->dtypep()->subDTypep(),
                                                       EnumDType)) {
-                AstVarRef* const tabRefp
-                    = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
-                tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
+                AstVarRef* const tabRefp = enumValueTabRefp(enumDtp);
                 AstNodeExpr* const randp
                     = newRandValue(fl, randcVarp, exprp->findBasicDType(VBasicDTypeKwd::UINT32));
                 AstNodeExpr* const moddivp = new AstModDiv{

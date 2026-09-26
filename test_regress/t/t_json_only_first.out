@@ -1,4 +1,4 @@
-{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"(E)",
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolPkgp":"(D)","dollarUnitPkgp":"(E)",
  "modulesp": [
   {"type":"MODULE","name":"t","addr":"(F)","loc":"d,7:8,7:9","origName":"t","verilogName":"t","level":1,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
@@ -119,6 +119,7 @@
     ]}
   ]},
   {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","verilogName":"\\$unit ","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"},
+  {"type":"PACKAGE","name":"__Vconstpool","addr":"(D)","loc":"a,0:0,0:0","origName":"__Vconstpool","verilogName":"__Vconstpool","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"},
   {"type":"MODULE","name":"mod2","addr":"(JC)","loc":"d,61:8,61:12","origName":"mod2","verilogName":"mod2","level":2,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
     {"type":"VAR","name":"clk","addr":"(RC)","loc":"d,62:11,62:14","dtypep":"(J)","origName":"clk","verilogName":"clk","direction":"INPUT","declDirection":"INPUT","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"},
@@ -180,12 +181,5 @@
     {"type":"BASICDTYPE","name":"logic","addr":"(FB)","loc":"d,27:26,27:27","dtypep":"(FB)","keyword":"logic","range":"1:0","generic":true,"signed":true},
     {"type":"BASICDTYPE","name":"bit","addr":"(AB)","loc":"d,27:32,27:34","dtypep":"(AB)","keyword":"bit","generic":true},
     {"type":"BASICDTYPE","name":"bit","addr":"(AD)","loc":"d,29:48,29:49","dtypep":"(AD)","keyword":"bit","range":"31:0","generic":true,"signed":true}
-  ]},
-  {"type":"CONSTPOOL","addr":"(D)","loc":"a,0:0,0:0",
-   "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(KD)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"NONE",
-     "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(LD)","loc":"a,0:0,0:0","modp":"(KD)"}
-    ]}
   ]}
 ]}

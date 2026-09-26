@@ -322,8 +322,10 @@
 // C++-2020
 
 #if __cplusplus >= 202002L
+# define VL_CONSTINIT_CXX20 constinit
 # define VL_NO_UNIQUE_ADDRESS_CXX20 [[no_unique_address]]
 #else
+# define VL_CONSTINIT_CXX20
 # define VL_NO_UNIQUE_ADDRESS_CXX20
 #endif
 

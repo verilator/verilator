@@ -150,6 +150,7 @@ bool AstActive::hasInitial() const { return m_sentreep->hasInitial(); }
 bool AstActive::hasStatic() const { return m_sentreep->hasStatic(); }
 
 bool AstNodeModule::isDollarUnit() const { return this == v3Global.rootp()->dollarUnitPkgp(); }
+bool AstNodeModule::isConstPool() const { return this == v3Global.rootp()->constPoolPkgp(); }
 
 AstAlways::AstAlways(AstAssignW* assignp)
     : ASTGEN_SUPER_Always(assignp->fileline(), assignp)
@@ -167,10 +168,10 @@ bool AstVar::sameNode(const AstNode* samep) const {
            && covergroupRefMember() == asamep->covergroupRefMember();
 }
 
-AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp)
+AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarRef* matchp)
     : ASTGEN_SUPER_MatchMasked(fl) {
     this->lhsp(lhsp);
-    this->matchp(new AstVarRef{fl, matchp, VAccess::READ});
+    this->matchp(matchp);
     dtypeSetUInt32();
 }
 

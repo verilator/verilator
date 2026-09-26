@@ -41,30 +41,51 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
 
 protected:
+    // METHODS
+    // Emit the initializer of a definition, for direct initialization: 'type name{...}'
+    void emitDirectInit(AstNode* valuep) {
+        if (VN_IS(valuep, InitArray) || (VN_IS(valuep, Const) && valuep->isWide())) {
+            iterateConst(valuep);  // Already a braced initializer list
+        } else {
+            puts("{");
+            iterateConst(valuep);
+            puts("}");
+        }
+    }
+
     // VISITORS
     void visit(AstInitArray* nodep) override {
         VL_RESTORER(m_unpackedWord);
         if (VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
-            // Note the double {{ initializer. The first { starts the initializer of the
-            // VlAssocArray, and the second starts the initializer of m_storage within the
-            // VlAssocArray.
-            puts("{");
-            ofp()->putsNoTracking("{");
-            puts("\n");
-            int comma = 0;
-            const auto& mapr = nodep->map();
-            for (const auto& itr : mapr) {
-                if (comma++) putbs(",\n");
-                putns(nodep, cvtToStr(itr.first));
-                ofp()->printf("%" PRIx64 "ULL", itr.first);
-                ofp()->putsNoTracking(":");
-                ofp()->putsNoTracking("{");
-                iterateConst(nodep->getIndexValuep(itr.first));
-                ofp()->putsNoTracking("}");
+            // Braced list for the constructors of VlAssocArray: '{default, {items...}}' with a
+            // default value, or '{{items...}}' without.
+            AstNode* const defaultp = nodep->defaultp();
+            const AstInitArray::KeyItemMap& mapr = nodep->map();
+            // An empty map without a default must be emitted as '{}'. With 'x{{}}', C++ would
+            // take the outer braces as the items list, and the inner '{}' as one value
+            // initialized item, giving a map with a single key 0 item instead of an empty map.
+            if (!defaultp && mapr.empty()) {
+                puts("{}");
+                return;
             }
-            puts("\n");
-            puts("}");
-            ofp()->putsNoTracking("}");
+            puts("{\n");
+            if (defaultp) {
+                puts("/* default: */ ");
+                iterateConst(defaultp);
+                puts(",\n");
+            }
+            puts("/* items: */ {");
+            bool first = true;
+            for (const auto& itr : mapr) {
+                if (!first) puts(",");
+                first = false;
+                puts("\n{");
+                ofp()->printf("0x%" PRIx64 "ULL", itr.first);
+                puts(", ");
+                iterateConst(nodep->getIndexValuep(itr.first));
+                puts("}");
+            }
+            puts("\n}\n}");
         } else if (const AstUnpackArrayDType* const dtypep
                    = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
             const uint64_t size = dtypep->elementsConst();
@@ -97,7 +118,24 @@ protected:
     void visit(AstConst* nodep) override {
         const V3Number& num = nodep->num();
         UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
-        putns(nodep, num.emitC());
+        if (!nodep->isWide()) {
+            putns(nodep, num.emitC());
+            return;
+        }
+        // Wide values are emitted as a braced initializer list of the words, without the
+        // VlWide type. Note the double {{ initializer. The first { starts the initializer of
+        // the VlWide, and the second starts the initializer of m_storage within the VlWide.
+        const int words = nodep->widthWords();
+        putns(nodep, "{");
+        ofp()->putsNoTracking("{");
+        if (words > 4) puts("\n");
+        for (int n = 0; n < words; ++n) {
+            if (n) puts((n % 4) ? ", " : ",\n");
+            ofp()->printf("0x%08" PRIx32, num.edataWord(n));
+        }
+        if (words > 4) puts("\n");
+        puts("}");
+        ofp()->putsNoTracking("}");
     }
     void visit(AstUnbounded* nodep) override {
         // e.g. when emitting a public parameter's "$" value
