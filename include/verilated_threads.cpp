@@ -110,12 +110,14 @@ void VlWorkerThread::wait() {
 }
 
 void VlWorkerThread::main() {
-    // Initialize thread_locals
-    Verilated::threadContextp(m_contextp);
     // One work item
     ExecRec work;
     // Wait for the first task without spinning, in case the thread is never actually used.
     dequeWork</* SpinWait: */ false>(&work);
+    // Initialize thread_locals once the thread is used. Receiving the task synchronizes with
+    // the thread that added it, and a thread that is never used must not touch the context,
+    // which may already be destructing when the shutdown task arrives.
+    if (work.m_fnp != shutdownTask) Verilated::threadContextp(m_contextp);
     // Loop until shutdown task is received
     while (VL_UNLIKELY(work.m_fnp != shutdownTask)) {
         work.m_fnp(work.m_selfp, work.m_evenCycle);
