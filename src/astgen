@@ -4,6 +4,7 @@
 
 import argparse
 import glob
+import hashlib
 import os
 import re
 import sys
@@ -879,6 +880,15 @@ def write_type_enum(prefix, nodeList):
             fh.write('            "{T}",\n'.format(T=node.name.upper()))
         fh.write("        };\n")
         fh.write("        return names[m_e];\n")
+        fh.write("    }\n")
+
+        fh.write("    uint32_t hash() const VL_MT_SAFE {\n")
+        fh.write("        static const uint32_t hashes[] = {\n")
+        for node in sorted(filter(lambda _: _.isLeaf, nodeList), key=lambda _: _.typeId):
+            digest = hashlib.md5((prefix + node.name).encode("ascii")).hexdigest()
+            fh.write("            0x{h}U,  // {p}{n}\n".format(h=digest[:8], p=prefix, n=node.name))
+        fh.write("        };\n")
+        fh.write("        return hashes[m_e];\n")
         fh.write("    }\n")
 
 
