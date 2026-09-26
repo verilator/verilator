@@ -271,8 +271,6 @@ the extracted coverage model:
 
 - ``/*verilator fsm_state*/`` forces the variable to be treated as FSM
   state.
-- ``/*verilator fsm_reset_arc*/`` marks reset transitions as user-visible
-  reset arcs instead of defaulting to a hidden reset-only summary.
 - ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch arcs that
   would otherwise be skipped by the conservative extractor.
 

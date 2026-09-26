@@ -418,6 +418,8 @@ detailed descriptions of these arguments.
     --coverage-expr             Enable expression coverage
     --coverage-expr-max <value>     Maximum permutations allowed for an expression
     --coverage-fsm              Enable FSM state/arc coverage
+    --coverage-fsm-expand <mode> Set mode of fsm arcs expansion
+    --coverage-fsm-max-arcs <value> Maximum amount of transitions of expanded FSM
     --coverage-line             Enable line coverage
     --coverage-max-bins <value>        Maximum bins of an integral coverpoint bins declaration
     --coverage-max-real-bins <value>   Maximum bins of a real coverpoint bins declaration

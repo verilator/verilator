@@ -29,12 +29,12 @@
             else begin
 %000003       case (state)
         // [FSM coverage]
-%000001        // [fsm_arc t.style_u.state::ANY->S0[reset]] [reset arc, excluded from %]
 %000000        // [fsm_arc t.style_u.state::S0->S1]
 %000003        // [fsm_arc t.style_u.state::S0->S2]
 %000000        // [fsm_arc t.style_u.state::S1->S3]
-%000000        // [SYNTHETIC DEFAULT ARC: t.style_u.state::default->S0]
-%000002        // [fsm_state t.style_u.state::S0]
+%000002        // [fsm_arc t.style_u.state::S2->S0]
+%000000        // [fsm_arc t.style_u.state::S3->S0]
+%000003        // [fsm_state t.style_u.state::S0]
 %000000        // [fsm_state t.style_u.state::S1] *** UNCOVERED ***
 %000003        // [fsm_state t.style_u.state::S2]
 %000000        // [fsm_state t.style_u.state::S3] *** UNCOVERED ***
@@ -66,11 +66,11 @@
             state_d = state_q;
 %000003     case (state_q)
         // [FSM coverage]
-%000001        // [fsm_arc t.default_incl_u.state_q::ANY->S0[reset]] [reset arc, excluded from %]
 %000000        // [fsm_arc t.default_incl_u.state_q::S0->S1]
 %000003        // [fsm_arc t.default_incl_u.state_q::S0->S2]
-%000000        // [SYNTHETIC DEFAULT ARC: t.default_incl_u.state_q::default->S0]
-%000002        // [fsm_state t.default_incl_u.state_q::S0]
+%000000        // [fsm_arc t.default_incl_u.state_q::S1->S0]
+%000002        // [fsm_arc t.default_incl_u.state_q::S2->S0]
+%000003        // [fsm_state t.default_incl_u.state_q::S0]
 %000000        // [fsm_state t.default_incl_u.state_q::S1] *** UNCOVERED ***
 %000003        // [fsm_state t.default_incl_u.state_q::S2]
               S0: state_d = start ? S1 : S2;
@@ -98,9 +98,10 @@
 %000002       case (state)
         // [FSM coverage]
 %000002        // [fsm_arc t.forced_u.state::2'h0->2'h1]
+%000000        // [fsm_arc t.forced_u.state::2'h1->2'h0]
 %000002        // [fsm_arc t.forced_u.state::2'h1->2'h2]
-%000001        // [fsm_arc t.forced_u.state::ANY->2'h0[reset]] [reset arc, excluded from %]
-%000001        // [fsm_state t.forced_u.state::2'h0]
+%000001        // [fsm_arc t.forced_u.state::2'h2->2'h0]
+%000002        // [fsm_state t.forced_u.state::2'h0]
 %000002        // [fsm_state t.forced_u.state::2'h1]
 %000002        // [fsm_state t.forced_u.state::2'h2]
                 2'd0: state <= 2'd1;

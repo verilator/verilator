@@ -5,7 +5,7 @@ Coverage Summary:
   branch    : 78.6% (22/28)
   expr      : 57.1% ( 8/14)
   fsm_state : 91.7% (11/12)
-  fsm_arc   : 71.4% (10/14)
+  fsm_arc   : 38.9% ( 7/18)
 
 $ verilator_coverage --report hierarchy --levels 3 coverage.dat
 Hierarchy Coverage Summary:
@@ -15,33 +15,33 @@ Hierarchy Coverage Summary:
     branch    : 78.6% (22/28)
     expr      : 57.1% ( 8/14)
     fsm_state : 91.7% (11/12)
-    fsm_arc   : 71.4% (10/14)
+    fsm_arc   : 38.9% ( 7/18)
   tb.cluster_a
     line      : 73.3% (11/15)
     toggle    : 76.1% (35/46)
     branch    : 66.7% ( 8/12)
     expr      : 100.0% ( 6/ 6)
     fsm_state : 83.3% ( 5/ 6)
-    fsm_arc   : 57.1% ( 4/ 7)
+    fsm_arc   : 33.3% ( 3/ 9)
   tb.cluster_a.u_core
     line      : 66.7% ( 8/12)
     toggle    : 83.3% (20/24)
     branch    : 62.5% ( 5/ 8)
     fsm_state : 83.3% ( 5/ 6)
-    fsm_arc   : 57.1% ( 4/ 7)
+    fsm_arc   : 33.3% ( 3/ 9)
   tb.cluster_b
     line      : 86.7% (13/15)
     toggle    : 93.5% (43/46)
     branch    : 83.3% (10/12)
     expr      : 0.0% ( 0/ 6)
     fsm_state : 100.0% ( 6/ 6)
-    fsm_arc   : 85.7% ( 6/ 7)
+    fsm_arc   : 44.4% ( 4/ 9)
   tb.cluster_b.u_core
     line      : 83.3% (10/12)
     toggle    : 100.0% (24/24)
     branch    : 87.5% ( 7/ 8)
     fsm_state : 100.0% ( 6/ 6)
-    fsm_arc   : 85.7% ( 6/ 7)
+    fsm_arc   : 44.4% ( 4/ 9)
 Design Unit Coverage Summary:
   cluster
     line      : 100.0% ( 3/ 3)
@@ -58,7 +58,7 @@ Design Unit Coverage Summary:
     toggle    : 91.7% (44/48)
     branch    : 75.0% (12/16)
     fsm_state : 91.7% (11/12)
-    fsm_arc   : 71.4% (10/14)
+    fsm_arc   : 38.9% ( 7/18)
   tb
     line      : 100.0% (5/5)
     toggle    : 100.0% (4/4)

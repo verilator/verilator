@@ -187,7 +187,6 @@ class FsmRegisterCandidate final {
     FsmResetCondDesc m_resetCond;  // Saved reset predicate, if any.
     std::vector<FsmResetArcDesc> m_resetArcs;  // Reset target arcs recovered during detect.
     bool m_hasResetCond = false;  // Whether the FSM had a modeled reset predicate.
-    bool m_resetInclude = false;  // Whether reset arcs count toward summary totals.
     bool m_inclCond = false;  // Whether conditional/default arcs are kept explicitly.
     FileLine* m_flp = nullptr;  // Representative source location.
 
@@ -210,8 +209,6 @@ public:
     std::vector<FsmResetArcDesc>& resetArcs() { return m_resetArcs; }
     bool hasResetCond() const { return m_hasResetCond; }
     void hasResetCond(bool flag) { m_hasResetCond = flag; }
-    bool resetInclude() const { return m_resetInclude; }
-    void resetInclude(bool flag) { m_resetInclude = flag; }
     bool inclCond() const { return m_inclCond; }
     void inclCond(bool flag) { m_inclCond = flag; }
     FileLine* fileline() const { return m_flp; }
@@ -259,7 +256,7 @@ public:
     bool isResetAny() const { return m_kind == Kind::RESET_ANY; }
     bool isDefaultAny() const { return m_kind == Kind::DEFAULT_ANY; }
     const string& label() const { return m_label; }
-    FsmStateValue value() const { return m_value; }
+    const FsmStateValue& value() const { return m_value; }
 
     string name() const override VL_MT_SAFE { return m_label + "=" + m_value.ascii(); }
 };
@@ -336,7 +333,6 @@ class FsmGraph final : public V3Graph {
     std::vector<FsmSenDesc> m_senses;  // Saved event controls for recreated active blocks.
     FsmResetCondDesc m_resetCond;  // Saved reset predicate shape, if one exists.
     bool m_hasResetCond = false;  // Whether the detected FSM had a reset branch.
-    bool m_resetInclude = false;  // Whether reset arcs count toward coverage totals.
     bool m_inclCond = false;  // Whether conditional arcs should be kept explicitly.
     FileLine* m_flp = nullptr;  // Representative source location for declarations/arcs.
     std::unordered_map<FsmStateValue, FsmStateVertex*, FsmStateValueHash>
@@ -369,8 +365,6 @@ public:
     FsmResetCondDesc& resetCond() { return m_resetCond; }
     bool hasResetCond() const { return m_hasResetCond; }
     void hasResetCond(bool flag) { m_hasResetCond = flag; }
-    bool resetInclude() const { return m_resetInclude; }
-    void resetInclude(bool flag) { m_resetInclude = flag; }
     bool inclCond() const { return m_inclCond; }
     void inclCond(bool flag) { m_inclCond = flag; }
     FileLine* fileline() const { return m_flp; }
@@ -693,7 +687,6 @@ class FsmDetectVisitor final : public VNVisitor {
             reg.senses() = FsmDetectVisitor::describeSenTree(alwaysp->sentreep());
             reg.resetCond() = FsmDetectVisitor::describeResetCond(resetCondp);
             reg.hasResetCond(reg.resetCond().varScopep != nullptr);
-            reg.resetInclude(vscp->varp()->attrFsmResetArc());
             reg.inclCond(vscp->varp()->attrFsmArcInclCond());
             AstIf* const firstIfp = VN_CAST(alwaysp->stmtsp(), If);
             if (firstIfp && reg.hasResetCond()) {
@@ -796,7 +789,6 @@ class FsmDetectVisitor final : public VNVisitor {
         cand.stateVscp(stateVscp);
         cand.sampleVscp(childRoleVarScope(cellp, roles.qPort));
         cand.nextVscp(nextVscp);
-        cand.resetInclude(stateVscp->varp()->attrFsmResetArc());
         cand.inclCond(stateVscp->varp()->attrFsmArcInclCond());
         cand.fileline(cellp->fileline());
         return true;
@@ -1443,7 +1435,6 @@ class FsmDetectVisitor final : public VNVisitor {
         cand.sampleVscp(stateVscp);
         cand.nextVscp(nextVscp);
         cand.senses() = describeSenTree(alwaysp->sentreep());
-        cand.resetInclude(stateVscp->varp()->attrFsmResetArc());
         cand.inclCond(stateVscp->varp()->attrFsmArcInclCond());
         cand.fileline(alwaysp->fileline());
         return true;
@@ -1768,7 +1759,6 @@ class FsmDetectVisitor final : public VNVisitor {
             entry.graphp->senses() = reg.senses();
             entry.graphp->resetCond() = reg.resetCond();
             entry.graphp->hasResetCond(reg.hasResetCond());
-            entry.graphp->resetInclude(reg.resetInclude());
             entry.graphp->inclCond(reg.inclCond());
             entry.graphp->fileline(casep->fileline());
             for (const std::pair<string, FsmStateValue>& state : stateSpace.states) {
@@ -1804,7 +1794,6 @@ class FsmDetectVisitor final : public VNVisitor {
         entry.graphp->senses() = reg.senses();
         entry.graphp->resetCond() = reg.resetCond();
         entry.graphp->hasResetCond(reg.hasResetCond());
-        entry.graphp->resetInclude(reg.resetInclude());
         entry.graphp->inclCond(reg.inclCond());
         entry.graphp->fileline(chain.ifp->fileline());
         for (const std::pair<string, FsmStateValue>& state : stateSpace.states) {
@@ -2063,6 +2052,356 @@ public:
     }
 };
 
+// Builder of statements that will handle incrementation of proper AstNodeCoverDecls - which will
+// be also created here
+class FsmCoverIncBuilder final {
+public:
+    enum class FsmExpand : uint8_t {
+        AUTO = 0,  // Expands only reset and default
+        AUTO_EXPAND,  // Expands transitions between all possible states
+        FULL,  // Cover all possible transitions
+    };
+
+private:
+    const FsmGraph& m_graph;  // Fsm graph
+    std::vector<const FsmStateVertex*> m_states;  // States vertexes inside fsm graph
+    std::unordered_set<uint64_t>
+        m_undefinedStates;  // States that have no enum value but are possible to represent with a
+                            // variable of given width.
+                            // This variable keeps uint64_t instead of V3Numebr because it is safe
+                            // to assume that nobody has over 16M TB of RAM
+    const FsmVertex* m_defaultVertexp = nullptr;  // default vertex
+    const FsmVertex* m_resetVertexp = nullptr;  // reset vertex
+    size_t m_edgesCount = 0;  // Total count of edges
+    AstVarScope* const m_prevVscp;  // vscp of variable keeping previous state of fsm
+    FileLine* const m_flp;  // fileline pointer to use across the builder
+    const std::string m_modPrettyName;  // pretty fsm mode name
+    AstNodeStmt* m_coverIncp
+        = nullptr;  // Statement which increments proper CoverDecls after each change
+    AstNodeStmt* m_initialCoverIncp
+        = nullptr;  // Statement incrementing proper CoverDecl at the beggining of the simulation
+    AstCoverOtherDecl* m_declsp = nullptr;  // List of CoverDecls
+    bool m_isComplete;  // Whether all possible values of state variable are covered by some state
+    // (e.g.: when state variable has two bits this will be true if exactly
+    // four states exist)
+
+    AstConst* makeConst(const uint64_t value) {
+        V3Number num{static_cast<AstNode*>(nullptr), m_prevVscp->width()};
+        num.setQuad(value);
+        num.isSigned(m_prevVscp->dtypep()->isSigned());
+        return new AstConst{m_flp, num};
+    }
+
+    std::string quadToBitStirngLabel(const uint64_t val) {
+        int width = m_prevVscp->width();
+        UASSERT(width < 64, "We should not expand values that wide");
+        std::string result = std::to_string(width) + "'b";
+        // Binary not hex because in future we want to represent
+        // four-state values accuratelly as well
+        while (--width >= 0) result.push_back("01"[(val >> width) & 1]);
+        return result;
+    }
+
+    void initExistingStates() {
+        for (const V3GraphVertex& vtx : m_graph.vertices()) {
+            const FsmVertex* const vertexp = vtx.as<FsmVertex>();
+            m_edgesCount += vertexp->inEdges().size();
+            if (const FsmStateVertex* const statep = vertexp->cast<FsmStateVertex>()) {
+                m_states.push_back(statep);
+            } else if (vertexp->isDefaultAny()) {
+                UASSERT_OBJ(!std::exchange(m_defaultVertexp, vertexp), m_graph.sampleVarScopep(),
+                            "Two defaults?");
+            } else /* if (vertexp->isResetAny()) */ {
+                UASSERT_OBJ(!std::exchange(m_resetVertexp, vertexp), m_graph.sampleVarScopep(),
+                            "Two resets?");
+            }
+        }
+        const int width = m_graph.sampleVarScopep()->width();
+        m_isComplete = width < 64 && m_states.size() == (static_cast<size_t>(1) << width);
+    }
+
+    void initUndefinedStates() {
+        UASSERT_OBJ(m_graph.sampleVarScopep()->width() < 64, m_graph.sampleVarScopep(),
+                    "This FSM is too wide to expand - this should be caught earlier");
+        const uint64_t combinationsCount = static_cast<size_t>(1)
+                                           << m_graph.sampleVarScopep()->width();
+        // rolling trick allows to cut peak memory usage
+        bool undefRolled = false;
+        auto rollUndefs = [this, combinationsCount] {
+            for (uint64_t i = 0; i < combinationsCount; ++i) {
+                const auto insert = m_undefinedStates.insert(i);
+                if (!insert.second) m_undefinedStates.erase(insert.first);
+            }
+        };
+        for (const FsmStateVertex* const statep : m_states) {
+            const V3Number& num = statep->value().num();
+            const uint64_t value = num.toUQuad();
+            if (!m_isComplete) {
+                if (undefRolled) {
+                    UASSERT_OBJ(m_undefinedStates.erase(value) == 1, m_graph.sampleVarScopep(),
+                                "Two states has the same value?");
+                } else {
+                    UASSERT_OBJ(m_undefinedStates.insert(value).second, m_graph.sampleVarScopep(),
+                                "Two states has the same value?");
+                    if (m_undefinedStates.size() * 2 >= combinationsCount) {
+                        undefRolled = true;
+                        rollUndefs();
+                    }
+                }
+            }
+        }
+        if (!(m_isComplete || undefRolled)) rollUndefs();
+    }
+
+    AstNodeExpr* buildResetCond() const {
+        AstNodeExpr* const refp
+            = new AstVarRef{m_flp, m_graph.resetCond().varScopep, VAccess::READ};
+        return m_graph.resetCond().activeLow
+                   ? static_cast<AstNodeExpr*>(new AstLogNot{m_flp, refp})
+                   : refp;
+    }
+
+    size_t getArcCountWithExpansion(const FsmExpand expand) const {
+        size_t arcCountWithExpansion = ~0ULL;
+        switch (expand) {
+        case FsmExpand::AUTO: {
+            arcCountWithExpansion = m_edgesCount;
+            if (m_defaultVertexp) {
+                UASSERT_OBJ(m_states.size() >= m_defaultVertexp->outEdges().size(),
+                            m_graph.sampleVarScopep(),
+                            "Default has more out edges than possible states?");
+                arcCountWithExpansion -= m_defaultVertexp->outEdges().size();
+                for (const FsmStateVertex* const statep : m_states) {
+                    arcCountWithExpansion += statep->outEdges().empty();
+                }
+            }
+            if (m_resetVertexp) {
+                UASSERT_OBJ(m_states.size() >= m_resetVertexp->outEdges().size(),
+                            m_graph.sampleVarScopep(),
+                            "Reset has more out edges than possible states?");
+                arcCountWithExpansion += m_states.size() - m_resetVertexp->outEdges().size();
+            }
+        } break;
+        case FsmExpand::AUTO_EXPAND: {
+            arcCountWithExpansion = m_states.size() * m_states.size() - m_states.size();
+        } break;
+        case FsmExpand::FULL: {
+            const int width = m_graph.sampleVarScopep()->width();
+            // 32 is derived from:
+            // tranitionsCount <= std::numeric_limits<uint64_t>::max()
+            // (2^width)^2 - (2^width) <= 2^64 - 1
+            // (2^width)^2 - (2^width) < 2^64 since we operate on integral values we can trade 1
+            // log_2((2^width)^2 - (2^width)) < 64
+            // log_2((2^width)^2) < 64 - `(2^width)` is negigible so, it may be dropped
+            // 2width < 64
+            if (width < 32) {
+                const uint64_t combinationsCount = static_cast<size_t>(1) << width;
+                arcCountWithExpansion = combinationsCount * combinationsCount - combinationsCount;
+            }
+        } break;
+        }
+        return arcCountWithExpansion;
+    }
+
+    AstCoverOtherDecl* buildStateCoverDecl(const std::string& label,
+                                           const std::string& fsmTag = "") {
+        AstCoverOtherDecl* const declp
+            = new AstCoverOtherDecl{m_flp,
+                                    "v_fsm_state/" + m_modPrettyName,
+                                    m_graph.stateVarName() + "::" + label,
+                                    "",
+                                    0,
+                                    m_graph.stateVarName(),
+                                    "",
+                                    label,
+                                    fsmTag};
+        // We run after scoping, so this is declared for one instance only
+        declp->perInstance(true);
+        m_declsp = AstNode::addNext(m_declsp, declp);
+        return declp;
+    }
+
+    AstNodeStmt* buildCoverIncStmtp(const std::string& fromStateLabel,
+                                    const std::string& toStateLabel,
+                                    const std::string& baseLabel = "") {
+        // Whole builder is designed in such a way that this function won't be called twice with
+        // the same arguments - but if it will ever change in future, `AstCoverOtherDecl` shall be
+        // cached for particular args set
+        AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
+            m_flp,
+            "v_fsm_arc/" + m_modPrettyName,
+            m_graph.stateVarName() + "::" + fromStateLabel + "->" + toStateLabel,
+            "",
+            0,
+            m_graph.stateVarName(),
+            fromStateLabel,
+            toStateLabel,
+            baseLabel};
+        // We run after scoping, so this is declared for one instance only
+        declp->perInstance(true);
+        m_declsp = AstNode::addNext(m_declsp, declp);
+        return new AstCoverInc{m_flp, declp};
+    }
+    AstNodeStmt* buildExpandedTransitionHandler(const std::string& toStateLabel,
+                                                const bool considerUndefs,
+                                                const bool expandOnlyWithTerminalVerticies,
+                                                const FsmStateVertex* const toStatep = nullptr) {
+        AstCase* const arcCasep = new AstCase{
+            m_flp, VCaseType::CT_CASE, new AstVarRef{m_flp, m_prevVscp, VAccess::READ}, nullptr};
+        std::unordered_set<const FsmStateVertex*> handledSoureces;
+        if (toStatep) {
+            for (const V3GraphEdge& edge : toStatep->inEdges()) {
+                if (const FsmStateVertex* const fromp = edge.top()->cast<FsmStateVertex>()) {
+                    if (!handledSoureces.emplace(fromp).second) continue;
+                    arcCasep->addItemsp(new AstCaseItem{
+                        m_flp, makeConst(fromp->value().num().toUQuad()),
+                        (fromp != toStatep) ? buildCoverIncStmtp(fromp->label(), toStateLabel)
+                                            : nullptr});
+                }
+            }
+        }
+        for (const FsmStateVertex* const fromp : m_states) {
+            if (handledSoureces.find(fromp) != handledSoureces.end()) continue;
+            arcCasep->addItemsp(new AstCaseItem{
+                m_flp, makeConst(fromp->value().num().toUQuad()),
+                (fromp != toStatep
+                 && (!expandOnlyWithTerminalVerticies || fromp->outEdges().empty()))
+                    ? buildCoverIncStmtp(fromp->label(), toStateLabel, "artificial")
+                    : nullptr});
+        }
+        if (!m_isComplete) {
+            if (considerUndefs) {
+                for (const uint64_t from : m_undefinedStates) {
+                    const std::string& label = quadToBitStirngLabel(from);
+                    arcCasep->addItemsp(
+                        new AstCaseItem{m_flp, makeConst(from),
+                                        (label != toStateLabel)
+                                            ? buildCoverIncStmtp(label, toStateLabel, "artificial")
+                                            : nullptr});
+                }
+            } else {
+                arcCasep->addItemsp(new AstCaseItem{m_flp, nullptr, nullptr});
+            }
+        }
+        return arcCasep;
+    }
+    AstNodeStmt* buildUnxpandedTransitionHandler(const FsmStateVertex* const toStatep) {
+        AstCase* const arcCasep = new AstCase{
+            m_flp, VCaseType::CT_CASE, new AstVarRef{m_flp, m_prevVscp, VAccess::READ}, nullptr};
+        for (const V3GraphEdge& edge : toStatep->inEdges()) {
+            const FsmArcEdge* const arcp = edge.as<FsmArcEdge>();
+            UASSERT_OBJ(!arcp->isReset(), m_graph.stateVarScopep(),
+                        "This function should never be called on a target of a reset arc");
+            UASSERT_OBJ(!arcp->isDefault(), m_graph.stateVarScopep(),
+                        "This function should never be called on a target of a default arc");
+            const FsmStateVertex* const fromp = arcp->fromp()->as<FsmStateVertex>();
+            if (fromp != toStatep) {
+                arcCasep->addItemsp(
+                    new AstCaseItem{m_flp, makeConst(fromp->value().num().toUQuad()),
+                                    buildCoverIncStmtp(fromp->label(), toStatep->label())});
+            }
+        }
+        arcCasep->addItemsp(new AstCaseItem{m_flp, nullptr, nullptr});
+        return arcCasep;
+    }
+
+public:
+    FsmCoverIncBuilder(const FsmGraph& graph, AstVarScope* const prevVscp, FsmExpand expand)
+        : m_graph{graph}
+        , m_prevVscp{prevVscp}
+        , m_flp{graph.fileline()}
+        , m_modPrettyName{graph.scopep()->modp()->prettyName()} {
+        initExistingStates();
+        AstVarScope* const sampleVscp = graph.sampleVarScopep();
+
+        {
+            const size_t arcCountWithExpansion = getArcCountWithExpansion(expand);
+            if (VL_UNLIKELY(v3Global.opt.coverageFsmMaxArcs() < 0 || ~arcCountWithExpansion == 0ULL
+                            || arcCountWithExpansion
+                                   > static_cast<size_t>(v3Global.opt.coverageFsmMaxArcs()))) {
+                sampleVscp->v3error("Exceeded size of max expandable fsm: "
+                                    << v3Global.opt.coverageFsmMaxArcs()
+                                    << " with: " << arcCountWithExpansion << '\n'
+                                    << sampleVscp->warnMore()
+                                    << "Use --coverage-fsm-max-arcs <value> to change this value");
+                return;
+            }
+        }
+
+        AstCase* const arcCasep
+            = new AstCase{m_flp, VCaseType::CT_CASE,
+                          new AstVarRef{m_flp, graph.sampleVarScopep(), VAccess::READ}, nullptr};
+        AstCase* const initialStateCasep
+            = new AstCase{m_flp, VCaseType::CT_CASE,
+                          new AstVarRef{m_flp, graph.sampleVarScopep(), VAccess::READ}, nullptr};
+
+        const bool expandAll = expand != FsmExpand::AUTO;
+        std::unordered_set<const FsmStateVertex*>
+            defaultTargets;  // states that have edge incoming from default vertex
+        std::unordered_set<const FsmStateVertex*>
+            resetTargets;  // states that have edge incoming from reset vertex
+        if (!expandAll) {
+            if (m_defaultVertexp) {
+                for (const V3GraphEdge& edge : m_defaultVertexp->outEdges()) {
+                    defaultTargets.emplace(edge.top()->as<FsmStateVertex>());
+                }
+            }
+            if (m_resetVertexp) {
+                for (const V3GraphEdge& edge : m_resetVertexp->outEdges()) {
+                    resetTargets.emplace(edge.top()->as<FsmStateVertex>());
+                }
+            }
+        }
+        const bool isFullExpansion = expand == FsmExpand::FULL;
+        if (isFullExpansion) initUndefinedStates();
+        for (const FsmStateVertex* const statep : m_states) {
+            // State coverage fires when the FSM enters a state from any other
+            // value, so repeated self-holds do not count as new entries.
+            AstCoverOtherDecl* const declp = buildStateCoverDecl(statep->label());
+            initialStateCasep->addItemsp(new AstCaseItem{
+                m_flp, makeConst(statep->value().num().toUQuad()), new AstCoverInc{m_flp, declp}});
+            const bool defaultExpantion
+                = !expandAll && (defaultTargets.find(statep) != defaultTargets.end());
+            const bool expand = expandAll || (resetTargets.find(statep) != resetTargets.end())
+                                || defaultExpantion;
+            arcCasep->addItemsp(new AstCaseItem{
+                m_flp, makeConst(statep->value().num().toUQuad()),
+                AstNode::addNext<AstNodeStmt>(
+                    new AstCoverInc{m_flp, declp},
+                    expand ? buildExpandedTransitionHandler(statep->label(), isFullExpansion,
+                                                            defaultExpantion, statep)
+                           : buildUnxpandedTransitionHandler(statep))});
+        }
+        if (!m_isComplete) {
+            // Case is incomplete default CaseItem is needed
+            if (isFullExpansion) {
+                for (const uint64_t value : m_undefinedStates) {
+                    const std::string& label = quadToBitStirngLabel(value);
+                    AstCoverOtherDecl* const declp = buildStateCoverDecl(label);
+                    initialStateCasep->addItemsp(
+                        new AstCaseItem{m_flp, makeConst(value), new AstCoverInc{m_flp, declp}});
+                    arcCasep->addItemsp(
+                        new AstCaseItem{m_flp, makeConst(value),
+                                        AstNode::addNext<AstNodeStmt>(
+                                            new AstCoverInc{m_flp, declp},
+                                            buildExpandedTransitionHandler(label, true, false))});
+                }
+            } else {
+                // No expansion
+                arcCasep->addItemsp(new AstCaseItem{m_flp, nullptr, nullptr});
+                initialStateCasep->addItemsp(new AstCaseItem{m_flp, nullptr, nullptr});
+            }
+        }
+        m_coverIncp = arcCasep;
+        m_initialCoverIncp = initialStateCasep;
+    }
+    VL_UNCOPYABLE(FsmCoverIncBuilder);
+    ~FsmCoverIncBuilder() = default;
+    AstNodeCoverDecl* getCoverDeclsp() const { return m_declsp; }
+    AstNodeStmt* getCoverIncp() const { return m_coverIncp; }
+    AstNodeStmt* getInitialCoverIncp() const { return m_initialCoverIncp; }
+};
+
 // Lower the completed FSM graphs into the concrete coverage declarations,
 // previous-state tracking, and pre/post-triggered instrumentation that the
 // runtime uses to record state and transition coverage.
@@ -2072,28 +2411,6 @@ class FsmLowerVisitor final {
     V3UniqueNames m_fsmBuildNames;
 
     // METHODS
-    // Rebuild a state-typed constant using the tracked state variable
-    // width/sign so emitted comparisons match the original representation.
-    static AstConst* makeStateConst(FileLine* flp, AstVarScope* vscp, const FsmStateValue& value) {
-        V3Number num{static_cast<AstNode*>(nullptr), vscp->width()};
-        num.opAssign(value.num());
-        num.isSigned(vscp->dtypep()->isSigned());
-        return new AstConst{flp, num};
-    }
-
-    // Build guards incrementally without forcing callers to special-case the
-    // first predicate; this keeps emitted state/arc conditions readable.
-    static AstNodeExpr* andExpr(FileLine* flp, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
-        if (!lhsp) return rhsp;
-        return new AstLogAnd{flp, lhsp, rhsp};
-    }
-
-    static AstNodeExpr* buildResetCond(FileLine* flp, AstVarScope* resetVscp,
-                                       const FsmResetCondDesc& desc) {
-        AstNodeExpr* const refp = new AstVarRef{flp, resetVscp, VAccess::READ};
-        return desc.activeLow ? static_cast<AstNodeExpr*>(new AstLogNot{flp, refp}) : refp;
-    }
-
     // Rebuild the original event control from the saved sense description so
     // post-state coverage sampling runs on the same triggering edges.
     static AstSenTree* buildSenTree(FileLine* flp, const std::vector<FsmSenDesc>& senses) {
@@ -2162,99 +2479,27 @@ class FsmLowerVisitor final {
             prevVscp->varp()->setIgnorePostRead();
         }
 
-        for (const V3GraphVertex& vtx : graph.vertices()) {
-            const FsmVertex* const vertexp = vtx.as<FsmVertex>();
-            if (!vertexp->isState()) continue;
-            const FsmStateVertex* const statep = vtx.as<FsmStateVertex>();
-            // State coverage fires when the FSM enters a state from any other
-            // value, so repeated self-holds do not count as new entries.
-            AstCoverOtherDecl* const declp
-                = new AstCoverOtherDecl{flp,
-                                        "v_fsm_state/" + modp->prettyName(),
-                                        graph.stateVarName() + "::" + statep->label(),
-                                        "",
-                                        0,
-                                        graph.stateVarName(),
-                                        "",
-                                        statep->label()};
-            // We run after scoping, so this is declared for one instance only
-            declp->perInstance(true);
-            modp->addStmtsp(declp);
-            AstNodeExpr* const guardp
-                = andExpr(flp,
+        {
+            // Create and increment proper AstNodeCoverDecls
+            const std::string& mode = v3Global.opt.coverageFsmExpand();
+            FsmCoverIncBuilder::FsmExpand expand;
+            if (mode == "full") {
+                expand = FsmCoverIncBuilder::FsmExpand::FULL;
+            } else if (mode == "auto-expand") {
+                expand = FsmCoverIncBuilder::FsmExpand::AUTO_EXPAND;
+            } else {
+                expand = FsmCoverIncBuilder::FsmExpand::AUTO;
+            }
+            const FsmCoverIncBuilder coverIncBuilder{graph, prevVscp, expand};
+            modp->addStmtsp(coverIncBuilder.getCoverDeclsp());
+            initActivep->addStmtsp(coverIncBuilder.getInitialCoverIncp());
+            covPostp->addStmtsp(
+                new AstIf{flp,
                           new AstNeq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
-                                     makeStateConst(flp, prevVscp, statep->value())},
-                          new AstEq{flp, new AstVarRef{flp, sampleVscp, VAccess::READ},
-                                    makeStateConst(flp, sampleVscp, statep->value())});
-            covPostp->addStmtsp(new AstIf{flp, guardp, new AstCoverInc{flp, declp}});
+                                     new AstVarRef{flp, sampleVscp, VAccess::READ}},
+                          coverIncBuilder.getCoverIncp()});
         }
 
-        for (const V3GraphVertex& vtx : graph.vertices()) {
-            const FsmVertex* const fromVertexp = vtx.as<FsmVertex>();
-            for (const V3GraphEdge& edge : fromVertexp->outEdges()) {
-                const FsmArcEdge* const arcp = edge.as<FsmArcEdge>();
-                const FsmStateVertex* const toStatep = arcp->top()->as<FsmStateVertex>();
-                // Arc coverage mirrors the extracted graph exactly, including
-                // reset and synthetic-default sources, so reports match the
-                // reviewer-visible graph dump and the user-visible annotation.
-                const string resetTag
-                    = arcp->isReset() ? (graph.resetInclude() ? "[reset_include]" : "[reset]")
-                                      : "";
-                const string fsmTag = arcp->isReset()
-                                          ? (graph.resetInclude() ? "reset_include" : "reset")
-                                      : arcp->isDefault() ? "default"
-                                                          : "";
-                AstCoverOtherDecl* const declp
-                    = new AstCoverOtherDecl{flp,
-                                            "v_fsm_arc/" + modp->prettyName(),
-                                            graph.stateVarName() + "::" + fromVertexp->label()
-                                                + "->" + toStatep->label() + resetTag,
-                                            "",
-                                            0,
-                                            graph.stateVarName(),
-                                            fromVertexp->label(),
-                                            toStatep->label(),
-                                            fsmTag};
-                // We run after scoping, so this is declared for one instance only
-                declp->perInstance(true);
-                modp->addStmtsp(declp);
-                AstNodeExpr* guardp = nullptr;
-                if (fromVertexp->isResetAny()) {
-                    // Reset arcs are modeled as pseudo-source edges in the
-                    // graph, then reconstructed here into the original simple
-                    // reset predicate combined with the destination state.
-                    guardp = buildResetCond(flp, graph.resetCond().varScopep, graph.resetCond());
-                    guardp
-                        = andExpr(flp, guardp,
-                                  new AstEq{flp, new AstVarRef{flp, sampleVscp, VAccess::READ},
-                                            makeStateConst(flp, sampleVscp, toStatep->value())});
-                } else if (fromVertexp->isDefaultAny()) {
-                    // Synthetic default arcs mean "none of the explicit
-                    // source states matched", so rebuild that as a conjunction
-                    // of previous-state != known-state tests.
-                    for (const V3GraphVertex& stateVtx : graph.vertices()) {
-                        const FsmVertex* const stateVertexp = stateVtx.as<FsmVertex>();
-                        if (!stateVertexp->isState()) continue;
-                        guardp = andExpr(
-                            flp, guardp,
-                            new AstNeq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
-                                       makeStateConst(flp, prevVscp, stateVertexp->value())});
-                    }
-                    guardp
-                        = andExpr(flp, guardp,
-                                  new AstEq{flp, new AstVarRef{flp, sampleVscp, VAccess::READ},
-                                            makeStateConst(flp, sampleVscp, toStatep->value())});
-                } else {
-                    guardp
-                        = andExpr(flp,
-                                  new AstEq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
-                                            makeStateConst(flp, prevVscp, fromVertexp->value())},
-                                  new AstEq{flp, new AstVarRef{flp, sampleVscp, VAccess::READ},
-                                            makeStateConst(flp, sampleVscp, toStatep->value())});
-                }
-                covPostp->addStmtsp(new AstIf{flp, guardp, new AstCoverInc{flp, declp}});
-            }
-        }
         if (updatePrevAfterPost) {
             covPostp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
                                               new AstVarRef{flp, sampleVscp, VAccess::READ}});
