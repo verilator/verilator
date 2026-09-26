@@ -1220,8 +1220,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         AstNodeModule* const modulesp = nodep->modulesp();
         UASSERT_OBJ(modulesp, nodep, "$unit should always be in the netlist");
         if (!modulesp->nextp()) {
-            UASSERT_OBJ(modulesp == v3Global.rootp()->dollarUnitPkgp(), modulesp,
-                        "Sole module should be $unit");
+            UASSERT_OBJ(modulesp->isDollarUnit(), modulesp, "Sole module should be $unit");
             if (!modulesp->stmtsp()) nodep->v3error("No top level module found");
         }
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();

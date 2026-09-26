@@ -1918,7 +1918,7 @@ AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
     , m_constPoolp{new AstConstPool{fileline()}}
-    , m_dollarUnitPkgp{new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"}} {
+    , m_dollarUnitPkgp{new AstPackage{fileline(), AstNode::encodeName("$unit"), "work"}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
     // packages are always libraries; don't want to make them a "top"

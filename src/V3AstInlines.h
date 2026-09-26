@@ -149,6 +149,8 @@ bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
 bool AstActive::hasInitial() const { return m_sentreep->hasInitial(); }
 bool AstActive::hasStatic() const { return m_sentreep->hasStatic(); }
 
+bool AstNodeModule::isDollarUnit() const { return this == v3Global.rootp()->dollarUnitPkgp(); }
+
 AstAlways::AstAlways(AstAssignW* assignp)
     : ASTGEN_SUPER_Always(assignp->fileline(), assignp)
     , m_keyword{VAlwaysKwd::CONT_ASSIGN} {}

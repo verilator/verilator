@@ -670,7 +670,7 @@ class DeadVisitor final : public VNVisitor {
                 nextmodp = VN_AS(modp->nextp(), NodeModule);
                 // Keep $unit until m_elimCells stages. Note v3Global.opt.serializeOnly()
                 // won't reach this stage, and will always have an empty $unit. That's ok.
-                const bool keep = !m_elimCells && modp == v3Global.rootp()->dollarUnitPkgp();
+                const bool keep = !m_elimCells && modp->isDollarUnit();
                 if (modp->dead() || (!modp->isTop() && modp->user1() == 0 && !keep)) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
                     UINFO(4, "  Dead module " << modp);
@@ -681,9 +681,7 @@ class DeadVisitor final : public VNVisitor {
                             cellp->modp()->user1Inc(-1);
                         });
                     }
-                    if (modp == v3Global.rootp()->dollarUnitPkgp()) {
-                        v3Global.rootp()->dollarUnitPkgp(nullptr);
-                    }
+                    if (modp->isDollarUnit()) v3Global.rootp()->dollarUnitPkgp(nullptr);
                     deleting(modp);
                     retry = true;
                 }

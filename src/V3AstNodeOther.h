@@ -358,6 +358,7 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string name() const override VL_MT_STABLE { return m_name; }
     virtual bool timescaleMatters() const = 0;
+    inline bool isDollarUnit() const;  // Is the $unit package
     // ACCESSORS
     void name(const string& name) override { m_name = name; }
     string origName() const override { return m_origName; }
@@ -3231,8 +3232,6 @@ public:
     ASTGEN_MEMBERS_AstPackage;
     string verilogKwd() const override { return "package"; }
     bool timescaleMatters() const override { return !isDollarUnit(); }
-    static string dollarUnitName() { return AstNode::encodeName("$unit"); }
-    bool isDollarUnit() const { return name() == dollarUnitName(); }
 };
 class AstPrimitive final : public AstNodeModule {
     // A primitive declaration
