@@ -70,8 +70,14 @@ void VlDelayScheduler::resume() {
     bool resumed = false;
 
     while (!m_queue.empty() && (m_queue.cbegin()->first == m_context.time())) {
+#ifdef __cpp_lib_node_extract
+        VlDelayedCoroutineQueue::node_type node = m_queue.extract(m_queue.begin());
+        VlCoroutineHandle handle = std::move(node.mapped());
+        if (m_spareNodes.size() < MAX_SPARE_NODES) m_spareNodes.push_back(std::move(node));
+#else
         VlCoroutineHandle handle = std::move(m_queue.begin()->second);
         m_queue.erase(m_queue.begin());
+#endif
         handle.resume();
         resumed = true;
     }
