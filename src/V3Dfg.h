@@ -594,14 +594,14 @@ namespace V3Dfg {
 // Returns true if variable can be represented in the graph
 inline bool isSupported(const AstVarScope* vscp) {
     const AstNodeModule* const modp = vscp->scopep()->modp();
-    if (VN_IS(modp, Module)) {
-        // Regular module supported
+    if (VN_IS(modp, Module) || VN_IS(modp, Package)) {
+        // Regular modules and packages supported
     } else if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
         // Interfaces supported if there are no virtual interfaces for
         // them, otherwise they cannot be resovled statically.
         if (ifacep->hasVirtualRef()) return false;
     } else {
-        return false;  // Anything else (package, class, etc) not supported
+        return false;  // Anything else (class, etc) not supported
     }
     if (DfgVertexVar::hasRWRefs(vscp)) return false;  // Referenced via READWRITE references
     // Check the AstVar
