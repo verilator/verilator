@@ -370,21 +370,21 @@ class WidthVisitor final : public VNVisitor {
     // These have different node types, as they operate differently
     // Must add to case statement below,
     // Widths: 1 bit out, lhs width == rhs width.  real if lhs|rhs real
-    void visit(AstEq* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstNeq* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstGt* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstGte* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstLt* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstLte* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstGtS* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstGteS* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstLtS* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstLteS* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstEqCase* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstNeqCase* nodep) override { visit_cmp_eq_gt(nodep, true); }
+    void visit(AstEq* nodep) override { visit_cmp_eq_gt(nodep, true, true); }
+    void visit(AstNeq* nodep) override { visit_cmp_eq_gt(nodep, true, true); }
+    void visit(AstGt* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstGte* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstLt* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstLte* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstGtS* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstGteS* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstLtS* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstLteS* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstEqCase* nodep) override { visit_cmp_eq_gt(nodep, true, true); }
+    void visit(AstNeqCase* nodep) override { visit_cmp_eq_gt(nodep, true, true); }
     // ...    These comparisons don't allow reals
-    void visit(AstEqWild* nodep) override { visit_cmp_eq_gt(nodep, false); }
-    void visit(AstNeqWild* nodep) override { visit_cmp_eq_gt(nodep, false); }
+    void visit(AstEqWild* nodep) override { visit_cmp_eq_gt(nodep, false, false); }
+    void visit(AstNeqWild* nodep) override { visit_cmp_eq_gt(nodep, false, false); }
     // ...    Real compares
     void visit(AstEqD* nodep) override { visit_cmp_real(nodep); }
     void visit(AstNeqD* nodep) override { visit_cmp_real(nodep); }
@@ -2260,7 +2260,7 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(replaceWithDVersion(nodep), nodep);
                 return;
             }
-
+            if (checkOperands(nodep, true)) return;
             checkCvtUS(nodep->lhsp(), false);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             nodep->dtypeFrom(nodep->lhsp());
@@ -8404,6 +8404,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->op1p(), BOTH);
             nodep->dtypeSetBit();
+            if (checkOperands(nodep, true)) return;
             // IEEE 1800-2023 16.12.3: property 'not' is not a sequence operator.
             // Boolean '!' is allowed in sequences (16.7 expression_or_dist).
             // The parser distinguishes the two via AstLogNot::fromProperty().
@@ -8428,6 +8429,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
             nodep->dtypeSetBit();
+            if (checkOperands(nodep, true)) return;
         }
     }
     void visitAbortProp(AstAbortOn* nodep) {
@@ -8556,7 +8558,7 @@ class WidthVisitor final : public VNVisitor {
         return dtypep->isAggregateType();
     }
 
-    void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok) {
+    void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok, bool nonNumericOk) {
         // CALLER: AstEq, AstGt, ..., AstLtS
         // Real allowed if and only if real_lhs set
         // See IEEE-2012 11.4.4, and 11.8.1:
@@ -8607,6 +8609,7 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
+                if (!nonNumericOk && checkOperands(nodep, realok)) return;
             } else if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
                 if (!realok) {
                     nodep->v3error("Real is illegal operand to ?== operator");
@@ -8730,6 +8733,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             if (!real_ok) checkCvtUS(nodep->lhsp(), false);
+            if (checkOperands(nodep, real_ok)) return;
         }
         if (real_ok && nodep->lhsp()->isDouble()) {
             spliceCvtD(nodep->lhsp());
@@ -8788,6 +8792,7 @@ class WidthVisitor final : public VNVisitor {
         // See IEEE 2012 11.4.10:
         //   RHS is self-determined. RHS is always treated as unsigned, has no effect on result.
         iterate_shift_prelim(nodep);
+        if (checkOperands(nodep, false)) return;
         nodep->dtypeChgSigned(nodep->lhsp()->isSigned());
         const AstNodeBiop* const newp = iterate_shift_final(nodep);
         VL_DANGLING(nodep);
@@ -8847,6 +8852,54 @@ class WidthVisitor final : public VNVisitor {
         return nodep;  // May edit
     }
 
+    // Helper method that unwraps nodep->dtype->skipRefp->isIntegralOrPacked
+    static bool isValidOperandType(const AstNode* const nodep, bool realok) {
+        const AstNodeDType* dtypep = nodep->dtypep();
+        // Node may not have dtype because of earlier errors
+        if (!dtypep) return false;
+        const AstNodeDType* const skippedp = dtypep->skipRefp();
+        const AstBasicDType* const basicp = skippedp->basicp();
+        // Let untyped nodes pass through, these are handled in V3AssertPre
+        if ((basicp && basicp->untyped()) || (realok && nodep->isDouble())) return true;
+        return skippedp->isIntegralOrPacked();
+    }
+
+    // Returns true if the operand is invalid, false otherwise
+    // Replaces the operand to maintain validity if the lhs and rhs are not
+    // integral, packed, or optionally real
+    bool checkOperands(AstNodeBiop* nodep, bool realok) {
+        UASSERT_OBJ(nodep->lhsp(), nodep, "LHSP must be non-null here");
+        UASSERT_OBJ(nodep->rhsp(), nodep, "RHSP must be non-null here");
+        const bool lhsIsValid = isValidOperandType(nodep->lhsp(), realok);
+        const bool rhsIsValid = isValidOperandType(nodep->rhsp(), realok);
+        if (lhsIsValid && rhsIsValid) return false;
+        const AstNodeExpr* const invalidp = lhsIsValid ? nodep->rhsp() : nodep->lhsp();
+        // Node may not have dtype because of earlier errors
+        const std::string prettyTypeQuotedName
+            = invalidp->dtypep() ? invalidp->dtypep()->prettyDTypeNameQ() : "'UNKNOWN'";
+        nodep->v3error(ucfirst(nodep->prettyOperatorName())
+                       << " expects integral " << (realok ? "or real " : "") << "operand on the "
+                       << (lhsIsValid ? "RHS" : "LHS")
+                       << ", but it's data type is: " << prettyTypeQuotedName);
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return true;
+    }
+
+    bool checkOperands(AstNodeUniop* nodep, bool realok) {
+        UASSERT_OBJ(nodep->lhsp(), nodep, "LHSP must be non-null here");
+        if (isValidOperandType(nodep->lhsp(), realok)) return false;
+        // Node may not have dtype because of earlier errors
+        const std::string prettyTypeQuotedName
+            = nodep->lhsp()->dtypep() ? nodep->lhsp()->dtypep()->prettyDTypeNameQ() : "'UNKNOWN'";
+        nodep->v3error(ucfirst(nodep->prettyOperatorName())
+                       << " expects integral " << (realok ? "or real " : "") << "operand"
+                       << ", but it's data type is: " << prettyTypeQuotedName);
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return true;
+    }
+
     void visit_boolexpr_and_or(AstNodeBiop* nodep) {
         // CALLER: And, Or, Xor, ...
         // Lint widths: out width = lhs width = rhs width
@@ -8862,6 +8915,7 @@ class WidthVisitor final : public VNVisitor {
             // Determine expression widths only relying on what's in the subops
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+            if (checkOperands(nodep, false)) return;
             checkCvtUS(nodep->lhsp(), false);
             checkCvtUS(nodep->rhsp(), false);
             const int width = std::max(nodep->lhsp()->width(), nodep->rhsp()->width());
@@ -8930,6 +8984,7 @@ class WidthVisitor final : public VNVisitor {
                 const bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
                 nodep->dtypeChgWidthSigned(width, mwidth, VSigning::fromBool(expSigned));
             }
+            if (checkOperands(nodep, real_ok)) { return; }
         }
         if (m_vup->final()) {
             // Parent's data type was computed using the max(upper, nodep->dtype)

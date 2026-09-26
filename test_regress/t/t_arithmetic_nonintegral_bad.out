@@ -1,0 +1,114 @@
+%Error: t/t_arithmetic_nonintegral_bad.v:14:18: Operator ADD expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   14 |     sink = x_arr + x;
+      |                  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_arithmetic_nonintegral_bad.v:15:18: Operator SUB expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   15 |     sink = x_arr - x;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:16:18: Operator MUL expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   16 |     sink = x_arr * x;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:17:18: Operator DIV expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   17 |     sink = x_arr / x;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:18:18: Operator POW expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   18 |     sink = x_arr ** x;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:19:18: Operator MODDIV expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   19 |     sink = x_arr % x;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:20:18: Operator AND expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   20 |     sink = x_arr & x;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:21:18: Operator OR expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   21 |     sink = x_arr | x;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:22:18: Operator XOR expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   22 |     sink = x_arr ^ x;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:23:18: Operator XOR expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   23 |     sink = x_arr ^~ x;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:24:18: Operator XOR expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   24 |     sink = x_arr ~^ x;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:25:18: Operator SHIFTR expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   25 |     sink = x_arr >> x;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:26:18: Operator SHIFTL expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   26 |     sink = x_arr << x;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:27:18: Operator SHIFTRS expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   27 |     sink = x_arr >>> x;
+      |                  ^~~
+%Error: t/t_arithmetic_nonintegral_bad.v:28:18: Operator SHIFTL expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   28 |     sink = x_arr <<< x;
+      |                  ^~~
+%Error: t/t_arithmetic_nonintegral_bad.v:29:18: Operator LOGAND expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   29 |     sink = x_arr && x;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:30:18: Operator LOGOR expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   30 |     sink = x_arr || x;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:31:18: Operator LOGIF expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   31 |     sink = x_arr -> x;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:32:18: Operator LOGEQ expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   32 |     sink = x_arr <-> x;
+      |                  ^~~
+%Error: t/t_arithmetic_nonintegral_bad.v:33:18: Operator LT expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   33 |     sink = x_arr < x_arr_2;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:35:18: Operator LTE expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   35 |     sink = x_arr <= x_arr_2;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:36:18: Operator GT expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   36 |     sink = x_arr > x_arr_2;
+      |                  ^
+%Error: t/t_arithmetic_nonintegral_bad.v:37:18: Operator GTE expects integral or real operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   37 |     sink = x_arr >= x_arr_2;
+      |                  ^~
+%Error: t/t_arithmetic_nonintegral_bad.v:38:18: Operator EQWILD expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   38 |     sink = x_arr ==? x_arr_2;
+      |                  ^~~
+%Error: t/t_arithmetic_nonintegral_bad.v:39:18: Operator NEQWILD expects integral operand on the LHS, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   39 |     sink = x_arr !=? x_arr_2;
+      |                  ^~~
+%Error: t/t_arithmetic_nonintegral_bad.v:41:12: Operator NEGATE expects integral or real operand, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   41 |     sink = -x_arr;
+      |            ^
+%Error: t/t_arithmetic_nonintegral_bad.v:42:12: Operator NOT expects integral operand, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   42 |     sink = ~x_arr;
+      |            ^
+%Error: t/t_arithmetic_nonintegral_bad.v:43:12: Operator LOGNOT expects integral or real operand, but it's data type is: 'logic$[0:2]'
+                                              : ... note: In instance 't'
+   43 |     sink = !x_arr;
+      |            ^
+%Error: Exiting due to
