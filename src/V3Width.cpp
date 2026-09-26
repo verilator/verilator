@@ -1608,7 +1608,8 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstEmptyQueue* nodep) override {
         nodep->dtypeSetEmptyQueue();
-        if (!VN_IS(nodep->backp(), Assign) && !VN_IS(nodep->backp(), Var)) {
+        if (!VN_IS(nodep->backp(), Assign) && !VN_IS(nodep->backp(), Var)
+            && !VN_IS(nodep->backp(), Arg)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported/Illegal: empty queue ('{}') in this context");
         }
@@ -6240,14 +6241,15 @@ class WidthVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
     }
+    AstNodeExpr* newConsDynArrayOrQueue(FileLine* fileline, const AstNodeDType* dtypep) {
+        if (VN_IS(dtypep, DynArrayDType)) return new AstConsDynArray{fileline};
+        if (VN_IS(dtypep, QueueDType)) return new AstConsQueue{fileline};
+        return nullptr;
+    }
     void patternDynArrayOrQueue(AstPattern* nodep, AstNodeDType* arrayp) {
-        AstNodeExpr* newp = nullptr;
+        AstNodeExpr* newp = newConsDynArrayOrQueue(nodep->fileline(), arrayp);
+        UASSERT_OBJ(newp, nodep, "Expected dynamic array or queue data type");
         const bool isDynArray = VN_IS(arrayp, DynArrayDType);
-        if (isDynArray) {
-            newp = new AstConsDynArray{nodep->fileline()};
-        } else {
-            newp = new AstConsQueue{nodep->fileline()};
-        }
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
@@ -7878,9 +7880,21 @@ class WidthVisitor final : public VNVisitor {
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
                 const AstArg* const argp = tconnect.second;
-                AstNodeExpr* const pinp = argp->exprp();
+                AstNodeExpr* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 AstNodeDType* const portDTypep = portp->dtypep()->skipRefToEnump();
+                if (VN_IS(pinp, EmptyQueue)) {
+                    AstNodeExpr* newp = newConsDynArrayOrQueue(pinp->fileline(), portDTypep);
+                    if (!newp) {
+                        pinp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported/Illegal: empty queue ('{}') in this context");
+                        newp = new AstConst{pinp->fileline(), AstConst::Unsized32{}, 0};
+                    }
+                    newp->dtypeFrom(portDTypep);
+                    pinp->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(pinp), pinp);
+                    pinp = newp;
+                }
                 const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefToEnump();
                 const AstIfaceRefDType* const portIfacep
                     = VN_CAST(portDTypep->elemDTypep(true), IfaceRefDType);
