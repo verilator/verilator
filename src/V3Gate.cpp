@@ -168,6 +168,10 @@ public:
                 // Public signals shouldn't be changed, pli code might be messing with them
                 vVtxp->clearReducibleAndDedupable("SigPublic");
                 vVtxp->setConsumed("SigPublic");
+            } else if (vscp->varp()->isSigVpiLazyRetained()) {
+                // Dedup would sever VPI from the driver.
+                vVtxp->clearDedupable("SigVpiLazyRetained");
+                vVtxp->setConsumed("SigVpiLazyRetained");
             }
             if (vscp->varp()->isIO() && vscp->scopep()->isTop()) {
                 // We may need to convert to/from sysc/reg sigs
@@ -734,6 +738,11 @@ class GateInline final {
             for (V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
+                // One reconstruct function serves every instance.
+                if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
+                    if (cfuncp->vpiLazyReconstruct()) continue;
+                }
+
                 // Do not inline anything other than buffers and inverters into
                 // sensitivity lists. If the signal becomes constant, we might
                 // miss an initialization time edge.
@@ -788,8 +797,8 @@ class GateInline final {
                 ++m_statRefs;
             }
 
-            // If removed all usage
-            if (vVtxp->outEmpty()) {
+            // Retained variables keep their drivers for VPI.
+            if (vVtxp->outEmpty() && !vscp->varp()->isSigVpiLazyRetained()) {
                 // Remove Variable vertex
                 VL_DO_DANGLING(vVtxp->unlinkDelete(&m_graph), vVtxp);
                 // Remove driving logic and vertex

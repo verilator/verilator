@@ -2298,6 +2298,17 @@ inline std::ostream& operator<<(std::ostream& os, const VVarType& rhs) VL_MT_SAF
 
 // ######################################################################
 
+enum class VVpiLazyRole : uint8_t {
+    NONE = 0,
+    RECONSTRUCTED,  // VPI-visible candidate; storage dropped, rebuilt on read
+    RETAINED,  // Storage kept for VPI, not otherwise public
+    SHADOW,  // Cold storage holding a reconstructed signal's value
+    SHADOW_HELPER,  // Shadow of a non-VPI source; only its copies get VPI rows
+    SHADOW_TEMP  // Cold storage for a group variable with no VPI descriptor slot of its own
+};
+
+// ######################################################################
+
 // Not in sorted order, as depends on above classes
 class VBasicTypeKey final {
 public:

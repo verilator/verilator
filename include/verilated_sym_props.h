@@ -30,6 +30,7 @@
 
 #include "verilated.h"
 
+#include <cstring>
 #include <vector>
 
 //===========================================================================
@@ -176,6 +177,9 @@ public:
         return bits;
     }
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
+    bool isLazyPublicRW() const { return ((m_vlflags & VLVF_LAZY_PUBLIC_RW) != 0); }
+    bool isLazyRetained() const { return ((m_vlflags & VLVF_LAZY_RETAINED) != 0); }
+    uint32_t lazyShape() const { return m_vlflags & VLVF_LAZY_SHAPE_MASK; }
     bool isForceable() const { return ((m_vlflags & VLVF_FORCEABLE) != 0); }
     bool isContinuously() const { return ((m_vlflags & VLVF_CONTINUOUSLY) != 0); }
     // DPI compatible C standard layout
@@ -275,6 +279,8 @@ public:
 // Thread safety: Assume is constructed only with model, then any number of readers
 
 struct VerilatedForceControlSignals;
+class VerilatedVpioVar;
+
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
     void* const m_datap;  // Location of data
@@ -298,12 +304,38 @@ public:
     ~VerilatedVar();
     VerilatedVar(VerilatedVar&&);
     // ACCESSORS
-    void* datap() const { return m_datap; }
+    void* datap() const {
+        // A --vpi-lazy row's m_datap is a VerilatedVarLazyDatap, so returning it as the value
+        // would hand back the descriptor; such a row is readable only through VPI. Debug-only,
+        // as datap() is on the VPI read path of every model, lazy or not.
+        VL_DEBUG_IF(  // LCOV_EXCL_START
+            if (VL_UNCOVERABLE(isLazyPublicRW())) {
+                VL_FATAL_MT(__FILE__, __LINE__, m_namep,
+                            "VerilatedVar::datap() on a --vpi-lazy reconstructed signal,"
+                            " read it through VPI");
+            });  // LCOV_EXCL_STOP
+        return m_datap;
+    }
+    // Reconstruct a --vpi-lazy row, or nothing for a plain one, and return a READ view of the
+    // storage. Const because it is otherwise the shortest route to a mutable pointer into a
+    // lazy row, and a store through such a pointer would skip the deposit claim.
+    inline const void* datapRefresh(VerilatedLazyStamps stamps) const VL_MT_UNSAFE_ONE;
+    inline void datapClaimDeposit(VerilatedLazyStamps stamps) const VL_MT_UNSAFE_ONE;
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
     const VerilatedForceControlSignals* forceControlSignals() const {
         return m_forceControlSignals.get();
     }
+
+private:
+    // The --vpi-lazy descriptor; only meaningful when isLazyPublicRW(). Private, because selfp
+    // plus storageOffset is a mutable pointer into a lazy row, and only VlVpiWriteAccess may
+    // hold one; VerilatedVpioVar::storagep() is the single friend that computes that address.
+    VerilatedVarLazyDatap* lazyDatap() const {
+        VL_DEBUG_IFDEF(assert(isLazyPublicRW()););
+        return static_cast<VerilatedVarLazyDatap*>(m_datap);
+    }
+    friend class VerilatedVpioVar;
 };
 
 //===========================================================================
@@ -339,5 +371,45 @@ inline VerilatedVar::VerilatedVar(
     , m_isParam{isParam} {}
 inline VerilatedVar::~VerilatedVar() = default;
 inline VerilatedVar::VerilatedVar(VerilatedVar&&) = default;
+// Not MT safe: runs generated reconstruction code and writes the model's shadow storage
+const void* VerilatedVar::datapRefresh(VerilatedLazyStamps stamps) const VL_MT_UNSAFE_ONE {
+    if (!isLazyPublicRW()) return m_datap;
+    auto* const lazyDatap = static_cast<VerilatedVarLazyDatap*>(m_datap);
+    uint8_t* const basep = static_cast<uint8_t*>(lazyDatap->selfp);
+    if (lazyShape() == VLVF_LAZY_CONE) {
+        // The func would skip its commit to a deposited row anyway; skipping the call keeps a
+        // deposited read at a single load and does not rebuild a cone nobody asked for.
+        const uint64_t* const depp
+            = reinterpret_cast<const uint64_t*>(basep + lazyDatap->srcOffset);
+        if (VL_LIKELY(*depp != stamps.deposited)) (lazyDatap->refreshp)(lazyDatap->selfp);
+        return basep + lazyDatap->storageOffset;
+    }
+    // Copy and fold rows have no generated body, so nothing can take a deposit back and the
+    // descriptor's own stamp carries it. A deposit outranks the copy: the shadow is this row's
+    // value until the next eval step, however many epochs other deposits burn through.
+    if (VL_UNLIKELY(lazyDatap->stamp == stamps.deposited)) return basep + lazyDatap->storageOffset;
+    if (lazyDatap->stamp != stamps.refreshed) {
+        lazyDatap->stamp = stamps.refreshed;
+        // A folded row copies the cone shadow this call rebuilds, deposit preserved and all
+        if (lazyShape() == VLVF_LAZY_FOLD) (lazyDatap->refreshp)(lazyDatap->selfp);
+        std::memcpy(basep + lazyDatap->storageOffset, basep + lazyDatap->srcOffset, totalSize());
+    }
+    return basep + lazyDatap->storageOffset;
+}
+// Claim this row's shadow as a deposit, so reads return it and a cone body skips the commit that
+// would take it back, until the next lazyEvalEnd() moves the deposit generation. Called once the
+// store has committed: a put rejected between the pre-store refresh and here must leave no claim.
+void VerilatedVar::datapClaimDeposit(VerilatedLazyStamps stamps) const VL_MT_UNSAFE_ONE {
+    if (!isLazyPublicRW()) return;
+    VerilatedVarLazyDatap* const datap = lazyDatap();
+    if (lazyShape() != VLVF_LAZY_CONE) {
+        datap->stamp = stamps.deposited;
+        return;
+    }
+    // varsInsertFromTable() rejects a cone row whose srcOffset is not a usable word offset, so
+    // this write cannot land on an arbitrary byte of the instance
+    *reinterpret_cast<uint64_t*>(static_cast<uint8_t*>(datap->selfp) + datap->srcOffset)
+        = stamps.deposited;
+}
 
 #endif  // Guard

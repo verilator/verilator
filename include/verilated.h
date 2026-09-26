@@ -100,6 +100,7 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+class VerilatedSyms;
 class VerilatedIfaceRef;
 class VerilatedIfaceRefMap;
 struct VlIfaceRefTableEntry;
@@ -161,7 +162,39 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
     VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
-    VLVF_NET = (1 << 15)  // Net object
+    VLVF_NET = (1 << 15),  // Net object
+    VLVF_LAZY_PUBLIC_RW = (1 << 16),
+    VLVF_LAZY_RETAINED = (1 << 17),
+    VLVF_LAZY_SHAPE_MASK = (3 << 18),
+    VLVF_LAZY_CONE = (0 << 18),
+    VLVF_LAZY_COPY = (1 << 18),
+    VLVF_LAZY_FOLD = (2 << 18)
+};
+
+// --vpi-lazy descriptor. srcOffset is signed for cross-scope copy rows.
+struct VerilatedVarLazyDatap final {
+    void (*refreshp)(void* selfp);
+    void* selfp;
+    uint64_t stamp;
+    uint32_t storageOffset;
+    // Deposit word for cones; copy source for copy/fold rows.
+    int32_t srcOffset;
+};
+
+// ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
+static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpectedly grew");
+
+// Refreshed is even and deposited odd, so zero matches neither.
+struct VerilatedLazyStamps final {
+    uint64_t refreshed;
+    uint64_t deposited;
+};
+
+// One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyIdx
+struct VlLazyReconEntry final {
+    void (*refreshp)(void* selfp);
+    int32_t srcByteOffset;
+    uint32_t vlflags;
 };
 
 // One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
@@ -171,9 +204,10 @@ struct VlVarTableEntry final {
     const char* namep;  // VPI-facing (protected) variable name, string literal
     size_t byteOffset;  // offsetof of storage member from module instance base
     VerilatedVarType vltype;
-    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
+    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_PUBLIC_RW
     uint8_t udims;  // udims + pdims <= kMaxDims
     uint8_t pdims;
+    int32_t lazyIdx;  // -1: normal; else module-relative --vpi-lazy slot
     // (left,right) pairs: unpacked dims first, then packed; int32_t since large
     // unpacked memories exceed int16 range
     int32_t dims[kMaxDims * 2];
@@ -373,7 +407,8 @@ private:
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 
     // Entry points called by VerilatedEvalLoop
-    virtual void evalBegin() = 0;
+    // Returns a pending settle request: only --vpi-lazy makes one, and consumes it here
+    virtual bool evalBegin() = 0;
     virtual void evalEnd() = 0;
     virtual void evalStatic() = 0;
     virtual void evalInitial() = 0;
@@ -929,6 +964,26 @@ public:  // But for internal use only
     // Keep first so is at zero offset for fastest code
     VerilatedContext* const _vm_contextp__;  // Context for current model
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
+    // --vpi-lazy: reconstruction generation. Memos equal to it are fresh; starts at 1 so zero
+    // stamps are stale. Every VPI deposit bumps it too, whatever row it lands on, and that
+    // wholesale miss is what makes a dependent reconstructed signal see the override.
+    uint64_t __Vm_lazyEpoch = 1;
+    // --vpi-lazy: deposit generation, the value a deposited row's word holds. Only
+    // lazyEvalEnd() moves it, so depositing into one row never retires another's deposit, and
+    // it is odd, so it never equals a zero-initialized word or an (epoch << 1) one.
+    uint64_t __Vm_lazyDepStamp = 3;
+    bool __Vm_vpiLazyWritten = false;  // --vpi-lazy deposit awaiting a settle
+    // --vpi-lazy: retire an eval step's reconstruction state. The epoch bump retires every cone
+    // memo, the deposit bump every deposit, both in O(1) however many rows were deposited.
+    // Called from the generated evalEnd(), so retirement is per EVAL step, not per time step: a
+    // deposit survives zero eval()s and is retired by each of several eval()s at one simulation
+    // time. That is a conservative reading of 38.34's "until one of the drivers of the net
+    // changes value" - eval is when drivers may have changed - and errs toward the true
+    // resolved value; per-net driver tracking is the work the lazy scheme exists to avoid.
+    void lazyEvalEnd() VL_MT_UNSAFE_ONE {
+        ++__Vm_lazyEpoch;
+        __Vm_lazyDepStamp += 2;
+    }
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
     VL_UNCOPYABLE(VerilatedSyms);
@@ -1005,7 +1060,10 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
-    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    // lazyBasep/lazyReconsp are null when the table has no lazy rows; both keyed by lazyIdx
+    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                             VerilatedVarLazyDatap* lazyBasep,
+                             const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;
     static void ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,

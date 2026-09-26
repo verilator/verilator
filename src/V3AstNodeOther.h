@@ -545,6 +545,8 @@ class AstCFunc final : public AstNode {
                          // so adding/removing loose functions doesn't recompile everything.
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
+    bool m_vpiLazyReconstruct : 1;  // Shared --vpi-lazy reconstruct cone
+    bool m_voidSelfArg : 1;  // Receives untyped self pointer
     bool m_dpiPure : 1;  // Pure DPI function
     bool m_dpiContext : 1;  // Declared as 'context' DPI import/export function
     bool m_dpiExportDispatcher : 1;  // This is the DPI export entry point (i.e.: called by user)
@@ -579,6 +581,8 @@ public:
         m_isVirtual = false;
         m_needProcess = false;
         m_entryPoint = false;
+        m_vpiLazyReconstruct = false;
+        m_voidSelfArg = false;
         m_dpiPure = false;
         m_dpiContext = false;
         m_dpiExportDispatcher = false;
@@ -600,6 +604,8 @@ public:
         const AstCFunc* const asamep = VN_DBG_AS(samep, CFunc);
         return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && isLoose() == asamep->isLoose()
+                && vpiLazyReconstruct() == asamep->vpiLazyReconstruct()
+                && voidSelfArg() == asamep->voidSelfArg()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
     //
@@ -647,6 +653,10 @@ public:
     void setNeedProcess() { m_needProcess = true; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
+    bool vpiLazyReconstruct() const { return m_vpiLazyReconstruct; }
+    void vpiLazyReconstruct(bool flag) { m_vpiLazyReconstruct = flag; }
+    bool voidSelfArg() const { return m_voidSelfArg; }
+    void voidSelfArg(bool flag) { m_voidSelfArg = flag; }
     bool dpiPure() const { return m_dpiPure; }
     void dpiPure(bool flag) { m_dpiPure = flag; }
     bool dpiContext() const { return m_dpiContext; }
@@ -1598,9 +1608,12 @@ class AstNetlist final : public AstNode {
     std::array<AstCFunc*, VEval::_ENUM_END> m_evalFuncps{};
     // The trigger dump function of each region if exists, otherwise nullptr
     std::array<AstCFunc*, VEval::_ENUM_END> m_dumpTriggersFuncps{};
+    // --vpi-lazy pass state
+    V3VpiLazyContext* m_vpiLazyContextp = nullptr;
 
 public:
     AstNetlist();
+    ~AstNetlist() override;
     ASTGEN_MEMBERS_AstNetlist;
     const char* broken() const override;
     void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.insert(varp); }
@@ -1614,6 +1627,8 @@ public:
     AstNodeModule* topModulep() const VL_MT_STABLE {  // Top module in hierarchy
         return modulesp();  // First one in the list, for now
     }
+    V3VpiLazyContext* vpiLazyContextp() const { return m_vpiLazyContextp; }
+    V3VpiLazyContext& createVpiLazyContext();
     AstTypeTable* typeTablep() { return m_typeTablep; }
     AstConstPool* constPoolp() { return m_constPoolp; }
     string astConstOrigParamName(const AstConst* nodep) const;
@@ -2295,6 +2310,12 @@ class AstVar final : public AstNode {
     bool m_sigModPublic : 1;  // User C code accesses this signal and module
     bool m_sigUserRdPublic : 1;  // User C code accesses this signal, read only
     bool m_sigUserRWPublic : 1;  // User C code accesses this signal, read-write
+    // Source storage for a copied shadow
+    // @astgen ptr := m_lazyCopySrcp : Optional[AstVar]
+    // Reconstruct function for a shadow
+    // @astgen ptr := m_lazyReconFuncp : Optional[AstCFunc]
+    bool m_lazyShadowNet : 1;  // Net shadow is a MODULETEMP
+    VVpiLazyRole m_vpiLazyRole : 3;  // --vpi-lazy role
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_funcLocal : 1;  // Local variable for a function
@@ -2363,6 +2384,8 @@ class AstVar final : public AstNode {
         m_sigModPublic = false;
         m_sigUserRdPublic = false;
         m_sigUserRWPublic = false;
+        m_lazyShadowNet = false;
+        m_vpiLazyRole = VVpiLazyRole::NONE;
         m_funcLocal = false;
         m_funcLocalSticky = false;
         m_funcReturn = false;
@@ -2541,6 +2564,10 @@ public:
         m_sigUserRWPublic = flag;
         if (flag) sigUserRdPublic(true);
     }
+    void lazyCopySrc(AstVar* varp) { m_lazyCopySrcp = varp; }
+    void lazyReconFuncp(AstCFunc* funcp) { m_lazyReconFuncp = funcp; }
+    void lazyShadowNet(bool flag) { m_lazyShadowNet = flag; }
+    void vpiLazyRole(VVpiLazyRole role) { m_vpiLazyRole = role; }
     void sc(bool flag) { m_sc = flag; }
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
@@ -2675,6 +2702,29 @@ public:
     bool isSigModPublic() const { return m_sigModPublic && !isIfaceRef(); }
     bool isSigUserRdPublic() const { return m_sigUserRdPublic && !isIfaceRef(); }
     bool isSigUserRWPublic() const { return m_sigUserRWPublic && !isIfaceRef(); }
+    VVpiLazyRole vpiLazyRole() const { return m_vpiLazyRole; }
+    bool isSigVpiLazyRWPublic() const {
+        return m_vpiLazyRole == VVpiLazyRole::RECONSTRUCTED && !isIfaceRef();
+    }
+    bool isSigVpiLazyRetained() const {
+        return m_vpiLazyRole == VVpiLazyRole::RETAINED && !isIfaceRef();
+    }
+    bool isSigExternallyRWPublic() const {
+        return isSigUserRWPublic() || isSigVpiLazyRWPublic() || isSigVpiLazyRetained();
+    }
+    // Retained lazy deposits are consumed by settle.
+    bool isSigExternallyWrittenAsync() const {
+        return isSigUserRWPublic() || isSigVpiLazyRWPublic();
+    }
+    AstVar* lazyCopySrc() const { return m_lazyCopySrcp; }
+    AstCFunc* lazyReconFuncp() const { return m_lazyReconFuncp; }
+    bool isLazyReconstructShadow() const {
+        return m_vpiLazyRole == VVpiLazyRole::SHADOW
+               || m_vpiLazyRole == VVpiLazyRole::SHADOW_HELPER;
+    }
+    bool isLazyReconstructHelper() const { return m_vpiLazyRole == VVpiLazyRole::SHADOW_HELPER; }
+    bool isLazyReconstructTemp() const { return m_vpiLazyRole == VVpiLazyRole::SHADOW_TEMP; }
+    bool isLazyShadowNet() const { return m_lazyShadowNet; }
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_rand.isRand(); }
     bool isRandC() const { return m_rand.isRandC(); }
