@@ -1062,8 +1062,7 @@ class ConstVisitor final : public VNVisitor {
         collectFixedAggregateTerms(dstp, termps, false);
         int srcWidth = srcp->width();
         if (srcWidth < dstWidth) {
-            AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
-            extendp->dtypeSetLogicSized(dstWidth, VSigning::UNSIGNED);
+            AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dstWidth};
             srcp = new AstShiftL{
                 extendp->fileline(), extendp,
                 new AstConst{extendp->fileline(), static_cast<uint32_t>(dstWidth - srcWidth)},
@@ -2590,8 +2589,7 @@ class ConstVisitor final : public VNVisitor {
                 if (lowerAsFixedAggregate(streamSrcp->dtypep())) {
                     AstNodeExpr* const packedp = packFixedAggregate(streamSrcp->unlinkFrBack());
                     streamp->lhsp(packedp);
-                    streamp->dtypeSetLogicUnsized(packedp->width(), packedp->widthMin(),
-                                                  VSigning::UNSIGNED);
+                    streamp->inferDType();
                 }
             }
             VL_DO_DANGLING(pushDeletep(cvtp), cvtp);
@@ -2640,8 +2638,7 @@ class ConstVisitor final : public VNVisitor {
                 const int sWidth = srcp->width();
                 const int dWidth = nodep->lhsp()->width();
                 if (sWidth < dWidth) {
-                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
-                    extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
+                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dWidth};
                     srcp = new AstShiftL{
                         srcp->fileline(), extendp,
                         new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
@@ -2690,12 +2687,7 @@ class ConstVisitor final : public VNVisitor {
             const int dWidth = dstp->width();
             // Connect the rhs to the stream operator and update its width
             VN_AS(streamp, StreamL)->lhsp(srcp);
-            if (VN_IS(srcDTypep, DynArrayDType) || VN_IS(srcDTypep, QueueDType)
-                || VN_IS(srcDTypep, UnpackArrayDType)) {
-                streamp->dtypeSetStream();
-            } else {
-                streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
-            }
+            streamp->inferDType();
             if (VN_IS(dstDTypep, UnpackArrayDType)) {
                 streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstDTypep};
             } else {
@@ -2778,8 +2770,7 @@ class ConstVisitor final : public VNVisitor {
                     // The right stream operator packs left-to-right, so remaining
                     // LSBs are zero-filled (IEEE 1800-2023 11.4.14.3).
                     if (!VN_IS(srcp->dtypep()->skipRefp(), QueueDType)) {
-                        AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
-                        extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
+                        AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dWidth};
                         srcp = new AstShiftL{
                             srcp->fileline(), extendp,
                             new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
@@ -2803,8 +2794,7 @@ class ConstVisitor final : public VNVisitor {
             if (lowerAsFixedAggregate(srcDTypep)) {
                 AstNodeExpr* const packedp = packFixedAggregate(srcp->unlinkFrBack());
                 streamp->lhsp(packedp);
-                streamp->dtypeSetLogicUnsized(packedp->width(), packedp->widthMin(),
-                                              VSigning::UNSIGNED);
+                streamp->inferDType();
                 srcp = packedp;
             } else if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
                         || VN_IS(srcDTypep, UnpackArrayDType))) {
@@ -2880,7 +2870,6 @@ class ConstVisitor final : public VNVisitor {
         AstAnd* const newp
             = new AstAnd{nodep->fileline(), new AstConst{nodep->fileline(), val}, fromp};
         // widthMin no longer applicable if different C-expanded width
-        newp->dtypeSetLogicSized(nodep->width(), VSigning::UNSIGNED);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         UINFOTREE(9, newp, "", "_new");

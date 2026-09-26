@@ -816,19 +816,30 @@ public:
     void dtypeSetLogicSized(int width, VSigning numeric) {
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
+    void dtypeSetBitOrLogicUnsized(int width, int widthMin, VSigning numeric, bool isFourstate) {
+        dtypep(findBitOrLogicDType(width, widthMin, numeric, isFourstate));
+    }
+    void dtypeSetBitOrLogicSized(int width, VSigning numeric, bool isFourstate) {
+        dtypep(findBitOrLogicDType(width, width, numeric,
+                                   isFourstate));  // Since sized, widthMin is width
+    }
     void dtypeSetBit() { dtypep(findBitDType()); }
     void dtypeSetLogic() { dtypep(findLogicDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
     void dtypeSetInt() { dtypep(findIntDType()); }
     void dtypeSetInteger() { dtypep(findIntegerDType()); }
-    // TODO: add a type to handle 4-state integers with 2-state domain
-    void dtypeSetInteger2State() { dtypep(findIntegerDType()); }
+    void dtypeSetInteger2State() { dtypep(findInteger2StateDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
+    void dtypeSetTime() { dtypep(findTimeDType()); }
+    void dtypeSetTime2State() { dtypep(findTime2StateDType()); }
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
     void dtypeSetStream() { dtypep(findStreamDType()); }
     void dtypeSetVoid() { dtypep(findVoidDType()); }
+    void dtypeSetBitOrLogic(bool isFourstate) {
+        dtypep(isFourstate ? findLogicDType() : findBitDType());
+    }
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
@@ -836,10 +847,17 @@ public:
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
     AstNodeDType* findIntegerDType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
+    AstNodeDType* findInteger2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::INTEGER2STATE);
+    }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }
     AstNodeDType* findSigned8DType() const { return findBasicDType(VBasicDTypeKwd::BYTE); }
     AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }
+    AstNodeDType* findTimeDType() const { return findBasicDType(VBasicDTypeKwd::TIME); }
+    AstNodeDType* findTime2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::TIME2STATE);
+    }
     AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findConstraintRefDType() const;
     AstNodeDType* findEmptyQueueDType() const;

@@ -87,6 +87,12 @@ public:
 
     // S-expression inspired dump of node and operands for debugging
     std::string patternString(uint32_t depth = 0) const;
+    static bool isTwostateDTypeNull(const AstNodeExpr* const nodep) {
+        if (!nodep || !nodep->dtypep()) return false;
+        return !nodep->dtypep()->skipRefp()->isFourstate();
+    }
+    virtual bool tryInferDType() { return false; }
+    void inferDType() { UASSERT_OBJ(tryInferDType(), this, "Failed to determine DType"); }
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
@@ -99,6 +105,23 @@ protected:
         : AstNodeExpr{t, fl} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
+    }
+    bool tryDeduceDTypeWidthMaxLRSignLnR(const bool forceFourstate = false) {
+        if (lhsp()->dtypep() && rhsp()->dtypep()) {
+            deduceDType(std::max(lhsp()->width(), rhsp()->width()),
+                        std::max(lhsp()->widthMin(), rhsp()->widthMin()),
+                        lhsp()->isSigned() && rhsp()->isSigned(), forceFourstate);
+            return true;
+        }
+        return false;
+    }
+    bool tryDeduceDTypeWidthFromLSignL(const int width = 0, const bool forceFourstate = false) {
+        if (lhsp()->dtypep() && rhsp()->dtypep()) {
+            deduceDType(width ? width : lhsp()->width(), width ? width : lhsp()->widthMin(),
+                        lhsp()->isSigned(), forceFourstate);
+            return true;
+        }
+        return false;
     }
 
 public:
@@ -118,9 +141,17 @@ public:
     bool sameNode(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
+    bool onlyTwoStateChilds() const {
+        return isTwostateDTypeNull(lhsp()) && isTwostateDTypeNull(rhsp());
+    }
 
 private:
     bool getPurityRecurse() const { return lhsp()->isPure() && rhsp()->isPure(); }
+    void deduceDType(const int width, const int widthMin, const bool isSigned,
+                     const bool forceFourstate) {
+        dtypeSetBitOrLogicUnsized(width, widthMin, VSigning::fromBool(isSigned),
+                                  forceFourstate || !onlyTwoStateChilds());
+    }
 };
 class AstNodeBiCom VL_NOT_FINAL : public AstNodeBiop {
     // Binary expr with commutative properties
@@ -144,7 +175,7 @@ class AstNodeDistBiop VL_NOT_FINAL : public AstNodeBiop {
 public:
     AstNodeDistBiop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : AstNodeBiop{t, fl, lhsp, rhsp} {
-        dtypeSetInteger();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNodeDistBiop;
     bool cleanOut() const override { return false; }
@@ -155,6 +186,10 @@ public:
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
+    bool tryInferDType() override {
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstNodeSel VL_NOT_FINAL : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
@@ -173,17 +208,28 @@ class AstNodeStream VL_NOT_FINAL : public AstNodeBiop {
 protected:
     AstNodeStream(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : AstNodeBiop{t, fl, lhsp, rhsp} {
-        if (lhsp->dtypep()) dtypeSetLogicSized(lhsp->dtypep()->width(), VSigning::UNSIGNED);
+        tryInferDType();
     }
 
 public:
     ASTGEN_MEMBERS_AstNodeStream;
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        if (VN_IS(lhsp()->dtypep(), DynArrayDType) || VN_IS(lhsp()->dtypep(), QueueDType)
+            || VN_IS(lhsp()->dtypep(), UnpackArrayDType)) {
+            dtypeSetStream();
+        } else {
+            dtypeSetBitOrLogicUnsized(lhsp()->width(), lhsp()->widthMin(), VSigning::UNSIGNED,
+                                      !isTwostateDTypeNull(lhsp()));
+        }
+        return true;
+    }
 };
 class AstNodeSystemBiopD VL_NOT_FINAL : public AstNodeBiop {
 public:
     AstNodeSystemBiopD(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : AstNodeBiop{t, fl, lhsp, rhsp} {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNodeSystemBiopD;
     bool cleanOut() const override { return false; }
@@ -194,6 +240,10 @@ public:
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstNodeCCall VL_NOT_FINAL : public AstNodeExpr {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
@@ -432,7 +482,7 @@ public:
     AstNodeDistTriop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                      AstNodeExpr* thsp)
         : AstNodeTriop{t, fl, lhsp, rhsp, thsp} {
-        dtypeSetInteger();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNodeDistTriop;
     bool cleanOut() const override { return false; }
@@ -447,6 +497,10 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                        const V3Number& ths) override {
         V3ERROR_NA;
+    }
+    bool tryInferDType() override {
+        dtypeSetInteger2State();
+        return true;
     }
 };
 class AstNodeUniop VL_NOT_FINAL : public AstNodeExpr {
@@ -483,7 +537,7 @@ class AstNodeSystemUniopD VL_NOT_FINAL : public AstNodeUniop {
 public:
     AstNodeSystemUniopD(VNType t, FileLine* fl, AstNodeExpr* lhsp)
         : AstNodeUniop{t, fl, lhsp} {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNodeSystemUniopD;
     bool cleanOut() const override { return true; }
@@ -492,6 +546,10 @@ public:
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstNodeVarRef VL_NOT_FINAL : public AstNodeExpr {
     // An AstVarRef or AstVarXRef
@@ -521,7 +579,7 @@ public:
     AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
     void varp(AstVar* varp) {
         m_varp = varp;
-        dtypeFrom(reinterpret_cast<AstNode*>(varp));
+        tryInferDType();
     }
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
@@ -532,6 +590,11 @@ public:
     }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
+    bool tryInferDType() override {
+        if (!m_varp || !m_varp->dtypep()) return false;
+        dtypeFrom(reinterpret_cast<AstNode*>(varp()));
+        return true;
+    }
 };
 
 // === Concrete node types =====================================================
@@ -618,6 +681,7 @@ public:
         , m_kind{kind} {
         this->condp(condp);
         this->propp(propp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstAbortOn;
     void dump(std::ostream& str) const override;
@@ -628,6 +692,10 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     bool isMultiCycleSva() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstAddrOfCFunc final : public AstNodeExpr {
     // Get address of CFunc
@@ -725,10 +793,14 @@ public:
     class Pure {};
     explicit AstCExprUser(FileLine* fl)
         : ASTGEN_SUPER_CExprUser(fl)
-        , m_pure{false} {}
+        , m_pure{false} {
+        tryInferDType();
+    }
     AstCExprUser(FileLine* fl, Pure)
         : ASTGEN_SUPER_CExprUser(fl)
-        , m_pure{true} {}
+        , m_pure{true} {
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstCExprUser;
     // METHODS
     void dump(std::ostream& str = std::cout) const override;
@@ -744,6 +816,11 @@ public:
     // Add some text, or a node to this expression
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
     void add(AstNode* nodep) { addNodesp(nodep); }
+    bool tryInferDType() override {
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::UNSIGNED);
+        return true;
+    }
 };
 class AstCMethodHard final : public AstNodeExpr {
     // A reference to a "C" hardcoded member task (or function)
@@ -1088,12 +1165,9 @@ class AstConst final : public AstNodeExpr {
             dtypeSetDouble();
         } else if (m_num.isString()) {
             dtypeSetString();
-        } else if (m_num.isAnyXZ()) {
-            dtypeSetLogicUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthToFit()),
-                                 VSigning::fromBool(m_num.isSigned()));
         } else {
-            dtypeSetBitUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthToFit()),
-                               VSigning::fromBool(m_num.isSigned()));
+            dtypeSetBitOrLogicUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthToFit()),
+                                      VSigning::fromBool(m_num.isSigned()), m_num.isAnyXZ());
         }
         m_num.nodep(this);
     }
@@ -1507,6 +1581,7 @@ public:
         : ASTGEN_SUPER_FError(fl) {
         this->filep(filep);
         this->strp(strp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFError;
     string emitVerilog() override { return "%f$ferror(%l, %r)"; }
@@ -1517,6 +1592,12 @@ public:
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
     bool isSystemFunc() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstFOpen final : public AstNodeExpr {
     // @astgen op2 := filenamep : AstNodeExpr
@@ -1526,6 +1607,7 @@ public:
         : ASTGEN_SUPER_FOpen(fl) {
         this->filenamep(filenamep);
         this->modep(modep);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFOpen;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -1539,6 +1621,12 @@ public:
     bool isUnlikely() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstFOpenMcd final : public AstNodeExpr {
     // @astgen op2 := filenamep : AstNodeExpr
@@ -1546,6 +1634,7 @@ public:
     AstFOpenMcd(FileLine* fl, AstNodeExpr* filenamep)
         : ASTGEN_SUPER_FOpenMcd(fl) {
         this->filenamep(filenamep);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFOpenMcd;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -1558,6 +1647,12 @@ public:
     bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstFRead final : public AstNodeExpr {
     // @astgen op1 := memp : AstNodeExpr // VarRef for result
@@ -1572,6 +1667,7 @@ public:
         this->filep(filep);
         this->startp(startp);
         this->countp(countp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFRead;
     string verilogKwd() const override { return "$fread"; }
@@ -1584,6 +1680,11 @@ public:
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstFRewind final : public AstNodeExpr {
     // @astgen op1 := filep : Optional[AstNodeExpr]
@@ -1591,6 +1692,7 @@ public:
     AstFRewind(FileLine* fl, AstNodeExpr* filep)
         : ASTGEN_SUPER_FRewind(fl) {
         this->filep(filep);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFRewind;
     string verilogKwd() const override { return "$frewind"; }
@@ -1603,6 +1705,12 @@ public:
     bool isUnlikely() const override { return true; }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstFScanF final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNodeExpr] // VarRefs for results
@@ -1615,6 +1723,7 @@ public:
         , m_text{text} {
         addExprsp(exprsp);
         this->filep(filep);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFScanF;
     string name() const override VL_MT_STABLE { return m_text; }
@@ -1632,6 +1741,11 @@ public:
     string text() const { return m_text; }  // * = Text to display
     void text(const string& text) { m_text = text; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstFSeek final : public AstNodeExpr {
     // @astgen op1 := filep : AstNodeExpr // file (must be a VarRef)
@@ -1643,6 +1757,7 @@ public:
         this->filep(filep);
         this->offset(offset);
         this->operation(operation);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFSeek;
     string verilogKwd() const override { return "$fseek"; }
@@ -1655,6 +1770,12 @@ public:
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstFTell final : public AstNodeExpr {
     // @astgen op1 := filep : AstNodeExpr // file (must be a VarRef)
@@ -1662,6 +1783,7 @@ public:
     AstFTell(FileLine* fl, AstNodeExpr* filep)
         : ASTGEN_SUPER_FTell(fl) {
         this->filep(filep);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFTell;
     string verilogKwd() const override { return "$ftell"; }
@@ -1675,6 +1797,12 @@ public:
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstFalling final : public AstNodeExpr {
     // Verilog $falling_gclk
@@ -1683,6 +1811,7 @@ public:
     AstFalling(FileLine* fl, AstNodeExpr* exprp)
         : ASTGEN_SUPER_Falling(fl) {
         this->exprp(exprp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFalling;
     string emitVerilog() override { return "$falling_gclk(%l)"; }
@@ -1692,6 +1821,10 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstFell final : public AstNodeExpr {
     // Verilog $fell
@@ -1702,6 +1835,7 @@ public:
         : ASTGEN_SUPER_Fell(fl) {
         this->exprp(exprp);
         this->sentreep(sentreep);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstFell;
     string emitVerilog() override { return "$fell(%l)"; }
@@ -1711,6 +1845,10 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstFuture final : public AstNodeExpr {
     // Verilog $future_gclk
@@ -1751,7 +1889,7 @@ class AstGetInitialRandomSeed final : public AstNodeExpr {
 public:
     explicit AstGetInitialRandomSeed(FileLine* fl)
         : ASTGEN_SUPER_GetInitialRandomSeed(fl) {
-        dtypeSetInt();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGetInitialRandomSeed;
     string emitVerilog() override { return "$get_initial_random_seed()"; }
@@ -1763,6 +1901,10 @@ public:
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetInt();
+        return true;
+    }
 };
 class AstImplication final : public AstNodeExpr {
     // Implication |-> |=> (IEEE 1800-2023 16.12.7) and followed-by #-# #=#
@@ -2269,6 +2411,7 @@ public:
     AstRising(FileLine* fl, AstNodeExpr* exprp)
         : ASTGEN_SUPER_Rising(fl) {
         this->exprp(exprp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstRising;
     string emitVerilog() override { return "$rising_gclk(%l)"; }
@@ -2278,6 +2421,10 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstRose final : public AstNodeExpr {
     // Verilog $rose
@@ -2288,6 +2435,7 @@ public:
         : ASTGEN_SUPER_Rose(fl) {
         this->exprp(exprp);
         this->sentreep(sentreep);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstRose;
     string emitVerilog() override { return "$rose(%l)"; }
@@ -2297,6 +2445,10 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstSClocked final : public AstNodeExpr {
     // Sequence expression with an explicit leading clocking event
@@ -2588,6 +2740,7 @@ public:
         , m_text{text} {
         addExprsp(exprsp);
         this->fromp(fromp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSScanF;
     string name() const override VL_MT_STABLE { return m_text; }
@@ -2607,6 +2760,11 @@ public:
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstSampled final : public AstNodeExpr {
     // Verilog $sampled
@@ -2618,6 +2776,7 @@ public:
         , m_internal{internal} {
         this->exprp(exprp);
         this->dtypep(dtypep);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSampled;
     void dump(std::ostream& str) const override;
@@ -2632,6 +2791,11 @@ public:
     }
     bool internal() const { return m_internal; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        if (!exprp()->dtypep()) return false;
+        dtypeFrom(exprp());
+        return true;
+    }
 };
 class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports
@@ -2648,7 +2812,7 @@ public:
     AstScopeName(FileLine* fl, bool forFormat)
         : ASTGEN_SUPER_ScopeName(fl)
         , m_forFormat{forFormat} {
-        dtypeSetUInt64();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstScopeName;
     bool sameNode(const AstNode* samep) const override {
@@ -2679,6 +2843,10 @@ public:
     string scopePrettySymName() const { return scopePrettyNameFormatter(m_scopeAttr); }
     // Name for __Vscopep variable including children
     string scopePrettyDpiName() const { return scopePrettyNameFormatter(m_scopeEntr); }
+    bool tryInferDType() override {
+        dtypeSetUInt64();
+        return true;
+    }
 };
 class AstSetAssoc final : public AstNodeExpr {
     // Set an assoc array element and return object, '{}
@@ -2744,7 +2912,7 @@ class AstStackTraceF final : public AstNodeExpr {
 public:
     explicit AstStackTraceF(FileLine* fl)
         : ASTGEN_SUPER_StackTraceF(fl) {
-        dtypeSetString();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstStackTraceF;
     string verilogKwd() const override { return "$stacktrace"; }
@@ -2757,6 +2925,10 @@ public:
     bool isUnlikely() const override { return true; }
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetString();
+        return true;
+    }
 };
 class AstSteady final : public AstNodeExpr {
     // Verilog $steady_gclk
@@ -2829,6 +3001,7 @@ public:
     AstSystemF(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_SystemF(fl) {
         this->lhsp(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSystemF;
     string verilogKwd() const override { return "$system"; }
@@ -2842,6 +3015,11 @@ public:
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstTaggedExpr final : public AstNodeExpr {
     // Tagged union expression: "tagged MemberName [expr]"
@@ -2888,6 +3066,7 @@ public:
     AstTestPlusArgs(FileLine* fl, AstNodeExpr* searchp)
         : ASTGEN_SUPER_TestPlusArgs(fl) {
         this->searchp(searchp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstTestPlusArgs;
     string verilogKwd() const override { return "$test$plusargs"; }
@@ -2899,6 +3078,12 @@ public:
     bool isSystemFunc() const override { return true; }
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstThisRef final : public AstNodeExpr {
     // Reference to 'this'.
@@ -2924,7 +3109,7 @@ class AstTimePrecision final : public AstNodeExpr {
 public:
     explicit AstTimePrecision(FileLine* fl)
         : ASTGEN_SUPER_TimePrecision(fl) {
-        dtypeSetInteger2State();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstTimePrecision;
     string emitVerilog() override { return "$timeprecision"; }
@@ -2934,6 +3119,11 @@ public:
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstTimeUnit final : public AstNodeExpr {
     VTimescale m_timeunit;  // Parent module time unit
@@ -3026,6 +3216,7 @@ public:
         : ASTGEN_SUPER_ValuePlusArgs(fl) {
         this->searchp(searchp);
         this->outp(outp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstValuePlusArgs;
     string verilogKwd() const override { return "$value$plusargs"; }
@@ -3037,6 +3228,12 @@ public:
     bool isSystemFunc() const override { return true; }
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstWithParse final : public AstNodeExpr {
     // In early parse, FUNC(index) WITH equation-using-index
@@ -3078,7 +3275,7 @@ class AstBufIf1 final : public AstNodeBiop {
 public:
     AstBufIf1(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_BufIf1(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstBufIf1;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3092,6 +3289,11 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        return tryDeduceDTypeWidthMaxLRSignLnR(true);
+        return true;
+    }
 };
 class AstCastDynamic final : public AstNodeBiop {
     // Verilog $cast used as a function
@@ -3103,7 +3305,9 @@ class AstCastDynamic final : public AstNodeBiop {
     // @astgen alias op2 := top
 public:
     AstCastDynamic(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_CastDynamic(fl, lhsp, rhsp) {}
+        : ASTGEN_SUPER_CastDynamic(fl, lhsp, rhsp) {
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstCastDynamic;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
@@ -3118,6 +3322,11 @@ public:
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 20; }
     bool isPure() override { return false; }
+    bool tryInferDType() override {
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstCompareNN final : public AstNodeBiop {
     // Verilog str.compare() and str.icompare()
@@ -3126,7 +3335,7 @@ public:
     AstCompareNN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool ignoreCase)
         : ASTGEN_SUPER_CompareNN(fl, lhsp, rhsp)
         , m_ignoreCase{ignoreCase} {
-        dtypeSetInt();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstCompareNN;
     void dump(std::ostream& str) const override;
@@ -3148,6 +3357,10 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool ignoreCase() const { return m_ignoreCase; }
+    bool tryInferDType() override {
+        dtypeSetInt();
+        return true;
+    }
 };
 class AstConcat final : public AstNodeBiop {
     // If you're looking for {#{}}, see AstReplicate
@@ -3155,15 +3368,7 @@ class AstConcat final : public AstNodeBiop {
 public:
     AstConcat(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Concat(fl, lhsp, rhsp) {
-        if (lhsp->dtypep() && rhsp->dtypep()) {
-            if (lhsp->dtypep()->isFourstate() || rhsp->dtypep()->isFourstate()) {
-                dtypeSetLogicSized(lhsp->dtypep()->width() + rhsp->dtypep()->width(),
-                                   VSigning::UNSIGNED);
-            } else {
-                dtypeSetBitSized(lhsp->dtypep()->width() + rhsp->dtypep()->width(),
-                                 VSigning::UNSIGNED);
-            }
-        }
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstConcat;
     string emitVerilog() override { return "%f{%l, %k%r}"; }
@@ -3178,13 +3383,20 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 2; }
+    bool tryInferDType() override {
+        if (!(lhsp()->dtypep() && rhsp()->dtypep())) return false;
+        dtypeSetBitOrLogicUnsized(lhsp()->width() + rhsp()->width(),
+                                  lhsp()->widthMin() + rhsp()->widthMin(), VSigning::UNSIGNED,
+                                  !onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstConcatN final : public AstNodeBiop {
     // String concatenate
 public:
     AstConcatN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ConcatN(fl, lhsp, rhsp) {
-        dtypeSetString();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstConcatN;
     string emitVerilog() override { return "%f{%l, %k%r}"; }
@@ -3199,13 +3411,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetString();
+        return true;
+    }
 };
 class AstDiv final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Div(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstDiv;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3221,12 +3437,13 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(!rhsp()->isNeqZero()); }
 };
 class AstDivD final : public AstNodeBiop {
 public:
     AstDivD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DivD(fl, lhsp, rhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstDivD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3242,13 +3459,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL_DIV; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstDivS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstDivS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DivS(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstDivS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3265,6 +3486,7 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(!rhsp()->isNeqZero()); }
 };
 class AstEqWild final : public AstNodeBiop {
     // Note wildcard operator rhs differs from lhs
@@ -3272,12 +3494,7 @@ class AstEqWild final : public AstNodeBiop {
 public:
     AstEqWild(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_EqWild(fl, lhsp, rhsp) {
-        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
-            && !rhsp->dtypep()->isFourstate()) {
-            dtypeSetBit();
-        } else {
-            dtypeSetLogic();
-        }
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstEqWild;
     // Return AstEqWild/AstEqD
@@ -3306,13 +3523,20 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(lhsp()->dtypep()->isFourstate());
+        return true;
+    }
 };
 class AstFGetS final : public AstNodeBiop {
     // @astgen alias op1 := strgp
     // @astgen alias op2 := filep
 public:
     AstFGetS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_FGetS(fl, lhsp, rhsp) {}
+        : ASTGEN_SUPER_FGetS(fl, lhsp, rhsp) {
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstFGetS;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
     string emitVerilog() override { return "%f$fgets(%l,%r)"; }
@@ -3328,11 +3552,18 @@ public:
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 64; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstFUngetC final : public AstNodeBiop {
 public:
     AstFUngetC(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_FUngetC(fl, lhsp, rhsp) {}
+        : ASTGEN_SUPER_FUngetC(fl, lhsp, rhsp) {
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstFUngetC;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
     string emitVerilog() override { return "%f$ungetc(%r, %l)"; }
@@ -3351,13 +3582,19 @@ public:
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
     AstNode* filep() const { return lhsp(); }
     AstNode* charp() const { return rhsp(); }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 8,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstGetcN final : public AstNodeBiop {
     // Verilog string.getc()
 public:
     AstGetcN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GetcN(fl, lhsp, rhsp) {
-        dtypeSetBitSized(8, VSigning::UNSIGNED);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGetcN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3372,6 +3609,10 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetBitSized(8, VSigning::UNSIGNED);
+        return true;
+    }
 };
 class AstGetcRefN final : public AstNodeBiop {
     // Verilog string[#] on the left-hand-side of assignment
@@ -3379,7 +3620,7 @@ class AstGetcRefN final : public AstNodeBiop {
 public:
     AstGetcRefN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GetcRefN(fl, lhsp, rhsp) {
-        dtypeSetBitSized(8, VSigning::UNSIGNED);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGetcRefN;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
@@ -3391,13 +3632,17 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetBitSized(8, VSigning::UNSIGNED);
+        return true;
+    }
 };
 class AstGt final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstGt(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Gt(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGt;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3412,12 +3657,17 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstGtD final : public AstNodeBiop {
 public:
     AstGtD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GtD(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGtD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3433,12 +3683,16 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstGtN final : public AstNodeBiop {
 public:
     AstGtN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GtN(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGtN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3454,13 +3708,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstGtS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstGtS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GtS(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGtS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3476,13 +3734,18 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstGte final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstGte(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Gte(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGte;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3497,12 +3760,17 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstGteD final : public AstNodeBiop {
 public:
     AstGteD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GteD(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGteD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3518,12 +3786,16 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstGteN final : public AstNodeBiop {
 public:
     AstGteN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GteN(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGteN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3539,13 +3811,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstGteS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstGteS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_GteS(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstGteS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3561,13 +3837,18 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstLogAnd final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstLogAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogAnd(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLogAnd;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3583,13 +3864,18 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return true;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstLogIf final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstLogIf(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogIf(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLogIf;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3605,13 +3891,18 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return true;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstLogOr final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstLogOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogOr(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLogOr;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3627,13 +3918,18 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return true;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstLt final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstLt(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Lt(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLt;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3648,12 +3944,17 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstLtD final : public AstNodeBiop {
 public:
     AstLtD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LtD(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLtD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3669,12 +3970,16 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstLtN final : public AstNodeBiop {
 public:
     AstLtN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LtN(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLtN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3690,13 +3995,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstLtS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstLtS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LtS(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLtS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3712,13 +4021,18 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstLte final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstLte(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Lte(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLte;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3733,12 +4047,17 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstLteD final : public AstNodeBiop {
 public:
     AstLteD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LteD(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLteD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3754,12 +4073,16 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstLteN final : public AstNodeBiop {
 public:
     AstLteN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LteN(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLteN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3775,13 +4098,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstLteS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstLteS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LteS(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLteS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3797,13 +4124,18 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstModDiv final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstModDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ModDiv(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstModDiv;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3819,13 +4151,14 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(!rhsp()->isNeqZero()); }
 };
 class AstModDivS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstModDivS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ModDivS(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstModDivS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3842,18 +4175,14 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(!rhsp()->isNeqZero()); }
 };
 class AstNeqWild final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstNeqWild(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_NeqWild(fl, lhsp, rhsp) {
-        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
-            && !rhsp->dtypep()->isFourstate()) {
-            dtypeSetBit();
-        } else {
-            dtypeSetLogic();
-        }
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNeqWild;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3879,13 +4208,18 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(lhsp()->dtypep()->isFourstate());
+        return true;
+    }
 };
 class AstPow final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstPow(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Pow(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstPow;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3900,12 +4234,13 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL * 10; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthFromLSignL(); }
 };
 class AstPowD final : public AstNodeBiop {
 public:
     AstPowD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_PowD(fl, lhsp, rhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstPowD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3920,13 +4255,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL_DIV * 5; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstPowSS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstPowSS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_PowSS(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstPowSS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3942,13 +4281,14 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL * 10; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override;
 };
 class AstPowSU final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstPowSU(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_PowSU(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstPowSU;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3964,13 +4304,14 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL * 10; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthFromLSignL(); }
 };
 class AstPowUS final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstPowUS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_PowUS(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstPowUS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3986,6 +4327,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL * 10; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override;
 };
 class AstReplicate final : public AstNodeBiop {
     // Also used as a "Uniop" flavor of Concat, e.g. "{a}"
@@ -3995,16 +4337,7 @@ class AstReplicate final : public AstNodeBiop {
 public:
     AstReplicate(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Replicate(fl, lhsp, rhsp) {
-        if (lhsp) {
-            if (const AstConst* const constp = VN_CAST(rhsp, Const)) {
-                if (constp->num().isFourState()
-                    || (constp->dtypep()->isSigned() && constp->num().isNegative())) {
-                    dtypeSetLogicSized(lhsp->width(), VSigning::UNSIGNED);  // V3Width warns
-                } else {
-                    dtypeSetLogicSized(lhsp->width() * constp->toSInt(), VSigning::UNSIGNED);
-                }
-            }
-        }
+        tryInferDType();
     }
     AstReplicate(FileLine* fl, AstNodeExpr* lhsp, uint32_t repCount)
         : AstReplicate{fl, lhsp, new AstConst{fl, repCount}} {}
@@ -4023,13 +4356,28 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 2; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        if (const AstConst* const constp = VN_CAST(rhsp(), Const)) {
+            if (constp->num().isFourState()
+                || (constp->dtypep()->isSigned() && constp->num().isNegative())) {
+                dtypeSetLogicSized(lhsp()->width(), VSigning::UNSIGNED);  // V3Width warns
+            } else {
+                dtypeSetBitOrLogicUnsized(lhsp()->width() * constp->toSInt(),
+                                          lhsp()->widthMin() * constp->toSInt(),
+                                          VSigning::UNSIGNED, !isTwostateDTypeNull(lhsp()));
+            }
+            return true;
+        }
+        return false;
+    }
 };
 class AstReplicateN final : public AstNodeBiop {
     // String replicate
 public:
     AstReplicateN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ReplicateN(fl, lhsp, rhsp) {
-        dtypeSetString();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstReplicateN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4044,6 +4392,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 2; }
     bool stringFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetString();
+        return true;
+    }
 };
 class AstSAnd final : public AstNodeBiop {
     // Sequence 'and' (IEEE 1800-2023 16.9.5): both operand sequences must match.
@@ -4053,7 +4405,7 @@ public:
     AstSAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool propertyControl = false)
         : ASTGEN_SUPER_SAnd(fl, lhsp, rhsp)
         , m_propertyControl{propertyControl} {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSAnd;
     void dump(std::ostream& str) const override;
@@ -4075,6 +4427,10 @@ public:
         return m_propertyControl == VN_DBG_AS(samep, SAnd)->m_propertyControl;  // LCOV_EXCL_LINE
     }
     bool propertyControl() const { return m_propertyControl; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstSIntersect final : public AstNodeBiop {
     // Sequence 'intersect' (IEEE 1800-2023 16.9.6): both operands match with equal length.
@@ -4082,7 +4438,7 @@ class AstSIntersect final : public AstNodeBiop {
 public:
     AstSIntersect(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_SIntersect(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSIntersect;
     // LCOV_EXCL_START  // Lowered before these are ever called
@@ -4100,6 +4456,10 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     // LCOV_EXCL_STOP
     bool isMultiCycleSva() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstSOr final : public AstNodeBiop {
     // Sequence 'or' (IEEE 1800-2023 16.9.7): at least one operand sequence must match.
@@ -4107,7 +4467,7 @@ class AstSOr final : public AstNodeBiop {
 public:
     AstSOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_SOr(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSOr;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4123,13 +4483,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isMultiCycleSva() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstSThroughout final : public AstNodeBiop {
     // expr throughout seq (IEEE 1800-2023 16.9.9)
 public:
     AstSThroughout(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_SThroughout(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSThroughout;
     // LCOV_EXCL_START // Lowered in V3AssertProp before these are called
@@ -4146,13 +4510,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     // LCOV_EXCL_STOP
     bool isMultiCycleSva() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstSWithin final : public AstNodeBiop {
     // seq1 within seq2 (IEEE 1800-2023 16.9.10)
 public:
     AstSWithin(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_SWithin(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSWithin;
     // LCOV_EXCL_START  // Lowered in V3AssertNfa before these are called
@@ -4169,6 +4537,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     // LCOV_EXCL_STOP
     bool isMultiCycleSva() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstSel final : public AstNodeBiop {
     // *Resolved* (tyep checked) multiple bit range extraction. Always const width
@@ -4184,13 +4556,14 @@ public:
         : ASTGEN_SUPER_Sel(fl, fromp, lsbp)
         , m_declElWidth{1}
         , m_widthConst{bitwidth} {
-        dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
+        dtypeSetBitOrLogicSized(bitwidth, VSigning::UNSIGNED, !isTwostateDTypeNull(fromp));
     }
-    AstSel(FileLine* fl, AstNodeExpr* fromp, int lsb, int bitwidth)
+    AstSel(FileLine* fl, AstNodeExpr* fromp, int lsb, int bitwidth, int bitwidthMin = 0)
         : ASTGEN_SUPER_Sel(fl, fromp, new AstConst(fl, lsb))  // Need () constructor
         , m_declElWidth{1}
         , m_widthConst{bitwidth} {
-        dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
+        dtypeSetBitOrLogicUnsized(bitwidth, bitwidthMin ? bitwidthMin : bitwidth,
+                                  VSigning::UNSIGNED, !isTwostateDTypeNull(fromp));
     }
     ASTGEN_MEMBERS_AstSel;
     void dump(std::ostream& str) const override;
@@ -4231,18 +4604,7 @@ class AstShiftL final : public AstNodeBiop {
 public:
     AstShiftL(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftL(fl, lhsp, rhsp) {
-        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
-            && !rhsp->dtypep()->isFourstate()) {
-            dtypeSetBitUnsized(setwidth ? setwidth : lhsp->width(),
-                               setwidth ? 0 : lhsp->dtypep()->widthMin(),
-                               lhsp->dtypep()->numeric());
-        } else if (lhsp->dtypep()) {
-            dtypeSetLogicUnsized(setwidth ? setwidth : lhsp->width(),
-                                 setwidth ? 0 : lhsp->dtypep()->widthMin(),
-                                 lhsp->dtypep()->numeric());
-        } else {
-            dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
-        }
+        tryDeduceDTypeWidthFromLSignL(setwidth);
     }
     ASTGEN_MEMBERS_AstShiftL;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4259,6 +4621,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthFromLSignL(); }
 };
 class AstShiftLOvr final : public AstNodeBiop {
     // Like ShiftL but checks for an over shift and returns zeros
@@ -4266,7 +4629,7 @@ class AstShiftLOvr final : public AstNodeBiop {
 public:
     AstShiftLOvr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftLOvr(fl, lhsp, rhsp) {
-        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        tryDeduceDTypeWidthFromLSignL(setwidth);
     }
     ASTGEN_MEMBERS_AstShiftLOvr;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4280,24 +4643,14 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthFromLSignL(); }
 };
 class AstShiftR final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstShiftR(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftR(fl, lhsp, rhsp) {
-        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
-            && !rhsp->dtypep()->isFourstate()) {
-            dtypeSetBitUnsized(setwidth ? setwidth : lhsp->width(),
-                               setwidth ? 0 : lhsp->dtypep()->widthMin(),
-                               lhsp->dtypep()->numeric());
-        } else if (lhsp->dtypep()) {
-            dtypeSetLogicUnsized(setwidth ? setwidth : lhsp->width(),
-                                 setwidth ? 0 : lhsp->dtypep()->widthMin(),
-                                 lhsp->dtypep()->numeric());
-        } else {
-            dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
-        }
+        tryDeduceDTypeWidthFromLSignL(setwidth);
     }
     ASTGEN_MEMBERS_AstShiftR;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4315,6 +4668,7 @@ public:
     // LHS size might be > output size, so don't want to force size
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthFromLSignL(); }
 };
 class AstShiftROvr final : public AstNodeBiop {
     // Like ShiftR but checks for an over shift and returns zeros
@@ -4322,7 +4676,7 @@ class AstShiftROvr final : public AstNodeBiop {
 public:
     AstShiftROvr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftROvr(fl, lhsp, rhsp) {
-        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        tryDeduceDTypeWidthFromLSignL(setwidth);
     }
     ASTGEN_MEMBERS_AstShiftROvr;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4337,6 +4691,7 @@ public:
     // LHS size might be > output size, so don't want to force size
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthFromLSignL(); }
 };
 class AstShiftRS final : public AstNodeBiop {
     // Shift right with sign extension, >>> operator
@@ -4346,7 +4701,7 @@ public:
     AstShiftRS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftRS(fl, lhsp, rhsp) {
         // Important that widthMin be correct, as opExtend requires it after V3Expand
-        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::SIGNED);
+        tryDeduceDTypeWidthFromLSignL(setwidth);
     }
     ASTGEN_MEMBERS_AstShiftRS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4362,6 +4717,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthFromLSignL(); }
 };
 class AstShiftRSOvr final : public AstNodeBiop {
     // Shift right with sign extension, >>> operator, checks for an over shift and returns zeros
@@ -4371,7 +4727,7 @@ public:
     AstShiftRSOvr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
         : ASTGEN_SUPER_ShiftRSOvr(fl, lhsp, rhsp) {
         // Important that widthMin be correct, as opExtend requires it after V3Expand
-        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::SIGNED);
+        tryDeduceDTypeWidthFromLSignL(setwidth);
     }
     ASTGEN_MEMBERS_AstShiftRSOvr;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4386,13 +4742,14 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthFromLSignL(); }
 };
 class AstSub final : public AstNodeBiop {
     // @astgen makeDfgVertex
 public:
     AstSub(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Sub(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSub;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4407,12 +4764,13 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(); }
 };
 class AstSubD final : public AstNodeBiop {
 public:
     AstSubD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_SubD(fl, lhsp, rhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSubD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4428,6 +4786,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstURandomRange final : public AstNodeBiop {
     // $urandom_range
@@ -4458,12 +4820,7 @@ class AstEq final : public AstNodeBiCom {
 public:
     AstEq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Eq(fl, lhsp, rhsp) {
-        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
-            && !rhsp->dtypep()->isFourstate()) {
-            dtypeSetBit();
-        } else {
-            dtypeSetLogic();
-        }
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstEq;
     // Return AstEq/AstEqD
@@ -4480,13 +4837,18 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstEqCase final : public AstNodeBiCom {
     // @astgen makeDfgVertex
 public:
     AstEqCase(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_EqCase(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstEqCase;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4500,12 +4862,16 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstEqD final : public AstNodeBiCom {
 public:
     AstEqD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_EqD(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstEqD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4521,6 +4887,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstEqN final : public AstNodeBiCom {
 public:
@@ -4542,6 +4912,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstEqT final : public AstNodeBiCom {
     // Equal (==) for data types
@@ -4567,7 +4941,7 @@ class AstLogEq final : public AstNodeBiCom {
 public:
     AstLogEq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogEq(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLogEq;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4583,18 +4957,18 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return true;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstNeq final : public AstNodeBiCom {
     // @astgen makeDfgVertex
 public:
     AstNeq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Neq(fl, lhsp, rhsp) {
-        if (lhsp->dtypep() && rhsp->dtypep() && !lhsp->dtypep()->isFourstate()
-            && !rhsp->dtypep()->isFourstate()) {
-            dtypeSetBit();
-        } else {
-            dtypeSetLogic();
-        }
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNeq;
     static AstNodeBiop* newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp);
@@ -4610,13 +4984,18 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep() || !rhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!onlyTwoStateChilds());
+        return true;
+    }
 };
 class AstNeqCase final : public AstNodeBiCom {
     // @astgen makeDfgVertex
 public:
     AstNeqCase(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_NeqCase(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNeqCase;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4630,12 +5009,16 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstNeqD final : public AstNodeBiCom {
 public:
     AstNeqD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_NeqD(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNeqD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4651,12 +5034,16 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstNeqN final : public AstNodeBiCom {
 public:
     AstNeqN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_NeqN(fl, lhsp, rhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNeqN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4672,6 +5059,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstNeqT final : public AstNodeBiCom {
     // Not-equal (!=) for data types
@@ -4699,7 +5090,7 @@ class AstAdd final : public AstNodeBiComAsv {
 public:
     AstAdd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Add(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstAdd;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4714,12 +5105,13 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(); }
 };
 class AstAddD final : public AstNodeBiComAsv {
 public:
     AstAddD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_AddD(fl, lhsp, rhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstAddD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4735,13 +5127,17 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstAnd final : public AstNodeBiComAsv {
     // @astgen makeDfgVertex
 public:
     AstAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_And(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstAnd;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4757,13 +5153,14 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(); }
 };
 class AstMul final : public AstNodeBiComAsv {
     // @astgen makeDfgVertex
 public:
     AstMul(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Mul(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstMul;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4779,12 +5176,13 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(); }
 };
 class AstMulD final : public AstNodeBiComAsv {
 public:
     AstMulD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_MulD(fl, lhsp, rhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstMulD;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4800,13 +5198,17 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstMulS final : public AstNodeBiComAsv {
     // @astgen makeDfgVertex
 public:
     AstMulS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_MulS(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstMulS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4824,13 +5226,14 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL; }
     bool signedFlavor() const override { return true; }
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(); }
 };
 class AstOr final : public AstNodeBiComAsv {
     // @astgen makeDfgVertex
 public:
     AstOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Or(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstOr;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4846,13 +5249,14 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(); }
 };
 class AstXor final : public AstNodeBiComAsv {
     // @astgen makeDfgVertex
 public:
     AstXor(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Xor(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstXor;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4868,6 +5272,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    bool tryInferDType() override { return tryDeduceDTypeWidthMaxLRSignLnR(); }
 };
 
 // === AstNodeDistBiop ===
@@ -4907,21 +5312,14 @@ public:
 // === AstNodeSel ===
 class AstArraySel final : public AstNodeSel {
     // @astgen makeDfgVertex
-    void init(const AstNode* fromp) {
-        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), NodeArrayDType)) {
-            // Strip off array to find what array references
-            dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), NodeArrayDType)->subDTypep());
-        }
-    }
-
 public:
     AstArraySel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_ArraySel(fl, fromp, bitp) {
-        init(fromp);
+        tryInferDType();
     }
     AstArraySel(FileLine* fl, AstNodeExpr* fromp, int bit)
         : ASTGEN_SUPER_ArraySel(fl, fromp, new AstConst(fl, bit)) {  // Need () constructor
-        init(fromp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstArraySel;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
@@ -4937,19 +5335,22 @@ public:
     bool isPredictOptimizable() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
+    bool tryInferDType() override {
+        if (!fromp() || !fromp()->dtypep()) return false;
+        if (const AstNodeArrayDType* const dtypep
+            = VN_CAST(fromp()->dtypep()->skipRefp(), NodeArrayDType)) {
+            // Strip off array to find what array references
+            dtypeFrom(dtypep->subDTypep());
+            return true;
+        }
+        return false;
+    }
 };
 class AstAssocSel final : public AstNodeSel {
-    void init(const AstNode* fromp) {
-        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), AssocArrayDType)) {
-            // Strip off array to find what array references
-            dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), AssocArrayDType)->subDTypep());
-        }
-    }
-
 public:
     AstAssocSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_AssocSel(fl, fromp, bitp) {
-        init(fromp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstAssocSel;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
@@ -4968,19 +5369,21 @@ public:
     bool isPure() override { return !isLValue(); }  // AssocSel creates on miss
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
+    bool tryInferDType() override {
+        if (!fromp() || !fromp()->dtypep()) return false;
+        if (const AstAssocArrayDType* const dtypep
+            = VN_CAST(fromp()->dtypep()->skipRefp(), AssocArrayDType)) {
+            // Strip off array to find what array references
+            dtypeFrom(dtypep->subDTypep());
+        }
+        return false;
+    }
 };
 class AstWildcardSel final : public AstNodeSel {
-    void init(const AstNode* fromp) {
-        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), WildcardArrayDType)) {
-            // Strip off array to find what array references
-            dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), WildcardArrayDType)->subDTypep());
-        }
-    }
-
 public:
     AstWildcardSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_WildcardSel(fl, fromp, bitp) {
-        init(fromp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstWildcardSel;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
@@ -4995,13 +5398,22 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
+    bool tryInferDType() override {
+        if (!fromp() || !fromp()->dtypep()) return false;
+        if (const AstWildcardArrayDType* const dtypep
+            = VN_CAST(fromp()->dtypep()->skipRefp(), WildcardArrayDType)) {
+            // Strip off array to find what array references
+            dtypeFrom(dtypep->subDTypep());
+        }
+        return false;
+    }
 };
 class AstWordSel final : public AstNodeSel {
     // Select a single word from a multi-word wide value
 public:
     AstWordSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_WordSel(fl, fromp, bitp) {
-        dtypeSetUInt32();  // Always used on VlWide arrays so returns EData size
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstWordSel;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
@@ -5013,6 +5425,10 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetUInt32();  // Always used on VlWide arrays so returns EData size
+        return true;
+    }
 };
 
 // === AstNodeStream ===
@@ -5230,12 +5646,18 @@ class AstCountBits final : public AstNodeQuadop {
 public:
     AstCountBits(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* ctrl1p)
         : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl1p->cloneTreePure(false),
-                                 ctrl1p->cloneTreePure(false)) {}
+                                 ctrl1p->cloneTreePure(false)) {
+        tryInferDType();
+    }
     AstCountBits(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* ctrl1p, AstNodeExpr* ctrl2p)
-        : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl2p->cloneTreePure(false)) {}
+        : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl2p->cloneTreePure(false)) {
+        tryInferDType();
+    }
     AstCountBits(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* ctrl1p, AstNodeExpr* ctrl2p,
                  AstNodeExpr* ctrl3p)
-        : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl3p) {}
+        : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl3p) {
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstCountBits;
     void numberOperate(V3Number& out, const V3Number& expr, const V3Number& ctrl1,
                        const V3Number& ctrl2, const V3Number& ctrl3) override {
@@ -5254,6 +5676,16 @@ public:
     bool sizeMattersFhs() const override { return false; }
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 16; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        // For widthMin, if a 32 bit number, we need a 6 bit number as we need to return '32'.
+        dtypeSetBitUnsized(32,
+                           v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH
+                               ? 32
+                               : V3Number::log2b(lhsp()->width()) + 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 
 // === AstNodeTermop ===
@@ -5261,7 +5693,7 @@ class AstInferredDisable final : public AstNodeTermop {
 public:
     explicit AstInferredDisable(FileLine* fl)
         : ASTGEN_SUPER_InferredDisable(fl) {
-        dtypeSetLogicSized(1, VSigning::UNSIGNED);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstInferredDisable;
     string emitVerilog() override { return "%f$inferred_disable"; }
@@ -5269,6 +5701,10 @@ public:
     bool cleanOut() const override { return true; }
     bool isSystemFunc() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstTime final : public AstNodeTermop {
     VTimescale m_timeunit;  // Parent module time unit
@@ -5276,7 +5712,7 @@ public:
     AstTime(FileLine* fl, const VTimescale& timeunit)
         : ASTGEN_SUPER_Time(fl)
         , m_timeunit{timeunit} {
-        dtypeSetUInt64();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstTime;
     string emitVerilog() override { return "%f$time"; }
@@ -5291,6 +5727,10 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    bool tryInferDType() override {
+        dtypeSetTime2State();
+        return true;
+    }
 };
 class AstTimeD final : public AstNodeTermop {
     VTimescale m_timeunit;  // Parent module time unit
@@ -5298,7 +5738,7 @@ public:
     AstTimeD(FileLine* fl, const VTimescale& timeunit)
         : ASTGEN_SUPER_TimeD(fl)
         , m_timeunit{timeunit} {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstTimeD;
     string emitVerilog() override { return "%f$realtime"; }
@@ -5313,6 +5753,10 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 
 // === AstNodeTriop ===
@@ -5323,7 +5767,12 @@ class AstCond final : public AstNodeTriop {
     // @astgen alias op3 := elsep
     // @astgen makeDfgVertex
 public:
-    AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep);
+    AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
+        : ASTGEN_SUPER_Cond(fl, condp, thenp, elsep) {
+        UASSERT_OBJ(thenp, this, "No thenp expression");
+        UASSERT_OBJ(elsep, this, "No elsep expression");
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstCond;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                        const V3Number& ths) override {
@@ -5340,13 +5789,14 @@ public:
     bool sizeMattersRhs() const override { return false; }
     bool sizeMattersThs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool tryInferDType() override;
 };
 class AstPutcN final : public AstNodeTriop {
     // Verilog string.putc()
 public:
     AstPutcN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* ths)
         : ASTGEN_SUPER_PutcN(fl, lhsp, rhsp, ths) {
-        dtypeSetString();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstPutcN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
@@ -5364,6 +5814,10 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool sizeMattersThs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetString();
+        return true;
+    }
 };
 class AstSliceSel final : public AstNodeTriop {
     // Multiple array element extraction
@@ -5402,7 +5856,7 @@ class AstSubstrN final : public AstNodeTriop {
 public:
     AstSubstrN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* ths)
         : ASTGEN_SUPER_SubstrN(fl, lhsp, rhsp, ths) {
-        dtypeSetString();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstSubstrN;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
@@ -5420,6 +5874,10 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool sizeMattersThs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetString();
+        return true;
+    }
 };
 
 // === AstNodeDistTriop ===
@@ -5495,7 +5953,7 @@ class AstBitsToRealD final : public AstNodeUniop {
 public:
     AstBitsToRealD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_BitsToRealD(fl, lhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstBitsToRealD;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opBitsToRealD(lhs); }
@@ -5506,6 +5964,10 @@ public:
     bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstCCast final : public AstNodeUniop {
     // Cast to C-based data type
@@ -5546,7 +6008,7 @@ class AstCLog2 final : public AstNodeUniop {
 public:
     AstCLog2(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CLog2(fl, lhsp) {
-        dtypeSetInteger2State();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstCLog2;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCLog2(lhs); }
@@ -5557,6 +6019,10 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 16; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstCastWrap final : public AstNodeUniop {
     // A cast which has been expanded and the LHSP does all the lifting
@@ -5578,7 +6044,9 @@ class AstCountOnes final : public AstNodeUniop {
     // @astgen makeDfgVertex
 public:
     AstCountOnes(FileLine* fl, AstNodeExpr* lhsp)
-        : ASTGEN_SUPER_CountOnes(fl, lhsp) {}
+        : ASTGEN_SUPER_CountOnes(fl, lhsp) {
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstCountOnes;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCountOnes(lhs); }
     string emitVerilog() override { return "%f$countones(%l)"; }
@@ -5588,6 +6056,16 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 16; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        // For widthMin, if a 32 bit number, we need a 6 bit number as we need to return '32'.
+        dtypeSetBitUnsized(32,
+                           v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH
+                               ? 32
+                               : V3Number::log2b(lhsp()->width()) + 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstCvtPackString final : public AstNodeUniop {
     // Convert to Verilator Packed String (aka verilog "string")
@@ -5610,10 +6088,16 @@ class AstExtend final : public AstNodeUniop {
     // @astgen makeDfgVertex
 public:
     AstExtend(FileLine* fl, AstNodeExpr* lhsp)
-        : ASTGEN_SUPER_Extend(fl, lhsp) {}
-    AstExtend(FileLine* fl, AstNodeExpr* lhsp, int width)
         : ASTGEN_SUPER_Extend(fl, lhsp) {
-        dtypeSetLogicSized(width, VSigning::UNSIGNED);
+        if (lhsp->dtypep()) {
+            dtypeSetBitOrLogicUnsized(lhsp->width(), lhsp->widthMin(), VSigning::UNSIGNED,
+                                      lhsp->dtypep()->isFourstate());
+        }
+    }
+    AstExtend(FileLine* fl, AstNodeExpr* lhsp, int width, int widthMin = 0)
+        : ASTGEN_SUPER_Extend(fl, lhsp) {
+        dtypeSetBitOrLogicUnsized(width, widthMin ? widthMin : width, VSigning::UNSIGNED,
+                                  !isTwostateDTypeNull(lhsp));
     }
     ASTGEN_MEMBERS_AstExtend;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
@@ -5638,7 +6122,7 @@ public:
     AstExtendS(FileLine* fl, AstNodeExpr* lhsp, int width)
         // Important that widthMin be correct, as opExtend requires it after V3Expand
         : ASTGEN_SUPER_ExtendS(fl, lhsp) {
-        dtypeSetLogicSized(width, VSigning::UNSIGNED);
+        dtypeSetBitOrLogicSized(width, VSigning::UNSIGNED, !isTwostateDTypeNull(lhsp));
     }
     ASTGEN_MEMBERS_AstExtendS;
     void numberOperate(V3Number& out, const V3Number& lhs) override {
@@ -5660,7 +6144,9 @@ public:
 class AstFEof final : public AstNodeUniop {
 public:
     AstFEof(FileLine* fl, AstNodeExpr* lhsp)
-        : ASTGEN_SUPER_FEof(fl, lhsp) {}
+        : ASTGEN_SUPER_FEof(fl, lhsp) {
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstFEof;
     void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
     string emitVerilog() override { return "%f$feof(%l)"; }
@@ -5673,11 +6159,19 @@ public:
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
     bool isSystemFunc() const override { return true; }
     AstNode* filep() const { return lhsp(); }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstFGetC final : public AstNodeUniop {
 public:
     AstFGetC(FileLine* fl, AstNodeExpr* lhsp)
-        : ASTGEN_SUPER_FGetC(fl, lhsp) {}
+        : ASTGEN_SUPER_FGetC(fl, lhsp) {
+        tryInferDType();
+    }
     ASTGEN_MEMBERS_AstFGetC;
     void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
     string emitVerilog() override { return "%f$fgetc(%l)"; }
@@ -5691,13 +6185,19 @@ public:
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
     AstNode* filep() const { return lhsp(); }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetBitUnsized(32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 8,
+                           VSigning::SIGNED);
+        return true;
+    }
 };
 class AstISToRD final : public AstNodeUniop {
     // $itor where lhs is signed
 public:
     AstISToRD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_ISToRD(fl, lhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstISToRD;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opISToRD(lhs); }
@@ -5709,13 +6209,17 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstIToRD final : public AstNodeUniop {
     // $itor where lhs is unsigned
 public:
     AstIToRD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_IToRD(fl, lhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstIToRD;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opIToRD(lhs); }
@@ -5726,13 +6230,17 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstIsUnbounded final : public AstNodeUniop {
     // True if is unbounded ($)
 public:
     AstIsUnbounded(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_IsUnbounded(fl, lhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstIsUnbounded;
     void numberOperate(V3Number& out, const V3Number&) override {
@@ -5745,13 +6253,17 @@ public:
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstIsUnknown final : public AstNodeUniop {
     // True if any unknown bits
 public:
     AstIsUnknown(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_IsUnknown(fl, lhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstIsUnknown;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opIsUnknown(lhs); }
@@ -5761,13 +6273,17 @@ public:
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstLenN final : public AstNodeUniop {
     // Length of a string
 public:
     AstLenN(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_LenN(fl, lhsp) {
-        dtypeSetInt();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLenN;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLenN(lhs); }
@@ -5776,6 +6292,10 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetInt();
+        return true;
+    }
 };
 class AstLogNot final : public AstNodeUniop {
     // @astgen makeDfgVertex
@@ -5786,7 +6306,7 @@ public:
     AstLogNot(FileLine* fl, AstNodeExpr* lhsp, bool fromProperty = false)
         : ASTGEN_SUPER_LogNot(fl, lhsp)
         , m_fromProperty{fromProperty} {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstLogNot;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLogNot(lhs); }
@@ -5800,13 +6320,18 @@ public:
     bool fromProperty() const { return m_fromProperty; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!isTwostateDTypeNull(lhsp()));
+        return true;
+    }
 };
 class AstMostSetBitP1 final : public AstNodeUniop {
     // Most-significant set bit plus one (bit-width); 0 if value is zero
 public:
     AstMostSetBitP1(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_MostSetBitP1(fl, lhsp) {
-        dtypeSetInteger2State();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstMostSetBitP1;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opMostSetBitP1(lhs); }
@@ -5816,6 +6341,10 @@ public:
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 16; }
+    bool tryInferDType() override {
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstNToI final : public AstNodeUniop {
     // String to any-size integral
@@ -5837,7 +6366,7 @@ class AstNegate final : public AstNodeUniop {
 public:
     AstNegate(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_Negate(fl, lhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNegate;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNegate(lhs); }
@@ -5848,12 +6377,17 @@ public:
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        dtypeFrom(lhsp());
+        return true;
+    }
 };
 class AstNegateD final : public AstNodeUniop {
 public:
     AstNegateD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_NegateD(fl, lhsp) {
-        dtypeSetDouble();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNegateD;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNegateD(lhs); }
@@ -5865,13 +6399,17 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool doubleFlavor() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetDouble();
+        return true;
+    }
 };
 class AstNot final : public AstNodeUniop {
     // @astgen makeDfgVertex
 public:
     AstNot(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_Not(fl, lhsp) {
-        dtypeFrom(lhsp);
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstNot;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNot(lhs); }
@@ -5883,6 +6421,11 @@ public:
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        dtypeFrom(lhsp());
+        return true;
+    }
 };
 class AstNullCheck final : public AstNodeUniop {
     // Return LHS after checking that LHS is non-null
@@ -5908,7 +6451,7 @@ class AstOneHot final : public AstNodeUniop {
 public:
     AstOneHot(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_OneHot(fl, lhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstOneHot;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opOneHot(lhs); }
@@ -5919,6 +6462,10 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 4; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstOneHot0 final : public AstNodeUniop {
     // True if only single bit, or no bits set in vector
@@ -5926,7 +6473,7 @@ class AstOneHot0 final : public AstNodeUniop {
 public:
     AstOneHot0(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_OneHot0(fl, lhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstOneHot0;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opOneHot0(lhs); }
@@ -5937,6 +6484,10 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 3; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetBit();
+        return true;
+    }
 };
 class AstPostDec final : public AstNodeUniop {
     // Post-decrement/subtract
@@ -6011,7 +6562,7 @@ class AstRToIRoundS final : public AstNodeUniop {
 public:
     AstRToIRoundS(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RToIRoundS(fl, lhsp) {
-        dtypeSetInteger();
+        dtypeSetInteger2State();
     }
     ASTGEN_MEMBERS_AstRToIRoundS;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRToIRoundS(lhs); }
@@ -6030,7 +6581,7 @@ class AstRToIS final : public AstNodeUniop {
 public:
     AstRToIS(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RToIS(fl, lhsp) {
-        dtypeSetInteger2State();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstRToIS;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRToIS(lhs); }
@@ -6041,12 +6592,17 @@ public:
     bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        // Spec says integer return but we return only 2-state domain
+        dtypeSetInteger2State();
+        return true;
+    }
 };
 class AstRealToBits final : public AstNodeUniop {
 public:
     AstRealToBits(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RealToBits(fl, lhsp) {
-        dtypeSetUInt64();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstRealToBits;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRealToBits(lhs); }
@@ -6057,13 +6613,17 @@ public:
     bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool isSystemFunc() const override { return true; }
+    bool tryInferDType() override {
+        dtypeSetUInt64();
+        return true;
+    }
 };
 class AstRedAnd final : public AstNodeUniop {
     // @astgen makeDfgVertex
 public:
     AstRedAnd(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RedAnd(fl, lhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstRedAnd;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedAnd(lhs); }
@@ -6072,13 +6632,18 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!isTwostateDTypeNull(lhsp()));
+        return true;
+    }
 };
 class AstRedOr final : public AstNodeUniop {
     // @astgen makeDfgVertex
 public:
     AstRedOr(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RedOr(fl, lhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstRedOr;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedOr(lhs); }
@@ -6087,13 +6652,18 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!isTwostateDTypeNull(lhsp()));
+        return true;
+    }
 };
 class AstRedXor final : public AstNodeUniop {
     // @astgen makeDfgVertex
 public:
     AstRedXor(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_RedXor(fl, lhsp) {
-        dtypeSetBit();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstRedXor;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedXor(lhs); }
@@ -6106,6 +6676,11 @@ public:
     }
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return 1 + V3Number::log2b(width()); }
+    bool tryInferDType() override {
+        if (!lhsp()->dtypep()) return false;
+        dtypeSetBitOrLogic(!isTwostateDTypeNull(lhsp()));
+        return true;
+    }
 };
 class AstResizeLValue final : public AstNodeUniop {
     // Resize a LValue into a wider/narrower entity at function argument boundry
@@ -6166,7 +6741,7 @@ class AstToLowerN final : public AstNodeUniop {
 public:
     AstToLowerN(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_ToLowerN(fl, lhsp) {
-        dtypeSetString();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstToLowerN;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opToLowerN(lhs); }
@@ -6175,12 +6750,16 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetString();
+        return true;
+    }
 };
 class AstToStringN final : public AstNodeUniop {
 public:
     AstToStringN(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_ToStringN(fl, lhsp) {
-        dtypeSetString();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstToStringN;
     void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
@@ -6191,13 +6770,17 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetString();
+        return true;
+    }
 };
 class AstToUpperN final : public AstNodeUniop {
     // string.toupper()
 public:
     AstToUpperN(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_ToUpperN(fl, lhsp) {
-        dtypeSetString();
+        tryInferDType();
     }
     ASTGEN_MEMBERS_AstToUpperN;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opToUpperN(lhs); }
@@ -6206,6 +6789,10 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
+    bool tryInferDType() override {
+        dtypeSetString();
+        return true;
+    }
 };
 class AstUnsigned final : public AstNodeUniop {
     // $unsigned(lhs)

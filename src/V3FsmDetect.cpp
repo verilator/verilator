@@ -2119,10 +2119,8 @@ class FsmLowerVisitor final {
         AstVarScope* const sampleVscp = graph.sampleVarScopep();
         FileLine* const flp = graph.fileline();
         AstNodeModule* const modp = scopep->modp();
-        AstNodeDType* const prevDTypep = scopep->findLogicDType(
-            sampleVscp->width(), sampleVscp->width(), sampleVscp->dtypep()->numeric());
         const std::string tmpName = m_fsmBuildNames.get(stateVscp->varp()->shortName());
-        AstVarScope* const prevVscp = scopep->createTemp(tmpName, prevDTypep);
+        AstVarScope* const prevVscp = scopep->createTemp(tmpName, sampleVscp->dtypep());
         // The saved previous-state temp crosses the scheduler's pre/post split
         // in the same way as Verilator's built-in NBA shadow variables, so keep
         // both vars marked as post-life participants for stable MT ordering.

@@ -1590,29 +1590,25 @@ void AstNode::dtypeChgSigned(bool flag) {
     dtypeChgWidthSigned(dtypep()->width(), dtypep()->widthMin(), VSigning::fromBool(flag));
 }
 void AstNode::dtypeChgWidth(int width, int widthMin) {
-    UASSERT_OBJ(dtypep(), this,
-                "No dtype when changing width");  // Use ChgWidthSigned(...UNSIGNED) otherwise
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
     dtypeChgWidthSigned(width, widthMin, dtypep()->numeric());
 }
 
 void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
-    if (!dtypep()) {
-        // We allow dtypep() to be null, as before/during widthing dtypes are not resolved
-        dtypeSetLogicUnsized(width, widthMin, numeric);
-    } else {
-        if (width == dtypep()->width() && widthMin == dtypep()->widthMin()
-            && numeric == dtypep()->numeric()
-            // Enums need to become direct sizes to avoid later ENUMVALUE errors
-            && !VN_IS(dtypep()->skipRefToEnump(), EnumDType))
-            return;  // Correct already
-        if (AstBasicDType* const basicp = VN_CAST(dtypep(), BasicDType)) {
-            if (!basicp->keyword().isFourstate()) {
-                dtypeSetBitUnsized(width, widthMin, numeric);
-                return;
-            }
-        }
-        dtypeSetLogicUnsized(width, widthMin, numeric);
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
+    if (width == dtypep()->width() && widthMin == dtypep()->widthMin()
+        && numeric == dtypep()->numeric()
+        // Enums need to become direct sizes to avoid later ENUMVALUE errors
+        && !VN_IS(dtypep()->skipRefToEnump(), EnumDType)) {
+        return;  // Correct already
     }
+    if (AstBasicDType* const basicp = VN_CAST(dtypep(), BasicDType)) {
+        if (!basicp->keyword().isFourstate()) {
+            dtypeSetBitUnsized(width, widthMin, numeric);
+            return;
+        }
+    }
+    dtypeSetLogicUnsized(width, widthMin, numeric);
 }
 
 AstNodeDType* AstNode::findBasicDType(VBasicDTypeKwd kwd) const {
