@@ -576,6 +576,7 @@ class TraceDriver final : public DfgVisitor {
         if (DfgVertex* const driverp = vtxp->driverAt(idx)) {
             DfgVertex* const srcp = driverp->as<DfgUnitArray>()->srcp();
             if (srcp->is<DfgVertexSplice>()) {
+                // TODO: Replace DfgSplice with DfgInsert modeling.
                 // Partial-element propagation is rejected during synthesis.
                 UASSERT_OBJ(!defaultp, vtxp, "Array default with partial element driver");
                 m_splicep = srcp;
