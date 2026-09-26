@@ -348,10 +348,6 @@ private:
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);
     }
-    void visit(AstEnumDType* nodep) override {
-        nodep->tableMap().clear();  // Only needed up through V3Width process
-        visitIterateNodeDType(nodep);
-    }
     void visit(AstParamTypeDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);

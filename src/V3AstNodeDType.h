@@ -882,14 +882,8 @@ class AstEnumDType final : public AstNodeDType {
     // @astgen op2 := itemsp : List[AstEnumItem]
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
-public:
-    using TableMap = std::map<VAttrType, AstVar*>;
-
-private:
     string m_name;  // Name from upper typedef, if any
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
-    // dist-ast-dump-suppress  // Skip dumping cache
-    TableMap m_tableMap;  // Created table for V3Width only to remove duplicates
 
 public:
     AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstEnumItem* itemsp)
@@ -937,8 +931,6 @@ public:
         return count;
     }
     bool isCompound() const override { return false; }
-    TableMap& tableMap() { return m_tableMap; }
-    const TableMap& tableMap() const { return m_tableMap; }
 };
 
 class AstIfaceGenericDType final : public AstNodeDType {

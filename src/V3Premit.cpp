@@ -28,6 +28,7 @@
 
 #include "V3Premit.h"
 
+#include "V3ConstPool.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
@@ -117,10 +118,12 @@ class PremitVisitor final : public VNVisitor {
 
         if (useConstPool) {
             // Extract into constant pool.
-            const bool merge = v3Global.opt.fMergeConstPool();
-            varp = v3Global.rootp()->constPoolp()->findConst(constp, merge)->varp();
+            AstVarRef* const refp = V3ConstPool::findConst(constp);
+            varp = refp->varp();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             ++m_extractedToConstPool;
+            // Replace node with reference to the constant pool entry
+            relinker.relink(refp);
         } else {
             // Keep as local temporary.
             varp = newTmpFor(nodep);
@@ -129,10 +132,9 @@ class PremitVisitor final : public VNVisitor {
             AstAssign* const assignp = new AstAssign{flp, refp, nodep};
             // Insert before the statement
             m_stmtp->addHereThisAsNext(assignp);
+            // Replace node with VarRef to new Var
+            relinker.relink(new AstVarRef{flp, varp, VAccess::READ});
         }
-
-        // Replace node with VarRef to new Var
-        relinker.relink(new AstVarRef{flp, varp, VAccess::READ});
 
         // Return the temporary variable
         return varp;

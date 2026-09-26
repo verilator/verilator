@@ -66,6 +66,7 @@ class EmitCHeader final : public EmitCConstInit {
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
+                if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 decorateFirst(first, "// CELLS\n");
                 putns(cellp, EmitCUtil::prefixNameProtect(cellp->modp()) + "* "
                                  + cellp->nameProtect() + ";\n");
@@ -175,10 +176,7 @@ class EmitCHeader final : public EmitCConstInit {
                     putns(varp, "static ");
                     puts(canBeConstexpr ? "constexpr " : "const ");
                     puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
-                    if (canBeConstexpr) {
-                        puts(" = ");
-                        iterateConst(varp->valuep());
-                    }
+                    if (canBeConstexpr) emitDirectInit(varp->valuep());
                     puts(";\n");
                 }
             }
@@ -768,6 +766,8 @@ void V3EmitC::emitcHeaders() {
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (VN_IS(nodep, Class)) continue;  // Declared with the ClassPackage
-        EmitCHeader::main(VN_AS(nodep, NodeModule));
+        const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
+        if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
+        EmitCHeader::main(modp);
     }
 }

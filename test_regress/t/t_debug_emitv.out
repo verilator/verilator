@@ -1228,7 +1228,9 @@ package Vt_debug_emitv___024unit;
             disable label3;
         end
     endfunction
-    string __Venumtab_enum_name36[1:0];
+endpackage
+package Vt_debug_emitv___Vconstpool;
+    string TABLE_0[1:0];
 endpackage
 package Vt_debug_emitv_std;
     class Vt_debug_emitv_process;

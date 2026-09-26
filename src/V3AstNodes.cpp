@@ -21,7 +21,6 @@
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Graph.h"
-#include "V3Hasher.h"
 #include "V3InstrCount.h"
 #include "V3Stats.h"
 #include "V3String.h"
@@ -125,59 +124,6 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
         return getLhsNetDelayRecurse(selp->fromp());
     }
     return nullptr;
-}
-
-static bool sameInit(const AstConst* ap, const AstConst* bp) {
-    // Similarly to the AstInitArray comparison, we ignore the dtype instance, so long as they
-    // are compatible. For now, we assume the dtype is not relevant, as we only call this from
-    // V3Prelim which is a late pass.
-    // Compare initializers by value. This checks widths as well.
-    return ap->num().isCaseEq(bp->num());
-}
-static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
-    // Unpacked array initializers must have equivalent values
-    // Note, sadly we can't just call ap->sameTree(pb), because both:
-    // - the dtypes might be different instances
-    // - the default/inititem children might be in different order yet still yield the same table
-    // See note in AstInitArray::same about the same. This function instead compares by initializer
-    // value, rather than by tree structure.
-    if (const AstAssocArrayDType* const aDTypep = VN_CAST(ap->dtypep(), AssocArrayDType)) {
-        const AstAssocArrayDType* const bDTypep = VN_CAST(bp->dtypep(), AssocArrayDType);
-        if (!bDTypep) return false;
-        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-        if (!aDTypep->keyDTypep()->sameTree(bDTypep->keyDTypep())) return false;
-        UASSERT_OBJ(ap->defaultp(), ap, "Assoc InitArray should have a default");
-        UASSERT_OBJ(bp->defaultp(), bp, "Assoc InitArray should have a default");
-        if (!ap->defaultp()->sameTree(bp->defaultp())) return false;
-        // Compare initializer arrays by value. Note this is only called when they hash the same,
-        // so they likely run at most once per call to 'AstConstPool::findTable'.
-        // This assumes that the defaults are used in the same way.
-        // TODO when building the AstInitArray, remove any values matching the default
-        const auto& amapr = ap->map();
-        const auto& bmapr = bp->map();
-        const auto ait = amapr.cbegin();
-        const auto bit = bmapr.cbegin();
-        while (ait != amapr.cend() || bit != bmapr.cend()) {
-            if (ait == amapr.cend() || bit == bmapr.cend()) return false;  // Different size
-            if (ait->first != bit->first) return false;  // Different key
-            if (ait->second->sameTree(bit->second)) return false;  // Different value
-        }
-    } else if (const AstUnpackArrayDType* const aDTypep
-               = VN_CAST(ap->dtypep(), UnpackArrayDType)) {
-        const AstUnpackArrayDType* const bDTypep = VN_CAST(bp->dtypep(), UnpackArrayDType);
-        if (!bDTypep) return false;
-        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-        if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) return false;
-        // Compare initializer arrays by value. Note this is only called when they hash the same,
-        // so they likely run at most once per call to 'AstConstPool::findTable'.
-        const uint64_t size = aDTypep->elementsConst();
-        for (uint64_t n = 0; n < size; ++n) {
-            const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
-            const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
-            if (!valAp->sameTree(valBp)) return false;
-        }
-    }
-    return true;
 }
 
 //======================================================================
@@ -1050,103 +996,6 @@ AstConst::~AstConst() {
     // is set, erase the entry before this AstConst address can be reused by a different node.
     if (m_num.hasOrigParamName()) v3Global.rootp()->astConstOrigParamNameErase(this);
 }
-AstConstPool::AstConstPool(FileLine* fl)
-    : ASTGEN_SUPER_ConstPool(fl)
-    , m_modp{new AstModule{fl, "@CONST-POOL@", "work"}}
-    , m_scopep{new AstScope{fl, m_modp, "@CONST-POOL@", nullptr, nullptr}} {
-    this->modulep(m_modp);
-    m_modp->addStmtsp(m_scopep);
-}
-AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp) {
-    FileLine* const fl = initp->fileline();
-    AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, initp->dtypep()};
-    varp->setConstPoolEntry();
-    varp->isConst(true);
-    varp->isStatic(true);
-    varp->valuep(initp->cloneTree(false));
-    m_modp->addStmtsp(varp);
-    AstVarScope* const varScopep = new AstVarScope{fl, m_scopep, varp};
-    m_scopep->addVarsp(varScopep);
-    return varScopep;
-}
-AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
-    // Try to find an existing constant with the same value
-    // cppcheck-suppress unreadVariable
-    const V3Hash hash = initp->num().toHash();
-    const auto& er = m_consts.equal_range(hash.value());
-    for (auto it = er.first; it != er.second; ++it) {
-        AstVarScope* const varScopep = it->second;
-        const AstConst* const init2p = VN_AS(varScopep->varp()->valuep(), Const);
-        if (sameInit(initp, init2p)
-            && (mergeDType || varScopep->dtypep()->sameTree(initp->dtypep()))) {
-            return varScopep;  // Found identical constant
-        }
-    }
-    // No such constant yet, create it.
-    string name = "CONST_";
-    name += hash.toString();
-    name += "_";
-    name += cvtToStr(std::distance(er.first, er.second));
-    AstVarScope* const varScopep = createNewEntry(name, initp);
-    m_consts.emplace(hash.value(), varScopep);
-    return varScopep;
-}
-AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
-    const AstNode* const defaultp = initp->defaultp();
-    // Verify initializer is well formed
-    UASSERT_OBJ(VN_IS(initp->dtypep(), AssocArrayDType)
-                    || VN_IS(initp->dtypep(), UnpackArrayDType),
-                initp, "Const pool table must have array dtype");
-    UASSERT_OBJ(!defaultp || VN_IS(defaultp, Const), initp,
-                "Const pool table default must be Const");
-    for (AstNode* nodep = initp->initsp(); nodep; nodep = nodep->nextp()) {
-        const AstNode* const valuep = VN_AS(nodep, InitItem)->valuep();
-        UASSERT_OBJ(VN_IS(valuep, Const), valuep, "Const pool table entry must be Const");
-    }
-    // Try to find an existing table with the same content
-    // cppcheck-suppress unreadVariable
-    const V3Hash hash = V3Hasher::uncachedHash(initp);
-    const auto& er = m_tables.equal_range(hash.value());
-    for (auto it = er.first; it != er.second; ++it) {
-        AstVarScope* const varScopep = it->second;
-        const AstInitArray* const init2p = VN_AS(varScopep->varp()->valuep(), InitArray);
-        if (sameInit(initp, init2p)) {
-            return varScopep;  // Found identical table
-        }
-    }
-    // No such table yet, create it.
-    string name = "TABLE_";
-    name += hash.toString();
-    name += "_";
-    name += cvtToStr(std::distance(er.first, er.second));
-    AstVarScope* const varScopep = createNewEntry(name, initp);
-    m_tables.emplace(hash.value(), varScopep);
-    return varScopep;
-}
-void AstConstPool::rebuildVarScopesAndCache() {
-    m_tables.clear();
-    m_consts.clear();
-    std::unordered_map<const AstVar*, AstVarScope*> varScopeps;
-    for (AstVarScope* vscp = m_scopep->varsp(); vscp; vscp = VN_CAST(vscp->nextp(), VarScope)) {
-        varScopeps.emplace(vscp->varp(), vscp);
-    }
-    for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        AstVar* const varp = VN_CAST(nodep, Var);
-        if (!varp) continue;
-        AstNode* const valuep = varp->valuep();
-        if (!valuep) continue;
-        const bool isTable = VN_IS(valuep, InitArray);
-        const AstConst* const constp = VN_CAST(valuep, Const);
-        if (!isTable && !constp) continue;
-        AstVarScope*& vscp = varScopeps[varp];
-        if (!vscp) {
-            vscp = new AstVarScope{varp->fileline(), m_scopep, varp};
-            m_scopep->addVarsp(vscp);
-        }
-        if (isTable) m_tables.emplace(V3Hasher::uncachedHash(valuep).value(), vscp);
-        if (constp) m_consts.emplace(constp->num().toHash().value(), vscp);
-    }
-}
 void AstConstraint::dump(std::ostream& str) const {
     Super::dump(str);
     if (isExternDef()) str << " [EXTDEF]";
@@ -1414,8 +1263,6 @@ void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {
 }
 const char* AstEnumDType::broken() const {
     BROKEN_RTN(!((m_refDTypep && !childDTypep()) || (!m_refDTypep && childDTypep())));
-    BROKEN_RTN(std::any_of(m_tableMap.begin(), m_tableMap.end(),
-                           [](const auto& p) { return !p.second->brokeExists(); }));
     return nullptr;
 }
 void AstEnumDType::dump(std::ostream& str) const {
@@ -1917,15 +1764,18 @@ AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
-    , m_constPoolp{new AstConstPool{fileline()}}
+    , m_constPoolPkgp{new AstPackage{fileline(), "__Vconstpool", "work"}}
     , m_dollarUnitPkgp{new AstPackage{fileline(), AstNode::encodeName("$unit"), "work"}} {
     addMiscsp(m_typeTablep);
-    addMiscsp(m_constPoolp);
     // packages are always libraries; don't want to make them a "top"
     m_dollarUnitPkgp->level(1);
     m_dollarUnitPkgp->inLibrary(true);
     m_dollarUnitPkgp->modTrace(false);  // may reconsider later
     addModulesp(m_dollarUnitPkgp);
+    m_constPoolPkgp->level(1);
+    m_constPoolPkgp->inLibrary(true);
+    m_constPoolPkgp->modTrace(false);
+    addModulesp(m_constPoolPkgp);
 }
 void AstNetlist::addEvalStats(const std::string& phase) {
     if (!v3Global.opt.stats()) return;
@@ -1986,7 +1836,7 @@ void AstNetlist::createTopScope(AstScope* scopep) {
 void AstNetlist::deleteContents() {
     // Delete all netlist memory.  Only for use by Verilator.cpp
     m_typeTablep = nullptr;
-    m_constPoolp = nullptr;
+    m_constPoolPkgp = nullptr;
     m_dollarUnitPkgp = nullptr;
     m_stdPackagep = nullptr;
     m_dpiExportTriggerp = nullptr;

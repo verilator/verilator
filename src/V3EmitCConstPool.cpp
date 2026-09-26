@@ -41,11 +41,11 @@ class EmitCConstPool final : public EmitCConstInit {
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "__ConstPool";
 
     // METHODS
-    void emitVars(const AstConstPool* poolp) {
+    void emitVars(const AstPackage* poolp) {
         UASSERT(!ofp(), "Output file should not be open");
 
         std::vector<const AstVar*> varps;
-        for (AstNode* nodep = poolp->modp()->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* nodep = poolp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) varps.push_back(varp);
         }
 
@@ -73,11 +73,13 @@ class EmitCConstPool final : public EmitCConstInit {
             const std::string nameProtect
                 = EmitCUtil::topClassName() + "__ConstPool__" + varp->nameProtect();
             puts("\n");
-            putns(varp, "extern const ");
+            putns(varp, "extern ");
+            // Literal types should be constinit (no code generation needed)
+            if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
+            putns(varp, "const ");
             putns(varp, varp->dtypep()->cType(nameProtect, false, false));
-            putns(varp, " = ");
             UASSERT_OBJ(varp, varp->valuep(), "Var without value");
-            iterateConst(varp->valuep());
+            emitDirectInit(varp->valuep());
             putns(varp, ";\n");
             // Keep track of stats
             if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
@@ -103,7 +105,7 @@ class EmitCConstPool final : public EmitCConstInit {
     }
 
 public:
-    explicit EmitCConstPool(const AstConstPool* poolp) {
+    explicit EmitCConstPool(const AstPackage* poolp) {
         emitVars(poolp);
         V3Stats::addStatSum("ConstPool, Tables emitted", m_tablesEmitted);
         V3Stats::addStatSum("ConstPool, Constants emitted", m_constsEmitted);
@@ -115,5 +117,5 @@ public:
 
 void V3EmitC::emitcConstPool() {
     UINFO(2, __FUNCTION__ << ":");
-    EmitCConstPool(v3Global.rootp()->constPoolp());
+    EmitCConstPool(v3Global.rootp()->constPoolPkgp());
 }
