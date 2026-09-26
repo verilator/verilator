@@ -517,7 +517,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     write_var(VlQueue<T, N_MaxSize>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
+        record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
     // Register unpacked array of non-struct types
     template <typename T, std::size_t N_Depth>
@@ -543,7 +543,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
+        record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
 
     // Register associative array of non-struct types
@@ -571,7 +571,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T_Value>::value, void>::type
     write_var(VlAssocArray<T_Key, T_Value>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
+        record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
 
     // ---  Record Arrays: flat and struct  ---
