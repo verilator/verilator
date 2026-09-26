@@ -493,6 +493,7 @@ class TimingControlVisitor final : public VNVisitor {
     V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
     V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
+    V3UniqueNames m_cycleCntNames{"__VcycleCnt"};  // Cycle delay counter var names
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
     V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
 
@@ -739,6 +740,20 @@ class TimingControlVisitor final : public VNVisitor {
         AstVarScope* vscp = new AstVarScope{flp, m_scopep, varp};
         m_scopep->addVarsp(vscp);
         return vscp;
+    }
+    // A cycle delay of a drive (Begin from V3AssertPre) initializes its counter first. Use a
+    // counter local to the forked process, so pending drives do not share a module variable.
+    void localizeCycleCounter(AstBegin* const beginp) {
+        AstAssign* const initp = VN_AS(beginp->stmtsp(), Assign);
+        AstVarScope* const vscp = VN_AS(initp->lhsp(), VarRef)->varScopep();
+        if (vscp->varp()->isFuncLocal()) return;
+        AstVarScope* const newVscp = createTemp(initp->fileline(), m_cycleCntNames.get(beginp),
+                                                vscp->varp()->dtypep(), initp);
+        beginp->foreach([&](AstVarRef* refp) {
+            if (refp->varScopep() != vscp) return;
+            refp->varScopep(newVscp);
+            refp->varp(newVscp->varp());
+        });
     }
     // Add a done() call on the fork sync
     void addForkDone(AstBegin* const beginp, AstVarScope* const forkVscp) const {
@@ -1200,7 +1215,8 @@ class TimingControlVisitor final : public VNVisitor {
             return;
         }
         // Insert new vars before the timing control if we're in a function; in a process we can't
-        // do that. These intra-assignment vars will later be passed to forked processes by value.
+        // do that, except before the fork of an NBA. These intra-assignment vars will later be
+        // passed to forked processes by value.
         AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
         // Special case for NBA
         if (inAssignDly) {
@@ -1216,12 +1232,17 @@ class TimingControlVisitor final : public VNVisitor {
                 nodep->replaceWith(trigAssignp);
                 trigAssignp->addNextHere(nbaEventControlp);
                 nbaEventControlp->addStmtsp(nodep);
-                insertBeforep = forkp;
                 if (!controlp) controlp = nbaEventControlp;
             }
+            // Pending updates keep their own values, even if their process schedules more
+            insertBeforep = forkp;
             controlp->replaceWith(forkp);
             AstBegin* beginp = VN_CAST(controlp, Begin);
-            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
+            if (beginp) {
+                localizeCycleCounter(beginp);
+            } else {
+                beginp = new AstBegin{nodep->fileline(), "", controlp, false};
+            }
             forkp->addForksp(beginp);
             addFlags(beginp, T_NBA_UPDATE);
             controlp = forkp;
