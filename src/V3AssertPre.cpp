@@ -74,11 +74,18 @@ private:
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
+    AstClocking* m_driveClockingp = nullptr;  // Clocking block of the drive's clockvar, if local
     bool m_hasCycleDelay = false;  // True if node has cycle delay beneath
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
     // METHODS
+
+    // The clocking block of a clocking item, which is in its list of items
+    static AstClocking* clockingOf(AstNode* nodep) {
+        while (!VN_IS(nodep, Clocking)) nodep = nodep->backp();
+        return VN_AS(nodep, Clocking);
+    }
 
     static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp) {
         const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
@@ -490,7 +497,10 @@ private:
             return;
         }
         AstSenItem* sensesp = nullptr;
-        if (!m_defaultClockingp) {
+        if (m_driveClockingp) {
+            // Count the cycles of the clockvar's clocking block (IEEE 1800-2023 14.16)
+            sensesp = m_driveClockingp->sensesp();
+        } else if (!m_defaultClockingp) {
             if (!m_pexprp) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
@@ -620,7 +630,10 @@ private:
                         nodep->v3error("Only non-blocking assignments can write "
                                        "to clockvars (IEEE 1800-2023 14.16)");
                     }
-                    if (m_inAssign) m_inSynchDrive = true;
+                    if (m_inAssign) {
+                        m_inSynchDrive = true;
+                        if (VN_IS(nodep, VarRef)) m_driveClockingp = clockingOf(itemp);
+                    }
                 } else if (itemp->direction() == VDirection::INPUT) {
                     nodep->v3error("Cannot write to input clockvar (IEEE 1800-2023 14.3)");
                 }
@@ -652,8 +665,10 @@ private:
         if (nodep->user1()) return;
         VL_RESTORER(m_inAssign);
         VL_RESTORER(m_inSynchDrive);
+        VL_RESTORER(m_driveClockingp);
         m_inAssign = true;
         m_inSynchDrive = false;
+        m_driveClockingp = nullptr;
         {
             VL_RESTORER(m_inAssignDlyLhs);
             m_inAssignDlyLhs = VN_IS(nodep, AssignDly);
