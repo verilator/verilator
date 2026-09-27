@@ -801,6 +801,7 @@ module Vt_debug_emitv_t;
             bins high = {['sh4:'sh6]};
             bins multi = {'sh0, 'sh1, 'sh2};
             bins sized['sh2] = {['sh0:'sh5], 'sh7};
+            wildcard bins wild[] = {3'b1z};
             bins dflt = default;
             ignore_bins ign = {'sh7};
             illegal_bins ill = {'sh5};

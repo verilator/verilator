@@ -16,6 +16,10 @@ module t;
     cp_array_over: coverpoint data {
       bins over_limit[] = {[0 : $]};
     }
+    // Warning (COVERIGN): a wildcard array of more values than the limit
+    cp_wild_over: coverpoint data {
+      wildcard bins over_limit[] = {32'h????_????};
+    }
     // Error: automatic bins over the limit
     cp_auto_over: coverpoint data {
       bins auto[33'd4294967296];

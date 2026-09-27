@@ -343,11 +343,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         emitCoverageOption(nodep, nodep->typeOption(), nodep->optType(), nodep->valuep());
     }
     void visit(AstCoverBin* nodep) override {
-        switch (nodep->binsType()) {
-        case VCoverBinsType::BINS_IGNORE: putfs(nodep, "ignore_bins "); break;
-        case VCoverBinsType::BINS_ILLEGAL: putfs(nodep, "illegal_bins "); break;
-        default: putfs(nodep, "bins "); break;
-        }
+        const char* const keywordp
+            = nodep->binsType() == VCoverBinsType::BINS_IGNORE    ? "ignore_bins "
+              : nodep->binsType() == VCoverBinsType::BINS_ILLEGAL ? "illegal_bins "
+                                                                  : "bins ";
+        putfs(nodep, std::string{nodep->isWildcard() ? "wildcard " : ""} + keywordp);
         puts(nodep->name());
         if (nodep->isArray()) {
             puts("[");
