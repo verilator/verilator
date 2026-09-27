@@ -3162,6 +3162,10 @@ void AstRange::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, fromBracket);
     dumpJsonGen(str);
 }
+const char* AstRefDType::broken() const {
+    if (v3Global.assertDTypesResolved()) BROKEN_RTN(captureTagp());
+    return nullptr;
+}
 void AstRefDType::dump(std::ostream& str) const {
     Super::dump(str);
     if (typedefp() || subDTypep()) {

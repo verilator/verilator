@@ -1305,6 +1305,7 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         return subDTypep()->similarDType(samep->subDTypep());
     }
+    const char* broken() const override;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;

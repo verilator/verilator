@@ -360,8 +360,6 @@ private:
         v3Global.rootp()->typeTablep()->addTypesp(nodep);
     }
     void visit(AstRefDType* nodep) override {
-        UASSERT_OBJ(!nodep->captureTagp(), nodep,
-                    "Capture tag not cleared by finalizeIfaceCapture");
         visitIterateNodeDType(nodep);
         if (!nodep->typedefp()) return;  // Already checked and cleared
         classEncapCheck(nodep, nodep->typedefp(), VN_CAST(nodep->classOrPackagep(), Class));
