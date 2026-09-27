@@ -33,8 +33,11 @@ class VSymEnt;
 // Capture record of an AstRefDType, shared by all clones of that reference
 class VIfaceCaptureTag final {
 public:
-    enum class Kind : uint8_t { TYPEDEF, PARAM_TYPE };
-    Kind m_kind;
+    enum class Kind : uint8_t {
+        TYPEDEF,  // Refers to a typedef in the interface
+        PARAM_TYPE  // Refers to a type parameter of the interface
+    };
+    Kind m_kind;  // What the reference refers to
     string m_cellPath;  // Cell path from the owner module (e.g. "cca_io.tlb_io")
     string m_ownerModName;  // Name of the interface that owns the target
     string m_capturedInName;  // Original name of the module the reference was captured in

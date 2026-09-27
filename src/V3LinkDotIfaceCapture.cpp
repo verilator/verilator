@@ -360,7 +360,7 @@ void V3LinkDotIfaceCapture::tag(AstRefDType* refp, const AstNodeModule* captured
                                 const string& ownerModName) {
     if (refp->captureTagp()) return;  // First capture wins
     UASSERT_OBJ(capturedInp, refp, "Captured reference is not in a module");
-    s_tags.push_back(VIfaceCaptureTag{kind, cellPath, ownerModName, capturedInp->origName()});
+    s_tags.emplace_back(VIfaceCaptureTag{kind, cellPath, ownerModName, capturedInp->origName()});
     refp->captureTagp(&s_tags.back());
 }
 
