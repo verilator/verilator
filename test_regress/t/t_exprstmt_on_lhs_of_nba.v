@@ -46,7 +46,7 @@ module t (
 
   always @(posedge clk) begin
     if (write_valid_i)
-      FIFOContent[write_front_i?(read_valid_i?read_pointer : prevPointer(
+      FIFOContent[write_front_i ? (read_valid_i ? read_pointer : prevPointer(
           read_pointer
       )) : write_pointer] <= data_i;
   end

@@ -21,9 +21,21 @@ module t;
   int b_out;
   int c_out;
 
-  suba ua(.clk(clk), .base(32'd10), .out(a_out));
-  suba ub(.clk(clk), .base(32'd20), .out(b_out));
-  subb uc(.clk(clk), .base(32'd30), .out(c_out));
+  suba ua (
+      .clk(clk),
+      .base(32'd10),
+      .out(a_out)
+  );
+  suba ub (
+      .clk(clk),
+      .base(32'd20),
+      .out(b_out)
+  );
+  subb uc (
+      .clk(clk),
+      .base(32'd30),
+      .out(c_out)
+  );
 
   function automatic int twiddle(int x);
     return x + 1;
@@ -43,7 +55,11 @@ module t;
 
 endmodule
 
-module suba(input clk, input int base, output int out);
+module suba (
+    input clk,
+    input int base,
+    output int out
+);
   /*verilator inline_module*/
 
   int val;
@@ -62,7 +78,11 @@ module suba(input clk, input int base, output int out);
   end
 endmodule
 
-module subb(input clk, input int base, output int out);
+module subb (
+    input clk,
+    input int base,
+    output int out
+);
   /*verilator no_inline_module*/
 
   int val;

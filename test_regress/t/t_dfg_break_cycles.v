@@ -421,7 +421,7 @@ module t (
   `signal(PACKED_0_LSB, 1);
   assign PACKED_0_LSB = packed_0_lsb;
 
-  logic [3:0] packed_1; // Bit 3 deliberately undriven
+  logic [3:0] packed_1;  // Bit 3 deliberately undriven
   assign packed_1[1] = rand_a[0];
   always_comb begin
     packed_1[2] = rand_a[1];

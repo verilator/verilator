@@ -5,8 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 
-module fsm(input logic clk, input logic alt);
-  typedef enum logic [2:0] { IDLE, RUN1A, RUN1B, RUN2, DONE } state_t;
+module fsm (
+    input logic clk,
+    input logic alt
+);
+  typedef enum logic [2:0] {
+    IDLE,
+    RUN1A,
+    RUN1B,
+    RUN2,
+    DONE
+  } state_t;
   state_t state;
   initial state = IDLE;
   always @(posedge clk) begin
@@ -25,8 +34,14 @@ module t;
   logic clk = 0;
   always #5 clk = ~clk;
 
-  fsm u1(.clk(clk), .alt(1'b0));
-  fsm u2(.clk(clk), .alt(1'b1));
+  fsm u1 (
+      .clk(clk),
+      .alt(1'b0)
+  );
+  fsm u2 (
+      .clk(clk),
+      .alt(1'b1)
+  );
 
   initial begin
     #201;
