@@ -665,9 +665,8 @@ int V3LinkDotIfaceCapture::resolveCapturedRefs() {
         if (!ownerModp || ownerModp->dead() || VN_IS(ownerModp, Package)) return;
 
         UINFO(9, "finalizeIfaceCapture Phase3 entry: refp="
-                     << refp->name() << " (" << cvtToHex(refp) << ")"
-                     << " ownerMod=" << ownerModp->name() << " cellPath='" << tagp->m_cellPath
-                     << "' targetKind="
+                     << refp->name() << " (" << cvtToHex(refp) << ")" << " ownerMod="
+                     << ownerModp->name() << " cellPath='" << tagp->m_cellPath << "' targetKind="
                      << (tagp->m_kind == VIfaceCaptureTag::Kind::PARAM_TYPE ? "param type"
                                                                             : "typedef"));
 
