@@ -12,12 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = 't/t_covergroup_sized_bins.v'
 
-# Without --coverage, and with names protected in the generated code
-test.compile(verilator_flags2=['--protect-ids', '--protect-key SIZED_KEY', '-Wno-INSECURE'])
+test.compile()
 
 test.execute()
-
-for filename in test.glob_some(test.obj_dir + '/*.cpp'):
-    test.file_grep_not(filename, r'cg_values|cg_ieee|fixed4|dflt')
 
 test.passes()

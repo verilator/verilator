@@ -134,7 +134,6 @@ struct VlCoverpoint::ValueData final {
     std::vector<uint32_t> m_reported;  // Declared bins that have values, in declaration order
     std::vector<Sized> m_sized;  // Sized arrays, in sizedFinish() order
     std::vector<SizedElement> m_sizedElements;  // sizedRange() elements of the next array
-    std::vector<uint32_t> m_sizedHits;  // Bins of one sizedSample(), reused to not allocate
 
     ValueData(uint32_t bits, bool isSigned, uint32_t bins)
         : m_bits{bits}
@@ -214,7 +213,7 @@ struct VlCoverpoint::ValueData final {
     static uint64_t number(const Value& position) { return VL_SET_QW(view(position)); }
     // A value of at most 64 bits in unsigned order: the sign bit of a signed value flipped
     uint64_t orderValue(uint64_t value) const {
-        return m_isSigned ? value ^ (uint64_t{1} << (m_bits - 1)) : value;
+        return m_isSigned ? value ^ VL_BIT_Q(m_bits - 1) : value;
     }
     bool contains(const Range& range, WDataInP value) const {
         if (less(value, range.m_lo) || less(range.m_hi, value)) return false;
@@ -760,22 +759,23 @@ bool VlCoverpoint::sizedSample(uint32_t sized, QData value, bool enabled) {
         VL_SET_WQ(words, value);
         return sizedSampleW(sized, words, enabled);
     }
-    data.m_sizedHits.clear();
     const uint64_t ordered = data.orderValue(value);
+    uint32_t last = UINT32_MAX;  // No bin yet; bins index below UINT32_MAX
     for (const ValueData::SizedFast& element : array.m_fast) {
         if (ordered < element.m_lo || ordered > element.m_hi) continue;
         const uint64_t bin = (element.m_position + (ordered - element.m_lo)) / array.m_fastPerBin;
         // Bins past the last hold none; it holds the remaining values
-        data.m_sizedHits.push_back(
-            array.m_first + static_cast<uint32_t>(std::min<uint64_t>(bin, array.m_count - 1)));
+        sizedHit(array.m_kind,
+                 array.m_first + static_cast<uint32_t>(std::min<uint64_t>(bin, array.m_count - 1)),
+                 enabled, last);
     }
-    return sizedCount(sized, enabled);
+    return last != UINT32_MAX;
 }
 
 bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
     ValueData& data = *m_valuesp;
     const ValueData::Sized& array = data.m_sized[sized];
-    data.m_sizedHits.clear();
+    uint32_t last = UINT32_MAX;  // No bin yet; bins index below UINT32_MAX
     for (const ValueData::SizedElement& element : array.m_elements) {
         if (data.less(valuep, element.m_lo) || data.less(element.m_hi, valuep)) continue;
         ValueData::Value position = data.distance(ValueData::view(element.m_lo), valuep);
@@ -783,30 +783,24 @@ bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
         ValueData::Value bin{data.positionWords()};
         data.quotient(position, array.m_perBin, bin);
         const bool past = !data.narrow(bin) || ValueData::number(bin) >= array.m_count;
-        data.m_sizedHits.push_back(array.m_first
-                                   + (past ? array.m_count - 1 : static_cast<uint32_t>(bin[0])));
+        sizedHit(array.m_kind,
+                 array.m_first + (past ? array.m_count - 1 : static_cast<uint32_t>(bin[0])),
+                 enabled, last);
     }
-    return sizedCount(sized, enabled);
+    return last != UINT32_MAX;
 }
 
-bool VlCoverpoint::sizedCount(uint32_t sized, bool enabled) {
-    ValueData& data = *m_valuesp;
-    std::vector<uint32_t>& hits = data.m_sizedHits;
-    if (hits.size() > 1) {  // Overlapping elements can put a value in one bin twice
-        std::sort(hits.begin(), hits.end());
-        hits.erase(std::unique(hits.begin(), hits.end()), hits.end());
+void VlCoverpoint::sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint32_t& last) {
+    // The elements hold consecutive positions, so the bins holding a value come in order, and
+    // one that two elements share repeats only in a row: count it once (IEEE 1800-2023 19.5)
+    if (bin == last) return;
+    last = bin;
+    if (!enabled) return;
+    if (kind == VlCovBinKind::KIND_NORMAL) {
+        incrementNormalBin(bin);
+    } else {
+        recordHit(bin);
     }
-    if (enabled) {
-        const bool normal = data.m_sized[sized].m_kind == VlCovBinKind::KIND_NORMAL;
-        for (const uint32_t bin : hits) {
-            if (normal) {
-                incrementNormalBin(bin);
-            } else {
-                recordHit(bin);
-            }
-        }
-    }
-    return !hits.empty();
 }
 
 void VlCoverpoint::init(const char* hier, uint32_t atLeast, uint32_t nBins) {

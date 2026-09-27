@@ -134,8 +134,9 @@ private:
     uint32_t reportedBin(uint32_t i) const;
     std::string declaredBinName(uint32_t bin) const;  // Name of a declared bin index
     bool liveBin(uint32_t bin) const;  // Normal bin keeps a value outside the exclusions
-    // Count a sample in the bins sizedSample() found, if enabled; true if it found any
-    bool sizedCount(uint32_t sized, bool enabled);
+    // Count a sample, if enabled, in a bin of a sized array holding the value, unless it is
+    // 'last', the bin found before; set 'last'
+    void sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint32_t& last);
 
 public:
     // CONSTRUCTORS
