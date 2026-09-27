@@ -19,6 +19,7 @@ module t;
   bit signed [1:0] sv2;
   bit [2:0] u;
   bit [99:0] w;
+  longint l;
 
   covergroup cg;
     coverpoint data {
@@ -80,6 +81,11 @@ module t;
       wildcard illegal_bins l[] = {3'b111};
       bins others = default;
     }
+    // Excluded values also leave values that are not consecutive: 1 and 5
+    split: coverpoint u {
+      wildcard bins b[] = {3'b?0?};
+      wildcard ignore_bins i[] = {3'b?00};
+    }
     gated: coverpoint v {
       wildcard bins b[] = {4'b11?0} iff (v2 == 3);
     }
@@ -90,9 +96,10 @@ module t;
     xx: cross nonzero, gaps{
       bins sel = binsof (gaps.b) intersect {[8 : 9]};
     }
-    // Values beyond 64 bits: 16..31
+    // Values beyond 64 bits: 16..31, and 24, 25, 28, 29
     wide100: coverpoint w {
       wildcard bins b[] = {100'h1?};
+      wildcard bins f[] = {100'b1_1?0?};
     }
     ww: cross nonzero, wide100;
   endgroup
@@ -110,8 +117,24 @@ module t;
     }
   endgroup
 
+  // Signed 64-bit values: a crossed array of negative ones, and those of a pattern with an x
+  // sign bit, in value order
+  covergroup cg_s64;
+    neg: coverpoint l {
+      wildcard bins b[] = {-1, -3};
+    }
+    top: coverpoint l {
+      wildcard bins b[] = {64'sh?fff_ffff_ffff_fffe};
+    }
+    three: coverpoint v2 {
+      bins b = {3};
+    }
+    nx: cross neg, three;
+  endgroup
+
   cg_arrays arrays_inst = new;
   cg_sized sized_inst = new;
+  cg_s64 s64_inst = new;
 
   initial begin
     cg cg_inst;
@@ -164,8 +187,8 @@ module t;
         w = 100'(i + 16);
         arrays_inst.sample();
       end
-      // With v2 == 0: all but sgn2, gated, nonzero, xx, and ww of the 13 items with bins
-      if (a == 0) `checkr(arrays_inst.get_inst_coverage(), 100.0 * 8 / 13);
+      // With v2 == 0: all but sgn2, gated, nonzero, xx, and ww of the 14 items with bins
+      if (a == 0) `checkr(arrays_inst.get_inst_coverage(), 100.0 * 9 / 14);
     end
     `checkr(arrays_inst.get_inst_coverage(), 100.0);
 
@@ -178,6 +201,19 @@ module t;
     v = 13;
     sized_inst.sample();
     `checkr(sized_inst.get_inst_coverage(), 100.0);
+
+    v2 = 3;
+    for (int i = 0; i < 16; ++i) begin
+      l = {4'(i), 60'hfff_ffff_ffff_fffe};
+      s64_inst.sample();
+    end
+    // All of top and three, none of neg and nx
+    `checkr(s64_inst.get_inst_coverage(), 100.0 * 2 / 4);
+    l = -1;
+    s64_inst.sample();
+    l = -3;
+    s64_inst.sample();
+    `checkr(s64_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -45,6 +45,10 @@ cg_arrays.sgn.ext[-3]: 4
 cg_arrays.sgn.ext[-4]: 4
 cg_arrays.sgn2.b[-1]: 16
 cg_arrays.sgn2.b[1]: 16
+cg_arrays.split.b[1]: 12
+cg_arrays.split.b[5]: 8
+cg_arrays.split.i[0] [ignore]: 12
+cg_arrays.split.i[4] [ignore]: 8
 cg_arrays.wide.keep[12]: 4
 cg_arrays.wide.keep[13]: 4
 cg_arrays.wide.keep[14]: 4
@@ -66,6 +70,10 @@ cg_arrays.wide100.b[28]: 4
 cg_arrays.wide100.b[29]: 4
 cg_arrays.wide100.b[30]: 4
 cg_arrays.wide100.b[31]: 4
+cg_arrays.wide100.f[24]: 4
+cg_arrays.wide100.f[25]: 4
+cg_arrays.wide100.f[28]: 4
+cg_arrays.wide100.f[29]: 4
 cg_arrays.ww.b[2]_x_b[16] [cross]: 1
 cg_arrays.ww.b[2]_x_b[17] [cross]: 1
 cg_arrays.ww.b[2]_x_b[18] [cross]: 1
@@ -82,6 +90,10 @@ cg_arrays.ww.b[2]_x_b[28] [cross]: 1
 cg_arrays.ww.b[2]_x_b[29] [cross]: 1
 cg_arrays.ww.b[2]_x_b[30] [cross]: 1
 cg_arrays.ww.b[2]_x_b[31] [cross]: 1
+cg_arrays.ww.b[2]_x_f[24] [cross]: 1
+cg_arrays.ww.b[2]_x_f[25] [cross]: 1
+cg_arrays.ww.b[2]_x_f[28] [cross]: 1
+cg_arrays.ww.b[2]_x_f[29] [cross]: 1
 cg_arrays.ww.b[3]_x_b[16] [cross]: 1
 cg_arrays.ww.b[3]_x_b[17] [cross]: 1
 cg_arrays.ww.b[3]_x_b[18] [cross]: 1
@@ -98,11 +110,36 @@ cg_arrays.ww.b[3]_x_b[28] [cross]: 1
 cg_arrays.ww.b[3]_x_b[29] [cross]: 1
 cg_arrays.ww.b[3]_x_b[30] [cross]: 1
 cg_arrays.ww.b[3]_x_b[31] [cross]: 1
+cg_arrays.ww.b[3]_x_f[24] [cross]: 1
+cg_arrays.ww.b[3]_x_f[25] [cross]: 1
+cg_arrays.ww.b[3]_x_f[28] [cross]: 1
+cg_arrays.ww.b[3]_x_f[29] [cross]: 1
 cg_arrays.xx.b[2]_x_b[12] [cross]: 1
 cg_arrays.xx.b[2]_x_b[13] [cross]: 1
 cg_arrays.xx.b[3]_x_b[12] [cross]: 1
 cg_arrays.xx.b[3]_x_b[13] [cross]: 1
 cg_arrays.xx.sel [cross]: 4
+cg_s64.neg.b[-1]: 1
+cg_s64.neg.b[-3]: 1
+cg_s64.nx.b[-1]_x_b [cross]: 1
+cg_s64.nx.b[-3]_x_b [cross]: 1
+cg_s64.three.b: 18
+cg_s64.top.b[-1152921504606846978]: 1
+cg_s64.top.b[-2305843009213693954]: 1
+cg_s64.top.b[-2]: 1
+cg_s64.top.b[-3458764513820540930]: 1
+cg_s64.top.b[-4611686018427387906]: 1
+cg_s64.top.b[-5764607523034234882]: 1
+cg_s64.top.b[-6917529027641081858]: 1
+cg_s64.top.b[-8070450532247928834]: 1
+cg_s64.top.b[1152921504606846974]: 1
+cg_s64.top.b[2305843009213693950]: 1
+cg_s64.top.b[3458764513820540926]: 1
+cg_s64.top.b[4611686018427387902]: 1
+cg_s64.top.b[5764607523034234878]: 1
+cg_s64.top.b[6917529027641081854]: 1
+cg_s64.top.b[8070450532247928830]: 1
+cg_s64.top.b[9223372036854775806]: 1
 cg_sized.d.b[0]: 1
 cg_sized.d.b[1]: 1
 cg_sized.s.b[0]: 1

@@ -986,10 +986,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return exprp->width() <= 64;
         }
         if (cbinp->isArray() && cbinp->isWildcard() && !cbinp->arraySizep()) {
-            // A value is in at most one bin of a wildcard array: one slot covering its values
+            // A value is in at most one bin of a wildcard array: one slot covering its values.
+            // Signed values are sign-extended, not unsigned intervals (see computeHitListBound)
             ++slotCount;
+            if (exprp->isSigned() || exprp->width() > 64) return false;
             const BinRuns runs = wildcardBinRuns(cbinp, exprp, false);
-            if (runs.unsupported || exprp->width() > 64) return false;
+            if (runs.unsupported) return false;
             std::vector<std::pair<uint64_t, uint64_t>> ivs;
             for (const BinRun& run : runs.runs) {
                 ivs.emplace_back(run.m_lo.toUQuad(), run.m_hi.toUQuad());
