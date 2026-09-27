@@ -483,49 +483,6 @@ void V3LinkDotIfaceCapture::captureTypedefContext(AstRefDType* refp, const char*
     // the promoteVarCb path and replaceRef confirmed this was dead code.
 }
 
-void V3LinkDotIfaceCapture::captureInnerParamTypeRefs(AstParamTypeDType* paramTypep,
-                                                      AstRefDType* refp,
-                                                      const string& ptOwnerName) {
-    if (!paramTypep) return;
-    paramTypep->foreach([&](AstRefDType* innerRefp) {
-        if (innerRefp == refp) return;
-        if (!innerRefp->refDTypep()) return;
-
-        AstNodeModule* const refOwnerModp = findOwnerModule(innerRefp->refDTypep());
-        if (refOwnerModp && VN_IS(refOwnerModp, Iface) && refOwnerModp->name() != ptOwnerName) {
-            if (!innerRefp->captureTagp()) {
-                // Find the cell name for the nested interface
-                string nestedCellName;
-                AstNodeModule* const ptOwnerModp = findOwnerModule(paramTypep);
-                if (ptOwnerModp) {
-                    for (AstNode* stmtp = ptOwnerModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                        if (AstCell* const cp = VN_CAST(stmtp, Cell)) {
-                            if (cp->modp() == refOwnerModp) {
-                                nestedCellName = cp->name();
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (VL_UNCOVERABLE(nestedCellName.empty())) {
-                    // The nested interface cell should always be found in the
-                    // owner module's statements.  If this fires, either
-                    // ptOwnerModp is wrong (findOwnerModule returned the wrong
-                    // module) or the cell was pruned before capture.
-                    v3fatalSrc("captureInnerParamTypeRefs: could not find cell for nested iface '"
-                               << refOwnerModp->prettyNameQ() << "' in '"
-                               << (ptOwnerModp ? ptOwnerModp->prettyNameQ() : "<null>") << "'");
-                }
-                UINFO(9, "addParamType: also capturing inner RefDType "
-                             << innerRefp << " refDTypep owner=" << refOwnerModp->name()
-                             << " nestedCellName='" << nestedCellName << "'");
-                tag(innerRefp, ptOwnerModp, VIfaceCaptureTag::Kind::TYPEDEF, nestedCellName,
-                    refOwnerModp->name());
-            }
-        }
-    });
-}
-
 void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPath,
                                          AstNodeModule* ownerModp, AstParamTypeDType* paramTypep,
                                          const string& paramTypeOwnerModName) {
@@ -551,9 +508,6 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
         });
     }
     tag(refp, ownerModp, VIfaceCaptureTag::Kind::PARAM_TYPE, cellPath, ptOwnerName);
-
-    // Also capture REFDTYPEs inside the PARAMTYPEDTYPE's subDTypep chain.
-    captureInnerParamTypeRefs(paramTypep, refp, ptOwnerName);
 }
 
 // Visitor that fixes dead references in the global type table.

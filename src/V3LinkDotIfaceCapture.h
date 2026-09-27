@@ -67,8 +67,6 @@ class V3LinkDotIfaceCapture final {
     static void tag(AstRefDType* refp, const AstNodeModule* capturedInp,
                     VIfaceCaptureTag::Kind kind, const string& cellPath,
                     const string& ownerModName);
-    static void captureInnerParamTypeRefs(AstParamTypeDType* paramTypep, AstRefDType* refp,
-                                          const string& ptOwnerName);
     static int fixDeadRefsInTypeTable(const std::unordered_set<const AstNode*>& liveNodes);
     static int fixDeadRefsInModules(const std::unordered_set<const AstNode*>& liveNodes);
     static int resolveCapturedRefs();
