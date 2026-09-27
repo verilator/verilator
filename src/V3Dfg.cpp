@@ -101,20 +101,6 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
     }
 }
 
-std::string DfgGraph::makeUniqueName(const std::string& prefix) {
-    // Construct the tmpNameStub if we have not done so yet
-    if (m_tmpNameStub.empty()) {
-        // Use the hash of the graph name (avoid long names and non-identifiers)
-        const std::string hash = V3Hash{m_name}.toString();
-        // We need to keep every variable globally unique, and graph hashed
-        // names might not be, so keep a static table to track multiplicity
-        static std::unordered_map<std::string, uint32_t> s_multiplicity;
-        m_tmpNameStub += '_' + hash + '_' + std::to_string(s_multiplicity[hash]++) + '_';
-    }
-    // Assemble the globally unique name
-    return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(m_tmpNameCount++);
-}
-
 DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix,
                                    const DfgDataType& dtype, AstScope* scopep) {
     // AstVar declarations outlive all DFG graphs. Splitting or merging graphs
@@ -123,7 +109,17 @@ DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix,
     const size_t slot = temps.m_scopeCounts[scopep]++;
     AstVar* varp;
     if (slot == temps.m_declps.size()) {
-        varp = new AstVar{flp, VVarType::MODULETEMP, makeUniqueName(prefix), dtype.astDtypep()};
+        // Construct the name stub on the first new declaration in this graph
+        if (m_tmpNameStub.empty()) {
+            // Use the hash of the graph name (avoid long names and non-identifiers)
+            const std::string hash = V3Hash{m_name}.toString();
+            // Graph hashes may collide, so track multiplicity to keep names globally unique
+            static std::unordered_map<std::string, uint32_t> s_multiplicity;
+            m_tmpNameStub += '_' + hash + '_' + std::to_string(s_multiplicity[hash]++) + '_';
+        }
+        const std::string varName
+            = "__Vdfg" + prefix + m_tmpNameStub + std::to_string(m_tmpNameCount++);
+        varp = new AstVar{flp, VVarType::MODULETEMP, varName, dtype.astDtypep()};
         scopep->modp()->addStmtsp(varp);
         temps.m_declps.emplace_back(varp);
     } else {

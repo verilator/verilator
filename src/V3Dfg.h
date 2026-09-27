@@ -449,9 +449,6 @@ class DfgGraph final {
     mutable bool m_vertexUserInUse = false;  // Vertex user data currently in use
     mutable uint32_t m_vertexUserGeneration = 0;  // Vertex user data generation counter
 
-    // Generate a globally unique name for a new temporary declaration.
-    std::string makeUniqueName(const std::string& prefix) VL_MT_DISABLED;
-
 public:
     // CONSTRUCTOR
     explicit DfgGraph(const string& name = "") VL_MT_DISABLED;
