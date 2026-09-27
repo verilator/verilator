@@ -78,10 +78,7 @@ class EmitCImp final : public EmitCFunc {
                     putns(varp, canBeConstexpr ? "constexpr " : "const ");
                     const string scopedName = modName + "::" + varp->nameProtect();
                     putns(varp, varp->dtypep()->cType(scopedName, false, false));
-                    if (!canBeConstexpr) {
-                        puts(" = ");
-                        emitConstInit(varp->valuep());
-                    }
+                    if (!canBeConstexpr) emitDirectInit(varp->valuep());
                     puts(";\n");
                 }
             }
@@ -939,6 +936,7 @@ void V3EmitC::emitcImp() {
         for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
             if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
             const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
+            if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
             cfiles.emplace_back();
             std::vector<AstCFile*>& slow = cfiles.back();
             threadScope.enqueue([modp, &slow] { slow = EmitCImp::main(modp, /* slow: */ true); });

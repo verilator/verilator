@@ -1,4 +1,4 @@
-{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"(E)",
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolPkgp":"(D)","dollarUnitPkgp":"(E)",
  "modulesp": [
   {"type":"MODULE","name":"test","addr":"(F)","loc":"d,21:8,21:12","origName":"test","verilogName":"test","level":1,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
@@ -24,6 +24,7 @@
     ]}
   ]},
   {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","verilogName":"\\$unit ","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"},
+  {"type":"PACKAGE","name":"__Vconstpool","addr":"(D)","loc":"a,0:0,0:0","origName":"__Vconstpool","verilogName":"__Vconstpool","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"},
   {"type":"MODULE","name":"submod","addr":"(L)","loc":"d,10:8,10:14","origName":"submod","verilogName":"submod","level":2,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
     {"type":"GENBLOCK","name":"submod_gen","addr":"(U)","loc":"d,11:18,11:28",
@@ -44,12 +45,5 @@
    "typesp": [
     {"type":"BASICDTYPE","name":"integer","addr":"(H)","loc":"d,22:10,22:11","dtypep":"(H)","keyword":"integer","range":"31:0","generic":true,"signed":true},
     {"type":"BASICDTYPE","name":"logic","addr":"(W)","loc":"d,12:10,12:16","dtypep":"(W)","keyword":"logic","generic":true}
-  ]},
-  {"type":"CONSTPOOL","addr":"(D)","loc":"a,0:0,0:0",
-   "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(CB)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"NONE",
-     "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(DB)","loc":"a,0:0,0:0","modp":"(CB)"}
-    ]}
   ]}
 ]}

@@ -794,7 +794,6 @@ AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED
     }
 
     AstScope* const rootp = v3Global.rootp()->topScopep()->scopep();
-    AstScope* const constPoolp = v3Global.rootp()->constPoolp()->scopep();
 
     // Note: the recursive invocation can cause a re-hash but that will not invalidate references
     AstScope*& resultr = cache[this];
@@ -802,11 +801,11 @@ AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED
         // Mark to prevent infinite recursion on circular graphs - should never be called on such
         resultr = reinterpret_cast<AstScope*>(1);
         // Find scope based on sources, falling back on the root scope. Never use a package
-        // scope, nor the constant pool scope, so new variables are not created in those.
+        // scope, including the constant pool, so new variables are not created in packages.
         AstScope* foundp = nullptr;
         foreachSource([&](DfgVertex& src) {
             AstScope* const scp = src.scopep(cache, true);
-            if (scp != rootp && scp != constPoolp && !VN_IS(scp->modp(), Package)) {
+            if (scp != rootp && !VN_IS(scp->modp(), Package)) {
                 foundp = scp;
                 return true;
             }

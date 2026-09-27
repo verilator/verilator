@@ -4,17 +4,19 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=[
-    "--trace-fst-thread --trace-threads 2 --order-clock-delay --clk foo --no-clk bar -fno-dfg-pre-inline -fno-dfg-post-inline -fno-dfg-scoped -fno-dfg-break-cycles -fno-lift-expr -fno-merge-const-pool --assert-unroll-limit 1024",
-],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["--binary", "--stats"])
+
+test.execute()
+
+test.file_grep(test.stats, r'ConstPool, Constants emitted\s+(\d+)', 1)
+test.file_grep(test.stats, r'ConstPool, Maps emitted\s+(\d+)', 1)
+test.file_grep(test.stats, r'ConstPool, Tables emitted\s+(\d+)', 2)
 
 test.passes()

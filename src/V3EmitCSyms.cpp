@@ -814,8 +814,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
-    void visit(AstConstPool* nodep) override {}  // Ignore
     void visit(AstNodeModule* nodep) override {
+        if (nodep->isConstPool()) return;  // Special emit rules
         nameCheck(nodep);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modCoverBins);
@@ -949,6 +949,7 @@ void EmitCSyms::emitSymHdr() {
     for (AstNodeModule *nodep = v3Global.rootp()->modulesp(), *nextp; nodep; nodep = nextp) {
         nextp = VN_AS(nodep->nextp(), NodeModule);
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
+        if (nodep->isConstPool()) continue;  // Special emit rules
         putns(nodep, "#include \"" + EmitCUtil::prefixNameProtect(nodep) + ".h\"\n");
     }
 

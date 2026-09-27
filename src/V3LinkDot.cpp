@@ -1216,12 +1216,18 @@ class LinkDotFindVisitor final : public VNVisitor {
         // (sorted before this is called).
         // This may not be the module with isTop() set, as early in the steps,
         // wrapTop may have not been created yet.
-        // $unit always exists, so nothing else, and nothing in it, means nothing was given
+        // $unit and the constant pool always exist, so nothing else, and nothing in $unit,
+        // means nothing was given
         AstNodeModule* const modulesp = nodep->modulesp();
         UASSERT_OBJ(modulesp, nodep, "$unit should always be in the netlist");
-        if (!modulesp->nextp()) {
-            UASSERT_OBJ(modulesp->isDollarUnit(), modulesp, "Sole module should be $unit");
-            if (!modulesp->stmtsp()) nodep->v3error("No top level module found");
+        const bool onlyBuiltins = [&]() {
+            for (AstNodeModule* modp = modulesp; modp; modp = VN_AS(modp->nextp(), NodeModule)) {
+                if (!modp->isDollarUnit() && !modp->isConstPool()) return false;
+            }
+            return true;
+        }();
+        if (onlyBuiltins && !v3Global.rootp()->dollarUnitPkgp()->stmtsp()) {
+            nodep->v3error("No top level module found");
         }
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
@@ -1282,7 +1288,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
     }
     void visit(AstTypeTable*) override {}  // FindVisitor::
-    void visit(AstConstPool*) override {}  // FindVisitor::
     void visit(AstIfaceRefDType* nodep) override {  // FindVisitor::
         if (!m_statep->forScopeCreation() && nodep->isVirtual() && nodep->ifacep()
             && !nodep->ifacep()->user3()) {
@@ -2474,7 +2479,6 @@ class LinkDotParamVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstTypeTable*) override {}  // ParamVisitor::
-    void visit(AstConstPool*) override {}  // ParamVisitor::
     void visit(AstNodeModule* nodep) override {  // ParamVisitor::
         UINFO(5, "   " << nodep);
         if ((nodep->dead() || !nodep->user4()) && !nodep->hierParams()) {
@@ -2676,7 +2680,6 @@ private:
         // Recurse..., backward as must do packages before using packages
         iterateChildrenBackwardsConst(nodep);
     }
-    void visit(AstConstPool*) override {}  // ScopeVisitor::
     void visit(AstScope* nodep) override {  // ScopeVisitor::
         UINFO(8, "  SCOPE " << nodep);
         UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
@@ -3843,7 +3846,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateChildrenBackwardsConst(nodep);
     }
     void visit(AstTypeTable*) override {}
-    void visit(AstConstPool*) override {}
     void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) return;
         LINKDOT_VISIT_START();

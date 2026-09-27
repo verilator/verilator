@@ -37,6 +37,7 @@
 
 #include "V3Dead.h"
 
+#include "V3ConstPool.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
 
@@ -371,6 +372,8 @@ class DeadVisitor final : public VNVisitor {
         // Class packages might have no children, but need to remain as
         // long as the class they refer to is needed
         if (VN_IS(m_modp, Class) || VN_IS(m_modp, ClassPackage)) nodep->user1Inc();
+        // The constant pool scope must remain for entries created later
+        if (m_modp->isConstPool()) nodep->user1Inc();
         if (!nodep->isTop() && !nodep->varsp() && !nodep->blocksp()) {
             m_scopesp.push_back(nodep);
         }
@@ -463,11 +466,6 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
-    }
-    void visit(AstEnumDType* nodep) override {
-        // Widthing during parameter evaluation may have populated the cache.
-        nodep->tableMap().clear();
-        visit(static_cast<AstNodeDType*>(nodep));
     }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
@@ -670,7 +668,8 @@ class DeadVisitor final : public VNVisitor {
                 nextmodp = VN_AS(modp->nextp(), NodeModule);
                 // Keep $unit until m_elimCells stages. Note v3Global.opt.serializeOnly()
                 // won't reach this stage, and will always have an empty $unit. That's ok.
-                const bool keep = !m_elimCells && modp->isDollarUnit();
+                // The constant pool is always kept, entries might be created later.
+                const bool keep = (!m_elimCells && modp->isDollarUnit()) || modp->isConstPool();
                 if (modp->dead() || (!modp->isTop() && modp->user1() == 0 && !keep)) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
                     UINFO(4, "  Dead module " << modp);
@@ -842,7 +841,7 @@ public:
         // We may have removed some datatypes, cleanup
         nodep->typeTablep()->repairCache();
         VIsCached::clearCacheTree();  // Removing assignments may affect isPure
-        nodep->constPoolp()->rebuildVarScopesAndCache();
+        V3ConstPool::invalidateCache();  // Might have deleted constant pool entries
     }
     ~DeadVisitor() override {
         V3Stats::addStatSum("Optimizations, FTasks, virtual-to-nonvirtual demotion",

@@ -68,6 +68,7 @@ set(HEADERS
     V3Combine.h
     V3Common.h
     V3Const.h
+    V3ConstPool.h
     V3Container.h
     V3Control.h
     V3Coverage.h
@@ -237,6 +238,7 @@ set(COMMON_SOURCES
     V3Clock.cpp
     V3Combine.cpp
     V3Common.cpp
+    V3ConstPool.cpp
     V3Control.cpp
     V3Const__gen.cpp
     V3Coverage.cpp

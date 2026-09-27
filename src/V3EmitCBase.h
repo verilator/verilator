@@ -77,9 +77,6 @@ public:
                && !dtp->isCompound()  // Non-POD members are not allowed in an anonymous aggregate
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
     }
-    static bool isConstPoolMod(const AstNode* modp) {
-        return modp == v3Global.rootp()->constPoolp()->modp();
-    }
 };
 
 //######################################################################

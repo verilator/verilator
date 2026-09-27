@@ -852,6 +852,11 @@ Summary:
 
 .. option:: -fno-merge-const-pool
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.054: Disable merging constant pool entries that have
+   the same value but different data types.
+
 .. option:: -fno-reloop
 
 .. option:: -fno-reorder

@@ -373,7 +373,6 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
 
     void visit(AstNodeStmt*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate
-    void visit(AstConstPool*) override {}  // Accelerate
     void visit(AstTypeTable*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
