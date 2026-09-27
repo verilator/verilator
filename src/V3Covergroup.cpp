@@ -460,14 +460,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         generateCoverageComputationCode();
     }
 
-    // Limit on the bins of one array or automatic bins declaration of an integral coverpoint,
-    // and on the automatic bins of option.auto_bin_max: --coverage-max-bins, like other
-    // simulators' limits.  It guards against hangs from e.g. signed underflow.  Such bins
-    // generate as runs, whose code size does not depend on their number.
-    static uint32_t binsLimit() { return v3Global.opt.coverageMaxBins(); }
-    // Limit on the values of one array bins declaration of a real coverpoint, which generates a
-    // comparison per value (see extractArrayValues): --coverage-max-real-bins
-    static uint32_t realBinsLimit() { return v3Global.opt.coverageMaxRealBins(); }
     static constexpr size_t VALUE_LIST_ENTRIES = 256;  // Metadata entries per constructor call
 
     // The number of bins a constant array size requests: -1 if it is negative, and saturated
@@ -483,7 +475,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const AstConst* const constp = VN_CAST(binp->arraySizep(), Const);
         if (!constp) return 0;
         const int64_t count = binsCount(constp);
-        return count < 1 || count > binsLimit() ? 0 : static_cast<uint32_t>(count);
+        return count < 1 || count > v3Global.opt.coverageMaxBins() ? 0
+                                                                   : static_cast<uint32_t>(count);
     }
 
     // True for a 'bins auto[N]' declaration, or the implicit automatic bins of a coverpoint
@@ -523,9 +516,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(sizep->unlinkFrBack()), sizep);
                 continue;
             } else if (binp->isWildcard()
-                       && sizedWildcardRuns(binp, coverpointp->exprp()) > binsLimit()) {
+                       && sizedWildcardRuns(binp, coverpointp->exprp())
+                              > v3Global.opt.coverageMaxBins()) {
                 binp->v3warn(COVERIGN, "Unsupported: sized wildcard array 'bins' of more than "
-                                           << binsLimit() << " ranges of values; bin ignored\n"
+                                       "--coverage-max-bins of "
+                                           << v3Global.opt.coverageMaxBins()
+                                           << " ranges of values; bin ignored\n"
                                            << binp->warnMore()
                                            << "... Suggest a larger --coverage-max-bins");
             } else {
@@ -543,7 +539,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (!VN_IS(rangep, Const)) continue;  // A range, or a value known at construction
             CrossValueRange range{rangep, resolveWidth(rangep, exprp)};
             if (resolveValue(rangep, exprp, true, true, range) && !crossRangeEmpty(range)) {
-                crossRangeRuns(range, binsLimit(), runs);
+                crossRangeRuns(range, v3Global.opt.coverageMaxBins(), runs);
             }
         }
         return runs.size();
@@ -561,10 +557,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             } else if (binsCount(constp) < 1) {
                 cbinp->v3error("Automatic bins array size must be >= 1, got "
                                << constp->num().toDecimalS());
-            } else if (binsCount(constp) > binsLimit()) {
+            } else if (binsCount(constp) > v3Global.opt.coverageMaxBins()) {
                 cbinp->v3error("Automatic bins array size of "
-                               << constp->num().toDecimalU() << " exceeds limit of " << binsLimit()
-                               << '\n'
+                               << constp->num().toDecimalU() << " exceeds limit of "
+                               << v3Global.opt.coverageMaxBins() << '\n'
                                << cbinp->warnMore() << "... Suggest a larger --coverage-max-bins");
             } else if (!exprp->dtypep()->skipRefp()->isIntegralOrPacked()) {
                 cbinp->v3error("Automatic bins are not allowed on a coverpoint of a non-integral "
@@ -648,15 +644,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                  "(IEEE 1800-2023 19.5.3).");
             return;
         }
-        if (count > binsLimit()) {
+        if (count > v3Global.opt.coverageMaxBins()) {
             coverpointp->v3warn(COVERIGN, "Unsupported: more than "
-                                              << binsLimit()
+                                              << v3Global.opt.coverageMaxBins()
                                               << " automatic bins from 'option.auto_bin_max'; "
                                                  "using "
-                                              << binsLimit() << ".\n"
+                                              << v3Global.opt.coverageMaxBins() << ".\n"
                                               << coverpointp->warnMore()
                                               << "... Suggest a larger --coverage-max-bins");
-            count = binsLimit();
+            count = v3Global.opt.coverageMaxBins();
         }
         FileLine* const fl = coverpointp->fileline();
         coverpointp->addBinsp(new AstCoverBin{fl, "auto", new AstConst{fl, count},
@@ -1184,11 +1180,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 if (hi < lo) continue;  // empty range contributes no bins
                 // Guard against a '$'-bounded or otherwise huge range exploding the bin count.
                 const uint64_t span = hi - lo;  // == valueCount - 1 (no overflow: hi >= lo)
-                if (span >= realBinsLimit() || values.size() + span + 1 > realBinsLimit()) {
+                if (span >= v3Global.opt.coverageMaxRealBins()
+                    || values.size() + span + 1 > v3Global.opt.coverageMaxRealBins()) {
                     arrayBinp->v3warn(COVERIGN,
                                       "Unsupported: array 'bins' of a real coverpoint "
                                       "covering more than "
-                                          << realBinsLimit() << " values; bin ignored.\n"
+                                          << v3Global.opt.coverageMaxRealBins()
+                                          << " values; bin ignored.\n"
                                           << arrayBinp->warnMore()
                                           << "... Suggest a larger --coverage-max-real-bins");
                     unsupportedOut = true;
@@ -1265,9 +1263,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 // Wider spans exceed any limit
                 count = span.mostSetBitP1() > 32 ? UINT64_MAX : span.toUQuad() + 1;
             }
-            if (count > binsLimit() - out.count) {
+            if (count > v3Global.opt.coverageMaxBins() - out.count) {
                 arrayBinp->v3warn(COVERIGN, "Unsupported: array 'bins' covering more than "
-                                                << binsLimit()
+                                                << v3Global.opt.coverageMaxBins()
                                                 << " values (e.g. an open '[lo:$]' range over "
                                                    "a wide coverpoint); bin ignored\n"
                                                 << arrayBinp->warnMore()
@@ -1312,7 +1310,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
             if (crossRangeEmpty(range)) continue;
             std::vector<std::pair<V3Number, V3Number>> found;
-            crossRangeRuns(range, binsLimit(), found);
+            crossRangeRuns(range, v3Global.opt.coverageMaxBins(), found);
             for (const std::pair<V3Number, V3Number>& run : found) {
                 // Coverpoint values, sign-extended in both widths
                 spans.emplace_back(V3Number{rangep, width, run.first},
@@ -1338,13 +1336,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 size.opSub(span.second, span.first);
                 // Beyond 2^32 values exceed any limit
                 count += size.mostSetBitP1() > 32 ? uint64_t{1} << 33 : size.toUQuad() + 1;
-                if (count > binsLimit()) break;
+                if (count > v3Global.opt.coverageMaxBins()) break;
             }
             spans = std::move(merged);
-            if (count > binsLimit()) {
+            if (count > v3Global.opt.coverageMaxBins()) {
                 if (report) {
                     arrayBinp->v3warn(COVERIGN, "Unsupported: wildcard array 'bins' of more than "
-                                                    << binsLimit() << " values; bin ignored\n"
+                                                "--coverage-max-bins of "
+                                                    << v3Global.opt.coverageMaxBins()
+                                                    << " values; bin ignored\n"
                                                     << arrayBinp->warnMore()
                                                     << "... Suggest a larger --coverage-max-bins");
                 }
@@ -1382,7 +1382,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (binp->isArray() && binp->isWildcard()) {
             if (!exprp->dtypep()->skipRefp()->isIntegralOrPacked()) {
                 AstNodeExpr* const falsep = wildcardTypeError(binp, exprp);
-                VL_DO_DANGLING(falsep->deleteTree(), falsep);
+                VL_DO_DANGLING(pushDeletep(falsep), falsep);
                 out.unsupported = true;
             } else {
                 out = wildcardBinRuns(binp, exprp, true);
@@ -1598,7 +1598,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_constructorp->addStmtsp(
             itemCall(fl, cpVarp, VCMethod::COVERGROUP_SIZED_FINISH,
                      {ctext(fl, binp->binsType().binSetEnum()), countValuep, positivep,
-                      cnum(fl, binsLimit()),
+                      cnum(fl, v3Global.opt.coverageMaxBins()),
                       ctext(fl, quoted(VIdProtect::protectWordsIf(binp->name(), prot))),
                       ctext(fl, quoted(VIdProtect::protectIf(fl->filename(), prot))),
                       cnum(fl, static_cast<uint32_t>(fl->lineno())),
@@ -1643,7 +1643,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 std::vector<std::pair<V3Number, V3Number>> runs{{range.lo, range.hi}};
                 if (range.wildcard) {  // checkSizedArrays bounded the runs
                     runs.clear();
-                    crossRangeRuns(range, binsLimit(), runs);
+                    crossRangeRuns(range, v3Global.opt.coverageMaxBins(), runs);
                 }
                 for (const std::pair<V3Number, V3Number>& run : runs) {
                     m_constructorp->addStmtsp(itemCall(fl, cpVarp, method,

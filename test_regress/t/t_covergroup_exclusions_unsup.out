@@ -25,7 +25,7 @@
                                                            : ... note: In instance 't'
    27 |       bins real_bound[2] = {[lo : 5]};
       |                             ^
-%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:37:21: Unsupported: sized wildcard array 'bins' of more than 1024 ranges of values; bin ignored
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:37:21: Unsupported: sized wildcard array 'bins' of more than --coverage-max-bins of 1024 ranges of values; bin ignored
                                                           : ... note: In instance 't'
                                                           : ... Suggest a larger --coverage-max-bins
    37 |       wildcard bins runs[2] = {16'b????_????_????_???1};
