@@ -262,6 +262,15 @@ module t (
   `signal(ARRAY_DEFAULT, 21);
   assign ARRAY_DEFAULT = {array_default[2], array_default[1], array_default[0]};
 
+  // Element 0 is partially driven, with bits 5:4 undriven, so its packed splice
+  // is not coalesced. It sits on the cycle boundary and is traced via a temporary.
+  wire [7:0] array_splice[2];  // UNOPTFLAT
+  assign array_splice[0][3:0] = rand_a[3:0];
+  assign array_splice[0][7:6] = rand_a[7:6];
+  assign array_splice[1] = {array_splice[0][7:6], 2'd0, array_splice[0][3:0]} + 8'd1;
+  `signal(ARRAY_SPLICE, 8);
+  assign ARRAY_SPLICE = array_splice[1];
+
   `signal(ADD_A, 8);  // UNOPTFLAT
   `signal(ADD_B, 8);
   `signal(ADD_C, 8);
