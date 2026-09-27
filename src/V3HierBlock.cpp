@@ -281,8 +281,8 @@ string V3HierBlock::typeParametersFilename() const {
 void V3HierBlock::writeParametersFile() const {
     if (m_typeParams.empty()) return;
 
-    VHashSha256 hash{"type params"};
-    const string moduleName = "Vhsh" + hash.digestSymbol();
+    VHashSha512 hash{"type params"};
+    const string moduleName = "Vhsh" + hash.digestSymbol24();
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
     *of << "module " << moduleName << ";\n";
     for (AstParamTypeDType* const gparam : m_typeParams) {

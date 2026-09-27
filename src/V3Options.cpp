@@ -1110,7 +1110,7 @@ string V3Options::protectKeyDefaulted() VL_MT_SAFE {
     if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
-        VHashSha256 digest{V3Os::trueRandom(32)};
+        VHashSha512 digest{V3Os::trueRandom(64)};
         m_protectKey = "VL-KEY-" + digest.digestSymbol();
     }
     return m_protectKey;

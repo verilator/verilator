@@ -284,7 +284,7 @@ class EmitCImp final : public EmitCFunc {
                 // Place a computed checksum to ensure proper structure save/restore formatting
                 // OK if this hash includes some things we won't dump, since
                 // just looking for loading the wrong model
-                VHashSha256 hash;
+                VHashSha512 hash;
                 for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                     if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                         hash.insert(varp->name());

@@ -65,8 +65,8 @@ string EmitCUtil::prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {
         } else if (it->second == prefix) {
             result = prefix;  // Same capitialization as last time
         } else {
-            VHashSha256 hash{prefix};
-            result = prefix + "__Vphsh" + hash.digestSymbol();
+            VHashSha512 hash{prefix};
+            result = prefix + "__Vphsh" + hash.digestSymbol24();
         }
     }
     s_memoized.emplace(prefix, result);

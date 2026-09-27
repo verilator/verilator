@@ -22,6 +22,7 @@ Verilator 5.053 devel
 * Remove deprecated `--structs-packed`.
 * Change internal module inlining to after V3Scope (#1539) (#8453). [Geza Lore, Testorrent USA, Inc.]
 * Change JSON dumps to suppress empty strings, etc.
+* Change `--protect` to use SHA512 per IEEE 1735.
 * Support multi-dimensional module instance arrays (#2675) (#8476). [Geza Lore, Testorrent USA, Inc.]
 * Support VPI interface references (#8081). [Todd Strader]
 * Support nested array and associative array element member access in constraint 1/4 - pre-cleanup (#8237). [Kamil Danecki, Antmicro Ltd.]
