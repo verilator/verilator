@@ -21,9 +21,9 @@
 //######################################################################
 // V3ConstPool
 
-bool V3ConstPool::sameMap(const AstInitArray* ap, const AstInitArray* bp) {
+bool V3ConstPool::equalMap(const AstInitArray* ap, const AstInitArray* bp) {
     // Associative array initializers must have equivalent types, defaults, and entries.
-    // As in 'sameTable', compare by value, rather than by tree structure.
+    // As in 'equalTable', compare by value, rather than by tree structure.
     const AstAssocArrayDType* const aDTypep = VN_AS(ap->dtypep(), AssocArrayDType);
     const AstAssocArrayDType* const bDTypep = VN_AS(bp->dtypep(), AssocArrayDType);
     if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
@@ -53,7 +53,7 @@ bool V3ConstPool::sameMap(const AstInitArray* ap, const AstInitArray* bp) {
     return true;
 }
 
-bool V3ConstPool::sameTable(const AstInitArray* ap, const AstInitArray* bp) {
+bool V3ConstPool::equalTable(const AstInitArray* ap, const AstInitArray* bp) {
     // Unpacked array initializers must have equivalent values
     // Note, sadly we can't just call ap->sameTree(pb), because both:
     // - the dtypes might be different instances
@@ -63,7 +63,8 @@ bool V3ConstPool::sameTable(const AstInitArray* ap, const AstInitArray* bp) {
     const AstUnpackArrayDType* const aDTypep = VN_AS(ap->dtypep(), UnpackArrayDType);
     const AstUnpackArrayDType* const bDTypep = VN_AS(bp->dtypep(), UnpackArrayDType);
     if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-    if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) return false;
+    // Compare the range by value, as the bounds might be differently typed constants
+    if (!(aDTypep->declRange() == bDTypep->declRange())) return false;
     // Compare initializer arrays by value. Note this is only called when they hash the same.
     const uint64_t size = aDTypep->elementsConst();
     for (uint64_t n = 0; n < size; ++n) {
@@ -74,6 +75,19 @@ bool V3ConstPool::sameTable(const AstInitArray* ap, const AstInitArray* bp) {
         if (!valAp->sameTree(valBp)) return false;
     }
     return true;
+}
+
+size_t V3ConstPool::hashTable(const AstInitArray* initp) {
+    // Hash what 'equalTable' compares: the element type, the range by value, and the values
+    const AstUnpackArrayDType* const dtypep = VN_AS(initp->dtypep(), UnpackArrayDType);
+    V3Hash hash = V3Hasher::uncachedHash(dtypep->subDTypep());
+    hash += dtypep->left();
+    hash += dtypep->right();
+    const uint64_t size = dtypep->elementsConst();
+    for (uint64_t n = 0; n < size; ++n) {
+        hash += V3Hasher::uncachedHash(initp->getIndexDefaultedValuep(n));
+    }
+    return hash.value();
 }
 
 template <typename T_Set, typename T_Init>

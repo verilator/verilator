@@ -10317,7 +10317,9 @@ class WidthVisitor final : public VNVisitor {
         }
         AstNodeDType* vardtypep;
         if (assoc) {
-            vardtypep = new AstAssocArrayDType{nodep->fileline(), basep, nodep};
+            // Key by the base type of the enum, not the enum itself, so identical maps of
+            // different enum types can be shared in the constant pool
+            vardtypep = new AstAssocArrayDType{nodep->fileline(), basep, nodep->subDTypep()};
         } else {
             vardtypep = new AstUnpackArrayDType{nodep->fileline(), basep,
                                                 new AstRange(nodep->fileline(), msbdim, 0)};

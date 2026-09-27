@@ -50,16 +50,16 @@ class V3ConstPool final {
         size_t operator()(const AstConst* initp) const { return initp->num().toHash().value(); }
     };
     struct ConstEqual final {
-        bool operator()(const AstVar* ap, const AstVar* bp) const {
-            return (*this)(ap, VN_AS(bp->valuep(), Const));
-        }
+        bool operator()(const AstVar* ap, const AstVar* bp) const {  // LCOV_EXCL_START
+            return (*this)(ap, VN_AS(bp->valuep(), Const));  // Only on collision while rebuild
+        }  // LCOV_EXCL_STOP
         bool operator()(const AstVar* varp, const AstConst* initp) const {
             // Compare by value, which also checks the width. The dtype is ignored.
             return VN_AS(varp->valuep(), Const)->num().isCaseEq(initp->num());
         }
     };
-    // Hash of associative array entries in 'm_maps' and table entries in 'm_tables'
-    struct InitArrayHash final {
+    // Hash and equality of associative array entries in 'm_maps'
+    struct MapHash final {
         size_t operator()(const AstVar* varp) const {
             return (*this)(VN_AS(varp->valuep(), InitArray));
         }
@@ -67,22 +67,29 @@ class V3ConstPool final {
             return V3Hasher::uncachedHash(initp).value();
         }
     };
-    // Equality of associative array entries in 'm_maps'
     struct MapEqual final {
-        bool operator()(const AstVar* ap, const AstVar* bp) const {
-            return (*this)(ap, VN_AS(bp->valuep(), InitArray));
-        }
+        bool operator()(const AstVar* ap, const AstVar* bp) const {  // LCOV_EXCL_START
+            return (*this)(ap, VN_AS(bp->valuep(), InitArray));  // Only on collision while rebuild
+        }  // LCOV_EXCL_STOP
         bool operator()(const AstVar* varp, const AstInitArray* initp) const {
-            return sameMap(VN_AS(varp->valuep(), InitArray), initp);
+            return equalMap(VN_AS(varp->valuep(), InitArray), initp);
         }
     };
-    // Equality of table entries in 'm_tables'
-    struct TableEqual final {
-        bool operator()(const AstVar* ap, const AstVar* bp) const {
-            return (*this)(ap, VN_AS(bp->valuep(), InitArray));
+    // Hash and equality of unpacked array entries in 'm_tables'
+    struct TableHash final {
+        size_t operator()(const AstVar* varp) const {
+            return (*this)(VN_AS(varp->valuep(), InitArray));
         }
+        size_t operator()(const AstInitArray* initp) const {  //
+            return hashTable(initp);
+        }
+    };
+    struct TableEqual final {
+        bool operator()(const AstVar* ap, const AstVar* bp) const {  // LCOV_EXCL_START
+            return (*this)(ap, VN_AS(bp->valuep(), InitArray));  // Only on collision while rebuild
+        }  // LCOV_EXCL_STOP
         bool operator()(const AstVar* varp, const AstInitArray* initp) const {
-            return sameTable(VN_AS(varp->valuep(), InitArray), initp);
+            return equalTable(VN_AS(varp->valuep(), InitArray), initp);
         }
     };
 
@@ -91,8 +98,8 @@ class V3ConstPool final {
     bool m_cacheValid = false;  // Cache below is up to date
     AstScope* m_scopep = nullptr;  // Scope of the constant pool, between V3Scope and V3Descope
     V3HashSet<AstVar*, ConstHash, ConstEqual> m_consts;  // Packed constants
-    V3HashSet<AstVar*, InitArrayHash, MapEqual> m_maps;  // Associative array constants (maps)
-    V3HashSet<AstVar*, InitArrayHash, TableEqual> m_tables;  // Unpacked array constants (tables)
+    V3HashSet<AstVar*, MapHash, MapEqual> m_maps;  // Associative array constants (maps)
+    V3HashSet<AstVar*, TableHash, TableEqual> m_tables;  // Unpacked array constants (tables)
     V3HashMap<const AstVar*, AstVarScope*> m_varScopes;  // VarScope of each entry iff m_scopep
     uint32_t m_nextConst = 0;  // Sequence number for naming
     uint32_t m_nextMap = 0;  // Sequence number for naming
@@ -100,9 +107,9 @@ class V3ConstPool final {
 
     // METHODS
     static V3ConstPool& instance() { return *v3Global.constPoolp(); }
-    // Compare associative array or unpacked array initializers by value
-    static bool sameMap(const AstInitArray* ap, const AstInitArray* bp);
-    static bool sameTable(const AstInitArray* ap, const AstInitArray* bp);
+    static bool equalMap(const AstInitArray* ap, const AstInitArray* bp);
+    static bool equalTable(const AstInitArray* ap, const AstInitArray* bp);
+    static size_t hashTable(const AstInitArray* initp);
     // Find an entry equal to the given initializer in the given set, or create one named from
     // the given prefix and sequence number, and return a read reference to it
     template <typename T_Set, typename T_Init>

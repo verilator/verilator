@@ -61,13 +61,9 @@ protected:
             // default value, or '{{items...}}' without.
             AstNode* const defaultp = nodep->defaultp();
             const AstInitArray::KeyItemMap& mapr = nodep->map();
-            // An empty map without a default must be emitted as '{}'. With 'x{{}}', C++ would
-            // take the outer braces as the items list, and the inner '{}' as one value
-            // initialized item, giving a map with a single key 0 item instead of an empty map.
-            if (!defaultp && mapr.empty()) {
-                puts("{}");
-                return;
-            }
+            // '{{}}' would be ambiguous, but the constant pool always has a default
+            UASSERT_OBJ(defaultp || !mapr.empty(), nodep,
+                        "Empty associative array initializer without default");
             puts("{\n");
             if (defaultp) {
                 puts("/* default: */ ");

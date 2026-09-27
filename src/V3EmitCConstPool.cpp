@@ -35,8 +35,9 @@ class EmitCConstPool final : public EmitCConstInit {
     using OutCFilePair = std::pair<V3OutCFile*, AstCFile*>;
 
     // MEMBERS
-    VDouble0 m_tablesEmitted;
     VDouble0 m_constsEmitted;
+    VDouble0 m_mapsEmitted;
+    VDouble0 m_tablesEmitted;
     V3UniqueNames m_uniqueNames;  // Generates unique file names
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "__ConstPool";
 
@@ -82,7 +83,9 @@ class EmitCConstPool final : public EmitCConstInit {
             emitDirectInit(varp->valuep());
             putns(varp, ";\n");
             // Keep track of stats
-            if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
+            if (VN_IS(varp->dtypep(), AssocArrayDType)) {
+                ++m_mapsEmitted;
+            } else if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
                 ++m_tablesEmitted;
             } else {
                 ++m_constsEmitted;
@@ -107,8 +110,9 @@ class EmitCConstPool final : public EmitCConstInit {
 public:
     explicit EmitCConstPool(const AstPackage* poolp) {
         emitVars(poolp);
-        V3Stats::addStatSum("ConstPool, Tables emitted", m_tablesEmitted);
         V3Stats::addStatSum("ConstPool, Constants emitted", m_constsEmitted);
+        V3Stats::addStatSum("ConstPool, Maps emitted", m_mapsEmitted);
+        V3Stats::addStatSum("ConstPool, Tables emitted", m_tablesEmitted);
     }
 };
 
