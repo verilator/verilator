@@ -399,6 +399,7 @@ module t (/*AUTOARG*/
       bins low    = {[0:3]} iff (cg_sig2[0]);
       bins high   = {[4:6]};
       bins multi  = {0, 1, 2};   // multiple values in one bins (exercises EmitV range loop)
+      bins sized[2] = {[0:5], 7};  // sized array of bins (exercises EmitV array size)
       bins dflt   = default;
       ignore_bins ign = {7};
       illegal_bins ill = {5};

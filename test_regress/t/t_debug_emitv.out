@@ -800,6 +800,7 @@ module Vt_debug_emitv_t;
             bins low = {['sh0:'sh3]} iff (cg_sig2[0]);
             bins high = {['sh4:'sh6]};
             bins multi = {'sh0, 'sh1, 'sh2};
+            bins sized['sh2] = {['sh0:'sh5], 'sh7};
             bins dflt = default;
             ignore_bins ign = {'sh7};
             illegal_bins ill = {'sh5};
@@ -907,7 +908,8 @@ module Vt_debug_emitv_t;
             bins t12 = (3'h1 => 3'h2);
             bins talt = (3'h2 => 3'h3), (3'h4 => 3'h5);
             bins trep = (3'h0 => 3'h1);
-            bins tarr = (3'h0 => 3'h1), (3'h1 => 3'h2);
+            bins tarr[] = (3'h0 => 3'h1), (3'h1 => 
+                                           3'h2);
         };
     endfunction
     int signed __Vint;

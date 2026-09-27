@@ -154,6 +154,8 @@ module t (
     // ignore/illegal bins = default sequence
     { ignore_bins ib_def_seq = default sequence; }
     { illegal_bins lib_def_seq = default sequence; }
+    // Explicit array size of transition bins
+    { bins trans_sized[2] = ( 1 => 2 ); }
   endgroup
 
   covergroup cg_coverpoint_ref;

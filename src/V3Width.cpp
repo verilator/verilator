@@ -2235,7 +2235,7 @@ class WidthVisitor final : public VNVisitor {
         widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         if (nodep->arraySizep()) {
-            // The size of 'bins auto[N]' is a self-determined constant expression, which
+            // The size of 'bins b[N]' or 'bins auto[N]' is a self-determined expression, which
             // V3Covergroup checks once folded
             userIterateAndNext(nodep->arraySizep(), WidthVP{SELF, BOTH}.p());
             V3Const::constifyEdit(nodep->arraySizep());  // arraySizep may change
