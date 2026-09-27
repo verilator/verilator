@@ -349,6 +349,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         default: putfs(nodep, "bins "); break;
         }
         puts(nodep->name());
+        if (nodep->isArray()) {
+            puts("[");
+            if (nodep->arraySizep()) iterateConst(nodep->arraySizep());
+            puts("]");
+        }
         if (nodep->binsType() == VCoverBinsType::BINS_DEFAULT) {
             puts(" = default");
         } else if (nodep->transp()) {

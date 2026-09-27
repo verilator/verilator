@@ -1042,7 +1042,8 @@ class AstCoverBin final : public AstNode {
     // @astgen op4 := transp : List[AstCoverTransSet]
     const string m_name;  // Base name of the bin
     const VCoverBinsType m_binsType;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
-    bool m_isArray = false;  // Bin is either an auto-sized array of values or transitions
+    bool m_isArray = false;  // Bin is an array: of a bin per value or transition, or of
+                             // arraySizep() bins
     bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
 
 public:

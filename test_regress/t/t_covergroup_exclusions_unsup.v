@@ -13,7 +13,19 @@ module t;
     cp: coverpoint value {
       bins text = {TEXT};
       bins text_array[] = {TEXT};
+      bins text_sized[2] = {TEXT};
       ignore_bins ignored = {0};
+    }
+  endgroup
+
+  // A sized array of bins with a non-integral bound given to the constructor, and of a real
+  // coverpoint, which is treated as an array of a bin per value
+  covergroup cg_sized(real lo);
+    cp: coverpoint value {
+      bins real_bound[2] = {[lo : 5]};
+    }
+    cp_real: coverpoint real_value {
+      bins sized[2] = {1.0, 2.0};
     }
   endgroup
 
@@ -43,6 +55,7 @@ module t;
   endgroup
 
   cg_values values_cov = new;
+  cg_sized sized_cov = new(1.0);
   cg_wild wild_cov = new;
   cg_transition transition_cov = new;
   cg_cross cross_cov = new;
