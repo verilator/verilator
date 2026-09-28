@@ -672,7 +672,7 @@ void VHashSha512::selfTest() {
 
 string VName::dehash(const string& in) {
     static constexpr const char VHSH[] = "__Vhsh";
-    static constexpr const size_t DOT_LEN = std::strlen("__DOT__");
+    static const size_t DOT_LEN = std::strlen("__DOT__");
     std::string dehashed;
 
     // Need to split 'in' into components separated by __DOT__, 'last_dot_pos'
