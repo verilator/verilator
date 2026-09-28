@@ -776,7 +776,7 @@ void normalizeCosts(Costs& costs) {
         if (maxCost < costProfiled) maxCost = costProfiled;
         UINFO(9, "Post uint scale: ce = " << est.second.first << " cp=" << est.second.second);
     }
-    const uint64_t scaleDownTo = 10000000;  // Extra room for future algorithms to add costs
+    constexpr uint64_t scaleDownTo = 10000000;  // Extra room for future algorithms to add costs
     if (maxCost > scaleDownTo) {
         const double scaleup = static_cast<double>(scaleDownTo) / static_cast<double>(maxCost);
         UINFO(5, "Scaling data to within 32-bits by multiply by=" << scaleup

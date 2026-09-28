@@ -3836,7 +3836,7 @@ class RandomizeVisitor final : public VNVisitor {
         return it->second;
     }
     AstTask* getCreateConstraintSetupFunc(AstClass* classp) {
-        static const char* const name = "__Vsetup_constraints";
+        static constexpr const char* const name = "__Vsetup_constraints";
         AstTask* setupAllTaskp = VN_AS(m_memberMap.findMember(classp, name), Task);
         if (setupAllTaskp) return setupAllTaskp;
         setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
@@ -3847,7 +3847,7 @@ class RandomizeVisitor final : public VNVisitor {
         return setupAllTaskp;
     }
     AstTask* getCreateAggrResizeTask(AstClass* const classp) {
-        static const char* const name = "__Vresize_constrained_arrays";
+        static constexpr const char* const name = "__Vresize_constrained_arrays";
         AstTask* resizeTaskp = VN_AS(m_memberMap.findMember(classp, name), Task);
         if (resizeTaskp) return resizeTaskp;
         resizeTaskp = new AstTask{classp->fileline(), name, nullptr};
@@ -5088,7 +5088,7 @@ class RandomizeVisitor final : public VNVisitor {
     //   3. if (fvar) post_randomize() -- IEEE 1800-2023 18.6.3 says
     //      post_randomize is not called when randomize() fails.
     AstFunc* getCreateRandomizeNullFunc(AstClass* const classp) {
-        static const char* const name = "__Vrandomize_null";
+        static constexpr const char* const name = "__Vrandomize_null";
         if (AstFunc* const existingp = VN_AS(m_memberMap.findMember(classp, name), Func)) {
             return existingp;
         }

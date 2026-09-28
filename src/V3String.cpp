@@ -113,8 +113,8 @@ string VString::dequotePercent(const string& str) {
 
 string VString::quoteStringLiteralForShell(const string& str) {
     string result;
-    const char dquote = '"';
-    const char escape = '\\';
+    constexpr char dquote = '"';
+    constexpr char escape = '\\';
     result.push_back(dquote);  // Start quoted string
     result.push_back(escape);
     result.push_back(dquote);  // "
@@ -133,8 +133,8 @@ string VString::escapeStringForPath(const string& str) {
         return str;  // if it has been escaped already, don't do it again
     if (str.find('/') != string::npos) return str;  // can be replaced by `__MINGW32__` or `_WIN32`
     string result;
-    const char space = ' ';  // escape space like this `Program Files`
-    const char escape = '\\';
+    constexpr char space = ' ';  // escape space like this `Program Files`
+    constexpr char escape = '\\';
     for (const char c : str) {
         if (c == space || c == escape) result.push_back(escape);
         result.push_back(c);
@@ -355,9 +355,9 @@ string VString::aOrAn(const char* word) {
 uint64_t VString::hashMurmur(const string& str) VL_PURE {
     const char* key = str.c_str();
     const size_t len = str.size();
-    const uint64_t seed = 0;
-    const uint64_t m = 0xc6a4a7935bd1e995ULL;
-    const int r = 47;
+    constexpr uint64_t seed = 0;
+    constexpr uint64_t m = 0xc6a4a7935bd1e995ULL;
+    constexpr int r = 47;
 
     uint64_t h = seed ^ (len * m);
 
@@ -400,7 +400,7 @@ void VString::selfTest() { UASSERT_SELFTEST(VString::replaceSubstr("aa", "a", "b
 //######################################################################
 // VHashSha512
 
-static const uint64_t sha512K[]
+static constexpr uint64_t sha512K[]
     = {0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL,
        0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL, 0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL,
        0xd807aa98a3030242ULL, 0x12835b0145706fbeULL, 0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL,
@@ -514,7 +514,7 @@ void VHashSha512::insert(const void* datap, size_t length) {
 }
 
 void VHashSha512::insertFile(const string& filename) {
-    static const size_t BUFFER_SIZE = 64 * 1024;
+    static constexpr size_t BUFFER_SIZE = 64 * 1024;
 
     const int fd = ::open(filename.c_str(), O_RDONLY);
     if (fd < 0) return;
@@ -577,7 +577,7 @@ uint64_t VHashSha512::digestUInt64() {
 }
 
 string VHashSha512::digestHex() {
-    static const char* const digits = "0123456789abcdef";
+    static constexpr const char* const digits = "0123456789abcdef";
     const string& binhash = digestBinary();
     string result;
     result.reserve(128);
@@ -593,7 +593,7 @@ string VHashSha512::digestSymbol() {
     // has + and / for last two digits, but need C symbol, and we also
     // avoid conflicts with use of _, so use "AB" at the end.
     // Thus this function is non-reversible.
-    static const char* const digits
+    static constexpr const char* const digits
         = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
     const string& binhash = digestBinary();
     string result;
@@ -671,8 +671,8 @@ void VHashSha512::selfTest() {
 // VName
 
 string VName::dehash(const string& in) {
-    static const char VHSH[] = "__Vhsh";
-    static const size_t DOT_LEN = std::strlen("__DOT__");
+    static constexpr const char VHSH[] = "__Vhsh";
+    static constexpr const size_t DOT_LEN = std::strlen("__DOT__");
     std::string dehashed;
 
     // Need to split 'in' into components separated by __DOT__, 'last_dot_pos'
