@@ -1102,10 +1102,22 @@ void EmitCSyms::emitSymHdr() {
     puts("\n// INCLUDE MODEL CLASS\n");
     puts("\n#include \"" + topClassName() + ".h\"\n");
 
+    // User c++ in headers may reference any class, so all classes must be visible everywhere
+    bool hdrUserCpp = false;
+    for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
+        const AstClass* const classp = VN_CAST(nodep, Class);
+        if (classp
+            && classp->hasAnyScSection({VSystemCSectionType::HDR, VSystemCSectionType::HDR_POST,
+                                        VSystemCSectionType::INT})) {
+            hdrUserCpp = true;
+            break;
+        }
+    }
+
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
-        if (VN_IS(nodep, Class)) continue;  // Class included earlier
         if (nodep->isConstPool()) continue;  // Special emit rules
+        if (VN_IS(nodep, Class) && !hdrUserCpp) continue;  // Included where used
         putns(nodep, "#include \"" + EmitCUtil::prefixNameProtect(nodep) + ".h\"\n");
     }
 

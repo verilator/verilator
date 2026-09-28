@@ -3348,6 +3348,14 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
     if (libname() != "work") dumpJsonStr(str, "libname=", libname());
     dumpJsonGen(str);
 }
+bool AstNodeModule::hasAnyScSection(std::initializer_list<VSystemCSectionType> types) const {
+    uint32_t mask = 0;
+    for (const VSystemCSectionType type : types) mask |= 1U << type;
+    return scSectionsp()
+           && scSectionsp()->existsAndNext([mask](const AstSystemCSection* const scSectionp) {
+                  return (mask & (1U << scSectionp->sectionType())) != 0;
+              });
+}
 const char* AstNodePreSel::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
