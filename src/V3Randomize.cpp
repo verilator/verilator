@@ -4117,17 +4117,28 @@ class RandomizeVisitor final : public VNVisitor {
     void makeModeInit(AstVar* modeVarp, AstClass* classp, uint32_t modeCount) {
         AstNodeModule* const modeVarModp = VN_AS(modeVarp->user2p(), NodeModule);
         FileLine* fl = modeVarp->fileline();
+        AstVar* const oldSizeVarp
+            = new AstVar{fl, VVarType::BLOCKTEMP, "oldSize", modeVarp->findUInt32DType()};
+        oldSizeVarp->funcLocal(true);
+        oldSizeVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        AstCMethodHard* const oldSizep
+            = new AstCMethodHard{fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::READ},
+                                 VCMethod::DYN_SIZE, nullptr};
+        oldSizep->dtypeSetUInt32();
         AstCMethodHard* const dynarrayNewp
             = new AstCMethodHard{fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
                                  VCMethod::DYN_RESIZE, new AstConst{fl, modeCount}};
         dynarrayNewp->dtypeSetVoid();
         AstNodeFTask* const ctorNewp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
         UASSERT_OBJ(ctorNewp, classp, "No new() in class");
-        // Build init chain: resize -> set-all-to-1 loop
-        AstNode* const initFirstp = dynarrayNewp->makeStmt();
+        // Preserve inherited modes set by super.new() and initialize only newly added entries.
+        AstNode* const initFirstp = oldSizeVarp;
         initFirstp->addNext(
-            makeModeSetLoop(fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
-                            new AstConst{fl, 1}, true));
+            new AstAssign{fl, new AstVarRef{fl, oldSizeVarp, VAccess::WRITE}, oldSizep});
+        initFirstp->addNext(dynarrayNewp->makeStmt());
+        initFirstp->addNext(makeModeSetLoop(
+            fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE}, new AstConst{fl, 1},
+            true, new AstVarRef{fl, oldSizeVarp, VAccess::READ}));
         // Prepend init code before user statements in constructor body, but after
         // var declarations and super.new(). This ensures that user's constraint_mode()
         // or rand_mode() calls in the constructor execute after mode arrays are initialized.
@@ -4176,7 +4187,7 @@ class RandomizeVisitor final : public VNVisitor {
         newp->addStmtsp(ifp);
     }
     AstNode* makeModeSetLoop(FileLine* const fl, AstNodeExpr* const lhsp, AstNodeExpr* const rhsp,
-                             bool inTask) {
+                             bool inTask, AstNodeExpr* const startp = nullptr) {
         AstVar* const iterVarp = new AstVar{fl, VVarType::BLOCKTEMP, "i", lhsp->findUInt32DType()};
         iterVarp->funcLocal(inTask);
         iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -4187,8 +4198,8 @@ class RandomizeVisitor final : public VNVisitor {
                                  new AstVarRef{fl, iterVarp, VAccess::READ}};
         setp->dtypeSetUInt32();
         AstNode* const stmtsp = iterVarp;
-        stmtsp->addNext(
-            new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}});
+        stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
+                                      startp ? startp : new AstConst{fl, 0}});
 
         AstLoop* const loopp = new AstLoop{fl};
         stmtsp->addNext(loopp);
