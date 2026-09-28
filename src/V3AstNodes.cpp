@@ -2484,8 +2484,16 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
         return anodep->lhsp()->getVAccessTargetRecurse();
     }
     if (const AstCMethodHard* const anodep = VN_CAST(this, CMethodHard)) {
-        // Used for things like Queue/AssocArray/DynArray
-        return anodep->fromp()->getVAccessTargetRecurse();
+        switch (anodep->method()) {
+        case VCMethod::ARRAY_AT:
+        case VCMethod::ARRAY_AT_BACK:
+        case VCMethod::ARRAY_AT_WRITE:
+        case VCMethod::DYN_AT_WRITE_APPEND:
+        case VCMethod::DYN_AT_WRITE_APPEND_BACK:
+            // Used for things like Queue/AssocArray/DynArray
+            return anodep->fromp()->getVAccessTargetRecurse();
+        default: break;
+        }
     }
     return nullptr;  // nothing found
 }
