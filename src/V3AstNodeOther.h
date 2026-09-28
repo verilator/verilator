@@ -1254,6 +1254,20 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstCoverWith final : public AstNode {
+    // The values of a coverpoint bin for which a 'with' filter is true (IEEE 1800-2023
+    // 19.5.1.1), the only range list element of its AstCoverBin
+    // @astgen op1 := subp : List[AstNode]  // Range list, or AstCoverpointRef for all values
+    // @astgen op2 := filterp : AstNodeExpr
+    // @astgen op3 := itemp : Optional[AstVar]  // Candidate value 'item', from V3LinkParse
+public:
+    AstCoverWith(FileLine* fl, AstNode* subp, AstNodeExpr* filterp)
+        : ASTGEN_SUPER_CoverWith(fl) {
+        addSubp(subp);
+        this->filterp(filterp);
+    }
+    ASTGEN_MEMBERS_AstCoverWith;
+};
 class AstCovergroup final : public AstNode {
     // Represents a covergroup declaration. V3LinkParse transforms this
     // into an AstClass with isCovergroup==true and attaches the clocking

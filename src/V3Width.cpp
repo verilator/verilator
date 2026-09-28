@@ -2169,6 +2169,15 @@ class WidthVisitor final : public VNVisitor {
                                         " type coverage is the weighted average of the"
                                         " instances");
             }
+        } else if (nodep->optType() == VCoverOptionType::DISTRIBUTE_FIRST) {
+            // A bins 'with' filter applies before the values are distributed to the bins
+            // (IEEE 1800-2023 19.5.1.1)
+            const AstConst* const constp = VN_CAST(nodep->valuep(), Const);
+            if (!constp || !constp->num().isEqZero()) {
+                nodep->v3warn(COVERIGN, "Ignoring unsupported: 'type_option.distribute_first';"
+                                        " 'with' filters apply before values are distributed"
+                                        " to bins");
+            }
         }
         // Add more options here as needed (goal, at_least, per_instance, comment)
 
@@ -2220,6 +2229,8 @@ class WidthVisitor final : public VNVisitor {
                 userIterate(rangep, nullptr);
                 fill(rangep->lhsp());
                 fill(rangep->rhsp());
+            } else if (VN_IS(itemp, CoverWith)) {
+                userIterate(itemp, m_vup);
             } else {
                 itemp = userIterateSubtreeReturnEdits(itemp, WidthVP{SELF, BOTH}.p());
                 fill(V3Const::constifyEdit(itemp));
@@ -2241,6 +2252,37 @@ class WidthVisitor final : public VNVisitor {
             V3Const::constifyEdit(nodep->arraySizep());  // arraySizep may change
         }
         userIterateAndNext(nodep->transp(), m_vup);
+    }
+    void visit(AstCoverWith* nodep) override {
+        // The candidate value 'item' has the coverpoint's type (IEEE 1800-2023 19.5.1.1)
+        userIterateAndNext(nodep->itemp(), nullptr);
+        if (!nodep->itemp()->dtypeSkipRefp()->isIntegralOrPacked()) {
+            nodep->v3error("Bin 'with' filters are not allowed on a coverpoint of a "
+                           "non-integral expression (IEEE 1800-2023 19.5.1.1)");
+        }
+        if (!VN_IS(nodep->subp(), CoverpointRef)) {
+            widthCovergroupRanges(nodep->subp(), m_vup->dtypep()->width());
+        }
+        // The filter is true for a nonzero value (IEEE 1800-2023 12.4), of a type assignment
+        // compatible with an integral type (19.5.1.1)
+        AstNodeExpr* const filterp = VN_AS(
+            userIterateSubtreeReturnEdits(nodep->filterp(), WidthVP{SELF, BOTH}.p()), NodeExpr);
+        FileLine* const fl = filterp->fileline();
+        const AstNodeDType* const resultp = filterp->dtypep()->skipRefp();
+        if (resultp->isDouble()) {
+            VNRelinker relinker;
+            filterp->unlinkFrBack(&relinker);
+            relinker.relink(
+                new AstNeqD{fl, filterp, new AstConst{fl, AstConst::RealDouble{}, 0.0}});
+        } else if (!resultp->isIntegralOrPacked()) {
+            filterp->v3error("Bin 'with' filter must be assignment compatible with an integral "
+                             "type, not "
+                             << resultp->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1.1)");
+            filterp->replaceWith(new AstConst{fl, AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(filterp), filterp);
+        } else {
+            fixWidthReduce(filterp);
+        }
     }
     void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), m_vup); }
     void visit(AstCoverTransItem* nodep) override {
