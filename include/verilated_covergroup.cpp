@@ -26,6 +26,7 @@
 #include "verilated.h"
 
 #include <map>
+#include <set>
 #include <tuple>
 
 // This file is compiled whenever covergroups are used, with or without
@@ -697,6 +698,21 @@ void VlCoverpoint::sizedRangeW(WDataInP lop, WDataInP hip) {
     data.m_sizedElements.push_back({data.read(lop), data.read(hip), {}});
 }
 
+// Warn that the bins 'name' are ignored, because of 'reason'.  From an mtask, VL_WARN_MT reports
+// after returning, so the text is kept for the program, once for all instances.
+static void _vl_cov_warn_ignored(const char* file, int line, const char* reason,
+                                 const char* name) VL_MT_SAFE {
+    static VerilatedMutex s_mutex;
+    static std::set<std::string> s_texts;  // Texts of the warnings
+    std::string text = std::string{reason} + "; bin '" + name + "' ignored";
+    const char* textp;
+    {
+        const VerilatedLockGuard lock{s_mutex};
+        textp = s_texts.insert(std::move(text)).first->c_str();
+    }
+    VL_WARN_MT(file, line, "", textp);
+}
+
 void VlCoverpoint::sizedFinish(VlCovBinKind kind, QData count, bool positive, uint32_t limit,
                                const char* name, const char* file, int line, int col) {
     ValueData& data = *m_valuesp;
@@ -709,9 +725,9 @@ void VlCoverpoint::sizedFinish(VlCovBinKind kind, QData count, bool positive, ui
     if (VL_UNLIKELY(!positive)) {
         // An error, after which (+verilator+error+limit) the array has no bins
         sized.m_elements.clear();
-        VL_PRINTF_MT("%%Error: %s:%d: Coverage bin array size must be a positive integer"
+        VL_PRINTF_MT("%%Error: %s:%d: Coverage bin array '%s' size must be a positive integer"
                      " (IEEE 1800-2023 19.5.1)\n",
-                     file, line);
+                     file, line, name);
         VL_STOP_MT(file, line, "");
         return;
     }
@@ -729,8 +745,8 @@ void VlCoverpoint::sizedFinish(VlCovBinKind kind, QData count, bool positive, ui
     const ValueData::Value& bins = fewer ? total : declared;
     if (data.compare(bins, data.toPosition(std::min(limit, UINT32_MAX - m_total))) > 0) {
         sized.m_elements.clear();
-        VL_WARN_MT(file, line, "",
-                   "Coverage bin array needs more bins than --coverage-max-bins; bin ignored");
+        _vl_cov_warn_ignored(file, line,
+                             "Coverage bin array needs more bins than --coverage-max-bins", name);
         return;
     }
     sized.m_count = bins[0];
@@ -907,13 +923,13 @@ void VlCoverpoint::withFinish(VlCovBinKind kind, QData count, bool positive, con
     const bool values = with.m_grouping == VlCovBinGrouping::Values;
     if (VL_UNLIKELY(with.m_candidates || with.m_full)) {
         kept.clear();
-        VL_WARN_MT(file, line, "",
-                   with.m_candidates ? "Coverage bin 'with' filter has more than 2**32 candidate"
-                                       " values; bin ignored"
-                   : values
-                       ? "Coverage bin array needs more bins than --coverage-max-bins; bin ignored"
-                       : "Coverage bin 'with' filter keeps values in more ranges than"
-                         " --coverage-max-bins; bin ignored");
+        _vl_cov_warn_ignored(
+            file, line,
+            with.m_candidates ? "Coverage bin 'with' filter has more than 2**32 candidate values"
+            : values          ? "Coverage bin array needs more bins than --coverage-max-bins"
+                              : "Coverage bin 'with' filter keeps values in more ranges than"
+                                " --coverage-max-bins",
+            name);
     }
     if (with.m_grouping == VlCovBinGrouping::Fixed) {
         // Filtered first, then distributed (IEEE 1800-2023 19.5.1.1)

@@ -115,7 +115,7 @@ cg_joined.p._q[7]: 8
 cg_joined.p_.q[1]: 2
 cg_joined.p_.q[2]: 3
 cg_joined.p_.q[3]: 4
-cg_types.calls.dpi_function: 4
+cg_types.calls.c_code: 4
 cg_types.calls.inside_set[100]: 0
 cg_types.calls.inside_set[101]: 1
 cg_types.calls.inside_set[3]: 1

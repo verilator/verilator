@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = 't/t_covergroup_with.v'
 
-test.compile(verilator_flags2=['t/t_covergroup_with_c.cpp'])
+test.compile()
 
 test.execute()
 

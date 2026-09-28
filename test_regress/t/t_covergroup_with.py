@@ -12,4 +12,4 @@ import coverage_covergroup_common
 
 test.scenarios('vlt_all')
 
-coverage_covergroup_common.run(test, verilator_flags2=['t/t_covergroup_with_c.cpp'])
+coverage_covergroup_common.run(test)

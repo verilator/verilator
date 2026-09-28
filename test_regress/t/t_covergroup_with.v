@@ -10,6 +10,11 @@
 `define stop $stop
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`ifdef verilator
+ `define no_optimize(v) $c(v)
+`else
+ `define no_optimize(v) (v)
+`endif
 // verilog_format: on
 
 // A constant 'item', which a filter names through its package
@@ -59,8 +64,6 @@ module t;
   logic [17:0] big;
   bit [64:0] w65;
   bit [63:0] q64;
-
-  import "DPI-C" function int dpi_keep(input int candidate);
 
   function automatic bit even(input int candidate);
     return candidate % 2 == 0;
@@ -265,10 +268,10 @@ module t;
     wild: coverpoint nibble {
       wildcard bins selected[] = {4'b1?0?} with (item != 9);
     }
-    // Calls: an SV function of a variable, a DPI function, and a system function
+    // Calls: an SV function of a variable, C++ code, and a system function
     calls: coverpoint big {
       bins sv_function[] = {[0 : 200003]} with (int'(item) < cutoff && int'(item) >= 1);
-      bins dpi_function = {[0 : 9]} with (dpi_keep(int'(item)) != 0);
+      bins c_code = {[0 : 9]} with (`no_optimize(int'(item)) % 3 == 0);
       bins pow2[] = {[1 : 20]} with ($countones(item) == 1);
       bins inside_set[] = calls with (item inside {3, [100 : 101]});
     }

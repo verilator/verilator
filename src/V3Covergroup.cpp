@@ -584,7 +584,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                        <= v3Global.opt.coverageMaxBins()) {
                 if (binWith(binp) && withCandidatesOver(binp, coverpointp->exprp())) {
                     binp->v3warn(COVERIGN, "Unsupported: 'with' filter of more than 2**32 "
-                                           "candidate values; bin ignored");
+                                           "candidate values; bin "
+                                               << binp->prettyNameQ() << " ignored");
                     if (binp->binsType().binIsNormal()) coverpointp->user2(true);
                     dropBins(coverpointp, binp);
                 }
@@ -597,8 +598,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                                            : "sized wildcard array '")
                                          << binp->binsType().verilogKwd()
                                          << "' of more than --coverage-max-bins of "
-                                         << v3Global.opt.coverageMaxBins() << " ranges of values; "
-                                         << (single ? "treated as one bin" : "bin ignored") << "\n"
+                                         << v3Global.opt.coverageMaxBins()
+                                         << " ranges of values; bin " << binp->prettyNameQ()
+                                         << (single ? " treated as one bin" : " ignored") << "\n"
                                          << binp->warnMore()
                                          << "... Suggest a larger --coverage-max-bins");
             if (single) {
@@ -1336,8 +1338,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     arrayBinp->v3warn(COVERIGN,
                                       "Unsupported: array 'bins' of a real coverpoint "
                                       "covering more than "
-                                          << v3Global.opt.coverageMaxRealBins()
-                                          << " values; bin ignored.\n"
+                                          << v3Global.opt.coverageMaxRealBins() << " values; bin "
+                                          << arrayBinp->prettyNameQ() << " ignored.\n"
                                           << arrayBinp->warnMore()
                                           << "... Suggest a larger --coverage-max-real-bins");
                     unsupportedOut = true;
@@ -1418,7 +1420,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 arrayBinp->v3warn(COVERIGN, "Unsupported: array 'bins' covering more than "
                                                 << v3Global.opt.coverageMaxBins()
                                                 << " values (e.g. an open '[lo:$]' range over "
-                                                   "a wide coverpoint); bin ignored\n"
+                                                   "a wide coverpoint); bin "
+                                                << arrayBinp->prettyNameQ() << " ignored\n"
                                                 << arrayBinp->warnMore()
                                                 << "... Suggest a larger --coverage-max-bins");
                 out.runs.clear();
@@ -1494,15 +1497,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 // An ignore or illegal array still excludes or checks its values, as one bin
                 out.single = !arrayBinp->binsType().binIsNormal();
                 if (report) {
-                    arrayBinp->v3warn(COVERIGN,
-                                      "Unsupported: wildcard array '"
-                                          << arrayBinp->binsType().verilogKwd()
-                                          << "' of more than --coverage-max-bins of "
-                                          << v3Global.opt.coverageMaxBins() << " values; "
-                                          << (out.single ? "treated as one bin" : "bin ignored")
-                                          << "\n"
-                                          << arrayBinp->warnMore()
-                                          << "... Suggest a larger --coverage-max-bins");
+                    arrayBinp->v3warn(
+                        COVERIGN, "Unsupported: wildcard array '"
+                                      << arrayBinp->binsType().verilogKwd()
+                                      << "' of more than --coverage-max-bins of "
+                                      << v3Global.opt.coverageMaxBins() << " values; bin "
+                                      << arrayBinp->prettyNameQ()
+                                      << (out.single ? " treated as one bin" : " ignored") << "\n"
+                                      << arrayBinp->warnMore()
+                                      << "... Suggest a larger --coverage-max-bins");
                 }
                 out.unsupported = true;
                 return out;

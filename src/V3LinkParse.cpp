@@ -1446,7 +1446,8 @@ class LinkParseVisitor final : public VNVisitor {
         if (!m_coverpointp && VN_IS(nodep->rangesp(), CoverWith)) {
             // A 'with' filter's candidates are of its coverpoint's type
             nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
-                                               "coverpoint; bin ignored");
+                                               "coverpoint; bin "
+                                                   << nodep->prettyNameQ() << " ignored");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }

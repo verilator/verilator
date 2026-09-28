@@ -90,28 +90,28 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:103:7: Unsupported: explicit coverage cross bins
   103 |       bins one = crossfunc();
       |       ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:117:21: Unsupported: 'with' in cover bin outside a coverpoint; bin ignored
+%Warning-COVERIGN: t/t_covergroup_unsup.v:117:21: Unsupported: 'with' in cover bin outside a coverpoint; bin 'ba' ignored
   117 |     { bins ba = {a} with ( b ); }
       |                     ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:120:32: Unsupported: 'with' in cover bin outside a coverpoint; bin ignored
+%Warning-COVERIGN: t/t_covergroup_unsup.v:120:32: Unsupported: 'with' in cover bin outside a coverpoint; bin 'bwaw' ignored
   120 |     { wildcard bins bwaw = {a} with ( b ); }
       |                                ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:143:35: Unsupported: 'with' in cover bin outside a coverpoint; bin ignored
+%Warning-COVERIGN: t/t_covergroup_unsup.v:143:35: Unsupported: 'with' in cover bin outside a coverpoint; bin 'ib_with' ignored
   143 |     { ignore_bins ib_with = {1,2} with ( b ); }
       |                                   ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:144:37: Unsupported: 'with' in cover bin outside a coverpoint; bin ignored
+%Warning-COVERIGN: t/t_covergroup_unsup.v:144:37: Unsupported: 'with' in cover bin outside a coverpoint; bin 'lib_with' ignored
   144 |     { illegal_bins lib_with = {1,2} with ( b ); }
       |                                     ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:146:29: Unsupported: 'with' in cover bin outside a coverpoint; bin ignored
+%Warning-COVERIGN: t/t_covergroup_unsup.v:146:29: Unsupported: 'with' in cover bin outside a coverpoint; bin 'ib_cp' ignored
   146 |     { ignore_bins ib_cp = a with ( b ); }
       |                             ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:147:31: Unsupported: 'with' in cover bin outside a coverpoint; bin ignored
+%Warning-COVERIGN: t/t_covergroup_unsup.v:147:31: Unsupported: 'with' in cover bin outside a coverpoint; bin 'lib_cp' ignored
   147 |     { illegal_bins lib_cp = a with ( b ); }
       |                               ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:149:45: Unsupported: 'with' in cover bin outside a coverpoint; bin ignored
+%Warning-COVERIGN: t/t_covergroup_unsup.v:149:45: Unsupported: 'with' in cover bin outside a coverpoint; bin 'wib_with' ignored
   149 |     { wildcard ignore_bins wib_with = {1,2} with ( b ); }
       |                                             ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:150:47: Unsupported: 'with' in cover bin outside a coverpoint; bin ignored
+%Warning-COVERIGN: t/t_covergroup_unsup.v:150:47: Unsupported: 'with' in cover bin outside a coverpoint; bin 'wlib_with' ignored
   150 |     { wildcard illegal_bins wlib_with = {1,2} with ( b ); }
       |                                               ^~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:163:7: Unsupported: explicit coverage cross bins
