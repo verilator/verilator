@@ -7350,12 +7350,9 @@ class WidthVisitor final : public VNVisitor {
             // Widthing handled as special init() case
             bool didWidth = false;
             if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
-                // A pattern that already carries its own type, either from
-                // data_type '{...} or resolved by V3Param when the port's type
-                // depends on other parameters of this instantiation, is left to
-                // the self-determined widthing below.  Widthing the port's type
-                // here would resolve its parameter-dependent ranges against the
-                // unspecialized template's defaults.
+                // A pattern with its own type, from data_type '{...} or from V3Param when
+                // the parameter's type depends on other parameters, is widthed below, as
+                // widthing the parameter's type would size it by the template's defaults
                 if (!patternp->childDTypep()) {
                     const AstVar* const modVarp = nodep->modVarp();
                     // Convert BracketArrayDType

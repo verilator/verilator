@@ -30,9 +30,7 @@ module p #(
 ) ();
 endmodule
 
-// Concatenation as the value of a parameter with a parameter-dependent width.
-// A concat is self-determined, so it does not go through the port's type, but
-// check it here as it is the closest relative of an assignment pattern.
+// Concatenation value for a parameter with a parameter-dependent width
 module c #(
     parameter int W = 1,
     parameter logic [W-1:0] P = '0
@@ -68,8 +66,7 @@ module r #(
 ) ();
 endmodule
 
-// Whole port type is a type parameter, so the substituted type replaces the
-// root of the port's type rather than a range inside it
+// Whole parameter type is a type parameter
 typedef struct packed {
   int a;
   int b;
@@ -239,7 +236,7 @@ module t;
     `checkd(i_r.V[0], 1);
     `checkd(i_r.V[15], 1);
 
-    // Whole port type from a type parameter
+    // Whole parameter type from a type parameter
     `checkd($bits(i_sn.V), 16);
     `checkh(i_sn.V.a, 8'h1);
     `checkh(i_sn.V.b, 8'h2);
