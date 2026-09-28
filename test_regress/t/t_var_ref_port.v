@@ -44,21 +44,28 @@ module t;
   // verilator lint_on MULTIDRIVEN
   int w = 15;
 
-  sub s (clk, cyc, x);
+  sub s (
+      clk,
+      cyc,
+      x
+  );
   subtask st (.z(w));
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 2) begin
       `checkd(x, 100)  // Written by 's'
-    end else if (cyc == 3) begin
+    end
+    else if (cyc == 3) begin
       x <= 200;
-    end else if (cyc == 4) begin
+    end
+    else if (cyc == 4) begin
       `checkd(x, 200)
       st.check(15);
       w = 16;
       st.check(16);
-    end else if (cyc == 5) begin
+    end
+    else if (cyc == 5) begin
       `checkd(w, 16)
       $write("*-* All Finished *-*\n");
       $finish;

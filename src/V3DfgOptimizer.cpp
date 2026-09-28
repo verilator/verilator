@@ -82,7 +82,7 @@ class DataflowOptimize final {
                 const bool hasExtRd =  //
                     varp->isPrimaryIO()  // Top level port - readable
                     || varp->isSigUserRdPublic()  // Readable by user
-                    || varp->constPoolEntry()  // Stored in AstConstPool hashmap, but read only
+                    || varp->constPoolEntry()  // Held in V3ConstPool lookup cache, keep
                     ;
                 const bool hasExtWr =  //
                     (varp->isPrimaryIO() && varp->isNonOutput())  // Top level port - writable

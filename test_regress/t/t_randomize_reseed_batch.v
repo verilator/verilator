@@ -16,7 +16,7 @@
 module t;
   class C;
     rand bit [7:0] a;
-    constraint c { a < 20; }
+    constraint c {a < 20;}
   endclass
 
   initial begin

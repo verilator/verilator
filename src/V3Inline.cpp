@@ -256,8 +256,6 @@ class InlineModGraphBuilder final : public VNVisitor {
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
-        if (nodep == v3Global.rootp()->constPoolp()->modp()) return;  // Ignore const pool module
-
         UASSERT_OBJ(!m_modVtxp, nodep, "Unsupported: Nested modules");
 
         // Create the module vertex
@@ -268,6 +266,8 @@ class InlineModGraphBuilder final : public VNVisitor {
         // TODO: All references are resolved by now, but AstIfaceRefDType::cellp and
         // the AstIntfRef records still name the interface instance, so keep it.
         if (VN_IS(nodep, Iface)) vtxp->setNoInlineHard("Interface");
+        // Never inline the constant pool, even if packages become inlineable
+        if (nodep->isConstPool()) vtxp->setNoInlineHard("Constant pool");
         // Never inline packages - TODO: conceptually fine, but why not?
         if (VN_IS(nodep, Package)) vtxp->setNoInlineHard("Package");
         // A --lib-create library stub instance that needs tracing must not be

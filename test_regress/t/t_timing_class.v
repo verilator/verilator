@@ -121,7 +121,7 @@ module t;
   end
 
   initial #20 ec.wake;
-  initial #40->ec.e;
+  initial #40 ->ec.e;
   initial begin
     wc.a = #50 4;
     wc.b = #10 32;

@@ -32,6 +32,7 @@
 #include <array>
 #include <atomic>
 #include <deque>
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <set>
@@ -1084,6 +1085,15 @@ public:
     // CONSTRUCTORS
     // m_defaultValue isn't defaulted. Caller's constructor must do it.
     VlAssocArray() = default;
+    // Construct with the given entries
+    explicit VlAssocArray(std::initializer_list<std::pair<const T_Key, T_Value>> init)
+        : m_map{init}
+        , m_defaultValue{} {}
+    // Construct with the given default value and entries
+    explicit VlAssocArray(const T_Value& defaultValue,
+                          std::initializer_list<std::pair<const T_Key, T_Value>> init)
+        : m_map{init}
+        , m_defaultValue{defaultValue} {}
     ~VlAssocArray() = default;
     VlAssocArray(const VlAssocArray&) = default;
     VlAssocArray(VlAssocArray&&) = default;

@@ -897,6 +897,13 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_SELECT_OR,               "selectOr",               false,  "") \
     macro(COVERGROUP_SELECT_RANGE,            "selectRange",            false,  "rr") \
     macro(COVERGROUP_SELECT_RANGE_W,          "selectRangeW",           false,  "rr") \
+    macro(COVERGROUP_SIZED_END,               "sizedEnd",               PURE,   "r") \
+    macro(COVERGROUP_SIZED_FINISH,            "sizedFinish",            false,  "r+") \
+    macro(COVERGROUP_SIZED_FIRST,             "sizedFirst",             PURE,   "r") \
+    macro(COVERGROUP_SIZED_RANGE,             "sizedRange",             false,  "rr") \
+    macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  "rr") \
+    macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  "rrr") \
+    macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  "rrr") \
     macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrr") \
     macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
     macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
@@ -1203,6 +1210,12 @@ public:
         static const char* const names[]
             = {"array",        "auto",       "auto_implicit", "default", "ignore_bins",
                "illegal_bins", "transition", "bins",          "wildcard"};
+        return names[m_e];
+    }
+    // Keyword declaring the bins, without any 'wildcard' prefix
+    const char* verilogKwd() const {
+        static const char* const names[] = {"bins",         "bins", "bins", "bins", "ignore_bins",
+                                            "illegal_bins", "bins", "bins", "bins"};
         return names[m_e];
     }
     // VlCovBinKind enumerator naming the bin's set

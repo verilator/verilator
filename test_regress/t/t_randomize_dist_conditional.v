@@ -29,16 +29,16 @@ endclass
 
 module t;
   DistScalar obj;
-  int mode1_zeros = 0;      // Count of zeros when mode=1 (favor 255)
-  int mode1_maxes = 0;      // Count of 255s when mode=1 (favor 255)
-  int mode0_zeros = 0;      // Count of zeros when mode=0 (favor 0)
-  int mode0_maxes = 0;      // Count of 255s when mode=0 (favor 0)
-  int mode1_trials = 0;     // Total trials with mode=1
-  int mode0_trials = 0;     // Total trials with mode=0
+  int mode1_zeros = 0;  // Count of zeros when mode=1 (favor 255)
+  int mode1_maxes = 0;  // Count of 255s when mode=1 (favor 255)
+  int mode0_zeros = 0;  // Count of zeros when mode=0 (favor 0)
+  int mode0_maxes = 0;  // Count of 255s when mode=0 (favor 0)
+  int mode1_trials = 0;  // Total trials with mode=1
+  int mode0_trials = 0;  // Total trials with mode=0
 
   // Verify distribution ratio matches expected range
-  function void check_distribution(int trials, int match_count, string match_name,
-                                    int expected_pct, string mode_name);
+  function void check_distribution(int trials, int match_count, string match_name, int expected_pct,
+                                   string mode_name);
     int actual_pct;
     int lower_bound;
     int upper_bound;
@@ -55,7 +55,8 @@ module t;
 
     if (actual_pct >= lower_bound && actual_pct <= upper_bound) begin
       $display("Distribution OK");
-    end else begin
+    end
+    else begin
       $display("WARNING: Distribution appears off (expected %0d+/-15%%)", expected_pct);
       $stop;
     end
@@ -77,7 +78,8 @@ module t;
         mode1_trials++;
         if (obj.x == 8'd0) mode1_zeros++;
         else if (obj.x == 8'd255) mode1_maxes++;
-      end else begin
+      end
+      else begin
         mode0_trials++;
         if (obj.x == 8'd0) mode0_zeros++;
         else if (obj.x == 8'd255) mode0_maxes++;

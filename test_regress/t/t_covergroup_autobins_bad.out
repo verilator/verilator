@@ -238,4 +238,12 @@
                                                        : ... Suggest a larger --coverage-max-real-bins
   257 |       bins over_limit[] = {[0 : 1024]};   
       |            ^~~~~~~~~~
+%Error: t/t_covergroup_autobins_bad.v:264:21: Non-constant expression in array bins value list; values must be constants (IEEE 1800-2023 19.5)
+                                            : ... note: In instance 't'
+  264 |       wildcard bins value[] = {size_var};
+      |                     ^~~~~
+%Error: t/t_covergroup_autobins_bad.v:265:21: Non-constant expression in array bins range; range bounds must be constants (IEEE 1800-2023 19.5)
+                                            : ... note: In instance 't'
+  265 |       wildcard bins range[] = {[0 : size_var]};
+      |                     ^~~~~
 %Error: Exiting due to

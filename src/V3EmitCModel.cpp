@@ -142,6 +142,7 @@ class EmitCModel final : public EmitCFunc {
              "// Otherwise the application code can consider these internals.\n");
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
+                if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 putns(cellp, EmitCUtil::prefixNameProtect(cellp->modp()) + "* const "
                                  + cellp->nameProtect() + ";\n");
             }
@@ -325,6 +326,7 @@ class EmitCModel final : public EmitCFunc {
         // Setup cell pointers
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
+                if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 const string protName = cellp->nameProtect();
                 puts("    , ");
                 putns(cellp, protName + "{vlSymsp->TOP." + protName + "}\n");

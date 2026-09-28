@@ -49,11 +49,11 @@ module t;
       run_traffic_per_port(i);
     end
 
-    #10->e_all_xfers_monitored_tx[0];
-    #10->e_all_xfers_monitored_rx[0];
+    #10 ->e_all_xfers_monitored_tx[0];
+    #10 ->e_all_xfers_monitored_rx[0];
 
-    #10->e_all_xfers_monitored_tx[1];
-    #10->e_all_xfers_monitored_rx[1];
+    #10 ->e_all_xfers_monitored_tx[1];
+    #10 ->e_all_xfers_monitored_rx[1];
 
     @(e_all_xfers_completed[0]);
     @(e_all_xfers_completed[1]);

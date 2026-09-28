@@ -38,6 +38,7 @@
 #include <unordered_set>
 
 class AstNetlist;
+class V3ConstPool;
 class V3HierGraph;
 class V3LibMap;
 class V3ThreadPool;
@@ -164,6 +165,8 @@ class V3Global final {
     // Globals
     // Root of entire netlist, created by makeInitNetlist(} so static constructors run first
     AstNetlist* m_rootp = nullptr;
+    // Constant pool lookup, see V3ConstPool.h
+    V3ConstPool* m_constPoolp = nullptr;
     // Hierarchical block graph (plan) iff hierarchical verilation is performed
     V3HierGraph* m_hierGraphp = nullptr;
     // Thread Pool, nullptr unless 'verilatedJobs' is known, set via threadPoolp(V3ThreadPool*)
@@ -224,6 +227,8 @@ public:
 
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
+    // Use V3ConstPool:: static methods instead
+    V3ConstPool* constPoolp() const VL_PURE { return m_constPoolp; }
     V3LibMap* libMapp() const VL_PURE { return m_libMapp; }
     V3ThreadPool* threadPoolp() const VL_PURE { return m_threadPoolp; }
     void threadPoolp(V3ThreadPool* threadPoolp) {

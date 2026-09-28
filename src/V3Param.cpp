@@ -684,13 +684,13 @@ class ParamProcessor final {
         const auto iter = m_longMap.find(longname);
         if (iter != m_longMap.end()) return iter->second;  // Already calculated
 
-        VHashSha256 hash;
+        VHashSha512 hash;
         // Calculate hash using longname
         // The hash is used as the module suffix to find a module name that is unique in the design
         hash.insert(longname);
         while (true) {
-            // Copy VHashSha256 just in case of hash collision
-            VHashSha256 hashStrGen = hash;
+            // Copy VHashSha512 just in case of hash collision
+            VHashSha512 hashStrGen = hash;
             // Hex string must be a safe suffix for any symbol
             const string hashStr = hashStrGen.digestHex();
             for (string::size_type i = 1; i < hashStr.size(); ++i) {

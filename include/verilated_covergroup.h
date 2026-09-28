@@ -121,6 +121,10 @@ protected:
     std::vector<uint32_t> m_crossToBin;
     uint32_t m_hitCount = 0;  // entries valid in the hit list this sample
 
+    // PROTECTED METHODS
+    // Normal bin: VlCoverpointT::incrementBin(), for the bins sizedSample() finds
+    virtual void incrementNormalBin(uint32_t i) = 0;
+
 private:
     // PRIVATE METHODS
     const VlCovNamer& namerFor(uint32_t i) const;  // obtain the bin-specific name producer
@@ -130,6 +134,9 @@ private:
     uint32_t reportedBin(uint32_t i) const;
     std::string declaredBinName(uint32_t bin) const;  // Name of a declared bin index
     bool liveBin(uint32_t bin) const;  // Normal bin keeps a value outside the exclusions
+    // Count a sample, if enabled, in a bin of a sized array holding the value, unless it is
+    // 'last', the bin found before; set 'last'
+    void sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint32_t& last);
 
 public:
     // CONSTRUCTORS
@@ -171,12 +178,30 @@ public:
     /// Test state exclusions independently of sampling-time iff guards.
     bool valueExcluded(QData value) const;
     bool valueExcludedW(WDataInP valuep) const;
+    /// Add the coverpoint values lo..hi of the next range list element of a sized array of
+    /// bins, in declaration order.
+    void sizedRange(QData lo, QData hi);
+    void sizedRangeW(WDataInP lop, WDataInP hip);
+    /// Distribute the values sizedRange() added over the bins of the sized array 'name[count]'
+    /// (IEEE 1800-2023 19.5.1).  'positive' is false for a count below one, which is invalid.
+    /// At most 'limit' bins may hold values.  Needs valueType(); bins append after those of
+    /// init().
+    void sizedFinish(VlCovBinKind kind, QData count, bool positive, uint32_t limit,
+                     const char* name, const char* file, int line, int col);
+    /// Declared bins [sizedFirst(), sizedEnd()) of the sized array 'sized', counted in
+    /// sizedFinish() order, for cross selections.
+    uint32_t sizedFirst(uint32_t sized) const;
+    uint32_t sizedEnd(uint32_t sized) const;
 
     // ---- hot path (from generated sample()) ----
     // Clear the hit list at the start of each sample() for a cross-fed coverpoint.
     void clearHitList() { m_hitCount = 0; }
     // Ignore/Illegal/Default: count only; never propagates to cross coverage.
     void recordHit(uint32_t i) { ++m_counts[i]; }
+    /// Count a sample in the bins of the sized array 'sized' holding the value, once each,
+    /// if 'enabled'.  True if a bin holds the value, enabled or not.
+    bool sizedSample(uint32_t sized, QData value, bool enabled);
+    bool sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled);
     // incrementBin (Normal bin: count + hit-list append) lives in VlCoverpointT<MaxHits>,
     // where MaxHits is the gen-time max per-sample bin overlap.
 
@@ -234,6 +259,9 @@ public:
         if (cx >= 0 && m_hitCount < MaxHits) m_hits[m_hitCount++] = static_cast<uint32_t>(cx);
     }
     const uint32_t* hitList() const override { return m_hits; }
+
+protected:
+    void incrementNormalBin(uint32_t i) override { incrementBin(i); }
 };
 
 //=============================================================================

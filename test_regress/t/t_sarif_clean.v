@@ -5,10 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  input logic a,
-  input logic b,
-  input logic sel,
-  output logic c);
+    input logic a,
+    input logic b,
+    input logic sel,
+    output logic c
+);
 
   assign c = sel ? a : b;
 

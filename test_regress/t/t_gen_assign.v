@@ -57,7 +57,7 @@ module assigns (
   genvar i;
   generate
     for (i = 0; i < 8; i = i + 1) begin : ap
-      assign Output[(i>0)?i-1 : 8] = Input[(i>0)?i-1 : 8];
+      assign Output[(i > 0) ? i - 1 : 8] = Input[(i > 0) ? i - 1 : 8];
     end
   endgenerate
 endmodule

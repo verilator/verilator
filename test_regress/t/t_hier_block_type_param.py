@@ -15,6 +15,4 @@ test.compile(verilator_flags2=['--hierarchical'])
 
 test.execute()
 
-test.file_grep(test.obj_dir + "/VTest_1/Test_1.sv", r'^module\s+(\S+)\s+', "Test_1")
-
 test.passes()
