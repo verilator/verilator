@@ -2408,7 +2408,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Rebuild the select chain text around the SMT name, innermost first
         for (auto it = frames.rbegin(); it != frames.rend(); ++it) {
             AstNodeExpr* const remainingArgsp = VN_CAST((*it)->exprsp()->nextp(), NodeExpr);
-            if (remainingArgsp) remainingArgsp->unlinkFrBackWithNext();
+            if (remainingArgsp) {
+                remainingArgsp->unlinkFrBackWithNext();
+            }
             activep = new AstSFormatF{fl, (*it)->name(), false,
                                       AstNode::addNext(activep, remainingArgsp)};
         }
@@ -3873,11 +3875,9 @@ class RandomizeVisitor final : public VNVisitor {
         m_memberMap.insert(classp, setupAllTaskp);
         return setupAllTaskp;
     }
-    AstTask* getCreatePrepareConstrainedArraysTask(AstClass* const classp) {
+    AstTask* createPrepareConstrainedArraysTask(AstClass* const classp) {
         static const char* const name = "__Vprepare_constrained_arrays";
-        AstTask* taskp = VN_AS(m_memberMap.findMember(classp, name), Task);
-        if (taskp) return taskp;
-        taskp = new AstTask{classp->fileline(), name, nullptr};
+        AstTask* const taskp = new AstTask{classp->fileline(), name, nullptr};
         taskp->classMethod(true);
         classp->addMembersp(taskp);
         m_memberMap.insert(classp, taskp);
@@ -5393,7 +5393,8 @@ class RandomizeVisitor final : public VNVisitor {
         }
         if (const AstCMethodHard* const methodp = VN_CAST(nodep, CMethodHard)) {
             if (methodp->method() == VCMethod::ARRAY_AT
-                && VN_IS(methodp->fromp()->dtypep()->skipRefp(), DynArrayDType)) {
+                && VN_IS(methodp->fromp()->dtypep()->skipRefp(),  // LCOV_EXCL_BR_LINE
+                         DynArrayDType)) {  // Queue form is rejected before dist lowering
                 return newDistGate(methodp->fromp(), randModeVarp, fl);
             }
         }
@@ -5840,7 +5841,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (genp) {
             // Phase 1: Process all constraints (create tasks, run ConstraintExprVisitor)
             // Setup task refs are NOT added to setupAllTaskp here -- done in phase 2
-            AstTask* const prepareArraysTaskp = getCreatePrepareConstrainedArraysTask(nodep);
+            AstTask* const prepareArraysTaskp = createPrepareConstrainedArraysTask(nodep);
             nodep->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
                 AstTask* taskp = VN_AS(constrp->user2p(), Task);
                 if (!taskp) {
@@ -6003,19 +6004,17 @@ class RandomizeVisitor final : public VNVisitor {
 
             const auto sizeArraysIt = m_sizeConstrainedArrays.find(nodep);
             if (sizeArraysIt != m_sizeConstrainedArrays.end()) {
-                for (AstVar* const arrVarp : sizeArraysIt->second) {
-                    sizeArrayVars.insert(arrVarp);
-                }
+                for (AstVar* const arrVarp : sizeArraysIt->second) sizeArrayVars.insert(arrVarp);
             }
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
             if (!sizeArrayVars.empty() && prepareArraysTaskp->stmtsp()) {
                 AstNodeStmt* const preparep = (new AstTaskRef{fl, prepareArraysTaskp})->makeStmt();
-                for (AstNode* stmtp = randomizep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                // A size-constrained array always has a preceding write_var registration.
+                for (AstNode* stmtp = randomizep->stmtsp(); stmtp;  // LCOV_EXCL_BR_LINE
+                     stmtp = stmtp->nextp()) {
                     bool writesArray = false;
                     stmtp->foreach([&](AstCMethodHard* methodp) {
-                        if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR) {
-                            writesArray = true;
-                        }
+                        writesArray |= methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR;
                     });
                     if (!writesArray) continue;
                     stmtp->addHereThisAsNext(preparep);
@@ -6044,9 +6043,8 @@ class RandomizeVisitor final : public VNVisitor {
 
                 // A disabled array keeps its current size. Pin its size proxy before solving so
                 // an incompatible size constraint fails instead of resizing the frozen array.
-                for (AstVar* const arrVarp : sizeArrayVars) {
+                for (AstVar* const arrVarp : sizeArrayVars)
                     addFrozenSizePin(fl, arrVarp, randomizep, genp, randModeVarp);
-                }
 
                 // First pass: solve size variables (and other constraints) to determine sizes
                 randomizep->addStmtsp(
