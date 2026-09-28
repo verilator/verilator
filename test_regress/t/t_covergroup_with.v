@@ -12,6 +12,11 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+// A constant 'item', which a filter names through its package
+package item_pkg;
+  localparam bit [2:0] item = 2;
+endpackage
+
 module t;
   typedef logic signed [6:0] signed_t;
   typedef struct packed {
@@ -352,6 +357,71 @@ module t;
     endfunction
   endclass
 
+  // 'item' is the candidate only in a filter, which is its scope (IEEE 1800-2023 7.12); elsewhere
+  // it is the parameter, 7, as bins and coverpoints named 'item' are no variables (19.5)
+  covergroup cg_item_names;
+    // The bin 'item' of 0, 1; 7; 6, counted as 'item' is 7; 0, 1, 3
+    named: coverpoint value {
+      bins item = {[0 : 7]} with (item < 2);
+      bins outer = {item};
+      bins guarded = {[0 : 7]} with (item == 6) iff (item == 7);
+      bins scoped[] = {[0 : 3]} with (item != item_pkg::item);
+    }
+    // The coverpoint 'item': 6, 7
+    item: coverpoint value {
+      bins b[] = item with (item > 5);
+    }
+    flag: coverpoint enabled {
+      bins on = {1};
+    }
+    x: cross named, flag{bins sel = binsof (named.item);}
+  endgroup
+
+  // An argument 'item', 3, sets the range list and the array size: 0, 2; <4>, <5>, <6, 7>
+  covergroup cg_item_arg(input bit [2:0] item);
+    listed: coverpoint value {
+      bins b[] = {[0 : item]} with (item % 2 == 0);
+    }
+    sized: coverpoint value {
+      bins b[item] = {[0 : 7]} with (item > 3);
+    }
+  endgroup
+
+  // Arguments 'item' as the coverpoint expression, whose type the candidate has: 6, 7; 0, 1
+  covergroup cg_item_sample with function sample (bit [2:0] item);
+    cp: coverpoint item {
+      bins b[] = cp with (item > 5);
+    }
+  endgroup
+  covergroup cg_item_ref(ref logic [2:0] item);
+    cp: coverpoint item {
+      bins b[] = cp with (item < 2);
+    }
+  endgroup
+
+  // A member 'item' as the coverpoint expression: 2, 3
+  class ItemMember;
+    bit [2:0] item;
+    covergroup cg_member;
+      cp: coverpoint item {
+        bins b[] = cp with (item inside {[2 : 3]});
+      }
+    endgroup
+    function new;
+      cg_member = new;
+    endfunction
+  endclass
+
+  // Coverpoints and bins whose names join alike, 'p_' of 'q' and 'p' of '_q': 1, 2, 3; 5, 6, 7
+  covergroup cg_joined;
+    p_: coverpoint value {
+      bins q[] = {[0 : 3]} with (item > 0);
+    }
+    p: coverpoint value {
+      bins _q[] = {[4 : 7]} with (item > 4);
+    }
+  endgroup
+
   cg_values values_inst = new;
   cg_default default_inst = new;
   cg_cross cross_inst = new;
@@ -363,6 +433,12 @@ module t;
   cg_guard guard_inst = new;
   cg_wide wide_inst = new;
   cg_iff iff_inst = new;
+  cg_item_names item_names_inst = new;
+  cg_item_arg item_arg_inst = new(3);
+  cg_item_sample item_sample_inst = new;
+  cg_item_ref item_ref_inst;
+  cg_joined joined_inst = new;
+  ItemMember item_member;
   Holder low_holder;
   Holder high_holder;
 
@@ -487,6 +563,23 @@ module t;
     nibble = 1;
     value = 0;
     iff_inst.sample();
+
+    // Each value v is sampled v + 1 times, so the counts tell the values of each bin
+    item_ref_inst = new(value);
+    item_member = new;
+    enabled = 1;
+    for (int i = 0; i < 8; ++i) begin
+      repeat (i + 1) begin
+        value = 3'(i);
+        item_member.item = 3'(i);
+        item_names_inst.sample();
+        item_arg_inst.sample();
+        item_sample_inst.sample(3'(i));
+        item_ref_inst.sample();
+        item_member.cg_member.sample();
+        joined_inst.sample();
+      end
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -30,6 +30,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3MemberMap.h"
+#include "V3UniqueNames.h"
 
 #include <bitset>
 #include <cmath>
@@ -297,6 +298,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::map<AstVar*, CoverpointBins> m_cpBins;  // Runtime coverpoint -> binsof index ranges
     // Names of the bins declarations each coverpoint ignored, which binsof selects as no bins
     std::map<const AstCoverpoint*, std::vector<std::string>> m_droppedBins;
+    // Prefixes of the constructor temporaries of constructed bins, as coverpoint and bin names
+    // alone may repeat: coverpoint 'a_' bins 'b', and coverpoint 'a' bins '_b'
+    V3UniqueNames m_sizedNames{"__Vsized"};
     std::vector<AstNodeExpr*> m_detachedValues;  // Array-bin values m_cpBins refers to
     std::set<AstCoverCross*>
         m_droppedCrosses;  // Crosses with a bare-variable item: drop (COVERIGN)
@@ -375,6 +379,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_cpVarMap.clear();
         m_cpBins.clear();
         m_droppedBins.clear();
+        m_sizedNames.reset();
         m_runtimePoints.clear();
         m_runtimeCrosses.clear();
         m_excludedVars.clear();
@@ -1774,7 +1779,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                  AstNodeExpr* exprp) {
         FileLine* const fl = binp->fileline();
         const string prefix
-            = "__Vsized_" + sanitizeGeneratedName(coverpointp->name() + "__" + binp->name());
+            = m_sizedNames.get(sanitizeGeneratedName(coverpointp->name() + "__" + binp->name()));
         AstVar* countp = nullptr;
         if (AstNodeExpr* const sizep = binp->arraySizep()) {
             countp = constructorTemp(fl, prefix + "_count", sizep->dtypep());

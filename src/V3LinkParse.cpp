@@ -1463,10 +1463,12 @@ class LinkParseVisitor final : public VNVisitor {
                               << " (IEEE 1800-2023 19.5.1.1)");
             }
         }
-        // The candidate value, of the coverpoint's type, which a filter need not read
+        // The candidate value, of the coverpoint's type, which a filter need not read.  The
+        // standard names it, so it hides another 'item' in the filter without a warning.
         FileLine* const fl = nodep->fileline();
         FileLine* const flNoWarn = new FileLine{fl};
         flNoWarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+        flNoWarn->modifyWarnOff(V3ErrorCode::VARHIDDEN, true);
         AstVar* const varp = new AstVar{flNoWarn, VVarType::VAR, "item", VFlagChildDType{},
                                         new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{},
                                                         m_coverpointp->exprp()->cloneTree(false)}};

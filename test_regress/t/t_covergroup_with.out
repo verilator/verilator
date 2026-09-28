@@ -2,6 +2,8 @@ __vlAnonCG_cg.cp.selected[1]: 1
 __vlAnonCG_cg.cp.selected[2]: 1
 __vlAnonCG_cg.cp.selected[3]: 1
 __vlAnonCG_cg.cp.selected[4]: 1
+__vlAnonCG_cg_member.cp.b[2]: 3
+__vlAnonCG_cg_member.cp.b[3]: 4
 cg_bounds.lower.lower[2]: 1
 cg_bounds.lower.lower[3]: 1
 cg_bounds.lower.lower[4]: 1
@@ -83,6 +85,36 @@ cg_ignore.cp.never [illegal]: 0
 cg_ignore.cp.odd [ignore]: 4
 cg_ignore.wide.excluded [ignore]: 1
 cg_ignore.wide.values: 6
+cg_item_arg.listed.b[0]: 1
+cg_item_arg.listed.b[2]: 3
+cg_item_arg.sized.b[0]: 5
+cg_item_arg.sized.b[1]: 6
+cg_item_arg.sized.b[2]: 15
+cg_item_names.flag.on: 36
+cg_item_names.item.b[6]: 7
+cg_item_names.item.b[7]: 8
+cg_item_names.named.guarded: 7
+cg_item_names.named.item: 3
+cg_item_names.named.outer: 8
+cg_item_names.named.scoped[0]: 1
+cg_item_names.named.scoped[1]: 2
+cg_item_names.named.scoped[3]: 4
+cg_item_names.x.guarded_x_on [cross]: 7
+cg_item_names.x.outer_x_on [cross]: 8
+cg_item_names.x.scoped[0]_x_on [cross]: 1
+cg_item_names.x.scoped[1]_x_on [cross]: 2
+cg_item_names.x.scoped[3]_x_on [cross]: 4
+cg_item_names.x.sel [cross]: 3
+cg_item_ref.cp.b[0]: 1
+cg_item_ref.cp.b[1]: 2
+cg_item_sample.cp.b[6]: 7
+cg_item_sample.cp.b[7]: 8
+cg_joined.p._q[5]: 6
+cg_joined.p._q[6]: 7
+cg_joined.p._q[7]: 8
+cg_joined.p_.q[1]: 2
+cg_joined.p_.q[2]: 3
+cg_joined.p_.q[3]: 4
 cg_types.calls.dpi_function: 4
 cg_types.calls.inside_set[100]: 0
 cg_types.calls.inside_set[101]: 1
