@@ -63,12 +63,20 @@ module t;
     dynamic_cross: cross cp_real, cp_dynamic{bins selected = binsof (cp_real) intersect {1};}
   endgroup
 
+  // A sized wildcard illegal array of as many ranges of values, treated as one bin
+  covergroup cg_wild_runs_illegal;
+    cp: coverpoint wide_value {
+      wildcard illegal_bins runs[2] = {16'b????_????_????_???1};
+    }
+  endgroup
+
   cg_values values_cov = new;
   cg_sized sized_cov = new(1.0);
   cg_wild_runs wild_runs_cov = new;
   cg_wild wild_cov = new;
   cg_transition transition_cov = new;
   cg_cross cross_cov = new;
+  cg_wild_runs_illegal wild_runs_illegal_cov = new;
 
   initial $finish;
 endmodule

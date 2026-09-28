@@ -228,7 +228,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
     //  AstCoverpoint::user1p()  -> AstVar*.  Previous-value variable for transition bins
+    //  AstCoverpoint::user2()   -> bool.  Had a bins declaration ignored, so no automatic bins
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     std::set<AstCoverpoint*>
@@ -268,6 +270,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         bool unsupported = false;  // Too many bins, or invalid: the declaration is ignored
         // The value of each bin, which names it, of a wildcard array; else the bins are indexed
         std::vector<std::string> values;
+        // Too many values of an ignore or illegal wildcard array, which is then one bin
+        bool single = false;
     };
     struct CrossBinValues final {
         AstCoverBin* binp;  // Declaration owning this Normal bin
@@ -492,7 +496,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // Check the sized arrays of bins of a coverpoint, dropping invalid ones.  A real
-    // coverpoint's are unsupported, and treated as arrays of a bin per value.
+    // coverpoint's are unsupported, and treated as arrays of a bin per value.  A wildcard array
+    // of too many ranges of values is ignored, or if ignore or illegal, treated as one bin.
     void checkSizedArrays(AstCoverpoint* coverpointp) {
         const bool integral = coverpointp->exprp()->dtypep()->skipRefp()->isIntegralOrPacked();
         for (AstNode* nodep = coverpointp->binsp(); nodep;) {
@@ -518,12 +523,22 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             } else if (binp->isWildcard()
                        && sizedWildcardRuns(binp, coverpointp->exprp())
                               > v3Global.opt.coverageMaxBins()) {
-                binp->v3warn(COVERIGN, "Unsupported: sized wildcard array 'bins' of more than "
-                                       "--coverage-max-bins of "
-                                           << v3Global.opt.coverageMaxBins()
-                                           << " ranges of values; bin ignored\n"
-                                           << binp->warnMore()
-                                           << "... Suggest a larger --coverage-max-bins");
+                // An ignore or illegal array still excludes or checks its values, as one bin
+                const bool single = !binp->binsType().binIsNormal();
+                binp->v3warn(COVERIGN,
+                             "Unsupported: sized wildcard array '"
+                                 << binp->binsType().verilogKwd()
+                                 << "' of more than --coverage-max-bins of "
+                                 << v3Global.opt.coverageMaxBins() << " ranges of values; "
+                                 << (single ? "treated as one bin" : "bin ignored") << "\n"
+                                 << binp->warnMore()
+                                 << "... Suggest a larger --coverage-max-bins");
+                if (single) {
+                    VL_DO_DANGLING(pushDeletep(sizep->unlinkFrBack()), sizep);
+                    binp->isArray(false);
+                    continue;
+                }
+                coverpointp->user2(true);
             } else {
                 continue;
             }
@@ -625,6 +640,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // IEEE 1800-2023 19.5.3/19.11.1: partition first, then apply exclusions.  The partition is one
     // automatic bins declaration, generated as a run like 'bins auto[N]' but numbering its bins.
     void createImplicitAutoBins(AstCoverpoint* coverpointp, AstNodeExpr* exprp, int autoBinMax) {
+        if (coverpointp->user2()) return;  // Declared bins, ignored, leave no bins
         for (AstNode* nodep = coverpointp->binsp(); nodep; nodep = nodep->nextp()) {
             const VCoverBinsType kind = VN_AS(nodep, CoverBin)->binsType();
             if (kind != VCoverBinsType::BINS_IGNORE && kind != VCoverBinsType::BINS_ILLEGAL)
@@ -1287,8 +1303,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // The bins of a wildcard array (wildcard bins b[] = {...}): one for each coverpoint value
     // an element matches (IEEE 1800-2023 19.5.4, 19.5.7), in value order, and named by the value
     // (19.5.1), as runs of single-value bins.  Errors on a non-constant element.  More than
-    // --coverage-max-bins values are unsupported -- emits COVERIGN, and sets unsupported.
-    // 'report' false omits these diagnostics.
+    // --coverage-max-bins values are unsupported -- emits COVERIGN, and sets unsupported, and for
+    // an ignore or illegal array, single.  'report' false omits these diagnostics.
     static BinRuns wildcardBinRuns(AstCoverBin* arrayBinp, AstNodeExpr* exprp, bool report) {
         BinRuns out;
         const int width = runWidth(exprp);
@@ -1342,13 +1358,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
             spans = std::move(merged);
             if (count > v3Global.opt.coverageMaxBins()) {
+                // An ignore or illegal array still excludes or checks its values, as one bin
+                out.single = !arrayBinp->binsType().binIsNormal();
                 if (report) {
-                    arrayBinp->v3warn(COVERIGN, "Unsupported: wildcard array 'bins' of more than "
-                                                "--coverage-max-bins of "
-                                                    << v3Global.opt.coverageMaxBins()
-                                                    << " values; bin ignored\n"
-                                                    << arrayBinp->warnMore()
-                                                    << "... Suggest a larger --coverage-max-bins");
+                    arrayBinp->v3warn(COVERIGN,
+                                      "Unsupported: wildcard array '"
+                                          << arrayBinp->binsType().verilogKwd()
+                                          << "' of more than --coverage-max-bins of "
+                                          << v3Global.opt.coverageMaxBins() << " values; "
+                                          << (out.single ? "treated as one bin" : "bin ignored")
+                                          << "\n"
+                                          << arrayBinp->warnMore()
+                                          << "... Suggest a larger --coverage-max-bins");
                 }
                 out.unsupported = true;
                 return out;
@@ -1375,7 +1396,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // The runs of an automatic bins declaration, or of an array bin of an integral coverpoint.
-    // False for other bins, which do not generate as runs.
+    // False for other bins, which do not generate as runs, including a wildcard array then one
+    // bin (see BinRuns::single).
     bool binRunsFor(AstCoverBin* binp, AstNodeExpr* exprp, BinRuns& out) {
         if (isAutoBins(binp)) {
             if (!autoBinRuns(binp, exprp, out)) out.unsupported = true;
@@ -1388,6 +1410,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 out.unsupported = true;
             } else {
                 out = wildcardBinRuns(binp, exprp, true);
+                if (out.single) {
+                    binp->isArray(false);  // Generates as one bin
+                    return false;
+                }
             }
             return true;
         }

@@ -33,6 +33,10 @@ module t;
       bins at_limit[] = {[1 : 2]};
       bins over_limit[] = {[1 : 3]};  // Warning (COVERIGN): 3 values
     }
+    // Warning (COVERIGN): a wildcard ignore array of more values than the limit, as one bin
+    cp_wild_ignore: coverpoint data {
+      wildcard ignore_bins over_limit[] = {32'h????_????};
+    }
   endgroup
 
   cg cg_inst = new;

@@ -46,4 +46,9 @@
                                                           : ... note: In instance 't'
    63 |     dynamic_cross: cross cp_real, cp_dynamic{bins selected = binsof (cp_real) intersect {1};}
       |                                                              ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:69:29: Unsupported: sized wildcard array 'illegal_bins' of more than --coverage-max-bins of 1024 ranges of values; treated as one bin
+                                                          : ... note: In instance 't'
+                                                          : ... Suggest a larger --coverage-max-bins
+   69 |       wildcard illegal_bins runs[2] = {16'b????_????_????_???1};
+      |                             ^~~~
 %Error: Exiting due to
