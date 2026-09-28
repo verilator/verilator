@@ -2408,9 +2408,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Rebuild the select chain text around the SMT name, innermost first
         for (auto it = frames.rbegin(); it != frames.rend(); ++it) {
             AstNodeExpr* const remainingArgsp = VN_CAST((*it)->exprsp()->nextp(), NodeExpr);
-            if (remainingArgsp) {
-                remainingArgsp->unlinkFrBackWithNext();
-            }
+            if (remainingArgsp) { remainingArgsp->unlinkFrBackWithNext(); }
             activep = new AstSFormatF{fl, (*it)->name(), false,
                                       AstNode::addNext(activep, remainingArgsp)};
         }
