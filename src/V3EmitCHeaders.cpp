@@ -605,6 +605,10 @@ class EmitCHeader final : public EmitCConstInit {
             AstNodeUOrStructDType* const sdtypep
                 = VN_CAST(tdefp->dtypep()->skipRefToEnump(), NodeUOrStructDType);
             if (!sdtypep) continue;
+            // V3Inline can copy one module into several parents. Only the module that
+            // declares the struct emits it, so C++ sees only one definition.
+            const bool declaredInOtherModule = sdtypep->classOrPackagep() != modp;
+            if (declaredInOtherModule) continue;
             emitStructDecl(modp, sdtypep, emitted);
         }
     }
