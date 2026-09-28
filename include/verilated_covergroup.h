@@ -51,6 +51,14 @@ enum class VlCovBinNaming : uint8_t {
     Single,  // "<name>"      one bin
     Array,  // "<name>[i]"   bins b[N] value array
     Numbered,  // "<name>_<i>" automatic bins of a coverpoint without bins
+    Values,  // "<name>[v]"   bins b[] with a 'with' filter, a bin per value v
+};
+
+// How the bins of a 'with' filter (IEEE 1800-2023 19.5.1.1) hold the values it keeps
+enum class VlCovBinGrouping : uint8_t {
+    Single,  // bins b = ...: one bin
+    Values,  // bins b[] = ...: a bin for each value, in value order
+    Fixed,  // bins b[N] = ...: distributed over N bins, as a sized array's
 };
 
 // Specifies the naming scheme for a range of bins, allowing the
@@ -192,6 +200,24 @@ public:
     /// sizedFinish() order, for cross selections.
     uint32_t sizedFirst(uint32_t sized) const;
     uint32_t sizedEnd(uint32_t sized) const;
+    /// Begin the bins of a 'with' filter (IEEE 1800-2023 19.5.1.1), whose candidates are the
+    /// values sizedRange() added, and whose bins then count as a sized array's.  At most
+    /// 'limit' bins, or runs of values kept.
+    void withBegin(VlCovBinGrouping grouping, uint32_t limit);
+    /// Advance to the next run of candidates, withLo() to withHi(); false after the last, or
+    /// once too many values are kept
+    bool withNext();
+    QData withLo() const;
+    void withLoW(WDataOutP valuep) const;
+    QData withHi() const;
+    void withHiW(WDataOutP valuep) const;
+    /// Keep the values lo..hi, in the order the filter kept them; false once too many are
+    bool withRun(QData lo, QData hi);
+    bool withRunW(WDataInP lop, WDataInP hip);
+    /// Make the bins of the values kept, a sized array 'name[count]' for Fixed grouping (see
+    /// sizedFinish())
+    void withFinish(VlCovBinKind kind, QData count, bool positive, const char* name,
+                    const char* file, int line, int col);
 
     // ---- hot path (from generated sample()) ----
     // Clear the hit list at the start of each sample() for a cross-fed coverpoint.

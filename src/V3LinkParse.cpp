@@ -63,6 +63,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeDType* m_dtypep = nullptr;  // Current data type
     AstNodeExpr* m_defaultInSkewp = nullptr;  // Current default input skew
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
+    AstCoverpoint* m_coverpointp = nullptr;  // Current coverpoint
     int m_anonUdpId = 0;  // Counter for anonymous UDP instances
     int m_coverpointNum = 0;  // Counter for unnamed coverpoints within current covergroup
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
@@ -1435,6 +1436,44 @@ class LinkParseVisitor final : public VNVisitor {
                 VL_DO_DANGLING(optp->deleteTree(), optp);
             }
         }
+        VL_RESTORER(m_coverpointp);
+        m_coverpointp = nodep;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverBin* nodep) override {
+        cleanFileline(nodep);
+        if (!m_coverpointp && VN_IS(nodep->rangesp(), CoverWith)) {
+            // A 'with' filter's candidates are of its coverpoint's type
+            nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
+                                               "coverpoint; bin ignored");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverWith* nodep) override {
+        cleanFileline(nodep);
+        UASSERT_OBJ(m_coverpointp, nodep, "Bin 'with' filter outside a coverpoint");
+        if (const AstCoverpointRef* const refp = VN_CAST(nodep->subp(), CoverpointRef)) {
+            if (refp->name() != m_coverpointp->name()) {
+                refp->v3error("A bin 'with' filter may name only its own coverpoint "
+                              << m_coverpointp->prettyNameQ() << ", not " << refp->prettyNameQ()
+                              << " (IEEE 1800-2023 19.5.1.1)");
+            }
+        }
+        // The candidate value, of the coverpoint's type, which a filter need not read
+        FileLine* const fl = nodep->fileline();
+        FileLine* const flNoWarn = new FileLine{fl};
+        flNoWarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+        AstVar* const varp = new AstVar{flNoWarn, VVarType::VAR, "item", VFlagChildDType{},
+                                        new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{},
+                                                        m_coverpointp->exprp()->cloneTree(false)}};
+        varp->funcLocal(true);
+        varp->noReset(true);
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        nodep->itemp(varp);
         iterateChildren(nodep);
     }
 

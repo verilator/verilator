@@ -1,0 +1,14 @@
+%Error: t/t_covergroup_with_type_bad.v:16:26: Bin 'with' filters are not allowed on a coverpoint of a non-integral expression (IEEE 1800-2023 19.5.1.1)
+                                            : ... note: In instance 't'
+   16 |       bins b = {[0 : 3]} with (item > 1);
+      |                          ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_with_type_bad.v:19:22: Bin 'with' filters are not allowed on a coverpoint of a non-integral expression (IEEE 1800-2023 19.5.1.1)
+                                            : ... note: In instance 't'
+   19 |       bins b = {"a"} with (1);
+      |                      ^~~~
+%Error: t/t_covergroup_with_type_bad.v:23:34: Bin 'with' filter must be assignment compatible with an integral type, not 'string' (IEEE 1800-2023 19.5.1.1)
+                                            : ... note: In instance 't'
+   23 |       bins b[] = {[0 : 3]} with (s);
+      |                                  ^
+%Error: Exiting due to

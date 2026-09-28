@@ -359,6 +359,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
                 if (setp != nodep->transp()) puts(", ");
                 iterateConst(setp);
             }
+        } else if (VN_IS(nodep->rangesp(), CoverWith)) {
+            puts(" = ");
+            iterateConst(nodep->rangesp());
         } else if (nodep->rangesp()) {  // LCOV_EXCL_BR_LINE - false: CoverBin always has
                                         // transp/rangesp/default
             puts(" = {");
@@ -374,6 +377,15 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(")");
         }
         puts(";\n");
+    }
+    void visit(AstCoverWith* nodep) override {
+        const bool rangeList = !VN_IS(nodep->subp(), CoverpointRef);
+        if (rangeList) putfs(nodep, "{");
+        iterateAndCommaConstNull(nodep->subp());
+        if (rangeList) puts("}");
+        puts(" with (");
+        iterateConst(nodep->filterp());
+        puts(")");
     }
     void visit(AstCoverBinsof* nodep) override {
         putfs(nodep, nodep->isNegated() ? "!binsof(" : "binsof(");

@@ -915,6 +915,15 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_VALUE_TRANSITIONS,       "valueTransitions",       false,  "r") \
     macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  "rr") \
     macro(COVERGROUP_WEIGHT,                  "weight",                 false,  "rr") \
+    macro(COVERGROUP_WITH_BEGIN,              "withBegin",              false,  "rr") \
+    macro(COVERGROUP_WITH_FINISH,             "withFinish",             false,  "r+") \
+    macro(COVERGROUP_WITH_HI,                 "withHi",                 false,  "") \
+    macro(COVERGROUP_WITH_HI_W,               "withHiW",                false,  "w") \
+    macro(COVERGROUP_WITH_LO,                 "withLo",                 false,  "") \
+    macro(COVERGROUP_WITH_LO_W,               "withLoW",                false,  "w") \
+    macro(COVERGROUP_WITH_NEXT,               "withNext",               false,  "") \
+    macro(COVERGROUP_WITH_RUN,                "withRun",                false,  "rr") \
+    macro(COVERGROUP_WITH_RUN_W,              "withRunW",               false,  "rr") \
     macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
     macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \
     macro(DYN_CLEAR,                          "clear",                  false,  "") \

@@ -2319,6 +2319,17 @@ class LinkDotFindVisitor final : public VNVisitor {
                             nullptr);
         iterateChildren(nodep);
     }
+    void visit(AstCoverWith* nodep) override {  // FindVisitor::
+        // The range list is outside the scope of the filter, which declares 'item'
+        iterateAndNextNull(nodep->subp());
+        VL_RESTORER(m_curSymp);
+        ++m_modWithNum;
+        m_curSymp = m_statep->insertBlock(m_curSymp, "__VcoverWith" + cvtToStr(m_modWithNum),
+                                          nodep, m_classOrPackagep);
+        m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
+        iterateAndNextNull(nodep->itemp());
+        iterateAndNextNull(nodep->filterp());
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // FindVisitor::
 
@@ -5750,6 +5761,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         nodep->prodp(findProd(nodep, m_curSymp, nodep->name()));
         iterateChildren(nodep);
+    }
+    void visit(AstCoverWith* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        iterateAndNextNull(nodep->subp());
+        // The type of 'item' is that of the coverpoint expression, which may name 'item' too
+        iterateAndNextNull(nodep->itemp()->childDTypep());
+        VL_RESTORER(m_curSymp);
+        m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+        iterateAndNextNull(nodep->itemp());
+        iterateAndNextNull(nodep->filterp());
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
     void visit(AstWith* nodep) override {
         LINKDOT_VISIT_START();

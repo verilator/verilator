@@ -401,6 +401,8 @@ module t (/*AUTOARG*/
       bins multi  = {0, 1, 2};   // multiple values in one bins (exercises EmitV range loop)
       bins sized[2] = {[0:5], 7};  // sized array of bins (exercises EmitV array size)
       wildcard bins wild[] = {3'b01?};  // wildcard array of bins (exercises EmitV wildcard)
+      bins filtered[] = {[0:7]} with (item % 2 == 0);  // 'with' filter of a range list
+      bins named = cp_sig with (item > 5);  // 'with' filter of the coverpoint's values
       bins dflt   = default;
       ignore_bins ign = {7};
       illegal_bins ill = {5};
