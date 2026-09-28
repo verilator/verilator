@@ -17,6 +17,9 @@ module t;
     cp_open: coverpoint value {
       wildcard bins open = {[1 : $]};
     }
+    cp_array: coverpoint value {
+      wildcard bins array[] = {1};
+    }
   endgroup
 
   cg cov = new;

@@ -20,4 +20,11 @@
         t/t_covergroup_wild_real_bad.v:18:21: ... Location of wildcard bin
    18 |       wildcard bins open = {[1 : $]};
       |                     ^~~~
+%Error: t/t_covergroup_wild_real_bad.v:20:15: Cannot use a wildcard bin on a coverpoint of type 'real' (IEEE 1800-2023 19.5.4).
+                                            : ... note: In instance 't'
+   20 |     cp_array: coverpoint value {
+      |               ^~~~~~~~~~
+        t/t_covergroup_wild_real_bad.v:21:21: ... Location of wildcard bin
+   21 |       wildcard bins array[] = {1};
+      |                     ^~~~~
 %Error: Exiting due to

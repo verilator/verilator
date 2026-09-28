@@ -1,0 +1,8 @@
+cg.ign.all: 8
+cg.ign.odd [ignore]: 8
+cg.ign_sized.all: 8
+cg.ign_sized.odd [ignore]: 8
+cg.ill.all: 16
+cg.ill.high [illegal]: 0
+cg.ill_sized.all: 16
+cg.ill_sized.odd [illegal]: 0

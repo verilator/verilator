@@ -258,6 +258,16 @@ module t;
     }
   endgroup
 
+  // Error: non-constant values of wildcard arrays of bins, also of a crossed coverpoint
+  covergroup cg_wild_nonconst;
+    cp_a: coverpoint cp_expr {
+      wildcard bins value[] = {size_var};
+      wildcard bins range[] = {[0 : size_var]};
+    }
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
   cg2b cg2b_inst = new;
@@ -280,6 +290,7 @@ module t;
   cgx_binsof_many_values cgx_binsof_many_values_inst = new;
   cg_limit cg_limit_inst = new;
   cg_real cg_real_inst = new;
+  cg_wild_nonconst cg_wild_nonconst_inst = new;
 
   initial $finish;
 endmodule

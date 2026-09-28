@@ -1212,6 +1212,12 @@ public:
                "illegal_bins", "transition", "bins",          "wildcard"};
         return names[m_e];
     }
+    // Keyword declaring the bins, without any 'wildcard' prefix
+    const char* verilogKwd() const {
+        static const char* const names[] = {"bins",         "bins", "bins", "bins", "ignore_bins",
+                                            "illegal_bins", "bins", "bins", "bins"};
+        return names[m_e];
+    }
     // VlCovBinKind enumerator naming the bin's set
     const char* binSetEnum() const {
         switch (m_e) {
