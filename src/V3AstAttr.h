@@ -75,11 +75,11 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"RD", "WR", "RW", "--"};
+        static constexpr const char* const names[] = {"RD", "WR", "RW", "--"};
         return names[m_e];
     }
     const char* arrow() const {
-        static const char* const names[] = {"[RV] <-", "[LV] =>", "[LRV] <=>", "--"};
+        static constexpr const char* const names[] = {"[RV] <-", "[LV] =>", "[LRV] <=>", "--"};
         return names[m_e];
     }
     VAccess()
@@ -119,7 +119,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"always", "always_ff", "always_latch", "always_comb", "cont_assign"};
         return names[m_e];
     }
@@ -160,18 +160,18 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         // IEEE 1800-2023 20.11
-        static const char* const names[] = {"",
-                                            "",
-                                            "",
-                                            "$asserton",
-                                            "$assertoff",
-                                            "$assertkill",
-                                            "$assertpasson",
-                                            "$assertpassoff",
-                                            "$assertfailon",
-                                            "$assertfailoff",
-                                            "$assertnonvacuouson",
-                                            "$assertvacuousoff"};
+        static constexpr const char* const names[] = {"",
+                                                      "",
+                                                      "",
+                                                      "$asserton",
+                                                      "$assertoff",
+                                                      "$assertkill",
+                                                      "$assertpasson",
+                                                      "$assertpassoff",
+                                                      "$assertfailon",
+                                                      "$assertfailoff",
+                                                      "$assertnonvacuouson",
+                                                      "$assertvacuousoff"};
         return names[m_e];
     }
 };
@@ -311,7 +311,7 @@ public:
     constexpr VPropStrength(en _e)
         : m_e{_e} {}
     const char* ascii() const {
-        static const char* const names[] = {"default", "weak", "strong"};
+        static constexpr const char* const names[] = {"default", "weak", "strong"};
         return names[m_e];
     }
 };
@@ -379,7 +379,7 @@ public:
     enum en m_e;
     const char* ascii() const {
         // clang-format off
-        static const char* const names[] = {
+        static constexpr const char* const names[] = {
             "%E-AT",
             "DIM_BITS", "DIM_BITS_OR_NUMBER", "DIM_DIMENSIONS",
             "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
@@ -520,69 +520,69 @@ public:
     };
     enum en m_e;
     const char* ascii() const VL_MT_SAFE {
-        static const char* const names[] = {"%E-unk",
-                                            "bit",
-                                            "byte",
-                                            "chandle",
-                                            "void",
-                                            "event",
-                                            "int",
-                                            "integer",
-                                            "logic",
-                                            "longint",
-                                            "real",
-                                            "shortint",
-                                            "time",
-                                            "string",
-                                            "untyped",
-                                            "VerilatedScope*",
-                                            "char*",
-                                            "VlMTaskState",
-                                            "VlDelayScheduler",
-                                            "VlTriggerScheduler",
-                                            "VlDynamicTriggerScheduler",
-                                            "VlFork",
-                                            "VlProcessRef",
-                                            "VlRandomizer",
-                                            "VlStdRandomizer",
-                                            "VlCovInstHandle",
-                                            "IData",
-                                            "QData",
-                                            "LOGIC_IMPLICIT",
-                                            " MAX"};
+        static constexpr const char* const names[] = {"%E-unk",
+                                                      "bit",
+                                                      "byte",
+                                                      "chandle",
+                                                      "void",
+                                                      "event",
+                                                      "int",
+                                                      "integer",
+                                                      "logic",
+                                                      "longint",
+                                                      "real",
+                                                      "shortint",
+                                                      "time",
+                                                      "string",
+                                                      "untyped",
+                                                      "VerilatedScope*",
+                                                      "char*",
+                                                      "VlMTaskState",
+                                                      "VlDelayScheduler",
+                                                      "VlTriggerScheduler",
+                                                      "VlDynamicTriggerScheduler",
+                                                      "VlFork",
+                                                      "VlProcessRef",
+                                                      "VlRandomizer",
+                                                      "VlStdRandomizer",
+                                                      "VlCovInstHandle",
+                                                      "IData",
+                                                      "QData",
+                                                      "LOGIC_IMPLICIT",
+                                                      " MAX"};
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[] = {"%E-unk",
-                                            "svBit",
-                                            "char",
-                                            "void*",
-                                            "void",
-                                            "char",
-                                            "int",
-                                            "%E-integer",
-                                            "svLogic",
-                                            "long long",
-                                            "double",
-                                            "short",
-                                            "%E-time",
-                                            "const char*",
-                                            "%E-untyped",
-                                            "dpiScope",
-                                            "const char*",
-                                            "%E-mtaskstate",
-                                            "%E-dly-sched",
-                                            "%E-trig-sched",
-                                            "%E-dyn-sched",
-                                            "%E-fork",
-                                            "%E-proc-ref",
-                                            "%E-rand-gen",
-                                            "%E-stdrand-gen",
-                                            "%E-cg-insthandle",
-                                            "IData",
-                                            "QData",
-                                            "%E-logic-implct",
-                                            " MAX"};
+        static constexpr const char* const names[] = {"%E-unk",
+                                                      "svBit",
+                                                      "char",
+                                                      "void*",
+                                                      "void",
+                                                      "char",
+                                                      "int",
+                                                      "%E-integer",
+                                                      "svLogic",
+                                                      "long long",
+                                                      "double",
+                                                      "short",
+                                                      "%E-time",
+                                                      "const char*",
+                                                      "%E-untyped",
+                                                      "dpiScope",
+                                                      "const char*",
+                                                      "%E-mtaskstate",
+                                                      "%E-dly-sched",
+                                                      "%E-trig-sched",
+                                                      "%E-dyn-sched",
+                                                      "%E-fork",
+                                                      "%E-proc-ref",
+                                                      "%E-rand-gen",
+                                                      "%E-stdrand-gen",
+                                                      "%E-cg-insthandle",
+                                                      "IData",
+                                                      "QData",
+                                                      "%E-logic-implct",
+                                                      " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -694,7 +694,7 @@ public:
 
     const char* traceSigType() const {
         // VerilatedTraceSigType to used in trace signal declaration
-        static const char* const lut[] = {
+        static constexpr const char* const lut[] = {
             /* UNKNOWN:                   */ "",  // Should not be traced
             /* BIT:                       */ "BIT",
             /* BYTE:                      */ "BYTE",
@@ -754,7 +754,7 @@ public:
     explicit VBoolOrUnknown(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
-        static const char* const names[] = {"FALSE", "TRUE", "UNK"};
+        static constexpr const char* const names[] = {"FALSE", "TRUE", "UNK"};
         return names[m_e];
     }
     bool isKnown() const { return m_e != BU_UNKNOWN; }
@@ -798,11 +798,11 @@ public:
         return m_e;
     }
     const char* ascii() const {
-        static const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
+        static constexpr const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
         return names[m_e];
     }
     const char* asciiShort() const {
-        static const char* const names[] = {"", "L", "!L"};
+        static constexpr const char* const names[] = {"", "L", "!L"};
         return names[m_e];
     }
 };
@@ -1018,7 +1018,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
-        static const char* const values[] = {
+        static constexpr const char* const values[] = {
 #define VL_CMETHOD_NAME(id, method, pure, args) method,
             FOR_EACH_CMETHOD(VL_CMETHOD_NAME)
 #undef VL_CMETHOD_NAME
@@ -1027,7 +1027,7 @@ public:
         return values[m_e];
     }
     bool isPure() const VL_PURE {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_CMETHOD_PURE(id, method, pure, args) pure,
             FOR_EACH_CMETHOD(VL_CMETHOD_PURE)
 #undef VL_CMETHOD_PURE
@@ -1036,7 +1036,7 @@ public:
         return values[m_e];
     }
     const char* args() const VL_PURE {
-        static const char* const values[] = {
+        static constexpr const char* const values[] = {
 #define VL_CMETHOD_ARGS(id, method, pure, args) args,
             FOR_EACH_CMETHOD(VL_CMETHOD_ARGS)
 #undef VL_CMETHOD_ARGS
@@ -1106,7 +1106,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
-        static const char* const names[] = {"none", "ctor_var_reset_call"};
+        static constexpr const char* const names[] = {"none", "ctor_var_reset_call"};
         return names[m_e];
     }
     bool isNone() const { return m_e == NONE; }
@@ -1142,7 +1142,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"CASE", "CASEX", "CASEZ", "CASEINSIDE", "CASEMATCHES", "RANDSEQUENCE"};
         return names[m_e];
     }
@@ -1169,7 +1169,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_EXPLICIT",
                "ENUM_IMPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
         return names[m_e];
@@ -1216,15 +1216,15 @@ public:
         : m_e{_e} {}
     constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"array",        "auto",       "auto_implicit", "default", "ignore_bins",
                "illegal_bins", "transition", "bins",          "wildcard"};
         return names[m_e];
     }
     // Keyword declaring the bins, without any 'wildcard' prefix
     const char* verilogKwd() const {
-        static const char* const names[] = {"bins",         "bins", "bins", "bins", "ignore_bins",
-                                            "illegal_bins", "bins", "bins", "bins"};
+        static constexpr const char* const names[] = {
+            "bins", "bins", "bins", "bins", "ignore_bins", "illegal_bins", "bins", "bins", "bins"};
         return names[m_e];
     }
     // VlCovBinKind enumerator naming the bin's set
@@ -1278,23 +1278,23 @@ public:
     constexpr VCoverOptionType(en _e)
         : m_e{_e} {}
     const char* ascii() const {
-        static const char* const names[] = {"weight",
-                                            "goal",
-                                            "at_least",
-                                            "auto_bin_max",
-                                            "per_instance",
-                                            "comment",
-                                            "name",
-                                            "cross_num_print_missing",
-                                            "cross_retain_auto_bins",
-                                            "detect_overlap",
-                                            "get_inst_coverage",
-                                            "strobe",
-                                            "merge_instances",
-                                            "distribute_first",
-                                            "real_interval",
-                                            "cross_auto_bin_max",
-                                            "unknown"};
+        static constexpr const char* const names[] = {"weight",
+                                                      "goal",
+                                                      "at_least",
+                                                      "auto_bin_max",
+                                                      "per_instance",
+                                                      "comment",
+                                                      "name",
+                                                      "cross_num_print_missing",
+                                                      "cross_retain_auto_bins",
+                                                      "detect_overlap",
+                                                      "get_inst_coverage",
+                                                      "strobe",
+                                                      "merge_instances",
+                                                      "distribute_first",
+                                                      "real_interval",
+                                                      "cross_auto_bin_max",
+                                                      "unknown"};
         return names[m_e];
     }
 };
@@ -1322,11 +1322,12 @@ public:
         : m_e(static_cast<en>(_e)) {}  // LCOV_EXCL_STOP  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
-        static const char* const names[] = {"", "[*]", "[->]", "[=]"};
+        static constexpr const char* const names[] = {"", "[*]", "[->]", "[=]"};
         return names[m_e];
     }
     const char* asciiJson() const {
-        static const char* const names[] = {"\"none\"", "\"consec\"", "\"goto\"", "\"noncons\""};
+        static constexpr const char* const names[]
+            = {"\"none\"", "\"consec\"", "\"goto\"", "\"noncons\""};
         return names[m_e];
     }
 };
@@ -1346,11 +1347,13 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const VL_MT_SAFE { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "INPUT", "OUTPUT", "INOUT", "REF", "CONSTREF"};
+        static constexpr const char* const names[]
+            = {"NONE", "INPUT", "OUTPUT", "INOUT", "REF", "CONSTREF"};
         return names[m_e];
     }
     string verilogKwd() const {
-        static const char* const names[] = {"", "input", "output", "inout", "ref", "const ref"};
+        static constexpr const char* const names[]
+            = {"", "input", "output", "inout", "ref", "const ref"};
         return names[m_e];
     }
     string prettyName() const { return verilogKwd(); }
@@ -1426,7 +1429,7 @@ public:
     bool addNewline() const { return m_e != DT_WRITE; }
     bool needScopeTracking() const { return m_e != DT_DISPLAY && m_e != DT_WRITE; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"display", "write", "monitor", "strobe", "info", "error", "warning", "fatal"};
         return names[m_e];
     }
@@ -1452,8 +1455,9 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"$dumpfile",  "$dumpvars", "$dumpall", "$dumpflush",
-                                            "$dumplimit", "$dumpoff",  "$dumpon"};
+        static constexpr const char* const names[]
+            = {"$dumpfile",  "$dumpvars", "$dumpall", "$dumpflush",
+               "$dumplimit", "$dumpoff",  "$dumpon"};
         return names[m_e];
     }
 };
@@ -1491,7 +1495,7 @@ public:
     };
     enum en m_e;
     bool clockedStmt() const {
-        static const bool clocked[] = {
+        static constexpr bool clocked[] = {
             true,  // ET_CHANGED
             true,  // ET_BOTHEDGE
             true,  // ET_POSEDGE
@@ -1521,13 +1525,13 @@ public:
         }
     }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"CHANGED", "BOTH",       "POS",    "NEG",    "EVENT",   "TRUE",  "ET_INITIAL_NBA",
                "COMBO",   "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
-        static const char* const names[] = {
+        static constexpr const char* const names[] = {
             "[changed]", "edge", "posedge",  "negedge",  "[event]",   "[true]",  "[initial_nba]",
             "*",         "*",    "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
@@ -1590,7 +1594,7 @@ public:
     enum en m_e;
 
     const char* ascii() const {
-        static const char* const values[] = {
+        static constexpr const char* const values[] = {
 #define VL_EVAL_NAME(id, iterated, triggers, first, slow) #id,
             FOR_EACH_EVAL(VL_EVAL_NAME)
 #undef VL_EVAL_NAME
@@ -1599,7 +1603,7 @@ public:
         return values[m_e];
     }
     bool isIterated() const {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_EVAL_IS_ITERATED(id, iterated, triggers, first, slow) iterated,
             FOR_EACH_EVAL(VL_EVAL_IS_ITERATED)
 #undef VL_EVAL_IS_ITERATED
@@ -1608,7 +1612,7 @@ public:
         return values[m_e];
     }
     bool hasTriggers() const {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_EVAL_HAS_TRIGGERS(id, iterated, triggers, first, slow) triggers,
             FOR_EACH_EVAL(VL_EVAL_HAS_TRIGGERS)
 #undef VL_EVAL_HAS_TRIGGERS
@@ -1617,7 +1621,7 @@ public:
         return values[m_e];
     }
     bool firstIteration() const {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_EVAL_FIRST(id, iterated, triggers, first, slow) first,
             FOR_EACH_EVAL(VL_EVAL_FIRST)
 #undef VL_EVAL_FIRST
@@ -1626,7 +1630,7 @@ public:
         return values[m_e];
     }
     bool slow() const {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_EVAL_SLOW(id, iterated, triggers, first, slow) slow,
             FOR_EACH_EVAL(VL_EVAL_SLOW)
 #undef VL_EVAL_SLOW
@@ -1669,7 +1673,7 @@ public:
     enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS, GENERIC_INTERFACE };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"none", "enum", "struct", "union", "class", "interface class", "generic interface"};
         return names[m_e];
     }
@@ -1739,11 +1743,11 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"JOIN", "JOIN_ANY", "JOIN_NONE"};
+        static constexpr const char* const names[] = {"JOIN", "JOIN_ANY", "JOIN_NONE"};
         return names[m_e];
     }
     const char* verilogKwd() const {
-        static const char* const names[] = {"join", "join_any", "join_none"};
+        static constexpr const char* const names[] = {"join", "join_any", "join_none"};
         return names[m_e];
     }
     bool join() const { return m_e == JOIN; }
@@ -1772,7 +1776,8 @@ public:
     };  // Static propagated from above
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "VAUTOM", "VAUTOMI", "VSTATIC", "VSTATICI"};
+        static constexpr const char* const names[]
+            = {"NONE", "VAUTOM", "VAUTOMI", "VSTATIC", "VSTATICI"};
         return names[m_e];
     }
     VLifetime()
@@ -1892,7 +1897,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {
+        static constexpr const char* const names[] = {
             "COVERAGE_BLOCK_OFF",  //
             "HIER_BLOCK",  //
             "HIER_PARAMS",  //
@@ -1940,7 +1945,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND_INLINE"};
+        static constexpr const char* const names[] = {"NONE", "RAND", "RANDC", "RAND_INLINE"};
         return names[m_e];
     }
     VRandAttr()
@@ -2007,7 +2012,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"UNSIGNED", "SIGNED", "NOSIGN"};
+        static constexpr const char* const names[] = {"UNSIGNED", "SIGNED", "NOSIGN"};
         return names[m_e];
     }
     VSigning()
@@ -2046,7 +2051,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"highz", "small", "medium", "weak", "large", "pull", "strong", "supply"};
         return names[m_e];
     }
@@ -2076,13 +2081,13 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"`systemc_ctor",  //
-                                            "`systemc_dtor",  //
-                                            "`systemc_header",  //
-                                            "`systemc_header_post",  //
-                                            "`systemc_implementation",  //
-                                            "`systemc_imp_header",  //
-                                            "`systemc_interface"};
+        static constexpr const char* const names[] = {"`systemc_ctor",  //
+                                                      "`systemc_dtor",  //
+                                                      "`systemc_header",  //
+                                                      "`systemc_header_post",  //
+                                                      "`systemc_implementation",  //
+                                                      "`systemc_imp_header",  //
+                                                      "`systemc_interface"};
         return names[m_e];
     }
     // cppcheck-suppress noExplicitConstructor
@@ -2111,7 +2116,7 @@ public:
         : m_e{_e} {}
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"ARRAY_PACKED",  "ARRAY_UNPACKED",  "SCOPE_MODULE", "SCOPE_INTERFACE",
                "STRUCT_PACKED", "STRUCT_UNPACKED", "UNION_PACKED"};
         return names[m_e];
@@ -2149,11 +2154,11 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"CONSTANT", "FULL", "CHANGE"};
+        static constexpr const char* const names[] = {"CONSTANT", "FULL", "CHANGE"};
         return names[m_e];
     }
     const char* func_prefix() const {
-        static const char* const names[] = {"trace_const", "trace_full", "trace_chg"};
+        static constexpr const char* const names[] = {"trace_const", "trace_full", "trace_chg"};
         return names[m_e];
     }
 };
@@ -2186,7 +2191,7 @@ public:
     constexpr operator en() const { return m_e; }
     bool containsAny(VUseType other) const { return m_e & other.m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
+        static constexpr const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
         return names[m_e - 1];
     }
 };
@@ -2239,7 +2244,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"?",        "GPARAM",  "LPARAM",   "SPECPARAM", "GENVAR",    "VAR",
                "SUPPLY0",  "SUPPLY1", "WIRE",     "WREAL",     "TRIAND",    "TRIOR",
                "TRIWIRE",  "TRI0",    "TRI1",     "PORT",      "BLOCKTEMP", "MODULETEMP",
@@ -2278,7 +2283,7 @@ public:
 
     const char* traceSigKind() const {
         // VerilatedTraceSigKind to used in trace signal declaration
-        static const char* const lut[] = {
+        static constexpr const char* const lut[] = {
             /* UNKNOWN:      */ "",  // Should not be traced
             /* GPARAM:       */ "PARAMETER",
             /* LPARAM:       */ "PARAMETER",

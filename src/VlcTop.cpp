@@ -44,10 +44,10 @@ namespace {
 // Map coverage type to (covered points, total points).
 using TypeTally = std::map<std::string, std::pair<uint64_t, uint64_t>>;
 
-static const char* const s_orderedTypes[]
+static constexpr const char* const s_orderedTypes[]
     = {"line", "toggle", "branch", "expr", "fsm_state", "fsm_arc"};
-static const size_t s_summaryIndent = 2;
-static const size_t s_reportRowIndent = 4;
+static constexpr size_t s_summaryIndent = 2;
+static constexpr size_t s_reportRowIndent = 4;
 
 string displayType(const VlcPoint& point) {
     const string type = point.type();

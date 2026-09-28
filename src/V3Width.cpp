@@ -144,7 +144,7 @@ enum Determ : uint8_t {
     ASSIGN  // Assignment-like where sign comes from RHS only
 };
 std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
-    static const char* const s_det[] = {"SELF", "CNTX", "ASSN"};
+    static constexpr const char* const s_det[] = {"SELF", "CNTX", "ASSN"};
     return str << s_det[rhs];
 }
 
