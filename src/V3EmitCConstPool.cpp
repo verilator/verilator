@@ -68,6 +68,7 @@ class EmitCConstPool final : public EmitCConstInit {
                                         "Constant pool");
                 puts("\n");
                 puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
+                emitModCUse(poolp, VUseType::IMP_INCLUDE);
             }
 
             puts("\n");

@@ -49,10 +49,30 @@ class EmitCImp final : public EmitCFunc {
     // MEMBERS
     const std::vector<AstNodeModule*>& m_modps;  // Modules emitted into the same output files
     const bool m_slow;  // Creating __Slow file
+    // Module has `systemc_imp_header, which is in every .cpp file and may reference any class
+    const bool m_userImpHdr;
+    // File contains a function with user c++ that may reference any class
+    bool m_userCppFile;
     V3UniqueNames m_uniqueNames;  // Generates unique file names
     const std::string m_fileBaseName;  // Base name of the output files
 
     // METHODS
+    static bool anyScSection(const std::vector<AstNodeModule*>& modps,
+                             std::initializer_list<VSystemCSectionType> types) {
+        return std::any_of(modps.begin(), modps.end(), [types](const AstNodeModule* const modp) {
+            return modp->hasAnyScSection(types);
+        });
+    }
+    static bool hasUserCpp(const AstCFunc* const funcp) {
+        return funcp->exists([](const AstNode* const nodep) {
+            return VN_IS(nodep, CStmtUser) || VN_IS(nodep, CExprUser);
+        });
+    }
+    void includeOnce(std::unordered_set<std::string>& includeLines, const std::string& line) {
+        const bool alreadyIncluded = !includeLines.insert(line).second;
+        if (alreadyIncluded) return;
+        puts(line);
+    }
     void openNextOutputFile(const std::string& fileName) {
         openNewOutputSourceFile(fileName, m_slow, false, "Design implementation internals");
         emitFileHeader();
@@ -61,6 +81,27 @@ class EmitCImp final : public EmitCFunc {
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
+        if (m_userCppFile || m_userImpHdr) {
+            for (const AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
+                if (const AstClass* const classp = VN_CAST(nodep, Class)) {
+                    const std::string classInclude
+                        = "#include \"" + EmitCUtil::prefixNameProtect(classp) + ".h\"\n";
+                    puts(classInclude);
+                }
+            }
+        } else {
+            std::unordered_set<std::string> includeLines;
+            for (const AstNodeModule* const modp : m_modps) {
+                if (VN_IS(modp, Class)) {
+                    const std::string classInclude
+                        = "#include \"" + EmitCUtil::prefixNameProtect(modp) + ".h\"\n";
+                    includeOnce(includeLines, classInclude);
+                }
+                forModCUse(modp, VUseType::IMP_INCLUDE, [&](const std::string& classInclude) {
+                    includeOnce(includeLines, classInclude);
+                });
+            }
+        }
         for (const AstNodeModule* const modp : m_modps) {
             emitSystemCSection(modp, VSystemCSectionType::IMP_HDR);
         }
@@ -450,23 +491,49 @@ class EmitCImp final : public EmitCFunc {
 
         if (ofp()) closeOutputFile();
     }
-    void emitCFuncImp() {
-        for (const AstNodeModule* const modp : m_modps) {
+    void emitCFuncFiles(const std::vector<AstCFunc*>& funcps, bool userCpp) {
+        if (funcps.empty()) return;
+        VL_RESTORER(m_userCppFile);
+        m_userCppFile = userCpp;
+        openNextOutputFile(m_uniqueNames.get(m_fileBaseName));
+        for (AstCFunc* const funcp : funcps) {
             VL_RESTORER(m_modp);
             VL_RESTORER(m_classOrPackagep);
-            m_modp = modp;
-            const AstClass* const classp = VN_CAST(modp, Class);
-            m_classOrPackagep = classp ? classp->classOrPackagep() : VN_CAST(modp, ClassPackage);
+            m_modp = EmitCParentModule::get(funcp);
+            if (VN_IS(m_modp, ClassPackage) || VN_IS(m_modp, Class)) m_classOrPackagep = m_modp;
+            iterateConst(funcp);
+        }
+        closeOutputFile();
+    }
+    void emitCFuncImp() {
+        // Functions to be emitted here
+        std::vector<AstCFunc*> funcps;
+        std::vector<AstCFunc*> userCppFuncps;
+
+        for (const AstNodeModule* const modp : m_modps) {
             for (AstNode* const nodep : modp->stmtspList()) {
                 AstCFunc* const funcp = VN_CAST(nodep, CFunc);
                 if (!funcp || !isImpFunc(funcp)) continue;
                 if (funcp->slow() != m_slow) continue;
-                // Open output file only when needed, so not to create empty files
-                if (!ofp()) openNextOutputFile(m_uniqueNames.get(m_fileBaseName));
-                iterateConst(funcp);
+                if (hasUserCpp(funcp)) {
+                    userCppFuncps.push_back(funcp);
+                } else {
+                    funcps.push_back(funcp);
+                }
             }
         }
-        if (ofp()) closeOutputFile();
+
+        if (v3Global.opt.outputSplit()) {
+            emitCFuncFiles(funcps, false);
+            // Functions that contain user c++ need to include every class; we create
+            // separate files so that not every implementation file includes every class
+            emitCFuncFiles(userCppFuncps, true);
+        } else {
+            // Splitting disabled; emit only one file
+            funcps.insert(funcps.end(), userCppFuncps.begin(), userCppFuncps.end());
+            const bool userCpp = !userCppFuncps.empty();
+            emitCFuncFiles(funcps, userCpp);
+        }
     }
     void splitOutputFile() {
         // Splitting file, so using parallel build.
@@ -484,9 +551,11 @@ class EmitCImp final : public EmitCFunc {
     EmitCImp(const std::vector<AstNodeModule*>& modps, const std::string& fileBaseName, bool slow)
         : m_modps{modps}
         , m_slow{slow}
+        , m_userImpHdr{anyScSection(modps, {VSystemCSectionType::IMP_HDR})}
+        , m_userCppFile{anyScSection(modps, {VSystemCSectionType::IMP, VSystemCSectionType::CTOR,
+                                             VSystemCSectionType::DTOR})}
         , m_fileBaseName{fileBaseName} {
         UINFO(5, "  Emitting implementation of " << fileBaseName);
-
         // Emit implementations of common parts
         if (m_slow) {
             emitCommonImpSlow();
@@ -966,13 +1035,13 @@ void V3EmitC::emitcImp() {
         std::vector<std::pair<std::vector<AstNodeModule*>, std::string>> groups;
 
         // Process each module in turn, gathering classes to be emitted below
-        std::vector<AstClassPackage*> clspkgps;  // Class packages, emitted with their class
+        std::vector<AstClass*> classps;
         for (AstNode* const nodep : v3Global.rootp()->modulespList()) {
             AstNodeModule* const modp = VN_AS(nodep, NodeModule);
             if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
-            if (VN_IS(modp, Class)) continue;  // Emitted with its package
-            if (AstClassPackage* const clspkgp = VN_CAST(modp, ClassPackage)) {
-                clspkgps.push_back(clspkgp);
+            if (VN_IS(modp, ClassPackage)) continue;
+            if (AstClass* const classp = VN_CAST(modp, Class)) {
+                classps.push_back(classp);
                 continue;
             }
             groups.emplace_back(std::vector<AstNodeModule*>{modp},
@@ -982,24 +1051,24 @@ void V3EmitC::emitcImp() {
         // Cut the classes, in netlist order, into chunks of about one --output-split worth of
         // slow or fast code, each emitted into its own files, in parallel. Netlist order keeps
         // classes that use each other close, so the templates instantiated for a class (e.g.
-        // VlClassRef) are compiled in fewer files. A class goes right after its package, so the
-        // compiler sees them together.
+        // VlClassRef) are compiled in fewer files.  If class's package exists,
+        // it goes right after its package, so the compiler sees them together
         const size_t splitLimit = v3Global.opt.outputSplit();
         std::vector<std::vector<AstNodeModule*>> chunks;
         // Size of the slow and fast code of the current chunk, as measured for --output-split
         size_t slowCost = 0;
         size_t fastCost = 0;
-        for (AstClassPackage* const clspkgp : clspkgps) {
+        for (AstClass* const classp : classps) {
             if (chunks.empty() || (splitLimit && std::max(slowCost, fastCost) >= splitLimit)) {
                 chunks.emplace_back();
                 slowCost = 0;
                 fastCost = 0;
             }
-            AstNodeModule* const pkgp = clspkgp;
-            AstNodeModule* const clsp = clspkgp->classp();
-            chunks.back().push_back(pkgp);
-            chunks.back().push_back(clsp);
-            for (const AstNodeModule* const implp : {pkgp, clsp}) {
+
+            for (AstNodeModule* const implp :
+                 std::initializer_list<AstNodeModule*>{classp->classOrPackagep(), classp}) {
+                if (!implp) continue;
+                chunks.back().push_back(implp);
                 for (const AstNode* const stmtp : implp->stmtspList()) {
                     const AstCFunc* const funcp = VN_CAST(stmtp, CFunc);
                     if (!funcp || !EmitCImp::isImpFunc(funcp)) continue;
