@@ -1411,6 +1411,12 @@ class ParamProcessor final {
                 if (!replacep && targetp->valuep()) {
                     replacep = targetp->valuep()->cloneTree(false);
                 }
+                // An assignment pattern takes the parameter's type, as the context of
+                // the reference, e.g. 'A[B[0]]', does not provide one
+                AstPattern* const patternp = VN_CAST(replacep, Pattern);
+                if (patternp && !patternp->childDTypep()) {
+                    patternp->childDTypep(targetp->subDTypep()->cloneTree(false));
+                }
                 if (replacep) {
                     if (varrefp == rootp) rootp = replacep;
                     varrefp->replaceWith(replacep);
@@ -2324,6 +2330,8 @@ public:
             } else if (AstIfaceRefDType* const ifaceRefp = VN_CAST(nodep, IfaceRefDType)) {
                 paramsp = ifaceRefp->paramsp();
             } else if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
+                paramsp = classRefp->paramsp();
+            } else if (AstClassOrPackageRef* const classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
                 paramsp = classRefp->paramsp();
             }
             if (paramsp) resolvePatternPinDTypes(paramsp);

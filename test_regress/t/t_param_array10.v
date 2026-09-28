@@ -92,6 +92,44 @@ module u #(
 ) ();
 endmodule
 
+// Size defaults to zero, so the module's own default is not a legal size
+module z #(
+    parameter int N = 0,
+    parameter int V[N] = '{}
+) ();
+endmodule
+
+// Target of a bind whose pattern values come from the target's own parameter
+module bt #(
+    parameter int P = 0
+) ();
+endmodule
+bind bt z #(.N(2), .V('{P, 99})) i_bz ();
+
+// Size from an element of another array parameter
+module e #(
+    parameter int B[2] = '{1, 1},
+    parameter int V[B[0]] = '{0}
+) ();
+endmodule
+
+// Size from the size of another array parameter
+module sz #(
+    parameter int B[3] = '{0, 0, 0},
+    parameter int V[$size(B)] = '{default: 0}
+) ();
+endmodule
+
+// Class parameters, reached through a class-scoped reference
+class cls #(
+    parameter int N = 0,
+    parameter int V[N] = '{}
+);
+  static function int last();
+    return V[N-1];
+  endfunction
+endclass
+
 // Size overridden from the enclosing module's own parameter
 module mid #(
     parameter int M = 1,
@@ -130,6 +168,15 @@ module t;
   u #(.LEN(8)) i_ud ();  // Default value must resize with LEN
 
   mid #(.M(3), .W('{1, 2, 3})) i_mid ();
+
+  z #(.N(1), .V('{9})) i_z1 ();
+  z #(.N(3), .V('{5, 6, 7})) i_z3 ();
+  bt #(.P(4)) i_bt ();
+
+  e #(.B('{2, 3}), .V('{5, 6})) i_eb ();  // Array parameter given first
+  e #(.V('{5, 6}), .B('{2, 3})) i_ea ();  // Array parameter given last
+  e #(.V('{5})) i_ed ();  // Array parameter left at its default
+  sz #(.B('{1, 2, 3}), .V('{7, 8, 9})) i_sz ();
 
   initial begin
     // Overridden size
@@ -210,6 +257,28 @@ module t;
     `checkd(i_mid.i_pass.V[2], 3);
     `checkd($size(i_mid.i_expr.V), 4);
     `checkd(i_mid.i_expr.V[3], 4);
+
+    // Zero default size
+    `checkd($size(i_z1.V), 1);
+    `checkd(i_z1.V[0], 9);
+    `checkd($size(i_z3.V), 3);
+    `checkd(i_z3.V[2], 7);
+    `checkd($size(i_bt.i_bz.V), 2);
+    `checkd(i_bt.i_bz.V[0], 4);
+    `checkd(i_bt.i_bz.V[1], 99);
+
+    // Size from another array parameter
+    `checkd($size(i_eb.V), 2);
+    `checkd(i_eb.V[1], 6);
+    `checkd($size(i_ea.V), 2);
+    `checkd(i_ea.V[1], 6);
+    `checkd($size(i_ed.V), 1);
+    `checkd(i_ed.V[0], 5);
+    `checkd($size(i_sz.V), 3);
+    `checkd(i_sz.V[2], 9);
+
+    // Class-scoped reference
+    `checkd(cls#(.N(2), .V('{1, 2}))::last(), 2);
 
     $write("*-* All Finished *-*\n");
     $finish;
