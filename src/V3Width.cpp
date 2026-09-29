@@ -2376,6 +2376,13 @@ class WidthVisitor final : public VNVisitor {
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
+        // A class handle is not a legal implicit conversion to string
+        if (AstNodeDType* const dt = nodep->lhsp()->dtypep()) {
+            if (VN_IS(dt->skipRefToEnump(), ClassRefDType)) {
+                nodep->lhsp()->v3error("Cannot convert 'class{}' handle to a string:"
+                              << dt->prettyDTypeNameQ());
+            }
+        }
     }
     void visit(AstCvtPackedToArray* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -7870,17 +7877,6 @@ class WidthVisitor final : public VNVisitor {
                          && !(VN_IS(pinp, VarRef) && VN_AS(pinp, VarRef)->varp()->basicp()
                               && VN_AS(pinp, VarRef)->varp()->basicp()->keyword()
                                      == VBasicDTypeKwd::STRING)) {
-                    // A class handle is not a legal implicit conversion to string
-                    if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
-                        if (AstNodeDType* const varDtp = varrefp->varp()->dtypep()) {
-                            if (VN_IS(varDtp->skipRefToEnump(), ClassRefDType)) {
-                                pinp->v3error(nodep->taskp()->prettyTypeName()
-                                              << " input argument " << portp->prettyNameQ()
-                                              << " requires a string but connection is "
-                                              << varDtp->prettyDTypeNameQ() << ".");
-                            }
-                        }
-                    }
                     UINFO(4, "   Add CvtPackString: " << pinp);
                     VNRelinker handle;
                     pinp->unlinkFrBack(&handle);  // No next, that's the next pin
