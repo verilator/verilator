@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import vltest_bootstrap
+import os
+
+test.scenarios('simulator')
+
+test.compile(
+    make_top_shell=False,
+    make_pli=True,
+    verilator_flags2=[
+        "--binary --vpi --public-flat-rw --trace --coverage --no-l2name", test.pli_filename
+    ],
+)
+
+test.execute(use_libvpi=True,
+             check_finished=True,
+             all_run_flags=["+verilator+coverage+file+" + test.obj_dir + "/coverage.dat"])
+
+if test.vlt:
+    if not os.path.exists(test.trace_filename):
+        test.error("VCD file was not created: " + test.trace_filename)
+    elif os.stat(test.trace_filename).st_size == 0:
+        test.error("VCD file is empty: " + test.trace_filename)
+    else:
+        test.file_grep(test.trace_filename, r'\$var')
+        test.file_grep(test.trace_filename, r'keep')
+
+test.passes()
