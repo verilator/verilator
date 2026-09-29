@@ -2376,6 +2376,13 @@ class WidthVisitor final : public VNVisitor {
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
+        // A class handle is not a legal implicit conversion to string
+        if (AstNodeDType* const dt = nodep->lhsp()->dtypep()) {
+            if (VN_IS(dt->skipRefToEnump(), ClassRefDType)) {
+                nodep->lhsp()->v3error(
+                    "Cannot convert 'class{}' handle to a string:" << dt->prettyDTypeNameQ());
+            }
+        }
     }
     void visit(AstCvtPackedToArray* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -7867,7 +7874,7 @@ class WidthVisitor final : public VNVisitor {
                          && !VN_IS(pinp, CvtPackString)
                          && !VN_IS(pinp, SFormatF)  // Already generates a string
                          && !VN_IS(portp->dtypep(), UnpackArrayDType)  // Unpacked array must match
-                         && !(VN_IS(pinp, VarRef)
+                         && !(VN_IS(pinp, VarRef) && VN_AS(pinp, VarRef)->varp()->basicp()
                               && VN_AS(pinp, VarRef)->varp()->basicp()->keyword()
                                      == VBasicDTypeKwd::STRING)) {
                     UINFO(4, "   Add CvtPackString: " << pinp);
