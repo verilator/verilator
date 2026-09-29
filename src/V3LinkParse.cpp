@@ -120,17 +120,22 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf
+    bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf/GenCaseItem
         // IEEE says directly nested item is not a new block
         // The genblk name will get attached to the if true/false LOWER begin block(s)
         //    1: GENIF
         // -> 1:3: GENBLOCK [IMPLIED]  // nodep passed to this function
         //    1:3:1: GENIF
         //    1:3:1:2: GENBLOCK genblk1 [IMPLIED]
+        // Likewise for a generate case item holding only a generate if
+        //    1: GENCASEITEM
+        // -> 1:2: GENBLOCK [IMPLIED]  // nodep passed to this function
+        //    1:2:1: GENIF
         const AstNode* const backp = nodep->backp();
         return (nodep->implied()  // User didn't provide begin/end
-                && VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep
-                && !nodep->nextp()  // No other statements under upper genif else
+                && ((VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep)
+                    || VN_IS(backp, GenCaseItem))
+                && !nodep->nextp()  // No other statements under upper genif else/case item
                 && (VN_IS(nodep->itemsp(), GenIf))  // Begin has if underneath
                 && !nodep->itemsp()->nextp());  // Has only one item
     }

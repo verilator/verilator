@@ -5288,12 +5288,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
             nodep->dotted(m_ds.m_dotText);  // Maybe ""
             // Only flag FTaskRefs under generate-if/case blocks that may be
             // pruned.  GenFor and plain begin-blocks won't be pruned by V3Param.
+            // A generate-case block's parent is the GenCaseItem, not the GenCase.
             // VarXRef uses the broader m_genBlk flag (set for all GenBlocks)
             // because genfor unrolling also removes variables.
             if (m_ds.m_genBlk && m_ds.m_dotSymp) {
                 const AstNode* const blkp = m_ds.m_dotSymp->nodep();
                 if (VN_IS(blkp, GenBlock)
-                    && (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCase))) {
+                    && (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCaseItem))) {
                     nodep->containsGenBlock(true);
                 }
             }
