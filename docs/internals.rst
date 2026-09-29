@@ -897,11 +897,12 @@ removes a situation the test was intended to exercise, adjust the fixture
 to retain that coverage. In particular, the private-state fixture must keep
 two distinct workers' private groups, each coalescing different writer
 sets, and every task accessing a private field must belong to that group's
-worker. The parameter fixture must retain a shared constant table without
-letting it consume an instance field's alignment, and the interface fixture
-must likewise skip a leading interface companion. The shared-writer fixture
-must combine fields with identical writer sets but different readers on the
-same workers. Preserve these checks when updating counts or dumps.
+worker. The parameter fixture must retain a shared constant table as the
+first declaration of a shared read-only group, without letting it consume
+an instance field's alignment. The interface fixture must likewise skip a
+leading interface companion. The shared-writer fixture must combine fields
+with identical writer sets but different readers on the same workers.
+Preserve these checks when updating counts or dumps.
 
 For a justified compiler change, update the expected counts and regenerate
 the affected golden files with ``HARNESS_UPDATE_GOLDEN=1`` in the same PR,
