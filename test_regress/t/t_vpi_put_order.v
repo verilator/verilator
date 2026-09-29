@@ -26,7 +26,7 @@ module t (
     cyc <= cyc + 8'h1;
     if (cyc == 8'd13) begin
       $write("*-* All Finished *-*\n");
-      $finish;
+      #1 $finish;
     end
   end
 
@@ -47,6 +47,7 @@ module t (
     t_vpi_dump_cb("t.s_comb");
     t_vpi_dump_cb("t.cyc");
     t_vpi_dump_cb("t.watched");
+    t_vpi_dump_put("t.in_a", "00");
     t_vpi_dump_values();
   end
   always @(clk) t_vpi_dump_values();
@@ -76,29 +77,30 @@ module t (
   end
 
   // 'dep' is combinationally driven from an impure expression, and sampled by a flop
-  logic [7:0] src;
+  logic [7:0] src = 8'h0;
   logic [7:0] dep;
   logic [7:0] dep_obs;
-  logic [7:0] dep_q;
+  logic [7:0] dep_q = 8'h0;
   always_comb dep = src ^ 8'(8'h5a * `IMPURE_ONE);
   always_comb dep_obs = dep + 8'(8'h01 * `IMPURE_ONE);
 
   // A combinational signal sampled from DPI during eval, after its input moved
-  logic [7:0] cnt;
+  logic [7:0] cnt = 8'h0;
   logic [7:0] tri3;
   assign tri3 = cnt * 8'd3;
-  always @(cnt) t_vpi_dump_value("t.tri3");
+  // cnt does not change at time 0, but this runs then under Verilator (IEEE 1800-2023 9.4.2)
+  always @(cnt) if (cnt != 8'h0) t_vpi_dump_value("t.tri3");
 
   // cbValueChange on a combinational signal whose input a put writes when it changes
-  logic [7:0] cin;
+  logic [7:0] cin = 8'h0;
   logic [7:0] watched;
   assign watched = cin + 8'd7;
   always @(watched) if (watched == 8'h0f) t_vpi_dump_put_rw("t.cin", "40");
 
   // A put reaches a combinational reader only at the next eval
-  logic [7:0] s;
-  logic [7:0] s_q;
-  logic [7:0] mem[2];
+  logic [7:0] s = 8'h0;
+  logic [7:0] s_q = 8'h0;
+  logic [7:0] mem[2] = '{default: 8'h0};
   wire [7:0] s_comb = s ^ 8'h5a;
   wire [7:0] s_copy = s;
   wire [7:0] s_dup = s_comb;
@@ -113,7 +115,7 @@ module t (
   string str = "ab";
   string str_comb;
   assign str_comb = {str, "!"};
-  logic [7:0] f  /*verilator forceable*/;
+  logic [7:0] f  /*verilator forceable*/ = 8'h0;
   wire [7:0] f_comb = f ^ 8'h0f;
 
   // A put into bits no process drives reaches their readers at the next eval
@@ -140,6 +142,7 @@ module t (
     t_vpi_dump_put("t.mid", "5a");
     mid_seen = mid;
   end
+  // Only under Verilator, so cmid and cmid_seen stay X elsewhere
 `ifdef VERILATOR
   initial begin
     cmid = 8'h00;

@@ -71,6 +71,7 @@ t (vpiModule) t  vpiDefName=t
         port_in (vpiReg) t.u_subpass.port_in 
         port_out (vpiReg) t.u_subpass.port_out 
         vpiParameter:
+-- put t.rst = 0 flag=1 ok
 -- @0 readonly
 t.INTF_QTY = 00000003 vpiSize=32
 t.alias1 = 00 vpiSize=7

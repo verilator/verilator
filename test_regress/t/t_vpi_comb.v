@@ -30,13 +30,13 @@ module subpass (
   assign port_out = port_in;
 endmodule
 
-// 'rst' is a top-level input left undriven, read only by cf_portop; the flops
-// reset from 'init' on the first clock edge.
+// 'rst' is a top-level input with no driver in the design, read only by cf_portop and
+// set by a VPI put at time 0; the flops also reset from 'init' on the first clock edge.
 module t #(
     parameter int INTF_QTY = 3
 ) (
     input logic rst,
-    output logic [6:0] observe
+    output logic [6:0] observe = 7'h0
 );
 
   logic clk = 1'b0;
@@ -50,13 +50,17 @@ module t #(
     if (cyc == 8'd12) begin
       t_vpi_dump_values();
       $write("*-* All Finished *-*\n");
-      $finish;
+      #1 $finish;
     end
   end
 
   import "DPI-C" context function void t_vpi_dump_values();
   import "DPI-C" context function void t_vpi_dump_skip(input string name);
   import "DPI-C" context function void t_vpi_dump_cb(input string name);
+  import "DPI-C" context function void t_vpi_dump_put(
+    input string name,
+    input string value
+  );
   import "DPI-C" context function void t_vpi_dump_put_rw(
     input string name,
     input string value,
@@ -69,6 +73,7 @@ module t #(
     t_vpi_dump_skip("t.cf_ovl");
     t_vpi_dump_cb("t.cmb1");
     t_vpi_dump_cb("t.cyc");
+    t_vpi_dump_put("t.rst", "0");
     t_vpi_dump_values();
   end
   always @(negedge clk) t_vpi_dump_values();
@@ -91,10 +96,10 @@ module t #(
   } ps_t;
 
   // Boundary registers
-  logic [6:0] keep;
-  logic signed [6:0] skeep;
-  logic [69:0] wkeep;  // >64 bits
-  logic [6:0] result;
+  logic [6:0] keep = 7'h0;
+  logic signed [6:0] skeep = 7'sh0;
+  logic [69:0] wkeep = 70'h0;  // >64 bits
+  logic [6:0] result = 7'h0;
 
   logic [6:0] cmb1;
   logic [6:0] cmb2;
@@ -144,7 +149,7 @@ module t #(
 
   // Explicit public_flat_rw pragma vs an ordinary combinational net. pinned_rw's driver
   // changes on the negedge, so a put to it is overwritten before the next value dump.
-  logic [6:0] nkeep;
+  logic [6:0] nkeep = 7'h0;
   always @(negedge clk) nkeep <= keep;
   logic [6:0] pinned_rw  /* verilator public_flat_rw */;
   assign pinned_rw = nkeep ^ 7'h5;
@@ -261,13 +266,13 @@ module t #(
   assign cf_portop = rst ? 7'h0 : keep;
 
   // Write-only registers
-  logic [6:0] dead;
-  logic [6:0] wo_plain;
-  logic signed [6:0] wo_signed;
-  logic [69:0] wo_wide;
+  logic [6:0] dead = 7'h0;
+  logic [6:0] wo_plain = 7'h0;
+  logic signed [6:0] wo_signed = 7'sh0;
+  logic [69:0] wo_wide = 70'h0;
 
   // Flop with a single downstream reader (via 'observe')
-  logic [6:0] cmb3_reg;
+  logic [6:0] cmb3_reg = 7'h0;
 
   always_ff @(posedge clk) begin
     if (init) begin

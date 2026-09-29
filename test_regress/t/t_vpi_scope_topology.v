@@ -106,14 +106,14 @@ module t;
   always #5 clk = ~clk;
 
   // Stimulus, one step per clock
-  logic [7:0] base;
-  logic [7:0] in0;
-  logic [7:0] in1;
-  logic [7:0] in2;
-  logic [7:0] in3;
-  logic [7:0][7:0] d;
-  logic [2:0] idx;
-  logic [3:0] nib;
+  logic [7:0] base = 8'h0;
+  logic [7:0] in0 = 8'h0;
+  logic [7:0] in1 = 8'h0;
+  logic [7:0] in2 = 8'h0;
+  logic [7:0] in3 = 8'h0;
+  logic [7:0][7:0] d = 64'h0;
+  logic [2:0] idx = 3'h0;
+  logic [3:0] nib = 4'h0;
 
   logic [7:0] cyc = 8'h0;
   always @(posedge clk) begin
@@ -154,7 +154,7 @@ module t;
       8'd13: begin
         t_vpi_dump_values();
         $write("*-* All Finished *-*\n");
-        $finish;
+        #1 $finish;
       end
       default: ;
     endcase
@@ -227,7 +227,7 @@ module t;
 
   // Free-running comb cycle plus a rotated alias pair and a self-loop, all fed
   // from a free-running counter.
-  logic [6:0] cyc_boundary;
+  logic [6:0] cyc_boundary = 7'h0;
 
   logic [6:0] cyc_d;
   assign cyc_d = cyc_boundary + 7'h1;
@@ -260,7 +260,8 @@ module t;
   always_ff @(posedge clk) cyc_boundary <= cyc_boundary + 7'h1;
 
   // A comb cycle closed through two instances, both inlined, with no external
-  // input: it settles to a fixed point.
+  // input: it settles to a fixed point from a 2-state 0 start, and stays X from a
+  // 4-state X start.
   // verilator lint_off UNOPTFLAT
   logic [6:0] alc_x;
   logic [6:0] alc_y;
@@ -319,7 +320,7 @@ module t;
 
   // u_portsrc's 'o' is a plain output port of a submodule, but internally it is
   // only a temporary feeding 'mix'; two different copy idioms read it.
-  logic [31:0] pt_acc;
+  logic [31:0] pt_acc = 32'h0;
   logic [31:0] pt_o;
   logic [31:0] pt_obs;
   always_ff @(posedge clk) pt_acc <= pt_acc + {24'h0, base};

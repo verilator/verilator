@@ -32,7 +32,7 @@ module t;
   end
 
   localparam logic [7:0] NumCycles = 8'd20;
-  logic [7:0] cyc;
+  logic [7:0] cyc = 8'h0;
 
   always_ff @(posedge clk) begin
     if (rst) cyc <= 8'h0;
@@ -42,7 +42,7 @@ module t;
   always @(posedge clk) begin
     if (!rst && cyc == NumCycles) begin
       $write("*-* All Finished *-*\n");
-      $finish;
+      #1 $finish;
     end
   end
 
@@ -70,6 +70,7 @@ module t;
   always @(cyc) begin
     case (cyc)
       8'd8: t_vpi_dump_put_rw("t.orphan", "2a");
+      // No vpi_put_value format for chandle; Questa rejects
       8'd9: t_vpi_dump_put_rw("t.handle", "2a");
       8'd14: t_vpi_dump_put_rw("t.frc", "55", "force");
       8'd16: t_vpi_dump_put_rw("t.frc", "55", "release");
@@ -111,7 +112,7 @@ module t;
   // An impure bit-select index is not a compile-time constant, so each read
   // must re-evaluate the current index. 'obs_impureidx' is a second, independent
   // read path to the same value: VPI must read both the same.
-  logic [31:0] seedv;
+  logic [31:0] seedv = 32'h0;
   logic [7:0] vec;
   logic [7:0] obs_impureidx;
   always_comb vec[($urandom(seedv)&3)+:4] = data;
@@ -129,7 +130,7 @@ module t;
   end
 
   // 'out' is assembled from two independent bit-slice writes off 'keep'.
-  logic [7:0] keep;
+  logic [7:0] keep = 8'h0;
   logic [7:0] out;
   assign out[3:0] = keep[3:0];
   assign out[7:4] = keep[7:4] ^ 4'hf;
@@ -235,7 +236,8 @@ module t;
   string sc_alias;
   always_ff @(posedge clk) begin
     rc_src <= $itor(a) + 0.5;
-    sc_src <= a[0] ? "odd" : "even";
+    if (a[0]) sc_src <= "odd";
+    else sc_src <= "even";
   end
   always_comb rc_alias = rc_src;
   always_comb sc_alias = sc_src;
@@ -246,7 +248,7 @@ module t;
   always_comb sf_mid = s_var;
 
   // 'wide' has more packed dimensions than 'narrow'; VPI must read both correctly.
-  logic [7:0] ctr;
+  logic [7:0] ctr = 8'h0;
   logic [1:0][1:0][1:0][1:0] wide;
   logic [7:0] narrow;
 
@@ -293,7 +295,7 @@ module t;
   assign r = a & b;
 
   // Forceable signals
-  logic [6:0] keep_frc;
+  logic [6:0] keep_frc = 7'h0;
   logic [6:0] frc  /* verilator forceable */;
   logic [6:0] frc2;
 
@@ -312,7 +314,7 @@ module t;
   end
 
   // An explicit public_flat_rd pin: readable by VPI, never writable.
-  logic [7:0] rdpin  /*verilator public_flat_rd*/;
+  logic [7:0] rdpin  /*verilator public_flat_rd*/ = 8'h0;
   always_ff @(posedge clk) rdpin <= a ^ 8'h6d;
 
 endmodule

@@ -217,14 +217,16 @@ void modDump(TestVpiHandle& it, int n, bool values) {
 
     while (const TestVpiHandle& hndl = vpi_scan(it)) {
         const int type = vpi_get(vpiType, hndl);
-        const char* fullname = vpi_get_str(vpiFullName, hndl);
+        // IEEE 1800-2023 38.11: the next vpi_get_str may overwrite the returned string
+        const char* const fullnameP = vpi_get_str(vpiFullName, hndl);
+        const std::string fullname = fullnameP ? fullnameP : "(null)";
         if (values) {
             if (hasValue(hndl, type)
                 && std::find(skipNames.begin(), skipNames.end(), fullname) == skipNames.end()) {
                 const std::string val = valueStr(hndl, type);
                 std::string& last = lastValues[fullname];
                 if (last != val) {
-                    printf("%s = %s", fullname, val.c_str());
+                    printf("%s = %s", fullname.c_str(), val.c_str());
                     if (!sizesDumped) printf(" vpiSize=%d", vpi_get(vpiSize, hndl));
                     printf("\n");
                     last = val;
@@ -233,7 +235,7 @@ void modDump(TestVpiHandle& it, int n, bool values) {
         } else {
             for (int i = 0; i < n; i++) printf("    ");
             const char* name = vpi_get_str(vpiName, hndl);
-            printf("%s (%s) %s ", name, strFromVpiObjType(type), fullname);
+            printf("%s (%s) %s ", name, strFromVpiObjType(type), fullname.c_str());
             if (type == vpiParameter || type == vpiConstType) {
                 printf(" vpiConstType=%s", strFromVpiConstType(vpi_get(vpiConstType, hndl)));
             }
@@ -242,7 +244,21 @@ void modDump(TestVpiHandle& it, int n, bool values) {
         }
 
         if (iterate_over.find(type) == iterate_over.end()) continue;
-        for (int type : iterate_over.at(type)) {
+        std::vector<int32_t> types = iterate_over.at(type);
+        if ((TestSimulator::is_questa() || TestSimulator::is_mti())
+            && (type == vpiModule || type == vpiInterface || type == vpiGenScope)) {
+            // Questa lists some variable kinds only under vpiVariables (IEEE 1800-2023 37.17)
+            const std::vector<int32_t> vars{vpiReg,        vpiRegArray, vpiMemory,
+                                            vpiIntegerVar, vpiRealVar,  vpiStructVar};
+            types.erase(std::remove_if(types.begin(), types.end(),
+                                       [&](int32_t t) {
+                                           return std::find(vars.begin(), vars.end(), t)
+                                                  != vars.end();
+                                       }),
+                        types.end());
+            types.push_back(vpiVariables);
+        }
+        for (int type : types) {
             if (values && (type == vpiNetBit || type == vpiPortBit)) continue;
             TestVpiHandle subIt = vpi_iterate(type, hndl);
             if (subIt) {
@@ -346,7 +362,8 @@ void doPut(const std::string& name, const std::string& valueArg, int flag) {
         value.value.str
             = const_cast<PLI_BYTE8*>(valueArg.c_str()) + (value.format == vpiStringVal ? 4 : 0);
     }
-    vpi_put_value(hndl, &value, NULL, flag);
+    s_vpi_time zeroDelay{vpiSimTime, 0, 0, 0};
+    vpi_put_value(hndl, &value, flag == vpiInertialDelay ? &zeroDelay : NULL, flag);
     s_vpi_error_info info{};
     const bool ok = hndl && vpi_chk_error(&info) < vpiError;
     printf("-- put %s = %s flag=%d %s\n", name.c_str(), valueArg.c_str(), flag,
@@ -404,6 +421,9 @@ PLI_INT32 next_sim_time(t_cb_data* data) {
 
 void pushRwOp(const RwOp& op) {
     const std::lock_guard<std::mutex> lock{apiMutex};
+    // Event-driven: this step's cbReadWriteSynch may already have run (IEEE 1800-2023 4.4)
+    if (rwOps.empty() && TestSimulator::is_event_driven())
+        registerCb(cbReadWriteSynch, &read_write_synch, NULL, NULL);
     rwOps.push_back(op);
 }
 

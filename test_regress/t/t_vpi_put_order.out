@@ -48,9 +48,9 @@ t (vpiModule) t  vpiDefName=t
     undriven (vpiReg) t.undriven 
     watched (vpiReg) t.watched 
     vpiParameter:
+-- put t.in_a = 00 flag=1 ok
 -- put t.mid = 5a flag=1 ok
 -- put t.cmid = 5b flag=1 ok
--- @0 dpi t.tri3 = 00
 -- @0 readonly
 t.cin = 00 vpiSize=8
 t.clk = 0 vpiSize=1

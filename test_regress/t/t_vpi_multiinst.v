@@ -36,7 +36,7 @@ module child (
   /*verilator no_inline_module*/
   logic [7:0] cy;
   assign cy = din ^ 8'hA5;
-  logic [7:0] cflop;
+  logic [7:0] cflop = 8'h0;
   always_ff @(posedge clk) cflop <= din ^ 8'h5a;
 endmodule
 
@@ -120,7 +120,7 @@ module t;
   // Cycle counter: one VPI-visible tick per clock, driving the stimulus
   // tables below and the harness puts.
   localparam logic [7:0] NumCycles = 8'd16;
-  logic [7:0] cyc;
+  logic [7:0] cyc = 8'h0;
 
   always_ff @(posedge clk) begin
     if (rst) cyc <= 8'h0;
@@ -131,7 +131,7 @@ module t;
     if (!rst && cyc == NumCycles) begin
       t_vpi_dump_values();
       $write("*-* All Finished *-*\n");
-      $finish;
+      #1 $finish;
     end
   end
 
@@ -152,7 +152,7 @@ module t;
   always @(cyc) if (cyc == 8'd7) t_vpi_dump_put_rw("t.p0.uc.cflop", "3c");
 
   // multiinst
-  logic [6:0] ctr;
+  logic [6:0] ctr = 7'h0;
 
   iface_t if_a ();
   iface_t if_b ();
@@ -173,7 +173,7 @@ module t;
       .dout(d1)
   );
 
-  logic [6:0] observe;
+  logic [6:0] observe = 7'h0;
   always_ff @(posedge clk) begin
     if (rst) begin
       ctr <= 7'h0;
@@ -186,7 +186,7 @@ module t;
   end
 
   // multiinst2
-  logic [6:0] ctr2;
+  logic [6:0] ctr2 = 7'h0;
 
   iface2_t if0 ();
   iface2_t if1 ();
@@ -196,7 +196,7 @@ module t;
   assign if0.b = ~if0.a;
   assign if1.b = if1.a ^ 7'h55;
 
-  logic [6:0] observe2;
+  logic [6:0] observe2 = 7'h0;
   always_ff @(posedge clk) begin
     if (rst) begin
       ctr2 <= 7'h0;
@@ -237,17 +237,17 @@ module t;
       .din(din1)
   );
 
-  logic [7:0] acc_xscope;
+  logic [7:0] acc_xscope = 8'h0;
   always_ff @(posedge clk) acc_xscope <= acc_xscope + p0.py + p1.py;
   logic [7:0] obs_xscope;
   assign obs_xscope = acc_xscope;
 
   // canon: a same-scope flop copied into instances across the boundary,
   // plus real/string variants that carry no equivalent memcpy-friendly shape.
-  logic [31:0] acc;
+  logic [31:0] acc = 32'h0;
   logic [31:0] accn;
   logic [31:0] canon;
-  logic [31:0] canonr;
+  logic [31:0] canonr = 32'h0;
   logic [31:0] qa, qb, qc, qd, qe, qf, qg, qh;
 
   function automatic logic [31:0] in2_of(input logic [7:0] cycle);
@@ -277,7 +277,8 @@ module t;
   string scanonr;
   always_ff @(posedge clk) begin
     rcanonr <= $itor(accn) + 0.25;
-    scanonr <= accn[0] ? "odd" : "even";
+    if (accn[0]) scanonr <= "odd";
+    else scanonr <= "even";
   end
 
   xsub u_a (
@@ -318,8 +319,8 @@ module t;
 
   // Boundary comb copy: bc0.bc/bc1.bc are driven only by the cross-scope
   // assigns below; bd reads bc back from within bcell's own scope.
-  logic [7:0] bflop0;
-  logic [7:0] bflop1;
+  logic [7:0] bflop0 = 8'h0;
+  logic [7:0] bflop1 = 8'h0;
   always_ff @(posedge clk) begin
     bflop0 <= din0 ^ 8'ha5;
     bflop1 <= din1 ^ 8'ha5;
