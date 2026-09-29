@@ -16,8 +16,8 @@ test.compile(make_top_shell=False,
              make_main=False,
              make_pli=True,
              verilator_flags2=[
-                 "--exe --vpi --timing --public-flat-rw --no-l2name",
-                 test.pli_filename, "t/TestVpiMain.cpp"
+                 "--exe --vpi --timing --public-flat-rw --no-l2name", test.pli_filename,
+                 "t/TestVpiMain.cpp"
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
