@@ -38,13 +38,16 @@ if test.vltmt:
 
 test.compile(verilator_flags2=flags, threads=(2 if test.vltmt else 1))
 
-headers = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*.h")
-aligned_var_re = r'alignas\(VL_CACHE_LINE_BYTES\) (?:CData|SData|IData|QData|VlWide|VL_)'
+# Resolve the current root type; protected builds can leave older renamed headers behind.
+root_type = test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.h',
+                           r'\b(\w+)\* const rootp;')[0]
+root_header = test.obj_dir + '/' + root_type + '.h'
+aligned_var_re = r'^\s+alignas\(VL_CACHE_LINE_BYTES\) '
 
 if test.vltmt:
     # Review intentional scheduling changes before updating counts or goldens.
     test.oprint('Layout expectation changes: see docs/internals.rst, Variable Layout.')
-    test.file_grep_any(headers, aligned_var_re)
+    test.file_grep_count(root_header, aligned_var_re, 8)
     # The dump records different accessing tasks but the same workers/writer
     # for r0 and r8, and their placement in the same final group.
     dump = test.glob_one(test.obj_dir + '/*_variableorder.txt')
@@ -56,13 +59,13 @@ if test.vltmt:
     test.file_grep(test.stats, r'VariableOrder, single-worker variables\s+(\d+)', 11)
     test.file_grep(test.stats, r'VariableOrder, shared read-only variables\s+(\d+)', 2)
     test.file_grep(test.stats, r'VariableOrder, shared written variables\s+(\d+)', 14)
+    test.file_grep(test.stats, r'VariableOrder, exact task/writer groups\s+(\d+)', 15)
     test.file_grep(test.stats, r'VariableOrder, groups eliminated by worker affinity\s+(\d+)', 2)
     test.file_grep(test.stats,
                    r'VariableOrder, groups eliminated for single-worker variables\s+(\d+)', 5)
     test.file_grep(test.stats, r'VariableOrder, additional groups for shared writers\s+(\d+)', 6)
 else:
-    for header in headers:
-        test.file_grep_not(header, aligned_var_re)
+    test.file_grep_not(root_header, aligned_var_re)
     test.file_grep_not(test.stats, r'VariableOrder, MTask affinity groups')
     test.file_grep_not(test.stats, r'VariableOrder, MTask aligned group starts')
 

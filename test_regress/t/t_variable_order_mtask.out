@@ -1,3 +1,16 @@
+Task 0 worker=0
+Task 1 worker=1
+Task 2 worker=0
+Task 3 worker=1
+Task 4 worker=0
+Task 5 worker=1
+Task 6 worker=1
+Task 7 worker=0
+Task 8 worker=1
+Task 9 worker=1
+Task 10 worker=0
+Task 11 worker=0
+Task 12 worker=0
 Module __024root
   Group 0 workers={0} writers={}
     t__DOT__r0 tasks={10,11,12} writers={10} aligned=1

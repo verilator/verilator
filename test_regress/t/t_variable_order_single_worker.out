@@ -1,3 +1,8 @@
+Task 0 worker=0
+Task 1 worker=1
+Task 2 worker=0
+Task 3 worker=1
+Task 4 worker=0
 Module __024root
   Group 0 workers={0} writers={}
     o tasks={4} writers={4} aligned=1

@@ -1184,16 +1184,17 @@ void implement(AstNetlist* netlistp) {
         std::unordered_map<const ExecMTask*, uint32_t> affinities;
         for (const ThreadSchedule& schedule : packed) {
             for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
-                if (thread.empty()) continue;
                 for (const ExecMTask* const mtaskp : thread) {
                     const auto result = affinities.emplace(mtaskp, thread.front()->id());
-                    UASSERT(result.second, "MTask assigned to multiple workers");
+                    UASSERT_OBJ(result.second, execGraphp, "MTask assigned to multiple workers");
                 }
             }
         }
         for (V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
             ExecMTask* const mtaskp = vtx.as<ExecMTask>();
-            mtaskp->affinityId(affinities.at(mtaskp));
+            const auto it = affinities.find(mtaskp);
+            UASSERT_OBJ(it != affinities.end(), execGraphp, "MTask not assigned to a worker");
+            mtaskp->affinityId(it->second);
         }
         V3Stats::addStatSum("Optimizations, Thread schedule count",
                             static_cast<double>(packed.size()));

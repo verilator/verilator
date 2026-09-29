@@ -65,18 +65,18 @@ module top;
   );
 
   // Exercise positional connections as well as named ones. Generated ports
-  // precede source ports, which retain their declaration order.
+  // follow source ports, which retain their declaration order.
   sub sub_pos (
-      a_en_pos,
-      a_out_pos,
-      z_en_pos,
-      z_out_pos,
       clkvec,
       cnt_pos,
       7'h35,
       7'h27,
       7'h14,
-      seen_pos
+      seen_pos,
+      a_en_pos,
+      a_out_pos,
+      z_en_pos,
+      z_out_pos
   );
 
   always @(clkvec) begin

@@ -830,17 +830,20 @@ Variable Layout
 ``V3VariableOrder`` groups fields by their accessing workers. Fields shared
 between workers are further separated by their exact writing-task sets to
 limit false sharing. Fields accessed by just one worker can share a group
-regardless of their writers. The first non-static field of each affinity
+regardless of their writers. The first instance field of each affinity
 group requests cache-line alignment; fields without known task accesses
-follow the affinity groups.
+follow the affinity groups. Static variables and parameters do not occupy
+instance storage and cannot receive this alignment.
 
-With :vlopt:`--stats`, four disjoint variable counts cover all declarations
-processed in module scope: ``no-affinity variables`` (no scheduled-task
-accesses), ``single-worker variables``, ``shared read-only variables`` (at
-least two accessing workers and no writing tasks), and ``shared written
-variables`` (at least two accessing workers and at least one writing task).
-These describe scheduled-task accesses, not initialization or external
-accesses. They do not count references or allocated bytes.
+For multithreaded models, :vlopt:`--stats` provides four disjoint variable
+counts covering all declarations processed in module scope: ``no-affinity
+variables`` (no scheduled-task accesses), ``single-worker variables``,
+``shared read-only variables`` (at least two accessing workers and no
+writing tasks), and ``shared written variables`` (at least two accessing
+workers and at least one writing task). These describe scheduled-task
+accesses, not initialization or external accesses. They include static
+variables, parameter tables, and constant-pool entries; they do not count
+references, instance fields, or allocated bytes.
 
 Three further ``VariableOrder`` counters describe the final grouping:
 
@@ -853,50 +856,66 @@ Three further ``VariableOrder`` counters describe the final grouping:
   beyond one per accessing-worker set, preserving different exact
   writing-task sets.
 
-These count changes in group count, not variables. Combining four groups
-into one eliminates three groups, even if every input group contains many
-variables. Reductions are attributed once, in the order above; the counters
-are not percentages. ``MTask affinity groups`` counts final known-affinity
-groups, while ``MTask aligned group starts`` counts those requesting
-alignment. All counts are summed across modules; groups in different
-modules do not merge.
+The baseline ``exact task/writer groups`` counts distinct pairs of exact
+accessing-task and writing-task sets for declarations with task accesses.
+Subtracting both ``groups eliminated`` counters from this baseline gives
+``MTask affinity groups``. The two reductions are attributed once, in the
+order above. They measure coalescing from this baseline, not improvement
+over a previous compiler: the older layout grouped by accessing tasks alone
+and could have fewer groups than this baseline.
 
-:vlopt:`--dumpi-V3VariableOrder 1 <--dumpi-<srcfile>>` writes an internal
+These count groups, not variables or percentages. Combining four groups
+into one eliminates three groups, even if each input group contains many
+variables. ``MTask affinity groups`` counts final known-affinity groups,
+while ``MTask aligned group starts`` counts those requesting alignment. All
+counts are summed across modules; groups in different modules do not merge.
+
+:vlopt:`--dumpi-V3VariableOrder 1 <--dumpi-\<srcfile\>>` writes an internal
 ``*_variableorder.txt`` dump for threaded models, for internal use only. It
-lists modules, final groups and fields in layout order, worker
-representatives, original accessing/writing tasks, and alignment requests.
-Worker representatives are task IDs within each scheduled graph, not
-physical CPU IDs. The dump contains neither C++ byte offsets nor measured
-cache misses. Regression golden files check group membership and order;
-small generated-header checks additionally check emission of alignment.
+lists task-to-worker assignments, modules, final groups and fields in
+layout order, worker representatives, original accessing/writing tasks, and
+alignment requests. Worker representatives are task IDs within each
+scheduled graph, not physical CPU IDs. The dump contains neither C++ byte
+offsets nor measured cache misses. Regression golden files check group
+membership and order; generated-header checks additionally count emitted
+field alignments.
 
-The exact counts and dumps checked by ``t_variable_order_mtask`` and
-``t_variable_order_single_worker`` are regression baselines for those
-fixtures. Task partitioning, scheduling, or other optimizations can
-legitimately change them. A changed count alone does not establish a
-performance regression; fewer merges may reflect fewer initial groups.
+The exact counts and dumps checked by the ``t_variable_order_*`` tests are
+regression baselines for those fixtures. Task partitioning, scheduling, or
+other optimizations can legitimately change them. A changed count alone
+does not establish a performance regression; fewer merges may reflect fewer
+initial groups.
 
-When either test fails, compare the before/after ``*_variableorder.txt``
+When a layout test fails, compare the before/after ``*_variableorder.txt``
 dumps and explain the changed grouping. Check that the fixtures still
 exercise worker-affinity coalescing, single-worker coalescing, and shared
 writer separation, and that the alignment checks pass. If an optimization
 removes a situation the test was intended to exercise, adjust the fixture
-to retain that coverage.
+to retain that coverage. In particular, the private-state fixture must keep
+two distinct workers' private groups, each coalescing different writer
+sets, and every task accessing a private field must belong to that group's
+worker. The parameter fixture must retain a shared constant table without
+letting it consume an instance field's alignment. Preserve these checks
+when updating counts or dumps.
 
 For a justified compiler change, update the expected counts and regenerate
 the affected golden files with ``HARNESS_UPDATE_GOLDEN=1`` in the same PR,
-explaining why the expectations changed. Rerun both tests in serial and
-multithreaded modes. Investigate unexplained differences before accepting
-new expectations; measure affected workloads when the performance impact is
-uncertain. These checks require review of layout changes, rather than
+explaining why the expectations changed. Rerun the layout tests in serial
+and multithreaded modes. Investigate unexplained differences before
+accepting new expectations; measure affected workloads when the performance
+impact is uncertain, using the RTLmeter performance CI results where
+available. These checks require review of layout changes, rather than
 preserving particular task IDs or counts indefinitely.
 
 Library wrapper ports and DPI arguments are ordered independently of this
 internal field layout so a scheduling change does not reorder a
 hierarchical interface. ``V3ProtectLib`` currently orders source ports by
-declaration order, with generated enable/output ports sorted by name before
-them. This is an internal implementation choice, not a public ordering
-guarantee.
+declaration order, with generated enable/output ports sorted by name after
+them. Keeping source ports first preserves positional connections to the
+original interface. The C++ model's field order remains an implementation
+detail and can change with the schedule or PGO costs, as can the layout
+checksum used by :vlopt:`--savable`; saved state is not portable between
+incompatible generated layouts.
 
 
 Partitioning

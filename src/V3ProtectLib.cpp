@@ -91,7 +91,8 @@ class ProtectVisitor final : public VNVisitor {
         // Field layout depends on the thread schedule, including PGO costs.
         // Keep the exported interface independent of layout so PGO does not change parent
         // task hashes. Sort by source pin number, then name. Generated ports without a
-        // source pin number have pinNum() == 0 and precede the source-declared ports.
+        // source pin number have pinNum() == 0 and follow the source-declared ports, so
+        // positional instances retain the source interface's pin numbers.
         std::vector<AstVar*> portps;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
@@ -99,6 +100,7 @@ class ProtectVisitor final : public VNVisitor {
             }
         }
         std::sort(portps.begin(), portps.end(), [](const AstVar* ap, const AstVar* bp) {
+            if ((ap->pinNum() == 0) != (bp->pinNum() == 0)) return bp->pinNum() == 0;
             if (ap->pinNum() != bp->pinNum()) return ap->pinNum() < bp->pinNum();
             return ap->name() < bp->name();
         });

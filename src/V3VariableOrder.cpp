@@ -48,6 +48,7 @@ class VariableOrderStats final {
     uint64_t m_statSingleWorker = 0;  // Variables accessed by exactly one worker
     uint64_t m_statSharedReadOnly = 0;  // Variables shared by workers with no task writes
     uint64_t m_statSharedWritten = 0;  // Variables shared by workers with task writes
+    uint64_t m_statTaskWriterGroups = 0;  // Distinct exact accessing/writing-task pairs
     // Groups eliminated by mapping accessing tasks to workers, with writers fixed
     uint64_t m_statWorkerEliminated = 0;
     // Further groups eliminated by dropping writer distinctions for single-worker state
@@ -75,6 +76,9 @@ public:
         }
     }
     MTaskAffinityMap& taskSets() { return m_taskSets; }
+    void dumpTask(uint32_t task, uint32_t worker) const {
+        if (m_dumpp) *m_dumpp << "Task " << task << " worker=" << worker << '\n';
+    }
     void startModule(const AstNodeModule* modp) {
         m_sharedWorkers.clear();
         m_group = 0;
@@ -87,7 +91,8 @@ public:
         const size_t nWorkers = std::count(workers.begin(), workers.end(), true);
         // Within each actual final group, hold writers fixed while counting collapsed
         // accessing-task sets. Then count any further collapse of distinct writer sets.
-        // This measures realized reductions, not opportunities in a hypothetical layout.
+        // The baseline is distinct (accessing tasks, writing tasks) pairs, not the old
+        // layout, which grouped by accessing tasks alone.
         std::map<MTaskIdVec, std::set<MTaskIdVec>> writersToAccesses;
         if (m_dumpp) {
             *m_dumpp << "  Group " << m_group++ << " workers=";
@@ -123,6 +128,7 @@ public:
             }
         }
         for (const auto& pair : writersToAccesses) {
+            m_statTaskWriterGroups += pair.second.size();
             m_statWorkerEliminated += pair.second.size() - 1;
         }
         if (nWorkers == 1) m_statSingleWorkerEliminated += writersToAccesses.size() - 1;
@@ -135,6 +141,7 @@ public:
         V3Stats::addStat("VariableOrder, single-worker variables", m_statSingleWorker);
         V3Stats::addStat("VariableOrder, shared read-only variables", m_statSharedReadOnly);
         V3Stats::addStat("VariableOrder, shared written variables", m_statSharedWritten);
+        V3Stats::addStat("VariableOrder, exact task/writer groups", m_statTaskWriterGroups);
         V3Stats::addStat("VariableOrder, groups eliminated by worker affinity",
                          m_statWorkerEliminated);
         V3Stats::addStat("VariableOrder, groups eliminated for single-worker variables",
@@ -165,6 +172,7 @@ class GatherMTaskAffinity final : VNVisitorConst {
         , m_statsp{statsp}
         , m_id{mTaskp->affinityId()}
         , m_writeId{mTaskp->id()} {
+        if (m_statsp) m_statsp->dumpTask(m_writeId, m_id);
         iterateConst(mTaskp->funcp());
     }
     ~GatherMTaskAffinity() = default;
@@ -275,7 +283,9 @@ class VariableOrder final {
                   simpleSortVars(subVarps);
                   bool aligned = !alignFirst;
                   for (AstVar* const varp : subVarps) {
-                      if (!aligned && !varp->isStatic()) {
+                      // Parameters are emitted separately as static constants, even when
+                      // AstVar::isStatic() is false; they cannot align an instance field.
+                      if (!aligned && !varp->isStatic() && !varp->isParam()) {
                           varp->mtaskCacheLineAlign(true);
                           V3Stats::addStatSum("VariableOrder, MTask aligned group starts", 1);
                           aligned = true;

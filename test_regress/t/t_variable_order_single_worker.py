@@ -9,6 +9,8 @@
 
 import vltest_bootstrap
 
+import re
+
 test.scenarios('vlt_all')
 test.top_filename = test.obj_dir + '/t_variable_order_single_worker.v'
 
@@ -46,10 +48,33 @@ if test.vltmt:
     test.file_grep(test.stats, r'VariableOrder, single-worker variables\s+(\d+)', 17)
     test.file_grep(test.stats, r'VariableOrder, shared read-only variables\s+(\d+)', 2)
     test.file_grep(test.stats, r'VariableOrder, shared written variables\s+(\d+)', 16)
+    test.file_grep(test.stats, r'VariableOrder, exact task/writer groups\s+(\d+)', 7)
     test.file_grep(test.stats, r'VariableOrder, groups eliminated by worker affinity\s+(\d+)', 1)
     test.file_grep(test.stats,
                    r'VariableOrder, groups eliminated for single-worker variables\s+(\d+)', 2)
     test.file_grep(test.stats, r'VariableOrder, additional groups for shared writers\s+(\d+)', 2)
+
+    root_type = test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.h',
+                               r'\b(\w+)\* const rootp;')[0]
+    test.file_grep_count(test.obj_dir + '/' + root_type + '.h',
+                         r'^\s+alignas\(VL_CACHE_LINE_BYTES\) ', 4)
+
+    # Statistics must also work without enabling the layout dump.
+    stats_pattern = r'^\s+(VariableOrder,.*?)\s+(\d+)\s*$'
+    expected_stats = re.findall(stats_pattern, test.file_contents(test.stats), re.MULTILINE)
+    stats_dir = test.obj_dir + '/stats_only'
+    test.compile(verilator_flags2=flags +
+                 ['--dumpi-V3VariableOrder 0', '--no-skip-identical', '--Mdir', stats_dir],
+                 threads=2,
+                 make_main=False,
+                 make_top_shell=False,
+                 verilator_make_gmake=False)
+    stats_file = stats_dir + '/' + test.vm_prefix + '__stats.txt'
+    actual_stats = re.findall(stats_pattern, test.file_contents(stats_file), re.MULTILINE)
+    if actual_stats != expected_stats:
+        test.error('Statistics differ without the layout dump')
+    if any(name.endswith('_variableorder.txt') for name in os.listdir(stats_dir)):
+        test.error('Statistics-only compilation unexpectedly produced a layout dump')
 
     # Dumping without --stats must still gather affinities and produce the same layout.
     dump_dir = test.obj_dir + '/dump_only'
