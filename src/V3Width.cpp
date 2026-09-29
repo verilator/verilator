@@ -7868,8 +7868,20 @@ class WidthVisitor final : public VNVisitor {
                          && !VN_IS(pinp, SFormatF)  // Already generates a string
                          && !VN_IS(portp->dtypep(), UnpackArrayDType)  // Unpacked array must match
                          && !(VN_IS(pinp, VarRef)
+                              && VN_AS(pinp, VarRef)->varp()->basicp()
                               && VN_AS(pinp, VarRef)->varp()->basicp()->keyword()
                                      == VBasicDTypeKwd::STRING)) {
+                    // A class handle is not a legal implicit conversion to string
+                    if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
+                        if (AstNodeDType* const varDtp = varrefp->varp()->dtypep()) {
+                            if (VN_IS(varDtp->skipRefToEnump(), ClassRefDType)) {
+                                pinp->v3error(nodep->taskp()->prettyTypeName()
+                                              << " input argument " << portp->prettyNameQ()
+                                              << " requires a string but connection is "
+                                              << varDtp->prettyDTypeNameQ() << ".");
+                            }
+                        }
+                    }
                     UINFO(4, "   Add CvtPackString: " << pinp);
                     VNRelinker handle;
                     pinp->unlinkFrBack(&handle);  // No next, that's the next pin
