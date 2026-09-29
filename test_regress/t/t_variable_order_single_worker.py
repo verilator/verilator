@@ -48,6 +48,38 @@ if test.vltmt:
     test.file_grep(test.stats,
                    r'VariableOrder, groups eliminated for single-worker variables\s+(\d+)', 2)
     test.file_grep(test.stats, r'VariableOrder, additional groups for shared writers\s+(\d+)', 2)
+
+    # Dumping without --stats must still gather affinities and produce the same layout.
+    dump_dir = test.obj_dir + '/dump_only'
+    dump_flags = flags + ['--no-stats', '--no-skip-identical', '--Mdir', dump_dir]
+    test.compile(verilator_flags2=dump_flags,
+                 threads=2,
+                 make_main=False,
+                 make_top_shell=False,
+                 verilator_make_gmake=False)
+    dump = test.glob_one(dump_dir + '/*_variableorder.txt')
+    test.files_identical(dump, 't/t_variable_order_single_worker.out')
+    if os.path.exists(dump_dir + '/' + test.vm_prefix + '__stats.txt'):
+        test.error('Dump-only compilation unexpectedly produced statistics')
+
+    # A directory at the discovered dump path makes opening it fail, even as root.
+    # Discover the filename instead of relying on its internal stage number.
+    test.unlink_ok(dump)
+    test.mkdir_ok(dump)
+    try:
+        test.compile(verilator_flags2=dump_flags,
+                     threads=2,
+                     make_main=False,
+                     make_top_shell=False,
+                     verilator_make_gmake=False,
+                     fails=True)
+        test.file_sed(test.obj_dir + '/vlt_compile.log', test.obj_dir + '/dump_bad.log',
+                      lambda text: text.replace(dump, '<layout dump>'))
+        test.files_identical(test.obj_dir + '/dump_bad.log',
+                             't/t_variable_order_single_worker__dump_bad.out',
+                             is_logfile=True)
+    finally:
+        os.rmdir(dump)
 else:
     test.file_grep_not(test.stats, r'VariableOrder, MTask affinity groups')
     test.file_grep_not(test.stats, r'VariableOrder, MTask aligned group starts')
