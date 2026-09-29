@@ -394,12 +394,14 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
                                    << " paramTypep=" << paramTypep << " paramTypeOwnerModName='"
                                    << ptOwnerName << "'");
     UINFO(9, "addParamType: paramTypep subDTypep chain:");
-    paramTypep->foreach([&](AstRefDType* innerRefp) {
-        UINFO(9, "  inner RefDType: "
-                     << innerRefp << " refDTypep=" << innerRefp->refDTypep()
-                     << (innerRefp->refDTypep() ? " refDTypep->name=" : "")
-                     << (innerRefp->refDTypep() ? innerRefp->refDTypep()->prettyTypeName() : ""));
-    });
+    if (debug())
+        paramTypep->foreach([&](AstRefDType* innerRefp) {
+            UINFO(9,
+                  "  inner RefDType: "
+                      << innerRefp << " refDTypep=" << innerRefp->refDTypep()
+                      << (innerRefp->refDTypep() ? " refDTypep->name=" : "")
+                      << (innerRefp->refDTypep() ? innerRefp->refDTypep()->prettyTypeName() : ""));
+        });
     tag(refp, ownerModp, VIfaceCaptureTag::Kind::PARAM_TYPE, cellPath, ptOwnerName);
 }
 
