@@ -24,7 +24,10 @@ module t;
 
   // cg: basic bin count tracking
   covergroup cg;
-    coverpoint data {bins zero = {0}; bins low = {[1 : 3]};}
+    coverpoint data {
+      bins zero = {0};
+      bins low = {[1 : 3]};
+    }
   endgroup
 
   // cg_mixed: mixed bin types - single values, multi-value lists, ranges
@@ -40,7 +43,10 @@ module t;
 
   // cg_db: labeled coverpoint - verifies the coverage database records the correct hierarchy path
   covergroup cg_db;
-    cp: coverpoint data {bins low = {[0 : 3]}; bins high = {[8 : 15]};}
+    cp: coverpoint data {
+      bins low = {[0 : 3]};
+      bins high = {[8 : 15]};
+    }
   endgroup
 
   // cg_unbounded: open-ended bin range - '$' resolves to the coverpoint domain max (15 for 4-bit)
@@ -77,7 +83,8 @@ module t;
   // cg_sel: coverpoint over a struct-member part-select expression (AstSel)
   covergroup cg_sel;
     cp: coverpoint f1.value[3:0] {  // low nibble only; upper bits ignored
-      bins lo = {[0 : 7]}; bins hi = {[8 : 15]};
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
     }
   endgroup
 

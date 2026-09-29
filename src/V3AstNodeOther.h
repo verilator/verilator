@@ -358,6 +358,8 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string name() const override VL_MT_STABLE { return m_name; }
     virtual bool timescaleMatters() const = 0;
+    inline bool isDollarUnit() const;  // Is the $unit package
+    inline bool isConstPool() const;  // Is the constant pool package
     // ACCESSORS
     void name(const string& name) override { m_name = name; }
     string origName() const override { return m_origName; }
@@ -993,40 +995,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
-class AstConstPool final : public AstNode {
-    // Container for const static data
-    // @astgen op1 := modulep : AstModule // m_modp below TODO: fix this mess
-    //
-    // @astgen ptr := m_modp : AstModule  // The Module holding the Scope below ...
-    // @astgen ptr := m_scopep : AstScope  // Scope holding the constant variables
-    std::unordered_multimap<uint32_t, AstVarScope*> m_tables;  // Constant tables (unpacked arrays)
-    std::unordered_multimap<uint32_t, AstVarScope*> m_consts;  // Constant tables (scalars)
-
-    AstVarScope* createNewEntry(const string& name, AstNodeExpr* initp);
-
-public:
-    explicit AstConstPool(FileLine* fl);
-    ASTGEN_MEMBERS_AstConstPool;
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
-    AstModule* modp() const { return m_modp; }
-    AstScope* scopep() const { return m_scopep; }
-
-    // Find a table (unpacked array) within the constant pool which is initialized with the
-    // given value, or create one if one does not already exists. The returned VarScope *might*
-    // have a different dtype than the given initp->dtypep(), including a different element type,
-    // but it will always have the same size and element width. In contexts where this matters,
-    // the caller must handle the dtype difference as appropriate.
-    AstVarScope* findTable(AstInitArray* initp);
-    // Find a constant within the constant pool which is initialized with the given value, or
-    // create one if one does not already exists. If 'mergeDType' is true, then the returned
-    // VarScope *might* have a different type than the given initp->dtypep(). In contexts where
-    // this matters, the caller must handle the dtype difference as appropriate. If 'mergeDType' is
-    // false, the returned VarScope will have _->dtypep()->sameTree(initp->dtypep()) return true.
-    AstVarScope* findConst(AstConst* initp, bool mergeDType);
-    // Rebuild hashes and missing variable scopes after potential removals
-    void rebuildVarScopesAndCache();
-};
 class AstConstraint final : public AstNode {
     // Constraint
     // @astgen op1 := itemsp : List[AstNode]
@@ -1074,7 +1042,8 @@ class AstCoverBin final : public AstNode {
     // @astgen op4 := transp : List[AstCoverTransSet]
     const string m_name;  // Base name of the bin
     const VCoverBinsType m_binsType;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
-    bool m_isArray = false;  // Bin is either an auto-sized array of values or transitions
+    bool m_isArray = false;  // Bin is an array: of a bin per value or transition, or of
+                             // arraySizep() bins
     bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
 
 public:
@@ -1091,10 +1060,11 @@ public:
         this->iffp(iffp);
     }
     // Constructor for automatic bins
-    AstCoverBin(FileLine* fl, const string& name, AstNodeExpr* arraySizep)
+    AstCoverBin(FileLine* fl, const string& name, AstNodeExpr* arraySizep,
+                VCoverBinsType type = VCoverBinsType::BINS_AUTO)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_binsType{VCoverBinsType::BINS_AUTO}
+        , m_binsType{type}
         , m_isArray{true} {
         this->arraySizep(arraySizep);
     }
@@ -1233,6 +1203,28 @@ public:
         return m_optType.m_e == asamep->m_optType.m_e && m_typeOption == asamep->m_typeOption;
     }  // LCOV_EXCL_STOP
 };
+class AstCoverToggle final : public AstNode {
+    // Toggle analysis of given signal
+    // Parents:  MODULE
+    // @astgen op1 := incp : AstCoverInc
+    // @astgen op2 := origp : AstNodeExpr
+    // @astgen op3 := changep : AstNodeExpr
+public:
+    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNodeExpr* origp, AstNodeExpr* changep)
+        : ASTGEN_SUPER_CoverToggle(fl) {
+        this->incp(incp);
+        this->origp(origp);
+        this->changep(changep);
+    }
+    ASTGEN_MEMBERS_AstCoverToggle;
+    int instrCount() const override { return 3 + INSTR_COUNT_BRANCH + INSTR_COUNT_LD; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return true; }
+    bool isOutputter() override {
+        return false;  // Though the AstCoverInc under this is an outputter
+    }
+};
 class AstCoverTransItem final : public AstNode {
     // Represents a single transition item: value or value[*N] or value[->N] or value[=N]
     // @astgen op1 := valuesp : List[AstNode]
@@ -1261,6 +1253,20 @@ public:
     ASTGEN_MEMBERS_AstCoverTransSet;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+};
+class AstCoverWith final : public AstNode {
+    // The values of a coverpoint bin for which a 'with' filter is true (IEEE 1800-2023
+    // 19.5.1.1), the only range list element of its AstCoverBin
+    // @astgen op1 := subp : List[AstNode]  // Range list, or AstCoverpointRef for all values
+    // @astgen op2 := filterp : AstNodeExpr
+    // @astgen op3 := itemp : Optional[AstVar]  // Candidate value 'item', from V3LinkParse
+public:
+    AstCoverWith(FileLine* fl, AstNode* subp, AstNodeExpr* filterp)
+        : ASTGEN_SUPER_CoverWith(fl) {
+        addSubp(subp);
+        this->filterp(filterp);
+    }
+    ASTGEN_MEMBERS_AstCoverWith;
 };
 class AstCovergroup final : public AstNode {
     // Represents a covergroup declaration. V3LinkParse transforms this
@@ -1569,7 +1575,7 @@ class AstNetlist final : public AstNode {
     // @astgen op3 := miscsp : List[AstNode]
     //
     // @astgen ptr := m_typeTablep : AstTypeTable  // Reference to type table, for faster lookup
-    // @astgen ptr := m_constPoolp : AstConstPool  // Reference to constant pool, for faster lookup
+    // @astgen ptr := m_constPoolPkgp : AstPackage  // Constant pool package
     // @astgen ptr := m_dollarUnitPkgp : Optional[AstPackage]  // $unit
     // @astgen ptr := m_stdPackagep : Optional[AstPackage]  // SystemVerilog std package
     // @astgen ptr := m_stdPackageProcessp : Optional[AstClass]  // SystemVerilog std process class
@@ -1613,7 +1619,6 @@ public:
         return modulesp();  // First one in the list, for now
     }
     AstTypeTable* typeTablep() { return m_typeTablep; }
-    AstConstPool* constPoolp() { return m_constPoolp; }
     string astConstOrigParamName(const AstConst* nodep) const;
     void astConstOrigParamName(const AstConst* nodep, const string& name);
     void astConstOrigParamNameErase(const AstConst* nodep);
@@ -1621,6 +1626,7 @@ public:
     const AstNodeModule* containingModule(const AstNode* nodep);
     // Forget remembered modules, as the tree has moved.
     void clearContainingModules() { m_containingModules.clear(); }
+    AstPackage* constPoolPkgp() const { return m_constPoolPkgp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     void dollarUnitPkgp(AstPackage* const packagep) { m_dollarUnitPkgp = packagep; }
     AstCFunc* evalFuncp(VEval eval) const { return m_evalFuncps[eval]; }
@@ -3229,9 +3235,7 @@ public:
         : ASTGEN_SUPER_Package(fl, name, libname) {}
     ASTGEN_MEMBERS_AstPackage;
     string verilogKwd() const override { return "package"; }
-    bool timescaleMatters() const override { return !isDollarUnit(); }
-    static string dollarUnitName() { return AstNode::encodeName("$unit"); }
-    bool isDollarUnit() const { return name() == dollarUnitName(); }
+    bool timescaleMatters() const override { return !isDollarUnit() && !isConstPool(); }
 };
 class AstPrimitive final : public AstNodeModule {
     // A primitive declaration

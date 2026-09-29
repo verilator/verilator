@@ -4,7 +4,11 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module t(input wire clk, input wire reset, input wire request);
+module t (
+    input wire clk,
+    input wire reset,
+    input wire request
+);
   // Writes in never-called task/function definitions are not executed
   // processes, so they must not count as the "other write" of MULTIDRIVEN,
   // no matter how many of them there are.

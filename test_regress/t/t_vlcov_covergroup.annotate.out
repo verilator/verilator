@@ -444,13 +444,13 @@
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.read
 -000001  point: type=covergroup comment= hier=cg_unnamed_cross.cp_c.write
 %000001     cross cp_a, cp_c;  // no label: reported under the default cross name
--000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a0_x_read
+-000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross9.a0_x_read
         //  cross: [a0, read]
--000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a0_x_write
+-000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross9.a0_x_write
         //  cross: [a0, write]
--000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a1_x_read
+-000000  point: type=covergroup comment= hier=cg_unnamed_cross.__cross9.a1_x_read
         //  cross: [a1, read]
--000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross8.a1_x_write
+-000001  point: type=covergroup comment= hier=cg_unnamed_cross.__cross9.a1_x_write
         //  cross: [a1, write]
           endgroup
         
@@ -540,16 +540,21 @@
           // Crossed coverpoint with a wildcard array bin (wildcard bins wb[] = {2'b0?}): the '0?'
           // wildcard expands to addr values 0 and 1, each its own array element.
           covergroup cg_wild_arr;
-%000004     cp_addr: coverpoint addr {wildcard bins wb[] = {2'b0?};}
--000004  point: type=covergroup comment= hier=cg_wild_arr.cp_addr.wb
+%000002     cp_addr: coverpoint addr {wildcard bins wb[] = {2'b0?};}
+-000002  point: type=covergroup comment= hier=cg_wild_arr.cp_addr.wb[0]
+-000002  point: type=covergroup comment= hier=cg_wild_arr.cp_addr.wb[1]
 %000002     cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
 -000002  point: type=covergroup comment= hier=cg_wild_arr.cp_cmd.read
 -000002  point: type=covergroup comment= hier=cg_wild_arr.cp_cmd.write
-%000002     wa: cross cp_addr, cp_cmd;
--000002  point: type=covergroup comment= hier=cg_wild_arr.wa.wb_x_read
-        //  cross: [wb, read]
--000002  point: type=covergroup comment= hier=cg_wild_arr.wa.wb_x_write
-        //  cross: [wb, write]
+%000001     wa: cross cp_addr, cp_cmd;
+-000001  point: type=covergroup comment= hier=cg_wild_arr.wa.wb[0]_x_read
+        //  cross: [wb[0], read]
+-000001  point: type=covergroup comment= hier=cg_wild_arr.wa.wb[0]_x_write
+        //  cross: [wb[0], write]
+-000001  point: type=covergroup comment= hier=cg_wild_arr.wa.wb[1]_x_read
+        //  cross: [wb[1], read]
+-000001  point: type=covergroup comment= hier=cg_wild_arr.wa.wb[1]_x_write
+        //  cross: [wb[1], write]
           endgroup
         
           // Crossed coverpoint with a non-array wildcard bin (wildcard bins wb = {2'b0?}): single

@@ -70,9 +70,9 @@
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Const.h"
+#include "V3ConstPool.h"
 #include "V3Error.h"
 #include "V3Global.h"
-#include "V3LinkDotIfaceCapture.h"
 #include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
@@ -143,7 +143,7 @@ enum Determ : uint8_t {
     ASSIGN  // Assignment-like where sign comes from RHS only
 };
 std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
-    static const char* const s_det[] = {"SELF", "CNTX", "ASSN"};
+    static constexpr const char* const s_det[] = {"SELF", "CNTX", "ASSN"};
     return str << s_det[rhs];
 }
 
@@ -254,7 +254,6 @@ public:
 
 class WidthVisitor final : public VNVisitor {
     // TYPES
-    using TableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
     using PatVecMap = std::map<int, AstPatMember*>;
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
@@ -285,10 +284,10 @@ class WidthVisitor final : public VNVisitor {
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     bool m_streamConcat = false;  // True if visiting arguments of stream concatenation
-    int m_dtTables = 0;  // Number of created data type tables
-    TableMap m_tableMap;  // Created tables so can remove duplicates
-    std::map<const AstNodeDType*, AstQueueDType*>
-        m_queueDTypeIndexed;  // Queues with given index type
+    // Created dimension and enum tables, mapped to a reference reading the table (always cloned)
+    std::map<std::pair<const AstNodeDType*, VAttrType>, AstVarRef*> m_tableMap;
+    // Queues with given index type
+    std::map<const AstNodeDType*, AstQueueDType*> m_queueDTypeIndexed;
     ContainingClassFinder m_containingClassFinder;
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
@@ -1608,7 +1607,8 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstEmptyQueue* nodep) override {
         nodep->dtypeSetEmptyQueue();
-        if (!VN_IS(nodep->backp(), Assign) && !VN_IS(nodep->backp(), Var)) {
+        if (!VN_IS(nodep->backp(), Assign) && !VN_IS(nodep->backp(), Var)
+            && !VN_IS(nodep->backp(), Arg)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported/Illegal: empty queue ('{}') in this context");
         }
@@ -2168,6 +2168,15 @@ class WidthVisitor final : public VNVisitor {
                                         " type coverage is the weighted average of the"
                                         " instances");
             }
+        } else if (nodep->optType() == VCoverOptionType::DISTRIBUTE_FIRST) {
+            // A bins 'with' filter applies before the values are distributed to the bins
+            // (IEEE 1800-2023 19.5.1.1)
+            const AstConst* const constp = VN_CAST(nodep->valuep(), Const);
+            if (!constp || !constp->num().isEqZero()) {
+                nodep->v3warn(COVERIGN, "Ignoring unsupported: 'type_option.distribute_first';"
+                                        " 'with' filters apply before values are distributed"
+                                        " to bins");
+            }
         }
         // Add more options here as needed (goal, at_least, per_instance, comment)
 
@@ -2219,6 +2228,8 @@ class WidthVisitor final : public VNVisitor {
                 userIterate(rangep, nullptr);
                 fill(rangep->lhsp());
                 fill(rangep->rhsp());
+            } else if (VN_IS(itemp, CoverWith)) {
+                userIterate(itemp, m_vup);
             } else {
                 itemp = userIterateSubtreeReturnEdits(itemp, WidthVP{SELF, BOTH}.p());
                 fill(V3Const::constifyEdit(itemp));
@@ -2233,8 +2244,44 @@ class WidthVisitor final : public VNVisitor {
         // No m_vup for a bin directly in a covergroup body (unsupported, already warned)
         widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
-        userIterateAndNext(nodep->arraySizep(), nullptr);
+        if (nodep->arraySizep()) {
+            // The size of 'bins b[N]' or 'bins auto[N]' is a self-determined expression, which
+            // V3Covergroup checks once folded
+            userIterateAndNext(nodep->arraySizep(), WidthVP{SELF, BOTH}.p());
+            V3Const::constifyEdit(nodep->arraySizep());  // arraySizep may change
+        }
         userIterateAndNext(nodep->transp(), m_vup);
+    }
+    void visit(AstCoverWith* nodep) override {
+        // The candidate value 'item' has the coverpoint's type (IEEE 1800-2023 19.5.1.1)
+        userIterateAndNext(nodep->itemp(), nullptr);
+        if (!nodep->itemp()->dtypeSkipRefp()->isIntegralOrPacked()) {
+            nodep->v3error("Bin 'with' filters are not allowed on a coverpoint of a "
+                           "non-integral expression (IEEE 1800-2023 19.5.1.1)");
+        }
+        if (!VN_IS(nodep->subp(), CoverpointRef)) {
+            widthCovergroupRanges(nodep->subp(), m_vup->dtypep()->width());
+        }
+        // The filter is true for a nonzero value (IEEE 1800-2023 12.4), of a type assignment
+        // compatible with an integral type (19.5.1.1)
+        AstNodeExpr* const filterp = VN_AS(
+            userIterateSubtreeReturnEdits(nodep->filterp(), WidthVP{SELF, BOTH}.p()), NodeExpr);
+        FileLine* const fl = filterp->fileline();
+        const AstNodeDType* const resultp = filterp->dtypep()->skipRefp();
+        if (resultp->isDouble()) {
+            VNRelinker relinker;
+            filterp->unlinkFrBack(&relinker);
+            relinker.relink(
+                new AstNeqD{fl, filterp, new AstConst{fl, AstConst::RealDouble{}, 0.0}});
+        } else if (!resultp->isIntegralOrPacked()) {
+            filterp->v3error("Bin 'with' filter must be assignment compatible with an integral "
+                             "type, not "
+                             << resultp->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1.1)");
+            filterp->replaceWith(new AstConst{fl, AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(filterp), filterp);
+        } else {
+            fixWidthReduce(filterp);
+        }
     }
     void visit(AstCoverTransSet* nodep) override { userIterateAndNext(nodep->itemsp(), m_vup); }
     void visit(AstCoverTransItem* nodep) override {
@@ -2329,6 +2376,13 @@ class WidthVisitor final : public VNVisitor {
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
+        // A class handle is not a legal implicit conversion to string
+        if (AstNodeDType* const dt = nodep->lhsp()->dtypep()) {
+            if (VN_IS(dt->skipRefToEnump(), ClassRefDType)) {
+                nodep->lhsp()->v3error(
+                    "Cannot convert 'class{}' handle to a string:" << dt->prettyDTypeNameQ());
+            }
+        }
     }
     void visit(AstCvtPackedToArray* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -2394,11 +2448,6 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
-    // Delete a subtree after removing any saved references that point into it.
-    static void deleteTreeCaptured(AstNode* nodep) {
-        V3LinkDotIfaceCapture::purgeDeletedSubtree(nodep);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
         m_attrp = nodep;
@@ -2415,7 +2464,7 @@ class WidthVisitor final : public VNVisitor {
                 = (nodep->attrType() == VAttrType::DIM_UNPK_DIMENSIONS ? dim.second
                                                                        : (dim.first + dim.second));
             nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Signed32{}, val));
-            VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             break;
         }
         case VAttrType::DIM_BITS_OR_NUMBER: {
@@ -2471,7 +2520,7 @@ class WidthVisitor final : public VNVisitor {
                 case VAttrType::DIM_LOW: {
                     AstNode* const newp = new AstConst(nodep->fileline(), AstConst::Signed32{}, 0);
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     break;
                 }
                 case VAttrType::DIM_RIGHT:
@@ -2493,7 +2542,7 @@ class WidthVisitor final : public VNVisitor {
                     AstNodeExpr* const newp
                         = new AstConst(nodep->fileline(), AstConst::Signed32{}, -1);
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     break;
                 }
                 case VAttrType::DIM_BITS: {
@@ -2526,22 +2575,21 @@ class WidthVisitor final : public VNVisitor {
                         AstConst* const newp = dimensionValue(nodep->fileline(), baseDTypep,
                                                               nodep->attrType(), dim);
                         nodep->replaceWith(newp);
-                        VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     }
                 } else if (VN_IS(nodep->dimp(), Const)) {
                     const int dim = VN_AS(nodep->dimp(), Const)->toSInt();
                     AstConst* const newp
                         = dimensionValue(nodep->fileline(), dtypep, nodep->attrType(), dim);
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 } else {  // Need a runtime lookup table.  Yuk.
                     UASSERT_OBJ(nodep->fromp() && dtypep, nodep, "Unsized expression");
-                    AstVar* const varp = dimensionVarp(dtypep, nodep->attrType(), msbdim);
+                    AstVarRef* const tabRefp = dimensionVarRefp(dtypep, nodep->attrType(), msbdim);
                     AstNodeExpr* const dimp = nodep->dimp()->unlinkFrBack();
-                    AstNodeExpr* const newp
-                        = new AstArraySel{nodep->fileline(), newVarRefDollarUnit(varp), dimp};
+                    AstNodeExpr* const newp = new AstArraySel{nodep->fileline(), tabRefp, dimp};
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(deleteTreeCaptured(nodep), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             }
             break;
@@ -6235,14 +6283,15 @@ class WidthVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
     }
+    AstNodeExpr* newConsDynArrayOrQueue(FileLine* fileline, const AstNodeDType* dtypep) {
+        if (VN_IS(dtypep, DynArrayDType)) return new AstConsDynArray{fileline};
+        if (VN_IS(dtypep, QueueDType)) return new AstConsQueue{fileline};
+        return nullptr;
+    }
     void patternDynArrayOrQueue(AstPattern* nodep, AstNodeDType* arrayp) {
-        AstNodeExpr* newp = nullptr;
+        AstNodeExpr* newp = newConsDynArrayOrQueue(nodep->fileline(), arrayp);
+        UASSERT_OBJ(newp, nodep, "Expected dynamic array or queue data type");
         const bool isDynArray = VN_IS(arrayp, DynArrayDType);
-        if (isDynArray) {
-            newp = new AstConsDynArray{nodep->fileline()};
-        } else {
-            newp = new AstConsQueue{nodep->fileline()};
-        }
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
@@ -7825,7 +7874,7 @@ class WidthVisitor final : public VNVisitor {
                          && !VN_IS(pinp, CvtPackString)
                          && !VN_IS(pinp, SFormatF)  // Already generates a string
                          && !VN_IS(portp->dtypep(), UnpackArrayDType)  // Unpacked array must match
-                         && !(VN_IS(pinp, VarRef)
+                         && !(VN_IS(pinp, VarRef) && VN_AS(pinp, VarRef)->varp()->basicp()
                               && VN_AS(pinp, VarRef)->varp()->basicp()->keyword()
                                      == VBasicDTypeKwd::STRING)) {
                     UINFO(4, "   Add CvtPackString: " << pinp);
@@ -7873,9 +7922,21 @@ class WidthVisitor final : public VNVisitor {
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
                 const AstArg* const argp = tconnect.second;
-                AstNodeExpr* const pinp = argp->exprp();
+                AstNodeExpr* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 AstNodeDType* const portDTypep = portp->dtypep()->skipRefToEnump();
+                if (VN_IS(pinp, EmptyQueue)) {
+                    AstNodeExpr* newp = newConsDynArrayOrQueue(pinp->fileline(), portDTypep);
+                    if (!newp) {
+                        pinp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported/Illegal: empty queue ('{}') in this context");
+                        newp = new AstConst{pinp->fileline(), AstConst::Unsized32{}, 0};
+                    }
+                    newp->dtypeFrom(portDTypep);
+                    pinp->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(pinp), pinp);
+                    pinp = newp;
+                }
                 const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefToEnump();
                 const AstIfaceRefDType* const portIfacep
                     = VN_CAST(portDTypep->elemDTypep(true), IfaceRefDType);
@@ -10231,35 +10292,29 @@ class WidthVisitor final : public VNVisitor {
                                 << ")=" << valp);
         return valp;
     }
-    AstVar* dimensionVarp(AstNodeDType* nodep, VAttrType attrType, uint32_t msbdim) {
-        // Return a variable table which has specified dimension properties for this variable
-        const auto pair = m_tableMap.emplace(std::piecewise_construct,  //
-                                             std::forward_as_tuple(nodep, attrType),
-                                             std::forward_as_tuple(nullptr));
-        if (pair.second) {
-            AstNodeArrayDType* const vardtypep
-                = new AstUnpackArrayDType{nodep->fileline(), nodep->findIntDType(),
-                                          new AstRange(nodep->fileline(), msbdim, 0)};
-            AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
-            v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-            AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
-                                            "__Vdimtab_" + VString::downcase(attrType.ascii())
-                                                + cvtToStr(m_dtTables++),
-                                            vardtypep};
-            varp->isConst(true);
-            varp->isStatic(true);
-            varp->valuep(initp);
-            // Add to root, as don't know module we are in, and aids later structure sharing
-            v3Global.rootp()->dollarUnitPkgp()->addStmtsp(varp);
-            // Element 0 is a non-index and has speced values
-            initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, 0));
-            for (unsigned i = 1; i < msbdim + 1; ++i) {
-                initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
-            }
-            userIterate(varp, nullptr);  // May have already done $unit so must do this var
-            pair.first->second = varp;
+    AstVarRef* dimensionVarRefp(AstNodeDType* nodep, VAttrType attrType, uint32_t msbdim) {
+        // Return a reference to a constant table which has the specified dimension properties
+        // for this data type. The reference is cached, so the table is built only once.
+        AstVarRef*& cachedpr = m_tableMap[std::make_pair(nodep, attrType)];
+        if (cachedpr) return cachedpr->cloneTree(false);
+
+        AstNodeArrayDType* const vardtypep = new AstUnpackArrayDType{
+            nodep->fileline(), nodep->findIntDType(), new AstRange(nodep->fileline(), msbdim, 0)};
+        v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
+        userIterate(vardtypep, WidthVP{SELF, BOTH}.p());
+        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
+        // Element 0 is a non-index and has speced values
+        initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, 0));
+        for (unsigned i = 1; i < msbdim + 1; ++i) {
+            initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
-        return pair.first->second;
+
+        // Share identical tables via the constant pool
+        cachedpr = V3ConstPool::find(initp);
+        VL_DO_DANGLING(initp->deleteTree(), initp);  // V3ConstPool::find clones it
+        cachedpr->varp()->didWidth(true);
+        pushDeletep(cachedpr);  // Deleted with the visitor - always cloned
+        return cachedpr->cloneTree(false);
     }
     static uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
         // Most enums unless overridden are 32 bits, so we size array
@@ -10282,102 +10337,97 @@ class WidthVisitor final : public VNVisitor {
         }
         return maxval;
     }
-    static AstVar* enumVarp(AstEnumDType* const nodep, VAttrType attrType, bool assoc,
-                            uint32_t msbdim) {
-        // Return a variable table which has specified dimension properties for this variable
-        const auto pair = nodep->tableMap().emplace(attrType, nullptr);
-        if (pair.second) {
-            UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
-                                                << " max=" << msbdim << " for " << nodep);
-            AstNodeDType* basep;
-            if (attrType == VAttrType::ENUM_NAME) {
-                basep = nodep->findStringDType();
-            } else if (attrType == VAttrType::ENUM_VALID) {
-                // TODO in theory we could bit-pack the bits in the table, but
-                // would require additional operations to extract, so only
-                // would be worth it for larger tables which perhaps could be
-                // better handled with equation generation?
-                basep = nodep->findBitDType();
-            } else {
-                basep = nodep->dtypep();
-            }
-            AstNodeDType* vardtypep;
-            if (assoc) {
-                vardtypep = new AstAssocArrayDType{nodep->fileline(), basep, nodep};
-            } else {
-                vardtypep = new AstUnpackArrayDType{nodep->fileline(), basep,
-                                                    new AstRange(nodep->fileline(), msbdim, 0)};
-            }
-            AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
-            v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-            // Rebuilt tables may coexist with live tables from earlier widthing.
-            AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
-                                            "__Venumtab_" + VString::downcase(attrType.ascii())
-                                                + cvtToStr(AstNodeDType::uniqueNumInc()),
-                                            vardtypep};
-            varp->lifetime(VLifetime::STATIC_EXPLICIT);
-            varp->isConst(true);
-            varp->isStatic(true);
-            varp->valuep(initp);
-            // Add to root, as don't know module we are in, and aids later structure sharing
-            v3Global.rootp()->dollarUnitPkgp()->addStmtsp(varp);
+    AstVarRef* enumVarRefp(AstEnumDType* const nodep, VAttrType attrType, bool assoc,
+                           uint32_t msbdim) {
+        // Return a reference to a constant table which has the specified attrType information
+        // for this enum. The reference is cached, so the table is built only once.
+        AstVarRef*& cachedpr = m_tableMap[std::make_pair(nodep, attrType)];
+        if (cachedpr) return cachedpr->cloneTree(false);
 
-            // Default for all unspecified values
-            if (attrType == VAttrType::ENUM_NAME) {
-                initp->defaultp(new AstConst{nodep->fileline(), AstConst::String{}, ""});
-            } else if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
-                initp->defaultp(
-                    new AstConst{nodep->fileline(), V3Number{nodep, nodep->width(), 0}});
-            } else if (attrType == VAttrType::ENUM_VALID) {
-                initp->defaultp(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-            } else {
-                nodep->v3fatalSrc("Bad case");
-            }
-
-            // Find valid values and populate
-            UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
-            std::map<uint64_t, AstNodeExpr*> values;
-            {
-                uint64_t ordinal = 0;
-                AstEnumItem* const firstp = nodep->itemsp();
-                const AstEnumItem* prevp = firstp;  // Prev must start with last item
-                while (prevp->nextp()) prevp = VN_AS(prevp->nextp(), EnumItem);
-                for (AstEnumItem* itemp = firstp; itemp;) {
-                    AstEnumItem* const nextp = VN_AS(itemp->nextp(), EnumItem);
-                    const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
-                    UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-                    if (!vconstp->num().isAnyXZ()) {  // Can 2-state runtime decode
-                        const uint64_t i = nodep->isWide() ? ++ordinal : vconstp->toUQuad();
-                        if (attrType == VAttrType::ENUM_NAME) {
-                            values[i] = new AstConst{nodep->fileline(), AstConst::String{},
-                                                     V3Number::displayedEnumName(itemp)};
-                        } else if (attrType == VAttrType::ENUM_NEXT) {
-                            values[i]
-                                = (nextp ? nextp : firstp)->valuep()->cloneTree(false);  // A const
-                        } else if (attrType == VAttrType::ENUM_PREV) {
-                            values[i] = prevp->valuep()->cloneTree(false);  // A const
-                        } else if (attrType == VAttrType::ENUM_VALID) {
-                            values[i] = new AstConst{nodep->fileline(), AstConst::BitTrue{}};
-                        } else {
-                            nodep->v3fatalSrc("Bad case");
-                        }
-                    }
-                    prevp = itemp;
-                    itemp = nextp;
-                }
-            }
-            // Add all specified values to table
-            if (assoc) {
-                for (const auto& itr : values) initp->addIndexValuep(itr.first, itr.second);
-            } else {
-                for (uint64_t i = 0; i < (msbdim + 1); ++i) {
-                    if (values[i]) initp->addIndexValuep(i, values[i]);
-                }
-            }
-            varp->didWidth(true);  // May have already done $unit so must do this var
-            pair.first->second = varp;
+        UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
+                                            << " max=" << msbdim << " for " << nodep);
+        AstNodeDType* basep;
+        if (attrType == VAttrType::ENUM_NAME) {
+            basep = nodep->findStringDType();
+        } else if (attrType == VAttrType::ENUM_VALID) {
+            // TODO in theory we could bit-pack the bits in the table, but
+            // would require additional operations to extract, so only
+            // would be worth it for larger tables which perhaps could be
+            // better handled with equation generation?
+            basep = nodep->findBitDType();
+        } else {
+            basep = nodep->dtypep();
         }
-        return pair.first->second;
+        AstNodeDType* vardtypep;
+        if (assoc) {
+            // Key by the base type of the enum, not the enum itself, so identical maps of
+            // different enum types can be shared in the constant pool
+            vardtypep = new AstAssocArrayDType{nodep->fileline(), basep, nodep->subDTypep()};
+        } else {
+            vardtypep = new AstUnpackArrayDType{nodep->fileline(), basep,
+                                                new AstRange(nodep->fileline(), msbdim, 0)};
+        }
+        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
+        v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
+
+        // Default for all unspecified values
+        if (attrType == VAttrType::ENUM_NAME) {
+            initp->defaultp(new AstConst{nodep->fileline(), AstConst::String{}, ""});
+        } else if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
+            initp->defaultp(new AstConst{nodep->fileline(), V3Number{nodep, nodep->width(), 0}});
+        } else if (attrType == VAttrType::ENUM_VALID) {
+            initp->defaultp(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+        } else {
+            nodep->v3fatalSrc("Bad case");
+        }
+
+        // Find valid values and populate
+        UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
+        std::map<uint64_t, AstNodeExpr*> values;
+        {
+            uint64_t ordinal = 0;
+            AstEnumItem* const firstp = nodep->itemsp();
+            const AstEnumItem* prevp = firstp;  // Prev must start with last item
+            while (prevp->nextp()) prevp = VN_AS(prevp->nextp(), EnumItem);
+            for (AstEnumItem* itemp = firstp; itemp;) {
+                AstEnumItem* const nextp = VN_AS(itemp->nextp(), EnumItem);
+                const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
+                UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
+                if (!vconstp->num().isAnyXZ()) {  // Can 2-state runtime decode
+                    const uint64_t i = nodep->isWide() ? ++ordinal : vconstp->toUQuad();
+                    if (attrType == VAttrType::ENUM_NAME) {
+                        values[i] = new AstConst{nodep->fileline(), AstConst::String{},
+                                                 V3Number::displayedEnumName(itemp)};
+                    } else if (attrType == VAttrType::ENUM_NEXT) {
+                        values[i]
+                            = (nextp ? nextp : firstp)->valuep()->cloneTree(false);  // A const
+                    } else if (attrType == VAttrType::ENUM_PREV) {
+                        values[i] = prevp->valuep()->cloneTree(false);  // A const
+                    } else if (attrType == VAttrType::ENUM_VALID) {
+                        values[i] = new AstConst{nodep->fileline(), AstConst::BitTrue{}};
+                    } else {
+                        nodep->v3fatalSrc("Bad case");
+                    }
+                }
+                prevp = itemp;
+                itemp = nextp;
+            }
+        }
+        // Add all specified values to table
+        if (assoc) {
+            for (const auto& itr : values) initp->addIndexValuep(itr.first, itr.second);
+        } else {
+            for (uint64_t i = 0; i < (msbdim + 1); ++i) {
+                if (values[i]) initp->addIndexValuep(i, values[i]);
+            }
+        }
+
+        // Share identical tables via the constant pool
+        cachedpr = V3ConstPool::find(initp);
+        VL_DO_DANGLING(initp->deleteTree(), initp);  // V3ConstPool::find clones it
+        cachedpr->varp()->didWidth(true);
+        pushDeletep(cachedpr);  // Deleted with the visitor - always cloned
+        return cachedpr->cloneTree(false);
     }
 
     AstNodeExpr* enumSelect(AstNodeExpr* nodep, AstEnumDType* adtypep, VAttrType attrType) {
@@ -10411,9 +10461,8 @@ class WidthVisitor final : public VNVisitor {
                                                itemp->valuep()->cloneTree(false)},
                                      new AstConst{nodep->fileline(), ++ordinal}, indexp};
             }
-            AstVar* const varp = enumVarp(adtypep, attrType, false, ordinal);
-            AstNodeExpr* const newp
-                = new AstArraySel{nodep->fileline(), newVarRefDollarUnit(varp), indexp};
+            AstVarRef* const tabRefp = enumVarRefp(adtypep, attrType, false, ordinal);
+            AstNodeExpr* const newp = new AstArraySel{nodep->fileline(), tabRefp, indexp};
             newp->dtypeSetString();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return newp;
@@ -10422,11 +10471,12 @@ class WidthVisitor final : public VNVisitor {
         const bool assoc = msbdim > ENUM_LOOKUP_BITS;
         AstNodeExpr* newp;
         if (assoc) {
-            AstVar* const varp = enumVarp(adtypep, attrType, true, 0);
-            newp = new AstAssocSel{nodep->fileline(), newVarRefDollarUnit(varp), nodep};
+            AstVarRef* const tabRefp = enumVarRefp(adtypep, attrType, true, 0);
+            newp = new AstAssocSel{nodep->fileline(), tabRefp, nodep};
         } else {
             const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
-            AstVar* const varp = enumVarp(adtypep, attrType, false, (1ULL << selwidth) - 1);
+            AstVarRef* const tabRefp
+                = enumVarRefp(adtypep, attrType, false, (1ULL << selwidth) - 1);
             AstNodeExpr* const boundp
                 = attrType == VAttrType::ENUM_NAME
                           && (adtypep->width() > selwidth || msbdim != (1ULL << selwidth) - 1)
@@ -10436,7 +10486,7 @@ class WidthVisitor final : public VNVisitor {
                                                         static_cast<uint32_t>(msbdim)}}}
                       : nullptr;
             newp = new AstArraySel{
-                nodep->fileline(), newVarRefDollarUnit(varp),
+                nodep->fileline(), tabRefp,
                 // Select in case widths are off due to msblen!=width
                 // We return "random" values if outside the range, which is fine
                 // as next/previous on illegal values just need something good out
@@ -10455,7 +10505,7 @@ class WidthVisitor final : public VNVisitor {
         }
         return newp;
     }
-    static AstNodeExpr* enumTestValid(AstNodeExpr* valp, AstEnumDType* enumDtp) {
+    AstNodeExpr* enumTestValid(AstNodeExpr* valp, AstEnumDType* enumDtp) {
         const uint64_t maxval = enumMaxValue(valp, enumDtp);
         const bool assoc = maxval > ENUM_LOOKUP_BITS;
         AstNodeExpr* testp = nullptr;
@@ -10463,13 +10513,12 @@ class WidthVisitor final : public VNVisitor {
         fl_novalue->warnOff(V3ErrorCode::ENUMVALUE, true);
         fl_novalue->warnOff(V3ErrorCode::CMPCONST, true);
         if (assoc) {
-            AstVar* const varp = enumVarp(enumDtp, VAttrType::ENUM_VALID, true, 0);
-            testp = new AstAssocSel{fl_novalue, newVarRefDollarUnit(varp),
-                                    valp->cloneTreePure(false)};
+            AstVarRef* const tabRefp = enumVarRefp(enumDtp, VAttrType::ENUM_VALID, true, 0);
+            testp = new AstAssocSel{fl_novalue, tabRefp, valp->cloneTreePure(false)};
         } else {
             const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
-            AstVar* const varp
-                = enumVarp(enumDtp, VAttrType::ENUM_VALID, false, (1ULL << selwidth) - 1);
+            AstVarRef* const tabRefp
+                = enumVarRefp(enumDtp, VAttrType::ENUM_VALID, false, (1ULL << selwidth) - 1);
             FileLine* const fl_nowidth = new FileLine{fl_novalue};
             fl_nowidth->warnOff(V3ErrorCode::WIDTH, true);
             testp = new AstCond{
@@ -10477,7 +10526,7 @@ class WidthVisitor final : public VNVisitor {
                 new AstGt{fl_nowidth, valp->cloneTreePure(false),
                           new AstConst{fl_nowidth, AstConst::Unsized64{}, maxval}},
                 new AstConst{fl_novalue, AstConst::BitFalse{}},
-                new AstArraySel{fl_novalue, newVarRefDollarUnit(varp),
+                new AstArraySel{fl_novalue, tabRefp,
                                 new AstSel{fl_novalue, valp->cloneTreePure(false), 0, selwidth}}};
         }
         return testp;
@@ -10662,11 +10711,6 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING2(pushDeletep(nodep), nodep, constp);
             return;
         }
-    }
-    static AstVarRef* newVarRefDollarUnit(AstVar* nodep) {
-        AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::READ};
-        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
-        return varrefp;
     }
     AstNode* nodeForUnsizedWarning(AstNode* nodep) {
         // Return a nodep to use for unsized warnings, reporting on child if can

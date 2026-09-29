@@ -296,8 +296,11 @@ void VlProcess::forkSyncOnKillClear(VlForkSyncState* forkSyncp) {
 }
 
 void VlProcess::state(int s) {
-    if (s == KILLED && m_state != KILLED && m_state != FINISHED && m_forkSyncOnKillp
-        && !m_forkSyncOnKillDone) {
+    if (completed()) {
+        // We can't change the sttaus of completed process
+        return;
+    }
+    if (s == KILLED && m_forkSyncOnKillp && !m_forkSyncOnKillDone) {
         m_forkSyncOnKillDone = true;
         m_state = s;
         m_forkSyncOnKillp->done();

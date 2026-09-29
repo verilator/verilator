@@ -262,28 +262,9 @@ public:
         UINFO(4, __FUNCTION__ << ": ");
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
-        const std::size_t capturedCount = V3LinkDotIfaceCapture::size();
-        if (forPrimary()) {
-            UINFO(9, "iface capture primary pass (entries=" << capturedCount << ")");
-        } else if (forParamed()) {
-            UINFO(9, "iface capture paramed pass (entries=" << capturedCount << ")");
-        }
         readModNames();
     }
     ~LinkDotState() {
-        const std::size_t capturedCount = V3LinkDotIfaceCapture::size();
-        if (forPrimary()) {
-            UINFO(9,
-                  "iface capture leaving primary pass captured typedef count=" << capturedCount);
-        } else if (forParamed()) {
-            UINFO(9,
-                  "iface capture leaving paramed pass captured typedef count=" << capturedCount);
-            // Do NOT call reset() here.  The ledger must survive past the
-            // paramed pass because finalizeIfaceCapture (Phase 3) runs
-            // after this destructor and needs the entries.
-            // finalizeIfaceCapture calls reset() when it is done.
-            // See V3LinkDotIfaceCapture.h ARCHITECTURE comment.
-        }
         V3Error::errorExitCb(nullptr);
         s_errorThisp = nullptr;
     }
@@ -1216,13 +1197,18 @@ class LinkDotFindVisitor final : public VNVisitor {
         // (sorted before this is called).
         // This may not be the module with isTop() set, as early in the steps,
         // wrapTop may have not been created yet.
-        // $unit always exists, so nothing else, and nothing in it, means nothing was given
+        // $unit and the constant pool always exist, so nothing else, and nothing in $unit,
+        // means nothing was given
         AstNodeModule* const modulesp = nodep->modulesp();
         UASSERT_OBJ(modulesp, nodep, "$unit should always be in the netlist");
-        if (!modulesp->nextp()) {
-            UASSERT_OBJ(modulesp == v3Global.rootp()->dollarUnitPkgp(), modulesp,
-                        "Sole module should be $unit");
-            if (!modulesp->stmtsp()) nodep->v3error("No top level module found");
+        const bool onlyBuiltins = [&]() {
+            for (AstNodeModule* modp = modulesp; modp; modp = VN_AS(modp->nextp(), NodeModule)) {
+                if (!modp->isDollarUnit() && !modp->isConstPool()) return false;
+            }
+            return true;
+        }();
+        if (onlyBuiltins && !v3Global.rootp()->dollarUnitPkgp()->stmtsp()) {
+            nodep->v3error("No top level module found");
         }
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
@@ -1283,7 +1269,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
     }
     void visit(AstTypeTable*) override {}  // FindVisitor::
-    void visit(AstConstPool*) override {}  // FindVisitor::
     void visit(AstIfaceRefDType* nodep) override {  // FindVisitor::
         if (!m_statep->forScopeCreation() && nodep->isVirtual() && nodep->ifacep()
             && !nodep->ifacep()->user3()) {
@@ -2315,6 +2300,17 @@ class LinkDotFindVisitor final : public VNVisitor {
                             nullptr);
         iterateChildren(nodep);
     }
+    void visit(AstCoverWith* nodep) override {  // FindVisitor::
+        // The range list is outside the scope of the filter, which declares 'item'
+        iterateAndNextNull(nodep->subp());
+        VL_RESTORER(m_curSymp);
+        ++m_modWithNum;
+        m_curSymp = m_statep->insertBlock(m_curSymp, "__VcoverWith" + cvtToStr(m_modWithNum),
+                                          nodep, m_classOrPackagep);
+        m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
+        iterateAndNextNull(nodep->itemp());
+        iterateAndNextNull(nodep->filterp());
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // FindVisitor::
 
@@ -2475,7 +2471,6 @@ class LinkDotParamVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstTypeTable*) override {}  // ParamVisitor::
-    void visit(AstConstPool*) override {}  // ParamVisitor::
     void visit(AstNodeModule* nodep) override {  // ParamVisitor::
         UINFO(5, "   " << nodep);
         if ((nodep->dead() || !nodep->user4()) && !nodep->hierParams()) {
@@ -2677,7 +2672,6 @@ private:
         // Recurse..., backward as must do packages before using packages
         iterateChildrenBackwardsConst(nodep);
     }
-    void visit(AstConstPool*) override {}  // ScopeVisitor::
     void visit(AstScope* nodep) override {  // ScopeVisitor::
         UINFO(8, "  SCOPE " << nodep);
         UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
@@ -3130,6 +3124,10 @@ class LinkDotIfaceVisitor final : public VNVisitor {
             nodep->v3error("Modport item is not a clocking block: " << nodep->prettyNameQ());
         }
     }
+    void visit(AstScope* nodep) override {  // IfaceVisitor::
+        if (nodep->user3SetOnce()) return;
+        iterateChildren(nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // IfaceVisitor::
 
 public:
@@ -3144,6 +3142,8 @@ public:
 };
 
 void LinkDotState::computeIfaceModSyms() {
+    //  AstScope::user3()  // bool. Already iterated by a LinkDotIfaceVisitor
+    const VNUser3InUse user3InUse;
     for (const auto& itr : m_ifaceModSyms) {
         AstIface* const nodep = itr.first;
         VSymEnt* const symp = itr.second;
@@ -3285,6 +3285,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         AstVar* const newp
             = new AstVar{nodep->fileline(), VVarType::WIRE, nodep->name(), VFlagLogicPacked{}, 1};
+        newp->lifetime(VLifetime::STATIC_IMPLICIT);
         newp->trace(modp->modTrace());
         modp->addStmtsp(newp);
         // Link it to signal list, must add the variable under the module;
@@ -3351,8 +3352,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     // Capture a ParamTypeDType reference for interface typedef retargeting.
     // Called when a RefDType resolves to a ParamTypeDType owned by an interface.
-    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp,
-                               const V3LinkDotIfaceCapture::CapturedEntry* capEntryp) {
+    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp) {
         if (!V3LinkDotIfaceCapture::enabled() || !m_statep->forPrimary()) return;
         AstNodeModule* const defOwnerModp = V3LinkDotIfaceCapture::findOwnerModule(defp);
         if (!defOwnerModp || !VN_IS(defOwnerModp, Iface)) return;
@@ -3362,8 +3362,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(9, indent() << "iface capture add paramtype " << nodep
                           << " iface=" << defOwnerModp->prettyNameQ());
         V3LinkDotIfaceCapture::addParamType(nodep, cellForCapture->name(), m_modp, defp,
-                                            defOwnerModp->name(),
-                                            capEntryp ? capEntryp->ifacePortVarp : nullptr);
+                                            defOwnerModp->name());
     }
 
     AstNodeStmt* addImplicitSuperNewCall(AstFunc* const nodep,
@@ -3463,6 +3462,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
             return;
         }
         defParamPins.emplace(nodep->paramPath(), nodep);
+    }
+    static AstClocking* sensClockingp(AstNode* nodep) {
+        // Return the clocking block referenced by nodep, either directly or through a modport
+        if (AstClocking* const clockingp = VN_CAST(nodep, Clocking)) return clockingp;
+        if (const AstModportClockingRef* const clockingRefp = VN_CAST(nodep, ModportClockingRef))
+            return clockingRefp->clockingp();
+        return nullptr;
     }
     VSymEnt* getCreateClockingEventSymEnt(AstClocking* clockingp) {
         AstVar* const eventp = clockingp->ensureEventp(true);
@@ -3839,7 +3845,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateChildrenBackwardsConst(nodep);
     }
     void visit(AstTypeTable*) override {}
-    void visit(AstConstPool*) override {}
     void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) return;
         LINKDOT_VISIT_START();
@@ -4448,7 +4453,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             bool ok = false;
             // Special case: waiting on clocking event
             if (m_inSens && foundp && m_ds.m_dotPos != DP_SCOPE && m_ds.m_dotPos != DP_FIRST) {
-                if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                if (AstClocking* const clockingp = sensClockingp(foundp->nodep())) {
                     foundp = getCreateClockingEventSymEnt(clockingp);
                 }
             }
@@ -4773,9 +4778,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     refp->typedefp(defp);
 
                     V3LinkDotIfaceCapture::captureTypedefContext(
-                        refp, "typedef", static_cast<int>(m_ds.m_dotPos),
-                        m_ds.m_dotPos == DP_FINAL, m_ds.m_dotText, m_ds.m_dotSymp, m_curSymp,
-                        m_modp, nodep, [this]() { return indent(); });
+                        refp, "typedef", static_cast<int>(m_ds.m_dotPos), m_ds.m_dotText,
+                        m_ds.m_dotSymp, m_modp, [this]() { return indent(); });
 
                     if (VN_IS(nodep->backp(), SelExtract)) {
                         m_packedArrayDtp = refp;
@@ -4792,9 +4796,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     refp->refDTypep(defp);
 
                     V3LinkDotIfaceCapture::captureTypedefContext(
-                        refp, "paramtype", static_cast<int>(m_ds.m_dotPos),
-                        m_ds.m_dotPos == DP_FINAL, m_ds.m_dotText, m_ds.m_dotSymp, m_curSymp,
-                        m_modp, nodep, [this]() { return indent(); });
+                        refp, "paramtype", static_cast<int>(m_ds.m_dotPos), m_ds.m_dotText,
+                        m_ds.m_dotSymp, m_modp, [this]() { return indent(); });
 
                     if (VN_IS(nodep->backp(), SelExtract)) {
                         m_packedArrayDtp = refp;
@@ -5066,7 +5069,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
                 }
                 if (m_inSens && foundp) {
-                    if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                    if (AstClocking* const clockingp = sensClockingp(foundp->nodep())) {
                         foundp = getCreateClockingEventSymEnt(clockingp);
                     }
                 }
@@ -5285,12 +5288,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
             nodep->dotted(m_ds.m_dotText);  // Maybe ""
             // Only flag FTaskRefs under generate-if/case blocks that may be
             // pruned.  GenFor and plain begin-blocks won't be pruned by V3Param.
+            // A generate-case block's parent is the GenCaseItem, not the GenCase.
             // VarXRef uses the broader m_genBlk flag (set for all GenBlocks)
             // because genfor unrolling also removes variables.
             if (m_ds.m_genBlk && m_ds.m_dotSymp) {
                 const AstNode* const blkp = m_ds.m_dotSymp->nodep();
                 if (VN_IS(blkp, GenBlock)
-                    && (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCase))) {
+                    && (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCaseItem))) {
                     nodep->containsGenBlock(true);
                 }
             }
@@ -5747,6 +5751,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
         nodep->prodp(findProd(nodep, m_curSymp, nodep->name()));
         iterateChildren(nodep);
     }
+    void visit(AstCoverWith* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        iterateAndNextNull(nodep->subp());
+        // The type of 'item' is that of the coverpoint expression, which may name 'item' too
+        iterateAndNextNull(nodep->itemp()->childDTypep());
+        VL_RESTORER(m_curSymp);
+        m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+        iterateAndNextNull(nodep->itemp());
+        iterateAndNextNull(nodep->filterp());
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
+    }
     void visit(AstWith* nodep) override {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
@@ -6095,10 +6112,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
 
         // Resolve its reference
-        if (V3LinkDotIfaceCapture::find(nodep)) {
-            UINFO(9, indent() << "iface capture visit captured typedef ptr=" << nodep
-                              << " user2=" << nodep->user2p());
-        }
         if (m_statep->forParamed() && nodep->user3()) {
             if (V3LinkDotIfaceCapture::enabled() && nodep->user2p()) {
                 UINFO(9, indent() << "iface capture clear user3 for captured typedef name="
@@ -6182,8 +6195,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
 
-        const V3LinkDotIfaceCapture::CapturedEntry* capEntryp = V3LinkDotIfaceCapture::find(nodep);
-
         if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE)) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
@@ -6233,18 +6244,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         checkDeclOrder(nodep, defp);
                     nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
-                    // class capture: capture typedef references inside parameterized classes
-                    // Only capture if we're referencing from OUTSIDE the class (not
-                    // self-references)
-                    if (V3LinkDotIfaceCapture::enabled() && m_statep->forPrimary()) {
-                        AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
-                        if (classp && classp->hasGParam() && classp != m_modp) {
-                            UINFO(9, indent() << "class capture add typedef name="
-                                              << nodep->prettyNameQ() << " class="
-                                              << classp->prettyNameQ() << " typedef=" << defp);
-                            V3LinkDotIfaceCapture::addClass(nodep, classp, m_modp, defp);
-                        }
-                    }
 
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
@@ -6264,7 +6263,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     } else {
                         nodep->refDTypep(defp);
                         nodep->classOrPackagep(foundp->classOrPackagep());
-                        captureIfaceParamType(nodep, defp, capEntryp);
+                        captureIfaceParamType(nodep, defp);
                     }
                 } else if (AstClass* const defp
                            = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {

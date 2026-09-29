@@ -60,9 +60,7 @@ module t;
     automatic SizeElemDynArr obj3 = new;
 
     `check_rand(obj, obj.q[0],
-                obj.q.size() > 1 && obj.q.size() < 6
-                && obj.q[0] > 100
-                && obj.q[1] == obj.q[0] + 1);
+                obj.q.size() > 1 && obj.q.size() < 6 && obj.q[0] > 100 && obj.q[1] == obj.q[0] + 1);
 
     `check_rand(obj2, obj2.q[0],
                 obj2.min_sz inside {[2:4]}
@@ -71,10 +69,9 @@ module t;
                 && obj2.q[obj2.q.size() - 1] inside {[10:20]}
                 && obj2.q[0] != obj2.q[obj2.q.size() - 1]);
 
-    `check_rand(obj3, obj3.da[0],
-                obj3.da.size() inside {[3:5]}
-                && obj3.da[0] < 50
-                && obj3.da[obj3.da.size() - 1] > 50);
+    `check_rand(
+        obj3, obj3.da[0],
+        obj3.da.size() inside {[3 : 5]} && obj3.da[0] < 50 && obj3.da[obj3.da.size()-1] > 50);
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -63,6 +63,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeDType* m_dtypep = nullptr;  // Current data type
     AstNodeExpr* m_defaultInSkewp = nullptr;  // Current default input skew
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
+    AstCoverpoint* m_coverpointp = nullptr;  // Current coverpoint
     int m_anonUdpId = 0;  // Counter for anonymous UDP instances
     int m_coverpointNum = 0;  // Counter for unnamed coverpoints within current covergroup
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
@@ -119,17 +120,22 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf
+    bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf/GenCaseItem
         // IEEE says directly nested item is not a new block
         // The genblk name will get attached to the if true/false LOWER begin block(s)
         //    1: GENIF
         // -> 1:3: GENBLOCK [IMPLIED]  // nodep passed to this function
         //    1:3:1: GENIF
         //    1:3:1:2: GENBLOCK genblk1 [IMPLIED]
+        // Likewise for a generate case item holding only a generate if
+        //    1: GENCASEITEM
+        // -> 1:2: GENBLOCK [IMPLIED]  // nodep passed to this function
+        //    1:2:1: GENIF
         const AstNode* const backp = nodep->backp();
         return (nodep->implied()  // User didn't provide begin/end
-                && VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep
-                && !nodep->nextp()  // No other statements under upper genif else
+                && ((VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep)
+                    || VN_IS(backp, GenCaseItem))
+                && !nodep->nextp()  // No other statements under upper genif else/case item
                 && (VN_IS(nodep->itemsp(), GenIf))  // Begin has if underneath
                 && !nodep->itemsp()->nextp());  // Has only one item
     }
@@ -1435,6 +1441,47 @@ class LinkParseVisitor final : public VNVisitor {
                 VL_DO_DANGLING(optp->deleteTree(), optp);
             }
         }
+        VL_RESTORER(m_coverpointp);
+        m_coverpointp = nodep;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverBin* nodep) override {
+        cleanFileline(nodep);
+        if (!m_coverpointp && VN_IS(nodep->rangesp(), CoverWith)) {
+            // A 'with' filter's candidates are of its coverpoint's type
+            nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
+                                               "coverpoint; bin "
+                                                   << nodep->prettyNameQ() << " ignored");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverWith* nodep) override {
+        cleanFileline(nodep);
+        UASSERT_OBJ(m_coverpointp, nodep, "Bin 'with' filter outside a coverpoint");
+        if (const AstCoverpointRef* const refp = VN_CAST(nodep->subp(), CoverpointRef)) {
+            if (refp->name() != m_coverpointp->name()) {
+                refp->v3error("A bin 'with' filter may name only its own coverpoint "
+                              << m_coverpointp->prettyNameQ() << ", not " << refp->prettyNameQ()
+                              << " (IEEE 1800-2023 19.5.1.1)");
+            }
+        }
+        // The candidate value, of the coverpoint's type, which a filter need not read.  The
+        // standard names it, so it hides another 'item' in the filter without a warning.
+        FileLine* const fl = nodep->fileline();
+        FileLine* const flNoWarn = new FileLine{fl};
+        flNoWarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+        flNoWarn->modifyWarnOff(V3ErrorCode::VARHIDDEN, true);
+        AstVar* const varp = new AstVar{flNoWarn, VVarType::VAR, "item", VFlagChildDType{},
+                                        new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{},
+                                                        m_coverpointp->exprp()->cloneTree(false)}};
+        varp->funcLocal(true);
+        varp->noReset(true);
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        nodep->itemp(varp);
         iterateChildren(nodep);
     }
 

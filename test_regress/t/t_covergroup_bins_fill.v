@@ -23,8 +23,12 @@ module t;
       bins hi = {[8'h80 : '1]};
       bins lo = {['0 : 8'h7f]};
     }
-    cp_sb: coverpoint sb {bins m1 = {'1};}
-    cp_mode: coverpoint mode {bins m = {3};}
+    cp_sb: coverpoint sb {
+      bins m1 = {'1};
+    }
+    cp_mode: coverpoint mode {
+      bins m = {3};
+    }
     cx: cross cp_mode, cp_insn;
   endgroup
 

@@ -739,6 +739,7 @@ devel
 difftree
 dir
 disambiguates
+discoverability
 displayb
 distcc
 doxygen

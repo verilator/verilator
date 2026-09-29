@@ -50,6 +50,15 @@ class VerilatedCovContext;
 enum class VlCovBinNaming : uint8_t {
     Single,  // "<name>"      one bin
     Array,  // "<name>[i]"   bins b[N] value array
+    Numbered,  // "<name>_<i>" automatic bins of a coverpoint without bins
+    Values,  // "<name>[v]"   bins b[] with a 'with' filter, a bin per value v
+};
+
+// How the bins of a 'with' filter (IEEE 1800-2023 19.5.1.1) hold the values it keeps
+enum class VlCovBinGrouping : uint8_t {
+    Single,  // bins b = ...: one bin
+    Values,  // bins b[] = ...: a bin for each value, in value order
+    Fixed,  // bins b[N] = ...: distributed over N bins, as a sized array's
 };
 
 // Specifies the naming scheme for a range of bins, allowing the
@@ -120,6 +129,10 @@ protected:
     std::vector<uint32_t> m_crossToBin;
     uint32_t m_hitCount = 0;  // entries valid in the hit list this sample
 
+    // PROTECTED METHODS
+    // Normal bin: VlCoverpointT::incrementBin(), for the bins sizedSample() finds
+    virtual void incrementNormalBin(uint32_t i) = 0;
+
 private:
     // PRIVATE METHODS
     const VlCovNamer& namerFor(uint32_t i) const;  // obtain the bin-specific name producer
@@ -129,6 +142,9 @@ private:
     uint32_t reportedBin(uint32_t i) const;
     std::string declaredBinName(uint32_t bin) const;  // Name of a declared bin index
     bool liveBin(uint32_t bin) const;  // Normal bin keeps a value outside the exclusions
+    // Count a sample, if enabled, in a bin of a sized array holding the value, unless it is
+    // 'last', the bin found before; set 'last'
+    void sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint32_t& last);
 
 public:
     // CONSTRUCTORS
@@ -145,12 +161,25 @@ public:
                        int line, int col) {
         addNamer(set, count, VlCovBinNaming::Array, name, file, line, col);
     }
-    void registerBins(VerilatedCovContext* covcontextp, const char* page);
+    void addNumberedNamer(VlCovBinKind set, uint32_t count, const char* name, const char* file,
+                          int line, int col) {
+        addNamer(set, count, VlCovBinNaming::Numbered, name, file, line, col);
+    }
+    /// Register the bins in the coverage database, with what verilator_coverage needs to
+    /// compute coverage (IEEE 1800-2023 19.11): option.at_least, and the weights of the
+    /// coverpoint, itemWeight, and of its covergroup, groupWeight.  The weights are those of
+    /// every instance, as the database merges the instances.
+    void registerBins(VerilatedCovContext* covcontextp, const char* page, uint32_t itemWeight,
+                      uint32_t groupWeight);
 
     /// Configure construction-time value metadata for exclusions and cross selections.
     void valueType(uint32_t bits, bool isSigned);
     /// Describe bin values as {bin, low words, high words} entries, without enumerating them.
     void valueRanges(std::initializer_list<EData> entries);
+    /// Describe runs of bins as {first bin, count, low words, span words, high words} entries:
+    /// bin k of a run holds [low + k * (span + 1), low + k * (span + 1) + span], and its last
+    /// bin extends to high.
+    void valueRuns(std::initializer_list<EData> entries);
     /// Describe wildcard patterns as {bin, value words, mask words, low words, high words}.
     void valuePatterns(std::initializer_list<EData> entries);
     /// State exclusions do not remove values from these transition bins.
@@ -162,12 +191,48 @@ public:
     /// Test state exclusions independently of sampling-time iff guards.
     bool valueExcluded(QData value) const;
     bool valueExcludedW(WDataInP valuep) const;
+    /// Add the coverpoint values lo..hi of the next range list element of a sized array of
+    /// bins, in declaration order.
+    void sizedRange(QData lo, QData hi);
+    void sizedRangeW(WDataInP lop, WDataInP hip);
+    /// Distribute the values sizedRange() added over the bins of the sized array 'name[count]'
+    /// (IEEE 1800-2023 19.5.1).  'positive' is false for a count below one, which is invalid.
+    /// At most 'limit' bins may hold values.  Needs valueType(); bins append after those of
+    /// init().
+    void sizedFinish(VlCovBinKind kind, QData count, bool positive, uint32_t limit,
+                     const char* name, const char* file, int line, int col);
+    /// Declared bins [sizedFirst(), sizedEnd()) of the sized array 'sized', counted in
+    /// sizedFinish() order, for cross selections.
+    uint32_t sizedFirst(uint32_t sized) const;
+    uint32_t sizedEnd(uint32_t sized) const;
+    /// Begin the bins of a 'with' filter (IEEE 1800-2023 19.5.1.1), whose candidates are the
+    /// values sizedRange() added, and whose bins then count as a sized array's.  At most
+    /// 'limit' bins, or runs of values kept.
+    void withBegin(VlCovBinGrouping grouping, uint32_t limit);
+    /// Advance to the next run of candidates, withLo() to withHi(); false after the last, or
+    /// once too many values are kept
+    bool withNext();
+    QData withLo() const;
+    void withLoW(WDataOutP valuep) const;
+    QData withHi() const;
+    void withHiW(WDataOutP valuep) const;
+    /// Keep the values lo..hi, in the order the filter kept them; false once too many are
+    bool withRun(QData lo, QData hi);
+    bool withRunW(WDataInP lop, WDataInP hip);
+    /// Make the bins of the values kept, a sized array 'name[count]' for Fixed grouping (see
+    /// sizedFinish())
+    void withFinish(VlCovBinKind kind, QData count, bool positive, const char* name,
+                    const char* file, int line, int col);
 
     // ---- hot path (from generated sample()) ----
     // Clear the hit list at the start of each sample() for a cross-fed coverpoint.
     void clearHitList() { m_hitCount = 0; }
     // Ignore/Illegal/Default: count only; never propagates to cross coverage.
     void recordHit(uint32_t i) { ++m_counts[i]; }
+    /// Count a sample in the bins of the sized array 'sized' holding the value, once each,
+    /// if 'enabled'.  True if a bin holds the value, enabled or not.
+    bool sizedSample(uint32_t sized, QData value, bool enabled);
+    bool sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled);
     // incrementBin (Normal bin: count + hit-list append) lives in VlCoverpointT<MaxHits>,
     // where MaxHits is the gen-time max per-sample bin overlap.
 
@@ -225,6 +290,9 @@ public:
         if (cx >= 0 && m_hitCount < MaxHits) m_hits[m_hitCount++] = static_cast<uint32_t>(cx);
     }
     const uint32_t* hitList() const override { return m_hits; }
+
+protected:
+    void incrementNormalBin(uint32_t i) override { incrementBin(i); }
 };
 
 //=============================================================================
@@ -370,7 +438,9 @@ public:
                 const char* filep, int line, int col);
     /// Retain only automatic cross bins not selected by any explicit bin.
     virtual void finalizeBins();
-    void registerBins(VerilatedCovContext* covcontextp, const char* page);
+    /// Register the bins in the coverage database; see VlCoverpoint::registerBins().
+    void registerBins(VerilatedCovContext* covcontextp, const char* page, uint32_t itemWeight,
+                      uint32_t groupWeight);
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
     /// Sample automatic and explicit bins, optionally applying per-bin iff guards.

@@ -140,45 +140,49 @@ public:
     // Hash the string
     static uint64_t hashMurmur(const string& str) VL_PURE;
 
+    // Base 64 encode
+    static string base64Enc(const string& str) VL_PURE;
+
     static void selfTest();  // Test this class
 };
 
 //######################################################################
-// VHashSha256 - Compute Sha256 hashes
+// VHashSha512 - Compute Sha512 hashes
 
-class VHashSha256 final {
-    // As blocks must be processed in 64 byte chunks, this does not at present
-    // support calling input() on multiple non-64B chunks and getting the correct
+class VHashSha512 final {
+    // As blocks must be processed in 128 byte chunks, this does not at present
+    // support calling input() on multiple non-128B chunks and getting the correct
     // hash. To do that first combine the string before calling here.
-    // Or improve to store 0-63 bytes of data between calls to input().
+    // Or improve to store 0-127 bytes of data between calls to input().
 
     // MEMBERS
-    uint32_t m_inthash[8];  // Intermediate hash, in host order
+    uint64_t m_inthash[8];  // Intermediate hash, in host order
     string m_remainder;  // Unhashed data
     size_t m_totLength = 0;  // Total all-chunk length as needed by output digest
     bool m_final = false;  // Finalized
 public:
     // CONSTRUCTORS
-    VHashSha256() {
-        m_inthash[0] = 0x6a09e667;
-        m_inthash[1] = 0xbb67ae85;
-        m_inthash[2] = 0x3c6ef372;
-        m_inthash[3] = 0xa54ff53a;
-        m_inthash[4] = 0x510e527f;
-        m_inthash[5] = 0x9b05688c;
-        m_inthash[6] = 0x1f83d9ab;
-        m_inthash[7] = 0x5be0cd19;
+    VHashSha512() {
+        m_inthash[0] = 0x6a09e667f3bcc908ULL;
+        m_inthash[1] = 0xbb67ae8584caa73bULL;
+        m_inthash[2] = 0x3c6ef372fe94f82bULL;
+        m_inthash[3] = 0xa54ff53a5f1d36f1ULL;
+        m_inthash[4] = 0x510e527fade682d1ULL;
+        m_inthash[5] = 0x9b05688c2b3e6c1fULL;
+        m_inthash[6] = 0x1f83d9abfb41bd6bULL;
+        m_inthash[7] = 0x5be0cd19137e2179ULL;
     }
-    explicit VHashSha256(const string& data)
-        : VHashSha256{} {
+    explicit VHashSha512(const string& data)
+        : VHashSha512{} {
         insert(data);
     }
-    ~VHashSha256() = default;
+    ~VHashSha512() = default;
 
     // METHODS
-    string digestBinary();  // Return digest as 32 character binary
+    string digestBase64();  // Return digest formatted in Base64 (non-URL flavor)
+    string digestBinary();  // Return digest as 64 character binary
     string digestHex();  // Return digest formatted as a hex string
-    string digestSymbol();  // Return digest formatted as C symbol/base64ish
+    string digestSymbol24();  // Return non-reversable short-formatted as C symbol/base64ish
     uint64_t digestUInt64();  // Return 64-bits of digest
     static void selfTest();  // Test this class
 
@@ -192,7 +196,7 @@ public:
 
 private:
     static void selfTestOne(const string& data, const string& data2, const string& exp,
-                            const string& exp64);
+                            const string& exp64, const string& exp24);
     void finalize();  // Process remaining data
 };
 

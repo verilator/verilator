@@ -882,14 +882,8 @@ class AstEnumDType final : public AstNodeDType {
     // @astgen op2 := itemsp : List[AstEnumItem]
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
-public:
-    using TableMap = std::map<VAttrType, AstVar*>;
-
-private:
     string m_name;  // Name from upper typedef, if any
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
-    // dist-ast-dump-suppress  // Skip dumping cache
-    TableMap m_tableMap;  // Created table for V3Width only to remove duplicates
 
 public:
     AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstEnumItem* itemsp)
@@ -937,8 +931,6 @@ public:
         return count;
     }
     bool isCompound() const override { return false; }
-    TableMap& tableMap() { return m_tableMap; }
-    const TableMap& tableMap() const { return m_tableMap; }
 };
 
 class AstIfaceGenericDType final : public AstNodeDType {
@@ -1018,7 +1010,14 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    bool similarDTypeNode(const AstNodeDType* samep) const override {
+        // Each occurrence of a virtual interface type parses to its own node,
+        // so pointer identity is insufficient; compare the referenced
+        // interface instead, same equivalence as AstNode::computeCastable uses.
+        const AstIfaceRefDType* const asamep = VN_DBG_AS(samep, IfaceRefDType);
+        return ifaceViaCellp() && ifaceViaCellp() == asamep->ifaceViaCellp()
+               && modportName() == asamep->modportName() && isVirtual() == asamep->isVirtual();
+    }
     int widthAlignBytes() const override { return 0; }
     int widthTotalBytes() const override { return 0; }
     bool isVirtual() const { return m_virtual; }
@@ -1276,6 +1275,9 @@ class AstRefDType final : public AstNodeDType {
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Data type references
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package defined in
     string m_name;  // Name of an AstTypedef
+    // Interface capture tag, owned by V3LinkDotIfaceCapture; cloning copies it
+    const VIfaceCaptureTag* m_captureTagp = nullptr;
+
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER_RefDType(fl)
@@ -1302,6 +1304,7 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         return subDTypep()->similarDType(samep->subDTypep());
     }
+    const char* broken() const override;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
@@ -1326,6 +1329,8 @@ public:
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
+    const VIfaceCaptureTag* captureTagp() const { return m_captureTagp; }
+    void captureTagp(const VIfaceCaptureTag* tagp) { m_captureTagp = tagp; }
     bool isCompound() const override {
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;

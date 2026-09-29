@@ -9,7 +9,9 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 // verilog_format: on
 
-interface my_if #(parameter WIDTH = 1);
+interface my_if #(
+    parameter WIDTH = 1
+);
   logic [WIDTH-1:0] sig_a, sig_b, sig_c, sig_d;
   logic [WIDTH-1:0] sig_e, sig_f;
   // Multiple expressions same direction

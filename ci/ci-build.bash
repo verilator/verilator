@@ -95,6 +95,9 @@ autoconf
 ccache -z
 BUILD_START=$SECONDS
 "$MAKE" -j "$NPROC" -k
+# Second make to get failures at bottom, to avoid needing to
+# scroll up GitHub action logs (to see first errors half-way up)
+"$MAKE" -j "$NPROC" -k
 ccache -svv
 ccache --evict-older-than "$((SECONDS - BUILD_START + 60))s"
 ccache -svv

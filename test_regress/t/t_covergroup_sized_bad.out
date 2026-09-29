@@ -1,0 +1,30 @@
+%Error: t/t_covergroup_sized_bad.v:16:17: Bins array size must be >= 1, got 0 (IEEE 1800-2023 19.5.1)
+                                        : ... note: In instance 't'
+   16 |       bins zero[0] = {[0 : 3]};   
+      |                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_sized_bad.v:17:21: Bins array size must be >= 1, got -1 (IEEE 1800-2023 19.5.1)
+                                        : ... note: In instance 't'
+   17 |       bins negative[-1] = {[0 : 3]};   
+      |                     ^
+%Error: t/t_covergroup_sized_bad.v:18:21: Bins array size must be integral (IEEE 1800-2023 19.5.1)
+                                        : ... note: In instance 't'
+   18 |       bins fraction[1.5] = {[0 : 3]};   
+      |                     ^~~
+%Error: t/t_covergroup_sized_bad.v:21:12: Bins array size must be integral, not '$' (IEEE 1800-2023 19.5.1)
+                                        : ... note: In instance 't'
+   21 |       bins param_size[UNBOUNDED] = {[0 : 3]};   
+      |            ^~~~~~~~~~
+%Error: t/t_covergroup_sized_bad.v:19:29: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+                                        : ... note: In instance 't'
+   19 |       bins four_state[2] = {[4'b000x : 4'hf]};   
+      |                             ^
+%Error: t/t_covergroup_sized_bad.v:20:31: Four-state (x/z) value in bin range bound; range bounds must be two-state constants
+                                        : ... note: In instance 't'
+   20 |       bins four_state_with = {[4'b000x : 4'hf]} with (1);   
+      |                               ^
+%Error: t/t_covergroup_sized_bad.v:22:12: Bins value may not be '$', which may only bound a range (IEEE 1800-2023 6.20.7)
+                                        : ... note: In instance 't'
+   22 |       bins param_value[2] = {UNBOUNDED};   
+      |            ^~~~~~~~~~~
+%Error: Exiting due to

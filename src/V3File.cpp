@@ -73,7 +73,7 @@ class V3FileDependImp final {
         bool m_exists = true;  // File exists
         const string m_filename;  // Filename
         struct stat m_stat;  // Stat information
-        VHashSha256 m_hash;  // SHA hash of file contents
+        VHashSha512 m_hash;  // SHA hash of file contents
     public:
         DependFile(const string& filename, bool target)
             : m_target{target}
@@ -92,9 +92,10 @@ class V3FileDependImp final {
         time_t mstime() const { return m_stat.st_mtime; }  // Seconds
         time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); }  // Nanoseconds
         string hashDigestSymbol() {
-            static VHashSha256 s_emptyHash;
-            return m_hash.digestSymbol() != s_emptyHash.digestSymbol() ? m_hash.digestSymbol()
-                                                                       : "unhashed";
+            static VHashSha512 s_emptyHash;
+            return m_hash.digestSymbol24() != s_emptyHash.digestSymbol24()
+                       ? m_hash.digestSymbol24()
+                       : "unhashed";
         }
         void loadStats() {
             if (!m_stat.st_mtime) {
@@ -310,11 +311,12 @@ bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn
             // as unlikely to find a match and can be large
             if (chkHash == "unhashed") return false;
 
-            VHashSha256 curHash;
+            VHashSha512 curHash;
             curHash.insertFile(chkFilename);
-            if (curHash.digestSymbol() != chkHash) {
-                UINFO(2, "   --check-times: hash differs "
-                             << chkFilename << "; " << curHash.digestSymbol() << "=?" << chkHash);
+            if (curHash.digestSymbol24() != chkHash) {
+                UINFO(2, "   --check-times: hash differs " << chkFilename << "; "
+                                                           << curHash.digestSymbol24() << "=?"
+                                                           << chkHash);
                 return false;
             }
         }
@@ -1077,10 +1079,10 @@ public:
                 // missing a protect()
                 out = "PS" + old;
             } else {
-                VHashSha256 digest{v3Global.opt.protectKeyDefaulted()};
+                VHashSha512 digest{v3Global.opt.protectKeyDefaulted()};
                 digest.insert(old);
                 // Add "PS" prefix (Protect Symbols) as cannot start symbol with number
-                out = "PS" + digest.digestSymbol();
+                out = "PS" + digest.digestSymbol24();
                 // See if we can shrink the digest symbol to something smaller
                 for (size_t len = 6; len < out.size() - 3; len += 3) {
                     const string tryout = out.substr(0, len);

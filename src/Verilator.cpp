@@ -725,7 +725,7 @@ static bool verilate(const string& argString) {
         V3Os::selfTest();
         V3Number::selfTest();
         VString::selfTest();
-        VHashSha256::selfTest();
+        VHashSha512::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
         V3ExecGraph::selfTest();

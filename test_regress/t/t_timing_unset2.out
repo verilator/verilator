@@ -5,7 +5,7 @@
                       ... For error description see https://verilator.org/warn/NEEDTIMINGOPT?v=latest
 %Error-NEEDTIMINGOPT: t/t_timing_off.v:34:11: Use --timing or --no-timing to specify how delays should be handled
                                             : ... note: In instance 't'
-   34 |   initial #2->e1;
+   34 |   initial #2 ->e1;
       |           ^
 %Error-NEEDTIMINGOPT: t/t_timing_off.v:38:11: Use --timing or --no-timing to specify how delays should be handled
                                             : ... note: In instance 't'

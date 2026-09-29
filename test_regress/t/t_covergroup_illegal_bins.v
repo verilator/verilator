@@ -18,7 +18,12 @@ module t;
   logic [3:0] data4;
 
   covergroup cg;
-    coverpoint data {bins low = {0}; bins mid = {1}; bins high = {2}; illegal_bins forbidden = {3};}
+    coverpoint data {
+      bins low = {0};
+      bins mid = {1};
+      bins high = {2};
+      illegal_bins forbidden = {3};
+    }
   endgroup
 
   // cg2: illegal_bins on multi-step transitions and array notation
@@ -38,7 +43,10 @@ module t;
 
   // cg3: all bins are ignore_bins or illegal_bins - nothing contributes to coverage
   covergroup cg3;
-    cp: coverpoint data {ignore_bins ign = {0, 1}; illegal_bins ill = {2, 3};}
+    cp: coverpoint data {
+      ignore_bins ign = {0, 1};
+      illegal_bins ill = {2, 3};
+    }
   endgroup
 
   initial begin

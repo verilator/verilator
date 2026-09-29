@@ -104,7 +104,7 @@ module t;
   wire [31:0] expected = 32'hDE55_8000;
 
   initial begin
-    #0; // Reading a continuously assigned net in an initial block is a time 0 race.
+    #0;  // Reading a continuously assigned net in an initial block is a time 0 race.
     $display("in_value = %h, out_value = %h, expected = %h", in_value, out_value, expected);
     `checkh(out_value, expected);
     $write("*-* All Finished *-*\n");

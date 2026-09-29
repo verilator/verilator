@@ -1,0 +1,34 @@
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:33:5: Ignoring unsupported: 'type_option.distribute_first'; 'with' filters apply before values are distributed to bins
+                                                   : ... note: In instance 't'
+   33 |     type_option.distribute_first = 1;   
+      |     ^~~~~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:17:21: Unsupported: 'with' filter of wildcard 'bins' of more than --coverage-max-bins of 8 ranges of values; bin 'odd' ignored
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest a larger --coverage-max-bins
+   17 |       wildcard bins odd[] = {8'b???????1} with (1);
+      |                     ^~~
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:21:28: Unsupported: 'with' filter of wildcard 'ignore_bins' of more than --coverage-max-bins of 8 ranges of values; bin 'odd' ignored
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest a larger --coverage-max-bins
+   21 |       wildcard ignore_bins odd = {8'b???????1} with (item > 1);
+      |                            ^~~
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:26:21: Unsupported: 'with' filter of wildcard 'bins' of more than --coverage-max-bins of 8 ranges of values; bin 'odd' ignored
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest a larger --coverage-max-bins
+   26 |       wildcard bins odd[] = {8'b???????1} with (item > 1);
+      |                     ^~~
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:47:12: Unsupported: 'with' filter of more than 2**32 candidate values; bin 'b' ignored
+                                                    : ... note: In instance 't'
+   47 |       bins b = all with (item < 5);   
+      |            ^
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:50:12: Unsupported: 'with' filter of more than 2**32 candidate values; bin 'b' ignored
+                                                    : ... note: In instance 't'
+   50 |       bins b = {[0 : 33'h1_0000_0000]} with (item < 5);   
+      |            ^
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:53:12: Unsupported: 'with' filter of more than 2**32 candidate values; bin 'fixed' ignored
+                                                    : ... note: In instance 't'
+   53 |       bins fixed[2] = {[0 : 33'h0_ffff_ffff], [0 : 33'h0_ffff_ffff]} with (item < 5);   
+      |            ^~~~~
+%Error: Exiting due to

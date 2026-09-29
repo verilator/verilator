@@ -25,6 +25,8 @@
 
 #include "V3Scope.h"
 
+#include "V3ConstPool.h"
+
 #include <unordered_map>
 #include <unordered_set>
 
@@ -419,5 +421,6 @@ void V3Scope::scopeAll(AstNetlist* nodep) {
         const ScopeVisitor visitor{nodep};
         ScopeCleanupVisitor{nodep};
     }  // Destruct before checking
+    V3ConstPool::setScoped();
     V3Global::dumpCheckGlobalTree("scope", 0, dumpTreeEitherLevel() >= 3);
 }

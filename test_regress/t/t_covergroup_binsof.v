@@ -22,7 +22,11 @@ module t (
       bins arrayed[] = {3, 4};
       bins rest = default;
     }
-    cp_b: coverpoint b {bins low = {0}; bins high = {1}; bins either = {[0 : 1]};}
+    cp_b: coverpoint b {
+      bins low = {0};
+      bins high = {1};
+      bins either = {[0 : 1]};
+    }
     // Overlapping coverpoint bins must not count a selected cross bin twice.
     all_products: cross cp_a, cp_b{
       bins combined = binsof (cp_a);
@@ -52,13 +56,18 @@ module t (
   endgroup
 
   covergroup cg_transition with function sample (bit [6:0] a, bit b);
-    cp_a: coverpoint a {bins seq = (0 => 1); bins two = {2};}
+    cp_a: coverpoint a {
+      bins seq = (0 => 1);
+      bins two = {2};
+    }
     cp_b: coverpoint b;
     transitions: cross cp_a, cp_b{bins selected = binsof (cp_a.seq);}
   endgroup
 
   covergroup cg_empty with function sample (bit a, bit b);
-    cp_a: coverpoint a {ignore_bins ignored = {0, 1};}
+    cp_a: coverpoint a {
+      ignore_bins ignored = {0, 1};
+    }
     cp_b: coverpoint b;
     empty_product: cross cp_a, cp_b{bins selected = binsof (cp_b);}
   endgroup

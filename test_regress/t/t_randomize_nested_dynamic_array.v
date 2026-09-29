@@ -5,9 +5,7 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-typedef struct {
-  rand bit values[];
-} Element;
+typedef struct {rand bit values[];} Element;
 
 class Container;
   rand Element elements[];

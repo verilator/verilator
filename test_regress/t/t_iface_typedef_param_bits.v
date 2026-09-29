@@ -8,12 +8,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package a_pkg;
-  typedef struct packed {
-    int unsigned p_a;
-  } cfg_t;
+  typedef struct packed {int unsigned p_a;} cfg_t;
 endpackage
 
-interface sub_if #(parameter a_pkg::cfg_t cfg = 0);
+interface sub_if #(
+    parameter a_pkg::cfg_t cfg = 0
+);
   typedef logic [cfg.p_a-1:0] data_t;
   typedef struct packed {
     logic [3:0] addr;
@@ -21,15 +21,17 @@ interface sub_if #(parameter a_pkg::cfg_t cfg = 0);
   } data2_t;
 endinterface
 
-module sub (sub_if io);
+module sub (
+    sub_if io
+);
 endmodule
 
-module t();
+module t ();
   parameter a_pkg::cfg_t cfg = '{p_a: 16};
 
-  sub_if #(cfg) sub_io();
+  sub_if #(cfg) sub_io ();
 
-  sub u_sub(.io(sub_io));
+  sub u_sub (.io(sub_io));
 
   typedef sub_io.data2_t data2_t;
   typedef sub_io.data_t data_t;

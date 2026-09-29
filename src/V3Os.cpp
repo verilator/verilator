@@ -471,7 +471,7 @@ string V3Os::trueRandom(size_t size) VL_MT_SAFE {
 uint64_t V3Os::timeUsecs() {
 #if defined(_WIN32) || defined(__MINGW32__)
     // Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
-    static const uint64_t EPOCH_DIFFERENCE_USECS = 11644473600000000ULL;
+    static constexpr uint64_t EPOCH_DIFFERENCE_USECS = 11644473600000000ULL;
 
     FILETIME ft;  // contains number of 0.1us intervals since the beginning of 1601 UTC.
     GetSystemTimeAsFileTime(&ft);
