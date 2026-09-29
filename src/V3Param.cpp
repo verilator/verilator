@@ -319,6 +319,12 @@ class ParamSubstVisitor final : public VNVisitor {
         return dtypep->exists([](const AstEnumDType*) { return true; })
                || dtypep->exists([](const AstNodeUOrStructDType* sp) { return !sp->packed(); });
     }
+    // Whether varp is declared in a package, so its type can't depend on the cell's parameters
+    static bool inPackage(const AstVar* varp) {
+        const AstNode* np = varp;
+        while (np && !VN_IS(np, NodeModule)) np = np->backp();
+        return VN_IS(np, Package);
+    }
     // Whether a typedef of the module uses the module's parameters
     static bool typedefDependsOnParams(const AstTypedef* typedefp, const ParamPinMaps& pins) {
         if (!typedefp || !typedefp->childDTypep() || !pins.isModuleTypedef(typedefp)) {
@@ -397,10 +403,13 @@ class ParamSubstVisitor final : public VNVisitor {
     }
 
 public:
-    // Whether a type or value refers to parameters, directly or through the module's typedefs
+    // Whether a type or value refers to parameters, directly or through the module's typedefs,
+    // or to a variable other than a package's, whose type may depend on them
     static bool dependsOnParams(const AstNode* nodep, const ParamPinMaps& pins) {
         return nodep->exists([&](const AstNode* np) {
-            if (VN_IS(np, VarRef)) return true;
+            if (const AstVarRef* const varrefp = VN_CAST(np, VarRef)) {
+                return !inPackage(varrefp->varp());
+            }
             const AstRefDType* const refp = VN_CAST(np, RefDType);
             if (!refp) return false;
             return VN_IS(refp->refDTypep(), ParamTypeDType)

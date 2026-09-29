@@ -271,7 +271,7 @@ module dg;
   parameter top_t V[2] = '{default: 0};
 endmodule
 
-// Size and type from $bits of a package variable, which isn't a parameter
+// Sizes and types from $bits of a variable of a package or of the module, not a parameter
 package pv;
   logic [4:0] sig5;
 endpackage
@@ -280,8 +280,14 @@ module bv #(
     parameter int V[N] = '{default: 0}
 ) ();
 endmodule
+module bp #(
+    parameter type T = logic [$bits(pv::sig5)-1:0],
+    parameter T V[2] = '{default: 0}
+) ();
+endmodule
 module bw;
-  typedef logic [$bits(pv::sig5)-1:0] w_t;
+  logic [4:0] w5;
+  typedef logic [$bits(w5)-1:0] w_t;
   parameter w_t V[2] = '{default: 0};
 endmodule
 
@@ -403,6 +409,8 @@ module t;
   dg #(.N(4), .V('{3, 5})) i_dg ();
 
   bv #(.V('{1, 2, 3, 4, 5})) i_bv ();
+  bp #(.V('{17, 18})) i_bp ();
+  bp #(.T(logic [$bits(pv::sig5):0]), .V('{33, 34})) i_bpo ();  // Type overridden
   bw #(.V('{17, 18})) i_bw ();
 
   initial begin
@@ -600,9 +608,13 @@ module t;
     `checkd($bits(i_dg.V[0]), 4);
     `checkd(i_dg.V[1], 5);
 
-    // Size and type from a package variable
+    // Sizes and types from variables
     `checkd($size(i_bv.V), 5);
     `checkd(i_bv.V[4], 5);
+    `checkd($bits(i_bp.V[0]), 5);
+    `checkd(i_bp.V[1], 18);
+    `checkd($bits(i_bpo.V[0]), 6);
+    `checkd(i_bpo.V[1], 34);
     `checkd($bits(i_bw.V[0]), 5);
     `checkd(i_bw.V[1], 18);
 
