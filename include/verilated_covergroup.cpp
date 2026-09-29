@@ -1126,7 +1126,20 @@ uint32_t VlCoverpoint::binCount() const {
 std::string VlCoverpoint::binName(uint32_t i) const { return declaredBinName(reportedBin(i)); }
 
 #if VM_COVERAGE
-void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* page) {
+// Key of the coverage computation (IEEE 1800-2023 19.11), or "", which leaves the key out, for
+// the default value 1, so that the records of the common case keep their names
+static const char* _vl_cov_score_key(const char* keyp, uint32_t value) VL_PURE {
+    return value == 1 ? "" : keyp;
+}
+
+void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* page,
+                                uint32_t itemWeight, uint32_t groupWeight) {
+    const std::string threshStr = std::to_string(m_atLeast);
+    const std::string weightStr = std::to_string(itemWeight);
+    const std::string groupWeightStr = std::to_string(groupWeight);
+    const char* const threshKeyp = _vl_cov_score_key("thresh", m_atLeast);
+    const char* const weightKeyp = _vl_cov_score_key("weight", itemWeight);
+    const char* const groupWeightKeyp = _vl_cov_score_key("group_weight", groupWeight);
     for (uint32_t reported = 0; reported < binCount(); ++reported) {
         const uint32_t i = reportedBin(reported);
         const VlCovNamer& nm = namerFor(i);
@@ -1135,18 +1148,16 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
         const std::string full = m_hier + "." + binp;
         const std::string lineStr = std::to_string(nm.line());
         const std::string colStr = std::to_string(nm.col());
-        if (kind == VlCovBinKind::KIND_NORMAL) {
-            VL_COVER_INSERT(covcontextp, full.c_str(), &m_counts[i], "page", page, "filename",
-                            nm.file(), "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                            binp.c_str());
-        } else {
-            const char* const binType = kind == VlCovBinKind::KIND_IGNORE    ? "ignore"
-                                        : kind == VlCovBinKind::KIND_ILLEGAL ? "illegal"
-                                                                             : "default";
-            VL_COVER_INSERT(covcontextp, full.c_str(), &m_counts[i], "page", page, "filename",
-                            nm.file(), "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                            binp.c_str(), "bin_type", binType);
-        }
+        // An empty key leaves out the bin type of a Normal bin
+        const char* const binType = kind == VlCovBinKind::KIND_NORMAL    ? ""
+                                    : kind == VlCovBinKind::KIND_IGNORE  ? "ignore"
+                                    : kind == VlCovBinKind::KIND_ILLEGAL ? "illegal"
+                                                                         : "default";
+        VL_COVER_INSERT(covcontextp, full.c_str(), &m_counts[i], "page", page, "filename",
+                        nm.file(), "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
+                        binp.c_str(), binType[0] ? "bin_type" : "", binType, threshKeyp,
+                        threshStr.c_str(), weightKeyp, weightStr.c_str(), groupWeightKeyp,
+                        groupWeightStr.c_str());
     }
 }
 #endif  // VM_COVERAGE
@@ -1422,9 +1433,15 @@ std::string VlCoverCross::autoBinName(uint32_t flat) const {
 }
 
 #if VM_COVERAGE
-void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* page) {
+void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* page,
+                                uint32_t itemWeight, uint32_t groupWeight) {
     const std::string lineStr = std::to_string(m_line);
     const std::string colStr = std::to_string(m_col);
+    // A cross bin is covered once hit, which needs no option.at_least
+    const std::string weightStr = std::to_string(itemWeight);
+    const std::string groupWeightStr = std::to_string(groupWeight);
+    const char* const weightKeyp = _vl_cov_score_key("weight", itemWeight);
+    const char* const groupWeightKeyp = _vl_cov_score_key("group_weight", groupWeight);
     const uint32_t explicitCount
         = hasExplicitBins() ? static_cast<uint32_t>(m_explicitp->bins.size()) : 0;
     // Use the same indexed names for registration and the runtime read interface.
@@ -1435,18 +1452,15 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
             Bin& userBin = m_explicitp->bins[i];
             const std::string binLineStr = std::to_string(userBin.line);
             const std::string binColStr = std::to_string(userBin.col);
-            if (userBin.kind == VlCovBinKind::KIND_NORMAL) {
-                VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page,
-                                "filename", userBin.filep, "lineno", binLineStr.c_str(), "column",
-                                binColStr.c_str(), "bin", bin.c_str(), "cross", "1");
-            } else {
-                const char* const binType
-                    = userBin.kind == VlCovBinKind::KIND_IGNORE ? "ignore" : "illegal";
-                VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page,
-                                "filename", userBin.filep, "lineno", binLineStr.c_str(), "column",
-                                binColStr.c_str(), "bin", bin.c_str(), "cross", "1", "bin_type",
-                                binType);
-            }
+            // An empty key leaves out the bin type of a Normal bin
+            const char* const binType = userBin.kind == VlCovBinKind::KIND_NORMAL   ? ""
+                                        : userBin.kind == VlCovBinKind::KIND_IGNORE ? "ignore"
+                                                                                    : "illegal";
+            VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page, "filename",
+                            userBin.filep, "lineno", binLineStr.c_str(), "column",
+                            binColStr.c_str(), "bin", bin.c_str(), "cross", "1",
+                            binType[0] ? "bin_type" : "", binType, weightKeyp, weightStr.c_str(),
+                            groupWeightKeyp, groupWeightStr.c_str());
             continue;
         }
         const uint32_t flat = autoIndex(i - explicitCount);
@@ -1460,7 +1474,8 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
         }
         VL_COVER_INSERT(covcontextp, full.c_str(), &m_flatCountsp[flat], "page", page, "filename",
                         m_file, "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str());
+                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str(), weightKeyp,
+                        weightStr.c_str(), groupWeightKeyp, groupWeightStr.c_str());
     }
 }
 #endif  // VM_COVERAGE
