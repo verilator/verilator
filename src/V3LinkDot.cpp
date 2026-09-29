@@ -3482,6 +3482,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         defParamPins.emplace(nodep->paramPath(), nodep);
     }
+    static AstClocking* sensClockingp(AstNode* nodep) {
+        // Return the clocking block referenced by nodep, either directly or through a modport
+        if (AstClocking* const clockingp = VN_CAST(nodep, Clocking)) return clockingp;
+        if (const AstModportClockingRef* const clockingRefp = VN_CAST(nodep, ModportClockingRef))
+            return clockingRefp->clockingp();
+        return nullptr;
+    }
     VSymEnt* getCreateClockingEventSymEnt(AstClocking* clockingp) {
         AstVar* const eventp = clockingp->ensureEventp(true);
         if (!eventp->user1p()) eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
@@ -4465,7 +4472,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             bool ok = false;
             // Special case: waiting on clocking event
             if (m_inSens && foundp && m_ds.m_dotPos != DP_SCOPE && m_ds.m_dotPos != DP_FIRST) {
-                if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                if (AstClocking* const clockingp = sensClockingp(foundp->nodep())) {
                     foundp = getCreateClockingEventSymEnt(clockingp);
                 }
             }
@@ -5081,7 +5088,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
                 }
                 if (m_inSens && foundp) {
-                    if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                    if (AstClocking* const clockingp = sensClockingp(foundp->nodep())) {
                         foundp = getCreateClockingEventSymEnt(clockingp);
                     }
                 }
