@@ -9,13 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_paramgraph_iface_template_nested.v"
+test.scenarios('simulator')
 
-test.lint(
-    # Check we can dump the interface capture ledger
-    v_flags=["--debug --debugi 0 --debugi-V3LinkDotIfaceCapture 9"])
+test.compile()
 
-test.file_grep(test.compile_log_filename, r'iface capture dumpEntries: after finalizeIfaceCapture')
+test.execute()
 
 test.passes()

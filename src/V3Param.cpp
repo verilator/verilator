@@ -858,7 +858,7 @@ class ParamProcessor final {
         // References in a class nested in newModp (e.g. a covergroup) are included.
         newModp->foreach([&](AstRefDType* refp) {
             const VIfaceCaptureTag* const tagp = V3LinkDotIfaceCapture::captureTag(refp);
-            if (!tagp || tagp->m_cellPath.empty()) return;
+            if (!tagp) return;
 
             AstNodeModule* const correctModp
                 = V3LinkDotIfaceCapture::followCellPath(newModp, tagp->m_cellPath);
@@ -2183,8 +2183,6 @@ public:
     // reference the old template's types so that $bits(iface_typedef)
     // evaluates with the clone's widths.
     void retargetIfaceRefs(AstNodeModule* parentModp, const string& cellName) {
-        // A template's references are retargeted in each of its clones instead.
-        if (parentModp->hasGParam()) return;
         AstNodeModule* const correctModp
             = V3LinkDotIfaceCapture::followCellPath(parentModp, cellName);
         if (!correctModp || correctModp->dead() || correctModp->parameterizedTemplate()) return;

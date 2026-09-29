@@ -44,8 +44,6 @@ public:
 };
 
 class V3LinkDotIfaceCapture final {
-    friend class TypeTableDeadRefVisitor;
-
     static std::deque<VIfaceCaptureTag> s_tags;  // Owns every tag; a deque keeps addresses stable
     static bool s_enabled;
 
@@ -54,24 +52,14 @@ class V3LinkDotIfaceCapture final {
     static void reset();
     static void clearModuleCache();
     static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
-    // True if this module is a copy of that one.
-    static bool isCloneOfModule(const AstNodeModule* modp, const AstNodeModule* templateModp);
     // Point a reference at a typedef and fix its other links.
     static void retargetRefToTypedef(AstRefDType* refp, AstTypedef* typedefp);
     // Same, for a parameter type.
     static void retargetRefToParamType(AstRefDType* refp, AstParamTypeDType* paramTypep);
-    static AstNodeModule* findCloneViaHierarchy(AstNodeModule* containingModp,
-                                                AstNodeModule* deadTargetModp, int depth = 0);
-    static AstNodeModule* findLiveCloneOf(AstNodeModule* deadTargetModp,
-                                          AstNodeModule** containerp = nullptr);
-    static int fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp, const char* location,
-                           const std::unordered_set<const AstNode*>& liveNodes);
-    // Tag a reference captured in capturedInp, unless it is already tagged
+    // Tag a reference captured in capturedInp
     static void tag(AstRefDType* refp, const AstNodeModule* capturedInp,
                     VIfaceCaptureTag::Kind kind, const string& cellPath,
                     const string& ownerModName);
-    static int fixDeadRefsInTypeTable(const std::unordered_set<const AstNode*>& liveNodes);
-    static int fixDeadRefsInModules(const std::unordered_set<const AstNode*>& liveNodes);
     static int resolveCapturedRefs();
     static void verifyNoDeadRefs(const std::unordered_set<const AstNode*>& liveNodes);
 
