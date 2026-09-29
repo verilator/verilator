@@ -43,11 +43,32 @@ namespace {
 
 // Coverage of a report row: its covered and total points, and for covergroups, their
 // coverage, which weights coverpoints and crosses rather than counting bins
-struct Tally final {
-    uint64_t hit = 0;  // Covered points
-    uint64_t total = 0;  // Points
-    bool scored = false;  // Coverage is score, not the ratio of the points
-    double score = 0.0;  // Percent coverage, if scored
+class Tally final {
+    // MEMBERS
+    uint64_t m_hit = 0;  // Covered points
+    uint64_t m_total = 0;  // Points
+    bool m_scored = false;  // Coverage is m_score, not the ratio of the points
+    double m_score = 0.0;  // Percent coverage, if m_scored
+
+public:
+    // ACCESSORS
+    uint64_t hit() const { return m_hit; }
+    uint64_t total() const { return m_total; }
+    bool scored() const { return m_scored; }
+    double score() const { return m_score; }
+    void score(double value) {
+        m_scored = true;
+        m_score = value;
+    }
+    // METHODS
+    void addPoint(bool covered) {
+        if (covered) ++m_hit;
+        ++m_total;
+    }
+    void addPoints(const Tally& other) {
+        m_hit += other.m_hit;
+        m_total += other.m_total;
+    }
 };
 
 // Map coverage type to its tally.
@@ -106,9 +127,7 @@ string duName(const VlcPoint& point) {
 }
 
 void tallyPoint(TypeTally& tally, const string& type, uint64_t count) {
-    Tally& entry = tally[type];
-    if (count > 0) ++entry.hit;
-    ++entry.total;
+    tally[type].addPoint(count > 0);
 }
 
 // Keep the percentage calculation in one place so flat summaries and hierarchy
@@ -138,21 +157,59 @@ string pctString(uint64_t hit, uint64_t total) {
 // weighted by type_option.weight.  The coverage database merges the instances of a covergroup
 // type, so this is the coverage of the merged instances, which is what get_coverage() returns
 // for a single instance.
-struct CgBin final {
-    string name;
-    uint64_t count = 0;
-    uint64_t atLeast = 0;  // option.at_least, the largest of the records
-    bool covered() const { return count >= atLeast; }
+
+// A coverable bin of a coverpoint or cross, of all its records
+class CgBin final {
+    // MEMBERS
+    string m_name;  // Name of the bin
+    uint64_t m_count = 0;  // Hits, of all the records
+    uint64_t m_atLeast = 0;  // option.at_least, the largest of the records
+
+public:
+    // ACCESSORS
+    const string& name() const { return m_name; }
+    bool covered() const { return m_count >= m_atLeast; }
+    // METHODS
+    void addRecord(const string& name, uint64_t count, uint64_t atLeast) {
+        m_name = name;
+        m_count += count;
+        m_atLeast = std::max(m_atLeast, atLeast);
+    }
 };
-struct CgItem final {
-    uint64_t weight = 0;  // The weight of the records, the largest
-    std::map<string, CgBin> bins;  // Coverable bins, by binIdentity()
+
+// A coverpoint or cross
+class CgItem final {
+    // MEMBERS
+    uint64_t m_weight = 0;  // The weight of the records, the largest
+    std::map<string, CgBin> m_bins;  // Coverable bins, by binIdentity()
+
+public:
+    // ACCESSORS
+    uint64_t weight() const { return m_weight; }
+    const std::map<string, CgBin>& bins() const { return m_bins; }
+    // METHODS
+    void addRecord(uint64_t weight) { m_weight = std::max(m_weight, weight); }
+    CgBin& findNewBin(const string& identity) { return m_bins[identity]; }
 };
-struct CgGroup final {
-    string hier;  // Hierarchy above the items
-    string designUnit;
-    uint64_t weight = 0;  // type_option.weight, the largest of the records
-    std::map<string, CgItem> items;  // By hierarchy
+
+// A covergroup
+class CgGroup final {
+    // MEMBERS
+    string m_hier;  // Hierarchy above the items
+    uint64_t m_weight = 0;  // type_option.weight, the largest of the records
+    std::map<string, CgItem> m_items;  // By hierarchy
+
+public:
+    // ACCESSORS
+    const string& hier() const { return m_hier; }
+    uint64_t weight() const { return m_weight; }
+    const std::map<string, CgItem>& items() const { return m_items; }
+    // METHODS
+    void addRecord(const string& hier, uint64_t weight) {
+        m_hier = hier;
+        m_weight = std::max(m_weight, weight);
+    }
+    CgItem& findNewItem(const string& hier) { return m_items[hier]; }
 };
 using CgGroups = std::map<string, CgGroup>;  // By page
 
@@ -163,7 +220,7 @@ uint64_t keyNumber(const string& value) {
 
 // If a field of a record's name, '\001<key>\002<value>', has a key of the coverage computation
 bool isScoreField(const string& field) {
-    for (const char* const keyp : {VL_CIK_THRESH, VL_CIK_WEIGHT, "group_weight"}) {
+    for (const char* const keyp : {VL_CIK_THRESH, VL_CIK_WEIGHT, VL_CIK_GROUP_WEIGHT}) {
         const string prefix = string{"\001"} + keyp + "\002";
         if (field.compare(0, prefix.size(), prefix) == 0) return true;
     }
@@ -200,29 +257,22 @@ CgGroups covergroups(VlcPoints& points) {
         const string itemHier
             = hier.substr(0, hier.size() - std::min(hier.size(), bin.size() + 1));
         CgGroup& group = groups[pt.page()];
-        group.hier = itemHier.substr(0, itemHier.rfind('.'));
-        group.designUnit = duName(pt);
-        group.weight = std::max(group.weight, keyNumber(pt.groupWeight()));
-        CgItem& item = group.items[itemHier];
-        item.weight = std::max(item.weight, keyNumber(pt.weight()));
+        group.addRecord(itemHier.substr(0, itemHier.rfind('.')), keyNumber(pt.groupWeight()));
+        CgItem& item = group.findNewItem(itemHier);
+        item.addRecord(keyNumber(pt.weight()));
         if (!pt.binType().empty()) continue;  // Not coverable
-        CgBin& entry = item.bins[binIdentity(pt.name())];
-        entry.name = bin;
-        entry.count += pt.count();
-        entry.atLeast = std::max(entry.atLeast, keyNumber(pt.thresh()));
+        item.findNewBin(binIdentity(pt.name())).addRecord(bin, pt.count(), keyNumber(pt.thresh()));
     }
     return groups;
 }
 
 Tally itemTally(const CgItem& item) {
     Tally tally;
-    tally.scored = true;
-    for (const std::pair<const string, CgBin>& bin : item.bins) {
-        if (bin.second.covered()) ++tally.hit;
-        ++tally.total;
+    for (const std::pair<const string, CgBin>& bin : item.bins()) {
+        tally.addPoint(bin.second.covered());
     }
     // Without bins, 0.0, or 100.0 if of zero weight (IEEE 1800-2023 19.11.1)
-    tally.score = tally.total ? pct(tally.hit, tally.total) : item.weight ? 0.0 : 100.0;
+    tally.score(tally.total() ? pct(tally.hit(), tally.total()) : item.weight() ? 0.0 : 100.0);
     return tally;
 }
 
@@ -230,42 +280,65 @@ Tally itemTally(const CgItem& item) {
 // in the coverage of covergroups together
 Tally groupTally(const CgGroup& group, bool* contributesp = nullptr) {
     Tally tally;
-    tally.scored = true;
     double weighted = 0.0;
     double weights = 0.0;
-    for (const std::pair<const string, CgItem>& it : group.items) {
+    for (const std::pair<const string, CgItem>& it : group.items()) {
         const Tally item = itemTally(it.second);
-        tally.hit += item.hit;
-        tally.total += item.total;
-        if (!item.total) continue;  // Excluded from both sums
-        weighted += static_cast<double>(it.second.weight) * item.score;
-        weights += static_cast<double>(it.second.weight);
+        tally.addPoints(item);
+        if (!item.total()) continue;  // Excluded from both sums
+        weighted += static_cast<double>(it.second.weight()) * item.score();
+        weights += static_cast<double>(it.second.weight());
     }
     if (contributesp) *contributesp = weights != 0.0;
     // Without items of weight and bins, 0.0, or 100.0 if of zero weight
-    tally.score = weights != 0.0 ? weighted / weights : group.weight ? 0.0 : 100.0;
+    tally.score(weights != 0.0 ? weighted / weights : group.weight() ? 0.0 : 100.0);
     return tally;
 }
 
 Tally groupsTally(const std::vector<const CgGroup*>& groups) {
     Tally tally;
-    tally.scored = true;
     double weighted = 0.0;
     double weights = 0.0;
     bool anyWeight = false;
     for (const CgGroup* const groupp : groups) {
         bool contributes = false;
         const Tally group = groupTally(*groupp, &contributes);
-        tally.hit += group.hit;
-        tally.total += group.total;
-        if (groupp->weight) anyWeight = true;
+        tally.addPoints(group);
+        if (groupp->weight()) anyWeight = true;
         if (!contributes) continue;
-        weighted += static_cast<double>(groupp->weight) * group.score;
-        weights += static_cast<double>(groupp->weight);
+        weighted += static_cast<double>(groupp->weight()) * group.score();
+        weights += static_cast<double>(groupp->weight());
     }
     // Without covergroups of weight that contribute, 0.0, or 100.0 if all have zero weight
-    tally.score = weights != 0.0 ? weighted / weights : anyWeight ? 0.0 : 100.0;
+    tally.score(weights != 0.0 ? weighted / weights : anyWeight ? 0.0 : 100.0);
     return tally;
+}
+
+// The tallies of covergroups, of their coverpoints and crosses, and of the coverable bins of
+// those, by name; a covergroup of a dotted name also tallies in each node of its name
+std::map<string, Tally> covergroupTallies(const CgGroups& groups) {
+    std::map<string, Tally> tallies;
+    std::map<string, std::vector<const CgGroup*>> nodeGroups;
+    for (const CgGroups::value_type& it : groups) {
+        const CgGroup& group = it.second;
+        string path;
+        for (const string& part : splitHier(group.hier())) {
+            path = path.empty() ? part : path + "." + part;
+            nodeGroups[path].push_back(&group);
+        }
+        for (const std::pair<const string, CgItem>& item : group.items()) {
+            tallies[item.first] = itemTally(item.second);
+            for (const std::pair<const string, CgBin>& bin : item.second.bins()) {
+                // Of the bins of the name
+                tallies[item.first + "." + bin.second.name()].addPoint(bin.second.covered());
+            }
+        }
+    }
+    for (const std::pair<const string, std::vector<const CgGroup*>>& it : nodeGroups) {
+        tallies[it.first]
+            = it.second.size() == 1 ? groupTally(*it.second.front()) : groupsTally(it.second);
+    }
+    return tallies;
 }
 
 // Shared row formatter.  The callers choose which rows to print; this only keeps
@@ -278,18 +351,18 @@ void printTallyRow(const string& type, const Tally& tally, size_t indent, size_t
                    size_t countWidth) {
     printIndent(indent);
     // A score is complete at 100%, which it may reach with bins of no weight uncovered
-    const string percent = tally.scored ? pctValueString(tally.score, tally.score >= 100.0)
-                                        : pctString(tally.hit, tally.total);
+    const string percent = tally.scored() ? pctValueString(tally.score(), tally.score() >= 100.0)
+                                          : pctString(tally.hit(), tally.total());
     std::cout << std::left << std::setw(typeWidth) << type << " : " << std::right << std::fixed
-              << percent << " (" << std::setw(countWidth) << tally.hit << "/"
-              << std::setw(countWidth) << tally.total << ")\n";
+              << percent << " (" << std::setw(countWidth) << tally.hit() << "/"
+              << std::setw(countWidth) << tally.total() << ")\n";
 }
 
 size_t countWidth(const TypeTally& tally) {
     size_t width = cvtToStr(0).size();
     for (TypeTally::const_iterator it = tally.begin(); it != tally.end(); ++it) {
-        width = std::max(width, cvtToStr(it->second.hit).size());
-        width = std::max(width, cvtToStr(it->second.total).size());
+        width = std::max(width, cvtToStr(it->second.hit()).size());
+        width = std::max(width, cvtToStr(it->second.total()).size());
     }
     return width;
 }
@@ -325,6 +398,23 @@ void printTypeTally(const TypeTally& tally, size_t indent, bool includeMissingOr
         if (!isOrderedType(it->first)) {
             printTallyRow(it->first, it->second, indent, typWidth, cntWidth);
         }
+    }
+}
+
+// Print covergroups, coverpoints, crosses, and bins one per line, so that searching for a name
+// shows its coverage
+void printCovergroupTallies(const std::map<string, Tally>& tallies, int levels) {
+    std::map<string, Tally> shown;
+    size_t nameWidth = 0;
+    for (const std::pair<const string, Tally>& it : tallies) {
+        if (levels >= 0 && static_cast<int>(splitHier(it.first).size()) > levels + 1) continue;
+        shown.insert(it);
+        nameWidth = std::max(nameWidth, it.first.size());
+    }
+    const size_t cntWidth = countWidth(shown);
+    std::cout << "Covergroup Coverage Summary:\n";
+    for (const std::pair<const string, Tally>& it : shown) {
+        printTallyRow(it.first, it.second, s_summaryIndent, nameWidth, cntWidth);
     }
 }
 
@@ -701,11 +791,11 @@ void VlcTop::printHierarchyReport() {
     bool hasCollapsedHier = false;
     for (VlcPoints::ByName::value_type& i : m_points) {
         const VlcPoint& pt = m_points.pointNumber(i.second);
+        if (isCovergroup(pt)) continue;  // Reported below, by covergroup
         const string hier = reportHier(pt);
         if (hier.empty()) continue;
         hasHier = true;
         if (isCollapsedHier(hier)) hasCollapsedHier = true;
-        if (isCovergroup(pt)) continue;  // Tallied below, by covergroup
         const string type = displayType(pt);
         const std::vector<string> parts = splitHier(hier);
         string path;
@@ -715,32 +805,12 @@ void VlcTop::printHierarchyReport() {
         }
         tallyPoint(duTallies[duName(pt)], type, pt.count());
     }
-    // Covergroups, their coverpoints and crosses, and the coverable bins of those
-    const CgGroups groups = covergroups(m_points);
-    std::map<string, std::vector<const CgGroup*>> hierGroups;
-    for (const CgGroups::value_type& it : groups) {
-        const CgGroup& group = it.second;
-        duTallies[group.designUnit][s_covergroupType] = groupTally(group);
-        string path;
-        for (const string& part : splitHier(group.hier)) {
-            path = path.empty() ? part : path + "." + part;
-            hierGroups[path].push_back(&group);
-        }
-        for (const std::pair<const string, CgItem>& item : group.items) {
-            hierTallies[item.first][s_covergroupType] = itemTally(item.second);
-            for (const std::pair<const string, CgBin>& bin : item.second.bins) {
-                // Of the bins of the name
-                Tally& tally = hierTallies[item.first + "." + bin.second.name][s_covergroupType];
-                tally.hit += bin.second.covered();
-                ++tally.total;
-            }
-        }
-    }
-    for (const std::pair<const string, std::vector<const CgGroup*>>& it : hierGroups) {
-        hierTallies[it.first][s_covergroupType]
-            = it.second.size() == 1 ? groupTally(*it.second.front()) : groupsTally(it.second);
-    }
+    const std::map<string, Tally> cgTallies = covergroupTallies(covergroups(m_points));
 
+    if (!hasHier && !cgTallies.empty()) {
+        printCovergroupTallies(cgTallies, opt.reportLevels());
+        return;
+    }
     if (!hasHier) {
         std::cout << "%Warning: --report hierarchy input has no hierarchy fields; "
                   << "printing flat summary instead.\n";
@@ -773,4 +843,5 @@ void VlcTop::printHierarchyReport() {
         // types only, but in the same stable order as the flat summary.
         printTypeTally(it->second, s_reportRowIndent, false);
     }
+    if (!cgTallies.empty()) printCovergroupTallies(cgTallies, levels);
 }

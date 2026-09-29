@@ -66,13 +66,13 @@ public:
     string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
     string page() const { return keyExtract("page", m_name.c_str()); }
     string type() const { return typeExtract(m_name.c_str()); }
-    // Covergroup-specific key accessors (long keys, no short-key alias)
-    string bin() const { return keyExtract("bin", m_name.c_str()); }
-    string binType() const { return keyExtract("bin_type", m_name.c_str()); }
-    bool isCross() const { return !keyExtract("cross", m_name.c_str()).empty(); }
+    // Covergroup-specific key accessors
+    string bin() const { return keyExtract(VL_CIK_BIN, m_name.c_str()); }
+    string binType() const { return keyExtract(VL_CIK_BIN_TYPE, m_name.c_str()); }
+    bool isCross() const { return !keyExtract(VL_CIK_CROSS, m_name.c_str()).empty(); }
     string crossBins() const { return keyExtract(VL_CIK_CROSS_BINS, m_name.c_str()); }
     // The covergroup's type_option.weight; "" for the default 1
-    string groupWeight() const { return keyExtract("group_weight", m_name.c_str()); }
+    string groupWeight() const { return keyExtract(VL_CIK_GROUP_WEIGHT, m_name.c_str()); }
     // The coverpoint's or cross's option.weight; "" for the default 1
     string weight() const { return keyExtract(VL_CIK_WEIGHT, m_name.c_str()); }
     string thresh() const {
