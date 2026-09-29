@@ -262,28 +262,9 @@ public:
         UINFO(4, __FUNCTION__ << ": ");
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
-        const std::size_t capturedCount = V3LinkDotIfaceCapture::size();
-        if (forPrimary()) {
-            UINFO(9, "iface capture primary pass (entries=" << capturedCount << ")");
-        } else if (forParamed()) {
-            UINFO(9, "iface capture paramed pass (entries=" << capturedCount << ")");
-        }
         readModNames();
     }
     ~LinkDotState() {
-        const std::size_t capturedCount = V3LinkDotIfaceCapture::size();
-        if (forPrimary()) {
-            UINFO(9,
-                  "iface capture leaving primary pass captured typedef count=" << capturedCount);
-        } else if (forParamed()) {
-            UINFO(9,
-                  "iface capture leaving paramed pass captured typedef count=" << capturedCount);
-            // Do NOT call reset() here.  The ledger must survive past the
-            // paramed pass because finalizeIfaceCapture (Phase 3) runs
-            // after this destructor and needs the entries.
-            // finalizeIfaceCapture calls reset() when it is done.
-            // See V3LinkDotIfaceCapture.h ARCHITECTURE comment.
-        }
         V3Error::errorExitCb(nullptr);
         s_errorThisp = nullptr;
     }
@@ -6262,18 +6243,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         checkDeclOrder(nodep, defp);
                     nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
-                    // class capture: capture typedef references inside parameterized classes
-                    // Only capture if we're referencing from OUTSIDE the class (not
-                    // self-references)
-                    if (V3LinkDotIfaceCapture::enabled() && m_statep->forPrimary()) {
-                        AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
-                        if (classp && classp->hasGParam() && classp != m_modp) {
-                            UINFO(9, indent() << "class capture add typedef name="
-                                              << nodep->prettyNameQ() << " class="
-                                              << classp->prettyNameQ() << " typedef=" << defp);
-                            V3LinkDotIfaceCapture::addClass(nodep, classp, m_modp, defp);
-                        }
-                    }
 
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {

@@ -1268,6 +1268,9 @@ class AstRefDType final : public AstNodeDType {
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Data type references
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package defined in
     string m_name;  // Name of an AstTypedef
+    // Interface capture tag, owned by V3LinkDotIfaceCapture; cloning copies it
+    const VIfaceCaptureTag* m_captureTagp = nullptr;
+
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER_RefDType(fl)
@@ -1294,6 +1297,7 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         return subDTypep()->similarDType(samep->subDTypep());
     }
+    const char* broken() const override;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
@@ -1318,6 +1322,8 @@ public:
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
+    const VIfaceCaptureTag* captureTagp() const { return m_captureTagp; }
+    void captureTagp(const VIfaceCaptureTag* tagp) { m_captureTagp = tagp; }
     bool isCompound() const override {
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
