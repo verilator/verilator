@@ -42,6 +42,8 @@ headers = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*.h")
 aligned_var_re = r'alignas\(VL_CACHE_LINE_BYTES\) (?:CData|SData|IData|QData|VlWide|VL_)'
 
 if test.vltmt:
+    # Review intentional scheduling changes before updating counts or goldens.
+    test.oprint('Layout expectation changes: see docs/internals.rst, Variable Layout.')
     test.file_grep_any(headers, aligned_var_re)
     # The dump records different accessing tasks but the same workers/writer
     # for r0 and r8, and their placement in the same final group.

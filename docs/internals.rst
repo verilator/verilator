@@ -870,6 +870,27 @@ physical CPU IDs. The dump contains neither C++ byte offsets nor measured
 cache misses. Regression golden files check group membership and order;
 small generated-header checks additionally check emission of alignment.
 
+The exact counts and dumps checked by ``t_variable_order_mtask`` and
+``t_variable_order_single_worker`` are regression baselines for those
+fixtures. Task partitioning, scheduling, or other optimizations can
+legitimately change them. A changed count alone does not establish a
+performance regression; fewer merges may reflect fewer initial groups.
+
+When either test fails, compare the before/after ``*_variableorder.txt``
+dumps and explain the changed grouping. Check that the fixtures still
+exercise worker-affinity coalescing, single-worker coalescing, and shared
+writer separation, and that the alignment checks pass. If an optimization
+removes a situation the test was intended to exercise, adjust the fixture
+to retain that coverage.
+
+For a justified compiler change, update the expected counts and regenerate
+the affected golden files with ``HARNESS_UPDATE_GOLDEN=1`` in the same PR,
+explaining why the expectations changed. Rerun both tests in serial and
+multithreaded modes. Investigate unexplained differences before accepting
+new expectations; measure affected workloads when the performance impact is
+uncertain. These checks require review of layout changes, rather than
+preserving particular task IDs or counts indefinitely.
+
 Library wrapper ports and DPI arguments are ordered independently of this
 internal field layout so a scheduling change does not reorder a
 hierarchical interface. ``V3ProtectLib`` currently orders source ports by

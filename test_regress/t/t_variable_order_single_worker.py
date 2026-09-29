@@ -35,6 +35,8 @@ test.compile(verilator_flags2=flags,
              make_top_shell=False,
              verilator_make_gmake=False)
 if test.vltmt:
+    # Review intentional scheduling changes before updating counts or goldens.
+    test.oprint('Layout expectation changes: see docs/internals.rst, Variable Layout.')
     dump = test.glob_one(test.obj_dir + '/*_variableorder.txt')
     test.files_identical(dump, 't/t_variable_order_single_worker.out')
     # Clearing all writer identities would also merge the two shared banks.
