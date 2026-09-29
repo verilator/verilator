@@ -8,8 +8,12 @@ module t (
     input logic x_arr[3],
     logic x,
     logic x_arr_2[3],
-    output sink
+    output sink,
+    output [1:0] o
 );
+  wire [1:0] arr [1:0];
+  assign o = arr | 1;
+
   initial begin
     sink = x_arr + x;
     sink = x_arr - x;
@@ -37,6 +41,33 @@ module t (
     sink = x_arr >= x_arr_2;
     sink = x_arr ==? x_arr_2;
     sink = x_arr !=? x_arr_2;
+
+    sink = x + x_arr;
+    sink = x - x_arr;
+    sink = x * x_arr;
+    sink = x / x_arr;
+    sink = x ** x_arr;
+    sink = x % x_arr;
+    sink = x & x_arr;
+    sink = x | x_arr;
+    sink = x ^ x_arr;
+    sink = x ^~ x_arr;
+    sink = x ~^ x_arr;
+    sink = x >> x_arr;
+    sink = x << x_arr;
+    sink = x >>> x_arr;
+    sink = x <<< x_arr;
+    sink = x && x_arr;
+    sink = x || x_arr;
+    sink = x -> x_arr;
+    sink = x <-> x_arr;
+    sink = x_arr_2 < x_arr;
+    sink = x_arr_2 == x_arr;
+    sink = x_arr_2 <= x_arr;
+    sink = x_arr_2 > x_arr;
+    sink = x_arr_2 >= x_arr;
+    sink = x_arr_2 ==? x_arr;
+    sink = x_arr_2 !=? x_arr;
 
     sink = -x_arr;
     sink = ~x_arr;
