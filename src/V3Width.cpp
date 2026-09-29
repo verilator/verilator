@@ -2602,7 +2602,7 @@ class WidthVisitor final : public VNVisitor {
                 pushDeletep(voidp);  // Note voidp used past here
                 return voidp;
             }();
-            if (!similarDTypeRecurse(protoDtp, declDtp)) {
+            if (!samePrototypeDType(protoDtp, declDtp)) {
                 protoDtp->v3warn(
                     PROTOTYPEMIS,
                     "In prototype for "
@@ -7664,7 +7664,7 @@ class WidthVisitor final : public VNVisitor {
                                              << declDtp->warnOther()
                                              << "... Location of out-of-block declaration\n"
                                              << declDtp->warnContextSecondary());
-                    } else if (!similarDTypeRecurse(protoDtp, declDtp)) {
+                    } else if (!samePrototypeDType(protoDtp, declDtp)) {
                         protoDtp->v3warn(
                             PROTOTYPEMIS,
                             "In prototype for "
@@ -9474,6 +9474,26 @@ class WidthVisitor final : public VNVisitor {
     static bool similarDTypeRecurse(const AstNodeDType* const node1p,
                                     const AstNodeDType* const node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
+    }
+    static bool samePrototypeDType(const AstNodeDType* const node1p,
+                                   const AstNodeDType* const node2p) {
+        const AstNodeDType* const dtype1p = node1p->skipRefp();
+        const AstNodeDType* const dtype2p = node2p->skipRefp();
+        const AstIfaceRefDType* const iface1p = VN_CAST(dtype1p, IfaceRefDType);
+        const AstIfaceRefDType* const iface2p = VN_CAST(dtype2p, IfaceRefDType);
+        if (iface1p || iface2p) {
+            return iface1p && iface2p && iface1p->ifaceViaCellp()
+                   && iface1p->ifaceViaCellp() == iface2p->ifaceViaCellp()
+                   && iface1p->modportName() == iface2p->modportName()
+                   && iface1p->isVirtual() == iface2p->isVirtual();
+        }
+        const AstUnpackArrayDType* const array1p = VN_CAST(dtype1p, UnpackArrayDType);
+        const AstUnpackArrayDType* const array2p = VN_CAST(dtype2p, UnpackArrayDType);
+        if (array1p || array2p) {
+            return array1p && array2p && array1p->elementsConst() == array2p->elementsConst()
+                   && samePrototypeDType(array1p->subDTypep(), array2p->subDTypep());
+        }
+        return dtype1p->similarDType(dtype2p);
     }
     void iterateCheckFileDesc(AstNode* parentp, AstNode* underp, Stage stage) {
         UASSERT_OBJ(stage == BOTH, parentp, "Bad call");
