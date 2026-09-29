@@ -27,6 +27,7 @@ Verilator 5.053 devel
 * Support VPI interface references (#8081). [Todd Strader]
 * Support nested array and associative array element member access in constraint 1/4 - pre-cleanup (#8237). [Kamil Danecki, Antmicro Ltd.]
 * Support unique constraint inside std::randomize (#8241). [Kornel Uriasz, Antmicro Ltd.]
+* Support nested array and associative array element member access in constraint (#8244). [Kamil Danecki, Antmicro Ltd.]
 * Support rand dynamic arrays used inside `with` clause of randomize (#8246). [Kamil Danecki, Antmicro Ltd.]
 * Support multiplicity in SVA shapes that use NFA rings (#8267). [Artur Bieniek, Antmicro Ltd.]
 * Support non-overlapped property implications correctly (#8268). [Artur Bieniek, Antmicro Ltd.]
@@ -37,6 +38,9 @@ Verilator 5.053 devel
 * Support dynamic cross layouts and fix covergroup bin exclusions priority (#8424). [Marco Bartoli]
 * Support automatic bins for enum coverpoints (#8462) (#8464). [David Harris]
 * Support empty queue literals as function and task arguments (#8501) (#8502). [Francesco Urbani]
+* Support covergroup fixed-size bin arrays (#8514). [Marco Bartoli]
+* Support wildcard bins (#8516). [Marco Bartoli]
+* Support coverpoint bin `with` filters (#8518). [Marco Bartoli]
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
 * Optimize recursion depth in DFG circular driver tracing (#8272). [Drew Risinger]
 * Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
@@ -58,6 +62,7 @@ Verilator 5.053 devel
 * Optimize covergroup bin metadata lookup (#8404). [Marco Bartoli]
 * Optimize dead ports (#8426). [Geza Lore, Testorrent USA, Inc.]
 * Optimize instance port connections by aliasing rather than by assignment (#8427). [Geza Lore, Testorrent USA, Inc.]
+* Optimize DFG temporary sharing across module instances (#8456). [Michael Bedford Taylor]
 * Optimize modport resolution with many interface instances (#8496) (#8497). [Deanyone Su]
 * Optimize covergroup bin generation (#8499). [Marco Bartoli]
 * Optimize through-package variables in DFG. [Geza Lore, Testorrent USA, Inc.]
@@ -126,6 +131,10 @@ Verilator 5.053 devel
 * Fix constant oversized shifts in V3Premit. [Geza Lore, Testorrent USA, Inc.]
 * Fix semaphore waiting on killed process (#8505). [Ryszard Rozak, Antmicro Ltd.]
 * Fix mis-setting of process state from FINISHED to KILLED (#8506). [Ryszard Rozak, Antmicro Ltd.]
+* Fix rand_mode(0) not preserving dynamic array of struct values used in a dist constraint (#8508) (#8509). [Kristof Marien]
+* Fix duplicate struct declaration when inlining (#8515). [Ethan Sifferman]
+* Fix bear version detection if uninstalled. [Geza Lore, Testorrent USA, Inc.]
+* Fix emitting public parameters (#8520). [Geza Lore, Testorrent USA, Inc.]
 
 
 Verilator 5.052 2026-09-05
