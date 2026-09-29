@@ -1111,7 +1111,7 @@ string V3Options::protectKeyDefaulted() VL_MT_SAFE {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
         VHashSha512 digest{V3Os::trueRandom(64)};
-        m_protectKey = "VL-KEY-" + digest.digestSymbol();
+        m_protectKey = "VL-KEY-" + digest.digestBase64();
     }
     return m_protectKey;
 }

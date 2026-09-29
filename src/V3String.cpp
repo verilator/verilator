@@ -395,7 +395,51 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
     return h;
 }
 
-void VString::selfTest() { UASSERT_SELFTEST(VString::replaceSubstr("aa", "a", "ba"), "baba"); }
+string VString::base64Enc(const string& str) VL_PURE {
+    // Non-URL format (+/), versus URL format (-/).
+    static constexpr const char* const digits
+        = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    size_t len = str.size();
+    string result;
+    result.reserve(len * 4 / 3 + 2);
+    size_t pos = 0;
+    if (len >= 3) {
+        for (; pos < len - 2; pos += 3) {
+            result += digits[((str[pos] >> 2) & 0x3f)];
+            result
+                += digits[((str[pos] & 0x3) << 4) | (static_cast<int>(str[pos + 1] & 0xf0) >> 4)];
+            result += digits[((str[pos + 1] & 0xf) << 2)
+                             | (static_cast<int>(str[pos + 2] & 0xc0) >> 6)];
+            result += digits[((str[pos + 2] & 0x3f))];
+        }
+    }
+    if (len >= 2 && pos < len - 1) {  // Pad 2
+        result += digits[((str[pos] >> 2) & 0x3f)];
+        result += digits[((str[pos] & 0x3) << 4) | (static_cast<int>(str[pos + 1] & 0xf0) >> 4)];
+        result += digits[((str[pos + 1] & 0xf) << 2) | (static_cast<int>(0) >> 6)];
+        result += '=';
+    } else if (pos < len) {  // Pad 1
+        result += digits[((str[pos] >> 2) & 0x3f)];
+        result += digits[((str[pos] & 0x3) << 4) | (static_cast<int>(0) >> 4)];
+        result += '=';
+        result += '=';
+    }
+    return result;
+}
+
+void VString::selfTest() {
+    UASSERT_SELFTEST(VString::replaceSubstr("aa", "a", "ba"), "baba");
+
+    // Cross-checked with 'base64'
+    UASSERT_SELFTEST(VString::base64Enc(""), "");
+    UASSERT_SELFTEST(VString::base64Enc("x"), "eA==");
+    UASSERT_SELFTEST(VString::base64Enc("xy"), "eHk=");
+    UASSERT_SELFTEST(VString::base64Enc("xyz"), "eHl6");
+    UASSERT_SELFTEST(
+        VString::base64Enc("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/~"),
+        "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxM"
+        "jM0NTY3ODkrL34=");
+}
 
 //######################################################################
 // VHashSha512
@@ -588,7 +632,12 @@ string VHashSha512::digestHex() {
     return result;
 }
 
-string VHashSha512::digestSymbol() {
+string VHashSha512::digestBase64() {
+    // Return base64 from hash.  Complete representation of the binary/reversable.
+    return VString::base64Enc(digestBinary());
+}
+
+string VHashSha512::digestSymbol24() {
     // Make a symbol name from hash.  Similar to base64, however base 64
     // has + and / for last two digits, but need C symbol, and we also
     // avoid conflicts with use of _, so use "AB" at the end.
@@ -606,15 +655,15 @@ string VHashSha512::digestSymbol() {
         result += digits[((binhash[pos + 1] & 0xf) << 2)
                          | (static_cast<int>(binhash[pos + 2] & 0xc0) >> 6)];
         result += digits[((binhash[pos + 2] & 0x3f))];
+        // Keep symbols short-ish, with 24 chars/144 bits we won't have hash collisions
+        if (result.size() >= 24) break;
     }
     // Any leftover bits don't matter for our purpose
     return result;
 }
 
-string VHashSha512::digestSymbol24() { return digestSymbol().substr(0, 24); }
-
 void VHashSha512::selfTestOne(const string& data, const string& data2, const string& exp,
-                              const string& exp64) {
+                              const string& exp64, const string& exp24) {
     VHashSha512 digest{data};
     if (data2 != "") digest.insert(data2);
     if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
@@ -622,9 +671,14 @@ void VHashSha512::selfTestOne(const string& data, const string& data2, const str
                   << "        ... got=" << digest.digestHex() << '\n'  // LCOV_EXCL_LINE
                   << "        ... exp=" << exp << endl;  // LCOV_EXCL_LINE
     }
-    if (VL_UNCOVERABLE(digest.digestSymbol() != exp64)) {
+    if (VL_UNCOVERABLE(digest.digestBase64() != exp64)) {
         std::cerr << "%Error: When hashing '" << data + data2 << "'\n"  // LCOV_EXCL_LINE
-                  << "        ... got=" << digest.digestSymbol() << '\n'  // LCOV_EXCL_LINE
+                  << "        ... got=" << digest.digestBase64() << '\n'  // LCOV_EXCL_LINE
+                  << "        ... exp=" << exp64 << endl;  // LCOV_EXCL_LINE
+    }
+    if (VL_UNCOVERABLE(digest.digestSymbol24() != exp24)) {
+        std::cerr << "%Error: When hashing '" << data + data2 << "'\n"  // LCOV_EXCL_LINE
+                  << "        ... got=" << digest.digestSymbol24() << '\n'  // LCOV_EXCL_LINE
                   << "        ... exp=" << exp64 << endl;  // LCOV_EXCL_LINE
     }
 }
@@ -635,36 +689,42 @@ void VHashSha512::selfTest() {
         "", "",
         "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce"
         "47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
-        "z4PhNX7vuL3xVChQ1m2AB9Yg5AULVxXcgBSpIdNs6c5H0NE8XYXysPADGNKHfuwvY7kxvUdBeoGlODJ6ASfa");
+        "z4PhNX7vuL3xVChQ1m2AB9Yg5AULVxXcg/SpIdNs6c5H0NE8XYXysP+DGNKHfuwvY7kxvUdBeoGlODJ6+SfaPg==",
+        "z4PhNX7vuL3xVChQ1m2AB9Yg");
     selfTestOne(
         "a", "",
         "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f53"
         "02860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75",
-        "H0D8ktokFpR1CXnubPWC8tXX0o4YM13gWrxU0FYOD1MChgxlKBCNVgJSql50IQVG82n7u86MEsBHlXsmUv6a");
+        "H0D8ktokFpR1CXnubPWC8tXX0o4YM13gWrxU0FYOD1MChgxlK/CNVgJSql50IQVG82n7u86MEs/HlXsmUv6adQ==",
+        "H0D8ktokFpR1CXnubPWC8tXX");
     selfTestOne(
         "The quick brown fox jumps over the lazy dog", "",
         "07e547d9586f6a73f73fbac0435ed76951218fb7d0c8d788a309d785436bbb64"
         "2e93a252a954f23912547d1e8a3b5ed6e1bfd7097821233fa0538f3db854fee6",
-        "BAVH2VhvanP3P7rAQ17XaVEhj7fQyNeIownXhUNru2Quk6JSqVTyORJUfR6KO17W4bBXCXghIzAgU489uFTA");
+        "B+VH2VhvanP3P7rAQ17XaVEhj7fQyNeIownXhUNru2Quk6JSqVTyORJUfR6KO17W4b/XCXghIz+gU489uFT+5g==",
+        "BAVH2VhvanP3P7rAQ17XaVEh");
     selfTestOne(
         "The quick brown fox jumps over the lazy", " dog",
         "07e547d9586f6a73f73fbac0435ed76951218fb7d0c8d788a309d785436bbb64"
         "2e93a252a954f23912547d1e8a3b5ed6e1bfd7097821233fa0538f3db854fee6",
-        "BAVH2VhvanP3P7rAQ17XaVEhj7fQyNeIownXhUNru2Quk6JSqVTyORJUfR6KO17W4bBXCXghIzAgU489uFTA");
+        "B+VH2VhvanP3P7rAQ17XaVEhj7fQyNeIownXhUNru2Quk6JSqVTyORJUfR6KO17W4b/XCXghIz+gU489uFT+5g==",
+        "BAVH2VhvanP3P7rAQ17XaVEh");
     selfTestOne(
         "Test using larger than block-size key and larger than one block-size data."
         " SHA512 has a 128 byte block size so this needs to be more than 128 characters long.",
         "",
         "6f51a6ddad3a86fccd8d1d6584712567ee60b00d6d31bfecb69b0e288f45fbbd"
         "91b785c218f1e7c019088ad9f47680a93720bada029294dd7a7fb8119137dbf1",
-        "b1Gm3a06hvzNjR1lhHElZA5gsA1tMbBstpsOKI9FA72Rt4XCGPHnwBkIitn0doCpNyC62gKSlN16f7gRkTfb");
+        "b1Gm3a06hvzNjR1lhHElZ+5gsA1tMb/stpsOKI9F+72Rt4XCGPHnwBkIitn0doCpNyC62gKSlN16f7gRkTfb8Q==",
+        "b1Gm3a06hvzNjR1lhHElZA5g");
     selfTestOne(
         "Test using",
         " larger than block-size key and larger than one block-size data."
         " SHA512 has a 128 byte block size so this needs to be more than 128 characters long.",
         "6f51a6ddad3a86fccd8d1d6584712567ee60b00d6d31bfecb69b0e288f45fbbd"
         "91b785c218f1e7c019088ad9f47680a93720bada029294dd7a7fb8119137dbf1",
-        "b1Gm3a06hvzNjR1lhHElZA5gsA1tMbBstpsOKI9FA72Rt4XCGPHnwBkIitn0doCpNyC62gKSlN16f7gRkTfb");
+        "b1Gm3a06hvzNjR1lhHElZ+5gsA1tMb/stpsOKI9F+72Rt4XCGPHnwBkIitn0doCpNyC62gKSlN16f7gRkTfb8Q==",
+        "b1Gm3a06hvzNjR1lhHElZA5g");
 }
 
 //######################################################################

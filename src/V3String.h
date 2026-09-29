@@ -140,6 +140,9 @@ public:
     // Hash the string
     static uint64_t hashMurmur(const string& str) VL_PURE;
 
+    // Base 64 encode
+    static string base64Enc(const string& str) VL_PURE;
+
     static void selfTest();  // Test this class
 };
 
@@ -176,10 +179,10 @@ public:
     ~VHashSha512() = default;
 
     // METHODS
+    string digestBase64();  // Return digest formatted in Base64 (non-URL flavor)
     string digestBinary();  // Return digest as 64 character binary
     string digestHex();  // Return digest formatted as a hex string
-    string digestSymbol();  // Return digest formatted as C symbol/base64ish
-    string digestSymbol24();  // Return short formatted as C symbol/base64ish
+    string digestSymbol24();  // Return non-reversable short-formatted as C symbol/base64ish
     uint64_t digestUInt64();  // Return 64-bits of digest
     static void selfTest();  // Test this class
 
@@ -193,7 +196,7 @@ public:
 
 private:
     static void selfTestOne(const string& data, const string& data2, const string& exp,
-                            const string& exp64);
+                            const string& exp64, const string& exp24);
     void finalize();  // Process remaining data
 };
 
