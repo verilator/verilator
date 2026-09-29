@@ -130,6 +130,15 @@ class clw #(
   endfunction
 endclass
 
+// Class array parameter of a fixed size, given through a typedef
+class cla #(
+    parameter int A[2] = '{0, 0}
+);
+  static function int sum();
+    return A[0] + A[1];
+  endfunction
+endclass
+
 // Size from a localparam of the parameter port list
 module lp #(
     parameter int N = 0,
@@ -310,6 +319,7 @@ module t;
   typedef cls#(.N(3), .V('{4, 5, 6})) cls3_t;
   typedef clw#(.P(8'h81), .N(TWO * 4)) clw81_t;  // Width given after the value
   typedef clw#(.P(8'h01), .N(TWO * 4)) clw01_t;  // Differs from clw81_t only above bit 0
+  typedef cla#(.A('{3, 4})) cla34_t;
 
   m #(.N(2), .V('{1, 2})) i_m2 ();
   m #(.N(3), .V('{1, 2, 3})) i_m3 ();
@@ -319,6 +329,7 @@ module t;
   m #(.N(3), .V('{3{1}})) i_m3r ();  // Replication in the pattern
   m #(.N(3), .V(arr3_t'{4, 5, 6})) i_m3t ();  // Pattern with its own type
   m #(.N(), .V('{7})) i_me ();  // Empty override keeps the default
+  m #(.N(2), .V(TWO > 2 ? '{1, 2} : TWO > 1 ? '{3, 4} : '{5, 6})) i_mc ();  // Conditionals
 
   p #(.W(8), .B('{8'ha, 8'hb})) i_p ();
 
@@ -449,6 +460,11 @@ module t;
     // Empty override
     `checkd($size(i_me.V), 1);
     `checkd(i_me.V[0], 7);
+
+    // Patterns under conditionals
+    `checkd($size(i_mc.V), 2);
+    `checkd(i_mc.V[0], 3);
+    `checkd(i_mc.V[1], 4);
 
     // Parameter-dependent element width
     `checkd($size(i_p.B), 2);
@@ -623,6 +639,7 @@ module t;
     `checkd(cls3_t::last(), 6);
     `checkh(clw81_t::value(), 'h81);
     `checkh(clw01_t::value(), 'h01);
+    `checkd(cla34_t::sum(), 7);
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -1618,25 +1618,44 @@ class ParamProcessor final {
         any_overridesr = true;
     }
 
-    // Give each untyped assignment pattern pin a copy of its parameter's type with this
+    // Collect the untyped assignment patterns that give exprp's value: exprp itself, or those
+    // of a conditional's branches
+    static void pinPatterns(AstNode* exprp, std::vector<AstPattern*>& patternps) {
+        if (AstPattern* const patternp = VN_CAST(exprp, Pattern)) {
+            if (!patternp->childDTypep()) patternps.push_back(patternp);  // Not data_type'{}
+        } else if (AstCond* const condp = VN_CAST(exprp, Cond)) {
+            pinPatterns(condp->thenp(), patternps);
+            pinPatterns(condp->elsep(), patternps);
+        }
+    }
+    // Give each untyped assignment pattern of a pin a copy of its parameter's type with this
     // cell's values substituted, so it is not widthed against the template's defaults
     void resolvePatternPinDTypes(AstPin* paramsp, const AstNodeModule* srcModp) {
         const ParamPinMaps pins{paramsp, srcModp, false};
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            AstPattern* const patternp = VN_CAST(pinp->exprp(), Pattern);
-            if (!patternp || patternp->childDTypep()) continue;  // No pattern, or data_type '{}
+            std::vector<AstPattern*> patternps;
+            pinPatterns(pinp->exprp(), patternps);
+            if (patternps.empty()) continue;
             AstVar* const modvarp = pinp->modVarp();
             if (!modvarp || !modvarp->isGParam()) continue;
-            // A type not depending on other parameters widths correctly in V3Width
             AstNodeDType* const dtypep = modvarp->childDTypep();
-            if (!dtypep || !ParamSubstVisitor::dependsOnParams(dtypep, pins)) continue;
-            patternp->childDTypep(dtypep->cloneTree(false));
-            ParamSubstVisitor::apply(patternp->childDTypep(), pins);
-            AstNodeDType* const newp = patternp->childDTypep();
+            if (!dtypep) continue;
+            // V3Width types a cell's lone pattern whose type doesn't depend on other parameters,
+            // but not a class reference's, or one under a conditional
+            if (VN_IS(pinp->exprp(), Pattern) && !VN_IS(srcModp, Class)
+                && !ParamSubstVisitor::dependsOnParams(dtypep, pins)) {
+                continue;
+            }
+            AstNodeDType* const newp = dtypep->cloneTree(false);
+            ParamSubstVisitor::apply(newp, pins);
             if (ParamSubstVisitor::dependsOnParams(newp, pins)) {  // Unresolved: leave to V3Width
                 UINFO(5, "Unresolved pattern pin type: " << pinp->prettyNameQ());
-                VL_DO_DANGLING(newp->unlinkFrBack()->deleteTree(), newp);
+            } else {
+                for (AstPattern* const patternp : patternps) {
+                    patternp->childDTypep(newp->cloneTree(false));
+                }
             }
+            VL_DO_DANGLING(newp->deleteTree(), newp);
         }
     }
 
