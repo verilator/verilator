@@ -106,6 +106,7 @@ Verilator 5.053 devel
 * Fix error on non-existent interface ports (#8393). [Andrii Andrieiev, Antmicro Ltd.]
 * Fix compile-time blowup forcing large unpacked arrays (#8395). [Jonathan Drolet]
 * Fix false MULTIDRIVEN for writes in tasks never executed (#8401). [Artur Bieniek, Antmicro Ltd.]
+* Fix $c() inside a DPI export (#8402). [Nazar Zibilyuk]
 * Fix covergroup constructor initialization (#8410). [Marco Bartoli]
 * Fix issues with configuring flex during build on MacOS (#8412). [Kaleb Barrett]
 * Fix interface modport resolution against non-scope symbol tables (#8420). [Geza Lore, Testorrent USA, Inc.]
