@@ -1016,8 +1016,7 @@ public:
         // interface instead, same equivalence as AstNode::computeCastable uses.
         const AstIfaceRefDType* const asamep = VN_DBG_AS(samep, IfaceRefDType);
         return ifaceViaCellp() && ifaceViaCellp() == asamep->ifaceViaCellp()
-               && modportName() == asamep->modportName()
-               && isVirtual() == asamep->isVirtual();
+               && modportName() == asamep->modportName() && isVirtual() == asamep->isVirtual();
     }
     int widthAlignBytes() const override { return 0; }
     int widthTotalBytes() const override { return 0; }
