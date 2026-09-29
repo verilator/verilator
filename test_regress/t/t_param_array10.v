@@ -271,6 +271,20 @@ module dg;
   parameter top_t V[2] = '{default: 0};
 endmodule
 
+// Size and type from $bits of a package variable, which isn't a parameter
+package pv;
+  logic [4:0] sig5;
+endpackage
+module bv #(
+    parameter int N = $bits(pv::sig5),
+    parameter int V[N] = '{default: 0}
+) ();
+endmodule
+module bw;
+  typedef logic [$bits(pv::sig5)-1:0] w_t;
+  parameter w_t V[2] = '{default: 0};
+endmodule
+
 // Size overridden from the enclosing module's own parameter
 module mid #(
     parameter int M = 1,
@@ -285,6 +299,7 @@ module t;
   localparam ULEN = 8;
   localparam logic [0:0] ALL = '1;
   localparam UALL = '1;
+  localparam int SIZES[2] = '{4, 5};
   typedef int arr3_t[3];
   typedef cls#(.N(3), .V('{4, 5, 6})) cls3_t;
   typedef clw#(.P(8'h81), .N(TWO * 4)) clw81_t;  // Width given after the value
@@ -315,6 +330,7 @@ module t;
   u #(.LEN(8), .LST('{8{0}})) i_u ();
   u #(.LEN(8)) i_ud ();  // Default value must resize with LEN
   u #(.LEN(ULEN), .LST('{ULEN{1}})) i_uu ();  // Size from the enclosing module's parameter
+  m #(.N(SIZES[1]), .V('{1, 2, 3, 4, 5})) i_m5s ();  // From an element of its array parameter
 
   mid #(.M(3), .W('{1, 2, 3})) i_mid ();
 
@@ -385,6 +401,9 @@ module t;
   fn #(.N(2), .V('{1, 2, 3})) i_fn ();
 
   dg #(.N(4), .V('{3, 5})) i_dg ();
+
+  bv #(.V('{1, 2, 3, 4, 5})) i_bv ();
+  bw #(.V('{17, 18})) i_bw ();
 
   initial begin
     // Overridden size
@@ -463,6 +482,8 @@ module t;
     `checkd($size(i_ud.LST), 8);
     `checkd($size(i_uu.LST), 8);
     `checkd(i_uu.LST[7], 1);
+    `checkd($size(i_m5s.V), 5);
+    `checkd(i_m5s.V[4], 5);
 
     // Size from the enclosing module's parameter
     `checkd($size(i_mid.i_pass.V), 3);
@@ -578,6 +599,12 @@ module t;
     // Typedefs sharing a dependency
     `checkd($bits(i_dg.V[0]), 4);
     `checkd(i_dg.V[1], 5);
+
+    // Size and type from a package variable
+    `checkd($size(i_bv.V), 5);
+    `checkd(i_bv.V[4], 5);
+    `checkd($bits(i_bw.V[0]), 5);
+    `checkd(i_bw.V[1], 18);
 
     // Class-scoped references
     `checkd(cls#(.N(2), .V('{1, 2}))::last(), 2);

@@ -36,10 +36,26 @@ module cs #(
 ) ();
 endmodule
 
+// Size from a parameter that is never given a value
+module nv #(
+    parameter int N,
+    parameter int V[N] = '{default: 0}
+) ();
+endmodule
+
+// Type from a type parameter that is never given a type
+module nt #(
+    parameter type T,
+    parameter T V[2] = '{default: 0}
+) ();
+endmodule
+
 module t;
   m #(.N(3), .V('{1, 2})) i_few ();  // Too few elements
   m #(.N(2), .V('{1, 2, 3})) i_many ();  // Too many elements
   z i_zero ();  // Size left at its zero default
   cy #(.V('{1})) i_cy ();
   cs #(.P(1)) i_cs ();
+  nv #(.V('{1, 2})) i_nv ();
+  nt #(.V('{1, 2})) i_nt ();
 endmodule
