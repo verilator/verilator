@@ -76,43 +76,48 @@ sub debug {
 # Builds
 
 sub verilator_coverage_bin {
-    my $basename = ($ENV{VERILATOR_COVERAGE_BIN}
-                    || ($Debug ? "verilator_coverage_bin_dbg" : "verilator_coverage_bin"));
-    my $bin = find_coverage_bin($basename);
-    if (!$bin && !$Debug && !$ENV{VERILATOR_COVERAGE_BIN}) {
-        # Support installations that only built the debug executable.
-        $bin = find_coverage_bin("verilator_coverage_bin_dbg");
+    my @basenames = ();
+    if ($ENV{VERILATOR_COVERAGE_BIN}) {
+        push @basenames, $ENV{VERILATOR_COVERAGE_BIN};
+    } else {
+        if (!$Debug) {
+            push @basenames, "verilator_coverage_bin";
+        }
+        # Fall back to dbg version if opt can't be found
+        push @basenames, "verilator_coverage_bin_dbg";
     }
-    return $bin if $bin;
-    # Keep the requested name in diagnostics when no executable was found.
-    return defined($ENV{VERILATOR_ROOT}) ? "$ENV{VERILATOR_ROOT}/$basename" : $basename;
-}
 
-sub find_coverage_bin {
-    my $basename = shift;
-    my @dirs = defined($ENV{VERILATOR_ROOT})
-        ? ("$ENV{VERILATOR_ROOT}/bin", $ENV{VERILATOR_ROOT}) : ($RealBin);
-    foreach my $dir (@dirs) {
-        if (-x "$dir/$basename" || -x "$dir/$basename.exe") {
-            return "$dir/$basename";
+    for my $basename (@basenames) {
+        # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
+        if (defined($ENV{VERILATOR_ROOT})) {
+            my $dir = $ENV{VERILATOR_ROOT};
+            if (bin_exists("$dir/bin/$basename")) {  # From a "make install" into VERILATOR_ROOT
+                return "$dir/bin/$basename";
+            } elsif (bin_exists("$dir/$basename")) {
+                return "$dir/$basename";  # From pointing to kit directory
+            }
+        } else {
+            if (bin_exists("$RealBin/$basename")) {
+                return "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
+            }
+            # Note we don't look under bin/$basename which would be right if running
+            # in the kit dir. Running that would likely break, since
+            # VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
         }
     }
     if (defined($ENV{VERILATOR_ROOT})) {
-        return undef;
+        warn "%Error: verilator_coverage: VERILATOR_ROOT set but could not find coverage binary.\n";
+        warn "%Error: VERILATOR_ROOT=$ENV{VERILATOR_ROOT}\n";
+        exit 1;
     }
-    my @paths = File::Spec->path();
-    # File::Spec drops trailing empty entries, which search the current directory.
-    if (defined($ENV{PATH})
-        && ($ENV{PATH} eq "" || $ENV{PATH} =~ /\Q$Config{path_sep}\E$/)) {
-        push @paths, File::Spec->curdir();
-    }
-    foreach my $dir (@paths) {
-        my $path = File::Spec->catfile($dir, $basename);
-        if (-x $path || -x "$path.exe") {
-            return $basename;  # Let the shell find it in PATH.
-        }
-    }
-    return undef;
+
+    # Find in path
+    return $basenames[0];
+}
+
+sub bin_exists {
+    my $path = shift;
+    return -x "$path" || -x "$path.exe";
 }
 
 #######################################################################
