@@ -40,17 +40,20 @@ using MTaskAffinityMap = std::unordered_map<const AstVar*, MTaskIdVec>;
 // Diagnostic inputs retain exact accessing/writing tasks before layout coalesces them.
 // Only collected with --stats or --dumpi-V3VariableOrder.
 class VariableOrderStats final {
-    MTaskAffinityMap m_taskSets;
-    std::unique_ptr<std::ofstream> m_dumpp;
-    std::set<MTaskIdVec> m_sharedWorkers;  // Reset for each module
-    size_t m_group = 0;
-    uint64_t m_noAffinity = 0;
-    uint64_t m_singleWorker = 0;
-    uint64_t m_sharedReadOnly = 0;
-    uint64_t m_sharedWritten = 0;
-    uint64_t m_workerEliminated = 0;
-    uint64_t m_singleWorkerEliminated = 0;
-    uint64_t m_sharedWriterAdditional = 0;
+    MTaskAffinityMap m_taskSets;  // Original accessing/writing task bits for each variable
+    std::unique_ptr<std::ofstream> m_dumpp;  // Optional layout dump stream
+    std::set<MTaskIdVec> m_sharedWorkers;  // Shared worker sets seen in the current module
+    size_t m_group = 0;  // Next group number in the current module's dump
+    uint64_t m_statNoAffinity = 0;  // Variables with no scheduled-task accesses
+    uint64_t m_statSingleWorker = 0;  // Variables accessed by exactly one worker
+    uint64_t m_statSharedReadOnly = 0;  // Variables shared by workers with no task writes
+    uint64_t m_statSharedWritten = 0;  // Variables shared by workers with task writes
+    // Groups eliminated by mapping accessing tasks to workers, with writers fixed
+    uint64_t m_statWorkerEliminated = 0;
+    // Further groups eliminated by dropping writer distinctions for single-worker state
+    uint64_t m_statSingleWorkerEliminated = 0;
+    // Additional shared groups retained to separate exact writing-task sets
+    uint64_t m_statSharedWriterAdditional = 0;
 
     void dumpSet(const MTaskIdVec& vec, size_t begin, size_t end) const {
         *m_dumpp << '{';
@@ -98,17 +101,17 @@ public:
             // Unaccessed variables have no task sets.
             const MTaskIdVec& tasks = it == m_taskSets.end() ? key : it->second;
             if (!nWorkers) {
-                ++m_noAffinity;
+                ++m_statNoAffinity;
             } else {
                 const MTaskIdVec accesses(tasks.begin(), tasks.begin() + usedIds);
                 const MTaskIdVec writers(tasks.begin() + usedIds, tasks.end());
                 writersToAccesses[writers].emplace(accesses);
                 if (nWorkers == 1) {
-                    ++m_singleWorker;
+                    ++m_statSingleWorker;
                 } else if (std::find(writers.begin(), writers.end(), true) == writers.end()) {
-                    ++m_sharedReadOnly;
+                    ++m_statSharedReadOnly;
                 } else {
-                    ++m_sharedWritten;
+                    ++m_statSharedWritten;
                 }
             }
             if (m_dumpp) {
@@ -120,23 +123,24 @@ public:
             }
         }
         for (const auto& pair : writersToAccesses) {
-            m_workerEliminated += pair.second.size() - 1;
+            m_statWorkerEliminated += pair.second.size() - 1;
         }
-        if (nWorkers == 1) m_singleWorkerEliminated += writersToAccesses.size() - 1;
-        if (nWorkers > 1 && !m_sharedWorkers.emplace(workers).second) ++m_sharedWriterAdditional;
+        if (nWorkers == 1) m_statSingleWorkerEliminated += writersToAccesses.size() - 1;
+        if (nWorkers > 1 && !m_sharedWorkers.emplace(workers).second)
+            ++m_statSharedWriterAdditional;
     }
     void report() const {
         // Add once, including zeros, so every variable category and transformation is visible.
-        V3Stats::addStat("VariableOrder, no-affinity variables", m_noAffinity);
-        V3Stats::addStat("VariableOrder, single-worker variables", m_singleWorker);
-        V3Stats::addStat("VariableOrder, shared read-only variables", m_sharedReadOnly);
-        V3Stats::addStat("VariableOrder, shared written variables", m_sharedWritten);
+        V3Stats::addStat("VariableOrder, no-affinity variables", m_statNoAffinity);
+        V3Stats::addStat("VariableOrder, single-worker variables", m_statSingleWorker);
+        V3Stats::addStat("VariableOrder, shared read-only variables", m_statSharedReadOnly);
+        V3Stats::addStat("VariableOrder, shared written variables", m_statSharedWritten);
         V3Stats::addStat("VariableOrder, groups eliminated by worker affinity",
-                         m_workerEliminated);
+                         m_statWorkerEliminated);
         V3Stats::addStat("VariableOrder, groups eliminated for single-worker variables",
-                         m_singleWorkerEliminated);
+                         m_statSingleWorkerEliminated);
         V3Stats::addStat("VariableOrder, additional groups for shared writers",
-                         m_sharedWriterAdditional);
+                         m_statSharedWriterAdditional);
     }
 };
 
@@ -149,7 +153,7 @@ class GatherMTaskAffinity final : VNVisitorConst {
 
     // STATE
     MTaskAffinityMap& m_results;  // The result map being built;
-    VariableOrderStats* const m_statsp;
+    VariableOrderStats* const m_statsp;  // Optional diagnostic collector
     const uint32_t m_id;  // Representative ID of the scheduled worker being analysed
     const uint32_t m_writeId;  // Preserve the precise task responsible for writes
     const size_t m_usedIds = ExecMTask::numUsedIds();  // Value of max id + 1
@@ -210,11 +214,11 @@ struct VarAttributes final {
     bool anonOk;  // Can be emitted as part of anonymous structure
 };
 class VariableOrder final {
-    std::unordered_map<const AstVar*, VarAttributes> m_attributes;
+    std::unordered_map<const AstVar*, VarAttributes> m_attributes;  // Per-variable sort attributes
 
-    const MTaskAffinityMap& m_mTaskAffinity;
-    std::vector<AstVar*>& m_varps;
-    VariableOrderStats* const m_statsp;
+    const MTaskAffinityMap& m_mTaskAffinity;  // Final worker/writer grouping keys
+    std::vector<AstVar*>& m_varps;  // Module variables in emission order
+    VariableOrderStats* const m_statsp;  // Optional diagnostic collector
 
     VariableOrder(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
                   std::vector<AstVar*>& varps, VariableOrderStats* statsp)
