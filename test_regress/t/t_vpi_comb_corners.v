@@ -49,6 +49,7 @@ module t;
   import "DPI-C" context function void t_vpi_dump_values();
   import "DPI-C" context function void t_vpi_dump_skip(input string name);
   import "DPI-C" context function void t_vpi_dump_cb(input string name);
+  import "DPI-C" context function string t_vpi_dump_get(input string name);
   import "DPI-C" context function void t_vpi_dump_put_rw(
     input string name,
     input string value,
@@ -109,12 +110,23 @@ module t;
 
   // An impure bit-select index is not a compile-time constant, so each read
   // must re-evaluate the current index. 'obs_impureidx' is a second, independent
-  // read path to the same value: VPI must agree on both.
+  // read path to the same value: VPI must read both the same.
   logic [31:0] seedv;
   logic [7:0] vec;
   logic [7:0] obs_impureidx;
   always_comb vec[($urandom(seedv)&3)+:4] = data;
   assign obs_impureidx = vec;
+  // An initial process, as a --threads model resumes those on the thread VPI needs
+  initial begin
+    forever begin
+      @(negedge clk);
+      if (t_vpi_dump_get("t.vec") != t_vpi_dump_get("t.obs_impureidx")) begin
+        $display("%%Error: t.vec = %s, t.obs_impureidx = %s", t_vpi_dump_get("t.vec"),
+                 t_vpi_dump_get("t.obs_impureidx"));
+        $stop;
+      end
+    end
+  end
 
   // 'out' is assembled from two independent bit-slice writes off 'keep'.
   logic [7:0] keep;

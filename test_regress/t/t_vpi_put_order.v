@@ -75,7 +75,7 @@ module t (
     endcase
   end
 
-  // 1: 'dep' is combinationally driven from an impure expression, and sampled by a flop
+  // 'dep' is combinationally driven from an impure expression, and sampled by a flop
   logic [7:0] src;
   logic [7:0] dep;
   logic [7:0] dep_obs;
@@ -83,19 +83,19 @@ module t (
   always_comb dep = src ^ 8'(8'h5a * `IMPURE_ONE);
   always_comb dep_obs = dep + 8'(8'h01 * `IMPURE_ONE);
 
-  // 2: a combinational signal sampled from DPI during eval, after its input moved
+  // A combinational signal sampled from DPI during eval, after its input moved
   logic [7:0] cnt;
   logic [7:0] tri3;
   assign tri3 = cnt * 8'd3;
   always @(cnt) t_vpi_dump_value("t.tri3");
 
-  // 3: cbValueChange on a combinational signal whose input a put writes when it changes
+  // cbValueChange on a combinational signal whose input a put writes when it changes
   logic [7:0] cin;
   logic [7:0] watched;
   assign watched = cin + 8'd7;
   always @(watched) if (watched == 8'h0f) t_vpi_dump_put_rw("t.cin", "40");
 
-  // 4: a put reaches a combinational reader only at the next eval
+  // A put reaches a combinational reader only at the next eval
   logic [7:0] s;
   logic [7:0] s_q;
   logic [7:0] mem[2];
@@ -115,7 +115,8 @@ module t (
   assign str_comb = {str, "!"};
   logic [7:0] f  /*verilator forceable*/;
   wire [7:0] f_comb = f ^ 8'h0f;
-  // 6: a put into bits no process drives reaches their readers at the next eval
+
+  // A put into bits no process drives reaches their readers at the next eval
   logic [7:0] init_only;
   logic [7:0] undriven;
   logic [7:0] once = 8'h21;

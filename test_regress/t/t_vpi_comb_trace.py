@@ -12,17 +12,14 @@ import os
 
 test.scenarios('simulator')
 
+test.pli_filename = "t/t_vpi_dump.cpp"
+
 test.compile(
     make_top_shell=False,
     make_pli=True,
-    verilator_flags2=[
-        "--binary --vpi --public-flat-rw --trace --coverage --no-l2name", test.pli_filename
-    ],
-)
+    verilator_flags2=["--binary --vpi --public-flat-rw --trace --no-l2name", test.pli_filename])
 
-test.execute(use_libvpi=True,
-             check_finished=True,
-             all_run_flags=["+verilator+coverage+file+" + test.obj_dir + "/coverage.dat"])
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 if test.vlt:
     if not os.path.exists(test.trace_filename):

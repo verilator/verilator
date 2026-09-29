@@ -17,7 +17,8 @@ test.compile(make_top_shell=False,
              make_pli=True,
              verilator_flags2=[
                  "--binary --vpi --public-flat-rw --protect-ids"
-                 " --protect-key SECRET_KEY --no-l2name -Wno-INSECURE", test.pli_filename
+                 " --protect-key SECRET_KEY --no-l2name -Wno-INSECURE +define+NO_T_VPI_DUMP",
+                 test.pli_filename
              ])
 
 test.execute(use_libvpi=True, check_finished=True)

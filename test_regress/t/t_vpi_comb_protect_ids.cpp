@@ -10,6 +10,7 @@
 //*************************************************************************
 
 #include "TestCheck.h"
+#include "TestVpi.h"
 #include "vpi_user.h"
 
 #include <cstdio>
@@ -20,18 +21,12 @@ int errors = 0;
 
 namespace {
 
-// idmap.xml sits next to the running model binary, named "<binary>__idmap.xml";
-// vpi_get_vlog_info() gives argv[0] since TEST_OBJ_DIR/VM_PREFIX aren't defined
-// when this file is built as a separate PLI plugin.
-std::string findIdmapPath() {
+// --protect-ids hashes non-top identifiers; recover 'realName's hash from the idmap.xml
+// that sits next to the model binary, as TEST_OBJ_DIR is not defined for a PLI plugin
+std::string hashedName(const std::string& realName) {
     s_vpi_vlog_info vlogInfo{};
     vpi_get_vlog_info(&vlogInfo);
-    return std::string{vlogInfo.argv[0]} + "__idmap.xml";
-}
-
-// --protect-ids hashes non-top identifiers; recover 'realName's hash from idmap.xml.
-std::string hashedName(const std::string& realName) {
-    const std::string idmapPath = findIdmapPath();
+    const std::string idmapPath = std::string{vlogInfo.argv[0]} + "__idmap.xml";
     std::ifstream idmap{idmapPath};
     if (!idmap) {
         std::printf("%%Error: failed to open %s\n", idmapPath.c_str());
@@ -54,74 +49,32 @@ std::string hashedName(const std::string& realName) {
     return "";
 }
 
-vpiHandle mustFind(const char* name) {
-    vpiHandle handle = vpi_handle_by_name((PLI_BYTE8*)name, nullptr);
-    if (!handle) {
-        const std::string rooted = std::string{"top."} + name;
-        handle = vpi_handle_by_name((PLI_BYTE8*)rooted.c_str(), nullptr);
-    }
-    if (!handle) { TEST_CHECK_NZ_LABEL(name, handle); }
-    return handle;
-}
-
-int readInt(vpiHandle handle) {
+void checkInt(const std::string& name, int expected) {
+    TestVpiHandle handle = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name.c_str()), nullptr);
+    TEST_CHECK_NZ_LABEL(name, handle);
+    if (!handle) return;
     s_vpi_value value{};
     value.format = vpiIntVal;
     vpi_get_value(handle, &value);
-    return value.value.integer;
-}
-
-void checkInt(const char* name, vpiHandle handle, int expected) {
-    const int got = readInt(handle);
-    TEST_CHECK_EQ_LABEL(name, got, expected);
-}
-
-void checkProtected() {
-    const std::string tHash = hashedName("t");
-    const std::string cmbHash = hashedName("cmb");
-    const std::string alias1Hash = hashedName("alias1");
-    if (errors) return;
-
-    const std::string cmbPath = tHash + "." + cmbHash;
-    const std::string alias1Path = tHash + "." + alias1Hash;
-    const vpiHandle cmbh = mustFind(cmbPath.c_str());
-    const vpiHandle alias1h = mustFind(alias1Path.c_str());
-    if (errors) return;
-
-    checkInt(alias1Path.c_str(), alias1h, 0x2d);
-    checkInt(cmbPath.c_str(), cmbh, 0x2e);
+    TEST_CHECK_EQ_LABEL(name, value.value.integer, expected);
 }
 
 PLI_INT32 readOnlySynchCb(s_cb_data*) {
-    checkProtected();
+    const std::string tHash = hashedName("t");
+    checkInt(tHash + "." + hashedName("alias1"), 0x2d);
+    checkInt(tHash + "." + hashedName("cmb"), 0x2e);
+    if (errors) vpi_control(vpiStop, 1);
     return 0;
 }
 
-PLI_INT32 endOfSimCb(s_cb_data*) {
-    if (!errors) std::printf("*-* All Finished *-*\n");
-    return 0;
-}
-
-PLI_INT32 startOfSimCb(s_cb_data*) {
+void bootstrap() {
     s_vpi_time time = {vpiSimTime, 0, 0, 0};
     s_cb_data cb_data{};
     cb_data.reason = cbReadOnlySynch;
     cb_data.cb_rtn = readOnlySynchCb;
     cb_data.time = &time;
-    const vpiHandle handle = vpi_register_cb(&cb_data);
+    TestVpiHandle handle = vpi_register_cb(&cb_data);
     TEST_CHECK_NZ_LABEL("cbReadOnlySynch", handle);
-    return 0;
-}
-
-void bootstrap() {
-    s_cb_data cb_data{};
-    cb_data.reason = cbStartOfSimulation;
-    cb_data.cb_rtn = startOfSimCb;
-    vpi_register_cb(&cb_data);
-
-    cb_data.reason = cbEndOfSimulation;
-    cb_data.cb_rtn = endOfSimCb;
-    vpi_register_cb(&cb_data);
 }
 
 }  // namespace

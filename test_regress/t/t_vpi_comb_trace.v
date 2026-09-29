@@ -26,11 +26,17 @@ module t (
 
   assign obs = keep ^ alias1 ^ cmb_net ^ cmb_ali;
 
+`ifndef NO_T_VPI_DUMP
+  import "DPI-C" context function void t_vpi_dump_values();
+  initial t_vpi_dump_values();
+`endif
+
   initial begin
     keep = 7'h2d;
     $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     $dumpvars();
     #1;
+    $write("*-* All Finished *-*\n");
     $finish;
   end
 

@@ -1,0 +1,17 @@
+t (vpiModule) t  vpiDefName=t
+    vpiReg:
+    alias1 (vpiReg) t.alias1 
+    cmb (vpiReg) t.cmb 
+    cmb_ali (vpiReg) t.cmb_ali 
+    cmb_net (vpiReg) t.cmb_net 
+    keep (vpiReg) t.keep 
+    obs (vpiReg) TOP.obs 
+    vpiParameter:
+-- @0 readonly
+t.alias1 = 2d vpiSize=7
+t.cmb = 2e vpiSize=7
+t.cmb_ali = 2e vpiSize=7
+t.cmb_net = 7b vpiSize=7
+t.keep = 2d vpiSize=7
+TOP.obs = 55 vpiSize=7
+*-* All Finished *-*

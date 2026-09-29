@@ -139,6 +139,7 @@ extern VM_PREFIX* testVpiTopp;
 //   t_vpi_dump_skip(name)  leave name out of value dumps
 //   t_vpi_dump_cb(name)    print name on each cbValueChange, from the end of this time step
 //   t_vpi_dump_value(name) print name now, so from the main thread only
+//   t_vpi_dump_get(name)   return name's value now, likewise, as t_vpi_dump_value prints it
 //   t_vpi_dump_put(name, value)  put now, likewise; value is hex, real=<r> or str=<s>
 //   t_vpi_dump_put_rw(name, value, flag)  put at the next cbReadWriteSynch, then
 //                          dump; flag is "", "force", "release" or "inertial"
@@ -422,6 +423,13 @@ extern "C" void t_vpi_dump_value(const char* name) {
     TestVpiHandle hndl = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name), NULL);
     printf("-- @%" PRIu64 " dpi %s = %s\n", simTime(), name,
            hndl ? valueStr(hndl, vpi_get(vpiType, hndl)).c_str() : "<null>");
+}
+
+extern "C" const char* t_vpi_dump_get(const char* name) {
+    static std::string result;
+    TestVpiHandle hndl = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name), NULL);
+    result = hndl ? valueStr(hndl, vpi_get(vpiType, hndl)) : "<null>";
+    return result.c_str();
 }
 
 extern "C" void t_vpi_dump_put(const char* name, const char* value) {
