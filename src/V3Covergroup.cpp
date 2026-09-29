@@ -367,7 +367,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         uint32_t typeWeight = 1;
         for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
-            if (optp->optType() != VCoverOptionType::WEIGHT) continue;
+            if (!(optp->optType() == VCoverOptionType::WEIGHT)) continue;
             // V3Width left type_option.weight a non-negative constant
             if (optp->typeOption()) {
                 typeWeight = VN_AS(optp->valuep(), Const)->toUInt();
