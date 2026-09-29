@@ -156,6 +156,7 @@ module td;
     logic [3:0] b;
   } pair_t;
   parameter elem_t V[2] = '{default: 0};
+  parameter elem_t W[2] = '{default: 0};  // Shares elem_t with V
   parameter pair_t P[2] = '{default: 0};
   parameter pair_t S = '0;
   pair_t x;
@@ -168,6 +169,35 @@ module ta #(
     parameter byte B[1] = '{1},
     parameter logic [(B[0] < 0 ? 8 : 1)-1:0] P = '0,
     parameter int V[B[0] < 0 ? 2 : B[0]] = '{default: 0}
+) ();
+endmodule
+
+// The same, for instances made in the other order
+module ta2 #(
+    parameter byte B[1] = '{1},
+    parameter logic [(B[0] < 0 ? 8 : 1)-1:0] P = '0
+) ();
+endmodule
+
+// Sizes from one-bit parameters set by the unsized literal '1
+module ub #(
+    parameter logic [0:0] N = '1,
+    parameter int A[N] = '{default: 0}
+) ();
+endmodule
+module ui #(
+    parameter N = '1,  // No type or range, so one bit
+    parameter int A[N == 1 && $bits(N) == 1 ? 2 : 1] = '{default: 0}
+) ();
+endmodule
+module us #(
+    parameter logic N = '1,
+    parameter logic [N+1:0] P = '0
+) ();
+endmodule
+module us2 #(  // The same, for instances made in the other order
+    parameter logic N = '1,
+    parameter logic [N+1:0] P = '0
 ) ();
 endmodule
 
@@ -194,7 +224,9 @@ module sg #(
     parameter unsigned U = 1,
     parameter int B[U < 0 ? 1 : 2] = '{default: 0},
     parameter signed R = 1,
-    parameter int D[R / 2 == 0.5 ? 2 : 1] = '{default: 0}
+    parameter int D[R / 2 == 0.5 ? 2 : 1] = '{default: 0},
+    parameter unsigned UR = 1,
+    parameter int E[UR / 2 == 0.5 ? 2 : 1] = '{default: 0}
 ) ();
 endmodule
 
@@ -247,6 +279,8 @@ endmodule
 module t;
   localparam int TWO = 2;
   localparam ULEN = 8;
+  localparam logic [0:0] ALL = '1;
+  localparam UALL = '1;
   typedef int arr3_t[3];
   typedef cls#(.N(3), .V('{4, 5, 6})) cls3_t;
 
@@ -299,14 +333,28 @@ module t;
   td #(
       .N(8),
       .V('{200, 100}),
+      .W('{55, 66}),
       .P('{'{a: 200, b: 1}, '{a: 100, b: 2}}),
       .S('{a: 150, b: 3})
   ) i_td ();
   td #(.N(4), .V('{13, 10})) i_td4 ();
 
   ta #(.B(ubyte1_t'{8'hff}), .P(8'h01), .V('{1, 2})) i_ta1 ();
-  ta #(.B(ubyte1_t'{8'hff}), .P(8'h81), .V('{3, 4})) i_ta81 ();  // Differs only above bit 0
+  ta #(.B(ubyte1_t'{8'hff}), .P(8'h81), .V('{1, 2})) i_ta81 ();  // P differs only above bit 0
+  ta2 #(.B(ubyte1_t'{8'hff}), .P(8'h81)) i_ta2_81 ();
+  ta2 #(.B(ubyte1_t'{8'hff}), .P(8'h01)) i_ta2_1 ();
   ta #(.P(1'b1), .B(int1_t'{257}), .V('{5})) i_tb ();  // Truncated to a byte, so B[0] is 1
+
+  ub #(.A('{7})) i_ub ();
+  ub #(.N('1), .A('{8})) i_ubo ();
+  ub #(.N(ALL), .A('{9})) i_ubp ();  // From the enclosing module's parameter
+  ui #(.A('{1, 2})) i_ui ();
+  ui #(.N('1), .A('{3, 4})) i_uio ();
+  ui #(.N(UALL), .A('{5, 6})) i_uip ();
+  us #(.P(3'b001)) i_us1 ();
+  us #(.P(3'b101)) i_us5 ();  // P differs only above bit 0
+  us2 #(.P(3'b101)) i_us2_5 ();
+  us2 #(.P(3'b001)) i_us2_1 ();
 
   rv #(
       .R(1),
@@ -318,8 +366,20 @@ module t;
       .E('{8{1}}),
       .F('{9})
   ) i_rv ();
+  rv #(.A('{4{1}}), .D('{1, 2}), .L('{1, 2}), .E('{8{1}}), .F('{9})) i_rvd ();  // Defaults
+  rv #(.T(shortint), .Q(3), .A('{4{1}}), .D('{1, 2}), .L('{1, 2}), .E('{16{1}}), .F('{1, 2, 3}))
+      i_rvt ();
 
-  sg #(.N(8'hff), .A('{1, 2}), .U(-1), .B('{3, 4}), .R(1.0), .D('{5, 6})) i_sg ();
+  sg #(
+      .N(8'hff),
+      .A('{1, 2}),
+      .U(-1),
+      .B('{3, 4}),
+      .R(1.0),
+      .D('{5, 6}),
+      .UR(1.0),
+      .E('{7, 8})
+  ) i_sg ();
 
   fn #(.N(2), .V('{1, 2, 3})) i_fn ();
 
@@ -455,6 +515,7 @@ module t;
     `checkd($bits(i_td.V[0]), 8);
     `checkd(i_td.V[0], 200);
     `checkd(i_td.V[1], 100);
+    `checkd(i_td.W[1], 66);
     `checkd($bits(i_td.P[0]), 12);
     `checkd(i_td.P[0].a, 200);
     `checkd(i_td.P[1].b, 2);
@@ -468,11 +529,33 @@ module t;
     // Array values converted to the element type
     `checkd(i_ta1.B[0], -1);
     `checkd($bits(i_ta1.P), 8);
+    `checkh(i_ta1.P, 8'h01);
     `checkd($size(i_ta1.V), 2);
     `checkh(i_ta81.P, 8'h81);
+    `checkh(i_ta2_1.P, 8'h01);
+    `checkh(i_ta2_81.P, 8'h81);
     `checkd(i_tb.B[0], 1);
     `checkd($bits(i_tb.P), 1);
     `checkd($size(i_tb.V), 1);
+
+    // One-bit parameters from '1
+    `checkd(i_ub.N, 1);
+    `checkd($size(i_ub.A), 1);
+    `checkd(i_ub.A[0], 7);
+    `checkd($size(i_ubo.A), 1);
+    `checkd(i_ubo.A[0], 8);
+    `checkd($size(i_ubp.A), 1);
+    `checkd(i_ubp.A[0], 9);
+    `checkd($bits(i_ui.N), 1);
+    `checkd($size(i_ui.A), 2);
+    `checkd($size(i_uio.A), 2);
+    `checkd($size(i_uip.A), 2);
+    `checkd($bits(i_us1.P), 3);
+    `checkd(i_us1.P, 1);
+    `checkd(i_us5.P, 5);
+    `checkd($bits(i_us2_1.P), 3);
+    `checkd(i_us2_1.P, 1);
+    `checkd(i_us2_5.P, 5);
 
     // Real, string and type parameter typed values
     `checkd($size(i_rv.A), 4);
@@ -480,11 +563,16 @@ module t;
     `checkd($size(i_rv.L), 3);
     `checkd($size(i_rv.E), 8);
     `checkd($size(i_rv.F), 1);
+    `checkd($size(i_rvd.L), 2);
+    `checkd($size(i_rvd.E), 8);
+    `checkd($size(i_rvt.E), 16);
+    `checkd($size(i_rvt.F), 3);
 
     // Signed or unsigned without a type
     `checkd($size(i_sg.A), 2);
     `checkd($size(i_sg.B), 2);
     `checkd($size(i_sg.D), 2);
+    `checkd($size(i_sg.E), 2);
 
     // Size from a function
     `checkd($size(i_fn.V), 3);

@@ -70,6 +70,7 @@
 #include "V3Stats.h"
 #include "V3Unroll.h"
 #include "V3Width.h"
+#include "V3WidthCommit.h"
 
 #include <cctype>
 #include <cstdlib>
@@ -254,8 +255,9 @@ static bool isAggregateParamValue(const AstNode* nodep) {
     return VN_IS(nodep, InitArray) || VN_IS(nodep, ConsPackUOrStruct);
 }
 
-// A cell's pins by the parameter they set, and what its parameters evaluate to. Values are
-// computed on first use and kept, so each parameter is evaluated once per cell.
+// A cell's pins by the parameter they set, and what its parameters evaluate to, computed on
+// first use and kept while these maps live. A cell gets one set of maps to type its pattern
+// pins, and another after its pins are folded, to name its specialization.
 struct ParamPinMaps final {
     const AstNodeModule* const m_modp;  // Module whose parameters the pins set
     const bool m_constPinsOnly;  // Use a pin's value only once it is a constant
@@ -328,7 +330,8 @@ class ParamSubstVisitor final : public VNVisitor {
         return depends;
     }
     // The type that keyp, a type parameter or typedef, has in the instance, from sourcep with
-    // the cell's parameters substituted, widthed once so that every reference shares it
+    // the cell's parameters substituted, widthed once for these maps and shared by each
+    // reference to it
     static AstNodeDType* instanceTypep(const AstNode* keyp, AstNodeDType* sourcep,
                                        const ParamPinMaps& pins) {
         const auto it = pins.m_types.find(keyp);
@@ -456,6 +459,14 @@ public:
                 }
             }
             VL_DO_DANGLING(holderp->deleteTree(), holderp);
+        }
+        // A folded initializer can still be an unsized literal such as '1, which would extend
+        // again where it is substituted; give it the parameter's width and signing
+        if (AstConst* const constp = VN_CAST(valuep, Const)) {
+            if (AstConst* const newp = V3WidthCommit::newIfConstCommitSize(constp)) {
+                VL_DO_DANGLING(constp->deleteTree(), constp);
+                valuep = newp;
+            }
         }
         pins.m_inProgress.erase(varp);
         pins.m_values.emplace(varp, std::make_pair(sourcep, valuep));
