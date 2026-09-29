@@ -353,8 +353,9 @@ void printTallyRow(const string& type, const Tally& tally, size_t indent, size_t
     // A score is complete at 100%, which it may reach with bins of no weight uncovered
     const string percent = tally.scored() ? pctValueString(tally.score(), tally.score() >= 100.0)
                                           : pctString(tally.hit(), tally.total());
+    // Right-align percentages to the width of "100.0%", so that rows line up
     std::cout << std::left << std::setw(typeWidth) << type << " : " << std::right << std::fixed
-              << percent << " (" << std::setw(countWidth) << tally.hit() << "/"
+              << std::setw(6) << percent << " (" << std::setw(countWidth) << tally.hit() << "/"
               << std::setw(countWidth) << tally.total() << ")\n";
 }
 
