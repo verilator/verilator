@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
-test.top_filename = "t/t_class_handle_to_string_port.sv"
 
 test.lint(fails=True, expect_filename=test.golden_filename)
 
