@@ -52,13 +52,6 @@ interface iface #(
 ) ();
 endinterface
 
-// Size from a parameter declared after the array's own parameter
-module q #(
-    parameter int V[N] = '{0},
-    parameter int N = 1
-) ();
-endmodule
-
 // Size from a type parameter
 module r #(
     parameter type T = byte,
@@ -127,6 +120,47 @@ class cls #(
   endfunction
 endclass
 
+// Size from a localparam of the parameter port list
+module lp #(
+    parameter int N = 0,
+    localparam int M = N + 1,
+    parameter int V[M] = '{default: 0}
+) ();
+endmodule
+
+// Sizes from values converted to the parameters' declared types
+module cv #(
+    // verilator lint_off WIDTHTRUNC
+    parameter byte N = 1,  // Overridden with a wider value
+    // verilator lint_on WIDTHTRUNC
+    parameter int B[$bits(N)] = '{default: 0},  // Size from the declared width
+    parameter int T[N] = '{default: 0},  // Size from the truncated value
+    parameter byte S = 1,
+    parameter int G[S < 0 ? 2 : 1] = '{default: 0}  // Size from the signed value
+) ();
+endmodule
+
+// Scalar width from an element of an array parameter
+module sc #(
+    parameter int B[1] = '{1},
+    parameter logic [B[0]-1:0] P = '0
+) ();
+endmodule
+
+// Types from typedefs of the module that use its parameters, so non-ANSI
+module td;
+  parameter int N = 1;
+  typedef logic [N-1:0] elem_t;
+  typedef struct packed {
+    elem_t a;
+    logic [3:0] b;
+  } pair_t;
+  parameter elem_t V[2] = '{default: 0};
+  parameter pair_t P[2] = '{default: 0};
+  parameter pair_t S = '0;
+  pair_t x;
+endmodule
+
 // Size overridden from the enclosing module's own parameter
 module mid #(
     parameter int M = 1,
@@ -138,6 +172,8 @@ endmodule
 
 module t;
   localparam int TWO = 2;
+  typedef int arr3_t[3];
+  typedef cls#(.N(3), .V('{4, 5, 6})) cls3_t;
 
   m #(.N(2), .V('{1, 2})) i_m2 ();
   m #(.N(3), .V('{1, 2, 3})) i_m3 ();
@@ -145,6 +181,7 @@ module t;
   m #(.V('{1})) i_m1 ();  // Size left at its default
   m #(.N(4), .V('{default: 1})) i_m4d ();  // Default in the pattern
   m #(.N(3), .V('{3{1}})) i_m3r ();  // Replication in the pattern
+  m #(.N(3), .V(arr3_t'{4, 5, 6})) i_m3t ();  // Pattern with its own type
 
   p #(.W(8), .B('{8'ha, 8'hb})) i_p ();
 
@@ -153,8 +190,6 @@ module t;
   iface #(.N(3), .V('{1, 2, 3})) i_iface ();
 
   c #(.W(16), .P({8'ha, 8'hb})) i_c ();
-
-  q #(.N(2), .V('{1, 2})) i_q2 ();
 
   r #(.T(shortint), .V('{16{1}})) i_r ();
 
@@ -174,6 +209,23 @@ module t;
   e #(.V('{5, 6}), .B('{2, 3})) i_ea ();  // Array parameter given last
   e #(.V('{5})) i_ed ();  // Array parameter left at its default
   sz #(.B('{1, 2, 3}), .V('{7, 8, 9})) i_sz ();
+
+  lp #(.N(2), .V('{1, 2, 3})) i_lp ();
+  lp #(.N(3)) i_lpd ();  // Default value must resize with M
+
+  cv #(.N(257), .B('{8{1}}), .T('{2}), .S(8'hff), .G('{3, 4})) i_cv ();
+
+  sc #(.B('{8}), .P(8'h01)) i_sc1 ();
+  sc #(.B('{8}), .P(8'h81)) i_sc81 ();  // Differs from i_sc1 only above bit 0
+  sc #(.P(8'h81), .B('{8})) i_sc81r ();  // Array parameter given last
+
+  td #(
+      .N(8),
+      .V('{200, 100}),
+      .P('{'{a: 200, b: 1}, '{a: 100, b: 2}}),
+      .S('{a: 150, b: 3})
+  ) i_td ();
+  td #(.N(4), .V('{13, 10})) i_td4 ();
 
   initial begin
     // Overridden size
@@ -204,6 +256,10 @@ module t;
     `checkd(i_m3r.V[0], 1);
     `checkd(i_m3r.V[2], 1);
 
+    // Pattern with its own type
+    `checkd($size(i_m3t.V), 3);
+    `checkd(i_m3t.V[2], 6);
+
     // Parameter-dependent element width
     `checkd($size(i_p.B), 2);
     `checkd($bits(i_p.B), 2 * 8);
@@ -224,11 +280,6 @@ module t;
     // Concatenation value against a parameter-dependent width
     `checkd($bits(i_c.P), 16);
     `checkh(i_c.P, 16'h0a0b);
-
-    // Size parameter declared after the array parameter
-    `checkd($size(i_q2.V), 2);
-    `checkd(i_q2.V[0], 1);
-    `checkd(i_q2.V[1], 2);
 
     // Size from a type parameter
     `checkd($size(i_r.V), 16);
@@ -274,8 +325,45 @@ module t;
     `checkd($size(i_sz.V), 3);
     `checkd(i_sz.V[2], 9);
 
-    // Class-scoped reference
+    // Size from a localparam of the parameter port list
+    `checkd($size(i_lp.V), 3);
+    `checkd(i_lp.V[2], 3);
+    `checkd($size(i_lpd.V), 4);
+
+    // Sizes from values converted to the declared types
+    `checkd($size(i_cv.B), 8);
+    `checkd(i_cv.N, 1);
+    `checkd($size(i_cv.T), 1);
+    `checkd(i_cv.T[0], 2);
+    `checkd(i_cv.S, -1);
+    `checkd($size(i_cv.G), 2);
+    `checkd(i_cv.G[1], 4);
+
+    // Scalar width from an array parameter
+    `checkd($bits(i_sc1.P), 8);
+    `checkh(i_sc1.P, 8'h01);
+    `checkd($bits(i_sc81.P), 8);
+    `checkh(i_sc81.P, 8'h81);
+    `checkd($bits(i_sc81r.P), 8);
+    `checkh(i_sc81r.P, 8'h81);
+
+    // Typedefs of the module
+    `checkd($bits(i_td.V[0]), 8);
+    `checkd(i_td.V[0], 200);
+    `checkd(i_td.V[1], 100);
+    `checkd($bits(i_td.P[0]), 12);
+    `checkd(i_td.P[0].a, 200);
+    `checkd(i_td.P[1].b, 2);
+    `checkd($bits(i_td.S), 12);
+    `checkd(i_td.S.a, 150);
+    `checkd($bits(i_td.x), 12);
+    `checkd($bits(i_td4.V[0]), 4);
+    `checkd(i_td4.V[0], 13);
+    `checkd($bits(i_td4.x), 8);
+
+    // Class-scoped references
     `checkd(cls#(.N(2), .V('{1, 2}))::last(), 2);
+    `checkd(cls3_t::last(), 6);
 
     $write("*-* All Finished *-*\n");
     $finish;

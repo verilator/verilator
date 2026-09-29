@@ -1,0 +1,29 @@
+%Error: t/t_param_array10_bad.v:32:17: Assignment pattern missed initializing elements: 2
+                                     : ... note: In instance 't'
+   32 |   m #(.N(3), .V('{1, 2})) i_few ();   
+      |                 ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_array10_bad.v:33:17: Assignment pattern with too many elements
+                                     : ... note: In instance 't'
+   33 |   m #(.N(2), .V('{1, 2, 3})) i_many ();   
+      |                 ^~
+%Error: t/t_param_array10_bad.v:25:19: Variable's initial value is circular: 'N'
+   25 |     parameter int N = M,
+      |                   ^
+%Warning-WIDTHEXPAND: t/t_param_array10_bad.v:26:19: Operator VAR 'M' expects 32 bits on the Initial value, but Initial value's VARREF 'N' generates 1 bits.
+   26 |     parameter int M = N,
+      |                   ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Error: t/t_param_array10_bad.v:27:20: Size of range is '[0]', must be positive integer (IEEE 1800-2023 7.4.2)
+   27 |     parameter int V[N] = '{default: 0}
+      |                    ^
+%Error: t/t_param_array10_bad.v:35:11: Assignment pattern missed initializing elements: -1
+                                     : ... note: In instance 't'
+   35 |   cy #(.V('{1})) i_cy ();
+      |           ^~
+%Error: t/t_param_array10_bad.v:19:20: Size of range is '[0]', must be positive integer (IEEE 1800-2023 7.4.2)
+                                     : ... note: In instance 't.i_zero'
+   19 |     parameter int V[N] = '{default: 0}
+      |                    ^
+%Error: Exiting due to
