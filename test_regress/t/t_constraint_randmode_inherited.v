@@ -38,11 +38,31 @@ class Derived extends Intermediate;
   constraint c_extra { extra == 15; }
 endclass
 
+class CombinedModes;
+  rand int value;
+
+  constraint c_value { value == 7; }
+
+  function new;
+    value = 9;
+    value.rand_mode(0);
+    c_value.constraint_mode(0);
+  endfunction
+endclass
+
 module t;
   initial begin
     automatic Intermediate intermediate = new;
     automatic Derived derived = new;
+    automatic CombinedModes combined_modes = new;
     automatic int randomize_result;
+
+    `checkd(combined_modes.value, 9)
+    `checkd(combined_modes.value.rand_mode(), 0)
+    `checkd(combined_modes.c_value.constraint_mode(), 0)
+    randomize_result = combined_modes.randomize();
+    `checkd(randomize_result, 1)
+    `checkd(combined_modes.value, 9)
 
     `checkd(intermediate.kind, THIRD)
     `checkd(intermediate.kind.rand_mode(), 0)

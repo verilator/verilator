@@ -4117,8 +4117,8 @@ class RandomizeVisitor final : public VNVisitor {
     void makeModeInit(AstVar* modeVarp, AstClass* classp, uint32_t modeCount) {
         AstNodeModule* const modeVarModp = VN_AS(modeVarp->user2p(), NodeModule);
         FileLine* fl = modeVarp->fileline();
-        AstVar* const oldSizeVarp
-            = new AstVar{fl, VVarType::BLOCKTEMP, "oldSize", modeVarp->findUInt32DType()};
+        AstVar* const oldSizeVarp = new AstVar{
+            fl, VVarType::BLOCKTEMP, m_uniqueNames.get("__VoldSize"), modeVarp->findUInt32DType()};
         oldSizeVarp->funcLocal(true);
         oldSizeVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         AstCMethodHard* const oldSizep
