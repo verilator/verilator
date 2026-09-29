@@ -161,6 +161,80 @@ module td;
   pair_t x;
 endmodule
 
+// Array values converted to the parameter's element type
+typedef byte unsigned ubyte1_t[1];
+typedef int int1_t[1];
+module ta #(
+    parameter byte B[1] = '{1},
+    parameter logic [(B[0] < 0 ? 8 : 1)-1:0] P = '0,
+    parameter int V[B[0] < 0 ? 2 : B[0]] = '{default: 0}
+) ();
+endmodule
+
+// Sizes from real, string and type parameter typed values
+module rv #(
+    parameter real R = 1.0,
+    parameter int A[$bits(R) / 16] = '{default: 0},
+    parameter int D[R / 2 == 0.5 ? 2 : 1] = '{default: 0},
+    parameter string S = "AB",
+    parameter int L[S.len()] = '{default: 0},
+    parameter type T = byte,
+    // verilator lint_off WIDTHTRUNC
+    parameter T Q = 1,  // Overridden with a wider value
+    // verilator lint_on WIDTHTRUNC
+    parameter int E[$bits(Q)] = '{default: 0},
+    parameter int F[Q] = '{default: 0}
+) ();
+endmodule
+
+// Parameters signed or unsigned but without a type take the value's type
+module sg #(
+    parameter signed N = 1,
+    parameter int A[N < 0 ? 2 : 1] = '{default: 0},
+    parameter unsigned U = 1,
+    parameter int B[U < 0 ? 1 : 2] = '{default: 0},
+    parameter signed R = 1,
+    parameter int D[R / 2 == 0.5 ? 2 : 1] = '{default: 0}
+) ();
+endmodule
+
+// Size from a function of another parameter
+module fn;
+  parameter int N = 1;
+  function automatic int f(input int x);
+    return x + 1;
+  endfunction
+  parameter int V[f(N)] = '{default: 0};
+endmodule
+
+// Typedefs that share a dependency on a parameter, so resolving each once matters
+module dg;
+  parameter int N = 1;
+  typedef logic [N-1:0] t0;
+  typedef union packed {t0 a; t0 b;} t1;
+  typedef union packed {t1 a; t1 b;} t2;
+  typedef union packed {t2 a; t2 b;} t3;
+  typedef union packed {t3 a; t3 b;} t4;
+  typedef union packed {t4 a; t4 b;} t5;
+  typedef union packed {t5 a; t5 b;} t6;
+  typedef union packed {t6 a; t6 b;} t7;
+  typedef union packed {t7 a; t7 b;} t8;
+  typedef union packed {t8 a; t8 b;} t9;
+  typedef union packed {t9 a; t9 b;} t10;
+  typedef union packed {t10 a; t10 b;} t11;
+  typedef union packed {t11 a; t11 b;} t12;
+  typedef union packed {t12 a; t12 b;} t13;
+  typedef union packed {t13 a; t13 b;} t14;
+  typedef union packed {t14 a; t14 b;} t15;
+  typedef union packed {t15 a; t15 b;} t16;
+  typedef union packed {t16 a; t16 b;} t17;
+  typedef union packed {t17 a; t17 b;} t18;
+  typedef union packed {t18 a; t18 b;} t19;
+  typedef union packed {t19 a; t19 b;} t20;
+  typedef t20 top_t;
+  parameter top_t V[2] = '{default: 0};
+endmodule
+
 // Size overridden from the enclosing module's own parameter
 module mid #(
     parameter int M = 1,
@@ -172,6 +246,7 @@ endmodule
 
 module t;
   localparam int TWO = 2;
+  localparam ULEN = 8;
   typedef int arr3_t[3];
   typedef cls#(.N(3), .V('{4, 5, 6})) cls3_t;
 
@@ -182,6 +257,7 @@ module t;
   m #(.N(4), .V('{default: 1})) i_m4d ();  // Default in the pattern
   m #(.N(3), .V('{3{1}})) i_m3r ();  // Replication in the pattern
   m #(.N(3), .V(arr3_t'{4, 5, 6})) i_m3t ();  // Pattern with its own type
+  m #(.N(), .V('{7})) i_me ();  // Empty override keeps the default
 
   p #(.W(8), .B('{8'ha, 8'hb})) i_p ();
 
@@ -198,6 +274,7 @@ module t;
 
   u #(.LEN(8), .LST('{8{0}})) i_u ();
   u #(.LEN(8)) i_ud ();  // Default value must resize with LEN
+  u #(.LEN(ULEN), .LST('{ULEN{1}})) i_uu ();  // Size from the enclosing module's parameter
 
   mid #(.M(3), .W('{1, 2, 3})) i_mid ();
 
@@ -226,6 +303,27 @@ module t;
       .S('{a: 150, b: 3})
   ) i_td ();
   td #(.N(4), .V('{13, 10})) i_td4 ();
+
+  ta #(.B(ubyte1_t'{8'hff}), .P(8'h01), .V('{1, 2})) i_ta1 ();
+  ta #(.B(ubyte1_t'{8'hff}), .P(8'h81), .V('{3, 4})) i_ta81 ();  // Differs only above bit 0
+  ta #(.P(1'b1), .B(int1_t'{257}), .V('{5})) i_tb ();  // Truncated to a byte, so B[0] is 1
+
+  rv #(
+      .R(1),
+      .A('{4{1}}),
+      .D('{1, 2}),
+      .S("ABC"),
+      .L('{1, 2, 3}),
+      .Q(257),
+      .E('{8{1}}),
+      .F('{9})
+  ) i_rv ();
+
+  sg #(.N(8'hff), .A('{1, 2}), .U(-1), .B('{3, 4}), .R(1.0), .D('{5, 6})) i_sg ();
+
+  fn #(.N(2), .V('{1, 2, 3})) i_fn ();
+
+  dg #(.N(4), .V('{3, 5})) i_dg ();
 
   initial begin
     // Overridden size
@@ -259,6 +357,10 @@ module t;
     // Pattern with its own type
     `checkd($size(i_m3t.V), 3);
     `checkd(i_m3t.V[2], 6);
+
+    // Empty override
+    `checkd($size(i_me.V), 1);
+    `checkd(i_me.V[0], 7);
 
     // Parameter-dependent element width
     `checkd($size(i_p.B), 2);
@@ -298,6 +400,8 @@ module t;
     // Untyped parameter, parameter-dependent default value
     `checkd($size(i_u.LST), 8);
     `checkd($size(i_ud.LST), 8);
+    `checkd($size(i_uu.LST), 8);
+    `checkd(i_uu.LST[7], 1);
 
     // Size from the enclosing module's parameter
     `checkd($size(i_mid.i_pass.V), 3);
@@ -360,6 +464,35 @@ module t;
     `checkd($bits(i_td4.V[0]), 4);
     `checkd(i_td4.V[0], 13);
     `checkd($bits(i_td4.x), 8);
+
+    // Array values converted to the element type
+    `checkd(i_ta1.B[0], -1);
+    `checkd($bits(i_ta1.P), 8);
+    `checkd($size(i_ta1.V), 2);
+    `checkh(i_ta81.P, 8'h81);
+    `checkd(i_tb.B[0], 1);
+    `checkd($bits(i_tb.P), 1);
+    `checkd($size(i_tb.V), 1);
+
+    // Real, string and type parameter typed values
+    `checkd($size(i_rv.A), 4);
+    `checkd($size(i_rv.D), 2);
+    `checkd($size(i_rv.L), 3);
+    `checkd($size(i_rv.E), 8);
+    `checkd($size(i_rv.F), 1);
+
+    // Signed or unsigned without a type
+    `checkd($size(i_sg.A), 2);
+    `checkd($size(i_sg.B), 2);
+    `checkd($size(i_sg.D), 2);
+
+    // Size from a function
+    `checkd($size(i_fn.V), 3);
+    `checkd(i_fn.V[2], 3);
+
+    // Typedefs sharing a dependency
+    `checkd($bits(i_dg.V[0]), 4);
+    `checkd(i_dg.V[1], 5);
 
     // Class-scoped references
     `checkd(cls#(.N(2), .V('{1, 2}))::last(), 2);

@@ -28,9 +28,18 @@ module cy #(
 ) ();
 endmodule
 
+// Scalar width from parameters whose defaults refer to each other
+module cs #(
+    parameter int N = M,
+    parameter int M = N,
+    parameter logic [N-1:0] P = '0
+) ();
+endmodule
+
 module t;
   m #(.N(3), .V('{1, 2})) i_few ();  // Too few elements
   m #(.N(2), .V('{1, 2, 3})) i_many ();  // Too many elements
   z i_zero ();  // Size left at its zero default
   cy #(.V('{1})) i_cy ();
+  cs #(.P(1)) i_cs ();
 endmodule
