@@ -10,8 +10,10 @@
 
 require 5.006_001;
 use warnings;
+use Config;
 use Getopt::Long;
 use FindBin qw($RealBin $RealScript);
+use File::Spec;
 use IO::File;
 use Pod::Usage;
 use Cwd qw(abs_path getcwd);
@@ -40,11 +42,12 @@ foreach my $sw (@ARGV) {
     push @Opt_Verilator_Sw, $sw;
 }
 
-Getopt::Long::config("no_auto_abbrev", "pass_through");
+Getopt::Long::config("no_auto_abbrev", "pass_through", "permute");
 if (! GetOptions (
           # Major operating modes
           "help"        => \&usage,
           "debug:s"     => \&debug,
+          "debugi=i"    => sub { $Debug ||= 1; },
           # "version!"  => \&version,   # Also passthru'ed
           # Additional parameters
           "<>"          => sub {},      # Ignored
@@ -73,30 +76,43 @@ sub debug {
 # Builds
 
 sub verilator_coverage_bin {
-    my $bin = "";
-    # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
     my $basename = ($ENV{VERILATOR_COVERAGE_BIN}
-                    || "verilator_coverage_bin_dbg");
-    if (defined($ENV{VERILATOR_ROOT})) {
-        my $dir = $ENV{VERILATOR_ROOT};
-        if (-x "$dir/bin/$basename"
-            || -x "$dir/bin/$basename.exe") {  # From a "make install" into VERILATOR_ROOT
-            $bin = "$dir/bin/$basename";
-        } else {
-            $bin = "$dir/$basename";  # From pointing to kit directory
-        }
-    } else {
-        if (-x "$RealBin/$basename"
-            || -x "$RealBin/$basename.exe") {
-            $bin = "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
-        } else {
-            $bin = $basename;  # Find in PATH
-        }
-        # Note we don't look under bin/$basename which would be right if running
-        # in the kit dir. Running that would likely break, since
-        # VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
+                    || ($Debug ? "verilator_coverage_bin_dbg" : "verilator_coverage_bin"));
+    my $bin = find_coverage_bin($basename);
+    if (!$bin && !$Debug && !$ENV{VERILATOR_COVERAGE_BIN}) {
+        # Support installations that only built the debug executable.
+        $bin = find_coverage_bin("verilator_coverage_bin_dbg");
     }
-    return $bin;
+    return $bin if $bin;
+    # Keep the requested name in diagnostics when no executable was found.
+    return defined($ENV{VERILATOR_ROOT}) ? "$ENV{VERILATOR_ROOT}/$basename" : $basename;
+}
+
+sub find_coverage_bin {
+    my $basename = shift;
+    my @dirs = defined($ENV{VERILATOR_ROOT})
+        ? ("$ENV{VERILATOR_ROOT}/bin", $ENV{VERILATOR_ROOT}) : ($RealBin);
+    foreach my $dir (@dirs) {
+        if (-x "$dir/$basename" || -x "$dir/$basename.exe") {
+            return "$dir/$basename";
+        }
+    }
+    if (defined($ENV{VERILATOR_ROOT})) {
+        return undef;
+    }
+    my @paths = File::Spec->path();
+    # File::Spec drops trailing empty entries, which search the current directory.
+    if (defined($ENV{PATH})
+        && ($ENV{PATH} eq "" || $ENV{PATH} =~ /\Q$Config{path_sep}\E$/)) {
+        push @paths, File::Spec->curdir();
+    }
+    foreach my $dir (@paths) {
+        my $path = File::Spec->catfile($dir, $basename);
+        if (-x $path || -x "$path.exe") {
+            return $basename;  # Let the shell find it in PATH.
+        }
+    }
+    return undef;
 }
 
 #######################################################################
@@ -177,6 +193,8 @@ L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
     --annotate-all                All files should be shown.
     --annotate-min <count>        Minimum occurrence count for uncovered.
     --annotate-points             Annotates info from each coverage point.
+    --debug                       Enable debugging with the debug executable.
+    --debugi <level>              Set debug level using the debug executable.
     --filter-type <regex>         Keep only records of given coverage type.
     --help                        Displays this message and version and exits.
     --include-reset-arcs          Include reset arcs in FSM arc summaries.

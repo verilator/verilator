@@ -28,7 +28,7 @@ endif()
 
 option(
     DEBUG_AND_RELEASE_AND_COVERAGE
-    "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
+    "Builds debug and release binaries for Verilator and coverage, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
 )
 
 find_package(Python3 COMPONENTS Interpreter)
@@ -138,6 +138,8 @@ if(DEBUG_AND_RELEASE_AND_COVERAGE)
     add_subdirectory(src build-Release)
     set(CMAKE_BUILD_TYPE Coverage)
     add_subdirectory(src build-Coverage)
+    set(CMAKE_BUILD_TYPE CoverageRelease)
+    add_subdirectory(src build-CoverageRelease)
     set(CMAKE_BUILD_TYPE ${saved_build_type})
 else()
     add_subdirectory(src)
