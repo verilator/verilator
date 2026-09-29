@@ -25,16 +25,29 @@ with open(test.top_filename, 'w', encoding='utf8') as fh:
     fh.write("  always_comb o = 32'h0" + ''.join(f' ^ r{i}' for i in range(32)) + ';\n')
     fh.write('endmodule\n')
 
-flags = ['--cc', '--stats', '-Wno-UNOPTTHREADS', '--threads-max-mtasks', '8']
+flags = [
+    '--cc', '--stats', '--dumpi-V3VariableOrder 1', '-Wno-UNOPTTHREADS', '--threads-max-mtasks',
+    '8'
+]
 test.compile(verilator_flags2=flags,
              threads=(2 if test.vltmt else 1),
              make_main=False,
              make_top_shell=False,
              verilator_make_gmake=False)
 if test.vltmt:
+    dump = test.glob_one(test.obj_dir + '/*_variableorder.txt')
+    test.files_identical(dump, 't/t_variable_order_single_worker.out')
     # Clearing all writer identities would also merge the two shared banks.
     test.file_grep(test.stats, r'VariableOrder, MTask affinity groups\s+(\d+)', 4)
     test.file_grep(test.stats, r'VariableOrder, MTask aligned group starts\s+(\d+)', 4)
+    test.file_grep(test.stats, r'VariableOrder, no-affinity variables\s+(\d+)', 10)
+    test.file_grep(test.stats, r'VariableOrder, single-worker variables\s+(\d+)', 17)
+    test.file_grep(test.stats, r'VariableOrder, shared read-only variables\s+(\d+)', 2)
+    test.file_grep(test.stats, r'VariableOrder, shared written variables\s+(\d+)', 16)
+    test.file_grep(test.stats, r'VariableOrder, groups eliminated by worker affinity\s+(\d+)', 1)
+    test.file_grep(test.stats,
+                   r'VariableOrder, groups eliminated for single-worker variables\s+(\d+)', 2)
+    test.file_grep(test.stats, r'VariableOrder, additional groups for shared writers\s+(\d+)', 2)
 else:
     test.file_grep_not(test.stats, r'VariableOrder, MTask affinity groups')
     test.file_grep_not(test.stats, r'VariableOrder, MTask aligned group starts')

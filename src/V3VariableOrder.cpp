@@ -37,6 +37,109 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 using MTaskIdVec = std::vector<bool>;
 using MTaskAffinityMap = std::unordered_map<const AstVar*, MTaskIdVec>;
 
+// Diagnostic inputs retain exact accessing/writing tasks before layout coalesces them.
+// Only collected with --stats or --dumpi-V3VariableOrder.
+class VariableOrderStats final {
+    MTaskAffinityMap m_taskSets;
+    std::unique_ptr<std::ofstream> m_dumpp;
+    std::set<MTaskIdVec> m_sharedWorkers;  // Reset for each module
+    size_t m_group = 0;
+    uint64_t m_noAffinity = 0;
+    uint64_t m_singleWorker = 0;
+    uint64_t m_sharedReadOnly = 0;
+    uint64_t m_sharedWritten = 0;
+    uint64_t m_workerEliminated = 0;
+    uint64_t m_singleWorkerEliminated = 0;
+    uint64_t m_sharedWriterAdditional = 0;
+
+    void dumpSet(const MTaskIdVec& vec, size_t begin, size_t end) const {
+        *m_dumpp << '{';
+        const char* sep = "";
+        for (size_t i = begin; i < end; ++i) {
+            if (!vec[i]) continue;
+            *m_dumpp << sep << i - begin;
+            sep = ",";
+        }
+        *m_dumpp << '}';
+    }
+
+public:
+    VariableOrderStats() {
+        if (v3Global.opt.mtasks() && dumpLevel()) {
+            const string filename = v3Global.debugFilename("variableorder.txt");
+            m_dumpp.reset(V3File::new_ofstream(filename));
+            if (m_dumpp->fail()) v3fatal("Can't write file: " << filename);
+        }
+    }
+    MTaskAffinityMap& taskSets() { return m_taskSets; }
+    void startModule(const AstNodeModule* modp) {
+        m_sharedWorkers.clear();
+        m_group = 0;
+        if (m_dumpp) *m_dumpp << "Module " << modp->name() << '\n';
+    }
+    void recordGroup(const MTaskIdVec& key, const std::vector<AstVar*>& varps) {
+        if (varps.empty()) return;
+        const size_t usedIds = ExecMTask::numUsedIds();
+        const MTaskIdVec workers(key.begin(), key.begin() + usedIds);
+        const size_t nWorkers = std::count(workers.begin(), workers.end(), true);
+        // Within each actual final group, hold writers fixed while counting collapsed
+        // accessing-task sets. Then count any further collapse of distinct writer sets.
+        // This measures realized reductions, not opportunities in a hypothetical layout.
+        std::map<MTaskIdVec, std::set<MTaskIdVec>> writersToAccesses;
+        if (m_dumpp) {
+            *m_dumpp << "  Group " << m_group++ << " workers=";
+            dumpSet(key, 0, usedIds);
+            *m_dumpp << " writers=";
+            dumpSet(key, usedIds, key.size());
+            *m_dumpp << '\n';
+        }
+        for (const AstVar* const varp : varps) {
+            const auto it = m_taskSets.find(varp);
+            // Unaccessed variables have no task sets.
+            const MTaskIdVec& tasks = it == m_taskSets.end() ? key : it->second;
+            if (!nWorkers) {
+                ++m_noAffinity;
+            } else {
+                const MTaskIdVec accesses(tasks.begin(), tasks.begin() + usedIds);
+                const MTaskIdVec writers(tasks.begin() + usedIds, tasks.end());
+                writersToAccesses[writers].emplace(accesses);
+                if (nWorkers == 1) {
+                    ++m_singleWorker;
+                } else if (std::find(writers.begin(), writers.end(), true) == writers.end()) {
+                    ++m_sharedReadOnly;
+                } else {
+                    ++m_sharedWritten;
+                }
+            }
+            if (m_dumpp) {
+                *m_dumpp << "    " << varp->name() << " tasks=";
+                dumpSet(tasks, 0, usedIds);
+                *m_dumpp << " writers=";
+                dumpSet(tasks, usedIds, tasks.size());
+                *m_dumpp << " aligned=" << varp->mtaskCacheLineAlign() << '\n';
+            }
+        }
+        for (const auto& pair : writersToAccesses) {
+            m_workerEliminated += pair.second.size() - 1;
+        }
+        if (nWorkers == 1) m_singleWorkerEliminated += writersToAccesses.size() - 1;
+        if (nWorkers > 1 && !m_sharedWorkers.emplace(workers).second) ++m_sharedWriterAdditional;
+    }
+    void report() const {
+        // Add once, including zeros, so every variable category and transformation is visible.
+        V3Stats::addStat("VariableOrder, no-affinity variables", m_noAffinity);
+        V3Stats::addStat("VariableOrder, single-worker variables", m_singleWorker);
+        V3Stats::addStat("VariableOrder, shared read-only variables", m_sharedReadOnly);
+        V3Stats::addStat("VariableOrder, shared written variables", m_sharedWritten);
+        V3Stats::addStat("VariableOrder, groups eliminated by worker affinity",
+                         m_workerEliminated);
+        V3Stats::addStat("VariableOrder, groups eliminated for single-worker variables",
+                         m_singleWorkerEliminated);
+        V3Stats::addStat("VariableOrder, additional groups for shared writers",
+                         m_sharedWriterAdditional);
+    }
+};
+
 // Trace through code reachable form an MTask and annotate referenced variabels
 class GatherMTaskAffinity final : VNVisitorConst {
     // NODE STATE
@@ -46,13 +149,16 @@ class GatherMTaskAffinity final : VNVisitorConst {
 
     // STATE
     MTaskAffinityMap& m_results;  // The result map being built;
+    VariableOrderStats* const m_statsp;
     const uint32_t m_id;  // Representative ID of the scheduled worker being analysed
     const uint32_t m_writeId;  // Preserve the precise task responsible for writes
     const size_t m_usedIds = ExecMTask::numUsedIds();  // Value of max id + 1
 
     // CONSTRUCTOR
-    GatherMTaskAffinity(const ExecMTask* mTaskp, MTaskAffinityMap& results)
+    GatherMTaskAffinity(const ExecMTask* mTaskp, MTaskAffinityMap& results,
+                        VariableOrderStats* statsp)
         : m_results{results}
+        , m_statsp{statsp}
         , m_id{mTaskp->affinityId()}
         , m_writeId{mTaskp->id()} {
         iterateConst(mTaskp->funcp());
@@ -73,6 +179,11 @@ class GatherMTaskAffinity final : VNVisitorConst {
                                    .first->second;
         affinity[m_id] = true;
         if (nodep->access().isWriteOrRW()) affinity[m_usedIds + m_writeId] = true;
+        if (m_statsp) {
+            MTaskIdVec& tasks = m_statsp->taskSets().emplace(varp, 2 * m_usedIds).first->second;
+            tasks[m_writeId] = true;
+            if (nodep->access().isWriteOrRW()) tasks[m_usedIds + m_writeId] = true;
+        }
     }
 
     void visit(AstCFunc* nodep) override {
@@ -88,8 +199,9 @@ class GatherMTaskAffinity final : VNVisitorConst {
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
-    static void apply(const ExecMTask* mTaskp, MTaskAffinityMap& results) {
-        GatherMTaskAffinity{mTaskp, results};
+    static void apply(const ExecMTask* mTaskp, MTaskAffinityMap& results,
+                      VariableOrderStats* statsp) {
+        GatherMTaskAffinity{mTaskp, results, statsp};
     }
 };
 
@@ -102,11 +214,14 @@ class VariableOrder final {
 
     const MTaskAffinityMap& m_mTaskAffinity;
     std::vector<AstVar*>& m_varps;
+    VariableOrderStats* const m_statsp;
 
     VariableOrder(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
-                  std::vector<AstVar*>& varps)
+                  std::vector<AstVar*>& varps, VariableOrderStats* statsp)
         : m_mTaskAffinity{mTaskAffinity}
-        , m_varps{varps} {
+        , m_varps{varps}
+        , m_statsp{statsp} {
+        if (m_statsp) m_statsp->startModule(modp);
         orderModuleVars(modp);
     }
     ~VariableOrder() = default;
@@ -172,14 +287,15 @@ class VariableOrder final {
         for (auto& pair : m2v) {
             if (emptyAffinity(pair.first)) continue;
             sortAndAppend(pair.second, true);
+            if (m_statsp) m_statsp->recordGroup(pair.first, pair.second);
             ++affinityGroups;
         }
 
         // Finally add the variables with no known MTask affinity
         sortAndAppend(m2v[emptyVec], false);
+        if (m_statsp) m_statsp->recordGroup(emptyVec, m2v[emptyVec]);
 
         V3Stats::addStatSum("VariableOrder, MTask affinity groups", affinityGroups);
-        V3Stats::addStatSum("VariableOrder, no-affinity variables", m2v[emptyVec].size());
     }
 
     // cppcheck-suppress constParameterPointer
@@ -218,8 +334,8 @@ class VariableOrder final {
 
 public:
     static void processModule(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
-                              std::vector<AstVar*>& varps) {
-        VariableOrder{modp, mTaskAffinity, varps};
+                              std::vector<AstVar*>& varps, VariableOrderStats* statsp) {
+        VariableOrder{modp, mTaskAffinity, varps, statsp};
     }
 };
 
@@ -230,12 +346,15 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     UINFO(2, __FUNCTION__ << ":");
 
     MTaskAffinityMap mTaskAffinity;
+    VariableOrderStats stats;
+    VariableOrderStats* const statsp
+        = v3Global.opt.mtasks() && (v3Global.opt.stats() || dumpLevel()) ? &stats : nullptr;
 
     // Gather MTask affinities
     if (v3Global.opt.mtasks()) {
         netlistp->topModulep()->foreach([&](AstExecGraph* execGraphp) {
             for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
-                GatherMTaskAffinity::apply(vtx.as<const ExecMTask>(), mTaskAffinity);
+                GatherMTaskAffinity::apply(vtx.as<const ExecMTask>(), mTaskAffinity, statsp);
             }
         });
         // Writer identities only separate state shared between workers. State accessed by a
@@ -255,8 +374,9 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     std::unordered_map<AstNodeModule*, std::vector<AstVar*>> sortedVars;
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {
-        VariableOrder::processModule(modp, mTaskAffinity, sortedVars[modp]);
+        VariableOrder::processModule(modp, mTaskAffinity, sortedVars[modp], statsp);
     }
+    if (statsp && v3Global.opt.stats()) stats.report();
     if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-sort");
 
     // Insert them back under the module, in the new order, but at

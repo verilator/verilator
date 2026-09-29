@@ -824,6 +824,60 @@ parallelism to take advantage of a modern multicore CPU. Runtime
 synchronization cost is reasonable with so few nodes.
 
 
+Variable Layout
+~~~~~~~~~~~~~~~
+
+``V3VariableOrder`` groups fields by their accessing workers. Fields shared
+between workers are further separated by their exact writing-task sets to
+limit false sharing. Fields accessed by just one worker can share a group
+regardless of their writers. The first non-static field of each affinity
+group requests cache-line alignment; fields without known task accesses
+follow the affinity groups.
+
+With :vlopt:`--stats`, four disjoint variable counts cover all declarations
+processed in module scope: ``no-affinity variables`` (no scheduled-task
+accesses), ``single-worker variables``, ``shared read-only variables`` (at
+least two accessing workers and no writing tasks), and ``shared written
+variables`` (at least two accessing workers and at least one writing task).
+These describe scheduled-task accesses, not initialization or external
+accesses. They do not count references or allocated bytes.
+
+Three further ``VariableOrder`` counters describe the final grouping:
+
+- ``groups eliminated by worker affinity`` counts distinct accessing-task
+  groups combined within each final group, holding exact writer sets fixed.
+- ``groups eliminated for single-worker variables`` counts the further
+  reduction from combining distinct writer sets within a final
+  single-worker group.
+- ``additional groups for shared writers`` counts final shared groups
+  beyond one per accessing-worker set, preserving different exact
+  writing-task sets.
+
+These count changes in group count, not variables. Combining four groups
+into one eliminates three groups, even if every input group contains many
+variables. Reductions are attributed once, in the order above; the counters
+are not percentages. ``MTask affinity groups`` counts final known-affinity
+groups, while ``MTask aligned group starts`` counts those requesting
+alignment. All counts are summed across modules; groups in different
+modules do not merge.
+
+:vlopt:`--dumpi-V3VariableOrder 1 <--dumpi-<srcfile>>` writes an internal
+``*_variableorder.txt`` dump for threaded models, for internal use only. It
+lists modules, final groups and fields in layout order, worker
+representatives, original accessing/writing tasks, and alignment requests.
+Worker representatives are task IDs within each scheduled graph, not
+physical CPU IDs. The dump contains neither C++ byte offsets nor measured
+cache misses. Regression golden files check group membership and order;
+small generated-header checks additionally check emission of alignment.
+
+Library wrapper ports and DPI arguments are ordered independently of this
+internal field layout so a scheduling change does not reorder a
+hierarchical interface. ``V3ProtectLib`` currently orders source ports by
+declaration order, with generated enable/output ports sorted by name before
+them. This is an internal implementation choice, not a public ordering
+guarantee.
+
+
 Partitioning
 ~~~~~~~~~~~~
 

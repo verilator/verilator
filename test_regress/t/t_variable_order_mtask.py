@@ -9,8 +9,6 @@
 
 import vltest_bootstrap
 
-import re
-
 test.scenarios('vlt_all')
 test.top_filename = test.obj_dir + "/t_variable_order_mtask.v"
 
@@ -34,57 +32,35 @@ def gen(filename, nregs):
 
 gen(test.top_filename, 24)
 
-flags = ["--cc", "--stats", "-Wno-UNOPTTHREADS"]
+flags = ["--cc", "--stats", "--dumpi-V3VariableOrder 1", "-Wno-UNOPTTHREADS"]
 if test.vltmt:
     flags += ["--threads-max-mtasks 16"]
 
 test.compile(verilator_flags2=flags, threads=(2 if test.vltmt else 1))
 
-root_h = test.obj_dir + "/" + test.vm_prefix + "___024root.h"
+headers = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*.h")
 aligned_var_re = r'alignas\(VL_CACHE_LINE_BYTES\) (?:CData|SData|IData|QData|VlWide|VL_)'
 
 if test.vltmt:
-    test.file_grep(root_h, aligned_var_re)
-    # Verify the fixture still exercises different reader tasks on one worker,
-    # with the same writing task. Do not depend on specific task or worker IDs.
-    functions = {}
-    for filename in test.glob_some(test.obj_dir + '/' + test.vm_prefix + '___024root*.cpp'):
-        with open(filename, encoding='utf8') as fh:
-            functions.update(
-                re.findall(r'^void (\w+)\([^;{]*\) \{\n(.*?)^\}', fh.read(), re.S | re.M))
-    tasks = {name: body for name, body in functions.items() if re.search(r'__nba_mtask\d+$', name)}
-    workers = {
-        task: name
-        for name, body in functions.items() if '____Vthread' in name for task in tasks
-        if task + '(' in body
-    }
-    accesses = [{
-        task
-        for task, body in tasks.items() if re.search(r'\bt__DOT__r' + str(reg) + r'\b', body)
-    } for reg in (0, 8)]
-    writers = [{
-        task
-        for task, body in tasks.items() if re.search(r'\bt__DOT__r' + str(reg) + r'\s*=', body)
-    } for reg in (0, 8)]
-    if len(writers[0]) != 1 or writers[0] != writers[1] or accesses[0] == accesses[1]:
-        test.error('Fixture needs one shared writer and different reader tasks for r0 and r8')
-    if any(task not in workers for access in accesses for task in access):
-        test.error('Fixture task has no scheduled worker')
-    elif {workers[task] for task in accesses[0]} != {workers[task] for task in accesses[1]}:
-        test.error('Fixture needs identical accessing workers for r0 and r8')
-
-    # r0 and r8 must share a group despite their different reader-task sets.
-    groups = [
-        set(re.findall(r'\bt__DOT__r(\d+);', group))
-        for group in test.file_contents(root_h).split('alignas(VL_CACHE_LINE_BYTES)')
-    ]
-    if not any({'0', '8'} <= group for group in groups):
-        test.error('Different reader tasks split written fields r0 and r8 into separate groups')
+    test.file_grep_any(headers, aligned_var_re)
+    # The dump records different accessing tasks but the same workers/writer
+    # for r0 and r8, and their placement in the same final group.
+    dump = test.glob_one(test.obj_dir + '/*_variableorder.txt')
+    test.files_identical(dump, 't/t_variable_order_mtask.out')
     # Merge private banks while retaining exact writer distinctions for shared banks.
     test.file_grep(test.stats, r'VariableOrder, MTask affinity groups\s+(\d+)', 8)
     test.file_grep(test.stats, r'VariableOrder, MTask aligned group starts\s+(\d+)', 8)
+    test.file_grep(test.stats, r'VariableOrder, no-affinity variables\s+(\d+)', 11)
+    test.file_grep(test.stats, r'VariableOrder, single-worker variables\s+(\d+)', 11)
+    test.file_grep(test.stats, r'VariableOrder, shared read-only variables\s+(\d+)', 2)
+    test.file_grep(test.stats, r'VariableOrder, shared written variables\s+(\d+)', 14)
+    test.file_grep(test.stats, r'VariableOrder, groups eliminated by worker affinity\s+(\d+)', 2)
+    test.file_grep(test.stats,
+                   r'VariableOrder, groups eliminated for single-worker variables\s+(\d+)', 5)
+    test.file_grep(test.stats, r'VariableOrder, additional groups for shared writers\s+(\d+)', 6)
 else:
-    test.file_grep_not(root_h, aligned_var_re)
+    for header in headers:
+        test.file_grep_not(header, aligned_var_re)
     test.file_grep_not(test.stats, r'VariableOrder, MTask affinity groups')
     test.file_grep_not(test.stats, r'VariableOrder, MTask aligned group starts')
 
