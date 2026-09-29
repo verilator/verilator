@@ -1,4 +1,4 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_isunbounded_warn.v:13:6: Unsupported: $isunbounded() in a constraint, treating as constant
+%Warning-CONSTRAINTIGN: t/t_constraint_isunbounded_unsup.v:13:6: Unsupported: $isunbounded() in a constraint, treating as constant
    13 |     !$isunbounded(x);
       |      ^~~~~~~~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest

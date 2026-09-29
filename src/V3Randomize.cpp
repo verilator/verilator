@@ -202,13 +202,15 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         return;
     }
     if (const AstIfaceRefDType* const ifacep = VN_CAST(dtypep, IfaceRefDType)) {
+        // A class property can only hold a *virtual* interface handle --
+        // a plain interface can't be a class member at all -- so a
+        // rand-qualified var landing here is always the virtual kind.
+        UASSERT_OBJ(ifacep->isVirtual(), dtypep, "Non-virtual interface as class property type");
         // Not in 18.4's enumerated random-variable domain, same reasoning
         // as chandle/string/event; also generates C++ that does not
         // compile if left unchecked.
-        if (ifacep->isVirtual()) {
-            contextp->v3error("'rand'/'randc' on a virtual interface handle (not "
-                              "in IEEE 1800-2023 18.4's random-variable type domain)");
-        }
+        contextp->v3error("'rand'/'randc' on a virtual interface handle (not "
+                          "in IEEE 1800-2023 18.4's random-variable type domain)");
         return;
     }
     if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
@@ -229,7 +231,12 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         return;
     }
     const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
-    if (basicp && basicp->isDouble()) {
+    // V3Width has already resolved every dtype by this pass, and every
+    // other leaf kind (class handle, virtual interface, struct/union) was
+    // already dispatched above, so a rand-qualified var's dtype can only
+    // be a BasicDType here.
+    UASSERT_OBJ(basicp, dtypep, "Unexpected non-basic leaf dtype for rand var");
+    if (basicp->isDouble()) {
         // rand on a real variable is legal; only randc is disallowed.
         if (isRandc) {
             contextp->v3error("'randc' on a real variable (IEEE 1800-2023 18.4: "
@@ -237,14 +244,17 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
         }
         return;
     }
-    if (basicp
-        && (basicp->keyword() == VBasicDTypeKwd::STRING
-            || basicp->keyword() == VBasicDTypeKwd::CHANDLE
-            || basicp->keyword() == VBasicDTypeKwd::EVENT)) {
+    switch (basicp->keyword()) {
+    case VBasicDTypeKwd::STRING:
+    case VBasicDTypeKwd::CHANDLE:
+    case VBasicDTypeKwd::EVENT: {
         const char* const articlep = basicp->keyword() == VBasicDTypeKwd::EVENT ? "an" : "a";
         contextp->v3error("'rand'/'randc' on " << articlep << " " << basicp->keyword().ascii()
                                                << " variable (not in IEEE 1800-2023 18.4's "
                                                   "random-variable type domain)");
+        break;
+    }
+    default: break;
     }
 }
 
@@ -4461,12 +4471,13 @@ class RandomizeVisitor final : public VNVisitor {
             dtp->v3error("Unpacked structs shall not be declared as randc"
                          " (IEEE 1800-2023 18.4)");
             return nullptr;
-        } else if (V3Error::errorCount()) {
-            // Any dtype landing here (object handle, virtual interface, unpacked
-            // union) was already rejected by type upstream; nothing to build.
-            return nullptr;
         } else {
-            varp->v3fatalSrc("Unexpected randc variable dtype");
+            // Only remaining possibility: an object handle, virtual interface,
+            // or unpacked union declared randc -- checkRandTypeEligibility()
+            // already rejected each of those with its own error, earlier in
+            // this same pass, before newRandcVarsp() ever runs on this var.
+            UASSERT_OBJ(V3Error::errorCount(), varp, "Unexpected randc variable dtype");
+            return nullptr;
         }
         AstCDType* const newdtp = findVlRandCDType(varp->fileline(), items);
         AstVar* const newp
