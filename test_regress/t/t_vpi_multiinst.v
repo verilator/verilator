@@ -27,8 +27,8 @@ interface iface2_t;
   logic [6:0] b;
 endinterface
 
-// Non-inlined module, instantiated twice below: exercises per-instance
-// storage rather than one table shared by the module class.
+// Non-inlined module, instanced once in each of t.p0 and t.p1: exercises
+// per-instance storage rather than one table shared by the module class.
 module child (
     input logic clk,
     input logic [7:0] din
@@ -40,8 +40,8 @@ module child (
   always_ff @(posedge clk) cflop <= din ^ 8'h5a;
 endmodule
 
-// bc is driven only by the cross-scope assign in the parent instance below;
-// bd reads bc back from within this module's own scope.
+// bc is driven only by cross-scope assigns in module t; bd reads bc back
+// from within this module's own scope.
 module bcell;
   /*verilator no_inline_module*/
   logic [7:0] bc;
@@ -207,7 +207,7 @@ module t;
     end
   end
 
-  // Per-instance storage across a non-inlined parent/child pair,
+  // Per-instance storage across the non-inlined parent/child modules (p0, p1),
   // plus a boundary alias of a child flop.
   function automatic logic [7:0] din0_of(input logic [7:0] cycle);
     case (cycle)

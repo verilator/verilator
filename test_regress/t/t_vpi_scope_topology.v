@@ -90,7 +90,7 @@ module combloop_pass (
   assign o = i;
 endmodule
 
-// Not inlined, so the alias chain below crosses a real instance boundary.
+// Not inlined, so the alias chain through u_chain crosses a real instance boundary.
 module chain_pass8 (
     input logic [7:0] i,
     output logic [7:0] o
