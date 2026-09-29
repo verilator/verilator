@@ -28,7 +28,7 @@ static const bool verbose = false;
 
 //======================================================================
 
-inline std::string _test_check_label(const std::string& label) {
+inline std::string testCheckLabel(const std::string& label) {
     return label.empty() ? "" : label + ": ";
 }
 
@@ -37,7 +37,7 @@ inline std::string _test_check_label(const std::string& label) {
     do { \
         if (!(test)) { \
             std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": " \
-                      << _test_check_label(label) << "GOT = " << (got) << "   EXP = " << (exp) \
+                      << testCheckLabel(label) << "GOT = " << (got) << "   EXP = " << (exp) \
                       << std::endl; \
             ++errors; \
         } \
@@ -81,8 +81,7 @@ inline std::string _test_check_label(const std::string& label) {
     do { \
         if (!(got)) { \
             std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": " << _test_check_label(label) << "GOT= NULL   EXP!=NULL" \
-                      << std::endl; \
+                      << ": " << testCheckLabel(label) << "GOT= NULL   EXP!=NULL" << std::endl; \
             ++errors; \
         } \
     } while (0)

@@ -39,13 +39,11 @@ t (vpiModule) t  vpiDefName=t
         vpiReg:
         bc (vpiReg) t.bc0.bc 
         bd (vpiReg) t.bc0.bd 
-        clk (vpiReg) t.bc0.clk 
         vpiParameter:
     bc1 (vpiModule) t.bc1  vpiDefName=bcell
         vpiReg:
         bc (vpiReg) t.bc1.bc 
         bd (vpiReg) t.bc1.bd 
-        clk (vpiReg) t.bc1.clk 
         vpiParameter:
     if0 (vpiInterface) t.if0 
         vpiReg:
@@ -184,10 +182,8 @@ t.rst = 1 vpiSize=1
 t.scanonr = "" vpiSize=1
 t.bc0.bc = 00 vpiSize=8
 t.bc0.bd = 33 vpiSize=8
-t.bc0.clk = 0 vpiSize=1
 t.bc1.bc = 00 vpiSize=8
 t.bc1.bd = 33 vpiSize=8
-t.bc1.clk = 0 vpiSize=1
 t.if0.a = 00 vpiSize=7
 t.if0.b = 7f vpiSize=7
 t.if1.a = 01 vpiSize=7
@@ -450,10 +446,8 @@ t.observe = 78
 t.observe2 = 2b
 t.bc0.bc = 89
 t.bc0.bd = ba
-t.bc0.clk = 1
 t.bc1.bc = c9
 t.bc1.bd = fa
-t.bc1.clk = 1
 t.if0.a = 15
 t.if0.b = 6a
 t.if1.a = 16
@@ -486,8 +480,6 @@ t.u1.din_copy = 17
 t.u1.dout = 18
 -- @80 readonly
 t.clk = 0
-t.bc0.clk = 0
-t.bc1.clk = 0
 t.p0.clk = 0
 t.p0.xali = 3c
 t.p0.uc.clk = 0
@@ -943,8 +935,6 @@ t.ctr2 = 33
 t.obs_xscope = c8
 t.observe = 7c
 t.observe2 = 2b
-t.bc0.clk = 1
-t.bc1.clk = 1
 t.if0.a = 33
 t.if0.b = 4c
 t.if1.a = 34

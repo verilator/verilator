@@ -9,14 +9,14 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 test.pli_filename = "t/t_vpi_dump.cpp"
 
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
-                 "--exe --vpi --public-flat-rw --savable --no-l2name", "-CFLAGS -DTEST_SAVABLE",
-                 test.pli_filename, "t/TestVpiMain.cpp"
+                 "--exe --vpi --public-flat-rw --savable --no-l2name", test.pli_filename,
+                 "t/TestVpiMain.cpp"
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 

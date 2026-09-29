@@ -114,7 +114,8 @@ module t #(
   logic [69:0] wcmb;  // >64 bits
   assign wcmb = wkeep + 70'd1;
 
-  logic bsel;  // Sel/Cond/>>> operators
+  // Bit/part select, conditional and >>> operators
+  logic bsel;
   assign bsel = keep[2];
 
   logic [6:0] mux0;
@@ -246,10 +247,8 @@ module t #(
   always_comb begin
     cf_nopre[3:0] = keep[3:0];
   end
-  /* verilator lint_on LATCH */
 
   // Genuine latch
-  /* verilator lint_off LATCH */
   logic [6:0] cf_latch;
   always_comb begin
     if (keep[2]) cf_latch = keep;

@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+# Not vltmt: t_vpi_dump_value from always @(cnt) runs on a worker thread under --threads
 test.scenarios('vlt')
 test.pli_filename = "t/t_vpi_dump.cpp"
 

@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 test.pli_filename = "t/t_vpi_dump.cpp"
 
 test.compile(make_top_shell=False,

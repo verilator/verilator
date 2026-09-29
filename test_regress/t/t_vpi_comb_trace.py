@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt_all')
 
 test.pli_filename = "t/t_vpi_dump.cpp"
 
@@ -20,7 +20,7 @@ test.compile(
 
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
-if test.vlt:
-    test.file_grep(test.trace_filename, r'\$var .* keep ')
+for name in ['keep', 'cmb', 'alias1', 'cmb_net', 'cmb_ali']:
+    test.file_grep(test.trace_filename, r'\$var .* ' + name + ' ')
 
 test.passes()

@@ -180,8 +180,8 @@ module t;
 
   // A comb net duplicated across two interface instances and two submodule
   // instances must keep independent storage per instance.
-  iface_t #(.W(8)) if0 (.din(base));
-  iface_t #(.W(8)) if1 (.din(base + 8'h20));
+  iface_t if0 (.din(base));
+  iface_t if1 (.din(base + 8'h20));
 
   logic [7:0] out0;
   logic [7:0] out1;
@@ -276,7 +276,7 @@ module t;
   );
 
   // sub_ifwrite drives intf.swapped from another scope entirely.
-  swap_if #(.DBW(8)) intf ();
+  swap_if intf ();
   assign intf.wdata = d;
   assign o = intf.swapped;
   sub_ifwrite u_ifwrite (intf);
@@ -313,8 +313,7 @@ module t;
   logic [7:0] rndc;
   always_comb rndc = 8'(nib) + 8'($random);
 
-  // $time reads simulation state no variable captures; when a put to 'nib'
-  // re-evaluates it is scheduler-dependent, so its value is read but not compared.
+  // $time is impure, so its value is not dumped.
   logic [7:0] tstamp;
   always_comb tstamp = 8'(nib) + 8'($time);
 

@@ -29,7 +29,7 @@ std::string hashedName(const std::string& realName) {
     const std::string idmapPath = std::string{vlogInfo.argv[0]} + "__idmap.xml";
     std::ifstream idmap{idmapPath};
     if (!idmap) {
-        std::printf("%%Error: failed to open %s\n", idmapPath.c_str());
+        std::printf("%%Error: %s:%d: failed to open %s\n", __FILE__, __LINE__, idmapPath.c_str());
         ++errors;
         return "";
     }
@@ -44,7 +44,7 @@ std::string hashedName(const std::string& realName) {
         if (end == std::string::npos) continue;
         return line.substr(start, end - start);
     }
-    std::printf("%%Error: no idmap entry for '%s'\n", realName.c_str());
+    std::printf("%%Error: %s:%d: no idmap entry for '%s'\n", __FILE__, __LINE__, realName.c_str());
     ++errors;
     return "";
 }

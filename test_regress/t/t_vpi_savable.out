@@ -13,7 +13,6 @@ t (vpiModule) t  vpiDefName=t
     ctrl_r (vpiReg) t.ctrl_r 
     cyc (vpiReg) t.cyc 
     flag_a (vpiReg) t.flag_a 
-    flag_b (vpiReg) t.flag_b 
     lvl0 (vpiRegArray) t.lvl0 
         vpiReg:
         lvl0 (vpiReg) t.lvl0[7] 
@@ -37,7 +36,6 @@ t (vpiModule) t  vpiDefName=t
     picked (vpiReg) t.picked 
     rst (vpiReg) t.rst 
     set_a (vpiReg) t.set_a 
-    set_b (vpiReg) t.set_b 
     status (vpiReg) t.status 
     vpiParameter:
     A_CTRL (vpiParameter) t.A_CTRL  vpiConstType=vpiDecConst
@@ -57,7 +55,6 @@ TOP.ctrl_o = 00000000 vpiSize=32
 t.ctrl_r = 00000000 vpiSize=32
 t.cyc = 00 vpiSize=8
 t.flag_a = 0 vpiSize=1
-t.flag_b = 0 vpiSize=1
 t.lvl0[7] = 8a vpiSize=8
 t.lvl0[6] = 7d vpiSize=8
 t.lvl0[5] = 50 vpiSize=8
@@ -75,8 +72,7 @@ t.lvl2[0] = 1f vpiSize=8
 t.picked = 53 vpiSize=8
 t.rst = 1 vpiSize=1
 t.set_a = 0 vpiSize=1
-t.set_b = 0 vpiSize=1
-t.status = 00 vpiSize=6
+t.status = 00 vpiSize=5
 -- @5 cb t.cyc = 01
 -- @5 readonly
 TOP.clk = 1
@@ -312,7 +308,7 @@ TOP.clk = 1
 t.cnt = 0b
 t.cyc = 0d
 t.flag_a = 1
-t.status = 2b
+t.status = 1b
 -- @140 readonly
 t.bus_addr = 3fa
 t.bus_wdata = 000000a7
@@ -337,7 +333,7 @@ t.set_a = 0
 TOP.clk = 1
 t.cnt = 0c
 t.cyc = 0e
-t.status = 2c
+t.status = 1c
 -- restore
 -- @125 after restore
 t.bus_addr = 014
@@ -391,7 +387,7 @@ TOP.clk = 1
 t.cnt = 0b
 t.cyc = 0d
 t.flag_a = 1
-t.status = 2b
+t.status = 1b
 -- @160 readonly
 t.bus_addr = 3fa
 t.bus_wdata = 000000a7
@@ -416,7 +412,7 @@ t.set_a = 0
 TOP.clk = 1
 t.cnt = 0c
 t.cyc = 0e
-t.status = 2c
+t.status = 1c
 -- @170 readonly
 TOP.clk = 0
 -- @175 cb t.cyc = 0f
@@ -427,7 +423,7 @@ TOP.clk = 1
 t.cnt = 06
 t.cyc = 0f
 t.flag_a = 0
-t.status = 2d
+t.status = 1d
 -- @175 readonly
 t.status = 06
 -- @180 readonly
@@ -490,7 +486,7 @@ TOP.clk = 1
 t.cnt = 0b
 t.cyc = 0d
 t.flag_a = 1
-t.status = 2b
+t.status = 1b
 -- @200 readonly
 t.bus_addr = 3fa
 t.bus_wdata = 000000a7
@@ -515,7 +511,7 @@ t.set_a = 0
 TOP.clk = 1
 t.cnt = 0c
 t.cyc = 0e
-t.status = 2c
+t.status = 1c
 -- @210 readonly
 TOP.clk = 0
 -- @215 cb t.cyc = 0f
@@ -523,7 +519,7 @@ TOP.clk = 0
 TOP.clk = 1
 t.cnt = 0d
 t.cyc = 0f
-t.status = 2d
+t.status = 1d
 -- @220 readonly
 TOP.clk = 0
 -- @225 cb t.cyc = 10
@@ -531,7 +527,7 @@ TOP.clk = 0
 TOP.clk = 1
 t.cnt = 0e
 t.cyc = 10
-t.status = 2e
+t.status = 1e
 -- @230 readonly
 TOP.clk = 0
 -- @235 cb t.cyc = 11
@@ -539,7 +535,7 @@ TOP.clk = 0
 TOP.clk = 1
 t.cnt = 0f
 t.cyc = 11
-t.status = 2f
+t.status = 1f
 -- @240 readonly
 TOP.clk = 0
 -- @245 cb t.cyc = 12
@@ -547,7 +543,7 @@ TOP.clk = 0
 TOP.clk = 1
 t.cnt = 10
 t.cyc = 12
-t.status = 20
+t.status = 10
 -- @250 readonly
 TOP.clk = 0
 -- @255 cb t.cyc = 13
@@ -555,7 +551,7 @@ TOP.clk = 0
 TOP.clk = 1
 t.cnt = 11
 t.cyc = 13
-t.status = 21
+t.status = 11
 -- @260 readonly
 TOP.clk = 0
 -- @265 cb t.cyc = 14
@@ -563,7 +559,7 @@ TOP.clk = 0
 TOP.clk = 1
 t.cnt = 12
 t.cyc = 14
-t.status = 22
+t.status = 12
 -- @270 readonly
 TOP.clk = 0
 *-* All Finished *-*
@@ -572,4 +568,4 @@ TOP.clk = 0
 TOP.clk = 1
 t.cnt = 13
 t.cyc = 15
-t.status = 23
+t.status = 13

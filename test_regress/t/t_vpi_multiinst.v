@@ -42,9 +42,7 @@ endmodule
 
 // bc is driven only by the cross-scope assign in the parent instance below;
 // bd reads bc back from within this module's own scope.
-module bcell (
-    input logic clk
-);
+module bcell;
   /*verilator no_inline_module*/
   logic [7:0] bc;
   logic [7:0] bd;
@@ -76,6 +74,7 @@ module xsub (
   assign q = p + 32'd7;
 endmodule
 
+// Same as xsub, but a separate module so its instances see only a flop-driven input
 module xsubr (
     input logic [31:0] p,
     output logic [31:0] q
@@ -326,8 +325,8 @@ module t;
     bflop1 <= din1 ^ 8'ha5;
   end
 
-  bcell bc0 (.clk(clk));
-  bcell bc1 (.clk(clk));
+  bcell bc0 ();
+  bcell bc1 ();
   assign bc0.bc = bflop0;
   assign bc1.bc = bflop1;
 

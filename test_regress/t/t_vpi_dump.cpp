@@ -122,7 +122,7 @@ std::map<int32_t, std::vector<int32_t>> iterate_over = [] {
     };
 }();
 
-#ifdef TEST_SAVABLE
+#ifdef T_VPI_SAVABLE
 #include "verilated_save.h"
 #include VM_PREFIX_INCLUDE
 extern VM_PREFIX* testVpiTopp;
@@ -258,7 +258,7 @@ void modDump(TestVpiHandle& it, int n, bool values) {
 
         if (iterate_over.find(type) == iterate_over.end()) continue;
         std::vector<int32_t> types = iterate_over.at(type);
-        if ((TestSimulator::is_questa() || TestSimulator::is_mti())
+        if ((TestSimulator::is_questa())
             && (type == vpiModule || type == vpiInterface || type == vpiGenScope)) {
             // Questa lists some variable kinds only under vpiVariables (IEEE 1800-2023 37.17)
             const std::vector<int32_t> vars{vpiReg,        vpiRegArray, vpiMemory,
@@ -385,7 +385,10 @@ int putFlag(const std::string& name, const std::string& flag) {
                       : flag == "release"  ? vpiReleaseFlag
                       : flag == "inertial" ? vpiInertialDelay
                                            : vpiNoDelay;
-    TEST_CHECK_LABEL(name, flag, "", vflag != vpiNoDelay || flag.empty());
+    if (vflag == vpiNoDelay && !flag.empty()) {
+        printf("%%Error: unknown put flag '%s' for %s\n", flag.c_str(), name.c_str());
+        ++errors;
+    }
     return vflag;
 }
 
@@ -412,7 +415,7 @@ void doPut(const std::string& name, const std::string& valueArg, int flag) {
 }
 
 void doSaveRestore(OpKind kind) {
-#ifdef TEST_SAVABLE
+#ifdef T_VPI_SAVABLE
     const char* const path = VL_STRINGIFY(TEST_OBJ_DIR) "/saved.vltsv";
     if (kind == OpKind::SAVE) {
         VerilatedSave os;
@@ -423,8 +426,12 @@ void doSaveRestore(OpKind kind) {
         os.open(path);
         os >> *testVpiTopp;
     }
-#endif
     printf("-- %s\n", kind == OpKind::SAVE ? "save" : "restore");
+#else
+    printf("%%Error: %s needs a --savable model built as t_vpi_savable\n",
+           kind == OpKind::SAVE ? "t_vpi_dump_save" : "t_vpi_dump_restore");
+    ++errors;
+#endif
 }
 
 PLI_INT32 read_write_synch(t_cb_data* data) {
@@ -434,7 +441,7 @@ PLI_INT32 read_write_synch(t_cb_data* data) {
         ops.swap(requests.rwOps);
     }
     if (ops.empty()) return 0;
-    const char* what = "after put";
+    const char* what = nullptr;
     for (const RwOp& op : ops) {
         if (op.kind == OpKind::PUT) {
             doPut(op.name, op.value, putFlag(op.name, op.flag));

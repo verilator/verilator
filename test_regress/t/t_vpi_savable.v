@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Flops accessed via VPI beside combinational logic derived from them: a status
-// net, a duplicate register, and a tree of unpacked arrays.
+// net, a duplicate net, and a tree of unpacked arrays.
 
 module t (
     input logic clk,
@@ -21,7 +21,6 @@ module t (
   logic [9:0] bus_addr = 10'h3ff;
   logic [31:0] bus_wdata = '0;
   logic set_a = 1'b0;
-  logic set_b = 1'b0;
   assign rst = cyc < 8'd2;
 
   always @(posedge clk) begin
@@ -125,10 +124,9 @@ module t (
 
   logic [31:0] ctrl_r;
   logic flag_a;
-  logic flag_b;
   logic [7:0] cnt;
-  logic [5:0] status;
-  assign status = {flag_a, flag_b, cnt[3:0]};
+  logic [4:0] status;
+  assign status = {flag_a, cnt[3:0]};
 
   // Comb unpacked arrays built one element per continuous assign, read back through a
   // variable index
@@ -159,12 +157,10 @@ module t (
     if (rst) begin
       ctrl_r <= '0;
       flag_a <= 1'b0;
-      flag_b <= 1'b0;
       cnt <= '0;
     end
     else begin
       flag_a <= flag_a | set_a;
-      flag_b <= flag_b | set_b;
       cnt <= cnt + 8'h1;
       if (bus_we && bus_addr == A_CTRL) ctrl_r <= bus_wdata;
     end

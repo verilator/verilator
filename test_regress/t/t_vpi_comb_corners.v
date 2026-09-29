@@ -75,7 +75,8 @@ module t;
   always @(cyc) begin
     case (cyc)
       8'd8: t_vpi_dump_put_rw("t.orphan", "2a");
-      // No vpi_put_value format for chandle; Questa rejects
+      // No vpi_put_value format for chandle; Questa rejects, and this golden records the
+      // put being accepted
       8'd9: t_vpi_dump_put_rw("t.handle", "2a");
       8'd14: t_vpi_dump_put_rw("t.frc", "55", "force");
       8'd16: t_vpi_dump_put_rw("t.frc", "55", "release");
@@ -266,7 +267,7 @@ module t;
   chandle handle;
   initial handle = null;
 
-  // 'comb_inc' is combinational and read-only; 'orphan' has no driver at all, so a
+  // 'comb_inc' is combinational; 'orphan' has no driver at all, so a
   // VPI put is its only source; 'p' is assembled from two independent writes under
   // a split_var pragma that keeps it as one word.
   logic [7:0] comb_inc;
@@ -314,7 +315,8 @@ module t;
     else release frc2;
   end
 
-  // An explicit public_flat_rd pin: readable by VPI, never writable.
+  // An explicit public_flat_rd pin; --public-flat-rw still makes it writable, so no put is
+  // made here
   logic [7:0] rdpin  /*verilator public_flat_rd*/ = 8'h0;
   always_ff @(posedge clk) rdpin <= a ^ 8'h6d;
 
