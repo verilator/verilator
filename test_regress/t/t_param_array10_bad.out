@@ -1,11 +1,11 @@
-%Error: t/t_param_array10_bad.v:54:17: Assignment pattern missed initializing elements: 2
+%Error: t/t_param_array10_bad.v:62:17: Assignment pattern missed initializing elements: 2
                                      : ... note: In instance 't'
-   54 |   m #(.N(3), .V('{1, 2})) i_few ();   
+   62 |   m #(.N(3), .V('{1, 2})) i_few ();   
       |                 ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_param_array10_bad.v:55:17: Assignment pattern with too many elements
+%Error: t/t_param_array10_bad.v:63:17: Assignment pattern with too many elements
                                      : ... note: In instance 't'
-   55 |   m #(.N(2), .V('{1, 2, 3})) i_many ();   
+   63 |   m #(.N(2), .V('{1, 2, 3})) i_many ();   
       |                 ^~
 %Error: t/t_param_array10_bad.v:25:19: Variable's initial value is circular: 'N'
    25 |     parameter int N = M,
@@ -18,19 +18,22 @@
 %Error: t/t_param_array10_bad.v:27:20: Size of range is '[0]', must be positive integer (IEEE 1800-2023 7.4.2)
    27 |     parameter int V[N] = '{default: 0}
       |                    ^
-%Error: t/t_param_array10_bad.v:57:11: Assignment pattern missed initializing elements: -1
+%Error: t/t_param_array10_bad.v:65:11: Assignment pattern missed initializing elements: -1
                                      : ... note: In instance 't'
-   57 |   cy #(.V('{1})) i_cy ();
+   65 |   cy #(.V('{1})) i_cy ();
       |           ^~
-%Error: t/t_param_array10_bad.v:42:21: Expecting expression to be constant, but variable isn't const: 'N'
-   42 |     parameter int V[N] = '{default: 0}
+%Error: t/t_param_array10_bad.v:41:20: Parameter type is circular: 'T'
+   41 |     parameter type T = logic [W-1:0],
+      |                    ^
+%Error: t/t_param_array10_bad.v:50:21: Expecting expression to be constant, but variable isn't const: 'N'
+   50 |     parameter int V[N] = '{default: 0}
       |                     ^
-%Error: t/t_param_array10_bad.v:42:21: right side of bit range isn't a two-state constant (IEEE 1800-2023 6.9.1)
-   42 |     parameter int V[N] = '{default: 0}
+%Error: t/t_param_array10_bad.v:50:21: right side of bit range isn't a two-state constant (IEEE 1800-2023 6.9.1)
+   50 |     parameter int V[N] = '{default: 0}
       |                     ^
-%Error: t/t_param_array10_bad.v:60:21: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+%Error: t/t_param_array10_bad.v:69:21: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
                                      : ... note: In instance 't'
-   60 |   nt #(.V('{1, 2})) i_nt ();
+   69 |   nt #(.V('{1, 2})) i_nt ();
       |                     ^~~~
 %Error: t/t_param_array10_bad.v:19:20: Size of range is '[0]', must be positive integer (IEEE 1800-2023 7.4.2)
                                      : ... note: In instance 't.i_zero'
@@ -44,12 +47,12 @@
                                                    : ... note: In instance 't.i_cs'
    33 |     parameter int N = M,
       |                   ^
-%Error: t/t_param_array10_bad.v:41:19: Parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'N'
+%Error: t/t_param_array10_bad.v:49:19: Parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'N'
                                      : ... note: In instance 't.i_nv'
-   41 |     parameter int N,
+   49 |     parameter int N,
       |                   ^
-%Error: t/t_param_array10_bad.v:48:20: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+%Error: t/t_param_array10_bad.v:56:20: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
                                      : ... note: In instance 't.i_nt'
-   48 |     parameter type T,
+   56 |     parameter type T,
       |                    ^
 %Error: Exiting due to

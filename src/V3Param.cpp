@@ -346,7 +346,11 @@ class ParamSubstVisitor final : public VNVisitor {
                                        const ParamPinMaps& pins) {
         const auto it = pins.m_types.find(keyp);
         if (it != pins.m_types.end()) return it->second;
-        if (!pins.m_inProgress.emplace(keyp).second) return nullptr;  // Cyclic
+        if (!pins.m_inProgress.emplace(keyp).second) {  // Refers to itself, as through a value
+            keyp->v3error((VN_IS(keyp, Typedef) ? "Typedef's type" : "Parameter type")
+                          << " is circular: " << keyp->prettyNameQ());
+            return nullptr;
+        }
         AstVar* const holderp
             = new AstVar{sourcep->fileline(), VVarType::MODULETEMP, "__Vparamtype",
                          VFlagChildDType{}, sourcep->cloneTree(false)};
