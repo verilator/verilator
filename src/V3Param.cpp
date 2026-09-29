@@ -418,9 +418,11 @@ public:
         AstNode* sourcep = varp->valuep();
         const auto pinIt = pins.m_varPins.find(varp);
         if (pinIt != pins.m_varPins.end()) {
-            AstNode* const exprp = pinIt->second->exprp();
-            if (!pins.m_constPinsOnly || VN_IS(exprp, Const) || isAggregateParamValue(exprp)) {
-                sourcep = exprp;
+            sourcep = pinIt->second->exprp();
+            // While naming, a pin not folded yet leaves the parameter without a value
+            if (pins.m_constPinsOnly && !VN_IS(sourcep, Const)
+                && !isAggregateParamValue(sourcep)) {
+                return nullptr;
             }
         }
         if (!pins.m_inProgress.emplace(varp).second) return nullptr;  // Cyclic

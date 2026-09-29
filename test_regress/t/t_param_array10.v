@@ -120,6 +120,16 @@ class cls #(
   endfunction
 endclass
 
+// Class parameter whose width comes from another, given after it in a typedef
+class clw #(
+    parameter int N = 1,
+    parameter logic [N-1:0] P = '0
+);
+  static function int value();
+    return int'(P);
+  endfunction
+endclass
+
 // Size from a localparam of the parameter port list
 module lp #(
     parameter int N = 0,
@@ -277,6 +287,8 @@ module t;
   localparam UALL = '1;
   typedef int arr3_t[3];
   typedef cls#(.N(3), .V('{4, 5, 6})) cls3_t;
+  typedef clw#(.P(8'h81), .N(TWO * 4)) clw81_t;  // Width given after the value
+  typedef clw#(.P(8'h01), .N(TWO * 4)) clw01_t;  // Differs from clw81_t only above bit 0
 
   m #(.N(2), .V('{1, 2})) i_m2 ();
   m #(.N(3), .V('{1, 2, 3})) i_m3 ();
@@ -570,6 +582,8 @@ module t;
     // Class-scoped references
     `checkd(cls#(.N(2), .V('{1, 2}))::last(), 2);
     `checkd(cls3_t::last(), 6);
+    `checkh(clw81_t::value(), 'h81);
+    `checkh(clw01_t::value(), 'h01);
 
     $write("*-* All Finished *-*\n");
     $finish;
