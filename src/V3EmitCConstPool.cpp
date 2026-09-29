@@ -81,6 +81,16 @@ class EmitCConstPool final : public EmitCConstInit {
             putns(varp, varp->dtypep()->cType(nameProtect, false, false));
             UASSERT_OBJ(varp, varp->valuep(), "Var without value");
             emitDirectInit(varp->valuep());
+            // Account for file splitting
+            varp->valuep()->foreach([this](const AstConst* constp) {
+                if (constp->num().isString()) {
+                    splitSizeInc(AstNode::INSTR_COUNT_STR);
+                } else if (constp->isWide()) {
+                    splitSizeInc(constp->widthWords());
+                } else {
+                    splitSizeInc(1);
+                }
+            });
             putns(varp, ";\n");
             // Keep track of stats
             if (VN_IS(varp->dtypep(), AssocArrayDType)) {
@@ -93,18 +103,6 @@ class EmitCConstPool final : public EmitCConstInit {
         }
 
         if (ofp()) closeOutputFile();
-    }
-
-    // VISITORS
-    void visit(AstConst* nodep) override {
-        if (nodep->num().isString()) {
-            splitSizeInc(AstNode::INSTR_COUNT_STR);
-        } else if (nodep->isWide()) {
-            splitSizeInc(nodep->widthWords());
-        } else {
-            splitSizeInc(1);
-        }
-        EmitCConstInit::visit(nodep);
     }
 
 public:
