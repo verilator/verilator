@@ -17,7 +17,10 @@ test.compile(verilator_flags2=[
 
 if test.vltmt:
     dump = test.glob_one(test.obj_dir + '/*_variableorder.txt')
-    test.file_grep(dump, r'__DOT__TAB tasks=\{[^}]+\} writers=\{\} aligned=0')
+    # The table must lead a shared group, so it would consume alignment without the fix.
+    test.file_grep(
+        dump, r'  Group \d+ workers=\{\d+,\d+\} writers=\{\}\n'
+        r'    \S+__DOT__TAB tasks=\{[^}]+\} writers=\{\} aligned=0')
     test.file_grep(dump, r'__VnbaTriggered tasks=\{[^}]+\} writers=\{\} aligned=1')
     test.file_grep(test.stats, r'VariableOrder, MTask aligned group starts\s+(\d+)', 5)
     root_type = test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.h',
