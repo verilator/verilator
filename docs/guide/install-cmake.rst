@@ -59,6 +59,11 @@ To build using ninja:
    cmake --install . --prefix $PWD/../install
 
 
+For coverage tools, use ``CMAKE_BUILD_TYPE=CoverageRelease`` to build
+``verilator_coverage_bin`` or ``CMAKE_BUILD_TYPE=Coverage`` to build
+``verilator_coverage_bin_dbg``.
+
+
 .. _cmake usage:
 
 Usage

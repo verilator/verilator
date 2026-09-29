@@ -51,17 +51,22 @@ obj_dbg:
 
 .SUFFIXES:
 
-.PHONY: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
+.PHONY: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
 
-opt: ../bin/verilator_bin$(EXEEXT)
+opt: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_coverage_bin$(EXEEXT)
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... One build
   ../bin/verilator_bin$(EXEEXT): ../bin/verilator_bin_dbg$(EXEEXT)
+	-cp -p $< $@.tmp
+	-mv -f $@.tmp $@
+  ../bin/verilator_coverage_bin$(EXEEXT): ../bin/verilator_coverage_bin_dbg$(EXEEXT)
 	-cp -p $< $@.tmp
 	-mv -f $@.tmp $@
 else
   ../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles
 	$(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
 	$(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
+  ../bin/verilator_coverage_bin$(EXEEXT): obj_opt ../bin prefiles
+	$(MAKE) -C obj_opt       TGT=../$@ VL_VLCOV=1 -f ../Makefile_obj
 endif
 
 dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
@@ -70,7 +75,6 @@ dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT
 	$(BEAR_OBJ_OPT) $(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
 ../bin/verilator_coverage_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
-	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
 
 ifneq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... don't rebuild each commit
@@ -80,7 +84,13 @@ ifneq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... don't rebuil
 endif
 
 prefiles::
-prefiles:: config_rev.h
+prefiles:: config_rev.h vlcovgen.d
+
+# Generate the shared header once, before any binary can read it.
+vlcovgen.d: ${srcdir}/vlcovgen ${srcdir}/../include/verilated_cov_key.h
+	$(PYTHON3) ${srcdir}/vlcovgen --srcdir ${srcdir}
+	touch $@
+
 # This output goes into srcdir if locally configured, as we need to distribute it as part of the kit.
 config_rev.h: ${srcdir}/config_rev $(GIT_CHANGE_DEP)
 	$(PYTHON3) ${srcdir}/config_rev ${srcdir} >$@

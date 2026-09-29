@@ -530,30 +530,32 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
 endforeach()
 
 #
-# Set up the Coverage build type
+# Set up the coverage build types (Coverage retains the debug build)
 
 addbuildtype(DEBUG COVERAGE)
+addbuildtype(RELEASE COVERAGERELEASE)
 
-# This regenerates include/verilated_cov_key.h in the source tree.
-# It is a custom_target, not custom_command, because vlcovgen.d is
-# a phony target (it doesn't exist as a file).
-add_custom_target(
-    vlcovgen.d${CMAKE_BUILD_TYPE}
-    DEPENDS ../include/verilated_cov_key.h ${VLCOVGEN}
-    COMMENT "Updating include/verilated_cov_key.h"
-    COMMAND ${PYTHON3} ${VLCOVGEN} --srcdir ${srcdir}
-)
+# All configurations share this source header and must use a single writer.
+if(NOT TARGET vlcovgen)
+    add_custom_target(
+        vlcovgen
+        DEPENDS ${srcdir}/../include/verilated_cov_key.h ${VLCOVGEN}
+        COMMENT "Updating include/verilated_cov_key.h"
+        COMMAND ${PYTHON3} ${VLCOVGEN} --srcdir ${srcdir}
+    )
+endif()
 
 #
 # Set up the verilator binary target
 
 set(verilator verilator${CMAKE_BUILD_TYPE})
+set(coverage_config $<OR:$<CONFIG:Coverage>,$<CONFIG:CoverageRelease>>)
 
 add_executable(
     ${verilator}
-    $<$<NOT:$<CONFIG:COVERAGE>>:${COMMON_SOURCES}>
-    $<$<NOT:$<CONFIG:COVERAGE>>:${GENERATED_FILES}>
-    $<$<CONFIG:COVERAGE>:${COVERAGE_SOURCES}
+    $<$<NOT:${coverage_config}>:${COMMON_SOURCES}>
+    $<$<NOT:${coverage_config}>:${GENERATED_FILES}>
+    $<${coverage_config}:${COVERAGE_SOURCES}
     config_rev.h>
 )
 
@@ -563,8 +565,9 @@ set_target_properties(
         OUTPUT_NAME_RELEASE verilator_bin
         OUTPUT_NAME_DEBUG verilator_bin_dbg
         OUTPUT_NAME_COVERAGE verilator_coverage_bin_dbg
+        OUTPUT_NAME_COVERAGERELEASE verilator_coverage_bin
         #UNITY_BUILD $<IF:$<CONFIG:DEBUG>,FALSE,${CMAKE_UNITY_BUILD}>
-        MSVC_RUNTIME_LIBRARY MultiThreaded$<IF:$<CONFIG:Release>,,DebugDLL>
+        MSVC_RUNTIME_LIBRARY MultiThreaded$<IF:$<OR:$<CONFIG:Release>,$<CONFIG:CoverageRelease>>,,DebugDLL>
         #JOB_POOL_LINK         one_job      # Linking takes lots of resources
         INTERPROCEDURAL_OPTIMIZATION_RELEASE $<IF:MINGW,FALSE,TRUE>
 )
@@ -581,18 +584,12 @@ endif()
 
 add_dependencies(
     ${verilator}
+    vlcovgen
     V3Lexer_yy_cpp${CMAKE_BUILD_TYPE}
     V3PreLex_yy_cpp${CMAKE_BUILD_TYPE}
 )
 
 target_link_libraries(${verilator} PRIVATE Threads::Threads)
-
-# verilated_cov_key.h is only regenerated in a single-configuration environment.
-# This limitation can be lifted when `add_dependencies` will support generator
-# expressions. See https://gitlab.kitware.com/cmake/cmake/issues/19467
-if(CMAKE_BUILD_TYPE STREQUAL Coverage)
-    add_dependencies(${verilator} vlcovgen.d${CMAKE_BUILD_TYPE})
-endif()
 
 if(NOT MSVC)
     target_compile_features(${verilator} PRIVATE cxx_std_11)
@@ -602,8 +599,8 @@ target_compile_definitions(
     ${verilator}
     PRIVATE
         YYDEBUG # Required to get nice error messages
-        $<$<CONFIG:DEBUG>:VL_DEBUG>
-        $<$<CONFIG:DEBUG>:_GLIBCXX_DEBUG>
+        $<$<OR:$<CONFIG:Debug>,$<CONFIG:Coverage>>:VL_DEBUG>
+        $<$<OR:$<CONFIG:Debug>,$<CONFIG:Coverage>>:_GLIBCXX_DEBUG>
 )
 
 target_include_directories(
