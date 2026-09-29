@@ -6,6 +6,11 @@
 
 // Wait on a clocking block event through a modport (#8403)
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 `timescale 1ns / 1ns
 
 interface simple_if (
@@ -65,9 +70,9 @@ module t;
 
   initial begin
     #100;
-    if (u.mem_count != 3) $stop;
-    if (u.mon_count != 3) $stop;
-    if (intf.req !== 1'b1) $stop;
+    `checkd(u.mem_count, 3);
+    `checkd(u.mon_count, 3);
+    `checkd(intf.req, 1'b1);
     $write("*-* All Finished *-*\n");
     $finish;
   end
