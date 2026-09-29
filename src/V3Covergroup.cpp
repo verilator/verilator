@@ -247,6 +247,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::map<std::string, AstCoverpoint*> m_coverpointMap;  // Name -> coverpoint for fast lookup
     std::vector<AstCoverCross*> m_coverCrosses;  // Cross coverage items in current covergroup
     std::vector<AstCgOptionAssign*> m_cgOptions;  // Covergroup-level weights, before lowering
+    uint32_t m_cgTypeWeight = 1;  // The covergroup's type_option.weight, a constant
 
     struct EmbeddedEventTrigger final {
         FileLine* eventFl;  // Clocking-event source location
@@ -342,6 +343,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             UASSERT_OBJ(optp->optType() == VCoverOptionType::WEIGHT, optp,
                         "Unexpected covergroup option reaching V3Covergroup");
             FileLine* const fl = optp->fileline();
+            // V3Width left type_option.weight a non-negative constant
+            if (optp->typeOption()) m_cgTypeWeight = VN_AS(optp->valuep(), Const)->toUInt();
             AstAssign* const assignp = new AstAssign{
                 fl, newWeightSel(fl, optionVar(optp->typeOption()), VAccess::WRITE),
                 optp->valuep()->unlinkFrBack()};
@@ -354,6 +357,27 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
         }
         m_cgOptions.clear();
+    }
+
+    // The weight of an item in the coverage database, which merges the instances: its
+    // option.weight if a constant, and so of every instance; else its type_option.weight, the
+    // weight of type coverage merged over the instances (IEEE 1800-2023 19.7.1)
+    static uint32_t itemDatabaseWeight(AstNode* optionsp) {
+        const AstNodeExpr* weightp = nullptr;  // The option.weight in effect
+        uint32_t typeWeight = 1;
+        for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
+            const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
+            if (optp->optType() != VCoverOptionType::WEIGHT) continue;
+            // V3Width left type_option.weight a non-negative constant
+            if (optp->typeOption()) {
+                typeWeight = VN_AS(optp->valuep(), Const)->toUInt();
+            } else {
+                weightp = optp->valuep();
+            }
+        }
+        if (!weightp) return 1;
+        if (const AstConst* const constp = VN_CAST(weightp, Const)) return constp->toUInt();
+        return typeWeight;
     }
 
     // Configure an item's option.weight, its weight in instance coverage (IEEE 1800-2023
@@ -385,6 +409,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_excludedVars.clear();
         m_droppedCrosses.clear();
         m_cgInstVarp = nullptr;
+        m_cgTypeWeight = 1;
 
         lowerCovergroupOptions();
 
@@ -2375,10 +2400,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (v3Global.opt.coverage()) {
             const std::string page
                 = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
-            m_constructorp->addStmtsp(itemCall(fl, cpVarp, VCMethod::COVERGROUP_REGISTER_BINS,
-                                               {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
-                                                ctext(fl, quoted(page))})
-                                          ->makeStmt());
+            m_constructorp->addStmtsp(
+                itemCall(fl, cpVarp, VCMethod::COVERGROUP_REGISTER_BINS,
+                         {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
+                          ctext(fl, quoted(page)),
+                          cnum(fl, itemDatabaseWeight(coverpointp->optionsp())),
+                          cnum(fl, m_cgTypeWeight)})
+                    ->makeStmt());
         }
     }
 
@@ -3678,7 +3706,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
             m_constructorp->addStmtsp(itemCall(fl, cxVarp, VCMethod::COVERGROUP_REGISTER_BINS,
                                                {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
-                                                ctext(fl, quoted(page))})
+                                                ctext(fl, quoted(page)),
+                                                cnum(fl, itemDatabaseWeight(crossp->optionsp())),
+                                                cnum(fl, m_cgTypeWeight)})
                                           ->makeStmt());
         }
 

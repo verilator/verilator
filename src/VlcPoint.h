@@ -71,6 +71,10 @@ public:
     string binType() const { return keyExtract("bin_type", m_name.c_str()); }
     bool isCross() const { return !keyExtract("cross", m_name.c_str()).empty(); }
     string crossBins() const { return keyExtract(VL_CIK_CROSS_BINS, m_name.c_str()); }
+    // The covergroup's type_option.weight; "" for the default 1
+    string groupWeight() const { return keyExtract("group_weight", m_name.c_str()); }
+    // The coverpoint's or cross's option.weight; "" for the default 1
+    string weight() const { return keyExtract(VL_CIK_WEIGHT, m_name.c_str()); }
     string thresh() const {
         // string as maybe ""
         return keyExtract(VL_CIK_THRESH, m_name.c_str());

@@ -1,0 +1,285 @@
+$ verilator_coverage --report summary,hierarchy coverage.dat
+Coverage Summary:
+  line       : 0.0% ( 0/ 0)
+  toggle     : 0.0% ( 0/ 0)
+  branch     : 0.0% ( 0/ 0)
+  expr       : 0.0% ( 0/ 0)
+  fsm_state  : 0.0% ( 0/ 0)
+  fsm_arc    : 0.0% ( 0/ 0)
+  covergroup : 67.6% (31/51)
+Hierarchy Coverage Summary:
+  __vlAnonCG_twin
+    covergroup : 50.0% (2/4)
+  __vlAnonCG_twin.cp
+    covergroup : 50.0% (2/4)
+  __vlAnonCG_twin.cp.hit
+    covergroup : 50.0% (1/2)
+  __vlAnonCG_twin.cp.miss
+    covergroup : 50.0% (1/2)
+  collide
+    covergroup : 91.7% (7/8)
+  collide.p
+    covergroup : 100.0% (2/2)
+  collide.p.a
+    covergroup : 100.0% (1/1)
+  collide.p.a_x_b
+    covergroup : 100.0% (1/1)
+  collide.q
+    covergroup : 100.0% (2/2)
+  collide.q.b_x_c
+    covergroup : 100.0% (1/1)
+  collide.q.c
+    covergroup : 100.0% (1/1)
+  collide.x
+    covergroup : 75.0% (3/4)
+  collide.x.a_x_b_x_b_x_c
+    covergroup : 100.0% (1/1)
+  collide.x.a_x_b_x_c
+    covergroup : 50.0% (1/2)
+  collide.x.a_x_c
+    covergroup : 100.0% (1/1)
+  crossed
+    covergroup : 30.0% ( 3/10)
+  crossed.cp_a
+    covergroup : 50.0% (1/2)
+  crossed.cp_a.auto_0
+    covergroup : 100.0% (1/1)
+  crossed.cp_a.auto_1
+    covergroup : 0.0% (0/1)
+  crossed.cp_b
+    covergroup : 25.0% (1/4)
+  crossed.cp_b.auto_0
+    covergroup : 100.0% (1/1)
+  crossed.cp_b.auto_1
+    covergroup : 0.0% (0/1)
+  crossed.cp_b.auto_2
+    covergroup : 0.0% (0/1)
+  crossed.cp_b.auto_3
+    covergroup : 0.0% (0/1)
+  crossed.x
+    covergroup : 25.0% (1/4)
+  crossed.x.auto_0_x_auto_0
+    covergroup : 100.0% (1/1)
+  crossed.x.auto_0_x_auto_1
+    covergroup : 0.0% (0/1)
+  crossed.x.auto_0_x_auto_2
+    covergroup : 0.0% (0/1)
+  crossed.x.auto_0_x_auto_3
+    covergroup : 0.0% (0/1)
+  empty
+    covergroup : 0.0% (0/0)
+  empty.cp
+    covergroup : 0.0% (0/0)
+  empty.unweighted
+    covergroup : 100.0% (0/0)
+  excluded
+    covergroup : 100.0% (1/1)
+  excluded.cp
+    covergroup : 100.0% (1/1)
+  excluded.cp.hit
+    covergroup : 100.0% (1/1)
+  free
+    covergroup : 100.0% (0/0)
+  free.cp
+    covergroup : 0.0% (0/0)
+  heavy
+    covergroup : 50.0% (1/2)
+  heavy.cp
+    covergroup : 50.0% (1/2)
+  heavy.cp.auto_0
+    covergroup : 100.0% (1/1)
+  heavy.cp.auto_1
+    covergroup : 0.0% (0/1)
+  instance_weight
+    covergroup : 100.0% (3/4)
+  instance_weight.cp_a
+    covergroup : 50.0% (1/2)
+  instance_weight.cp_a.auto_0
+    covergroup : 100.0% (1/1)
+  instance_weight.cp_a.auto_1
+    covergroup : 0.0% (0/1)
+  instance_weight.cp_b
+    covergroup : 100.0% (2/2)
+  instance_weight.cp_b.auto_0
+    covergroup : 100.0% (1/1)
+  instance_weight.cp_b.auto_1
+    covergroup : 100.0% (1/1)
+  merged
+    covergroup : 100.0% (2/2)
+  merged.cp
+    covergroup : 100.0% (2/2)
+  merged.cp.auto_0
+    covergroup : 100.0% (1/1)
+  merged.cp.auto_1
+    covergroup : 100.0% (1/1)
+  threshold
+    covergroup : 50.0% (1/2)
+  threshold.cp
+    covergroup : 50.0% (1/2)
+  threshold.cp.auto_0
+    covergroup : 100.0% (1/1)
+  threshold.cp.auto_1
+    covergroup : 0.0% (0/1)
+  type_weight
+    covergroup : 75.0% (3/4)
+  type_weight.cp_a
+    covergroup : 50.0% (1/2)
+  type_weight.cp_a.auto_0
+    covergroup : 100.0% (1/1)
+  type_weight.cp_a.auto_1
+    covergroup : 0.0% (0/1)
+  type_weight.cp_b
+    covergroup : 100.0% (2/2)
+  type_weight.cp_b.auto_0
+    covergroup : 100.0% (1/1)
+  type_weight.cp_b.auto_1
+    covergroup : 100.0% (1/1)
+  unequal
+    covergroup : 37.5% (2/6)
+  unequal.cp_a
+    covergroup : 50.0% (1/2)
+  unequal.cp_a.auto_0
+    covergroup : 100.0% (1/1)
+  unequal.cp_a.auto_1
+    covergroup : 0.0% (0/1)
+  unequal.cp_b
+    covergroup : 25.0% (1/4)
+  unequal.cp_b.auto_0
+    covergroup : 100.0% (1/1)
+  unequal.cp_b.auto_1
+    covergroup : 0.0% (0/1)
+  unequal.cp_b.auto_2
+    covergroup : 0.0% (0/1)
+  unequal.cp_b.auto_3
+    covergroup : 0.0% (0/1)
+  varying
+    covergroup : 62.5% (3/4)
+  varying.cp
+    covergroup : 50.0% (1/2)
+  varying.cp.auto_0
+    covergroup : 100.0% (1/1)
+  varying.cp.auto_1
+    covergroup : 0.0% (0/1)
+  varying.cq
+    covergroup : 100.0% (2/2)
+  varying.cq.auto_0
+    covergroup : 100.0% (1/1)
+  varying.cq.auto_1
+    covergroup : 100.0% (1/1)
+  weighted
+    covergroup : 100.0% (3/4)
+  weighted.cp_a
+    covergroup : 50.0% (1/2)
+  weighted.cp_a.auto_0
+    covergroup : 100.0% (1/1)
+  weighted.cp_a.auto_1
+    covergroup : 0.0% (0/1)
+  weighted.cp_b
+    covergroup : 100.0% (2/2)
+  weighted.cp_b.auto_0
+    covergroup : 100.0% (1/1)
+  weighted.cp_b.auto_1
+    covergroup : 100.0% (1/1)
+Design Unit Coverage Summary:
+  __vlAnonCG_twin
+    covergroup : 50.0% (2/4)
+  collide
+    covergroup : 91.7% (7/8)
+  crossed
+    covergroup : 30.0% ( 3/10)
+  empty
+    covergroup : 0.0% (0/0)
+  excluded
+    covergroup : 100.0% (1/1)
+  free
+    covergroup : 100.0% (0/0)
+  heavy
+    covergroup : 50.0% (1/2)
+  instance_weight
+    covergroup : 100.0% (3/4)
+  merged
+    covergroup : 100.0% (2/2)
+  threshold
+    covergroup : 50.0% (1/2)
+  type_weight
+    covergroup : 75.0% (3/4)
+  unequal
+    covergroup : 37.5% (2/6)
+  varying
+    covergroup : 62.5% (3/4)
+  weighted
+    covergroup : 100.0% (3/4)
+
+$ verilator_coverage --report summary,hierarchy edge.dat
+Coverage Summary:
+  line       : 0.0% (0/0)
+  toggle     : 0.0% (0/0)
+  branch     : 0.0% (0/0)
+  expr       : 0.0% (0/0)
+  fsm_state  : 0.0% (0/0)
+  fsm_arc    : 0.0% (0/0)
+  covergroup : 58.3% (3/5)
+Hierarchy Coverage Summary:
+  pkg
+    covergroup : 75.0% (2/3)
+  pkg.alpha
+    covergroup : 50.0% (1/2)
+  pkg.alpha.cp
+    covergroup : 50.0% (1/2)
+  pkg.alpha.cp.b0
+    covergroup : 100.0% (1/1)
+  pkg.alpha.cp.b1
+    covergroup : 0.0% (0/1)
+  pkg.beta
+    covergroup : 100.0% (1/1)
+  pkg.beta.cp
+    covergroup : 100.0% (1/1)
+  pkg.beta.cp.b0
+    covergroup : 100.0% (1/1)
+  split
+    covergroup : 25.0% (1/2)
+  split.cp
+    covergroup : 0.0% (0/1)
+  split.cp.b0
+    covergroup : 0.0% (0/1)
+  split.cq
+    covergroup : 100.0% (1/1)
+  split.cq.b0
+    covergroup : 100.0% (1/1)
+Design Unit Coverage Summary:
+  pkg.alpha
+    covergroup : 50.0% (1/2)
+  pkg.beta
+    covergroup : 100.0% (1/1)
+  split
+    covergroup : 25.0% (1/2)
+
+$ verilator_coverage --report summary zero.dat
+Coverage Summary:
+  line       : 0.0% (0/0)
+  toggle     : 0.0% (0/0)
+  branch     : 0.0% (0/0)
+  expr       : 0.0% (0/0)
+  fsm_state  : 0.0% (0/0)
+  fsm_arc    : 0.0% (0/0)
+  covergroup : 100.0% (0/1)
+
+$ verilator_coverage --report summary none.dat
+Coverage Summary:
+  line       : 0.0% (0/0)
+  toggle     : 0.0% (0/0)
+  branch     : 0.0% (0/0)
+  expr       : 0.0% (0/0)
+  fsm_state  : 0.0% (0/0)
+  fsm_arc    : 0.0% (0/0)
+  covergroup : 0.0% (0/0)
+
+$ verilator_coverage --report summary near.dat
+Coverage Summary:
+  line       : 0.0% (   0/   0)
+  toggle     : 0.0% (   0/   0)
+  branch     : 0.0% (   0/   0)
+  expr       : 0.0% (   0/   0)
+  fsm_state  : 0.0% (   0/   0)
+  fsm_arc    : 0.0% (   0/   0)
+  covergroup : 99.9% (2000/2001)

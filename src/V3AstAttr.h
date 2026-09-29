@@ -886,7 +886,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_INST_P,                  "p",                      PURE,   "") \
     macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  "rr") \
     macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  "r") \
-    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rr") \
+    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rrrr") \
     macro(COVERGROUP_SAMPLE,                  "sample",                 false,  "") \
     macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  "r") \
     macro(COVERGROUP_SELECT_ALL,              "selectAll",              false,  "") \
