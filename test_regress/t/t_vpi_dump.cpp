@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
-#include <cstring>
+#include <list>
 #include <map>
 #include <mutex>
 #include <string>
@@ -152,19 +152,32 @@ struct RwOp {
     OpKind kind;
     std::string name;
     std::string value;
-    int flag;
+    std::string flag;
 };
-std::mutex apiMutex;
-std::vector<RwOp> rwOps;
-std::vector<std::string> cbNames;
+
+// Requests from the DPI entry points, which may run on a --threads worker thread
+struct Requests {
+    std::mutex mutex;
+    std::vector<RwOp> rwOps;
+    std::vector<std::string> cbNames;
+    std::vector<std::string> skipNames;
+    std::string clockName;
+    int clockHalf = 0;
+} requests;
+std::atomic<bool> dumpPending{false};
+std::atomic<int> restores{0};
+
+// Touched only by VPI callbacks, on the main thread
 std::vector<std::string> skipNames;
 std::map<std::string, std::string> lastValues;
-std::atomic<bool> dumpPending{false};
 bool sizesDumped = false;
-int restores = 0;
+std::list<std::string> cbUserData;  // Owns each value_change callback's user_data
 std::string clockName;
 int clockHalf = 0;
-bool clockStarted = false;
+
+vpiHandle handleByName(const std::string& name) {
+    return vpi_handle_by_name(const_cast<PLI_BYTE8*>(name.c_str()), nullptr);
+}
 
 bool hasValue(vpiHandle hndl, int type) {
     switch (type) {
@@ -258,13 +271,13 @@ void modDump(TestVpiHandle& it, int n, bool values) {
                         types.end());
             types.push_back(vpiVariables);
         }
-        for (int type : types) {
-            if (values && (type == vpiNetBit || type == vpiPortBit)) continue;
-            TestVpiHandle subIt = vpi_iterate(type, hndl);
+        for (const int subType : types) {
+            if (values && (subType == vpiNetBit || subType == vpiPortBit)) continue;
+            TestVpiHandle subIt = vpi_iterate(subType, hndl);
             if (subIt) {
                 if (!values) {
                     for (int i = 0; i < n + 1; i++) printf("    ");
-                    printf("%s:\n", strFromVpiObjType(type));
+                    printf("%s:\n", strFromVpiObjType(subType));
                 }
                 modDump(subIt, n + 1, values);
             }
@@ -276,15 +289,25 @@ void modDump(TestVpiHandle& it, int n, bool values) {
 uint64_t simTime() {
     s_vpi_time t{};
     t.type = vpiSimTime;
-    vpi_get_time(NULL, &t);
+    vpi_get_time(nullptr, &t);
     return (static_cast<uint64_t>(t.high) << 32) | t.low;
 }
 
 void valuesDump(const char* when) {
+    {
+        const std::lock_guard<std::mutex> lock{requests.mutex};
+        skipNames.insert(skipNames.end(), requests.skipNames.begin(), requests.skipNames.end());
+        requests.skipNames.clear();
+    }
     printf("-- @%" PRIu64 " %s\n", simTime(), when);
-    TestVpiHandle it = vpi_iterate(vpiModule, NULL);
+    TestVpiHandle it = vpi_iterate(vpiModule, nullptr);
     modDump(it, 0, true);
     sizesDumped = true;
+}
+
+std::string valueByName(const std::string& name) {
+    TestVpiHandle hndl = handleByName(name);
+    return hndl ? valueStr(hndl, vpi_get(vpiType, hndl)) : "<null>";
 }
 
 void registerCb(PLI_INT32 reason, PLI_INT32 (*rtn)(t_cb_data*), vpiHandle obj,
@@ -311,27 +334,44 @@ PLI_INT32 value_change(t_cb_data* data) {
     return 0;
 }
 
-PLI_INT32 clock_toggle(t_cb_data* data);
+PLI_INT32 clock_toggle(t_cb_data* data) {
+    TestVpiHandle hndl = handleByName(clockName);
+    TEST_CHECK_NZ_LABEL(clockName, hndl);
+    if (!hndl) return 0;
+    s_vpi_value value{};
+    value.format = vpiIntVal;
+    vpi_get_value(hndl, &value);
+    value.value.integer = !value.value.integer;
+    vpi_put_value(hndl, &value, nullptr, vpiNoDelay);
+    registerCb(cbAfterDelay, &clock_toggle, nullptr, nullptr, clockHalf);
+    return 0;
+}
+
 PLI_INT32 next_sim_time(t_cb_data* data);
 
 PLI_INT32 read_only_synch(t_cb_data* data) {
     if (dumpPending.exchange(false)) valuesDump("readonly");
     std::vector<std::string> names;
+    bool startClock = false;
     {
-        const std::lock_guard<std::mutex> lock{apiMutex};
-        names = std::move(cbNames);
-        cbNames.clear();
+        const std::lock_guard<std::mutex> lock{requests.mutex};
+        names.swap(requests.cbNames);
+        if (clockName.empty() && !requests.clockName.empty()) {
+            clockName = requests.clockName;
+            clockHalf = requests.clockHalf;
+            startClock = true;
+        }
     }
     for (const std::string& name : names) {
-        TestVpiHandle hndl = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name.c_str()), NULL);
-        TEST_CHECK_NZ(hndl);
-        if (hndl) registerCb(cbValueChange, &value_change, hndl, strdup(name.c_str()));
+        TestVpiHandle hndl = handleByName(name);
+        TEST_CHECK_NZ_LABEL(name, hndl);
+        if (!hndl) continue;
+        cbUserData.push_back(name);
+        const std::string& userData = cbUserData.back();
+        registerCb(cbValueChange, &value_change, hndl, const_cast<PLI_BYTE8*>(userData.c_str()));
     }
-    if (!clockName.empty() && !clockStarted) {
-        clockStarted = true;
-        registerCb(cbAfterDelay, &clock_toggle, NULL, NULL, clockHalf);
-    }
-    registerCb(cbNextSimTime, &next_sim_time, NULL, NULL);
+    if (startClock) registerCb(cbAfterDelay, &clock_toggle, nullptr, nullptr, clockHalf);
+    registerCb(cbNextSimTime, &next_sim_time, nullptr, nullptr);
     return 0;
 }
 
@@ -340,32 +380,33 @@ PLI_INT32 end_of_sim(t_cb_data* data) {
     return 0;
 }
 
-PLI_INT32 clock_toggle(t_cb_data* data) {
-    TestVpiHandle hndl = vpi_handle_by_name(const_cast<PLI_BYTE8*>(clockName.c_str()), NULL);
-    s_vpi_value value{};
-    value.format = vpiIntVal;
-    vpi_get_value(hndl, &value);
-    value.value.integer = !value.value.integer;
-    vpi_put_value(hndl, &value, NULL, vpiNoDelay);
-    registerCb(cbAfterDelay, &clock_toggle, NULL, NULL, clockHalf);
-    return 0;
+int putFlag(const std::string& name, const std::string& flag) {
+    const int vflag = flag == "force"      ? vpiForceFlag
+                      : flag == "release"  ? vpiReleaseFlag
+                      : flag == "inertial" ? vpiInertialDelay
+                                           : vpiNoDelay;
+    TEST_CHECK_LABEL(name, flag, "", vflag != vpiNoDelay || flag.empty());
+    return vflag;
 }
 
 void doPut(const std::string& name, const std::string& valueArg, int flag) {
-    TestVpiHandle hndl = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name.c_str()), NULL);
-    s_vpi_value value{};
-    if (valueArg.rfind("real=", 0) == 0) {
-        value.format = vpiRealVal;
-        value.value.real = std::strtod(valueArg.c_str() + 5, NULL);
-    } else {
-        value.format = valueArg.rfind("str=", 0) == 0 ? vpiStringVal : vpiHexStrVal;
-        value.value.str
-            = const_cast<PLI_BYTE8*>(valueArg.c_str()) + (value.format == vpiStringVal ? 4 : 0);
+    TestVpiHandle hndl = handleByName(name);
+    bool ok = false;
+    if (hndl) {
+        s_vpi_value value{};
+        if (valueArg.rfind("real=", 0) == 0) {
+            value.format = vpiRealVal;
+            value.value.real = std::strtod(valueArg.c_str() + 5, nullptr);
+        } else {
+            value.format = valueArg.rfind("str=", 0) == 0 ? vpiStringVal : vpiHexStrVal;
+            value.value.str = const_cast<PLI_BYTE8*>(valueArg.c_str())
+                              + (value.format == vpiStringVal ? 4 : 0);
+        }
+        s_vpi_time zeroDelay{vpiSimTime, 0, 0, 0};
+        vpi_put_value(hndl, &value, flag == vpiInertialDelay ? &zeroDelay : nullptr, flag);
+        s_vpi_error_info info{};
+        ok = vpi_chk_error(&info) < vpiError;
     }
-    s_vpi_time zeroDelay{vpiSimTime, 0, 0, 0};
-    vpi_put_value(hndl, &value, flag == vpiInertialDelay ? &zeroDelay : NULL, flag);
-    s_vpi_error_info info{};
-    const bool ok = hndl && vpi_chk_error(&info) < vpiError;
     printf("-- put %s = %s flag=%d %s\n", name.c_str(), valueArg.c_str(), flag,
            ok ? "ok" : "rejected");
 }
@@ -389,15 +430,14 @@ void doSaveRestore(OpKind kind) {
 PLI_INT32 read_write_synch(t_cb_data* data) {
     std::vector<RwOp> ops;
     {
-        const std::lock_guard<std::mutex> lock{apiMutex};
-        ops = std::move(rwOps);
-        rwOps.clear();
+        const std::lock_guard<std::mutex> lock{requests.mutex};
+        ops.swap(requests.rwOps);
     }
     if (ops.empty()) return 0;
     const char* what = "after put";
     for (const RwOp& op : ops) {
         if (op.kind == OpKind::PUT) {
-            doPut(op.name, op.value, op.flag);
+            doPut(op.name, op.value, putFlag(op.name, op.flag));
             what = "after put";
         } else if (op.kind == OpKind::SAVE) {
             doSaveRestore(op.kind);
@@ -414,41 +454,39 @@ PLI_INT32 read_write_synch(t_cb_data* data) {
 }
 
 PLI_INT32 next_sim_time(t_cb_data* data) {
-    registerCb(cbReadWriteSynch, &read_write_synch, NULL, NULL);
-    registerCb(cbReadOnlySynch, &read_only_synch, NULL, NULL);
+    registerCb(cbReadWriteSynch, &read_write_synch, nullptr, nullptr);
+    registerCb(cbReadOnlySynch, &read_only_synch, nullptr, nullptr);
     return 0;
 }
 
-void pushRwOp(const RwOp& op) {
-    const std::lock_guard<std::mutex> lock{apiMutex};
+void pushRwOp(RwOp op) {
+    const std::lock_guard<std::mutex> lock{requests.mutex};
     // Event-driven: this step's cbReadWriteSynch may already have run (IEEE 1800-2023 4.4)
-    if (rwOps.empty() && TestSimulator::is_event_driven())
-        registerCb(cbReadWriteSynch, &read_write_synch, NULL, NULL);
-    rwOps.push_back(op);
+    if (requests.rwOps.empty() && TestSimulator::is_event_driven())
+        registerCb(cbReadWriteSynch, &read_write_synch, nullptr, nullptr);
+    requests.rwOps.push_back(std::move(op));
 }
 
 extern "C" void t_vpi_dump_values() { dumpPending = true; }
 
 extern "C" void t_vpi_dump_skip(const char* name) {
-    const std::lock_guard<std::mutex> lock{apiMutex};
-    skipNames.push_back(name);
+    const std::lock_guard<std::mutex> lock{requests.mutex};
+    requests.skipNames.push_back(name);
 }
 
 extern "C" void t_vpi_dump_cb(const char* name) {
-    const std::lock_guard<std::mutex> lock{apiMutex};
-    cbNames.push_back(name);
+    const std::lock_guard<std::mutex> lock{requests.mutex};
+    requests.cbNames.push_back(name);
 }
 
 extern "C" void t_vpi_dump_value(const char* name) {
-    TestVpiHandle hndl = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name), NULL);
-    printf("-- @%" PRIu64 " dpi %s = %s\n", simTime(), name,
-           hndl ? valueStr(hndl, vpi_get(vpiType, hndl)).c_str() : "<null>");
+    const std::string value = valueByName(name);
+    printf("-- @%" PRIu64 " dpi %s = %s\n", simTime(), name, value.c_str());
 }
 
 extern "C" const char* t_vpi_dump_get(const char* name) {
     static std::string result;
-    TestVpiHandle hndl = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name), NULL);
-    result = hndl ? valueStr(hndl, vpi_get(vpiType, hndl)) : "<null>";
+    result = valueByName(name);
     return result.c_str();
 }
 
@@ -457,33 +495,27 @@ extern "C" void t_vpi_dump_put(const char* name, const char* value) {
 }
 
 extern "C" void t_vpi_dump_put_rw(const char* name, const char* value, const char* flag) {
-    const std::string f = flag;
-    const int vflag = f == "force"      ? vpiForceFlag
-                      : f == "release"  ? vpiReleaseFlag
-                      : f == "inertial" ? vpiInertialDelay
-                                        : vpiNoDelay;
-    TEST_CHECK_LABEL(name, f, "", vflag != vpiNoDelay || f.empty());
-    pushRwOp({OpKind::PUT, name, value, vflag});
+    pushRwOp({OpKind::PUT, name, value, flag});
 }
 
-extern "C" void t_vpi_dump_save() { pushRwOp({OpKind::SAVE, "", "", 0}); }
+extern "C" void t_vpi_dump_save() { pushRwOp({OpKind::SAVE, "", "", ""}); }
 
-extern "C" void t_vpi_dump_restore() { pushRwOp({OpKind::RESTORE, "", "", 0}); }
+extern "C" void t_vpi_dump_restore() { pushRwOp({OpKind::RESTORE, "", "", ""}); }
 
 extern "C" int t_vpi_dump_restores() { return restores; }
 
 extern "C" void t_vpi_dump_clock(const char* name, int halfperiod) {
-    const std::lock_guard<std::mutex> lock{apiMutex};
-    clockName = name;
-    clockHalf = halfperiod;
+    const std::lock_guard<std::mutex> lock{requests.mutex};
+    requests.clockName = name;
+    requests.clockHalf = halfperiod;
 }
 
 PLI_INT32 start_of_sim(t_cb_data* data) {
-    TestVpiHandle it = vpi_iterate(vpiModule, NULL);
+    TestVpiHandle it = vpi_iterate(vpiModule, nullptr);
     TEST_CHECK_NZ(it);
     modDump(it, 0, false);
     next_sim_time(nullptr);
-    registerCb(cbEndOfSimulation, &end_of_sim, NULL, NULL);
+    registerCb(cbEndOfSimulation, &end_of_sim, nullptr, nullptr);
     return 0;
 }
 
@@ -501,11 +533,11 @@ void vpi_compat_bootstrap(void) {
 
     cb_data.reason = cbStartOfSimulation;
     cb_data.cb_rtn = &start_of_sim;
-    cb_data.obj = NULL;
+    cb_data.obj = nullptr;
     cb_data.time = &vpi_time;
-    cb_data.value = NULL;
+    cb_data.value = nullptr;
     cb_data.index = 0;
-    cb_data.user_data = NULL;
+    cb_data.user_data = nullptr;
     TestVpiHandle callback_h = vpi_register_cb(&cb_data);
 }
 

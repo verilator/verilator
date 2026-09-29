@@ -21,7 +21,7 @@ module sub (
   assign dout = din_copy ^ 7'h0f;
 endmodule
 
-// Different per-instance expressions.
+// Members driven by per-instance expressions in t.
 interface iface2_t;
   logic [6:0] a;
   logic [6:0] b;
@@ -151,7 +151,7 @@ module t;
   // A put to one instance's flop leaves the other instance's alone
   always @(cyc) if (cyc == 8'd7) t_vpi_dump_put_rw("t.p0.uc.cflop", "3c");
 
-  // multiinst
+  // Interface and submodule instances with differing inputs
   logic [6:0] ctr = 7'h0;
 
   iface_t if_a ();
@@ -185,7 +185,7 @@ module t;
     end
   end
 
-  // multiinst2
+  // Interface instances whose members differ by expression
   logic [6:0] ctr2 = 7'h0;
 
   iface2_t if0 ();
@@ -208,7 +208,7 @@ module t;
     end
   end
 
-  // xscope: per-instance storage across a non-inlined parent/child pair,
+  // Per-instance storage across a non-inlined parent/child pair,
   // plus a boundary alias of a child flop.
   function automatic logic [7:0] din0_of(input logic [7:0] cycle);
     case (cycle)
@@ -242,8 +242,8 @@ module t;
   logic [7:0] obs_xscope;
   assign obs_xscope = acc_xscope;
 
-  // canon: a same-scope flop copied into instances across the boundary,
-  // plus real/string variants that carry no equivalent memcpy-friendly shape.
+  // A combinational value and a flop, each passed to two instances of a non-inlined
+  // module, and real and string flops passed the same way.
   logic [31:0] acc = 32'h0;
   logic [31:0] accn;
   logic [31:0] canon;

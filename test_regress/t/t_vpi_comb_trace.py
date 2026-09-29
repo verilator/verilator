@@ -8,7 +8,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
-import os
 
 test.scenarios('simulator')
 
@@ -22,12 +21,6 @@ test.compile(
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 if test.vlt:
-    if not os.path.exists(test.trace_filename):
-        test.error("VCD file was not created: " + test.trace_filename)
-    elif os.stat(test.trace_filename).st_size == 0:
-        test.error("VCD file is empty: " + test.trace_filename)
-    else:
-        test.file_grep(test.trace_filename, r'\$var')
-        test.file_grep(test.trace_filename, r'keep')
+    test.file_grep(test.trace_filename, r'\$var .* keep ')
 
 test.passes()

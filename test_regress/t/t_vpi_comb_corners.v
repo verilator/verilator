@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 // Flat-rw VPI coverage of combinational shapes: partial and multi-dimensional
 // coverage, real/string aliases, forceable signals, multidriven ports,
 // a public_flat_rd pin, and a chandle variable.
@@ -121,11 +126,7 @@ module t;
   initial begin
     forever begin
       @(negedge clk);
-      if (t_vpi_dump_get("t.vec") != t_vpi_dump_get("t.obs_impureidx")) begin
-        $display("%%Error: t.vec = %s, t.obs_impureidx = %s", t_vpi_dump_get("t.vec"),
-                 t_vpi_dump_get("t.obs_impureidx"));
-        $stop;
-      end
+      `checks(t_vpi_dump_get("t.vec"), t_vpi_dump_get("t.obs_impureidx"));
     end
   end
 

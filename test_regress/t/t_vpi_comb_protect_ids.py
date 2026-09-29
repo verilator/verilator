@@ -16,9 +16,8 @@ test.top_filename = "t/t_vpi_comb_trace.v"
 test.compile(make_top_shell=False,
              make_pli=True,
              verilator_flags2=[
-                 "--binary --vpi --public-flat-rw --protect-ids"
-                 " --protect-key SECRET_KEY --no-l2name -Wno-INSECURE +define+NO_T_VPI_DUMP",
-                 test.pli_filename
+                 "--binary --vpi --public-flat-rw --protect-ids --no-l2name -Wno-INSECURE"
+                 " +define+NO_T_VPI_DUMP", test.pli_filename
              ])
 
 test.execute(use_libvpi=True, check_finished=True)
