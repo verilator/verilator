@@ -135,6 +135,7 @@ Verilator 5.053 devel
 * Fix duplicate struct declaration when inlining (#8515). [Ethan Sifferman]
 * Fix bear version detection if uninstalled. [Geza Lore, Testorrent USA, Inc.]
 * Fix emitting public parameters (#8520). [Geza Lore, Testorrent USA, Inc.]
+* Fix verilator_coverage reports rounding incomplete coverage to 100.0% (#8523). [Jordan Carlin]
 
 
 Verilator 5.052 2026-09-05

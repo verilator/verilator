@@ -101,10 +101,15 @@ void tallyPoint(TypeTally& tally, const string& type, uint64_t count) {
     ++entry.second;
 }
 
-// Keep the percentage calculation in one place so flat summaries and hierarchy
-// reports cannot drift in formatting or zero-total handling.
-double pct(uint64_t hit, uint64_t total) {
-    return total ? (100.0 * static_cast<double>(hit) / static_cast<double>(total)) : 0.0;
+// Return percentage as a string, handling 100%, and protecting from div zero.
+string pctString(uint64_t hit, uint64_t total) {
+    double value = 0.0;
+    if (total) value = 100.0 * static_cast<double>(hit) / static_cast<double>(total);
+    if (hit < total && value > 99.9) value = 99.9;  // Presumes precision 1
+    std::stringstream os;
+    os << std::fixed << std::setprecision(1)  // 1 matters, see above
+       << value << "%";
+    return os.str();
 }
 
 // Shared row formatter.  The callers choose which rows to print; this only keeps
@@ -117,8 +122,8 @@ void printTallyRow(const string& type, uint64_t hit, uint64_t total, size_t inde
                    size_t typeWidth, size_t countWidth) {
     printIndent(indent);
     std::cout << std::left << std::setw(typeWidth) << type << " : " << std::right << std::fixed
-              << std::setprecision(1) << pct(hit, total) << "% (" << std::setw(countWidth) << hit
-              << "/" << std::setw(countWidth) << total << ")\n";
+              << pctString(hit, total) << " (" << std::setw(countWidth) << hit << "/"
+              << std::setw(countWidth) << total << ")\n";
 }
 
 size_t countWidth(const TypeTally& tally) {
@@ -418,11 +423,9 @@ void VlcTop::annotateCalcNeeded() {
             }
         }
     }
-    const float pct = totCases ? (100 * totOk / totCases) : 0;
     std::cout << "Annotation Summary:\n";
     std::cout << "  lines with all attached points covered : ";
-    std::cout << std::fixed << std::setw(5) << std::setprecision(2) << pct << "%  (" << totOk
-              << "/" << totCases << ")\n";
+    std::cout << pctString(totOk, totCases) << "%  (" << totOk << "/" << totCases << ")\n";
     if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
 }
 
