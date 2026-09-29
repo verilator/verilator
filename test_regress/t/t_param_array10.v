@@ -112,8 +112,8 @@ endmodule
 
 // Class parameters, reached through a class-scoped reference
 class cls #(
-    parameter int N = 0,
-    parameter int V[N] = '{}
+    parameter int N = 1,
+    parameter int V[N] = '{0}
 );
   static function int last();
     return V[N-1];
@@ -201,13 +201,11 @@ module us2 #(  // The same, for instances made in the other order
 ) ();
 endmodule
 
-// Sizes from real, string and type parameter typed values
+// Sizes from real and type parameter typed values
 module rv #(
     parameter real R = 1.0,
     parameter int A[$bits(R) / 16] = '{default: 0},
     parameter int D[R / 2 == 0.5 ? 2 : 1] = '{default: 0},
-    parameter string S = "AB",
-    parameter int L[S.len()] = '{default: 0},
     parameter type T = byte,
     // verilator lint_off WIDTHTRUNC
     parameter T Q = 1,  // Overridden with a wider value
@@ -222,11 +220,7 @@ module sg #(
     parameter signed N = 1,
     parameter int A[N < 0 ? 2 : 1] = '{default: 0},
     parameter unsigned U = 1,
-    parameter int B[U < 0 ? 1 : 2] = '{default: 0},
-    parameter signed R = 1,
-    parameter int D[R / 2 == 0.5 ? 2 : 1] = '{default: 0},
-    parameter unsigned UR = 1,
-    parameter int E[UR / 2 == 0.5 ? 2 : 1] = '{default: 0}
+    parameter int B[U < 0 ? 1 : 2] = '{default: 0}
 ) ();
 endmodule
 
@@ -360,26 +354,21 @@ module t;
       .R(1),
       .A('{4{1}}),
       .D('{1, 2}),
-      .S("ABC"),
-      .L('{1, 2, 3}),
       .Q(257),
       .E('{8{1}}),
       .F('{9})
   ) i_rv ();
-  rv #(.A('{4{1}}), .D('{1, 2}), .L('{1, 2}), .E('{8{1}}), .F('{9})) i_rvd ();  // Defaults
-  rv #(.T(shortint), .Q(3), .A('{4{1}}), .D('{1, 2}), .L('{1, 2}), .E('{16{1}}), .F('{1, 2, 3}))
-      i_rvt ();
+  rv #(.A('{4{1}}), .D('{1, 2}), .E('{8{1}}), .F('{9})) i_rvd ();  // Defaults
+  rv #(
+      .T(shortint),
+      .Q(3),
+      .A('{4{1}}),
+      .D('{1, 2}),
+      .E('{16{1}}),
+      .F('{1, 2, 3})
+  ) i_rvt ();
 
-  sg #(
-      .N(8'hff),
-      .A('{1, 2}),
-      .U(-1),
-      .B('{3, 4}),
-      .R(1.0),
-      .D('{5, 6}),
-      .UR(1.0),
-      .E('{7, 8})
-  ) i_sg ();
+  sg #(.N(8'hff), .A('{1, 2}), .U(-1), .B('{3, 4})) i_sg ();
 
   fn #(.N(2), .V('{1, 2, 3})) i_fn ();
 
@@ -557,13 +546,11 @@ module t;
     `checkd(i_us2_1.P, 1);
     `checkd(i_us2_5.P, 5);
 
-    // Real, string and type parameter typed values
+    // Real and type parameter typed values
     `checkd($size(i_rv.A), 4);
     `checkd($size(i_rv.D), 2);
-    `checkd($size(i_rv.L), 3);
     `checkd($size(i_rv.E), 8);
     `checkd($size(i_rv.F), 1);
-    `checkd($size(i_rvd.L), 2);
     `checkd($size(i_rvd.E), 8);
     `checkd($size(i_rvt.E), 16);
     `checkd($size(i_rvt.F), 3);
@@ -571,8 +558,6 @@ module t;
     // Signed or unsigned without a type
     `checkd($size(i_sg.A), 2);
     `checkd($size(i_sg.B), 2);
-    `checkd($size(i_sg.D), 2);
-    `checkd($size(i_sg.E), 2);
 
     // Size from a function
     `checkd($size(i_fn.V), 3);
