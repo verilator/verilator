@@ -14,6 +14,9 @@ test.scenarios('vlt')
 if not test.have_sc:
     test.skip("No SystemC installed")
 
+if re.search(r'clang', test.cxx_version):
+    test.skip("Known clang bug on ubuntu-26.04")
+
 test.compile(make_main=False, verilator_flags2=["-sc --exe --timing", test.pli_filename])
 
 test.execute()
