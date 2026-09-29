@@ -152,12 +152,28 @@ module t;
       8'd10: base <= 8'h7e;
       8'd11: base <= 8'hc3;
       8'd13: begin
+        t_vpi_dump_values();
         $write("*-* All Finished *-*\n");
         $finish;
       end
       default: ;
     endcase
   end
+
+  import "DPI-C" context function void t_vpi_dump_values();
+  import "DPI-C" context function void t_vpi_dump_skip(input string name);
+
+  // $random and $time are impure, as is obs, which reads them; and any values with
+  // cyc_a ^ cyc_b == cyc_d close the comb cycle. None of these are dumped.
+  initial begin
+    t_vpi_dump_skip("t.rndc");
+    t_vpi_dump_skip("t.tstamp");
+    t_vpi_dump_skip("t.obs");
+    t_vpi_dump_skip("t.cyc_a");
+    t_vpi_dump_skip("t.cyc_b");
+    t_vpi_dump_values();
+  end
+  always @(negedge clk) t_vpi_dump_values();
 
   logic [7:0][7:0] o;
   logic [7:0] obs;

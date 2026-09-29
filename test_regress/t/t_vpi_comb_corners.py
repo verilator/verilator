@@ -21,15 +21,6 @@ test.compile(make_top_shell=False,
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
-# Multiply-driven and impure signals resolve by how the model was optimised, so are not
-# dumped
-test.execute(use_libvpi=True,
-             all_run_flags=[
-                 "+dump_values", "+dump_skip=t.vec", "+dump_skip=t.obs_impureidx",
-                 "+dump_skip=t.w", "+dump_skip=t.u_wdrv.y", "+dump_trigger=t.cyc",
-                 "+dump_put=8:t.orphan:2a", "+dump_put=9:t.handle:2a",
-                 "+dump_put=14:t.frc:55:force", "+dump_put=16:t.frc:55:release"
-             ],
-             expect_filename=test.golden_filename)
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.passes()

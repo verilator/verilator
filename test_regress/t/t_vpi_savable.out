@@ -1,82 +1,82 @@
 t (vpiModule) t  vpiDefName=t
     vpiReg:
-    A_CTRL (vpiParameter) t.A_CTRL  vpiConstType=vpiDecConst vpiSize=10
-    LVL0 (vpiParameter) t.LVL0  vpiConstType=vpiDecConst vpiSize=32
-    LVL1 (vpiParameter) t.LVL1  vpiConstType=vpiDecConst vpiSize=32
-    bus_addr (vpiReg) t.bus_addr  vpiSize=10
-    bus_wdata (vpiReg) t.bus_wdata  vpiSize=32
-    bus_we (vpiReg) t.bus_we  vpiSize=1
-    clk (vpiReg) TOP.clk  vpiSize=1
-    cnt (vpiReg) t.cnt  vpiSize=8
-    ctrl_dup (vpiReg) t.ctrl_dup  vpiSize=32
-    ctrl_o (vpiReg) TOP.ctrl_o  vpiSize=32
-    ctrl_r (vpiReg) t.ctrl_r  vpiSize=32
-    cyc (vpiReg) t.cyc  vpiSize=8
-    flag_a (vpiReg) t.flag_a  vpiSize=1
-    flag_b (vpiReg) t.flag_b  vpiSize=1
+    A_CTRL (vpiParameter) t.A_CTRL  vpiConstType=vpiDecConst
+    LVL0 (vpiParameter) t.LVL0  vpiConstType=vpiDecConst
+    LVL1 (vpiParameter) t.LVL1  vpiConstType=vpiDecConst
+    bus_addr (vpiReg) t.bus_addr 
+    bus_wdata (vpiReg) t.bus_wdata 
+    bus_we (vpiReg) t.bus_we 
+    clk (vpiReg) TOP.clk 
+    cnt (vpiReg) t.cnt 
+    ctrl_dup (vpiReg) t.ctrl_dup 
+    ctrl_o (vpiReg) TOP.ctrl_o 
+    ctrl_r (vpiReg) t.ctrl_r 
+    cyc (vpiReg) t.cyc 
+    flag_a (vpiReg) t.flag_a 
+    flag_b (vpiReg) t.flag_b 
     lvl0 (vpiRegArray) t.lvl0 
         vpiReg:
-        lvl0 (vpiReg) t.lvl0[7]  vpiSize=8
-        lvl0 (vpiReg) t.lvl0[6]  vpiSize=8
-        lvl0 (vpiReg) t.lvl0[5]  vpiSize=8
-        lvl0 (vpiReg) t.lvl0[4]  vpiSize=8
-        lvl0 (vpiReg) t.lvl0[3]  vpiSize=8
-        lvl0 (vpiReg) t.lvl0[2]  vpiSize=8
-        lvl0 (vpiReg) t.lvl0[1]  vpiSize=8
-        lvl0 (vpiReg) t.lvl0[0]  vpiSize=8
+        lvl0 (vpiReg) t.lvl0[7] 
+        lvl0 (vpiReg) t.lvl0[6] 
+        lvl0 (vpiReg) t.lvl0[5] 
+        lvl0 (vpiReg) t.lvl0[4] 
+        lvl0 (vpiReg) t.lvl0[3] 
+        lvl0 (vpiReg) t.lvl0[2] 
+        lvl0 (vpiReg) t.lvl0[1] 
+        lvl0 (vpiReg) t.lvl0[0] 
     lvl1 (vpiRegArray) t.lvl1 
         vpiReg:
-        lvl1 (vpiReg) t.lvl1[3]  vpiSize=8
-        lvl1 (vpiReg) t.lvl1[2]  vpiSize=8
-        lvl1 (vpiReg) t.lvl1[1]  vpiSize=8
-        lvl1 (vpiReg) t.lvl1[0]  vpiSize=8
+        lvl1 (vpiReg) t.lvl1[3] 
+        lvl1 (vpiReg) t.lvl1[2] 
+        lvl1 (vpiReg) t.lvl1[1] 
+        lvl1 (vpiReg) t.lvl1[0] 
     lvl2 (vpiRegArray) t.lvl2 
         vpiReg:
-        lvl2 (vpiReg) t.lvl2[1]  vpiSize=8
-        lvl2 (vpiReg) t.lvl2[0]  vpiSize=8
-    picked (vpiReg) t.picked  vpiSize=8
-    rst (vpiReg) t.rst  vpiSize=1
-    set_a (vpiReg) t.set_a  vpiSize=1
-    set_b (vpiReg) t.set_b  vpiSize=1
-    status (vpiReg) t.status  vpiSize=6
+        lvl2 (vpiReg) t.lvl2[1] 
+        lvl2 (vpiReg) t.lvl2[0] 
+    picked (vpiReg) t.picked 
+    rst (vpiReg) t.rst 
+    set_a (vpiReg) t.set_a 
+    set_b (vpiReg) t.set_b 
+    status (vpiReg) t.status 
     vpiParameter:
-    A_CTRL (vpiParameter) t.A_CTRL  vpiConstType=vpiDecConst vpiSize=10
-    LVL0 (vpiParameter) t.LVL0  vpiConstType=vpiDecConst vpiSize=32
-    LVL1 (vpiParameter) t.LVL1  vpiConstType=vpiDecConst vpiSize=32
+    A_CTRL (vpiParameter) t.A_CTRL  vpiConstType=vpiDecConst
+    LVL0 (vpiParameter) t.LVL0  vpiConstType=vpiDecConst
+    LVL1 (vpiParameter) t.LVL1  vpiConstType=vpiDecConst
 -- @0 readonly
-t.A_CTRL = 014
-t.LVL0 = 00000008
-t.LVL1 = 00000004
-t.bus_addr = 3ff
-t.bus_wdata = 00000000
-t.bus_we = 0
-TOP.clk = 0
-t.cnt = 00
-t.ctrl_dup = 00000000
-TOP.ctrl_o = 00000000
-t.ctrl_r = 00000000
-t.cyc = 00
-t.flag_a = 0
-t.flag_b = 0
-t.lvl0[7] = 8a
-t.lvl0[6] = 7d
-t.lvl0[5] = 50
-t.lvl0[4] = 43
-t.lvl0[3] = 36
-t.lvl0[2] = 29
-t.lvl0[1] = 1c
-t.lvl0[0] = 0f
-t.lvl1[3] = ff
-t.lvl1[2] = 53
-t.lvl1[1] = 3f
-t.lvl1[0] = 1f
-t.lvl2[1] = 53
-t.lvl2[0] = 1f
-t.picked = 53
-t.rst = 1
-t.set_a = 0
-t.set_b = 0
-t.status = 00
+t.A_CTRL = 014 vpiSize=10
+t.LVL0 = 00000008 vpiSize=32
+t.LVL1 = 00000004 vpiSize=32
+t.bus_addr = 3ff vpiSize=10
+t.bus_wdata = 00000000 vpiSize=32
+t.bus_we = 0 vpiSize=1
+TOP.clk = 0 vpiSize=1
+t.cnt = 00 vpiSize=8
+t.ctrl_dup = 00000000 vpiSize=32
+TOP.ctrl_o = 00000000 vpiSize=32
+t.ctrl_r = 00000000 vpiSize=32
+t.cyc = 00 vpiSize=8
+t.flag_a = 0 vpiSize=1
+t.flag_b = 0 vpiSize=1
+t.lvl0[7] = 8a vpiSize=8
+t.lvl0[6] = 7d vpiSize=8
+t.lvl0[5] = 50 vpiSize=8
+t.lvl0[4] = 43 vpiSize=8
+t.lvl0[3] = 36 vpiSize=8
+t.lvl0[2] = 29 vpiSize=8
+t.lvl0[1] = 1c vpiSize=8
+t.lvl0[0] = 0f vpiSize=8
+t.lvl1[3] = ff vpiSize=8
+t.lvl1[2] = 53 vpiSize=8
+t.lvl1[1] = 3f vpiSize=8
+t.lvl1[0] = 1f vpiSize=8
+t.lvl2[1] = 53 vpiSize=8
+t.lvl2[0] = 1f vpiSize=8
+t.picked = 53 vpiSize=8
+t.rst = 1 vpiSize=1
+t.set_a = 0 vpiSize=1
+t.set_b = 0 vpiSize=1
+t.status = 00 vpiSize=6
 -- @5 cb t.cyc = 01
 -- @5 readonly
 TOP.clk = 1
@@ -245,6 +245,7 @@ TOP.ctrl_o = 0c0c0002
 t.ctrl_r = 0c0c0002
 t.cyc = 0a
 t.status = 08
+-- @95 cb t.cyc = 0a
 -- @95 readonly
 -- @110 readonly
 TOP.clk = 0
@@ -361,6 +362,7 @@ t.lvl2[1] = 57
 t.lvl2[0] = 13
 t.picked = 13
 t.status = 0a
+-- @125 cb t.cyc = 0c
 -- @125 readonly
 -- @150 readonly
 t.bus_addr = 3f5
@@ -459,6 +461,7 @@ t.lvl2[1] = 57
 t.lvl2[0] = 13
 t.picked = 13
 t.status = 0a
+-- @125 cb t.cyc = 0c
 -- @125 readonly
 -- @190 readonly
 t.bus_addr = 3f5

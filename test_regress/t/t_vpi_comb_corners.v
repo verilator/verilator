@@ -46,6 +46,36 @@ module t;
     end
   end
 
+  import "DPI-C" context function void t_vpi_dump_values();
+  import "DPI-C" context function void t_vpi_dump_skip(input string name);
+  import "DPI-C" context function void t_vpi_dump_cb(input string name);
+  import "DPI-C" context function void t_vpi_dump_put_rw(
+    input string name,
+    input string value,
+    input string flag = ""
+  );
+
+  // Multiply-driven and impure signals resolve by how the model was optimised, so are not
+  // dumped
+  initial begin
+    t_vpi_dump_skip("t.vec");
+    t_vpi_dump_skip("t.obs_impureidx");
+    t_vpi_dump_skip("t.w");
+    t_vpi_dump_skip("t.u_wdrv.y");
+    t_vpi_dump_cb("t.cyc");
+    t_vpi_dump_values();
+  end
+  always @(clk) t_vpi_dump_values();
+  always @(cyc) begin
+    case (cyc)
+      8'd8: t_vpi_dump_put_rw("t.orphan", "2a");
+      8'd9: t_vpi_dump_put_rw("t.handle", "2a");
+      8'd14: t_vpi_dump_put_rw("t.frc", "55", "force");
+      8'd16: t_vpi_dump_put_rw("t.frc", "55", "release");
+      default: ;
+    endcase
+  end
+
   // Stimulus tables driving 'a'/'b' at specific cycles; 0 elsewhere.
   function automatic logic [7:0] a_of(input logic [7:0] cycle);
     case (cycle)

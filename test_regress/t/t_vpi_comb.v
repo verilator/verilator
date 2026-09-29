@@ -48,9 +48,41 @@ module t #(
   always @(posedge clk) begin
     cyc <= cyc + 8'h1;
     if (cyc == 8'd12) begin
+      t_vpi_dump_values();
       $write("*-* All Finished *-*\n");
       $finish;
     end
+  end
+
+  import "DPI-C" context function void t_vpi_dump_values();
+  import "DPI-C" context function void t_vpi_dump_skip(input string name);
+  import "DPI-C" context function void t_vpi_dump_cb(input string name);
+  import "DPI-C" context function void t_vpi_dump_put_rw(
+    input string name,
+    input string value,
+    input string flag = ""
+  );
+
+  // Multiply-driven signals resolve by how the model was optimised, so are not dumped
+  initial begin
+    t_vpi_dump_skip("t.cf_mixfull");
+    t_vpi_dump_skip("t.cf_ovl");
+    t_vpi_dump_cb("t.cmb1");
+    t_vpi_dump_cb("t.cyc");
+    t_vpi_dump_values();
+  end
+  always @(negedge clk) t_vpi_dump_values();
+  always @(cyc) begin
+    case (cyc)
+      8'd7: begin
+        t_vpi_dump_put_rw("t.cf_nopre", "52");
+        t_vpi_dump_put_rw("t.wo_signed", "2a");
+      end
+      8'd8: t_vpi_dump_put_rw("t.dead", "2a");
+      8'd9: t_vpi_dump_put_rw("t.keep", "20");
+      8'd10: t_vpi_dump_put_rw("t.pinned_rw", "69");
+      default: ;
+    endcase
   end
 
   typedef struct packed {

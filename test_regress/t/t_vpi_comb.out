@@ -1,133 +1,133 @@
 t (vpiModule) t  vpiDefName=t
     vpiReg:
-    INTF_QTY (vpiParameter) t.INTF_QTY  vpiConstType=vpiDecConst vpiSize=32
-    alias1 (vpiReg) t.alias1  vpiSize=7
-    alias2 (vpiReg) t.alias2  vpiSize=7
-    bsel (vpiReg) t.bsel  vpiSize=1
-    cf_case (vpiReg) t.cf_case  vpiSize=7
-    cf_casepart (vpiReg) t.cf_casepart  vpiSize=7
-    cf_cts (vpiReg) t.cf_cts  vpiSize=8
-    cf_ctv (vpiReg) t.cf_ctv  vpiSize=8
-    cf_ifdef (vpiReg) t.cf_ifdef  vpiSize=7
-    cf_ifelse (vpiReg) t.cf_ifelse  vpiSize=7
-    cf_latch (vpiReg) t.cf_latch  vpiSize=7
-    cf_mixfull (vpiReg) t.cf_mixfull  vpiSize=7
-    cf_mta (vpiReg) t.cf_mta  vpiSize=7
-    cf_mtb (vpiReg) t.cf_mtb  vpiSize=7
-    cf_nopre (vpiReg) t.cf_nopre  vpiSize=7
-    cf_ovl (vpiReg) t.cf_ovl  vpiSize=7
-    cf_partial (vpiReg) t.cf_partial  vpiSize=7
-    cf_portop (vpiReg) t.cf_portop  vpiSize=7
-    cf_readscomb (vpiReg) t.cf_readscomb  vpiSize=7
-    cf_readsrecon (vpiReg) t.cf_readsrecon  vpiSize=7
-    cf_selfread (vpiReg) t.cf_selfread  vpiSize=7
-    cf_uncond (vpiReg) t.cf_uncond  vpiSize=7
-    cf_vlsb (vpiReg) t.cf_vlsb  vpiSize=8
-    clk (vpiReg) t.clk  vpiSize=1
-    cmb1 (vpiReg) t.cmb1  vpiSize=7
-    cmb2 (vpiReg) t.cmb2  vpiSize=7
-    cmb3 (vpiReg) t.cmb3  vpiSize=7
-    cmb3_reg (vpiReg) t.cmb3_reg  vpiSize=7
-    cyc (vpiReg) t.cyc  vpiSize=8
-    dead (vpiReg) t.dead  vpiSize=7
-    init (vpiReg) t.init  vpiSize=1
-    keep (vpiReg) t.keep  vpiSize=7
-    mux0 (vpiReg) t.mux0  vpiSize=7
-    nkeep (vpiReg) t.nkeep  vpiSize=7
-    observe (vpiReg) TOP.observe  vpiSize=7
-    pass_out (vpiReg) t.pass_out  vpiSize=7
-    pcomb (vpiReg) t.pcomb  vpiSize=7
-    pinned_rw (vpiReg) t.pinned_rw  vpiSize=7
-    plain_ro (vpiReg) t.plain_ro  vpiSize=7
-    psel (vpiReg) t.psel  vpiSize=7
-    result (vpiReg) t.result  vpiSize=7
-    rst (vpiReg) TOP.rst  vpiSize=1
-    scmb (vpiReg) t.scmb  vpiSize=7
-    skeep (vpiReg) t.skeep  vpiSize=7
-    sshift (vpiReg) t.sshift  vpiSize=7
-    sub_out (vpiReg) t.sub_out  vpiSize=7
-    wcmb (vpiReg) t.wcmb  vpiSize=70
-    wkeep (vpiReg) t.wkeep  vpiSize=70
-    wo_plain (vpiReg) t.wo_plain  vpiSize=7
-    wo_signed (vpiReg) t.wo_signed  vpiSize=7
-    wo_wide (vpiReg) t.wo_wide  vpiSize=70
-    wsel (vpiReg) t.wsel  vpiSize=70
+    INTF_QTY (vpiParameter) t.INTF_QTY  vpiConstType=vpiDecConst
+    alias1 (vpiReg) t.alias1 
+    alias2 (vpiReg) t.alias2 
+    bsel (vpiReg) t.bsel 
+    cf_case (vpiReg) t.cf_case 
+    cf_casepart (vpiReg) t.cf_casepart 
+    cf_cts (vpiReg) t.cf_cts 
+    cf_ctv (vpiReg) t.cf_ctv 
+    cf_ifdef (vpiReg) t.cf_ifdef 
+    cf_ifelse (vpiReg) t.cf_ifelse 
+    cf_latch (vpiReg) t.cf_latch 
+    cf_mixfull (vpiReg) t.cf_mixfull 
+    cf_mta (vpiReg) t.cf_mta 
+    cf_mtb (vpiReg) t.cf_mtb 
+    cf_nopre (vpiReg) t.cf_nopre 
+    cf_ovl (vpiReg) t.cf_ovl 
+    cf_partial (vpiReg) t.cf_partial 
+    cf_portop (vpiReg) t.cf_portop 
+    cf_readscomb (vpiReg) t.cf_readscomb 
+    cf_readsrecon (vpiReg) t.cf_readsrecon 
+    cf_selfread (vpiReg) t.cf_selfread 
+    cf_uncond (vpiReg) t.cf_uncond 
+    cf_vlsb (vpiReg) t.cf_vlsb 
+    clk (vpiReg) t.clk 
+    cmb1 (vpiReg) t.cmb1 
+    cmb2 (vpiReg) t.cmb2 
+    cmb3 (vpiReg) t.cmb3 
+    cmb3_reg (vpiReg) t.cmb3_reg 
+    cyc (vpiReg) t.cyc 
+    dead (vpiReg) t.dead 
+    init (vpiReg) t.init 
+    keep (vpiReg) t.keep 
+    mux0 (vpiReg) t.mux0 
+    nkeep (vpiReg) t.nkeep 
+    observe (vpiReg) TOP.observe 
+    pass_out (vpiReg) t.pass_out 
+    pcomb (vpiReg) t.pcomb 
+    pinned_rw (vpiReg) t.pinned_rw 
+    plain_ro (vpiReg) t.plain_ro 
+    psel (vpiReg) t.psel 
+    result (vpiReg) t.result 
+    rst (vpiReg) TOP.rst 
+    scmb (vpiReg) t.scmb 
+    skeep (vpiReg) t.skeep 
+    sshift (vpiReg) t.sshift 
+    sub_out (vpiReg) t.sub_out 
+    wcmb (vpiReg) t.wcmb 
+    wkeep (vpiReg) t.wkeep 
+    wo_plain (vpiReg) t.wo_plain 
+    wo_signed (vpiReg) t.wo_signed 
+    wo_wide (vpiReg) t.wo_wide 
+    wsel (vpiReg) t.wsel 
     vpiParameter:
-    INTF_QTY (vpiParameter) t.INTF_QTY  vpiConstType=vpiDecConst vpiSize=32
+    INTF_QTY (vpiParameter) t.INTF_QTY  vpiConstType=vpiDecConst
     vpiInternalScope:
     u_sub (vpiModule) t.u_sub  vpiDefName=sub
         vpiReg:
-        sub_in (vpiReg) t.u_sub.sub_in  vpiSize=7
-        sub_out (vpiReg) t.u_sub.sub_out  vpiSize=7
+        sub_in (vpiReg) t.u_sub.sub_in 
+        sub_out (vpiReg) t.u_sub.sub_out 
         vpiParameter:
         vpiInternalScope:
         u_sub2 (vpiModule) t.u_sub.u_sub2  vpiDefName=sub2
             vpiReg:
-            p2_in (vpiReg) t.u_sub.u_sub2.p2_in  vpiSize=7
-            p2_out (vpiReg) t.u_sub.u_sub2.p2_out  vpiSize=7
+            p2_in (vpiReg) t.u_sub.u_sub2.p2_in 
+            p2_out (vpiReg) t.u_sub.u_sub2.p2_out 
             vpiParameter:
     u_subpass (vpiModule) t.u_subpass  vpiDefName=subpass
         vpiReg:
-        port_in (vpiReg) t.u_subpass.port_in  vpiSize=7
-        port_out (vpiReg) t.u_subpass.port_out  vpiSize=7
+        port_in (vpiReg) t.u_subpass.port_in 
+        port_out (vpiReg) t.u_subpass.port_out 
         vpiParameter:
 -- @0 readonly
-t.INTF_QTY = 00000003
-t.alias1 = 00
-t.alias2 = 00
-t.bsel = 0
-t.cf_case = 00
-t.cf_casepart = 01
-t.cf_cts = 00
-t.cf_ctv = 00
-t.cf_ifdef = 04
-t.cf_ifelse = 7f
-t.cf_latch = 00
-t.cf_mta = 06
-t.cf_mtb = 07
-t.cf_nopre = 00
-t.cf_partial = 00
-t.cf_portop = 00
-t.cf_readscomb = 14
-t.cf_readsrecon = 05
-t.cf_selfread = 01
-t.cf_uncond = 11
-t.cf_vlsb = 00
-t.clk = 0
-t.cmb1 = 07
-t.cmb2 = 2d
-t.cmb3 = 32
-t.cmb3_reg = 00
-t.cyc = 00
-t.dead = 00
-t.init = 1
-t.keep = 00
-t.mux0 = 2d
-t.nkeep = 00
-TOP.observe = 00
-t.pass_out = 00
-t.pcomb = 00
-t.pinned_rw = 05
-t.plain_ro = 01
-t.psel = 68
-t.result = 00
-TOP.rst = 0
-t.scmb = 7d
-t.skeep = 00
-t.sshift = 00
-t.sub_out = 15
-t.wcmb = 000000000000000001
-t.wkeep = 000000000000000000
-t.wo_plain = 00
-t.wo_signed = 00
-t.wo_wide = 000000000000000000
-t.wsel = 000000000000000000
-t.u_sub.sub_in = 00
-t.u_sub.sub_out = 15
-t.u_sub.u_sub2.p2_in = 00
-t.u_sub.u_sub2.p2_out = 15
-t.u_subpass.port_in = 00
-t.u_subpass.port_out = 00
+t.INTF_QTY = 00000003 vpiSize=32
+t.alias1 = 00 vpiSize=7
+t.alias2 = 00 vpiSize=7
+t.bsel = 0 vpiSize=1
+t.cf_case = 00 vpiSize=7
+t.cf_casepart = 01 vpiSize=7
+t.cf_cts = 00 vpiSize=8
+t.cf_ctv = 00 vpiSize=8
+t.cf_ifdef = 04 vpiSize=7
+t.cf_ifelse = 7f vpiSize=7
+t.cf_latch = 00 vpiSize=7
+t.cf_mta = 06 vpiSize=7
+t.cf_mtb = 07 vpiSize=7
+t.cf_nopre = 00 vpiSize=7
+t.cf_partial = 00 vpiSize=7
+t.cf_portop = 00 vpiSize=7
+t.cf_readscomb = 14 vpiSize=7
+t.cf_readsrecon = 05 vpiSize=7
+t.cf_selfread = 01 vpiSize=7
+t.cf_uncond = 11 vpiSize=7
+t.cf_vlsb = 00 vpiSize=8
+t.clk = 0 vpiSize=1
+t.cmb1 = 07 vpiSize=7
+t.cmb2 = 2d vpiSize=7
+t.cmb3 = 32 vpiSize=7
+t.cmb3_reg = 00 vpiSize=7
+t.cyc = 00 vpiSize=8
+t.dead = 00 vpiSize=7
+t.init = 1 vpiSize=1
+t.keep = 00 vpiSize=7
+t.mux0 = 2d vpiSize=7
+t.nkeep = 00 vpiSize=7
+TOP.observe = 00 vpiSize=7
+t.pass_out = 00 vpiSize=7
+t.pcomb = 00 vpiSize=7
+t.pinned_rw = 05 vpiSize=7
+t.plain_ro = 01 vpiSize=7
+t.psel = 68 vpiSize=7
+t.result = 00 vpiSize=7
+TOP.rst = 0 vpiSize=1
+t.scmb = 7d vpiSize=7
+t.skeep = 00 vpiSize=7
+t.sshift = 00 vpiSize=7
+t.sub_out = 15 vpiSize=7
+t.wcmb = 000000000000000001 vpiSize=70
+t.wkeep = 000000000000000000 vpiSize=70
+t.wo_plain = 00 vpiSize=7
+t.wo_signed = 00 vpiSize=7
+t.wo_wide = 000000000000000000 vpiSize=70
+t.wsel = 000000000000000000 vpiSize=70
+t.u_sub.sub_in = 00 vpiSize=7
+t.u_sub.sub_out = 15 vpiSize=7
+t.u_sub.u_sub2.p2_in = 00 vpiSize=7
+t.u_sub.u_sub2.p2_out = 15 vpiSize=7
+t.u_subpass.port_in = 00 vpiSize=7
+t.u_subpass.port_out = 00 vpiSize=7
 -- @5 cb t.cyc = 01
 -- @10 readonly
 t.cyc = 01
@@ -778,7 +778,7 @@ t.u_subpass.port_out = 29
 *-* All Finished *-*
 -- @125 cb t.cmb1 = 33
 -- @125 cb t.cyc = 0d
--- @125 end
+-- @125 readonly
 t.alias1 = 2c
 t.alias2 = 2c
 t.bsel = 1

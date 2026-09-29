@@ -1,217 +1,217 @@
 t (vpiModule) t  vpiDefName=t
     vpiReg:
-    alc_x (vpiReg) t.alc_x  vpiSize=7
-    alc_y (vpiReg) t.alc_y  vpiSize=7
-    ali_a (vpiReg) t.ali_a  vpiSize=7
-    ali_b (vpiReg) t.ali_b  vpiSize=7
+    alc_x (vpiReg) t.alc_x 
+    alc_y (vpiReg) t.alc_y 
+    ali_a (vpiReg) t.ali_a 
+    ali_b (vpiReg) t.ali_b 
     arr (vpiRegArray) t.arr 
         vpiReg:
-        arr (vpiReg) t.arr[3]  vpiSize=8
-        arr (vpiReg) t.arr[2]  vpiSize=8
-        arr (vpiReg) t.arr[1]  vpiSize=8
-        arr (vpiReg) t.arr[0]  vpiSize=8
-    base (vpiReg) t.base  vpiSize=8
-    chain_deep (vpiReg) t.chain_deep  vpiSize=8
-    chain_l0 (vpiReg) t.chain_l0  vpiSize=8
-    chain_l1 (vpiReg) t.chain_l1  vpiSize=8
-    chain_l2 (vpiReg) t.chain_l2  vpiSize=8
-    chain_l3 (vpiReg) t.chain_l3  vpiSize=8
-    chain_l4 (vpiReg) t.chain_l4  vpiSize=8
-    chain_tap (vpiReg) t.chain_tap  vpiSize=8
-    chain_use (vpiReg) t.chain_use  vpiSize=8
-    clk (vpiReg) t.clk  vpiSize=1
-    crbase (vpiReg) t.crbase  vpiSize=8
-    cyc (vpiReg) t.cyc  vpiSize=8
-    cyc_a (vpiReg) t.cyc_a  vpiSize=7
-    cyc_b (vpiReg) t.cyc_b  vpiSize=7
-    cyc_boundary (vpiReg) t.cyc_boundary  vpiSize=7
-    cyc_d (vpiReg) t.cyc_d  vpiSize=7
-    cyc_down (vpiReg) t.cyc_down  vpiSize=7
-    cyc_down2 (vpiReg) t.cyc_down2  vpiSize=7
-    d (vpiReg) t.d  vpiSize=64
-    flat_arr_gg (vpiReg) t.flat_arr_gg  vpiSize=32
-    flat_gg (vpiReg) t.flat_gg  vpiSize=24
-    flat_lb (vpiReg) t.flat_lb  vpiSize=24
-    flat_ll (vpiReg) t.flat_ll  vpiSize=24
-    idx (vpiReg) t.idx  vpiSize=3
-    in0 (vpiReg) t.in0  vpiSize=8
-    in1 (vpiReg) t.in1  vpiSize=8
-    in2 (vpiReg) t.in2  vpiSize=8
-    in3 (vpiReg) t.in3  vpiSize=8
-    nib (vpiReg) t.nib  vpiSize=4
-    o (vpiReg) t.o  vpiSize=64
-    obs (vpiReg) t.obs  vpiSize=8
-    out0 (vpiReg) t.out0  vpiSize=8
-    out1 (vpiReg) t.out1  vpiSize=8
-    pt_acc (vpiReg) t.pt_acc  vpiSize=32
-    pt_o (vpiReg) t.pt_o  vpiSize=32
-    pt_obs (vpiReg) t.pt_obs  vpiSize=32
-    rndc (vpiReg) t.rndc  vpiSize=8
+        arr (vpiReg) t.arr[3] 
+        arr (vpiReg) t.arr[2] 
+        arr (vpiReg) t.arr[1] 
+        arr (vpiReg) t.arr[0] 
+    base (vpiReg) t.base 
+    chain_deep (vpiReg) t.chain_deep 
+    chain_l0 (vpiReg) t.chain_l0 
+    chain_l1 (vpiReg) t.chain_l1 
+    chain_l2 (vpiReg) t.chain_l2 
+    chain_l3 (vpiReg) t.chain_l3 
+    chain_l4 (vpiReg) t.chain_l4 
+    chain_tap (vpiReg) t.chain_tap 
+    chain_use (vpiReg) t.chain_use 
+    clk (vpiReg) t.clk 
+    crbase (vpiReg) t.crbase 
+    cyc (vpiReg) t.cyc 
+    cyc_a (vpiReg) t.cyc_a 
+    cyc_b (vpiReg) t.cyc_b 
+    cyc_boundary (vpiReg) t.cyc_boundary 
+    cyc_d (vpiReg) t.cyc_d 
+    cyc_down (vpiReg) t.cyc_down 
+    cyc_down2 (vpiReg) t.cyc_down2 
+    d (vpiReg) t.d 
+    flat_arr_gg (vpiReg) t.flat_arr_gg 
+    flat_gg (vpiReg) t.flat_gg 
+    flat_lb (vpiReg) t.flat_lb 
+    flat_ll (vpiReg) t.flat_ll 
+    idx (vpiReg) t.idx 
+    in0 (vpiReg) t.in0 
+    in1 (vpiReg) t.in1 
+    in2 (vpiReg) t.in2 
+    in3 (vpiReg) t.in3 
+    nib (vpiReg) t.nib 
+    o (vpiReg) t.o 
+    obs (vpiReg) t.obs 
+    out0 (vpiReg) t.out0 
+    out1 (vpiReg) t.out1 
+    pt_acc (vpiReg) t.pt_acc 
+    pt_o (vpiReg) t.pt_o 
+    pt_obs (vpiReg) t.pt_obs 
+    rndc (vpiReg) t.rndc 
     s (vpiStructVar) t.s 
         vpiReg:
         *undefined*:
-        a (vpiReg) t.s.a  vpiSize=8
-        b (vpiReg) t.s.b  vpiSize=8
-        c (vpiReg) t.s.c  vpiSize=8
-    a (vpiReg) t.s.a  vpiSize=8
-    b (vpiReg) t.s.b  vpiSize=8
-    c (vpiReg) t.s.c  vpiSize=8
-    self_loop (vpiReg) t.self_loop  vpiSize=7
-    tstamp (vpiReg) t.tstamp  vpiSize=8
-    xscope_o (vpiReg) t.xscope_o  vpiSize=1
+        a (vpiReg) t.s.a 
+        b (vpiReg) t.s.b 
+        c (vpiReg) t.s.c 
+    a (vpiReg) t.s.a 
+    b (vpiReg) t.s.b 
+    c (vpiReg) t.s.c 
+    self_loop (vpiReg) t.self_loop 
+    tstamp (vpiReg) t.tstamp 
+    xscope_o (vpiReg) t.xscope_o 
     vpiParameter:
     vpiInternalScope:
     if0 (vpiInterface) t.if0 
         vpiReg:
-        W (vpiParameter) t.if0.W  vpiConstType=vpiDecConst vpiSize=32
-        a (vpiReg) t.if0.a  vpiSize=8
-        b (vpiReg) t.if0.b  vpiSize=8
-        din (vpiReg) t.if0.din  vpiSize=8
+        W (vpiParameter) t.if0.W  vpiConstType=vpiDecConst
+        a (vpiReg) t.if0.a 
+        b (vpiReg) t.if0.b 
+        din (vpiReg) t.if0.din 
     if1 (vpiInterface) t.if1 
         vpiReg:
-        W (vpiParameter) t.if1.W  vpiConstType=vpiDecConst vpiSize=32
-        a (vpiReg) t.if1.a  vpiSize=8
-        b (vpiReg) t.if1.b  vpiSize=8
-        din (vpiReg) t.if1.din  vpiSize=8
+        W (vpiParameter) t.if1.W  vpiConstType=vpiDecConst
+        a (vpiReg) t.if1.a 
+        b (vpiReg) t.if1.b 
+        din (vpiReg) t.if1.din 
     intf (vpiInterface) t.intf 
         vpiReg:
-        DBW (vpiParameter) t.intf.DBW  vpiConstType=vpiDecConst vpiSize=32
-        swapped (vpiReg) t.intf.swapped  vpiSize=64
-        wdata (vpiReg) t.intf.wdata  vpiSize=64
+        DBW (vpiParameter) t.intf.DBW  vpiConstType=vpiDecConst
+        swapped (vpiReg) t.intf.swapped 
+        wdata (vpiReg) t.intf.wdata 
     u0 (vpiModule) t.u0  vpiDefName=sub_comb
         vpiReg:
-        din (vpiReg) t.u0.din  vpiSize=8
-        dout (vpiReg) t.u0.dout  vpiSize=8
-        s1 (vpiReg) t.u0.s1  vpiSize=8
-        s2 (vpiReg) t.u0.s2  vpiSize=8
+        din (vpiReg) t.u0.din 
+        dout (vpiReg) t.u0.dout 
+        s1 (vpiReg) t.u0.s1 
+        s2 (vpiReg) t.u0.s2 
         vpiParameter:
     u1 (vpiModule) t.u1  vpiDefName=sub_comb
         vpiReg:
-        din (vpiReg) t.u1.din  vpiSize=8
-        dout (vpiReg) t.u1.dout  vpiSize=8
-        s1 (vpiReg) t.u1.s1  vpiSize=8
-        s2 (vpiReg) t.u1.s2  vpiSize=8
+        din (vpiReg) t.u1.din 
+        dout (vpiReg) t.u1.dout 
+        s1 (vpiReg) t.u1.s1 
+        s2 (vpiReg) t.u1.s2 
         vpiParameter:
     u_chain (vpiModule) t.u_chain  vpiDefName=chain_pass8
         vpiReg:
-        i (vpiReg) t.u_chain.i  vpiSize=8
-        o (vpiReg) t.u_chain.o  vpiSize=8
+        i (vpiReg) t.u_chain.i 
+        o (vpiReg) t.u_chain.o 
         vpiParameter:
     u_pass1 (vpiModule) t.u_pass1  vpiDefName=combloop_pass
         vpiReg:
-        i (vpiReg) t.u_pass1.i  vpiSize=7
-        o (vpiReg) t.u_pass1.o  vpiSize=7
+        i (vpiReg) t.u_pass1.i 
+        o (vpiReg) t.u_pass1.o 
         vpiParameter:
     u_pass2 (vpiModule) t.u_pass2  vpiDefName=combloop_pass
         vpiReg:
-        i (vpiReg) t.u_pass2.i  vpiSize=7
-        o (vpiReg) t.u_pass2.o  vpiSize=7
+        i (vpiReg) t.u_pass2.i 
+        o (vpiReg) t.u_pass2.o 
         vpiParameter:
     u_portsrc (vpiModule) t.u_portsrc  vpiDefName=portsrc
         vpiReg:
-        cpy_a (vpiReg) t.u_portsrc.cpy_a  vpiSize=32
-        cpy_c (vpiReg) t.u_portsrc.cpy_c  vpiSize=32
-        i (vpiReg) t.u_portsrc.i  vpiSize=32
-        mix (vpiReg) t.u_portsrc.mix  vpiSize=32
-        o (vpiReg) t.u_portsrc.o  vpiSize=32
-        obs (vpiReg) t.u_portsrc.obs  vpiSize=32
+        cpy_a (vpiReg) t.u_portsrc.cpy_a 
+        cpy_c (vpiReg) t.u_portsrc.cpy_c 
+        i (vpiReg) t.u_portsrc.i 
+        mix (vpiReg) t.u_portsrc.mix 
+        o (vpiReg) t.u_portsrc.o 
+        obs (vpiReg) t.u_portsrc.obs 
         vpiParameter:
     u_xscope_drv (vpiModule) t.u_xscope_drv  vpiDefName=xscope_drv
         vpiReg:
-        a (vpiReg) t.u_xscope_drv.a  vpiSize=1
-        v (vpiReg) t.u_xscope_drv.v  vpiSize=1
+        a (vpiReg) t.u_xscope_drv.a 
+        v (vpiReg) t.u_xscope_drv.v 
         vpiParameter:
     u_xscope_rcv (vpiModule) t.u_xscope_rcv  vpiDefName=xscope_rcv
         vpiReg:
-        n (vpiReg) t.u_xscope_rcv.n  vpiSize=1
-        o (vpiReg) t.u_xscope_rcv.o  vpiSize=1
+        n (vpiReg) t.u_xscope_rcv.n 
+        o (vpiReg) t.u_xscope_rcv.o 
         vpiParameter:
     xscope_bus (vpiInterface) t.xscope_bus 
         vpiReg:
-        v (vpiReg) t.xscope_bus.v  vpiSize=1
+        v (vpiReg) t.xscope_bus.v 
 -- @0 readonly
-t.alc_x = 0a
-t.alc_y = 0a
-t.ali_a = 00
-t.ali_b = 00
-t.arr[3] = 00
-t.arr[2] = 00
-t.arr[1] = 00
-t.arr[0] = 00
-t.base = 00
-t.chain_deep = 23
-t.chain_l0 = 01
-t.chain_l1 = 03
-t.chain_l2 = 07
-t.chain_l3 = 0f
-t.chain_l4 = 1f
-t.chain_tap = 23
-t.chain_use = 86
-t.clk = 0
-t.crbase = 00
-t.cyc = 00
-t.cyc_boundary = 00
-t.cyc_d = 01
-t.cyc_down = 01
-t.cyc_down2 = 01
-t.d = 0000000000000000
-t.flat_arr_gg = 00000000
-t.flat_gg = 000000
-t.flat_lb = 000000
-t.flat_ll = 000000
-t.idx = 0
-t.in0 = 00
-t.in1 = 00
-t.in2 = 00
-t.in3 = 00
-t.nib = 0
-t.o = 0000000000000000
-t.out0 = 07
-t.out1 = 97
-t.pt_acc = 00000000
-t.pt_o = 5a5a0000
-t.pt_obs = 5a5a0003
-t.s.a = 00
-t.s.b = 00
-t.s.c = 00
-t.self_loop = 00
-t.xscope_o = 0
-t.if0.W = 00000008
-t.if0.a = 11
-t.if0.b = 4b
-t.if0.din = 00
-t.if1.W = 00000008
-t.if1.a = 31
-t.if1.b = 6b
-t.if1.din = 20
-t.intf.DBW = 00000008
-t.intf.swapped = 0000000000000000
-t.intf.wdata = 0000000000000000
-t.u0.din = 00
-t.u0.dout = 07
-t.u0.s1 = 07
-t.u0.s2 = 07
-t.u1.din = 30
-t.u1.dout = 97
-t.u1.s1 = 37
-t.u1.s2 = 97
-t.u_chain.i = 23
-t.u_chain.o = 23
-t.u_pass1.i = 0a
-t.u_pass1.o = 0a
-t.u_pass2.i = 0a
-t.u_pass2.o = 0a
-t.u_portsrc.cpy_a = 5a5a0000
-t.u_portsrc.cpy_c = 5a5a0000
-t.u_portsrc.i = 00000000
-t.u_portsrc.mix = 5a5a0003
-t.u_portsrc.o = 5a5a0000
-t.u_portsrc.obs = 5a5a0003
-t.u_xscope_drv.a = 0
-t.u_xscope_drv.v = 1
-t.u_xscope_rcv.n = 0
-t.u_xscope_rcv.o = 0
-t.xscope_bus.v = 1
+t.alc_x = 0a vpiSize=7
+t.alc_y = 0a vpiSize=7
+t.ali_a = 00 vpiSize=7
+t.ali_b = 00 vpiSize=7
+t.arr[3] = 00 vpiSize=8
+t.arr[2] = 00 vpiSize=8
+t.arr[1] = 00 vpiSize=8
+t.arr[0] = 00 vpiSize=8
+t.base = 00 vpiSize=8
+t.chain_deep = 23 vpiSize=8
+t.chain_l0 = 01 vpiSize=8
+t.chain_l1 = 03 vpiSize=8
+t.chain_l2 = 07 vpiSize=8
+t.chain_l3 = 0f vpiSize=8
+t.chain_l4 = 1f vpiSize=8
+t.chain_tap = 23 vpiSize=8
+t.chain_use = 86 vpiSize=8
+t.clk = 0 vpiSize=1
+t.crbase = 00 vpiSize=8
+t.cyc = 00 vpiSize=8
+t.cyc_boundary = 00 vpiSize=7
+t.cyc_d = 01 vpiSize=7
+t.cyc_down = 01 vpiSize=7
+t.cyc_down2 = 01 vpiSize=7
+t.d = 0000000000000000 vpiSize=64
+t.flat_arr_gg = 00000000 vpiSize=32
+t.flat_gg = 000000 vpiSize=24
+t.flat_lb = 000000 vpiSize=24
+t.flat_ll = 000000 vpiSize=24
+t.idx = 0 vpiSize=3
+t.in0 = 00 vpiSize=8
+t.in1 = 00 vpiSize=8
+t.in2 = 00 vpiSize=8
+t.in3 = 00 vpiSize=8
+t.nib = 0 vpiSize=4
+t.o = 0000000000000000 vpiSize=64
+t.out0 = 07 vpiSize=8
+t.out1 = 97 vpiSize=8
+t.pt_acc = 00000000 vpiSize=32
+t.pt_o = 5a5a0000 vpiSize=32
+t.pt_obs = 5a5a0003 vpiSize=32
+t.s.a = 00 vpiSize=8
+t.s.b = 00 vpiSize=8
+t.s.c = 00 vpiSize=8
+t.self_loop = 00 vpiSize=7
+t.xscope_o = 0 vpiSize=1
+t.if0.W = 00000008 vpiSize=32
+t.if0.a = 11 vpiSize=8
+t.if0.b = 4b vpiSize=8
+t.if0.din = 00 vpiSize=8
+t.if1.W = 00000008 vpiSize=32
+t.if1.a = 31 vpiSize=8
+t.if1.b = 6b vpiSize=8
+t.if1.din = 20 vpiSize=8
+t.intf.DBW = 00000008 vpiSize=32
+t.intf.swapped = 0000000000000000 vpiSize=64
+t.intf.wdata = 0000000000000000 vpiSize=64
+t.u0.din = 00 vpiSize=8
+t.u0.dout = 07 vpiSize=8
+t.u0.s1 = 07 vpiSize=8
+t.u0.s2 = 07 vpiSize=8
+t.u1.din = 30 vpiSize=8
+t.u1.dout = 97 vpiSize=8
+t.u1.s1 = 37 vpiSize=8
+t.u1.s2 = 97 vpiSize=8
+t.u_chain.i = 23 vpiSize=8
+t.u_chain.o = 23 vpiSize=8
+t.u_pass1.i = 0a vpiSize=7
+t.u_pass1.o = 0a vpiSize=7
+t.u_pass2.i = 0a vpiSize=7
+t.u_pass2.o = 0a vpiSize=7
+t.u_portsrc.cpy_a = 5a5a0000 vpiSize=32
+t.u_portsrc.cpy_c = 5a5a0000 vpiSize=32
+t.u_portsrc.i = 00000000 vpiSize=32
+t.u_portsrc.mix = 5a5a0003 vpiSize=32
+t.u_portsrc.o = 5a5a0000 vpiSize=32
+t.u_portsrc.obs = 5a5a0003 vpiSize=32
+t.u_xscope_drv.a = 0 vpiSize=1
+t.u_xscope_drv.v = 1 vpiSize=1
+t.u_xscope_rcv.n = 0 vpiSize=1
+t.u_xscope_rcv.o = 0 vpiSize=1
+t.xscope_bus.v = 1 vpiSize=1
 -- @10 readonly
 t.arr[3] = 55
 t.arr[2] = f0
@@ -776,7 +776,7 @@ t.u_portsrc.mix = 5a5a040e
 t.u_portsrc.o = 5a5a040b
 t.u_portsrc.obs = 5a5a0410
 *-* All Finished *-*
--- @135 end
+-- @135 readonly
 t.clk = 1
 t.cyc = 0e
 t.cyc_boundary = 0e

@@ -21,12 +21,6 @@ test.compile(make_top_shell=False,
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
-# A put to one instance's flop leaves the other instance's alone
-test.execute(use_libvpi=True,
-             all_run_flags=[
-                 "+dump_values", "+dump_at=t.clk:0", "+dump_trigger=t.cyc",
-                 "+dump_put=7:t.p0.uc.cflop:3c"
-             ],
-             expect_filename=test.golden_filename)
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.passes()

@@ -129,10 +129,27 @@ module t;
 
   always @(posedge clk) begin
     if (!rst && cyc == NumCycles) begin
+      t_vpi_dump_values();
       $write("*-* All Finished *-*\n");
       $finish;
     end
   end
+
+  import "DPI-C" context function void t_vpi_dump_values();
+  import "DPI-C" context function void t_vpi_dump_cb(input string name);
+  import "DPI-C" context function void t_vpi_dump_put_rw(
+    input string name,
+    input string value,
+    input string flag = ""
+  );
+
+  initial begin
+    t_vpi_dump_cb("t.cyc");
+    t_vpi_dump_values();
+  end
+  always @(negedge clk) t_vpi_dump_values();
+  // A put to one instance's flop leaves the other instance's alone
+  always @(cyc) if (cyc == 8'd7) t_vpi_dump_put_rw("t.p0.uc.cflop", "3c");
 
   // multiinst
   logic [6:0] ctr;

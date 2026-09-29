@@ -21,13 +21,6 @@ test.compile(make_top_shell=False,
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
-# $random and $time are impure, as is obs, which reads them; and any values with
-# cyc_a ^ cyc_b == cyc_d close the comb cycle. None of these are dumped.
-test.execute(use_libvpi=True,
-             all_run_flags=[
-                 "+dump_values", "+dump_at=t.clk:0", "+dump_skip=t.rndc", "+dump_skip=t.tstamp",
-                 "+dump_skip=t.obs", "+dump_skip=t.cyc_a", "+dump_skip=t.cyc_b"
-             ],
-             expect_filename=test.golden_filename)
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.passes()

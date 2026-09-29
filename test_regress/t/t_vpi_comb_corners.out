@@ -1,169 +1,169 @@
 t (vpiModule) t  vpiDefName=t
     vpiReg:
-    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst vpiSize=8
-    a (vpiReg) t.a  vpiSize=8
-    b (vpiReg) t.b  vpiSize=8
-    clk (vpiReg) t.clk  vpiSize=1
-    comb_inc (vpiReg) t.comb_inc  vpiSize=8
-    ctr (vpiReg) t.ctr  vpiSize=8
-    cyc (vpiReg) t.cyc  vpiSize=8
-    data (vpiReg) t.data  vpiSize=4
-    en_comb (vpiReg) t.en_comb  vpiSize=2
-    frc (vpiReg) t.frc  vpiSize=7
-    frc2 (vpiReg) t.frc2  vpiSize=7
-    frc2__VforceEn (vpiReg) t.frc2__VforceEn  vpiSize=7
-    frc2__VforceVal (vpiReg) t.frc2__VforceVal  vpiSize=7
-    frc2_force (vpiReg) t.frc2_force  vpiSize=1
-    frc__VforceEn (vpiReg) t.frc__VforceEn  vpiSize=7
-    frc__VforceVal (vpiReg) t.frc__VforceVal  vpiSize=7
-    handle (vpiReg) t.handle  vpiSize=64
-    i_comb (vpiReg) t.i_comb  vpiSize=32
-    keep (vpiReg) t.keep  vpiSize=8
-    keep_frc (vpiReg) t.keep_frc  vpiSize=7
+    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
+    a (vpiReg) t.a 
+    b (vpiReg) t.b 
+    clk (vpiReg) t.clk 
+    comb_inc (vpiReg) t.comb_inc 
+    ctr (vpiReg) t.ctr 
+    cyc (vpiReg) t.cyc 
+    data (vpiReg) t.data 
+    en_comb (vpiReg) t.en_comb 
+    frc (vpiReg) t.frc 
+    frc2 (vpiReg) t.frc2 
+    frc2__VforceEn (vpiReg) t.frc2__VforceEn 
+    frc2__VforceVal (vpiReg) t.frc2__VforceVal 
+    frc2_force (vpiReg) t.frc2_force 
+    frc__VforceEn (vpiReg) t.frc__VforceEn 
+    frc__VforceVal (vpiReg) t.frc__VforceVal 
+    handle (vpiReg) t.handle 
+    i_comb (vpiReg) t.i_comb 
+    keep (vpiReg) t.keep 
+    keep_frc (vpiReg) t.keep_frc 
     md_full (vpiRegArray) t.md_full 
         vpiReg:
-        md_full (vpiReg) t.md_full[1][1]  vpiSize=16
-        md_full (vpiReg) t.md_full[1][0]  vpiSize=16
-        md_full (vpiReg) t.md_full[2][1]  vpiSize=16
-        md_full (vpiReg) t.md_full[2][0]  vpiSize=16
-        md_full (vpiReg) t.md_full[3][1]  vpiSize=16
-        md_full (vpiReg) t.md_full[3][0]  vpiSize=16
+        md_full (vpiReg) t.md_full[1][1] 
+        md_full (vpiReg) t.md_full[1][0] 
+        md_full (vpiReg) t.md_full[2][1] 
+        md_full (vpiReg) t.md_full[2][0] 
+        md_full (vpiReg) t.md_full[3][1] 
+        md_full (vpiReg) t.md_full[3][0] 
     md_gap (vpiRegArray) t.md_gap 
         vpiReg:
-        md_gap (vpiReg) t.md_gap[1][0]  vpiSize=16
-        md_gap (vpiReg) t.md_gap[1][1]  vpiSize=16
-        md_gap (vpiReg) t.md_gap[1][2]  vpiSize=16
-        md_gap (vpiReg) t.md_gap[0][0]  vpiSize=16
-        md_gap (vpiReg) t.md_gap[0][1]  vpiSize=16
-        md_gap (vpiReg) t.md_gap[0][2]  vpiSize=16
+        md_gap (vpiReg) t.md_gap[1][0] 
+        md_gap (vpiReg) t.md_gap[1][1] 
+        md_gap (vpiReg) t.md_gap[1][2] 
+        md_gap (vpiReg) t.md_gap[0][0] 
+        md_gap (vpiReg) t.md_gap[0][1] 
+        md_gap (vpiReg) t.md_gap[0][2] 
     mem (vpiRegArray) t.mem 
         vpiReg:
-        mem (vpiReg) t.mem[3]  vpiSize=8
-        mem (vpiReg) t.mem[2]  vpiSize=8
-        mem (vpiReg) t.mem[1]  vpiSize=8
-        mem (vpiReg) t.mem[0]  vpiSize=8
+        mem (vpiReg) t.mem[3] 
+        mem (vpiReg) t.mem[2] 
+        mem (vpiReg) t.mem[1] 
+        mem (vpiReg) t.mem[0] 
     mem_part (vpiRegArray) t.mem_part 
         vpiReg:
-        mem_part (vpiReg) t.mem_part[3]  vpiSize=8
-        mem_part (vpiReg) t.mem_part[2]  vpiSize=8
-        mem_part (vpiReg) t.mem_part[1]  vpiSize=8
-        mem_part (vpiReg) t.mem_part[0]  vpiSize=8
+        mem_part (vpiReg) t.mem_part[3] 
+        mem_part (vpiReg) t.mem_part[2] 
+        mem_part (vpiReg) t.mem_part[1] 
+        mem_part (vpiReg) t.mem_part[0] 
     mixdep (vpiRegArray) t.mixdep 
         vpiReg:
-        mixdep (vpiReg) t.mixdep[1][1]  vpiSize=8
-        mixdep (vpiReg) t.mixdep[1][0]  vpiSize=8
-        mixdep (vpiReg) t.mixdep[0][1]  vpiSize=8
-        mixdep (vpiReg) t.mixdep[0][0]  vpiSize=8
-    narrow (vpiReg) t.narrow  vpiSize=8
-    obs_dtypes (vpiReg) t.obs_dtypes  vpiSize=8
-    obs_impureidx (vpiReg) t.obs_impureidx  vpiSize=8
-    orphan (vpiReg) t.orphan  vpiSize=8
-    out (vpiReg) t.out  vpiSize=8
-    p (vpiReg) t.p  vpiSize=8
-    pa_comb (vpiReg) t.pa_comb  vpiSize=32
-    ps_comb (vpiReg) t.ps_comb  vpiSize=8
-    r (vpiReg) t.r  vpiSize=8
-    r_comb (vpiRealVar) t.r_comb  vpiSize=1
-    rc_alias (vpiRealVar) t.rc_alias  vpiSize=1
-    rc_src (vpiRealVar) t.rc_src  vpiSize=1
-    rdpin (vpiReg) t.rdpin  vpiSize=8
-    rf_mid (vpiRealVar) t.rf_mid  vpiSize=1
-    rst (vpiReg) t.rst  vpiSize=1
-    s_fmt (vpiStringVar) t.s_fmt  vpiSize=1
-    s_var (vpiStringVar) t.s_var  vpiSize=1
-    sc_alias (vpiStringVar) t.sc_alias  vpiSize=1
-    sc_src (vpiStringVar) t.sc_src  vpiSize=1
-    seedv (vpiReg) t.seedv  vpiSize=32
-    sf_mid (vpiStringVar) t.sf_mid  vpiSize=1
+        mixdep (vpiReg) t.mixdep[1][1] 
+        mixdep (vpiReg) t.mixdep[1][0] 
+        mixdep (vpiReg) t.mixdep[0][1] 
+        mixdep (vpiReg) t.mixdep[0][0] 
+    narrow (vpiReg) t.narrow 
+    obs_dtypes (vpiReg) t.obs_dtypes 
+    obs_impureidx (vpiReg) t.obs_impureidx 
+    orphan (vpiReg) t.orphan 
+    out (vpiReg) t.out 
+    p (vpiReg) t.p 
+    pa_comb (vpiReg) t.pa_comb 
+    ps_comb (vpiReg) t.ps_comb 
+    r (vpiReg) t.r 
+    r_comb (vpiRealVar) t.r_comb 
+    rc_alias (vpiRealVar) t.rc_alias 
+    rc_src (vpiRealVar) t.rc_src 
+    rdpin (vpiReg) t.rdpin 
+    rf_mid (vpiRealVar) t.rf_mid 
+    rst (vpiReg) t.rst 
+    s_fmt (vpiStringVar) t.s_fmt 
+    s_var (vpiStringVar) t.s_var 
+    sc_alias (vpiStringVar) t.sc_alias 
+    sc_src (vpiStringVar) t.sc_src 
+    seedv (vpiReg) t.seedv 
+    sf_mid (vpiStringVar) t.sf_mid 
     us_comb (vpiStructVar) t.us_comb 
         vpiReg:
         *undefined*:
-        a (vpiReg) t.us_comb.a  vpiSize=8
-        b (vpiReg) t.us_comb.b  vpiSize=8
-    a (vpiReg) t.us_comb.a  vpiSize=8
-    b (vpiReg) t.us_comb.b  vpiSize=8
-    v_comb (vpiReg) t.v_comb  vpiSize=7
-    vec (vpiReg) t.vec  vpiSize=8
-    w (vpiReg) t.w  vpiSize=8
-    wide (vpiReg) t.wide  vpiSize=16
+        a (vpiReg) t.us_comb.a 
+        b (vpiReg) t.us_comb.b 
+    a (vpiReg) t.us_comb.a 
+    b (vpiReg) t.us_comb.b 
+    v_comb (vpiReg) t.v_comb 
+    vec (vpiReg) t.vec 
+    w (vpiReg) t.w 
+    wide (vpiReg) t.wide 
     vpiParameter:
-    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst vpiSize=8
+    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
     vpiInternalScope:
     u_wdrv (vpiModule) t.u_wdrv  vpiDefName=sub_drv
         vpiReg:
-        x (vpiReg) t.u_wdrv.x  vpiSize=8
-        y (vpiReg) t.u_wdrv.y  vpiSize=8
+        x (vpiReg) t.u_wdrv.x 
+        y (vpiReg) t.u_wdrv.y 
         vpiParameter:
 -- @0 readonly
-t.NumCycles = 14
-t.a = 00
-t.b = 00
-t.clk = 0
-t.comb_inc = 01
-t.ctr = 00
-t.cyc = 00
-t.data = 5
-t.en_comb = 0
-t.frc = 11
-t.frc2 = 22
-t.frc2__VforceEn = 00
-t.frc2__VforceVal = 00
-t.frc2_force = 0
-t.frc__VforceEn = 00
-t.frc__VforceVal = 00
-t.handle = 0000000000000000
-t.i_comb = 00000001
-t.keep = 00
-t.keep_frc = 00
-t.md_full[1][1] = 0011
-t.md_full[1][0] = ff00
-t.md_full[2][1] = 0033
-t.md_full[2][0] = 0022
-t.md_full[3][1] = 0055
-t.md_full[3][0] = 0044
-t.md_gap[1][0] = 0033
-t.md_gap[1][1] = 0044
-t.md_gap[1][2] = 0055
-t.md_gap[0][0] = 0000
-t.md_gap[0][1] = 0011
-t.md_gap[0][2] = 0022
-t.mem[3] = 03
-t.mem[2] = 02
-t.mem[1] = 01
-t.mem[0] = 00
-t.mem_part[3] = 00
-t.mem_part[2] = 00
-t.mem_part[1] = 00
-t.mem_part[0] = 27
-t.mixdep[1][1] = ff
-t.mixdep[1][0] = ff
-t.mixdep[0][1] = 00
-t.mixdep[0][0] = 00
-t.narrow = 01
-t.obs_dtypes = fa
-t.orphan = 00
-t.out = f0
-t.p = 00
-t.pa_comb = 00ff01ff
-t.ps_comb = 00
-t.r = 00
-t.r_comb = 1.5
-t.rc_alias = 0
-t.rc_src = 0
-t.rdpin = 00
-t.rf_mid = 1.5
-t.rst = 1
-t.s_fmt = "v0"
-t.s_var = "hi"
-t.sc_alias = ""
-t.sc_src = ""
-t.seedv = 00000000
-t.sf_mid = "hi"
-t.us_comb.a = 00
-t.us_comb.b = ff
-t.v_comb = 05
-t.wide = 00ff
-t.u_wdrv.x = 00
+t.NumCycles = 14 vpiSize=8
+t.a = 00 vpiSize=8
+t.b = 00 vpiSize=8
+t.clk = 0 vpiSize=1
+t.comb_inc = 01 vpiSize=8
+t.ctr = 00 vpiSize=8
+t.cyc = 00 vpiSize=8
+t.data = 5 vpiSize=4
+t.en_comb = 0 vpiSize=2
+t.frc = 11 vpiSize=7
+t.frc2 = 22 vpiSize=7
+t.frc2__VforceEn = 00 vpiSize=7
+t.frc2__VforceVal = 00 vpiSize=7
+t.frc2_force = 0 vpiSize=1
+t.frc__VforceEn = 00 vpiSize=7
+t.frc__VforceVal = 00 vpiSize=7
+t.handle = 0000000000000000 vpiSize=64
+t.i_comb = 00000001 vpiSize=32
+t.keep = 00 vpiSize=8
+t.keep_frc = 00 vpiSize=7
+t.md_full[1][1] = 0011 vpiSize=16
+t.md_full[1][0] = ff00 vpiSize=16
+t.md_full[2][1] = 0033 vpiSize=16
+t.md_full[2][0] = 0022 vpiSize=16
+t.md_full[3][1] = 0055 vpiSize=16
+t.md_full[3][0] = 0044 vpiSize=16
+t.md_gap[1][0] = 0033 vpiSize=16
+t.md_gap[1][1] = 0044 vpiSize=16
+t.md_gap[1][2] = 0055 vpiSize=16
+t.md_gap[0][0] = 0000 vpiSize=16
+t.md_gap[0][1] = 0011 vpiSize=16
+t.md_gap[0][2] = 0022 vpiSize=16
+t.mem[3] = 03 vpiSize=8
+t.mem[2] = 02 vpiSize=8
+t.mem[1] = 01 vpiSize=8
+t.mem[0] = 00 vpiSize=8
+t.mem_part[3] = 00 vpiSize=8
+t.mem_part[2] = 00 vpiSize=8
+t.mem_part[1] = 00 vpiSize=8
+t.mem_part[0] = 27 vpiSize=8
+t.mixdep[1][1] = ff vpiSize=8
+t.mixdep[1][0] = ff vpiSize=8
+t.mixdep[0][1] = 00 vpiSize=8
+t.mixdep[0][0] = 00 vpiSize=8
+t.narrow = 01 vpiSize=8
+t.obs_dtypes = fa vpiSize=8
+t.orphan = 00 vpiSize=8
+t.out = f0 vpiSize=8
+t.p = 00 vpiSize=8
+t.pa_comb = 00ff01ff vpiSize=32
+t.ps_comb = 00 vpiSize=8
+t.r = 00 vpiSize=8
+t.r_comb = 1.5 vpiSize=1
+t.rc_alias = 0 vpiSize=1
+t.rc_src = 0 vpiSize=1
+t.rdpin = 00 vpiSize=8
+t.rf_mid = 1.5 vpiSize=1
+t.rst = 1 vpiSize=1
+t.s_fmt = "v0" vpiSize=1
+t.s_var = "hi" vpiSize=1
+t.sc_alias = "" vpiSize=1
+t.sc_src = "" vpiSize=1
+t.seedv = 00000000 vpiSize=32
+t.sf_mid = "hi" vpiSize=1
+t.us_comb.a = 00 vpiSize=8
+t.us_comb.b = ff vpiSize=8
+t.v_comb = 05 vpiSize=7
+t.wide = 00ff vpiSize=16
+t.u_wdrv.x = 00 vpiSize=8
 -- @5 readonly
 t.clk = 1
 t.rc_alias = 0.5

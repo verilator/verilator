@@ -1,241 +1,241 @@
 t (vpiModule) t  vpiDefName=t
     vpiReg:
-    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst vpiSize=8
-    acc (vpiReg) t.acc  vpiSize=32
-    acc_xscope (vpiReg) t.acc_xscope  vpiSize=8
-    accn (vpiReg) t.accn  vpiSize=32
-    bflop0 (vpiReg) t.bflop0  vpiSize=8
-    bflop1 (vpiReg) t.bflop1  vpiSize=8
-    canon (vpiReg) t.canon  vpiSize=32
-    canonr (vpiReg) t.canonr  vpiSize=32
-    clk (vpiReg) t.clk  vpiSize=1
-    ctr (vpiReg) t.ctr  vpiSize=7
-    ctr2 (vpiReg) t.ctr2  vpiSize=7
-    cyc (vpiReg) t.cyc  vpiSize=8
-    d0 (vpiReg) t.d0  vpiSize=7
-    d1 (vpiReg) t.d1  vpiSize=7
-    din0 (vpiReg) t.din0  vpiSize=8
-    din1 (vpiReg) t.din1  vpiSize=8
-    in2 (vpiReg) t.in2  vpiSize=32
-    obs_canon (vpiReg) t.obs_canon  vpiSize=32
-    obs_xscope (vpiReg) t.obs_xscope  vpiSize=8
-    observe (vpiReg) t.observe  vpiSize=7
-    observe2 (vpiReg) t.observe2  vpiSize=7
-    qa (vpiReg) t.qa  vpiSize=32
-    qb (vpiReg) t.qb  vpiSize=32
-    qc (vpiReg) t.qc  vpiSize=32
-    qd (vpiReg) t.qd  vpiSize=32
-    qe (vpiReg) t.qe  vpiSize=32
-    qf (vpiReg) t.qf  vpiSize=32
-    qg (vpiReg) t.qg  vpiSize=32
-    qh (vpiReg) t.qh  vpiSize=32
-    rcanonr (vpiRealVar) t.rcanonr  vpiSize=1
-    rst (vpiReg) t.rst  vpiSize=1
-    scanonr (vpiStringVar) t.scanonr  vpiSize=1
+    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
+    acc (vpiReg) t.acc 
+    acc_xscope (vpiReg) t.acc_xscope 
+    accn (vpiReg) t.accn 
+    bflop0 (vpiReg) t.bflop0 
+    bflop1 (vpiReg) t.bflop1 
+    canon (vpiReg) t.canon 
+    canonr (vpiReg) t.canonr 
+    clk (vpiReg) t.clk 
+    ctr (vpiReg) t.ctr 
+    ctr2 (vpiReg) t.ctr2 
+    cyc (vpiReg) t.cyc 
+    d0 (vpiReg) t.d0 
+    d1 (vpiReg) t.d1 
+    din0 (vpiReg) t.din0 
+    din1 (vpiReg) t.din1 
+    in2 (vpiReg) t.in2 
+    obs_canon (vpiReg) t.obs_canon 
+    obs_xscope (vpiReg) t.obs_xscope 
+    observe (vpiReg) t.observe 
+    observe2 (vpiReg) t.observe2 
+    qa (vpiReg) t.qa 
+    qb (vpiReg) t.qb 
+    qc (vpiReg) t.qc 
+    qd (vpiReg) t.qd 
+    qe (vpiReg) t.qe 
+    qf (vpiReg) t.qf 
+    qg (vpiReg) t.qg 
+    qh (vpiReg) t.qh 
+    rcanonr (vpiRealVar) t.rcanonr 
+    rst (vpiReg) t.rst 
+    scanonr (vpiStringVar) t.scanonr 
     vpiParameter:
-    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst vpiSize=8
+    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
     vpiInternalScope:
     bc0 (vpiModule) t.bc0  vpiDefName=bcell
         vpiReg:
-        bc (vpiReg) t.bc0.bc  vpiSize=8
-        bd (vpiReg) t.bc0.bd  vpiSize=8
-        clk (vpiReg) t.bc0.clk  vpiSize=1
+        bc (vpiReg) t.bc0.bc 
+        bd (vpiReg) t.bc0.bd 
+        clk (vpiReg) t.bc0.clk 
         vpiParameter:
     bc1 (vpiModule) t.bc1  vpiDefName=bcell
         vpiReg:
-        bc (vpiReg) t.bc1.bc  vpiSize=8
-        bd (vpiReg) t.bc1.bd  vpiSize=8
-        clk (vpiReg) t.bc1.clk  vpiSize=1
+        bc (vpiReg) t.bc1.bc 
+        bd (vpiReg) t.bc1.bd 
+        clk (vpiReg) t.bc1.clk 
         vpiParameter:
     if0 (vpiInterface) t.if0 
         vpiReg:
-        a (vpiReg) t.if0.a  vpiSize=7
-        b (vpiReg) t.if0.b  vpiSize=7
+        a (vpiReg) t.if0.a 
+        b (vpiReg) t.if0.b 
     if1 (vpiInterface) t.if1 
         vpiReg:
-        a (vpiReg) t.if1.a  vpiSize=7
-        b (vpiReg) t.if1.b  vpiSize=7
+        a (vpiReg) t.if1.a 
+        b (vpiReg) t.if1.b 
     if_a (vpiInterface) t.if_a 
         vpiReg:
-        derived (vpiReg) t.if_a.derived  vpiSize=7
-        val (vpiReg) t.if_a.val  vpiSize=7
+        derived (vpiReg) t.if_a.derived 
+        val (vpiReg) t.if_a.val 
     if_b (vpiInterface) t.if_b 
         vpiReg:
-        derived (vpiReg) t.if_b.derived  vpiSize=7
-        val (vpiReg) t.if_b.val  vpiSize=7
+        derived (vpiReg) t.if_b.derived 
+        val (vpiReg) t.if_b.val 
     if_c (vpiInterface) t.if_c 
         vpiReg:
-        derived (vpiReg) t.if_c.derived  vpiSize=7
-        val (vpiReg) t.if_c.val  vpiSize=7
+        derived (vpiReg) t.if_c.derived 
+        val (vpiReg) t.if_c.val 
     p0 (vpiModule) t.p0  vpiDefName=parent
         vpiReg:
-        clk (vpiReg) t.p0.clk  vpiSize=1
-        din (vpiReg) t.p0.din  vpiSize=8
-        py (vpiReg) t.p0.py  vpiSize=8
-        xali (vpiReg) t.p0.xali  vpiSize=8
+        clk (vpiReg) t.p0.clk 
+        din (vpiReg) t.p0.din 
+        py (vpiReg) t.p0.py 
+        xali (vpiReg) t.p0.xali 
         vpiParameter:
         vpiInternalScope:
         uc (vpiModule) t.p0.uc  vpiDefName=child
             vpiReg:
-            cflop (vpiReg) t.p0.uc.cflop  vpiSize=8
-            clk (vpiReg) t.p0.uc.clk  vpiSize=1
-            cy (vpiReg) t.p0.uc.cy  vpiSize=8
-            din (vpiReg) t.p0.uc.din  vpiSize=8
+            cflop (vpiReg) t.p0.uc.cflop 
+            clk (vpiReg) t.p0.uc.clk 
+            cy (vpiReg) t.p0.uc.cy 
+            din (vpiReg) t.p0.uc.din 
             vpiParameter:
     p1 (vpiModule) t.p1  vpiDefName=parent
         vpiReg:
-        clk (vpiReg) t.p1.clk  vpiSize=1
-        din (vpiReg) t.p1.din  vpiSize=8
-        py (vpiReg) t.p1.py  vpiSize=8
-        xali (vpiReg) t.p1.xali  vpiSize=8
+        clk (vpiReg) t.p1.clk 
+        din (vpiReg) t.p1.din 
+        py (vpiReg) t.p1.py 
+        xali (vpiReg) t.p1.xali 
         vpiParameter:
         vpiInternalScope:
         uc (vpiModule) t.p1.uc  vpiDefName=child
             vpiReg:
-            cflop (vpiReg) t.p1.uc.cflop  vpiSize=8
-            clk (vpiReg) t.p1.uc.clk  vpiSize=1
-            cy (vpiReg) t.p1.uc.cy  vpiSize=8
-            din (vpiReg) t.p1.uc.din  vpiSize=8
+            cflop (vpiReg) t.p1.uc.cflop 
+            clk (vpiReg) t.p1.uc.clk 
+            cy (vpiReg) t.p1.uc.cy 
+            din (vpiReg) t.p1.uc.din 
             vpiParameter:
     u0 (vpiModule) t.u0  vpiDefName=sub
         vpiReg:
-        din (vpiReg) t.u0.din  vpiSize=7
-        din_copy (vpiReg) t.u0.din_copy  vpiSize=7
-        dout (vpiReg) t.u0.dout  vpiSize=7
+        din (vpiReg) t.u0.din 
+        din_copy (vpiReg) t.u0.din_copy 
+        dout (vpiReg) t.u0.dout 
         vpiParameter:
     u1 (vpiModule) t.u1  vpiDefName=sub
         vpiReg:
-        din (vpiReg) t.u1.din  vpiSize=7
-        din_copy (vpiReg) t.u1.din_copy  vpiSize=7
-        dout (vpiReg) t.u1.dout  vpiSize=7
+        din (vpiReg) t.u1.din 
+        din_copy (vpiReg) t.u1.din_copy 
+        dout (vpiReg) t.u1.dout 
         vpiParameter:
     u_a (vpiModule) t.u_a  vpiDefName=xsub
         vpiReg:
-        p (vpiReg) t.u_a.p  vpiSize=32
-        q (vpiReg) t.u_a.q  vpiSize=32
+        p (vpiReg) t.u_a.p 
+        q (vpiReg) t.u_a.q 
         vpiParameter:
     u_b (vpiModule) t.u_b  vpiDefName=xsub
         vpiReg:
-        p (vpiReg) t.u_b.p  vpiSize=32
-        q (vpiReg) t.u_b.q  vpiSize=32
+        p (vpiReg) t.u_b.p 
+        q (vpiReg) t.u_b.q 
         vpiParameter:
     u_c (vpiModule) t.u_c  vpiDefName=xsubr
         vpiReg:
-        p (vpiReg) t.u_c.p  vpiSize=32
-        q (vpiReg) t.u_c.q  vpiSize=32
+        p (vpiReg) t.u_c.p 
+        q (vpiReg) t.u_c.q 
         vpiParameter:
     u_d (vpiModule) t.u_d  vpiDefName=xsubr
         vpiReg:
-        p (vpiReg) t.u_d.p  vpiSize=32
-        q (vpiReg) t.u_d.q  vpiSize=32
+        p (vpiReg) t.u_d.p 
+        q (vpiReg) t.u_d.q 
         vpiParameter:
     u_e (vpiModule) t.u_e  vpiDefName=xsubre
         vpiReg:
-        p (vpiRealVar) t.u_e.p  vpiSize=1
-        q (vpiReg) t.u_e.q  vpiSize=32
+        p (vpiRealVar) t.u_e.p 
+        q (vpiReg) t.u_e.q 
         vpiParameter:
     u_f (vpiModule) t.u_f  vpiDefName=xsubre
         vpiReg:
-        p (vpiRealVar) t.u_f.p  vpiSize=1
-        q (vpiReg) t.u_f.q  vpiSize=32
+        p (vpiRealVar) t.u_f.p 
+        q (vpiReg) t.u_f.q 
         vpiParameter:
     u_g (vpiModule) t.u_g  vpiDefName=xsubse
         vpiReg:
-        p (vpiStringVar) t.u_g.p  vpiSize=1
-        q (vpiReg) t.u_g.q  vpiSize=32
+        p (vpiStringVar) t.u_g.p 
+        q (vpiReg) t.u_g.q 
         vpiParameter:
     u_h (vpiModule) t.u_h  vpiDefName=xsubse
         vpiReg:
-        p (vpiStringVar) t.u_h.p  vpiSize=1
-        q (vpiReg) t.u_h.q  vpiSize=32
+        p (vpiStringVar) t.u_h.p 
+        q (vpiReg) t.u_h.q 
         vpiParameter:
 -- @0 readonly
-t.NumCycles = 10
-t.acc = 00000000
-t.acc_xscope = 00
-t.accn = 00000000
-t.bflop0 = 00
-t.bflop1 = 00
-t.canon = 5a5a5a5a
-t.canonr = 00000000
-t.clk = 0
-t.ctr = 00
-t.ctr2 = 00
-t.cyc = 00
-t.d0 = 0f
-t.d1 = 0c
-t.din0 = 00
-t.din1 = 40
-t.in2 = 00000000
-t.obs_canon = 00000000
-t.obs_xscope = 00
-t.observe = 00
-t.observe2 = 00
-t.qa = 5a5a5a61
-t.qb = 5a5a5a61
-t.qc = 00000007
-t.qd = 00000007
-t.qe = 00000007
-t.qf = 00000007
-t.qg = 00000000
-t.qh = 00000000
-t.rcanonr = 0
-t.rst = 1
-t.scanonr = ""
-t.bc0.bc = 00
-t.bc0.bd = 33
-t.bc0.clk = 0
-t.bc1.bc = 00
-t.bc1.bd = 33
-t.bc1.clk = 0
-t.if0.a = 00
-t.if0.b = 7f
-t.if1.a = 01
-t.if1.b = 54
-t.if_a.derived = 02
-t.if_a.val = 01
-t.if_b.derived = 2b
-t.if_b.val = 2a
-t.if_c.derived = 56
-t.if_c.val = 55
-t.p0.clk = 0
-t.p0.din = 00
-t.p0.py = a8
-t.p0.xali = 00
-t.p0.uc.cflop = 00
-t.p0.uc.clk = 0
-t.p0.uc.cy = a5
-t.p0.uc.din = 00
-t.p1.clk = 0
-t.p1.din = 40
-t.p1.py = e8
-t.p1.xali = 00
-t.p1.uc.cflop = 00
-t.p1.uc.clk = 0
-t.p1.uc.cy = e5
-t.p1.uc.din = 40
-t.u0.din = 00
-t.u0.din_copy = 00
-t.u0.dout = 0f
-t.u1.din = 03
-t.u1.din_copy = 03
-t.u1.dout = 0c
-t.u_a.p = 5a5a5a5a
-t.u_a.q = 5a5a5a61
-t.u_b.p = 5a5a5a5a
-t.u_b.q = 5a5a5a61
-t.u_c.p = 00000000
-t.u_c.q = 00000007
-t.u_d.p = 00000000
-t.u_d.q = 00000007
-t.u_e.p = 0
-t.u_e.q = 00000007
-t.u_f.p = 0
-t.u_f.q = 00000007
-t.u_g.p = ""
-t.u_g.q = 00000000
-t.u_h.p = ""
-t.u_h.q = 00000000
+t.NumCycles = 10 vpiSize=8
+t.acc = 00000000 vpiSize=32
+t.acc_xscope = 00 vpiSize=8
+t.accn = 00000000 vpiSize=32
+t.bflop0 = 00 vpiSize=8
+t.bflop1 = 00 vpiSize=8
+t.canon = 5a5a5a5a vpiSize=32
+t.canonr = 00000000 vpiSize=32
+t.clk = 0 vpiSize=1
+t.ctr = 00 vpiSize=7
+t.ctr2 = 00 vpiSize=7
+t.cyc = 00 vpiSize=8
+t.d0 = 0f vpiSize=7
+t.d1 = 0c vpiSize=7
+t.din0 = 00 vpiSize=8
+t.din1 = 40 vpiSize=8
+t.in2 = 00000000 vpiSize=32
+t.obs_canon = 00000000 vpiSize=32
+t.obs_xscope = 00 vpiSize=8
+t.observe = 00 vpiSize=7
+t.observe2 = 00 vpiSize=7
+t.qa = 5a5a5a61 vpiSize=32
+t.qb = 5a5a5a61 vpiSize=32
+t.qc = 00000007 vpiSize=32
+t.qd = 00000007 vpiSize=32
+t.qe = 00000007 vpiSize=32
+t.qf = 00000007 vpiSize=32
+t.qg = 00000000 vpiSize=32
+t.qh = 00000000 vpiSize=32
+t.rcanonr = 0 vpiSize=1
+t.rst = 1 vpiSize=1
+t.scanonr = "" vpiSize=1
+t.bc0.bc = 00 vpiSize=8
+t.bc0.bd = 33 vpiSize=8
+t.bc0.clk = 0 vpiSize=1
+t.bc1.bc = 00 vpiSize=8
+t.bc1.bd = 33 vpiSize=8
+t.bc1.clk = 0 vpiSize=1
+t.if0.a = 00 vpiSize=7
+t.if0.b = 7f vpiSize=7
+t.if1.a = 01 vpiSize=7
+t.if1.b = 54 vpiSize=7
+t.if_a.derived = 02 vpiSize=7
+t.if_a.val = 01 vpiSize=7
+t.if_b.derived = 2b vpiSize=7
+t.if_b.val = 2a vpiSize=7
+t.if_c.derived = 56 vpiSize=7
+t.if_c.val = 55 vpiSize=7
+t.p0.clk = 0 vpiSize=1
+t.p0.din = 00 vpiSize=8
+t.p0.py = a8 vpiSize=8
+t.p0.xali = 00 vpiSize=8
+t.p0.uc.cflop = 00 vpiSize=8
+t.p0.uc.clk = 0 vpiSize=1
+t.p0.uc.cy = a5 vpiSize=8
+t.p0.uc.din = 00 vpiSize=8
+t.p1.clk = 0 vpiSize=1
+t.p1.din = 40 vpiSize=8
+t.p1.py = e8 vpiSize=8
+t.p1.xali = 00 vpiSize=8
+t.p1.uc.cflop = 00 vpiSize=8
+t.p1.uc.clk = 0 vpiSize=1
+t.p1.uc.cy = e5 vpiSize=8
+t.p1.uc.din = 40 vpiSize=8
+t.u0.din = 00 vpiSize=7
+t.u0.din_copy = 00 vpiSize=7
+t.u0.dout = 0f vpiSize=7
+t.u1.din = 03 vpiSize=7
+t.u1.din_copy = 03 vpiSize=7
+t.u1.dout = 0c vpiSize=7
+t.u_a.p = 5a5a5a5a vpiSize=32
+t.u_a.q = 5a5a5a61 vpiSize=32
+t.u_b.p = 5a5a5a5a vpiSize=32
+t.u_b.q = 5a5a5a61 vpiSize=32
+t.u_c.p = 00000000 vpiSize=32
+t.u_c.q = 00000007 vpiSize=32
+t.u_d.p = 00000000 vpiSize=32
+t.u_d.q = 00000007 vpiSize=32
+t.u_e.p = 0 vpiSize=1
+t.u_e.q = 00000007 vpiSize=32
+t.u_f.p = 0 vpiSize=1
+t.u_f.q = 00000007 vpiSize=32
+t.u_g.p = "" vpiSize=1
+t.u_g.q = 00000000 vpiSize=32
+t.u_h.p = "" vpiSize=1
+t.u_h.q = 00000000 vpiSize=32
 -- @10 readonly
 t.acc_xscope = 90
 t.bflop0 = a5
@@ -935,7 +935,7 @@ t.u_g.q = 00000003
 t.u_h.p = "odd"
 t.u_h.q = 00000003
 *-* All Finished *-*
--- @175 end
+-- @175 readonly
 t.acc_xscope = c8
 t.clk = 1
 t.ctr = 33

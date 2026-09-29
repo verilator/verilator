@@ -32,6 +32,63 @@ module t (
     end
   end
 
+  import "DPI-C" context function void t_vpi_dump_values();
+  import "DPI-C" context function void t_vpi_dump_cb(input string name);
+  import "DPI-C" context function void t_vpi_dump_put_rw(
+    input string name,
+    input string value,
+    input string flag = ""
+  );
+  import "DPI-C" context function void t_vpi_dump_save();
+  import "DPI-C" context function void t_vpi_dump_restore();
+  import "DPI-C" context function int t_vpi_dump_restores();
+  import "DPI-C" context function void t_vpi_dump_clock(
+    input string name,
+    input int halfperiod
+  );
+
+  // --savable excludes --timing, so the harness drives the clock
+  initial begin
+    t_vpi_dump_clock("t.clk", 5);
+    t_vpi_dump_cb("t.cyc");
+    t_vpi_dump_values();
+  end
+  always @(clk) t_vpi_dump_values();
+  // Each restore returns cyc to its value at the save, so the stimulus after it replays;
+  // the count of restores so far, which a restore does not rewind, selects each pass's
+  // operations. The second save follows a bus write to ctrl_r that nothing has read since.
+  always @(cyc) begin
+    if (t_vpi_dump_restores() == 0) begin
+      case (cyc)
+        8'd8: t_vpi_dump_put_rw("t.ctrl_r", "0c0c0001");
+        8'd9: t_vpi_dump_put_rw("t.ctrl_r", "0c0c0002");
+        8'd10: begin
+          t_vpi_dump_save();
+          t_vpi_dump_put_rw("t.ctrl_r", "0c0c0003");
+        end
+        8'd11: t_vpi_dump_restore();
+        default: ;
+      endcase
+    end
+    else if (t_vpi_dump_restores() == 1) begin
+      case (cyc)
+        8'd12: t_vpi_dump_save();
+        8'd14: t_vpi_dump_restore();
+        default: ;
+      endcase
+    end
+    else if (t_vpi_dump_restores() == 2) begin
+      case (cyc)
+        8'd15: begin
+          t_vpi_dump_put_rw("t.cnt", "06");
+          t_vpi_dump_put_rw("t.flag_a", "0");
+        end
+        8'd16: t_vpi_dump_restore();
+        default: ;
+      endcase
+    end
+  end
+
   always @(negedge clk) begin
     set_a <= cyc == 8'd12;
     case (cyc)

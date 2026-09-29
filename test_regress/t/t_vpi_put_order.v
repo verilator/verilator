@@ -5,7 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // '$c(1)' keeps an expression impure so the compiler cannot precompute it.
+`ifdef VERILATOR
 `define IMPURE_ONE ($c(1))
+`else
+`define IMPURE_ONE (1)
+`endif
 
 module t (
     input logic [7:0] in_a
@@ -14,7 +18,7 @@ module t (
   logic clk = 1'b0;
   always #5 clk = ~clk;
 
-  // cyc steps the harness puts
+  // cyc steps the puts
   logic [7:0] cyc = 8'h0;
   logic rst;
   assign rst = cyc < 8'd2;
@@ -31,6 +35,45 @@ module t (
     input string name,
     input string value
   );
+  import "DPI-C" context function void t_vpi_dump_values();
+  import "DPI-C" context function void t_vpi_dump_cb(input string name);
+  import "DPI-C" context function void t_vpi_dump_put_rw(
+    input string name,
+    input string value,
+    input string flag = ""
+  );
+
+  initial begin
+    t_vpi_dump_cb("t.s_comb");
+    t_vpi_dump_cb("t.cyc");
+    t_vpi_dump_cb("t.watched");
+    t_vpi_dump_values();
+  end
+  always @(clk) t_vpi_dump_values();
+  always @(cyc) begin
+    case (cyc)
+      8'd2: t_vpi_dump_put_rw("t.in_a", "11");
+      8'd4: begin
+        t_vpi_dump_put_rw("t.s", "22");
+        t_vpi_dump_put_rw("t.in_a", "33");
+        t_vpi_dump_put_rw("t.mem[1]", "44");
+        t_vpi_dump_put_rw("t.r", "real=4.0");
+        t_vpi_dump_put_rw("t.str", "str=longer_than_any_short_string_buffer");
+      end
+      8'd5: t_vpi_dump_put_rw("t.s", "55");
+      8'd6: t_vpi_dump_put_rw("t.s", "77", "inertial");
+      8'd7: t_vpi_dump_put_rw("t.f", "55", "force");
+      8'd8: t_vpi_dump_put_rw("t.f", "66", "release");
+      8'd9: t_vpi_dump_put_rw("t.s", "5c");
+      8'd11: begin
+        t_vpi_dump_put_rw("t.init_only", "31");
+        t_vpi_dump_put_rw("t.undriven", "32");
+        t_vpi_dump_put_rw("t.once", "33");
+        t_vpi_dump_put_rw("t.part", "a3");
+      end
+      default: ;
+    endcase
+  end
 
   // 1: 'dep' is combinationally driven from an impure expression, and sampled by a flop
   logic [7:0] src;
@@ -46,10 +89,11 @@ module t (
   assign tri3 = cnt * 8'd3;
   always @(cnt) t_vpi_dump_value("t.tri3");
 
-  // 3: cbValueChange on a combinational signal whose input the callback writes
+  // 3: cbValueChange on a combinational signal whose input a put writes when it changes
   logic [7:0] cin;
   logic [7:0] watched;
   assign watched = cin + 8'd7;
+  always @(watched) if (watched == 8'h0f) t_vpi_dump_put_rw("t.cin", "40");
 
   // 4: a put reaches a combinational reader only at the next eval
   logic [7:0] s;
@@ -95,11 +139,13 @@ module t (
     t_vpi_dump_put("t.mid", "5a");
     mid_seen = mid;
   end
+`ifdef VERILATOR
   initial begin
     cmid = 8'h00;
     $c("t_vpi_dump_put(\"t.cmid\", \"5b\");");
     cmid_seen = cmid;
   end
+`endif
 
   always_ff @(posedge clk) begin
     s <= in_a;

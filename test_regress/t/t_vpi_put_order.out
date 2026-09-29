@@ -1,102 +1,102 @@
 t (vpiModule) t  vpiDefName=t
     vpiReg:
-    cin (vpiReg) t.cin  vpiSize=8
-    clk (vpiReg) t.clk  vpiSize=1
-    cmid (vpiReg) t.cmid  vpiSize=8
-    cmid_seen (vpiReg) t.cmid_seen  vpiSize=8
-    cnt (vpiReg) t.cnt  vpiSize=8
-    cyc (vpiReg) t.cyc  vpiSize=8
-    dep (vpiReg) t.dep  vpiSize=8
-    dep_obs (vpiReg) t.dep_obs  vpiSize=8
-    dep_q (vpiReg) t.dep_q  vpiSize=8
-    f (vpiReg) t.f  vpiSize=8
-    f__VforceEn (vpiReg) t.f__VforceEn  vpiSize=8
-    f__VforceVal (vpiReg) t.f__VforceVal  vpiSize=8
-    f_comb (vpiReg) t.f_comb  vpiSize=8
-    in_a (vpiReg) TOP.in_a  vpiSize=8
-    in_comb (vpiReg) t.in_comb  vpiSize=8
-    init_comb (vpiReg) t.init_comb  vpiSize=8
-    init_only (vpiReg) t.init_only  vpiSize=8
-    init_sum (vpiReg) t.init_sum  vpiSize=8
+    cin (vpiReg) t.cin 
+    clk (vpiReg) t.clk 
+    cmid (vpiReg) t.cmid 
+    cmid_seen (vpiReg) t.cmid_seen 
+    cnt (vpiReg) t.cnt 
+    cyc (vpiReg) t.cyc 
+    dep (vpiReg) t.dep 
+    dep_obs (vpiReg) t.dep_obs 
+    dep_q (vpiReg) t.dep_q 
+    f (vpiReg) t.f 
+    f__VforceEn (vpiReg) t.f__VforceEn 
+    f__VforceVal (vpiReg) t.f__VforceVal 
+    f_comb (vpiReg) t.f_comb 
+    in_a (vpiReg) TOP.in_a 
+    in_comb (vpiReg) t.in_comb 
+    init_comb (vpiReg) t.init_comb 
+    init_only (vpiReg) t.init_only 
+    init_sum (vpiReg) t.init_sum 
     mem (vpiRegArray) t.mem 
         vpiReg:
-        mem (vpiReg) t.mem[1]  vpiSize=8
-        mem (vpiReg) t.mem[0]  vpiSize=8
-    mem_comb (vpiReg) t.mem_comb  vpiSize=8
-    mid (vpiReg) t.mid  vpiSize=8
-    mid_seen (vpiReg) t.mid_seen  vpiSize=8
-    once (vpiReg) t.once  vpiSize=8
-    once_comb (vpiReg) t.once_comb  vpiSize=8
-    part (vpiReg) t.part  vpiSize=8
-    part_comb (vpiReg) t.part_comb  vpiSize=4
-    r (vpiRealVar) t.r  vpiSize=1
-    r_comb (vpiRealVar) t.r_comb  vpiSize=1
-    rst (vpiReg) t.rst  vpiSize=1
-    s (vpiReg) t.s  vpiSize=8
-    s_comb (vpiReg) t.s_comb  vpiSize=8
-    s_copy (vpiReg) t.s_copy  vpiSize=8
-    s_dup (vpiReg) t.s_dup  vpiSize=8
-    s_mix (vpiReg) t.s_mix  vpiSize=8
-    s_q (vpiReg) t.s_q  vpiSize=8
-    s_sum (vpiReg) t.s_sum  vpiSize=8
-    src (vpiReg) t.src  vpiSize=8
-    str (vpiStringVar) t.str  vpiSize=1
-    str_comb (vpiStringVar) t.str_comb  vpiSize=1
-    tri3 (vpiReg) t.tri3  vpiSize=8
-    und_comb (vpiReg) t.und_comb  vpiSize=8
-    und_sum (vpiReg) t.und_sum  vpiSize=8
-    undriven (vpiReg) t.undriven  vpiSize=8
-    watched (vpiReg) t.watched  vpiSize=8
+        mem (vpiReg) t.mem[1] 
+        mem (vpiReg) t.mem[0] 
+    mem_comb (vpiReg) t.mem_comb 
+    mid (vpiReg) t.mid 
+    mid_seen (vpiReg) t.mid_seen 
+    once (vpiReg) t.once 
+    once_comb (vpiReg) t.once_comb 
+    part (vpiReg) t.part 
+    part_comb (vpiReg) t.part_comb 
+    r (vpiRealVar) t.r 
+    r_comb (vpiRealVar) t.r_comb 
+    rst (vpiReg) t.rst 
+    s (vpiReg) t.s 
+    s_comb (vpiReg) t.s_comb 
+    s_copy (vpiReg) t.s_copy 
+    s_dup (vpiReg) t.s_dup 
+    s_mix (vpiReg) t.s_mix 
+    s_q (vpiReg) t.s_q 
+    s_sum (vpiReg) t.s_sum 
+    src (vpiReg) t.src 
+    str (vpiStringVar) t.str 
+    str_comb (vpiStringVar) t.str_comb 
+    tri3 (vpiReg) t.tri3 
+    und_comb (vpiReg) t.und_comb 
+    und_sum (vpiReg) t.und_sum 
+    undriven (vpiReg) t.undriven 
+    watched (vpiReg) t.watched 
     vpiParameter:
 -- put t.mid = 5a flag=1 ok
 -- put t.cmid = 5b flag=1 ok
 -- @0 dpi t.tri3 = 00
 -- @0 readonly
-t.cin = 00
-t.clk = 0
-t.cmid = 5b
-t.cmid_seen = 5b
-t.cnt = 00
-t.cyc = 00
-t.dep = 5a
-t.dep_obs = 5b
-t.dep_q = 00
-t.f = 00
-t.f__VforceEn = 00
-t.f__VforceVal = 00
-t.f_comb = 0f
-TOP.in_a = 00
-t.in_comb = 03
-t.init_comb = 1e
-t.init_only = 11
-t.init_sum = 12
-t.mem[1] = 00
-t.mem[0] = 00
-t.mem_comb = f0
-t.mid = 5a
-t.mid_seen = 5a
-t.once = 21
-t.once_comb = 2e
-t.part = 00
-t.part_comb = 3
-t.r = 1.5
-t.r_comb = 3
-t.rst = 1
-t.s = 00
-t.s_comb = 5a
-t.s_copy = 00
-t.s_dup = 5a
-t.s_mix = 02
-t.s_q = 00
-t.s_sum = 02
-t.src = 00
-t.str = "ab"
-t.str_comb = "ab!"
-t.tri3 = 00
-t.und_comb = 0f
-t.und_sum = 01
-t.undriven = 00
-t.watched = 07
+t.cin = 00 vpiSize=8
+t.clk = 0 vpiSize=1
+t.cmid = 5b vpiSize=8
+t.cmid_seen = 5b vpiSize=8
+t.cnt = 00 vpiSize=8
+t.cyc = 00 vpiSize=8
+t.dep = 5a vpiSize=8
+t.dep_obs = 5b vpiSize=8
+t.dep_q = 00 vpiSize=8
+t.f = 00 vpiSize=8
+t.f__VforceEn = 00 vpiSize=8
+t.f__VforceVal = 00 vpiSize=8
+t.f_comb = 0f vpiSize=8
+TOP.in_a = 00 vpiSize=8
+t.in_comb = 03 vpiSize=8
+t.init_comb = 1e vpiSize=8
+t.init_only = 11 vpiSize=8
+t.init_sum = 12 vpiSize=8
+t.mem[1] = 00 vpiSize=8
+t.mem[0] = 00 vpiSize=8
+t.mem_comb = f0 vpiSize=8
+t.mid = 5a vpiSize=8
+t.mid_seen = 5a vpiSize=8
+t.once = 21 vpiSize=8
+t.once_comb = 2e vpiSize=8
+t.part = 00 vpiSize=8
+t.part_comb = 3 vpiSize=4
+t.r = 1.5 vpiSize=1
+t.r_comb = 3 vpiSize=1
+t.rst = 1 vpiSize=1
+t.s = 00 vpiSize=8
+t.s_comb = 5a vpiSize=8
+t.s_copy = 00 vpiSize=8
+t.s_dup = 5a vpiSize=8
+t.s_mix = 02 vpiSize=8
+t.s_q = 00 vpiSize=8
+t.s_sum = 02 vpiSize=8
+t.src = 00 vpiSize=8
+t.str = "ab" vpiSize=1
+t.str_comb = "ab!" vpiSize=1
+t.tri3 = 00 vpiSize=8
+t.und_comb = 0f vpiSize=8
+t.und_sum = 01 vpiSize=8
+t.undriven = 00 vpiSize=8
+t.watched = 07 vpiSize=8
 -- @5 cb t.cyc = 01
 -- @5 readonly
 t.clk = 1
@@ -145,6 +145,7 @@ t.watched = 08
 t.clk = 0
 -- @35 dpi t.tri3 = 06
 -- @35 cb t.cyc = 04
+-- @35 cb t.watched = 09
 -- put t.s = 22 flag=1 ok
 -- put t.in_a = 33 flag=1 ok
 -- put t.mem[1] = 44 flag=1 ok
@@ -168,7 +169,6 @@ t.src = 02
 t.str = "longer_than_any_short_string_buffer"
 t.tri3 = 06
 t.watched = 09
--- @35 cb t.watched = 09
 -- @35 cb t.s_comb = 78
 -- @35 readonly
 t.in_comb = 36
@@ -222,6 +222,7 @@ t.clk = 0
 -- @55 dpi t.tri3 = 0c
 -- @55 cb t.s_comb = 69
 -- @55 cb t.cyc = 06
+-- @55 cb t.watched = 0b
 -- put t.s = 77 flag=2 ok
 -- @55 after put
 t.cin = 04
@@ -242,7 +243,6 @@ t.s_sum = 35
 t.src = 04
 t.tri3 = 0c
 t.watched = 0b
--- @55 cb t.watched = 0b
 -- @55 cb t.s_comb = 2d
 -- @55 readonly
 t.s = 77
@@ -256,6 +256,7 @@ t.clk = 0
 -- @65 dpi t.tri3 = 0f
 -- @65 cb t.s_comb = 69
 -- @65 cb t.cyc = 07
+-- @65 cb t.watched = 0c
 -- put t.f = 55 flag=5 ok
 -- @65 after put
 t.cin = 05
@@ -279,13 +280,13 @@ t.s_sum = 35
 t.src = 05
 t.tri3 = 0f
 t.watched = 0c
--- @65 cb t.watched = 0c
 -- @65 readonly
 t.f_comb = 5a
 -- @70 readonly
 t.clk = 0
 -- @75 dpi t.tri3 = 12
 -- @75 cb t.cyc = 08
+-- @75 cb t.watched = 0d
 -- put t.f = 66 flag=6 ok
 -- @75 after put
 t.cin = 06
@@ -301,12 +302,12 @@ t.s_q = 33
 t.src = 06
 t.tri3 = 12
 t.watched = 0d
--- @75 cb t.watched = 0d
 -- @75 readonly
 -- @80 readonly
 t.clk = 0
 -- @85 dpi t.tri3 = 15
 -- @85 cb t.cyc = 09
+-- @85 cb t.watched = 0e
 -- put t.s = 5c flag=1 ok
 -- @85 after put
 t.cin = 07
@@ -322,7 +323,6 @@ t.s = 5c
 t.src = 07
 t.tri3 = 15
 t.watched = 0e
--- @85 cb t.watched = 0e
 -- @85 cb t.s_comb = 06
 -- @85 readonly
 t.s_comb = 06
@@ -363,6 +363,7 @@ t.watched = 47
 t.clk = 0
 -- @105 dpi t.tri3 = 1b
 -- @105 cb t.cyc = 0b
+-- @105 cb t.watched = 48
 -- put t.init_only = 31 flag=1 ok
 -- put t.undriven = 32 flag=1 ok
 -- put t.once = 33 flag=1 ok
@@ -384,7 +385,6 @@ t.src = 09
 t.tri3 = 1b
 t.undriven = 32
 t.watched = 48
--- @105 cb t.watched = 48
 -- @105 readonly
 t.init_comb = 3e
 t.init_sum = 32
