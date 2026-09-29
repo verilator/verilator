@@ -8,30 +8,30 @@
 
 module t;
 
-   event hit;
+  event hit;
 
-   time  woke_at = 0;
+  time woke_at = 0;
 
-   export "DPI-C" function sv_trigger;
+  export "DPI-C" function sv_trigger;
 
-   // Called from SystemC at 10ns. Triggers an event a process is already waiting on.
-   function automatic void sv_trigger();
-      ->hit;
-   endfunction
+  // Called from SystemC at 10ns. Triggers an event a process is already waiting on.
+  function automatic void sv_trigger();
+    ->hit;
+  endfunction
 
-   initial begin
-      @(hit);
-      woke_at = $time;
-   end
+  initial begin
+    @(hit);
+    woke_at = $time;
+  end
 
-   initial begin
-      #50;
-      if (woke_at != 10) begin
-         $write("%%Error: the waiting process was released at %0t, expected 10ns\n", woke_at);
-         $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    #50;
+    if (woke_at != 10) begin
+      $write("%%Error: the waiting process was released at %0t, expected 10ns\n", woke_at);
+      $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
