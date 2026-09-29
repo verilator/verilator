@@ -389,6 +389,13 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (!VN_IS(m_procp, NodeProcedure)) v3Global.setUsesTiming();
         visit(static_cast<AstNode*>(nodep));
     }
+    void visit(AstFireEvent* nodep) override {
+        if (nodep->isDelayed()
+            && (!VN_IS(m_procp, NodeProcedure) || !VN_IS(nodep->operandp(), VarRef))) {
+            v3Global.setUsesTiming();
+        }
+        visit(static_cast<AstNode*>(nodep));
+    }
     void visit(AstAssignW* nodep) override {
         if (nodep->timingControlp()) v3Global.setUsesTiming();
         // Containing process will not suspend, don't mark it
@@ -1258,6 +1265,51 @@ class TimingControlVisitor final : public VNVisitor {
         }
         // Replace the RHS with an intermediate value var
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
+    }
+    void visit(AstFireEvent* nodep) override {
+        // V3Delayed handles '->>' of a variable in a process. Like NBAs in non-inlined functions,
+        // trigger other events from a fork awaiting the NBA region.
+        if (!nodep->isDelayed() || (m_underProcedure && VN_IS(nodep->operandp(), VarRef))) {
+            iterateChildren(nodep);
+            return;
+        }
+        FileLine* const flp = nodep->fileline();
+        AstAssign* const trigAssignp = createNbaEventTriggerAssignment(flp);
+        nodep->replaceWith(trigAssignp);
+        AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
+        trigAssignp->addNextHere(forkp);
+        if (m_underJumpBlock) addCLocalScope(flp, forkp);
+        // The triggered event is the one referenced now, so evaluate handles and indices now
+        AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
+        const auto evalNow = [&](AstNodeExpr* const valuep, V3UniqueNames& names) {
+            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(), forkp);
+            valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
+            // Unlike an event, a handle selecting one is only read
+            valuep->foreach([](AstNode* const np) {
+                if (AstNodeVarRef* const refp = VN_CAST(np, NodeVarRef)) {
+                    refp->access(VAccess::READ);
+                } else if (AstMemberSel* const selp = VN_CAST(np, MemberSel)) {
+                    selp->access(VAccess::READ);
+                }
+            });
+            forkp->addHereThisAsNext(
+                new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, valuep});
+        };
+        AstNodeExpr* refp = eventp;
+        while (AstNodeSel* const selp = VN_CAST(refp, NodeSel)) {
+            if (!VN_IS(selp->bitp(), Const)) evalNow(selp->bitp(), m_intraIndexNames);
+            refp = selp->fromp();
+        }
+        // Handle of a class (or virtual interface)
+        if (AstMemberSel* const selp = VN_CAST(refp, MemberSel)) {
+            evalNow(selp->fromp(), m_intraValueNames);
+        }
+        AstEventControl* const controlp = createNbaEventControl(flp);
+        controlp->addStmtsp(new AstFireEvent{flp, eventp, false});
+        AstBegin* const beginp = new AstBegin{flp, "", controlp, false};
+        addFlags(beginp, T_NBA_UPDATE);
+        forkp->addForksp(beginp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstAssignW* nodep) override {
         FileLine* const flp = nodep->fileline();
