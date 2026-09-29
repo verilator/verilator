@@ -69,13 +69,6 @@ public:
     }
     // Return C++ class name for a module/class object
     static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
-    // Return whether this variable is emitted in a module's design-specific state.
-    // Includes static state; excludes parameters, specparams, and IFACEREF declarations
-    // without a port direction (including interface companions and ordinary interface ports).
-    static bool isDesignVar(const AstVar* const varp) VL_MT_STABLE {
-        return varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
-               || varp->isGenVar();
-    }
     static bool isAnonOk(const AstVar* varp) VL_MT_STABLE {
         AstNodeDType* const dtp = varp->dtypep()->skipRefp();
         return v3Global.opt.compLimitMembers() != 0  // Enabled

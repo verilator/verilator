@@ -285,7 +285,7 @@ class VariableOrder final {
                   for (AstVar* const varp : subVarps) {
                       // Only emitted, non-static state occupies instance storage. Parameters
                       // and interface companions must not consume the group's alignment.
-                      if (!aligned && !varp->isStatic() && EmitCUtil::isDesignVar(varp)) {
+                      if (!aligned && !varp->isStatic() && varp->isDesignVar()) {
                           varp->mtaskCacheLineAlign(true);
                           V3Stats::addStatSum("VariableOrder, MTask aligned group starts", 1);
                           aligned = true;
