@@ -2379,8 +2379,8 @@ class WidthVisitor final : public VNVisitor {
         // A class handle is not a legal implicit conversion to string
         if (AstNodeDType* const dt = nodep->lhsp()->dtypep()) {
             if (VN_IS(dt->skipRefToEnump(), ClassRefDType)) {
-                nodep->lhsp()->v3error("Cannot convert 'class{}' handle to a string:"
-                              << dt->prettyDTypeNameQ());
+                nodep->lhsp()->v3error(
+                    "Cannot convert 'class{}' handle to a string:" << dt->prettyDTypeNameQ());
             }
         }
     }
