@@ -141,10 +141,6 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:171:7: Unsupported: explicit coverage cross bins
   171 |       illegal_bins lib_cross = binsof(a) with (a);
       |       ^~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:46:5: Ignoring unsupported: 'type_option.merge_instances'; type coverage is the weighted average of the instances
-                                              : ... note: In instance 't'
-   46 |     type_option.merge_instances = 1;   
-      |     ^~~~~~~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:47:5: Ignoring unsupported: 'type_option.distribute_first'; 'with' filters apply before values are distributed to bins
                                               : ... note: In instance 't'
    47 |     type_option.distribute_first = 1;   

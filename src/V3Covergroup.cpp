@@ -246,8 +246,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::vector<AstCoverpoint*> m_coverpoints;  // Coverpoints in current covergroup
     std::map<std::string, AstCoverpoint*> m_coverpointMap;  // Name -> coverpoint for fast lookup
     std::vector<AstCoverCross*> m_coverCrosses;  // Cross coverage items in current covergroup
-    std::vector<AstCgOptionAssign*> m_cgOptions;  // Covergroup-level weights, before lowering
+    std::vector<AstCgOptionAssign*> m_cgOptions;  // Covergroup-level options, before lowering
     uint32_t m_cgTypeWeight = 1;  // The covergroup's type_option.weight, a constant
+    bool m_cgMergeInstances = false;  // The covergroup's type_option.merge_instances, a constant
+    // The covergroup's type_option.merge_instances is, or SystemVerilog may make it, true
+    bool m_cgMayMerge = false;
+    // type_option members through which SystemVerilog may set type_option.merge_instances
+    std::set<const AstVar*> m_mergeableTypeOptions;
 
     struct EmbeddedEventTrigger final {
         FileLine* eventFl;  // Clocking-event source location
@@ -321,32 +326,47 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return varp;
     }
 
-    // 'option.weight' or 'type_option.weight', per optionVarp
-    AstStructSel* newWeightSel(FileLine* fl, AstVar* optionVarp, VAccess access) {
-        const AstMemberDType* const memberp = VN_AS(
-            m_memberMap.findMember(optionVarp->dtypep()->skipRefp(), "weight"), MemberDType);
-        UASSERT_OBJ(memberp, optionVarp, "Coverage option structure missing 'weight'");
+    // 'option.<member>' or 'type_option.<member>', per optionVarp
+    AstStructSel* newOptionSel(FileLine* fl, AstVar* optionVarp, const std::string& member,
+                               VAccess access) {
+        const AstMemberDType* const memberp
+            = VN_AS(m_memberMap.findMember(optionVarp->dtypep()->skipRefp(), member), MemberDType);
+        UASSERT_OBJ(memberp, optionVarp, "Coverage option structure missing '" << member << "'");
         AstNodeExpr* const fromp = optionVarp->lifetime().isStatic()
                                        ? new AstVarRef{fl, optionVarp, access}
                                        : memberRef(fl, optionVarp, access);
-        AstStructSel* const selp = new AstStructSel{fl, fromp, "weight"};
+        AstStructSel* const selp = new AstStructSel{fl, fromp, member};
         selp->dtypep(memberp->subDTypep()->skipRefToEnump());
         selp->didWidth(true);
         return selp;
     }
 
-    // Store the covergroup-level weights (IEEE 1800-2023 19.7) where SystemVerilog and the
-    // runtime read them.  option.weight is evaluated by the constructor, as are the other
-    // instance options; type_option.weight is constant, and initializes the static member.
+    // Store the covergroup-level options (IEEE 1800-2023 19.7) where SystemVerilog and the
+    // runtime read them.  The instance options, option.weight and option.get_inst_coverage,
+    // are evaluated by the constructor, as are the other instance options; the type options,
+    // type_option.weight and type_option.merge_instances, are constant, and initialize the
+    // static member.  Without its own type_option.merge_instances, a covergroup has the
+    // default of --coverage-merge-instances.
     void lowerCovergroupOptions() {
+        bool mergeSet = false;  // The covergroup sets type_option.merge_instances
         for (AstCgOptionAssign* const optp : m_cgOptions) {
-            UASSERT_OBJ(optp->optType() == VCoverOptionType::WEIGHT, optp,
-                        "Unexpected covergroup option reaching V3Covergroup");
             FileLine* const fl = optp->fileline();
-            // V3Width left type_option.weight a non-negative constant
-            if (optp->typeOption()) m_cgTypeWeight = VN_AS(optp->valuep(), Const)->toUInt();
+            // V3Width left the type options constant, and type_option.weight non-negative
+            const AstConst* const constp = VN_CAST(optp->valuep(), Const);
+            std::string member = "weight";
+            if (optp->optType() == VCoverOptionType::MERGE_INSTANCES) {
+                member = "merge_instances";
+                m_cgMergeInstances = !constp->num().isEqZero();
+                mergeSet = true;
+            } else if (optp->optType() == VCoverOptionType::GET_INST_COVERAGE) {
+                member = "get_inst_coverage";
+            } else {
+                UASSERT_OBJ(optp->optType() == VCoverOptionType::WEIGHT, optp,
+                            "Unexpected covergroup option reaching V3Covergroup");
+                if (optp->typeOption()) m_cgTypeWeight = constp->toUInt();
+            }
             AstAssign* const assignp = new AstAssign{
-                fl, newWeightSel(fl, optionVar(optp->typeOption()), VAccess::WRITE),
+                fl, newOptionSel(fl, optionVar(optp->typeOption()), member, VAccess::WRITE),
                 optp->valuep()->unlinkFrBack()};
             if (optp->typeOption()) {
                 m_covergroupp->addMembersp(new AstInitialStatic{fl, assignp});
@@ -357,12 +377,21 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
         }
         m_cgOptions.clear();
+        if (!mergeSet && v3Global.opt.coverageMergeInstances()) {
+            FileLine* const fl = m_covergroupp->fileline();
+            m_covergroupp->addMembersp(new AstInitialStatic{
+                fl, new AstAssign{
+                        fl, newOptionSel(fl, optionVar(true), "merge_instances", VAccess::WRITE),
+                        new AstConst{fl, AstConst::BitTrue{}}}});
+            m_cgMergeInstances = true;
+        }
+        m_cgMayMerge = m_cgMergeInstances || m_mergeableTypeOptions.count(optionVar(true));
     }
 
     // The weight of an item in the coverage database, which merges the instances: its
-    // option.weight if a constant, and so of every instance; else its type_option.weight, the
-    // weight of type coverage merged over the instances (IEEE 1800-2023 19.7.1)
-    static uint32_t itemDatabaseWeight(AstNode* optionsp) {
+    // type_option.weight if the covergroup merges them too (IEEE 1800-2023 19.11.3); else its
+    // option.weight if a constant, and so of every instance; else its type_option.weight
+    uint32_t itemDatabaseWeight(AstNode* optionsp) const {
         const AstNodeExpr* weightp = nullptr;  // The option.weight in effect
         uint32_t typeWeight = 1;
         for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
@@ -375,22 +404,30 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 weightp = optp->valuep();
             }
         }
+        if (m_cgMergeInstances) return typeWeight;
         if (!weightp) return 1;
         if (const AstConst* const constp = VN_CAST(weightp, Const)) return constp->toUInt();
         return typeWeight;
     }
 
     // Configure an item's option.weight, its weight in instance coverage (IEEE 1800-2023
-    // 19.11).  type_option.weight only weighs type coverage merged over the instances, which
-    // type_option.merge_instances would select; without that, it has no effect.
+    // 19.11), and, if the covergroup may merge its instances, its type_option.weight, its
+    // weight in type coverage then (19.11.3).
     void generateItemWeight(FileLine* fl, AstVar* itemVarp, AstNode* optionsp) {
         for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
-            if (!(optp->optType() == VCoverOptionType::WEIGHT) || optp->typeOption()) continue;
-            m_constructorp->addStmtsp(
-                itemCall(fl, itemVarp, VCMethod::COVERGROUP_WEIGHT,
-                         {optp->valuep()->cloneTree(false), fileLineDebug(optp->fileline())})
-                    ->makeStmt());
+            if (!(optp->optType() == VCoverOptionType::WEIGHT)) continue;
+            if (!optp->typeOption()) {
+                m_constructorp->addStmtsp(
+                    itemCall(fl, itemVarp, VCMethod::COVERGROUP_WEIGHT,
+                             {optp->valuep()->cloneTree(false), fileLineDebug(optp->fileline())})
+                        ->makeStmt());
+            } else if (m_cgMayMerge) {
+                // V3Width left type_option.weight a non-negative constant
+                m_constructorp->addStmtsp(itemCall(fl, itemVarp, VCMethod::COVERGROUP_TYPE_WEIGHT,
+                                                   {optp->valuep()->cloneTree(false)})
+                                              ->makeStmt());
+            }
         }
     }
 
@@ -410,6 +447,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_droppedCrosses.clear();
         m_cgInstVarp = nullptr;
         m_cgTypeWeight = 1;
+        m_cgMergeInstances = false;
+        m_cgMayMerge = false;
 
         lowerCovergroupOptions();
 
@@ -1052,12 +1091,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_ATTACH,
                      {ctext(fl, "vlSymsp->_vm_contextp__->covergroupRegistryp()"
                                 "->newCovergroupInst("
-                                    + quoted(covergroupProtectedName()) + ")")},
+                                    + quoted(covergroupProtectedName())
+                                    + (m_cgMayMerge ? ", true" : "") + ")")},
                      /*usePtr=*/false)
                 ->makeStmt());
         // The node reads option.weight in place, so procedural assignments take effect
         AstCExpr* const weightAddrp = new AstCExpr{fl, "&"};
-        weightAddrp->add(newWeightSel(fl, optionVar(false), VAccess::READ));
+        weightAddrp->add(newOptionSel(fl, optionVar(false), "weight", VAccess::READ));
         m_constructorp->addStmtsp(itemCall(fl, m_cgInstVarp, VCMethod::COVERGROUP_LEND_WEIGHT,
                                            {weightAddrp, fileLineDebug(fl)}, /*usePtr=*/false)
                                       ->makeStmt());
@@ -3909,34 +3949,50 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_memberMap.clear();
 
         // get_inst_coverage(): the average of the coverpoints and crosses, weighted by their
-        // option.weight (IEEE 1800-2023 19.11).  The instance node holds their runtimes.
+        // option.weight (IEEE 1800-2023 19.11).  The instance node holds their runtimes.  With
+        // the instances merged, get_coverage() instead, unless option.get_inst_coverage
+        // (Table 19-1).
         AstFunc* const getInstCoveragep
             = VN_AS(m_memberMap.findMember(m_covergroupp, "get_inst_coverage"), Func);
         FileLine* const instFl = getInstCoveragep->fileline();
         AstCMethodHard* const instCallp = instanceCall(instFl, VCMethod::COVERGROUP_COVERAGE);
         instCallp->dtypeSetDouble();
+        AstNodeExpr* instValuep = instCallp;
+        if (m_cgMayMerge) {
+            AstNodeExpr* const mergedp = new AstLogAnd{
+                instFl, newOptionSel(instFl, optionVar(true), "merge_instances", VAccess::READ),
+                new AstLogNot{instFl, newOptionSel(instFl, optionVar(false), "get_inst_coverage",
+                                                   VAccess::READ)}};
+            instValuep = new AstCond{instFl, mergedp, typeCoverageCall(instFl), instCallp};
+        }
         getInstCoveragep->addStmtsp(new AstAssign{
             instFl, new AstVarRef{instFl, VN_AS(getInstCoveragep->fvarp(), Var), VAccess::WRITE},
-            instCallp});
+            instValuep});
 
         // get_coverage(): the average of the covergroup's instances, weighted by their
-        // option.weight (IEEE 1800-2023 19.11.3).  Static, so the registry finds the instances.
+        // option.weight, or with type_option.merge_instances, the coverage of the union of their
+        // bins (IEEE 1800-2023 19.11.3).  Static, so the registry finds the instances.
         AstFunc* const getCoveragep
             = VN_AS(m_memberMap.findMember(m_covergroupp, "get_coverage"), Func);
         FileLine* const typeFl = getCoveragep->fileline();
-        AstCExpr* const registryp
-            = ctext(typeFl, "vlSymsp->_vm_contextp__->covergroupRegistryp()");
-        registryp->dtypeSetVoid();  // Opaque receiver; only ever the 'fromp' of the call below
-        AstCMethodHard* const typeCallp
-            = new AstCMethodHard{typeFl, registryp, VCMethod::COVERGROUP_TYPE_COVERAGE};
-        typeCallp->addPinsp(ctext(typeFl, quoted(covergroupProtectedName())));
-        typeCallp->addPinsp(newWeightSel(typeFl, optionVar(true), VAccess::READ));
-        typeCallp->addPinsp(fileLineDebug(m_covergroupp->fileline()));
-        typeCallp->usePtr(true);
-        typeCallp->dtypeSetDouble();
         getCoveragep->addStmtsp(new AstAssign{
             typeFl, new AstVarRef{typeFl, VN_AS(getCoveragep->fvarp(), Var), VAccess::WRITE},
-            typeCallp});
+            typeCoverageCall(typeFl)});
+    }
+
+    // The registry call computing the covergroup's type coverage, per its type options
+    AstCMethodHard* typeCoverageCall(FileLine* fl) {
+        AstCExpr* const registryp = ctext(fl, "vlSymsp->_vm_contextp__->covergroupRegistryp()");
+        registryp->dtypeSetVoid();  // Opaque receiver; only ever the 'fromp' of the call below
+        AstCMethodHard* const callp
+            = new AstCMethodHard{fl, registryp, VCMethod::COVERGROUP_TYPE_COVERAGE};
+        callp->addPinsp(ctext(fl, quoted(covergroupProtectedName())));
+        callp->addPinsp(newOptionSel(fl, optionVar(true), "weight", VAccess::READ));
+        callp->addPinsp(newOptionSel(fl, optionVar(true), "merge_instances", VAccess::READ));
+        callp->addPinsp(fileLineDebug(m_covergroupp->fileline()));
+        callp->usePtr(true);
+        callp->dtypeSetDouble();
+        return callp;
     }
 
     // VISITORS
@@ -4488,14 +4544,29 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // V3Width leaves only the covergroup-level weights, for lowerCovergroupOptions()
+    // V3Width leaves only the covergroup-level options lowerCovergroupOptions() stores
     void visit(AstCgOptionAssign* nodep) override { m_cgOptions.push_back(nodep); }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit FunctionalCoverageVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit FunctionalCoverageVisitor(AstNetlist* nodep) {
+        // Type options may be set at any time (IEEE 1800-2023 19.7.1), so SystemVerilog may
+        // set type_option.merge_instances with any use of a type_option but a read of another
+        // member, as not every write is marked yet (std::randomize); covergroups are then
+        // tested with optionVar(true)
+        nodep->foreach([&](const AstNodeVarRef* refp) {
+            if (refp->varp()->name() != "type_option") return;
+            const AstStructSel* const selp = VN_CAST(refp->backp(), StructSel);
+            if (selp && selp->fromp() == refp && selp->name() != "merge_instances"
+                && refp->access().isReadOnly()) {
+                return;
+            }
+            m_mergeableTypeOptions.insert(refp->varp());
+        });
+        iterate(nodep);
+    }
     ~FunctionalCoverageVisitor() override = default;
 };
 

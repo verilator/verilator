@@ -1,0 +1,10 @@
+$ verilator_coverage --report hierarchy --levels 0 coverage.dat
+Covergroup Coverage Summary:
+  __vlAnonCG_cg_emb : 100.0% (2/2)
+  cg_default        : 100.0% (3/4)
+  cg_inst           : 100.0% (3/4)
+  cg_multi          : 100.0% (2/2)
+  cg_multi_off      : 100.0% (2/2)
+  cg_off            :  75.0% (3/4)
+  cg_on             : 100.0% (3/4)
+  cg_optw           :  75.0% (3/4)
