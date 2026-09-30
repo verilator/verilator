@@ -164,6 +164,100 @@ static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
     return dtypep;
 }
 
+// Whether dtypep is, or contains anywhere through unpacked array/struct
+// nesting, a real value. A packed struct can't hold one (IEEE disallows
+// real as a packed-struct member), so it's never worth descending into.
+static bool dtypeContainsReal(AstNodeDType* dtypep) {
+    dtypep = dtypep->skipRefp();
+    if (AstNodeDType* const subp = dtypep->subDTypep()) return dtypeContainsReal(subp);
+    if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (structp->packed()) return false;
+        for (AstMemberDType* memberp = structp->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+            if (dtypeContainsReal(memberp->subDTypep())) return true;
+        }
+        return false;
+    }
+    const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
+    return basicp && basicp->isDouble();
+}
+
+// Check a rand/randc variable's type against IEEE 1800-2023 18.4's
+// allowed list. Purely diagnostic: codegen sites that would otherwise
+// mishandle one of these types guard themselves on V3Error::errorCount()
+// rather than relying on anything checked here.
+static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bool isRandc) {
+    dtypep = dtypep->skipRefp();
+    if (AstNodeDType* const subp = dtypep->subDTypep()) {
+        checkRandTypeEligibility(contextp, subp, isRandc);  // Containers inherit rand/randc kind
+        return;
+    }
+    if (VN_IS(dtypep, ClassRefDType)) {
+        // rand on a class handle is legal (recursive randomization).
+        // Only randc is disallowed.
+        if (isRandc) {
+            contextp->v3error("'randc' on an object handle (IEEE 1800-2023 18.4: object "
+                              "handles shall not be declared randc)");
+        }
+        return;
+    }
+    if (const AstIfaceRefDType* const ifacep = VN_CAST(dtypep, IfaceRefDType)) {
+        // A class property can only hold a *virtual* interface handle --
+        // a plain interface can't be a class member at all -- so a
+        // rand-qualified var landing here is always the virtual kind.
+        UASSERT_OBJ(ifacep->isVirtual(), dtypep, "Non-virtual interface as class property type");
+        // Not in 18.4's enumerated random-variable domain, same reasoning
+        // as chandle/string/event; also generates C++ that does not
+        // compile if left unchecked.
+        contextp->v3error("'rand'/'randc' on a virtual interface handle (not "
+                          "in IEEE 1800-2023 18.4's random-variable type domain)");
+        return;
+    }
+    if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (structp->packed()) return;  // Integral by construction; members checked separately
+        if (VN_IS(structp, UnionDType)) {
+            contextp->v3error("'rand'/'randc' on an unpacked union (IEEE "
+                              "1800-2023 18.4: unpacked unions shall not be declared as rand "
+                              "or randc)");
+            return;
+        }
+        for (AstMemberDType* memberp = structp->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+            // Each unpacked-struct member independently declares its own rand/randc.
+            if (memberp->rand().isRandomizable()) {
+                checkRandTypeEligibility(memberp, memberp->subDTypep(), memberp->rand().isRandC());
+            }
+        }
+        return;
+    }
+    const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
+    // V3Width has already resolved every dtype by this pass, and every
+    // other leaf kind (class handle, virtual interface, struct/union) was
+    // already dispatched above, so a rand-qualified var's dtype can only
+    // be a BasicDType here.
+    UASSERT_OBJ(basicp, dtypep, "Unexpected non-basic leaf dtype for rand var");
+    if (basicp->isDouble()) {
+        // rand on a real variable is legal; only randc is disallowed.
+        if (isRandc) {
+            contextp->v3error("'randc' on a real variable (IEEE 1800-2023 18.4: "
+                              "real variables shall not be declared randc)");
+        }
+        return;
+    }
+    switch (basicp->keyword()) {
+    case VBasicDTypeKwd::STRING:
+    case VBasicDTypeKwd::CHANDLE:
+    case VBasicDTypeKwd::EVENT: {
+        const char* const articlep = basicp->keyword() == VBasicDTypeKwd::EVENT ? "an" : "a";
+        contextp->v3error("'rand'/'randc' on " << articlep << " " << basicp->keyword().ascii()
+                                               << " variable (not in IEEE 1800-2023 18.4's "
+                                                  "random-variable type domain)");
+        break;
+    }
+    default: break;
+    }
+}
+
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
@@ -739,6 +833,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         nodep->user2p(m_modp);
+        if (nodep->rand().isRandomizable()) {
+            checkRandTypeEligibility(nodep, nodep->dtypep(), nodep->rand().isRandC());
+        }
         iterateChildrenConst(nodep);
     }
     void visit(AstWith* nodep) override {
@@ -1739,6 +1836,9 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         AstMemberSel* memberselp = nullptr;
         bool structSelOrCMeth = false;
+        // Set below only when narrowing to one struct field/array element;
+        // staying null means "check varp's own type" (see its use further down).
+        AstNodeDType* selectedDtypep = nullptr;
         std::string smtName;
         if (m_nestedAccess) {
             m_nestedAccess->addVarNamePart(
@@ -1762,6 +1862,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             if (VN_IS(topNodep, StructSel) || VN_IS(topNodep, CMethodHard)) {
                 structSelOrCMeth = true;
+                selectedDtypep = VN_AS(topNodep, NodeExpr)->dtypep();
             }
 
             memberselp = VN_CAST(topNodep, MemberSel);
@@ -1776,6 +1877,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
 
         if (memberselp) varp = memberselp->varp();
+        // The SMT translation assumes bit-vector operands and does not
+        // type-check; embedding a real value produces a malformed width.
+        // Check the selected field/element's type, not the whole
+        // struct/array's -- a real sibling field elsewhere is irrelevant.
+        if (dtypeContainsReal(structSelOrCMeth ? selectedDtypep : varp->dtypep())) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: real value in this constraint expression");
+            return;
+        }
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
         const RandomizeMode randMode = {.asUQuad = varp->user1()};
         if (!randMode.usesMode && editFormat(nodep)) return;
@@ -2081,6 +2190,19 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->replaceWith(resultp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(resultp);
+    }
+    void visit(AstIsUnbounded* nodep) override {
+        // Only true for the literal '$' token, never a real expression, so
+        // this always folds to false. It has no runtime implementation of
+        // its own, so it must be substituted now rather than left for later.
+        nodep->v3warn(CONSTRAINTIGN,
+                      "Unsupported: $isunbounded() in a constraint, treating as constant");
+        AstConst* const zerop = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        nodep->replaceWith(zerop);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // So the constant is rendered as an SMT literal like every other
+        // folded constant here, instead of being left behind unconverted.
+        iterate(zerop);
     }
     void handlePow(AstNodeBiop* nodep) {
         if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
@@ -4345,8 +4467,12 @@ class RandomizeVisitor final : public VNVisitor {
             items = static_cast<uint64_t>(enumDtp->itemCount());
         } else if (AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp()) {
             if (basicp->width() > 32) {
-                varp->v3error("Maximum implemented width for randc is 32 bits, "
-                              << varp->prettyNameQ() << " is " << basicp->width() << " bits");
+                // Real/chandle/string/event are rejected by type upstream already;
+                // an over-width integral type isn't, so still needs its own message.
+                if (!V3Error::errorCount()) {
+                    varp->v3error("Maximum implemented width for randc is 32 bits, "
+                                  << varp->prettyNameQ() << " is " << basicp->width() << " bits");
+                }
                 varp->rand(VRandAttr::RAND);
                 return nullptr;
             }
@@ -4357,7 +4483,12 @@ class RandomizeVisitor final : public VNVisitor {
                          " (IEEE 1800-2023 18.4)");
             return nullptr;
         } else {
-            varp->v3fatalSrc("Unexpected randc variable dtype");
+            // Only remaining possibility: an object handle, virtual interface,
+            // or unpacked union declared randc -- checkRandTypeEligibility()
+            // already rejected each of those with its own error, earlier in
+            // this same pass, before newRandcVarsp() ever runs on this var.
+            UASSERT_OBJ(V3Error::errorCount(), varp, "Unexpected randc variable dtype");
+            return nullptr;
         }
         AstCDType* const newdtp = findVlRandCDType(varp->fileline(), items);
         AstVar* const newp
@@ -4442,11 +4573,9 @@ class RandomizeVisitor final : public VNVisitor {
             }
             return stmtsp;
         } else if (const auto* const unionDtp = VN_CAST(memberDtp, UnionDType)) {
-            if (!unionDtp->packed()) {
-                unionDtp->v3error("Unpacked unions shall not be declared as rand or randc."
-                                  " (IEEE 1800-2023 18.4)");
-                return nullptr;
-            }
+            // Illegal for rand/randc, rejected by type upstream for every such
+            // case; nothing valid to build a randomize statement for here.
+            if (!unionDtp->packed()) return nullptr;
             AstMemberDType* const firstMemberp = unionDtp->membersp();
             return newRandStmtsp(fl, exprp, nullptr, outputVarp, offset, firstMemberp);
         } else if (const AstClassRefDType* const classRefDtp = VN_CAST(memberDtp, ClassRefDType)) {
