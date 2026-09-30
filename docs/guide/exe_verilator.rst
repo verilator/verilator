@@ -1365,6 +1365,17 @@ Summary:
    to the value from :vlopt:`--build-jobs`, or from :vlopt:`-j`, or zero in
    that priority.
 
+.. option:: --output-groups-size <bytes>
+
+   With :vlopt:`--output-groups`, limits the size of each concatenated .cpp
+   file, including the generated headers it includes, to the given number
+   of bytes. Groups that would exceed the limit are split into more groups,
+   so more files than requested by :vlopt:`--output-groups` may be
+   created. A single .cpp file larger than the limit is compiled on its
+   own. This bounds the compiler memory usage when grouping large designs.
+
+   Defaults to 536870912 (512 MiB). Zero disables the limit.
+
 .. option:: --output-split <statements>
 
    Enables splitting the output .cpp files into multiple outputs. When a
