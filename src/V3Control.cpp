@@ -844,10 +844,9 @@ public:
                         const string& path) {
         m_hierXmrPorts[module].push_back(V3Control::HierXmrPort{port, width, path});
     }
-    const std::vector<V3Control::HierXmrPort>& getHierXmrPorts(const string& module) const {
-        static const std::vector<V3Control::HierXmrPort> s_empty;
+    const std::vector<V3Control::HierXmrPort>* getHierXmrPorts(const string& module) const {
         const auto it = m_hierXmrPorts.find(module);
-        return it == m_hierXmrPorts.cend() ? s_empty : it->second;
+        return it == m_hierXmrPorts.cend() ? nullptr : &it->second;
     }
     int getHierWorkers(const string& model) const {
         const auto mit = m_hierWorkers.find(model);
@@ -913,7 +912,7 @@ void V3Control::addHierXmrPort(FileLine* fl, const string& module, const string&
     V3ControlResolver::s().addHierXmrPort(fl, module, port, width, path);
 }
 
-const std::vector<V3Control::HierXmrPort>& V3Control::getHierXmrPorts(const string& module) {
+const std::vector<V3Control::HierXmrPort>* V3Control::getHierXmrPorts(const string& module) {
     return V3ControlResolver::s().getHierXmrPorts(module);
 }
 
