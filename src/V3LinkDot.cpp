@@ -3465,6 +3465,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     static bool extendsClass(const AstClass* classp, const AstClass* targetp) {
         // Return true if classp inherits from targetp through already resolved extends
+        // If performance of this becomes a problem, use just a counter to check
+        // exceeds some number of iterations then perform the more expensive analysis
         std::set<const AstClass*> visited;
         std::vector<const AstClass*> todo{classp};
         while (!todo.empty()) {
@@ -6009,7 +6011,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         cextp->v3error("Attempting to extend class "
                                        << nodep->prettyNameQ() << " from "
                                        << baseClassp->prettyNameQ()
-                                       << ", which inherits from it (circular inheritance)");
+                                       << ", which circularly inherits from it");
                     } else if (cextp->isImplements() && !baseClassp->isInterfaceClass()) {
                         cextp->v3error("Attempting to implement from non-interface class "
                                        << baseClassp->prettyNameQ() << '\n'
