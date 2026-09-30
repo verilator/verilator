@@ -50,6 +50,9 @@ public:
     void writeCommandArgsFiles(bool forMkJson) const VL_MT_DISABLED;
     void writeParametersFiles() const VL_MT_DISABLED;
     static string topCommandArgsFilename(bool forMkJson) VL_MT_DISABLED;
+    // Configuration file describing every promoted hierarchical reference
+    static string xmrPortsFilename() VL_MT_DISABLED;
+    void writeXmrPortsFile() const VL_MT_DISABLED;
 };
 
 class V3HierBlock final : public V3GraphVertex {
