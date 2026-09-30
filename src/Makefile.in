@@ -46,6 +46,8 @@ obj_opt:
 	mkdir -p $@
 obj_dbg:
 	mkdir -p $@
+obj_shared:
+	mkdir -p $@
 ../bin:
 	mkdir -p $@
 
@@ -84,10 +86,10 @@ ifneq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... don't rebuil
 endif
 
 prefiles::
-prefiles:: config_rev.h vlcovgen.d
+prefiles:: config_rev.h obj_shared/vlcovgen.d
 
 # Generate the shared header once, before any binary can read it.
-vlcovgen.d: ${srcdir}/vlcovgen ${srcdir}/../include/verilated_cov_key.h
+obj_shared/vlcovgen.d: ${srcdir}/vlcovgen ${srcdir}/../include/verilated_cov_key.h | obj_shared
 	$(PYTHON3) ${srcdir}/vlcovgen --srcdir ${srcdir}
 	touch $@
 
