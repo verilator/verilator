@@ -2649,7 +2649,7 @@ public:
     // Return whether this variable is emitted in a module's design-specific state.
     // Includes static state; excludes parameters, specparams, and IFACEREF declarations
     // without a port direction (including interface companions and ordinary interface ports).
-    bool isDesignVar() const VL_MT_STABLE {
+    bool isDesignVar() const {
         return isIO() || isSignal() || isClassMember() || isTemp() || isGenVar();
     }
     bool isBitLogic() const {
