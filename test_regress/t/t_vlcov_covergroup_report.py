@@ -45,12 +45,16 @@ def write_dat(name, records, points=()):
     return filename
 
 
-# Covergroups of dotted names under one node; a record without its bin's name; and records of a
-# bin with different weights and thresholds, which merge with the largest of those
+# Covergroups of dotted names under one node, of which one has an escaped identifier holding a
+# dot and one an escaped identifier ending in a quote, which the white space ending it follows;
+# a record without its bin's name; and records of a bin with different weights and thresholds,
+# which merge with the largest of those
 edge_cov = write_dat("edge.dat", [
     ("pkg.alpha", "cp", "b0", 1, [("B", "b0")]),
     ("pkg.alpha", "cp", "b1", 0, [("B", "b1")]),
     ("pkg.beta", "cp", "b0", 1, []),
+    ("pkg.\\esc.cg ", "cp", "b0", 1, [("B", "b0")]),
+    ("pkg.\\quote' ", "cp", "b0", 0, [("B", "b0")]),
     ("split", "cp", "b0", 1, [("B", "b0"), ("s", "2"), ("w", "2")]),
     ("split", "cp", "b0", 0, [("B", "b0"), ("w", "3")]),
     ("split", "cq", "b0", 1, [("B", "b0")]),
