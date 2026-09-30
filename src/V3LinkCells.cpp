@@ -27,6 +27,7 @@
 
 #include "V3LinkCells.h"
 
+#include "V3Control.h"
 #include "V3Graph.h"
 #include "V3Parse.h"
 #include "V3SymTable.h"
@@ -742,14 +743,9 @@ class LinkCellsVisitor final : public VNVisitor {
                             // connected later, by V3Hierarchical::bindXmrPorts, which runs
                             // after linking. It is not a missing pin.
                             bool promotedXmr = false;
-                            {
-                                const auto& binds = v3Global.opt.hierXmrBinds();
-                                const auto bit = binds.find(nodep->modName());
-                                if (bit != binds.end()) {
-                                    for (const auto& pr : bit->second) {
-                                        if (pr.first == portp->name()) promotedXmr = true;
-                                    }
-                                }
+                            for (const V3Control::HierXmrPort& xp :
+                                 V3Control::getHierXmrPorts(nodep->modName())) {
+                                if (xp.m_port == portp->name()) promotedXmr = true;
                             }
 
                             // Is the matching Module port: an INPUT, with default value (in

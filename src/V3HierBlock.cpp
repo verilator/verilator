@@ -204,11 +204,9 @@ VStringList V3HierBlock::commandArgs(bool forMkJson) const {
     if (!m_typeParams.empty()) {
         opts.push_back(" --hierarchical-params-file " + typeParametersFilename());
     }
-    // Outbound references this block makes, promoted to input ports in the child run
-    for (const XmrPort& port : m_xmrPorts) {
-        opts.push_back(" --hierarchical-xmr-port " + port.m_name + "," + cvtToStr(port.m_width)
-                       + "," + port.m_path);
-    }
+    // Promoted references travel in a configuration file, not on the command
+    // line: a large design can have far too many for the argument list.
+    if (!m_xmrPorts.empty()) opts.push_back(" " + V3HierGraph::xmrPortsFilename());
 
     const int blockThreads = V3Control::getHierWorkers(m_modp->origName());
     if (blockThreads > 1) {
@@ -432,7 +430,32 @@ VStringList V3HierGraph::sourceFiles(const string& topModuleFile) {
     return sources;
 }
 
+string V3HierGraph::xmrPortsFilename() {
+    return v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__hierXmrPorts.vlt";
+}
+
+// Describe every promoted reference in one configuration file, read by both the
+// child runs (which create the ports) and the top run (which connects them).
+void V3HierGraph::writeXmrPortsFile() const {
+    bool any = false;
+    for (const V3GraphVertex& vtx : vertices()) {
+        if (!vtx.as<V3HierBlock>()->xmrPorts().empty()) any = true;
+    }
+    if (!any) return;
+    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(xmrPortsFilename())};
+    *of << "`verilator_config\n";
+    for (const V3GraphVertex& vtx : vertices()) {
+        const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
+        for (const V3HierBlock::XmrPort& port : blockp->xmrPorts()) {
+            *of << "hier_xmr_port -module \"" << blockp->modp()->name() << "\" -port \""
+                << port.m_name << "\" -width " << port.m_width << " -scope \"" << port.m_path
+                << "\"\n";
+        }
+    }
+}
+
 void V3HierGraph::writeCommandArgsFiles(bool forMkJson) const {
+    writeXmrPortsFile();
 
     for (const V3GraphVertex& vtx : vertices()) {
         vtx.as<V3HierBlock>()->writeCommandArgsFile(forMkJson);
@@ -459,13 +482,11 @@ void V3HierGraph::writeCommandArgsFiles(bool forMkJson) const {
         *of << vtx.as<V3HierBlock>()->hierBlockArgs().front() << "\n";
     }
 
-    // Binding for each promoted XMR port. The port name is not losslessly
-    // decodable, so the top run is told the path rather than deriving it.
+    // The top run needs the same promoted-port descriptions, to connect them
     for (const V3GraphVertex& vtx : vertices()) {
-        const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
-        for (const V3HierBlock::XmrPort& port : blockp->xmrPorts()) {
-            *of << "--hierarchical-xmr-bind " << blockp->modp()->name() << "," << port.m_name
-                << "," << port.m_path << "\n";
+        if (!vtx.as<V3HierBlock>()->xmrPorts().empty()) {
+            *of << xmrPortsFilename() << "\n";
+            break;
         }
     }
 
@@ -547,6 +568,16 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
             if (modp != blockp && modp->hierBlock()) hasNestedBlock = true;
         }
 
+        // Names declared anywhere in the block, gathered once: checking each
+        // generated name against every variable of every module would be
+        // quadratic in the number of promoted references.
+        std::map<std::string, AstNodeModule*> declared;
+        for (AstNodeModule* const modp : inBlock) {
+            modp->foreach(
+                [&declared, modp](AstVar* varp) { declared.emplace(varp->name(), modp); });
+        }
+        std::set<std::string> promotedPaths;  // Dedup, instead of rescanning the vector
+
         size_t count = 0;
         for (AstNodeModule* const modp : inBlock) {
             modp->foreach([&](AstVarXRef* xrefp) {
@@ -586,24 +617,16 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
                         = "xmrport_" + cvtToStr(blockVtxp->xmrPorts().size());
                     // The synthesized name must not shadow anything the design
                     // already declares anywhere in the block's subtree.
-                    for (AstNodeModule* const inModp : inBlock) {
-                        inModp->foreach([&](AstVar* existingp) {
-                            if (existingp->name() == portName) {
-                                xrefp->v3warn(E_UNSUPPORTED,
-                                              "Cannot promote reference out of a hierarchical "
-                                              "block: generated port name '"
-                                                  << portName
-                                                  << "' collides with an existing "
-                                                     "signal in "
-                                                  << inModp->prettyNameQ());
-                            }
-                        });
+                    const auto dit = declared.find(portName);
+                    if (dit != declared.cend()) {
+                        xrefp->v3warn(E_UNSUPPORTED,
+                                      "Cannot promote reference out of a hierarchical block: "
+                                      "generated port name '"
+                                          << portName << "' collides with an existing signal in "
+                                          << dit->second->prettyNameQ());
+                        return;
                     }
-                    bool seen = false;
-                    for (const auto& pr : blockVtxp->xmrPorts()) {
-                        if (pr.m_path == path) seen = true;
-                    }
-                    if (!seen) {
+                    if (promotedPaths.insert(path).second) {
                         // V3Width has not run in this pass - createGraph returns
                         // before it - so varp()->width() is 0 and dtypep() is null.
                         // The width has to come from the declared type, and any
@@ -714,12 +737,14 @@ static AstVar* ensurePort(AstNodeModule* modp, const std::string& name, int widt
 }
 
 void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
-    const auto& wantedList = v3Global.opt.hierXmrPorts();
+    // This run's top module is the hierarchical block being compiled
+    const std::vector<V3Control::HierXmrPort>& wantedList
+        = V3Control::getHierXmrPorts(v3Global.opt.topModule());
     if (wantedList.empty()) return;
     // dotted path -> (port name, width)
     std::map<std::string, std::pair<std::string, int>> wanted;
-    for (const auto& t : wantedList) {
-        wanted.emplace(std::get<2>(t), std::make_pair(std::get<0>(t), std::get<1>(t)));
+    for (const V3Control::HierXmrPort& port : wantedList) {
+        wanted.emplace(port.m_path, std::make_pair(port.m_port, port.m_width));
     }
 
     // 1) Rewrite each matching hierarchical name into a read of a new port.
@@ -819,34 +844,28 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
 // In the top run, connect each promoted port to the signal it came from. The
 // full hierarchy is present here, so the rebuilt dotted reference resolves.
 void V3Hierarchical::bindXmrPorts(AstNetlist* netlistp) {
-    static int s_calls = 0;
-    ++s_calls;
-    UINFO(4, "HIER-XMR-ID: call#" << s_calls << " pid=" << getpid()
-                                  << " hierChild=" << v3Global.opt.hierChild()
-                                  << " hierBlocks=" << v3Global.opt.hierBlocks().size()
-                                  << " top=" << v3Global.opt.topModule()
-                                  << " binds=" << v3Global.opt.hierXmrBinds().size());
-    const auto& binds = v3Global.opt.hierXmrBinds();
-    if (binds.empty()) return;
     // Collect first: adding pins during the traversal mutates the tree being
     // walked, and the additions do not survive.
     std::vector<AstCell*> targets;
-    netlistp->foreach([&](AstCell* cellp) {
-        if (binds.count(cellp->modName())) targets.push_back(cellp);
+    netlistp->foreach([&targets](AstCell* cellp) {
+        if (!V3Control::getHierXmrPorts(cellp->modName()).empty()) targets.push_back(cellp);
     });
     for (AstCell* const cellp : targets) {
-        for (const auto& pr : binds.at(cellp->modName())) {
+        // Index the pins once; scanning per port would be quadratic
+        std::map<std::string, AstPin*> pinByName;
+        for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            pinByName.emplace(pinp->name(), pinp);
+        }
+        for (const V3Control::HierXmrPort& pr : V3Control::getHierXmrPorts(cellp->modName())) {
             // Linking already created a pin for every port of the instantiated
             // module, with a null expression for the ones the source does not
             // connect - which is exactly what PINMISSING reports. So fill that
             // pin in rather than adding another.
-            AstPin* existingp = nullptr;
-            for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                if (pinp->name() == pr.first) existingp = pinp;
-            }
+            const auto pit = pinByName.find(pr.m_port);
+            AstPin* const existingp = pit == pinByName.cend() ? nullptr : pit->second;
             if (existingp && existingp->exprp()) continue;  // already connected
             AstNodeExpr* exprp = nullptr;
-            std::string rest = pr.second;
+            std::string rest = pr.m_path;
             while (!rest.empty()) {
                 const size_t dot = rest.find('.');
                 const std::string part = (dot == std::string::npos) ? rest : rest.substr(0, dot);
@@ -858,9 +877,9 @@ void V3Hierarchical::bindXmrPorts(AstNetlist* netlistp) {
             }
             // V3LinkCells has already created a pin for every port of the
             // instantiated module, so there is always one to fill here.
-            UASSERT_OBJ(existingp, cellp, "No pin for promoted port " + pr.first);
+            UASSERT_OBJ(existingp, cellp, "No pin for promoted port " + pr.m_port);
             existingp->exprp(exprp);
-            UINFO(4, "HIER-XMR: bound " << pr.first << " to " << pr.second << " on "
+            UINFO(4, "HIER-XMR: bound " << pr.m_port << " to " << pr.m_path << " on "
                                         << cellp->prettyNameQ());
         }
     }
