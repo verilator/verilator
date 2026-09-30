@@ -1003,7 +1003,14 @@ class CaseVisitor final : public VNVisitor {
 
         // If there was no default, add a empty one, this greatly simplifies below code
         // and constant propagation will just eliminate it for us later.
-        if (!hasDefault) {
+        if (!hasDefault && m_caseDetailsValid && m_caseDetails.exhaustive
+            && !m_caseDetails.exhaustiveOverEnumOnly) {
+            // Every value matches some item, so the last is reached only when its test holds
+            AstCaseItem* lastp = nodep->itemsp();
+            while (AstCaseItem* const nextp = VN_AS(lastp->nextp(), CaseItem)) lastp = nextp;
+            lastp->condsp()->unlinkFrBackWithNext()->deleteTree();
+            lastp->addCondsp(new AstConst{lastp->fileline(), AstConst::BitTrue{}});
+        } else if (!hasDefault) {
             nodep->addItemsp(new AstCaseItem{
                 nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}}, nullptr});
         }
