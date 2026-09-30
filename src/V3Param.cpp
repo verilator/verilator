@@ -257,8 +257,7 @@ static bool isAggregateParamValue(const AstNode* nodep) {
 
 // A cell's pins by the parameter they set, and what its parameters evaluate to, computed on
 // first use and kept while these maps live. A cell gets one set of maps to type its pattern
-// pins, and another to name its specialization, which folds its pins as it goes, so that set
-// forgets its values before each pin.
+// pins, and another, once its pins are folded, to name its specialization.
 struct ParamPinMaps final {
     const AstNodeModule* const m_modp;  // Module whose parameters the pins set
     const bool m_constPinsOnly;  // Use a pin's value only once it is a constant
@@ -282,17 +281,12 @@ struct ParamPinMaps final {
             if (pinp->modPTypep()) m_typePins.emplace(pinp->modPTypep(), pinp);
         }
     }
-    ~ParamPinMaps() { clearValues(); }
-    VL_UNCOPYABLE(ParamPinMaps);
-
-    // Forget the values and types found so far, as after a pin is folded
-    void clearValues() const {
+    ~ParamPinMaps() {
         for (const auto& pair : m_values) {
             if (pair.second) pair.second->deleteTree();
         }
-        m_values.clear();
-        m_types.clear();
     }
+    VL_UNCOPYABLE(ParamPinMaps);
 
     // Whether typedefp is a typedef of the module, so it may use the module's parameters
     bool isModuleTypedef(const AstTypedef* typedefp) const {
@@ -358,6 +352,7 @@ class ParamSubstVisitor final : public VNVisitor {
         AstNodeDType* typep = nullptr;
         if (!dependsOnParams(holderp, pins)) {
             V3Width::widthParamsEdit(holderp);
+            V3Stats::addStatSum("Param, Types resolved for instances", 1);
             typep = holderp->dtypep();  // Moved to the type table, so outlives the holder
         }
         VL_DO_DANGLING(holderp->deleteTree(), holderp);
@@ -432,7 +427,7 @@ public:
         const auto pinIt = pins.m_varPins.find(varp);
         if (pinIt != pins.m_varPins.end()) {
             sourcep = pinIt->second->exprp();
-            // While naming, a pin not folded yet leaves the parameter without a value
+            // While naming, a pin that didn't fold leaves the parameter without a value
             if (pins.m_constPinsOnly && !VN_IS(sourcep, Const)
                 && !isAggregateParamValue(sourcep)) {
                 return nullptr;
@@ -1713,7 +1708,6 @@ class ParamProcessor final {
                 // hash the same (#5479), and widthing doesn't touch the template (#7411)
                 AstConst* normedNamep = nullptr;
                 if (exprp && !exprp->num().isDouble() && !exprp->num().isString()) {
-                    pins.clearValues();  // Earlier values may predate folding a pin
                     if (AstConst* const valuep
                         = VN_CAST(ParamSubstVisitor::instanceValuep(modvarp, pins), Const)) {
                         normedNamep = valuep->cloneTree(false);
@@ -2104,6 +2098,16 @@ class ParamProcessor final {
             longname = parameterizedHierBlockName(srcModp, paramsp);
             any_overrides = longname != srcModp->name();
         } else {
+            // A class reference's pins may not be folded yet. Fold them all first, so each pin
+            // is named with the values of the others.
+            for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                AstVar* const modvarp = pinp->modVarp();
+                if (!modvarp || !modvarp->isGParam() || !pinp->exprp()) continue;
+                resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
+                if (!VN_IS(pinp->exprp(), Const) && !isAggregateParamValue(pinp->exprp())) {
+                    V3Const::constifyParamsEdit(pinp->exprp());
+                }
+            }
             const ParamPinMaps pins{paramsp, srcModp, true};
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 cellPinCleanup(nodep, pinp, pins, srcModp, longname /*ref*/,

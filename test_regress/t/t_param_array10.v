@@ -123,8 +123,11 @@ endclass
 // Class parameter whose width comes from another, given after it in a typedef
 class clw #(
     parameter int N = 1,
-    parameter logic [N-1:0] P = '0
+    // verilator lint_off WIDTHTRUNC
+    parameter logic [N-1:0] P = '0  // Given wider values
+    // verilator lint_on WIDTHTRUNC
 );
+  static int count;
   static function int value();
     return int'(P);
   endfunction
@@ -319,6 +322,10 @@ module t;
   typedef cls#(.N(3), .V('{4, 5, 6})) cls3_t;
   typedef clw#(.P(8'h81), .N(TWO * 4)) clw81_t;  // Width given after the value
   typedef clw#(.P(8'h01), .N(TWO * 4)) clw01_t;  // Differs from clw81_t only above bit 0
+  typedef clw#(.P(8'h81), .N(TWO * 2)) clw4a_t;  // Equal to clw4b_t once P is 4 bits
+  typedef clw#(.P(8'h01), .N(TWO * 2)) clw4b_t;
+  clw4a_t clw4a;
+  clw4b_t clw4b;
   typedef cla#(.A('{3, 4})) cla34_t;
 
   m #(.N(2), .V('{1, 2})) i_m2 ();
@@ -639,6 +646,11 @@ module t;
     `checkd(cls3_t::last(), 6);
     `checkh(clw81_t::value(), 'h81);
     `checkh(clw01_t::value(), 'h01);
+    clw4a = new;
+    clw4b = clw4a;  // One specialization, so one type
+    clw4a_t::count = 7;
+    `checkd(clw4b_t::count, 7);
+    `checkh(clw4b_t::value(), 'h1);
     `checkd(cla34_t::sum(), 7);
 
     $write("*-* All Finished *-*\n");
