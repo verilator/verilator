@@ -14,7 +14,8 @@ test.scenarios('simulator')
 test.compile(verilator_flags2=['--stats'])
 
 # t0, t1 and t2 once each, not once for each of the eight parameters
-test.file_grep(test.stats, r'Param, Types resolved for instances\s+(\d+)', 3)
+if test.vlt_all:
+    test.file_grep(test.stats, r'Param, Types resolved for instances\s+(\d+)', 3)
 
 test.execute()
 

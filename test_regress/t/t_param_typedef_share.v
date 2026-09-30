@@ -8,6 +8,11 @@
 // SPDX-FileCopyrightText: 2026 Michael Bedford Taylor
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module m;
   parameter int N = 1;
   typedef logic [N-1:0] t0;
@@ -27,8 +32,8 @@ module t;
   m #(.N(4), .P0(1), .P1(2), .P2(3), .P3(4), .P4(5), .P5(6), .P6(7), .P7(8)) i_m ();
 
   initial begin
-    if ($bits(i_m.P7) != 4) $stop;
-    if (i_m.P7 != 8) $stop;
+    `checkd($bits(i_m.P7), 4);
+    `checkd(i_m.P7, 8);
     $write("*-* All Finished *-*\n");
     $finish;
   end

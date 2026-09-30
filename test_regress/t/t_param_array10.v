@@ -133,6 +133,20 @@ class clw #(
   endfunction
 endclass
 
+// Class values whose type is a type parameter given after one of them
+class clt #(
+    parameter type T = byte,
+    // verilator lint_off WIDTHTRUNC
+    parameter T P = 0,  // Given wider values
+    parameter T Q = 0
+    // verilator lint_on WIDTHTRUNC
+);
+  static int count;
+  static function int value();
+    return int'(Q);
+  endfunction
+endclass
+
 // Class array parameter of a fixed size, given through a typedef
 class cla #(
     parameter int A[2] = '{0, 0}
@@ -353,6 +367,15 @@ module t;
   clw4a_t clw4a;
   clw4b_t clw4b;
   typedef cla#(.A('{3, 4})) cla34_t;
+  logic [3:0] tv;
+  typedef clt#(.P(8'h01), .T(type(tv)), .Q(8'h81)) clta_t;  // Equal to cltb_t once T is known
+  typedef clt#(.P(8'h01), .T(type(tv)), .Q(8'h01)) cltb_t;
+  typedef clt#(.P(8'h02), .T(type(tv)), .Q(8'h01)) cltc_t;  // The same, in the other order
+  typedef clt#(.P(8'h02), .T(type(tv)), .Q(8'h81)) cltd_t;
+  typedef clt#(.T(type(tv)), .P(8'h03), .Q(8'h81)) clte_t;  // The same, with T given first
+  typedef clt#(.T(type(tv)), .P(8'h03), .Q(8'h01)) cltf_t;
+  clta_t clta;
+  cltb_t cltb;
 
   m #(.N(2), .V('{1, 2})) i_m2 ();
   m #(.N(3), .V('{1, 2, 3})) i_m3 ();
@@ -694,6 +717,15 @@ module t;
     `checkd(clw4b_t::count, 7);
     `checkh(clw4b_t::value(), 'h1);
     `checkd(cla34_t::sum(), 7);
+    clta = new;
+    cltb = clta;  // One specialization, so one type
+    clta_t::count = 1;
+    cltc_t::count = 2;
+    clte_t::count = 3;
+    `checkd(cltb_t::count, 1);
+    `checkd(cltd_t::count, 2);
+    `checkd(cltf_t::count, 3);
+    `checkh(cltb_t::value(), 'h1);
 
     $write("*-* All Finished *-*\n");
     $finish;

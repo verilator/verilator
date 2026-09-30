@@ -257,7 +257,7 @@ static bool isAggregateParamValue(const AstNode* nodep) {
 
 // A cell's pins by the parameter they set, and what its parameters evaluate to, computed on
 // first use and kept while these maps live. A cell gets one set of maps to type its pattern
-// pins, and another, once its pins are folded, to name its specialization.
+// pins, and another, once its pins are prepared, to name its specialization.
 struct ParamPinMaps final {
     const AstNodeModule* const m_modp;  // Module whose parameters the pins set
     const bool m_constPinsOnly;  // Use a pin's value only once it is a constant
@@ -1656,8 +1656,11 @@ class ParamProcessor final {
         }
     }
 
+    // Name the specialization by a value pin, or prepare a type pin, noting in
+    // overridingTypePinsr whether it differs from the default
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, const ParamPinMaps& pins,
-                        AstNodeModule* srcModp, string& longnamer, bool& any_overridesr) {
+                        AstNodeModule* srcModp, string& longnamer, bool& any_overridesr,
+                        std::set<const AstPin*>& overridingTypePinsr) {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
             resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
@@ -1824,8 +1827,7 @@ class ParamProcessor final {
                             exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
                         }
                     }
-                    longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
-                    any_overridesr = true;
+                    overridingTypePinsr.emplace(pinp);  // Named once every pin is prepared
                 }
             }
         } else {
@@ -2096,20 +2098,35 @@ class ParamProcessor final {
             longname = parameterizedHierBlockName(srcModp, paramsp);
             any_overrides = longname != srcModp->name();
         } else {
-            // A class reference's pins may not be folded yet. Fold them all first, so each pin
-            // is named with the values of the others.
+            const ParamPinMaps pins{paramsp, srcModp, true};  // Evaluates nothing until naming
+            // Prepare every pin before naming any, as naming a value can depend on the others:
+            // fold each value pin, as a class reference's may not be yet, and resolve each type
+            std::set<const AstPin*> overridingTypePins;
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                if (!pinp->exprp()) continue;  // An empty override keeps the default
+                if (pinp->modPTypep()) {
+                    cellPinCleanup(nodep, pinp, pins, srcModp, longname /*ref*/,
+                                   any_overrides /*ref*/, overridingTypePins /*ref*/);
+                    continue;
+                }
                 AstVar* const modvarp = pinp->modVarp();
-                if (!modvarp || !modvarp->isGParam() || !pinp->exprp()) continue;
+                if (!modvarp || !modvarp->isGParam()) continue;
                 resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
                 if (!VN_IS(pinp->exprp(), Const) && !isAggregateParamValue(pinp->exprp())) {
                     V3Const::constifyParamsEdit(pinp->exprp());
                 }
             }
-            const ParamPinMaps pins{paramsp, srcModp, true};
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                cellPinCleanup(nodep, pinp, pins, srcModp, longname /*ref*/,
-                               any_overrides /*ref*/);
+                if (AstParamTypeDType* const modptp = pinp->modPTypep()) {
+                    if (!overridingTypePins.count(pinp)) continue;
+                    AstNodeDType* const typep = VN_AS(pinp->exprp(), NodeDType);
+                    longname += "_" + paramSmallName(srcModp, modptp)
+                                + paramValueNumber(typep->skipRefToNonRefp());
+                    any_overrides = true;
+                    continue;
+                }
+                cellPinCleanup(nodep, pinp, pins, srcModp, longname /*ref*/, any_overrides /*ref*/,
+                               overridingTypePins /*ref*/);
             }
         }
         IfaceRefRefs ifaceRefRefs;
