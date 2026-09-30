@@ -454,7 +454,7 @@ public:
             if (!dependsOnParams(holderp, pins)) {
                 V3Const::constifyParamsEdit(holderp);
                 AstNode* const foldedp = holderp->valuep();
-                if (foldedp && (VN_IS(foldedp, Const) || isAggregateParamValue(foldedp))) {
+                if (VN_IS(foldedp, Const) || isAggregateParamValue(foldedp)) {
                     valuep = foldedp->unlinkFrBack();
                     valuep->dtypeFrom(holderp);  // As V3Const substitutes a parameter
                 }

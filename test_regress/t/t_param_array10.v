@@ -283,6 +283,17 @@ module dg;
   parameter top_t V[2] = '{default: 0};
 endmodule
 
+// A typedef holding an enum that depends on a parameter isn't copied for the instance, as the
+// copy would be a different enum, so the pattern is typed from the module's defaults
+module ue;
+  parameter int N = 7;
+  typedef union packed {
+    enum logic [N-1:0] {ZERO = 0} e;
+    logic [N-1:0] x;
+  } u_t;
+  parameter u_t A[2] = '{default: '{x: 0}};
+endmodule
+
 // Sizes and types from $bits of a variable of a package or of the module, not a parameter
 package pv;
   class pvc;  // A class ahead of the variable, as a class is a scope too
@@ -352,6 +363,7 @@ module t;
   m #(.N(3), .V(arr3_t'{4, 5, 6})) i_m3t ();  // Pattern with its own type
   m #(.N(), .V('{7})) i_me ();  // Empty override keeps the default
   m #(.N(2), .V(TWO > 2 ? '{1, 2} : TWO > 1 ? '{3, 4} : '{5, 6})) i_mc ();  // Conditionals
+  m #(.N(2), .V(TWO > 2 ? '{1, 2} : SIZES)) i_mc1 ();  // A pattern only in the arm not taken
 
   p #(.W(8), .B('{8'ha, 8'hb})) i_p ();
 
@@ -441,6 +453,8 @@ module t;
 
   dg #(.N(4), .V('{3, 5})) i_dg ();
 
+  ue #(.A('{65, 33})) i_ue ();
+
   bv #(.V('{1, 2, 3, 4, 5})) i_bv ();
   bp #(.V('{17, 18})) i_bp ();
   bp #(.T(logic [$bits(pv::sig5):0]), .V('{33, 34})) i_bpo ();  // Type overridden
@@ -489,6 +503,8 @@ module t;
     `checkd($size(i_mc.V), 2);
     `checkd(i_mc.V[0], 3);
     `checkd(i_mc.V[1], 4);
+    `checkd(i_mc1.V[0], 4);
+    `checkd(i_mc1.V[1], 5);
 
     // Parameter-dependent element width
     `checkd($size(i_p.B), 2);
@@ -647,6 +663,11 @@ module t;
     // Typedefs sharing a dependency
     `checkd($bits(i_dg.V[0]), 4);
     `checkd(i_dg.V[1], 5);
+
+    // Typedef holding an enum
+    `checkd($bits(i_ue.A[0].x), 7);
+    `checkd(i_ue.A[0].x, 65);
+    `checkd(i_ue.A[1].x, 33);
 
     // Sizes and types from variables
     `checkd($size(i_bv.V), 5);

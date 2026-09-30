@@ -44,6 +44,27 @@ module ct #(
 ) ();
 endmodule
 
+// Types from typedefs that refer to each other, directly or through a value
+module ctd;
+  typedef A;
+  typedef logic [$bits(A)-1:0] B;
+  typedef B A;
+  parameter A V[2] = '{default: 0};
+endmodule
+module ctv;
+  typedef A;
+  parameter int W = $bits(A);
+  typedef logic [W-1:0] A;
+  parameter A V[2] = '{default: 0};
+endmodule
+
+// Width from a parameter whose override isn't a constant, given after the value
+module wx #(
+    parameter int N = 1,
+    parameter logic [N-1:0] P = '0
+) ();
+endmodule
+
 // Size from a parameter that is never given a value
 module nv #(
     parameter int N,
@@ -59,12 +80,16 @@ module nt #(
 endmodule
 
 module t;
+  int x;
   m #(.N(3), .V('{1, 2})) i_few ();  // Too few elements
   m #(.N(2), .V('{1, 2, 3})) i_many ();  // Too many elements
   z i_zero ();  // Size left at its zero default
   cy #(.V('{1})) i_cy ();
   cs #(.P(1)) i_cs ();
   ct #(.V('{1, 0})) i_ct ();
+  ctd #(.V('{1, 0})) i_ctd ();
+  ctv #(.V('{1, 0})) i_ctv ();
+  wx #(.P(1), .N(x)) i_wx ();
   nv #(.V('{1, 2})) i_nv ();
   nt #(.V('{1, 2})) i_nt ();
 endmodule
