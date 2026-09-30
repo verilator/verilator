@@ -60,8 +60,18 @@ class V3HierBlock final : public V3GraphVertex {
     using StrGParam = std::pair<string, string>;
     using StrGParams = std::vector<StrGParam>;
 
+public:
+    // A reference out of this block, promoted to an input port on it
+    struct XmrPort final {
+        string m_name;  // Generated port name
+        string m_path;  // Dotted path of the signal it reads
+        int m_width;  // Width, established before V3Width from the declared type
+    };
+
+private:
     // MEMBERS
     const AstModule* const m_modp;  // Hierarchical block module
+    std::vector<XmrPort> m_xmrPorts;  // Promoted outbound references
     // Value parameters that are overridden by #(.param(value)) syntax.
     const std::vector<AstVar*> m_params;
     // Types parameters that are overridden by #(.param(value)) syntax.
@@ -84,6 +94,8 @@ public:
     VL_UNMOVABLE(V3HierBlock);
 
     const AstModule* modp() const { return m_modp; }
+    const std::vector<XmrPort>& xmrPorts() const { return m_xmrPorts; }
+    void addXmrPort(const XmrPort& port) { m_xmrPorts.push_back(port); }
 
     // Whether a string parameter value can be passed to a hierarchical block's Verilation
     static bool stringParamPassable(const string& value) VL_PURE;
@@ -117,6 +129,11 @@ public:
 class V3Hierarchical final {
 public:
     static void createGraph(AstNetlist* nodep) VL_MT_DISABLED;
+    // In the child run, turn the XMRs named by --hierarchical-xmr-port into
+    // input ports threaded up to the hierarchical block boundary.
+    static void promoteXmrPorts(AstNetlist* nodep) VL_MT_DISABLED;
+    // In the top run, bind those ports to the signals they came from.
+    static void bindXmrPorts(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // guard
