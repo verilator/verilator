@@ -1,0 +1,2 @@
+%Error: --hierarchical-xmr-bind expects block,port,path: blockOnly
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
