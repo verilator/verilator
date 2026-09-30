@@ -11,7 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--binary --debug-stack-check'])
+test.compile(verilator_flags2=['--binary --debug-stack-check --stats'])
+
+test.file_grep(test.stats, r'Size prediction, Stack \(bytes\)\s+(\d+)', 1073741841)
 
 test.execute()
 
