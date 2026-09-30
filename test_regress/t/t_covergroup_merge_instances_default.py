@@ -13,7 +13,7 @@ from coverage_common import init_log, run_vlcov, vlcov_run_context
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--coverage-user', '--coverage-merge-instances'])
+test.compile(verilator_flags2=['--coverage-user', '--coverage-merge-instances 1'])
 
 test.execute()
 

@@ -9,12 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
-test.top_filename = 't/t_covergroup_merge_instances.v'
+test.scenarios('vlt')
 
-# The last setting applies, so the IEEE default: instances averaged unless merged explicitly
-test.compile(verilator_flags2=['--coverage-merge-instances 1', '--coverage-merge-instances 0'])
-
-test.execute()
+test.lint(verilator_flags2=["--coverage-merge-instances 2"],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()
