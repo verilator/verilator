@@ -721,12 +721,12 @@ static AstVar* ensurePort(AstNodeModule* modp, const std::string& name, int widt
 
 void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
     // This run's top module is the hierarchical block being compiled
-    const std::vector<V3Control::HierXmrPort>& wantedList
+    const std::vector<V3Control::HierXmrPort>* const wantedp
         = V3Control::getHierXmrPorts(v3Global.opt.topModule());
-    if (wantedList.empty()) return;
+    if (!wantedp) return;
     // dotted path -> (port name, width)
     std::map<std::string, std::pair<std::string, int>> wanted;
-    for (const V3Control::HierXmrPort& port : wantedList) {
+    for (const V3Control::HierXmrPort& port : *wantedp) {
         wanted.emplace(port.m_path, std::make_pair(port.m_port, port.m_width));
     }
 
@@ -831,7 +831,7 @@ void V3Hierarchical::bindXmrPorts(AstNetlist* netlistp) {
     // walked, and the additions do not survive.
     std::vector<AstCell*> targets;
     netlistp->foreach([&targets](AstCell* cellp) {
-        if (!V3Control::getHierXmrPorts(cellp->modName()).empty()) targets.push_back(cellp);
+        if (V3Control::getHierXmrPorts(cellp->modName())) targets.push_back(cellp);
     });
     for (AstCell* const cellp : targets) {
         // Index the pins once; scanning per port would be quadratic
@@ -839,7 +839,7 @@ void V3Hierarchical::bindXmrPorts(AstNetlist* netlistp) {
         for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             pinByName.emplace(pinp->name(), pinp);
         }
-        for (const V3Control::HierXmrPort& pr : V3Control::getHierXmrPorts(cellp->modName())) {
+        for (const V3Control::HierXmrPort& pr : *V3Control::getHierXmrPorts(cellp->modName())) {
             // Linking already created a pin for every port of the instantiated
             // module, with a null expression for the ones the source does not
             // connect - which is exactly what PINMISSING reports. So fill that

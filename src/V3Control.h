@@ -83,7 +83,9 @@ public:
                              AstVar* varp);
 
     static int getHierWorkers(const string& model);
-    static const std::vector<HierXmrPort>& getHierXmrPorts(const string& module);
+    // nullptr if the module has none; a reference return trips gcc's
+    // -Wdangling-reference at every call site
+    static const std::vector<HierXmrPort>* getHierXmrPorts(const string& module);
     static FileLine* getHierWorkersFileLine(const string& model);
     static const FsmRegisterWrapper* getFsmRegisterWrapper(const string& module);
     static uint64_t getProfileData(const string& hierDpi);
