@@ -1,0 +1,23 @@
+%Error: t/t_class_extends_cycle_bad.v:10:21: Attempting to extend class 'Cls2B' from 'Cls2A', which circularly inherits from it
+   10 | class Cls2B extends Cls2A;
+      |                     ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_extends_cycle_bad.v:8:21: Attempting to extend class 'Cls2A' from 'Cls2B', which circularly inherits from it
+    8 | class Cls2A extends Cls2B;
+      |                     ^~~~~
+%Error: t/t_class_extends_cycle_bad.v:16:21: Attempting to extend class 'Cls3B' from 'Cls3A', which circularly inherits from it
+   16 | class Cls3B extends Cls3A;
+      |                     ^~~~~
+%Error: t/t_class_extends_cycle_bad.v:18:21: Attempting to extend class 'Cls3C' from 'Cls3B', which circularly inherits from it
+   18 | class Cls3C extends Cls3B;
+      |                     ^~~~~
+%Error: t/t_class_extends_cycle_bad.v:14:21: Attempting to extend class 'Cls3A' from 'Cls3C', which circularly inherits from it
+   14 | class Cls3A extends Cls3C;
+      |                     ^~~~~
+%Error: t/t_class_extends_cycle_bad.v:24:30: Attempting to extend class 'IfcB' from 'IfcA', which circularly inherits from it
+   24 | interface class IfcB extends IfcA;
+      |                              ^~~~
+%Error: t/t_class_extends_cycle_bad.v:22:30: Attempting to extend class 'IfcA' from 'IfcB', which circularly inherits from it
+   22 | interface class IfcA extends IfcB;
+      |                              ^~~~
+%Error: Exiting due to
