@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 // Exhaustive cases lowered as if/else chains, checked against reference expressions.
 
 // verilator lint_off CASEINCOMPLETE
@@ -120,15 +125,15 @@ module t (
     $write("[%0t] cyc=%0d s3=%b %h %h %h %h %h %h %h %h %h\n", $time, cyc, s3, y_plain, y_casez,
            y_casex, y_never, y_inside, y_overlap, y_unique, y_enum, y_incompl);
 `endif
-    if (y_plain !== 4'h1 << sel_plain) $stop;
-    if (y_casez !== (s3[2] ? 4'h1 : s3[1] ? 4'h2 : s3[0] ? 4'h3 : 4'h4)) $stop;
-    if (y_casex !== (s3[0] ? 4'h1 : s3[1] ? 4'h2 : s3[2] ? 4'h3 : 4'h4)) $stop;
-    if (y_never !== 4'(s3[1:0]) + 4'h1) $stop;
-    if (y_inside !== (s3[2] ? 4'h1 : s3[0] ? 4'h2 : 4'h3)) $stop;
-    if (y_overlap !== (s3[0] ? 4'h1 : s3[2] ? 4'h2 : 4'h3)) $stop;
-    if (y_unique !== 4'h4 - 4'(sel_plain)) $stop;
-    if (y_enum !== (sel_plain == 2'd3 ? 4'h0 : 4'(sel_plain) + 4'h1)) $stop;
-    if (y_incompl !== (sel_plain == 2'd3 ? 4'h0 : 4'(sel_plain) + 4'h1)) $stop;
+    `checkd(y_plain, 4'h1 << sel_plain);
+    `checkd(y_casez, (s3[2] ? 4'h1 : s3[1] ? 4'h2 : s3[0] ? 4'h3 : 4'h4));
+    `checkd(y_casex, (s3[0] ? 4'h1 : s3[1] ? 4'h2 : s3[2] ? 4'h3 : 4'h4));
+    `checkd(y_never, 4'(s3[1:0]) + 4'h1);
+    `checkd(y_inside, (s3[2] ? 4'h1 : s3[0] ? 4'h2 : 4'h3));
+    `checkd(y_overlap, (s3[0] ? 4'h1 : s3[2] ? 4'h2 : 4'h3));
+    `checkd(y_unique, 4'h4 - 4'(sel_plain));
+    `checkd(y_enum, (sel_plain == 2'd3 ? 4'h0 : 4'(sel_plain) + 4'h1));
+    `checkd(y_incompl, (sel_plain == 2'd3 ? 4'h0 : 4'(sel_plain) + 4'h1));
     cyc <= cyc + 1;
     if (cyc == 20) begin
       $write("*-* All Finished *-*\n");
