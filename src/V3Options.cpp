@@ -1393,6 +1393,17 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         parseBinsLimit("--coverage-max-real-bins", valp, m_coverageMaxRealBins);
     });
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
+    DECL_OPTION("-coverage-merge-instances", CbVal, [this, fl](const char* valp) {
+        if (!std::strcmp(valp, "0")) {
+            m_coverageMergeInstances = false;
+        } else if (!std::strcmp(valp, "1")) {
+            m_coverageMergeInstances = true;
+        } else {
+            fl->v3error("Unknown setting for --coverage-merge-instances: '"
+                        << valp << "'\n"
+                        << fl->warnMore() << "... Suggest '0' or '1'");
+        }
+    });
     DECL_OPTION("-coverage-per-instance", OnOff, &m_coveragePerInstance);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);

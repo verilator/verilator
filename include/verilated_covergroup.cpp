@@ -1093,6 +1093,13 @@ std::string VlCoverpoint::normalBinName(uint32_t crossIdx) const {
     return declaredBinName(m_crossToBin[crossIdx]);
 }
 
+void VlCoverpoint::mergeInto(VlCovMergedItems& items) const {
+    VlCovMergedItem& item = items.findNewItem(m_hier);
+    item.options(m_atLeast, typeWeight());
+    // The bins coverageParts() counts
+    for (const uint32_t bin : m_crossToBin) item.addBin(declaredBinName(bin), m_counts[bin]);
+}
+
 const VlCovNamer& VlCoverpoint::namerFor(uint32_t i) const {
     // Namers are appended in ascending order covering [0, m_total).
     const auto it = std::upper_bound(
@@ -1432,6 +1439,25 @@ std::string VlCoverCross::autoBinName(uint32_t flat) const {
     }
     name += '>';
     return name;
+}
+
+void VlCoverCross::mergeInto(VlCovMergedItems& items) const {
+    VlCovMergedItem& item = items.findNewItem(m_hier);
+    item.options(1, typeWeight());  // A cross bin is covered once hit
+    // The bins coverageParts() counts, which share a bin when they share its name.  As no bin
+    // name holds ',' or '<', an automatic bin's, <bin1,...,binN> (IEEE 1800-2023 19.11.3), is
+    // that of no other automatic bin, nor of an explicit bin.
+    const uint32_t explicitCount
+        = hasExplicitBins() ? static_cast<uint32_t>(m_explicitp->bins.size()) : 0;
+    for (uint32_t i = 0; i < binCount(); ++i) {
+        if (i < explicitCount) {
+            const Bin& bin = m_explicitp->bins[i];
+            if (bin.kind == VlCovBinKind::KIND_NORMAL) item.addBin(bin.namep, bin.count);
+            continue;
+        }
+        const uint32_t flat = autoIndex(i - explicitCount);
+        item.addBin(autoBinName(flat), m_flatCountsp[flat]);
+    }
 }
 
 #if VM_COVERAGE
@@ -1793,10 +1819,42 @@ double VlCovergroupInst::coverage() {
     return _vl_cov_calculate(sums.first, sums.second, m_weight);
 }
 
+void VlCovergroupInst::mergeInto(VlCovMergedItems& items) const {
+    for (const auto& itemp : m_items) itemp->mergeInto(items);
+}
+
+//=============================================================================
+// VlCovMergedItem / VlCovMergedItems
+
+void VlCovMergedItem::coverageParts(double& covered, double& total) const {
+    uint64_t numCovered = 0;
+    for (const auto& it : m_counts) {
+        if (it.second >= m_atLeast) ++numCovered;
+    }
+    covered = static_cast<double>(numCovered);
+    total = static_cast<double>(m_counts.size());
+}
+
+std::pair<double, double> VlCovMergedItems::coverageSums() const {
+    double weighted = 0.0;
+    double weights = 0.0;
+    for (const auto& it : m_items) {
+        double covered = 0.0;
+        double total = 0.0;
+        it.second.coverageParts(covered, total);
+        if (total == 0.0) continue;  // No bins: excluded from both sums
+        weighted += it.second.typeWeight() * (covered / total);
+        weights += it.second.typeWeight();
+    }
+    return {100.0 * weighted, weights};
+}
+
 //=============================================================================
 // VlCovergroupType / VlCovRegistry
 
-VlCovergroupInst* VlCovergroupType::newInstance() {
+VlCovergroupInst* VlCovergroupType::newInstance(bool mayMerge) {
+    // Once set, kept: the bins of the instances that die from now on are kept
+    m_mayMerge = m_mayMerge || mayMerge;
     VlCovergroupInst* const instp = new VlCovergroupInst{this, m_nextInstId++};
     m_insts.emplace_back(instp);
 #if !VM_COVERAGE
@@ -1807,6 +1865,8 @@ VlCovergroupInst* VlCovergroupType::newInstance() {
 }
 
 void VlCovergroupType::foldResidue(VlCovergroupInst* instp) {
+    // Merged type coverage needs the dead instance's bins themselves
+    if (m_mayMerge) instp->mergeInto(m_mergedRetired);
     const std::pair<double, double> sums = instp->coverageSums();
     // Nothing coverable: excluded from both sums, so it moves neither the mean
     // nor the denominator.  Never-sampled is different: it has bins, none hit,
@@ -1863,10 +1923,20 @@ bool VlCovergroupType::anyAttached() const {
     return false;
 }
 
-double VlCovergroupType::coverage(IData typeWeight, VlFileLineDebug fileline) {
+double VlCovergroupType::coverage(IData typeWeight, bool mergeInstances,
+                                  VlFileLineDebug fileline) {
     if (typeWeight != m_loadedTypeWeight) {  // Only a new value, as in loadWeight()
         m_loadedTypeWeight = typeWeight;
         m_typeWeight = _vl_cov_load_weight("type_option.weight", typeWeight, fileline);
+    }
+    if (mergeInstances) {
+        // The union of the bins of every instance, including those that have died
+        VlCovMergedItems items = m_mergedRetired;
+        for (const auto& instp : m_insts) {
+            if (!instp->retained()) instp->mergeInto(items);  // Retained: in m_mergedRetired
+        }
+        const std::pair<double, double> sums = items.coverageSums();
+        return _vl_cov_calculate(sums.first, sums.second, m_typeWeight);
     }
     // Instances that have died still count: their contribution is the residue
     double sumCoverage = m_retired.sumCoverage;
@@ -1912,14 +1982,14 @@ VlCovergroupType* VlCovRegistry::findOrCreateType(const char* typeName) {
     return typep;
 }
 
-VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
-    return findOrCreateType(typeName)->newInstance();
+VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName, bool mayMerge) {
+    return findOrCreateType(typeName)->newInstance(mayMerge);
 }
 
-double VlCovRegistry::typeCoverage(const char* typeName, IData typeWeight,
+double VlCovRegistry::typeCoverage(const char* typeName, IData typeWeight, bool mergeInstances,
                                    VlFileLineDebug fileline) {
     // Also for a type never instantiated, whose node then remembers type_option.weight
-    return findOrCreateType(typeName)->coverage(typeWeight, fileline);
+    return findOrCreateType(typeName)->coverage(typeWeight, mergeInstances, fileline);
 }
 
 // A covergroup object can outlive the registry: models must be destroyed before
