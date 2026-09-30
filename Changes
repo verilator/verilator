@@ -41,6 +41,7 @@ Verilator 5.053 devel
 * Support covergroup fixed-size bin arrays (#8514). [Marco Bartoli]
 * Support wildcard bins (#8516). [Marco Bartoli]
 * Support coverpoint bin `with` filters (#8518). [Marco Bartoli]
+* Support waiting on clocking block event through modport (#8403) (#8530). [Saqib Khan]
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
 * Optimize recursion depth in DFG circular driver tracing (#8272). [Drew Risinger]
 * Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
@@ -68,6 +69,7 @@ Verilator 5.053 devel
 * Optimize through-package variables in DFG. [Geza Lore, Testorrent USA, Inc.]
 * Move module inlining after V3Scope (#8453) (#1539). [Geza Lore, Testorrent USA, Inc.]
 * Fix array slice crash when used as a bare value (#5132) (#8262). [Marco Frank]
+* Fix function reference into generate case block (#5312) (#8532). [Hongseok Choi]
 * Fix pattern type matching against nested aggregates (#7304).
 * Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
 * Fix typedef through a parameterized sub-interface (#7943 repair) (#8124) (#8128). [em2machine]
@@ -104,6 +106,7 @@ Verilator 5.053 devel
 * Fix error on non-existent interface ports (#8393). [Andrii Andrieiev, Antmicro Ltd.]
 * Fix compile-time blowup forcing large unpacked arrays (#8395). [Jonathan Drolet]
 * Fix false MULTIDRIVEN for writes in tasks never executed (#8401). [Artur Bieniek, Antmicro Ltd.]
+* Fix $c() inside a DPI export (#8402). [Nazar Zibilyuk]
 * Fix covergroup constructor initialization (#8410). [Marco Bartoli]
 * Fix issues with configuring flex during build on MacOS (#8412). [Kaleb Barrett]
 * Fix interface modport resolution against non-scope symbol tables (#8420). [Geza Lore, Testorrent USA, Inc.]
@@ -127,6 +130,7 @@ Verilator 5.053 devel
 * Fix model failing when host has fewer cores than --threads (#8475). [Artur Bieniek, Antmicro Ltd.]
 * Fix `##0` synchronous drive overriding later drives (#8482). [Marco Bartoli]
 * Fix disable fork and wait fork affecting pending NBA updates (#8483). [Marco Bartoli]
+* Fix nonblocking event trigger never firing in suspendable processes (#8485). [Marco Bartoli]
 * Fix setting status of finished process immediately (#8503). [Ryszard Rozak, Antmicro Ltd.]
 * Fix constant oversized shifts in V3Premit. [Geza Lore, Testorrent USA, Inc.]
 * Fix semaphore waiting on killed process (#8505). [Ryszard Rozak, Antmicro Ltd.]
@@ -134,8 +138,13 @@ Verilator 5.053 devel
 * Fix rand_mode(0) not preserving dynamic array of struct values used in a dist constraint (#8508) (#8509). [Kristof Marien]
 * Fix duplicate struct declaration when inlining (#8515). [Ethan Sifferman]
 * Fix bear version detection if uninstalled. [Geza Lore, Testorrent USA, Inc.]
+* Fix enums inside randomize() with (#8517). [Kornel Uriasz, Antmicro Ltd.]
 * Fix emitting public parameters (#8520). [Geza Lore, Testorrent USA, Inc.]
+* Fix verilator_coverage report to align with get_coverage() (#8522) (#8524) (#8531). [Marco Bartoli]
 * Fix verilator_coverage reports rounding incomplete coverage to 100.0% (#8523). [Jordan Carlin]
+* Fix extern class method rejects matching virtual interface argument type (#8525) (#8526). [Kristof Marien]
+* Fix of queue pop return value access (#8529) (#8511). [Igor Zaworski, Antmicro Ltd.]
+* Fix crash on class handle passed to string port (#8536) (#8538). [Noam Gallmann]
 
 
 Verilator 5.052 2026-09-05

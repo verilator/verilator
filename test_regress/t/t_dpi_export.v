@@ -23,7 +23,12 @@ module t;
   import "DPI-C" context function int dpix_run_tests();
 
   export "DPI-C" task dpix_t_int;
-  task dpix_t_int(input int i, output int o);  o = ~i; endtask
+  task dpix_t_int(input int i, output int o);
+`ifdef VERILATOR
+    $c(";");  // Test issue #8402
+`endif
+    o = ~i;
+  endtask
 
   export "DPI-C" dpix_t_renamed = task dpix_t_ren;
   task dpix_t_ren(input int i, output int o);  o = i+2; endtask

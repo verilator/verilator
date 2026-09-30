@@ -1,0 +1,571 @@
+t (vpiModule) t  vpiDefName=t
+    vpiReg:
+    A_CTRL (vpiParameter) t.A_CTRL  vpiConstType=vpiDecConst
+    LVL0 (vpiParameter) t.LVL0  vpiConstType=vpiDecConst
+    LVL1 (vpiParameter) t.LVL1  vpiConstType=vpiDecConst
+    bus_addr (vpiReg) t.bus_addr 
+    bus_wdata (vpiReg) t.bus_wdata 
+    bus_we (vpiReg) t.bus_we 
+    clk (vpiReg) TOP.clk 
+    cnt (vpiReg) t.cnt 
+    ctrl_dup (vpiReg) t.ctrl_dup 
+    ctrl_o (vpiReg) TOP.ctrl_o 
+    ctrl_r (vpiReg) t.ctrl_r 
+    cyc (vpiReg) t.cyc 
+    flag_a (vpiReg) t.flag_a 
+    lvl0 (vpiRegArray) t.lvl0 
+        vpiReg:
+        lvl0 (vpiReg) t.lvl0[7] 
+        lvl0 (vpiReg) t.lvl0[6] 
+        lvl0 (vpiReg) t.lvl0[5] 
+        lvl0 (vpiReg) t.lvl0[4] 
+        lvl0 (vpiReg) t.lvl0[3] 
+        lvl0 (vpiReg) t.lvl0[2] 
+        lvl0 (vpiReg) t.lvl0[1] 
+        lvl0 (vpiReg) t.lvl0[0] 
+    lvl1 (vpiRegArray) t.lvl1 
+        vpiReg:
+        lvl1 (vpiReg) t.lvl1[3] 
+        lvl1 (vpiReg) t.lvl1[2] 
+        lvl1 (vpiReg) t.lvl1[1] 
+        lvl1 (vpiReg) t.lvl1[0] 
+    lvl2 (vpiRegArray) t.lvl2 
+        vpiReg:
+        lvl2 (vpiReg) t.lvl2[1] 
+        lvl2 (vpiReg) t.lvl2[0] 
+    picked (vpiReg) t.picked 
+    rst (vpiReg) t.rst 
+    set_a (vpiReg) t.set_a 
+    status (vpiReg) t.status 
+    vpiParameter:
+    A_CTRL (vpiParameter) t.A_CTRL  vpiConstType=vpiDecConst
+    LVL0 (vpiParameter) t.LVL0  vpiConstType=vpiDecConst
+    LVL1 (vpiParameter) t.LVL1  vpiConstType=vpiDecConst
+-- @0 readonly
+t.A_CTRL = 014 vpiSize=10
+t.LVL0 = 00000008 vpiSize=32
+t.LVL1 = 00000004 vpiSize=32
+t.bus_addr = 3ff vpiSize=10
+t.bus_wdata = 00000000 vpiSize=32
+t.bus_we = 0 vpiSize=1
+TOP.clk = 0 vpiSize=1
+t.cnt = 00 vpiSize=8
+t.ctrl_dup = 00000000 vpiSize=32
+TOP.ctrl_o = 00000000 vpiSize=32
+t.ctrl_r = 00000000 vpiSize=32
+t.cyc = 00 vpiSize=8
+t.flag_a = 0 vpiSize=1
+t.lvl0[7] = 8a vpiSize=8
+t.lvl0[6] = 7d vpiSize=8
+t.lvl0[5] = 50 vpiSize=8
+t.lvl0[4] = 43 vpiSize=8
+t.lvl0[3] = 36 vpiSize=8
+t.lvl0[2] = 29 vpiSize=8
+t.lvl0[1] = 1c vpiSize=8
+t.lvl0[0] = 0f vpiSize=8
+t.lvl1[3] = ff vpiSize=8
+t.lvl1[2] = 53 vpiSize=8
+t.lvl1[1] = 3f vpiSize=8
+t.lvl1[0] = 1f vpiSize=8
+t.lvl2[1] = 53 vpiSize=8
+t.lvl2[0] = 1f vpiSize=8
+t.picked = 53 vpiSize=8
+t.rst = 1 vpiSize=1
+t.set_a = 0 vpiSize=1
+t.status = 00 vpiSize=5
+-- @5 cb t.cyc = 01
+-- @5 readonly
+TOP.clk = 1
+t.cyc = 01
+-- @10 readonly
+TOP.clk = 0
+-- @15 cb t.cyc = 02
+-- @15 readonly
+TOP.clk = 1
+t.cyc = 02
+t.rst = 0
+-- @20 readonly
+TOP.clk = 0
+-- @25 cb t.cyc = 03
+-- @25 readonly
+TOP.clk = 1
+t.cnt = 01
+t.cyc = 03
+t.status = 01
+-- @30 readonly
+TOP.clk = 0
+-- @35 cb t.cyc = 04
+-- @35 readonly
+TOP.clk = 1
+t.cnt = 02
+t.cyc = 04
+t.status = 02
+-- @40 readonly
+t.bus_addr = 00b
+t.bus_wdata = 000000a5
+TOP.clk = 0
+t.lvl0[7] = 2b
+t.lvl0[6] = dc
+t.lvl0[5] = f1
+t.lvl0[4] = e2
+t.lvl0[3] = 97
+t.lvl0[2] = 88
+t.lvl0[1] = bd
+t.lvl0[0] = ae
+t.lvl1[2] = f3
+t.lvl1[1] = 9f
+t.lvl1[0] = bf
+t.lvl2[1] = f3
+t.lvl2[0] = 9f
+t.picked = f3
+-- @45 cb t.cyc = 05
+-- @45 readonly
+TOP.clk = 1
+t.cnt = 03
+t.cyc = 05
+t.status = 03
+-- @50 readonly
+t.bus_addr = 004
+t.bus_wdata = 0000005a
+TOP.clk = 0
+t.lvl0[7] = db
+t.lvl0[6] = 2c
+t.lvl0[5] = 01
+t.lvl0[4] = 12
+t.lvl0[3] = 67
+t.lvl0[2] = 78
+t.lvl0[1] = 4d
+t.lvl0[0] = 5e
+t.lvl1[2] = 13
+t.lvl1[1] = 7f
+t.lvl1[0] = 5f
+t.lvl2[1] = 13
+t.lvl2[0] = 5f
+t.picked = 5f
+-- @55 cb t.cyc = 06
+-- @55 readonly
+TOP.clk = 1
+t.cnt = 04
+t.cyc = 06
+t.status = 04
+-- @60 readonly
+t.bus_addr = 007
+t.bus_wdata = 000000ff
+TOP.clk = 0
+t.lvl0[7] = 7d
+t.lvl0[6] = 8a
+t.lvl0[5] = a7
+t.lvl0[4] = b4
+t.lvl0[3] = c1
+t.lvl0[2] = de
+t.lvl0[1] = eb
+t.lvl0[0] = f8
+t.lvl1[2] = b7
+t.lvl1[1] = df
+t.lvl1[0] = fb
+t.lvl2[1] = b7
+t.lvl2[0] = db
+t.picked = b7
+-- @65 cb t.cyc = 07
+-- @65 readonly
+TOP.clk = 1
+t.cnt = 05
+t.cyc = 07
+t.status = 05
+-- @70 readonly
+t.bus_addr = 3ff
+TOP.clk = 0
+t.lvl0[7] = 75
+t.lvl0[6] = 82
+t.lvl0[5] = af
+t.lvl0[4] = bc
+t.lvl0[3] = c9
+t.lvl0[2] = d6
+t.lvl0[1] = e3
+t.lvl0[0] = f0
+t.lvl1[3] = f7
+t.lvl1[2] = bf
+t.lvl1[0] = f3
+t.lvl2[0] = d3
+-- @75 cb t.cyc = 08
+-- put t.ctrl_r = 0c0c0001 flag=1 ok
+-- @75 after put
+TOP.clk = 1
+t.cnt = 06
+t.ctrl_r = 0c0c0001
+t.cyc = 08
+t.status = 06
+-- @75 readonly
+t.ctrl_dup = 0c0c0001
+TOP.ctrl_o = 0c0c0001
+-- @80 readonly
+TOP.clk = 0
+-- @85 cb t.cyc = 09
+-- put t.ctrl_r = 0c0c0002 flag=1 ok
+-- @85 after put
+TOP.clk = 1
+t.cnt = 07
+t.ctrl_r = 0c0c0002
+t.cyc = 09
+t.status = 07
+-- @85 readonly
+t.ctrl_dup = 0c0c0002
+TOP.ctrl_o = 0c0c0002
+-- @90 readonly
+TOP.clk = 0
+-- @95 cb t.cyc = 0a
+-- save
+-- put t.ctrl_r = 0c0c0003 flag=1 ok
+-- @95 after put
+TOP.clk = 1
+t.cnt = 08
+t.ctrl_r = 0c0c0003
+t.cyc = 0a
+t.status = 08
+-- @95 readonly
+t.ctrl_dup = 0c0c0003
+TOP.ctrl_o = 0c0c0003
+-- @100 readonly
+TOP.clk = 0
+-- @105 cb t.cyc = 0b
+-- @105 before restore
+TOP.clk = 1
+t.cnt = 09
+t.cyc = 0b
+t.status = 09
+-- restore
+-- @95 after restore
+t.cnt = 08
+t.ctrl_dup = 0c0c0002
+TOP.ctrl_o = 0c0c0002
+t.ctrl_r = 0c0c0002
+t.cyc = 0a
+t.status = 08
+-- @95 cb t.cyc = 0a
+-- @95 readonly
+-- @110 readonly
+TOP.clk = 0
+-- @115 cb t.cyc = 0b
+-- @115 readonly
+TOP.clk = 1
+t.cnt = 09
+t.cyc = 0b
+t.status = 09
+-- @120 readonly
+t.bus_addr = 014
+t.bus_wdata = 0c0c0004
+t.bus_we = 1
+TOP.clk = 0
+t.lvl0[7] = 85
+t.lvl0[6] = 72
+t.lvl0[5] = 5f
+t.lvl0[4] = 4c
+t.lvl0[3] = 39
+t.lvl0[2] = 26
+t.lvl0[1] = 13
+t.lvl0[0] = 00
+t.lvl1[2] = 5f
+t.lvl1[1] = 3f
+t.lvl1[0] = 13
+t.lvl2[1] = 57
+t.lvl2[0] = 13
+t.picked = 13
+-- @125 cb t.cyc = 0c
+-- save
+-- @125 after save
+TOP.clk = 1
+t.cnt = 0a
+t.ctrl_dup = 0c0c0004
+TOP.ctrl_o = 0c0c0004
+t.ctrl_r = 0c0c0004
+t.cyc = 0c
+t.status = 0a
+-- @125 readonly
+-- @130 readonly
+t.bus_addr = 3f5
+t.bus_wdata = 0000003c
+t.bus_we = 0
+TOP.clk = 0
+t.lvl0[7] = bc
+t.lvl0[6] = 4b
+t.lvl0[5] = 66
+t.lvl0[4] = 75
+t.lvl0[3] = 00
+t.lvl0[2] = 1f
+t.lvl0[1] = 2a
+t.lvl0[0] = 39
+t.lvl1[3] = ff
+t.lvl1[2] = 77
+t.lvl1[1] = 1f
+t.lvl1[0] = 3b
+t.lvl2[1] = 77
+t.lvl2[0] = 1b
+t.picked = 77
+t.set_a = 1
+-- @135 cb t.cyc = 0d
+-- @135 readonly
+TOP.clk = 1
+t.cnt = 0b
+t.cyc = 0d
+t.flag_a = 1
+t.status = 1b
+-- @140 readonly
+t.bus_addr = 3fa
+t.bus_wdata = 000000a7
+TOP.clk = 0
+t.lvl0[7] = 28
+t.lvl0[6] = df
+t.lvl0[5] = f2
+t.lvl0[4] = e1
+t.lvl0[3] = 94
+t.lvl0[2] = 8b
+t.lvl0[1] = be
+t.lvl0[0] = ad
+t.lvl1[2] = f3
+t.lvl1[1] = 9f
+t.lvl1[0] = bf
+t.lvl2[1] = f3
+t.lvl2[0] = 9f
+t.picked = 9f
+t.set_a = 0
+-- @145 cb t.cyc = 0e
+-- @145 before restore
+TOP.clk = 1
+t.cnt = 0c
+t.cyc = 0e
+t.status = 1c
+-- restore
+-- @125 after restore
+t.bus_addr = 014
+t.bus_wdata = 0c0c0004
+t.bus_we = 1
+t.cnt = 0a
+t.cyc = 0c
+t.flag_a = 0
+t.lvl0[7] = 85
+t.lvl0[6] = 72
+t.lvl0[5] = 5f
+t.lvl0[4] = 4c
+t.lvl0[3] = 39
+t.lvl0[2] = 26
+t.lvl0[1] = 13
+t.lvl0[0] = 00
+t.lvl1[3] = f7
+t.lvl1[2] = 5f
+t.lvl1[1] = 3f
+t.lvl1[0] = 13
+t.lvl2[1] = 57
+t.lvl2[0] = 13
+t.picked = 13
+t.status = 0a
+-- @125 cb t.cyc = 0c
+-- @125 readonly
+-- @150 readonly
+t.bus_addr = 3f5
+t.bus_wdata = 0000003c
+t.bus_we = 0
+TOP.clk = 0
+t.lvl0[7] = bc
+t.lvl0[6] = 4b
+t.lvl0[5] = 66
+t.lvl0[4] = 75
+t.lvl0[3] = 00
+t.lvl0[2] = 1f
+t.lvl0[1] = 2a
+t.lvl0[0] = 39
+t.lvl1[3] = ff
+t.lvl1[2] = 77
+t.lvl1[1] = 1f
+t.lvl1[0] = 3b
+t.lvl2[1] = 77
+t.lvl2[0] = 1b
+t.picked = 77
+t.set_a = 1
+-- @155 cb t.cyc = 0d
+-- @155 readonly
+TOP.clk = 1
+t.cnt = 0b
+t.cyc = 0d
+t.flag_a = 1
+t.status = 1b
+-- @160 readonly
+t.bus_addr = 3fa
+t.bus_wdata = 000000a7
+TOP.clk = 0
+t.lvl0[7] = 28
+t.lvl0[6] = df
+t.lvl0[5] = f2
+t.lvl0[4] = e1
+t.lvl0[3] = 94
+t.lvl0[2] = 8b
+t.lvl0[1] = be
+t.lvl0[0] = ad
+t.lvl1[2] = f3
+t.lvl1[1] = 9f
+t.lvl1[0] = bf
+t.lvl2[1] = f3
+t.lvl2[0] = 9f
+t.picked = 9f
+t.set_a = 0
+-- @165 cb t.cyc = 0e
+-- @165 readonly
+TOP.clk = 1
+t.cnt = 0c
+t.cyc = 0e
+t.status = 1c
+-- @170 readonly
+TOP.clk = 0
+-- @175 cb t.cyc = 0f
+-- put t.cnt = 06 flag=1 ok
+-- put t.flag_a = 0 flag=1 ok
+-- @175 after put
+TOP.clk = 1
+t.cnt = 06
+t.cyc = 0f
+t.flag_a = 0
+t.status = 1d
+-- @175 readonly
+t.status = 06
+-- @180 readonly
+TOP.clk = 0
+-- @185 cb t.cyc = 10
+-- @185 before restore
+TOP.clk = 1
+t.cnt = 07
+t.cyc = 10
+t.status = 07
+-- restore
+-- @125 after restore
+t.bus_addr = 014
+t.bus_wdata = 0c0c0004
+t.bus_we = 1
+t.cnt = 0a
+t.cyc = 0c
+t.lvl0[7] = 85
+t.lvl0[6] = 72
+t.lvl0[5] = 5f
+t.lvl0[4] = 4c
+t.lvl0[3] = 39
+t.lvl0[2] = 26
+t.lvl0[1] = 13
+t.lvl0[0] = 00
+t.lvl1[3] = f7
+t.lvl1[2] = 5f
+t.lvl1[1] = 3f
+t.lvl1[0] = 13
+t.lvl2[1] = 57
+t.lvl2[0] = 13
+t.picked = 13
+t.status = 0a
+-- @125 cb t.cyc = 0c
+-- @125 readonly
+-- @190 readonly
+t.bus_addr = 3f5
+t.bus_wdata = 0000003c
+t.bus_we = 0
+TOP.clk = 0
+t.lvl0[7] = bc
+t.lvl0[6] = 4b
+t.lvl0[5] = 66
+t.lvl0[4] = 75
+t.lvl0[3] = 00
+t.lvl0[2] = 1f
+t.lvl0[1] = 2a
+t.lvl0[0] = 39
+t.lvl1[3] = ff
+t.lvl1[2] = 77
+t.lvl1[1] = 1f
+t.lvl1[0] = 3b
+t.lvl2[1] = 77
+t.lvl2[0] = 1b
+t.picked = 77
+t.set_a = 1
+-- @195 cb t.cyc = 0d
+-- @195 readonly
+TOP.clk = 1
+t.cnt = 0b
+t.cyc = 0d
+t.flag_a = 1
+t.status = 1b
+-- @200 readonly
+t.bus_addr = 3fa
+t.bus_wdata = 000000a7
+TOP.clk = 0
+t.lvl0[7] = 28
+t.lvl0[6] = df
+t.lvl0[5] = f2
+t.lvl0[4] = e1
+t.lvl0[3] = 94
+t.lvl0[2] = 8b
+t.lvl0[1] = be
+t.lvl0[0] = ad
+t.lvl1[2] = f3
+t.lvl1[1] = 9f
+t.lvl1[0] = bf
+t.lvl2[1] = f3
+t.lvl2[0] = 9f
+t.picked = 9f
+t.set_a = 0
+-- @205 cb t.cyc = 0e
+-- @205 readonly
+TOP.clk = 1
+t.cnt = 0c
+t.cyc = 0e
+t.status = 1c
+-- @210 readonly
+TOP.clk = 0
+-- @215 cb t.cyc = 0f
+-- @215 readonly
+TOP.clk = 1
+t.cnt = 0d
+t.cyc = 0f
+t.status = 1d
+-- @220 readonly
+TOP.clk = 0
+-- @225 cb t.cyc = 10
+-- @225 readonly
+TOP.clk = 1
+t.cnt = 0e
+t.cyc = 10
+t.status = 1e
+-- @230 readonly
+TOP.clk = 0
+-- @235 cb t.cyc = 11
+-- @235 readonly
+TOP.clk = 1
+t.cnt = 0f
+t.cyc = 11
+t.status = 1f
+-- @240 readonly
+TOP.clk = 0
+-- @245 cb t.cyc = 12
+-- @245 readonly
+TOP.clk = 1
+t.cnt = 10
+t.cyc = 12
+t.status = 10
+-- @250 readonly
+TOP.clk = 0
+-- @255 cb t.cyc = 13
+-- @255 readonly
+TOP.clk = 1
+t.cnt = 11
+t.cyc = 13
+t.status = 11
+-- @260 readonly
+TOP.clk = 0
+-- @265 cb t.cyc = 14
+-- @265 readonly
+TOP.clk = 1
+t.cnt = 12
+t.cyc = 14
+t.status = 12
+-- @270 readonly
+TOP.clk = 0
+*-* All Finished *-*
+-- @275 cb t.cyc = 15
+-- @275 readonly
+TOP.clk = 1
+t.cnt = 13
+t.cyc = 15
+t.status = 13

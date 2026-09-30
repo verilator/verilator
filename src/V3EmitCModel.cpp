@@ -31,8 +31,6 @@ class EmitCModel final : public EmitCFunc {
     using CFuncVector = std::vector<const AstCFunc*>;
 
     // MEMBERS
-    // Needed to emit references to functions of the model, e.g. entry points
-    const EmitCParentModule m_emitCParentModule;
     V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS

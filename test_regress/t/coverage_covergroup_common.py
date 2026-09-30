@@ -29,8 +29,8 @@ def covergroup_coverage_report(test, outfile=None):
         if not h_m:
             continue
         hier = h_m.group(1)
-        bt_m = re.search(r'\x01bin_type\x02([^\x01]+)', entry)
-        cross_m = re.search(r'\x01cross\x021', entry)
+        bt_m = re.search(r'\x01Bt\x02([^\x01]+)', entry)
+        cross_m = re.search(r'\x01C\x021', entry)
         annotations = []
         if bt_m:
             annotations.append(bt_m.group(1))

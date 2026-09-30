@@ -1,0 +1,637 @@
+t (vpiModule) t  vpiDefName=t
+    vpiReg:
+    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
+    a (vpiReg) t.a 
+    b (vpiReg) t.b 
+    clk (vpiReg) t.clk 
+    comb_inc (vpiReg) t.comb_inc 
+    ctr (vpiReg) t.ctr 
+    cyc (vpiReg) t.cyc 
+    data (vpiReg) t.data 
+    en_comb (vpiReg) t.en_comb 
+    frc (vpiReg) t.frc 
+    frc2 (vpiReg) t.frc2 
+    frc2__VforceEn (vpiReg) t.frc2__VforceEn 
+    frc2__VforceVal (vpiReg) t.frc2__VforceVal 
+    frc2_force (vpiReg) t.frc2_force 
+    frc__VforceEn (vpiReg) t.frc__VforceEn 
+    frc__VforceVal (vpiReg) t.frc__VforceVal 
+    handle (vpiReg) t.handle 
+    i_comb (vpiReg) t.i_comb 
+    keep (vpiReg) t.keep 
+    keep_frc (vpiReg) t.keep_frc 
+    md_full (vpiRegArray) t.md_full 
+        vpiReg:
+        md_full (vpiReg) t.md_full[1][1] 
+        md_full (vpiReg) t.md_full[1][0] 
+        md_full (vpiReg) t.md_full[2][1] 
+        md_full (vpiReg) t.md_full[2][0] 
+        md_full (vpiReg) t.md_full[3][1] 
+        md_full (vpiReg) t.md_full[3][0] 
+    md_gap (vpiRegArray) t.md_gap 
+        vpiReg:
+        md_gap (vpiReg) t.md_gap[1][0] 
+        md_gap (vpiReg) t.md_gap[1][1] 
+        md_gap (vpiReg) t.md_gap[1][2] 
+        md_gap (vpiReg) t.md_gap[0][0] 
+        md_gap (vpiReg) t.md_gap[0][1] 
+        md_gap (vpiReg) t.md_gap[0][2] 
+    mem (vpiRegArray) t.mem 
+        vpiReg:
+        mem (vpiReg) t.mem[3] 
+        mem (vpiReg) t.mem[2] 
+        mem (vpiReg) t.mem[1] 
+        mem (vpiReg) t.mem[0] 
+    mem_part (vpiRegArray) t.mem_part 
+        vpiReg:
+        mem_part (vpiReg) t.mem_part[3] 
+        mem_part (vpiReg) t.mem_part[2] 
+        mem_part (vpiReg) t.mem_part[1] 
+        mem_part (vpiReg) t.mem_part[0] 
+    mixdep (vpiRegArray) t.mixdep 
+        vpiReg:
+        mixdep (vpiReg) t.mixdep[1][1] 
+        mixdep (vpiReg) t.mixdep[1][0] 
+        mixdep (vpiReg) t.mixdep[0][1] 
+        mixdep (vpiReg) t.mixdep[0][0] 
+    narrow (vpiReg) t.narrow 
+    obs_dtypes (vpiReg) t.obs_dtypes 
+    obs_impureidx (vpiReg) t.obs_impureidx 
+    orphan (vpiReg) t.orphan 
+    out (vpiReg) t.out 
+    p (vpiReg) t.p 
+    pa_comb (vpiReg) t.pa_comb 
+    ps_comb (vpiReg) t.ps_comb 
+    r (vpiReg) t.r 
+    r_comb (vpiRealVar) t.r_comb 
+    rc_alias (vpiRealVar) t.rc_alias 
+    rc_src (vpiRealVar) t.rc_src 
+    rdpin (vpiReg) t.rdpin 
+    rf_mid (vpiRealVar) t.rf_mid 
+    rst (vpiReg) t.rst 
+    s_fmt (vpiStringVar) t.s_fmt 
+    s_var (vpiStringVar) t.s_var 
+    sc_alias (vpiStringVar) t.sc_alias 
+    sc_src (vpiStringVar) t.sc_src 
+    seedv (vpiReg) t.seedv 
+    sf_mid (vpiStringVar) t.sf_mid 
+    us_comb (vpiStructVar) t.us_comb 
+        vpiReg:
+        *undefined*:
+        a (vpiReg) t.us_comb.a 
+        b (vpiReg) t.us_comb.b 
+    a (vpiReg) t.us_comb.a 
+    b (vpiReg) t.us_comb.b 
+    v_comb (vpiReg) t.v_comb 
+    vec (vpiReg) t.vec 
+    w (vpiReg) t.w 
+    wide (vpiReg) t.wide 
+    vpiParameter:
+    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
+    vpiInternalScope:
+    u_wdrv (vpiModule) t.u_wdrv  vpiDefName=sub_drv
+        vpiReg:
+        x (vpiReg) t.u_wdrv.x 
+        y (vpiReg) t.u_wdrv.y 
+        vpiParameter:
+-- @0 readonly
+t.NumCycles = 14 vpiSize=8
+t.a = 00 vpiSize=8
+t.b = 00 vpiSize=8
+t.clk = 0 vpiSize=1
+t.comb_inc = 01 vpiSize=8
+t.ctr = 00 vpiSize=8
+t.cyc = 00 vpiSize=8
+t.data = 5 vpiSize=4
+t.en_comb = 0 vpiSize=2
+t.frc = 11 vpiSize=7
+t.frc2 = 22 vpiSize=7
+t.frc2__VforceEn = 00 vpiSize=7
+t.frc2__VforceVal = 00 vpiSize=7
+t.frc2_force = 0 vpiSize=1
+t.frc__VforceEn = 00 vpiSize=7
+t.frc__VforceVal = 00 vpiSize=7
+t.handle = 0000000000000000 vpiSize=64
+t.i_comb = 00000001 vpiSize=32
+t.keep = 00 vpiSize=8
+t.keep_frc = 00 vpiSize=7
+t.md_full[1][1] = 0011 vpiSize=16
+t.md_full[1][0] = ff00 vpiSize=16
+t.md_full[2][1] = 0033 vpiSize=16
+t.md_full[2][0] = 0022 vpiSize=16
+t.md_full[3][1] = 0055 vpiSize=16
+t.md_full[3][0] = 0044 vpiSize=16
+t.md_gap[1][0] = 0033 vpiSize=16
+t.md_gap[1][1] = 0044 vpiSize=16
+t.md_gap[1][2] = 0055 vpiSize=16
+t.md_gap[0][0] = 0000 vpiSize=16
+t.md_gap[0][1] = 0011 vpiSize=16
+t.md_gap[0][2] = 0022 vpiSize=16
+t.mem[3] = 03 vpiSize=8
+t.mem[2] = 02 vpiSize=8
+t.mem[1] = 01 vpiSize=8
+t.mem[0] = 00 vpiSize=8
+t.mem_part[3] = 00 vpiSize=8
+t.mem_part[2] = 00 vpiSize=8
+t.mem_part[1] = 00 vpiSize=8
+t.mem_part[0] = 27 vpiSize=8
+t.mixdep[1][1] = ff vpiSize=8
+t.mixdep[1][0] = ff vpiSize=8
+t.mixdep[0][1] = 00 vpiSize=8
+t.mixdep[0][0] = 00 vpiSize=8
+t.narrow = 01 vpiSize=8
+t.obs_dtypes = fa vpiSize=8
+t.orphan = 00 vpiSize=8
+t.out = f0 vpiSize=8
+t.p = 00 vpiSize=8
+t.pa_comb = 00ff01ff vpiSize=32
+t.ps_comb = 00 vpiSize=8
+t.r = 00 vpiSize=8
+t.r_comb = 1.5 vpiSize=1
+t.rc_alias = 0 vpiSize=1
+t.rc_src = 0 vpiSize=1
+t.rdpin = 00 vpiSize=8
+t.rf_mid = 1.5 vpiSize=1
+t.rst = 1 vpiSize=1
+t.s_fmt = "v0" vpiSize=1
+t.s_var = "hi" vpiSize=1
+t.sc_alias = "" vpiSize=1
+t.sc_src = "" vpiSize=1
+t.seedv = 00000000 vpiSize=32
+t.sf_mid = "hi" vpiSize=1
+t.us_comb.a = 00 vpiSize=8
+t.us_comb.b = ff vpiSize=8
+t.v_comb = 05 vpiSize=7
+t.wide = 00ff vpiSize=16
+t.u_wdrv.x = 00 vpiSize=8
+-- @5 readonly
+t.clk = 1
+t.rc_alias = 0.5
+t.rc_src = 0.5
+t.rdpin = 6d
+t.sc_alias = "even"
+t.sc_src = "even"
+-- @10 readonly
+t.clk = 0
+t.rst = 0
+-- @15 cb t.cyc = 01
+-- @15 readonly
+t.clk = 1
+t.ctr = 03
+t.cyc = 01
+t.frc = 14
+t.frc2 = 25
+t.keep = 11
+t.keep_frc = 03
+t.narrow = 04
+t.out = e1
+t.wide = 03fc
+-- @20 readonly
+t.clk = 0
+-- @25 cb t.cyc = 02
+-- @25 readonly
+t.clk = 1
+t.ctr = 06
+t.cyc = 02
+t.frc = 17
+t.frc2 = 28
+t.keep = 22
+t.keep_frc = 06
+t.narrow = 07
+t.out = d2
+t.wide = 06f9
+-- @30 readonly
+t.clk = 0
+-- @35 cb t.cyc = 03
+-- @35 readonly
+t.clk = 1
+t.ctr = 09
+t.cyc = 03
+t.frc = 1a
+t.frc2 = 2b
+t.keep = 33
+t.keep_frc = 09
+t.narrow = 0a
+t.out = c3
+t.wide = 09f6
+-- @40 readonly
+t.clk = 0
+-- @45 cb t.cyc = 04
+-- @45 readonly
+t.a = 3c
+t.clk = 1
+t.comb_inc = 3d
+t.ctr = 0c
+t.cyc = 04
+t.frc = 1d
+t.frc2 = 2e
+t.i_comb = 0000003d
+t.keep = 44
+t.keep_frc = 0c
+t.md_full[1][1] = 3c11
+t.md_full[1][0] = c33c
+t.md_full[2][1] = 3c33
+t.md_full[2][0] = 3c22
+t.md_full[3][1] = 3c55
+t.md_full[3][0] = 3c44
+t.md_gap[1][0] = 3c33
+t.md_gap[1][1] = 3c44
+t.md_gap[1][2] = 3c55
+t.md_gap[0][0] = 003c
+t.md_gap[0][1] = 3c11
+t.md_gap[0][2] = 3c22
+t.mem[3] = 3f
+t.mem[2] = 3e
+t.mem[1] = 3d
+t.mem[0] = 3c
+t.mem_part[0] = 1b
+t.mixdep[1][0] = c3
+t.mixdep[0][0] = 3c
+t.narrow = 0d
+t.obs_dtypes = 02
+t.out = b4
+t.p = 3c
+t.pa_comb = 3cc33d3b
+t.ps_comb = 3c
+t.s_fmt = "v60"
+t.us_comb.a = 3c
+t.us_comb.b = c3
+t.v_comb = 39
+t.wide = 0cf3
+-- @50 readonly
+t.clk = 0
+-- @55 cb t.cyc = 05
+-- @55 readonly
+t.a = 2b
+t.b = 74
+t.clk = 1
+t.comb_inc = 2c
+t.ctr = 0f
+t.cyc = 05
+t.en_comb = 3
+t.frc = 20
+t.frc2 = 31
+t.i_comb = 0000002c
+t.keep = 55
+t.keep_frc = 0f
+t.md_full[1][1] = 2b11
+t.md_full[1][0] = d42b
+t.md_full[2][1] = 2b33
+t.md_full[2][0] = 2b22
+t.md_full[3][1] = 2b55
+t.md_full[3][0] = 2b44
+t.md_gap[1][0] = 2b33
+t.md_gap[1][1] = 2b44
+t.md_gap[1][2] = 2b55
+t.md_gap[0][0] = 002b
+t.md_gap[0][1] = 2b11
+t.md_gap[0][2] = 2b22
+t.mem[3] = 2e
+t.mem[2] = 2d
+t.mem[1] = 2c
+t.mem[0] = 2b
+t.mem_part[0] = 0c
+t.mixdep[1][1] = 8b
+t.mixdep[1][0] = d4
+t.mixdep[0][1] = 74
+t.mixdep[0][0] = 2b
+t.narrow = 10
+t.obs_dtypes = 01
+t.out = a5
+t.p = 2b
+t.pa_comb = 2bd42c2a
+t.ps_comb = 2b
+t.r = 20
+t.rc_alias = 60.5
+t.rc_src = 60.5
+t.rdpin = 51
+t.s_fmt = "v43"
+t.us_comb.a = 2b
+t.us_comb.b = d4
+t.v_comb = 2e
+t.wide = 0ff0
+t.u_wdrv.x = 74
+-- @60 readonly
+t.clk = 0
+-- @65 cb t.cyc = 06
+-- @65 readonly
+t.a = 5a
+t.b = 33
+t.clk = 1
+t.comb_inc = 5b
+t.ctr = 12
+t.cyc = 06
+t.en_comb = 2
+t.frc = 23
+t.frc2 = 34
+t.i_comb = 0000005b
+t.keep = 66
+t.keep_frc = 12
+t.md_full[1][1] = 5a11
+t.md_full[1][0] = a55a
+t.md_full[2][1] = 5a33
+t.md_full[2][0] = 5a22
+t.md_full[3][1] = 5a55
+t.md_full[3][0] = 5a44
+t.md_gap[1][0] = 5a33
+t.md_gap[1][1] = 5a44
+t.md_gap[1][2] = 5a55
+t.md_gap[0][0] = 005a
+t.md_gap[0][1] = 5a11
+t.md_gap[0][2] = 5a22
+t.mem[3] = 5d
+t.mem[2] = 5c
+t.mem[1] = 5b
+t.mem[0] = 5a
+t.mem_part[0] = 7d
+t.mixdep[1][1] = cc
+t.mixdep[1][0] = a5
+t.mixdep[0][1] = 33
+t.mixdep[0][0] = 5a
+t.narrow = 13
+t.obs_dtypes = 04
+t.out = 96
+t.p = 5a
+t.pa_comb = 5aa55b59
+t.ps_comb = 5a
+t.r = 12
+t.rc_alias = 43.5
+t.rc_src = 43.5
+t.rdpin = 46
+t.s_fmt = "v90"
+t.sc_alias = "odd"
+t.sc_src = "odd"
+t.us_comb.a = 5a
+t.us_comb.b = a5
+t.v_comb = 5f
+t.wide = 12ed
+t.u_wdrv.x = 33
+-- @70 readonly
+t.clk = 0
+-- @75 cb t.cyc = 07
+-- @75 readonly
+t.a = 00
+t.b = 00
+t.clk = 1
+t.comb_inc = 01
+t.ctr = 15
+t.cyc = 07
+t.en_comb = 0
+t.frc = 26
+t.frc2 = 37
+t.i_comb = 00000001
+t.keep = 77
+t.keep_frc = 15
+t.md_full[1][1] = 0011
+t.md_full[1][0] = ff00
+t.md_full[2][1] = 0033
+t.md_full[2][0] = 0022
+t.md_full[3][1] = 0055
+t.md_full[3][0] = 0044
+t.md_gap[1][0] = 0033
+t.md_gap[1][1] = 0044
+t.md_gap[1][2] = 0055
+t.md_gap[0][0] = 0000
+t.md_gap[0][1] = 0011
+t.md_gap[0][2] = 0022
+t.mem[3] = 03
+t.mem[2] = 02
+t.mem[1] = 01
+t.mem[0] = 00
+t.mem_part[0] = 27
+t.mixdep[1][1] = ff
+t.mixdep[1][0] = ff
+t.mixdep[0][1] = 00
+t.mixdep[0][0] = 00
+t.narrow = 16
+t.obs_dtypes = fa
+t.out = 87
+t.p = 00
+t.pa_comb = 00ff01ff
+t.ps_comb = 00
+t.r = 00
+t.rc_alias = 90.5
+t.rc_src = 90.5
+t.rdpin = 37
+t.s_fmt = "v0"
+t.sc_alias = "even"
+t.sc_src = "even"
+t.us_comb.a = 00
+t.us_comb.b = ff
+t.v_comb = 05
+t.wide = 15ea
+t.u_wdrv.x = 00
+-- @80 readonly
+t.clk = 0
+-- @85 cb t.cyc = 08
+-- put t.orphan = 2a flag=1 ok
+-- @85 after put
+t.clk = 1
+t.ctr = 18
+t.cyc = 08
+t.frc = 29
+t.frc2 = 3a
+t.keep = 88
+t.keep_frc = 18
+t.narrow = 19
+t.orphan = 2a
+t.out = 78
+t.rc_alias = 0.5
+t.rc_src = 0.5
+t.rdpin = 6d
+t.wide = 18e7
+-- @85 readonly
+-- @90 readonly
+t.clk = 0
+-- @95 cb t.cyc = 09
+-- put t.handle = 2a flag=1 ok
+-- @95 after put
+t.clk = 1
+t.ctr = 1b
+t.cyc = 09
+t.frc = 2c
+t.frc2 = 3d
+t.handle = 000000000000002a
+t.keep = 99
+t.keep_frc = 1b
+t.narrow = 1c
+t.out = 69
+t.wide = 1be4
+-- @95 readonly
+-- @100 readonly
+t.clk = 0
+-- @105 cb t.cyc = 0a
+-- @105 readonly
+t.clk = 1
+t.ctr = 1e
+t.cyc = 0a
+t.frc = 2f
+t.frc2 = 40
+t.frc2_force = 1
+t.keep = aa
+t.keep_frc = 1e
+t.narrow = 1f
+t.out = 5a
+t.wide = 1ee1
+-- @110 readonly
+t.clk = 0
+-- @115 cb t.cyc = 0b
+-- @115 readonly
+t.clk = 1
+t.ctr = 21
+t.cyc = 0b
+t.frc = 32
+t.frc2 = 55
+t.frc2__VforceEn = 7f
+t.frc2__VforceVal = 55
+t.keep = bb
+t.keep_frc = 21
+t.narrow = 22
+t.out = 4b
+t.wide = 21de
+-- @120 readonly
+t.clk = 0
+-- @125 cb t.cyc = 0c
+-- @125 readonly
+t.clk = 1
+t.ctr = 24
+t.cyc = 0c
+t.frc = 35
+t.frc2_force = 0
+t.keep = cc
+t.keep_frc = 24
+t.narrow = 25
+t.out = 3c
+t.wide = 24db
+-- @130 readonly
+t.clk = 0
+-- @135 cb t.cyc = 0d
+-- @135 readonly
+t.clk = 1
+t.ctr = 27
+t.cyc = 0d
+t.frc = 38
+t.frc2 = 49
+t.frc2__VforceEn = 00
+t.keep = dd
+t.keep_frc = 27
+t.narrow = 28
+t.out = 2d
+t.wide = 27d8
+-- @140 readonly
+t.clk = 0
+-- @145 cb t.cyc = 0e
+-- put t.frc = 55 flag=5 ok
+-- @145 after put
+t.clk = 1
+t.ctr = 2a
+t.cyc = 0e
+t.frc = 55
+t.frc2 = 4c
+t.frc__VforceEn = 7f
+t.frc__VforceVal = 55
+t.keep = ee
+t.keep_frc = 2a
+t.narrow = 2b
+t.out = 1e
+t.wide = 2ad5
+-- @145 readonly
+-- @150 readonly
+t.clk = 0
+-- @155 cb t.cyc = 0f
+-- @155 readonly
+t.clk = 1
+t.ctr = 2d
+t.cyc = 0f
+t.frc2 = 4f
+t.keep = ff
+t.keep_frc = 2d
+t.narrow = 2e
+t.out = 0f
+t.wide = 2dd2
+-- @160 readonly
+t.clk = 0
+-- @165 cb t.cyc = 10
+-- put t.frc = 55 flag=6 ok
+-- @165 after put
+t.clk = 1
+t.ctr = 30
+t.cyc = 10
+t.frc = 41
+t.frc2 = 52
+t.frc__VforceEn = 00
+t.keep = 10
+t.keep_frc = 30
+t.narrow = 31
+t.out = e0
+t.wide = 30cf
+-- @165 readonly
+-- @170 readonly
+t.clk = 0
+-- @175 cb t.cyc = 11
+-- @175 readonly
+t.clk = 1
+t.ctr = 33
+t.cyc = 11
+t.frc = 44
+t.frc2 = 55
+t.keep = 21
+t.keep_frc = 33
+t.narrow = 34
+t.out = d1
+t.wide = 33cc
+-- @180 readonly
+t.clk = 0
+-- @185 cb t.cyc = 12
+-- @185 readonly
+t.clk = 1
+t.ctr = 36
+t.cyc = 12
+t.frc = 47
+t.frc2 = 58
+t.keep = 32
+t.keep_frc = 36
+t.narrow = 37
+t.out = c2
+t.wide = 36c9
+-- @190 readonly
+t.clk = 0
+-- @195 cb t.cyc = 13
+-- @195 readonly
+t.clk = 1
+t.ctr = 39
+t.cyc = 13
+t.frc = 4a
+t.frc2 = 5b
+t.keep = 43
+t.keep_frc = 39
+t.narrow = 3a
+t.out = b3
+t.wide = 39c6
+-- @200 readonly
+t.clk = 0
+-- @205 cb t.cyc = 14
+-- @205 readonly
+t.clk = 1
+t.ctr = 3c
+t.cyc = 14
+t.frc = 4d
+t.frc2 = 5e
+t.keep = 54
+t.keep_frc = 3c
+t.narrow = 3d
+t.out = a4
+t.wide = 3cc3
+-- @210 readonly
+t.clk = 0
+*-* All Finished *-*
+-- @215 readonly
+t.clk = 1
+t.ctr = 3f
+t.frc = 50
+t.frc2 = 61
+t.keep = 65
+t.keep_frc = 3f
+t.narrow = 40
+t.out = 95
+t.wide = 3fc0

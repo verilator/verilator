@@ -165,7 +165,12 @@ public:
                           int line, int col) {
         addNamer(set, count, VlCovBinNaming::Numbered, name, file, line, col);
     }
-    void registerBins(VerilatedCovContext* covcontextp, const char* page);
+    /// Register the bins in the coverage database, with what verilator_coverage needs to
+    /// compute coverage (IEEE 1800-2023 19.11): option.at_least, and the weights of the
+    /// coverpoint, itemWeight, and of its covergroup, groupWeight.  The weights are those of
+    /// every instance, as the database merges the instances.
+    void registerBins(VerilatedCovContext* covcontextp, const char* page, uint32_t itemWeight,
+                      uint32_t groupWeight);
 
     /// Configure construction-time value metadata for exclusions and cross selections.
     void valueType(uint32_t bits, bool isSigned);
@@ -433,7 +438,9 @@ public:
                 const char* filep, int line, int col);
     /// Retain only automatic cross bins not selected by any explicit bin.
     virtual void finalizeBins();
-    void registerBins(VerilatedCovContext* covcontextp, const char* page);
+    /// Register the bins in the coverage database; see VlCoverpoint::registerBins().
+    void registerBins(VerilatedCovContext* covcontextp, const char* page, uint32_t itemWeight,
+                      uint32_t groupWeight);
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
     /// Sample automatic and explicit bins, optionally applying per-bin iff guards.

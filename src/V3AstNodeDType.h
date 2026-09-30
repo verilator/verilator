@@ -1010,7 +1010,14 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    bool similarDTypeNode(const AstNodeDType* samep) const override {
+        // Each occurrence of a virtual interface type parses to its own node,
+        // so pointer identity is insufficient; compare the referenced
+        // interface instead, same equivalence as AstNode::computeCastable uses.
+        const AstIfaceRefDType* const asamep = VN_DBG_AS(samep, IfaceRefDType);
+        return ifaceViaCellp() && ifaceViaCellp() == asamep->ifaceViaCellp()
+               && modportName() == asamep->modportName() && isVirtual() == asamep->isVirtual();
+    }
     int widthAlignBytes() const override { return 0; }
     int widthTotalBytes() const override { return 0; }
     bool isVirtual() const { return m_virtual; }
