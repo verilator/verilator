@@ -439,11 +439,23 @@ class ProtectVisitor final : public VNVisitor {
         return V3Task::assignDpiToInternal("handlep__V->" + varp->name(), varp);
     }
 
+    // The wrapper's module ports are connected by name, so they must use the user's
+    // names rather than the hashed form of long names used internally
+    static string svPortName(const AstVar* varp) {
+        return AstNode::prettyName(VName::dehash(varp->name()));
+    }
+
+    static AstVar* newSvPortVar(AstVar* varp) {
+        AstVar* const newVarp = varp->cloneTree(false);
+        newVarp->name(VName::dehash(varp->name()));
+        return newVarp;
+    }
+
     void handleClock(AstVar* varp) {
         handleInput(varp);
         m_seqPortsp->add(varp->cloneTree(false));
         if (m_hasClk) {
-            const std::string pname = varp->prettyName();
+            const std::string pname = svPortName(varp);
             m_seqParamsp->add(pname);
             m_clkSensp->add(pname);
         }
@@ -454,15 +466,15 @@ class ProtectVisitor final : public VNVisitor {
     void handleDataInput(AstVar* varp) {
         handleInput(varp);
         m_comboPortsp->add(varp->cloneTree(false));
-        m_comboParamsp->add(varp->prettyName());
+        m_comboParamsp->add(svPortName(varp));
         m_comboIgnorePortsp->add(varp->cloneTree(false));
-        if (m_hasClk) m_comboIgnoreParamsp->add(varp->prettyName());
+        if (m_hasClk) m_comboIgnoreParamsp->add(svPortName(varp));
         m_cComboParamsp->add(varp->dpiArgType(true, false));
         m_cComboInsp->add(cInputConnection(varp));
         m_cIgnoreParamsp->add(varp->dpiArgType(true, false));
     }
 
-    void handleInput(AstVar* varp) { m_modPortsp->add(varp->cloneTree(false)); }
+    void handleInput(AstVar* varp) { m_modPortsp->add(newSvPortVar(varp)); }
 
     static void addLocalVariable(AstTextBlock* textp, const AstVar* varp, const char* suffix) {
         AstVar* const newVarp
@@ -472,7 +484,8 @@ class ProtectVisitor final : public VNVisitor {
 
     void handleOutput(AstVar* const varp) {
         const std::string pname = varp->prettyName();
-        m_modPortsp->add(varp->cloneTree(false));
+        const std::string portName = svPortName(varp);
+        m_modPortsp->add(newSvPortVar(varp));
         m_comboPortsp->add(varp->cloneTree(false));
         m_comboParamsp->add(pname + "_combo__V");
         if (m_hasClk) {
@@ -487,9 +500,9 @@ class ProtectVisitor final : public VNVisitor {
             addLocalVariable(m_tmpDeclsp, varp, "_tmp__V");
 
             m_nbAssignsp->add(pname + "_seq__V <= " + pname + "_tmp__V;\n");
-            m_seqAssignsp->add(pname + " = " + pname + "_seq__V;\n");
+            m_seqAssignsp->add(portName + " = " + pname + "_seq__V;\n");
         }
-        m_comboAssignsp->add(pname + " = " + pname + "_combo__V;\n");
+        m_comboAssignsp->add(portName + " = " + pname + "_combo__V;\n");
         m_cComboParamsp->add(varp->dpiArgType(true, false));
         m_cComboOutsp->add(V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->") + "\n");
         if (m_hasClk) {
