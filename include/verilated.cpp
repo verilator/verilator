@@ -3128,32 +3128,16 @@ VerilatedContext::Serialized::Serialized() {
 
 bool VerilatedContext::assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
-    if (assertCtlsLocked()) return;
+    if (m_ns.m_assertCtlsLocked) return;
     // Set all assert and directive types when true, clear otherwise.
     m_s.m_assertOn = VL_MASK_I(ASSERT_ON_WIDTH) * flag;
 }
-bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
-                                   VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    return assertCtlGet(VerilatedAssertCtlQuery::ASSERT_CTL_ON, type, directive);
-}
-void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
-                                   VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    if (assertCtlsLocked()) return;
-    m_s.m_assertOn |= assertOnMask(types, directives);
-}
-void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
-                                     VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    if (assertCtlsLocked()) return;
-    m_s.m_assertOn &= ~assertOnMask(types, directives);
-}
-bool VerilatedContext::assertCtlsLocked() const VL_MT_SAFE { return m_ns.m_assertCtlsLocked; }
-void VerilatedContext::assertCtlsLocked(bool flag) VL_MT_SAFE { m_ns.m_assertCtlsLocked = flag; }
 void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
     // IEEE 1800-2023 Table 20-5 control_type. Lock freezes the On/Off state of the
     // selected bits until Unlock; On/Off/Kill leave locked bits unchanged.
     // +verilator+assert+lock freezes everything, including Lock/Unlock itself.
-    if (assertCtlsLocked()) return;
+    if (m_ns.m_assertCtlsLocked) return;
     const uint32_t mask = assertOnMask(types, directives);
     const uint32_t lockedMask = mask & ~m_s.m_assertLock;
     switch (controlType) {
@@ -3598,7 +3582,7 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
         std::string str;
         uint64_t u64;
         if (arg == "+verilator+assert+lock") {
-            assertCtlsLocked(true);
+            m_ns.m_assertCtlsLocked = true;
         } else if (commandArgVlString(arg, "+verilator+coverage+file+", str)) {
             coverageFilename(str);
         } else if (arg == "+verilator+debug") {

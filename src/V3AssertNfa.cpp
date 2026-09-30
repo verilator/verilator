@@ -243,12 +243,6 @@ static AstNodeExpr* sampled(AstNodeExpr* exprp) {
     return new AstSampled{exprp->fileline(), exprp, exprp->dtypep(), true};
 }
 
-static string assertCtlGetCall(const char* query, VAssertType type,
-                               VAssertDirectiveType directiveType) {
-    return "vlSymsp->_vm_contextp__->assertCtlGet(VerilatedAssertCtlQuery::"s + query + ", "s
-           + std::to_string(type) + ", "s + std::to_string(directiveType) + ")"s;
-}
-
 static const char* assertPassOnQuery(bool vacuous) {
     static constexpr const char* queries[2]
         = {"ASSERT_CTL_PASS_ON_NONVACUOUS", "ASSERT_CTL_PASS_ON_VACUOUS"};
@@ -259,13 +253,14 @@ static AstNodeExpr* assertOnCond(FileLine* flp, VAssertType type,
                                  VAssertDirectiveType directiveType) {
     if (!v3Global.opt.assertOn()) { return new AstConst{flp, AstConst::BitFalse{}}; }
     return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
+                        V3AssertCommon::assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
 }
 
 static AstNodeExpr* assertKillGet(FileLine* flp, VAssertType type,
                                   VAssertDirectiveType directiveType) {
     return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertCtlGetCall("ASSERT_CTL_KILL", type, directiveType), 32};
+                        V3AssertCommon::assertCtlGetCall("ASSERT_CTL_KILL", type, directiveType),
+                        32};
 }
 
 static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
@@ -280,19 +275,21 @@ static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
 
 static AstNodeExpr* assertPassOnCond(FileLine* flp, VAssertType type,
                                      VAssertDirectiveType directiveType, bool vacuous) {
-    return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertActionControlPrefix(directiveType)
-                            + assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
-                            + "))"s,
-                        1};
+    return new AstCExpr{
+        flp, AstCExpr::Pure{},
+        assertActionControlPrefix(directiveType)
+            + V3AssertCommon::assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
+            + "))"s,
+        1};
 }
 
 static AstNodeExpr* assertFailOnCond(FileLine* flp, VAssertType type,
                                      VAssertDirectiveType directiveType) {
-    return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertActionControlPrefix(directiveType)
-                            + assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType) + "))"s,
-                        1};
+    return new AstCExpr{
+        flp, AstCExpr::Pure{},
+        assertActionControlPrefix(directiveType)
+            + V3AssertCommon::assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType) + "))"s,
+        1};
 }
 
 static AstIf* newPassOnIf(FileLine* flp, AstNodeExpr* firep, AstNode* bodyp, VAssertType type,

@@ -154,6 +154,13 @@ void V3AssertCommon::lowerSequenceEvents(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("assertseqevent", 0, dumpTreeEitherLevel() >= 3);
 }
 
+string V3AssertCommon::assertCtlGetCall(const char* query, VAssertType type,
+                                        VAssertDirectiveType directiveType) {
+    // Template arguments let the runtime build the type/directive mask at C++ compile time
+    return "vlSymsp->_vm_contextp__->assertCtlGet<"s + std::to_string(type) + ", "s
+           + std::to_string(directiveType) + ">(VerilatedAssertCtlQuery::"s + query + ")"s;
+}
+
 //######################################################################
 // AssertDeFutureVisitor
 // If any AstFuture, then move all non-future varrefs to be one cycle behind,
@@ -335,11 +342,6 @@ class AssertVisitor final : public VNVisitor {
     std::unordered_map<const AstAlways*, AstVar*> m_delayedAlways2TickTimep;
 
     // METHODS
-    static string assertCtlGetCall(const char* query, VAssertType type,
-                                   VAssertDirectiveType directiveType) {
-        return "vlSymsp->_vm_contextp__->assertCtlGet(VerilatedAssertCtlQuery::"s + query + ", "s
-               + std::to_string(type) + ", "s + std::to_string(directiveType) + ")"s;
-    }
     static const char* assertPassOnQuery(bool vacuous) {
         static constexpr const char* queries[2]
             = {"ASSERT_CTL_PASS_ON_NONVACUOUS", "ASSERT_CTL_PASS_ON_VACUOUS"};
@@ -363,8 +365,9 @@ class AssertVisitor final : public VNVisitor {
         case VAssertDirectiveType::COVER:
         case VAssertDirectiveType::ASSUME: {
             if (v3Global.opt.assertOn()) {
-                return new AstCExpr{fl, AstCExpr::Pure{},
-                                    assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
+                return new AstCExpr{
+                    fl, AstCExpr::Pure{},
+                    V3AssertCommon::assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
             }
             return new AstConst{fl, AstConst::BitFalse{}};
         }
@@ -391,15 +394,17 @@ class AssertVisitor final : public VNVisitor {
                                          VAssertDirectiveType directiveType, bool vacuous) {
         if (!isControlled(directiveType)) return new AstConst{fl, AstConst::BitTrue{}};
         if (!v3Global.opt.assertOn()) return new AstConst{fl, AstConst::BitFalse{}};
-        return new AstCExpr{fl, AstCExpr::Pure{},
-                            assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType), 1};
+        return new AstCExpr{
+            fl, AstCExpr::Pure{},
+            V3AssertCommon::assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType), 1};
     }
     static AstNodeExpr* assertFailOnCond(FileLine* fl, VAssertType type,
                                          VAssertDirectiveType directiveType) {
         if (!isControlled(directiveType)) return new AstConst{fl, AstConst::BitTrue{}};
         if (!v3Global.opt.assertOn()) return new AstConst{fl, AstConst::BitFalse{}};
-        return new AstCExpr{fl, AstCExpr::Pure{},
-                            assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType), 1};
+        return new AstCExpr{
+            fl, AstCExpr::Pure{},
+            V3AssertCommon::assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType), 1};
     }
     string assertDisplayMessage(const AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
