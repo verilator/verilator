@@ -1,0 +1,74 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+class ClsA;
+  rand logic member_a;
+endclass
+
+class ClsB;
+  rand ClsA member_b;
+  rand ClsA inner_b[int];
+
+  function new;
+    member_b = new;
+  endfunction
+endclass
+
+class ClsC;
+  bit enable_c;
+  rand ClsB member_c[int];
+
+  // Nested member access through the foreach iterator. The generated
+  // write_var registration references the loop index and must stay inside
+  // the loop body (regression: it used to be hoisted into the init task,
+  // leaving a dangling reference after task inlining deleted the index).
+  constraint constraint_c {
+    foreach (member_c[i]) {
+      enable_c == 0 -> member_c[i].member_b.member_a == 1'b1;
+    }
+  }
+
+  // Nested foreach: the inner body references both loop indices, exercising
+  // the per-level isolation of collected statements.
+  constraint constraint_nested {
+    foreach (member_c[i]) {
+      foreach (member_c[i].inner_b[j]) {
+        member_c[i].inner_b[j].member_a == 1'b1;
+      }
+    }
+  }
+
+  function new;
+    for (int k = 0; k < 3; k++) begin
+      ClsB item = new;
+      ClsA a0 = new;
+      ClsA a1 = new;
+      item.inner_b[0] = a0;
+      item.inner_b[1] = a1;
+      member_c[k] = item;
+    end
+  endfunction
+endclass
+
+module t;
+  ClsC obj_c = new;
+
+  initial begin
+    int rand_ok;
+    obj_c.enable_c = 0;
+    rand_ok = obj_c.randomize();
+    if (rand_ok == 0) $stop;
+    // Every array element must satisfy the loop-index-dependent constraints.
+    foreach (obj_c.member_c[i]) begin
+      if (obj_c.member_c[i].member_b.member_a !== 1'b1) $stop;
+      foreach (obj_c.member_c[i].inner_b[j]) begin
+        if (obj_c.member_c[i].inner_b[j].member_a !== 1'b1) $stop;
+      end
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+endmodule
