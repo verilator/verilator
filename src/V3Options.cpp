@@ -1583,6 +1583,28 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
     DECL_OPTION("-hierarchical-params-file", CbVal,
                 [this](const char* optp) { m_hierParamsFile.push_back({optp, work()}); });
+    DECL_OPTION("-hierarchical-xmr-port", CbVal, [this](const char* valp) {
+        const string s{valp};
+        const size_t c1 = s.find(',');
+        const size_t c2 = (c1 == string::npos) ? string::npos : s.find(',', c1 + 1);
+        if (c2 == string::npos) {
+            v3fatal("--hierarchical-xmr-port expects name,width,path: " << s);
+            return;
+        }
+        m_hierXmrPorts.emplace_back(
+            s.substr(0, c1), std::atoi(s.substr(c1 + 1, c2 - c1 - 1).c_str()), s.substr(c2 + 1));
+    });
+    DECL_OPTION("-hierarchical-xmr-bind", CbVal, [this](const char* valp) {
+        const string s{valp};
+        const size_t c1 = s.find(',');
+        const size_t c2 = (c1 == string::npos) ? string::npos : s.find(',', c1 + 1);
+        if (c2 == string::npos) {
+            v3fatal("--hierarchical-xmr-bind expects block,port,path: " << s);
+            return;
+        }
+        m_hierXmrBinds[s.substr(0, c1)].emplace_back(s.substr(c1 + 1, c2 - c1 - 1),
+                                                     s.substr(c2 + 1));
+    });
 
     DECL_OPTION("-I", CbPartialMatch, [this, &optdir](const char* optp) {
         addIncDirUser(parseFileArg(optdir, optp));

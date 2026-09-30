@@ -159,6 +159,11 @@ static void process() {
 
         // Convert parseref's to varrefs, and other directly post parsing fixups
         V3LinkParse::linkParse(v3Global.rootp());
+        // In a hierarchical child, replace references reaching outside the block
+        // with ports before linkDot tries, and fails, to resolve them
+        if (v3Global.opt.hierChild()) V3Hierarchical::promoteXmrPorts(v3Global.rootp());
+        // In the top run, bind those ports to the signals they came from
+        if (v3Global.opt.hierTop()) V3Hierarchical::bindXmrPorts(v3Global.rootp());
         // Cross-link signal names
         // Cross-link dotted hierarchical references
         V3LinkDot::linkDotPrimary(v3Global.rootp());
