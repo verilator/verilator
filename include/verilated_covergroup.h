@@ -731,8 +731,9 @@ public:
 
     // METHODS
     // Find-or-create the type node, then add an instance to it.  typeName is the
-    // generated covergroup class name, already --protect-ids obfuscated, and is
-    // the same string that keys the coverage database's hier/page.
+    // covergroup type's name within its scopes (e.g. "pkg.cls.cg"), already
+    // --protect-ids obfuscated, and is the same string that keys the coverage
+    // database's hier/page.
     VlCovergroupInst* newCovergroupInst(const char* typeName);
     /// Type coverage of a covergroup type (get_coverage()); see
     /// VlCovergroupType::coverage().  typeWeight is its type_option.weight.

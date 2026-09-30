@@ -106,11 +106,13 @@ string reportHier(const VlcPoint& point) {
 }
 
 std::vector<string> splitHier(const string& hier) {
-    // Verilator emits dot-separated non-empty hierarchy components.
+    // Verilator emits dot-separated non-empty hierarchy components.  An escaped identifier, which
+    // may hold dots, runs from its backslash to the white space ending it (IEEE 1800-2023 23.6).
     std::vector<string> parts;
     string::size_type start = 0;
     while (true) {
-        const string::size_type dot = hier.find('.', start);
+        const string::size_type from = hier[start] == '\\' ? hier.find(' ', start) : start;
+        const string::size_type dot = hier.find('.', from);
         if (dot == string::npos) break;
         parts.push_back(hier.substr(start, dot - start));
         start = dot + 1;
@@ -437,10 +439,10 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
         const string line = V3Os::getline(is);
         // UINFO(9, " got " << line);
         if (line[0] == 'C') {
-            string::size_type secspace = 3;
-            for (; secspace < line.length(); secspace++) {
-                if (line[secspace] == '\'' && line[secspace + 1] == ' ') break;
-            }
+            // The count follows the last "' ": a point may hold one too, as does an escaped
+            // identifier that ends in a quote, before its white space
+            const string::size_type secspace = line.rfind("' ");
+            if (secspace == string::npos || secspace < 3) continue;  // Malformed, no count
             const string point = line.substr(3, secspace - 3);
             if (!opt.isTypeMatch(point.c_str())) continue;
 

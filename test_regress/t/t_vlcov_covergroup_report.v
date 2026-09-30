@@ -116,8 +116,8 @@ module t;
     cp: coverpoint a;
   endgroup
 
-  // Covergroups of a name in distinct classes are both named __vlAnonCG_twin, with distinct
-  // bins: 50, and get_coverage() averages their instances: 50
+  // Covergroups of a name in distinct classes are distinct types, each of its own bins: 100 and
+  // 0, where a single type would average its instances: 50
   class First;
     bit v;
     covergroup twin;
@@ -186,8 +186,8 @@ module t;
     varying_two.sample(0, 1);
     first.v = 0;
     first.twin.sample();
-    second.v = 1;
-    second.twin.sample();
+    first.v = 1;
+    first.twin.sample();
     `checkr(excluded_inst.get_coverage(), 100.0);
     `checkr(unequal_inst.get_coverage(), 37.5);
     `checkr(weighted_inst.get_coverage(), 100.0);
@@ -201,7 +201,8 @@ module t;
     `checkr(merged_first.get_coverage(), 50.0);
     `checkr(collide_inst.get_coverage(), 275.0 / 3);
     `checkr(varying_none.get_coverage(), 50.0);
-    `checkr(first.twin.get_coverage(), 50.0);
+    `checkr(first.twin.get_coverage(), 100.0);
+    `checkr(second.twin.get_coverage(), 0.0);
     $write("*-* All Finished *-*\n");
     $finish;
   end
