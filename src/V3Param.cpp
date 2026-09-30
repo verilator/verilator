@@ -57,7 +57,6 @@
 #include "V3Case.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
-#include "V3Hasher.h"
 #include "V3LinkDotIfaceCapture.h"
 #include "V3MemberMap.h"
 #include "V3Os.h"
@@ -72,6 +71,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -281,7 +281,7 @@ class ParamProcessor final {
 
     std::map<const std::string, std::string>
         m_longMap;  // Hash of very long names to unique identity number
-    int m_longId = 0;
+    std::set<std::string> m_longSuffixes;  // Digest suffixes of the names of very long names
 
     // All module names that are loaded from source code
     // Generated modules by this visitor is not included
@@ -290,8 +290,11 @@ class ParamProcessor final {
     CloneMap m_originalParams;  // Map between parameters of copied parameteized classes and their
                                 // original nodes
 
-    std::map<const V3Hash, int> m_valueMap;  // Hash of node hash to param value
-    int m_nextValue = 1;  // Next value to use in m_valueMap
+    std::map<const std::string, std::string> m_valueNames;  // Parameter value text to its name
+    std::set<std::string> m_valueSuffixes;  // Digest suffixes of the names of parameter values
+    // Digits of the digest naming a parameter value or a very long name.  Hierarchical blocks'
+    // runs cannot see each other's names, so enough that distinct ones are unlikely to share it
+    static constexpr std::string::size_type DIGEST_DIGITS = 8;
 
     const AstNodeModule* m_modp = nullptr;  // Current module being processed
 
@@ -392,11 +395,12 @@ class ParamProcessor final {
             key += "] ";
             key += paramValueString(dtypep->subDTypep());
         } else if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
+            // With the index of each element, as the default may give the others
             key += "{";
-            for (auto it : initp->map()) {
-                key += paramValueString(it.second->valuep());
-                key += ",";
+            for (const auto& it : initp->map()) {
+                key += cvtToStr(it.first) + ":" + paramValueString(it.second->valuep()) + ",";
             }
+            if (initp->defaultp()) key += "default:" + paramValueString(initp->defaultp()) + ",";
             key += "}";
         } else if (const AstConsPackUOrStruct* const structp = VN_CAST(nodep, ConsPackUOrStruct)) {
             key += "{";
@@ -446,43 +450,38 @@ class ParamProcessor final {
         return key;
     }
 
+    // A suffix naming 'text', from its digest: so the same in every Verilator run, unlike a
+    // count, as hierarchical Verilation names the specializations of each block in its own run.
+    // The shortest prefix of the digest, of at least DIGEST_DIGITS digits, that no other text has
+    // taken in 'usedr'.
+    static string digestSuffix(const string& text, std::set<string>& usedr) {
+        const string hex = VHashSha512{text}.digestHex();
+        // Force collisions of the prefixes -- for testing only
+        string::size_type digits = v3Global.opt.debugCollision() ? 1 : DIGEST_DIGITS;
+        while (digits < hex.size() && !usedr.insert(hex.substr(0, digits)).second) ++digits;
+        return hex.substr(0, digits);
+    }
     string paramValueNumber(AstNode* nodep) {
-        // For type parameters (NodeDType), use only the string representation for hashing.
-        // Using V3Hasher::uncachedHash includes AST node pointer which differs for equivalent
-        // types represented by different AST nodes (e.g., parameterized class specializations).
-        // For value parameters, we can still use the AST hash for better collision resistance.
         // All call sites resolve through skipRefToNonRefp() or pass non-DType
         // nodes, so nodep should never be a bare RefDType here.
         if (VN_IS(nodep, RefDType)) {  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Unexpected RefDType in paramValueNumber");  // LCOV_EXCL_LINE
         }
-        const string paramStr = paramValueString(nodep);
-        V3Hash hash;
-        if (VN_IS(nodep, NodeDType)) {
-            // Type parameter: use only string-based hash for type equivalence
-            hash = V3Hash{paramStr};
-        } else {
-            // Value parameter: use AST hash + string for better collision resistance
-            hash = V3Hasher::uncachedHash(nodep) + paramStr;
-        }
-        // Force hash collisions -- for testing only
-        // cppcheck-suppress unreadVariable
-        if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash{paramStr};
-        int num;
-        const auto pair = m_valueMap.emplace(hash, 0);
-        if (pair.second) pair.first->second = m_nextValue++;
-        num = pair.first->second;
-        return "z"s + cvtToStr(num);
+        // Name the value by its text, which equal values and types share in any run: an AST hash
+        // hashes node pointers, which differ for equal types, and uses std::hash, not portable
+        const string text = paramValueString(nodep);
+        const auto pair = m_valueNames.emplace(text, "");
+        if (pair.second) pair.first->second = "z" + digestSuffix(text, m_valueSuffixes);
+        return pair.first->second;
     }
     string moduleCalcName(const AstNodeModule* srcModp, const string& longname) {
         string newname = longname;
         if (longname.length() > 30) {
             const auto pair = m_longMap.emplace(longname, "");
             if (pair.second) {
-                newname = srcModp->name();
                 // We use all upper case above, so lower here can't conflict
-                newname += "__pi" + cvtToStr(++m_longId);
-                pair.first->second = newname;
+                pair.first->second
+                    = srcModp->name() + "__pi" + digestSuffix(longname, m_longSuffixes);
             }
             newname = pair.first->second;
         }
