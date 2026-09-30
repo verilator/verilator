@@ -800,6 +800,8 @@ class V3ControlResolver final {
         m_profileData;  // Access to profile_data records
     uint8_t m_mode = NONE;  // Kind of profile_data records is currently active
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
+    // Promoted hierarchical-block references, by block module name
+    std::unordered_map<string, std::vector<V3Control::HierXmrPort>> m_hierXmrPorts;
     FileLine* m_profileFileLine = nullptr;  // Location profile_data was read from
 
     V3ControlResolver() = default;
@@ -837,6 +839,15 @@ public:
     void addHierWorkers(FileLine* flp, const string& model, int workers) {
         m_hierWorkers.emplace(std::piecewise_construct, std::forward_as_tuple(model),
                               std::forward_as_tuple(workers, flp));
+    }
+    void addHierXmrPort(FileLine* fl, const string& module, const string& port, int width,
+                        const string& path) {
+        m_hierXmrPorts[module].push_back(V3Control::HierXmrPort{port, width, path});
+    }
+    const std::vector<V3Control::HierXmrPort>& getHierXmrPorts(const string& module) const {
+        static const std::vector<V3Control::HierXmrPort> s_empty;
+        const auto it = m_hierXmrPorts.find(module);
+        return it == m_hierXmrPorts.cend() ? s_empty : it->second;
     }
     int getHierWorkers(const string& model) const {
         const auto mit = m_hierWorkers.find(model);
@@ -895,6 +906,15 @@ void V3Control::addCoverageBlockOff(const string& module, const string& blocknam
 
 void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
     V3ControlResolver::s().addHierWorkers(fl, model, workers);
+}
+
+void V3Control::addHierXmrPort(FileLine* fl, const string& module, const string& port, int width,
+                               const string& path) {
+    V3ControlResolver::s().addHierXmrPort(fl, module, port, width, path);
+}
+
+const std::vector<V3Control::HierXmrPort>& V3Control::getHierXmrPorts(const string& module) {
+    return V3ControlResolver::s().getHierXmrPorts(module);
 }
 
 void V3Control::addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,

@@ -483,8 +483,6 @@ detailed descriptions of these arguments.
     --hierarchical-child <block>  Internal use only for --hierarchical
     --hierarchical-params-file <name>  Internal option that specifies parameters file for hier blocks
     --hierarchical-threads <threads>  Number of threads for hierarchical scheduling
-    --hierarchical-xmr-bind <bind>  Internal use only for --hierarchical
-    --hierarchical-xmr-port <port>  Internal use only for --hierarchical
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
