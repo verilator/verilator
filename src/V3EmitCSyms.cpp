@@ -1058,6 +1058,15 @@ void EmitCSyms::emitSymHdr() {
     puts("\n// METHODS\n");
     puts("const char* name() const { return TOP.vlNamep; }\n");
 
+    if (v3Global.opt.systemC()) {
+        putsDecoration(nullptr, "// Called by DPI exports: the SystemC wrapper must evaluate\n");
+        puts("void wakeModel() {");
+        if (v3Global.usesTiming()) {
+            puts(" __Vm_modelp->m_wakeEvent.notify(sc_core::SC_ZERO_TIME); ");
+        }
+        puts("}\n");
+    }
+
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
             puts("void fireEvent(VlAssignableEvent& event) {\n");
@@ -1072,12 +1081,6 @@ void EmitCSyms::emitSymHdr() {
         }
         puts("}\n");
         puts("event.fire();\n");
-        if (v3Global.usesTiming()) {
-            putsDecoration(nullptr,
-                           "// The schedule may now be wrong for whoever decides when to\n"
-                           "// evaluate this model -- an event fired outside evaluation\n");
-            puts("vlScheduleChanged();\n");
-        }
         puts("}\n");
         puts("void clearTriggeredEvents() {\n");
         if (v3Global.assignsEvents()) {

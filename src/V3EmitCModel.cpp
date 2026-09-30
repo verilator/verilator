@@ -190,7 +190,6 @@ class EmitCModel final : public EmitCFunc {
                            "// Notified when work appears in the model outside evaluation,\n"
                            "// e.g. from a DPI call: the armed timer alone would miss it\n");
             puts("sc_core::sc_event m_wakeEvent;\n");
-            ofp()->putsPrivate(true);
             puts("void eval();\n");
         } else {
             puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
@@ -356,14 +355,6 @@ class EmitCModel final : public EmitCFunc {
 
         if (optSystemC()) {
             // Create sensitivity list for when to evaluate the model.
-            if (v3Global.usesTiming()) {
-                putsDecoration(nullptr,
-                               "// Let the runtime say when the schedule changed under us\n");
-                puts("vlSetScheduleChangedCb([](void* selfp) {\n");
-                puts("static_cast<" + EmitCUtil::topClassName()
-                     + "*>(selfp)->m_wakeEvent.notify(sc_core::SC_ZERO_TIME);\n");
-                puts("}, this);\n");
-            }
             putsDecoration(nullptr, "// Sensitivities on all clocks and combinational inputs\n");
             puts("SC_METHOD(eval);\n");
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
