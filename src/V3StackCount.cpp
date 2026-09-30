@@ -140,22 +140,7 @@ private:
             if (nodep->thenp()) nodep->thenp()->user2(0);  // Don't dump it
         }
     }
-    void visit(AstFork* nodep) override {
-        if (m_ignoreRemaining) return;
-        const VisitBase vb{this, nodep};
-        iterateAndNextConstNull(nodep->stmtsp());
-        uint64_t totalCount = m_stackSize;
-        VL_RESTORER(m_ignoreRemaining);
-        VL_RESTORER(m_callMax);
-        // Sum counts in each statement
-        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
-            reset();
-            m_callMax = 0;
-            iterateConst(stmtp);
-            totalCount += m_stackSize + m_callMax;
-        }
-        m_stackSize = totalCount;
-    }
+    void visit(AstFork* nodep) override { nodep->v3fatalSrc("Fork removed earlier"); }
     void visit(AstNodeCCall* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
