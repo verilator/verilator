@@ -484,9 +484,6 @@ private:
     // Build the assertion-control bit mask for the given assertion x directive types.
     static constexpr uint32_t assertOnMask(VerilatedAssertType_t types,
                                            VerilatedAssertDirectiveType_t directives) VL_PURE;
-    // Query assertion-control runtime state for a mask built by assertOnMask()
-    VL_ATTR_ALWINLINE uint32_t assertCtlMaskGet(VerilatedAssertCtlQuery query,
-                                                uint32_t mask) const VL_MT_SAFE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
     // No termination request has stamped m_finishPendingTime yet
     static constexpr uint64_t TIME_UNSET = ~0ULL;
@@ -626,28 +623,9 @@ public:
     bool assertOn() const VL_MT_SAFE;
     /// Enable all assertion types
     void assertOn(bool flag) VL_MT_SAFE;
-    /// Get enabled status for given assertion types
-    bool assertOnGet(VerilatedAssertType_t type,
-                     VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
-    /// Set enabled status for given assertion types
-    void assertOnSet(VerilatedAssertType_t types,
-                     VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Clear enabled status for given assertion types
-    void assertOnClear(VerilatedAssertType_t types,
-                       VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Return if assertion-control updates are locked. When locked, RTL assert
-    // control statements ($asserton/$assertoff/$assertcontrol) are ignored, as
-    // are updates from the C++ API.
-    bool assertCtlsLocked() const VL_MT_SAFE;
-    /// Lock/unlock assertion-control updates.
-    void assertCtlsLocked(bool flag) VL_MT_SAFE;
     /// Apply assertion control for given control, assertion, and directive types
     void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Get assertion-control runtime state. Boolean queries return 0/1, Kill returns
-    /// the generation count.
-    inline uint32_t assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
-                                 VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)
@@ -825,12 +803,7 @@ public:
 
     // Internal: assertCtlGet() for generated code, with constant type and directive
     template <VerilatedAssertType_t T_Type, VerilatedAssertDirectiveType_t T_Directive>
-    VL_ATTR_ALWINLINE uint32_t assertCtlGet(VerilatedAssertCtlQuery query) const VL_MT_SAFE {
-        // A constexpr local forces compile-time evaluation of the mask, which a plain
-        // assertOnMask() call does not get from GCC at -Os
-        constexpr uint32_t mask = assertOnMask(T_Type, T_Directive);
-        return assertCtlMaskGet(query, mask);
-    }
+    VL_ATTR_ALWINLINE uint32_t assertCtlGet(VerilatedAssertCtlQuery query) const VL_MT_SAFE;
 
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
@@ -1350,8 +1323,11 @@ VerilatedContext::assertOnMask(VerilatedAssertType_t types,
     }
     return mask;
 }
-uint32_t VerilatedContext::assertCtlMaskGet(VerilatedAssertCtlQuery query,
-                                            uint32_t mask) const VL_MT_SAFE {
+template <VerilatedAssertType_t T_Type, VerilatedAssertDirectiveType_t T_Directive>
+uint32_t VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query) const VL_MT_SAFE {
+    // A constexpr local forces compile-time evaluation of the mask, which a plain
+    // assertOnMask() call does not get from GCC at -Os
+    constexpr uint32_t mask = assertOnMask(T_Type, T_Directive);
     if (!mask) return 0;
     // Explicit load(): G++ -Os inlines it but not the implicit conversion.
     switch (query) {  // LCOV_EXCL_BR_LINE
@@ -1369,11 +1345,6 @@ uint32_t VerilatedContext::assertCtlMaskGet(VerilatedAssertCtlQuery query,
         VL_FATAL_MT("", 0, "", "Internal: Bad assertCtlGet query");
         VL_UNREACHABLE;
     }  // LCOV_EXCL_STOP
-}
-uint32_t
-VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
-                               VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    return assertCtlMaskGet(query, assertOnMask(type, directive));
 }
 
 #undef VERILATOR_VERILATED_H_INTERNAL_
