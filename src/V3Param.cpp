@@ -281,7 +281,7 @@ class ParamProcessor final {
 
     std::map<const std::string, std::string>
         m_longMap;  // Hash of very long names to unique identity number
-    std::set<std::string> m_longSuffixes;  // Digest suffixes of the names of very long names
+    std::set<std::string> m_longSuffixes;  // Digest suffixes used by m_longMap
 
     // All module names that are loaded from source code
     // Generated modules by this visitor is not included
@@ -291,9 +291,11 @@ class ParamProcessor final {
                                 // original nodes
 
     std::map<const std::string, std::string> m_valueNames;  // Parameter value text to its name
-    std::set<std::string> m_valueSuffixes;  // Digest suffixes of the names of parameter values
-    // Digits of the digest naming a parameter value or a very long name.  Hierarchical blocks'
-    // runs cannot see each other's names, so enough that distinct ones are unlikely to share it
+    std::set<std::string> m_valueSuffixes;  // Digest suffixes used by m_valueNames
+    // Number of digest hex digits in a name. With 8 digits, a collision between names made in
+    // different runs, such as those of different hierarchical blocks, is unlikely. Within one
+    // run, digestSuffix resolves a collision by lengthening the later text's suffix, which can
+    // then differ between runs.
     static constexpr std::string::size_type DIGEST_DIGITS = 8;
 
     const AstNodeModule* m_modp = nullptr;  // Current module being processed
@@ -395,7 +397,7 @@ class ParamProcessor final {
             key += "] ";
             key += paramValueString(dtypep->subDTypep());
         } else if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
-            // With the index of each element, as the default may give the others
+            // Include the indices and the default, as with a default the map may be sparse
             key += "{";
             for (const auto& it : initp->map()) {
                 key += cvtToStr(it.first) + ":" + paramValueString(it.second->valuep()) + ",";
@@ -450,10 +452,10 @@ class ParamProcessor final {
         return key;
     }
 
-    // A suffix naming 'text', from its digest: so the same in every Verilator run, unlike a
-    // count, as hierarchical Verilation names the specializations of each block in its own run.
-    // The shortest prefix of the digest, of at least DIGEST_DIGITS digits, that no other text has
-    // taken in 'usedr'.
+    // Return a name suffix for 'text' from its SHA-512 digest. Hierarchical blocks are
+    // Verilated in separate runs, where a counter would restart, but the digest is the same in
+    // every run. Use the shortest digest prefix of at least DIGEST_DIGITS digits that is not
+    // already in 'usedr', and add it to 'usedr'.
     static string digestSuffix(const string& text, std::set<string>& usedr) {
         const string hex = VHashSha512{text}.digestHex();
         // Force collisions of the prefixes -- for testing only
@@ -467,8 +469,9 @@ class ParamProcessor final {
         if (VN_IS(nodep, RefDType)) {  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Unexpected RefDType in paramValueNumber");  // LCOV_EXCL_LINE
         }
-        // Name the value by its text, which equal values and types share in any run: an AST hash
-        // hashes node pointers, which differ for equal types, and uses std::hash, not portable
+        // Name the value by its text, which is the same for equal values or types in every run.
+        // V3Hasher is unsuitable, as it hashes node pointers, which can differ for equal types.
+        // V3Hash of a string is unsuitable, as std::hash varies between C++ libraries.
         const string text = paramValueString(nodep);
         const auto pair = m_valueNames.emplace(text, "");
         if (pair.second) pair.first->second = "z" + digestSuffix(text, m_valueSuffixes);
