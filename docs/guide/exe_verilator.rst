@@ -1026,17 +1026,6 @@ Summary:
    Set to :vlopt:`--threads` by default. For optimal performance should not
    exceed the CPU thread count.
 
-.. option:: --hierarchical-xmr-bind <block,port,path>
-
-   Internal use only, for :vlopt:`--hierarchical`. Names a reference out of a
-   hierarchical block that was promoted to a port, and the signal the top-level
-   Verilation must connect it to.
-
-.. option:: --hierarchical-xmr-port <port,width,path>
-
-   Internal use only, for :vlopt:`--hierarchical`. Names a reference out of a
-   hierarchical block that the child Verilation must turn into an input port.
-
 .. option:: -I<dir>
 
    See :vlopt:`-y`.
