@@ -1961,9 +1961,19 @@ extern "C" int tryInvalidPutOperations() {
         "'t.test.onebit__VforceVal'"));
 
     CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
-        "onebit", {.format = vpiStringVal, .value = {}}, vpiInertialDelay,
+        "onebit", {.format = vpiSuppressVal, .value = {}}, vpiInertialDelay,
         "vpi_put_value: Unsupported p_vpi_value as requested for 't.test.onebit' with "
         "vpiInertialDelay"));
+
+    CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
+        "hexString", {.format = vpiHexStrVal, .value = {.str = nullptr}}, vpiForceFlag,
+        "vpi_put_value: Ignoring nullptr value.str with format vpiHexStrVal for "
+        "'t.test.hexString'"));
+
+    CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
+        "onebit", {.format = vpiVectorVal, .value = {.vector = nullptr}}, vpiForceFlag,
+        "vpi_put_value: Ignoring nullptr value.vector with format vpiVectorVal for "
+        "'t.test.onebit'"));
 
     return 0;
 }
