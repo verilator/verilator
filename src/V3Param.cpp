@@ -315,9 +315,7 @@ class ParamSubstVisitor final : public VNVisitor {
     }
     // Whether varp is declared in a package, so its type can't depend on the cell's parameters
     static bool inPackage(const AstVar* varp) {
-        const AstNode* np = varp;
-        while (np && !VN_IS(np, NodeModule)) np = np->backp();
-        return VN_IS(np, Package);
+        return VN_IS(v3Global.rootp()->containingModule(varp), Package);
     }
     // Whether a typedef of the module uses the module's parameters
     static bool typedefDependsOnParams(const AstTypedef* typedefp, const ParamPinMaps& pins) {

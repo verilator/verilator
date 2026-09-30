@@ -285,8 +285,11 @@ endmodule
 
 // Sizes and types from $bits of a variable of a package or of the module, not a parameter
 package pv;
+  class pvc;  // A class ahead of the variable, as a class is a scope too
+  endclass
   logic [4:0] sig5;
 endpackage
+logic [5:0] unit6;  // In $unit
 module bv #(
     parameter int N = $bits(pv::sig5),
     parameter int V[N] = '{default: 0}
@@ -294,6 +297,18 @@ module bv #(
 endmodule
 module bp #(
     parameter type T = logic [$bits(pv::sig5)-1:0],
+    parameter T V[2] = '{default: 0}
+) ();
+endmodule
+module bpi
+  import pv::*;
+#(
+    parameter type T = logic [$bits(sig5)-1:0],
+    parameter T V[2] = '{default: 0}
+) ();
+endmodule
+module bpu #(
+    parameter type T = logic [$bits(unit6)-1:0],
     parameter T V[2] = '{default: 0}
 ) ();
 endmodule
@@ -429,6 +444,8 @@ module t;
   bv #(.V('{1, 2, 3, 4, 5})) i_bv ();
   bp #(.V('{17, 18})) i_bp ();
   bp #(.T(logic [$bits(pv::sig5):0]), .V('{33, 34})) i_bpo ();  // Type overridden
+  bpi #(.V('{19, 20})) i_bpi ();
+  bpu #(.V('{40, 41})) i_bpu ();
   bw #(.V('{17, 18})) i_bw ();
 
   initial begin
@@ -638,6 +655,10 @@ module t;
     `checkd(i_bp.V[1], 18);
     `checkd($bits(i_bpo.V[0]), 6);
     `checkd(i_bpo.V[1], 34);
+    `checkd($bits(i_bpi.V[0]), 5);
+    `checkd(i_bpi.V[1], 20);
+    `checkd($bits(i_bpu.V[0]), 6);
+    `checkd(i_bpu.V[1], 41);
     `checkd($bits(i_bw.V[0]), 5);
     `checkd(i_bw.V[1], 18);
 
