@@ -27,6 +27,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 
 class V3OptionsImp;
@@ -373,6 +374,11 @@ private:
     string      m_diagnosticsSarifOutput;  // main switch: --diagnostics-sarif-output
     string      m_exeName;      // main switch: -o {name}
     VFileLibList m_hierParamsFile; // main switch: --hierarchical-params-file
+    // main switch: --hierarchical-xmr-port (outbound XMRs promoted to ports)
+    // (port name, width, dotted path)
+    std::vector<std::tuple<string, int, string>> m_hierXmrPorts;
+    // main switch: --hierarchical-xmr-bind, block -> [(port, dotted path)]
+    std::map<string, std::vector<std::pair<string, string>>> m_hierXmrBinds;
     string      m_jsonOnlyOutput;    // main switch: --json-only-output
     string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
@@ -682,6 +688,13 @@ public:
     }
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
     VFileLibList hierParamFile() const { return m_hierParamsFile; }
+    const std::vector<std::tuple<string, int, string>>& hierXmrPorts() const VL_MT_SAFE {
+        return m_hierXmrPorts;
+    }
+    const std::map<string, std::vector<std::pair<string, string>>>&
+    hierXmrBinds() const VL_MT_SAFE {
+        return m_hierXmrBinds;
+    }
     string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
     string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
     string l2Name() const { return m_l2Name; }

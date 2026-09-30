@@ -738,9 +738,24 @@ class LinkCellsVisitor final : public VNVisitor {
                                 }
                             }
 
+                            // A port promoted from an outbound cross-module reference is
+                            // connected later, by V3Hierarchical::bindXmrPorts, which runs
+                            // after linking. It is not a missing pin.
+                            bool promotedXmr = false;
+                            {
+                                const auto& binds = v3Global.opt.hierXmrBinds();
+                                const auto bit = binds.find(nodep->modName());
+                                if (bit != binds.end()) {
+                                    for (const auto& pr : bit->second) {
+                                        if (pr.first == portp->name()) promotedXmr = true;
+                                    }
+                                }
+                            }
+
                             // Is the matching Module port: an INPUT, with default value (in
                             // valuep):
-                            if (portp_varp && portp_varp->isInput() && portp_varp->valuep()) {
+                            if (promotedXmr
+                                || (portp_varp && portp_varp->isInput() && portp_varp->valuep())) {
                                 // Do not warn
                                 // Create b/c not already connected, and it does exist.
                                 AstPin* const newp
