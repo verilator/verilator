@@ -42,7 +42,7 @@ foreach my $sw (@ARGV) {
     push @Opt_Verilator_Sw, $sw;
 }
 
-Getopt::Long::config("no_auto_abbrev", "pass_through", "permute");
+Getopt::Long::config("no_auto_abbrev", "pass_through");
 if (! GetOptions (
           # Major operating modes
           "help"        => \&usage,
