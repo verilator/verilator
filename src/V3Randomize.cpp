@@ -1358,8 +1358,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // must stay inside the loop body; hoisting them out leaves dangling references
     // once task inlining deletes the loop's index variable.
     static bool referencesLoopIdx(const AstNode* nodep) {
-        return nodep->exists(
-            [](const AstVarRef* refp) { return refp->varp()->isUsedLoopIdx(); });
+        return nodep->exists([](const AstVarRef* refp) { return refp->varp()->isUsedLoopIdx(); });
     }
 
     // Create SFormatF for array dereference inside solver
