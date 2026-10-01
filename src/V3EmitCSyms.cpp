@@ -999,6 +999,7 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
     puts("bool& __Vm_didInit;\n");
+    if (v3Global.opt.systemC()) puts("sc_core::sc_event __Vm_wakeEvent;\n");
 
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
