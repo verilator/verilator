@@ -521,8 +521,11 @@ void V3HierGraph::writeParametersFiles() const {
 // parameterized range, an unpacked array, a struct, enum, real or string -
 // returns -1 so the caller refuses instead of assuming a width.
 static int promotableWidth(const AstVar* varp) {
-    const AstBasicDType* const bdtypep = VN_CAST(varp->subDTypep(), BasicDType);
-    if (!bdtypep) return -1;  // struct, enum, unpacked array, typedef, ...
+    // Follow typedefs: a name for a packed basic type is still promotable
+    const AstNodeDType* subp = varp->subDTypep();
+    if (subp) subp = subp->skipRefp();
+    const AstBasicDType* const bdtypep = VN_CAST(subp, BasicDType);
+    if (!bdtypep) return -1;  // struct, enum, unpacked array, class, ...
     // isOpaque() covers real, string, event and the internal types; a bare
     // 'input foo' is LOGIC_IMPLICIT, which isIntNumeric() would wrongly reject.
     if (bdtypep->keyword().isOpaque()) return -1;
