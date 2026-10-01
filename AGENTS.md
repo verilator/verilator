@@ -143,6 +143,7 @@ The API you choose determines which test must accompany the change.
 
 ## Commits
 
-- Subject line is short and imperative and conventionally ends with the PR number:
-  `Support property case (#7721)`. A body is optional and common for non-trivial
-  changes.
+- Subject line is short and imperative and conventionally ends with the
+  issue number being fixed. No need for the PR number this will be added
+  during git squash. e.g `Support property case (#7721)`. The commit body message is
+  optional and common for non-trivial changes.
