@@ -3265,10 +3265,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstForeachHeader* const headerp
                 = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), loopVarp};
 
-            // Filled in by whichever branch below applies; the with-clause
-            // branch defers until the per-element width is known further
-            // down, since the reduction node's own dtype isn't resolved yet
-            // for a dynamically-sized struct-array element.
+            // Filled in by whichever branch below applies.
             const char* smtOp = nullptr;
             std::string identity;
             if (!withp) {
@@ -3313,9 +3310,30 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeExpr* const elemSelp = newSel(fl, nodep->fromp(), idxRefp);
                 elemSelp->user1(randArr);
 
-                // Get the result width for the reduction
+                // Get the result width for the reduction -- V3Width resolves
+                // this from the with-clause expression's own dtype, so it's
+                // already the real per-element width here, even for a
+                // dynamically-sized array of structs.
                 const int resultWidth = nodep->dtypep()->width();
                 const VSigning resultSigning = nodep->dtypep()->numeric();
+
+                if (nodep->method() == VCMethod::ARRAY_R_SUM) {
+                    smtOp = "bvadd";
+                    identity = "#b" + std::string(resultWidth, '0');
+                } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
+                    smtOp = "bvmul";
+                    UASSERT_OBJ(resultWidth > 0, nodep, "Zero-width per-element expression");
+                    identity = "#b" + std::string(resultWidth - 1, '0') + "1";
+                } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
+                    smtOp = "bvand";
+                    identity = "#b" + std::string(resultWidth, '1');
+                } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
+                    smtOp = "bvor";
+                    identity = "#b" + std::string(resultWidth, '0');
+                } else {  // ARRAY_R_XOR
+                    smtOp = "bvxor";
+                    identity = "#b" + std::string(resultWidth, '0');
+                }
 
                 AstNode* perElemExprp = withp->exprp()->cloneTreePure(false);
                 if (AstLambdaArgRef* const rootRefp = VN_CAST(perElemExprp, LambdaArgRef)) {
@@ -3344,26 +3362,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                     });
                 }
                 VL_DO_DANGLING(elemSelp->deleteTree(), elemSelp);
-                {
-                    const int width = perElemExprp->width();
-                    if (nodep->method() == VCMethod::ARRAY_R_SUM) {
-                        smtOp = "bvadd";
-                        identity = "#b" + std::string(width, '0');
-                    } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
-                        smtOp = "bvmul";
-                        UASSERT_OBJ(width > 0, nodep, "Zero-width per-element expression");
-                        identity = "#b" + std::string(width - 1, '0') + "1";
-                    } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
-                        smtOp = "bvand";
-                        identity = "#b" + std::string(width, '1');
-                    } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
-                        smtOp = "bvor";
-                        identity = "#b" + std::string(width, '0');
-                    } else {  // ARRAY_R_XOR
-                        smtOp = "bvxor";
-                        identity = "#b" + std::string(width, '0');
-                    }
-                }
 
                 // enum-literal folding pass already ran -- re-fold the literals.
                 perElemExprp = V3Const::constifyEdit(perElemExprp);
