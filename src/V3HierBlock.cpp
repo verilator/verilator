@@ -810,27 +810,29 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
 
     // 3) Thread each port up to the block top, adding a pin at every instance.
     //    Iterate to a fixpoint: adding a port to a parent may require its own
-    //    parent to supply it in turn.
+    //    parent to supply it in turn. The cells are gathered first, because
+    //    creating ports and pins mutates the tree a traversal would be walking.
+    std::vector<AstCell*> cells;
+    netlistp->foreach([&cells](AstCell* cellp) { cells.push_back(cellp); });
     bool changed = true;
     while (changed) {
         changed = false;
-        netlistp->foreach([&](AstCell* cellp) {
+        for (AstCell* const cellp : cells) {
             AstNodeModule* const childp = cellp->modp();
-            if (!childp) return;
+            if (!childp) continue;
             const auto it = needs.find(childp);
-            if (it == needs.end()) return;
+            if (it == needs.end()) continue;
             AstNodeModule* parentp = nullptr;
             for (AstNode* upp = cellp; upp; upp = upp->backp()) {
                 if ((parentp = VN_CAST(upp, NodeModule))) break;
             }
-            if (!parentp) return;
+            if (!parentp) continue;
             for (const auto& np : it->second) {
                 const std::string& name = np.first;
-                // Pin already present?
                 bool havePin = false;
-                cellp->foreach([&](AstPin* pinp) {
+                for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                     if (pinp->name() == name) havePin = true;
-                });
+                }
                 if (havePin) continue;
                 ensurePort(parentp, name, np.second, netlistp);
                 if (needs[parentp].emplace(name, np.second).second) changed = true;
@@ -840,7 +842,7 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
                 UINFO(4, "HIER-XMR: pinned " << name << " on instance " << cellp->prettyNameQ());
                 changed = true;
             }
-        });
+        }
     }
 }
 
