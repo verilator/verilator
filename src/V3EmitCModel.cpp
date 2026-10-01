@@ -353,7 +353,7 @@ class EmitCModel final : public EmitCFunc {
             putsDecoration(nullptr, "// Sensitivities on all clocks and combinational inputs\n");
             puts("SC_METHOD(eval);\n");
             if (v3Global.usesTiming()) {
-                putsDecoration(nullptr, "// Notified by DPI exports\n");
+                putsDecoration(nullptr, "// Notified by pending time delays/DPI exports\n");
                 puts("sensitive << vlSymsp->__Vm_wakeEvent;\n");
             }
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
