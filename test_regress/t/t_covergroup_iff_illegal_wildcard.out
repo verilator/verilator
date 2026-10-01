@@ -1,0 +1,4 @@
+Disabled guards produced no illegal-bin errors.
+[0] %Error: t_covergroup_iff_illegal.v:20: Assertion failed in top.t.cg.sample: Illegal bin 'wild' hit in coverpoint 'cp'
+%Error: t/t_covergroup_iff_illegal.v:20: Verilog $stop
+Aborting...

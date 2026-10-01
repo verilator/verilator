@@ -22,7 +22,11 @@ module t (
       bins arrayed[] = {3, 4};
       bins rest = default;
     }
-    cp_b: coverpoint b {bins low = {0}; bins high = {1}; bins either = {[0 : 1]};}
+    cp_b: coverpoint b {
+      bins low = {0};
+      bins high = {1};
+      bins either = {[0 : 1]};
+    }
     // Overlapping coverpoint bins must not count a selected cross bin twice.
     all_products: cross cp_a, cp_b{
       bins combined = binsof (cp_a);
@@ -52,13 +56,18 @@ module t (
   endgroup
 
   covergroup cg_transition with function sample (bit [6:0] a, bit b);
-    cp_a: coverpoint a {bins seq = (0 => 1); bins two = {2};}
+    cp_a: coverpoint a {
+      bins seq = (0 => 1);
+      bins two = {2};
+    }
     cp_b: coverpoint b;
     transitions: cross cp_a, cp_b{bins selected = binsof (cp_a.seq);}
   endgroup
 
   covergroup cg_empty with function sample (bit a, bit b);
-    cp_a: coverpoint a {ignore_bins ignored = {0, 1};}
+    cp_a: coverpoint a {
+      ignore_bins ignored = {0, 1};
+    }
     cp_b: coverpoint b;
     empty_product: cross cp_a, cp_b{bins selected = binsof (cp_b);}
   endgroup
@@ -81,8 +90,13 @@ module t (
       empty_cov.sample(1'(cyc / 2), 1'(cyc));
       if (cyc < 6) trans_cov.sample(7'(cyc % 3), 1'(cyc / 3));
       if (cyc == 0) begin
-        `checkr(cov.get_inst_coverage(), 20.0);
-        `checkr(auto_cov.get_inst_coverage(), 60.0);
+        // IEEE 1800-2023 19.11: the mean of the items' coverage.  cp_a 1/4, cp_b 2/3,
+        // all_products 1/1, named 1/10, other_axis 2/9, array_bins 2/7, overlapping 2/8,
+        // guarded 0/11, and empty_selection 2/12
+        `checkr(cov.get_inst_coverage(),
+                100.0 * (1.0 / 4 + 2.0 / 3 + 1.0 + 1.0 / 10 + 2.0 / 9 + 2.0 / 7 + 2.0 / 8 + 0.0
+                         + 2.0 / 12) / 9);
+        `checkr(auto_cov.get_inst_coverage(), (50.0 + 50.0 + 100.0) / 3);
       end
     end
     else begin

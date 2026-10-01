@@ -19,13 +19,19 @@ module t (
 
   covergroup cg_a(ref logic [1:0] sig);
     cp_a: coverpoint sig {
-      bins zero = {2'b00}; bins one = {2'b01}; bins two = {2'b10}; bins three = {2'b11};
+      bins zero = {2'b00};
+      bins one = {2'b01};
+      bins two = {2'b10};
+      bins three = {2'b11};
     }
   endgroup
 
   covergroup cg_b(ref logic [1:0] sig);
     cp_b: coverpoint sig {
-      bins zero = {2'b00}; bins one = {2'b01}; bins two = {2'b10}; bins three = {2'b11};
+      bins zero = {2'b00};
+      bins one = {2'b01};
+      bins two = {2'b10};
+      bins three = {2'b11};
     }
   endgroup
 

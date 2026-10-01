@@ -30,7 +30,8 @@ class StackCountVisitor final : public VNVisitorConst {
     const VNUser2InUse m_inuser2;
 
     // MEMBERS
-    uint64_t m_stackSize = 0;  // Running count of instructions
+    uint64_t m_stackSize = 0;  // Running count of local bytes in the current function
+    uint64_t m_callMax = 0;  // Largest callee cost called from the current function
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_ignoreRemaining = false;  // Ignore remaining statements in the block
     bool m_inCFunc = false;  // Inside function
@@ -39,9 +40,9 @@ class StackCountVisitor final : public VNVisitorConst {
     // Little class to cleanly call startVisitBase/endVisitBase
     class VisitBase final {
         // MEMBERS
-        uint32_t m_savedCount;
-        AstNode* const m_nodep;
-        StackCountVisitor* const m_visitor;
+        uint64_t m_savedCount;  // Count before visit applied
+        AstNode* const m_nodep;  // Node this RAII helper is visiting
+        StackCountVisitor* const m_visitor;  // Visitor whose start/endVisitBase are called
 
     public:
         // CONSTRUCTORS
@@ -62,24 +63,24 @@ public:
     ~StackCountVisitor() override = default;
 
     // METHODS
-    uint32_t stackSize() const { return m_stackSize; }
+    uint64_t stackSize() const { return m_stackSize + m_callMax; }
 
 private:
     void reset() {
         m_stackSize = 0;
         m_ignoreRemaining = false;
     }
-    uint32_t startVisitBase(AstNode* nodep) {
+    uint64_t startVisitBase(AstNode* nodep) {
         UASSERT_OBJ(!m_ignoreRemaining, nodep, "Should not reach here if ignoring");
 
         // Save the count, and add it back in during ~VisitBase This allows
         // debug prints to show local cost of each subtree, so we can see a
         // hierarchical view of the cost when in debug mode.
-        const uint32_t savedCount = m_stackSize;
+        const uint64_t savedCount = m_stackSize;
         m_stackSize = 0;
         return savedCount;
     }
-    void endVisitBase(uint32_t savedCount, const AstNode* nodep) {
+    void endVisitBase(uint64_t savedCount, const AstNode* nodep) {
         UINFO(8, "cost " << std::setw(6) << std::left << m_stackSize << "  " << nodep);
         if (!m_ignoreRemaining) m_stackSize += savedCount;
     }
@@ -89,18 +90,18 @@ private:
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
         iterateAndNextConstNull(nodep->condp());
-        const uint32_t savedCount = m_stackSize;
+        const uint64_t savedCount = m_stackSize;
 
         UINFO(8, "thensp:");
         reset();
         iterateAndNextConstNull(nodep->thensp());
-        uint32_t ifCount = m_stackSize;
+        uint64_t ifCount = m_stackSize;
         if (nodep->branchPred().unlikely()) ifCount = 0;
 
         UINFO(8, "elsesp:");
         reset();
         iterateAndNextConstNull(nodep->elsesp());
-        uint32_t elseCount = m_stackSize;
+        uint64_t elseCount = m_stackSize;
         if (nodep->branchPred().likely()) elseCount = 0;
 
         reset();
@@ -118,17 +119,17 @@ private:
         // one of the two expressions, so only count the max.
         const VisitBase vb{this, nodep};
         iterateAndNextConstNull(nodep->condp());
-        const uint32_t savedCount = m_stackSize;
+        const uint64_t savedCount = m_stackSize;
 
         UINFO(8, "?");
         reset();
         iterateAndNextConstNull(nodep->thenp());
-        const uint32_t ifCount = m_stackSize;
+        const uint64_t ifCount = m_stackSize;
 
         UINFO(8, ":");
         reset();
         iterateAndNextConstNull(nodep->elsep());
-        const uint32_t elseCount = m_stackSize;
+        const uint64_t elseCount = m_stackSize;
 
         reset();
         if (ifCount >= elseCount) {
@@ -139,20 +140,7 @@ private:
             if (nodep->thenp()) nodep->thenp()->user2(0);  // Don't dump it
         }
     }
-    void visit(AstFork* nodep) override {
-        if (m_ignoreRemaining) return;
-        const VisitBase vb{this, nodep};
-        iterateAndNextConstNull(nodep->stmtsp());
-        uint32_t totalCount = m_stackSize;
-        VL_RESTORER(m_ignoreRemaining);
-        // Sum counts in each statement
-        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
-            reset();
-            iterateConst(stmtp);
-            totalCount += m_stackSize;
-        }
-        m_stackSize = totalCount;
-    }
+    void visit(AstFork* nodep) override { nodep->v3fatalSrc("Fork removed earlier"); }
     void visit(AstNodeCCall* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
@@ -170,15 +158,18 @@ private:
         if (!nodep->user2()) {  // Short circuit
             VL_RESTORER(m_ignoreRemaining);
             VL_RESTORER(m_stackSize);
+            VL_RESTORER(m_callMax);
             VL_RESTORER(m_inCFunc);
             m_tracingCall = false;
             m_stackSize = 0;
+            m_callMax = 0;
             m_inCFunc = true;
             const VisitBase vb{this, nodep};
             iterateChildrenConst(nodep);
-            nodep->user2(m_stackSize + 1);
+            nodep->user2(m_stackSize + m_callMax + 1);
         }
-        m_stackSize += nodep->user2() - 1;
+        // Sequential calls reuse the same stack, so only the deepest counts
+        m_callMax = std::max(m_callMax, nodep->user2() - 1);
         m_tracingCall = false;
     }
     void visit(AstVar* nodep) override {

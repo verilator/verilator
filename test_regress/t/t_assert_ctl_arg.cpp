@@ -27,140 +27,15 @@ void verilatedTest() {
     TEST_CHECK_NZ(contextp->assertOn());
     contextp->assertOn(false);
     TEST_CHECK_Z(contextp->assertOn());
-    TEST_CHECK_Z(contextp->assertOnGet(1, 1));
-
-    // Setting one type
-    contextp->assertOnSet(1, 1);
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 1));
-    TEST_CHECK_NZ(contextp->assertOn());
-    TEST_CHECK_Z(contextp->assertOnGet(2, 2));
-
-    // Setting types
-    contextp->assertOn(false);
-    contextp->assertOnSet(1, 3);
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 3));
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 2));
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 1));
-    TEST_CHECK_Z(contextp->assertOnGet(1, 0));
-    TEST_CHECK_Z(contextp->assertOnGet(2, 0));
-    TEST_CHECK_Z(contextp->assertOnGet(0, 0));
-
-    // Setting multiple types separately
-    contextp->assertOn(false);
-    contextp->assertOnSet(0, 1);
-    contextp->assertOnSet(1, 2);
-    contextp->assertOnSet(2, 3);
-    TEST_CHECK_NZ(contextp->assertOn());
-    TEST_CHECK_Z(contextp->assertOnGet(0, 1));
-    TEST_CHECK_Z(contextp->assertOnGet(1, 1));
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 2));
-    TEST_CHECK_NZ(contextp->assertOnGet(2, 1));
-    TEST_CHECK_NZ(contextp->assertOnGet(2, 2));
-    TEST_CHECK_NZ(contextp->assertOnGet(2, 3));
-    TEST_CHECK_Z(contextp->assertOnGet(0, 2));
-    TEST_CHECK_Z(contextp->assertOnGet(4, 1));
-    TEST_CHECK_Z(contextp->assertOnGet(8, 7));
-
-    // Clearing selected types
-    contextp->assertOn(true);
-    contextp->assertOnClear(1, 3);
-    contextp->assertOnClear(1, 4);
-    TEST_CHECK_Z(contextp->assertOnGet(1, 1));
-    TEST_CHECK_Z(contextp->assertOnGet(1, 2));
-    TEST_CHECK_Z(contextp->assertOnGet(1, 4));
-    contextp->assertOnClear(4, 4);
-    TEST_CHECK_Z(contextp->assertOnGet(4, 4));
-    TEST_CHECK_NZ(contextp->assertOnGet(4, 1));
-    TEST_CHECK_NZ(contextp->assertOnGet(4, 2));
-    TEST_CHECK_NZ(contextp->assertOn());
-
-    // Clearing all assert types
-    contextp->assertOn(true);
-    contextp->assertOnClear(255, 7);
-    // Everything is disabled except internal asserts
-    TEST_CHECK_NZ(contextp->assertOn());
-    contextp->assertOn(false);
-    // Now everything is disabled
-    TEST_CHECK_Z(contextp->assertOn());
-
-    // Unified runtime query getter
-    using Query = VerilatedAssertCtlQuery;
-    constexpr uint32_t LOCK = 1;
-    constexpr uint32_t UNLOCK = 2;
-    constexpr uint32_t ON = 3;
-    constexpr uint32_t OFF = 4;
-    constexpr uint32_t KILL = 5;
-    constexpr uint32_t PASS_ON = 6;
-    constexpr uint32_t PASS_OFF = 7;
-    constexpr uint32_t FAIL_ON = 8;
-    constexpr uint32_t FAIL_OFF = 9;
-    constexpr uint32_t NONVACUOUS_ON = 10;
-    constexpr uint32_t VACUOUS_OFF = 11;
-    constexpr uint32_t TYPE = 1;
-    constexpr uint32_t DIRECTIVE = 1;
-
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, 0, DIRECTIVE));
-
-    contextp->assertCtl(LOCK, TYPE, DIRECTIVE);
-    contextp->assertCtl(ON, TYPE, DIRECTIVE);
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
-    contextp->assertCtl(UNLOCK, TYPE, DIRECTIVE);
-    contextp->assertCtl(ON, TYPE, DIRECTIVE);
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
-    contextp->assertCtl(OFF, TYPE, DIRECTIVE);
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
-
-    const uint32_t killBefore = contextp->assertCtlGet(Query::ASSERT_CTL_KILL, TYPE, DIRECTIVE);
-    contextp->assertCtl(KILL, TYPE, DIRECTIVE);
-    TEST_CHECK_EQ(contextp->assertCtlGet(Query::ASSERT_CTL_KILL, TYPE, DIRECTIVE), killBefore + 1);
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_ON, TYPE, DIRECTIVE));
-
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
-    contextp->assertCtl(PASS_OFF, TYPE, DIRECTIVE);
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
-
-    contextp->assertCtl(NONVACUOUS_ON, TYPE, DIRECTIVE);
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
-    contextp->assertCtl(PASS_ON, TYPE, DIRECTIVE);
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
-    contextp->assertCtl(VACUOUS_OFF, TYPE, DIRECTIVE);
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_NONVACUOUS, TYPE, DIRECTIVE));
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_PASS_ON_VACUOUS, TYPE, DIRECTIVE));
-
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_FAIL_ON, TYPE, DIRECTIVE));
-    contextp->assertCtl(FAIL_OFF, TYPE, DIRECTIVE);
-    TEST_CHECK_Z(contextp->assertCtlGet(Query::ASSERT_CTL_FAIL_ON, TYPE, DIRECTIVE));
-    contextp->assertCtl(FAIL_ON, TYPE, DIRECTIVE);
-    TEST_CHECK_NZ(contextp->assertCtlGet(Query::ASSERT_CTL_FAIL_ON, TYPE, DIRECTIVE));
 }
 
 void verilatedLockedTest() {
     // With +verilator+assert+lock, every assertion-control update is a no-op
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-
-    // Clear some bits to test assertOnSet
-    contextp->assertOnClear(2, 3);
     const char* argsp[] = {"+verilator+assert+lock"};
     contextp->commandArgsAdd(1, argsp);
-    TEST_CHECK_EQ(contextp->assertCtlsLocked(), true);
-
-    // Validate each assert control API call is a no-op
     contextp->assertOn(false);
     TEST_CHECK_NZ(contextp->assertOn());
-
-    contextp->assertOnSet(2, 3);
-    TEST_CHECK_Z(contextp->assertOnGet(2, 3));
-
-    contextp->assertOnClear(1, 1);
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 1));
-
-    contextp->assertCtl(4, 4, 1);
-    TEST_CHECK_NZ(contextp->assertOnGet(4, 1));
 }
 
 int main(int argc, char** argv) {

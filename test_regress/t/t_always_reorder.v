@@ -18,10 +18,13 @@ module t (
   reg [15:0] v3;
   integer nosplit;
 
+  // Write needed so that V3Dead doesn't kill v0..v3. In its own block, as it only reads
+  // them, so would split out of the block below anyway.
   always @(posedge clk) begin
-    // write needed so that V3Dead doesn't kill v0..v3
     $write(" values %x %x %x\n", v1, v2, v3);
+  end
 
+  always @(posedge clk) begin
     // Locally-set 'nosplit' will prevent the if from splitting
     // in splitAlwaysAll(). This whole always block should still be
     // intact when we call splitReorderAll() which is the subject

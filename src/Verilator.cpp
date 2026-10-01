@@ -48,6 +48,7 @@
 #include "V3DfgOptimizer.h"
 #include "V3DiagSarif.h"
 #include "V3EmitC.h"
+#include "V3EmitCBase.h"
 #include "V3EmitCMain.h"
 #include "V3EmitMk.h"
 #include "V3EmitMkJson.h"
@@ -284,10 +285,6 @@ static void process() {
             // should be after constifyAllLint() which flattens to 1D bit vector
             V3SplitVar::splitVariable(v3Global.rootp());
 
-            // Remove cell arrays (must be between V3Width and scoping)
-            V3Inst::dearrayAll(v3Global.rootp());
-            V3LinkDot::linkDotArrayed(v3Global.rootp());
-
             if (v3Global.opt.timing().isSetTrue()) {
                 // Generate classes and tasks required to maintain proper lifetimes for references
                 // in forks
@@ -314,17 +311,6 @@ static void process() {
             // module.)
             V3Unknown::unknownAll(v3Global.rootp());
             v3Global.constRemoveXs(true);
-        }
-
-        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
-            // Module inlining
-            // Cannot remove dead variables after this, as alias information for final
-            // V3Scope's V3LinkDot is in the AstVar.
-            if (v3Global.opt.coverageFsm()) V3FsmDetect::markWrapperStateVars(v3Global.rootp());
-            if (v3Global.opt.fInline()) {
-                V3Inline::inlineAll(v3Global.rootp());
-                V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules
-            }
         }
 
         // Interface references feed trace file aliases and VPI name resolution
@@ -359,12 +345,14 @@ static void process() {
             // No more AstAlias after linkDotScope
             V3Scope::scopeAll(v3Global.rootp());
             V3LinkDot::linkDotScope(v3Global.rootp());
-            // FSM coverage needs scopes, but should otherwise run as early as
-            // possible before later lowering rewrites user-visible clocked
-            // case structure. This entry point runs two adjacent phases:
-            // detect into local graph state, then lower that completed state
-            // into the concrete coverage machinery.
+            V3Error::abortIfErrors();
+
+            // FSM coverage needs scopes, but should otherwise run as early as possible before
+            // later lowering rewrites user-visible clocked case structure.
             if (v3Global.opt.coverageFsm()) V3FsmDetect::detect(v3Global.rootp());
+
+            // Module inlining
+            if (v3Global.opt.fInline()) V3Inline::inlineAll(v3Global.rootp());
 
             // Relocate classes (after linkDot)
             V3Class::classAll(v3Global.rootp());
@@ -641,6 +629,8 @@ static void process() {
         // Output the text
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
             && !v3Global.opt.dpiHdrOnly()) {
+            // Make parent module pointers available for all Emit stages below
+            const EmitCParentModule emitCParentModule;
             // emitcInlines is first, as it may set needHInlines which other emitters read
             V3EmitC::emitcInlines();
             V3EmitC::emitcSyms();
@@ -738,7 +728,7 @@ static bool verilate(const string& argString) {
         V3Os::selfTest();
         V3Number::selfTest();
         VString::selfTest();
-        VHashSha256::selfTest();
+        VHashSha512::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
         V3ExecGraph::selfTest();

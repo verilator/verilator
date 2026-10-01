@@ -12,7 +12,7 @@
 //*************************************************************************
 
 #include "Vt_dpi_accessors.h"
-#include "Vt_dpi_accessors__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 #include <iomanip>

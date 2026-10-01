@@ -36,28 +36,28 @@ module t (
   assert property (@(posedge clk) always 1'b1);
 
   // A zero-lower-bound weak always remains temporal even though it starts at entry.
-  assert property (@(posedge clk) (always [0:$] a_low) or 1'b1);
-  assert property (@(posedge clk) 1'b1 or (always [0:$] a_low));
+  assert property (@(posedge clk) (always[0: $] a_low) or 1'b1);
+  assert property (@(posedge clk) 1'b1 or(always[0: $] a_low));
 
   // Bounded weak always over constant-true input.
-  assert property (@(posedge clk) always [0:3] a_high) high_bounded_pass_q.push_back(cyc);
+  assert property (@(posedge clk) always[0: 3] a_high) high_bounded_pass_q.push_back(cyc);
 
   // Degenerate [0:0]: equivalent to immediate sample.
-  assert property (@(posedge clk) always [0:0] a_high) high_degenerate_pass_q.push_back(cyc);
+  assert property (@(posedge clk) always[0: 0] a_high) high_degenerate_pass_q.push_back(cyc);
 
   // Constant-false: every attempt fails.
-  assert property (@(posedge clk) always [0:3] a_low)
+  assert property (@(posedge clk) always[0: 3] a_low)
   else low_bounded_fail_q.push_back(cyc);
 
-  assert property (@(posedge clk) always [0:0] a_low)
+  assert property (@(posedge clk) always[0: 0] a_low)
   else low_degenerate_fail_q.push_back(cyc);
 
   // CRC-driven random input: window [cyc..cyc+3] of a_rand.
-  assert property (@(posedge clk) always [0:3] a_rand) rand_bounded_pass_q.push_back(cyc);
+  assert property (@(posedge clk) always[0: 3] a_rand) rand_bounded_pass_q.push_back(cyc);
   else rand_bounded_fail_q.push_back(cyc);
 
   // disable iff suppresses attempts whose start cyc has rst_rand=1.
-  assert property (@(posedge clk) disable iff (rst_rand) always [0:3] a_rand)
+  assert property (@(posedge clk) disable iff (rst_rand) always[0: 3] a_rand)
     disable_bounded_pass_q.push_back(cyc);
   else disable_bounded_fail_q.push_back(cyc);
 
@@ -69,7 +69,7 @@ module t (
 
   // disable iff inside named property.
   property p_disable_named;
-    @(posedge clk) disable iff (rst_rand) always [1:2] a_high;
+    @(posedge clk) disable iff (rst_rand) always[1: 2] a_high;
   endproperty
   assert property (p_disable_named);
 
@@ -77,22 +77,22 @@ module t (
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc == 19) begin
-      // Constant-true window [0:3]: K=0..16 succeed at cyc K+3 = 3..19.
-      `checkd(high_bounded_pass_q.size(), 17);  // Other sims: 16
+      // Constant-true window [0:3]: K=0..15 succeed at cyc K+3 = 3..18.
+      `checkd(high_bounded_pass_q.size(), 16);
       `checkd(high_bounded_pass_q[0], 3);  // Other sims: 4
-      `checkd(high_bounded_pass_q[$], 19);
-      // Degenerate [0:0]: K=0..19 succeed at cyc K = 0..19.
-      `checkd(high_degenerate_pass_q.size(), 20);  // Other sims: 19
-      `checkd(high_degenerate_pass_q[0], 0);  // Other sims: 0, 1
-      `checkd(high_degenerate_pass_q[$], 19);
+      `checkd(high_bounded_pass_q[$], 18);
+      // Degenerate [0:0]: K=0..18 succeed at cyc K = 0..18.
+      `checkd(high_degenerate_pass_q.size(), 19);
+      `checkd(high_degenerate_pass_q[0], 0);  // Some other sims: 1
+      `checkd(high_degenerate_pass_q[$], 18);
       // Constant-false: every attempt fails immediately.
-      `checkd(low_bounded_fail_q.size(), 20);  // Other sims: 19
-      `checkd(low_degenerate_fail_q.size(), 20);  // Other sims: 19
+      `checkd(low_bounded_fail_q.size(), 19);
+      `checkd(low_degenerate_fail_q.size(), 19);
       // CRC + disable streams
       `checkd(rand_bounded_pass_q.size(), 0);
-      `checkd(rand_bounded_fail_q.size(), 20);  // Other sims: 19, 11
+      `checkd(rand_bounded_fail_q.size(), 19);  // Some other sims: 11
       `checkd(disable_bounded_pass_q.size(), 0);
-      `checkd(disable_bounded_fail_q.size(), 8);  // Other sims: 5, 6
+      `checkd(disable_bounded_fail_q.size(), 7);  // Other sims: 5, 6
       $write("*-* All Finished *-*\n");
       $finish;
     end

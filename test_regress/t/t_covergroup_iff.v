@@ -27,9 +27,11 @@ class CrossIffEmbedded;
   bit b;
   bit enabled;
 
-  // cross-level iff using an enclosing class member
+  // Bin- and cross-level iff using an enclosing class member.
   covergroup cg;
-    cp_a: coverpoint a {bins one = {1};}
+    cp_a: coverpoint a {
+      bins one = {1} iff (this.enabled);
+    }
     cp_b: coverpoint b {bins one = {1};}
     cross_ab: cross cp_a, cp_b iff (this.enabled);
   endgroup
@@ -56,6 +58,10 @@ module t;
   logic [1:0] m_a;
   logic [1:0] m_b;
   int count;
+  logic [3:0] bin_value;
+  bit point_enable;
+  bit bin_enable;
+  logic [2:0] bin_mask;
 
   // iff on explicit value bins
   covergroup cg_iff;
@@ -144,6 +150,29 @@ module t;
     cross cp_a, cp_b iff (!disable_cross) {}
   endgroup
 
+  covergroup cg_state_bin_iff;
+    cp: coverpoint bin_value iff (point_enable) {
+      bins scalar = {2} iff (bin_enable);
+      bins values[] = {0, 1} iff (bin_enable && bin_mask[0]);
+      bins grouped = {3, 4} iff (bin_enable && (bin_mask[2:1] != 0));
+      wildcard bins wild = {4'b01?1} iff (bin_enable && !(bin_mask[2] == 0));
+      ignore_bins ignored = {8} iff (bin_enable);
+      wildcard ignore_bins wild_ignored = {4'b10?1} iff (bin_enable && bin_mask[1]);
+      illegal_bins illegal = {12} iff (bin_enable);
+      wildcard illegal_bins wild_illegal = {4'b11?1} iff (bin_enable && bin_mask[2]);
+    }
+  endgroup
+
+  covergroup cg_bin_cross with function sample (bit a, bit b, bit enable_a, bit enable_b);
+    cp_a: coverpoint a {
+      bins one = {1} iff (enable_a);
+    }
+    cp_b: coverpoint b {
+      bins one = {1} iff (enable_b);
+    }
+    cross_ab: cross cp_a, cp_b;
+  endgroup
+
   cg_iff cg1 = new;
   cg_default_iff cg2 = new;
   cg_array_iff cg3 = new;
@@ -158,6 +187,8 @@ module t;
   cg_cross_iff cx = new;
   cg_cross_iff_unnamed cxu = new;
   CrossIffEmbedded cxe = new;
+  cg_state_bin_iff state_bins = new;
+  cg_bin_cross cxb = new;
 
   initial begin
     cxc.sample(1, 1, 0, 1);
@@ -171,6 +202,42 @@ module t;
     cxu.sample(1, 1, 0);
     cxe.observe(1, 1, 0);
     cxe.observe(1, 1, 1);
+
+    cxb.sample(1, 1, 0, 0);
+    `checkr(cxb.get_inst_coverage(), 0.0);
+    cxb.sample(1, 1, 1, 0);
+    cxb.sample(1, 1, 0, 1);
+    `checkr(cxb.get_inst_coverage() < 100.0, 1);
+    cxb.sample(1, 1, 1, 1);
+    `checkr(cxb.get_inst_coverage(), 100.0);
+    cxb.sample(1, 1, 0, 0);
+
+    // IEEE 1800-2023 19.5.1: iff gates sampling, not bin construction.
+    point_enable = 1;
+    bin_enable = 0;
+    bin_mask = 3'b111;
+    for (int i = 0; i < 8; ++i) begin
+      bin_value = 4'(i);
+      state_bins.sample();
+    end
+    `checkr(state_bins.get_inst_coverage(), 0.0);
+    for (int i = 8; i < 16; ++i) begin
+      bin_value = 4'(i);
+      state_bins.sample();
+    end
+    point_enable = 0;
+    bin_enable = 1;
+    for (int i = 0; i < 16; ++i) begin
+      bin_value = 4'(i);
+      state_bins.sample();
+    end
+    `checkr(state_bins.get_inst_coverage(), 0.0);
+    point_enable = 1;
+    for (int i = 0; i < 12; ++i) begin
+      bin_value = 4'(i);
+      state_bins.sample();
+    end
+    `checkr(state_bins.get_inst_coverage(), 100.0);
 
     // Sample disabled_lo and disabled_hi with enable=0 -- must not be recorded
     enable = 0;

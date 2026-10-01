@@ -37,8 +37,21 @@ cg_overlap.cp_b.either: 8
 cg_overlap.cp_b.one: 4
 cg_overlap.cp_b.zero: 4
 cg_overlap.cx.combined [cross]: 8
+cg_overlap.cx.entire [cross]: 8
 cg_overlap.cx.forbidden [illegal,cross]: 0
 cg_overlap.cx.ignored [ignore,cross]: 4
+cg_static_cross.cp_a.auto_0: 4
+cg_static_cross.cp_a.auto_1: 4
+cg_static_cross.cp_b.auto_0: 4
+cg_static_cross.cp_b.auto_1: 4
+cg_static_cross.cross__02eref.entire [cross]: 8
+cg_static_cross.xx.entire [cross]: 8
+cg_static_cross.xx.grouped [cross]: 6
+cg_static_cross.xx.guarded [cross]: 4
+cg_static_cross.xx.one [cross]: 4
+cg_static_cross.xx.union_left [cross]: 8
+cg_static_cross.xx.union_right [cross]: 8
+cg_static_cross.xx.zero [cross]: 4
 cg_three.cp_a.auto_0: 4
 cg_three.cp_a.auto_1: 4
 cg_three.cp_b.auto_0: 4
@@ -128,6 +141,8 @@ cg_wide.cx.forbidden [illegal,cross]: 0
 cg_wide.cx.ignored [ignore,cross]: 6
 cg_wide.cx.partial [cross]: 4
 cg_wide.cx.sparse [cross]: 2
+cg_wide.whole.entire [cross]: 130
+cg_wide.whole.tail [cross]: 2
 cg_zero_product.cp_a.ignored [ignore]: 8
 cg_zero_product.cp_b.auto_0: 4
 cg_zero_product.cp_b.auto_1: 4

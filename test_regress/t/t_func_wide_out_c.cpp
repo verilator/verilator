@@ -18,13 +18,7 @@
 
 // clang-format off
 #if defined(VERILATOR)
-# ifdef T_FUNC_WIDE_OUT
-#  include "Vt_func_wide_out__Dpi.h"
-# elif defined(T_FUNC_WIDE_OUT_NOINL)
-#  include "Vt_func_wide_out_noinl__Dpi.h"
-# else
-#  error "Unknown test"
-# endif
+# include VM_PREFIX_INCLUDE_DPI
 #elif defined(VCS)
 # include "../vc_hdrs.h"
 #else

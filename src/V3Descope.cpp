@@ -26,6 +26,7 @@
 
 #include "V3Descope.h"
 
+#include "V3ConstPool.h"
 #include "V3EmitCBase.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -159,8 +160,7 @@ class DescopeVisitor final : public VNVisitor {
                         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
                                 AstVarRef* const newp = new AstVarRef{
-                                    portp->fileline(), portp,
-                                    portp->isWritable() ? VAccess::WRITE : VAccess::READ};
+                                    portp->fileline(), portp, portp->direction().pinAccess()};
                                 argsp = AstNode::addNext(argsp, newp);
                             }
                         }
@@ -236,7 +236,7 @@ class DescopeVisitor final : public VNVisitor {
         if (varp->isFuncLocal()) {
             // Reference to function locals need no self pointer
             nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
-        } else if (scopep->modp() == v3Global.rootp()->constPoolp()->modp()) {
+        } else if (scopep->modp()->isConstPool()) {
             // Reference to constant pool value need no self pointer
             nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
         } else {
@@ -295,5 +295,6 @@ public:
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { DescopeVisitor{nodep}; }  // Destruct before checking
+    V3ConstPool::setDescoped();
     V3Global::dumpCheckGlobalTree("descope", 0, dumpTreeEitherLevel() >= 3);
 }

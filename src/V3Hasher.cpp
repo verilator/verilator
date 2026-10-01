@@ -59,7 +59,7 @@ class HasherVisitor final : public VNVisitorConst {
         } else {
             VL_RESTORER(m_hash);
             // Reset accumulator
-            m_hash = V3Hash{nodep->type()};  // Node type
+            m_hash = V3Hash{nodep->type().hash()};  // Node type
             f();  // Node-specific hash
             if (hashDType && nodep != nodep->dtypep())
                 iterateConstNull(nodep->dtypep());  // Node dtype
@@ -77,7 +77,7 @@ class HasherVisitor final : public VNVisitorConst {
     // Each visitor below contributes to the hash any node-specific content
     // that is not dependent on either of the following, as these are
     // included by default by hashNode:
-    // - Node type (as given by AstNode::type())
+    // - Node type (as given by AstNode::type().hash())
     // - Node dtype (unless !hashDType)
     // - child nodes (unless !hashChildren)
     //

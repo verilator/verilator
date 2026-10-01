@@ -15,7 +15,7 @@
 #include <cstdio>
 //#include "verilated.h"
 
-#include "Vt_vpi_release_dup_bad__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 
 //======================================================================
 

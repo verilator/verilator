@@ -126,7 +126,7 @@ class UnknownVisitor final : public VNVisitor {
                 addVar(varp);
                 AstNode* const prepCopyp = prep->clonep();
                 prepCopyp->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
-                pushDeletep(prepCopyp);
+                VL_DO_DANGLING(pushDeletep(prepCopyp), prepCopyp);
             }
             AstIf* const newp = new AstIf{fl, condp, origStmtp, elseStmtp};
             replaceHandle.relink(newp);

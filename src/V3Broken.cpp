@@ -26,6 +26,8 @@
 
 #include "V3Broken.h"
 
+#include "V3ConstPool.h"
+
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -234,18 +236,11 @@ private:
         const char* dp = descrp;
         for (AstNodeExpr* argp = argsp; argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
             if (argp->fileline()->erroringOn()) return;  // Intentionally skip all checks
-            const AstNodeExpr* const lvalp = argp->cLValueTargetp();
-            const VAccess access = [&]() -> VAccess {
-                if (const AstVarRef* const varrefp = VN_CAST(lvalp, VarRef)) {
-                    return varrefp->access();
-                }
-                if (const AstMemberSel* const memberselp = VN_CAST(lvalp, MemberSel)) {
-                    return memberselp->access();
-                }
-                UASSERT_OBJ(!lvalp, argp, "Unknown LValue expression");
-                // Not an LValue, so it's read-only
-                return VAccess::READ;
-            }();
+            const AstNodeExpr* const lvalp = argp->getVAccessTargetRecurse();
+            const VAccess access
+                = lvalp ? lvalp->getVAccessRecurse()  // Since we call it on a result of above call
+                                                      // there should be no recursion at all
+                        : VAccess{VAccess::READ};
             if (dp[0] == '+') --dp;  // Repeats the entry before it
             switch (dp[0]) {
             case 'r':
@@ -438,6 +433,10 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
 
         // Check every node in tree
         const BrokenCheckVisitor cvisitor{nodep};
+
+        // Check the constant pool lookup cache refers only to nodes in the tree
+        const char* const whyp = V3ConstPool::broken();
+        UASSERT_OBJ(!whyp, nodep, "Broken constant pool cache: " << whyp);
 
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();

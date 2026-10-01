@@ -316,6 +316,33 @@ Summary:
 
    Enables basic block line coverage analysis. See :ref:`Line Coverage`.
 
+.. option:: --coverage-max-bins <value>
+
+   Rarely needed. Specifies the maximum number of bins one covergroup bins
+   declaration of an integral coverpoint may create: an array of bins such
+   as ``bins b[] = {[0:$]}``, automatic bins ``bins auto[N]``, or the
+   automatic bins of a coverpoint from ``option.auto_bin_max``. Defaults to
+   1024, and may be at most 4294967295 (``2**32 - 1``).
+
+   A larger array of bins is ignored with a :option:`COVERIGN` warning, a
+   larger ``bins auto[N]`` is an error, and a larger
+   ``option.auto_bin_max`` is reduced to this limit with a
+   :option:`COVERIGN` warning. Increasing the limit increases the memory
+   the model uses for the bins. See also
+   :vlopt:`--coverage-max-real-bins`.
+
+.. option:: --coverage-max-real-bins <value>
+
+   Rarely needed. Specifies the maximum number of values of one array of
+   bins of a coverpoint of a ``real`` expression, such as
+   ``bins b[] = {[1:10]}``, each of which is a bin compared separately.
+   Defaults to 1024, and may be at most 4294967295 (``2**32 - 1``).
+
+   A larger array of bins is ignored with a :option:`COVERIGN` warning.
+   Increasing the limit increases the size of the generated code, which
+   grows with the number of these bins. See also
+   :vlopt:`--coverage-max-bins`.
+
 .. option:: --coverage-max-width <width>
 
    Rarely needed. Specify the maximum bit width of a signal subject to
@@ -824,6 +851,11 @@ Summary:
 .. option:: -fno-merge-cond-motion
 
 .. option:: -fno-merge-const-pool
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.054: Disable merging constant pool entries that have
+   the same value but different data types.
 
 .. option:: -fno-reloop
 
@@ -2272,7 +2304,7 @@ Summary:
      If using `--x-assign unique`, use the
      :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
      runtime option, and seed the runtime random number generator such that
-     each regression run gets a different randomization sequence with
+     each regression test run gets a different randomization sequence with
      :vlopt:`+verilator+seed+\<value\>`. You'll probably also want to print
      any seeds selected, and code to enable rerunning with that same seed,
      so you can reproduce bugs.
@@ -2301,7 +2333,7 @@ Summary:
      If using `--x-initial unique`, use the
      :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
      runtime option, and seed the runtime random number generator such that
-     each regression run gets a different randomization sequence with
+     each regression test run gets a different randomization sequence with
      :vlopt:`+verilator+seed+\<value\>`. You'll probably also want to print
      any seeds selected, and code to enable rerunning with that same seed,
      so you can reproduce bugs.

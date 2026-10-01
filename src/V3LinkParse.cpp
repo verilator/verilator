@@ -63,6 +63,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeDType* m_dtypep = nullptr;  // Current data type
     AstNodeExpr* m_defaultInSkewp = nullptr;  // Current default input skew
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
+    AstCoverpoint* m_coverpointp = nullptr;  // Current coverpoint
     int m_anonUdpId = 0;  // Counter for anonymous UDP instances
     int m_coverpointNum = 0;  // Counter for unnamed coverpoints within current covergroup
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
@@ -119,17 +120,22 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf
+    bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf/GenCaseItem
         // IEEE says directly nested item is not a new block
         // The genblk name will get attached to the if true/false LOWER begin block(s)
         //    1: GENIF
         // -> 1:3: GENBLOCK [IMPLIED]  // nodep passed to this function
         //    1:3:1: GENIF
         //    1:3:1:2: GENBLOCK genblk1 [IMPLIED]
+        // Likewise for a generate case item holding only a generate if
+        //    1: GENCASEITEM
+        // -> 1:2: GENBLOCK [IMPLIED]  // nodep passed to this function
+        //    1:2:1: GENIF
         const AstNode* const backp = nodep->backp();
         return (nodep->implied()  // User didn't provide begin/end
-                && VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep
-                && !nodep->nextp()  // No other statements under upper genif else
+                && ((VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep)
+                    || VN_IS(backp, GenCaseItem))
+                && !nodep->nextp()  // No other statements under upper genif else/case item
                 && (VN_IS(nodep->itemsp(), GenIf))  // Begin has if underneath
                 && !nodep->itemsp()->nextp());  // Has only one item
     }
@@ -1213,12 +1219,14 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->addMembersp(varp);
         }
         {
+            // IEEE 1800-2023 19.10: type_option is a static member, shared by all instances
             AstVar* const varp
                 = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option", VFlagChildDType{},
                              new AstRefDType{nodep->fileline(), "vl_covergroup_type_options_t",
                                              new AstClassOrPackageRef{nodep->fileline(), "std",
                                                                       nullptr, nullptr},
                                              nullptr}};
+            varp->lifetime(VLifetime::STATIC_EXPLICIT);
             nodep->addMembersp(varp);
         }
 
@@ -1332,7 +1340,7 @@ class LinkParseVisitor final : public VNVisitor {
             if (origVarp->direction() == VDirection::OUTPUT
                 || origVarp->direction() == VDirection::INOUT) {
                 origVarp->v3error("Covergroup formal arguments cannot be output or inout"
-                                  " (IEEE 1800-2012 19.3)");
+                                  " (IEEE 1800-2023 19.3)");
                 origVarp->direction(VDirection::INPUT);
             }
             if ((origVarp->isRef() || origVarp->isConstRef()) && origVarp->valuep()) {
@@ -1353,7 +1361,7 @@ class LinkParseVisitor final : public VNVisitor {
             AstVar* const origVarp = VN_AS(argp, Var);
             if (!origVarp->isInput()) {
                 origVarp->v3error("Covergroup sample formal argument must have input direction "
-                                  "(IEEE 1800-2012 19.8.1).");
+                                  "(IEEE 1800-2023 19.8.1).");
                 origVarp->direction(VDirection::INPUT);
             }
             AstVar* const memberp = origVarp->cloneTree(false);
@@ -1421,8 +1429,10 @@ class LinkParseVisitor final : public VNVisitor {
                 if (dropDeprecatedCoverageOption(optp)) continue;
                 optp->unlinkFrBack();
                 if (optp->optType() == VCoverOptionType::AT_LEAST
-                    || optp->optType() == VCoverOptionType::AUTO_BIN_MAX) {
-                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->optType(),
+                    || optp->optType() == VCoverOptionType::AUTO_BIN_MAX
+                    || optp->optType() == VCoverOptionType::WEIGHT) {
+                    nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->typeOption(),
+                                                          optp->optType(),
                                                           optp->valuep()->cloneTree(false)});
                 } else {
                     optp->v3warn(COVERIGN,
@@ -1431,6 +1441,47 @@ class LinkParseVisitor final : public VNVisitor {
                 VL_DO_DANGLING(optp->deleteTree(), optp);
             }
         }
+        VL_RESTORER(m_coverpointp);
+        m_coverpointp = nodep;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverBin* nodep) override {
+        cleanFileline(nodep);
+        if (!m_coverpointp && VN_IS(nodep->rangesp(), CoverWith)) {
+            // A 'with' filter's candidates are of its coverpoint's type
+            nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
+                                               "coverpoint; bin "
+                                                   << nodep->prettyNameQ() << " ignored");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstCoverWith* nodep) override {
+        cleanFileline(nodep);
+        UASSERT_OBJ(m_coverpointp, nodep, "Bin 'with' filter outside a coverpoint");
+        if (const AstCoverpointRef* const refp = VN_CAST(nodep->subp(), CoverpointRef)) {
+            if (refp->name() != m_coverpointp->name()) {
+                refp->v3error("A bin 'with' filter may name only its own coverpoint "
+                              << m_coverpointp->prettyNameQ() << ", not " << refp->prettyNameQ()
+                              << " (IEEE 1800-2023 19.5.1.1)");
+            }
+        }
+        // The candidate value, of the coverpoint's type, which a filter need not read.  The
+        // standard names it, so it hides another 'item' in the filter without a warning.
+        FileLine* const fl = nodep->fileline();
+        FileLine* const flNoWarn = new FileLine{fl};
+        flNoWarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+        flNoWarn->modifyWarnOff(V3ErrorCode::VARHIDDEN, true);
+        AstVar* const varp = new AstVar{flNoWarn, VVarType::VAR, "item", VFlagChildDType{},
+                                        new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{},
+                                                        m_coverpointp->exprp()->cloneTree(false)}};
+        varp->funcLocal(true);
+        varp->noReset(true);
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        nodep->itemp(varp);
         iterateChildren(nodep);
     }
 
@@ -1485,12 +1536,14 @@ class LinkParseVisitor final : public VNVisitor {
             if (dropDeprecatedCoverageOption(optp)) continue;
             itemp->unlinkFrBack();
             const VCoverOptionType optType = optp->optType();
-            optp->v3warn(COVERIGN,
-                         "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
+            if (!(optType == VCoverOptionType::WEIGHT)) {
+                optp->v3warn(COVERIGN,
+                             "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
+            }
             // Always preserve the option node so V3Coverage can track its source line
             // for coverage annotation, even when the option itself is unsupported.
-            nodep->addOptionsp(
-                new AstCoverOption{optp->fileline(), optType, optp->valuep()->cloneTree(false)});
+            nodep->addOptionsp(new AstCoverOption{optp->fileline(), optp->typeOption(), optType,
+                                                  optp->valuep()->cloneTree(false)});
             VL_DO_DANGLING(optp->deleteTree(), optp);
         }
         iterateChildren(nodep);

@@ -1,27 +1,30 @@
-%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:23:7: Unexpected target of interface assignment ['IFACEREFDTYPE$[0:5]']
-                                                    : ... note: In instance 'tb_top'
-   23 |     a = f;
-      |       ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:26:11: Array size mismatch in interface assignment
-                                                     : ... note: In instance 'tb_top'
-   26 |     c.vif = b;
-      |           ^
-%Error: t/t_interface_dearray_bad.v:31:20: Expecting expression to be constant, but variable isn't const: 'i'
+%Error: t/t_interface_dearray_bad.v:27:21: Selection index out of range of interface array: 6 outside 5:0 (IEEE 1800-2023 23.6)
                                          : ... note: In instance 'tb_top'
-   31 |       d.vif[i] = a[i];
-      |                    ^
+   27 |   sub s_oob_hi (.p(a[6]));
+      |                     ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:31:20: Non-constant index in RHS interface array selection
-                                                     : ... note: In instance 'tb_top'
-   31 |       d.vif[i] = a[i];
+%Error: t/t_interface_dearray_bad.v:28:21: Selection index out of range of interface array: -1 outside 5:0 (IEEE 1800-2023 23.6)
+                                         : ... note: In instance 'tb_top'
+   28 |   sub s_oob_lo (.p(a[-1]));
+      |                     ^
+%Error: t/t_interface_dearray_bad.v:31:7: Illegal assignment to an interface instance (IEEE 1800-2023 10.4)
+                                        : ... note: In instance 'tb_top'
+   31 |     a = f;
+      |       ^
+%Error: t/t_interface_dearray_bad.v:32:12: Illegal assignment to an interface instance (IEEE 1800-2023 10.4)
+                                         : ... note: In instance 'tb_top'
+   32 |     a[0:1] = f[0:1];
+      |            ^
+%Error: t/t_interface_dearray_bad.v:33:10: Illegal assignment to an interface instance (IEEE 1800-2023 10.4)
+                                         : ... note: In instance 'tb_top'
+   33 |     a[2] = f[2];
+      |          ^
+%Error: t/t_interface_dearray_bad.v:38:20: Expecting expression to be constant, but variable isn't const: 'i'
+                                         : ... note: In instance 'tb_top'
+   38 |       d.vif[i] = a[i];
       |                    ^
-%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:35:14: Interface slices unsupported
-                                                     : ... note: In instance 'tb_top'
-   35 |     e.vif = b[0:5];
+%Error: t/t_interface_dearray_bad.v:40:14: Slice selection index '[3:8]' outside data type's '[0:5]'
+                                         : ... note: In instance 'tb_top'
+   40 |     d.vif = a[3:8];
       |              ^
-%Error: Internal Error: t/t_interface_dearray_bad.v:23:9: ../V3Broken.cpp:#: Broken link in node (or something without maybePointedTo): 'm_varp && !m_varp->brokeExists()' @ ./V3Ast__gen_impl.h:#
-                                                        : ... note: In instance 'tb_top'
-   23 |     a = f;
-      |         ^
-                        ... This fatal error may be caused by the earlier error(s); resolve those first.
+%Error: Exiting due to

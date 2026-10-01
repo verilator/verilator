@@ -199,6 +199,7 @@ class CoverageVisitor final : public VNVisitor {
             AstVar* const varp = new AstVar{fl_nowarn, VVarType::MODULETEMP, trace_var_name,
                                             incp->findUInt32DType()};
             varp->setIgnoreSchedWrite();  // Ignore the increment output, so no UNOPTFLAT
+            varp->lifetime(VLifetime::STATIC_IMPLICIT);
             varp->trace(true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp);
@@ -1053,7 +1054,7 @@ class CoverageVisitor final : public VNVisitor {
                 unrolledp = new T_Oper{fl, selp, unrolledp};
             }
             iterate(unrolledp);
-            pushDeletep(unrolledp);
+            VL_DO_DANGLING(pushDeletep(unrolledp), unrolledp);
         } else {
             iterateChildren(nodep);
             lineTrack(nodep);

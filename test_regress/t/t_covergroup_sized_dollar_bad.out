@@ -1,0 +1,11 @@
+%Error: t/t_covergroup_sized_dollar_bad.v:15:19: Bins array size must be integral, not '$' (IEEE 1800-2023 19.5.1)
+   15 |       bins values[$] = {[0 : 3]};   
+      |                   ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_sized_dollar_bad.v:16:30: Bins array size must be integral, not '$' (IEEE 1800-2023 19.5.1)
+   16 |       wildcard bins patterns[$] = {4'b11??};   
+      |                              ^
+%Error: t/t_covergroup_sized_dollar_bad.v:17:19: Bins array size must be integral, not '$' (IEEE 1800-2023 19.5.1)
+   17 |       bins others[$] = default;   
+      |                   ^
+%Error: Exiting due to

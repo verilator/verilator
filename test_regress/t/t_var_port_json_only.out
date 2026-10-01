@@ -1,4 +1,4 @@
-{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"(E)",
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolPkgp":"(D)","dollarUnitPkgp":"(E)",
  "modulesp": [
   {"type":"MODULE","name":"mh2","addr":"(F)","loc":"d,18:8,18:11","origName":"mh2","verilogName":"mh2","level":1,"depth":2,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [
@@ -65,7 +65,8 @@
     {"type":"VAR","name":"ref_var_logic_u6","addr":"(RB)","loc":"d,58:17,58:33","dtypep":"(SB)","origName":"ref_var_logic_u6","verilogName":"ref_var_logic_u6","isPrimaryIO":true,"direction":"REF","declDirection":"REF","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT"},
     {"type":"VAR","name":"y_ref_var_logic","addr":"(TB)","loc":"d,58:41,58:56","dtypep":"(K)","origName":"y_ref_var_logic","verilogName":"y_ref_var_logic","isPrimaryIO":true,"direction":"REF","declDirection":"REF","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic"}
   ]},
-  {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","verilogName":"\\$unit ","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"}
+  {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","verilogName":"\\$unit ","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"},
+  {"type":"PACKAGE","name":"__Vconstpool","addr":"(D)","loc":"a,0:0,0:0","origName":"__Vconstpool","verilogName":"__Vconstpool","level":2,"depth":3,"inLibrary":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps"}
 ],
  "miscsp": [
   {"type":"TYPETABLE","addr":"(C)","loc":"a,0:0,0:0",
@@ -95,12 +96,5 @@
     {"type":"BASICDTYPE","name":"logic","addr":"(V)","loc":"d,34:27,34:28","dtypep":"(V)","keyword":"logic","range":"5:0","generic":true,"signed":true},
     {"type":"BASICDTYPE","name":"integer","addr":"(H)","loc":"d,18:19,18:26","dtypep":"(H)","keyword":"integer","range":"31:0","generic":true,"signed":true},
     {"type":"BASICDTYPE","name":"bit","addr":"(WB)","loc":"d,40:37,40:38","dtypep":"(WB)","keyword":"bit","range":"31:0","generic":true,"signed":true}
-  ]},
-  {"type":"CONSTPOOL","addr":"(D)","loc":"a,0:0,0:0",
-   "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(BC)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"NONE",
-     "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(CC)","loc":"a,0:0,0:0","modp":"(BC)"}
-    ]}
   ]}
 ]}

@@ -56,6 +56,14 @@ __vlAnonCG_change_cg.cp_change.hi: 2
 __vlAnonCG_change_cg.cp_change.lo: 4
 __vlAnonCG_clock_cg.cp_clocked.hi: 8
 __vlAnonCG_clock_cg.cp_clocked.lo: 8
+__vlAnonCG_constructor_cg.cp_bias.one: 4
+__vlAnonCG_constructor_cg.cp_bias.two: 6
+__vlAnonCG_constructor_cg.cp_live.one: 5
+__vlAnonCG_constructor_cg.cp_live.zero: 5
+__vlAnonCG_constructor_cg.cp_parent.one: 5
+__vlAnonCG_constructor_cg.cp_parent.zero: 5
+__vlAnonCG_constructor_cg.cp_snapshot.one: 0
+__vlAnonCG_constructor_cg.cp_snapshot.zero: 10
 __vlAnonCG_copy_cg.cp_copy.hi: 0
 __vlAnonCG_copy_cg.cp_copy.lo: 1
 __vlAnonCG_cov_mixed.cp.auto_0: 0

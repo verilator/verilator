@@ -79,6 +79,13 @@ fi
 if [ "$OPT_LIGHT_DEBUG" = 1 ]; then
   CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-light-debug"
 fi
+if [ "$(uname -s)" = Darwin ]; then
+  # Force the use of the Homebrew flex over the one included as part of the
+  # Apple SDK that's preinstalled on the MacOS Github Action runners.
+  FLEX_PREFIX=$(brew --prefix flex)
+  export LEX="$FLEX_PREFIX/bin/flex"
+  export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$FLEX_PREFIX/include"
+fi
 autoconf
 ./configure $CONFIGURE_ARGS CXX="$CXX"
 
@@ -87,6 +94,9 @@ autoconf
 
 ccache -z
 BUILD_START=$SECONDS
+"$MAKE" -j "$NPROC" -k
+# Second make to get failures at bottom, to avoid needing to
+# scroll up GitHub action logs (to see first errors half-way up)
 "$MAKE" -j "$NPROC" -k
 ccache -svv
 ccache --evict-older-than "$((SECONDS - BUILD_START + 60))s"

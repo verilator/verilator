@@ -28,7 +28,7 @@ if test.vlt_all:
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.u.u1.u0.z0",.*"loc":"\w,70:[^"]*",.*"origName":"z0",.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"t.u.u0.u0.z0",.*"loc":"\w,70:[^"]*",.*"origName":"z0",.*"dtypeName":"logic"'
     )
 
 test.execute()

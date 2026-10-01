@@ -8,7 +8,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
-#include "Vt_dpi_decl__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 
 char* func(const char* arg) {
     static char str[] = "abc";

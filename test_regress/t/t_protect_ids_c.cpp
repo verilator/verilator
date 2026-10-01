@@ -18,11 +18,7 @@
 
 // clang-format off
 #if defined(VERILATOR)
-# ifdef T_PROTECT_IDS_KEY
-#  include "Vt_protect_ids_key__Dpi.h"
-# else
-#  include "Vt_protect_ids__Dpi.h"
-# endif
+# include VM_PREFIX_INCLUDE_DPI
 #elif defined(VCS)
 # include "../vc_hdrs.h"
 #elif defined(CADENCE)

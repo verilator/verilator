@@ -264,7 +264,8 @@ class VlRandomizer VL_NOT_FINAL {
     std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
                                            // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
-    std::vector<std::string> m_unique_arrays;  // Arrays whose elements must be distinct
+    // Arrays whose elements must be distinct grouped by unique constraint
+    std::map<uint32_t, std::unordered_set<std::string>> m_uniqueArrays;
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     const VlQueue<CData>* m_static_randmodep = nullptr;  // Static rand_mode state (shared)
     std::unordered_set<std::string> m_staticVars;  // Names of static rand vars
@@ -491,7 +492,7 @@ public:
     typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        modifyMembers(var, var.memberIndices(), name);
+        modifyMembers(var, var.memberIndices(), name, randmodeIdx);
     }
 
     // Register queue of non-struct types
@@ -516,7 +517,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     write_var(VlQueue<T, N_MaxSize>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
+        record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
     // Register unpacked array of non-struct types
     template <typename T, std::size_t N_Depth>
@@ -542,7 +543,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
+        record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
 
     // Register associative array of non-struct types
@@ -570,7 +571,7 @@ public:
     typename std::enable_if<VlContainsCustomStruct<T_Value>::value, void>::type
     write_var(VlAssocArray<T_Key, T_Value>& var, int /*width*/, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
+        record_struct_arr(var, name, dimension, {}, {}, randmodeIdx);
     }
 
     // ---  Record Arrays: flat and struct  ---
@@ -585,10 +586,23 @@ public:
         ++m_index;
     }
 
+    template <typename T>
+    typename std::enable_if<!std::is_class<T>::value || VlIsVlWide<T>::value, void>::type
+    update_arr_table(T& var, const std::string& name, int /*dimension*/) {
+        const std::string key = generateKey(name, m_index++);
+        const auto it = m_arr_vars.find(key);
+        assert(it != m_arr_vars.end());
+        const ArrayInfo& arrayInfo = *it->second;
+        it->second = std::make_shared<const ArrayInfo>(arrayInfo.m_name, &var, arrayInfo.m_index,
+                                                       arrayInfo.m_indices, arrayInfo.m_idxWidths);
+    }
+
     // This is the "Sender" API for the generated code.
     // The elements to make distinct are taken from the array element table at
     // solve time, so a container resized by the solver is handled correctly.
-    void rand_unique(const std::string& name) { m_unique_arrays.push_back(name); }
+    void rand_unique(const std::string& name, const uint32_t key) {
+        m_uniqueArrays[key].insert(name);
+    }
 
     // Recursively record all elements in an unpacked array
     template <typename T, std::size_t N_Depth>
@@ -606,6 +620,15 @@ public:
         }
     }
 
+    // Recursively update pointers to all elements in an unpacked array
+    template <typename T, std::size_t N_Depth>
+    void update_arr_table(VlUnpacked<T, N_Depth>& var, const std::string& name, int dimension) {
+        assert(dimension > 0);
+        for (size_t i = 0; i < N_Depth; ++i) {
+            update_arr_table(var[i], name + "[" + std::to_string(i) + "]", dimension - 1);
+        }
+    }
+
     // Recursively record all elements in a queue
     template <typename T, size_t N_MaxSize>
     void record_arr_table(VlQueue<T, N_MaxSize>& var, const std::string& name, int dimension,
@@ -618,6 +641,15 @@ public:
                 record_arr_table(var.atWrite(i), indexed_name, dimension - 1, indices, idxWidths);
                 indices.pop_back();
             }
+        }
+    }
+
+    // Recursively update pointers to all elements in a queue
+    template <typename T, size_t N_MaxSize>
+    void update_arr_table(VlQueue<T, N_MaxSize>& var, const std::string& name, int dimension) {
+        assert(dimension > 0);
+        for (size_t i = 0; i < var.size(); ++i) {
+            update_arr_table(var.atWrite(i), name + "[" + std::to_string(i) + "]", dimension - 1);
         }
     }
 
@@ -651,11 +683,27 @@ public:
         }
     }
 
+    // Recursively update pointers to all elements in an associative array
+    template <typename T_Key, typename T_Value>
+    void update_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string& name,
+                          int dimension) {
+        assert(dimension > 0);
+        for (auto it = var.begin(); it != var.end(); ++it) {
+            const T_Key& key = it->first;
+            std::string indexed_name;
+            std::vector<size_t> integral_index;
+            size_t idx_width = 0;
+            process_key(key, indexed_name, integral_index, name, idx_width);
+            update_arr_table(var.atWrite(key), indexed_name, dimension - 1);
+        }
+    }
+
     // Register a single structArray element via write_var
     template <typename T>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     record_struct_arr(T& var, const std::string& name, int /*dimension*/,
-                      std::vector<IData> indices, std::vector<size_t> idxWidths) {
+                      std::vector<IData> indices, std::vector<size_t> idxWidths,
+                      std::uint32_t randmodeIdx) {
         std::ostringstream oss;
         for (size_t i = 0; i < indices.size(); ++i) {
             oss << std::hex << std::setw(int(idxWidths[i] / 4)) << std::setfill('0')
@@ -663,35 +711,67 @@ public:
             if (i < indices.size() - 1) oss << ".";
         }
         write_var(var, 1ULL,
-                  oss.str().length() > 0 ? (name + "." + oss.str()).c_str() : name.c_str(), 1ULL);
+                  oss.str().length() > 0 ? (name + "." + oss.str()).c_str() : name.c_str(), 1ULL,
+                  randmodeIdx);
+    }
+
+    template <typename T>
+    typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
+    update_struct_arr(T& var, const std::string& name) {
+        update_var(var, name.c_str());
     }
 
     // Recursively process VlUnpacked of structs
     template <typename T, std::size_t N_Depth>
     void record_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string& name, int dimension,
-                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
+                           std::vector<IData> indices, std::vector<size_t> idxWidths,
+                           std::uint32_t randmodeIdx) {
         if (dimension > 0 && N_Depth != 0) {
             constexpr size_t idx_width = 1 << VL_CLOG2_CE_Q(VL_CLOG2_CE_Q(N_Depth) + 1);
             idxWidths.push_back(idx_width);
             for (size_t i = 0; i < N_Depth; ++i) {
                 indices.push_back(i);
-                record_struct_arr(var.operator[](i), name, dimension - 1, indices, idxWidths);
+                record_struct_arr(var.operator[](i), name, dimension - 1, indices, idxWidths,
+                                  randmodeIdx);
                 indices.pop_back();
             }
+        }
+    }
+
+    template <typename T, std::size_t N_Depth>
+    void update_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string& name) {
+        constexpr size_t idx_width = 1 << VL_CLOG2_CE_Q(VL_CLOG2_CE_Q(N_Depth) + 1);
+        for (size_t i = 0; i < N_Depth; ++i) {
+            std::ostringstream oss;
+            oss << name << "." << std::hex << std::setw(int(idx_width / 4)) << std::setfill('0')
+                << static_cast<int>(i);
+            update_struct_arr(var[i], oss.str());
         }
     }
 
     // Recursively process VlQueue of structs
     template <typename T, size_t N_MaxSize>
     void record_struct_arr(VlQueue<T, N_MaxSize>& var, const std::string& name, int dimension,
-                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
+                           std::vector<IData> indices, std::vector<size_t> idxWidths,
+                           std::uint32_t randmodeIdx) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
             for (size_t i = 0; i < var.size(); ++i) {
                 indices.push_back(i);
-                record_struct_arr(var.atWrite(i), name, dimension - 1, indices, idxWidths);
+                record_struct_arr(var.atWrite(i), name, dimension - 1, indices, idxWidths,
+                                  randmodeIdx);
                 indices.pop_back();
             }
+        }
+    }
+
+    template <typename T, size_t N_MaxSize>
+    void update_struct_arr(VlQueue<T, N_MaxSize>& var, const std::string& name) {
+        for (size_t i = 0; i < var.size(); ++i) {
+            std::ostringstream oss;
+            oss << name << "." << std::hex << std::setw(8) << std::setfill('0')
+                << static_cast<int>(i);
+            update_struct_arr(var.atWrite(i), oss.str());
         }
     }
 
@@ -699,7 +779,7 @@ public:
     template <typename T_Key, typename T_Value>
     void record_struct_arr(VlAssocArray<T_Key, T_Value>& var, const std::string& name,
                            int dimension, const std::vector<IData>& indices,
-                           const std::vector<size_t>& idxWidths) {
+                           const std::vector<size_t>& idxWidths, std::uint32_t randmodeIdx) {
         if ((dimension > 0) && (!var.empty())) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
@@ -717,8 +797,29 @@ public:
                 std::string result = oss.str();
                 result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
                 record_struct_arr(var.atWrite(key), name + "." + result, dimension - 1, indices,
-                                  idxWidths);
+                                  idxWidths, randmodeIdx);
             }
+        }
+    }
+
+    template <typename T_Key, typename T_Value>
+    void update_struct_arr(VlAssocArray<T_Key, T_Value>& var, const std::string& name) {
+        for (auto it = var.begin(); it != var.end(); ++it) {
+            const T_Key& key = it->first;
+
+            std::string indexed_name;
+            std::vector<size_t> integral_index;
+            size_t idx_width = 0;
+
+            process_key(key, indexed_name, integral_index, name, idx_width);
+            std::ostringstream oss;
+            for (size_t i = 0; i < integral_index.size(); ++i) {
+                oss << std::hex << static_cast<int>(integral_index[i]);
+            }
+
+            std::string result = oss.str();
+            result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
+            update_struct_arr(var.atWrite(key), name + "." + result);
         }
     }
 
@@ -726,12 +827,95 @@ public:
 
     // Helper: Register all members of a user-defined struct
     template <typename T, std::size_t... I>
-    void modifyMembers(T& obj, std::index_sequence<I...>, const std::string& baseName) {
+    void modifyMembers(T& obj, std::index_sequence<I...>, const std::string& baseName,
+                       std::uint32_t randmodeIdx) {
         // Use the indices to access each member via std::get
         (void)std::initializer_list<int>{
             (write_var(std::get<I>(obj.getMembers(obj)), obj.memberWidth()[I],
-                       (baseName + "." + obj.memberNames()[I]).c_str(), obj.memberDimension()[I]),
+                       (baseName + "." + obj.memberNames()[I]).c_str(), obj.memberDimension()[I],
+                       randmodeIdx),
              0)...};
+    }
+
+    template <typename T, std::size_t... I>
+    void updateMembers(T& obj, std::index_sequence<I...>, const std::string& baseName) {
+        (void)std::initializer_list<int>{
+            (update_var(std::get<I>(obj.getMembers(obj)),
+                        (baseName + "." + obj.memberNames()[I]).c_str()),
+             0)...};
+    }
+
+    template <typename T>
+    typename std::enable_if<!VlContainsCustomStruct<T>::value && !IsVlUnpacked<T>::value,
+                            void>::type
+    update_var(T& var, const char* name) {
+        auto it = m_vars.find(name);
+        assert(it != m_vars.end());
+        it->second = std::make_shared<const VlRandomVar>(
+            name, it->second->width(), &var, it->second->dimension(), it->second->randModeIdx());
+    }
+
+    template <typename T>
+    typename std::enable_if<VlIsCustomStruct<T>::value, void>::type update_var(T& var,
+                                                                               const char* name) {
+        updateMembers(var, var.memberIndices(), name);
+    }
+
+    template <typename T, size_t N_MaxSize>
+    typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
+    update_var(VlQueue<T, N_MaxSize>& var, const char* name) {
+        auto it = m_vars.find(name);
+        assert(it != m_vars.end());
+        const int dimension = it->second->dimension();
+        it->second = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T, N_MaxSize>>>(
+            name, it->second->width(), &var, dimension, it->second->randModeIdx());
+        m_index = 0;
+        update_arr_table(var, name, dimension);
+    }
+
+    template <typename T, size_t N_MaxSize>
+    typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
+    update_var(VlQueue<T, N_MaxSize>& var, const char* name) {
+        update_struct_arr(var, name);
+    }
+
+    template <typename T, std::size_t N_Depth>
+    typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
+    update_var(VlUnpacked<T, N_Depth>& var, const char* name) {
+        auto it = m_vars.find(name);
+        assert(it != m_vars.end());
+        const int dimension = it->second->dimension();
+        it->second = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
+            name, it->second->width(), &var, dimension, it->second->randModeIdx());
+        m_index = 0;
+        update_arr_table(var, name, dimension);
+    }
+
+    template <typename T, std::size_t N_Depth>
+    typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
+    update_var(VlUnpacked<T, N_Depth>& var, const char* name) {
+        update_struct_arr(var, name);
+    }
+
+    template <typename T_Key, typename T_Value>
+    typename std::enable_if<!VlContainsCustomStruct<T_Value>::value, void>::type
+    update_var(VlAssocArray<T_Key, T_Value>& var, const char* name) {
+        auto it = m_vars.find(name);
+        assert(it != m_vars.end());
+        const int dimension = it->second->dimension();
+        std::vector<size_t> keyWidths;
+        VlRandomAssocKeyWidths<VlAssocArray<T_Key, T_Value>>::push(keyWidths);
+        it->second
+            = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
+                name, it->second->width(), &var, dimension, it->second->randModeIdx(), keyWidths);
+        m_index = 0;
+        update_arr_table(var, name, dimension);
+    }
+
+    template <typename T_Key, typename T_Value>
+    typename std::enable_if<VlContainsCustomStruct<T_Value>::value, void>::type
+    update_var(VlAssocArray<T_Key, T_Value>& var, const char* name) {
+        update_struct_arr(var, name);
     }
 
     // Helper: Generate unique variable key from name and index

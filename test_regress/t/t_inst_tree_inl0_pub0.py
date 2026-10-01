@@ -23,12 +23,10 @@ if test.vlt_all:
                    r'{"type":"MODULE","name":"l2",.*"loc":"\w,62:[^"]*",.*"origName":"l2"')
     test.file_grep(out_filename,
                    r'{"type":"MODULE","name":"l3",.*"loc":"\w,69:[^"]*",.*"origName":"l3"')
-    test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l4",.*"loc":"\w,76:[^"]*",.*"origName":"l4"')
-    test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l5__P1",.*"loc":"\w,83:[^"]*",.*"origName":"l5"')
-    test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l5__P2",.*"loc":"\w,83:[^"]*",.*"origName":"l5"')
+    # l4 and l5 hold nothing but combinational logic feeding their single reader,
+    # so they are optimized away entirely, even though they are marked no_inline
+    test.file_grep_not(out_filename, r'{"type":"MODULE","name":"l4"')
+    test.file_grep_not(out_filename, r'{"type":"MODULE","name":"l5__P')
 
 test.execute()
 test.file_grep(test.run_log_filename, r"\] (%m|.*t\.ps): Clocked")

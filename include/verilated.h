@@ -261,7 +261,7 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 private:
-    VerilatedMutex& m_mutexr;
+    VerilatedMutex& m_mutexr;  // Mutex protecting the guard
 
 public:
     /// Construct and hold given mutex lock until destruction or unlock()
@@ -302,6 +302,34 @@ public:
 #else  // !VL_DEBUG
 public:
     void check() {}
+#endif
+};
+
+// Internals: VlFileLineDebug stores a SystemVerilog source code location. Used in
+// VlCoroutineHandle for debugging purposes, and to locate covergroup weight errors.
+
+class VlFileLineDebug final {
+    // MEMBERS
+#ifdef VL_DEBUG
+    const char* m_filename = nullptr;  // Filename from sources, nullptr for unlnown
+    int m_lineno = 0;  // Line number from sources
+#endif
+
+public:
+    // CONSTRUCTORS
+    VlFileLineDebug() = default;
+    VlFileLineDebug(const char* filename, int lineno)
+#ifdef VL_DEBUG
+        : m_filename{filename}
+        , m_lineno{lineno}
+#endif
+    {
+    }
+
+    // METHODS
+#ifdef VL_DEBUG
+    const char* filename() const { return m_filename; }
+    int lineno() const { return m_lineno; }
 #endif
 };
 
@@ -380,8 +408,7 @@ class VerilatedEvalLoop final {
     const uint32_t m_convergeLimit;  // --converge-limit from compiler command line
     // Where to record --prof-exec sections, or null if not profiling
     VlExecutionProfilerBase* m_profilerp = nullptr;
-    // Whether this is the top level model during profiling
-    bool m_profTopLevel = false;
+    bool m_profTopLevel = false;  // Top level model during profiling
 
 public:
     // CONSTRUCTORS
@@ -483,8 +510,8 @@ private:
         = ASSERT_DIRECTIVE_TYPE_MASK_WIDTH * std::numeric_limits<VerilatedAssertType_t>::digits
           + 1;
     // Build the assertion-control bit mask for the given assertion x directive types.
-    static inline uint32_t assertOnMask(VerilatedAssertType_t types,
-                                        VerilatedAssertDirectiveType_t directives) VL_PURE;
+    static constexpr uint32_t assertOnMask(VerilatedAssertType_t types,
+                                           VerilatedAssertDirectiveType_t directives) VL_PURE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
     // No termination request has stamped m_finishPendingTime yet
     static constexpr uint64_t TIME_UNSET = ~0ULL;
@@ -502,20 +529,18 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        std::atomic<uint32_t> m_assertOn{
-            std::numeric_limits<uint32_t>::max()};  // Enabled assertions,
-                                                    // for each VerilatedAssertType we store
-                                                    // 3-bits, one for each directive type. Last
-                                                    // bit guards internal directive types.
+        // Enabled assertions, for each VerilatedAssertType we store 3-bits, one for each directive
+        // type. Last bit guards internal directive types.
+        std::atomic<uint32_t> m_assertOn{std::numeric_limits<uint32_t>::max()};
         std::atomic<uint32_t> m_assertLock{0};  // Locked assertion bits (IEEE 1800-2023 20.11
                                                 // Lock/Unlock); same layout as m_assertOn. While
                                                 // a bit is locked, On/Off/Kill leave it unchanged.
-        std::atomic<uint32_t> m_assertPassOnVacuous{
-            std::numeric_limits<uint32_t>::max()};  // Enabled vacuous pass actions
-        std::atomic<uint32_t> m_assertPassOnNonvacuous{
-            std::numeric_limits<uint32_t>::max()};  // Enabled nonvacuous pass actions
-        std::atomic<uint32_t> m_assertFailOn{
-            std::numeric_limits<uint32_t>::max()};  // Enabled fail actions
+        // Enabled vacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnVacuous{std::numeric_limits<uint32_t>::max()};
+        // Enabled nonvacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnNonvacuous{std::numeric_limits<uint32_t>::max()};
+        // Enabled fail actions
+        std::atomic<uint32_t> m_assertFailOn{std::numeric_limits<uint32_t>::max()};
         std::array<std::atomic<uint32_t>, ASSERT_CONTROL_SLOT_COUNT> m_assertKill{};
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
@@ -549,8 +574,7 @@ protected:
         // A worker queues $finish before the main thread callback can set m_gotFinish.
         std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
         std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
-        std::atomic<bool> m_assertCtlsLocked{
-            false};  // When true, all assertion-control updates are ignored
+        std::atomic<bool> m_assertCtlsLocked{false};  // All assertion-control updates are ignored
         int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
@@ -584,6 +608,8 @@ protected:
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
     unsigned m_threads = VlOs::getProcessDefaultParallelism();
+    // True if m_threads was set by the user, rather than being the default
+    bool m_threadsSet = false;
     // Use numa automatic CPU-to-thread assignment
     bool m_useNumaAssign = false;
     // Number of threads in added models
@@ -607,9 +633,8 @@ protected:
     // List of free descriptors in the MCT region [4, 32)
     std::vector<IData> m_fdFreeMct VL_GUARDED_BY(m_fdMutex);
 
-    // Magic to check for bad construction
     static constexpr uint64_t MAGIC = 0xC35F9A6E5298EE6EULL;  // SHA256 "VerilatedContext"
-    uint64_t m_magic = MAGIC;
+    uint64_t m_magic = MAGIC;  // Magic to check for bad construction
 
 private:
     // CONSTRUCTORS
@@ -626,28 +651,9 @@ public:
     bool assertOn() const VL_MT_SAFE;
     /// Enable all assertion types
     void assertOn(bool flag) VL_MT_SAFE;
-    /// Get enabled status for given assertion types
-    bool assertOnGet(VerilatedAssertType_t type,
-                     VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
-    /// Set enabled status for given assertion types
-    void assertOnSet(VerilatedAssertType_t types,
-                     VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Clear enabled status for given assertion types
-    void assertOnClear(VerilatedAssertType_t types,
-                       VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Return if assertion-control updates are locked. When locked, RTL assert
-    // control statements ($asserton/$assertoff/$assertcontrol) are ignored, as
-    // are updates from the C++ API.
-    bool assertCtlsLocked() const VL_MT_SAFE;
-    /// Lock/unlock assertion-control updates.
-    void assertCtlsLocked(bool flag) VL_MT_SAFE;
     /// Apply assertion control for given control, assertion, and directive types
     void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Get assertion-control runtime state. Boolean queries return 0/1, Kill returns
-    /// the generation count.
-    inline uint32_t assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
-                                 VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)
@@ -823,6 +829,10 @@ public:
     bool stopRequestReserve(bool maybe) VL_MT_SAFE;
     void stopRequestRelease() VL_MT_SAFE;
 
+    // Internal: assertCtlGet() for generated code, with constant type and directive
+    template <VerilatedAssertType_t T_Type, VerilatedAssertDirectiveType_t T_Directive>
+    VL_ATTR_ALWINLINE uint32_t assertCtlGet(VerilatedAssertCtlQuery query) const VL_MT_SAFE;
+
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
     const VerilatedContextImp* impp() const VL_MT_SAFE {
@@ -831,7 +841,9 @@ public:
 
     // Internal: Model and thread setup
     void addModel(const VerilatedModel* modelp);
-    VerilatedVirtualBase* threadPoolp();
+    // Get the thread pool, creating it if needed. 'modelThreads' is the parallelism of the model
+    // being constructed, so that the context can grow to the number of threads it requires.
+    VerilatedVirtualBase* threadPoolp(unsigned modelThreads = 1);
     void prepareClone();
     VerilatedVirtualBase* threadPoolpOnClone();
     VerilatedVirtualBase*
@@ -1329,8 +1341,9 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
 }
 
 // Defined here, not in-class: VL_CLOG2_I / VL_FATAL_MT (verilated_funcs.h) are not yet in scope
-uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
-                                        VerilatedAssertDirectiveType_t directives) VL_PURE {
+constexpr uint32_t
+VerilatedContext::assertOnMask(VerilatedAssertType_t types,
+                               VerilatedAssertDirectiveType_t directives) VL_PURE {
     // Place the directive bits at each selected assertion type's 3-bit group.
     uint32_t mask = 0;
     for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
@@ -1338,21 +1351,24 @@ uint32_t VerilatedContext::assertOnMask(VerilatedAssertType_t types,
     }
     return mask;
 }
-uint32_t
-VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
-                               VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    const uint32_t mask = assertOnMask(type, directive);
+template <VerilatedAssertType_t T_Type, VerilatedAssertDirectiveType_t T_Directive>
+uint32_t VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query) const VL_MT_SAFE {
+    // A constexpr local forces compile-time evaluation of the mask, which a plain
+    // assertOnMask() call does not get from GCC at -Os
+    constexpr uint32_t mask = assertOnMask(T_Type, T_Directive);
     if (!mask) return 0;
+    // Explicit load(): G++ -Os inlines it but not the implicit conversion.
     switch (query) {  // LCOV_EXCL_BR_LINE
-    case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn.load() & mask) != 0;
     case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
         assert(mask && (mask & (mask - 1)) == 0);
-        return m_s.m_assertKill[VL_CLOG2_I(mask)];
+        return m_s.m_assertKill[VL_CLOG2_I(mask)].load();
     case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
-        return (m_s.m_assertPassOnVacuous & mask) != 0;
+        return (m_s.m_assertPassOnVacuous.load() & mask) != 0;
     case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
-        return (m_s.m_assertPassOnNonvacuous & mask) != 0;
-    case VerilatedAssertCtlQuery::ASSERT_CTL_FAIL_ON: return (m_s.m_assertFailOn & mask) != 0;
+        return (m_s.m_assertPassOnNonvacuous.load() & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_FAIL_ON:
+        return (m_s.m_assertFailOn.load() & mask) != 0;
     default:  // LCOV_EXCL_START
         VL_FATAL_MT("", 0, "", "Internal: Bad assertCtlGet query");
         VL_UNREACHABLE;

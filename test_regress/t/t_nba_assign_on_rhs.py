@@ -15,4 +15,7 @@ test.compile()
 
 test.execute()
 
+# Hosts the no-DPI case for VM_PREFIX_INCLUDE_DPI; keep this design free of DPI and public
+test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + ".mk", r'VM_PREFIX_INCLUDE_DPI')
+
 test.passes()

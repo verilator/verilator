@@ -305,6 +305,7 @@ Mahmoudy
 Makefile
 Makefiles
 Maksymenko
+Manzoni
 Marche
 Markley
 Marquet
@@ -346,6 +347,7 @@ Narcis
 Nassim
 Nauticus
 Nayak
+Nazar
 Nenakhov
 Newgard
 Nigam
@@ -588,6 +590,7 @@ Yurii
 Zaruba
 Zhang
 Zhi
+Zibilyuk
 abirkmanis
 accessor
 accessors
@@ -719,6 +722,7 @@ deduplication
 defenv
 defname
 defparam
+dehash
 demangling
 dep
 deparametrized
@@ -738,6 +742,7 @@ devel
 difftree
 dir
 disambiguates
+discoverability
 displayb
 distcc
 doxygen
@@ -1134,6 +1139,7 @@ shortint
 shortreal
 signame
 signedness
+slp
 sp
 specparam
 splitme
@@ -1258,6 +1264,7 @@ vcddiff
 vcoverage
 vdhotre
 vec
+vectorize
 ventana
 venv
 ver

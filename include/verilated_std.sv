@@ -99,46 +99,6 @@ package std;
     endfunction
   endclass
 
-  // IEEE 1800-specified standard "semaphore"
-  class semaphore;
-    protected int m_keyCount;
-    protected int m_nextKeyCount = '1;
-    protected longint unsigned m_ticket = 0;
-    protected longint unsigned m_nextTicket = 0;
-
-    function new(int keyCount = 0);
-      m_keyCount = keyCount;
-    endfunction
-
-    function void put(int keyCount = 1);
-      m_keyCount += keyCount;
-    endfunction
-
-    task get(int keyCount = 1);
-`ifdef VERILATOR_TIMING
-      longint unsigned ticket;
-      // Fast path: take if keys fit AND either no one is queued, or
-      // the head still doesn't fit (so we're not stealing its keys).
-      if (m_keyCount >= keyCount && m_nextKeyCount > m_keyCount) begin
-        m_keyCount -= keyCount;
-        return;
-      end
-      ticket = m_nextTicket++;
-      wait (m_ticket == ticket);
-      m_nextKeyCount = keyCount;
-      wait (m_keyCount >= keyCount);
-      m_keyCount -= keyCount;
-      m_ticket++;
-`endif
-    endtask
-
-    function int try_get(int keyCount = 1);
-      if (m_keyCount < keyCount) return 0;
-      m_keyCount -= keyCount;
-      return 1;
-    endfunction
-  endclass
-
   // IEEE 1800-specified standard "process"
   class process;
     typedef enum {
@@ -243,6 +203,56 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
     endfunction
   endclass
 
+  // IEEE 1800-specified standard "semaphore"
+  class semaphore;
+    typedef struct {
+      process proc;
+      int reqKeys;
+    } procKeys;
+    procKeys m_queue[$];
+    protected int m_keyCount;
+
+    local task dropKilled;
+      // Drop killed processes from the queue
+`ifdef VERILATOR_TIMING
+      while (m_queue.size() > 0 && m_queue[0].proc.status() == process::KILLED) m_queue.pop_front();
+`endif
+    endtask
+    function new(int keyCount = 0);
+      m_keyCount = keyCount;
+    endfunction
+
+    function void put(int keyCount = 1);
+      m_keyCount += keyCount;
+    endfunction
+
+    task get(int keyCount = 1);
+`ifdef VERILATOR_TIMING
+      dropKilled();
+      // Fast path: take if keys fit AND either no one is queued, or
+      // the head still doesn't fit (so we're not stealing its keys).
+      if (m_keyCount >= keyCount && (m_queue.size() == 0 || m_queue[0].reqKeys > keyCount)) begin
+        m_keyCount -= keyCount;
+        return;
+      end
+      m_queue.push_back('{process::self(), keyCount});
+      while (m_queue[0].proc != process::self()) begin
+        wait (m_queue[0].proc.status() == process::KILLED || m_queue[0].proc == process::self());
+        dropKilled();
+      end
+      wait (m_keyCount >= keyCount);
+      m_keyCount -= keyCount;
+      m_queue.pop_front();
+`endif
+    endtask
+
+    function int try_get(int keyCount = 1);
+      if (m_keyCount < keyCount) return 0;
+      m_keyCount -= keyCount;
+      return 1;
+    endfunction
+  endclass
+
   // IEEE 1800-specified standard "std::randomize"
   function int randomize();
     randomize = 0;
@@ -253,7 +263,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   // them as such currently, so named with a unique prefix
   typedef struct {
     string name;
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     int at_least;
@@ -266,7 +276,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_covergroup_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     int at_least;
@@ -275,7 +285,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_coverpoint_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     int at_least;
@@ -284,7 +294,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_cross_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     bit strobe;
@@ -294,14 +304,14 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
   } vl_covergroup_type_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
     real real_interval;
   } vl_coverpoint_type_options_t;
 
   typedef struct {
-    int weight;
+    int weight = 1;
     int goal;
     string comment;
   } vl_cross_type_options_t;

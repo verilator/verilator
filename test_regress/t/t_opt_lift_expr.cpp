@@ -9,7 +9,7 @@
 //
 //*************************************************************************
 
-#include "Vt_opt_lift_expr__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 svLogic impure_0() { return sv_0; }

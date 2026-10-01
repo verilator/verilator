@@ -237,20 +237,6 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                             }
                         }
                     }
-                    if (VN_IS(subtypep, UnpackArrayDType)) {
-                        const AstUnpackArrayDType* const arrp = VN_AS(subtypep, UnpackArrayDType);
-                        const AstNodeDType* const arrsubtypep = arrp->subDTypep();
-                        if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                            const AstIfaceRefDType* const ifacerefp
-                                = VN_AS(arrsubtypep, IfaceRefDType);
-                            if (!ifacerefp->cellp()) {
-                                if (!ioNames.insert(oldvarp->name()).second) {
-                                    // UINFO(8, "Multitop dup interface array found: " << oldvarp);
-                                    dupNames.insert(oldvarp->name());
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -356,59 +342,6 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                                                                                  : VAccess::READ}};
                             pinp->modVarp(oldvarp);
                             cellp->addPinsp(pinp);
-                        }
-                    } else if (VN_IS(subtypep, UnpackArrayDType)) {
-                        const AstUnpackArrayDType* const oldarrp
-                            = VN_AS(subtypep, UnpackArrayDType);
-                        const AstNodeDType* const arrsubtypep = oldarrp->subDTypep();
-                        if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                            const AstIfaceRefDType* const ifacerefp
-                                = VN_AS(arrsubtypep, IfaceRefDType);
-                            if (!ifacerefp->cellp()) {
-                                string name = oldvarp->name();
-                                if (dupNames.find(name) != dupNames.end()) {
-                                    // __02E=. while __DOT__ looks nicer but will break V3LinkDot
-                                    name = oldmodp->name() + "__02E" + name;
-                                }
-
-                                AstUnpackArrayDType* arraydtypep
-                                    = VN_AS(oldvarp->dtypep(), UnpackArrayDType);
-                                AstCell* ifacearraycellp
-                                    = new AstCell{newmodp->fileline(),
-                                                  newmodp->fileline(),
-                                                  name,
-                                                  ifacerefp->ifaceName(),
-                                                  nullptr,
-                                                  nullptr,
-                                                  arraydtypep->rangep()->cloneTree(true)};
-                                ifacearraycellp->modp(ifacerefp->ifacep());
-                                newmodp->addStmtsp(ifacearraycellp);
-
-                                AstIfaceRefDType* const idtypep = new AstIfaceRefDType{
-                                    newmodp->fileline(), name, ifacerefp->ifaceName()};
-                                idtypep->ifacep(nullptr);
-                                idtypep->dtypep(idtypep);
-                                idtypep->cellp(ifacearraycellp);
-                                rootp->typeTablep()->addTypesp(idtypep);
-
-                                AstNodeArrayDType* const arrp = new AstUnpackArrayDType{
-                                    newmodp->fileline(), idtypep,
-                                    arraydtypep->rangep()->cloneTree(true)};
-                                AstVar* varp = new AstVar{newmodp->fileline(), VVarType::IFACEREF,
-                                                          name + "__Viftop", arrp};
-                                varp->isIfaceParent(true);
-                                ifacearraycellp->addNextHere(varp);
-                                ifacearraycellp->hasIfaceVar(true);
-                                rootp->typeTablep()->addTypesp(arrp);
-
-                                AstPin* const pinp = new AstPin{
-                                    oldvarp->fileline(), 0, varp->name(),
-                                    new AstVarRef{varp->fileline(), varp,
-                                                  oldvarp->isWritable() ? VAccess::WRITE
-                                                                        : VAccess::READ}};
-                                pinp->modVarp(oldvarp);
-                                cellp->addPinsp(pinp);
-                            }
                         }
                     }
                 }

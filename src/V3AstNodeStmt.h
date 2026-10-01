@@ -549,29 +549,7 @@ public:
     bool isOutputter() override { return true; }
     bool isPure() override { return false; }
     AstNodeCoverDecl* declp() const { return m_declp; }  // Where defined
-};
-class AstCoverToggle final : public AstNodeStmt {
-    // Toggle analysis of given signal
-    // Parents:  MODULE
-    // @astgen op1 := incp : AstCoverInc
-    // @astgen op2 := origp : AstNodeExpr
-    // @astgen op3 := changep : AstNodeExpr
-public:
-    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNodeExpr* origp, AstNodeExpr* changep)
-        : ASTGEN_SUPER_CoverToggle(fl) {
-        this->incp(incp);
-        this->origp(origp);
-        this->changep(changep);
-    }
-    ASTGEN_MEMBERS_AstCoverToggle;
-    int instrCount() const override { return 3 + INSTR_COUNT_BRANCH + INSTR_COUNT_LD; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return true; }
-    bool isOutputter() override {
-        return false;  // Though the AstCoverInc under this is an outputter
-    }
-    // but isPure()  true
+    void declp(AstNodeCoverDecl* nodep) { m_declp = nodep; }
 };
 class AstDeassign final : public AstNodeStmt {
     // Procedural 'deassign' statement
@@ -1220,13 +1198,6 @@ public:
     }
     ASTGEN_MEMBERS_AstSetuphold;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
-class AstSplitPlaceholder final : public AstNodeStmt {
-public:
-    // Dummy node used within V3Split; never exists outside of V3Split.
-    explicit AstSplitPlaceholder(FileLine* fl)
-        : ASTGEN_SUPER_SplitPlaceholder(fl) {}
-    ASTGEN_MEMBERS_AstSplitPlaceholder;
 };
 class AstStackTraceT final : public AstNodeStmt {
     // $stacktrace used as task

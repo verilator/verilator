@@ -506,6 +506,7 @@ int mon_check_props(void) {
                                1))
                 return 1;
             if (test_vpiIntVal(write_bytes_rl_name, write_bytes, i, j, NUM_ELEMENTS, 1)) return 1;
+            if (test_vpiIntVal(write_shorts_name, write_shorts, i, j, NUM_ELEMENTS, 2)) return 1;
             if (test_vpiIntVal(write_words_name, write_words, i, j, NUM_ELEMENTS, 4)) return 1;
             if (test_vpiIntVal(write_integers_name, write_words, i, j, NUM_ELEMENTS, 4)) return 1;
 
@@ -664,6 +665,51 @@ int mon_check_props(void) {
 
         arrayvalue.flags = vpiOneValue;
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
+        TEST_CHECK_ERROR(true);
+    }
+
+    {
+        // test every remaining format & type combination the dispatch does not handle
+        TestVpiHandle longs = vpi_handle_by_name((PLI_BYTE8*)"test.write_longs", NULL);
+        CHECK_RESULT_NZ(longs);
+        TestVpiHandle customs = vpi_handle_by_name((PLI_BYTE8*)"test.write_customs", NULL);
+        CHECK_RESULT_NZ(customs);
+
+        PLI_INT16 shortdatap[4] = {0, 0, 0, 0};
+        PLI_INT32 intdatap[4] = {0, 0, 0, 0};
+        PLI_INT64 longdatap[4] = {0, 0, 0, 0};
+        s_vpi_vecval vecdatap[12] = {};
+        PLI_INT32 indexp[1] = {0};
+
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.flags = 0;
+
+        arrayvalue.format = vpiShortIntVal;
+        arrayvalue.value.shortints = shortdatap;
+        vpi_put_value_array(longs, &arrayvalue, indexp, 4);
+        TEST_CHECK_ERROR(true);
+        vpi_put_value_array(customs, &arrayvalue, indexp, 4);
+        TEST_CHECK_ERROR(true);
+
+        arrayvalue.format = vpiIntVal;
+        arrayvalue.value.integers = intdatap;
+        vpi_put_value_array(longs, &arrayvalue, indexp, 4);
+        TEST_CHECK_ERROR(true);
+        vpi_put_value_array(customs, &arrayvalue, indexp, 4);
+        TEST_CHECK_ERROR(true);
+
+        arrayvalue.format = vpiLongIntVal;
+        arrayvalue.value.longints = longdatap;
+        vpi_put_value_array(customs, &arrayvalue, indexp, 4);
+        TEST_CHECK_ERROR(true);
+
+        // test num out of bounds is reported by the entry point for every format
+        vpi_put_value_array(longs, &arrayvalue, indexp, 5);
+        TEST_CHECK_ERROR(true);
+
+        arrayvalue.format = vpiVectorVal;
+        arrayvalue.value.vectors = vecdatap;
+        vpi_put_value_array(customs, &arrayvalue, indexp, 5);
         TEST_CHECK_ERROR(true);
     }
 

@@ -110,7 +110,10 @@ class DepthVisitor final : public VNVisitor {
     // (Here instead of new visitor after V3Descope just to avoid another visitor)
     void needNonStaticFunc(AstNode* nodep) {
         UASSERT_OBJ(m_cfuncp, nodep, "Non-static accessor not under a function");
-        if (m_cfuncp->isStatic()) {
+        // DPI export implementations are always invoked via the generic DPI dispatcher,
+        // which can only ever supply the symbol table pointer, never a scope-specific
+        // "this", so they must remain static regardless of what they contain.
+        if (m_cfuncp->isStatic() && !m_cfuncp->dpiExportImpl()) {
             UINFO(5, "Mark non-public due to " << nodep);
             m_cfuncp->isStatic(false);
         }

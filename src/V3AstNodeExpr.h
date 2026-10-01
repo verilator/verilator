@@ -66,13 +66,16 @@ public:
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
     // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
     virtual bool isMultiCycleSva() const { return false; }
-
-    // TODO: consolidate cLValueTargetp, isLValue, baseFromp
-    // If the expression is a valid C++ LValue, return the target reference, else nullptr
-    // This always returns either AstVarRef, AstMemberSel, or nullptr
-    AstNodeExpr* cLValueTargetp();
+    const AstNodeExpr* getVAccessTargetRecurse() const;
+    AstNodeExpr* getVAccessTargetRecurse() {
+        return const_cast<AstNodeExpr*>(  // casting constness away is safe since this function is
+                                          // non-const itself therefore, caller guarantees that
+                                          // this object is non-const
+            static_cast<const AstNodeExpr*>(this)->getVAccessTargetRecurse());
+    }
+    VAccess getVAccessRecurse() const;
     // TODO: this actually means it's a write or RW, not that it's an LValue
-    bool isLValue() const;
+    bool isLValue() const { return getVAccessRecurse().isWriteOrRW(); }
     // Return base var (or const) nodep dereferences
     AstNode* baseFromp(bool overMembers);
 
@@ -529,7 +532,6 @@ public:
     }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
-    static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
 };
 
 // === Concrete node types =====================================================
@@ -1473,7 +1475,7 @@ class AstExprStmt final : public AstNodeExpr {
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := resultp : AstNodeExpr
 private:
-    bool m_hasResult = true;
+    bool m_hasResult = true;  // Returns result via resultp()
 
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
@@ -1905,7 +1907,7 @@ class AstMatchMasked final : public AstNodeExpr {
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := matchp : AstVarRef
 public:
-    inline AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp);
+    inline AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarRef* matchp);
     ASTGEN_MEMBERS_AstMatchMasked;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { return "VL_MATCHMASKED_%lq(%lw, %li, %ri)"; }
@@ -2033,7 +2035,7 @@ class AstParseRef final : public AstNodeExpr {
     // @astgen op1 := lhsp : Optional[AstNodeExpr]
     // @astgen op2 := ftaskrefp : Optional[AstNodeFTaskRef]
 
-    string m_name;
+    string m_name;  // Name of the variable/function/task
 
 public:
     AstParseRef(FileLine* fl, const string& name, AstNodeExpr* lhsp = nullptr,
@@ -2635,7 +2637,7 @@ class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports
     // Parents:  AstSFormatF, AstNodeFTaskRef, AstNodeFTask
     std::string m_scopeAttr;
-    std::string m_scopeEntr;
+    std::string m_scopeEntr;  // Scope path for the DPI import/export context name
     bool m_dpiExport = false;  // Is for dpiExport
     const bool m_forFormat;  // Is for a format %m
     static std::string scopeNameFormatter(const std::string& text);
@@ -6462,6 +6464,7 @@ class AstVarXRef final : public AstNodeVarRef {
     string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_containsGenBlock = false;  // Contains gen block reference
+    bool m_readOnlyModport = false;  // Linked via an input-only modport, until V3LinkLValue
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, const VAccess& access)
         : ASTGEN_SUPER_VarXRef(fl, nullptr, access)
@@ -6479,6 +6482,8 @@ public:
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
     bool containsGenBlock() const { return m_containsGenBlock; }
     void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
+    bool readOnlyModport() const { return m_readOnlyModport; }
+    void readOnlyModport(const bool flag) { m_readOnlyModport = flag; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
