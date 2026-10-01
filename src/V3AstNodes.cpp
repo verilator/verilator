@@ -2365,6 +2365,9 @@ string AstNodeDType::vlEnumType() const {
         arg += "VLVT_REAL";
     } else if (sdtypep && !sdtypep->packed()) {
         arg += VN_IS(sdtypep, StructDType) ? "VLVT_STRUCT" : "VLVT_UNION";
+    } else if (dtypep->isCompound() || (bdtypep && bdtypep->isEvent())) {
+        // Queue, class handle, event etc.: widthMin() is not their storage size
+        return "";
     } else if (widthMin() <= 8) {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {

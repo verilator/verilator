@@ -450,6 +450,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             const AstNodeDType* const itemDTypep = itemp->dtypep();
+            if (itemDTypep->vlEnumType().empty()) continue;
             const std::string prettyName
                 = prettyPrefix + "." + AstNode::vpiName(itemp->shortName());
             const std::string cName = cPrefix + "." + itemp->nameProtect();
@@ -889,8 +890,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildrenConst(nodep);
-        // Record if public, ignoring locals
-        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp) {
+        // Record if public, ignoring locals and types VPI cannot represent
+        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp
+            && !nodep->vlEnumType().empty()) {
             m_modVars.emplace_back(m_modp, nodep);
         }
     }
@@ -999,6 +1001,7 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
     puts("bool& __Vm_didInit;\n");
+    if (v3Global.opt.systemC()) puts("sc_core::sc_event __Vm_wakeEvent;\n");
 
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
