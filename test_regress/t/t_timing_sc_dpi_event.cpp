@@ -14,16 +14,17 @@ using namespace sc_core;
 extern "C" void sv_trigger();
 
 // Calls into the model at 10ns, from outside its own evaluation
-SC_MODULE(poker) {
-    SC_CTOR(poker) { SC_THREAD(run); }
-    void run() {
-        wait(10, SC_NS);
-        svScope scope = svGetScopeFromName("tb.t");
-        if (!scope) vl_fatal(__FILE__, __LINE__, "tb", "svGetScopeFromName failed\n");
-        svSetScope(scope);
-        sv_trigger();
-    }
-};
+SC_MODULE(poker){SC_CTOR(poker){SC_THREAD(run);
+}
+void run() {
+    wait(10, SC_NS);
+    svScope scope = svGetScopeFromName("tb.t");
+    if (!scope) vl_fatal(__FILE__, __LINE__, "tb", "svGetScopeFromName failed\n");
+    svSetScope(scope);
+    sv_trigger();
+}
+}
+;
 
 int sc_main(int argc, char* argv[]) {
     VM_PREFIX* tb = new VM_PREFIX{"tb"};
