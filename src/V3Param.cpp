@@ -396,6 +396,26 @@ class ParamProcessor final {
             key += cvtToStr(dtypep->right());
             key += "] ";
             key += paramValueString(dtypep->subDTypep());
+        } else if (const AstPattern* const patp = VN_CAST(nodep, Pattern)) {
+            // A parameter override pattern, keyed before the specialized module types it
+            key += "'{";
+            for (const AstPatMember* memp = VN_AS(patp->itemsp(), PatMember); memp;
+                 memp = VN_AS(memp->nextp(), PatMember)) {
+                if (memp->isDefault()) key += "default";
+                if (const AstText* const textp = VN_CAST(memp->keyp(), Text)) {
+                    key += textp->text();
+                } else if (memp->keyp()) {
+                    key += paramValueString(memp->keyp());
+                }
+                key += ":";
+                if (memp->repp()) key += paramValueString(memp->repp()) + "x";
+                for (const AstNodeExpr* valuep = memp->lhssp(); valuep;
+                     valuep = VN_AS(valuep->nextp(), NodeExpr)) {
+                    key += paramValueString(valuep) + ";";
+                }
+                key += ",";
+            }
+            key += "}";
         } else if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
             // Include the indices and the default, as with a default the map may be sparse
             key += "{";
@@ -1391,8 +1411,10 @@ class ParamProcessor final {
             if (!modvarp->isGParam()) {
                 pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
                                  << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
-            } else if (VN_IS(pinp->exprp(), InitArray) && arraySubDTypep(modvarp->subDTypep())) {
-                // Array assigned to array
+            } else if (VN_IS(pinp->exprp(), Pattern)
+                       || (VN_IS(pinp->exprp(), InitArray)
+                           && arraySubDTypep(modvarp->subDTypep()))) {
+                // A pattern or array value is named by its contents
                 nameByPinValue(pinp, srcModp, modvarp, longnamer, any_overridesr);
             } else {
                 UINFO(9, "cellPinCleanup: before constify " << pinp << " " << modvarp);
@@ -1511,6 +1533,12 @@ class ParamProcessor final {
                                 UINFO(5, "  cellPinCleanup: skip normedNamep "
                                          "(unresolved RefDType->ParamTypeDType) pin="
                                              << pinp->prettyNameQ());
+                                cloneVarpUnresolved = true;
+                            }
+                            // A type declared in the template must not be widthed there
+                            if (V3LinkDotIfaceCapture::findOwnerModule(refp->typedefp()) == srcModp
+                                || V3LinkDotIfaceCapture::findOwnerModule(refp->refDTypep())
+                                       == srcModp) {
                                 cloneVarpUnresolved = true;
                             }
                         });

@@ -4632,8 +4632,11 @@ class ConstVisitor final : public VNVisitor {
         // Default: Just iterate
         if (m_required) {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
-                || VN_IS(nodep, Dot)) {
+                || VN_IS(nodep, Dot) || VN_IS(nodep, Text)) {
                 // ignore
+            } else if (VN_IS(nodep, Pattern) || VN_IS(nodep, PatMember)) {
+                // A parameter override pattern is typed later, so only fold its members
+                iterateChildren(nodep);
             } else if (AstCellRef* const crp = VN_CAST(nodep, CellRef)) {
                 iterate(crp->exprp());
                 if (AstNode* const newp = crp->exprp()) {
