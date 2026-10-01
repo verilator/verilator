@@ -739,6 +739,38 @@ static AstVar* ensurePort(AstNodeModule* modp, const std::string& name, int widt
     return varp;
 }
 
+// Give one instance the ports its module needs, and its parent the same ports
+// to drive them with. Returns true if anything was added.
+static bool threadCellPorts(AstCell* cellp,
+                            std::map<AstNodeModule*, std::map<std::string, int>>& needs,
+                            AstNetlist* netlistp) {
+    AstNodeModule* const childp = cellp->modp();
+    if (!childp) return false;
+    const auto it = needs.find(childp);
+    if (it == needs.end()) return false;
+    AstNodeModule* parentp = nullptr;
+    for (AstNode* upp = cellp; upp; upp = upp->backp()) {
+        if ((parentp = VN_CAST(upp, NodeModule))) break;
+    }
+    if (!parentp) return false;
+    bool changed = false;
+    for (const auto& np : it->second) {
+        const std::string& name = np.first;
+        bool havePin = false;
+        for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (pinp->name() == name) havePin = true;
+        }
+        if (havePin) continue;
+        ensurePort(parentp, name, np.second, netlistp);
+        needs[parentp].emplace(name, np.second);
+        cellp->addPinsp(
+            new AstPin{cellp->fileline(), -1, name, new AstParseRef{cellp->fileline(), name}});
+        UINFO(4, "HIER-XMR: pinned " << name << " on instance " << cellp->prettyNameQ());
+        changed = true;
+    }
+    return changed;
+}
+
 void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
     // This run's top module is the hierarchical block being compiled
     const std::vector<V3Control::HierXmrPort>* const wantedp
@@ -817,32 +849,7 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
     bool changed = true;
     while (changed) {
         changed = false;
-        for (AstCell* const cellp : cells) {
-            AstNodeModule* const childp = cellp->modp();
-            if (!childp) continue;
-            const auto it = needs.find(childp);
-            if (it == needs.end()) continue;
-            AstNodeModule* parentp = nullptr;
-            for (AstNode* upp = cellp; upp; upp = upp->backp()) {
-                if ((parentp = VN_CAST(upp, NodeModule))) break;
-            }
-            if (!parentp) continue;
-            for (const auto& np : it->second) {
-                const std::string& name = np.first;
-                bool havePin = false;
-                for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                    if (pinp->name() == name) havePin = true;
-                }
-                if (havePin) continue;
-                ensurePort(parentp, name, np.second, netlistp);
-                if (needs[parentp].emplace(name, np.second).second) changed = true;
-                AstPin* const pinp = new AstPin{cellp->fileline(), -1, name,
-                                                new AstParseRef{cellp->fileline(), name}};
-                cellp->addPinsp(pinp);
-                UINFO(4, "HIER-XMR: pinned " << name << " on instance " << cellp->prettyNameQ());
-                changed = true;
-            }
-        }
+        for (AstCell* const cellp : cells) changed |= threadCellPorts(cellp, needs, netlistp);
     }
 }
 
