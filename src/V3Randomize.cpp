@@ -4631,11 +4631,27 @@ class RandomizeVisitor final : public VNVisitor {
         return classp->existsMember([](const AstClass*, const AstConstraint* constrp) {
             bool owns = false;
             constrp->foreach([&](const AstMemberSel* memberSelp) {
+                // Walk to the root of the access chain, descending through both
+                // member selects (a.b) and array/assoc/queue selects (a[i]), so a
+                // constraint reaching through an array of class handles is detected.
                 const AstNode* rootp = memberSelp->fromp();
-                while (const AstMemberSel* const sp = VN_CAST(rootp, MemberSel))
-                    rootp = sp->fromp();
+                while (true) {
+                    if (const AstMemberSel* const sp = VN_CAST(rootp, MemberSel)) {
+                        rootp = sp->fromp();
+                    } else if (const AstNodeSel* const sp = VN_CAST(rootp, NodeSel)) {
+                        rootp = sp->fromp();
+                    } else {
+                        break;
+                    }
+                }
                 if (const AstVarRef* const refp = VN_CAST(rootp, VarRef)) {
-                    if (VN_IS(refp->varp()->dtypep()->skipRefp(), ClassRefDType)) owns = true;
+                    // The root owns a sub-object constraint when it is a class
+                    // handle, or an array/assoc/queue/unpacked array whose element
+                    // type is a class handle (e.g. "rand ClsB member_c[int]").
+                    const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
+                    while (const AstNodeDType* const subp = dtypep->subDTypep())
+                        dtypep = subp->skipRefp();
+                    if (VN_IS(dtypep, ClassRefDType)) owns = true;
                 }
             });
             return owns;
