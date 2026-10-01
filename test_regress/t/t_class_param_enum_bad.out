@@ -1,4 +1,4 @@
-%Error: t/t_class_param_enum_bad.v:25:40: Assign RHS expects a CLASSREFDTYPE 'Converter__Tz7d09f080', got CLASSREFDTYPE 'Converter__Tza32c8cf8'
+%Error: t/t_class_param_enum_bad.v:25:40: Assign RHS expects a CLASSREFDTYPE 'Converter__Tz2', got CLASSREFDTYPE 'Converter__Tz1'
                                         : ... note: In instance 't'
    25 |     automatic Converter #(bit) conv2 = conv1;
       |                                        ^~~~~
