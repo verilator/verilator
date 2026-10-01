@@ -2448,6 +2448,24 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
+    // Names of the classes a class extends, for $typename, as other simulators give them
+    static string typenameExtends(const AstClass* classp) {
+        string result;
+        // An interface class may extend several, so those are not named
+        while (classp && !classp->isInterfaceClass()) {
+            AstClass* basep = nullptr;
+            for (const AstClassExtends* extendsp = classp->extendsp(); extendsp;
+                 extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+                if (!extendsp->isImplements()) {
+                    basep = extendsp->classOrNullp();
+                    break;
+                }
+            }
+            if (basep) result += " extends class{}" + basep->dtypeName(true);
+            classp = basep;
+        }
+        return result;
+    }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
         m_attrp = nodep;
@@ -2629,8 +2647,13 @@ class WidthVisitor final : public VNVisitor {
         }
         case VAttrType::TYPENAME: {
             UASSERT_OBJ(nodep->fromp(), nodep, "Unprovided expression");
-            const string result = nodep->fromp()->dtypep()->prettyDTypeName(true);
-            UINFO(9, "typename '" << result << "' from " << nodep->fromp()->dtypep());
+            AstNodeDType* const dtypep = nodep->fromp()->dtypep();
+            string result = dtypep->prettyDTypeName(true);
+            if (const AstClassRefDType* const classRefp
+                = VN_CAST(dtypep->skipRefOrNullp(), ClassRefDType)) {
+                result += typenameExtends(classRefp->classp());
+            }
+            UINFO(9, "typename '" << result << "' from " << dtypep);
             AstNode* const newp = new AstConst{nodep->fileline(), AstConst::String{}, result};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);

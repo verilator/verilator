@@ -127,6 +127,141 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
 }
 
 //======================================================================
+// Data type names of classes and interfaces, with the values of their parameters
+
+// Skip references in a data type, to the enum or other type it stands for, or nullptr
+static const AstNodeDType* dtypeNameSkipRefp(const AstNodeDType* dtypep) {
+    // Bounded, as a message may name a circular parameter type, itself reported as an error
+    static constexpr int MAX_DEPTH = 1000;
+    for (int depth = 0; dtypep && depth < MAX_DEPTH; ++depth) {
+        if (!VN_IS(dtypep, RefDType) && !VN_IS(dtypep, ParamTypeDType)
+            && !VN_IS(dtypep, RequireDType) && !VN_IS(dtypep, ConstDType)
+            && !VN_IS(dtypep, MemberDType)) {
+            return dtypep;
+        }
+        dtypep = dtypep->subDTypep();
+    }
+    return nullptr;
+}
+
+// Text of a real parameter value, with the fewest of 15 or 17 digits that is exact
+static string dtypeNameReal(double value) {
+    std::ostringstream os;
+    os.precision(15);
+    os << value;
+    string result = os.str();
+    if (std::strtod(result.c_str(), nullptr) != value) {
+        os.str("");
+        os.precision(17);
+        os << value;
+        result = os.str();
+    }
+    // A real, as in Verilog, unless has an exponent, or is infinite or not-a-number
+    if (result.find_first_of(".en") == string::npos) result += ".0";
+    return result;
+}
+
+// Text of a constant parameter value, given the data type of the parameter
+static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep) {
+    if (num.isNull()) return "null";
+    if (num.isDouble()) return dtypeNameReal(num.toDouble());
+    const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
+    if (num.isString() || (basicp && basicp->isString())) return '"' + num.toString() + '"';
+    // Sized and signed as the parameter, as the value may not be yet
+    const int width = (dtypep && dtypep->width()) ? dtypep->width() : num.width();
+    V3Number value{&num, width};
+    if (num.isSigned() && num.width() < width) {
+        value.opExtendS(num, num.width());
+    } else {
+        value.opAssign(num);
+    }
+    if (const AstEnumDType* const enump = VN_CAST(dtypep, EnumDType)) {
+        for (const AstEnumItem* itemp = enump->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
+            if (constp && !constp->num().isAnyXZ() && value.isCaseEq(constp->num())) {
+                return itemp->prettyName();
+            }
+        }
+    }
+    if (value.isAnyXZ()) return value.ascii(true, true);
+    const bool isSigned = dtypep ? dtypep->isSigned() : num.isSigned();
+    return isSigned ? value.toDecimalS() : value.toDecimalU();
+}
+
+// Text of a parameter value, given the data type of the parameter
+static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep) {
+    dtypep = dtypeNameSkipRefp(dtypep);
+    if (const AstConst* const constp = VN_CAST(valuep, Const)) {
+        return dtypeNameConst(constp->num(), dtypep);
+    }
+    if (const AstInitArray* const initp = VN_CAST(valuep, InitArray)) {
+        const AstNodeDType* const elemDTypep = dtypep ? dtypep->subDTypep() : nullptr;
+        // Elements are indexed, unless all are given in order
+        bool indexed = initp->defaultp() != nullptr;
+        uint64_t nextIndex = 0;
+        for (const auto& itr : initp->map()) {
+            if (itr.first != nextIndex) indexed = true;
+            ++nextIndex;
+        }
+        string result;
+        for (const auto& itr : initp->map()) {
+            result += result.empty() ? "'{" : ",";
+            if (indexed) result += cvtToStr(itr.first) + ":";
+            result += dtypeNameValue(itr.second->valuep(), elemDTypep);
+        }
+        if (initp->defaultp()) {
+            result += (result.empty() ? "'{" : ",") + "default:"s
+                      + dtypeNameValue(initp->defaultp(), elemDTypep);
+        }
+        return result.empty() ? "'{}" : result + "}";
+    }
+    if (const AstConsPackUOrStruct* const consp = VN_CAST(valuep, ConsPackUOrStruct)) {
+        string result;
+        for (const AstConsPackMember* memberp = consp->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+            result += (result.empty() ? "'{" : ",")
+                      + dtypeNameValue(memberp->rhsp(), memberp->dtypep());
+        }
+        return result.empty() ? "'{}" : result + "}";
+    }
+    // Not yet a constant, as a default value until V3Param has elaborated the class
+    return "?";
+}
+
+// Text '#(...)' of the values of the parameters of a class or interface, or "" if it has none
+static string dtypeNameParams(const AstNodeModule* modp, bool full) {
+    string result;
+    for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        string valueName;
+        if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+            if (!varp->isGParam()) continue;
+            valueName = dtypeNameValue(varp->valuep(), varp->subDTypep());
+        } else if (const AstParamTypeDType* const ptypep = VN_CAST(stmtp, ParamTypeDType)) {
+            if (!ptypep->isGParam()) continue;
+            const AstNodeDType* const dtypep = dtypeNameSkipRefp(ptypep);
+            valueName = dtypep ? dtypep->prettyDTypeName(full) : "?";
+        } else {
+            continue;
+        }
+        result += (result.empty() ? "#(" : ",") + valueName;
+    }
+    return result.empty() ? "" : result + ")";
+}
+
+// Name of a class, without its scope or parameters
+static string dtypeNameClass(const AstClass* classp) {
+    const string name = classp->origName();
+    // A covergroup in a class declares a variable of an anonymous type (IEEE 1800-2023 19.4),
+    // which is named as the variable, as other simulators do
+    if (classp->isCovergroup() && classp->covergroupEnclosingClassp()
+        && VString::startsWith(name, AstCovergroup::EMBEDDED_PREFIX)) {
+        return AstNode::prettyName(name.substr(std::strlen(AstCovergroup::EMBEDDED_PREFIX)));
+    }
+    return AstNode::prettyName(name);
+}
+
+//======================================================================
 // AstNode:: functions (*not* general Ast{something} functions)
 
 void AstNode::dump(std::ostream& str) const {
@@ -373,9 +508,13 @@ void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int 
     this->rangep(rangep);
     this->dtypep(this);
 }
-string AstBasicDType::prettyDTypeName(bool) const {
+string AstBasicDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     os << keyword().ascii();
+    // In full, as for $typename, with signing other than the default (IEEE 1800-2023 20.6.1)
+    if (full && keyword().isIntNumeric() && isSigned() != keyword().isSigned()) {
+        os << (isSigned() ? " signed" : " unsigned");
+    }
     if (isRanged() && !rangep() && keyword().width() <= 1) {
         os << "[" << left() << ":" << right() << "]";
     }
@@ -675,6 +814,34 @@ AstClass* AstClass::baseMostClassp() {
     }
     return basep;
 }
+string AstClass::dtypeName(bool full) const {
+    const string& frozen = full ? m_dtypeNameFull : m_dtypeNameShort;
+    if (!frozen.empty()) return frozen;
+    // A parameter may lead back to the class, which is then named without parameters
+    if (m_dtypeNameBusy) return (full ? dtypeNameScope() : "") + dtypeNameClass(this);
+    m_dtypeNameBusy = true;
+    const string name = dtypeNameCalc(full);
+    m_dtypeNameBusy = false;
+    return name;
+}
+string AstClass::dtypeNameCalc(bool full) const {
+    return (full ? dtypeNameScope() : "") + dtypeNameClass(this) + dtypeNameParams(this, full);
+}
+void AstClass::dtypeNameFreeze() {
+    m_dtypeNameFull = dtypeName(true);
+    m_dtypeNameShort = dtypeName(false);
+}
+string AstClass::dtypeNameScope() const {
+    if (!m_scopePrefix.empty()) return m_scopePrefix;
+    // Within a class, the scope is that class, with its parameters
+    for (const AstNode* abovep = aboveLoopp(); abovep; abovep = abovep->aboveLoopp()) {
+        if (const AstClass* const classp = VN_CAST(abovep, Class)) {
+            return classp->dtypeName(true) + "::";
+        }
+        if (VN_IS(abovep, NodeModule)) break;
+    }
+    return "";
+}
 void AstClass::dump(std::ostream& str) const {
     Super::dump(str);
     if (isCovergroup()) str << " [CG]";
@@ -687,6 +854,9 @@ void AstClass::dump(std::ostream& str) const {
     if (useVirtualPublic()) str << " [VIRPUB]";
     if (baseOverride().isAny()) str << " [" << baseOverride().ascii() << "]";
     if (cgAutoBinMax()) str << " cost=" << cgAutoBinMax();
+    if (!m_scopePrefix.empty()) str << " scope=" << m_scopePrefix;
+    if (!m_dtypeNameFull.empty()) str << " dtypeName=" << m_dtypeNameFull;
+    if (!m_dtypeNameShort.empty()) str << " dtypeNameShort=" << m_dtypeNameShort;
 }
 void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
@@ -700,6 +870,9 @@ void AstClass::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, useVirtualPublic);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonNumFunc(str, cgAutoBinMax);
+    if (!m_scopePrefix.empty()) dumpJsonStr(str, "scopePrefix", m_scopePrefix);
+    if (!m_dtypeNameFull.empty()) dumpJsonStr(str, "dtypeNameFull", m_dtypeNameFull);
+    if (!m_dtypeNameShort.empty()) dumpJsonStr(str, "dtypeNameShort", m_dtypeNameShort);
     dumpJsonGen(str);
 }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
@@ -789,7 +962,14 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
     str << "class:" << name();
 }
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
-string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prettyName(); }
+string AstClassRefDType::prettyDTypeName(bool full) const {
+    // Until V3Param specializes the class for the parameters, just name the class
+    if (!classp() || paramsp()) return "class{}"s + prettyName();
+    return "class{}"s + classp()->dtypeName(full);
+}
+string AstClassRefDType::prettyNameMsg() const {
+    return (classp() && !paramsp()) ? classp()->prettyNameMsg() : prettyName();
+}
 void AstClassRefDType::selfTest() {
     FileLine* const fl = new FileLine{FileLine::commandLineFilename()};
     AstClassRefDType* const owningp = new AstClassRefDType{fl, nullptr, nullptr};
@@ -1431,6 +1611,18 @@ void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
 // We need these here, because the classes they point to aren't defined when we declare the class
 AstIface* AstIfaceRefDType::ifaceViaCellp() const {
     return ((m_cellp && m_cellp->modp()) ? VN_AS(m_cellp->modp(), Iface) : m_ifacep);
+}
+string AstIfaceRefDType::prettyDTypeName(bool full) const {
+    string result = isVirtual() ? "virtual interface " : "interface ";
+    // Until V3Param specializes the interface for the parameters, just name the interface
+    const AstIface* const ifacep = paramsp() ? nullptr : ifaceViaCellp();
+    if (ifacep) {
+        result += prettyName(ifacep->origName()) + dtypeNameParams(ifacep, full);
+    } else {
+        result += prettyName(ifaceName());
+    }
+    if (!modportName().empty()) result += "." + prettyName(modportName());
+    return result;
 }
 void AstImplication::dump(std::ostream& str) const {
     Super::dump(str);
@@ -3152,6 +3344,14 @@ string AstScope::nameDotless() const {
     string::size_type pos;
     while ((pos = result.find('.')) != string::npos) result.replace(pos, 1, "__");
     return result;
+}
+string AstScope::prettyNameMsg() const {
+    // The scope of a class is named after the class as $typename would, as the scope's name has
+    // the class's internal name. A class made since elaboration has no such name, so keeps the
+    // scope's name.
+    const AstClass* const classp = VN_CAST(modp(), Class);
+    if (!classp || !classp->dtypeNameFrozen()) return prettyName();
+    return classp->dtypeName(true);
 }
 bool AstScope::sameNode(const AstNode* samep) const {
     const AstScope* const asamep = VN_DBG_AS(samep, Scope);

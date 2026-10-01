@@ -611,6 +611,7 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string prettyDTypeName(bool full) const override;
+    string prettyNameMsg() const override;
     string name() const override VL_MT_STABLE;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     int widthAlignBytes() const override { return 0; }
@@ -1009,6 +1010,7 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         // Each occurrence of a virtual interface type parses to its own node,

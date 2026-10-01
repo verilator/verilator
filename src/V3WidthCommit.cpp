@@ -232,6 +232,8 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
+        // Name the class while it has its parameter types, before they move to the type table
+        if (AstClass* const classp = VN_CAST(nodep, Class)) classp->dtypeNameFreeze();
         iterateChildren(nodep);
         editDType(nodep);
         if (AstClass* const classp = VN_CAST(nodep, Class)) {

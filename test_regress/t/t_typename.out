@@ -24,6 +24,6 @@
 "struct{bit A;bit B;}t.AB_t" ==? "struct{bit A;bit B;}<some_have_typename>"
 "struct{bit A;bit B;}t.AB_t$[0:9]" ==? "struct{bit A;bit B;}top.AB_t$[0:9]"
 "union{bit A;bit B;}t.UAB_t" ==? "union{bit A;bit B;}"
-"class{}Cls" ==? "class{}t.Cls <or class t.Cls>"
+"class{}t.Cls" ==? "class{}t.Cls <or class t.Cls>"
 
 *-* All Finished *-*

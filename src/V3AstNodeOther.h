@@ -1279,6 +1279,10 @@ class AstCovergroup final : public AstNode {
     string m_name;  // covergroup name
 
 public:
+    // Prefix the parser adds to the name of a covergroup declared in a class, as that declares
+    // an anonymous covergroup type, and a variable of it named as the covergroup (IEEE
+    // 1800-2023 19.4)
+    static constexpr const char* EMBEDDED_PREFIX = "__vlAnonCG_";
     AstCovergroup(FileLine* fl, const string& name, AstVar* argsp, AstVar* sampleArgsp,
                   AstNode* membersp, AstSenTree* eventp)
         : ASTGEN_SUPER_Covergroup(fl)
@@ -1892,6 +1896,7 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     void name(const string& name) override { m_name = name; }
+    string prettyNameMsg() const override;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* samep) const override;
@@ -3055,6 +3060,9 @@ class AstClass final : public AstNodeModule {
     // MEMBERS
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
     // @astgen ptr := m_covergroupEnclosingClassp : Optional[AstClass]  // Lexical enclosing class
+    string m_scopePrefix;  // Package or module declaring the class, as a dtypeName() prefix
+    string m_dtypeNameFull;  // dtypeName(true) once frozen, as parameters may then be gone
+    string m_dtypeNameShort;  // dtypeName(false) once frozen, as parameters may then be gone
     uint32_t m_declTokenNum;  // Declaration token number
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     bool m_hasRandVarsUpdate = false;  // Has updateRandVars method,
@@ -3066,8 +3074,13 @@ class AstClass final : public AstNodeModule {
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
     bool m_virtual = false;  // Virtual class
     bool m_printedFrom = false;  // This class is printed from i.e. is used as format arg.
+    // Mutable, as only a recursion guard of the const dtypeName(), so also not dumped
+    mutable bool m_dtypeNameBusy = false;  // In dtypeName(), which a parameter may lead back to
     // Covergroup options (when m_covergroup is true)
     int m_cgAutoBinMax = -1;  // option.auto_bin_max value (-1 = not set, use default 64)
+
+    string dtypeNameCalc(bool full) const;  // dtypeName() as computed from the tree
+    string dtypeNameScope() const;  // Prefix of dtypeName(true) for the scope declaring the class
 
 public:
     AstClass(FileLine* fl, const string& name, const string& libname)
@@ -3103,6 +3116,18 @@ public:
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
     void markPrintedFrom() { m_printedFrom = true; }
     bool isPrintedFrom() const { return m_printedFrom; }
+    string scopePrefix() const { return m_scopePrefix; }
+    void scopePrefix(const string& prefix) { m_scopePrefix = prefix; }
+    // Name of the class as a data type, with the values of its parameters, e.g. 'Cls#(int,5)'.
+    // With 'full', as for $typename (IEEE 1800-2023 20.6.1), prefixed with the scope declaring
+    // the class, e.g. '$unit::Cls#(int,5)', and with the types of parameters in full.
+    string dtypeName(bool full) const;
+    // Fix dtypeName(), as V3WidthCommit moves parameter types to the type table
+    void dtypeNameFreeze();
+    // Whether dtypeName() is fixed, as for a class elaborated from the design
+    bool dtypeNameFrozen() const { return !m_dtypeNameFull.empty(); }
+    // Named by dtypeName(), as name() is internal for a specialization, unless still a template
+    string prettyNameMsg() const override { return hasGParam() ? prettyName() : dtypeName(false); }
     // Covergroup options accessors
     int cgAutoBinMax() const { return m_cgAutoBinMax; }
     void cgAutoBinMax(int value) { m_cgAutoBinMax = value; }

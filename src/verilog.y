@@ -7979,7 +7979,7 @@ class_item<nodep>:                      // ==IEEE: class_item
                         {
                           if ($1) {
                               const string cgName = $1->name();
-                              $1->name("__vlAnonCG_" + cgName);
+                              $1->name(AstCovergroup::EMBEDDED_PREFIX + cgName);
                               AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR, cgName,
                                   VFlagChildDType{}, new AstRefDType($1->fileline(), $1->name())};
                               $$ = addNextNull($1, newp);
