@@ -4651,7 +4651,10 @@ class RandomizeVisitor final : public VNVisitor {
                     const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
                     while (const AstNodeDType* const subp = dtypep->subDTypep())
                         dtypep = subp->skipRefp();
-                    if (VN_IS(dtypep, ClassRefDType)) owns = true;
+                    // A MemberSel chain is always class-member access, so the
+                    // resolved root is a class handle (or array thereof); the
+                    // non-class branch is unreachable here.
+                    if (VN_IS(dtypep, ClassRefDType)) owns = true;  // LCOV_EXCL_BR_LINE
                 }
             });
             return owns;

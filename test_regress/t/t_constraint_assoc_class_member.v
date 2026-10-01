@@ -41,6 +41,16 @@ class ClsC;
     }
   }
 
+  // Fixed index inside a foreach: the nested-access write_var registration
+  // does NOT reference the loop iterator, so it must stay in the init task
+  // rather than being moved into the loop body (exercises the
+  // referencesLoopIdx()==false path).
+  constraint constraint_fixed {
+    foreach (member_c[i]) {
+      member_c[0].member_b.member_a == 1'b1;
+    }
+  }
+
   function new;
     for (int k = 0; k < 3; k++) begin
       ClsB item = new;
