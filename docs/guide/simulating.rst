@@ -223,6 +223,10 @@ translate covergroup coverage points the user has inserted manually in
 SystemVerilog code into the Verilated model. Verilator supports coverpoints
 with value and transition bins, and cross points.
 
+A bin whose ``option.at_least`` is not 1 records it as the bin's threshold,
+which :command:`verilator_coverage` uses to decide whether the bin is
+covered.
+
 
 .. _fsm coverage:
 

@@ -164,7 +164,8 @@ verilator_coverage Arguments
    Prints an experimental report listing the relative importance of each
    test in covering all of the coverage points. The report shows "Covered"
    which indicates the number of points the test covers; a test is
-   considered to cover a point if it has a bucket count of at least 1. The
+   considered to cover a point if it has a bucket count of at least 1, or
+   of at least its ``option.at_least`` for a covergroup bin. The
    "rank" column has a higher number t indicate the test is more critical,
    and rank 0 means the test does not need to be run to cover the points.
    "RankPts" indicates the number of coverage points this test will

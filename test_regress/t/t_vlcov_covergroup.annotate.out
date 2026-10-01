@@ -370,22 +370,44 @@
         //  cross: [a1, write]
           endgroup
         
-          // Cross with option.at_least set in the cross body
+          // The covergroup's option.at_least is the default of its coverpoints and crosses; the
+          // cross overrides it
           covergroup cg_at_least;
-%000001     cp_addr: coverpoint addr {bins addr0 = {0}; bins addr1 = {1};}
--000001  point: type=covergroup comment= hier=cg_at_least.cp_addr.addr0
+            option.at_least = 2;
+%000003     cp_addr: coverpoint addr {bins addr0 = {0}; bins addr1 = {1};}
++000003  point: type=covergroup comment= hier=cg_at_least.cp_addr.addr0
 -000001  point: type=covergroup comment= hier=cg_at_least.cp_addr.addr1
-%000001     cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
--000001  point: type=covergroup comment= hier=cg_at_least.cp_cmd.read
+%000003     cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
++000003  point: type=covergroup comment= hier=cg_at_least.cp_cmd.read
 -000001  point: type=covergroup comment= hier=cg_at_least.cp_cmd.write
-%000001     addr_cmd_al: cross cp_addr, cp_cmd{option.at_least = 3;}
--000001  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr0_x_read
+%000003     addr_cmd_al: cross cp_addr, cp_cmd{option.at_least = 3;}
++000003  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr0_x_read
         //  cross: [addr0, read]
 -000000  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr0_x_write
         //  cross: [addr0, write]
 -000000  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr1_x_read
         //  cross: [addr1, read]
 -000001  point: type=covergroup comment= hier=cg_at_least.addr_cmd_al.addr1_x_write
+        //  cross: [addr1, write]
+          endgroup
+        
+          // With option.at_least 0, every bin is covered before any sample
+          covergroup cg_at_least_0;
+            option.at_least = 0;
+%000000     cp_addr: coverpoint addr {bins addr0 = {0}; bins addr1 = {1};}
++000000  point: type=covergroup comment= hier=cg_at_least_0.cp_addr.addr0
++000000  point: type=covergroup comment= hier=cg_at_least_0.cp_addr.addr1
+%000000     cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
++000000  point: type=covergroup comment= hier=cg_at_least_0.cp_cmd.read
++000000  point: type=covergroup comment= hier=cg_at_least_0.cp_cmd.write
+%000000     addr_cmd: cross cp_addr, cp_cmd;
++000000  point: type=covergroup comment= hier=cg_at_least_0.addr_cmd.addr0_x_read
+        //  cross: [addr0, read]
++000000  point: type=covergroup comment= hier=cg_at_least_0.addr_cmd.addr0_x_write
+        //  cross: [addr0, write]
++000000  point: type=covergroup comment= hier=cg_at_least_0.addr_cmd.addr1_x_read
+        //  cross: [addr1, read]
++000000  point: type=covergroup comment= hier=cg_at_least_0.addr_cmd.addr1_x_write
         //  cross: [addr1, write]
           endgroup
         
@@ -742,6 +764,8 @@
 -000001  point: type=line comment=block hier=top.t
 %000001   cg_at_least cg_at_least_inst = new;
 -000001  point: type=line comment=block hier=top.t
+%000001   cg_at_least_0 cg_at_least_0_inst = new;
+-000001  point: type=line comment=block hier=top.t
 %000001   cg_goal cg_goal_inst = new;
 -000001  point: type=line comment=block hier=top.t
 %000001   cg_unsup_cross_opt cg_unsup_cross_opt_inst = new;
@@ -1045,8 +1069,7 @@
 -000000  point: type=line comment=block hier=top.t
 -000001  point: type=line comment=else hier=top.t
         
-            // Sample cg_at_least (option.at_least in cross body; Verilator uses at_least=1 for bins)
-            // cg_at_least: 2 of 4 cross bins hit (count=1, at_least effectively 1)
+            // Sample cg_at_least (option.at_least = 2, and 3 in cross body)
 %000001     addr = 0;
 -000001  point: type=line comment=block hier=top.t
 %000001     cmd = 0;
@@ -1059,7 +1082,29 @@
 -000001  point: type=line comment=block hier=top.t
 %000001     cg_at_least_inst.sample();  // addr1 x write
 -000001  point: type=line comment=block hier=top.t
-%000001     `checkr(cg_at_least_inst.get_inst_coverage(), (100.0 + 100.0 + 50.0) / 3);
+            // No bin hit twice
+%000001     `checkr(cg_at_least_inst.get_inst_coverage(), 0.0);
+-000001  point: type=line comment=block hier=top.t
+-000000  point: type=line comment=block hier=top.t
+-000001  point: type=line comment=else hier=top.t
+%000001     addr = 0;
+-000001  point: type=line comment=block hier=top.t
+%000001     cmd = 0;
+-000001  point: type=line comment=block hier=top.t
+%000001     cg_at_least_inst.sample();  // addr0 x read
+-000001  point: type=line comment=block hier=top.t
+            // addr0 and read hit twice, addr0 x read short of 3
+%000001     `checkr(cg_at_least_inst.get_inst_coverage(), (50.0 + 50.0 + 0.0) / 3);
+-000001  point: type=line comment=block hier=top.t
+-000000  point: type=line comment=block hier=top.t
+-000001  point: type=line comment=else hier=top.t
+%000001     cg_at_least_inst.sample();  // addr0 x read
+-000001  point: type=line comment=block hier=top.t
+%000001     `checkr(cg_at_least_inst.get_inst_coverage(), (50.0 + 50.0 + 25.0) / 3);
+-000001  point: type=line comment=block hier=top.t
+-000000  point: type=line comment=block hier=top.t
+-000001  point: type=line comment=else hier=top.t
+%000001     `checkr(cg_at_least_0_inst.get_inst_coverage(), 100.0);
 -000001  point: type=line comment=block hier=top.t
 -000000  point: type=line comment=block hier=top.t
 -000001  point: type=line comment=else hier=top.t

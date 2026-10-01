@@ -246,8 +246,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::vector<AstCoverpoint*> m_coverpoints;  // Coverpoints in current covergroup
     std::map<std::string, AstCoverpoint*> m_coverpointMap;  // Name -> coverpoint for fast lookup
     std::vector<AstCoverCross*> m_coverCrosses;  // Cross coverage items in current covergroup
-    std::vector<AstCgOptionAssign*> m_cgOptions;  // Covergroup-level weights, before lowering
+    std::vector<AstCgOptionAssign*> m_cgOptions;  // Covergroup-level options, before lowering
     uint32_t m_cgTypeWeight = 1;  // The covergroup's type_option.weight, a constant
+    int m_cgAtLeast = 1;  // Covergroup option.at_least
 
     struct EmbeddedEventTrigger final {
         FileLine* eventFl;  // Clocking-event source location
@@ -335,11 +336,31 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return selp;
     }
 
+    // A constant option.at_least; a negative count of hits has no meaning, so takes the default
+    static int constAtLeast(const AstConst* constp) {
+        const int value = constp->toSInt();
+        if (value >= 0) return value;
+        constp->v3warn(COVERIGN, "Ignoring negative 'option.at_least'; using 1");
+        return 1;
+    }
+
     // Store the covergroup-level weights (IEEE 1800-2023 19.7) where SystemVerilog and the
     // runtime read them.  option.weight is evaluated by the constructor, as are the other
     // instance options; type_option.weight is constant, and initializes the static member.
+    // A constant option.at_least is the default of the coverpoints and crosses.
     void lowerCovergroupOptions() {
+        m_cgAtLeast = 1;
         for (AstCgOptionAssign* const optp : m_cgOptions) {
+            if (optp->optType() == VCoverOptionType::AT_LEAST) {
+                if (const AstConst* const constp = VN_CAST(optp->valuep(), Const)) {
+                    m_cgAtLeast = constAtLeast(constp);
+                } else {
+                    optp->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant"
+                                                     " 'option.at_least'; using default value");
+                }
+                VL_DO_DANGLING(pushDeletep(optp->unlinkFrBack()), optp);
+                continue;
+            }
             UASSERT_OBJ(optp->optType() == VCoverOptionType::WEIGHT, optp,
                         "Unexpected covergroup option reaching V3Covergroup");
             FileLine* const fl = optp->fileline();
@@ -732,17 +753,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
     }
 
-    // Extract all coverpoint option values in a single pass.
-    // atLeastOut: option.at_least (default 1)
+    // Extract all option values of a coverpoint or cross in a single pass.
+    // atLeastOut: option.at_least (default the covergroup's)
     // autoBinMaxOut: option.auto_bin_max (coverpoint overrides covergroup, default 64)
-    void extractCoverpointOptions(AstCoverpoint* coverpointp, int& atLeastOut,
-                                  int& autoBinMaxOut) {
-        atLeastOut = 1;
+    void extractItemOptions(AstNode* optionsp, int& atLeastOut, int& autoBinMaxOut) {
+        atLeastOut = m_cgAtLeast;
         autoBinMaxOut = -1;  // -1 = not set at coverpoint level
-        for (AstNode* optionp = coverpointp->optionsp(); optionp; optionp = optionp->nextp()) {
+        for (AstNode* optionp = optionsp; optionp; optionp = optionp->nextp()) {
             AstCoverOption* const optp = VN_AS(optionp, CoverOption);
-            // Weights may be non-constant; generateItemWeight() handles them
-            if (optp->optType() == VCoverOptionType::WEIGHT) continue;
+            // Weights may be non-constant; generateItemWeight() handles them.  A cross keeps
+            // its unsupported options, which V3LinkParse warned of.
+            if (!(optp->optType() == VCoverOptionType::AT_LEAST
+                  || optp->optType() == VCoverOptionType::AUTO_BIN_MAX)) {
+                continue;
+            }
             AstConst* const constp = VN_CAST(optp->valuep(), Const);
             if (!constp) {
                 optp->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant 'option."
@@ -751,13 +775,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 continue;
             }
             if (optp->optType() == VCoverOptionType::AT_LEAST) {
-                atLeastOut = constp->toSInt();
+                atLeastOut = constAtLeast(constp);
             } else {
-                // V3LinkParse only converts at_least/auto_bin_max/weight coverpoint options
-                // into AstCoverOption (others are dropped there), so this is the only
-                // alternative.
-                UASSERT_OBJ(optp->optType() == VCoverOptionType::AUTO_BIN_MAX, optp,
-                            "Unexpected coverpoint option type reaching V3Covergroup");
                 autoBinMaxOut = constp->toSInt();
             }
         }
@@ -910,7 +929,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Extract all coverpoint options in a single pass
         int atLeastValue;
         int autoBinMax;
-        extractCoverpointOptions(coverpointp, atLeastValue, autoBinMax);
+        extractItemOptions(coverpointp->optionsp(), atLeastValue, autoBinMax);
         UINFO(6, "    Coverpoint at_least = " << atLeastValue << " auto_bin_max = " << autoBinMax);
 
         // Create implicit automatic bins if no regular bins exist
@@ -3684,6 +3703,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                                  dynamic ? VCMethod::COVERGROUP_ADD_CROSS_DYN
                                                          : VCMethod::COVERGROUP_ADD_CROSS));
         generateItemWeight(fl, cxVarp, crossp->optionsp());
+        int atLeastValue;
+        int autoBinMax;  // Not a cross option
+        extractItemOptions(crossp->optionsp(), atLeastValue, autoBinMax);
 
         // Constructor: init (after the coverpoints, which generate earlier) then registration.
         // Obfuscate the hierarchy/filename/page under --protect-ids as for coverpoints above.
@@ -3693,8 +3715,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_constructorp->addStmtsp(makeCrossCpsCall(
             fl, cpVars,
             itemCall(fl, cxVarp, VCMethod::COVERGROUP_INIT,
-                     {ctext(fl, quoted(hier)), cnum(fl, static_cast<uint32_t>(dims)),
-                      ctext(fl, "__Vcx_cps"),
+                     {ctext(fl, quoted(hier)), cnum(fl, static_cast<uint32_t>(atLeastValue)),
+                      cnum(fl, static_cast<uint32_t>(dims)), ctext(fl, "__Vcx_cps"),
                       ctext(fl, quoted(VIdProtect::protectIf(fl->filename(), prot))),
                       cnum(fl, static_cast<uint32_t>(fl->lineno())),
                       cnum(fl, static_cast<uint32_t>(fl->firstColumn()))})));
@@ -4488,7 +4510,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // V3Width leaves only the covergroup-level weights, for lowerCovergroupOptions()
+    // V3Width leaves the covergroup-level options lowerCovergroupOptions() takes
     void visit(AstCgOptionAssign* nodep) override { m_cgOptions.push_back(nodep); }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
