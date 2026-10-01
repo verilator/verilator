@@ -1533,7 +1533,8 @@ class TaskVisitor final : public VNVisitor {
                 // With --sc, also wake the SystemC wrapper: it cannot see the flag, and may
                 // otherwise sleep until its next timed slot. (usesTiming() is not known yet.)
                 if (v3Global.opt.systemC()) {
-                    assignp->addNextHere(new AstCStmt{flp, "vlSymsp->wakeModel();\n"});
+                    assignp->addNextHere(new AstCStmt{
+                        flp, "vlSymsp->__Vm_wakeEvent.notify(sc_core::SC_ZERO_TIME);\n"});
                 }
             }
         }

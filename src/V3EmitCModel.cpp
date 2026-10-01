@@ -185,11 +185,6 @@ class EmitCModel final : public EmitCFunc {
             puts("/// Evaluate the model.  Application must call when inputs change.\n");
         }
         if (optSystemC() && v3Global.usesTiming()) {
-            ofp()->putsPrivate(true);
-            putsDecoration(nullptr,
-                           "// Notified when work appears in the model outside evaluation,\n"
-                           "// e.g. from a DPI call: the armed timer alone would miss it\n");
-            puts("sc_core::sc_event m_wakeEvent;\n");
             puts("void eval();\n");
         } else {
             puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
@@ -357,6 +352,10 @@ class EmitCModel final : public EmitCFunc {
             // Create sensitivity list for when to evaluate the model.
             putsDecoration(nullptr, "// Sensitivities on all clocks and combinational inputs\n");
             puts("SC_METHOD(eval);\n");
+            if (v3Global.usesTiming()) {
+                putsDecoration(nullptr, "// Notified by DPI exports\n");
+                puts("sensitive << vlSymsp->__Vm_wakeEvent;\n");
+            }
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isNonOutput() && (varp->isScSensitive() || varp->isPrimaryClock())) {
@@ -435,9 +434,7 @@ class EmitCModel final : public EmitCFunc {
             puts("if (eventsPending()) {\n");
             puts("sc_core::sc_time dt = sc_core::sc_time::from_value(nextTimeSlot() - "
                  "contextp()->time());\n");
-            puts("next_trigger(dt, m_wakeEvent);\n");
-            puts("} else {\n");
-            puts("next_trigger(m_wakeEvent);\n");
+            puts("vlSymsp->__Vm_wakeEvent.notify(dt);\n");
             puts("}\n");
             puts("}\n");
         }
