@@ -154,6 +154,7 @@ Verilator 5.053 devel
 * Fix stack depth calculations over calls (#8544). [Nick Brereton]
 * Fix cascading errors after unsupported class dot reference in parameter value (#8551). [Martijn Wobbes, Antmicro Ltd.]
 * Fix vpi_put_value crash on NULL value pointer (#8553). [Nick Brereton]
+* Fix --hierarchical parameter specialization name collisions (#8555) (#8565). [Marco Bartoli]
 * Fix dehash of a suffix after a hashed name (#8556). [Ethan Sifferman]
 
 
