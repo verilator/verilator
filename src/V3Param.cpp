@@ -461,6 +461,16 @@ class ParamProcessor final {
         } else if (const AstWildcardArrayDType* const dtypep
                    = VN_CAST(nodep, WildcardArrayDType)) {
             key = paramElemString(dtypep->subDTypep()) + "$[*]";
+        } else if (const AstEnumDType* const dtypep = VN_CAST(nodep, EnumDType)) {
+            // With the items, as prettyDTypeName() omits them, yet a specialization of a class
+            // may declare an enumeration of the same name with other values
+            key += " enum {";
+            for (const AstEnumItem* itemp = dtypep->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
+                const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
+                key += itemp->name() + "=" + (constp ? constp->num().ascii() : "?") + ";";
+            }
+            key += "}";
         } else if (const AstNodeDType* const dtypep = VN_CAST(nodep, NodeDType)) {
             key += dtypep->prettyDTypeName(true);
         }

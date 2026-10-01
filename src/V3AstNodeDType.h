@@ -1083,6 +1083,7 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool hasDType() const override VL_MT_SAFE { return true; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
@@ -1315,9 +1316,7 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    string prettyDTypeName(bool full) const override {
-        return subDTypep() ? prettyName(subDTypep()->prettyDTypeName(full)) : prettyName();
-    }
+    string prettyDTypeName(bool full) const override;
     AstBasicDType* basicp() const override VL_MT_STABLE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
     }

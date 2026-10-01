@@ -6,10 +6,13 @@
 
 // $typename of a class gives the scope declaring the class (IEEE 1800-2023 20.6.1), the values
 // of its parameters, which distinguish its specializations (8.25), and the classes it extends.
+// A structure, union, or enumeration is likewise named with the scope declaring it, but without
+// its members or items.
 // The IEEE leaves the form open, which here is like that of other simulators.
 
 // verilog_format: off
 `define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
@@ -26,10 +29,24 @@ typedef struct packed {
   logic [3:0] a;
   bit b;
 } ps_t;
+typedef union packed {
+  logic [7:0] b;
+  bit [7:0] c;
+} pu_t;
 typedef struct {
   int a;
   int b;
 } us_t;
+typedef int int_t;
+// Of several types, and of another structure
+typedef struct {
+  int_t i;
+  ps_t ps;
+  color_e c;
+  string s;
+  real r;
+  bit [7:0] v[2];
+} nested_t;
 typedef int iq_t[$];
 typedef int bq_t[$:3];
 typedef int ua_t[2];
@@ -225,7 +242,46 @@ interface ifc #(
 );
   logic [W-1:0] d;
   modport mp(input d);
+  typedef struct packed {logic [W-1:0] d;} is_t;
 endinterface
+
+// Structures of types given by the parameters, named within the specialization
+class Ps #(
+    int W = 4
+);
+  typedef struct packed {logic [W-1:0] d;} s_t;
+  typedef enum logic [W-1:0] {
+    P0,
+    P1
+  } e_t;
+  s_t s;
+  function string s_typename();
+    return $typename(s);
+  endfunction
+  // Declared within a function, still within the specialization
+  function string local_typename();
+    typedef struct packed {logic [W-1:0] l;} local_t;
+    local_t l;
+    return $typename(l);
+  endfunction
+endclass
+
+// Likewise within a module, and an interface
+module msub #(
+    parameter int W = 4
+);
+  typedef struct packed {logic [W-1:0] d;} ms_t;
+  ms_t v;
+  ifc #(W) i ();
+  typedef i.is_t ms_is_t;
+  ms_is_t iv;
+  function automatic string ms_typename();
+    return $typename(v);
+  endfunction
+  function automatic string is_typename();
+    return $typename(iv);
+  endfunction
+endmodule
 
 // Defaulting to a specialized interface, and to a type in a specialized class
 class Defaults #(
@@ -260,6 +316,34 @@ module t;
 
   ifc i4 ();
   ifc #(8) i8 ();
+  msub u4 ();
+  msub #(16) u16 ();
+
+  // Not classes, named as resolved (IEEE 1800-2023 20.6.1), and a structure without its members
+  typedef struct packed {
+    ps_t ps;
+    logic signed [2:0] q;
+  } mps_t;
+  int_t int_value;
+  nested_t nested;
+  mps_t mps;
+  localparam nested_t NESTED = '{
+      i: 3,
+      ps: '{a: 4'h5, b: 1'b1},
+      c: GREEN,
+      s: "x",
+      r: 1.5,
+      v: '{8'h1, 8'h2}
+  };
+  Bar #(int_t) bar_int;
+  // Of a type given by parameters
+  Ps ps_default;
+  Ps #(8) ps8;
+  Ps #(8)::s_t ps8_s;
+  Bar #(Ps #(8)::s_t) bar_ps8_s;
+  Ps #(8)::e_t ps8_e;
+  Bar #(Ps #(8)::e_t) bar_ps8_e;
+  Bar #(Ps #(16)::e_t) bar_ps16_e;
 
   foo_t foo;
   Foo foo_default;
@@ -298,6 +382,7 @@ module t;
   Bar #(Cont #(Base #(3))::eq_t) bar_cont;
   Bar #(color_e) bar_enum;
   Bar #(ps_t) bar_struct;
+  Bar #(pu_t) bar_union;
   Bar #(string) bar_string;
   Bar #(real) bar_real;
   Bar #(virtual ifc) bar_vif;
@@ -361,9 +446,16 @@ module t;
     `checks($typename(bar_wild), "class{}$unit::Bar#(int$[*])");
     `checks($typename(bar_wildb), "class{}$unit::Bar#(byte$[*])");
     `checks($typename(bar_cont), "class{}$unit::Bar#(class{}$unit::Base#(3)$[$])");
-    `checks($typename(bar_enum),
-            "class{}$unit::Bar#(enum{RED=32'h0;GREEN=32'h5;BLUE=32'h6;}$unit::color_e)");
-    `checks($typename(bar_struct), "class{}$unit::Bar#(struct{logic[3:0] a;bit b;}$unit::ps_t)");
+    `checks($typename(bar_enum), "class{}$unit::Bar#(enum{}$unit::color_e)");
+    `checks($typename(bar_struct), "class{}$unit::Bar#(struct{}$unit::ps_t)");
+    `checks($typename(bar_union), "class{}$unit::Bar#(union{}$unit::pu_t)");
+    // Without their members, as named by themselves
+    `checks($typename(color_e), "enum{}$unit::color_e");
+    `checks($typename(ps_t), "struct{}$unit::ps_t");
+    `checks($typename(pu_t), "union{}$unit::pu_t");
+    `checks($typename(bar_enum), {"class{}$unit::Bar#(", $typename(color_e), ")"});
+    `checks($typename(bar_struct), {"class{}$unit::Bar#(", $typename(ps_t), ")"});
+    `checks($typename(bar_union), {"class{}$unit::Bar#(", $typename(pu_t), ")"});
     `checks($typename(bar_string), "class{}$unit::Bar#(string)");
     `checks($typename(bar_real), "class{}$unit::Bar#(real)");
     `checks($typename(bar_vif), "class{}$unit::Bar#(virtual interface ifc#(4))");
@@ -389,6 +481,36 @@ module t;
     `checks($typename(defaults), "class{}$unit::Defaults#(2,virtual interface ifc#(8),byte,3)");
     // As named while being specialized
     `checks(Holder#(bar_xyz_t)::TNAME, $typename(bar_xyz_t));
+    // Not classes
+    `checks($typename(int_value), "int");
+    `checks($typename(int_t), "int");
+    `checks($typename(bar_int), $typename(bar_default));
+    `checks($typename(nested), "struct{}$unit::nested_t");
+    `checks($typename(NESTED), $typename(nested));
+    `checks($typename(NESTED.ps), "struct{}$unit::ps_t");
+    `checks($typename(nested.i), "int");
+    `checks($typename(nested.v), "bit[7:0]$[0:1]");
+    `checks($typename(mps), "struct{}t.mps_t");
+    `checks($typename(mps.ps), "struct{}$unit::ps_t");
+    `checks($typename(mps.q), "logic signed[2:0]");
+    `checkd(NESTED.ps.a, 4'h5);
+    `checks(NESTED.s, "x");
+    // Of a type given by parameters
+    ps_default = new;
+    ps8 = new;
+    `checks($typename(ps_default.s), "struct{}$unit::Ps#(4)::s_t");
+    `checks($typename(ps8.s), "struct{}$unit::Ps#(8)::s_t");
+    `checks($typename(ps8_s), "struct{}$unit::Ps#(8)::s_t");
+    `checks(ps8.s_typename(), "struct{}$unit::Ps#(8)::s_t");
+    `checks(ps8.local_typename(), "struct{}$unit::Ps#(8)::local_t");
+    `checks($typename(bar_ps8_s), "class{}$unit::Bar#(struct{}$unit::Ps#(8)::s_t)");
+    `checks($typename(ps8_e), "enum{}$unit::Ps#(8)::e_t");
+    `checks($typename(bar_ps8_e), {"class{}$unit::Bar#(", $typename(ps8_e), ")"});
+    `checks($typename(bar_ps16_e), "class{}$unit::Bar#(enum{}$unit::Ps#(16)::e_t)");
+    `checks(u4.ms_typename(), "struct{}msub#(4).ms_t");
+    `checks(u16.ms_typename(), "struct{}msub#(16).ms_t");
+    `checks(u4.is_typename(), "struct{}ifc#(4).is_t");
+    `checks(u16.is_typename(), "struct{}ifc#(16).is_t");
     $write("*-* All Finished *-*\n");
     $finish;
   end

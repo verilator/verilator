@@ -211,8 +211,7 @@ static string dtypeNameParams(const AstNodeModule* modp, bool full) {
         } else if (const AstParamTypeDType* const ptypep = VN_CAST(stmtp, ParamTypeDType)) {
             if (!ptypep->isGParam()) continue;
             // Or '?' if not yet resolved, as a default until V3Param has elaborated the class
-            const AstNodeDType* const dtypep = ptypep->skipRefToEnumOrNullp();
-            valueName = dtypep ? dtypep->prettyDTypeName(full) : "?";
+            valueName = ptypep->skipRefToEnumOrNullp() ? ptypep->prettyDTypeName(full) : "?";
         } else {
             continue;
         }
@@ -236,6 +235,20 @@ static string dtypeNameClass(const AstClass* classp) {
         }
     }
     return AstNode::prettyName(classp->origName());
+}
+
+// Prefix of the name of a type for the package, interface, module, or class declaring it, with
+// the values of its parameters, e.g. '$unit::', 'ifc#(8).', or '$unit::Cls#(8)::'
+static string dtypeNameScopeOf(const AstNode* nodep) {
+    const AstNode* abovep = nodep->aboveLoopp();
+    while (!VN_IS(abovep, NodeModule)) {
+        UASSERT_OBJ(abovep, nodep, "Type declared outside of a module");
+        abovep = abovep->aboveLoopp();
+    }
+    const AstNodeModule* const modp = VN_AS(abovep, NodeModule);
+    if (const AstClass* const classp = VN_CAST(modp, Class)) return classp->dtypeName(true) + "::";
+    if (VN_IS(modp, Package)) return modp->prettyName() + "::";
+    return AstNode::prettyName(modp->origName()) + dtypeNameParams(modp, true) + ".";
 }
 
 //======================================================================
@@ -1430,21 +1443,9 @@ void AstEnumDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "enum";
 }
-string AstEnumDType::prettyDTypeName(bool full) const {
-    string result = "enum{";
-    if (full) {  // else shorten for error messages
-        for (AstEnumItem* itemp = itemsp(); itemp; itemp = VN_AS(itemp->nextp(), EnumItem)) {
-            result += itemp->prettyName() + "=";
-            if (AstConst* constp = VN_CAST(itemp->valuep(), Const)) {
-                result += constp->num().ascii(true, true);
-            } else {
-                result += "?";
-            }
-            result += ";";
-        }
-    }
-    result += "}" + prettyName();
-    return result;
+string AstEnumDType::prettyDTypeName(bool) const {
+    // Without the items, as other simulators, which would make for long names
+    return "enum{}" + prettyName();
 }
 const char* AstEnumItemRef::broken() const {
     if (v3Global.assertDTypesResolved()) BROKEN_RTN(!itemp());
@@ -1824,6 +1825,10 @@ AstNodeUOrStructDType* AstMemberDType::getChildStructp() {
     }
     // It's possible that `subdtp` is still a ref type, so skip it.
     return VN_CAST(subdtp->skipRefp(), NodeUOrStructDType);  // Maybe nullptr
+}
+string AstMemberDType::prettyDTypeName(bool full) const {
+    // Named as the member's type, as for $typename of a member (IEEE 1800-2023 20.6.1)
+    return subDTypep()->prettyDTypeName(full);
 }
 AstMemberSel::AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
     : ASTGEN_SUPER_MemberSel(fl)
@@ -2909,17 +2914,9 @@ void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, emitToString);
     dumpJsonGen(str);
 }
-string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
-    string result = verilogKwd() + "{";
-    if (full) {  // else shorten for errors
-        for (AstMemberDType* itemp = membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            result += itemp->subDTypep()->prettyDTypeName(full);
-            result += " " + itemp->prettyName() + ";";
-        }
-    }
-    result += "}" + prettyName();
-    return result;
+string AstNodeUOrStructDType::prettyDTypeName(bool) const {
+    // Without the members, as other simulators, which would make for long names
+    return verilogKwd() + "{}" + prettyName();
 }
 bool AstNodeUOrStructDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstNodeUOrStructDType* const sp = VN_DBG_AS(samep, NodeUOrStructDType);
@@ -3046,8 +3043,8 @@ void AstParamTypeDType::dumpJson(std::ostream& str) const {
 }
 string AstParamTypeDType::prettyDTypeName(bool full) const {
     // Named as the type it stands for, as is a reference to it, or if not yet resolved, by name
-    const AstNodeDType* const dtypep = skipRefToEnumOrNullp();
-    return dtypep ? dtypep->prettyDTypeName(full) : prettyName();
+    if (!skipRefToEnumOrNullp()) return prettyName();
+    return subDTypep()->prettyDTypeName(full);
 }
 void AstParseTypeDType::dump(std::ostream& str) const {
     Super::dump(str);
@@ -3223,6 +3220,19 @@ void AstRefDType::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstRefDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "ref";
+}
+string AstRefDType::prettyDTypeName(bool full) const {
+    // A structure, union, or enumeration is named in full by the typedef declaring it, with the
+    // scope of the typedef, so with the values of its parameters, which its own name lacks
+    if (full && typedefp()) {
+        const AstNodeDType* const subp = typedefp()->subDTypep();
+        const AstNodeUOrStructDType* const sdtypep = VN_CAST(subp, NodeUOrStructDType);
+        if (sdtypep || VN_IS(subp, EnumDType)) {
+            return (sdtypep ? sdtypep->verilogKwd() : "enum"s) + "{}"
+                   + dtypeNameScopeOf(typedefp()) + typedefp()->prettyName();
+        }
+    }
+    return subDTypep() ? prettyName(subDTypep()->prettyDTypeName(full)) : prettyName();
 }
 AstNodeDType* AstRefDType::subDTypep() const VL_MT_STABLE {
     if (typedefp()) return typedefp()->subDTypep();
