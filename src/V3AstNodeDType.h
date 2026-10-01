@@ -103,6 +103,9 @@ public:
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(true, false));
     }
+    // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType|ConstDType to EnumDType,
+    // Returns null if not resolved
+    const AstNodeDType* skipRefToEnumOrNullp() const { return skipRefIterp(true, false, false); }
     // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType to other type
     const AstNodeDType* skipRefToNonRefp() const { return skipRefIterp(false, false); }
     AstNodeDType* skipRefToNonRefp() {
@@ -1163,6 +1166,7 @@ public:
     ASTGEN_MEMBERS_AstParamTypeDType;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
+    string prettyDTypeName(bool full) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return dtypep() ? dtypep() : childDTypep();
@@ -1504,6 +1508,7 @@ public:
     bool sameNode(const AstNode* samep) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();

@@ -2451,8 +2451,10 @@ class WidthVisitor final : public VNVisitor {
     // Names of the classes a class extends, for $typename, as other simulators give them
     static string typenameExtends(const AstClass* classp) {
         string result;
+        // Stop at a cycle, which is an error, should processing continue past it
+        std::unordered_set<const AstClass*> visited;
         // An interface class may extend several, so those are not named
-        while (classp && !classp->isInterfaceClass()) {
+        while (classp && !classp->isInterfaceClass() && visited.insert(classp).second) {
             AstClass* basep = nullptr;
             for (const AstClassExtends* extendsp = classp->extendsp(); extendsp;
                  extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {

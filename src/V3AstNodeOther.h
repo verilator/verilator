@@ -1279,10 +1279,6 @@ class AstCovergroup final : public AstNode {
     string m_name;  // covergroup name
 
 public:
-    // Prefix the parser adds to the name of a covergroup declared in a class, as that declares
-    // an anonymous covergroup type, and a variable of it named as the covergroup (IEEE
-    // 1800-2023 19.4)
-    static constexpr const char* EMBEDDED_PREFIX = "__vlAnonCG_";
     AstCovergroup(FileLine* fl, const string& name, AstVar* argsp, AstVar* sampleArgsp,
                   AstNode* membersp, AstSenTree* eventp)
         : ASTGEN_SUPER_Covergroup(fl)
@@ -2318,6 +2314,7 @@ class AstVar final : public AstNode {
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_constPoolEntry : 1;  // Constant pool variable
     bool m_covergroupRefMember : 1;  // Persistent covergroup ref/const ref argument
+    bool m_embeddedCovergroup : 1;  // Instance variable an embedded covergroup declares
     bool m_attrFileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
@@ -2384,6 +2381,7 @@ class AstVar final : public AstNode {
         m_attrFsmArcInclCond = false;
         m_constPoolEntry = false;
         m_covergroupRefMember = false;
+        m_embeddedCovergroup = false;
         m_attrFileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
@@ -2537,6 +2535,10 @@ public:
     void setConstPoolEntry() { m_constPoolEntry = true; }
     bool covergroupRefMember() const { return m_covergroupRefMember; }
     void covergroupRefMember(bool flag) { m_covergroupRefMember = flag; }
+    // Instance variable an embedded covergroup declares, of the covergroup's anonymous type
+    // (IEEE 1800-2023 19.4)
+    bool embeddedCovergroup() const { return m_embeddedCovergroup; }
+    void embeddedCovergroup(bool flag) { m_embeddedCovergroup = flag; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -3116,7 +3118,6 @@ public:
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
     void markPrintedFrom() { m_printedFrom = true; }
     bool isPrintedFrom() const { return m_printedFrom; }
-    string scopePrefix() const { return m_scopePrefix; }
     void scopePrefix(const string& prefix) { m_scopePrefix = prefix; }
     // Name of the class as a data type, with the values of its parameters, e.g. 'Cls#(int,5)'.
     // With 'full', as for $typename (IEEE 1800-2023 20.6.1), prefixed with the scope declaring

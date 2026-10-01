@@ -129,42 +129,10 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
 //======================================================================
 // Data type names of classes and interfaces, with the values of their parameters
 
-// Skip references in a data type, to the enum or other type it stands for, or nullptr
-static const AstNodeDType* dtypeNameSkipRefp(const AstNodeDType* dtypep) {
-    // Bounded, as a message may name a circular parameter type, itself reported as an error
-    static constexpr int MAX_DEPTH = 1000;
-    for (int depth = 0; dtypep && depth < MAX_DEPTH; ++depth) {
-        if (!VN_IS(dtypep, RefDType) && !VN_IS(dtypep, ParamTypeDType)
-            && !VN_IS(dtypep, RequireDType) && !VN_IS(dtypep, ConstDType)
-            && !VN_IS(dtypep, MemberDType)) {
-            return dtypep;
-        }
-        dtypep = dtypep->subDTypep();
-    }
-    return nullptr;
-}
-
-// Text of a real parameter value, with the fewest of 15 or 17 digits that is exact
-static string dtypeNameReal(double value) {
-    std::ostringstream os;
-    os.precision(15);
-    os << value;
-    string result = os.str();
-    if (std::strtod(result.c_str(), nullptr) != value) {
-        os.str("");
-        os.precision(17);
-        os << value;
-        result = os.str();
-    }
-    // A real, as in Verilog, unless has an exponent, or is infinite or not-a-number
-    if (result.find_first_of(".en") == string::npos) result += ".0";
-    return result;
-}
-
 // Text of a constant parameter value, given the data type of the parameter
 static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep) {
     if (num.isNull()) return "null";
-    if (num.isDouble()) return dtypeNameReal(num.toDouble());
+    if (num.isDouble()) return num.toRealString();
     const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
     if (num.isString() || (basicp && basicp->isString())) return '"' + num.toString() + '"';
     // Sized and signed as the parameter, as the value may not be yet
@@ -191,7 +159,8 @@ static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep) {
 
 // Text of a parameter value, given the data type of the parameter
 static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep) {
-    dtypep = dtypeNameSkipRefp(dtypep);
+    // The enum or other type the data type stands for, or nullptr if not yet resolved
+    if (dtypep) dtypep = dtypep->skipRefToEnumOrNullp();
     if (const AstConst* const constp = VN_CAST(valuep, Const)) {
         return dtypeNameConst(constp->num(), dtypep);
     }
@@ -204,26 +173,28 @@ static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep) 
             if (itr.first != nextIndex) indexed = true;
             ++nextIndex;
         }
-        string result;
+        string result = "'{";
+        const char* sepp = "";
         for (const auto& itr : initp->map()) {
-            result += result.empty() ? "'{" : ",";
+            result += sepp;
+            sepp = ",";
             if (indexed) result += cvtToStr(itr.first) + ":";
             result += dtypeNameValue(itr.second->valuep(), elemDTypep);
         }
         if (initp->defaultp()) {
-            result += (result.empty() ? "'{" : ",") + "default:"s
-                      + dtypeNameValue(initp->defaultp(), elemDTypep);
+            result += sepp + "default:"s + dtypeNameValue(initp->defaultp(), elemDTypep);
         }
-        return result.empty() ? "'{}" : result + "}";
+        return result + "}";
     }
     if (const AstConsPackUOrStruct* const consp = VN_CAST(valuep, ConsPackUOrStruct)) {
-        string result;
+        string result = "'{";
+        const char* sepp = "";
         for (const AstConsPackMember* memberp = consp->membersp(); memberp;
              memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
-            result += (result.empty() ? "'{" : ",")
-                      + dtypeNameValue(memberp->rhsp(), memberp->dtypep());
+            result += sepp + dtypeNameValue(memberp->rhsp(), memberp->dtypep());
+            sepp = ",";
         }
-        return result.empty() ? "'{}" : result + "}";
+        return result + "}";
     }
     // Not yet a constant, as a default value until V3Param has elaborated the class
     return "?";
@@ -239,7 +210,8 @@ static string dtypeNameParams(const AstNodeModule* modp, bool full) {
             valueName = dtypeNameValue(varp->valuep(), varp->subDTypep());
         } else if (const AstParamTypeDType* const ptypep = VN_CAST(stmtp, ParamTypeDType)) {
             if (!ptypep->isGParam()) continue;
-            const AstNodeDType* const dtypep = dtypeNameSkipRefp(ptypep);
+            // Or '?' if not yet resolved, as a default until V3Param has elaborated the class
+            const AstNodeDType* const dtypep = ptypep->skipRefToEnumOrNullp();
             valueName = dtypep ? dtypep->prettyDTypeName(full) : "?";
         } else {
             continue;
@@ -251,14 +223,19 @@ static string dtypeNameParams(const AstNodeModule* modp, bool full) {
 
 // Name of a class, without its scope or parameters
 static string dtypeNameClass(const AstClass* classp) {
-    const string name = classp->origName();
-    // A covergroup in a class declares a variable of an anonymous type (IEEE 1800-2023 19.4),
-    // which is named as the variable, as other simulators do
-    if (classp->isCovergroup() && classp->covergroupEnclosingClassp()
-        && VString::startsWith(name, AstCovergroup::EMBEDDED_PREFIX)) {
-        return AstNode::prettyName(name.substr(std::strlen(AstCovergroup::EMBEDDED_PREFIX)));
+    // An embedded covergroup declares an anonymous type, and an instance variable of it named
+    // by the covergroup (IEEE 1800-2023 19.4), so the type is named as the variable, as other
+    // simulators do
+    if (const AstClass* const enclosingp = classp->covergroupEnclosingClassp()) {
+        for (const AstNode* stmtp = enclosingp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            const AstVar* const varp = VN_CAST(stmtp, Var);
+            if (varp && varp->embeddedCovergroup()
+                && varp->subDTypep()->name() == classp->name()) {
+                return varp->prettyName();
+            }
+        }
     }
-    return AstNode::prettyName(name);
+    return AstNode::prettyName(classp->origName());
 }
 
 //======================================================================
@@ -833,14 +810,10 @@ void AstClass::dtypeNameFreeze() {
 }
 string AstClass::dtypeNameScope() const {
     if (!m_scopePrefix.empty()) return m_scopePrefix;
-    // Within a class, the scope is that class, with its parameters
-    for (const AstNode* abovep = aboveLoopp(); abovep; abovep = abovep->aboveLoopp()) {
-        if (const AstClass* const classp = VN_CAST(abovep, Class)) {
-            return classp->dtypeName(true) + "::";
-        }
-        if (VN_IS(abovep, NodeModule)) break;
-    }
-    return "";
+    // Else declared within a class, which is the scope, named with its parameters (see
+    // V3LinkParse), or made since, as by V3Fork, so without a scope
+    const AstClass* const classp = VN_CAST(aboveLoopp(), Class);
+    return classp ? classp->dtypeName(true) + "::" : "";
 }
 void AstClass::dump(std::ostream& str) const {
     Super::dump(str);
@@ -3071,6 +3044,11 @@ void AstParamTypeDType::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "varType", varType().ascii());
     dumpJsonGen(str);
 }
+string AstParamTypeDType::prettyDTypeName(bool full) const {
+    // Named as the type it stands for, as is a reference to it, or if not yet resolved, by name
+    const AstNodeDType* const dtypep = skipRefToEnumOrNullp();
+    return dtypep ? dtypep->prettyDTypeName(full) : prettyName();
+}
 void AstParseTypeDType::dump(std::ostream& str) const {
     Super::dump(str);
     if (fwdType() != VFwdType::NONE) str << " [" << fwdType().ascii() << "]";
@@ -3983,6 +3961,7 @@ void AstVar::dump(std::ostream& str) const {
     if (declDirection() != direction()) str << " dd=" << direction().ascii();
     if (constPoolEntry()) str << " [CONSTPOOL]";
     if (covergroupRefMember()) str << " [CGREF]";
+    if (embeddedCovergroup()) str << " [EMBCG]";
     if (isSc()) str << " [SC]";
     if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
     if (isPrimaryClock()) str << " [PCLK]";
@@ -4026,6 +4005,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, constPoolEntry);
     dumpJsonBoolFuncIf(str, covergroupRefMember);
+    dumpJsonBoolFuncIf(str, embeddedCovergroup);
     dumpJsonBoolFuncIf(str, isSc);
     dumpJsonBoolFuncIf(str, isPrimaryIO);
     dumpJsonBoolFuncIf(str, isPrimaryClock);
@@ -4353,6 +4333,9 @@ void AstVoidDType::dumpSmall(std::ostream& str) const {
 void AstWildcardArrayDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "[*]";
+}
+string AstWildcardArrayDType::prettyDTypeName(bool full) const {
+    return subDTypep()->prettyDTypeName(full) + "$[*]";
 }
 bool AstWildcardArrayDType::sameNode(const AstNode* samep) const {
     const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);

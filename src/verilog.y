@@ -7978,10 +7978,11 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       covergroup_declaration
                         {
                           if ($1) {
-                              const string cgName = $1->name();
-                              $1->name(AstCovergroup::EMBEDDED_PREFIX + cgName);
-                              AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR, cgName,
-                                  VFlagChildDType{}, new AstRefDType($1->fileline(), $1->name())};
+                              // Also declares an instance variable, of the covergroup's type
+                              AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR,
+                                  $1->name(), VFlagChildDType{},
+                                  new AstRefDType($1->fileline(), $1->name())};
+                              newp->embeddedCovergroup(true);
                               $$ = addNextNull($1, newp);
                           } else {
                               $$ = nullptr;
