@@ -8,6 +8,10 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+package cfg_pkg;
+  localparam int SEL = 3;
+endpackage
+
 typedef logic [7:0] phi_t;
 
 module tech(input phi_t phi, input en,
@@ -24,7 +28,9 @@ module leaf(output reg o, input i);
   // Bit select directly on the reference: the select binds to the last
   // identifier inside the dotted chain, and must survive promotion
   wire       b2 = t.top.drv.tech_inst.phi[2];
-  always @(ph or i or en or b2 or pb) o <= en ? (i ^ ph[3] ^ b2 ^ pb[0]) : 1'b0;
+  // A package-scoped name in a dotted expression is not a hierarchical
+  // reference, and must simply not match
+  always @(ph or i or en or b2 or pb) o <= en ? (i ^ ph[cfg_pkg::SEL] ^ b2 ^ pb[0]) : 1'b0;
 endmodule
 
 module blk(output o, input i);
