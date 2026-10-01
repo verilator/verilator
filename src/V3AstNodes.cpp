@@ -1299,6 +1299,7 @@ const char* AstEnumItemRef::broken() const {
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
     Super::dump(str);
+    if (!dotted().empty()) str << " .=" << dotted();
     str << " -> ";
     if (itemp()) {
         itemp()->dump(str);
@@ -1306,7 +1307,10 @@ void AstEnumItemRef::dump(std::ostream& str) const {
         str << "UNLINKED";
     }
 }
-void AstEnumItemRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstEnumItemRef::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, dotted);
+    dumpJsonGen(str);
+}
 AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
         return new AstEqN{fl, lhsp, rhsp};

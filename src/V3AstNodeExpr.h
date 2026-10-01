@@ -1442,6 +1442,7 @@ class AstEnumItemRef final : public AstNodeExpr {
     // @astgen ptr := m_itemp : Optional[AstEnumItem]  // [AfterLink] Pointer to item
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package defined in
     string m_name;  // Name of enum (for param relink)
+    string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
 public:
     AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* classOrPackagep)
         : ASTGEN_SUPER_EnumItemRef(fl)
@@ -1462,6 +1463,8 @@ public:
     }
     AstEnumItem* itemp() const VL_MT_STABLE { return m_itemp; }
     void itemp(AstEnumItem* nodep) { m_itemp = nodep; }
+    string dotted() const { return m_dotted; }
+    void dotted(const string& dotted) { m_dotted = dotted; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

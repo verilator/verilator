@@ -4730,8 +4730,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             } else if (AstEnumItem* const valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
-                    AstNode* const newp
+                    AstEnumItemRef* const refp
                         = new AstEnumItemRef{nodep->fileline(), valuep, foundp->classOrPackagep()};
+                    AstNode* newp = refp;
+                    // Hierarchical reference, relinked after V3Param as the referenced
+                    // module may be specialized, similar to AstVarXRef
+                    refp->dotted(m_ds.m_dotText);
+                    if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
+                        UINFO(9, indent() << "deferring until post-V3Param: " << refp);
+                        newp = new AstUnlinkedRef{nodep->fileline(), refp, refp->name(),
+                                                  m_ds.m_unlinkedScopep->unlinkFrBack()};
+                        m_ds.m_unlinkedScopep = nullptr;
+                        m_ds.m_unresolvedCell = false;
+                    }
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
@@ -5157,6 +5168,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // a parameterized class/module, so we shouldn't get can't find errors.
         // No checkNoDot; created and iterated from a parseRef
         LINKDOT_VISIT_START();
+        if (m_statep->forParamed() && !nodep->dotted().empty() && m_modSymp) {
+            // Hierarchical reference, relink as V3Param may have specialized the module
+            string baddot;
+            VSymEnt* okSymp;
+            VSymEnt* const dotSymp = m_statep->findDotted(nodep->fileline(), m_curSymp,
+                                                          nodep->dotted(), baddot, okSymp, true);
+            VSymEnt* const foundp
+                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+            AstEnumItem* const itemp = foundp ? VN_CAST(foundp->nodep(), EnumItem) : nullptr;
+            if (!itemp) {
+                nodep->v3error(
+                    "Can't find definition of "
+                    << (!baddot.empty() ? AstNode::prettyNameQ(baddot) : nodep->prettyNameQ()));
+                return;
+            }
+            nodep->itemp(itemp);
+            UINFO(9, indent() << " relinked " << nodep);
+        }
         if (!nodep->itemp()) {
             UINFO(9, indent() << "linkEnumRef se" << cvtToHex(m_curSymp) << "  n=" << nodep);
             UASSERT_OBJ(m_curSymp, nodep, "nullptr lookup symbol table");
