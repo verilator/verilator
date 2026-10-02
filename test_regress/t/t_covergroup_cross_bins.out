@@ -4,12 +4,12 @@ t.cg_auto.cp_a.values[2]: 2
 t.cg_auto.cp_a.values[3]: 2
 t.cg_auto.cp_b.auto_0: 4
 t.cg_auto.cp_b.auto_1: 4
+t.cg_auto.cx.<values[1],auto_0> [cross]: 1
+t.cg_auto.cx.<values[1],auto_1> [cross]: 1
+t.cg_auto.cx.<values[2],auto_0> [cross]: 1
+t.cg_auto.cx.<values[2],auto_1> [cross]: 1
 t.cg_auto.cx.forbidden [illegal,cross]: 0
 t.cg_auto.cx.ignored [ignore,cross]: 1
-t.cg_auto.cx.values[1]_x_auto_0 [cross]: 1
-t.cg_auto.cx.values[1]_x_auto_1 [cross]: 1
-t.cg_auto.cx.values[2]_x_auto_0 [cross]: 1
-t.cg_auto.cx.values[2]_x_auto_1 [cross]: 1
 t.cg_empty.cp_a.values[0]: 2
 t.cg_empty.cp_a.values[1]: 2
 t.cg_empty.cp_a.values[2]: 2

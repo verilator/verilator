@@ -45,8 +45,8 @@ t.cg_kinds.mixed.arr[1]: 1
 t.cg_kinds.mixed.one: 1
 t.cg_kinds.mixed.sized[0]: 1
 t.cg_kinds.mixed.sized[1]: 0
-t.cg_kinds.xx.b[1]_x_b[0] [cross]: 0
-t.cg_kinds.xx.b[1]_x_b[1] [cross]: 1
+t.cg_kinds.xx.<b[1],b[0]> [cross]: 0
+t.cg_kinds.xx.<b[1],b[1]> [cross]: 1
 t.cg_kinds.xx.low [cross]: 1
 t.cg_types.many.b[0]: 0
 t.cg_types.many.b[1]: 1

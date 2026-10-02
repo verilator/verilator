@@ -30,7 +30,7 @@ t.cg_plain.cp_b.auto_1: 2
 t.cg_plain.cx.forbidden [illegal,cross]: 1
 t.cg_plain.cx.ignored [ignore,cross]: 2
 t.cg_plain.cx.normal [cross]: 2
-t.cg_plain.only_illegal.auto_0_x_auto_0 [cross]: 1
-t.cg_plain.only_illegal.auto_0_x_auto_1 [cross]: 1
-t.cg_plain.only_illegal.auto_1_x_auto_0 [cross]: 1
+t.cg_plain.only_illegal.<auto_0,auto_0> [cross]: 1
+t.cg_plain.only_illegal.<auto_0,auto_1> [cross]: 1
+t.cg_plain.only_illegal.<auto_1,auto_0> [cross]: 1
 t.cg_plain.only_illegal.forbidden [illegal,cross]: 1

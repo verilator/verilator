@@ -47,8 +47,9 @@ def write_dat(name, records, points=()):
 
 # Covergroups of dotted names under one node, of which one is named with the value of a string
 # parameter holding a quote that a space follows, as is the count; a record without its bin's
-# name; and records of a bin with different weights and thresholds, which merge with the largest
-# of those
+# name; records of a bin with different weights and thresholds, which merge with the largest of
+# those; and records of two bins of a name, as of covergroups of distinct scopes that share a
+# name, which do not merge
 edge_cov = write_dat("edge.dat", [
     ("pkg.alpha", "cp", "b0", 1, [("B", "b0")]),
     ("pkg.alpha", "cp", "b1", 0, [("B", "b1")]),
@@ -57,6 +58,8 @@ edge_cov = write_dat("edge.dat", [
     ("split", "cp", "b0", 1, [("B", "b0"), ("s", "2"), ("w", "2")]),
     ("split", "cp", "b0", 0, [("B", "b0"), ("w", "3")]),
     ("split", "cq", "b0", 1, [("B", "b0")]),
+    ("shared", "cp", "b0", 1, [("B", "b0"), ("n", "3")]),
+    ("shared", "cp", "b0", 0, [("B", "b0"), ("n", "5")]),
 ])
 # Covergroups of zero weight only: 100
 zero_cov = write_dat("zero.dat", [("idle", "cp", "b0", 0, [("B", "b0"), ("Gw", "0")])])

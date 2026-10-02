@@ -64,8 +64,8 @@ module t;
       ignore_bins ignored = binsof (cp_a) intersect {1};
     }
   endgroup
-  // Bins of a name are distinct bins: the cross bins of 'a' and 'b_x_c', and of 'a_x_b' and
-  // 'c', are both named a_x_b_x_c: 100, 100 and 75: 91.67
+  // Cross bins named by joining their coverpoints' bins would collide: those of 'a' and 'b_x_c',
+  // and of 'a_x_b' and 'c'.  Named by tuples, they do not: 100, 100 and 75: 91.67
   covergroup collide with function sample (bit u, bit v);
     p: coverpoint u {
       bins a = {0};

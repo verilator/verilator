@@ -19,10 +19,10 @@ t.cg_cross.cpa.a0: 1
 t.cg_cross.cpa.a1: 1
 t.cg_cross.cpb.b0: 2
 t.cg_cross.cpb.b1: 0
-t.cg_cross.x.a0_x_b0 [cross]: 1
-t.cg_cross.x.a0_x_b1 [cross]: 0
-t.cg_cross.x.a1_x_b0 [cross]: 1
-t.cg_cross.x.a1_x_b1 [cross]: 0
+t.cg_cross.x.<a0,b0> [cross]: 1
+t.cg_cross.x.<a0,b1> [cross]: 0
+t.cg_cross.x.<a1,b0> [cross]: 1
+t.cg_cross.x.<a1,b1> [cross]: 0
 t.cg_group.cpa.auto_0: 1
 t.cg_group.cpa.auto_1: 1
 t.cg_group.cpa.auto_2: 0

@@ -27,7 +27,7 @@ t.cg_const_ref_scalar.cp_const_ref_scalar.one: 1
 t.cg_const_ref_scalar.cp_const_ref_scalar.zero: 1
 t.cg_cross_iff.cp_a.one: 2
 t.cg_cross_iff.cp_b.one: 2
-t.cg_cross_iff.cross_ab.one_x_one [cross]: 1
+t.cg_cross_iff.cross_ab.<one,one> [cross]: 1
 t.cg_global.cp_global.one: 1
 t.cg_global.cp_global.zero: 2
 t.cg_interface_arrays.cp_const_ref.one: 0
