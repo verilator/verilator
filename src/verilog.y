@@ -8486,11 +8486,11 @@ vltItem:
         |       yVLT_HIER_WORKERS vltDHierDpi vltDWorkers
                         { V3Control::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
         |       yVLT_HIER_XMR_PORT vltDModule vltDBlock vltDXmrPort vltDWidth vltDScope
-                        { V3Control::addHierXmrPort($<fl>1, *$2, *$3, *$4, $5->toSInt(), false,
+                        { V3Control::addHierXmrPort($<fl>1, *$3, *$2, *$4, $5->toSInt(), false,
                                                     *$6); }
         |       yVLT_HIER_XMR_PORT vltDModule vltDBlock vltDXmrPort vltDWidth yVLT_D_SIGNED
                     vltDScope
-                        { V3Control::addHierXmrPort($<fl>1, *$2, *$3, *$4, $5->toSInt(), true,
+                        { V3Control::addHierXmrPort($<fl>1, *$3, *$2, *$4, $5->toSInt(), true,
                                                     *$7); }
         |       yVLT_PARALLEL_CASE vltDFile
                         { V3Control::addCaseParallel(*$2, 0); }

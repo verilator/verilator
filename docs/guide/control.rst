@@ -157,7 +157,7 @@ The grammar of control commands is as follows:
    smaller than :vlopt:`--threads` to fit in a thread schedule.
    See :ref:`Hierarchical Verilation`.
 
-.. option:: hier_xmr_port -module "<block>" -block "<modulename>" -port "<portname>" -width <width> [-signed] -scope "<path>"
+.. option:: hier_xmr_port -module "<modulename>" -block "<block>" -port "<portname>" -width <width> [-signed] -scope "<path>"
 
    Specifies a reference out of a :vlopt:`--hierarchical` block that has been
    promoted to a port on it, naming the module the reference appears in, the
