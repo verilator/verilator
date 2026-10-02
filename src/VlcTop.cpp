@@ -229,7 +229,7 @@ bool isScoreField(const string& field) {
 
 // The name of a bin's record without the keys of the coverage computation, which the records of
 // a bin may differ in, so identifying the bin.  Its name does not: covergroups of distinct scopes
-// may share a name, as may cross bins, of the names of their coverpoints' bins joined.
+// may share a name.
 string binIdentity(const string& recordName) {
     string identity;
     string::size_type start = 0;

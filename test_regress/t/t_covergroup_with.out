@@ -18,7 +18,7 @@ t.cg_cross.aa.even_values[0]: 4
 t.cg_cross.aa.even_values[2]: 4
 t.cg_cross.bb.sized[0]: 8
 t.cg_cross.bb.sized[1]: 8
-t.cg_cross.xx.even_values[0]_x_sized[0] [cross]: 2
+t.cg_cross.xx.<even_values[0],sized[0]> [cross]: 2
 t.cg_cross.xx.sized_one [cross]: 4
 t.cg_cross.xx.two [cross]: 3
 t.cg_default.cp.gated: 1
@@ -99,11 +99,11 @@ t.cg_item_names.named.outer: 8
 t.cg_item_names.named.scoped[0]: 1
 t.cg_item_names.named.scoped[1]: 2
 t.cg_item_names.named.scoped[3]: 4
-t.cg_item_names.x.guarded_x_on [cross]: 7
-t.cg_item_names.x.outer_x_on [cross]: 8
-t.cg_item_names.x.scoped[0]_x_on [cross]: 1
-t.cg_item_names.x.scoped[1]_x_on [cross]: 2
-t.cg_item_names.x.scoped[3]_x_on [cross]: 4
+t.cg_item_names.x.<guarded,on> [cross]: 7
+t.cg_item_names.x.<outer,on> [cross]: 8
+t.cg_item_names.x.<scoped[0],on> [cross]: 1
+t.cg_item_names.x.<scoped[1],on> [cross]: 2
+t.cg_item_names.x.<scoped[3],on> [cross]: 4
 t.cg_item_names.x.sel [cross]: 3
 t.cg_item_ref.cp.b[0]: 1
 t.cg_item_ref.cp.b[1]: 2

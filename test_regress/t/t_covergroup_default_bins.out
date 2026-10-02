@@ -20,10 +20,10 @@ t.cg7.data.hi: 1
 t.cg7.data.lo: 1
 t.cg_cross.a.auto_0: 1
 t.cg_cross.a.auto_1: 1
-t.cg_cross.ab.auto_0_x_auto_0 [cross]: 1
-t.cg_cross.ab.auto_0_x_auto_1 [cross]: 0
-t.cg_cross.ab.auto_1_x_auto_0 [cross]: 0
-t.cg_cross.ab.auto_1_x_auto_1 [cross]: 1
+t.cg_cross.ab.<auto_0,auto_0> [cross]: 1
+t.cg_cross.ab.<auto_0,auto_1> [cross]: 0
+t.cg_cross.ab.<auto_1,auto_0> [cross]: 0
+t.cg_cross.ab.<auto_1,auto_1> [cross]: 1
 t.cg_cross.b.auto_0: 1
 t.cg_cross.b.auto_1: 1
 t.cg_member.__Vcoverpoint0.auto_0: 1

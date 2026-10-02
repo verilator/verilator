@@ -2,12 +2,12 @@ t.cg_cross.aa.auto_1: 4
 t.cg_cross.aa.auto_2: 5
 t.cg_cross.aa.high [illegal]: 0
 t.cg_cross.aa.low [ignore]: 0
-t.cg_cross.automatic_cross.auto_1_x_values[0] [cross]: 1
-t.cg_cross.automatic_cross.auto_1_x_values[2] [cross]: 1
-t.cg_cross.automatic_cross.auto_1_x_values[3] [cross]: 1
-t.cg_cross.automatic_cross.auto_2_x_values[0] [cross]: 1
-t.cg_cross.automatic_cross.auto_2_x_values[2] [cross]: 2
-t.cg_cross.automatic_cross.auto_2_x_values[3] [cross]: 1
+t.cg_cross.automatic_cross.<auto_1,values[0]> [cross]: 1
+t.cg_cross.automatic_cross.<auto_1,values[2]> [cross]: 1
+t.cg_cross.automatic_cross.<auto_1,values[3]> [cross]: 1
+t.cg_cross.automatic_cross.<auto_2,values[0]> [cross]: 1
+t.cg_cross.automatic_cross.<auto_2,values[2]> [cross]: 2
+t.cg_cross.automatic_cross.<auto_2,values[3]> [cross]: 1
 t.cg_cross.bb.ignored [ignore]: 2
 t.cg_cross.bb.values[0]: 2
 t.cg_cross.bb.values[2]: 3
@@ -62,11 +62,11 @@ t.cg_resolution.cp.clipped: 4
 t.cg_resolution.cp.kept: 4
 t.cg_resolution.cp.rest [default]: 4
 t.cg_resolution.cp.values[0]: 2
-t.cg_resolution.cx.clipped_x_auto_0 [cross]: 2
-t.cg_resolution.cx.clipped_x_auto_1 [cross]: 2
+t.cg_resolution.cx.<clipped,auto_0> [cross]: 2
+t.cg_resolution.cx.<clipped,auto_1> [cross]: 2
+t.cg_resolution.cx.<values[0],auto_0> [cross]: 1
+t.cg_resolution.cx.<values[0],auto_1> [cross]: 1
 t.cg_resolution.cx.kept_values [cross]: 4
-t.cg_resolution.cx.values[0]_x_auto_0 [cross]: 1
-t.cg_resolution.cx.values[0]_x_auto_1 [cross]: 1
 t.cg_resolution.other.auto_0: 7
 t.cg_resolution.other.auto_1: 7
 t.cg_resolution_excl.cp.clipped: 4
@@ -74,11 +74,11 @@ t.cg_resolution_excl.cp.kept: 4
 t.cg_resolution_excl.cp.rest [default]: 4
 t.cg_resolution_excl.cp.unused [ignore]: 0
 t.cg_resolution_excl.cp.values[0]: 2
-t.cg_resolution_excl.cx.clipped_x_auto_0 [cross]: 2
-t.cg_resolution_excl.cx.clipped_x_auto_1 [cross]: 2
+t.cg_resolution_excl.cx.<clipped,auto_0> [cross]: 2
+t.cg_resolution_excl.cx.<clipped,auto_1> [cross]: 2
+t.cg_resolution_excl.cx.<values[0],auto_0> [cross]: 1
+t.cg_resolution_excl.cx.<values[0],auto_1> [cross]: 1
 t.cg_resolution_excl.cx.kept_values [cross]: 4
-t.cg_resolution_excl.cx.values[0]_x_auto_0 [cross]: 1
-t.cg_resolution_excl.cx.values[0]_x_auto_1 [cross]: 1
 t.cg_resolution_excl.other.auto_0: 7
 t.cg_resolution_excl.other.auto_1: 7
 t.cg_signed.cp.auto_1: 1
@@ -88,9 +88,9 @@ t.cg_signed_wide.cp.auto_1: 2
 t.cg_signed_wide.cp.auto_2: 1
 t.cg_signed_wide.cp.auto_3: 1
 t.cg_signed_wide.cp.ignored [ignore]: 1
-t.cg_signed_wide.cx.auto_2_x_auto_0 [cross]: 1
-t.cg_signed_wide.cx.auto_2_x_auto_1 [cross]: 0
-t.cg_signed_wide.cx.auto_3_x_auto_0 [cross]: 0
+t.cg_signed_wide.cx.<auto_2,auto_0> [cross]: 1
+t.cg_signed_wide.cx.<auto_2,auto_1> [cross]: 0
+t.cg_signed_wide.cx.<auto_3,auto_0> [cross]: 0
 t.cg_signed_wide.cx.negative [cross]: 2
 t.cg_signed_wide.cx.positive [cross]: 1
 t.cg_signed_wide.other.auto_0: 3
