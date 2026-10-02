@@ -253,6 +253,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     //
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package emitted with
     string m_name;  // Name from upper typedef, if any
+    string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
     bool m_packed;  // Packed struct/union, else unpacked
     bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
@@ -270,6 +271,7 @@ protected:
     AstNodeUOrStructDType(const AstNodeUOrStructDType& other)
         : AstNodeDType{other}
         , m_name{other.m_name}
+        , m_typedefName{other.m_typedefName}
         , m_uniqueNum{uniqueNumInc()}
         , m_packed{other.m_packed}
         , m_isFourstate{other.m_isFourstate} {}
@@ -297,6 +299,8 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
+    // Keep the name the typedef declaring it gives, as it moves off it to the type table
+    void typedefName(const string& name) { m_typedefName = name; }
     bool packed() const VL_MT_SAFE { return m_packed; }
     void packed(bool flag) { m_packed = flag; }
     // packed() but as don't support unpacked, presently all structs
@@ -887,6 +891,7 @@ class AstEnumDType final : public AstNodeDType {
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
     string m_name;  // Name from upper typedef, if any
+    string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
 
 public:
@@ -902,6 +907,7 @@ public:
     AstEnumDType(const AstEnumDType& other)
         : AstNodeDType{other}
         , m_name{other.m_name}
+        , m_typedefName{other.m_typedefName}
         , m_uniqueNum{uniqueNumInc()} {}
     ASTGEN_MEMBERS_AstEnumDType;
 
@@ -921,6 +927,8 @@ public:
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
+    // Keep the name the typedef declaring it gives, as it moves off it to the type table
+    void typedefName(const string& name) { m_typedefName = name; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
@@ -1316,7 +1324,9 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    string prettyDTypeName(bool full) const override;
+    string prettyDTypeName(bool full) const override {
+        return subDTypep() ? subDTypep()->prettyDTypeName(full) : prettyName();
+    }
     AstBasicDType* basicp() const override VL_MT_STABLE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
     }

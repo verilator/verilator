@@ -134,7 +134,10 @@ static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep) {
     if (num.isNull()) return "null";
     if (num.isDouble()) return num.toRealString();
     const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
-    if (num.isString() || (basicp && basicp->isString())) return '"' + num.toString() + '"';
+    if (num.isString() || (basicp && basicp->isString())) {
+        // Escaped as a string literal, so the quotes enclose the whole value
+        return '"' + V3OutFormatter::quoteNameControls(num.toString()) + '"';
+    }
     // Sized and signed as the parameter, as the value may not be yet
     const int width = (dtypep && dtypep->width()) ? dtypep->width() : num.width();
     V3Number value{&num, width};
@@ -166,20 +169,32 @@ static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep) 
     }
     if (const AstInitArray* const initp = VN_CAST(valuep, InitArray)) {
         const AstNodeDType* const elemDTypep = dtypep ? dtypep->subDTypep() : nullptr;
+        // Keys count from the lowest index, while elements are listed from the left index
+        const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
+        const int lo = adtypep ? adtypep->declRange().lo() : 0;
+        const bool descending = adtypep && !adtypep->declRange().ascending();
+        const AstInitArray::KeyItemMap& map = initp->map();
         // Elements are indexed, unless all are given in order
-        bool indexed = initp->defaultp() != nullptr;
+        const size_t elements
+            = adtypep ? static_cast<size_t>(adtypep->declRange().elements()) : map.size();
+        bool indexed = initp->defaultp() || map.size() != elements;
         uint64_t nextIndex = 0;
-        for (const auto& itr : initp->map()) {
+        for (const auto& itr : map) {
             if (itr.first != nextIndex) indexed = true;
             ++nextIndex;
         }
         string result = "'{";
         const char* sepp = "";
-        for (const auto& itr : initp->map()) {
+        const auto addElem = [&](const AstInitArray::KeyItemMap::value_type& itr) {
             result += sepp;
             sepp = ",";
-            if (indexed) result += cvtToStr(itr.first) + ":";
+            if (indexed) result += cvtToStr(static_cast<int64_t>(itr.first) + lo) + ":";
             result += dtypeNameValue(itr.second->valuep(), elemDTypep);
+        };
+        if (descending) {
+            for (auto it = map.crbegin(); it != map.crend(); ++it) addElem(*it);
+        } else {
+            for (const auto& itr : map) addElem(itr);
         }
         if (initp->defaultp()) {
             result += sepp + "default:"s + dtypeNameValue(initp->defaultp(), elemDTypep);
@@ -200,7 +215,7 @@ static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep) 
     return "?";
 }
 
-// Text '#(...)' of the values of the parameters of a class or interface, or "" if it has none
+// Text '#(...)' of the values of the parameters of a class, interface, or module, or "" if none
 static string dtypeNameParams(const AstNodeModule* modp, bool full) {
     string result;
     for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -247,8 +262,17 @@ static string dtypeNameScopeOf(const AstNode* nodep) {
     }
     const AstNodeModule* const modp = VN_AS(abovep, NodeModule);
     if (const AstClass* const classp = VN_CAST(modp, Class)) return classp->dtypeName(true) + "::";
+    if (const AstIface* const ifacep = VN_CAST(modp, Iface)) return ifacep->dtypeName(true) + ".";
     if (VN_IS(modp, Package)) return modp->prettyName() + "::";
     return AstNode::prettyName(modp->origName()) + dtypeNameParams(modp, true) + ".";
+}
+
+// Name in full of a structure, union, or enumeration, as given by the typedef declaring it, if
+// any, with the scope of the typedef, or as 'frozen' once it moved off the typedef
+static string dtypeNameTypedef(const AstNodeDType* dtypep, const string& frozen) {
+    if (!frozen.empty()) return frozen;
+    const AstTypedef* const typedefp = VN_CAST(dtypep->backp(), Typedef);
+    return typedefp ? typedefp->dtypeName() : dtypep->prettyName();
 }
 
 //======================================================================
@@ -822,11 +846,10 @@ void AstClass::dtypeNameFreeze() {
     m_dtypeNameShort = dtypeName(false);
 }
 string AstClass::dtypeNameScope() const {
-    if (!m_scopePrefix.empty()) return m_scopePrefix;
-    // Else declared within a class, which is the scope, named with its parameters (see
-    // V3LinkParse), or made since, as by V3Fork, so without a scope
-    const AstClass* const classp = VN_CAST(aboveLoopp(), Class);
-    return classp ? classp->dtypeName(true) + "::" : "";
+    // The package, interface, module, or class declaring the class, so named with the values of
+    // its parameters, unless since moved to the top, as by V3Class after dtypeNameFreeze()
+    const AstNode* const abovep = aboveLoopp();
+    return (abovep && !VN_IS(abovep, Netlist)) ? dtypeNameScopeOf(this) : "";
 }
 void AstClass::dump(std::ostream& str) const {
     Super::dump(str);
@@ -840,7 +863,6 @@ void AstClass::dump(std::ostream& str) const {
     if (useVirtualPublic()) str << " [VIRPUB]";
     if (baseOverride().isAny()) str << " [" << baseOverride().ascii() << "]";
     if (cgAutoBinMax()) str << " cost=" << cgAutoBinMax();
-    if (!m_scopePrefix.empty()) str << " scope=" << m_scopePrefix;
     if (!m_dtypeNameFull.empty()) str << " dtypeName=" << m_dtypeNameFull;
     if (!m_dtypeNameShort.empty()) str << " dtypeNameShort=" << m_dtypeNameShort;
 }
@@ -856,7 +878,6 @@ void AstClass::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, useVirtualPublic);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonNumFunc(str, cgAutoBinMax);
-    if (!m_scopePrefix.empty()) dumpJsonStr(str, "scopePrefix", m_scopePrefix);
     if (!m_dtypeNameFull.empty()) dumpJsonStr(str, "dtypeNameFull", m_dtypeNameFull);
     if (!m_dtypeNameShort.empty()) dumpJsonStr(str, "dtypeNameShort", m_dtypeNameShort);
     dumpJsonGen(str);
@@ -1434,18 +1455,20 @@ const char* AstEnumDType::broken() const {
 void AstEnumDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " enum";
+    if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
 }
 void AstEnumDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "enum", true);
+    if (!m_typedefName.empty()) dumpJsonStr(str, "typedefName", m_typedefName);
     dumpJsonGen(str);
 }
 void AstEnumDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "enum";
 }
-string AstEnumDType::prettyDTypeName(bool) const {
+string AstEnumDType::prettyDTypeName(bool full) const {
     // Without the items, as other simulators, which would make for long names
-    return "enum{}" + prettyName();
+    return "enum{}" + (full ? dtypeNameTypedef(this, m_typedefName) : prettyName());
 }
 const char* AstEnumItemRef::broken() const {
     if (v3Global.assertDTypesResolved()) BROKEN_RTN(!itemp());
@@ -1543,12 +1566,25 @@ void AstIf::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "unique0", unique0Pragma());
     dumpJsonGen(str);
 }
+string AstIface::dtypeName(bool full) const {
+    const string& frozen = full ? m_dtypeNameFull : m_dtypeNameShort;
+    if (!frozen.empty()) return frozen;
+    return prettyName(origName()) + dtypeNameParams(this, full);
+}
+void AstIface::dtypeNameFreeze() {
+    m_dtypeNameFull = dtypeName(true);
+    m_dtypeNameShort = dtypeName(false);
+}
 void AstIface::dump(std::ostream& str) const {
     Super::dump(str);
     if (hasVirtualRef()) str << " [VIRTREF]";
+    if (!m_dtypeNameFull.empty()) str << " dtypeName=" << m_dtypeNameFull;
+    if (!m_dtypeNameShort.empty()) str << " dtypeNameShort=" << m_dtypeNameShort;
 }
 void AstIface::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "hasVirtualRef", hasVirtualRef());
+    if (!m_dtypeNameFull.empty()) dumpJsonStr(str, "dtypeNameFull", m_dtypeNameFull);
+    if (!m_dtypeNameShort.empty()) dumpJsonStr(str, "dtypeNameShort", m_dtypeNameShort);
     dumpJsonGen(str);
 }
 void AstIfaceGenericDType::dumpSmall(std::ostream& str) const {
@@ -1591,7 +1627,7 @@ string AstIfaceRefDType::prettyDTypeName(bool full) const {
     // Until V3Param specializes the interface for the parameters, just name the interface
     const AstIface* const ifacep = paramsp() ? nullptr : ifaceViaCellp();
     if (ifacep) {
-        result += prettyName(ifacep->origName()) + dtypeNameParams(ifacep, full);
+        result += ifacep->dtypeName(full);
     } else {
         result += prettyName(ifaceName());
     }
@@ -2906,17 +2942,19 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     if (isConstrainedRand()) str << " [CSRAND]";
     if (emitToString()) str << " [EMITSTR]";
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
+    if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
     dumpJsonBoolFuncIf(str, isConstrainedRand);
     dumpJsonBoolFuncIf(str, isFourstate);
     dumpJsonBoolFuncIf(str, emitToString);
+    if (!m_typedefName.empty()) dumpJsonStr(str, "typedefName", m_typedefName);
     dumpJsonGen(str);
 }
-string AstNodeUOrStructDType::prettyDTypeName(bool) const {
+string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     // Without the members, as other simulators, which would make for long names
-    return verilogKwd() + "{}" + prettyName();
+    return verilogKwd() + "{}" + (full ? dtypeNameTypedef(this, m_typedefName) : prettyName());
 }
 bool AstNodeUOrStructDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstNodeUOrStructDType* const sp = VN_DBG_AS(samep, NodeUOrStructDType);
@@ -3220,19 +3258,6 @@ void AstRefDType::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstRefDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "ref";
-}
-string AstRefDType::prettyDTypeName(bool full) const {
-    // A structure, union, or enumeration is named in full by the typedef declaring it, with the
-    // scope of the typedef, so with the values of its parameters, which its own name lacks
-    if (full && typedefp()) {
-        const AstNodeDType* const subp = typedefp()->subDTypep();
-        const AstNodeUOrStructDType* const sdtypep = VN_CAST(subp, NodeUOrStructDType);
-        if (sdtypep || VN_IS(subp, EnumDType)) {
-            return (sdtypep ? sdtypep->verilogKwd() : "enum"s) + "{}"
-                   + dtypeNameScopeOf(typedefp()) + typedefp()->prettyName();
-        }
-    }
-    return subDTypep() ? prettyName(subDTypep()->prettyDTypeName(full)) : prettyName();
 }
 AstNodeDType* AstRefDType::subDTypep() const VL_MT_STABLE {
     if (typedefp()) return typedefp()->subDTypep();
@@ -3731,6 +3756,7 @@ void AstTypeTable::repairCache() {
         }
     }
 }
+string AstTypedef::dtypeName() const { return dtypeNameScopeOf(this) + prettyName(); }
 void AstTypedef::dump(std::ostream& str) const {
     Super::dump(str);
     if (attrPublic()) str << " [PUBLIC]";

@@ -2946,7 +2946,18 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        // As it moves to the type table, a structure, union, or enumeration it declares keeps the
+        // name it has from the typedef, with the scope of the typedef
+        const bool declares = nodep->childDTypep() != nullptr;
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        if (declares) {
+            AstNodeDType* const dtypep = nodep->dtypep();
+            if (AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+                sdtypep->typedefName(nodep->dtypeName());
+            } else if (AstEnumDType* const edtypep = VN_CAST(dtypep, EnumDType)) {
+                edtypep->typedefName(nodep->dtypeName());
+            }
+        }
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstParamTypeDType* nodep) override {

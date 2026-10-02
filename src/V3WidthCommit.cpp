@@ -232,8 +232,6 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
-        // Name the class while it has its parameter types, before they move to the type table
-        if (AstClass* const classp = VN_CAST(nodep, Class)) classp->dtypeNameFreeze();
         iterateChildren(nodep);
         editDType(nodep);
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
@@ -589,6 +587,15 @@ private:
 public:
     // CONSTRUCTORS
     explicit WidthCommitVisitor(AstNetlist* nodep) {
+        // Name classes and interfaces while they have their parameter types, as this visit
+        // moves those to the type table, maybe from another module's types before their own
+        nodep->foreach([](AstNodeModule* modp) {
+            if (AstClass* const classp = VN_CAST(modp, Class)) {
+                classp->dtypeNameFreeze();
+            } else if (AstIface* const ifacep = VN_CAST(modp, Iface)) {
+                ifacep->dtypeNameFreeze();
+            }
+        });
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);

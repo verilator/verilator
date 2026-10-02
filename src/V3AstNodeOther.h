@@ -2174,6 +2174,9 @@ public:
     ASTGEN_MEMBERS_AstTypedef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    // Name of the type it declares, with the scope declaring it, so with the values of the
+    // parameters of the scope, e.g. '$unit::Cls#(8)::s_t'
+    string dtypeName() const;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE {
         return dtypep() ? dtypep() : childDTypep();
@@ -3062,7 +3065,6 @@ class AstClass final : public AstNodeModule {
     // MEMBERS
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
     // @astgen ptr := m_covergroupEnclosingClassp : Optional[AstClass]  // Lexical enclosing class
-    string m_scopePrefix;  // Package or module declaring the class, as a dtypeName() prefix
     string m_dtypeNameFull;  // dtypeName(true) once frozen, as parameters may then be gone
     string m_dtypeNameShort;  // dtypeName(false) once frozen, as parameters may then be gone
     uint32_t m_declTokenNum;  // Declaration token number
@@ -3118,7 +3120,6 @@ public:
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
     void markPrintedFrom() { m_printedFrom = true; }
     bool isPrintedFrom() const { return m_printedFrom; }
-    void scopePrefix(const string& prefix) { m_scopePrefix = prefix; }
     // Name of the class as a data type, with the values of its parameters, e.g. 'Cls#(int,5)'.
     // With 'full', as for $typename (IEEE 1800-2023 20.6.1), prefixed with the scope declaring
     // the class, e.g. '$unit::Cls#(int,5)', and with the types of parameters in full.
@@ -3198,6 +3199,8 @@ public:
 };
 class AstIface final : public AstNodeModule {
     // An interface declaration
+    string m_dtypeNameFull;  // dtypeName(true) once frozen, as parameter types may then be gone
+    string m_dtypeNameShort;  // dtypeName(false) once frozen, as parameter types may then be gone
     bool m_hasVirtualRef = false;  // There exists a virtual interface reference for this interface
 public:
     AstIface(FileLine* fl, const string& name, const string& libname)
@@ -3211,6 +3214,10 @@ public:
     bool timescaleMatters() const override { return false; }
     bool hasVirtualRef() const { return m_hasVirtualRef; }
     void setHasVirtualRef() { m_hasVirtualRef = true; }
+    // Name of the interface as a data type, with the values of its parameters, e.g. 'ifc#(8)'
+    string dtypeName(bool full) const;
+    // Fix dtypeName(), as V3WidthCommit moves parameter types to the type table
+    void dtypeNameFreeze();
 };
 class AstModule final : public AstNodeModule {
     // A module declaration

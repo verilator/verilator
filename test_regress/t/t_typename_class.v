@@ -6,9 +6,10 @@
 
 // $typename of a class gives the scope declaring the class (IEEE 1800-2023 20.6.1), the values
 // of its parameters, which distinguish its specializations (8.25), and the classes it extends.
-// A structure, union, or enumeration is likewise named with the scope declaring it, but without
-// its members or items.
-// The IEEE leaves the form open, which here is like that of other simulators.
+// 20.6.1 does not give the form of these, which here is like that of other simulators.
+// A structure, union, or enumeration is likewise named with the scope declaring it. For
+// readability, it is named without its members or items, so unlike the examples of 20.6.1,
+// without the values of the items of an enumeration.
 
 // verilog_format: off
 `define stop $stop
@@ -56,10 +57,31 @@ typedef int wild_t [*];
 typedef byte wildb_t [*];
 typedef int arr_t[4];
 
+typedef int a58_t[5:8];
+typedef int a85_t[8:5];
+typedef int an_t[-1:1];
+
 // An array with all but one element left as initialized, so given by default
 function automatic arr_t arr_one(int value);
   arr_t result;
   result[1] = value;
+  return result;
+endfunction
+// Likewise, of arrays not indexed from 0
+function automatic a58_t a58_one(int value);
+  a58_t result;
+  result[6] = value;
+  return result;
+endfunction
+function automatic a85_t a85_two(int value7, int value6);
+  a85_t result;
+  result[6] = value6;
+  result[7] = value7;
+  return result;
+endfunction
+function automatic an_t an_one(int value);
+  an_t result;
+  result[-1] = value;
   return result;
 endfunction
 
@@ -112,6 +134,28 @@ class Aggregates #(
     us_t US = '{1, 2},
     int A[2] = '{3, 4},
     arr_t F = arr_one(5)
+);
+endclass
+
+// Elements listed from the left index, and indexed as declared
+class Ranges #(
+    int D[1:0] = '{10, 20},
+    int N[-1:1] = '{7, 8, 9},
+    a58_t U = a58_one(9),
+    a85_t W = a85_two(1, 2),
+    an_t M = an_one(4)
+);
+endclass
+
+// Strings, which a name shows escaped, and whatever they contain
+class StrP #(
+    string S = ""
+);
+endclass
+
+class Str2 #(
+    string A = "",
+    string B = ""
 );
 endclass
 
@@ -299,8 +343,47 @@ class Cont #(
   typedef E eq_t[$];
 endclass
 
+// Giving another module a type of its type parameter
+class TypeP #(
+    type T = int
+);
+  typedef T elem_t;
+endclass
+
+interface tifc #(
+    type T = int
+);
+  T v;
+endinterface
+
+// A class within a module, of which each specialization has its own
+module mcls #(
+    parameter int W = 4
+);
+  class MC;
+  endclass
+  MC mc;
+  function automatic string mc_typename();
+    return $typename(mc);
+  endfunction
+endmodule
+
+// Likewise within an interface
+interface cifc #(
+    int W = 4
+);
+  class IC;
+  endclass
+  IC ic;
+  function automatic string ic_typename();
+    return $typename(ic);
+  endfunction
+endinterface
+
 typedef Bar#(Xyz) bar_xyz_t;
 typedef Foo#(Bar#(Xyz), 88) foo_t;
+typedef StrP#("__DOT__x") strp_dot_t;
+typedef Ps#(8)::s_t ps8_s_t;
 
 module t;
   class Mcls;
@@ -318,6 +401,11 @@ module t;
   ifc #(8) i8 ();
   msub u4 ();
   msub #(16) u16 ();
+  mcls mc4 ();
+  mcls #(16) mc16 ();
+  cifc ci4 ();
+  cifc #(16) ci16 ();
+  tifc #(byte) tb ();
 
   // Not classes, named as resolved (IEEE 1800-2023 20.6.1), and a structure without its members
   typedef struct packed {
@@ -344,6 +432,21 @@ module t;
   Ps #(8)::e_t ps8_e;
   Bar #(Ps #(8)::e_t) bar_ps8_e;
   Bar #(Ps #(16)::e_t) bar_ps16_e;
+  Ps #(8)::s_t ps8_sa[2];
+  Ps #(16)::s_t ps16_sa[2];
+  Ps #(8)::s_t ps8_sq[$];
+  ps8_s_t ps8_s_td;
+  // Of a type parameter only given by the type of another module
+  TypeP #(byte)::elem_t typep_elem;
+  TypeP #(byte) typep;
+  virtual tifc #(byte) vtb;
+  Ranges ranges;
+  StrP #("__DOT__x") strp_dot;
+  strp_dot_t strp_dot_td;
+  StrP #("a\"b") strp_quote;
+  StrP #("t\tn\n") strp_ctrl;
+  Str2 #("a\",\"b", "c") str2_ab;
+  Str2 #("a", "b\",\"c") str2_bc;
 
   foo_t foo;
   Foo foo_default;
@@ -511,6 +614,37 @@ module t;
     `checks(u16.ms_typename(), "struct{}msub#(16).ms_t");
     `checks(u4.is_typename(), "struct{}ifc#(4).is_t");
     `checks(u16.is_typename(), "struct{}ifc#(16).is_t");
+    // Of a data type, named as of a variable of it
+    `checks($typename(Ps#(8)::s_t), $typename(ps8_s));
+    `checks($typename(Ps#(8)::e_t), $typename(ps8_e));
+    `checks($typename(ps8_s_t), $typename(ps8_s));
+    `checks($typename(ps8_s_td), $typename(ps8_s));
+    // Of arrays of such, whose elements are named likewise
+    `checks($typename(ps8_sa), "struct{}$unit::Ps#(8)::s_t$[0:1]");
+    `checks($typename(ps16_sa), "struct{}$unit::Ps#(16)::s_t$[0:1]");
+    `checks($typename(ps8_sa[0]), $typename(ps8_s));
+    `checks($typename(ps8_sq[0]), $typename(ps8_s));
+    `checks($typename(Ps#(8)::P1), $typename(ps8_e));
+    // Of a type parameter only given by the type of another module
+    `checks($typename(typep), "class{}$unit::TypeP#(byte)");
+    `checks($typename(typep_elem), "byte");
+    `checks($typename(vtb), "virtual interface tifc#(byte)");
+    // Of array values, listed from the left index
+    `checks($typename(ranges),
+            "class{}$unit::Ranges#('{10,20},'{7,8,9},'{6:9,default:0},'{7:1,6:2,default:0},'{-1:4,default:0})");
+    // Of strings, escaped, and not taken as names
+    `checks($typename(strp_dot), "class{}$unit::StrP#(\"__DOT__x\")");
+    `checks($typename(strp_dot_td), $typename(strp_dot));
+    `checks($typename(strp_dot_t), $typename(strp_dot));
+    `checks($typename(strp_quote), "class{}$unit::StrP#(\"a\\\"b\")");
+    `checks($typename(strp_ctrl), "class{}$unit::StrP#(\"t\\tn\\n\")");
+    `checks($typename(str2_ab), "class{}$unit::Str2#(\"a\\\",\\\"b\",\"c\")");
+    `checks($typename(str2_bc), "class{}$unit::Str2#(\"a\",\"b\\\",\\\"c\")");
+    // Of classes within each specialization of a module or interface
+    `checks(mc4.mc_typename(), "class{}mcls#(4).MC");
+    `checks(mc16.mc_typename(), "class{}mcls#(16).MC");
+    `checks(ci4.ic_typename(), "class{}cifc#(4).IC");
+    `checks(ci16.ic_typename(), "class{}cifc#(16).IC");
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -798,17 +798,6 @@ class LinkParseVisitor final : public VNVisitor {
         cleanFileline(nodep);
         // Classes inherit from upper package
         if (m_modp && nodep->timeunit().isNone()) nodep->timeunit(m_modp->timeunit());
-        // A class type is named prefixed by the package or module declaring it. A class within a
-        // class instead has the scope AstClass::dtypeName() gives, of that class as specialized.
-        if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            // The parser puts a class not in a package or module in $unit
-            UASSERT_OBJ(m_modp, nodep, "Class not under a package, module, or class");
-            if (VN_IS(m_modp, Package)) {
-                classp->scopePrefix(m_modp->prettyName() + "::");
-            } else if (!VN_IS(m_modp, Class)) {
-                classp->scopePrefix(m_modp->prettyName() + ".");
-            }
-        }
         m_modp = nodep;
         if (VN_IS(nodep, Iface)) m_inInterface = true;  // Start or stay within interface
         m_anonUdpId = 0;
