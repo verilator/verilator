@@ -47,7 +47,6 @@ test.compile(verilator_flags2=["--timing --vpi-lazy --no-vpi -Wno-NOEFFECT"],
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", r'VM_VPI = 0')
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
                    r'VerilatedScope::SCOPE_MODULE')
-test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
-                   r'VLVF_LAZY_REMAT')
+test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp", r'VLVF_LAZY_REMAT')
 
 test.passes()

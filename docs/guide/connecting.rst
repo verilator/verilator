@@ -481,9 +481,9 @@ rest and leaves those unchanged.
 
 Rematerialized signals have no storage and are produced by running model
 code, so read them through VPI rather than ``VerilatedVar::datap()``, which
-will return null, and from the thread that evaluates the model. If
-model state is changed other than through VPI, for example by setting a
-top-level input from C++, call ``eval()`` before reading.
+will return null, and from the thread that evaluates the model. If model
+state is changed other than through VPI, for example by setting a top-level
+input from C++, call ``eval()`` before reading.
 
 .. _vpi example:
 
