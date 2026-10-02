@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// A hierarchical block whose cells reach outside it for a shared signal. The
+// A hierarchical block whose cells reach outside it for shared signals. The
 // references are promoted to ports automatically; without that the child
 // Verilation cannot resolve them, because it compiles the block with itself
 // as top and the upper modules are pruned.
@@ -15,50 +15,52 @@ endpackage
 typedef logic [7:0] phi_t;
 
 module tech(input phi_t phi, input en,
-            input [3:0] pub /*verilator public_flat_rd*/);
+            input [3:0] pub /*verilator public_flat_rd*/,
+            input signed [7:0] sgn);
 endmodule
 
-module leaf(output reg o, input i);
-  // Reaches up and out of the enclosing hierarchical block
+module leaf(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, output o_bit);
   // Typedef'd target: a name for a packed basic type is still promotable
   wire [7:0] ph = t.top.drv.tech_inst.phi;
   wire       en = t.top.drv.tech_inst.en;
   // Target exposed to VPI; promotion must not disturb that
   wire [3:0] pb = t.top.drv.tech_inst.pub;
-  // Bit select directly on the reference: the select binds to the last
-  // identifier inside the dotted chain, and must survive promotion
+  // Signed target: the promoted port must stay signed
+  wire signed [7:0] sg = t.top.drv.tech_inst.sgn;
+  // Bit select binds to the last identifier inside the chain
   wire       b2 = t.top.drv.tech_inst.phi[2];
-  // A package-scoped name in a dotted expression is not a hierarchical
-  // reference, and must simply not match
-  always @(ph or i or en or b2 or pb) o <= en ? (i ^ ph[cfg_pkg::SEL] ^ b2 ^ pb[0]) : 1'b0;
+  // A package-scoped name is not a hierarchical reference and must not match
+  wire       px = ph[cfg_pkg::SEL];
+
+  assign o_ph = ph;
+  assign o_en = en;
+  assign o_pub = pb;
+  assign o_neg = (sg < 0);
+  assign o_bit = b2 ^ px;
 endmodule
 
-module blk(output o, input i);
+module blk(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, output o_bit);
   /*verilator hier_block*/
-  leaf l0(o, i);
+  leaf l0(o_ph, o_en, o_pub, o_neg, o_bit);
 endmodule
 
-module drv(output phi_t ph, output reg en, output reg [3:0] pub);
-  tech tech_inst(ph, en, pub);
+module drv(output phi_t ph, output en, output [3:0] pub, output signed [7:0] sgn);
+  tech tech_inst(ph, en, pub, sgn);
   assign ph = 8'h5a;
-  initial begin en = 1'b1; pub = 4'ha; end
+  assign en = 1'b1;
+  assign pub = 4'ha;
+  assign sgn = -8'sd5;
 endmodule
 
-module bench(output o, input i);
+module bench(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, output o_bit);
   phi_t ph;
   wire  en;
   wire [3:0] pub;
-  drv drv(ph, en, pub);
-  blk b(o, i);
+  wire signed [7:0] sgn;
+  drv drv(ph, en, pub, sgn);
+  blk b(o_ph, o_en, o_pub, o_neg, o_bit);
 endmodule
 
-module t;
-  wire o;
-  reg  i = 1'b1;
-  bench top(o, i);
-
-  initial begin
-    $write("*-* All Finished *-*\n");
-    $finish;
-  end
+module t(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, output o_bit);
+  bench top(o_ph, o_en, o_pub, o_neg, o_bit);
 endmodule

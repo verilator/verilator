@@ -51,12 +51,14 @@ public:
     static void addHierWorkers(FileLine* fl, const string& model, int workers);
     // A reference out of a hierarchical block, promoted to a port on it
     struct HierXmrPort final {
+        string m_refModule;  // Module the reference appears in
         string m_port;  // Generated port name
         int m_width;  // Width of the referenced signal
+        bool m_signed;  // Whether that signal is signed
         string m_path;  // Dotted path the port reads
     };
-    static void addHierXmrPort(FileLine* fl, const string& module, const string& port, int width,
-                               const string& path);
+    static void addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
+                               const string& port, int width, bool isSigned, const string& path);
     static void addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
                                       const string& q, const string& clock, const string& reset,
                                       const string& resetValue);

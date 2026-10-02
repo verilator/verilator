@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_hier_block_xmr_bad.v"
+test.top_filename = "t/t_hier_block_xmr_unsup.v"
 
 test.clean_objs()
 
