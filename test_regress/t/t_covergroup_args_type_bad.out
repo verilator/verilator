@@ -7,7 +7,7 @@
                                             : ... note: In instance 't'
    68 |     cp: coverpoint mutate(value);
       |                           ^~~~~
-%Error: t/t_covergroup_args_type_bad.v:83:45: Ref argument requires matching types; port 'state' requires 'class{}BaseState' but connection is 'class{}DerivedState'.
+%Error: t/t_covergroup_args_type_bad.v:83:45: Ref argument requires matching types; port 'state' requires 'class BaseState' but connection is 'class DerivedState'.
                                             : ... note: In instance 't'
    83 |   cg_const_ref_type const_ref_type_cg = new(derived_state);
       |                                             ^~~~~~~~~~~~~

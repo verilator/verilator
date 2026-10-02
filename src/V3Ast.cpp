@@ -365,7 +365,7 @@ string AstNode::vpiName(const string& namein) {
 
 string AstNode::prettyTypeName() const {
     if (name() == "") return typeName();
-    return std::string{typeName()} + " '" + prettyName() + "'";
+    return std::string{typeName()} + " '" + prettyNameMsg() + "'";
 }
 
 //######################################################################

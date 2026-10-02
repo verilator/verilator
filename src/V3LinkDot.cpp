@@ -365,10 +365,12 @@ public:
             UINFO(4, "name " << name);  // Not always same as nodep->name
             UINFO(4, "Var1 " << nodep);
             UINFO(4, "Var2 " << fnodep);
+            // Quote the node's own name as for messages, if it is the symbol's
+            const string nameQ
+                = fnodep->name() == name ? fnodep->prettyNameQ() : AstNode::prettyNameQ(name);
             if (nodep->type() == fnodep->type()) {
                 nodep->v3error("Duplicate declaration of "
-                               << nodeTextType(fnodep) << ": " << AstNode::prettyNameQ(name)
-                               << '\n'
+                               << nodeTextType(fnodep) << ": " << nameQ << '\n'
                                << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
@@ -377,8 +379,7 @@ public:
             } else {
                 nodep->v3error("Unsupported in C: "
                                << ucfirst(nodeTextType(nodep)) << " has the same name as "
-                               << nodeTextType(fnodep) << ": " << AstNode::prettyNameQ(name)
-                               << '\n'
+                               << nodeTextType(fnodep) << ": " << nameQ << '\n'
                                << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
@@ -3463,6 +3464,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         defParamPins.emplace(nodep->paramPath(), nodep);
     }
+    static bool extendsClass(const AstClass* classp, const AstClass* targetp) {
+        // Return true if classp inherits from targetp through already resolved extends
+        // If performance of this becomes a problem, use just a counter to check
+        // exceeds some number of iterations then perform the more expensive analysis
+        std::set<const AstClass*> visited;
+        std::vector<const AstClass*> todo{classp};
+        while (!todo.empty()) {
+            const AstClass* const currp = todo.back();
+            todo.pop_back();
+            if (currp == targetp) return true;
+            if (!visited.insert(currp).second) continue;
+            for (const AstClassExtends* cextp = currp->extendsp(); cextp;
+                 cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+                if (const AstClass* const basep = cextp->classOrNullp()) todo.push_back(basep);
+            }
+        }
+        return false;
+    }
     static AstClocking* sensClockingp(AstNode* nodep) {
         // Return the clocking block referenced by nodep, either directly or through a modport
         if (AstClocking* const clockingp = VN_CAST(nodep, Clocking)) return clockingp;
@@ -5989,6 +6008,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (baseClassp == nodep) {
                         cextp->v3error("Attempting to extend class " << nodep->prettyNameQ()
                                                                      << " from itself");
+                    } else if (extendsClass(baseClassp, nodep)) {
+                        cextp->v3error("Attempting to extend class "
+                                       << nodep->prettyNameQ() << " from "
+                                       << baseClassp->prettyNameQ()
+                                       << ", which circularly inherits from it");
                     } else if (cextp->isImplements() && !baseClassp->isInterfaceClass()) {
                         cextp->v3error("Attempting to implement from non-interface class "
                                        << baseClassp->prettyNameQ() << '\n'

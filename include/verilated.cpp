@@ -1695,7 +1695,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
                                       "0123456789+-xXzZ?_");
-                    if (!t_tmp[0]) goto done;
+                    t_tmp.erase(std::remove(t_tmp.begin(), t_tmp.end(), '_'), t_tmp.end());
+                    if (t_tmp.empty()) goto done;
                     if (formatAttr == VL_VFORMATATTR_SIGNED) {
                         QData ld = 0;
                         std::sscanf(t_tmp.c_str(), "%30" PRIu64, &ld);
@@ -2401,8 +2402,10 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     VL_ZERO_W(rbits, rwp);
     switch (std::tolower(fmt)) {
     case 'd': {
+        std::string digits{dp};
+        digits.erase(std::remove(digits.begin(), digits.end(), '_'), digits.end());
         int64_t lld = 0;
-        std::sscanf(dp, "%30" PRId64, &lld);
+        std::sscanf(digits.c_str(), "%30" PRId64, &lld);
         VL_SET_WQ(rwp, lld);
         break;
     }

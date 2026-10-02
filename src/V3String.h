@@ -178,6 +178,10 @@ public:
     }
     ~VHashSha512() = default;
 
+    // CONSTANTS
+    // Characters digestSymbol24 keeps, 6 bits each, so 144 bits and no collisions in practice
+    static constexpr size_t DIGEST_SYMBOL24_LENGTH = 24;
+
     // METHODS
     string digestBase64();  // Return digest formatted in Base64 (non-URL flavor)
     string digestBinary();  // Return digest as 64 character binary

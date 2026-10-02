@@ -1001,11 +1001,22 @@ class CaseVisitor final : public VNVisitor {
             itemp->addCondsp(newCondp);
         }
 
-        // If there was no default, add a empty one, this greatly simplifies below code
+        // If there was no default, make one up, this greatly simplifies below code
         // and constant propagation will just eliminate it for us later.
         if (!hasDefault) {
-            nodep->addItemsp(new AstCaseItem{
-                nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}}, nullptr});
+            if (m_caseDetailsValid && m_caseDetails.exhaustive
+                && !m_caseDetails.exhaustiveOverEnumOnly) {
+                // Case is proven exhaustive, so the last is reached only when its test holds,
+                // make it unconditional
+                AstCaseItem* const lastp = VN_AS(nodep->itemsp()->lastp(), CaseItem);
+                pushDeletep(lastp->condsp()->unlinkFrBackWithNext());
+                lastp->addCondsp(new AstConst{lastp->fileline(), AstConst::BitTrue{}});
+            } else {
+                // Otherwise needs an explicit empty default
+                nodep->addItemsp(new AstCaseItem{
+                    nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}},
+                    nullptr});
+            }
         }
 
         // Now build the IF statement tree

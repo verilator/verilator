@@ -391,13 +391,21 @@ class TraceDeclVisitor final : public VNVisitor {
     void fixupLibStub(const std::string& path, AstNodeStmt* placeholderp) {
         FileLine* const flp = placeholderp->fileline();
 
+        // The library instance's model is named after its %m within the parent model,
+        // which does not include the "l2-name" (top module) of the library
+        std::string name = AstNode::prettyName(path);
+        if (!v3Global.opt.libCreate().empty()) {
+            const std::string topPrefix = v3Global.rootp()->traceLibTopName() + ".";
+            if (VString::startsWith(name, topPrefix)) name = name.substr(topPrefix.size());
+        }
+
         // Call the initialization function for the library instance
         AstCStmt* const initp = new AstCStmt{flp};
         initp->add("{\n");
         initp->add("std::string __VlibName = vlSymsp->name();\n");
         initp->add("if (!__VlibName.empty()) __VlibName += '.';\n");
         initp->add("__VlibName += ");
-        initp->add(new AstConst{flp, AstConst::String{}, AstNode::prettyName(path)});
+        initp->add(new AstConst{flp, AstConst::String{}, name});
         initp->add(";\n");
         initp->add("tracep->initLib(__VlibName);\n");
         initp->add("}\n");
