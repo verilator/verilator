@@ -832,24 +832,21 @@ class TristateVisitor final : public TristateBaseVisitor {
                     // (different VarXRef dotted paths) must be processed separately.
                     // E.g. io_ifc.d and io_ifc_local.d both target the same AstVar d in
                     // the ifc interface, but each instance needs its own contribution slot.
-                    struct PartitionInfo final {
-                        RefStrengthVec refs;
-                        string inlinedDots;
-                    };
-                    std::map<string, PartitionInfo> partitions;
+                    // Generate instances can share a dotted path but have different
+                    // inlined scopes. Both identify the destination interface instance.
+                    using InstancePath = std::pair<string, string>;
+                    std::map<InstancePath, RefStrengthVec> partitions;
                     for (const RefStrength& rs : *refsp) {
                         if (AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef)) {
-                            PartitionInfo& pi = partitions[xrefp->dotted()];
-                            pi.refs.push_back(rs);
-                            if (pi.inlinedDots.empty()) { pi.inlinedDots = xrefp->inlinedDots(); }
+                            partitions[{xrefp->dotted(), xrefp->inlinedDots()}].push_back(rs);
                         } else {
-                            partitions[""].refs.push_back(rs);
+                            partitions[{"", ""}].push_back(rs);
                         }
                     }
                     for (auto& kv : partitions) {
-                        insertTristatesSignal(nodep, invarp, &kv.second.refs, true, kv.first,
-                                              kv.second.inlinedDots,
-                                              findModportForDotted(nodep, kv.first));
+                        insertTristatesSignal(nodep, invarp, &kv.second, true, kv.first.first,
+                                              kv.first.second,
+                                              findModportForDotted(nodep, kv.first.first));
                     }
                 } else if (VN_IS(nodep, Iface) && !invarp->isIO()) {
                     // Local driver in an interface module - use contribution mechanism
@@ -1102,7 +1099,9 @@ class TristateVisitor final : public TristateBaseVisitor {
             // create d__strong in the driving module)
             string strengthPrefix;
             if (isIfaceTri && !ifaceDottedPath.empty()) {
-                strengthPrefix = ifaceDottedPath;
+                strengthPrefix = ifaceInlinedDots.empty()
+                                     ? ifaceDottedPath
+                                     : ifaceInlinedDots + "__" + ifaceDottedPath;
                 std::replace(strengthPrefix.begin(), strengthPrefix.end(), '.', '_');
                 strengthPrefix += "__";
             }
