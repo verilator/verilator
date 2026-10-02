@@ -106,14 +106,38 @@ string reportHier(const VlcPoint& point) {
 }
 
 std::vector<string> splitHier(const string& hier) {
-    // Verilator emits dot-separated non-empty hierarchy components.
+    // Verilator emits dot-separated non-empty hierarchy components.  The name of a covergroup
+    // type of a specialization holds the values of its parameters, '#(...)', whose dots, as of a
+    // real value, separate no components, and whose string values, which the coverage file
+    // quotes with '%22' and escapes with '\', may hold parentheses that nest nothing
     std::vector<string> parts;
     string::size_type start = 0;
-    while (true) {
-        const string::size_type dot = hier.find('.', start);
-        if (dot == string::npos) break;
-        parts.push_back(hier.substr(start, dot - start));
-        start = dot + 1;
+    int depth = 0;  // Of the parentheses of the values of parameters
+    bool inString = false;  // Within a string value
+    const auto isQuote = [&hier](string::size_type i) { return hier.compare(i, 3, "%22") == 0; };
+    for (string::size_type i = 0; i < hier.size(); ++i) {
+        const char c = hier[i];
+        if (inString) {
+            if (c == '\\') {
+                ++i;  // Past the escaped character
+            } else if (isQuote(i)) {
+                inString = false;
+            }
+        } else if (depth) {
+            if (isQuote(i)) {
+                inString = true;
+            } else if (c == '(') {
+                ++depth;
+            } else if (c == ')') {
+                --depth;
+            }
+        } else if (hier.compare(i, 2, "#(") == 0) {
+            depth = 1;
+            ++i;
+        } else if (c == '.') {
+            parts.push_back(hier.substr(start, i - start));
+            start = i + 1;
+        }
     }
     parts.push_back(hier.substr(start));
     return parts;

@@ -46,15 +46,18 @@ def write_dat(name, records, points=()):
 
 
 # Covergroups of dotted names under one node, of which one is named with the value of a string
-# parameter holding a quote that a space follows, as is the count; a record without its bin's
-# name; records of a bin with different weights and thresholds, which merge with the largest of
-# those; and records of two bins of a name, as of covergroups of distinct scopes that share a
-# name, which do not merge
+# parameter holding a quote that a space follows, as is the count, and one named with the values of
+# the parameters of a specialization, whose dots split the name into no nodes, nor do the escaped
+# quote and parenthesis of a string value, quoted as the coverage file quotes it; a record
+# without its bin's name; records of a bin with different weights and thresholds, which merge with
+# the largest of those; and records of two bins of a name, as of covergroups of distinct scopes
+# that share a name, which do not merge
 edge_cov = write_dat("edge.dat", [
     ("pkg.alpha", "cp", "b0", 1, [("B", "b0")]),
     ("pkg.alpha", "cp", "b1", 0, [("B", "b1")]),
     ("pkg.beta", "cp", "b0", 1, []),
     ('pkg.quote#("it\' s")', "cp", "b0", 0, [("B", "b0")]),
+    ('pkg.Cls#(0.1,%22a.\\%22(b%22,class pkg::Inner#(1.5),2.5).cg', "cp", "b0", 1, [("B", "b0")]),
     ("split", "cp", "b0", 1, [("B", "b0"), ("s", "2"), ("w", "2")]),
     ("split", "cp", "b0", 0, [("B", "b0"), ("w", "3")]),
     ("split", "cq", "b0", 1, [("B", "b0")]),
