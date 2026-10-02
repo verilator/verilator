@@ -57,9 +57,6 @@ cg5.cp_addr.addr0: 1
 cg5.cp_addr.addr1: 1
 cg5.cp_cmd.read: 1
 cg5.cp_cmd.write: 1
-cg_arr_4state.a4.av[0]_x_read [cross]: 1
-cg_arr_4state.a4.av[0]_x_write [cross]: 1
-cg_arr_4state.cp_addr.av[0]: 2
 cg_arr_4state.cp_cmd.read: 1
 cg_arr_4state.cp_cmd.write: 1
 cg_arr_range.ar.av[0]_x_read [cross]: 1
@@ -128,11 +125,8 @@ cg_ignore.cross_ab.a0_x_read [cross]: 1
 cg_ignore.cross_ab.a0_x_write [cross]: 1
 cg_ignore.cross_ab.a1_x_read [cross]: 1
 cg_ignore.cross_ab.a1_x_write [cross]: 1
-cg_inv.cp_addr.inv: 0
 cg_inv.cp_cmd.read: 1
 cg_inv.cp_cmd.write: 1
-cg_inv.iv.inv_x_read [cross]: 0
-cg_inv.iv.inv_x_write [cross]: 0
 cg_mixed.ab.addr0_x_read [cross]: 1
 cg_mixed.ab.addr0_x_write [cross]: 1
 cg_mixed.ab.addr1_x_read [cross]: 1
@@ -175,10 +169,10 @@ cg_trans.cp_v.v5: 2
 cg_trans.cp_v.v6: 1
 cg_trans.tx.t01_x_v5 [cross]: 1
 cg_trans.tx.t01_x_v6 [cross]: 0
-cg_unnamed_cross.__cross8.a0_x_read [cross]: 1
-cg_unnamed_cross.__cross8.a0_x_write [cross]: 0
-cg_unnamed_cross.__cross8.a1_x_read [cross]: 0
-cg_unnamed_cross.__cross8.a1_x_write [cross]: 1
+cg_unnamed_cross.__cross9.a0_x_read [cross]: 1
+cg_unnamed_cross.__cross9.a0_x_write [cross]: 0
+cg_unnamed_cross.__cross9.a1_x_read [cross]: 0
+cg_unnamed_cross.__cross9.a1_x_write [cross]: 1
 cg_unnamed_cross.cp_a.a0: 1
 cg_unnamed_cross.cp_a.a1: 1
 cg_unnamed_cross.cp_c.read: 1
@@ -199,11 +193,14 @@ cg_wide.wd.hi_x_read [cross]: 1
 cg_wide.wd.hi_x_write [cross]: 1
 cg_wide.wd.lo_x_read [cross]: 1
 cg_wide.wd.lo_x_write [cross]: 1
-cg_wild_arr.cp_addr.wb: 4
+cg_wild_arr.cp_addr.wb[0]: 2
+cg_wild_arr.cp_addr.wb[1]: 2
 cg_wild_arr.cp_cmd.read: 2
 cg_wild_arr.cp_cmd.write: 2
-cg_wild_arr.wa.wb_x_read [cross]: 2
-cg_wild_arr.wa.wb_x_write [cross]: 2
+cg_wild_arr.wa.wb[0]_x_read [cross]: 1
+cg_wild_arr.wa.wb[0]_x_write [cross]: 1
+cg_wild_arr.wa.wb[1]_x_read [cross]: 1
+cg_wild_arr.wa.wb[1]_x_write [cross]: 1
 cg_wild_solo.cp_addr.wb: 2
 cg_wild_solo.cp_cmd.read: 1
 cg_wild_solo.cp_cmd.write: 1

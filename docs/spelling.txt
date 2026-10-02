@@ -347,6 +347,7 @@ Narcis
 Nassim
 Nauticus
 Nayak
+Nazar
 Nenakhov
 Newgard
 Nigam
@@ -589,6 +590,7 @@ Yurii
 Zaruba
 Zhang
 Zhi
+Zibilyuk
 abirkmanis
 accessor
 accessors
@@ -723,6 +725,7 @@ deduplication
 defenv
 defname
 defparam
+dehash
 demangling
 dep
 deparametrized
@@ -742,6 +745,7 @@ devel
 difftree
 dir
 disambiguates
+discoverability
 displayb
 distcc
 doxygen

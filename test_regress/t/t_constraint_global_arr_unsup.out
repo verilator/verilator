@@ -17,9 +17,6 @@
 %Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:52:14: Unsupported: Randomized index in complex expression
    52 |     m_mid_arr[m_idx].m_obj.m_x == 123;
       |              ^
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:58:24: Unsupported: Array element access in global constraint
-   58 |       m_mid.m_assoc[i].m_x == 1;
-      |                        ^~~
 %Error: t/t_constraint_global_arr_unsup.v:58:21: Illegal non-integral expression or subexpression in random constraint. (IEEE 1800-2023 18.3)
    58 |       m_mid.m_assoc[i].m_x == 1;
       |                     ^

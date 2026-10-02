@@ -355,7 +355,7 @@ class TraceVisitor final : public VNVisitor {
                             } while (emptyScope);
                         }
                         // Can't purge until we finish this pass
-                        pushDeletep(declp->unlinkFrBack());
+                        pushDeletep(declp->unlinkFrBack());  // declp used below
                         vvertexp->rerouteEdges(&m_graph);
                         vvertexp->unlinkDelete(&m_graph);
                     }
@@ -1137,8 +1137,7 @@ class TraceVisitor final : public VNVisitor {
         // TraceInc
         for (const auto& i : traces) {
             AstNode* const valuep = i.second->nodep()->valuep();
-            valuep->unlinkFrBack();
-            valuep->deleteTree();
+            VL_DO_DANGLING(valuep->unlinkFrBack()->deleteTree(), valuep);
         }
 
         // Create the trace cleanup function clearing the activity flags

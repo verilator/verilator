@@ -1710,8 +1710,7 @@ int _mon_check_delayed() {
     vpi_put_value(vhMemWord, &v, &t, vpiInertialDelay);
     TEST_CHECK_ERROR(false);
 
-    // test unsupported vpiInertialDelay cases
-    // - should these also throw vpi errors?
+    // Null value pointer members
     v.format = vpiStringVal;
     v.value.str = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
@@ -1720,6 +1719,25 @@ int _mon_check_delayed() {
     v.format = vpiVectorVal;
     v.value.vector = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
+    TEST_CHECK_ERROR(true);
+
+    for (const PLI_INT32 format :
+         {vpiBinStrVal, vpiOctStrVal, vpiDecStrVal, vpiHexStrVal, vpiStringVal, vpiVectorVal}) {
+        v.format = format;
+        v.value.str = nullptr;
+        v.value.vector = nullptr;
+        vpi_put_value(vh, &v, &t, vpiNoDelay);
+        TEST_CHECK_ERROR(true);
+    }
+
+    v.format = vpiStringVal;
+    v.value.str = nullptr;
+    vpi_put_value(vhMemWord, &v, &t, vpiNoDelay);
+    TEST_CHECK_ERROR(true);
+
+    v.format = vpiVectorVal;
+    v.value.vector = nullptr;
+    vpi_put_value(vhMemWord, &v, &t, vpiNoDelay);
     TEST_CHECK_ERROR(true);
 
     // Test null value in put

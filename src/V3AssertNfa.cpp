@@ -243,12 +243,6 @@ static AstNodeExpr* sampled(AstNodeExpr* exprp) {
     return new AstSampled{exprp->fileline(), exprp, exprp->dtypep(), true};
 }
 
-static string assertCtlGetCall(const char* query, VAssertType type,
-                               VAssertDirectiveType directiveType) {
-    return "vlSymsp->_vm_contextp__->assertCtlGet(VerilatedAssertCtlQuery::"s + query + ", "s
-           + std::to_string(type) + ", "s + std::to_string(directiveType) + ")"s;
-}
-
 static const char* assertPassOnQuery(bool vacuous) {
     static constexpr const char* queries[2]
         = {"ASSERT_CTL_PASS_ON_NONVACUOUS", "ASSERT_CTL_PASS_ON_VACUOUS"};
@@ -259,13 +253,14 @@ static AstNodeExpr* assertOnCond(FileLine* flp, VAssertType type,
                                  VAssertDirectiveType directiveType) {
     if (!v3Global.opt.assertOn()) { return new AstConst{flp, AstConst::BitFalse{}}; }
     return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
+                        V3AssertCommon::assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
 }
 
 static AstNodeExpr* assertKillGet(FileLine* flp, VAssertType type,
                                   VAssertDirectiveType directiveType) {
     return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertCtlGetCall("ASSERT_CTL_KILL", type, directiveType), 32};
+                        V3AssertCommon::assertCtlGetCall("ASSERT_CTL_KILL", type, directiveType),
+                        32};
 }
 
 static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
@@ -280,19 +275,21 @@ static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
 
 static AstNodeExpr* assertPassOnCond(FileLine* flp, VAssertType type,
                                      VAssertDirectiveType directiveType, bool vacuous) {
-    return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertActionControlPrefix(directiveType)
-                            + assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
-                            + "))"s,
-                        1};
+    return new AstCExpr{
+        flp, AstCExpr::Pure{},
+        assertActionControlPrefix(directiveType)
+            + V3AssertCommon::assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
+            + "))"s,
+        1};
 }
 
 static AstNodeExpr* assertFailOnCond(FileLine* flp, VAssertType type,
                                      VAssertDirectiveType directiveType) {
-    return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertActionControlPrefix(directiveType)
-                            + assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType) + "))"s,
-                        1};
+    return new AstCExpr{
+        flp, AstCExpr::Pure{},
+        assertActionControlPrefix(directiveType)
+            + V3AssertCommon::assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType) + "))"s,
+        1};
 }
 
 static AstIf* newPassOnIf(FileLine* flp, AstNodeExpr* firep, AstNode* bodyp, VAssertType type,
@@ -1839,7 +1836,7 @@ class SvaNfaLowering final {
         };
         UASSERT_OBJ(size > 0, idxExprp, "Ring size must be positive");
         if (size == 1) {
-            idxExprp->deleteTree();
+            VL_DO_DANGLING(idxExprp->deleteTree(), idxExprp);
             return u32Const(0);
         }
         // idx == size - 1 ? 0 : idx + 1
@@ -2894,6 +2891,7 @@ class AssertNfaVisitor final : public VNVisitor {
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
+    V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
 
     template <typename T_Node>
@@ -3276,13 +3274,12 @@ class AssertNfaVisitor final : public VNVisitor {
             // IEEE 1800-2023 16.12 requires one action-block evaluation per failed
             // thread. AstAssert handles the first, so replay the rest here.
             AstVar* const remainingFailCountVarp
-                = new AstVar{flp, VVarType::BLOCKTEMP, "__VnfaRemainingFailCount",
+                = new AstVar{flp, VVarType::MODULETEMP, m_failCountNames.get(""),
                              m_modp->findBasicDType(VBasicDTypeKwd::UINT32)};
-            remainingFailCountVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            AstBegin* const replayBlockp = new AstBegin{flp, "", remainingFailCountVarp, true};
-            replayBlockp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE},
-                              threadFailCountp});
+            remainingFailCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(remainingFailCountVarp);
+            AstNode* const replayStmtsp = new AstAssign{
+                flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE}, threadFailCountp};
             AstLoop* const replayLoopp = new AstLoop{flp};
             replayLoopp->addStmtsp(new AstLoopTest{
                 flp, replayLoopp,
@@ -3296,9 +3293,9 @@ class AssertNfaVisitor final : public VNVisitor {
             replayLoopp->addStmtsp(
                 new AstAssign{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE},
                               decrementedFailCountp});
-            replayBlockp->addStmtsp(replayLoopp);
+            replayStmtsp->addNext(replayLoopp);
             m_modp->addStmtsp(
-                new AstAlways{flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayBlockp});
+                new AstAlways{flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp});
         }
     }
 

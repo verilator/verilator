@@ -23,11 +23,11 @@ module t;
 
   initial begin
     @e1 v = 1;
-    #1->e2;
+    #1 ->e2;
     @e1 v = 2;
-    #1->e2;
+    #1 ->e2;
     @e1 v = 3;
-    #1->e2;
+    #1 ->e2;
   end
 
   initial #5 $stop;  // timeout

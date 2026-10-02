@@ -9,7 +9,7 @@ module t (
 );
 
   int cyc = 0;
-  always @(posedge clk)++cyc;
+  always @(posedge clk) ++cyc;
 
   reg [15 : 0] t2;
 

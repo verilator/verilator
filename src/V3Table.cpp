@@ -25,6 +25,7 @@
 
 #include "V3Table.h"
 
+#include "V3ConstPool.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
 
@@ -111,7 +112,11 @@ public:
     }
 
     AstVarScope* varScopep() {
-        if (!m_varScopep) m_varScopep = v3Global.rootp()->constPoolp()->findTable(m_initp);
+        if (!m_varScopep) {
+            AstVarRef* const refp = V3ConstPool::findTable(m_initp);
+            m_varScopep = refp->varScopep();
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
         return m_varScopep;
     }
 };

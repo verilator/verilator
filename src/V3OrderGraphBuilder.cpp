@@ -415,7 +415,6 @@ class OrderGraphBuilder final : public VNVisitor {
     void visit(AstVarScope* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
     void visit(AstCell* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
     void visit(AstTypeTable* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
-    void visit(AstConstPool* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
     void visit(AstClass* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
     void visit(AstCFunc*) override {
         // Calls to DPI exports handled with AstCCall. /* verilator public */ functions are

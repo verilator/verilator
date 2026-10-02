@@ -35,25 +35,10 @@ endif
 
 UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
 
-ifeq (,$(wildcard obj_dbg/bear.o))
-  ifneq (, $(shell which bear 2>/dev/null))
-    BEAR := $(shell which bear)
-    ifeq (, $(shell $(BEAR) --output obj_dbg/comptest.json -- true))
-      $(shell which bear 2>/dev/null >obj_dbg/bear.o)
-    else
-      # unsupported version
-      BEAR :=
-    endif
-  endif
-else
-  BEAR := $(shell cat obj_dbg/bear.o)
-endif
-
-ifneq ($(BEAR),)
-  BEAR_OBJ_OPT := $(BEAR) --append --output obj_dbg/compile_commands.json --
-else
-  BEAR_OBJ_OPT :=
-endif
+# Use bear if installed, and new enough to support the '--output FILE --' syntax
+BEAR := $(shell bear=$$(which bear 2>/dev/null) && tmp=$$(mktemp -d 2>/dev/null) \
+          && { "$$bear" --output "$$tmp/probe.json" -- true >/dev/null 2>&1 && echo "$$bear"; rm -rf "$$tmp"; })
+BEAR_OBJ_OPT := $(if $(BEAR),$(BEAR) --append --output obj_dbg/compile_commands.json --)
 
 #*********************************************************************
 

@@ -1,0 +1,9 @@
+%Warning: t/t_covergroup_with_limits.v:21: Coverage bin 'with' filter has more than 2**32 candidate values; bin 'b' ignored
+%Warning: t/t_covergroup_with_limits.v:25: Coverage bin 'with' filter has more than 2**32 candidate values; bin 'b' ignored
+%Warning: t/t_covergroup_with_limits.v:33: Coverage bin array needs more bins than --coverage-max-bins; bin 'b' ignored
+%Warning: t/t_covergroup_with_limits.v:41: Coverage bin 'with' filter keeps values in more ranges than --coverage-max-bins; bin 'b' ignored
+%Warning: t/t_covergroup_with_limits.v:49: Coverage bin 'with' filter keeps values in more ranges than --coverage-max-bins; bin 'b' ignored
+%Warning: t/t_covergroup_with_limits.v:52: Coverage bin array needs more bins than --coverage-max-bins; bin 'b' ignored
+%Error: t/t_covergroup_with_limits.v:55: Coverage bin array 'b' size must be a positive integer (IEEE 1800-2023 19.5.1)
+-Info: t/t_covergroup_with_limits.v:55: Verilog $stop, ignored due to +verilator+error+limit
+*-* All Finished *-*

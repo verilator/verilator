@@ -497,12 +497,32 @@ void testEntryLifetime() {
         }
         UASSERT_SELFTEST(set.begin() == set.end(), true);  // Erased down to empty
         UASSERT_SELFTEST(alive, 0);  // With every entry destroyed
+        // Clearing destroys every entry at once, and leaves a usable, empty set
+        for (size_t i = 0; i < N; ++i) set.insert(NoDefault{&alive, 7, i});
+        UASSERT_SELFTEST(alive, N);  // Filled up again
+        set.clear();
+        UASSERT_SELFTEST(set.size(), 0);  // Nothing left
+        UASSERT_SELFTEST(set.empty(), true);  // Says so
+        UASSERT_SELFTEST(set.begin() == set.end(), true);  // Iterates nothing
+        UASSERT_SELFTEST(alive, 0);  // With every entry destroyed
+        UASSERT_SELFTEST(set.contains(size_t{7}, size_t{0}), false);  // Nor finds any
+        set.clear();  // Clearing an empty set does nothing
+        UASSERT_SELFTEST(set.empty(), true);  // Still empty
         // Leave entries in the set, so its destructor has some to destroy
         for (size_t i = 0; i < N; ++i) set.insert(NoDefault{&alive, 7, i});
         UASSERT_SELFTEST(alive, N);  // Live as the set goes out of scope
     }
     // The set is gone, so every entry it still held has been destroyed
     UASSERT_SELFTEST(alive, 0);  // Leaking none of them
+    // Clearing a set that never allocated a table does nothing
+    {
+        Set set;
+        set.clear();
+        UASSERT_SELFTEST(set.empty(), true);  // Still empty
+        set.insert(NoDefault{&alive, 7, 0});
+        UASSERT_SELFTEST(set.size(), 1);  // And still usable
+    }
+    UASSERT_SELFTEST(alive, 0);  // Leaking nothing
 }
 
 //######################################################################

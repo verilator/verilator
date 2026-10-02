@@ -14,7 +14,7 @@ module t (
 );
 
   reg [7:0] da0[*];
-  reg [7:0] da1[2][*];
+  reg [7:0] da1[2] [*];
 
   integer cyc = 0;
 
@@ -24,7 +24,8 @@ module t (
       da0[1] = 8'h11;
       da1[0][2] = 8'h22;
       da1[1][3] = 8'h33;
-    end else if (cyc == 1) begin
+    end
+    else if (cyc == 1) begin
       `checkh(da0.size(), 1);
       `checkh(da0[1], 8'h11);
       `checkh(da1[0].size(), 1);

@@ -88,6 +88,7 @@ enum NodeFlag : uint8_t {
     T_FORCES_PROC = 1 << 3,  // Forces VlProcess allocation
     T_NEEDS_PROC = 1 << 4,  // Needs access to VlProcess if it's allocated
     T_HAS_PROC = 1 << 5,  // Has VlProcess argument in the signature
+    T_NBA_UPDATE = 1 << 6,  // Fork branch of a pending NBA update, which is not a subprocess
 };
 
 enum ForkType : uint8_t {
@@ -386,6 +387,13 @@ class TimingSuspendableVisitor final : public VNVisitor {
     }
     void visit(AstAssignDly* nodep) override {
         if (!VN_IS(m_procp, NodeProcedure)) v3Global.setUsesTiming();
+        visit(static_cast<AstNode*>(nodep));
+    }
+    void visit(AstFireEvent* nodep) override {
+        if (nodep->isDelayed()
+            && (!VN_IS(m_procp, NodeProcedure) || !VN_IS(nodep->operandp(), VarRef))) {
+            v3Global.setUsesTiming();
+        }
         visit(static_cast<AstNode*>(nodep));
     }
     void visit(AstAssignW* nodep) override {
@@ -1222,6 +1230,7 @@ class TimingControlVisitor final : public VNVisitor {
             AstBegin* beginp = VN_CAST(controlp, Begin);
             if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
             forkp->addForksp(beginp);
+            addFlags(beginp, T_NBA_UPDATE);
             controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
@@ -1256,6 +1265,51 @@ class TimingControlVisitor final : public VNVisitor {
         }
         // Replace the RHS with an intermediate value var
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
+    }
+    void visit(AstFireEvent* nodep) override {
+        // V3Delayed handles '->>' of a variable in a process. Like NBAs in non-inlined functions,
+        // trigger other events from a fork awaiting the NBA region.
+        if (!nodep->isDelayed() || (m_underProcedure && VN_IS(nodep->operandp(), VarRef))) {
+            iterateChildren(nodep);
+            return;
+        }
+        FileLine* const flp = nodep->fileline();
+        AstAssign* const trigAssignp = createNbaEventTriggerAssignment(flp);
+        nodep->replaceWith(trigAssignp);
+        AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
+        trigAssignp->addNextHere(forkp);
+        if (m_underJumpBlock) addCLocalScope(flp, forkp);
+        // The triggered event is the one referenced now, so evaluate handles and indices now
+        AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
+        const auto evalNow = [&](AstNodeExpr* const valuep, V3UniqueNames& names) {
+            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(), forkp);
+            valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
+            // Unlike an event, a handle selecting one is only read
+            valuep->foreach([](AstNode* const np) {
+                if (AstNodeVarRef* const refp = VN_CAST(np, NodeVarRef)) {
+                    refp->access(VAccess::READ);
+                } else if (AstMemberSel* const selp = VN_CAST(np, MemberSel)) {
+                    selp->access(VAccess::READ);
+                }
+            });
+            forkp->addHereThisAsNext(
+                new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, valuep});
+        };
+        AstNodeExpr* refp = eventp;
+        while (AstNodeSel* const selp = VN_CAST(refp, NodeSel)) {
+            if (!VN_IS(selp->bitp(), Const)) evalNow(selp->bitp(), m_intraIndexNames);
+            refp = selp->fromp();
+        }
+        // Handle of a class (or virtual interface)
+        if (AstMemberSel* const selp = VN_CAST(refp, MemberSel)) {
+            evalNow(selp->fromp(), m_intraValueNames);
+        }
+        AstEventControl* const controlp = createNbaEventControl(flp);
+        controlp->addStmtsp(new AstFireEvent{flp, eventp, false});
+        AstBegin* const beginp = new AstBegin{flp, "", controlp, false};
+        addFlags(beginp, T_NBA_UPDATE);
+        forkp->addForksp(beginp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstAssignW* nodep) override {
         FileLine* const flp = nodep->fileline();
@@ -1438,6 +1492,9 @@ class TimingControlVisitor final : public VNVisitor {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
         m_hasProcess |= hasFlags(nodep, T_HAS_PROC);
+        // A pending NBA update is not a subprocess of the process that scheduled it, so it is
+        // unaffected by 'disable fork' and 'wait fork' (IEEE 1800-2023 9.6.1, 9.6.3)
+        if (hasFlags(nodep, T_NBA_UPDATE)) m_hasProcess = false;
         m_procp = nodep;
         if (m_hasProcess) nodep->setNeedProcess();
         iterateChildren(nodep);
@@ -1463,6 +1520,10 @@ class TimingControlVisitor final : public VNVisitor {
 
             // Name the begin (later the name will be used for a new function)
             itemp->name(nodep->name() + "__" + std::to_string(idx++));
+            if (itemp->needProcess()) {
+                itemp->addStmtsp(
+                    new AstCStmt{itemp->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
+            }
         }
         if (!nodep->joinType().joinNone()) makeForkJoin(nodep);
     }

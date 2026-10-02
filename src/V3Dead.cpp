@@ -37,6 +37,7 @@
 
 #include "V3Dead.h"
 
+#include "V3ConstPool.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
 
@@ -371,6 +372,8 @@ class DeadVisitor final : public VNVisitor {
         // Class packages might have no children, but need to remain as
         // long as the class they refer to is needed
         if (VN_IS(m_modp, Class) || VN_IS(m_modp, ClassPackage)) nodep->user1Inc();
+        // The constant pool scope must remain for entries created later
+        if (m_modp->isConstPool()) nodep->user1Inc();
         if (!nodep->isTop() && !nodep->varsp() && !nodep->blocksp()) {
             m_scopesp.push_back(nodep);
         }
@@ -463,11 +466,6 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
-    }
-    void visit(AstEnumDType* nodep) override {
-        // Widthing during parameter evaluation may have populated the cache.
-        nodep->tableMap().clear();
-        visit(static_cast<AstNodeDType*>(nodep));
     }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
@@ -670,7 +668,8 @@ class DeadVisitor final : public VNVisitor {
                 nextmodp = VN_AS(modp->nextp(), NodeModule);
                 // Keep $unit until m_elimCells stages. Note v3Global.opt.serializeOnly()
                 // won't reach this stage, and will always have an empty $unit. That's ok.
-                const bool keep = !m_elimCells && modp == v3Global.rootp()->dollarUnitPkgp();
+                // The constant pool is always kept, entries might be created later.
+                const bool keep = (!m_elimCells && modp->isDollarUnit()) || modp->isConstPool();
                 if (modp->dead() || (!modp->isTop() && modp->user1() == 0 && !keep)) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
                     UINFO(4, "  Dead module " << modp);
@@ -681,9 +680,7 @@ class DeadVisitor final : public VNVisitor {
                             cellp->modp()->user1Inc(-1);
                         });
                     }
-                    if (modp == v3Global.rootp()->dollarUnitPkgp()) {
-                        v3Global.rootp()->dollarUnitPkgp(nullptr);
-                    }
+                    if (modp->isDollarUnit()) v3Global.rootp()->dollarUnitPkgp(nullptr);
                     deleting(modp);
                     retry = true;
                 }
@@ -799,48 +796,10 @@ class DeadVisitor final : public VNVisitor {
         }
     }
 
-    // cppcheck-suppress constParameterPointer
-    void preserveTopIfaces(AstNetlist* rootp) {
-        // cppcheck-suppress constVariablePointer
-        for (AstNodeModule* modp = rootp->modulesp(); modp && modp->isTop();
-             modp = VN_AS(modp->nextp(), NodeModule)) {
-            for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
-                if (AstVar* const varp = VN_CAST(subnodep, Var)) {
-                    if (varp->isIfaceRef()) {
-                        const AstNodeDType* const subtypep = varp->subDTypep();
-                        const AstIfaceRefDType* ifacerefp = nullptr;
-                        if (VN_IS(subtypep, IfaceRefDType)) {
-                            ifacerefp = VN_AS(varp->subDTypep(), IfaceRefDType);
-                        } else if (VN_IS(subtypep, BracketArrayDType)) {
-                            const AstBracketArrayDType* const arrp
-                                = VN_AS(subtypep, BracketArrayDType);
-                            const AstNodeDType* const arrsubtypep = arrp->subDTypep();
-                            if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                                ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
-                            }
-                        } else if (VN_IS(subtypep, UnpackArrayDType)) {
-                            const AstUnpackArrayDType* const arrp
-                                = VN_AS(subtypep, UnpackArrayDType);
-                            const AstNodeDType* const arrsubtypep = arrp->subDTypep();
-                            if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                                ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
-                            }
-                        }
-
-                        if (ifacerefp && !ifacerefp->cellp()
-                            && (ifacerefp->ifacep()->user1() == 0)) {
-                            ifacerefp->ifacep()->user1(1);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 public:
     // CONSTRUCTORS
     DeadVisitor(AstNetlist* nodep, bool elimUserVars, bool elimDTypes, bool elimScopes,
-                bool elimCells, bool elimTopIfaces, bool elimTasks)
+                bool elimCells, bool elimTasks)
         : m_elimUserVars{elimUserVars}
         , m_elimDTypes{elimDTypes}
         , m_elimCells{elimCells}
@@ -875,7 +834,6 @@ public:
         if (elimCells) deadCheckCells();
         deadCheckClasses();
         // Modules after vars, because might be vars we delete inside a mod we delete
-        if (!elimTopIfaces) preserveTopIfaces(nodep);
         deadCheckMod();
 
         // After deleting as much as can, demote some virtual functions
@@ -884,7 +842,7 @@ public:
         // We may have removed some datatypes, cleanup
         nodep->typeTablep()->repairCache();
         VIsCached::clearCacheTree();  // Removing assignments may affect isPure
-        nodep->constPoolp()->rebuildVarScopesAndCache();
+        V3ConstPool::invalidateCache();  // Might have deleted constant pool entries
     }
     ~DeadVisitor() override {
         V3Stats::addStatSum("Optimizations, FTasks, virtual-to-nonvirtual demotion",
@@ -902,32 +860,32 @@ public:
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    {  // node, elimUserVars, elimDTypes, elimScopes, elimCells, elimTopIfaces
-        DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported(), false};
+    {  // node, elimUserVars, elimDTypes, elimScopes, elimCells, elimTasks
+        DeadVisitor{nodep, false, false, false, false, false};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeEitherLevel() >= 6);
 }
 
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, false, true, false, false, false, true}; }  // Destruct before checking
+    { DeadVisitor{nodep, false, true, false, false, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypes", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, false, true, true, false, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, false, true, true, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, true, true, false, true, false, true}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, false, true, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, true, true, true, true, false, true}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, true, true, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTreeEitherLevel() >= 3);
 }

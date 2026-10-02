@@ -23,11 +23,11 @@ module t (
   int cnt_ff;
 
   assert property (@(negedge clk) disable iff (value[1]) value[2]) begin
-    assert (value[0])++cnt_tt;
+    assert (value[0]) ++cnt_tt;
     else ++cnt_tf;
   end
   else begin
-    assert (value[0])++cnt_ft;
+    assert (value[0]) ++cnt_ft;
     else ++cnt_ff;
   end
 

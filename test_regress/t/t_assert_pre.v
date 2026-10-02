@@ -36,7 +36,7 @@ module t (
   assert property (@(e) not toggle) begin
     `checkh(inc2, 0);
     inc2++;
-    `checkh(inc2,1);
+    `checkh(inc2, 1);
   end
   event e;
 

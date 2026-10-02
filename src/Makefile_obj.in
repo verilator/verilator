@@ -187,7 +187,6 @@ maintainer-copy::
 #### Top executable
 
 RAW_OBJS = \
-  V3Const__gen.o \
   V3Error.o \
   V3FileLine.o \
   V3Graph.o \
@@ -213,6 +212,7 @@ RAW_OBJS_PCH_ASTMT = \
   V3Ast.o \
   V3AstNodes.o \
   V3Broken.o \
+  V3ConstPool.o \
   V3Control.o \
   V3EmitCBase.o \
   V3EmitCConstPool.o \
@@ -253,6 +253,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Clock.o \
   V3Combine.o \
   V3Common.o \
+  V3Const__gen.o \
   V3Coverage.o \
   V3Covergroup.o \
   V3CoverageJoin.o \
@@ -411,8 +412,6 @@ $(TGT): $(PREDEP_H) $(OBJS)
 %__gen.cpp: %.cpp $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
 	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) $*.cpp
 
-.SECONDARY:
-
 %.gch: %
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH} -c $< -o $@
 %.o: %.cpp
@@ -432,7 +431,7 @@ V3PreProc.o: V3PreProc.cpp V3PreLex.yy.cpp
 
 define CXX_ASTMT_template
 $(1): $(basename $(1)).cpp V3PchAstMT.h.gch
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstMT.h${CFG_GCH_IF_CLANG} -c $$< -o $(1)
 
 endef
 
@@ -440,7 +439,7 @@ $(foreach obj,$(RAW_OBJS_PCH_ASTMT),$(eval $(call CXX_ASTMT_template,$(obj))))
 
 define CXX_ASTNOMT_template
 $(1): $(basename $(1)).cpp V3PchAstNoMT.h.gch
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstNoMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstNoMT.h${CFG_GCH_IF_CLANG} -c $$< -o $(1)
 
 endef
 
@@ -489,6 +488,8 @@ header_cc: $(addsuffix __header_cc.o, $(basename $(HEADER_CC_H)))
 
 %__header_cc.cpp: %.h
 	$(PYTHON3) $(srcdir)/../bin/verilator_includer -DVL_MT_DISABLED_CODE_UNIT=1 $^ > $@
+
+.SECONDARY: V3Const__gen.cpp $(addsuffix __header_cc.cpp, $(basename $(HEADER_CC_H)))
 
 .SUFFIXES:
 

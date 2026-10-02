@@ -15,7 +15,7 @@ typedef int unsigned uint;
 class Base;
   rand uint delay;
   rand uint guard;  // gets rand_mode(0) to engage the per-var mode machinery
-  constraint delay_c {delay inside {[1:100]};}
+  constraint delay_c {delay inside {[1 : 100]};}
   function int rd();
     return this.randomize(delay);
   endfunction
@@ -23,19 +23,25 @@ endclass
 
 class Unpacked extends Base;
   rand uint a[3];
-  constraint c {foreach (a[i]) a[i] inside {[1:10]};}
+  constraint c {
+    foreach (a[i])
+    a[i] inside {[1 : 10]};
+  }
 endclass
 
 class Unpacked2D extends Base;
   rand uint a[2][2];
-  constraint c {foreach (a[i, j]) a[i][j] inside {[1:10]};}
+  constraint c {
+    foreach (a[i, j])
+    a[i][j] inside {[1 : 10]};
+  }
 endclass
 
 class Queue extends Base;
   rand uint a[$];
   constraint c {
     a.size() == 3;
-    foreach (a[i]) a[i] inside {[1:10]};
+    foreach (a[i]) a[i] inside {[1 : 10]};
   }
 endclass
 
@@ -43,7 +49,7 @@ class Dyn extends Base;
   rand uint a[];
   constraint c {
     a.size() == 3;
-    foreach (a[i]) a[i] inside {[1:10]};
+    foreach (a[i]) a[i] inside {[1 : 10]};
   }
 endclass
 
@@ -51,8 +57,8 @@ endclass
 class AssocStr extends Base;
   rand uint amap[string];
   constraint c {
-    amap["alice"] inside {[1:10]};
-    amap["bob"] inside {[20:30]};
+    amap["alice"] inside {[1 : 10]};
+    amap["bob"] inside {[20 : 30]};
   }
   function new();
     amap = '{"alice": 5, "bob": 25};
@@ -61,12 +67,15 @@ endclass
 
 class EmptyAssoc extends Base;  // never populated: frozen default 0 violates
   rand uint amap[string];
-  constraint c {amap["alice"] inside {[1:10]};}
+  constraint c {amap["alice"] inside {[1 : 10]};}
 endclass
 
 class AssocInt extends Base;
   rand uint imap[int];
-  constraint c {foreach (imap[k]) imap[k] inside {[1:10]};}
+  constraint c {
+    foreach (imap[k])
+    imap[k] inside {[1 : 10]};
+  }
   /* verilator lint_on SIDEEFFECT */
   function new();
     imap[2] = 1;
@@ -76,14 +85,20 @@ endclass
 
 class Leaf;
   rand uint a[3];
-  constraint c {foreach (a[i]) a[i] inside {[1:10]};}
+  constraint c {
+    foreach (a[i])
+    a[i] inside {[1 : 10]};
+  }
 endclass
 
 class Nested;
   rand uint x;
   rand Leaf leaf;
-  constraint xc {x inside {[1:100]};}
-  constraint lc {foreach (leaf.a[i]) leaf.a[i] inside {[1:10]};}
+  constraint xc {x inside {[1 : 100]};}
+  constraint lc {
+    foreach (leaf.a[i])
+    leaf.a[i] inside {[1 : 10]};
+  }
   function new();
     leaf = new;
   endfunction
@@ -93,9 +108,9 @@ class NoModes;  // no rand_mode() call anywhere; scoped arg only
   rand uint x, y;
   rand uint arr[2];
   constraint c {
-    x inside {[1:100]};
-    y inside {[1:100]};
-    foreach (arr[i]) arr[i] inside {[1:10]};
+    x inside {[1 : 100]};
+    y inside {[1 : 100]};
+    foreach (arr[i]) arr[i] inside {[1 : 10]};
   }
   function int rx();
     return this.randomize(x);

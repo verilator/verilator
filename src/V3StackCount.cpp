@@ -30,8 +30,8 @@ class StackCountVisitor final : public VNVisitorConst {
     const VNUser2InUse m_inuser2;
 
     // MEMBERS
-    uint64_t m_stackSize = 0;  // Running count of instructions
-    uint64_t m_maxLazyCallee = 0;
+    uint64_t m_stackSize = 0;  // Running count of local bytes in the current function
+    uint64_t m_callMax = 0;  // Largest callee cost called from the current function
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_ignoreRemaining = false;  // Ignore remaining statements in the block
     bool m_inCFunc = false;  // Inside function
@@ -63,7 +63,7 @@ public:
     ~StackCountVisitor() override = default;
 
     // METHODS
-    uint64_t stackSize() const { return m_stackSize + m_maxLazyCallee; }
+    uint64_t stackSize() const { return m_stackSize + m_callMax; }
 
 private:
     void reset() {
@@ -140,20 +140,7 @@ private:
             if (nodep->thenp()) nodep->thenp()->user2(0);  // Don't dump it
         }
     }
-    void visit(AstFork* nodep) override {
-        if (m_ignoreRemaining) return;
-        const VisitBase vb{this, nodep};
-        iterateAndNextConstNull(nodep->stmtsp());
-        uint64_t totalCount = m_stackSize;
-        VL_RESTORER(m_ignoreRemaining);
-        // Sum counts in each statement
-        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
-            reset();
-            iterateConst(stmtp);
-            totalCount += m_stackSize;
-        }
-        m_stackSize = totalCount;
-    }
+    void visit(AstFork* nodep) override { nodep->v3fatalSrc("Fork removed earlier"); }
     void visit(AstNodeCCall* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
@@ -168,27 +155,23 @@ private:
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
         if (nodep->recursive()) return;
+        // Called from VPI reads, never from eval
+        if (nodep->vpiLazyReconstruct()) return;
         if (!nodep->user2()) {  // Short circuit
             VL_RESTORER(m_ignoreRemaining);
             VL_RESTORER(m_stackSize);
+            VL_RESTORER(m_callMax);
             VL_RESTORER(m_inCFunc);
-            VL_RESTORER(m_maxLazyCallee);
             m_tracingCall = false;
             m_stackSize = 0;
-            m_maxLazyCallee = 0;
+            m_callMax = 0;
             m_inCFunc = true;
             const VisitBase vb{this, nodep};
             iterateChildrenConst(nodep);
-            // Only one reconstruct callee is active at a time.
-            nodep->user2(m_stackSize + m_maxLazyCallee + 1);
+            nodep->user2(m_stackSize + m_callMax + 1);
         }
-        const uint64_t cost = nodep->user2() - 1;
-        // Shared cone operands make sibling sums incorrect.
-        if (nodep->vpiLazyReconstruct()) {
-            m_maxLazyCallee = std::max(m_maxLazyCallee, cost);
-        } else {
-            m_stackSize += cost;
-        }
+        // Sequential calls reuse the same stack, so only the deepest counts
+        m_callMax = std::max(m_callMax, nodep->user2() - 1);
         m_tracingCall = false;
     }
     void visit(AstVar* nodep) override {

@@ -37,7 +37,7 @@ package my_pkg;
     task test_std_rand_with();
       int unsigned v;
       int ok;
-      ok = std::randomize(v) with { v inside {[1:100]}; };
+      ok = std::randomize(v) with {v inside {[1 : 100]};};
       `checkd(ok, 1);
       if (v < 1 || v > 100) begin
         $write("%%Error: constraint violated: v=%0d\n", v);
@@ -49,7 +49,7 @@ package my_pkg;
   // this.randomize() regression for parameterized-derived class
   class rand_t extends uvm_sequence #(uvm_sequence_item);
     rand int unsigned x;
-    constraint c_x { x inside {[1:50]}; }
+    constraint c_x {x inside {[1 : 50]};}
   endclass
 
 endpackage

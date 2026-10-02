@@ -760,7 +760,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 varp->attrSplitVar(!cannotSplitPackedVarReason(varp));
                 m_forPackedSplit.m_refs[m_modp].add(varp);
             } else {
-                pushDeletep(varp->unlinkFrBack());
+                VL_DO_DANGLING(pushDeletep(varp->unlinkFrBack()), varp);
             }
             ++numSplit;
         }

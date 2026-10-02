@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // Test that illegal_bins are excluded from coverage (like ignore_bins).
-// Also tests coverpoints where all bins are ignore/illegal - get_coverage returns 100.0.
+// Also tests coverpoints where all bins are ignore/illegal - nothing contributes to coverage.
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2026 by Wilson Snyder.
@@ -18,7 +18,12 @@ module t;
   logic [3:0] data4;
 
   covergroup cg;
-    coverpoint data {bins low = {0}; bins mid = {1}; bins high = {2}; illegal_bins forbidden = {3};}
+    coverpoint data {
+      bins low = {0};
+      bins mid = {1};
+      bins high = {2};
+      illegal_bins forbidden = {3};
+    }
   endgroup
 
   // cg2: illegal_bins on multi-step transitions and array notation
@@ -36,9 +41,12 @@ module t;
     }
   endgroup
 
-  // cg3: all bins are ignore_bins or illegal_bins - get_coverage returns 100.0
+  // cg3: all bins are ignore_bins or illegal_bins - nothing contributes to coverage
   covergroup cg3;
-    cp: coverpoint data {ignore_bins ign = {0, 1}; illegal_bins ill = {2, 3};}
+    cp: coverpoint data {
+      ignore_bins ign = {0, 1};
+      illegal_bins ill = {2, 3};
+    }
   endgroup
 
   initial begin
@@ -60,13 +68,14 @@ module t;
     cg2_inst.sample();
     `checkr(cg2_inst.get_inst_coverage(), 100.0);
 
-    // Sample cg3 - values that only hit ignore_bins, never illegal_bins
+    // Sample cg3 - values that only hit ignore_bins, never illegal_bins.  With no coverage
+    // to contribute, the covergroup's nonzero weight gives 0 (IEEE 1800-2023 19.11)
     data = 0;
     cg3_inst.sample();
-    `checkr(cg3_inst.get_inst_coverage(), 100.0);
+    `checkr(cg3_inst.get_inst_coverage(), 0.0);
     data = 1;
     cg3_inst.sample();
-    `checkr(cg3_inst.get_inst_coverage(), 100.0);
+    `checkr(cg3_inst.get_inst_coverage(), 0.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

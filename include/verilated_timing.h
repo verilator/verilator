@@ -65,35 +65,6 @@
 #define VL_UNKNOWN "<unknown>"
 
 //=============================================================================
-// VlFileLineDebug stores a SystemVerilog source code location. Used in VlCoroutineHandle for
-// debugging purposes.
-
-class VlFileLineDebug final {
-    // MEMBERS
-#ifdef VL_DEBUG
-    const char* m_filename = nullptr;  // Filename from sources, nullptr for unlnown
-    int m_lineno = 0;  // Line number from sources
-#endif
-
-public:
-    // CONSTRUCTORS
-    VlFileLineDebug() = default;
-    VlFileLineDebug(const char* filename, int lineno)
-#ifdef VL_DEBUG
-        : m_filename{filename}
-        , m_lineno{lineno}
-#endif
-    {
-    }
-
-    // METHODS
-#ifdef VL_DEBUG
-    const char* filename() const { return m_filename; }
-    int lineno() const { return m_lineno; }
-#endif
-};
-
-//=============================================================================
 // VlCoroutineHandle is a non-copyable (but movable) coroutine handle. On resume, the handle is
 // cleared, as we assume that either the coroutine has finished and deleted itself, or, if it got
 // suspended, another VlCoroutineHandle was created to manage it.

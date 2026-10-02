@@ -1832,8 +1832,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     return got;
 
 done:
-    // Scan stopped early, return parsed or EOF
-    if (_vl_vsss_eof(fp, floc)) return -1;
+    // Scan stopped early; EOF only if input ended before the first conversion
+    if (got == 0 && _vl_vsss_eof(fp, floc)) return -1;
     return got;
 }
 
@@ -3128,32 +3128,16 @@ VerilatedContext::Serialized::Serialized() {
 
 bool VerilatedContext::assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
-    if (assertCtlsLocked()) return;
+    if (m_ns.m_assertCtlsLocked) return;
     // Set all assert and directive types when true, clear otherwise.
     m_s.m_assertOn = VL_MASK_I(ASSERT_ON_WIDTH) * flag;
 }
-bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
-                                   VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
-    return assertCtlGet(VerilatedAssertCtlQuery::ASSERT_CTL_ON, type, directive);
-}
-void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
-                                   VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    if (assertCtlsLocked()) return;
-    m_s.m_assertOn |= assertOnMask(types, directives);
-}
-void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
-                                     VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    if (assertCtlsLocked()) return;
-    m_s.m_assertOn &= ~assertOnMask(types, directives);
-}
-bool VerilatedContext::assertCtlsLocked() const VL_MT_SAFE { return m_ns.m_assertCtlsLocked; }
-void VerilatedContext::assertCtlsLocked(bool flag) VL_MT_SAFE { m_ns.m_assertCtlsLocked = flag; }
 void VerilatedContext::assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                                  VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
     // IEEE 1800-2023 Table 20-5 control_type. Lock freezes the On/Off state of the
     // selected bits until Unlock; On/Off/Kill leave locked bits unchanged.
     // +verilator+assert+lock freezes everything, including Lock/Unlock itself.
-    if (assertCtlsLocked()) return;
+    if (m_ns.m_assertCtlsLocked) return;
     const uint32_t mask = assertOnMask(types, directives);
     const uint32_t lockedMask = mask & ~m_s.m_assertLock;
     switch (controlType) {
@@ -3386,6 +3370,15 @@ const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
     return vl_time_str(timeprecision());
 }
 
+static void warnThreadsOversubscribed(unsigned threads) VL_MT_SAFE {
+    const unsigned threadsAvailableToProcess = VlOs::getProcessDefaultParallelism();
+    if (threads > threadsAvailableToProcess) {
+        VL_PRINTF_MT("%%Warning: Process has %u hardware threads available, but simulation thread "
+                     "count set to %u. This will likely cause significant slowdown.\n",
+                     threadsAvailableToProcess, threads);
+    }
+}
+
 void VerilatedContext::threads(unsigned n) {
     if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "Simulation threads must be >= 1");
 
@@ -3396,14 +3389,10 @@ void VerilatedContext::threads(unsigned n) {
     }
 
     m_useNumaAssign = true;
+    m_threadsSet = true;
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
-    const unsigned threadsAvailableToProcess = VlOs::getProcessDefaultParallelism();
-    if (m_threads > threadsAvailableToProcess) {
-        VL_PRINTF_MT("%%Warning: Process has %u hardware threads available, but simulation thread "
-                     "count set to %u. This will likely cause significant slowdown.\n",
-                     threadsAvailableToProcess, m_threads);
-    }
+    warnThreadsOversubscribed(m_threads);
 }
 
 void VerilatedContext::useNumaAssign(bool flag) { m_useNumaAssign = flag; }
@@ -3469,7 +3458,15 @@ void VerilatedContext::addModel(const VerilatedModel* modelp) {
     }
 }
 
-VerilatedVirtualBase* VerilatedContext::threadPoolp() {
+VerilatedVirtualBase* VerilatedContext::threadPoolp(unsigned modelThreads) {
+    // The thread count defaults to the number of threads available to the process, which may be
+    // fewer than a model uses, e.g. a model Verilated with --threads 4 on a single core machine.
+    // Oversubscribing is slow but works, so grow to fit the model, unless the user picked the
+    // thread count themselves, in which case addModel() reports the mismatch instead.
+    if (VL_UNLIKELY(modelThreads > m_threads) && !m_threadsSet && !m_threadPool) {
+        m_threads = modelThreads;
+        warnThreadsOversubscribed(m_threads);
+    }
     if (m_threads == 1) return nullptr;
     if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
     return m_threadPool.get();
@@ -3585,7 +3582,7 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
         std::string str;
         uint64_t u64;
         if (arg == "+verilator+assert+lock") {
-            assertCtlsLocked(true);
+            m_ns.m_assertCtlsLocked = true;
         } else if (commandArgVlString(arg, "+verilator+coverage+file+", str)) {
             coverageFilename(str);
         } else if (arg == "+verilator+debug") {

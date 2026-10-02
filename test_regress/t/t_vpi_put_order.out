@@ -1,0 +1,443 @@
+t (vpiModule) t  vpiDefName=t
+    vpiReg:
+    cin (vpiReg) t.cin 
+    clk (vpiReg) t.clk 
+    cmid (vpiReg) t.cmid 
+    cmid_seen (vpiReg) t.cmid_seen 
+    cnt (vpiReg) t.cnt 
+    cyc (vpiReg) t.cyc 
+    dep (vpiReg) t.dep 
+    dep_obs (vpiReg) t.dep_obs 
+    dep_q (vpiReg) t.dep_q 
+    f (vpiReg) t.f 
+    f__VforceEn (vpiReg) t.f__VforceEn 
+    f__VforceVal (vpiReg) t.f__VforceVal 
+    f_comb (vpiReg) t.f_comb 
+    in_a (vpiReg) TOP.in_a 
+    in_comb (vpiReg) t.in_comb 
+    init_comb (vpiReg) t.init_comb 
+    init_only (vpiReg) t.init_only 
+    init_sum (vpiReg) t.init_sum 
+    mem (vpiRegArray) t.mem 
+        vpiReg:
+        mem (vpiReg) t.mem[1] 
+        mem (vpiReg) t.mem[0] 
+    mem_comb (vpiReg) t.mem_comb 
+    mid (vpiReg) t.mid 
+    mid_seen (vpiReg) t.mid_seen 
+    once (vpiReg) t.once 
+    once_comb (vpiReg) t.once_comb 
+    part (vpiReg) t.part 
+    part_comb (vpiReg) t.part_comb 
+    r (vpiRealVar) t.r 
+    r_comb (vpiRealVar) t.r_comb 
+    rst (vpiReg) t.rst 
+    s (vpiReg) t.s 
+    s_comb (vpiReg) t.s_comb 
+    s_copy (vpiReg) t.s_copy 
+    s_dup (vpiReg) t.s_dup 
+    s_mix (vpiReg) t.s_mix 
+    s_q (vpiReg) t.s_q 
+    s_sum (vpiReg) t.s_sum 
+    src (vpiReg) t.src 
+    str (vpiStringVar) t.str 
+    str_comb (vpiStringVar) t.str_comb 
+    tri3 (vpiReg) t.tri3 
+    und_comb (vpiReg) t.und_comb 
+    und_sum (vpiReg) t.und_sum 
+    undriven (vpiReg) t.undriven 
+    watched (vpiReg) t.watched 
+    vpiParameter:
+-- put t.in_a = 00 flag=1 ok
+-- put t.mid = 5a flag=1 ok
+-- put t.cmid = 5b flag=1 ok
+-- @0 readonly
+t.cin = 00 vpiSize=8
+t.clk = 0 vpiSize=1
+t.cmid = 5b vpiSize=8
+t.cmid_seen = 5b vpiSize=8
+t.cnt = 00 vpiSize=8
+t.cyc = 00 vpiSize=8
+t.dep = 5a vpiSize=8
+t.dep_obs = 5b vpiSize=8
+t.dep_q = 00 vpiSize=8
+t.f = 00 vpiSize=8
+t.f__VforceEn = 00 vpiSize=8
+t.f__VforceVal = 00 vpiSize=8
+t.f_comb = 0f vpiSize=8
+TOP.in_a = 00 vpiSize=8
+t.in_comb = 03 vpiSize=8
+t.init_comb = 1e vpiSize=8
+t.init_only = 11 vpiSize=8
+t.init_sum = 12 vpiSize=8
+t.mem[1] = 00 vpiSize=8
+t.mem[0] = 00 vpiSize=8
+t.mem_comb = f0 vpiSize=8
+t.mid = 5a vpiSize=8
+t.mid_seen = 5a vpiSize=8
+t.once = 21 vpiSize=8
+t.once_comb = 2e vpiSize=8
+t.part = 00 vpiSize=8
+t.part_comb = 3 vpiSize=4
+t.r = 1.5 vpiSize=1
+t.r_comb = 3 vpiSize=1
+t.rst = 1 vpiSize=1
+t.s = 00 vpiSize=8
+t.s_comb = 5a vpiSize=8
+t.s_copy = 00 vpiSize=8
+t.s_dup = 5a vpiSize=8
+t.s_mix = 02 vpiSize=8
+t.s_q = 00 vpiSize=8
+t.s_sum = 02 vpiSize=8
+t.src = 00 vpiSize=8
+t.str = "ab" vpiSize=1
+t.str_comb = "ab!" vpiSize=1
+t.tri3 = 00 vpiSize=8
+t.und_comb = 0f vpiSize=8
+t.und_sum = 01 vpiSize=8
+t.undriven = 00 vpiSize=8
+t.watched = 07 vpiSize=8
+-- @5 cb t.cyc = 01
+-- @5 readonly
+t.clk = 1
+t.cyc = 01
+t.f = 01
+t.f_comb = 0e
+-- @10 readonly
+t.clk = 0
+-- @15 cb t.cyc = 02
+-- put t.in_a = 11 flag=1 ok
+-- @15 after put
+t.clk = 1
+t.cyc = 02
+TOP.in_a = 11
+t.rst = 0
+-- @15 readonly
+t.in_comb = 14
+t.part = 01
+-- @20 readonly
+t.clk = 0
+-- @25 dpi t.tri3 = 03
+-- @25 cb t.s_comb = 4b
+-- @25 cb t.cyc = 03
+-- @25 cb t.watched = 08
+-- @25 readonly
+t.cin = 01
+t.clk = 1
+t.cnt = 01
+t.cyc = 03
+t.dep = 5b
+t.dep_obs = 5c
+t.dep_q = 5a
+t.f = 12
+t.f_comb = 1d
+t.mem[1] = 11
+t.mem_comb = e1
+t.s = 11
+t.s_comb = 4b
+t.s_copy = 11
+t.s_dup = 4b
+t.s_sum = 13
+t.src = 01
+t.tri3 = 03
+t.watched = 08
+-- @30 readonly
+t.clk = 0
+-- @35 dpi t.tri3 = 06
+-- @35 cb t.cyc = 04
+-- @35 cb t.watched = 09
+-- put t.s = 22 flag=1 ok
+-- put t.in_a = 33 flag=1 ok
+-- put t.mem[1] = 44 flag=1 ok
+-- put t.r = real=4.0 flag=1 ok
+-- put t.str = str=longer_than_any_short_string_buffer flag=1 ok
+-- @35 after put
+t.cin = 02
+t.clk = 1
+t.cnt = 02
+t.cyc = 04
+t.dep = 58
+t.dep_obs = 59
+t.dep_q = 5b
+TOP.in_a = 33
+t.mem[1] = 44
+t.mem[0] = 11
+t.r = 4
+t.s = 22
+t.s_q = 11
+t.src = 02
+t.str = "longer_than_any_short_string_buffer"
+t.tri3 = 06
+t.watched = 09
+-- @35 cb t.s_comb = 78
+-- @35 readonly
+t.in_comb = 36
+t.mem_comb = b4
+t.part = 03
+t.r_comb = 8
+t.s_comb = 78
+t.s_copy = 22
+t.s_dup = 78
+t.s_mix = 06
+t.s_sum = 24
+t.str_comb = "longer_than_any_short_string_buffer!"
+-- @40 readonly
+t.clk = 0
+-- @45 dpi t.tri3 = 09
+-- @45 cb t.s_comb = 69
+-- @45 cb t.cyc = 05
+-- @45 cb t.watched = 0a
+-- put t.s = 55 flag=1 ok
+-- @45 after put
+t.cin = 03
+t.clk = 1
+t.cnt = 03
+t.cyc = 05
+t.dep = 59
+t.dep_obs = 5a
+t.dep_q = 58
+t.f = 34
+t.f_comb = 3b
+t.mem[1] = 33
+t.mem[0] = 22
+t.mem_comb = c3
+t.s = 55
+t.s_comb = 69
+t.s_copy = 33
+t.s_dup = 69
+t.s_q = 22
+t.s_sum = 35
+t.src = 03
+t.tri3 = 09
+t.watched = 0a
+-- @45 cb t.s_comb = 0f
+-- @45 readonly
+t.s_comb = 0f
+t.s_copy = 55
+t.s_dup = 0f
+t.s_mix = 02
+t.s_sum = 57
+-- @50 readonly
+t.clk = 0
+-- @55 dpi t.tri3 = 0c
+-- @55 cb t.s_comb = 69
+-- @55 cb t.cyc = 06
+-- @55 cb t.watched = 0b
+-- put t.s = 77 flag=2 ok
+-- @55 after put
+t.cin = 04
+t.clk = 1
+t.cnt = 04
+t.cyc = 06
+t.dep = 5e
+t.dep_obs = 5f
+t.dep_q = 59
+t.mem[0] = 55
+t.s = 33
+t.s_comb = 69
+t.s_copy = 33
+t.s_dup = 69
+t.s_mix = 06
+t.s_q = 55
+t.s_sum = 35
+t.src = 04
+t.tri3 = 0c
+t.watched = 0b
+-- @55 cb t.s_comb = 2d
+-- @55 readonly
+t.s = 77
+t.s_comb = 2d
+t.s_copy = 77
+t.s_dup = 2d
+t.s_mix = 0e
+t.s_sum = 79
+-- @60 readonly
+t.clk = 0
+-- @65 dpi t.tri3 = 0f
+-- @65 cb t.s_comb = 69
+-- @65 cb t.cyc = 07
+-- @65 cb t.watched = 0c
+-- put t.f = 55 flag=5 ok
+-- @65 after put
+t.cin = 05
+t.clk = 1
+t.cnt = 05
+t.cyc = 07
+t.dep = 5f
+t.dep_obs = 60
+t.dep_q = 5e
+t.f = 55
+t.f__VforceEn = ff
+t.f__VforceVal = 55
+t.mem[0] = 77
+t.s = 33
+t.s_comb = 69
+t.s_copy = 33
+t.s_dup = 69
+t.s_mix = 06
+t.s_q = 77
+t.s_sum = 35
+t.src = 05
+t.tri3 = 0f
+t.watched = 0c
+-- @65 readonly
+t.f_comb = 5a
+-- @70 readonly
+t.clk = 0
+-- @75 dpi t.tri3 = 12
+-- @75 cb t.cyc = 08
+-- @75 cb t.watched = 0d
+-- put t.f = 66 flag=6 ok
+-- @75 after put
+t.cin = 06
+t.clk = 1
+t.cnt = 06
+t.cyc = 08
+t.dep = 5c
+t.dep_obs = 5d
+t.dep_q = 5f
+t.f__VforceEn = 00
+t.mem[0] = 33
+t.s_q = 33
+t.src = 06
+t.tri3 = 12
+t.watched = 0d
+-- @75 readonly
+-- @80 readonly
+t.clk = 0
+-- @85 dpi t.tri3 = 15
+-- @85 cb t.cyc = 09
+-- @85 cb t.watched = 0e
+-- put t.s = 5c flag=1 ok
+-- @85 after put
+t.cin = 07
+t.clk = 1
+t.cnt = 07
+t.cyc = 09
+t.dep = 5d
+t.dep_obs = 5e
+t.dep_q = 5c
+t.f = 34
+t.f_comb = 3b
+t.s = 5c
+t.src = 07
+t.tri3 = 15
+t.watched = 0e
+-- @85 cb t.s_comb = 06
+-- @85 readonly
+t.s_comb = 06
+t.s_copy = 5c
+t.s_dup = 06
+t.s_mix = 02
+t.s_sum = 5e
+-- @90 readonly
+t.clk = 0
+-- @95 dpi t.tri3 = 18
+-- @95 cb t.s_comb = 69
+-- @95 cb t.cyc = 0a
+-- @95 cb t.watched = 0f
+-- put t.cin = 40 flag=1 ok
+-- @95 after put
+t.cin = 40
+t.clk = 1
+t.cnt = 08
+t.cyc = 0a
+t.dep = 52
+t.dep_obs = 53
+t.dep_q = 5d
+t.mem[0] = 5c
+t.s = 33
+t.s_comb = 69
+t.s_copy = 33
+t.s_dup = 69
+t.s_mix = 06
+t.s_q = 5c
+t.s_sum = 35
+t.src = 08
+t.tri3 = 18
+t.watched = 0f
+-- @95 cb t.watched = 47
+-- @95 readonly
+t.watched = 47
+-- @100 readonly
+t.clk = 0
+-- @105 dpi t.tri3 = 1b
+-- @105 cb t.cyc = 0b
+-- @105 cb t.watched = 48
+-- put t.init_only = 31 flag=1 ok
+-- put t.undriven = 32 flag=1 ok
+-- put t.once = 33 flag=1 ok
+-- put t.part = a3 flag=1 ok
+-- @105 after put
+t.cin = 41
+t.clk = 1
+t.cnt = 09
+t.cyc = 0b
+t.dep = 53
+t.dep_obs = 54
+t.dep_q = 52
+t.init_only = 31
+t.mem[0] = 33
+t.once = 33
+t.part = a3
+t.s_q = 33
+t.src = 09
+t.tri3 = 1b
+t.undriven = 32
+t.watched = 48
+-- @105 readonly
+t.init_comb = 3e
+t.init_sum = 32
+t.once_comb = 3c
+t.part_comb = 9
+t.und_comb = 3d
+t.und_sum = 33
+-- @110 readonly
+t.clk = 0
+-- @115 dpi t.tri3 = 1e
+-- @115 cb t.cyc = 0c
+-- @115 cb t.watched = 49
+-- @115 readonly
+t.cin = 42
+t.clk = 1
+t.cnt = 0a
+t.cyc = 0c
+t.dep = 50
+t.dep_obs = 51
+t.dep_q = 53
+t.src = 0a
+t.tri3 = 1e
+t.watched = 49
+-- @120 readonly
+t.clk = 0
+-- @125 dpi t.tri3 = 21
+-- @125 cb t.cyc = 0d
+-- @125 cb t.watched = 4a
+-- @125 readonly
+t.cin = 43
+t.clk = 1
+t.cnt = 0b
+t.cyc = 0d
+t.dep = 51
+t.dep_obs = 52
+t.dep_q = 50
+t.src = 0b
+t.tri3 = 21
+t.watched = 4a
+-- @130 readonly
+t.clk = 0
+*-* All Finished *-*
+-- @135 dpi t.tri3 = 24
+-- @135 cb t.cyc = 0e
+-- @135 cb t.watched = 4b
+-- @135 readonly
+t.cin = 44
+t.clk = 1
+t.cnt = 0c
+t.cyc = 0e
+t.dep = 56
+t.dep_obs = 57
+t.dep_q = 51
+t.src = 0c
+t.tri3 = 24
+t.watched = 4b

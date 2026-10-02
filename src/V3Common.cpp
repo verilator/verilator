@@ -318,7 +318,6 @@ class ToStringVisitor final : public VNVisitorConst {
             }
         }
     }
-    void visit(AstConstPool*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:

@@ -394,10 +394,15 @@ module t (/*AUTOARG*/
   covergroup cg_basic;
     option.per_instance = 1;
     option.weight = 2;
+    type_option.weight = 3;
     cp_sig: coverpoint cg_sig {
       bins low    = {[0:3]} iff (cg_sig2[0]);
       bins high   = {[4:6]};
       bins multi  = {0, 1, 2};   // multiple values in one bins (exercises EmitV range loop)
+      bins sized[2] = {[0:5], 7};  // sized array of bins (exercises EmitV array size)
+      wildcard bins wild[] = {3'b01?};  // wildcard array of bins (exercises EmitV wildcard)
+      bins filtered[] = {[0:7]} with (item % 2 == 0);  // 'with' filter of a range list
+      bins named = cp_sig with (item > 5);  // 'with' filter of the coverpoint's values
       bins dflt   = default;
       ignore_bins ign = {7};
       illegal_bins ill = {5};
@@ -405,6 +410,8 @@ module t (/*AUTOARG*/
     // Coverpoint with per-coverpoint option but no explicit bins
     cp_options: coverpoint cg_sig2 {
       option.at_least = 2;
+      option.weight = 4;
+      type_option.weight = 5;
     }
   endgroup
 
@@ -436,6 +443,7 @@ module t (/*AUTOARG*/
     }
     cx: cross cp_x, cp_y iff (cg_sig[0] == cg_sig2[0]);
     cx_select: cross cp_x, cp_y{
+      option.weight = 2;
       bins entire = cx_select;
       bins plain = binsof (cp_x);
       bins named = binsof (cp_x.x0);
@@ -452,10 +460,22 @@ module t (/*AUTOARG*/
     }
   endgroup
 
+  covergroup cg_live_cross;
+    option.auto_bin_max = 4;
+    cp_x: coverpoint cg_sig {
+      ignore_bins removed = {0};
+    }
+    cp_y: coverpoint cg_sig2;
+    cx: cross cp_x, cp_y{
+      bins all = cx;
+    }
+  endgroup
+
   cg_basic   cg_basic_inst   = new;
   cg_clocked cg_clocked_inst = new;
   cg_trans   cg_trans_inst   = new;
   cg_cross   cg_cross_inst   = new;
+  cg_live_cross cg_live_cross_inst = new;
 endmodule
 
 module sub(input logic clk);

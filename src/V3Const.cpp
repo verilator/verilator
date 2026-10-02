@@ -1463,11 +1463,12 @@ class ConstVisitor final : public VNVisitor {
         }
         if (const AstShiftR* const shiftp = VN_CAST(rhsp, ShiftR)) {
             // 'a >> S' forces the high S bits to zero. Check against the width of the shifted
-            // operand, V3Expand can create shifts wider than their inputs
+            // operand, V3Expand can create shifts wider than their inputs. Must use width(),
+            // not widthMin(), as bits above widthMin() are not guaranteed to be zero.
             if (AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                 return scp->num().fitsInUInt()
                        && (lsb + scp->num().toUInt()
-                           >= static_cast<uint32_t>(shiftp->lhsp()->widthMin()));
+                           >= static_cast<uint32_t>(shiftp->lhsp()->width()));
             }
         }
         if (const AstMul* const mulp = VN_CAST(rhsp, Mul)) {

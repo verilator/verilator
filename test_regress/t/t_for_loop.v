@@ -81,7 +81,7 @@ module t (
       // 1800-2017 optionals init/expr/incr
       loops = 0;
       i = 0;
-      for (; i < 10; ++i)++loops;
+      for (; i < 10; ++i) ++loops;
       if (loops !== 10) $stop;
       //
       loops = 0;

@@ -21,7 +21,6 @@
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Graph.h"
-#include "V3Hasher.h"
 #include "V3InstrCount.h"
 #include "V3Stats.h"
 #include "V3String.h"
@@ -126,59 +125,6 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
         return getLhsNetDelayRecurse(selp->fromp());
     }
     return nullptr;
-}
-
-static bool sameInit(const AstConst* ap, const AstConst* bp) {
-    // Similarly to the AstInitArray comparison, we ignore the dtype instance, so long as they
-    // are compatible. For now, we assume the dtype is not relevant, as we only call this from
-    // V3Prelim which is a late pass.
-    // Compare initializers by value. This checks widths as well.
-    return ap->num().isCaseEq(bp->num());
-}
-static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
-    // Unpacked array initializers must have equivalent values
-    // Note, sadly we can't just call ap->sameTree(pb), because both:
-    // - the dtypes might be different instances
-    // - the default/inititem children might be in different order yet still yield the same table
-    // See note in AstInitArray::same about the same. This function instead compares by initializer
-    // value, rather than by tree structure.
-    if (const AstAssocArrayDType* const aDTypep = VN_CAST(ap->dtypep(), AssocArrayDType)) {
-        const AstAssocArrayDType* const bDTypep = VN_CAST(bp->dtypep(), AssocArrayDType);
-        if (!bDTypep) return false;
-        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-        if (!aDTypep->keyDTypep()->sameTree(bDTypep->keyDTypep())) return false;
-        UASSERT_OBJ(ap->defaultp(), ap, "Assoc InitArray should have a default");
-        UASSERT_OBJ(bp->defaultp(), bp, "Assoc InitArray should have a default");
-        if (!ap->defaultp()->sameTree(bp->defaultp())) return false;
-        // Compare initializer arrays by value. Note this is only called when they hash the same,
-        // so they likely run at most once per call to 'AstConstPool::findTable'.
-        // This assumes that the defaults are used in the same way.
-        // TODO when building the AstInitArray, remove any values matching the default
-        const auto& amapr = ap->map();
-        const auto& bmapr = bp->map();
-        const auto ait = amapr.cbegin();
-        const auto bit = bmapr.cbegin();
-        while (ait != amapr.cend() || bit != bmapr.cend()) {
-            if (ait == amapr.cend() || bit == bmapr.cend()) return false;  // Different size
-            if (ait->first != bit->first) return false;  // Different key
-            if (ait->second->sameTree(bit->second)) return false;  // Different value
-        }
-    } else if (const AstUnpackArrayDType* const aDTypep
-               = VN_CAST(ap->dtypep(), UnpackArrayDType)) {
-        const AstUnpackArrayDType* const bDTypep = VN_CAST(bp->dtypep(), UnpackArrayDType);
-        if (!bDTypep) return false;
-        if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-        if (!aDTypep->rangep()->sameTree(bDTypep->rangep())) return false;
-        // Compare initializer arrays by value. Note this is only called when they hash the same,
-        // so they likely run at most once per call to 'AstConstPool::findTable'.
-        const uint64_t size = aDTypep->elementsConst();
-        for (uint64_t n = 0; n < size; ++n) {
-            const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
-            const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
-            if (!valAp->sameTree(valBp)) return false;
-        }
-    }
-    return true;
 }
 
 //======================================================================
@@ -682,6 +628,7 @@ string AstCase::pragmaString() const {
 void AstCell::dump(std::ostream& str) const {
     Super::dump(str);
     if (recursive()) str << " [RECURSIVE]";
+    if (arrayIdx() >= 0) str << " [ARRAYIDX=" << arrayIdx() << "]";
     if (modp()) {
         str << " -> ";
         modp()->dump(str);
@@ -694,6 +641,7 @@ void AstCell::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, recursive);
+    if (arrayIdx() >= 0) dumpJsonNumFunc(str, arrayIdx);
     dumpJsonGen(str);
 }
 void AstCellInline::dump(std::ostream& str) const {
@@ -1051,103 +999,6 @@ AstConst::~AstConst() {
     // is set, erase the entry before this AstConst address can be reused by a different node.
     if (m_num.hasOrigParamName()) v3Global.rootp()->astConstOrigParamNameErase(this);
 }
-AstConstPool::AstConstPool(FileLine* fl)
-    : ASTGEN_SUPER_ConstPool(fl)
-    , m_modp{new AstModule{fl, "@CONST-POOL@", "work"}}
-    , m_scopep{new AstScope{fl, m_modp, "@CONST-POOL@", nullptr, nullptr}} {
-    this->modulep(m_modp);
-    m_modp->addStmtsp(m_scopep);
-}
-AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp) {
-    FileLine* const fl = initp->fileline();
-    AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, initp->dtypep()};
-    varp->setConstPoolEntry();
-    varp->isConst(true);
-    varp->isStatic(true);
-    varp->valuep(initp->cloneTree(false));
-    m_modp->addStmtsp(varp);
-    AstVarScope* const varScopep = new AstVarScope{fl, m_scopep, varp};
-    m_scopep->addVarsp(varScopep);
-    return varScopep;
-}
-AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
-    // Try to find an existing constant with the same value
-    // cppcheck-suppress unreadVariable
-    const V3Hash hash = initp->num().toHash();
-    const auto& er = m_consts.equal_range(hash.value());
-    for (auto it = er.first; it != er.second; ++it) {
-        AstVarScope* const varScopep = it->second;
-        const AstConst* const init2p = VN_AS(varScopep->varp()->valuep(), Const);
-        if (sameInit(initp, init2p)
-            && (mergeDType || varScopep->dtypep()->sameTree(initp->dtypep()))) {
-            return varScopep;  // Found identical constant
-        }
-    }
-    // No such constant yet, create it.
-    string name = "CONST_";
-    name += hash.toString();
-    name += "_";
-    name += cvtToStr(std::distance(er.first, er.second));
-    AstVarScope* const varScopep = createNewEntry(name, initp);
-    m_consts.emplace(hash.value(), varScopep);
-    return varScopep;
-}
-AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
-    const AstNode* const defaultp = initp->defaultp();
-    // Verify initializer is well formed
-    UASSERT_OBJ(VN_IS(initp->dtypep(), AssocArrayDType)
-                    || VN_IS(initp->dtypep(), UnpackArrayDType),
-                initp, "Const pool table must have array dtype");
-    UASSERT_OBJ(!defaultp || VN_IS(defaultp, Const), initp,
-                "Const pool table default must be Const");
-    for (AstNode* nodep = initp->initsp(); nodep; nodep = nodep->nextp()) {
-        const AstNode* const valuep = VN_AS(nodep, InitItem)->valuep();
-        UASSERT_OBJ(VN_IS(valuep, Const), valuep, "Const pool table entry must be Const");
-    }
-    // Try to find an existing table with the same content
-    // cppcheck-suppress unreadVariable
-    const V3Hash hash = V3Hasher::uncachedHash(initp);
-    const auto& er = m_tables.equal_range(hash.value());
-    for (auto it = er.first; it != er.second; ++it) {
-        AstVarScope* const varScopep = it->second;
-        const AstInitArray* const init2p = VN_AS(varScopep->varp()->valuep(), InitArray);
-        if (sameInit(initp, init2p)) {
-            return varScopep;  // Found identical table
-        }
-    }
-    // No such table yet, create it.
-    string name = "TABLE_";
-    name += hash.toString();
-    name += "_";
-    name += cvtToStr(std::distance(er.first, er.second));
-    AstVarScope* const varScopep = createNewEntry(name, initp);
-    m_tables.emplace(hash.value(), varScopep);
-    return varScopep;
-}
-void AstConstPool::rebuildVarScopesAndCache() {
-    m_tables.clear();
-    m_consts.clear();
-    std::unordered_map<const AstVar*, AstVarScope*> varScopeps;
-    for (AstVarScope* vscp = m_scopep->varsp(); vscp; vscp = VN_CAST(vscp->nextp(), VarScope)) {
-        varScopeps.emplace(vscp->varp(), vscp);
-    }
-    for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        AstVar* const varp = VN_CAST(nodep, Var);
-        if (!varp) continue;
-        AstNode* const valuep = varp->valuep();
-        if (!valuep) continue;
-        const bool isTable = VN_IS(valuep, InitArray);
-        const AstConst* const constp = VN_CAST(valuep, Const);
-        if (!isTable && !constp) continue;
-        AstVarScope*& vscp = varScopeps[varp];
-        if (!vscp) {
-            vscp = new AstVarScope{varp->fileline(), m_scopep, varp};
-            m_scopep->addVarsp(vscp);
-        }
-        if (isTable) m_tables.emplace(V3Hasher::uncachedHash(valuep).value(), vscp);
-        if (constp) m_consts.emplace(constp->num().toHash().value(), vscp);
-    }
-}
 void AstConstraint::dump(std::ostream& str) const {
     Super::dump(str);
     if (isExternDef()) str << " [EXTDEF]";
@@ -1227,6 +1078,7 @@ string AstCoverCrossDType::cppTemplateArgs() const {
 void AstCoverCrossDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [" << cppTemplateArgs() << "]";
+    if (isDynamic()) str << " [DYNAMIC]";
 }
 void AstCoverCrossDType::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, dimensions);
@@ -1234,6 +1086,7 @@ void AstCoverCrossDType::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, bins);
     dumpJsonNumFunc(str, autoBins);
     dumpJsonNumFunc(str, binWords);
+    dumpJsonBoolFuncIf(str, isDynamic);
     dumpJsonGen(str);
 }
 void AstCoverCrossDType::dumpSmall(std::ostream& str) const {
@@ -1261,10 +1114,12 @@ void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstCoverOption::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_optType.ascii();
+    if (typeOption()) str << " [TYPEOPT]";
 }
 void AstCoverOption::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     str << ", \"optType\": \"" << m_optType.ascii() << "\"";
+    dumpJsonBoolFuncIf(str, typeOption);
 }
 void AstCoverOtherDecl::dump(std::ostream& str) const {
     Super::dump(str);
@@ -1411,8 +1266,6 @@ void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {
 }
 const char* AstEnumDType::broken() const {
     BROKEN_RTN(!((m_refDTypep && !childDTypep()) || (!m_refDTypep && childDTypep())));
-    BROKEN_RTN(std::any_of(m_tableMap.begin(), m_tableMap.end(),
-                           [](const auto& p) { return !p.second->brokeExists(); }));
     return nullptr;
 }
 void AstEnumDType::dump(std::ostream& str) const {
@@ -1914,15 +1767,18 @@ AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
-    , m_constPoolp{new AstConstPool{fileline()}}
-    , m_dollarUnitPkgp{new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"}} {
+    , m_constPoolPkgp{new AstPackage{fileline(), "__Vconstpool", "work"}}
+    , m_dollarUnitPkgp{new AstPackage{fileline(), AstNode::encodeName("$unit"), "work"}} {
     addMiscsp(m_typeTablep);
-    addMiscsp(m_constPoolp);
     // packages are always libraries; don't want to make them a "top"
     m_dollarUnitPkgp->level(1);
     m_dollarUnitPkgp->inLibrary(true);
     m_dollarUnitPkgp->modTrace(false);  // may reconsider later
     addModulesp(m_dollarUnitPkgp);
+    m_constPoolPkgp->level(1);
+    m_constPoolPkgp->inLibrary(true);
+    m_constPoolPkgp->modTrace(false);
+    addModulesp(m_constPoolPkgp);
 }
 void AstNetlist::addEvalStats(const std::string& phase) {
     if (!v3Global.opt.stats()) return;
@@ -1964,6 +1820,16 @@ const char* AstNetlist::broken() const {
     }
     return nullptr;
 }
+const AstNodeModule* AstNetlist::containingModule(const AstNode* nodep) {
+    if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) return modp;
+    const auto it = m_containingModules.find(nodep);
+    if (it != m_containingModules.end()) return it->second;
+    // Only true parents are followed.
+    AstNode* const abovep = nodep->aboveLoopp();
+    const AstNodeModule* const modp = abovep ? containingModule(abovep) : nullptr;
+    m_containingModules[nodep] = modp;
+    return modp;
+}
 void AstNetlist::createTopScope(AstScope* scopep) {
     UASSERT(scopep, "Must not be nullptr");
     UASSERT_OBJ(!m_topScopep, scopep, "TopScope already exits");
@@ -1979,7 +1845,7 @@ void AstNetlist::deleteContents() {
     // Delete all netlist memory.  Only for use by Verilator.cpp
     VL_DO_CLEAR(V3VpiLazy::deleteContext(m_vpiLazyContextp), m_vpiLazyContextp = nullptr);
     m_typeTablep = nullptr;
-    m_constPoolp = nullptr;
+    m_constPoolPkgp = nullptr;
     m_dollarUnitPkgp = nullptr;
     m_stdPackagep = nullptr;
     m_dpiExportTriggerp = nullptr;
@@ -1987,6 +1853,7 @@ void AstNetlist::deleteContents() {
     m_nbaEventp = nullptr;
     m_nbaEventTriggerp = nullptr;
     m_topScopep = nullptr;
+    m_containingModules.clear();
     m_evalFuncps.fill(nullptr);
     m_dumpTriggersFuncps.fill(nullptr);
     if (op1p()) op1p()->unlinkFrBackWithNext()->deleteTree();
@@ -2107,6 +1974,7 @@ bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
 void AstNodeCoverDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (localBinNum()) str << " lbin=" << localBinNum();
+    if (perInstance()) str << " [PERINST]";
     if (!page().empty()) str << " page=" << page();
     if (!hier().empty()) str << " hier=" << hier();
     if (this->dataDeclNullp()) {
@@ -2126,6 +1994,7 @@ void AstNodeCoverDecl::dump(std::ostream& str) const {
 void AstNodeCoverDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, binNum);
     dumpJsonNumFunc(str, localBinNum);
+    dumpJsonBoolFuncIf(str, perInstance);
     dumpJsonStrFunc(str, page);
     dumpJsonStrFunc(str, hier);
     dumpJsonGen(str);
@@ -2192,7 +2061,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type += ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverCrossDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
-        info.m_type = "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
+        info.m_type = adtypep->isDynamic() ? "VlCoverCrossDyn*"
+                                           : "VlCoverCrossT<" + adtypep->cppTemplateArgs() + ">*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CoverpointDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = "VlCoverpointT<" + cvtToStr(adtypep->hitBound()) + ">*";
@@ -2505,6 +2375,9 @@ string AstNodeDType::vlEnumType() const {
         arg += "VLVT_REAL";
     } else if (sdtypep && !sdtypep->packed()) {
         arg += VN_IS(sdtypep, StructDType) ? "VLVT_STRUCT" : "VLVT_UNION";
+    } else if (dtypep->isCompound() || (bdtypep && bdtypep->isEvent())) {
+        // Queue, class handle, event etc.: widthMin() is not their storage size
+        return "";
     } else if (widthMin() <= 8) {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {
@@ -2624,8 +2497,16 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
         return anodep->lhsp()->getVAccessTargetRecurse();
     }
     if (const AstCMethodHard* const anodep = VN_CAST(this, CMethodHard)) {
-        // Used for things like Queue/AssocArray/DynArray
-        return anodep->fromp()->getVAccessTargetRecurse();
+        switch (anodep->method()) {
+        case VCMethod::ARRAY_AT:
+        case VCMethod::ARRAY_AT_BACK:
+        case VCMethod::ARRAY_AT_WRITE:
+        case VCMethod::DYN_AT_WRITE_APPEND:
+        case VCMethod::DYN_AT_WRITE_APPEND_BACK:
+            // Used for things like Queue/AssocArray/DynArray
+            return anodep->fromp()->getVAccessTargetRecurse();
+        default: break;
+        }
     }
     return nullptr;  // nothing found
 }
@@ -3151,6 +3032,10 @@ void AstRange::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, ascending);
     dumpJsonBoolFuncIf(str, fromBracket);
     dumpJsonGen(str);
+}
+const char* AstRefDType::broken() const {
+    if (v3Global.assertDTypesResolved()) BROKEN_RTN(captureTagp());
+    return nullptr;
 }
 void AstRefDType::dump(std::ostream& str) const {
     Super::dump(str);
@@ -3922,6 +3807,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isConst()) str << " [CONST]";
     if (isPullup()) str << " [PULLUP]";
     if (isPulldown()) str << " [PULLDOWN]";
+    if (isIfaceArraySplit()) str << " [IFACEARRAYSPLIT]";
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
@@ -3973,6 +3859,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConst);
     dumpJsonBoolFuncIf(str, isPullup);
     dumpJsonBoolFuncIf(str, isPulldown);
+    dumpJsonBoolFuncIf(str, isIfaceArraySplit);
     dumpJsonBoolFuncIf(str, isSigPublic);
     dumpJsonBoolFuncIf(str, isLatched);
     dumpJsonBoolFuncIf(str, isUsedLoopIdx);
@@ -4117,7 +4004,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
-string AstVar::vlEnumDir() const {
+string AstVar::vlEnumDir(bool forMember) const {
     string out;
     if (isInout()) {
         out = "VLVD_INOUT";
@@ -4136,17 +4023,17 @@ string AstVar::vlEnumDir() const {
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
-    if (isForceable()) out += "|VLVF_FORCEABLE";
+    if (isForceable() && !forMember) out += "|VLVF_FORCEABLE";
     if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
     }
     //
-    if (dtypep()->skipRefp()->isSigned()) out += "|VLVF_SIGNED";
+    if (dtypep()->skipRefp()->isSigned() && !forMember) out += "|VLVF_SIGNED";
     //
     if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
-        if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
+        if (basicp->keyword() == VBasicDTypeKwd::BIT && !forMember) out += "|VLVF_BITVAR";
     }
     // Shadows are MODULETEMPs; inherit net-ness from their signal.
     if (isNet() || isLazyShadowNet()) out += "|VLVF_NET";
@@ -4275,6 +4162,7 @@ bool AstVarScope::sameNode(const AstNode* samep) const {
 void AstVarXRef::dump(std::ostream& str) const {
     Super::dump(str);
     if (containsGenBlock()) str << " [GENBLK]";
+    if (readOnlyModport()) str << " [ROMODPORT]";
     str << ".=" << dotted() << " ";
     if (inlinedDots() != "") str << " inline.=" << inlinedDots() << " - ";
     if (varScopep()) {
@@ -4287,6 +4175,7 @@ void AstVarXRef::dump(std::ostream& str) const {
 }
 void AstVarXRef::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, containsGenBlock);
+    dumpJsonBoolFuncIf(str, readOnlyModport);
     dumpJsonStrFunc(str, dotted);
     dumpJsonStrFunc(str, inlinedDots);
     dumpJsonGen(str);
