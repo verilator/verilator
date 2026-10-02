@@ -61,4 +61,24 @@
                                                 : ... Right-hand data type: 'bit$[$]' (2-state)
    34 |   assign queueA = queueB;
       |                 ^
+%Error: t/t_assignment_compatibility_bad.v:44:12: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
+                                                : ... note: In instance 't'
+   44 |     return text_value;
+      |            ^~~~~~~~~~
+%Error: t/t_assignment_compatibility_bad.v:51:18: Implicit conversion from 'string' to 'bit[8191:0]' requires a cast (IEEE 1800-2023 6.16).
+                                                : ... note: In instance 't'
+   51 |     wide_value = text_value;
+      |                  ^~~~~~~~~~
+%Error: t/t_assignment_compatibility_bad.v:52:20: Implicit conversion from 'string' to 'bit[6:0]' requires a cast (IEEE 1800-2023 6.16).
+                                                : ... note: In instance 't'
+   52 |     narrow_value = text_value;
+      |                    ^~~~~~~~~~
+%Error: t/t_assignment_compatibility_bad.v:53:21: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
+                                                : ... note: In instance 't'
+   53 |     integer_value = text_value;
+      |                     ^~~~~~~~~~
+%Error: t/t_assignment_compatibility_bad.v:54:18: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
+                                                : ... note: In instance 't'
+   54 |     take_integer(text_value);
+      |                  ^~~~~~~~~~
 %Error: Exiting due to

@@ -32,4 +32,25 @@ module t;
   assign nonAggregate = unpackedA;
   assign unpackedA = assocArrayA;
   assign queueA = queueB;
+
+  typedef bit [8191:0] wide_t;
+  typedef string string_t;
+  string_t text_value = "hello";
+  wide_t wide_value;
+  bit [6:0] narrow_value;
+  int integer_value;
+
+  function int bad_return();
+    return text_value;
+  endfunction
+
+  task take_integer(input int value);
+  endtask
+
+  initial begin
+    wide_value = text_value;
+    narrow_value = text_value;
+    integer_value = text_value;
+    take_integer(text_value);
+  end
 endmodule

@@ -9765,6 +9765,15 @@ class WidthVisitor final : public VNVisitor {
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());
+        } else if (underp->dtypep()->isString() && expDTypep->skipRefp()->isIntegralOrPacked()) {
+            underp->v3error("Implicit conversion from 'string' to "
+                            << expDTypep->prettyDTypeNameQ()
+                            << " requires a cast (IEEE 1800-2023 6.16).");
+            AstConst* const newp = new AstConst{underp->fileline(), AstConst::BitFalse{}};
+            newp->dtypep(expDTypep);
+            underp->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(underp), underp);
+            underp = newp;
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
