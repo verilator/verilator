@@ -1,7 +1,7 @@
-t.Sized.cg_embedded.cp.b[0]: 0
-t.Sized.cg_embedded.cp.b[1]: 1
-t.Sized.cg_embedded.cp.b[2]: 0
-t.Sized.cg_embedded.cp.b[3]: 0
+t.Sized::cg_embedded.cp.b[0]: 0
+t.Sized::cg_embedded.cp.b[1]: 1
+t.Sized::cg_embedded.cp.b[2]: 0
+t.Sized::cg_embedded.cp.b[3]: 0
 t.cg_dynamic.cp.b[0]: 2
 t.cg_dynamic.cp.b[1]: 3
 t.cg_dynamic.cp.b[2]: 2

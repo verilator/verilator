@@ -1,6 +1,6 @@
-$unit.CrossIffEmbedded.cg.cp_a.one: 1
-$unit.CrossIffEmbedded.cg.cp_b.one: 2
-$unit.CrossIffEmbedded.cg.cross_ab.one_x_one [cross]: 1
+$unit::CrossIffEmbedded::cg.cp_a.one: 1
+$unit::CrossIffEmbedded::cg.cp_b.one: 2
+$unit::CrossIffEmbedded::cg.cross_ab.one_x_one [cross]: 1
 t.cg_and.cp_concat.b00: 0
 t.cg_and.cp_concat.b01: 1
 t.cg_and.cp_concat.b10: 0

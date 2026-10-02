@@ -418,6 +418,23 @@ module t;
     coverpoint cg_value;
   endgroup
 
+  // Types in generate blocks, named with each block, as each is a scope (IEEE 1800-2023 27.6)
+  for (genvar i = 0; i < 2; ++i) begin : gen
+    typedef struct packed {bit a;} gs_t;
+    gs_t gs;
+    covergroup GenCg;
+      coverpoint cg_value;
+    endgroup
+    GenCg gen_cg = new;
+  end
+  // The unnamed block around the 'if' of an 'else if' is not a scope
+  if (0) begin : gen_if
+  end
+  else if (1) begin : gen_elif
+    typedef struct packed {bit b;} ge_t;
+    ge_t ge;
+  end
+
   ifc i4 ();
   ifc #(8) i8 ();
   msub u4 ();
@@ -623,6 +640,11 @@ module t;
     mod_cg.sample();
     `checks($typename(unit_cg), "class $unit::UnitCg");
     `checks($typename(mod_cg), "class t.ModCg");
+    `checks($typename(gen[0].gs), "struct t.gen[0].gs_t");
+    `checks($typename(gen[1].gs), "struct t.gen[1].gs_t");
+    `checks($typename(gen[0].gen_cg), "class t.gen[0].GenCg");
+    `checks($typename(gen[1].gen_cg), "class t.gen[1].GenCg");
+    `checks($typename(gen_elif.ge), "struct t.gen_elif.ge_t");
     `checks($typename(defaults), "class $unit::Defaults#(2,virtual interface ifc#(8),byte,3)");
     // As named while being specialized
     `checks(Holder#(bar_xyz_t)::TNAME, $typename(bar_xyz_t));

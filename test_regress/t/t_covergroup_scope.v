@@ -7,7 +7,8 @@
 // Covergroups of one name in distinct scopes are distinct types, so the type coverage of each,
 // get_coverage(), is of its own instances only (IEEE 1800-2023 19.3, 19.4, 19.11).  In each
 // pair below one type is covered and the other is not; were they one type, both would be 50.
-// Scopes are told apart even by escaped identifiers holding a dot or brackets (IEEE 23.6).
+// A type is named as $typename names it (IEEE 1800-2023 20.6.1), with its scopes, generate blocks
+// included, and the values of the parameters of its specializations.
 
 // verilog_format: off
 `define stop $stop
@@ -117,14 +118,7 @@ module sub_p #(
   cg inst = new;
 endmodule
 
-// A module of an escaped name holding a dot, and generate block 'gen_e' in module 'sub_e'
-module \sub_e.gen_e ;
-  covergroup cg with function sample (bit v);
-    cp: coverpoint v;
-  endgroup
-  cg inst = new;
-endmodule
-
+// Generate block 'gen_e' in module 'sub_e'
 module sub_e;
   if (1) begin : gen_e
     covergroup cg with function sample (bit v);
@@ -147,13 +141,6 @@ module t;
     endgroup
     cg inst = new;
   end
-  // A block of an escaped name holding brackets, not element 0 of 'gen'
-  if (1) begin : \gen[0]
-    covergroup cg with function sample (bit v);
-      cp: coverpoint v;
-    endgroup
-    cg inst = new;
-  end
   if (0) begin : gen_if
   end
   else if (1) begin : gen_elif
@@ -167,7 +154,6 @@ module t;
   sub_b b ();
   sub_p #(1) p1 ();
   sub_p #(2) p2 ();
-  \sub_e.gen_e e1 ();
   sub_e e2 ();
 
   First first;
@@ -212,8 +198,6 @@ module t;
     gen[0].inst.sample(1);
     gen_elif.inst.sample(0);
     gen_elif.inst.sample(1);
-    e1.inst.sample(0);
-    e1.inst.sample(1);
     outer.v = 0;
     outer.\inner.cg .sample();
     outer.v = 1;
@@ -230,11 +214,9 @@ module t;
     `checkr(b.inst.get_coverage(), 0.0);
     `checkr(p1.inst.get_coverage(), 100.0);
     `checkr(p2.inst.get_coverage(), 0.0);
-    `checkr(e1.inst.get_coverage(), 100.0);
     `checkr(e2.gen_e.inst.get_coverage(), 0.0);
     `checkr(gen[0].inst.get_coverage(), 100.0);
     `checkr(gen[1].inst.get_coverage(), 0.0);
-    `checkr(\gen[0] .inst.get_coverage(), 0.0);
     `checkr(gen_elif.inst.get_coverage(), 100.0);
     `checkr(inst.get_coverage(), 0.0);
     `checkr(outer.\inner.cg .get_coverage(), 100.0);

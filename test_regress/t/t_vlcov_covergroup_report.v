@@ -143,6 +143,21 @@ module t;
     endfunction
   endclass
 
+  // Classes declared in the iterations of a generate loop are distinct classes, so their
+  // covergroups are distinct types, named with each generate block: 100 and 0
+  for (genvar i = 0; i < 2; ++i) begin : gen
+    class Gen;
+      bit v;
+      covergroup cg;
+        cp: coverpoint v;
+      endgroup
+      function new;
+        cg = new;
+      endfunction
+    endclass
+    Gen obj = new;
+  end
+
   excluded excluded_inst = new;
   unequal unequal_inst = new;
   weighted weighted_inst = new;
@@ -188,6 +203,10 @@ module t;
     first.twin.sample();
     first.v = 1;
     first.twin.sample();
+    gen[0].obj.v = 0;
+    gen[0].obj.cg.sample();
+    gen[0].obj.v = 1;
+    gen[0].obj.cg.sample();
     `checkr(excluded_inst.get_coverage(), 100.0);
     `checkr(unequal_inst.get_coverage(), 37.5);
     `checkr(weighted_inst.get_coverage(), 100.0);
@@ -203,6 +222,8 @@ module t;
     `checkr(varying_none.get_coverage(), 50.0);
     `checkr(first.twin.get_coverage(), 100.0);
     `checkr(second.twin.get_coverage(), 0.0);
+    `checkr(gen[0].obj.cg.get_coverage(), 100.0);
+    `checkr(gen[1].obj.cg.get_coverage(), 0.0);
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -731,7 +731,7 @@ public:
 
     // METHODS
     // Find-or-create the type node, then add an instance to it.  typeName is the
-    // covergroup type's name within its scopes (e.g. "pkg.cls.cg"), already
+    // covergroup type's name, as $typename names it (e.g. "pkg::cls::cg"), already
     // --protect-ids obfuscated, and is the same string that keys the coverage
     // database's hier/page.
     VlCovergroupInst* newCovergroupInst(const char* typeName);
