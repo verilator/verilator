@@ -2,7 +2,7 @@
                                  : ... note: In instance 't'
    11 |   typedef enum s_t {   
       |           ^~~~
-        t/t_enum_base_bad.v:9:11: ... Location of failing data type 'struct{}t.s_t'
+        t/t_enum_base_bad.v:9:11: ... Location of failing data type 'struct t.s_t'
     9 |   typedef struct {int a;} s_t;
       |           ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
@@ -31,14 +31,14 @@
                                 : ... note: In instance 't'
    30 |   enum str_t {   
       |   ^~~~
-        t/t_enum_base_bad.v:29:11: ... Location of failing data type 'struct{}t.str_t'
+        t/t_enum_base_bad.v:29:11: ... Location of failing data type 'struct t.str_t'
    29 |   typedef struct packed {int x;} str_t;
       |           ^~~~~~
 %Error: t/t_enum_base_bad.v:35:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                 : ... note: In instance 't'
    35 |   enum enum_t {   
       |   ^~~~
-        t/t_enum_base_bad.v:34:11: ... Location of failing data type 'enum{}t.enum_t'
+        t/t_enum_base_bad.v:34:11: ... Location of failing data type 'enum t.enum_t'
    34 |   typedef enum {ENUM_VAL} enum_t;
       |           ^~~~
 %Error: t/t_enum_base_bad.v:40:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)

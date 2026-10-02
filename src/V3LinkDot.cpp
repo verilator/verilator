@@ -365,10 +365,12 @@ public:
             UINFO(4, "name " << name);  // Not always same as nodep->name
             UINFO(4, "Var1 " << nodep);
             UINFO(4, "Var2 " << fnodep);
+            // Quote the node's own name as for messages, if it is the symbol's
+            const string nameQ
+                = fnodep->name() == name ? fnodep->prettyNameQ() : AstNode::prettyNameQ(name);
             if (nodep->type() == fnodep->type()) {
                 nodep->v3error("Duplicate declaration of "
-                               << nodeTextType(fnodep) << ": " << AstNode::prettyNameQ(name)
-                               << '\n'
+                               << nodeTextType(fnodep) << ": " << nameQ << '\n'
                                << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
@@ -377,8 +379,7 @@ public:
             } else {
                 nodep->v3error("Unsupported in C: "
                                << ucfirst(nodeTextType(nodep)) << " has the same name as "
-                               << nodeTextType(fnodep) << ": " << AstNode::prettyNameQ(name)
-                               << '\n'
+                               << nodeTextType(fnodep) << ": " << nameQ << '\n'
                                << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
