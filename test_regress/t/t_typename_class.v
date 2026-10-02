@@ -127,6 +127,17 @@ class Derived2 #(
 ) extends Derived #(K * 2);
 endclass
 
+// Extending a specialization by its type parameter, and likewise extending such a class
+class Wrap #(
+    type T = Xyz
+) extends Bar #(T);
+endclass
+
+class Wrap2 #(
+    type T = Xyz
+) extends Wrap #(T);
+endclass
+
 class Values #(
     int I = 1,
     bit [7:0] B = 8'h0f,
@@ -469,6 +480,11 @@ module t;
   Derived #(6) derived6;
   Derived2 derived2;
   Foo #(Child, 3) foo_child;
+  // Of classes extending several levels of classes, as parameters
+  Bar #(Derived2 #(4)) bar_derived2;
+  Foo #(Derived2 #(4), 9) foo_derived2;
+  Wrap2 #(Derived2 #(4)) wrap2;
+  Bar #(Wrap2 #(Derived2 #(4))) bar_wrap2;
   Values values_default;
   Values #(-5, 8'hA5, 4'b1x0z, "hello", 0.1, BLUE, 7, 64'h1_0000_0000, 8'h7f) values;
   Aggregates aggregates;
@@ -532,6 +548,14 @@ module t;
     `checks($typename(derived6), "class $unit::Derived#(6) extends class $unit::Base#(7)");
     `checks($typename(foo_child),
             "class $unit::Foo#(class $unit::Child,3) extends class $unit::Child");
+    // As parameters, classes are named without the classes they extend, at any depth
+    `checks($typename(bar_derived2), "class $unit::Bar#(class $unit::Derived2#(4))");
+    `checks($typename(foo_derived2),
+            "class $unit::Foo#(class $unit::Derived2#(4),9) extends class $unit::Derived2#(4)");
+    `checks($typename(wrap2),
+            "class $unit::Wrap2#(class $unit::Derived2#(4)) extends class $unit::Wrap#(class $unit::Derived2#(4))");
+    `checks($typename(bar_wrap2),
+            "class $unit::Bar#(class $unit::Wrap2#(class $unit::Derived2#(4)))");
     `checks($typename(values_default),
             "class $unit::Values#(1,15,4'b10xz,\"hi\",1.5,RED,3,5,-128)");
     `checks($typename(values),
