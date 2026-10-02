@@ -33,7 +33,8 @@ module t (
     `checkd(c, 8'(cycles));
     `checkd(c_param, 7'(cycles * 3));
     if (cycles == 10) begin
-      $display("cnt=%0d", c);
+      `checkd(c, 8'd10);
+      `checkd(c_param, 7'd30);
       $write("*-* All Finished *-*\n");
       $finish;
     end
