@@ -12,6 +12,8 @@ $unit::Param#(2)::cg.cp.auto_0: 0
 $unit::Param#(2)::cg.cp.auto_1: 0
 $unit::Second::cg.cp.auto_0: 0
 $unit::Second::cg.cp.auto_1: 0
+$unit::cg+symbol.cp.auto_0: 1
+$unit::cg+symbol.cp.auto_1: 1
 pkg::Holder::cg.cp.auto_0: 1
 pkg::Holder::cg.cp.auto_1: 1
 sub_a.cg.cp.auto_0: 1
@@ -32,3 +34,5 @@ t.gen[1].cg.cp.auto_0: 0
 t.gen[1].cg.cp.auto_1: 0
 t.gen_elif.cg.cp.auto_0: 1
 t.gen_elif.cg.cp.auto_1: 1
+t.pack+gen.Klass!::cg@symbol2.cp.auto_0: 0
+t.pack+gen.Klass!::cg@symbol2.cp.auto_1: 0

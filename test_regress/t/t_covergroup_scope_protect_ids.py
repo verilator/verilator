@@ -18,7 +18,7 @@ test.compile(
     verilator_flags2=['--coverage', '--protect-ids', '--protect-key SCOPE_KEY', '-Wno-INSECURE'])
 test.execute()
 
-scopes = r'First|Second|Holder|Param|Outer|inner|sub_a|sub_b|sub_e|sub_p|gen_e|\$unit'
+scopes = r'First|Second|Holder|Param|Outer|inner|sub_a|sub_b|sub_e|sub_p|gen_e|Klass|cg.symbol|cg__02bsymbol|symbol2|pack.gen|pack__02bgen|\$unit'
 test.file_grep_not(test.coverage_filename, scopes)
 for filename in test.glob_some(test.obj_dir + '/*.cpp'):
     test.file_grep_not(filename, scopes)
