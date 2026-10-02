@@ -16,7 +16,7 @@
 //
 // V3VpiLazy implements --vpi-lazy: VPI access to combinational signals the
 // optimizer eliminates, at no cost to the hot eval path. LinkParse marks every
-// VPI-accessible variable isSigVpiLazyRWPublic(), which unlike --public-flat-rw
+// VPI-accessible variable isSigVpiLazyCandidate(), which unlike --public-flat-rw
 // does not block optimization; this pass then gives each signal one of three
 // outcomes:
 //
@@ -38,8 +38,9 @@
 // shadows. Its statements are cloned into a cold loose function with every
 // written variable redirected to a "shadow", leaving the originals deletable.
 // Operands belonging to another group are rewired to that group's shadows,
-// keeping reconstruction O(N); other "boundary" operands are pinned with
-// sigUserRWPublic so the cone has real storage to read.
+// keeping reconstruction O(N); other "boundary" operands keep their storage so
+// the cone has something to read: retained if VPI-visible, else pinned with no
+// row, as a compiler temporary has no RTL name.
 //
 // A group is claimed only if one ordered walk over its statements proves that
 // every read of a group variable follows an unconditional full-width write of
@@ -49,6 +50,7 @@
 //
 // PHASES, in the fixed order run() lists
 //
+//   classifyCombDriven                       the bits a VPI put may not change
 //   findHelperCandidates                     vars a copy needs promoted to a target
 //   findCrossScopeCopyCandidates             `otherScope.dst = u;` targets formGroups must not
 //                                            retain, so crossScopeCopySources may claim them
@@ -61,46 +63,65 @@
 //   pruneBodies                              backward liveness over the clones
 //   foldTrivialCopyGroups                    fold rows: the source is another cone
 //   emitReconstructions                      emit the funcs and shadows
-//   retainWriteOnlySequential, retainCompletenessFloor   retain what is left
+//   retainCompletenessFloor                  retain what is left
 //
 // COPY AND FOLD
 //
-// A group whose whole body is `target = u;` needs no cone: its descriptor
-// refreshes by memcpy from u, costing no function and no epoch slot.
-// copyStoredSources takes a u that holds storage and names it directly;
-// foldTrivialCopyGroups takes a u that is another live cone's target, and
-// names that cone's shadow, calling its function first.
+// A group whose whole body is `target = u;` needs no cone, costing no function
+// and no epoch slot. copyStoredSources takes a u that holds storage: the row
+// keeps a shadow of its own, refreshed by memcpy from u. foldTrivialCopyGroups
+// takes a u that is another live cone's target: the row is that cone's shadow,
+// its read that cone's, and it has no member of its own (isLazyShadowAlias).
 //
 // crossScopeCopySources is copyStoredSources for the shape that never forms a
 // group at all: a continuous `otherScope.dst = u;`, as an SV interface port
 // driven from its parent is. Its descriptor's source is in another scope, and
 // so addressed relative to the Syms object both scopes are members of.
 //
-// Every converted row keeps its own shadow: --public-flat-rw is the
-// reference, and there two aliases of one net are distinct nets, so two rows
-// naming one storage location would leak a deposit from one into the other.
+// A copy of stored state keeps its own shadow, as each alias has storage of
+// its own under --public-flat-rw: after a put into u and before the next eval,
+// the copy must still read u's last-eval value, which the undo log swaps in
+// around its memcpy. A fold's source is itself rebuilt under the undo log, and
+// no put reaches it, so sharing its shadow reads exactly what a copy would.
+//
+// WRITABILITY
+//
+// A put is accepted where a --public-flat-rw put would persist: into bits that
+// hold their value without a driver, as flops, latches, undriven or
+// initial-only storage and top-level inputs do. classifyCombDriven unions per
+// instance the bits each combinational block writes: a constant select or
+// element names its own, any other write the whole variable. Latch bits
+// contribute nothing: all of an always_latch's, else those a walk of the
+// block's if-tree proves unassigned on some path, per bit, as full-width and
+// constant-select assigns define them. The walk reads only control flow, and
+// folds constant conditions itself, so how V3Split, V3Case or V3Const reshaped
+// the block does not change its answer. A target written under a loop or jump,
+// or through any other lvalue, is not proven, so each of its writes counts as
+// combinational. A variable driven whole is read-only; one driven in part
+// keeps its storage and a mask of the bits a put may not change. Instances of
+// one AstVar, as a non-inlined module's or an interface's are, can differ,
+// driven from their parents: the variable is then PARTIAL, keeping its
+// storage, and each instance's row takes its own class, so writability follows
+// the RTL and not inlining. Explicit public_flat_rw and forceable signals keep
+// --public-flat-rw semantics.
 //
 // RUNTIME
 //
 // A reconstructed row's datap is a VerilatedVarLazyDatap {refreshp, selfp,
 // offsets}. A read calls refreshp, which compares the group's stamp in its
-// module's epoch array against vlSymsp->__Vm_lazyEpoch, recomputes the cone if
-// stale, and restamps; eval() bumps the epoch, so a cone is recomputed at most
-// once per eval step however many of its signals are read.
+// module's epoch array against vlSymsp->__Vm_lazy.epoch, recomputes the cone
+// if stale, and restamps; eval() bumps the epoch, so a cone is recomputed at most
+// once per eval step however many of its signals are read. The epoch is odd
+// during eval(), and a read then moves it first, so a read from DPI or a
+// callback mid-eval never trusts a memo.
 //
-// A vpi_put_value into a reconstructed signal refreshes the row, stores, and
-// stamps the row's word in the module's __Vlazydep array with
-// vlSymsp->__Vm_lazyDepStamp. Two things follow, and they are what IEEE
-// 1800-2023 38.34 asks of a deposit into a net. The put also bumps the epoch,
-// so every memoised cone misses and the signals that resolve from this one
-// re-resolve; and each cone body tests the deposit word before committing to
-// a row, so the rebuild recomputes that row's siblings and dependents while
-// leaving the deposited row alone. Both retire together at evalEnd (see
-// VerilatedSyms::lazyEvalEnd), which is over-eager - the LRM would hold the
-// override until a driver of that net changed - but per-net driver tracking is
-// the work this pass exists to avoid. A put into a retained signal instead sets
-// __Vm_vpiLazyWritten, and the next eval re-runs the settle region once to
-// propagate it.
+// Reconstructed, copied and wholly combinational rows are read-only, and a put
+// into a masked row keeps the masked bits, changing nothing if it changes no
+// other bit. A put logs the bytes it overwrites, which a read swaps back in
+// around a reconstruction until the next eval, so a put reaches a rebuilt
+// dependant when it would reach a --public-flat-rw one. A put into a retained
+// signal also sets vlSymsp->__Vm_lazy.written, so the next eval re-runs the
+// settle region once to propagate it.
 //
 // A lazy read is thus model code that writes model state - the shadow and the
 // memo stamps - from whatever thread called VPI, and those stamps are plain
@@ -130,6 +151,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
@@ -145,29 +167,46 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 static const char* const RECONSTRUCT_FUNC_NAME = "__Vlazy_reconstruct";
 static const char* const SHADOW_PREFIX = "__Vlazyrecon__";
 static const char* const EPOCH_NAME = "__Vlazyepoch";
-static const char* const DEP_NAME = "__Vlazydep";
 static const char* const RECONSTRUCT_BODY_FUNC_NAME = "__Vlazy_reconstruct_body";
+static const char* const RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_inst";
 
 //######################################################################
 class V3VpiLazyContext final {
 public:
     // Names survive the intervening optimisation passes.
     struct CrossScopeSrcNames final {
-        std::string m_dstScopeName;
-        std::string m_dstVarName;
-        std::string m_srcScopeName;
-        std::string m_srcVarName;
+        std::string m_dstScopeName;  // Scope holding the copied shadow
+        std::string m_dstVarName;  // Shadow variable
+        std::string m_srcScopeName;  // Scope holding the copy source
+        std::string m_srcVarName;  // Copy source variable
     };
 
-    std::set<std::string> m_residualNames;
     std::vector<CrossScopeSrcNames> m_crossScopeSrcs;
     std::map<std::pair<const AstScope*, const AstVar*>, V3VpiLazy::CrossScopeSrc>
         m_crossScopeResolved;
     bool m_crossScopeResolvedDone = false;
-    std::unordered_map<std::string, int> m_depSlotOfShadowName;
-    std::map<const AstVar*, V3VpiLazy::DepWord> m_depWordResolved;
-    // Guards emitted, against which finalize() checks that the optimizer did not fold them away.
-    int m_depGuards = 0;
+    std::map<const AstVar*, std::vector<V3VpiLazy::CombRun>> m_combRuns;
+    // One instance of a PARTIAL variable whose instances differ.
+    struct InstComb final {
+        VVpiLazyComb m_comb;  // This instance's class
+        std::vector<V3VpiLazy::CombRun> m_runs;  // Its masked bits, if PARTIAL
+    };
+    std::map<std::pair<std::string, const AstVar*>, InstComb> m_instComb;  // By scope name
+    bool m_anyInstStub = false;  // instanceCallee() made a stub for retargetInstanceCalls()
+
+    VVpiLazyComb combOf(const std::string& scopeName, const AstVar* varp) const {
+        if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
+        const auto it = m_instComb.find({scopeName, varp});
+        return it == m_instComb.end() ? VVpiLazyComb{VVpiLazyComb::PARTIAL} : it->second.m_comb;
+    }
+    const std::vector<V3VpiLazy::CombRun>& combRunsOf(const std::string& scopeName,
+                                                      const AstVar* varp) const {
+        const auto it = m_instComb.find({scopeName, varp});
+        if (it != m_instComb.end()) return it->second.m_runs;
+        const auto rit = m_combRuns.find(varp);
+        UASSERT_OBJ(rit != m_combRuns.end(), varp, "--vpi-lazy masked variable has no runs");
+        return rit->second;
+    }
 };
 
 V3VpiLazyContext* V3VpiLazy::newContext() { return new V3VpiLazyContext; }
@@ -178,6 +217,7 @@ void V3VpiLazy::deleteContext(V3VpiLazyContext* ctxp) { delete ctxp; }
 namespace {
 
 using CrossScopeSrcNames = V3VpiLazyContext::CrossScopeSrcNames;
+using InstComb = V3VpiLazyContext::InstComb;
 
 bool storagePinnedElsewhere(const AstVar* varp) {
     if (varp->isPrimaryIO()) return true;
@@ -217,19 +257,12 @@ struct Group final {
     std::vector<AstVarScope*> targets;  // VPI candidates this group defines, encounter order
     std::vector<AstVarScope*> temps;  // Other variables it writes, encounter order
     std::unordered_set<AstVarScope*> members;
-    std::unordered_map<AstVarScope*, size_t> slotOf;  // target -> index in 'targets'
     std::vector<AstVarScope*> zeroInitps;  // Partial assembly: zero these shadows first
     AstVarScope* copyFromp = nullptr;  // Converted: refresh by copying this variable instead
     AstVar* keyp = nullptr;  // targets[0]->varp(): cross-instance group identity
     AstCFunc* funcp = nullptr;
-    int epochSlot = -1;  // Index into the module's stamp array (assignEpochSlots)
-    // Per target, its index into the module's deposit array, or -1 for a helper target, which
-    // has no VPI row and so can never be deposited into (assignDepSlots)
-    std::vector<int> depSlots;
     bool live = true;  // Cleared when the group is abandoned and its targets retained
     GroupVertex* vtxp = nullptr;  // Its vertex in the dependency graph, null once dead
-    AstVarScope* copySrcp = nullptr;  // soleCopySource() memo
-    bool copySrcValid = false;
     // Representatives only: the pruned statement clone and the group vars it still produces.
     AstNode* bodyp = nullptr;
     std::unordered_set<AstVarScope*> neededps;
@@ -244,7 +277,6 @@ public:
         : V3GraphVertex{graphp}
         , m_groupp{groupp} {}
     Group* groupp() const { return m_groupp; }
-    string name() const override { return m_groupp->keyp->name(); }
 };
 
 // One partial write's footprint; idxs order need only be consistent between parts.
@@ -260,7 +292,7 @@ struct PartWrite final {
 };
 
 // Base and footprint of a constant-selected partial write (`base[3][c +: w] = rhs;`), else null.
-AstVarScope* partialLhs(AstNodeExpr* lhsp, PartExtent& extr) {
+AstVarRef* partialLhsRef(AstNodeExpr* lhsp, PartExtent& extr) {
     AstNodeExpr* nodep = lhsp;
     bool anySel = false;
     if (AstSel* const selp = VN_CAST(nodep, Sel)) {
@@ -281,7 +313,12 @@ AstVarScope* partialLhs(AstNodeExpr* lhsp, PartExtent& extr) {
     AstVarRef* const refp = VN_CAST(nodep, VarRef);
     if (!refp) return nullptr;
     if (!extr.width) extr.width = lhsp->dtypep()->skipRefp()->width();
-    return refp->varScopep();
+    return refp;
+}
+
+AstVarScope* partialLhs(AstNodeExpr* lhsp, PartExtent& extr) {
+    AstVarRef* const refp = partialLhsRef(lhsp, extr);
+    return refp ? refp->varScopep() : nullptr;
 }
 
 // 'partialr' if a select leaves untouched bits, which are then read. Null if not a select chain.
@@ -305,17 +342,17 @@ AstVarRef* lhsBaseRef(AstNodeExpr* lhsp, bool& partialr) {
 class LazyGatherVisitor final : public VNVisitor {
 public:
     struct CombBlock final {
-        AstAlways* m_alwaysp = nullptr;
+        AstAlways* m_alwaysp = nullptr;  // The combo block
         AstScope* m_scopep = nullptr;  // Scope that authored the block
         AstAssignW* m_assignwp = nullptr;  // Lone AstAssignW of a CONT_ASSIGN block
         std::vector<AstVarScope*> m_targets;  // Written vars, encounter order
         std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes within this block
     };
     // STATE
-    std::unordered_map<const AstVarScope*, int> m_writeCount;
+    std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes per var
     std::vector<AstVarScope*> m_writtenOrder;  // Vars with >=1 write, encounter order
     std::unordered_map<const AstVarScope*, int> m_readCount;  // Reads (RW counts as read)
-    std::vector<CombBlock> m_combBlocks;
+    std::vector<CombBlock> m_combBlocks;  // Combo blocks, encounter order
     // Per-AstVar VarScope count == instance count; keeps retain stats in per-instance units.
     std::unordered_map<const AstVar*, int> m_instanceCount;
     // Every VarScope in tree-encounter order; iterated by the completeness floor and by
@@ -402,13 +439,14 @@ class VpiLazyPreparer final {
     std::vector<std::unique_ptr<Group>> m_groups;  // Formation order (deterministic)
     std::unordered_map<AstVar*, std::vector<Group*>> m_groupsOfKey;
     std::unordered_map<AstVarScope*, Group*> m_groupOf;  // Solely-written var -> its group
-    std::unordered_map<AstVarScope*, Group*> m_targetOf;  // Group target -> its group
+    // Group target -> its group and index in its 'targets'
+    std::unordered_map<AstVarScope*, std::pair<Group*, size_t>> m_targetOf;
     // Copy sources promoted from temp to target; per AstVar, so every instance forms one shape
     std::unordered_set<const AstVar*> m_helperCandVars;
     std::unordered_set<const AstVarScope*> m_helperTargets;  // Committed helper targets
     int m_helperCount = 0;  // Helper targets reconstructed, per instance
     std::vector<Group*> m_copyGroups;  // Copies of a variable that holds storage
-    std::vector<Group*> m_foldedCopies;  // Cones folded to a descriptor memcpy
+    std::vector<Group*> m_foldedCopies;  // Copies of another cone's target, sharing its shadow
     int m_foldedCount = 0;
     int m_copyCount = 0;
     // Converted target -> the variable its row copies, for cone operand substitution.
@@ -433,6 +471,7 @@ class VpiLazyPreparer final {
         DTYPE,  // Kind reconstruction cannot express (unpacked aggregate, over dim cap)
         PARTIAL_MIXED_WRITE,  // Partial-write target also has a full/comb/impure/var-lsb write
         PARTIAL_OVERLAP,  // Partial writes overlap, so no unambiguous assembly
+        PARTIAL_GAP,  // Partial writes leave bits undriven, which a VPI put may write
         READ_BEFORE_WRITE,  // A group var is read before an unconditional full-width write
         LATCH,  // A target is not written on every path through the block
         IMPURE,  // The block has a side effect reconstruction must not repeat
@@ -440,12 +479,10 @@ class VpiLazyPreparer final {
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
         CROSS_SCOPE_WRITE,  // Writes a variable outside the scope that authored the statements
         CROSS_SCOPE_CONE,  // Multi-instance cone reading outside its scope; one func cannot serve
-        COMB_CYCLE,  // Genuine combinational cycle (SCC member or self-loop)
-        TOPO_LEFTOVER,  // Unordered by Kahn's despite being a DAG; indicates a bug
+        COMB_CYCLE,  // Genuine combinational cycle (SCC member)
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
         BOUNDARY_COMB_DTYPE,  // Comb boundary operand of a kind reconstruction cannot express
         BOUNDARY_COMB_COPY,  // Comb boundary operand whose own row copies another variable
-        BOUNDARY_COMB_UNKNOWN,  // Comb boundary operand no skip path explains
         BOUNDARY_OPERAND_SEQ,  // Read by another cone, no comb driver: sequential/undriven
         _COUNT
     };
@@ -455,6 +492,7 @@ class VpiLazyPreparer final {
                                             "dtype",
                                             "partial mixed write",
                                             "partial overlap",
+                                            "partial gap",
                                             "read before write",
                                             "latch",
                                             "impure",
@@ -463,11 +501,9 @@ class VpiLazyPreparer final {
                                             "cross-scope write",
                                             "cross-scope cone",
                                             "comb cycle",
-                                            "topo leftover",
                                             "completeness floor",
                                             "boundary comb (dtype)",
                                             "boundary comb (copy)",
-                                            "boundary comb (unexplained)",
                                             "boundary operand (seq)"};
         static_assert(sizeof(names) / sizeof(names[0]) == static_cast<size_t>(Bail::_COUNT),
                       "Bail name table out of sync with enum");
@@ -480,23 +516,32 @@ class VpiLazyPreparer final {
     std::unordered_map<AstVar*, AstVar*> m_shadowVarOfOrig;  // per-module member dedup
     std::unordered_map<AstVarScope*, AstVarScope*> m_shadowOf;  // per-instance VarScope
     // One stamp-array member per module, not one apiece for thousands of groups.
-    struct StampArray final {
-        std::unordered_map<const AstNodeModule*, AstVar*> varOfMod;
-        std::unordered_map<const AstScope*, AstVarScope*> ofScope;
+    std::unordered_map<const AstNodeModule*, AstVar*> m_epochVarOfMod;  // makeStampVar
+    std::unordered_map<const AstScope*, AstVarScope*> m_epochOfScope;  // stampFor
+    // Per group key, so shared by every instance of its module.
+    struct KeyInfo final {
+        int gid = -1;  // Design-global id naming the emitted artefacts (gidOf)
+        AstCFunc* funcp = nullptr;  // Reconstruct func shared by every instance
+        int epochSlot = -1;  // Index into the module's stamp array (assignEpochSlots)
     };
-    StampArray m_epoch;
-    StampArray m_dep;
-    std::unordered_map<AstVar*, AstCFunc*> m_funcOfKey;
-    // Short names for the emitted artefacts; ids are design-global (gidOf).
-    std::unordered_map<const AstVar*, int> m_gidOfKey;
-    std::unordered_map<const AstVar*, int> m_tempIdxOfVar;
+    std::unordered_map<const AstVar*, KeyInfo> m_keyInfo;
+    std::unordered_map<const Group*, AstCFunc*> m_instStubOf;  // instanceCallee
     int m_nextGid = 0;
     int m_nextTempIdx = 0;
 
     int m_prunedStmts = 0;  // Cloned statements dropped as dead (pruneBodies)
-    int m_floorRetained = 0;
     std::map<std::string, int> m_floorReason;  // Floor residual shape -> instances, for stats
     int m_crossScopeCopies = 0;  // Copy rows whose source is in another scope
+    // Comb-driven bits of one instance of a VPI candidate: flat element -> {lsb, width}
+    struct CombFootprint final {
+        bool whole = false;
+        std::map<int32_t, std::vector<std::pair<int, int>>> runsOf;
+    };
+    std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;
+    std::unordered_set<const AstVar*> m_combFootVars;  // Variables of m_combFootOf keys
+    std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
+    int m_combWhole = 0;  // Read-only variables, per instance
+    int m_combPartial = 0;  // Masked variables, per instance
 
 public:
     VpiLazyPreparer(AstNetlist* nodep, AstScope* topScopep, V3VpiLazyContext& ctx)
@@ -508,6 +553,7 @@ public:
     const std::vector<AstVarScope*>& vscOrder() const { return m_gather.m_vscOrder; }
 
     void run() {
+        classifyCombDriven();
         findHelperCandidates();
         findCrossScopeCopyCandidates();
         formGroups();
@@ -549,11 +595,11 @@ private:
         return it != tally.end() && it->second == instancesOf(varp);
     }
 
-    void dropFromOrdered(const std::unordered_set<Group*>& dropped) {
-        if (dropped.empty()) return;
-        m_ordered.erase(std::remove_if(m_ordered.begin(), m_ordered.end(),
-                                       [&](Group* g) { return dropped.count(g) != 0; }),
-                        m_ordered.end());
+    // After topoOrderSurvivors, only a copy or a fold clears 'live'.
+    void dropFromOrdered() {
+        m_ordered.erase(
+            std::remove_if(m_ordered.begin(), m_ordered.end(), [](Group* g) { return !g->live; }),
+            m_ordered.end());
     }
 
     Group* liveGroupOf(AstVarScope* u) const {
@@ -571,23 +617,12 @@ private:
         }
     }
 
-    template <typename T_Callable>
-    bool existsInStmt(const Group* g, T_Callable&& p) const {
-        if (g->alwaysp) {
-            for (AstNode* sp = g->alwaysp->stmtsp(); sp; sp = sp->nextp())
-                if (sp->exists(p)) return true;
-        } else {
-            for (AstAssignW* const awp : g->partialps)
-                if (awp->exists(p)) return true;
-        }
-        return false;
-    }
-
     Bail combBoundaryReason(AstVarScope* u) {
         if (!reconstructableKind(u->varp())) return Bail::BOUNDARY_COMB_DTYPE;
-        if (m_retargetSrcOf.count(u)) return Bail::BOUNDARY_COMB_COPY;
-        // Catch-all: what is left is a variable a bailed group wrote, reached as a copy's source.
-        return Bail::BOUNDARY_COMB_UNKNOWN;
+        // A bailed group's targets are retained, so pinBoundary() returns before asking.
+        UASSERT_OBJ(m_retargetSrcOf.count(u), u,
+                    "--vpi-lazy comb boundary operand no skip path explains");
+        return Bail::BOUNDARY_COMB_COPY;
     }
 
     // A converted target has no storage, so a cone reading it reads what its row copies.
@@ -611,7 +646,8 @@ private:
 
     void retainTarget(AstVarScope* target, Bail why) {
         AstVar* const varp = target->varp();
-        if (!varp->isSigVpiLazyRWPublic()) return;  // already reconstructed / retained
+        // Already reconstructed / retained, or holding storage regardless
+        if (!varp->isSigVpiLazyCandidate() || storagePinnedElsewhere(varp)) return;
         varp->vpiLazyRole(VVpiLazyRole::RETAINED);
         m_combBailRetained += instancesOf(varp);
         m_bailCount[static_cast<size_t>(why)] += instancesOf(varp);
@@ -626,6 +662,402 @@ private:
             g->live = false;
             for (AstVarScope* const t : g->targets) retainTarget(t, why);
         }
+    }
+
+    // Its VPI presence moves to a shadow; a masked variable's undriven bits need the storage.
+    static void dropStorage(AstVar* varp) {
+        UASSERT_OBJ(!varp->isVpiLazyCombPartial(), varp,
+                    "--vpi-lazy drops the storage of a variable with undriven bits");
+        varp->vpiLazyRole(VVpiLazyRole::NONE);
+    }
+
+    // METHODS - Writability
+
+    // Explicit public_flat_rw, forceable and top-level input signals keep flat-rw semantics.
+    static bool combCandidate(const AstVar* varp) {
+        return varp->isSigVpiLazyCandidate() && !varp->isForceable() && !varp->isPrimaryInish();
+    }
+
+    // A mask names bits of a table row's integral elements; any other kind is all or nothing.
+    static bool combMaskable(const AstVar* varp, std::vector<int32_t>& dimsr, int& elemWidthr) {
+        const AstNodeDType* dtypep = varp->dtypeSkipRefp();
+        while (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            dimsr.push_back(adtypep->elementsConst());
+            dtypep = adtypep->subDTypep()->skipRefp();
+        }
+        if (!dtypep->isIntegralOrPacked()) return false;
+        const std::pair<uint32_t, uint32_t> dims = varp->dtypeSkipRefp()->dimensions(true);
+        if (dims.first + dims.second > static_cast<uint32_t>(V3VpiLazy::VPI_TABLE_MAX_DIMS))
+            return false;
+        elemWidthr = dtypep->width();
+        return true;
+    }
+
+    // Row-major, as the storage is laid out; false unless the select names bits of one element.
+    static bool combElement(const AstVar* varp, const PartExtent& ext, int32_t& elemr) {
+        std::vector<int32_t> dims;
+        int elemWidth = 0;
+        if (!combMaskable(varp, dims, elemWidth)) return false;
+        if (ext.idxs.size() != dims.size()) return false;
+        if (ext.lsb < 0 || ext.width <= 0 || ext.lsb + ext.width > elemWidth) return false;
+        int64_t flat = 0;
+        for (size_t k = 0; k < dims.size(); ++k) {
+            const int32_t idx = ext.idxs[dims.size() - 1 - k];
+            if (idx < 0 || idx >= dims[k]) return false;
+            flat = flat * dims[k] + idx;
+            if (flat > std::numeric_limits<int32_t>::max()) return false;
+        }
+        elemr = static_cast<int32_t>(flat);
+        return true;
+    }
+
+    CombFootprint& combFootprint(const AstVarScope* vscp) {
+        AstVar* const varp = vscp->varp();
+        const auto pr = m_combFootOf.emplace(vscp, CombFootprint{});
+        if (pr.second && m_combFootVars.insert(varp).second) m_combFootOrder.push_back(varp);
+        return pr.first->second;
+    }
+
+    // Null 'extp': a write the footprint cannot narrow, so the whole variable.
+    void addCombWrite(const AstVarScope* vscp, const PartExtent* extp) {
+        CombFootprint& fp = combFootprint(vscp);
+        if (fp.whole) return;
+        int32_t elem = 0;
+        if (!extp || !combElement(vscp->varp(), *extp, elem)) {
+            fp.whole = true;
+            fp.runsOf.clear();
+            return;
+        }
+        fp.runsOf[elem].emplace_back(extp->lsb, extp->width);
+    }
+
+    void addCombBits(const AstVarScope* vscp, const CombFootprint& bits) {
+        CombFootprint& fp = combFootprint(vscp);
+        if (fp.whole) return;
+        if (bits.whole) {
+            fp.whole = true;
+            fp.runsOf.clear();
+            return;
+        }
+        for (const auto& pr : bits.runsOf)
+            for (const std::pair<int, int>& run : pr.second) fp.runsOf[pr.first].push_back(run);
+    }
+
+    // 1 or 0 if 'condp' is constant, else -1: what V3Const folds before prepare() unless
+    // -fno-const-before-dfg, and V3Case's grouped `if (a | ... | 1'b1)`.
+    static int constTruth(const AstNodeExpr* condp) {
+        if (const AstVarRef* const refp = VN_CAST(condp, VarRef)) {
+            const AstConst* const valuep = VN_CAST(refp->varp()->valuep(), Const);
+            if (refp->varp()->isParam() && valuep) condp = valuep;
+        }
+        if (const AstConst* const constp = VN_CAST(condp, Const)) return constp->isZero() ? 0 : 1;
+        if (condp->width() != 1) return -1;
+        if (VN_IS(condp, Not) || VN_IS(condp, LogNot)) {
+            const int truth = constTruth(VN_AS(condp, NodeUniop)->lhsp());
+            return truth < 0 ? -1 : !truth;
+        }
+        const AstNodeBiop* const biopp = VN_CAST(condp, NodeBiop);
+        if (!biopp) return -1;
+        const int lhs = constTruth(biopp->lhsp());
+        const int rhs = constTruth(biopp->rhsp());
+        if (VN_IS(condp, Or) || VN_IS(condp, LogOr)) {
+            if (lhs == 1 || rhs == 1) return 1;
+            return lhs == 0 && rhs == 0 ? 0 : -1;
+        }
+        if (VN_IS(condp, And) || VN_IS(condp, LogAnd)) {
+            if (lhs == 0 || rhs == 0) return 0;
+            return lhs == 1 && rhs == 1 ? 1 : -1;
+        }
+        return -1;
+    }
+
+    // Keeps an element's runs sorted, disjoint and non-adjacent, as intersectBits needs.
+    static void addBits(CombFootprint& fp, int32_t elem, int lsb, int width) {
+        if (fp.whole) return;
+        std::vector<std::pair<int, int>>& runs = fp.runsOf[elem];
+        int lo = lsb;
+        int hi = lsb + width;
+        // Disjoint runs have ascending ends too
+        const auto firstIt = std::lower_bound(
+            runs.begin(), runs.end(), lsb,
+            [](const std::pair<int, int>& run, int bit) { return run.first + run.second < bit; });
+        auto lastIt = firstIt;
+        for (; lastIt != runs.end() && lastIt->first <= hi; ++lastIt) {
+            lo = std::min(lo, lastIt->first);
+            hi = std::max(hi, lastIt->first + lastIt->second);
+        }
+        if (firstIt == lastIt) {
+            runs.emplace(firstIt, lo, hi - lo);
+            return;
+        }
+        *firstIt = {lo, hi - lo};
+        runs.erase(firstIt + 1, lastIt);
+    }
+
+    static void unionBits(CombFootprint& dst, const CombFootprint& src) {
+        if (dst.whole) return;
+        if (src.whole) {
+            dst.whole = true;
+            dst.runsOf.clear();
+            return;
+        }
+        for (const auto& pr : src.runsOf) {
+            std::vector<std::pair<int, int>>& runs = dst.runsOf[pr.first];
+            if (runs.empty()) {
+                runs = pr.second;
+            } else if (pr.second.size() <= 4) {
+                for (const std::pair<int, int>& run : pr.second)
+                    addBits(dst, pr.first, run.first, run.second);
+            } else {
+                std::vector<std::pair<int, int>> sorted;
+                sorted.reserve(runs.size() + pr.second.size());
+                std::merge(runs.begin(), runs.end(), pr.second.begin(), pr.second.end(),
+                           std::back_inserter(sorted));
+                runs.clear();
+                for (const std::pair<int, int>& run : sorted) {
+                    if (!runs.empty() && run.first <= runs.back().first + runs.back().second) {
+                        runs.back().second = std::max(runs.back().second,
+                                                      run.first + run.second - runs.back().first);
+                    } else {
+                        runs.push_back(run);
+                    }
+                }
+            }
+        }
+    }
+
+    static CombFootprint intersectBits(const CombFootprint& a, const CombFootprint& b) {
+        if (a.whole) return b;
+        if (b.whole) return a;
+        CombFootprint both;
+        for (const auto& pr : a.runsOf) {
+            const auto it = b.runsOf.find(pr.first);
+            if (it == b.runsOf.end()) continue;
+            std::vector<std::pair<int, int>> runs;
+            auto xIt = pr.second.begin();
+            auto yIt = it->second.begin();
+            while (xIt != pr.second.end() && yIt != it->second.end()) {
+                const int xEnd = xIt->first + xIt->second;
+                const int yEnd = yIt->first + yIt->second;
+                const int lo = std::max(xIt->first, yIt->first);
+                const int hi = std::min(xEnd, yEnd);
+                if (lo < hi) runs.emplace_back(lo, hi - lo);
+                if (xEnd < yEnd) {
+                    ++xIt;
+                } else {
+                    ++yIt;
+                }
+            }
+            if (!runs.empty()) both.runsOf.emplace(pr.first, std::move(runs));
+        }
+        return both;
+    }
+
+    using DefinedBits = std::unordered_map<AstVarScope*, CombFootprint>;
+
+    static DefinedBits intersectDefined(const DefinedBits& a, const DefinedBits& b) {
+        const bool aSmaller = a.size() <= b.size();
+        const DefinedBits& smallr = aSmaller ? a : b;
+        const DefinedBits& larger = aSmaller ? b : a;
+        DefinedBits both;
+        for (const auto& pr : smallr) {
+            const auto it = larger.find(pr.first);
+            if (it == larger.end()) continue;
+            CombFootprint bits = intersectBits(pr.second, it->second);
+            if (bits.whole || !bits.runsOf.empty()) both.emplace(pr.first, std::move(bits));
+        }
+        return both;
+    }
+
+    static void unionDefined(DefinedBits& dst, DefinedBits&& src) {
+        if (dst.empty()) {
+            dst = std::move(src);
+            return;
+        }
+        for (const auto& pr : src) unionBits(dst[pr.first], pr.second);
+    }
+
+    // Adds to 'definedr' the bits every path through 'stmtsp' assigns. Arms only add, so
+    // (D | then) & (D | else) == D | (then & else): each arm is walked from empty.
+    // 'modelledr': full-width and constant-select assigns reached through ifs alone, the only
+    // writes it decides. Both arms of a constant 'if' are walked, so a V3Const-folded branch
+    // reads the same.
+    static void latchWalk(AstNode* stmtsp, DefinedBits& definedr,
+                          std::unordered_set<const AstVarRef*>& modelledr) {
+        for (AstNode* sp = stmtsp; sp; sp = sp->nextp()) {
+            if (AstNodeAssign* const asgnp = VN_CAST(sp, NodeAssign)) {
+                PartExtent ext;
+                int32_t elem = 0;
+                if (AstVarRef* const refp = VN_CAST(asgnp->lhsp(), VarRef)) {
+                    modelledr.insert(refp);
+                    CombFootprint& fp = definedr[refp->varScopep()];
+                    fp.whole = true;
+                    fp.runsOf.clear();
+                } else if (AstVarRef* const prefp = partialLhsRef(asgnp->lhsp(), ext)) {
+                    if (combElement(prefp->varp(), ext, elem)) {
+                        modelledr.insert(prefp);
+                        addBits(definedr[prefp->varScopep()], elem, ext.lsb, ext.width);
+                    }
+                }
+            } else if (AstNodeIf* const ifp = VN_CAST(sp, NodeIf)) {
+                // An else-if chain is folded from its last 'else' up, iteratively
+                std::vector<AstNodeIf*> chain{ifp};
+                while (AstNodeIf* const nextp = VN_CAST(chain.back()->elsesp(), NodeIf)) {
+                    if (nextp->nextp()) break;
+                    chain.push_back(nextp);
+                }
+                DefinedBits delta;
+                latchWalk(chain.back()->elsesp(), delta, modelledr);
+                for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+                    DefinedBits thenDelta;
+                    latchWalk((*it)->thensp(), thenDelta, modelledr);
+                    const int truth = constTruth((*it)->condp());
+                    if (truth == 1) {
+                        delta = std::move(thenDelta);
+                    } else if (truth < 0) {
+                        delta = intersectDefined(thenDelta, delta);
+                    }
+                }
+                unionDefined(definedr, std::move(delta));
+            }
+        }
+    }
+
+    struct LatchProof final {
+        DefinedBits defined;  // Bits assigned on every path; a target's others are a latch's
+        Defined unprovable;  // Targets whose every write is combinational
+    };
+
+    // Purity and read order do not matter here, so the answer does not depend on how V3Split
+    // partitioned the block. A target written any other way, as under a loop or jump, is not
+    // proven: the safe direction.
+    static LatchProof proveLatches(const CombBlock& b) {
+        LatchProof proof;
+        const VAlwaysKwd kwd = b.m_alwaysp->keyword();
+        if (kwd == VAlwaysKwd::ALWAYS_LATCH) return proof;
+        std::unordered_set<const AstVarRef*> modelled;
+        if (kwd != VAlwaysKwd::CONT_ASSIGN)
+            latchWalk(b.m_alwaysp->stmtsp(), proof.defined, modelled);
+        b.m_alwaysp->foreach([&](const AstVarRef* refp) {
+            if (!refp->access().isReadOnly() && !modelled.count(refp))
+                proof.unprovable.insert(refp->varScopep());
+        });
+        return proof;
+    }
+
+    // See WRITABILITY above.
+    void classifyCombDriven() {
+        for (const CombBlock& b : m_gather.m_combBlocks) {
+            if (std::none_of(b.m_targets.begin(), b.m_targets.end(),
+                             [](const AstVarScope* t) { return combCandidate(t->varp()); }))
+                continue;
+            const LatchProof proof = proveLatches(b);
+            std::unordered_map<const AstVarRef*, PartExtent> exact;
+            b.m_alwaysp->foreach([&](AstNodeAssign* asgnp) {
+                PartExtent ext;
+                if (const AstVarRef* const refp = partialLhsRef(asgnp->lhsp(), ext))
+                    exact.emplace(refp, std::move(ext));
+            });
+            Defined proven;
+            b.m_alwaysp->foreach([&](AstVarRef* refp) {
+                if (refp->access().isReadOnly()) return;
+                AstVarScope* const vscp = refp->varScopep();
+                if (!combCandidate(vscp->varp())) return;
+                if (proof.unprovable.count(vscp)) {
+                    const auto it = exact.find(refp);
+                    addCombWrite(vscp, it == exact.end() ? nullptr : &it->second);
+                    return;
+                }
+                // Every bit defined on every path has a write, so the union of writes is these
+                const auto it = proof.defined.find(vscp);
+                if (it != proof.defined.end() && proven.insert(vscp).second)
+                    addCombBits(vscp, it->second);
+            });
+        }
+        // V3Const made 'assign v = CONST' an initial plus a decl value, but it still drives v
+        for (const AstVarScope* const vscp : m_gather.m_vscOrder) {
+            AstVar* const varp = vscp->varp();
+            if (combCandidate(varp) && varp->isContinuously() && varp->isConst() && varp->valuep()
+                && !varp->isParam())
+                addCombWrite(vscp, nullptr);
+        }
+        std::unordered_map<const AstVar*, std::vector<const AstVarScope*>> vscpsOf;
+        for (const AstVarScope* const vscp : m_gather.m_vscOrder)
+            if (m_combFootVars.count(vscp->varp())) vscpsOf[vscp->varp()].push_back(vscp);
+        for (AstVar* const varp : m_combFootOrder) finishCombFootprint(varp, vscpsOf.at(varp));
+    }
+
+    // Merged runs covering every bit of every element are the whole variable, and have none.
+    static InstComb mergedFootprint(const AstVar* varp, CombFootprint& fp) {
+        std::vector<V3VpiLazy::CombRun> runs;
+        if (!fp.whole) {
+            std::vector<int32_t> dims;
+            int elemWidth = 0;
+            combMaskable(varp, dims, elemWidth);
+            uint64_t elements = 1;
+            for (const int32_t d : dims) {
+                elements *= static_cast<uint64_t>(d);
+                if (elements > fp.runsOf.size()) break;
+            }
+            bool full = elements == fp.runsOf.size();
+            for (auto& pr : fp.runsOf) {
+                std::vector<std::pair<int, int>>& parts = pr.second;
+                std::sort(parts.begin(), parts.end());
+                const size_t first = runs.size();
+                for (const std::pair<int, int>& part : parts) {
+                    const uint32_t lsb = static_cast<uint32_t>(part.first);
+                    const uint32_t width = static_cast<uint32_t>(part.second);
+                    V3VpiLazy::CombRun* const lastp = runs.size() > first ? &runs.back() : nullptr;
+                    if (lastp && lsb <= lastp->lsb + lastp->width) {
+                        lastp->width = std::max(lastp->width, lsb + width - lastp->lsb);
+                    } else {
+                        runs.push_back({static_cast<uint32_t>(pr.first), lsb, width});
+                    }
+                }
+                if (runs.size() != first + 1 || runs.back().lsb != 0
+                    || runs.back().width != static_cast<uint32_t>(elemWidth))
+                    full = false;
+            }
+            fp.whole = full;
+        }
+        if (fp.whole) return InstComb{VVpiLazyComb::WHOLE, {}};
+        return InstComb{VVpiLazyComb::PARTIAL, std::move(runs)};
+    }
+
+    void countComb(VVpiLazyComb comb, int instances) {
+        if (comb == VVpiLazyComb::WHOLE) m_combWhole += instances;
+        if (comb == VVpiLazyComb::PARTIAL) m_combPartial += instances;
+    }
+
+    // Instances alike share the variable's class. Otherwise each keeps its own, as each has its
+    // own row, and PARTIAL keeps the storage the writable ones need.
+    void finishCombFootprint(AstVar* varp, const std::vector<const AstVarScope*>& vscps) {
+        std::vector<InstComb> insts;
+        for (const AstVarScope* const vscp : vscps) {
+            const auto it = m_combFootOf.find(vscp);
+            insts.push_back(it == m_combFootOf.end() ? InstComb{VVpiLazyComb::NONE, {}}
+                                                     : mergedFootprint(varp, it->second));
+        }
+        const InstComb& firstr = insts.front();
+        if (std::all_of(insts.begin(), insts.end(), [&](const InstComb& ic) {
+                return ic.m_comb == firstr.m_comb && ic.m_runs == firstr.m_runs;
+            })) {
+            varp->vpiLazyComb(firstr.m_comb);
+            countComb(firstr.m_comb, instancesOf(varp));
+            if (firstr.m_comb == VVpiLazyComb::PARTIAL)
+                m_ctx.m_combRuns.emplace(varp, std::move(insts.front().m_runs));
+            return;
+        }
+        varp->vpiLazyComb(VVpiLazyComb::PARTIAL);
+        for (size_t i = 0; i < vscps.size(); ++i) {
+            countComb(insts[i].m_comb, 1);
+            m_ctx.m_instComb.emplace(std::make_pair(vscps[i]->scopep()->name(), varp),
+                                     std::move(insts[i]));
+        }
+    }
+
+    VVpiLazyComb combOf(const AstVarScope* vscp) const {
+        return m_ctx.combOf(vscp->scopep()->name(), vscp->varp());
     }
 
     // METHODS - Group formation
@@ -645,8 +1077,7 @@ private:
             if (w->scopep() == scopep) continue;
             for (AstVarScope* const t : written) {
                 if (m_xscopeSrcOf.count(t)) continue;  // crossScopeCopySources() may claim it
-                if (t->varp()->isSigVpiLazyRWPublic() && !storagePinnedElsewhere(t->varp()))
-                    retainTarget(t, Bail::CROSS_SCOPE_WRITE);
+                retainTarget(t, Bail::CROSS_SCOPE_WRITE);
             }
             return nullptr;
         }
@@ -661,18 +1092,17 @@ private:
             const bool sole = writeCountOf(w) == wit->second;
             if (notSole.count(varp)) {
                 // Multidriven in some instance: never a target, the choice being per module.
-                if (varp->isSigVpiLazyRWPublic() && !storagePinnedElsewhere(varp))
-                    retainTarget(w, Bail::MULTIDRIVEN);
-            } else if (!varp->isSigVpiLazyRWPublic()) {
+                retainTarget(w, Bail::MULTIDRIVEN);
+            } else if (!varp->isSigVpiLazyCandidate()) {
                 // A temp, unless a VPI-visible copy reads it: then a "helper target" with a
                 // shadow, and no row of its own.
-                if (m_helperCandVars.count(varp) && reconstructableKind(varp)) {
+                if (m_helperCandVars.count(varp)) {
                     targets.push_back(w);
                     m_helperTargets.insert(w);
                     continue;
                 }
             } else if (!reconstructableKind(varp)) {
-                if (!storagePinnedElsewhere(varp)) retainTarget(w, Bail::DTYPE);
+                retainTarget(w, Bail::DTYPE);
             } else {
                 targets.push_back(w);
                 continue;
@@ -693,21 +1123,20 @@ private:
         if (zeroInit) g->zeroInitps = targets;
         g->keyp = targets[0]->varp();
         for (size_t i = 0; i < targets.size(); ++i) {
-            g->slotOf.emplace(targets[i], i);
             m_groupOf[targets[i]] = g;
-            m_targetOf[targets[i]] = g;
+            m_targetOf[targets[i]] = {g, i};
         }
         // Only a solely-written temp may be read through another group's shadow copy.
-        for (AstVarScope* const t : soleTemps)
-            if (t) m_groupOf.emplace(t, g);
+        for (AstVarScope* const t : soleTemps) m_groupOf.emplace(t, g);
         m_groups.push_back(std::move(ownp));
         m_groupsOfKey[g->keyp].push_back(g);
         return g;
     }
 
+    // A parameter is a static member, which a row cannot address by offset.
     static bool canCopyFrom(const AstVarScope* dstp, const AstVarScope* srcp) {
         return dstp->scopep() == srcp->scopep() && reconstructableKind(dstp->varp())
-               && sameLayout(dstp, srcp);
+               && !srcp->varp()->isParam() && sameLayout(dstp, srcp);
     }
 
     template <typename T_Callable>
@@ -724,8 +1153,8 @@ private:
     // A copy whose source is a group temp has no shadow to read; a helper target gives it one.
     void findHelperCandidates() {
         forEachCopyAssign([&](const CombBlock&, AstVarScope* dstp, AstVarScope* srcp) {
-            if (!dstp->varp()->isSigVpiLazyRWPublic() || writeCountOf(dstp) != 1) return;
-            if (srcp->varp()->isSigVpiLazyRWPublic()) return;
+            if (!dstp->varp()->isSigVpiLazyCandidate() || writeCountOf(dstp) != 1) return;
+            if (srcp->varp()->isSigVpiLazyCandidate()) return;
             if (!reconstructableKind(srcp->varp())) return;
             if (!canCopyFrom(dstp, srcp)) return;
             m_helperCandVars.insert(srcp->varp());
@@ -741,9 +1170,10 @@ private:
             if (dstp->scopep() == b.m_scopep) return;  // copyStoredSources' shape
             // pinBoundary reasons within one scope, and that is the scope V3EmitCSyms addresses.
             if (srcp->scopep() != b.m_scopep) return;
-            if (!dstp->varp()->isSigVpiLazyRWPublic()) return;
+            if (!dstp->varp()->isSigVpiLazyCandidate()) return;
             if (writeCountOf(dstp) != 1) return;
-            if (!copyTargetKind(dstp->varp()) || !sameLayout(dstp, srcp)) return;
+            if (!copyTargetKind(dstp->varp()) || srcp->varp()->isParam()) return;
+            if (!sameLayout(dstp, srcp)) return;
             cand.emplace_back(dstp, srcp);
             ++instances[dstp->varp()];
         });
@@ -813,11 +1243,8 @@ private:
                 }
                 // A write shape the shadow cannot mirror: retain rather than let it be dropped.
                 bool partial = false;
-                if (const AstVarRef* const basep2 = lhsBaseRef(lhsp, partial)) {
-                    AstVar* const varp = basep2->varScopep()->varp();
-                    if (varp->isSigVpiLazyRWPublic() && !storagePinnedElsewhere(varp))
-                        retainTarget(basep2->varScopep(), Bail::UNSUPPORTED_LVALUE);
-                }
+                if (const AstVarRef* const basep2 = lhsBaseRef(lhsp, partial))
+                    retainTarget(basep2->varScopep(), Bail::UNSUPPORTED_LVALUE);
                 continue;
             }
             makeGroup(b.m_scopep, b.m_alwaysp, {}, b.m_targets, b.m_writeCount, notSole,
@@ -829,9 +1256,9 @@ private:
     void formPartialGroup(AstVarScope* basep, const std::vector<PartWrite>& parts,
                           AstScope* scopep, const std::unordered_set<const AstVar*>& notSole) {
         AstVar* const varp = basep->varp();
-        if (!varp->isSigVpiLazyRWPublic()) return;
+        if (!varp->isSigVpiLazyCandidate()) return;
         if (!reconstructableKind(varp)) {
-            if (!storagePinnedElsewhere(varp)) retainTarget(basep, Bail::DTYPE);
+            retainTarget(basep, Bail::DTYPE);
             return;
         }
         if (static_cast<int>(parts.size()) != writeCountOf(basep) || notSole.count(varp)) {
@@ -864,6 +1291,10 @@ private:
                     return;
                 }
             }
+        }
+        if (varp->isVpiLazyCombPartial()) {
+            retainTarget(basep, Bail::PARTIAL_GAP);
+            return;
         }
         const std::unordered_map<const AstVarScope*, int> groupWrites{
             {basep, static_cast<int>(parts.size())}};
@@ -1027,10 +1458,11 @@ private:
             ElemInfo& ei = elems[u];
             if (ei.mixedDepth) continue;
             if (!ei.matched) ei.depth = ext.idxs.size();
-            if (ext.idxs.size() != ei.depth) {
+            // V3Slice leaves element assigns at one depth; kept as the safe fallback
+            if (ext.idxs.size() != ei.depth) {  // LCOV_EXCL_START
                 ei.mixedDepth = true;
                 continue;
-            }
+            }  // LCOV_EXCL_STOP
             ei.byElem[ext.idxs].push_back(ext);
             ++ei.matched;
         }
@@ -1086,16 +1518,21 @@ private:
         for (AstVarScope* const t : g->temps) trySeed(t);
     }
 
-    bool analyseBlockGroup(Group* g, Bail& whyr) const {
+    // 'defined' as walkStmt has it for the whole block.
+    bool walkBlockGroup(Group* g, Defined& defined, Bail& whyr) const {
         for (AstNode* sp = g->alwaysp->stmtsp(); sp; sp = sp->nextp()) {
             if (impure(sp)) {
                 whyr = Bail::IMPURE;
                 return false;
             }
         }
-        Defined defined;
         seedElementWrittenArrays(g, defined);
-        if (!walkStmts(g->alwaysp->stmtsp(), g, defined, whyr)) return false;
+        return walkStmts(g->alwaysp->stmtsp(), g, defined, whyr);
+    }
+
+    bool analyseBlockGroup(Group* g, Bail& whyr) const {
+        Defined defined;
+        if (!walkBlockGroup(g, defined, whyr)) return false;
         for (AstVarScope* const t : g->targets) {
             if (!defined.count(t)) {
                 whyr = Bail::LATCH;  // Not written on every path
@@ -1119,24 +1556,16 @@ private:
 
     // One loose vlSelf-relative func per instance, and a cross-scope VarRef descopes absolute.
     void restrictMultiInstanceToLocalCones() {
-        std::unordered_set<const AstVar*> unshareable;
         for (const auto& ownp : m_groups) {
             const Group* const g = ownp.get();
             if (!g->live || instancesOf(g->keyp) <= 1) continue;
             bool bad = false;
-            for (AstVarScope* const t : g->targets)
-                if (t->scopep() != g->scopep) bad = true;
-            if (!bad) {
-                bad = existsInStmt(g, [&](const AstVarRef* refp) {
+            forEachStmt(g, [&](AstNode* sp) {
+                bad = bad || sp->exists([&](const AstVarRef* refp) {
                     return refp->varScopep()->scopep() != g->scopep;
                 });
-            }
-            if (bad) unshareable.insert(g->keyp);
-        }
-        for (const auto& ownp : m_groups) {
-            Group* const g = ownp.get();
-            if (g->live && unshareable.count(g->keyp))
-                killGroupsOfKey(g->keyp, Bail::CROSS_SCOPE_CONE);
+            });
+            if (bad) killGroupsOfKey(g->keyp, Bail::CROSS_SCOPE_CONE);
         }
     }
 
@@ -1180,7 +1609,7 @@ private:
         m_depGraph.stronglyConnected(&V3GraphEdge::followAlwaysTrue);
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
-            // Non-zero color = a real comb cycle (multi-node SCC or self-loop): retain it.
+            // Non-zero color = a real comb cycle (multi-node SCC): retain it.
             if (g->live && g->vtxp->color() != 0) killGroupsOfKey(g->keyp, Bail::COMB_CYCLE);
         }
         dropDeadVertices();
@@ -1229,10 +1658,9 @@ private:
                 if (--inDegree[v] == 0) pushReady(v);
             }
         }
-        // Survivors are a DAG, so a leftover is a bug: retain it rather than let V3Dead drop it.
-        const std::unordered_set<Group*> ordered{m_ordered.begin(), m_ordered.end()};
+        // splitCyclesRetainCores() left a DAG of live vertices only
         for (Group* const g : live) {
-            if (g->live && !ordered.count(g)) killGroupsOfKey(g->keyp, Bail::TOPO_LEFTOVER);
+            UASSERT_OBJ(!inDegree[g], g->keyp, "--vpi-lazy group left unordered");
         }
     }
 
@@ -1244,7 +1672,6 @@ private:
         std::unordered_map<const Group*, AstVarScope*> chainEnd;
         // Topological order, so a source's own chain is resolved before anything reads it.
         for (Group* const g : m_ordered) {
-            if (!g->live) continue;
             AstVarScope* u = soleCopySource(g);
             if (!u) continue;
             AstVarScope* const targetp = g->targets[0];
@@ -1252,7 +1679,7 @@ private:
             if (m_helperTargets.count(targetp)) continue;
             const auto tit = m_targetOf.find(u);
             if (tit != m_targetOf.end()) {
-                const auto cit = chainEnd.find(tit->second);
+                const auto cit = chainEnd.find(tit->second.first);
                 if (cit != chainEnd.end()) u = cit->second;
             }
             // The source must hold storage, and nothing in a live group does.
@@ -1262,7 +1689,6 @@ private:
             cand.push_back(g);
             ++candInstances[targetp->varp()];
         }
-        std::unordered_set<Group*> dropped;
         for (Group* const g : cand) {
             AstVarScope* const targetp = g->targets[0];
             if (!claimPerVar(candInstances, targetp->varp())) continue;
@@ -1271,11 +1697,10 @@ private:
                         "--vpi-lazy copy candidate has no resolved source");
             g->copyFromp = cit->second;
             g->live = false;
-            dropped.insert(g);
             m_retargetSrcOf.emplace(targetp, g->copyFromp);
             m_copyGroups.push_back(g);
         }
-        dropFromOrdered(dropped);
+        dropFromOrdered();
     }
 
     // Runs after copyStoredSources, so liveGroupOf() already says what kept its storage.
@@ -1284,8 +1709,7 @@ private:
         std::vector<AstVarScope*> cand;
         for (AstVarScope* const dstp : m_xscopeOrder) {
             AstVarScope* const srcp = m_xscopeSrcOf.at(dstp);
-            if (!dstp->varp()->isSigVpiLazyRWPublic()) continue;  // retained meanwhile
-            if (m_groupOf.count(dstp)) continue;  // a group writes it too
+            if (!dstp->varp()->isSigVpiLazyCandidate()) continue;  // retained meanwhile
             if (liveGroupOf(srcp) || m_retargetSrcOf.count(srcp)) continue;  // no own storage
             cand.push_back(dstp);
             ++viable[dstp->varp()];
@@ -1297,8 +1721,12 @@ private:
         // source must not be claimed. Dropping only ever removes sources, so one pass suffices.
         for (AstVarScope* const dstp : cand)
             if (claimed.count(dstp->varp())) claimed.erase(m_xscopeSrcOf.at(dstp)->varp());
-        for (AstVarScope* const dstp : cand) {
-            if (!claimed.count(dstp->varp())) continue;
+        for (AstVarScope* const dstp : m_xscopeOrder) {
+            // makeGroup() left it unretained for this pass, and a cone may yet read it
+            if (!claimed.count(dstp->varp())) {
+                retainTarget(dstp, Bail::CROSS_SCOPE_WRITE);
+                continue;
+            }
             // The retarget is what keeps a cone reading this target off pinBoundary().
             m_retargetSrcOf.emplace(dstp, m_xscopeSrcOf.at(dstp));
             m_crossScopeCopyTargets.push_back(dstp);
@@ -1308,15 +1736,14 @@ private:
     // Cross-scope copies: a shadow and a Syms-relative descriptor source, no func, no epoch slot.
     void emitCrossScopeCopies() {
         for (AstVarScope* const dstp : m_crossScopeCopyTargets) {
-            if (dstp->varp()->isSigUserRWPublic() || dstp->varp()->isSigVpiLazyRetained())
-                continue;
+            if (dstp->varp()->isSigVpiLazyRetained()) continue;
             AstVarScope* const srcp = m_xscopeSrcOf.at(dstp);
             pinBoundary(srcp);
             AstVarScope* const shadowp = crossScopeShadow(dstp);
             m_ctx.m_crossScopeSrcs.push_back(
                 CrossScopeSrcNames{dstp->scopep()->name(), shadowp->varp()->name(),
                                    srcp->scopep()->name(), srcp->varp()->name()});
-            dstp->varp()->vpiLazyRole(VVpiLazyRole::NONE);
+            dropStorage(dstp->varp());
             ++m_reconstructed;
             ++m_crossScopeCopies;
         }
@@ -1324,14 +1751,7 @@ private:
 
     // Reads pre-optimisation statements, so a width change appears as a Cast/Extend and is
     // refused: memcpy cannot convert.
-    AstVarScope* soleCopySource(Group* g) const {
-        if (g->copySrcValid) return g->copySrcp;
-        g->copySrcValid = true;
-        g->copySrcp = soleCopySourceCalc(g);
-        return g->copySrcp;
-    }
-
-    AstVarScope* soleCopySourceCalc(const Group* g) const {
+    AstVarScope* soleCopySource(const Group* g) const {
         if (g->targets.size() != 1 || !g->temps.empty()) return nullptr;
         AstNode* onlyp = nullptr;
         size_t n = 0;
@@ -1360,65 +1780,43 @@ private:
 
     void foldTrivialCopyGroups() {
         // Topological order, so a chain resolves to a source that is not itself folded.
-        std::unordered_map<const Group*, AstVarScope*> resolvedSrc;
         std::unordered_map<const AstVar*, int> foldable;  // Instances of a key that can fold
         for (Group* const g : m_ordered) {
-            if (!g->live) continue;
             AstVarScope* u = soleCopySource(g);
-            if (u) {
-                if (AstVarScope* const srcp = retargetSubstituteFor(u, g)) u = srcp;
-                Group* const ugp = liveGroupOf(u);
-                // m_groupOf covers temps too, and only a target has a shadow with a func to call
-                if (!ugp || ugp == g || !ugp->slotOf.count(u)) {
-                    u = nullptr;
-                } else {
-                    const auto rit = resolvedSrc.find(ugp);
-                    if (rit != resolvedSrc.end()) u = rit->second;  // Source folded too; chase it
-                    if (u && !sameLayout(g->targets[0], u)) u = nullptr;
-                }
-            }
             if (!u) continue;
-            resolvedSrc.emplace(g, u);
+            if (AstVarScope* const srcp = retargetSubstituteFor(u, g)) u = srcp;
+            const Group* const ugp = liveGroupOf(u);
+            // m_groupOf covers temps too, and only a target has a shadow with a func to call
+            if (!ugp || ugp == g || !m_targetOf.count(u)) continue;
+            if (ugp->copyFromp) u = ugp->copyFromp;  // Source folded too; chase it
+            // srcOffset is from the target's own selfp, so the source must be the same instance.
+            if (!sameLayout(g->targets[0], u) || u->scopep() != g->targets[0]->scopep()) continue;
             ++foldable[g->keyp];
             g->copyFromp = u;
         }
         // m_ordered order, not foldable's, so what is emitted does not depend on pointer hashing
-        std::unordered_set<Group*> dropped;
         for (Group* const g : m_ordered) {
             if (!g->copyFromp) continue;
-            if (!claimPerVar(foldable, g->keyp)) {  // One instance could not fold: none may
+            // One instance could not fold: none may. Instances fold alike, so this is untested.
+            if (!claimPerVar(foldable, g->keyp)) {  // LCOV_EXCL_START
                 g->copyFromp = nullptr;
                 continue;
-            }
-            // srcOffset is from the target's own selfp, so the source must be the same instance.
-            if (g->copyFromp->scopep() != g->targets[0]->scopep()) {
-                g->copyFromp = nullptr;
-                continue;
-            }
-            // The source must still emit a cone of its own, else there is no shadow to copy
-            const Group* const srcGroupp = liveGroupOf(g->copyFromp);
-            if (!srcGroupp || dropped.count(const_cast<Group*>(srcGroupp))) {
-                g->copyFromp = nullptr;
-                continue;
-            }
+            }  // LCOV_EXCL_STOP
             // Killing it makes the retarget safe: a consumer that cannot substitute pins instead.
             m_retargetSrcOf.emplace(g->targets[0], g->copyFromp);
             m_foldedCopies.push_back(g);
             g->live = false;
             if (g->bodyp) VL_DO_DANGLING(g->bodyp->deleteTree(), g->bodyp);
-            dropped.insert(g);
         }
-        dropFromOrdered(dropped);
+        dropFromOrdered();
     }
 
     // METHODS - Emission
 
     // Design-global group id, shared by every instance of the group's module.
     int gidOf(const Group* g) {
-        const auto it = m_gidOfKey.find(g->keyp);
-        if (it != m_gidOfKey.end()) return it->second;
-        const int gid = m_nextGid++;
-        m_gidOfKey.emplace(g->keyp, gid);
+        int& gid = m_keyInfo[g->keyp].gid;
+        if (gid < 0) gid = m_nextGid++;
         return gid;
     }
 
@@ -1442,7 +1840,7 @@ private:
             funcp->argTypes("void* voidSelf");
         }
         funcp->slow(true);
-        // Called only via the syms recon-fn array, an out-of-tree address-take no pass can see.
+        // A table-facing func's only caller is the syms recon-fn array, which no pass can see.
         funcp->entryPoint(true);
         // One func serves every instance: V3Gate/V3Dfg must not substitute instance expressions.
         funcp->vpiLazyReconstruct(true);
@@ -1451,182 +1849,79 @@ private:
         return funcp;
     }
 
+    // V3Descope takes a call's self pointer from its callee's scope, which for a shared func is
+    // the representative's. A stub in the operand's own scope gets the call that instance's
+    // self pointer; retargetInstanceCalls() then points the call at the shared func.
+    AstCFunc* instanceCallee(const Group* ugp) {
+        if (ugp->funcp->scopep() == ugp->scopep) return ugp->funcp;
+        AstCFunc*& stubp = m_instStubOf[ugp];
+        if (!stubp) {
+            stubp = newReconFunc(
+                ugp->scopep,
+                std::string{RECONSTRUCT_INST_FUNC_NAME} + "__" + std::to_string(gidOf(ugp)), true);
+            AstCCall* const callp = new AstCCall{m_funcFlp, ugp->funcp};
+            callp->dtypeSetVoid();
+            stubp->addStmtsp(callp->makeStmt());
+            stubp->vpiLazyInstStub(true);
+            m_ctx.m_anyInstStub = true;
+        }
+        return stubp;
+    }
+
+    // Slots per module over m_ordered; arrays are created in first-encounter module order.
     void assignEpochSlots() {
-        std::unordered_map<const AstVar*, int> slotOfKey;
-        std::unordered_map<AstNodeModule*, int> slotsOfMod;
-        std::vector<AstNodeModule*> modOrder;  // Deterministic AstVar creation order
+        std::unordered_map<const AstNodeModule*, size_t> idxOfMod;
+        std::vector<std::pair<AstNodeModule*, int>> slotsOfMod;
         for (Group* const g : m_ordered) {
             AstNodeModule* const modp = g->scopep->modp();
             UASSERT_OBJ(g->targets[0]->scopep()->modp() == modp, g->keyp,
                         "Lazy group key variable outside the group scope's module");
-            const auto mpair = slotsOfMod.emplace(modp, 0);
-            if (mpair.second) modOrder.push_back(modp);
-            int& slots = mpair.first->second;
-            const auto pair = slotOfKey.emplace(g->keyp, slots);
-            if (pair.second) ++slots;
-            g->epochSlot = pair.first->second;
+            const auto pair = idxOfMod.emplace(modp, slotsOfMod.size());
+            if (pair.second) slotsOfMod.emplace_back(modp, 0);
+            int& slot = m_keyInfo[g->keyp].epochSlot;
+            if (slot < 0) slot = slotsOfMod[pair.first->second].second++;
         }
-        for (AstNodeModule* const modp : modOrder) {
-            const auto mit = slotsOfMod.find(modp);
-            UASSERT_OBJ(mit != slotsOfMod.end(), modp,
-                        "--vpi-lazy module has no epoch slot count");
-            modp->addStmtsp(makeStampVar(m_epoch, modp, mit->second, EPOCH_NAME, false));
-        }
+        for (const auto& pr : slotsOfMod) pr.first->addStmtsp(makeStampVar(pr.first, pr.second));
     }
 
-    // Deposit generations, per guarded row per instance. Assigned after the shadows exist, and
-    // keyed by the shadow variable, so every instance of a module shares the numbering and the
-    // runtime can turn a slot into one byte offset from any instance's base.
-    void assignDepSlots() {
-        std::unordered_map<const AstVar*, int> slotOfShadow;
-        std::unordered_map<AstNodeModule*, int> slotsOfMod;
-        std::vector<AstNodeModule*> modOrder;  // Deterministic AstVar creation order
-        for (Group* const g : m_ordered) {
-            AstNodeModule* const modp = g->scopep->modp();
-            const auto mpair = slotsOfMod.emplace(modp, 0);
-            if (mpair.second) modOrder.push_back(modp);
-            int& slots = mpair.first->second;
-            g->depSlots.assign(g->targets.size(), -1);
-            for (size_t slot = 0; slot < g->targets.size(); ++slot) {
-                AstVarScope* const t = g->targets[slot];
-                // A helper target emits no VPI row, so nothing can deposit into it
-                if (m_helperTargets.count(t)) continue;
-                const auto sit = m_shadowOf.find(t);
-                UASSERT_OBJ(sit != m_shadowOf.end(), t->varp(),
-                            "--vpi-lazy deposit slot before the target's shadow");
-                AstVar* const shadowVarp = sit->second->varp();
-                const auto pair = slotOfShadow.emplace(shadowVarp, slots);
-                if (pair.second) {
-                    ++slots;
-                    m_ctx.m_depSlotOfShadowName.emplace(shadowVarp->name(), pair.first->second);
-                }
-                g->depSlots[slot] = pair.first->second;
-            }
-        }
-        for (AstNodeModule* const modp : modOrder) {
-            const auto mit = slotsOfMod.find(modp);
-            UASSERT_OBJ(mit != slotsOfMod.end(), modp, "--vpi-lazy module has no deposit count");
-            if (!mit->second) continue;
-            AstVar* const depVarp = makeStampVar(m_dep, modp, mit->second, DEP_NAME, true);
-            // Next to __Vlazyepoch, so the two cold words share a line rather than sit
-            // among signals
-            const auto eit = m_epoch.varOfMod.find(modp);
-            UASSERT_OBJ(eit != m_epoch.varOfMod.end(), modp,
-                        "--vpi-lazy module has deposit slots but no epoch stamp array");
-            eit->second->addNextHere(depVarp);
-        }
-    }
-
-    // Freshness and deposit stamps, per instance: a shared slot would mark instance B fresh
-    // after A ran. MODULETEMP being isTemp() is what forces the zero initializer, even under
-    // --x-initial unique; a zero slot is even, so it can never equal the odd __Vm_lazyDepStamp.
-    AstVar* makeStampVar(StampArray& arr, AstNodeModule* modp, int slots, const string& name,
-                         bool pub) {
+    // Freshness stamps, per instance: a shared slot would mark instance B fresh after A ran.
+    // MODULETEMP being isTemp() is what forces the zero initializer, even under
+    // --x-initial unique.
+    AstVar* makeStampVar(AstNodeModule* modp, int slots) {
         FileLine* const flp = modp->fileline();
         AstUnpackArrayDType* const dtypep = new AstUnpackArrayDType{
             flp, modp->findUInt64DType(), new AstRange{flp, slots - 1, 0}};
         v3Global.rootp()->typeTablep()->addTypesp(dtypep);
-        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
-        UASSERT_OBJ(varp->varType().isTemp(), varp, "Stamp array must be zero-initialized");
+        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, EPOCH_NAME, dtypep};
         varp->trace(false);
-        // Only the VPI runtime writes the deposit array, through a byte offset no pass can see,
-        // so without this the guards read a variable nothing assigns and are foldable.
-        if (pub) varp->sigPublic(true);
-        arr.varOfMod.emplace(modp, varp);
+        m_epochVarOfMod.emplace(modp, varp);
         return varp;
     }
 
     // Per-instance VarScope for the stamp array, so the guard can reference it as an AstVarRef.
-    AstVarScope* stampFor(StampArray& arr, Group* g) {
+    AstVarScope* stampFor(Group* g) {
         AstScope* const scopep = g->scopep;
-        const auto it = arr.ofScope.find(scopep);
-        if (it != arr.ofScope.end()) return it->second;
-        const auto mit = arr.varOfMod.find(scopep->modp());
-        UASSERT_OBJ(mit != arr.varOfMod.end(), scopep->modp(),
+        const auto it = m_epochOfScope.find(scopep);
+        if (it != m_epochOfScope.end()) return it->second;
+        const auto mit = m_epochVarOfMod.find(scopep->modp());
+        UASSERT_OBJ(mit != m_epochVarOfMod.end(), scopep->modp(),
                     "--vpi-lazy module has no stamp array");
         AstVar* const varp = mit->second;
         AstVarScope* const vscp = new AstVarScope{varp->fileline(), scopep, varp};
         scopep->addVarsp(vscp);
-        arr.ofScope.emplace(scopep, vscp);
+        m_epochOfScope.emplace(scopep, vscp);
         return vscp;
     }
 
-    AstNodeExpr* newEpochSel(AstVarScope* epochVscp, int slot, VAccess access) {
-        return new AstArraySel{m_funcFlp, new AstVarRef{m_funcFlp, epochVscp, access}, slot};
-    }
-    AstNodeExpr* newModelEpoch() { return new AstCExpr{m_funcFlp, "vlSymsp->__Vm_lazyEpoch", 64}; }
-
-    AstNodeExpr* newDepSel(AstVarScope* depVscp, int slot) {
-        return new AstArraySel{m_funcFlp, new AstVarRef{m_funcFlp, depVscp, VAccess::READ}, slot};
-    }
-    AstNodeExpr* newDepStamp() {
-        return new AstCExpr{m_funcFlp, "vlSymsp->__Vm_lazyDepStamp", 64};
-    }
-
-    // The deposit slot a statement commits to, or -1 if it must always run. Only a statement
-    // whose single written variable is a guarded row of this group qualifies: a write this scan
-    // cannot see, or that a temp another cone reads shares, must never be suppressed.
-    static int wrappableDepSlot(const std::unordered_map<const AstVarScope*, int>& slotOfShadow,
-                                AstNode* stmtp) {
-        AstVarScope* writtenp = nullptr;
-        bool opaque = false;
-        stmtp->foreach([&](AstNode* nodep) {
-            if (opaque) return;
-            if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-                // An AstCReset names no variable of its own; its assign's lvalue is this ref
-                if (refp->access().isReadOnly()) return;
-                if (writtenp && writtenp != refp->varScopep()) opaque = true;
-                writtenp = refp->varScopep();
-            } else if (VN_IS(nodep, NodeCCall) || VN_IS(nodep, CStmt)) {
-                opaque = true;  // May write rows this scan cannot enumerate
-            }
-        });
-        if (opaque || !writtenp) return -1;
-        const auto it = slotOfShadow.find(writtenp);
-        return it == slotOfShadow.end() ? -1 : it->second;
-    }
-
-    // Guard each run of statements committing to one deposited row, so a deposit survives the
-    // rebuild that every deposit forces on every cone (IEEE 1800-2023 38.34). Per row, not per
-    // function: a cone writes up to four rows, and suppressing the function would freeze the
-    // deposited row's siblings. 'headp' is already linked under its owner.
-    void guardDepositedWrites(Group* g, const std::unordered_map<const AstVarScope*, int>& slots,
-                              AstNode* headp) {
-        AstNode* stmtp = headp;
-        while (stmtp) {
-            const int slot = wrappableDepSlot(slots, stmtp);
-            if (slot < 0) {
-                // A mixed statement still guards what it holds: a conditional overwrite of one
-                // row is wrapped whole above, and only one that also writes a temp gets here.
-                for (AstNode* const childp :
-                     {stmtp->op1p(), stmtp->op2p(), stmtp->op3p(), stmtp->op4p()}) {
-                    if (childp && VN_IS(childp, NodeStmt)) guardDepositedWrites(g, slots, childp);
-                }
-                stmtp = stmtp->nextp();
-                continue;
-            }
-            AstNode* lastp = stmtp;
-            while (lastp->nextp() && wrappableDepSlot(slots, lastp->nextp()) == slot) {
-                lastp = lastp->nextp();
-            }
-            AstNode* const contp = lastp->nextp();
-            AstIf* const guardp
-                = new AstIf{m_funcFlp, new AstNeq{m_funcFlp, newDepSel(stampFor(m_dep, g), slot),
-                                                  newDepStamp()}};
-            stmtp->addHereThisAsNext(guardp);  // Takes the run's place in the list
-            if (contp) contp->unlinkFrBackWithNext();
-            guardp->addThensp(stmtp->unlinkFrBackWithNext());
-            if (contp) guardp->addNextHere(contp);
-            ++m_ctx.m_depGuards;
-            stmtp = contp;
-        }
+    AstNodeExpr* newStaleCheck(AstVarScope* epochVscp, int slot) {
+        AstCExpr* const exprp = new AstCExpr{m_funcFlp, "vlSymsp->__Vm_lazy.stale(", 1};
+        exprp->add(new AstArraySel{m_funcFlp,
+                                   new AstVarRef{m_funcFlp, epochVscp, VAccess::READWRITE}, slot});
+        exprp->add(")");
+        return exprp;
     }
 
     AstVarScope* attachShadow(AstVarScope* origp, AstVar* shadowVarp, bool isNew) {
-        // prepare() scans the pre-run VarScope order, which no shadow is in. A lazy role here
-        // would go uncounted, and with it the retained re-settle path
-        UASSERT_OBJ(!shadowVarp->isSigVpiLazyRWPublic() && !shadowVarp->isSigVpiLazyRetained(),
-                    shadowVarp, "--vpi-lazy shadow must carry no lazy role");
         if (isNew) {
             shadowVarp->trace(false);
             shadowVarp->sigPublic(true);  // Keep as a struct member; don't optimize/localize
@@ -1641,24 +1936,32 @@ private:
         return shadowVscp;
     }
 
+    // origp's shadow, else its module's shadow member attached to origp's scope, else null.
+    AstVarScope* reuseShadow(AstVarScope* origp) {
+        const auto it = m_shadowOf.find(origp);
+        if (it != m_shadowOf.end()) return it->second;
+        const auto vit = m_shadowVarOfOrig.find(origp->varp());
+        return vit != m_shadowVarOfOrig.end() ? attachShadow(origp, vit->second, false) : nullptr;
+    }
+
     AstVarScope* shadowForTarget(Group* g, size_t slot) {
-        return targetShadow(g->targets[slot],
-                            SHADOW_PREFIX + std::to_string(gidOf(g)) + "_" + std::to_string(slot));
+        const int gid = gidOf(g);
+        AstVarScope* const origp = g->targets[slot];
+        if (AstVarScope* const vscp = reuseShadow(origp)) return vscp;
+        return newTargetShadow(origp,
+                               SHADOW_PREFIX + std::to_string(gid) + "_" + std::to_string(slot));
     }
 
     // Shadow of a cross-scope copy target, which belongs to no group and so has no group id.
     AstVarScope* crossScopeShadow(AstVarScope* origp) {
         const int idx
             = m_xscopeShadowIdx.emplace(origp->varp(), m_xscopeShadowIdx.size()).first->second;
-        return targetShadow(origp, std::string{SHADOW_PREFIX} + "x" + std::to_string(idx));
+        if (AstVarScope* const vscp = reuseShadow(origp)) return vscp;
+        return newTargetShadow(origp, std::string{SHADOW_PREFIX} + "x" + std::to_string(idx));
     }
 
-    AstVarScope* targetShadow(AstVarScope* origp, const std::string& name) {
-        const auto it = m_shadowOf.find(origp);
-        if (it != m_shadowOf.end()) return it->second;
+    AstVarScope* newTargetShadow(AstVarScope* origp, const std::string& name) {
         AstVar* const origVarp = origp->varp();
-        const auto vit = m_shadowVarOfOrig.find(origVarp);
-        if (vit != m_shadowVarOfOrig.end()) return attachShadow(origp, vit->second, false);
         AstVar* const shadowVarp
             = new AstVar{origVarp->fileline(), VVarType::MODULETEMP, name, origVarp->dtypep()};
         shadowVarp->origName(origVarp->name());  // VPI-facing name
@@ -1675,24 +1978,21 @@ private:
 
     // Shadow of a non-target group variable: plain cold storage, no origName, so no VPI row.
     AstVarScope* shadowForTemp(AstVarScope* origp) {
-        const auto it = m_shadowOf.find(origp);
-        if (it != m_shadowOf.end()) return it->second;
+        if (AstVarScope* const vscp = reuseShadow(origp)) return vscp;
         AstVar* const origVarp = origp->varp();
-        const auto vit = m_shadowVarOfOrig.find(origVarp);
-        if (vit != m_shadowVarOfOrig.end()) return attachShadow(origp, vit->second, false);
-        const auto iit = m_tempIdxOfVar.find(origVarp);
-        const int idx = iit != m_tempIdxOfVar.end() ? iit->second : m_nextTempIdx++;
-        m_tempIdxOfVar.emplace(origVarp, idx);
-        AstVar* const shadowVarp = new AstVar{
-            origVarp->fileline(), VVarType::MODULETEMP,
-            std::string{SHADOW_PREFIX} + "t" + std::to_string(idx), origVarp->dtypep()};
+        AstVar* const shadowVarp
+            = new AstVar{origVarp->fileline(), VVarType::MODULETEMP,
+                         std::string{SHADOW_PREFIX} + "t" + std::to_string(m_nextTempIdx++),
+                         origVarp->dtypep()};
         shadowVarp->vpiLazyRole(VVpiLazyRole::SHADOW_TEMP);
         return attachShadow(origp, shadowVarp, true);
     }
 
-    AstVarScope* shadowForMember(Group* g, AstVarScope* u) {
-        const auto it = g->slotOf.find(u);
-        return it != g->slotOf.end() ? shadowForTarget(g, it->second) : shadowForTemp(u);
+    // A target is written by its own group alone, so the map names the right group.
+    AstVarScope* shadowForMember(AstVarScope* u) {
+        const auto it = m_targetOf.find(u);
+        return it != m_targetOf.end() ? shadowForTarget(it->second.first, it->second.second)
+                                      : shadowForTemp(u);
     }
 
     // An AstAssignW must never sit under a CFunc, so continuous assigns are cloned as blocking.
@@ -1727,23 +2027,24 @@ private:
     // The cone is shared by every instance, so it must read the variable, not a driver expression.
     void pinBoundary(AstVarScope* u) {
         AstVar* const uVarp = u->varp();
-        if (uVarp->isPrimaryIO() || uVarp->isSigUserRWPublic() || uVarp->isSigVpiLazyRetained())
+        if (uVarp->isPrimaryIO() || uVarp->isSigUserRWPublic() || uVarp->isVpiLazyStorageKept())
             return;
         if (uVarp->isSigUserRdPublic()) {
-            // Retaining would arm the write gate on a row that refuses deposits.
-            UASSERT_OBJ(!uVarp->isSigVpiLazyRWPublic(), uVarp, "public_flat_rd is still lazy");
+            // Retaining would arm the write gate on a row that refuses writes.
+            UASSERT_OBJ(!uVarp->isSigVpiLazyCandidate(), uVarp, "public_flat_rd is still lazy");
             return;
         }
-        if (uVarp->isSigVpiLazyRWPublic()) {
+        if (uVarp->isSigVpiLazyCandidate()) {
             m_fallback += instancesOf(uVarp);
             // Sequential/undriven operands hold storage regardless, so pinning them is free.
             const Bail why = hasCombDriver(u) ? combBoundaryReason(u) : Bail::BOUNDARY_OPERAND_SEQ;
             m_bailCount[static_cast<size_t>(why)] += instancesOf(uVarp);
+            uVarp->vpiLazyRole(VVpiLazyRole::RETAINED);
         } else {
-            // Storage kept only so a reconstruct function can read it.
+            // No RTL name, so no row: --public-flat-rw would not have one either.
             m_boundaryStorage += instancesOf(uVarp);
+            uVarp->vpiLazyRole(VVpiLazyRole::PINNED);
         }
-        uVarp->vpiLazyRole(VVpiLazyRole::RETAINED);
     }
 
     // METHODS - Liveness prune
@@ -1854,21 +2155,19 @@ private:
         m_fallback = m_combBailRetained;
         m_funcFlp = m_topScopep->fileline();
         assignEpochSlots();
-        // Every instance needs its own shadow VarScope for its descriptor, and a deposit slot is
-        // keyed by the shadow, so every shadow exists before any slot or statement is made.
+        // Every instance needs its own shadow VarScope for its descriptor.
         for (Group* const g : m_ordered) {
             for (size_t slot = 0; slot < g->targets.size(); ++slot) shadowForTarget(g, slot);
         }
-        assignDepSlots();
         for (Group* const g : m_ordered) {
-            const auto fit = m_funcOfKey.find(g->keyp);
-            if (fit != m_funcOfKey.end()) {
-                g->funcp = fit->second;
+            KeyInfo& key = m_keyInfo[g->keyp];
+            if (key.funcp) {
+                g->funcp = key.funcp;
                 continue;  // non-representative instance: share the func
             }
             AstCFunc* const funcp = newReconFunc(g->scopep, reconFuncName(g), true);
             g->funcp = funcp;
-            m_funcOfKey.emplace(g->keyp, funcp);
+            key.funcp = funcp;
             // What V3EmitCSyms routes a row's refreshp to, here and on any fold of this shadow
             for (AstVarScope* const t : g->targets) {
                 const auto tit = m_shadowOf.find(t);
@@ -1884,7 +2183,7 @@ private:
             bodyp->foreachAndNext([&](AstVarRef* refp) {
                 AstVarScope* u = refp->varScopep();
                 if (g->members.count(u)) {  // Read or written by this group
-                    AstVarScope* const shadowp = shadowForMember(g, u);
+                    AstVarScope* const shadowp = shadowForMember(u);
                     refp->varScopep(shadowp);
                     refp->varp(shadowp->varp());
                     return;
@@ -1900,7 +2199,7 @@ private:
                     // Operand is reconstructed too: read its shadow, calling its func to freshen.
                     UASSERT_OBJ(ugp->funcp, g->keyp,
                                 "--vpi-lazy cone operand ordered after its consumer");
-                    AstVarScope* const shadowp = shadowForMember(ugp, u);
+                    AstVarScope* const shadowp = shadowForMember(u);
                     refp->varScopep(shadowp);
                     refp->varp(shadowp->varp());
                     if (seenOps.insert(ugp).second) coneOps.push_back(ugp);
@@ -1910,14 +2209,9 @@ private:
             });
 
             // (1) epoch guard. Not an early return: split-cfuncs may move the body elsewhere.
-            AstVarScope* const epochVscp = stampFor(m_epoch, g);
-            AstIf* const guardp = new AstIf{
-                m_funcFlp,
-                new AstNeq{m_funcFlp, newEpochSel(epochVscp, g->epochSlot, VAccess::READ),
-                           newModelEpoch()}};
+            AstVarScope* const epochVscp = stampFor(g);
+            AstIf* const guardp = new AstIf{m_funcFlp, newStaleCheck(epochVscp, key.epochSlot)};
             funcp->addStmtsp(guardp);
-            guardp->addThensp(new AstAssign{
-                m_funcFlp, newEpochSel(epochVscp, g->epochSlot, VAccess::WRITE), newModelEpoch()});
             // The guard cannot move with the body; /4 slack for the optimizer growing it.
             AstCFunc* bodyFuncp = nullptr;
             if (const int splitAt = v3Global.opt.outputSplitCFuncs()) {
@@ -1939,14 +2233,14 @@ private:
             };
             // (2) refresh the operand cone; topo order guarantees each operand's func exists.
             for (Group* const ugp : coneOps) {
-                AstCCall* const callp = new AstCCall{m_funcFlp, ugp->funcp};
+                AstCCall* const callp = new AstCCall{m_funcFlp, instanceCallee(ugp)};
                 callp->dtypeSetVoid();
                 addBodyStmt(callp->makeStmt());
             }
             // (3) zero the shadows a partial assembly builds up, then (4) run its statements.
             for (AstVarScope* const u : g->zeroInitps) {
                 if (!g->neededps.count(u)) continue;  // Its element writes were pruned away
-                AstVarScope* const shadowp = shadowForMember(g, u);
+                AstVarScope* const shadowp = shadowForMember(u);
                 AstVar* const shadowVarp = shadowp->varp();
                 AstNodeDType* const dtypep = shadowVarp->dtypep();
                 AstNodeExpr* zerop;
@@ -1964,75 +2258,49 @@ private:
             }
             addBodyStmt(bodyp);
 
-            // (5) after the body is final, because the zero-initializers need guarding too or
-            // a partially assembled row would be zeroed out from under a deposit
-            std::unordered_map<const AstVarScope*, int> slotOfShadow;
-            for (size_t slot = 0; slot < g->targets.size(); ++slot) {
-                if (g->depSlots[slot] >= 0) {
-                    slotOfShadow.emplace(shadowForTarget(g, slot), g->depSlots[slot]);
-                }
-            }
-            if (!slotOfShadow.empty()) {
-                guardDepositedWrites(g, slotOfShadow,
-                                     bodyFuncp ? bodyFuncp->stmtsp() : guardp->thensp());
-            }
-
-            // The original signals' VPI presence now comes from the shadows.
+            // The shadows carry the original signals' VPI presence.
             for (AstVarScope* const t : g->targets) {
                 if (m_helperTargets.count(t)) {
                     ++m_helperCount;  // Never lazy-flagged; read only by the copies of it
                     continue;
                 }
-                t->varp()->vpiLazyRole(VVpiLazyRole::NONE);
+                dropStorage(t->varp());
                 m_reconstructed += instancesOf(t->varp());
             }
         }
-        emitCopyGroups();
-        emitFoldedCopies();
+        emitCopyRows(m_copyGroups, false);
+        emitCopyRows(m_foldedCopies, true);
         emitCrossScopeCopies();
     }
 
-    // A shadow row on top of the retained row a consumer pinned would name the signal twice.
-    static bool targetPinnedAlready(const Group* g) {
-        const AstVar* const varp = g->targets[0]->varp();
-        return varp->isSigUserRWPublic() || varp->isSigVpiLazyRetained();
-    }
-
-    void bindCopyRow(Group* g, AstVar* srcVarp) {
-        AstVar* const shadowVarp = shadowForTarget(g, 0)->varp();
-        if (AstVar* const prevp = shadowVarp->lazyCopySrc()) {
-            UASSERT_OBJ(prevp == srcVarp, shadowVarp,
-                        "--vpi-lazy copy instances disagree on their source");
-        } else {
+    // Copy rows: a shadow and a descriptor source, no func, no epoch slot. A copy names the
+    // stored source; a fold's shadow aliases the source cone's, whose func its row calls.
+    void emitCopyRows(const std::vector<Group*>& groups, bool folded) {
+        for (Group* const g : groups) {
+            AstVar* const targetVarp = g->targets[0]->varp();
+            // A shadow row on top of the retained row a consumer pinned would name it twice.
+            if (targetVarp->isSigVpiLazyRetained()) continue;
+            AstVar* srcVarp;
+            if (folded) {
+                const auto sit = m_shadowOf.find(g->copyFromp);
+                UASSERT_OBJ(sit != m_shadowOf.end(), g->copyFromp->varp(),
+                            "--vpi-lazy folded copy source has no shadow");
+                srcVarp = sit->second->varp();
+                UASSERT_OBJ(srcVarp->lazyReconFuncp(), srcVarp,
+                            "--vpi-lazy folded copy source has no reconstruct func");
+                ++m_foldedCount;
+            } else {
+                pinBoundary(g->copyFromp);  // The cone this row replaced would have pinned it too
+                srcVarp = g->copyFromp->varp();
+                ++m_copyCount;
+            }
+            AstVar* const shadowVarp = shadowForTarget(g, 0)->varp();
+            UASSERT_OBJ(!shadowVarp->lazyCopySrc() || shadowVarp->lazyCopySrc() == srcVarp,
+                        shadowVarp, "--vpi-lazy copy instances disagree on their source");
             shadowVarp->lazyCopySrc(srcVarp);
-        }
-        AstVar* const targetVarp = g->targets[0]->varp();
-        targetVarp->vpiLazyRole(VVpiLazyRole::NONE);
-        m_reconstructed += instancesOf(targetVarp);
-    }
-
-    // Folded cones: a shadow pointed at the source's, whose func the descriptor calls.
-    void emitFoldedCopies() {
-        for (Group* const g : m_foldedCopies) {
-            if (targetPinnedAlready(g)) continue;
-            const auto sit = m_shadowOf.find(g->copyFromp);
-            UASSERT_OBJ(sit != m_shadowOf.end(), g->copyFromp->varp(),
-                        "--vpi-lazy folded copy source has no shadow");
-            AstVar* const srcShadowVarp = sit->second->varp();
-            UASSERT_OBJ(srcShadowVarp->lazyReconFuncp(), srcShadowVarp,
-                        "--vpi-lazy folded copy source has no reconstruct func");
-            bindCopyRow(g, srcShadowVarp);
-            ++m_foldedCount;
-        }
-    }
-
-    // Copies of a stored variable: a shadow and a descriptor source, no func, no epoch slot.
-    void emitCopyGroups() {
-        for (Group* const g : m_copyGroups) {
-            if (targetPinnedAlready(g)) continue;
-            pinBoundary(g->copyFromp);  // The cone this row replaced would have pinned it too
-            bindCopyRow(g, g->copyFromp->varp());
-            ++m_copyCount;
+            if (shadowVarp->isLazyShadowAlias()) shadowVarp->noReset(true);  // No member to reset
+            dropStorage(targetVarp);
+            m_reconstructed += instancesOf(targetVarp);
         }
     }
 
@@ -2042,13 +2310,20 @@ private:
     void retainCompletenessFloor() {
         for (AstVarScope* const vscp : m_gather.m_vscOrder) {
             AstVar* const varp = vscp->varp();
-            if (!varp->isSigVpiLazyRWPublic()) continue;  // reconstructed / retained already
-            if (storagePinnedElsewhere(varp)) continue;  // only exclusions bail
-            const int insts = instancesOf(varp);
-            m_floorReason[floorReason(vscp)] += insts;
+            if (!varp->isSigVpiLazyCandidate()) continue;  // reconstructed / retained already
+            // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
+            // forceable net's force vars, not the net itself, and DFG may alias it away.
+            if (storagePinnedElsewhere(varp)) {
+                varp->sigUserRWPublic(true);
+                varp->vpiLazyRole(VVpiLazyRole::NONE);
+                const bool dpi = varp->isReadByDpi() || varp->isWrittenByDpi();
+                m_floorReason[dpi ? "storage pinned (DPI)" : "storage pinned"]
+                    += instancesOf(varp);
+                continue;
+            }
+            m_floorReason[floorReason(vscp)] += instancesOf(varp);
             UINFO(9, "vpi-lazy floor: " << floorReason(vscp) << " " << vscp->name());
             retainTarget(vscp, Bail::COMPLETENESS_FLOOR);  // flips the shared AstVar flag once
-            m_floorRetained += insts;  // counted once per AstVar (guard above)
         }
     }
 
@@ -2067,12 +2342,13 @@ private:
 
     void reportStats() {
         const size_t reconstructedMembers = m_shadowVarOfOrig.size();
+        const int floorRetained = m_bailCount[static_cast<size_t>(Bail::COMPLETENESS_FLOOR)];
         UINFO(3, "vpi-lazy: reconstructed="
                      << m_reconstructed << " groups=" << m_ordered.size()
                      << " members=" << reconstructedMembers << " fallback=" << m_fallback
                      << " copyGroups=" << m_copyCount << " crossScopeCopies=" << m_crossScopeCopies
                      << " foldedCopies=" << m_foldedCount << " prunedStmts=" << m_prunedStmts
-                     << " helpers=" << m_helperCount << " floorRetained=" << m_floorRetained);
+                     << " helpers=" << m_helperCount << " floorRetained=" << floorRetained);
         if (v3Global.opt.stats()) {
             V3Stats::addStat("VPI, lazy reconstructed", m_reconstructed);
             V3Stats::addStat("VPI, lazy groups", m_ordered.size());
@@ -2084,11 +2360,13 @@ private:
             V3Stats::addStat("VPI, lazy folded copy cones", m_foldedCount);
             V3Stats::addStat("VPI, lazy helper targets", m_helperCount);
             V3Stats::addStat("VPI, lazy pruned statements", m_prunedStmts);
-            V3Stats::addStat("VPI, lazy floor retained", m_floorRetained);
+            V3Stats::addStat("VPI, lazy floor retained", floorRetained);
+            V3Stats::addStat("VPI, lazy comb read-only", m_combWhole);
+            V3Stats::addStat("VPI, lazy comb masked", m_combPartial);
             for (const auto& pr : m_floorReason)
                 V3Stats::addStat(std::string{"VPI, lazy floor residual, "} + pr.first, pr.second);
             for (size_t i = 0; i < static_cast<size_t>(Bail::_COUNT); ++i) {
-                if (m_bailCount[i]) {
+                if (m_bailCount[i] && static_cast<Bail>(i) != Bail::COMPLETENESS_FLOOR) {
                     V3Stats::addStat(std::string{"VPI, lazy group bail, "}
                                          + bailName(static_cast<Bail>(i)),
                                      m_bailCount[i]);
@@ -2111,24 +2389,32 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
         VpiLazyPreparer preparer{nodep, topScopep, ctx};
         preparer.run();
 
-        // Residuals by name, not pointer: V3Dead may delete the AstVar, and a freed slot can be
-        // reused. Both roles are only ever set through a scoped variable the gather walk already
-        // saw, so its order holds every one of them.
         bool anyRetained = false;
         for (const AstVarScope* const vscp : preparer.vscOrder()) {
             const AstVar* const varp = vscp->varp();
-            if (varp->isSigVpiLazyRWPublic()) ctx.m_residualNames.emplace(vscp->name());
-            if (varp->isSigVpiLazyRetained()) anyRetained = true;
+            if (varp->isSigVpiLazyRetained() && !varp->isVpiLazyCombWhole()) anyRetained = true;
         }
-        // A deposit into a retained signal is propagated by re-running 'settle' on the next eval.
+        // A VPI write into a writable retained signal is propagated by re-running 'settle' on the
+        // next eval.
         if (anyRetained) v3Global.setHasVpiLazyRetained();
     }
 
-    if (v3Global.opt.stats()) {
-        V3Stats::addStat("VPI, lazy residual un-retained", ctx.m_residualNames.size());
-    }
-
     V3Global::dumpCheckGlobalTree("vpi-lazy-prepare", 0, dumpTreeEitherLevel() >= 3);
+}
+
+VVpiLazyComb V3VpiLazy::combOf(const AstNetlist* nodep, const AstScope* scopep,
+                               const AstVar* varp) {
+    if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
+    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+    UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
+    return ctxp->combOf(scopep->name(), varp);
+}
+
+const std::vector<V3VpiLazy::CombRun>&
+V3VpiLazy::combRuns(const AstNetlist* nodep, const AstScope* scopep, const AstVar* varp) {
+    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+    UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
+    return ctxp->combRunsOf(scopep->name(), varp);
 }
 
 //######################################################################
@@ -2136,50 +2422,26 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
 namespace {
 
 // Everything resolveCrossScopeSrcs() needs from the tree, in one walk: the AstScope of each
-// wanted scope name, the module-level AstVar of each wanted variable name, and each module's
-// deposit array and reconstruct shadows.
+// wanted scope name and the module-level AstVar of each wanted variable name.
 class CrossScopeGatherVisitor final : public VNVisitorConst {
     // STATE
-    V3VpiLazyContext& m_ctx;
     const std::set<std::string>& m_wantScopes;
     const std::set<std::string>& m_wantVars;
-    const bool m_wantDepWords;
     const AstNodeModule* m_modp = nullptr;
     bool m_modLevel = false;  // Directly under a module's stmtsp
-    const AstVar* m_depVarp = nullptr;
-    std::vector<const AstVar*> m_shadowps;
 
 public:
     std::map<std::string, const AstScope*> m_scopeps;
     std::map<std::pair<const AstNodeModule*, std::string>, const AstVar*> m_varps;
 
 private:
-    // Bind the deposit slots emitReconstructions() recorded by name to the surviving tree. A
-    // cone row's descriptor carries the byte offset of its word, so V3EmitCSyms needs the
-    // module's array member (for offsetof, under its protected name) as well as the slot.
-    void resolveDepWords() {
-        for (const AstVar* const shadowVarp : m_shadowps) {
-            const auto it = m_ctx.m_depSlotOfShadowName.find(shadowVarp->name());
-            if (it == m_ctx.m_depSlotOfShadowName.end()) continue;  // Copy, fold or cross-scope
-            // Without the array there is no word for the runtime to stamp, and the row would
-            // silently go back to being recomputed out from under a deposit
-            UASSERT_OBJ(m_depVarp, shadowVarp,
-                        "--vpi-lazy row has a deposit slot but its module has no " << DEP_NAME);
-            m_ctx.m_depWordResolved.emplace(shadowVarp, V3VpiLazy::DepWord{m_depVarp, it->second});
-        }
-    }
-
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modLevel);
-        VL_RESTORER(m_depVarp);
-        VL_RESTORER_CLEAR(m_shadowps);
         m_modp = nodep;
         m_modLevel = true;
-        m_depVarp = nullptr;
         iterateChildrenConst(nodep);
-        if (m_wantDepWords) resolveDepWords();
     }
     void visit(AstScope* nodep) override {
         // Not folded into the module stmtsp walk: the top scope is op2 of an AstTopScope, one
@@ -2195,13 +2457,6 @@ private:
     }
     void visit(AstVar* nodep) override {
         if (!m_modLevel) return;
-        if (m_wantDepWords) {
-            if (nodep->name() == DEP_NAME) {
-                m_depVarp = nodep;
-            } else if (nodep->isLazyReconstructShadow()) {
-                m_shadowps.push_back(nodep);
-            }
-        }
         if (!m_wantVars.count(nodep->name())) return;
         const bool inserted = m_varps.emplace(std::make_pair(m_modp, nodep->name()), nodep).second;
         UASSERT_OBJ(inserted, nodep,
@@ -2209,9 +2464,6 @@ private:
     }
     // Module-level vars only: V3Descope moves CFuncs up but leaves their locals inside
     void visit(AstCFunc*) override {}
-    // Skipped whole: its scope is named "TOP" like the real top scope, and its module hangs off
-    // it rather than the netlist, so neither was ever collected
-    void visit(AstConstPool*) override {}
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_modLevel);
         m_modLevel = false;
@@ -2220,40 +2472,22 @@ private:
 
 public:
     // CONSTRUCTORS
-    CrossScopeGatherVisitor(AstNetlist* nodep, V3VpiLazyContext& ctx,
-                            const std::set<std::string>& wantScopes,
-                            const std::set<std::string>& wantVars, bool wantDepWords)
-        : m_ctx{ctx}
-        , m_wantScopes{wantScopes}
-        , m_wantVars{wantVars}
-        , m_wantDepWords{wantDepWords} {
+    CrossScopeGatherVisitor(AstNetlist* nodep, const std::set<std::string>& wantScopes,
+                            const std::set<std::string>& wantVars)
+        : m_wantScopes{wantScopes}
+        , m_wantVars{wantVars} {
         iterateConst(nodep);
     }
 };
 
 }  // namespace
 
-const V3VpiLazy::DepWord* V3VpiLazy::depWordOf(const AstNetlist* nodep, const AstVar* shadowVarp) {
-    // Most rows on most designs are cones, so this runs per lazy descriptor slot
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
-    if (!ctxp || ctxp->m_depSlotOfShadowName.empty()) return nullptr;
-    UASSERT(ctxp->m_crossScopeResolvedDone,
-            "depWordOf() before V3VpiLazy::resolveCrossScopeSrcs()");
-    const auto it = ctxp->m_depWordResolved.find(shadowVarp);
-    return it == ctxp->m_depWordResolved.end() ? nullptr : &it->second;
-}
-
 void V3VpiLazy::resolveCrossScopeSrcs(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
     if (!ctxp) return;
     ctxp->m_crossScopeResolvedDone = true;
-    ctxp->m_depWordResolved.clear();
-    // Two independent jobs, one walk: the deposit slots are bound whenever any row has one,
-    // the name maps built only for the rows that name another scope.
-    const bool wantDepWords = !ctxp->m_depSlotOfShadowName.empty();
-    const bool wantCrossScope = !ctxp->m_crossScopeSrcs.empty();
-    if (!wantDepWords && !wantCrossScope) return;
+    if (ctxp->m_crossScopeSrcs.empty()) return;
 
     // Only the names rows actually reference are looked up, so only those are collected and
     // only their uniqueness is asserted: a duplicate elsewhere is no business of this pass.
@@ -2265,8 +2499,7 @@ void V3VpiLazy::resolveCrossScopeSrcs(AstNetlist* nodep) {
         wantVars.emplace(names.m_dstVarName);
         wantVars.emplace(names.m_srcVarName);
     }
-    const CrossScopeGatherVisitor gather{nodep, *ctxp, wantScopes, wantVars, wantDepWords};
-    if (!wantCrossScope) return;
+    const CrossScopeGatherVisitor gather{nodep, wantScopes, wantVars};
 
     const auto findScope = [&gather](const std::string& name) -> const AstScope* {
         const auto it = gather.m_scopeps.find(name);
@@ -2292,7 +2525,7 @@ void V3VpiLazy::resolveCrossScopeSrcs(AstNetlist* nodep) {
                        << "' did not survive; its VPI row would copy garbage");
         }
         // pinBoundary() promised this source keeps its storage; a dead member would copy garbage.
-        UASSERT_OBJ(srcVarp->isSigVpiLazyRetained() || srcVarp->isSigUserRWPublic()
+        UASSERT_OBJ(srcVarp->isVpiLazyStorageKept() || srcVarp->isSigUserRWPublic()
                         || srcVarp->isSigUserRdPublic() || srcVarp->isPrimaryIO(),
                     srcVarp, "--vpi-lazy cross-scope copy source was not pinned");
         const bool inserted
@@ -2302,6 +2535,30 @@ void V3VpiLazy::resolveCrossScopeSrcs(AstNetlist* nodep) {
         UASSERT_OBJ(inserted, dstVarp,
                     "Duplicate --vpi-lazy cross-scope copy row in " << dstScopep->prettyNameQ());
     }
+}
+
+void V3VpiLazy::retargetInstanceCalls(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+    if (!ctxp || !ctxp->m_anyInstStub) return;
+    std::unordered_map<const AstCFunc*, AstCFunc*> sharedOf;
+    std::vector<AstCFunc*> stubps;
+    nodep->foreach([&](AstCFunc* funcp) {
+        if (!funcp->vpiLazyInstStub()) return;
+        const AstStmtExpr* const stmtp = VN_CAST(funcp->stmtsp(), StmtExpr);
+        const AstCCall* const callp = stmtp ? VN_CAST(stmtp->exprp(), CCall) : nullptr;
+        UASSERT_OBJ(callp && !stmtp->nextp(), funcp, "--vpi-lazy instance stub is not one call");
+        sharedOf.emplace(funcp, callp->funcp());
+        stubps.push_back(funcp);
+    });
+    // The self pointer V3Descope gave the call stays, as when V3Combine retargets a call.
+    nodep->foreach([&](AstCCall* callp) {
+        const auto it = sharedOf.find(callp->funcp());
+        if (it != sharedOf.end()) callp->funcp(it->second);
+    });
+    for (AstCFunc* const stubp : stubps)
+        VL_DO_DANGLING(stubp->unlinkFrBack()->deleteTree(), stubp);
+    V3Global::dumpCheckGlobalTree("vpi-lazy-retarget", 0, dumpTreeEitherLevel() >= 3);
 }
 
 const V3VpiLazy::CrossScopeSrc* V3VpiLazy::crossScopeCopySrc(const AstNetlist* nodep,
@@ -2320,36 +2577,32 @@ const V3VpiLazy::CrossScopeSrc* V3VpiLazy::crossScopeCopySrc(const AstNetlist* n
 
 namespace {
 
-// Everything finalize() needs from the tree, in one walk: the role assert, which reconstruct
-// func (if only one) uses each temp shadow, the surviving deposit guards, and the reconstruct
-// funcs to split.
+// Everything finalize() needs from the tree, in one walk: which reconstruct func (if only one)
+// uses each temp shadow, and the reconstruct funcs to split.
 class FinalizeVisitor final : public VNVisitorConst {
 public:
     struct Use final {
         AstCFunc* m_funcp = nullptr;  // Null once a second func, or no func at all, uses it
         AstNode* m_firstUsep = nullptr;  // First top-level statement of m_funcp using it
+        std::vector<AstNodeVarRef*> m_refps;  // Every reference, unscoped on localization
     };
     // STATE
     std::vector<AstVar*> m_order;  // Temp shadows in encounter order (determinism)
     std::unordered_map<AstVar*, Use> m_useOf;
+    std::unordered_map<AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Of temp shadows
     std::vector<AstCFunc*> m_reconFuncps;  // Encounter order (determinism)
-    std::unordered_set<const AstVar*> m_writtenps;
-    std::vector<const AstVarScope*> m_lazyVscps;
-    int m_depGuardsSurvived = 0;
+    std::unordered_map<AstCFunc*, std::vector<AstCFunc*>> m_calleesOf;
 
 private:
     AstCFunc* m_funcp = nullptr;  // Func currently being descended, null outside one
     AstNode* m_stmtp = nullptr;  // Top-level statement of m_funcp->stmtsp() being descended
-    bool m_inReconFunc = false;
 
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_funcp);
         VL_RESTORER(m_stmtp);
-        VL_RESTORER(m_inReconFunc);
         m_funcp = nodep;
         m_stmtp = nullptr;
-        m_inReconFunc = nodep->vpiLazyReconstruct();
-        if (m_inReconFunc) m_reconFuncps.push_back(nodep);
+        if (nodep->vpiLazyReconstruct()) m_reconFuncps.push_back(nodep);
         iterateAndNextConstNull(nodep->argsp());
         iterateAndNextConstNull(nodep->varsp());
         iterateConstNull(nodep->scopeNamep());
@@ -2359,20 +2612,18 @@ private:
             iterateConst(stmtp);
         }
     }
-    void visit(AstVar* nodep) override {
-        // prepare() clears the lazy flag whenever it retains, so the two are disjoint.
-        UASSERT_OBJ(!nodep->isSigVpiLazyRetained() || !nodep->isSigVpiLazyRWPublic(), nodep,
-                    "--vpi-lazy signal is both retained and lazy");
+    void visit(AstVarScope* nodep) override {
+        if (nodep->varp()->isLazyReconstructTemp()) m_vscpsOf[nodep->varp()].push_back(nodep);
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNodeCCall* nodep) override {
+        if (m_funcp) m_calleesOf[m_funcp].push_back(nodep->funcp());
         iterateChildrenConst(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
-        if (!nodep->access().isReadOnly()) m_writtenps.emplace(varp);
-        if (m_inReconFunc && VN_IS(nodep, VarRef) && varp->name() == DEP_NAME) {
-            ++m_depGuardsSurvived;
-        }
         if (varp->isLazyReconstructTemp()) {
-            const auto pair = m_useOf.emplace(varp, Use{m_funcp, m_stmtp});
+            const auto pair = m_useOf.emplace(varp, Use{m_funcp, m_stmtp, {}});
             if (pair.second) {
                 m_order.push_back(varp);
             } else if (pair.first->second.m_funcp != m_funcp) {
@@ -2381,11 +2632,8 @@ private:
                 // Only if first mentioned outside stmtsp, and shadow refs are statement-only
                 pair.first->second.m_firstUsep = m_stmtp;  // LCOV_EXCL_LINE
             }
+            pair.first->second.m_refps.push_back(nodep);
         }
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstVarScope* nodep) override {
-        if (nodep->varp()->isSigVpiLazyRWPublic()) m_lazyVscps.push_back(nodep);
         iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -2394,9 +2642,28 @@ public:
     explicit FinalizeVisitor(AstNetlist* nodep) { iterateConst(nodep); }
 };
 
+// Reconstruct funcs and the V3DepthBlock and splitCheck sub-funcs they call, which lack the flag.
+std::unordered_set<const AstCFunc*> reconFamily(const FinalizeVisitor& uses) {
+    std::unordered_set<const AstCFunc*> family{uses.m_reconFuncps.begin(),
+                                               uses.m_reconFuncps.end()};
+    std::vector<AstCFunc*> work = uses.m_reconFuncps;
+    while (!work.empty()) {
+        AstCFunc* const funcp = work.back();
+        work.pop_back();
+        const auto it = uses.m_calleesOf.find(funcp);
+        if (it == uses.m_calleesOf.end()) continue;
+        for (AstCFunc* const calleep : it->second) {
+            if (family.insert(calleep).second) work.push_back(calleep);
+        }
+    }
+    return family;
+}
+
 // A temp shadow only one reconstruct func touches needs no per-instance member. Not V3Localize's
-// job: it runs after finalize() has split, and it skips the isSigPublic() attachShadow sets.
+// job: it skips the isSigPublic() attachShadow sets. Not before V3DepthBlock, which would move a
+// use into a sub-func that cannot see the local.
 int localizeTempShadows(const FinalizeVisitor& uses) {
+    const std::unordered_set<const AstCFunc*> family = reconFamily(uses);
     int localized = 0;
     for (AstVar* const varp : uses.m_order) {
         const auto uit = uses.m_useOf.find(varp);
@@ -2404,39 +2671,24 @@ int localizeTempShadows(const FinalizeVisitor& uses) {
         const FinalizeVisitor::Use& use = uit->second;
         AstCFunc* const funcp = use.m_funcp;
         if (!funcp) continue;
-        if (!funcp->vpiLazyReconstruct()) continue;
+        if (!family.count(funcp)) continue;
         if (!use.m_firstUsep) continue;
         varp->unlinkFrBack();
         varp->funcLocal(true);
         varp->sigPublic(false);  // Was set only to hold it as a member
+        varp->noReset(false);  // Reset at declaration, as any func local is
         use.m_firstUsep->addHereThisAsNext(varp);
+        // As V3Localize leaves a func local: unscoped, its VarScopes gone
+        for (AstNodeVarRef* const refp : use.m_refps) refp->varScopep(nullptr);
+        const auto vit = uses.m_vscpsOf.find(varp);
+        if (vit != uses.m_vscpsOf.end()) {
+            for (AstVarScope* vscp : vit->second) {
+                VL_DO_DANGLING(vscp->unlinkFrBack()->deleteTree(), vscp);
+            }
+        }
         ++localized;
     }
     return localized;
-}
-
-void verifyRetention(const FinalizeVisitor& gather, const V3VpiLazyContext* ctxp) {
-    if (!ctxp || ctxp->m_residualNames.empty()) return;
-
-    std::set<std::string> livenames;
-    for (const AstVarScope* const vscp : gather.m_lazyVscps) {
-        const AstVar* const varp = vscp->varp();
-        livenames.emplace(vscp->name());
-        if (varp->isPrimaryIO()) continue;
-        if (gather.m_writtenps.count(varp)) continue;
-        varp->v3fatalSrc("--vpi-lazy left '"
-                         << vscp->name()
-                         << "' un-retained, but its driver did not survive: its VPI row would"
-                            " read zero for ever. storagePinnedElsewhere() over-promised.");
-    }
-
-    for (const std::string& name : ctxp->m_residualNames) {
-        if (livenames.count(name)) continue;
-        v3fatalSrc("--vpi-lazy left '" << name
-                                       << "' un-retained, but its storage did not survive:"
-                                          " its VPI row is lost. storagePinnedElsewhere()"
-                                          " over-promised.");
-    }
 }
 
 }  // namespace
@@ -2447,31 +2699,20 @@ void V3VpiLazy::finalize(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
 
     const FinalizeVisitor visitor{nodep};
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
-    verifyRetention(visitor, ctxp);
-
-    const int localized = localizeTempShadows(visitor);
-    if (v3Global.opt.stats()) V3Stats::addStat("VPI, lazy localized temps", localized);
-
-    // A guard reads a variable nothing in the tree assigns - only the VPI runtime writes the
-    // deposit array - so an optimizer may fold the guards away and silently restore the defect
-    // they fix. Counted, not matched one for one: V3Const may merge two adjacent guards.
-    if (ctxp && ctxp->m_depGuards) {
-        const int survived = visitor.m_depGuardsSurvived;
-        if (!survived) {
-            v3fatalSrc("--vpi-lazy emitted " << ctxp->m_depGuards
-                                             << " deposit guards and none survived: a VPI"
-                                                " deposit into a reconstructed signal would be"
-                                                " recomputed away");
-        }
-        UINFO(3, "vpi-lazy: deposit guards emitted=" << ctxp->m_depGuards
-                                                     << " survived=" << survived);
-        if (v3Global.opt.stats()) { V3Stats::addStat("VPI, lazy deposit guards", survived); }
-    }
 
     // Split oversized reconstruction funcs per --output-split-cfuncs, their size now settled.
     // prepare()'s pointers do not survive the intervening passes, so the walk above found the
     // funcs by their flag. splitCheck moves whole top-level statements, so an entry func's
     // epoch guard stays whole.
     for (AstCFunc* const cfuncp : visitor.m_reconFuncps) V3Sched::util::splitCheck(cfuncp);
+    V3Global::dumpCheckGlobalTree("vpi-lazy-finalize", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3VpiLazy::localizeTemps(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    if (!nodep->vpiLazyContextp()) return;
+    const FinalizeVisitor visitor{nodep};
+    const int localized = localizeTempShadows(visitor);
+    if (v3Global.opt.stats()) V3Stats::addStat("VPI, lazy localized temps", localized);
+    V3Global::dumpCheckGlobalTree("vpi-lazy-localize", 0, dumpTreeEitherLevel() >= 3);
 }

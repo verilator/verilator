@@ -3891,7 +3891,13 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
             VerilatedVpiImp::inertialDelay(baseSignalVop, valuep);
             return object;
         }
-        vl_vpi_note_write(baseSignalVop);
+        // A malformed decimal string is rejected only once parsed below, so must not re-settle;
+        // a force has by then already set its enable bits
+        unsigned long long decVal;
+        if (forceFlag == vpiForceFlag || forceFlag == vpiReleaseFlag
+            || valuep->format != vpiDecStrVal
+            || std::sscanf(valuep->value.str, "%30llu", &decVal) == 1)  // lintok-format-ll
+            vl_vpi_note_write(baseSignalVop);
         VerilatedVpiImp::evalNeeded(true);
         const int varBits = baseSignalVop->bitSize();
 

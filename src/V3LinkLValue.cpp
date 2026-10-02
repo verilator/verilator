@@ -84,7 +84,7 @@ class LinkLValueVisitor final : public VNVisitor {
                 // functions read the forced value correctly
                 if (v3Global.opt.vpi()
                     && (nodep->varp()->isSigPublic() || nodep->varp()->isSigModPublic()
-                        || nodep->varp()->isSigExternallyRWPublic())) {
+                        || nodep->varp()->isSigVpiLazyCandidate())) {
                     nodep->varp()->setForceable();
                 }
             } else if (!nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()) {

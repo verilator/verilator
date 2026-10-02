@@ -189,7 +189,7 @@ class V3Global final {
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
     bool m_hasTable = false;  // Desgin has the UDP Table.
     bool m_hasVirtIfaces = false;  // Design uses virtual interfaces
-    bool m_hasVpiLazyRetained = false;
+    bool m_hasVpiLazyRetained = false;  // --vpi-lazy kept writable storage; puts re-settle
     bool m_usesProbDist = false;  // Uses $dist_*
     bool m_usesStdPackage = false;  // Design uses the std package
     bool m_usesTiming = false;  // Design uses timing constructs

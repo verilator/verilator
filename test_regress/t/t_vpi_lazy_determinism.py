@@ -10,29 +10,38 @@
 import vltest_bootstrap
 import glob
 import os
+import shutil
 
 test.scenarios('vlt')
 
-# Any lazy design with enough cones to split across files will do; topology has the most.
-test.top_filename = "t/t_vpi_lazy_topology.v"
-test.pli_filename = "t/t_vpi_lazy_topology.cpp"
+# Any design with enough cones to split across files will do.
+test.top_filename = "t/t_vpi_scope_topology.v"
+test.golden_filename = "t/t_vpi_scope_topology.out"
+test.pli_filename = "t/t_vpi_dump.cpp"
 
 verilator_flags2 = [
-    "--exe --vpi --vpi-lazy --no-l2name --no-skip-identical"
-    " -Wno-UNOPTFLAT -Wno-UNUSED -Wno-WIDTHTRUNC", test.pli_filename
+    "--exe --vpi --timing --vpi-lazy --no-l2name --no-skip-identical", test.pli_filename,
+    "t/TestVpiMain.cpp"
 ]
 
-test.compile(make_top_shell=False, make_main=False, verilator_flags2=verilator_flags2)
-test.execute()
+test.clean_objs()
+
+test.compile(make_top_shell=False,
+             make_main=False,
+             make_pli=True,
+             verilator_flags2=verilator_flags2,
+             make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 obj_dir1 = test.obj_dir
 
-obj_dir2 = os.path.dirname(obj_dir1) + "_determinism_run2/" + os.path.basename(obj_dir1)
-os.makedirs(obj_dir2, exist_ok=True)
+obj_dir2 = test.obj_dir + "/obj_dir_2"
+# A stale file in either obj_dir would read as a difference
+shutil.rmtree(obj_dir2, ignore_errors=True)
+os.makedirs(obj_dir2)
 
-verilator_flags_run2 = [
-    "-cc", "-Mdir", obj_dir2, "--fdedup", "--debug-check", "--comp-limit-members", "10"
-]
+# Run 1's driver defaults, only redirected to obj_dir2
+verilator_flags_run2 = [obj_dir2 if f == obj_dir1 else f for f in test.verilator_flags]
 vlt_cmd2 = test.compile_vlt_cmd(verilator_flags=verilator_flags_run2,
                                 verilator_flags2=verilator_flags2,
                                 make_main=False)

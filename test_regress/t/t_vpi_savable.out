@@ -531,11 +531,19 @@ t.status = 1e
 -- @230 readonly
 TOP.clk = 0
 -- @235 cb t.cyc = 11
--- @235 readonly
+-- put t.ctrl_r = 0c0c0005 flag=1 ok
+-- save
+-- @235 before restore
 TOP.clk = 1
 t.cnt = 0f
+t.ctrl_r = 0c0c0005
 t.cyc = 11
 t.status = 1f
+-- restore
+-- @235 after restore
+-- @235 readonly
+t.ctrl_dup = 0c0c0005
+TOP.ctrl_o = 0c0c0005
 -- @240 readonly
 TOP.clk = 0
 -- @245 cb t.cyc = 12

@@ -424,7 +424,6 @@ static void process() {
             // directly from force discovery to assign/deassign lowering without rediscovery.
             V3Force::forceAndAssignAll(v3Global.rootp());
 
-            // Preserve reconstructable lazy signals before optimisation.
             if (v3Global.opt.vpiLazy()) V3VpiLazy::prepare(v3Global.rootp());
 
             // DFG optimization
@@ -477,7 +476,6 @@ static void process() {
             V3Sched::schedule(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
 
-            // Split reconstruction functions after optimisation.
             if (v3Global.opt.vpiLazy()) V3VpiLazy::finalize(v3Global.rootp());
 
             // Post scheduling transformations - TODO: this should at least be renamed
@@ -519,9 +517,11 @@ static void process() {
 
             // Move variables from modules to function local variables where possible
             if (v3Global.opt.fLocalize()) V3Localize::localizeAll(v3Global.rootp());
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::localizeTemps(v3Global.rootp());
 
             // Remove remaining scopes; make varrefs/funccalls relative to current module
             V3Descope::descopeAll(v3Global.rootp());
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::retargetInstanceCalls(v3Global.rootp());
 
             // Icache packing; combine common code in each module's functions into subroutines
             if (v3Global.opt.fCombine()) V3Combine::combineAll(v3Global.rootp());
@@ -640,7 +640,6 @@ static void process() {
             const EmitCParentModule emitCParentModule;
             // emitcInlines is first, as it may set needHInlines which other emitters read
             V3EmitC::emitcInlines();
-            // Bind surviving cross-scope sources before emission.
             if (v3Global.opt.vpiLazy()) V3VpiLazy::resolveCrossScopeSrcs(v3Global.rootp());
             V3EmitC::emitcSyms();
             V3EmitC::emitcConstPool();

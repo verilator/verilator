@@ -490,7 +490,7 @@ class LinkParseVisitor final : public VNVisitor {
                 if (nodep->isParam()) {
                     nodep->sigUserRWPublic(true);
                 } else {
-                    nodep->vpiLazyRole(VVpiLazyRole::RECONSTRUCTED);
+                    nodep->vpiLazyRole(VVpiLazyRole::CANDIDATE);
                 }
             } else if (v3Global.opt.publicFlatRW()) {
                 nodep->sigUserRWPublic(true);
@@ -516,7 +516,7 @@ class LinkParseVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
         m_varp = nullptr;
-        if (nodep->isSigVpiLazyRWPublic()
+        if (nodep->isSigVpiLazyCandidate()
             && (nodep->isSigUserRWPublic() || nodep->isSigUserRdPublic()))
             nodep->vpiLazyRole(VVpiLazyRole::NONE);
         // temporaries under an always aren't expected to be blocking

@@ -30,6 +30,7 @@
 #include "V3DupFinder.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3VpiLazy.h"
 
 #include <list>
 #include <unordered_map>
@@ -168,10 +169,16 @@ public:
                 // Public signals shouldn't be changed, pli code might be messing with them
                 vVtxp->clearReducibleAndDedupable("SigPublic");
                 vVtxp->setConsumed("SigPublic");
-            } else if (vscp->varp()->isSigVpiLazyRetained()) {
+            } else if (vscp->varp()->isVpiLazyStorageKept()) {
                 // Dedup would sever VPI from the driver.
                 vVtxp->clearDedupable("SigVpiLazyRetained");
                 vVtxp->setConsumed("SigVpiLazyRetained");
+                // Substituting a writable signal's driver into its readers would hide a put
+                if (vscp->varp()->isSigVpiLazyRetained()
+                    && V3VpiLazy::combOf(v3Global.rootp(), vscp->scopep(), vscp->varp())
+                           != VVpiLazyComb::WHOLE) {
+                    vVtxp->clearReducible("SigVpiLazyWritable");
+                }
             }
             if (vscp->varp()->isIO() && vscp->scopep()->isTop()) {
                 // We may need to convert to/from sysc/reg sigs
@@ -739,8 +746,10 @@ class GateInline final {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
                 // One reconstruct function serves every instance.
-                if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
-                    if (cfuncp->vpiLazyReconstruct()) continue;
+                if (v3Global.opt.vpiLazy()) {
+                    if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
+                        if (cfuncp->vpiLazyReconstruct()) continue;
+                    }
                 }
 
                 // Do not inline anything other than buffers and inverters into
@@ -798,7 +807,7 @@ class GateInline final {
             }
 
             // Retained variables keep their drivers for VPI.
-            if (vVtxp->outEmpty() && !vscp->varp()->isSigVpiLazyRetained()) {
+            if (vVtxp->outEmpty() && !vscp->varp()->isVpiLazyStorageKept()) {
                 // Remove Variable vertex
                 VL_DO_DANGLING(vVtxp->unlinkDelete(&m_graph), vVtxp);
                 // Remove driving logic and vertex

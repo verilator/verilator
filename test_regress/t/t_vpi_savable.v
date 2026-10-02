@@ -86,6 +86,17 @@ module t (
         default: ;
       endcase
     end
+    else if (t_vpi_dump_restores() == 3) begin
+      // Saved between a put and its eval, so ctrl_dup reads as before the put until the eval
+      case (cyc)
+        8'd17: begin
+          t_vpi_dump_put_rw("t.ctrl_r", "0c0c0005");
+          t_vpi_dump_save();
+          t_vpi_dump_restore();
+        end
+        default: ;
+      endcase
+    end
   end
 
   always @(negedge clk) begin

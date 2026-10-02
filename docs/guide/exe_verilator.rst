@@ -2144,12 +2144,17 @@ Summary:
 .. option:: --vpi-lazy
 
    Declares all variables, ports, and wires VPI accessible by their flat
-   name, as :vlopt:`--public-flat-rw` does, but, where possible,
-   reconstructing them on demand when VPI reads them instead of pinning them
-   as model state on the evaluation path. Implies :vlopt:`--vpi`.
+   name, as :vlopt:`--public-flat-rw` does, but rematerializes
+   combinationally driven signals when VPI reads them rather than storing
+   them in the model. Those signals are read-only unless marked
+   ``public_flat_rw`` or ``forceable``. Implies :vlopt:`--vpi`. See
+   :ref:`Lazy VPI Signal Access`.
 
-   Deposits into a reconstructed signal do not behave as they do under
-   :vlopt:`--public-flat-rw`. See :ref:`Lazy VPI Signal Access`.
+   :vlopt:`--public-flat-rw`, :vlopt:`--public-depth` and
+   :vlopt:`--public-params` are ignored alongside it with a
+   :option:`NOEFFECT` warning, though a ``public_flat_rw`` metacomment is
+   honored. With :vlopt:`--no-vpi <--vpi>`, :vlopt:`--vpi-lazy` itself is
+   ignored.
 
 .. option:: --waiver-multiline
 

@@ -988,10 +988,8 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_exe && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
     }
-    // Preserve whether the user explicitly set --vpi.
     const bool vpiUserSet = m_vpi.isSetTrue();
     if (m_vpiLazy) {
-        // Explicit --no-vpi disables lazy VPI.
         if (m_vpi.isSetFalse()) {
             cmdfl->v3warn(NOEFFECT,
                           "--vpi-lazy is ignored when --no-vpi is set; the lazy symbol tables are "
@@ -1010,6 +1008,16 @@ void V3Options::notify() VL_MT_DISABLED {
                           + "... Suggest mark individual signals with a public_flat_rw attribute"
                             " to keep their storage.");
         m_publicFlatRW = false;
+    }
+    if (m_vpiLazy && m_publicDepth) {
+        cmdfl->v3warn(NOEFFECT, "--public-depth is ignored when --vpi-lazy is set; --vpi-lazy "
+                                "makes signals at every depth VPI accessible");
+        m_publicDepth = 0;
+    }
+    if (m_vpiLazy && m_publicParams) {
+        cmdfl->v3warn(NOEFFECT, "--public-params is ignored when --vpi-lazy is set; --vpi-lazy "
+                                "makes every parameter VPI accessible");
+        m_publicParams = false;
     }
 
     // Make sure at least one make system is enabled

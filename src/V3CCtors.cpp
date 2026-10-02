@@ -205,13 +205,8 @@ class CCtorsVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    static bool needsNoLazyReset(const AstVar* nodep) {
-        if (!v3Global.opt.vpiLazy() || nodep->isFuncLocal()) return false;
-        return nodep->isLazyReconstructShadow() || nodep->isLazyReconstructHelper()
-               || nodep->isLazyReconstructTemp();
-    }
     void visit(AstVar* nodep) override {
-        if (nodep->needsCReset() && !needsNoLazyReset(nodep)) {
+        if (nodep->needsCReset()) {
             AstNode* const crstp = new AstAssign{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                 new AstCReset{nodep->fileline(), nodep, true}};

@@ -500,6 +500,8 @@ void AstCFunc::dump(std::ostream& str) const {
     if (needProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
     if (vpiLazyReconstruct()) str << " [VPILAZYRECON]";
+    if (vpiLazyInstStub()) str << " [VPILAZYSTUB]";
+    if (voidSelfArg()) str << " [VOIDSELF]";
     if (noLife()) str << " [NOLIFE]";
     if (isConst().isKnown()) str << (isConst().trueKnown() ? " [CONST]" : " [!CONST]");
     if (m_cost) str << " cost=" << m_cost;
@@ -524,6 +526,8 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonBoolFuncIf(str, vpiLazyReconstruct);
+    dumpJsonBoolFuncIf(str, vpiLazyInstStub);
+    dumpJsonBoolFuncIf(str, voidSelfArg);
     dumpJsonBoolFuncIf(str, noLife);
     dumpJsonStr(str, "isConst", isConst().ascii());
     dumpJsonNum(str, "cost", m_cost);
@@ -3717,7 +3721,6 @@ void AstVar::combineType(const AstVar* otherp) {
     if (otherp->isSigModPublic()) sigModPublic(true);
     if (otherp->isSigUserRdPublic()) sigUserRdPublic(true);
     if (otherp->isSigUserRWPublic()) sigUserRWPublic(true);
-    // Roles cannot be merged.
     if (m_vpiLazyRole == VVpiLazyRole::NONE) {
         m_vpiLazyRole = otherp->m_vpiLazyRole;
     } else {
@@ -3725,6 +3728,8 @@ void AstVar::combineType(const AstVar* otherp) {
                         || otherp->m_vpiLazyRole == m_vpiLazyRole,
                     this, "Combining variables with conflicting --vpi-lazy roles");
     }
+    if (isSigVpiLazyCandidate() && (isSigUserRWPublic() || isSigUserRdPublic()))
+        m_vpiLazyRole = VVpiLazyRole::NONE;
     if (otherp->varType() == VVarType::PORT) {
         varType(otherp->varType());
         direction(otherp->direction());
@@ -3811,13 +3816,10 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
-    if (isSigVpiLazyRWPublic()) str << " [PVPILAZY]";
-    if (isSigVpiLazyRetained()) str << " [PVPIRETAIN]";
-    if (isLazyReconstructShadow()) str << " [PVPISHADOW]";
-    if (isLazyReconstructTemp()) str << " [PVPITEMP]";
-    if (isLazyReconstructHelper()) str << " [PVPIHELPER]";
-    if (isLazyShadowNet()) str << " [PVPISHADOWNET]";
-    if (lazyCopySrc()) str << " [PVPICOPY=" << lazyCopySrc()->name() << "]";
+    if (vpiLazyRole() != VVpiLazyRole::NONE) str << " [VPILAZY=" << vpiLazyRole() << "]";
+    if (vpiLazyComb() != VVpiLazyComb::NONE) str << " [VPICOMB=" << vpiLazyComb() << "]";
+    if (isLazyShadowNet()) str << " [VPISHADOWNET]";
+    if (lazyCopySrc()) str << " [VPICOPY=" << lazyCopySrc()->name() << "]";
     if (isReadByDpi()) str << " [DPIRD]";
     if (isWrittenByDpi()) str << " [DPIWR]";
     if (isInternal()) str << " [INTERNAL]";
@@ -3881,11 +3883,10 @@ void AstVar::dumpJson(std::ostream& str) const {
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
     dumpJsonBoolFuncIf(str, isSigUserRdPublic);
     dumpJsonBoolFuncIf(str, isSigUserRWPublic);
-    dumpJsonBoolFuncIf(str, isSigVpiLazyRWPublic);
-    dumpJsonBoolFuncIf(str, isSigVpiLazyRetained);
-    dumpJsonBoolFuncIf(str, isLazyReconstructShadow);
-    dumpJsonBoolFuncIf(str, isLazyReconstructTemp);
-    dumpJsonBoolFuncIf(str, isLazyReconstructHelper);
+    if (vpiLazyRole() != VVpiLazyRole::NONE)
+        dumpJsonStr(str, "vpiLazyRole", vpiLazyRole().ascii());
+    if (vpiLazyComb() != VVpiLazyComb::NONE)
+        dumpJsonStr(str, "vpiLazyComb", vpiLazyComb().ascii());
     dumpJsonBoolFuncIf(str, isLazyShadowNet);
     dumpJsonBoolFuncIf(str, isReadByDpi);
     dumpJsonBoolFuncIf(str, isWrittenByDpi);
@@ -4004,7 +4005,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     }
     return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
-string AstVar::vlEnumDir(bool forMember) const {
+string AstVar::vlEnumDir(VVpiLazyComb comb, bool forMember) const {
     string out;
     if (isInout()) {
         out = "VLVD_INOUT";
@@ -4016,10 +4017,13 @@ string AstVar::vlEnumDir(bool forMember) const {
         out = "VLVD_NODIR";
     }
     //
-    if (isSigExternallyRWPublic()) {
+    if (isSigExternallyRWPublic() && comb == VVpiLazyComb::WHOLE) {
+        out += "|VLVF_PUB_RD|VLVF_LAZY_COMB";
+    } else if (isSigExternallyRWPublic()) {
         out += "|VLVF_PUB_RW";
         // All emission paths use this write gate.
         if (isSigVpiLazyRetained()) out += "|VLVF_LAZY_RETAINED";
+        if (comb == VVpiLazyComb::PARTIAL) out += "|VLVF_LAZY_COMB";
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }

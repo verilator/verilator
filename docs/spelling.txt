@@ -654,9 +654,6 @@ casez
 casted
 castro
 cb
-cbNextSimTime
-cbReadOnlySynch
-cbReadWriteSynch
 cbValueChange
 ccache
 ccall
@@ -1112,6 +1109,8 @@ redeclaring
 reentrant
 regs
 reloop
+rematerialized
+rematerializes
 replaceShiftOp
 reproducibility
 resetall
@@ -1290,15 +1289,11 @@ vluint
 vpi
 vpiConstType
 vpiDefName
-vpiForceFlag
 vpiInertialDelay
 vpiInstance
 vpiIntVal
 vpiLeftRange
-vpiMemoryWord
 vpiModule
-vpiPropagateOff
-vpiReleaseFlag
 vpiSigned
 vpiSize
 vpiSuppressVal

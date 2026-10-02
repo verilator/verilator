@@ -23,7 +23,6 @@
 
 #include VM_PREFIX_INCLUDE
 #include VM_PREFIX_INCLUDE_DPI
-
 #include "svdpi.h"
 
 #endif

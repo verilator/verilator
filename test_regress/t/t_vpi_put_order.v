@@ -142,6 +142,21 @@ module t (
     t_vpi_dump_put("t.mid", "5a");
     mid_seen = mid;
   end
+  // A put between two reads of the same condition reaches the second
+  logic mcnd;
+  logic [7:0] mc_a;
+  logic [7:0] mc_b;
+  initial begin
+    t_vpi_dump_put("t.mcnd", "1");
+    mc_a = mcnd ? 8'h01 : 8'h02;
+    t_vpi_dump_put("t.mcnd", "0");
+    mc_b = mcnd ? 8'h03 : 8'h04;
+  end
+  // A DPI export reads mc_b, pinning its storage
+  export "DPI-C" function t_mc_b;
+  function int t_mc_b();
+    return int'(mc_b);
+  endfunction
   // Only under Verilator, so cmid and cmid_seen stay X elsewhere
 `ifdef VERILATOR
   initial begin

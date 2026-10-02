@@ -47,11 +47,6 @@ class EmitCModel final : public EmitCFunc {
         return funcps;
     }
 
-    // Report pending lazy deposit to the eval loop.
-    static bool emitVpiLazySettleRequest() {
-        return v3Global.opt.vpiLazy() && v3Global.hasVpiLazyRetained();
-    }
-
     void putSectionDelimiter(const string& name) {
         puts("\n");
         puts("//============================================================\n");
@@ -271,7 +266,7 @@ class EmitCModel final : public EmitCFunc {
 
         ofp()->putsPrivate(true);  // private:
         puts("\n// Internal functions - the model's evaluation entry points\n");
-        puts("bool evalBegin() override final;\n");
+        puts("void evalBegin() override final;\n");
         puts("void evalEnd() override final;\n");
         for (int i = 0; i < VEval::_ENUM_END; ++i) {
             const VEval eval{i};
@@ -451,7 +446,8 @@ class EmitCModel final : public EmitCFunc {
         puts("m_evalLoop.eval();\n");
         puts("}\n");
 
-        puts("\nbool " + EmitCUtil::topClassName() + "::evalBegin() {\n");
+        // ::evalBegin - prepare the model for a time step
+        puts("\nvoid " + EmitCUtil::topClassName() + "::evalBegin() {\n");
         puts("#ifdef VL_DEBUG\n");
         putsDecoration(nullptr, "// Debug assertions\n");
         puts(topModNameProtected + "__" + protect("_eval_debug_assertions")
@@ -463,13 +459,17 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.hasEvents()) puts("vlSymsp->clearTriggeredEvents();\n");
         if (v3Global.hasClasses()) puts("vlSymsp->__Vm_deleter.deleteAll();\n");
 
-        if (emitVpiLazySettleRequest()) {
-            putsDecoration(nullptr, "// Consume pending lazy deposit\n");
-            puts("const bool needsSettle = vlSymsp->__Vm_vpiLazyWritten;\n");
-            puts("vlSymsp->__Vm_vpiLazyWritten = false;\n");
-            puts("return needsSettle;\n");
-        } else {
-            puts("return false;\n");
+        if (v3Global.opt.vpiLazy()) {
+            putsDecoration(nullptr, "// Lazy epoch odd until evalEnd(): reads re-resolve\n");
+            puts("++vlSymsp->__Vm_lazy.epoch;\n");
+        }
+        if (v3Global.hasVpiLazyRetained()) {
+            // Consumed before time 0 too, as the time 0 settle already propagates the write
+            putsDecoration(nullptr, "// Re-settle a pending lazy VPI write\n");
+            puts("if (VL_UNLIKELY(vlSymsp->__Vm_lazy.written)) {\n");
+            puts("vlSymsp->__Vm_lazy.written = false;\n");
+            puts("if (m_didInit) m_evalLoop.lazySettle();\n");
+            puts("}\n");
         }
         puts("}\n");
 
@@ -482,8 +482,7 @@ class EmitCModel final : public EmitCFunc {
             puts(delaySchedp->nameProtect());
             puts(".cleanupForevered();\n");
         }
-        // Retire lazy state after evaluation.
-        if (v3Global.opt.vpiLazy()) puts("vlSymsp->lazyEvalEnd();\n");
+        if (v3Global.opt.vpiLazy()) puts("vlSymsp->__Vm_lazy.evalEnd();\n");
 
         puts("}\n");
 
