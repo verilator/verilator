@@ -2380,7 +2380,7 @@ class WidthVisitor final : public VNVisitor {
         if (AstNodeDType* const dt = nodep->lhsp()->dtypep()) {
             if (VN_IS(dt->skipRefToEnump(), ClassRefDType)) {
                 nodep->lhsp()->v3error(
-                    "Cannot convert 'class{}' handle to a string:" << dt->prettyDTypeNameQ());
+                    "Cannot convert 'class' handle to a string:" << dt->prettyDTypeNameQ());
             }
         }
     }
@@ -2448,25 +2448,18 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
-    // Names of the classes a class extends, for $typename, as other simulators give them
+    // Name of the class a class extends, for $typename, as other simulators give it. Only the
+    // class it directly extends, as $typename of that class names the classes that one extends.
     static string typenameExtends(const AstClass* classp) {
-        string result;
-        // Stop at a cycle, which is an error, should processing continue past it
-        std::unordered_set<const AstClass*> visited;
         // An interface class may extend several, so those are not named
-        while (classp && !classp->isInterfaceClass() && visited.insert(classp).second) {
-            AstClass* basep = nullptr;
-            for (const AstClassExtends* extendsp = classp->extendsp(); extendsp;
-                 extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
-                if (!extendsp->isImplements()) {
-                    basep = extendsp->classOrNullp();
-                    break;
-                }
-            }
-            if (basep) result += " extends class{}" + basep->dtypeName(true);
-            classp = basep;
+        if (!classp || classp->isInterfaceClass()) return "";
+        for (const AstClassExtends* extendsp = classp->extendsp(); extendsp;
+             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+            if (extendsp->isImplements()) continue;
+            const AstClass* const basep = extendsp->classOrNullp();
+            return basep ? " extends class " + basep->dtypeName(true) : "";
         }
-        return result;
+        return "";
     }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);

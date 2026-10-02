@@ -17,7 +17,7 @@ test.top_filename = "t/t_typename_class.v"
 test.lint(verilator_flags2=["--debug --debugi 0 --debugi-V3Param 9"])
 
 test.file_grep(test.compile_log_filename,
-               r"nodeDeparamCommon result: 'Foo#\(class\{\}Bar#\(class\{\}Xyz\),88\)'")
+               r"nodeDeparamCommon result: 'Foo#\(class Bar#\(class Xyz\),88\)'")
 test.file_grep(test.compile_log_filename,
                r"nodeDeparamCommon result: 'Defaults#\(2,virtual interface ifc,\?,3\)'")
 

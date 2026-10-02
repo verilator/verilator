@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // $typename of a class gives the scope declaring the class (IEEE 1800-2023 20.6.1), the values
-// of its parameters, which distinguish its specializations (8.25), and the classes it extends.
+// of its parameters, which distinguish its specializations (8.25), and the class it extends,
+// though not the classes that one extends, which $typename of that class gives.
 // 20.6.1 does not give the form of these, which here is like that of other simulators.
 // A structure, union, or enumeration is likewise named with the scope declaring it. For
 // readability, it is named without its members or items, so unlike the examples of 20.6.1,
@@ -106,6 +107,9 @@ endclass
 class GrandChild extends Child;
 endclass
 
+class GreatGrandChild extends GrandChild;
+endclass
+
 class Base #(
     int N = 1
 );
@@ -115,6 +119,12 @@ endclass
 class Derived #(
     int M = 2
 ) extends Base #(M + 1);
+endclass
+
+// Likewise, extending such a class
+class Derived2 #(
+    int K = 3
+) extends Derived #(K * 2);
 endclass
 
 class Values #(
@@ -454,7 +464,11 @@ module t;
   bar_xyz_t bar_xyz;
   Bar #(Bar #(Xyz)) bar_bar;
   GrandChild grand;
+  GreatGrandChild great_grand;
   Derived #(5) derived;
+  Derived #(6) derived6;
+  Derived2 derived2;
+  Foo #(Child, 3) foo_child;
   Values values_default;
   Values #(-5, 8'hA5, 4'b1x0z, "hello", 0.1, BLUE, 7, 64'h1_0000_0000, 8'h7f) values;
   Aggregates aggregates;
@@ -502,149 +516,153 @@ module t;
   initial begin
     // The example of issue #8568
     `checks($typename(foo),
-            "class{}$unit::Foo#(class{}$unit::Bar#(class{}$unit::Xyz),88) extends class{}$unit::Bar#(class{}$unit::Xyz)");
+            "class $unit::Foo#(class $unit::Bar#(class $unit::Xyz),88) extends class $unit::Bar#(class $unit::Xyz)");
     `checks($typename(foo_t), $typename(foo));
     `checks($typename(foo_default),
-            "class{}$unit::Foo#(class{}$unit::Xyz,1) extends class{}$unit::Xyz");
-    `checks($typename(bar_default), "class{}$unit::Bar#(int)");
-    `checks($typename(bar_xyz), "class{}$unit::Bar#(class{}$unit::Xyz)");
-    `checks($typename(bar_bar), "class{}$unit::Bar#(class{}$unit::Bar#(class{}$unit::Xyz))");
-    `checks($typename(grand),
-            "class{}$unit::GrandChild extends class{}$unit::Child extends class{}$unit::Xyz");
-    `checks($typename(derived), "class{}$unit::Derived#(5) extends class{}$unit::Base#(6)");
+            "class $unit::Foo#(class $unit::Xyz,1) extends class $unit::Xyz");
+    `checks($typename(bar_default), "class $unit::Bar#(int)");
+    `checks($typename(bar_xyz), "class $unit::Bar#(class $unit::Xyz)");
+    `checks($typename(bar_bar), "class $unit::Bar#(class $unit::Bar#(class $unit::Xyz))");
+    // Only the class it extends, as $typename of that class names the classes that one extends
+    `checks($typename(grand), "class $unit::GrandChild extends class $unit::Child");
+    `checks($typename(Child), "class $unit::Child extends class $unit::Xyz");
+    `checks($typename(great_grand), "class $unit::GreatGrandChild extends class $unit::GrandChild");
+    `checks($typename(derived), "class $unit::Derived#(5) extends class $unit::Base#(6)");
+    `checks($typename(derived2), "class $unit::Derived2#(3) extends class $unit::Derived#(6)");
+    `checks($typename(derived6), "class $unit::Derived#(6) extends class $unit::Base#(7)");
+    `checks($typename(foo_child),
+            "class $unit::Foo#(class $unit::Child,3) extends class $unit::Child");
     `checks($typename(values_default),
-            "class{}$unit::Values#(1,15,4'b10xz,\"hi\",1.5,RED,3,5,-128)");
+            "class $unit::Values#(1,15,4'b10xz,\"hi\",1.5,RED,3,5,-128)");
     `checks($typename(values),
-            "class{}$unit::Values#(-5,165,4'b1x0z,\"hello\",0.1,BLUE,7,4294967296,127)");
-    `checks($typename(aggregates), "class{}$unit::Aggregates#('{1,2},'{3,4},'{1:5,default:0})");
-    `checks($typename(reals), "class{}$unit::Reals#(0.30000000000000004,1e+20,2.0)");
-    `checks($typename(others), "class{}$unit::Others#(3,L1,7,null)");
-    `checks($typename(inner), "class{}$unit::Outer#(7)::Inner");
+            "class $unit::Values#(-5,165,4'b1x0z,\"hello\",0.1,BLUE,7,4294967296,127)");
+    `checks($typename(aggregates), "class $unit::Aggregates#('{1,2},'{3,4},'{1:5,default:0})");
+    `checks($typename(reals), "class $unit::Reals#(0.30000000000000004,1e+20,2.0)");
+    `checks($typename(others), "class $unit::Others#(3,L1,7,null)");
+    `checks($typename(inner), "class $unit::Outer#(7)::Inner");
     // Classes within a class (within a class)
     inner = new;
-    `checks(inner.name(), "class{}$unit::Outer#(7)::Inner");
-    `checks($typename(inner.deep), "class{}$unit::Outer#(7)::Inner::Deep");
-    `checks($typename(inner.inner_cg), "class{}$unit::Outer#(7)::Inner::inner_cg");
-    `checks($typename(sub), "class{}$unit::Outer#(7)::Sub extends class{}$unit::Outer#(7)::Inner");
-    `checks($typename(pkg_inner), "class{}pkg::Po::Pi");
-    `checks($typename(pkg_deep), "class{}pkg::Po::Pi::Deep");
-    `checks($typename(pkg_param), "class{}pkg::Po::Pp#(4)");
-    `checks($typename(mod_inner), "class{}t.Mcls::Mi");
-    `checks($typename(self_ref), "class{}$unit::SelfRef#(class{}$unit::SelfRef)");
+    `checks(inner.name(), "class $unit::Outer#(7)::Inner");
+    `checks($typename(inner.deep), "class $unit::Outer#(7)::Inner::Deep");
+    `checks($typename(inner.inner_cg), "class $unit::Outer#(7)::Inner::inner_cg");
+    `checks($typename(sub), "class $unit::Outer#(7)::Sub extends class $unit::Outer#(7)::Inner");
+    `checks($typename(pkg_inner), "class pkg::Po::Pi");
+    `checks($typename(pkg_deep), "class pkg::Po::Pi::Deep");
+    `checks($typename(pkg_param), "class pkg::Po::Pp#(4)");
+    `checks($typename(mod_inner), "class t.Mcls::Mi");
+    `checks($typename(self_ref), "class $unit::SelfRef#(class $unit::SelfRef)");
     // Implementing an interface class is not extending it
-    `checks($typename(impl),
-            "class{}$unit::Impl extends class{}$unit::Child extends class{}$unit::Xyz");
-    `checks($typename(only_impl), "class{}$unit::OnlyImpl");
-    `checks($typename(ifc2), "class{}$unit::Ifc2");
-    `checks($typename(pc), "class{}pkg::Pc#(7)");
-    `checks($typename(mcls), "class{}t.Mcls");
-    `checks($typename(bar_mcls), "class{}$unit::Bar#(class{}t.Mcls)");
-    `checks($typename(bar_uint), "class{}$unit::Bar#(int unsigned)");
-    `checks($typename(bar_signed), "class{}$unit::Bar#(logic signed[6:0])");
-    `checks($typename(bar_queue), "class{}$unit::Bar#(int$[$])");
-    `checks($typename(bar_bqueue), "class{}$unit::Bar#(int$[$:3])");
-    `checks($typename(bar_unpack), "class{}$unit::Bar#(int$[0:1])");
-    `checks($typename(bar_dyn), "class{}$unit::Bar#(int$[])");
-    `checks($typename(bar_assoc), "class{}$unit::Bar#(int$[string])");
-    `checks($typename(bar_wild), "class{}$unit::Bar#(int$[*])");
-    `checks($typename(bar_wildb), "class{}$unit::Bar#(byte$[*])");
-    `checks($typename(bar_cont), "class{}$unit::Bar#(class{}$unit::Base#(3)$[$])");
-    `checks($typename(bar_enum), "class{}$unit::Bar#(enum{}$unit::color_e)");
-    `checks($typename(bar_struct), "class{}$unit::Bar#(struct{}$unit::ps_t)");
-    `checks($typename(bar_union), "class{}$unit::Bar#(union{}$unit::pu_t)");
+    `checks($typename(impl), "class $unit::Impl extends class $unit::Child");
+    `checks($typename(only_impl), "class $unit::OnlyImpl");
+    `checks($typename(ifc2), "class $unit::Ifc2");
+    `checks($typename(pc), "class pkg::Pc#(7)");
+    `checks($typename(mcls), "class t.Mcls");
+    `checks($typename(bar_mcls), "class $unit::Bar#(class t.Mcls)");
+    `checks($typename(bar_uint), "class $unit::Bar#(int unsigned)");
+    `checks($typename(bar_signed), "class $unit::Bar#(logic signed[6:0])");
+    `checks($typename(bar_queue), "class $unit::Bar#(int$[$])");
+    `checks($typename(bar_bqueue), "class $unit::Bar#(int$[$:3])");
+    `checks($typename(bar_unpack), "class $unit::Bar#(int$[0:1])");
+    `checks($typename(bar_dyn), "class $unit::Bar#(int$[])");
+    `checks($typename(bar_assoc), "class $unit::Bar#(int$[string])");
+    `checks($typename(bar_wild), "class $unit::Bar#(int$[*])");
+    `checks($typename(bar_wildb), "class $unit::Bar#(byte$[*])");
+    `checks($typename(bar_cont), "class $unit::Bar#(class $unit::Base#(3)$[$])");
+    `checks($typename(bar_enum), "class $unit::Bar#(enum $unit::color_e)");
+    `checks($typename(bar_struct), "class $unit::Bar#(struct $unit::ps_t)");
+    `checks($typename(bar_union), "class $unit::Bar#(union $unit::pu_t)");
     // Without their members, as named by themselves
-    `checks($typename(color_e), "enum{}$unit::color_e");
-    `checks($typename(ps_t), "struct{}$unit::ps_t");
-    `checks($typename(pu_t), "union{}$unit::pu_t");
-    `checks($typename(bar_enum), {"class{}$unit::Bar#(", $typename(color_e), ")"});
-    `checks($typename(bar_struct), {"class{}$unit::Bar#(", $typename(ps_t), ")"});
-    `checks($typename(bar_union), {"class{}$unit::Bar#(", $typename(pu_t), ")"});
-    `checks($typename(bar_string), "class{}$unit::Bar#(string)");
-    `checks($typename(bar_real), "class{}$unit::Bar#(real)");
-    `checks($typename(bar_vif), "class{}$unit::Bar#(virtual interface ifc#(4))");
-    `checks($typename(bar_vif8), "class{}$unit::Bar#(virtual interface ifc#(8))");
+    `checks($typename(color_e), "enum $unit::color_e");
+    `checks($typename(ps_t), "struct $unit::ps_t");
+    `checks($typename(pu_t), "union $unit::pu_t");
+    `checks($typename(bar_enum), {"class $unit::Bar#(", $typename(color_e), ")"});
+    `checks($typename(bar_struct), {"class $unit::Bar#(", $typename(ps_t), ")"});
+    `checks($typename(bar_union), {"class $unit::Bar#(", $typename(pu_t), ")"});
+    `checks($typename(bar_string), "class $unit::Bar#(string)");
+    `checks($typename(bar_real), "class $unit::Bar#(real)");
+    `checks($typename(bar_vif), "class $unit::Bar#(virtual interface ifc#(4))");
+    `checks($typename(bar_vif8), "class $unit::Bar#(virtual interface ifc#(8))");
     `checks($typename(vif_mp), "virtual interface ifc#(4).mp");
-    // Within another type, a class is named without the classes it extends
-    `checks($typename(children), "class{}$unit::Child$[0:1]");
-    `checks($typename(mbox), "class{}std::mailbox#(int)");
+    // Within another type, a class is named without the class it extends
+    `checks($typename(children), "class $unit::Child$[0:1]");
+    `checks($typename(mbox), "class std::mailbox#(int)");
     cg_holder = new;
     cg_default = new;
-    `checks($typename(cg_holder),
-            "class{}$unit::CgHolder#(byte,5) extends class{}$unit::CgBase#(6)");
-    `checks($typename(cg_holder.cg), "class{}$unit::CgHolder#(byte,5)::cg");
+    `checks($typename(cg_holder), "class $unit::CgHolder#(byte,5) extends class $unit::CgBase#(6)");
+    `checks($typename(cg_holder.cg), "class $unit::CgHolder#(byte,5)::cg");
     `checks(cg_holder.cg_typename(), $typename(cg_holder.cg));
-    `checks($typename(cg_default.cg), "class{}$unit::CgHolder#(int,2)::cg");
-    `checks($typename(cg_holder.base_cg), "class{}$unit::CgBase#(6)::base_cg");
+    `checks($typename(cg_default.cg), "class $unit::CgHolder#(int,2)::cg");
+    `checks($typename(cg_holder.base_cg), "class $unit::CgBase#(6)::base_cg");
     unit_cg = new;
     mod_cg = new;
     unit_cg.sample(1);
     mod_cg.sample();
-    `checks($typename(unit_cg), "class{}$unit::UnitCg");
-    `checks($typename(mod_cg), "class{}t.ModCg");
-    `checks($typename(defaults), "class{}$unit::Defaults#(2,virtual interface ifc#(8),byte,3)");
+    `checks($typename(unit_cg), "class $unit::UnitCg");
+    `checks($typename(mod_cg), "class t.ModCg");
+    `checks($typename(defaults), "class $unit::Defaults#(2,virtual interface ifc#(8),byte,3)");
     // As named while being specialized
     `checks(Holder#(bar_xyz_t)::TNAME, $typename(bar_xyz_t));
     // Not classes
     `checks($typename(int_value), "int");
     `checks($typename(int_t), "int");
     `checks($typename(bar_int), $typename(bar_default));
-    `checks($typename(nested), "struct{}$unit::nested_t");
+    `checks($typename(nested), "struct $unit::nested_t");
     `checks($typename(NESTED), $typename(nested));
-    `checks($typename(NESTED.ps), "struct{}$unit::ps_t");
+    `checks($typename(NESTED.ps), "struct $unit::ps_t");
     `checks($typename(nested.i), "int");
     `checks($typename(nested.v), "bit[7:0]$[0:1]");
-    `checks($typename(mps), "struct{}t.mps_t");
-    `checks($typename(mps.ps), "struct{}$unit::ps_t");
+    `checks($typename(mps), "struct t.mps_t");
+    `checks($typename(mps.ps), "struct $unit::ps_t");
     `checks($typename(mps.q), "logic signed[2:0]");
     `checkd(NESTED.ps.a, 4'h5);
     `checks(NESTED.s, "x");
     // Of a type given by parameters
     ps_default = new;
     ps8 = new;
-    `checks($typename(ps_default.s), "struct{}$unit::Ps#(4)::s_t");
-    `checks($typename(ps8.s), "struct{}$unit::Ps#(8)::s_t");
-    `checks($typename(ps8_s), "struct{}$unit::Ps#(8)::s_t");
-    `checks(ps8.s_typename(), "struct{}$unit::Ps#(8)::s_t");
-    `checks(ps8.local_typename(), "struct{}$unit::Ps#(8)::local_t");
-    `checks($typename(bar_ps8_s), "class{}$unit::Bar#(struct{}$unit::Ps#(8)::s_t)");
-    `checks($typename(ps8_e), "enum{}$unit::Ps#(8)::e_t");
-    `checks($typename(bar_ps8_e), {"class{}$unit::Bar#(", $typename(ps8_e), ")"});
-    `checks($typename(bar_ps16_e), "class{}$unit::Bar#(enum{}$unit::Ps#(16)::e_t)");
-    `checks(u4.ms_typename(), "struct{}msub#(4).ms_t");
-    `checks(u16.ms_typename(), "struct{}msub#(16).ms_t");
-    `checks(u4.is_typename(), "struct{}ifc#(4).is_t");
-    `checks(u16.is_typename(), "struct{}ifc#(16).is_t");
+    `checks($typename(ps_default.s), "struct $unit::Ps#(4)::s_t");
+    `checks($typename(ps8.s), "struct $unit::Ps#(8)::s_t");
+    `checks($typename(ps8_s), "struct $unit::Ps#(8)::s_t");
+    `checks(ps8.s_typename(), "struct $unit::Ps#(8)::s_t");
+    `checks(ps8.local_typename(), "struct $unit::Ps#(8)::local_t");
+    `checks($typename(bar_ps8_s), "class $unit::Bar#(struct $unit::Ps#(8)::s_t)");
+    `checks($typename(ps8_e), "enum $unit::Ps#(8)::e_t");
+    `checks($typename(bar_ps8_e), {"class $unit::Bar#(", $typename(ps8_e), ")"});
+    `checks($typename(bar_ps16_e), "class $unit::Bar#(enum $unit::Ps#(16)::e_t)");
+    `checks(u4.ms_typename(), "struct msub#(4).ms_t");
+    `checks(u16.ms_typename(), "struct msub#(16).ms_t");
+    `checks(u4.is_typename(), "struct ifc#(4).is_t");
+    `checks(u16.is_typename(), "struct ifc#(16).is_t");
     // Of a data type, named as of a variable of it
     `checks($typename(Ps#(8)::s_t), $typename(ps8_s));
     `checks($typename(Ps#(8)::e_t), $typename(ps8_e));
     `checks($typename(ps8_s_t), $typename(ps8_s));
     `checks($typename(ps8_s_td), $typename(ps8_s));
     // Of arrays of such, whose elements are named likewise
-    `checks($typename(ps8_sa), "struct{}$unit::Ps#(8)::s_t$[0:1]");
-    `checks($typename(ps16_sa), "struct{}$unit::Ps#(16)::s_t$[0:1]");
+    `checks($typename(ps8_sa), "struct $unit::Ps#(8)::s_t$[0:1]");
+    `checks($typename(ps16_sa), "struct $unit::Ps#(16)::s_t$[0:1]");
     `checks($typename(ps8_sa[0]), $typename(ps8_s));
     `checks($typename(ps8_sq[0]), $typename(ps8_s));
     `checks($typename(Ps#(8)::P1), $typename(ps8_e));
     // Of a type parameter only given by the type of another module
-    `checks($typename(typep), "class{}$unit::TypeP#(byte)");
+    `checks($typename(typep), "class $unit::TypeP#(byte)");
     `checks($typename(typep_elem), "byte");
     `checks($typename(vtb), "virtual interface tifc#(byte)");
     // Of array values, listed from the left index
     `checks($typename(ranges),
-            "class{}$unit::Ranges#('{10,20},'{7,8,9},'{6:9,default:0},'{7:1,6:2,default:0},'{-1:4,default:0})");
+            "class $unit::Ranges#('{10,20},'{7,8,9},'{6:9,default:0},'{7:1,6:2,default:0},'{-1:4,default:0})");
     // Of strings, escaped, and not taken as names
-    `checks($typename(strp_dot), "class{}$unit::StrP#(\"__DOT__x\")");
+    `checks($typename(strp_dot), "class $unit::StrP#(\"__DOT__x\")");
     `checks($typename(strp_dot_td), $typename(strp_dot));
     `checks($typename(strp_dot_t), $typename(strp_dot));
-    `checks($typename(strp_quote), "class{}$unit::StrP#(\"a\\\"b\")");
-    `checks($typename(strp_ctrl), "class{}$unit::StrP#(\"t\\tn\\n\")");
-    `checks($typename(str2_ab), "class{}$unit::Str2#(\"a\\\",\\\"b\",\"c\")");
-    `checks($typename(str2_bc), "class{}$unit::Str2#(\"a\",\"b\\\",\\\"c\")");
+    `checks($typename(strp_quote), "class $unit::StrP#(\"a\\\"b\")");
+    `checks($typename(strp_ctrl), "class $unit::StrP#(\"t\\tn\\n\")");
+    `checks($typename(str2_ab), "class $unit::Str2#(\"a\\\",\\\"b\",\"c\")");
+    `checks($typename(str2_bc), "class $unit::Str2#(\"a\",\"b\\\",\\\"c\")");
     // Of classes within each specialization of a module or interface
-    `checks(mc4.mc_typename(), "class{}mcls#(4).MC");
-    `checks(mc16.mc_typename(), "class{}mcls#(16).MC");
-    `checks(ci4.ic_typename(), "class{}cifc#(4).IC");
-    `checks(ci16.ic_typename(), "class{}cifc#(16).IC");
+    `checks(mc4.mc_typename(), "class mcls#(4).MC");
+    `checks(mc16.mc_typename(), "class mcls#(16).MC");
+    `checks(ci4.ic_typename(), "class cifc#(4).IC");
+    `checks(ci16.ic_typename(), "class cifc#(16).IC");
     $write("*-* All Finished *-*\n");
     $finish;
   end

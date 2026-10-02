@@ -275,6 +275,12 @@ static string dtypeNameTypedef(const AstNodeDType* dtypep, const string& frozen)
     return typedefp ? typedefp->dtypeName() : dtypep->prettyName();
 }
 
+// Name of a type of a kind given by a keyword, e.g. 'struct $unit::s_t', or just the keyword if
+// anonymous
+static string dtypeNameKwd(const string& kwd, const string& name) {
+    return name.empty() ? kwd : kwd + " " + name;
+}
+
 //======================================================================
 // AstNode:: functions (*not* general Ast{something} functions)
 
@@ -971,8 +977,8 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 string AstClassRefDType::prettyDTypeName(bool full) const {
     // Until V3Param specializes the class for the parameters, just name the class
-    if (!classp() || paramsp()) return "class{}"s + prettyName();
-    return "class{}"s + classp()->dtypeName(full);
+    if (!classp() || paramsp()) return dtypeNameKwd("class", prettyName());
+    return dtypeNameKwd("class", classp()->dtypeName(full));
 }
 string AstClassRefDType::prettyNameMsg() const {
     return (classp() && !paramsp()) ? classp()->prettyNameMsg() : prettyName();
@@ -1468,7 +1474,7 @@ void AstEnumDType::dumpSmall(std::ostream& str) const {
 }
 string AstEnumDType::prettyDTypeName(bool full) const {
     // Without the items, as other simulators, which would make for long names
-    return "enum{}" + (full ? dtypeNameTypedef(this, m_typedefName) : prettyName());
+    return dtypeNameKwd("enum", full ? dtypeNameTypedef(this, m_typedefName) : prettyName());
 }
 const char* AstEnumItemRef::broken() const {
     if (v3Global.assertDTypesResolved()) BROKEN_RTN(!itemp());
@@ -2954,7 +2960,7 @@ void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
 }
 string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     // Without the members, as other simulators, which would make for long names
-    return verilogKwd() + "{}" + (full ? dtypeNameTypedef(this, m_typedefName) : prettyName());
+    return dtypeNameKwd(verilogKwd(), full ? dtypeNameTypedef(this, m_typedefName) : prettyName());
 }
 bool AstNodeUOrStructDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstNodeUOrStructDType* const sp = VN_DBG_AS(samep, NodeUOrStructDType);
