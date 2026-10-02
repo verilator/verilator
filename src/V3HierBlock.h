@@ -44,6 +44,8 @@ public:
     VL_UNCOPYABLE(V3HierGraph);
     VL_UNMOVABLE(V3HierGraph);
 
+    // Explicit HDL inputs followed by the library-discovered top module file, if any.
+    static VStringList sourceFiles(const string& topModuleFile = "") VL_MT_DISABLED;
     // Write command line arguments to .f files for child Verilation run
     void writeCommandArgsFiles(bool forMkJson) const VL_MT_DISABLED;
     void writeParametersFiles() const VL_MT_DISABLED;
