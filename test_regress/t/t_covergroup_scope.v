@@ -8,11 +8,13 @@
 // get_coverage(), is of its own instances only (IEEE 1800-2023 19.3, 19.4, 19.11).  In each
 // pair below one type is covered and the other is not; were they one type, both would be 50.
 // A type is named as $typename names it (IEEE 1800-2023 20.6.1), with its scopes, generate blocks
-// included, and the values of the parameters of its specializations.
+// included, and the values of the parameters of its specializations; escaped identifiers are
+// named without their escapes (IEEE 1800-2023 5.6.1).
 
 // verilog_format: off
 `define stop $stop
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
 package pkg;
@@ -93,6 +95,11 @@ class Outer;
   endfunction
 endclass
 
+// A covergroup of an escaped name, outside any class
+covergroup \cg+symbol with function sample (bit v);
+  cp: coverpoint v;
+endgroup
+
 // Covergroups of one name in two modules
 module sub_a;
   covergroup cg with function sample (bit v);
@@ -149,6 +156,19 @@ module t;
     endgroup
     cg inst = new;
   end
+  // Escaped names of a generate block, of a class in it, and of the covergroup of the class
+  if (1) begin : \pack+gen
+    class \Klass! ;
+      bit v;
+      covergroup \cg@symbol2 ;
+        cp: coverpoint v;
+      endgroup
+      function new;
+        \cg@symbol2 = new;
+      endfunction
+    endclass
+    \Klass! obj = new;
+  end
 
   sub_a a ();
   sub_b b ();
@@ -165,6 +185,7 @@ module t;
   Param #(2) param2;
   Outer outer;
   Outer::inner nested;
+  \cg+symbol unit_sym = new;
 
   initial begin
     first = new;
@@ -198,6 +219,8 @@ module t;
     gen[0].inst.sample(1);
     gen_elif.inst.sample(0);
     gen_elif.inst.sample(1);
+    unit_sym.sample(0);
+    unit_sym.sample(1);
     outer.v = 0;
     outer.\inner.cg .sample();
     outer.v = 1;
@@ -221,6 +244,11 @@ module t;
     `checkr(inst.get_coverage(), 0.0);
     `checkr(outer.\inner.cg .get_coverage(), 100.0);
     `checkr(nested.cg.get_coverage(), 0.0);
+    `checkr(unit_sym.get_coverage(), 100.0);
+    `checkr(\pack+gen .obj.\cg@symbol2 .get_coverage(), 0.0);
+    // Named as $typename names them, so without the escapes
+    `checks($typename(unit_sym), "class $unit::cg+symbol");
+    `checks($typename(\pack+gen .obj.\cg@symbol2 ), "class t.pack+gen.Klass!::cg@symbol2");
 
     $write("*-* All Finished *-*\n");
     $finish;
