@@ -3420,6 +3420,14 @@ public:
     }
     int elementsConst() const VL_MT_STABLE { return hiConst() - loConst() + 1; }
     bool ascending() const { return leftConst() < rightConst(); }
+    // Iterate indices from left to right inclusive, see VNumRange::seqLeftToRight()
+    VNumRange::Sequence seqLeftToRight() const {
+        return VNumRange{leftConst(), rightConst()}.seqLeftToRight();
+    }
+    // Iterate indices from right to left inclusive, see VNumRange::seqRightToLeft()
+    VNumRange::Sequence seqRightToLeft() const {
+        return VNumRange{leftConst(), rightConst()}.seqRightToLeft();
+    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
