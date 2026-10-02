@@ -1299,6 +1299,7 @@ const char* AstEnumItemRef::broken() const {
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
     Super::dump(str);
+    if (containsGenBlock()) str << " [GENBLK]";
     if (!dotted().empty()) str << " .=" << dotted();
     str << " -> ";
     if (itemp()) {
@@ -1308,6 +1309,7 @@ void AstEnumItemRef::dump(std::ostream& str) const {
     }
 }
 void AstEnumItemRef::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, containsGenBlock);
     dumpJsonStrFunc(str, dotted);
     dumpJsonGen(str);
 }

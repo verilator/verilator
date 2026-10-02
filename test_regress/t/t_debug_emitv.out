@@ -307,6 +307,9 @@ module Vt_debug_emitv_t;
                 $stop;
             end
             sub.r = 62.0;
+            if ((SUB_B != 2'h1)) begin
+                $stop;
+            end
             mod_res = (mod_val % 'sh5);
             $display("%g", $log10(r));
             $display("%g", $ln(r));
@@ -1498,6 +1501,12 @@ interface Vt_debug_emitv_Iface;
 endinterface
 module Vt_debug_emitv_sub;
     input logic clk;
+    /* generate */ begin : sub_gen
+        typedef enum logic [1:0] {
+            SUB_A = 2'h0,
+            SUB_B = 2'h1
+        } sub_e;
+    end : sub_gen
     task inc;
         input int signed i;
         output int signed o;

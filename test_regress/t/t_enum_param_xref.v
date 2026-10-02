@@ -34,6 +34,11 @@ module child #(
       B_WORK = 5'(W + 10)
     } blk_t;
   end
+  if (W == 1) begin : gif
+    typedef enum logic [4:0] {G_ONE = 21} one_t;
+  end else begin : gif
+    typedef enum logic [4:0] {G_OTHER = 22} other_t;
+  end
 endmodule
 
 module sub (
@@ -69,6 +74,7 @@ module t;
     `checkd(b.fsm, b.S_WORK);
     `checkd(a.blk.B_WORK, 12);
     `checkd(t.b.blk.B_WORK, 13);
+    `checkd(b.gif.G_OTHER, 22);
     `checkd(gen[0].working, 1'b1);
     `checkd(gen[1].working, 1'b1);
     `checkd(gen[0].work, 4);
