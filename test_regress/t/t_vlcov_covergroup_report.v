@@ -12,6 +12,19 @@
 `define checkr(gotv,expv) do if ((gotv) > (expv) + 0.001 || (gotv) < (expv) - 0.001) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+// A covergroup of a specialization is named with the values of its parameters, whose dots split
+// the name into no nodes of the report, nor do the escaped quote and parenthesis of a string
+// value: 50
+module spec #(
+    parameter real R = 0.0,
+    parameter string S = ""
+);
+  covergroup cg with function sample (bit v);
+    cp: coverpoint v;
+  endgroup
+  cg inst = new;
+endmodule
+
 module t;
   // Ignore, illegal and default bins are not coverable: 100
   covergroup excluded with function sample (int value);
@@ -175,6 +188,7 @@ module t;
   varying varying_two = new(2);
   First first = new;
   Second second = new;
+  spec #(0.5, "a.\"(b") sp ();
 
   initial begin
     excluded_inst.sample(0);
@@ -207,6 +221,7 @@ module t;
     gen[0].obj.cg.sample();
     gen[0].obj.v = 1;
     gen[0].obj.cg.sample();
+    sp.inst.sample(1);
     `checkr(excluded_inst.get_coverage(), 100.0);
     `checkr(unequal_inst.get_coverage(), 37.5);
     `checkr(weighted_inst.get_coverage(), 100.0);
@@ -224,6 +239,7 @@ module t;
     `checkr(second.twin.get_coverage(), 0.0);
     `checkr(gen[0].obj.cg.get_coverage(), 100.0);
     `checkr(gen[1].obj.cg.get_coverage(), 0.0);
+    `checkr(sp.inst.get_coverage(), 50.0);
     $write("*-* All Finished *-*\n");
     $finish;
   end

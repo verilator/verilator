@@ -5,9 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // The specializations of a module are distinct modules, so the covergroups in them are distinct
-// types (IEEE 1800-2023 19.3), wherever they are elaborated: the parent and hierarchical block
-// 'hb' each specialize the modules below differently.  The parent's types are covered and hb's
-// are not; were a type of the parent and one of hb one type, both would be 50.
+// types (IEEE 1800-2023 19.3), and those of one specialization one type, wherever they are
+// elaborated: in the parent, or in hierarchical block 'hb', Verilated in a run of its own.  The
+// parent's instances are covered and hb's are not, so those of the parent's specializations
+// that hb does not elaborate are 100, and those of hb's, one type with hb's instances, are 50.
 
 // verilog_format: off
 `define stop $stop
@@ -50,19 +51,16 @@ module hb;
   long_parameters #(1111111, 2222222) l ();
   byte_parameter #(8'd2) b ();
   type_parameter #(byte) p ();
-
-  // After the parent's samples
-  final begin
-    `checkr(l.inst.get_coverage(), 0.0);
-    `checkr(b.inst.get_coverage(), 0.0);
-    `checkr(p.inst.get_coverage(), 0.0);
-  end
 endmodule
 
 module t;
   long_parameters #(3333333, 4444444) l ();
   byte_parameter #(8'd3) b ();
   type_parameter #(shortint) p ();
+  // Of hb's specializations
+  long_parameters #(1111111, 2222222) l_hb ();
+  byte_parameter #(8'd2) b_hb ();
+  type_parameter #(byte) p_hb ();
   hb h ();
 
   initial begin
@@ -72,6 +70,12 @@ module t;
     b.inst.sample(1);
     p.inst.sample(0);
     p.inst.sample(1);
+    l_hb.inst.sample(0);
+    l_hb.inst.sample(1);
+    b_hb.inst.sample(0);
+    b_hb.inst.sample(1);
+    p_hb.inst.sample(0);
+    p_hb.inst.sample(1);
     $finish;
   end
 
@@ -80,6 +84,9 @@ module t;
     `checkr(l.inst.get_coverage(), 100.0);
     `checkr(b.inst.get_coverage(), 100.0);
     `checkr(p.inst.get_coverage(), 100.0);
+    `checkr(l_hb.inst.get_coverage(), 50.0);
+    `checkr(b_hb.inst.get_coverage(), 50.0);
+    `checkr(p_hb.inst.get_coverage(), 50.0);
     $write("*-* All Finished *-*\n");
   end
 endmodule
