@@ -840,9 +840,10 @@ public:
         m_hierWorkers.emplace(std::piecewise_construct, std::forward_as_tuple(model),
                               std::forward_as_tuple(workers, flp));
     }
-    void addHierXmrPort(FileLine* fl, const string& module, const string& port, int width,
-                        const string& path) {
-        m_hierXmrPorts[module].push_back(V3Control::HierXmrPort{port, width, path});
+    void addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
+                        const string& port, int width, bool isSigned, const string& path) {
+        m_hierXmrPorts[block].push_back(
+            V3Control::HierXmrPort{refModule, port, width, isSigned, path});
     }
     const std::vector<V3Control::HierXmrPort>* getHierXmrPorts(const string& module) const {
         const auto it = m_hierXmrPorts.find(module);
@@ -907,9 +908,9 @@ void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
     V3ControlResolver::s().addHierWorkers(fl, model, workers);
 }
 
-void V3Control::addHierXmrPort(FileLine* fl, const string& module, const string& port, int width,
-                               const string& path) {
-    V3ControlResolver::s().addHierXmrPort(fl, module, port, width, path);
+void V3Control::addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
+                               const string& port, int width, bool isSigned, const string& path) {
+    V3ControlResolver::s().addHierXmrPort(fl, block, refModule, port, width, isSigned, path);
 }
 
 const std::vector<V3Control::HierXmrPort>* V3Control::getHierXmrPorts(const string& module) {
