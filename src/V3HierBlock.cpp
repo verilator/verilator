@@ -92,6 +92,7 @@
 
 #include "V3HierBlock.h"
 
+#include "V3Container.h"
 #include "V3Control.h"
 #include "V3EmitV.h"
 #include "V3File.h"
@@ -103,6 +104,7 @@
 #include <cctype>
 #include <memory>
 #include <sstream>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -129,9 +131,8 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
     }
 }
 
-// Outbound XMRs per hierarchical block, found in run a) and needed by run b).
-// Port names are generated per block; the dotted path travels separately in
-// the option, because a path flattened into an identifier is not decodable.
+// Outbound references per hierarchical block, found in run a), passed to the
+// other runs as hier_xmr_port configuration commands.
 
 //######################################################################
 
@@ -447,9 +448,9 @@ void V3HierGraph::writeXmrPortsFile() const {
     for (const V3GraphVertex& vtx : vertices()) {
         const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
         for (const V3HierBlock::XmrPort& port : blockp->xmrPorts()) {
-            *of << "hier_xmr_port -module \"" << blockp->modp()->name() << "\" -port \""
-                << port.m_name << "\" -width " << port.m_width << " -scope \"" << port.m_path
-                << "\"\n";
+            *of << "hier_xmr_port -module \"" << blockp->modp()->name() << "\" -block \""
+                << port.m_refModule << "\" -port \"" << port.m_name << "\" -width " << port.m_width
+                << (port.m_signed ? " -signed" : "") << " -scope \"" << port.m_path << "\"\n";
         }
     }
 }
@@ -511,21 +512,16 @@ void V3HierGraph::writeParametersFiles() const {
 
 //######################################################################
 
-// Detect XMRs inside a hierarchical block that resolve OUTSIDE it. Such a
-// reference cannot survive the child Verilation run, which compiles the block
-// with itself as top and prunes the upper modules (see step 4-1 above), so the
-// name has nothing to resolve against. Promoting each to a port is the fix.
 // Width of a signal that can be promoted to a port, or -1 if it cannot be.
-// Deliberately conservative: this runs before V3Width, so only a packed basic
-// type with a literal range can be sized correctly. Everything else - a
-// parameterized range, an unpacked array, a struct, enum, real or string -
-// returns -1 so the caller refuses instead of assuming a width.
-static int promotableWidth(const AstVar* varp) {
+// Runs before V3Width, so only a packed basic type with a literal range can be
+// sized; everything else returns -1 and the caller refuses.
+static int promotableWidth(const AstVar* varp, bool& isSignedr) {
     // Follow typedefs: a name for a packed basic type is still promotable
     const AstNodeDType* subp = varp->subDTypep();
     if (subp) subp = subp->skipRefp();
     const AstBasicDType* const bdtypep = VN_CAST(subp, BasicDType);
     if (!bdtypep) return -1;  // struct, enum, unpacked array, class, ...
+    isSignedr = bdtypep->isSigned();
     // isOpaque() covers real, string, event and the internal types; a bare
     // 'input foo' is LOGIC_IMPLICIT, which isIntNumeric() would wrongly reject.
     if (bdtypep->keyword().isOpaque()) return -1;
@@ -542,21 +538,27 @@ static int promotableWidth(const AstVar* varp) {
 }
 
 static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
+    // Which module each variable lives in, built in one pass; walking backp()
+    // per reference would be quadratic
+    std::unordered_map<const AstVar*, AstNodeModule*> varToMod;
+    netlistp->foreach([&varToMod](AstNodeModule* modp) {
+        modp->foreach([&varToMod, modp](AstVar* varp) { varToMod.emplace(varp, modp); });
+    });
     // Vertex per block, so findings attach to the plan rather than to file statics
     std::map<const AstModule*, V3HierBlock*> mod2vtx;
     for (V3GraphVertex& vtx : graphp->vertices()) {
         V3HierBlock* const blockVtxp = vtx.as<V3HierBlock>();
         mod2vtx[blockVtxp->modp()] = blockVtxp;
     }
-    netlistp->foreach([&mod2vtx](AstModule* blockp) {
+    netlistp->foreach([&mod2vtx, &varToMod](AstModule* blockp) {
         if (!blockp->hierBlock()) return;
         // Every module in this block's subtree
-        std::set<AstNodeModule*> inBlock;
+        VInsertionSet<AstNodeModule*> inBlock;
         std::vector<AstNodeModule*> todo{blockp};
         while (!todo.empty()) {
             AstNodeModule* const modp = todo.back();
             todo.pop_back();
-            if (!inBlock.insert(modp).second) continue;
+            if (!inBlock.insert(modp)) continue;
             modp->foreach([&todo](AstCell* cellp) {
                 if (cellp->modp()) todo.push_back(cellp->modp());
             });
@@ -579,21 +581,21 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
             modp->foreach(
                 [&declared, modp](AstVar* varp) { declared.emplace(varp->name(), modp); });
         }
-        std::set<std::string> promotedPaths;  // Dedup, instead of rescanning the vector
+        std::map<std::string, std::string> pathToPort;  // One port per distinct path
+        std::set<std::pair<std::string, std::string>> seen;  // (module, path) emitted
 
         size_t count = 0;
         for (AstNodeModule* const modp : inBlock) {
-            modp->foreach([&](AstVarXRef* xrefp) {
+            modp->foreach([&, modp](AstVarXRef* xrefp) {
                 if (!xrefp->varp()) return;
-                AstNode* p = xrefp->varp();
-                while (p && !VN_IS(p, NodeModule)) p = p->backp();
-                AstNodeModule* const targetp = VN_CAST(p, NodeModule);
+                const auto vit = varToMod.find(xrefp->varp());
+                AstNodeModule* const targetp = vit == varToMod.cend() ? nullptr : vit->second;
                 // An interface port member is not an outbound reference: the
                 // block reaches it through its own port, and interfaces at a
                 // hierarchical block boundary are diagnosed separately (see the
                 // modport check in HierBlockUsageCollectVisitor).
                 if (VN_IS(targetp, Iface)) return;
-                if (targetp && !inBlock.count(targetp)) {
+                if (targetp && !inBlock.exists(targetp)) {
                     if (hasNestedBlock) {
                         xrefp->v3warn(E_UNSUPPORTED,
                                       "Cannot promote reference out of hierarchical block "
@@ -616,8 +618,13 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
                     // not injective ("a.b_c" and "a_b.c" collide), and the path
                     // is passed explicitly anyway.
                     V3HierBlock* const blockVtxp = mod2vtx.at(blockp);
+                    // Modules sharing a path share its port; each module that
+                    // reads it still needs its own entry, because the rewrite
+                    // is matched per module.
+                    auto pit = pathToPort.find(path);
+                    const bool newPort = pit == pathToPort.cend();
                     const std::string portName
-                        = "xmrport_" + cvtToStr(blockVtxp->xmrPorts().size());
+                        = newPort ? "xmrport_" + cvtToStr(pathToPort.size()) : pit->second;
                     // The synthesized name must not shadow anything the design
                     // already declares anywhere in the block's subtree.
                     const auto dit = declared.find(portName);
@@ -629,14 +636,16 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
                                           << dit->second->prettyNameQ());
                         return;
                     }
-                    if (promotedPaths.insert(path).second) {
+                    if (newPort) pathToPort.emplace(path, portName);
+                    if (seen.insert(std::make_pair(modp->name(), path)).second) {
                         // V3Width has not run in this pass - createGraph returns
                         // before it - so varp()->width() is 0 and dtypep() is null.
                         // The width has to come from the declared type, and any
                         // type whose width cannot be established exactly here is
                         // refused rather than guessed: a silently wrong width
                         // would mean silently wrong hardware.
-                        const int width = promotableWidth(xrefp->varp());
+                        bool isSigned = false;
+                        const int width = promotableWidth(xrefp->varp(), isSigned);
                         if (width < 0) {
                             xrefp->v3warn(E_UNSUPPORTED,
                                           "Cannot promote reference out of a hierarchical block: '"
@@ -646,7 +655,14 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
                                                  "non-integral type)");
                             return;
                         }
-                        blockVtxp->addXmrPort(V3HierBlock::XmrPort{portName, path, width});
+                        // origName, not name: a de-parameterized module is
+                        // mangled differently between runs
+                        blockVtxp->addXmrPort(
+                            V3HierBlock::XmrPort{modp->name(), portName, path, width, isSigned});
+                        if (modp->origName() != modp->name()) {
+                            blockVtxp->addXmrPort(V3HierBlock::XmrPort{modp->origName(), portName,
+                                                                       path, width, isSigned});
+                        }
                     }
                     UINFO(4, "HIER-XMR: " << blockp->prettyNameQ() << " -> '" << xrefp->dotted()
                                           << "." << xrefp->name() << "' in "
@@ -715,17 +731,23 @@ static bool flattenDot(AstNode* nodep, std::vector<std::string>& names,
     return false;
 }
 
+// Width and signedness of a port to create
+struct PortSpec final {
+    int m_width;  // Declared width
+    bool m_signed;  // Declared signed
+};
+
 // Add an input port to modp, if not already present. Returns the variable.
-static AstVar* ensurePort(AstNodeModule* modp, const std::string& name, int width,
-                          AstNetlist* netlistp) {
-    AstVar* found = nullptr;
-    modp->foreach([&](AstVar* varp) {
-        if (!found && varp->name() == name) found = varp;
-    });
-    if (found) return found;
-    AstNodeDType* const dtypep = (width <= 1)
+static AstVar* ensurePort(AstNodeModule* modp, const std::string& name, const PortSpec& spec,
+                          AstNetlist* netlistp,
+                          std::map<AstNodeModule*, std::set<std::string>>& havePort) {
+    // Membership is tracked as ports are added; a foreach over every variable
+    // on each call would be quadratic
+    if (!havePort[modp].insert(name).second) return nullptr;
+    const VSigning numeric = spec.m_signed ? VSigning::SIGNED : VSigning::UNSIGNED;
+    AstNodeDType* const dtypep = (spec.m_width <= 1 && !spec.m_signed)
                                      ? netlistp->findBitDType()
-                                     : netlistp->findBitDType(width, width, VSigning::UNSIGNED);
+                                     : netlistp->findBitDType(spec.m_width, spec.m_width, numeric);
     AstVar* const varp = new AstVar{modp->fileline(), VVarType::PORT, name, dtypep};
     varp->direction(VDirection::INPUT);
     varp->declDirection(VDirection::INPUT);
@@ -742,8 +764,9 @@ static AstVar* ensurePort(AstNodeModule* modp, const std::string& name, int widt
 // Give one instance the ports its module needs, and its parent the same ports
 // to drive them with. Returns true if anything was added.
 static bool threadCellPorts(AstCell* cellp,
-                            std::map<AstNodeModule*, std::map<std::string, int>>& needs,
-                            AstNetlist* netlistp) {
+                            std::map<AstNodeModule*, std::map<std::string, PortSpec>>& needs,
+                            AstNetlist* netlistp,
+                            std::map<AstNodeModule*, std::set<std::string>>& havePort) {
     AstNodeModule* const childp = cellp->modp();
     if (!childp) return false;
     const auto it = needs.find(childp);
@@ -761,7 +784,7 @@ static bool threadCellPorts(AstCell* cellp,
             if (pinp->name() == name) havePin = true;
         }
         if (havePin) continue;
-        ensurePort(parentp, name, np.second, netlistp);
+        ensurePort(parentp, name, np.second, netlistp, havePort);
         needs[parentp].emplace(name, np.second);
         cellp->addPinsp(
             new AstPin{cellp->fileline(), -1, name, new AstParseRef{cellp->fileline(), name}});
@@ -776,17 +799,25 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
     const std::vector<V3Control::HierXmrPort>* const wantedp
         = V3Control::getHierXmrPorts(v3Global.opt.topModule());
     if (!wantedp) return;
-    // dotted path -> (port name, width)
-    std::map<std::string, std::pair<std::string, int>> wanted;
+    // (module the reference is in, dotted path) -> the port it becomes. A dotted
+    // path is relative to its module, so matching on the text alone would rewrite
+    // an unrelated module's identically-spelled internal reference.
+    struct Want final {
+        std::string m_port;  // Port the reference becomes
+        int m_width;  // Width to declare it
+        bool m_signed;  // Whether to declare it signed
+    };
+    std::map<std::pair<std::string, std::string>, Want> wanted;
     for (const V3Control::HierXmrPort& port : *wantedp) {
-        wanted.emplace(port.m_path, std::make_pair(port.m_port, port.m_width));
+        wanted.emplace(std::make_pair(port.m_refModule, port.m_path),
+                       Want{port.m_port, port.m_width, port.m_signed});
     }
 
     // 1) Rewrite each matching hierarchical name into a read of a new port.
     //    Collect first: replaceWith/deleteTree on the node being traversed
     //    corrupts the iteration.
     // module -> (port name, width) it must declare
-    std::map<AstNodeModule*, std::map<std::string, int>> needs;
+    std::map<AstNodeModule*, std::map<std::string, PortSpec>> needs;
     struct Hit final {
         AstDot* m_dotp;  // The reference to rewrite
         AstNodeModule* m_modp;  // Module the reference is in
@@ -803,15 +834,20 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
             if (i) path += '.';
             path += names[i];
         }
-        const auto wit = wanted.find(path);
-        if (wit == wanted.end()) return;
         AstNodeModule* modp = nullptr;
         for (AstNode* upp = dotp; upp; upp = upp->backp()) {
             if ((modp = VN_CAST(upp, NodeModule))) break;
         }
         if (!modp) return;
-        needs[modp].emplace(wit->second.first, wit->second.second);
-        hits.push_back(Hit{dotp, modp, wit->second.first});
+        // The module may be de-parameterized differently between runs, so accept
+        // either spelling; both are still scoped to this module, which is what
+        // stops an unrelated module's identical path from matching.
+        auto wit = wanted.find(std::make_pair(modp->name(), path));
+        if (wit == wanted.end()) wit = wanted.find(std::make_pair(modp->origName(), path));
+        if (wit == wanted.end()) return;
+        needs[modp].emplace(wit->second.m_port,
+                            PortSpec{wit->second.m_width, wit->second.m_signed});
+        hits.push_back(Hit{dotp, modp, wit->second.m_port});
     });
 
     for (const Hit& hit : hits) {
@@ -836,8 +872,11 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
     if (needs.empty()) return;
 
     // 2) Create the ports where the references were
+    std::map<AstNodeModule*, std::set<std::string>> havePort;
     for (const auto& pair : needs) {
-        for (const auto& np : pair.second) ensurePort(pair.first, np.first, np.second, netlistp);
+        for (const auto& np : pair.second) {
+            ensurePort(pair.first, np.first, np.second, netlistp, havePort);
+        }
     }
 
     // 3) Thread each port up to the block top, adding a pin at every instance.
@@ -849,7 +888,9 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
     bool changed = true;
     while (changed) {
         changed = false;
-        for (AstCell* const cellp : cells) changed |= threadCellPorts(cellp, needs, netlistp);
+        for (AstCell* const cellp : cells) {
+            changed |= threadCellPorts(cellp, needs, netlistp, havePort);
+        }
     }
 }
 
