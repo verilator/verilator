@@ -12,9 +12,15 @@ import multiprocessing
 import os
 import pickle
 import platform
-import pty
+try:
+    import pty
+except ImportError:
+    pty = None
 import re
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 import runpy
 import shutil
 import signal
@@ -1503,6 +1509,8 @@ class VlTest:
         by all of the spawned child processess"""
         #  An  unprivileged  process may set only its soft limit
         #  to a value in the range from 0 up to the hard limit
+        if not resource:
+            return
         _, hardlimit = resource.getrlimit(resource.RLIMIT_CPU)
         softlimit = ctypes.c_long(min(seconds, ctypes.c_ulong(hardlimit).value)).value
         # Casting is required due to a quirk in Python,
@@ -1945,7 +1953,7 @@ class VlTest:
         if logfile:
             logfh = open(logfile, 'wb')  # pylint: disable=consider-using-with
 
-        if not Args.interactive_debugger:
+        if not Args.interactive_debugger and pty:
             # Some parallel job's run() may attempt to capture driver.py's
             # terminal, e.g. gdb does this. So, unless known we want to run GDB
             # (where we want it to control the terminal), become a controlling
