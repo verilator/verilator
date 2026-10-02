@@ -2966,10 +2966,7 @@ class ParamVisitor final : public VNVisitor {
         // Enumerate the current dimension given by 'arrp'
         // Each element is added right after 'portp', so go from right to left,
         // to end with an enumeration from the left index to the right index.
-        const int left = arrp->left();
-        const int right = arrp->right();
-        const int step = arrp->declRange().ascending() ? 1 : -1;
-        for (int n = right; n != left - step; n -= step) {
+        for (const int n : arrp->declRange().seqRightToLeft()) {
             const std::string s = suffix + "__BRA__" + AstNode::encodeNumber(n) + "__KET__";
             expandIfaceArrayPortDimensions(portp, arrp->subDTypep(), s);
         }
@@ -3011,12 +3008,9 @@ class ParamVisitor final : public VNVisitor {
         // Enumerate the current dimension given by 'rangep'
         // Each element is added right after 'arrayedCellp', so go from right to left,
         // to end with an enumeration from the left index to the right index.
-        const int left = rangep->leftConst();
-        const int right = rangep->rightConst();
-        const int step = rangep->ascending() ? 1 : -1;
         idx = (idx + 1) * rangep->elementsConst();
         const AstRange* const subRangep = VN_AS(rangep->nextp(), Range);
-        for (int n = right; n != left - step; n -= step) {
+        for (const int n : rangep->seqRightToLeft()) {
             const std::string s = suffix + "__BRA__" + AstNode::encodeNumber(n) + "__KET__";
             expandCellArrayDimensions(arrayedCellp, ifaceVarp, subRangep, s, --idx);
         }
