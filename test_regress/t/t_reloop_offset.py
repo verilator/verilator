@@ -11,8 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(
-    verilator_flags2=["-unroll-count 1024", test.wno_unopthreads_for_few_cores, "--stats"])
+test.compile(verilator_flags2=[
+    "-unroll-count 1024", test.wno_unopthreads_for_few_cores, "--stats", "-fno-decompose"
+])
 
 test.execute(expect_filename=test.golden_filename)
 

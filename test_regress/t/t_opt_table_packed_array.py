@@ -15,7 +15,8 @@ test.compile(verilator_flags2=["--stats", "-fno-case-table", "-fno-case-decoder"
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, Tables created\s+(\d+)', 1)
-    test.file_grep(test.stats, r'ConstPool, Tables emitted\s+(\d+)', 1)
+    # One output table for each element, as the variable is decomposed
+    test.file_grep(test.stats, r'ConstPool, Tables emitted\s+(\d+)', 4)
 
 test.execute(expect_filename=test.golden_filename)
 

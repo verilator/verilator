@@ -454,6 +454,8 @@ private:
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
     bool m_fDeadMethods;   // main switch: -fno-dead-methods: remove dead methods
+    bool m_fDecomposePacked;  // main switch: -fno-decompose-packed: packed decomposition
+    bool m_fDecomposeUnpacked;  // main switch: -fno-decompose-unpacked: unpacked decomposition
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
     bool m_fFuncBalanceCat = true;  // main switch: -fno-func-balance-cat: expansion of C macros
     bool m_fFuncSplitCat = true;  // main switch: -fno-func-split-cat: expansion of C macros
@@ -798,6 +800,9 @@ public:
     bool fDeadAssigns() const { return m_fDeadAssigns; }
     bool fDeadCells() const { return m_fDeadCells; }
     bool fDeadMethods() const { return m_fDeadMethods; }
+    bool fDecompose() const { return m_fDecomposePacked || m_fDecomposeUnpacked; }
+    bool fDecomposePacked() const { return m_fDecomposePacked; }
+    bool fDecomposeUnpacked() const { return m_fDecomposeUnpacked; }
     bool fExpand() const { return m_fExpand; }
     bool fFuncBalanceCat() const { return m_fFuncBalanceCat; }
     bool fFuncSplitCat() const { return m_fFuncSplitCat; }
