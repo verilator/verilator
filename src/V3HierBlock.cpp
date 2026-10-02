@@ -115,8 +115,9 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
     string topModuleFile;
     if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
     if (!forMkJson) {
-        if (!topModuleFile.empty()) *of << topModuleFile << "\n";
         for (const auto& i : v3Global.opt.vFiles()) *of << i.filename() << "\n";
+        // Library-discovered blocks may depend on packages in the explicit input files.
+        if (!topModuleFile.empty()) *of << topModuleFile << "\n";
     }
     for (const auto& i : v3Global.opt.libraryFiles()) {
         if (V3Os::filenameRealPath(i.filename()) != topModuleFile)

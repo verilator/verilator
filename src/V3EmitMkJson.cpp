@@ -127,13 +127,13 @@ class V3EmitMkJsonEmitter final {
                     sources.emplace_back(makeDir + "/" + dependencyp->hierWrapperFilename(true));
                 }
 
-                const std::string vFile = hblockp->vFileIfNecessary();
-                if (!vFile.empty()) sources.emplace_back(vFile);
-
                 for (const VFileLibName& i : v3Global.opt.vFiles()) {
                     const std::string fname = i.filename();
                     sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(fname)));
                 }
+                // Match the input order in V3HierWriteCommonInputs.
+                const std::string vFile = hblockp->vFileIfNecessary();
+                if (!vFile.empty()) sources.emplace_back(vFile);
 
                 of.begin()
                     .put("prefix", hblockp->hierPrefix())
