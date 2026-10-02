@@ -11,11 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--stats'])
+test.compile(verilator_flags2=['--assert', '--stats'])
 
 test.execute()
 
 # Check that $past shared common variables
-test.file_grep(test.stats, r'Assertions, \$past variables\s+(\d+)', 8)
+test.file_grep(test.stats, r'Assertions, \$past variables\s+(\d+)', 15)
 
 test.passes()
