@@ -5211,8 +5211,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!classDtp)
                         nodep->v3error("'randomize() with' on a non-class-instance "
                                        << fromDtp->prettyNameQ());
-                    else
+                    else if (m_statep->forPrimary() && m_extendsParam.count(classDtp->classp())) {
+                        // Inherited members are unavailable until the base class is specialized.
+                        // Defer lookup rather than incorrectly binding names in the caller.
+                        m_ds.m_unresolvedClass = true;
+                    } else {
                         m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                    }
                 }
             }
             iterateChildren(nodep);
@@ -5786,6 +5791,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
+        if (m_ds.m_unresolvedClass) return;
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_currentWithp);
         VL_RESTORER_COPY(m_restrictedNamesUsed);
