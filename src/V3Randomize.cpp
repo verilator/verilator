@@ -906,7 +906,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
     AstNode* m_firstExpressionInsideIndexp = nullptr;
     AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
-    std::vector<AstNode*> m_foreachStmtsp;  // Solver stmts to inject into foreach body
 
     class NestedAccessPath final {
         AstMemberSel* m_topNestedArrayMemberSelp
@@ -1958,14 +1957,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = getInitTaskp(varp, memberselp || structSelOrCMeth, classp);
             if (m_nestedAccess) {
                 AstStmtExpr* const writeVarStmtp = m_nestedAccess->makeWriteVarStmt(varp, m_genp);
-                initTaskp->addStmtsp(writeVarStmtp);
                 if (m_foreachp && referencesLoopIdx(writeVarStmtp)) {
-                    // The access path depends on the foreach iterator, so the
-                    // registration must execute inside the loop. Collect it here
-                    // and move it into the loop body after the body is processed
-                    // (initTaskp is outside the iterator's scope and the reference
-                    // would dangle once task inlining deletes the loop variable)
-                    m_foreachStmtsp.push_back(writeVarStmtp);
+                    m_foreachp->addBodyp(writeVarStmtp);
+                } else {
+                    initTaskp->addStmtsp(writeVarStmtp);
                 }
                 if (isGlobalConstrained && memberselp && randMode.usesMode) {
                     setRandMode(varp, memberselp, smtName, randMode, initTaskp);
@@ -2788,16 +2783,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
             VL_RESTORER(m_foreachp);
-            std::vector<AstNode*> outerStmts;
-            outerStmts.swap(m_foreachStmtsp);  // Isolate nesting level
             m_foreachp = nodep;
             iterateAndNextNull(nodep->bodyp());
-            for (AstNode* const stmtp : m_foreachStmtsp) {
-                stmtp->unlinkFrBack();
-                nodep->addBodyp(stmtp);
-            }
-            m_foreachStmtsp.clear();
-            m_foreachStmtsp.swap(outerStmts);
             AstNode* const bodyp
                 = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
             nodep->replaceWith(

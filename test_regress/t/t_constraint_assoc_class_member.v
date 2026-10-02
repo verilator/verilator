@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
 class ClsA;
   rand logic member_a;
 endclass
@@ -69,13 +72,15 @@ module t;
   initial begin
     int rand_ok;
     obj_c.enable_c = 0;
-    rand_ok = obj_c.randomize();
-    if (rand_ok == 0) $stop;
-    // Every array element must satisfy the loop-index-dependent constraints.
-    foreach (obj_c.member_c[i]) begin
-      if (obj_c.member_c[i].member_b.member_a !== 1'b1) $stop;
-      foreach (obj_c.member_c[i].inner_b[j]) begin
-        if (obj_c.member_c[i].inner_b[j].member_a !== 1'b1) $stop;
+    repeat (20) begin
+      rand_ok = obj_c.randomize();
+      `checkd(rand_ok, 1)
+      // Every array element must satisfy the loop-index-dependent constraints.
+      foreach (obj_c.member_c[i]) begin
+        `checkd(obj_c.member_c[i].member_b.member_a, 1'b1)
+        foreach (obj_c.member_c[i].inner_b[j]) begin
+          `checkd(obj_c.member_c[i].inner_b[j].member_a, 1'b1)
+        end
       end
     end
     $write("*-* All Finished *-*\n");
