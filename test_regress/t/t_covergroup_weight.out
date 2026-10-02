@@ -1,8 +1,8 @@
-t.Cls.cg_emb.cpv.auto_0: 1
-t.Cls.cg_emb.cpv.auto_1: 0
-t.Cls.cg_emb.cpv.auto_2: 0
-t.Cls.cg_emb.cpv.auto_3: 0
-t.Cls.cg_emb.cpz.zero: 1
+t.Cls::cg_emb.cpv.auto_0: 1
+t.Cls::cg_emb.cpv.auto_1: 0
+t.Cls::cg_emb.cpv.auto_2: 0
+t.Cls::cg_emb.cpv.auto_3: 0
+t.Cls::cg_emb.cpz.zero: 1
 t.cg_all_zero.cpa.auto_0: 1
 t.cg_all_zero.cpa.auto_1: 1
 t.cg_all_zero.cpa.auto_2: 0

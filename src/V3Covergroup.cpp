@@ -241,9 +241,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstClass* m_covergroupp = nullptr;  // Current covergroup being processed
     AstClass* m_enclosingClassp = nullptr;  // Class lexically enclosing the covergroup, if any
     AstVar* m_embeddedVarp = nullptr;  // Embedded covergroup member of m_enclosingClassp, if any
-    std::string m_scopeName;  // Dotted names of the scopes enclosing the current node
-    std::string m_covergroupName;  // Current covergroup's type name, within its scopes
-    std::set<std::string> m_sharedModuleNames;  // Names shared by modules of distinct libraries
+    std::string m_covergroupName;  // Current covergroup's type name, see covergroupTypeName()
     AstFunc* m_sampleFuncp = nullptr;  // Current sample() function
     AstFunc* m_constructorp = nullptr;  // Current constructor
     std::vector<AstCoverpoint*> m_coverpoints;  // Coverpoints in current covergroup
@@ -1040,32 +1038,21 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return VIdProtect::protectWordsIf(m_covergroupName, v3Global.opt.protectIds());
     }
 
-    // If an identifier is simple, so not escaped: letters, digits, '$' and '_', the first not a
-    // digit or '$' (IEEE 1800-2023 5.6)
-    static bool isSimpleIdentifier(const std::string& ident) {
-        const auto simpleChar = [](char c) {
-            return std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '$';
-        };
-        return !std::isdigit(static_cast<unsigned char>(ident[0])) && ident[0] != '$'
-               && std::all_of(ident.begin(), ident.end(), simpleChar);
-    }
-
-    // The name of a scope in a covergroup type's name, as a hierarchical name writes it: an
-    // identifier that is not simple is escaped, and followed by white space, so that the names
-    // of distinct scopes never coincide (IEEE 1800-2023 23.6)
-    static std::string scopeName(const std::string& name) {
-        // A loop generate block's index follows its identifier
-        const std::string::size_type indexPos = name.find("__BRA__");
-        const std::string ident = AstNode::prettyName(name.substr(0, indexPos));
-        std::string result = isSimpleIdentifier(ident) ? ident : "\\" + ident + " ";
-        if (indexPos != std::string::npos) result += AstNode::prettyName(name.substr(indexPos));
-        return result;
-    }
-
-    // The name of a module, interface, program or package in a covergroup type's name, not
-    // including its library
-    static std::string moduleScopeName(const AstNodeModule* modp) {
-        return modp->isDollarUnit() ? "$unit" : scopeName(modp->name());
+    // The name of the covergroup's type, which keys the coverage registry and database: as
+    // $typename names it (IEEE 1800-2023 20.6.1), so apart for covergroups of distinct scopes and
+    // specializations, and alike in each Verilator run of a hierarchical design.  As design units
+    // of distinct libraries may share a name, one of a library other than the default is prefixed
+    // by its library, as '%l' prints it (IEEE 1800-2023 33.4).
+    std::string covergroupTypeName() const {
+        // The design unit declaring the covergroup, outside any class
+        const AstNode* unitp = m_covergroupp->aboveLoopp();
+        while (!VN_IS(unitp, NodeModule) || VN_IS(unitp, Class)) {
+            UASSERT_OBJ(unitp, m_covergroupp, "Covergroup declared outside of a design unit");
+            unitp = unitp->aboveLoopp();
+        }
+        const std::string& libname = VN_AS(unitp, NodeModule)->libname();
+        const std::string name = m_covergroupp->dtypeName(true);
+        return libname == "work" ? name : libname + "." + name;
     }
 
     // Emit the covergroup's instance handle member and the constructor statement that creates
@@ -4408,12 +4395,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             VL_RESTORER_CLEAR(m_covergroupName);
             m_covergroupp = nodep;
             m_embeddedVarp = findEmbeddedCovergroupVar();
-            // Covergroups of one name in distinct scopes are distinct types, so a type is named
-            // within its scopes.  An embedded covergroup declares an anonymous type, named here
-            // by its instance variable, which has the covergroup's name (IEEE 1800-2023 19.4).
-            m_covergroupName
-                = m_scopeName + "."
-                  + scopeName(m_embeddedVarp ? m_embeddedVarp->name() : nodep->name());
+            m_covergroupName = covergroupTypeName();
             m_sampleFuncp = nullptr;
             m_constructorp = nullptr;
             std::vector<EmbeddedEventTrigger> embeddedEventTriggers;
@@ -4509,30 +4491,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             // Track the lexically enclosing class so a nested covergroup can resolve
             // references to the enclosing object's members (installEnclosingBackPointer).
             VL_RESTORER(m_enclosingClassp);
-            VL_RESTORER_COPY(m_scopeName);
             m_enclosingClassp = nodep;
-            m_scopeName += "." + scopeName(nodep->name());
             iterateChildren(nodep);
         }
-    }
-
-    // A module, interface, program or package: the outermost scope of a covergroup
-    void visit(AstNodeModule* nodep) override {
-        VL_RESTORER_CLEAR(m_scopeName);
-        m_scopeName = moduleScopeName(nodep);
-        // Modules of one name in distinct libraries are named as library cells, as '%l' prints
-        // them (IEEE 1800-2023 33.4)
-        if (m_sharedModuleNames.count(m_scopeName)) {
-            m_scopeName = scopeName(nodep->libname()) + "." + m_scopeName;
-        }
-        iterateChildren(nodep);
-    }
-
-    void visit(AstGenBlock* nodep) override {
-        VL_RESTORER_COPY(m_scopeName);
-        // An unnamed block, as around the 'if' of an 'else if', is not a scope
-        if (!nodep->name().empty()) m_scopeName += "." + scopeName(nodep->name());
-        iterateChildren(nodep);
     }
 
     void visit(AstCoverpoint* nodep) override {
@@ -4555,16 +4516,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit FunctionalCoverageVisitor(AstNetlist* nodep) {
-        // Modules of distinct libraries may share a name
-        std::set<std::string> names;
-        for (AstNodeModule* modp = nodep->modulesp(); modp;
-             modp = VN_AS(modp->nextp(), NodeModule)) {
-            const std::string name = moduleScopeName(modp);
-            if (!names.insert(name).second) m_sharedModuleNames.insert(name);
-        }
-        iterate(nodep);
-    }
+    explicit FunctionalCoverageVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~FunctionalCoverageVisitor() override = default;
 };
 

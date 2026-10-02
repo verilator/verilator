@@ -1,33 +1,29 @@
-$unit.First.cg.cp.auto_0: 1
-$unit.First.cg.cp.auto_1: 1
-$unit.Holder.cg.cp.auto_0: 0
-$unit.Holder.cg.cp.auto_1: 0
-$unit.Outer.\inner.cg .cp.auto_0: 1
-$unit.Outer.\inner.cg .cp.auto_1: 1
-$unit.Outer.inner.cg.cp.auto_0: 0
-$unit.Outer.inner.cg.cp.auto_1: 0
-$unit.Param.cg.cp.auto_0: 1
-$unit.Param.cg.cp.auto_1: 1
-$unit.Param__N2.cg.cp.auto_0: 0
-$unit.Param__N2.cg.cp.auto_1: 0
-$unit.Second.cg.cp.auto_0: 0
-$unit.Second.cg.cp.auto_1: 0
-\sub_e.gen_e .cg.cp.auto_0: 1
-\sub_e.gen_e .cg.cp.auto_1: 1
-pkg.Holder.cg.cp.auto_0: 1
-pkg.Holder.cg.cp.auto_1: 1
+$unit::First::cg.cp.auto_0: 1
+$unit::First::cg.cp.auto_1: 1
+$unit::Holder::cg.cp.auto_0: 0
+$unit::Holder::cg.cp.auto_1: 0
+$unit::Outer::inner.cg.cp.auto_0: 1
+$unit::Outer::inner.cg.cp.auto_1: 1
+$unit::Outer::inner::cg.cp.auto_0: 0
+$unit::Outer::inner::cg.cp.auto_1: 0
+$unit::Param#(1)::cg.cp.auto_0: 1
+$unit::Param#(1)::cg.cp.auto_1: 1
+$unit::Param#(2)::cg.cp.auto_0: 0
+$unit::Param#(2)::cg.cp.auto_1: 0
+$unit::Second::cg.cp.auto_0: 0
+$unit::Second::cg.cp.auto_1: 0
+pkg::Holder::cg.cp.auto_0: 1
+pkg::Holder::cg.cp.auto_1: 1
 sub_a.cg.cp.auto_0: 1
 sub_a.cg.cp.auto_1: 1
 sub_b.cg.cp.auto_0: 0
 sub_b.cg.cp.auto_1: 0
 sub_e.gen_e.cg.cp.auto_0: 0
 sub_e.gen_e.cg.cp.auto_1: 0
-sub_p.cg.cp.auto_0: 1
-sub_p.cg.cp.auto_1: 1
-sub_p__W2.cg.cp.auto_0: 0
-sub_p__W2.cg.cp.auto_1: 0
-t.\gen[0] .cg.cp.auto_0: 0
-t.\gen[0] .cg.cp.auto_1: 0
+sub_p#(1).cg.cp.auto_0: 1
+sub_p#(1).cg.cp.auto_1: 1
+sub_p#(2).cg.cp.auto_0: 0
+sub_p#(2).cg.cp.auto_1: 0
 t.cg.cp.auto_0: 0
 t.cg.cp.auto_1: 0
 t.gen[0].cg.cp.auto_0: 1

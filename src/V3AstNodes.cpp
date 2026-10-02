@@ -253,18 +253,28 @@ static string dtypeNameClass(const AstClass* classp) {
 }
 
 // Prefix of the name of a type for the package, interface, module, or class declaring it, with
-// the values of its parameters, e.g. '$unit::', 'ifc#(8).', or '$unit::Cls#(8)::'
+// the values of its parameters, and for the generate blocks declaring it, e.g. '$unit::',
+// 'ifc#(8).', '$unit::Cls#(8)::', or 'top.gen[0].'
 static string dtypeNameScopeOf(const AstNode* nodep) {
+    // A named generate block is a scope (IEEE 1800-2023 27.6), so the types of distinct blocks,
+    // as of the iterations of a loop, are named apart
+    string blocks;
     const AstNode* abovep = nodep->aboveLoopp();
     while (!VN_IS(abovep, NodeModule)) {
         UASSERT_OBJ(abovep, nodep, "Type declared outside of a module");
+        // An unnamed block, as around the 'if' of an 'else if', is not a scope
+        if (VN_IS(abovep, GenBlock) && !abovep->name().empty()) {
+            blocks = abovep->prettyName() + "." + blocks;
+        }
         abovep = abovep->aboveLoopp();
     }
     const AstNodeModule* const modp = VN_AS(abovep, NodeModule);
     if (const AstClass* const classp = VN_CAST(modp, Class)) return classp->dtypeName(true) + "::";
-    if (const AstIface* const ifacep = VN_CAST(modp, Iface)) return ifacep->dtypeName(true) + ".";
+    if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
+        return ifacep->dtypeName(true) + "." + blocks;
+    }
     if (VN_IS(modp, Package)) return modp->prettyName() + "::";
-    return AstNode::prettyName(modp->origName()) + dtypeNameParams(modp, true) + ".";
+    return AstNode::prettyName(modp->origName()) + dtypeNameParams(modp, true) + "." + blocks;
 }
 
 // Name in full of a structure, union, or enumeration, as given by the typedef declaring it, if

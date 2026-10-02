@@ -1,4 +1,4 @@
-$unit.myClass.embeddedCg.cp_mc.auto_0: 0
-$unit.myClass.embeddedCg.cp_mc.auto_1: 1
-$unit.secondClass.embeddedCg.cp_sc.auto_0: 1
-$unit.secondClass.embeddedCg.cp_sc.auto_1: 0
+$unit::myClass::embeddedCg.cp_mc.auto_0: 0
+$unit::myClass::embeddedCg.cp_mc.auto_1: 1
+$unit::secondClass::embeddedCg.cp_sc.auto_0: 1
+$unit::secondClass::embeddedCg.cp_sc.auto_1: 0
