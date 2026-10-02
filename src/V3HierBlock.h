@@ -66,9 +66,11 @@ class V3HierBlock final : public V3GraphVertex {
 public:
     // A reference out of this block, promoted to an input port on it
     struct XmrPort final {
+        string m_refModule;  // Module the reference appears in
         string m_name;  // Generated port name
         string m_path;  // Dotted path of the signal it reads
         int m_width;  // Width, established before V3Width from the declared type
+        bool m_signed;  // Whether the referenced signal is signed
     };
 
 private:

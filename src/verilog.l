@@ -190,6 +190,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-var"              { FL; return yVLT_D_VAR; }
   -?"-workers"          { FL; return yVLT_D_WORKERS; }
   -?"-width"            { FL; return yVLT_D_WIDTH; }
+  -?"-signed"           { FL; return yVLT_D_SIGNED; }
 
   /* Reachable by attr_event_control */
   "edge"                { FL; return yEDGE; }
