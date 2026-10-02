@@ -749,6 +749,13 @@ class ForkVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstArg* nodep) override {
+        // Writable arguments replace the handle itself, just like assignments.
+        if (AstVarRef* const refp = VN_CAST(nodep->exprp(), VarRef)) {
+            if (refp->isClassHandleValue() && refp->access().isWriteOrRW()) refp->user2(true);
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstInitialAutomaticStmt* nodep) override {
         VL_RESTORER(m_inInitStmt);
         m_inInitStmt = true;
