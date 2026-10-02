@@ -448,9 +448,10 @@ void V3HierGraph::writeXmrPortsFile() const {
     for (const V3GraphVertex& vtx : vertices()) {
         const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
         for (const V3HierBlock::XmrPort& port : blockp->xmrPorts()) {
-            *of << "hier_xmr_port -module \"" << blockp->modp()->name() << "\" -block \""
-                << port.m_refModule << "\" -port \"" << port.m_name << "\" -width " << port.m_width
-                << (port.m_signed ? " -signed" : "") << " -scope \"" << port.m_path << "\"\n";
+            *of << "hier_xmr_port -module \"" << port.m_refModule << "\" -block \""
+                << blockp->modp()->name() << "\" -port \"" << port.m_name << "\" -width "
+                << port.m_width << (port.m_signed ? " -signed" : "") << " -scope \"" << port.m_path
+                << "\"\n";
         }
     }
 }
