@@ -256,6 +256,7 @@ module t (/*AUTOARG*/
 
     if (Pkg::PKG_PARAM != 1) $stop;
     sub.r = 62.0;
+    if (sub.sub_gen.SUB_B != 2'd1) $stop;
 
     mod_res = mod_val % 5;
 
@@ -479,6 +480,9 @@ module t (/*AUTOARG*/
 endmodule
 
 module sub(input logic clk);
+  if (1) begin : sub_gen
+    typedef enum logic [1:0] {SUB_A, SUB_B} sub_e;
+  end
   task inc(input int i, output int o);
     o = {1'b0, i[31:1]} + 32'd1;
   endtask

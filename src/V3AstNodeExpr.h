@@ -1442,6 +1442,8 @@ class AstEnumItemRef final : public AstNodeExpr {
     // @astgen ptr := m_itemp : Optional[AstEnumItem]  // [AfterLink] Pointer to item
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package defined in
     string m_name;  // Name of enum (for param relink)
+    string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
+    bool m_containsGenBlock = false;  // Contains gen block reference
 public:
     AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* classOrPackagep)
         : ASTGEN_SUPER_EnumItemRef(fl)
@@ -1458,10 +1460,15 @@ public:
     int instrCount() const override { return 0; }
     bool sameNode(const AstNode* samep) const override {
         const AstEnumItemRef* const sp = VN_DBG_AS(samep, EnumItemRef);
-        return itemp() == sp->itemp();
+        return itemp() == sp->itemp() && dotted() == sp->dotted()
+               && containsGenBlock() == sp->containsGenBlock();
     }
     AstEnumItem* itemp() const VL_MT_STABLE { return m_itemp; }
     void itemp(AstEnumItem* nodep) { m_itemp = nodep; }
+    string dotted() const { return m_dotted; }
+    void dotted(const string& dotted) { m_dotted = dotted; }
+    bool containsGenBlock() const { return m_containsGenBlock; }
+    void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
