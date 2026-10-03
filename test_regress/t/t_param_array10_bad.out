@@ -1,0 +1,76 @@
+%Error: t/t_param_array10_bad.v:84:17: Assignment pattern missed initializing elements: 2
+                                     : ... note: In instance 't'
+   84 |   m #(.N(3), .V('{1, 2})) i_few ();   
+      |                 ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_array10_bad.v:85:17: Assignment pattern with too many elements
+                                     : ... note: In instance 't'
+   85 |   m #(.N(2), .V('{1, 2, 3})) i_many ();   
+      |                 ^~
+%Error: t/t_param_array10_bad.v:25:19: Variable's initial value is circular: 'N'
+   25 |     parameter int N = M,
+      |                   ^
+%Warning-WIDTHEXPAND: t/t_param_array10_bad.v:26:19: Operator VAR 'M' expects 32 bits on the Initial value, but Initial value's VARREF 'N' generates 1 bits.
+   26 |     parameter int M = N,
+      |                   ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Error: t/t_param_array10_bad.v:27:20: Size of range is '[0]', must be positive integer (IEEE 1800-2023 7.4.2)
+   27 |     parameter int V[N] = '{default: 0}
+      |                    ^
+%Error: t/t_param_array10_bad.v:87:11: Assignment pattern missed initializing elements: -1
+                                     : ... note: In instance 't'
+   87 |   cy #(.V('{1})) i_cy ();
+      |           ^~
+%Error: t/t_param_array10_bad.v:41:20: Parameter type is circular: 'T'
+   41 |     parameter type T = logic [W-1:0],
+      |                    ^
+%Error: t/t_param_array10_bad.v:51:13: Typedef's type is circular: 'A'
+   51 |   typedef B A;
+      |             ^
+%Error: t/t_param_array10_bad.v:57:25: Typedef's type is circular: 'A'
+   57 |   typedef logic [W-1:0] A;
+      |                         ^
+%Error: t/t_param_array10_bad.v:92:18: Expecting expression to be constant, but variable isn't const: 'x'
+                                     : ... note: In instance 't'
+   92 |   wx #(.P(1), .N(x)) i_wx ();
+      |                  ^
+%Error: t/t_param_array10_bad.v:92:16: Can't convert defparam value to constant: Param 'N' of 'i_wx'
+                                     : ... note: In instance 't'
+   92 |   wx #(.P(1), .N(x)) i_wx ();
+      |                ^
+%Error: t/t_param_array10_bad.v:71:21: Expecting expression to be constant, but variable isn't const: 'N'
+   71 |     parameter int V[N] = '{default: 0}
+      |                     ^
+%Error: t/t_param_array10_bad.v:71:21: right side of bit range isn't a two-state constant (IEEE 1800-2023 6.9.1)
+   71 |     parameter int V[N] = '{default: 0}
+      |                     ^
+%Error: t/t_param_array10_bad.v:94:21: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+                                     : ... note: In instance 't'
+   94 |   nt #(.V('{1, 2})) i_nt ();
+      |                     ^~~~
+%Error: t/t_param_array10_bad.v:19:20: Size of range is '[0]', must be positive integer (IEEE 1800-2023 7.4.2)
+                                     : ... note: In instance 't.i_zero'
+   19 |     parameter int V[N] = '{default: 0}
+      |                    ^
+%Error: t/t_param_array10_bad.v:34:19: Variable's initial value is circular: 'M'
+                                     : ... note: In instance 't.i_cs'
+   34 |     parameter int M = N,
+      |                   ^
+%Warning-WIDTHEXPAND: t/t_param_array10_bad.v:33:19: Operator VAR 'N' expects 32 bits on the Initial value, but Initial value's VARREF 'M' generates 1 bits.
+                                                   : ... note: In instance 't.i_cs'
+   33 |     parameter int N = M,
+      |                   ^
+%Warning-WIDTHEXPAND: t/t_param_array10_bad.v:63:19: Operator VAR 'N' expects 32 bits on the Initial value, but Initial value's CONST '?1?h0' generates 1 bits.
+                                                   : ... note: In instance 't.i_wx'
+   63 |     parameter int N = 1,
+      |                   ^
+%Error: t/t_param_array10_bad.v:70:19: Parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'N'
+                                     : ... note: In instance 't.i_nv'
+   70 |     parameter int N,
+      |                   ^
+%Error: t/t_param_array10_bad.v:77:20: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+                                     : ... note: In instance 't.i_nt'
+   77 |     parameter type T,
+      |                    ^
+%Error: Exiting due to

@@ -7388,14 +7388,19 @@ class WidthVisitor final : public VNVisitor {
             // Widthing handled as special init() case
             bool didWidth = false;
             if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
-                const AstVar* const modVarp = nodep->modVarp();
-                // Convert BracketArrayDType
-                userIterate(modVarp->childDTypep(),
-                            WidthVP{SELF, BOTH}.p());  // May relink pointed to node
-                AstNodeDType* const setDtp = modVarp->childDTypep();
-                if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
-                userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
-                didWidth = true;
+                // A pattern with its own type, from data_type '{...} or from V3Param when
+                // the parameter's type depends on other parameters, is widthed below, as
+                // widthing the parameter's type would size it by the template's defaults
+                if (!patternp->childDTypep()) {
+                    const AstVar* const modVarp = nodep->modVarp();
+                    // Convert BracketArrayDType
+                    userIterate(modVarp->childDTypep(),
+                                WidthVP{SELF, BOTH}.p());  // May relink pointed to node
+                    AstNodeDType* const setDtp = modVarp->childDTypep();
+                    patternp->childDTypep(setDtp->cloneTree(false));
+                    userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                    didWidth = true;
+                }
             }
             if (!didWidth) userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         } else if (!m_paramsOnly) {
