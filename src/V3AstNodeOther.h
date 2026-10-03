@@ -324,6 +324,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
     bool m_subgraphBoundary : 1;  // Module is an experimental scheduling boundary
+    bool m_subgraphSharedInput : 1;  // Its input is captured per instance for shared logic
     bool m_parameterizedTemplate : 1;  // True when at least one specialized clone exists;
                                        // set by V3Param::deepCloneModule. Suppresses
                                        // width/type errors on the unresolved template.
@@ -346,6 +347,7 @@ protected:
         , m_recursive{false}
         , m_recursiveClone{false}
         , m_subgraphBoundary{false}
+        , m_subgraphSharedInput{false}
         , m_parameterizedTemplate{false}
         , m_verilatorLib{false} {}
 
@@ -353,6 +355,11 @@ public:
     ASTGEN_MEMBERS_AstNodeModule;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        const AstNodeModule* const asamep = VN_DBG_AS(samep, NodeModule);
+        return name() == asamep->name() && subgraphBoundary() == asamep->subgraphBoundary()
+               && subgraphSharedInput() == asamep->subgraphSharedInput();
+    }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string name() const override VL_MT_STABLE { return m_name; }
     virtual bool timescaleMatters() const = 0;
@@ -393,6 +400,8 @@ public:
     bool recursiveClone() const { return m_recursiveClone; }
     bool subgraphBoundary() const { return m_subgraphBoundary; }
     void subgraphBoundary(bool flag) { m_subgraphBoundary = flag; }
+    bool subgraphSharedInput() const { return m_subgraphSharedInput; }
+    void subgraphSharedInput(bool flag) { m_subgraphSharedInput = flag; }
     bool parameterizedTemplate() const { return m_parameterizedTemplate; }
     void parameterizedTemplate(bool flag) { m_parameterizedTemplate = flag; }
     void verilatorLib(bool flag) { m_verilatorLib = flag; }
@@ -556,6 +565,8 @@ class AstCFunc final : public AstNode {
     bool m_noLife : 1;  // Disable V3Life on this function - has multiple calls, and reads Syms
                         // state
     bool m_isCovergroupSample : 1;  // Automatic covergroup sample() function
+    bool m_subgraphWrapper : 1;  // Ordered child NBA function called at a subgraph boundary
+    bool m_subgraphShareable : 1;  // Receiver-relative child body retained for combining
     int m_cost;  // Function call cost
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
@@ -588,6 +599,8 @@ public:
         m_unlikely = false;
         m_noLife = false;
         m_isCovergroupSample = false;
+        m_subgraphWrapper = false;
+        m_subgraphShareable = false;
         m_cost = v3Global.opt.instrCountDpi();  // As proxy for unknown general DPI cost
     }
     ASTGEN_MEMBERS_AstCFunc;
@@ -599,6 +612,8 @@ public:
         const AstCFunc* const asamep = VN_DBG_AS(samep, CFunc);
         return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && isLoose() == asamep->isLoose()
+                && subgraphWrapper() == asamep->subgraphWrapper()
+                && subgraphShareable() == asamep->subgraphShareable()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
     //
@@ -670,6 +685,10 @@ public:
     bool noLife() const { return m_noLife; }
     bool isCovergroupSample() const { return m_isCovergroupSample; }
     void isCovergroupSample(bool flag) { m_isCovergroupSample = flag; }
+    bool subgraphWrapper() const { return m_subgraphWrapper; }
+    void subgraphWrapper(bool flag) { m_subgraphWrapper = flag; }
+    bool subgraphShareable() const { return m_subgraphShareable; }
+    void subgraphShareable(bool flag) { m_subgraphShareable = flag; }
     void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
@@ -1846,9 +1865,11 @@ class AstScope final : public AstNode {
     // @astgen ptr := m_aboveScopep : Optional[AstScope]  // Scope above this one in the hierarchy
     // @astgen ptr := m_aboveCellp : Optional[AstCell]  // Cell above this in the hierarchy
     // @astgen ptr := m_modp : AstNodeModule  // Module scope corresponds to
+    // @astgen ptr := m_subgraphImplementationScopep : Optional[AstScope]  // Shared logic owner
 
     // An AstScope->name() is special: . indicates an uninlined scope, __DOT__ an inlined scope
     string m_name;  // Name
+    uint32_t m_subgraphInstanceId = 0;  // Boundary instance identity, independent of renaming
 public:
     AstScope(FileLine* fl, AstNodeModule* modp, const string& name, AstScope* aboveScopep,
              AstCell* aboveCellp)
@@ -1874,6 +1895,12 @@ public:
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
     AstCell* aboveCellp() const { return m_aboveCellp; }
     bool isTop() const VL_MT_SAFE { return aboveScopep() == nullptr; }  // At top of hierarchy
+    uint32_t subgraphInstanceId() const { return m_subgraphInstanceId; }
+    void subgraphInstanceId(uint32_t id) { m_subgraphInstanceId = id; }
+    AstScope* subgraphImplementationScopep() const { return m_subgraphImplementationScopep; }
+    void subgraphImplementationScopep(AstScope* scopep) {
+        m_subgraphImplementationScopep = scopep;
+    }
     // Create new MODULETEMP variable under this scope
     AstVarScope* createTemp(const string& name, unsigned width);
     AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
@@ -2252,6 +2279,7 @@ class AstVar final : public AstNode {
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
+    uint32_t m_subgraphPortId = 0;  // Stable elaborated boundary port identity, zero if none
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     VVarType m_varType;  // Type of variable
     VDirection m_direction;  // Direction input/output etc
@@ -2304,6 +2332,9 @@ class AstVar final : public AstNode {
     bool m_noCReset : 1;  // Do not do automated CReset creation
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
+    bool m_subgraphCaptured : 1;  // Per-receiver value acquired from an input port on an edge
+    bool m_subgraphPublished : 1;  // Dedicated value visible outside a subgraph boundary
+    bool m_subgraphSharedState : 1;  // Used by logic shared with another instance
     bool m_sampled : 1;  // Sampled timing region
     bool m_substConstOnly : 1;  // Only substitute if constant
     bool m_overriddenParam : 1;  // Overridden parameter by #(...) or defparam
@@ -2369,6 +2400,9 @@ class AstVar final : public AstNode {
         m_noCReset = false;
         m_noReset = false;
         m_noSubst = false;
+        m_subgraphCaptured = false;
+        m_subgraphPublished = false;
+        m_subgraphSharedState = false;
         m_sampled = false;
         m_substConstOnly = false;
         m_overriddenParam = false;
@@ -2550,6 +2584,14 @@ public:
     void noReset(bool flag) { m_noReset = flag; }
     bool noSubst() const { return m_noSubst; }
     void noSubst(bool flag) { m_noSubst = flag; }
+    bool subgraphPublished() const { return m_subgraphPublished; }
+    bool subgraphCaptured() const { return m_subgraphCaptured; }
+    void subgraphCaptured(bool flag) { m_subgraphCaptured = flag; }
+    bool subgraphSharedState() const { return m_subgraphSharedState; }
+    void subgraphSharedState(bool flag) { m_subgraphSharedState = flag; }
+    uint32_t subgraphPortId() const { return m_subgraphPortId; }
+    void subgraphPortId(uint32_t id) { m_subgraphPortId = id; }
+    void subgraphPublished(bool flag) { m_subgraphPublished = flag; }
     bool processQueue() const { return m_processQueue; }
     void processQueue(bool flag) { m_processQueue = flag; }
     bool sampled() const { return m_sampled; }

@@ -1,6 +1,10 @@
 module Vt_debug_emitv_t;
     input logic clk;
     input logic in;
+    logic subgraph_q;
+    initial begin
+        $display("subgraph_q=%b", subgraph_q);
+    end
     typedef enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
@@ -1492,6 +1496,15 @@ endmodule
 package Vt_debug_emitv_p;
     logic pkgvar;
 endpackage
+module Vt_debug_emitv_sg_debug_emitv;
+    input logic clk;
+    input logic d;
+    output logic q;
+    q = 1'h0;
+    always @(posedge clk) begin
+        q <= d;
+    end
+endmodule
 package Vt_debug_emitv_Pkg;
     logic signed [31:0]  PKG_PARAM;
     typedef enum int signed{

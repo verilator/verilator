@@ -27,7 +27,10 @@
 
 #include "V3Const.h"
 #include "V3Control.h"
+#include "V3Stats.h"
 #include "V3Width.h"
+
+#include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -48,12 +51,48 @@ class InstVisitor final : public VNVisitor {
 
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell
+    std::map<AstVar*, AstVar*> m_publishedByPort;  // Publication storage for each selected output
+    std::map<AstNodeModule*, unsigned>
+        m_nextPublishedIndex;  // Next publication identifier per module
+    uint64_t m_publishedConnections = 0;  // Number of lowered publication connections
 
     // METHODS
+    // Keep the parent's published value separate from internal child state.
+    AstVar* publishOutput(AstPin* nodep, AstNodeExpr* exprp) {
+        AstVar* portVarp = nodep->modVarp();
+        if (v3Global.opt.subgraphSchedule() && m_cellp->modp()->subgraphBoundary()
+            && portVarp->subgraphPortId()) {
+            const auto inserted = m_publishedByPort.emplace(portVarp, nullptr);
+            AstVar*& publishedVarp = inserted.first->second;
+            if (inserted.second) {
+                const string name
+                    = "__VsubgraphPublished__" + cvtToStr(m_nextPublishedIndex[m_cellp->modp()]++);
+                publishedVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, name,
+                                           portVarp->dtypep()};
+                publishedVarp->noSubst(true);
+                publishedVarp->subgraphPublished(true);
+                publishedVarp->subgraphPortId(portVarp->subgraphPortId());
+                m_cellp->modp()->addStmtsp(publishedVarp);
+            }
+            AstVarXRef* const pubLhsp = new AstVarXRef{exprp->fileline(), publishedVarp,
+                                                       m_cellp->name(), VAccess::WRITE};
+            markContinuousLhs(pubLhsp);
+            AstNodeExpr* const portRhsp
+                = new AstVarXRef{exprp->fileline(), portVarp, m_cellp->name(), VAccess::READ};
+            AstAssignW* const publishp = new AstAssignW{exprp->fileline(), pubLhsp, portRhsp};
+            m_cellp->addNextHere(new AstAlways{publishp});
+            portVarp = publishedVarp;
+            ++m_publishedConnections;
+        }
+        return portVarp;
+    }
+
     // If appropriate, add an AstAlias to connect the given Cell pin to the given expression.
     // Returns true if an alias was made, in which case there is nothing else to do for this pin.
     bool tryAliasPin(AstPin* nodep, AstNodeExpr* exprp) {
         AstVar* const modVarp = nodep->modVarp();
+        // Boundary ports need their own storage and explicit parent connections.
+        if (m_cellp->modp()->subgraphBoundary() && modVarp->subgraphPortId()) return false;
         // An interface reference is aliased via AstAliasScope below, not as a variable
         if (modVarp->isIfaceRef()) return false;
         // Only a whole variable can be aliased, anything else needs the assignment
@@ -130,8 +169,9 @@ class InstVisitor final : public VNVisitor {
             if (nodep->modVarp()->isInout()) {
                 nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
             } else if (nodep->modVarp()->isWritable()) {
-                if (!tryAliasPin(nodep, exprp)) {
-                    AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
+                AstVar* const portVarp = publishOutput(nodep, exprp);
+                if (portVarp != nodep->modVarp() || !tryAliasPin(nodep, exprp)) {
+                    AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), portVarp,
                                                              m_cellp->name(), VAccess::READ};
                     markContinuousLhs(exprp);
                     AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
@@ -190,7 +230,9 @@ public:
         // aliased port connections (see tryAliasPin).
         iterateChildrenBackwardsConst(nodep);
     }
-    ~InstVisitor() override = default;
+    ~InstVisitor() override {
+        V3Stats::addStat("Inst, Subgraph published outputs", m_publishedConnections);
+    }
 };
 
 //######################################################################

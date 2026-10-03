@@ -102,6 +102,7 @@
 #include "V3SplitVar.h"
 #include "V3Stats.h"
 #include "V3String.h"
+#include "V3SubgraphBoundary.h"
 #include "V3Subst.h"
 #include "V3Table.h"
 #include "V3Task.h"
@@ -219,6 +220,7 @@ static void process() {
         V3WidthCommit::widthCommit(v3Global.rootp());
         v3Global.assertDTypesResolved(true);
         v3Global.widthMinUsage(VWidthMinUsage::MATCHES_WIDTH);
+        V3SubgraphBoundary subgraphBoundary{v3Global.rootp()};
 
         // End of elaboration
         V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_ELAB, elabWallTime.deltaTime());
@@ -350,6 +352,7 @@ static void process() {
             // can be done as possible should be before this....
 
             // Convert instantiations to wassigns and always blocks
+            subgraphBoundary.prepare(v3Global.rootp());
             V3Inst::instAll(v3Global.rootp());
 
             // Inst may have made lots of concats; fix them
@@ -359,6 +362,7 @@ static void process() {
             // No more AstAlias after linkDotScope
             V3Scope::scopeAll(v3Global.rootp());
             V3LinkDot::linkDotScope(v3Global.rootp());
+            subgraphBoundary.scoped(v3Global.rootp());
             // FSM coverage needs scopes, but should otherwise run as early as
             // possible before later lowering rewrites user-visible clocked
             // case structure. This entry point runs two adjacent phases:
@@ -470,6 +474,7 @@ static void process() {
             // Create delayed assignments
             // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step.
             V3Delayed::delayedAll(v3Global.rootp());
+            subgraphBoundary.delayed(v3Global.rootp());
 
             // Make Active's on the top level.
             // Differs from V3Active, because identical clocks may be pushed
@@ -483,6 +488,7 @@ static void process() {
 
             // Schedule the logic
             V3Sched::schedule(v3Global.rootp());
+            subgraphBoundary.scheduled(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
 
             // Post scheduling transformations - TODO: this should at least be renamed

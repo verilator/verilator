@@ -16,6 +16,7 @@ test.lint(
     # Likewise XML
     v_flags=[
         "--lint-only",
+        "--subgraph-schedule",
         # --Wno-COVERIGN: cg_trans uses a goto-repetition transition bin ([->N]); the count is
         # unsupported (dropped) but the bin is still created with a non-NONE VTransRepType, which
         # is what exercises VTransRepType::ascii() and AstCoverTransItem::dump()'s repType arm.

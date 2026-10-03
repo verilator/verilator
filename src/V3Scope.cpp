@@ -25,6 +25,8 @@
 
 #include "V3Scope.h"
 
+#include "V3Stats.h"
+
 #include <unordered_map>
 #include <unordered_set>
 
@@ -419,5 +421,29 @@ void V3Scope::scopeAll(AstNetlist* nodep) {
         const ScopeVisitor visitor{nodep};
         ScopeCleanupVisitor{nodep};
     }  // Destruct before checking
+    if (v3Global.opt.stats()) {
+        uint64_t boundaryScopes = 0;
+        uint64_t boundaryVarScopes = 0;
+        uint64_t boundaryProcedures = 0;
+        uint64_t boundaryProcedureNodes = 0;
+        nodep->foreach([&](AstScope* scopep) {
+            if (!scopep->modp()->subgraphBoundary()) return;
+            ++boundaryScopes;
+            for (AstVarScope* vscp = scopep->varsp(); vscp;
+                 vscp = VN_AS(vscp->nextp(), VarScope)) {
+                ++boundaryVarScopes;
+            }
+            for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                if (!VN_IS(blockp, NodeProcedure)) continue;
+                ++boundaryProcedures;
+                boundaryProcedureNodes += blockp->nodeCount();
+            }
+        });
+        V3Stats::addStat("Scope, AST nodes", nodep->nodeCount());
+        V3Stats::addStat("Scope, Subgraph boundary scopes", boundaryScopes);
+        V3Stats::addStat("Scope, Subgraph boundary VarScopes", boundaryVarScopes);
+        V3Stats::addStat("Scope, Subgraph boundary procedures", boundaryProcedures);
+        V3Stats::addStat("Scope, Subgraph boundary procedure AST nodes", boundaryProcedureNodes);
+    }
     V3Global::dumpCheckGlobalTree("scope", 0, dumpTreeEitherLevel() >= 3);
 }

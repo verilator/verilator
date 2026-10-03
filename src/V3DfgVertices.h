@@ -146,7 +146,8 @@ public:
     // 'srcp' and 'defaultp'. That is, it might be assigned, possibly partially,
     // or abruptly outside the graph, hence it is not equivalent to its 'srcp'.
     static bool isVolatile(const AstVarScope* nodep) {
-        return hasModWrRefs(nodep) || hasExtWrRefs(nodep);
+        return hasModWrRefs(nodep) || hasExtWrRefs(nodep) || nodep->varp()->subgraphPublished()
+               || nodep->varp()->subgraphSharedState();
     }
     bool isVolatile() const { return isVolatile(m_vscp); }
 };

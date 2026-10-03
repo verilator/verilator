@@ -59,6 +59,10 @@ module t (/*AUTOARG*/
   input clk;
   input in;
 
+  wire subgraph_q;
+  sg_debug_emitv i_subgraph (.clk(clk), .d(in), .q(subgraph_q));
+  initial $display("subgraph_q=%b", subgraph_q);
+
   // verilator lint_off UNPACKED
 
   typedef enum [2:0] {
@@ -494,3 +498,12 @@ endmodule
 package p;
   logic pkgvar;
 endpackage
+
+module sg_debug_emitv (
+  input clk,
+  input d,
+  output logic q = 0
+);
+  /*verilator subgraph_boundary*/
+  always_ff @(posedge clk) q <= d;
+endmodule

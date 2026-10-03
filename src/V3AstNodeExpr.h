@@ -5082,6 +5082,8 @@ public:
 // === AstNodeCCall ===
 class AstCCall final : public AstNodeCCall {
     // C++ function call
+    // @astgen ptr := m_subgraphReceiverScopep : Optional[AstScope]  // Real child state for a
+    // shared body
     VSelfPointerText m_selfPointer
         = VSelfPointerText{VSelfPointerText::Empty()};  // Output code object
                                                         // pointer (e.g.: 'this')
@@ -5091,6 +5093,16 @@ public:
         UASSERT_OBJ(funcp, this, "CCall created calling null function");
     }
     ASTGEN_MEMBERS_AstCCall;
+    AstScope* subgraphReceiverScopep() const { return m_subgraphReceiverScopep; }
+    void subgraphReceiverScopep(AstScope* scopep) { m_subgraphReceiverScopep = scopep; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        const AstCCall* const asamep = VN_DBG_AS(samep, CCall);
+        return AstNodeCCall::sameNode(samep)
+               && subgraphReceiverScopep() == asamep->subgraphReceiverScopep()
+               && selfPointer() == asamep->selfPointer();
+    }
 
     const VSelfPointerText& selfPointer() const { return m_selfPointer; }
     void selfPointer(const VSelfPointerText& selfPointer) { m_selfPointer = selfPointer; }

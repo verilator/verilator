@@ -41,6 +41,8 @@
 #include "V3Stats.h"
 
 #include <queue>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -358,6 +360,35 @@ class DeadVisitor final : public VNVisitor {
             varp->user1Inc();
             varp->user2(1);
         }
+    }
+    void visit(AstCCall* nodep) override {
+        iterateChildren(nodep);
+        checkAll(nodep);
+        AstScope* const receiverp = nodep->subgraphReceiverScopep();
+        if (!receiverp) return;
+        AstScope* const implementationp = nodep->funcp()->scopep();
+        UASSERT_OBJ(receiverp->modp() == implementationp->modp(), nodep,
+                    "Subgraph receiver has a different specialization");
+        receiverp->user1Inc();
+        std::unordered_map<const AstVar*, AstVarScope*> receiverVars;
+        for (AstVarScope* vscp = receiverp->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+            receiverVars.emplace(vscp->varp(), vscp);
+        }
+        std::unordered_set<const AstCFunc*> visited;
+        std::function<void(AstCFunc*)> countReceiverUses = [&](AstCFunc* funcp) {
+            if (!visited.insert(funcp).second) return;
+            funcp->foreach([&](AstNodeVarRef* refp) {
+                AstVarScope* const vscp = refp->varScopep();
+                if (vscp->scopep() != implementationp) return;
+                const auto it = receiverVars.find(vscp->varp());
+                UASSERT_OBJ(it != receiverVars.end(), refp,
+                            "Shared subgraph state missing from receiver scope");
+                it->second->user1Inc();
+                it->second->varp()->user1Inc();
+            });
+            funcp->foreach([&](AstCCall* callp) { countReceiverUses(callp->funcp()); });
+        };
+        countReceiverUses(nodep->funcp());
     }
     void visit(AstPin* nodep) override {
         iterateChildren(nodep);
@@ -691,6 +722,7 @@ class DeadVisitor final : public VNVisitor {
         }
     }
     bool mightElimVar(const AstVar* nodep) const {
+        if (nodep->subgraphSharedState()) return false;
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
         if (nodep->isPrimaryIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
