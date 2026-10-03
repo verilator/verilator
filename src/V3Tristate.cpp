@@ -837,11 +837,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                     using InstancePath = std::pair<string, string>;
                     std::map<InstancePath, RefStrengthVec> partitions;
                     for (const RefStrength& rs : *refsp) {
-                        if (AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef)) {
-                            partitions[{xrefp->dotted(), xrefp->inlinedDots()}].push_back(rs);
-                        } else {
-                            partitions[{"", ""}].push_back(rs);
-                        }
+                        const AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef);
+                        partitions[xrefp ? InstancePath{xrefp->dotted(), xrefp->inlinedDots()}
+                                         : InstancePath{}]
+                            .push_back(rs);
                     }
                     for (auto& kv : partitions) {
                         insertTristatesSignal(nodep, invarp, &kv.second, true, kv.first.first,
