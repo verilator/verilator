@@ -105,6 +105,11 @@ module UnpackedSamples(input clk, input [31:0] in);
   assert property (@(posedge clk) $stable(unchanged)) else `stop;
   assert property (@(posedge clk) unchanged == $past(unchanged)) else `stop;
   assert property (@(posedge clk) $stable(values) == (values == previous)) else `stop;
+  global clocking @(posedge clk);
+  endclocking
+  assert property (@(posedge clk) $past_gclk(values) == previous) else `stop;
+  assert property (@(posedge clk) $stable_gclk(values) == (values == previous)) else `stop;
+  assert property (@(posedge clk) $changed_gclk(values) == (values != previous)) else `stop;
   property matrix_stable(v);
     $stable(v) == (matrix == previous_matrix);
   endproperty
