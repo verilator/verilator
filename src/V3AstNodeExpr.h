@@ -1253,6 +1253,10 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool isEqAllOnes() const { return num().isEqAllOnes(width()); }
     bool isEqAllOnesV() const { return num().isEqAllOnes(widthMinV()); }
+    // Whether a parameter declared without a data type takes the same type from this value
+    // as from 'samep': both real, both string, or both integral with the same width and
+    // signedness. Unlike AstNodeDType::similarDType, ignores whether two-state or four-state.
+    bool sameValueType(const AstConst* samep) const;
     // Parse string and create appropriate type of AstConst.
     // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
