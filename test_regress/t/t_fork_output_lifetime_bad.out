@@ -1,0 +1,7 @@
+%Error-LIFETIME: t/t_fork_output_lifetime_bad.v:21:15: Invalid reference: Process might outlive variable 'h'.
+                                                     : ... note: In instance 't'
+                                                     : ... Suggest use it as read-only to initialize a local copy at the beginning of the process, or declare it as static. It is also possible to refer by reference to objects and their members.
+   21 |       produce(h);
+      |               ^
+                 ... For error description see https://verilator.org/warn/LIFETIME?v=latest
+%Error: Exiting due to
