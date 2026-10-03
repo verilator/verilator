@@ -7,6 +7,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%p exp=%p\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
 class Item;
@@ -83,6 +84,34 @@ class Runner;
     disable fork;
     `checkh(by_static.value, 6);
   endtask
+
+  task run_nested;
+    Item by_nested;
+    int i;
+    fork
+      begin
+        fork
+          produce(by_nested, 7);
+          #10;
+        join_any
+      end
+      #20;
+    join_any
+    disable fork;
+    `checkh(by_nested.value, 7);
+
+    fork
+      begin
+        fork
+          for (i = 0; i < 3; ++i) #1;
+          #10;
+        join_any
+      end
+      #20;
+    join_any
+    disable fork;
+    `checkd(i, 3);
+  endtask
 endclass
 
 class Cls;
@@ -107,6 +136,7 @@ module t;
     runner = new;
     test();
     runner.run();
+    runner.run_nested();
     $write("*-* All Finished *-*\n");
     $finish;
   end

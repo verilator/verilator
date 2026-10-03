@@ -558,8 +558,10 @@ class ForkVisitor final : public VNVisitor {
         varp->funcLocal(true);
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
-        // Pass variable as argument
-        AstArg* const argp = new AstArg{flp, refp->name(), refp->cloneTree(false)};
+        // Pass variable as argument, which is a read as the port is an input
+        AstVarRef* const argRefp = refp->cloneTree(false);
+        argRefp->access(VAccess::READ);
+        AstArg* const argp = new AstArg{flp, refp->name(), argRefp};
         m_capturedArgsp = AstNode::addNext(m_capturedArgsp, argp);
         return varp;
     }
