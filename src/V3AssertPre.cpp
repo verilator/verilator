@@ -40,10 +40,18 @@ class AssertPreVisitor final : public VNVisitor {
     // Eventually inlines calls to sequences, properties, etc.
     // We're not parsing the tree, or anything more complicated.
 private:
+    // TYPES
+    struct SynchDrive final {
+        AstClockingItem* itemp;  // Clocking item of the driven clockvar
+        AstNodeExpr* refp;  // Reference to the driven clockvar
+    };
+
     // NODE STATE
     // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
+    // AstClockingItem::user2p()         // AstVar*.      Flag set by drives of output clockvar
     // AstPExpr::user1()                 // bool.         Created from AstUntil
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
     // STATE
     // Current context:
     AstNetlist* const m_netlistp = nullptr;  // Current netlist
@@ -71,14 +79,47 @@ private:
     V3UniqueNames m_blockNames{"__VassertBlock"};  // Names of blocks with temporaries
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     V3UniqueNames m_activeNames{"__VassertsActive"};  // Active asserts map name generator
+    V3UniqueNames m_drivenNames{"__VclockingDriven"};  // Clockvar drive flag name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
+    std::vector<SynchDrive> m_drives;  // Clockvars written by the synchronous drive
     bool m_hasCycleDelay = false;  // True if node has cycle delay beneath
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
 
     // METHODS
+
+    // Flag set by each drive of an output clockvar, added to the module with its clocking item
+    AstVar* getCreateDrivenVarp(AstClockingItem* itemp) {
+        if (!itemp->user2p()) {
+            AstVar* const varp = new AstVar{itemp->fileline(), VVarType::MODULETEMP,
+                                            m_drivenNames.get(itemp), itemp->findBitDType()};
+            varp->lifetime(VLifetime::STATIC_EXPLICIT);
+            itemp->user2p(varp);
+        }
+        return VN_AS(itemp->user2p(), Var);
+    }
+    // Assignment setting the drive flag of a driven clockvar, referenced like the clockvar
+    AstAssign* newDrivenSetp(FileLine* flp, const SynchDrive& drive) {
+        AstVar* const varp = getCreateDrivenVarp(drive.itemp);
+        AstNodeExpr* refp;
+        if (const AstVarXRef* const xrefp = VN_CAST(drive.refp, VarXRef)) {
+            refp = new AstVarXRef{flp, varp, xrefp->dotted(), VAccess::WRITE};
+        } else if (const AstMemberSel* const selp = VN_CAST(drive.refp, MemberSel)) {
+            // The interface expression is evaluated again for the flag, so it must not have side
+            // effects; cloneTreePure warns if it has any
+            AstMemberSel* const newSelp
+                = new AstMemberSel{flp, selp->fromp()->cloneTreePure(false), varp};
+            newSelp->access(VAccess::WRITE);
+            refp = newSelp;
+        } else {
+            refp = new AstVarRef{flp, varp, VAccess::WRITE};
+        }
+        AstAssign* const setp = new AstAssign{flp, refp, new AstConst{flp, AstConst::BitTrue{}}};
+        setp->user1(true);
+        return setp;
+    }
 
     static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp) {
         const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
@@ -273,13 +314,21 @@ private:
         // It has to be converted to a list of ModportClockingVarRefs,
         // because clocking blocks are removed in this pass
         for (AstNode* itemp = nodep->clockingp()->itemsp(); itemp; itemp = itemp->nextp()) {
-            if (const AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
+            if (AstClockingItem* const citemp = VN_CAST(itemp, ClockingItem)) {
                 if (AstVar* const varp
                     = citemp->varp() ? citemp->varp() : VN_AS(citemp->user1p(), Var)) {
                     AstModportVarRef* const modVarp = new AstModportVarRef{
                         nodep->fileline(), varp->name(), citemp->direction()};
                     modVarp->varp(varp);
                     nodep->addNextHere(modVarp);
+                    if (citemp->direction().isOutput()) {
+                        // Drives through the modport set the drive flag
+                        AstVar* const drivenVarp = getCreateDrivenVarp(citemp);
+                        AstModportVarRef* const drivenRefp = new AstModportVarRef{
+                            nodep->fileline(), drivenVarp->name(), VDirection::OUTPUT};
+                        drivenRefp->varp(drivenVarp);
+                        nodep->addNextHere(drivenRefp);
+                    }
                 }
             }
         }
@@ -292,6 +341,8 @@ private:
             // Unused item
             return;
         }
+        // Flag set by drives of an output clockvar, possibly visited before this item
+        if (nodep->direction().isOutput()) m_modp->addStmtsp(getCreateDrivenVarp(nodep));
         FileLine* const flp = nodep->fileline();
         V3Const::constifyEdit(nodep->skewp());
         if (!VN_IS(nodep->skewp(), Const)) {
@@ -318,32 +369,26 @@ private:
             AstInitialStatic* const initClockvarp = new AstInitialStatic{
                 flp, new AstAssign{flp, skewedWriteRefp, exprp->cloneTreePure(false)}};
             m_modp->addStmtsp(initClockvarp);
-            // A var to keep the previous value of the clockvar
-            AstVar* const prevVarp = new AstVar{
-                flp, VVarType::MODULETEMP, "__Vclocking_prev__" + varp->name(), exprp->dtypep()};
-            prevVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-            AstInitialStatic* const initPrevClockvarp = new AstInitialStatic{
-                flp, new AstAssign{flp, new AstVarRef{flp, prevVarp, VAccess::WRITE},
-                                   skewedReadRefp->cloneTreePure(false)}};
-            m_modp->addStmtsp(prevVarp);
-            m_modp->addStmtsp(initPrevClockvarp);
-            // Assign the clockvar to the actual var; only do it if the clockvar's value has
-            // changed
+            // Each drive sets a flag, so the signal is also assigned when driven with the same
+            // value again, e.g. after another assignment to the signal (IEEE 1800-2023 14.16.2)
+            AstVar* const drivenVarp = getCreateDrivenVarp(nodep);
+            m_modp->addStmtsp(new AstInitialStatic{
+                flp, new AstAssign{flp, new AstVarRef{flp, drivenVarp, VAccess::WRITE},
+                                   new AstConst{flp, AstConst::BitFalse{}}}});
+            // Assign the clockvar to the actual var if it was driven
             AstAssign* const assignp
                 = new AstAssign{flp, exprp->cloneTreePure(false), skewedReadRefp};
             AstIf* const ifp
-                = new AstIf{flp,
-                            new AstNeq{flp, new AstVarRef{flp, prevVarp, VAccess::READ},
-                                       skewedReadRefp->cloneTreePure(false)},
-                            assignp};
-            ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, prevVarp, VAccess::WRITE},
-                                         skewedReadRefp->cloneTree(false)});
+                = new AstIf{flp, new AstVarRef{flp, drivenVarp, VAccess::READ},
+                            new AstAssign{flp, new AstVarRef{flp, drivenVarp, VAccess::WRITE},
+                                          new AstConst{flp, AstConst::BitFalse{}}}};
+            ifp->addThensp(assignp);
             if (skewp->isZero()) {
                 // Drive the var in Re-NBA (IEEE 1800-2023 14.16)
                 AstSenTree* senTreep
                     = new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)};
-                senTreep->addSensesp(
-                    new AstSenItem{flp, VEdgeType::ET_CHANGED, skewedReadRefp->cloneTree(false)});
+                senTreep->addSensesp(new AstSenItem{
+                    flp, VEdgeType::ET_CHANGED, new AstVarRef{flp, drivenVarp, VAccess::READ}});
                 AstCMethodHard* const trigp = new AstCMethodHard{
                     nodep->fileline(),
                     new AstVarRef{flp, m_clockingp->ensureEventp(), VAccess::READ},
@@ -620,7 +665,10 @@ private:
                         nodep->v3error("Only non-blocking assignments can write "
                                        "to clockvars (IEEE 1800-2023 14.16)");
                     }
-                    if (m_inAssign) m_inSynchDrive = true;
+                    if (m_inAssign) {
+                        m_inSynchDrive = true;
+                        m_drives.push_back({itemp, nodep});
+                    }
                 } else if (itemp->direction() == VDirection::INPUT) {
                     nodep->v3error("Cannot write to input clockvar (IEEE 1800-2023 14.3)");
                 }
@@ -641,7 +689,10 @@ private:
                         nodep->v3error("Only non-blocking assignments can write "
                                        "to clockvars (IEEE 1800-2023 14.16)");
                     }
-                    if (m_inAssign) m_inSynchDrive = true;
+                    if (m_inAssign) {
+                        m_inSynchDrive = true;
+                        m_drives.push_back({itemp, nodep});
+                    }
                 } else if (itemp->direction() == VDirection::INPUT) {
                     nodep->v3error("Cannot write to input clockvar (IEEE 1800-2023 14.3)");
                 }
@@ -652,6 +703,7 @@ private:
         if (nodep->user1()) return;
         VL_RESTORER(m_inAssign);
         VL_RESTORER(m_inSynchDrive);
+        VL_RESTORER_CLEAR(m_drives);
         m_inAssign = true;
         m_inSynchDrive = false;
         {
@@ -668,6 +720,20 @@ private:
             assignp->user1(true);
             nodep->replaceWith(assignp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            nodep = assignp;
+        }
+        // Note the drives when they take effect, after the cycle delay if any. Each clockvar
+        // of the LHS is driven, e.g. in a concatenation which other simulators accept, although
+        // IEEE 1800-2023 14.16 does not allow it
+        AstNode* setsp = nullptr;
+        for (const SynchDrive& drive : m_drives) {
+            setsp = AstNode::addNext(setsp, newDrivenSetp(nodep->fileline(), drive));
+        }
+        if (!setsp) return;
+        if (AstBegin* const beginp = VN_CAST(nodep->timingControlp(), Begin)) {
+            beginp->addStmtsp(setsp);
+        } else {
+            nodep->addNextHere(setsp);
         }
     }
     void visit(AstAlways* nodep) override {
