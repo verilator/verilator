@@ -1421,7 +1421,7 @@ class ParamProcessor final {
     // overridingTypePinsr whether it differs from the default
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
                         string& longnamer, bool& any_overridesr,
-                        std::set<const AstPin*>& overridingTypePinsr) {
+                        std::unordered_set<const AstPin*>& overridingTypePinsr) {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
             resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
@@ -1947,7 +1947,7 @@ class ParamProcessor final {
         } else {
             // Prepare every pin before naming any, as naming a value can depend on the others:
             // fold each value pin, as a class reference's may not be yet, and resolve each type
-            std::set<const AstPin*> overridingTypePins;
+            std::unordered_set<const AstPin*> overridingTypePins;
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (!pinp->exprp()) continue;  // An empty override keeps the default
                 if (pinp->modPTypep()) {
