@@ -319,6 +319,12 @@ class DeadVisitor final : public VNVisitor {
             m_dtypeElimsp.push_back(nodep);
         }
         if (VN_IS(m_modp, Package) || VN_IS(m_modp, Class)) m_dtypePkgsp.emplace(nodep, m_modp);
+        // A struct type moved to the type table refers to its package via classOrPackagep
+        if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(nodep, NodeUOrStructDType)) {
+            if (sdtypep->classOrPackagep()) {
+                m_dtypePkgsp.emplace(nodep, sdtypep->classOrPackagep());
+            }
+        }
         if (AstNode* const subnodep = nodep->virtRefDTypep()) subnodep->user1Inc();
         if (AstNode* const subnodep = nodep->virtRefDType2p()) subnodep->user1Inc();
     }
