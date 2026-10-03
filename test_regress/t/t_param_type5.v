@@ -34,7 +34,7 @@ module t #(
     if ($typename(H) != "bit") $stop;
     if (str2.len() != 0) $stop;
     if ($typename(param_class.R) != "string") $stop;
-    if ($typename(struct1.b.a) != "MEMBERDTYPE 'a'") $stop;
+    if ($typename(struct1.b.a) != "logic") $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
