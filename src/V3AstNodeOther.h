@@ -1912,6 +1912,7 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     void name(const string& name) override { m_name = name; }
+    string prettyNameMsg() const override;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* samep) const override;
@@ -2193,6 +2194,9 @@ public:
     ASTGEN_MEMBERS_AstTypedef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    // Name of the type it declares, with the scope declaring it, so with the values of the
+    // parameters of the scope, e.g. '$unit::Cls#(8)::s_t'
+    string dtypeName() const;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE {
         return dtypep() ? dtypep() : childDTypep();
@@ -2340,6 +2344,7 @@ class AstVar final : public AstNode {
     bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     bool m_constPoolEntry : 1;  // Constant pool variable
     bool m_covergroupRefMember : 1;  // Persistent covergroup ref/const ref argument
+    bool m_embeddedCovergroup : 1;  // Instance variable an embedded covergroup declares
     bool m_attrFileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
@@ -2407,6 +2412,7 @@ class AstVar final : public AstNode {
         m_attrFsmArcInclCond = false;
         m_constPoolEntry = false;
         m_covergroupRefMember = false;
+        m_embeddedCovergroup = false;
         m_attrFileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
@@ -2562,6 +2568,10 @@ public:
     void setConstPoolEntry() { m_constPoolEntry = true; }
     bool covergroupRefMember() const { return m_covergroupRefMember; }
     void covergroupRefMember(bool flag) { m_covergroupRefMember = flag; }
+    // Instance variable an embedded covergroup declares, of the covergroup's anonymous type
+    // (IEEE 1800-2023 19.4)
+    bool embeddedCovergroup() const { return m_embeddedCovergroup; }
+    void embeddedCovergroup(bool flag) { m_embeddedCovergroup = flag; }
     void rand(const VRandAttr flag) { m_rand = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -3121,6 +3131,8 @@ class AstClass final : public AstNodeModule {
     // MEMBERS
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
     // @astgen ptr := m_covergroupEnclosingClassp : Optional[AstClass]  // Lexical enclosing class
+    string m_dtypeNameFull;  // dtypeName(true) once frozen, as parameters may then be gone
+    string m_dtypeNameShort;  // dtypeName(false) once frozen, as parameters may then be gone
     uint32_t m_declTokenNum;  // Declaration token number
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     bool m_hasRandVarsUpdate = false;  // Has updateRandVars method,
@@ -3132,8 +3144,13 @@ class AstClass final : public AstNodeModule {
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
     bool m_virtual = false;  // Virtual class
     bool m_printedFrom = false;  // This class is printed from i.e. is used as format arg.
+    // Mutable, as only a recursion guard of the const dtypeName(), so also not dumped
+    mutable bool m_dtypeNameBusy = false;  // In dtypeName(), which a parameter may lead back to
     // Covergroup options (when m_covergroup is true)
     int m_cgAutoBinMax = -1;  // option.auto_bin_max value (-1 = not set, use default 64)
+
+    string dtypeNameCalc(bool full) const;  // dtypeName() as computed from the tree
+    string dtypeNameScope() const;  // Prefix of dtypeName(true) for the scope declaring the class
 
 public:
     AstClass(FileLine* fl, const string& name, const string& libname)
@@ -3169,6 +3186,16 @@ public:
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
     void markPrintedFrom() { m_printedFrom = true; }
     bool isPrintedFrom() const { return m_printedFrom; }
+    // Name of the class as a data type, with the values of its parameters, e.g. 'Cls#(int,5)'.
+    // With 'full', as for $typename (IEEE 1800-2023 20.6.1), prefixed with the scope declaring
+    // the class, e.g. '$unit::Cls#(int,5)', and with the types of parameters in full.
+    string dtypeName(bool full) const;
+    // Fix dtypeName(), as V3WidthCommit moves parameter types to the type table
+    void dtypeNameFreeze();
+    // Whether dtypeName() is fixed, as for a class elaborated from the design
+    bool dtypeNameFrozen() const { return !m_dtypeNameFull.empty(); }
+    // Named by dtypeName(), as name() is internal for a specialization, unless still a template
+    string prettyNameMsg() const override { return hasGParam() ? prettyName() : dtypeName(false); }
     // Covergroup options accessors
     int cgAutoBinMax() const { return m_cgAutoBinMax; }
     void cgAutoBinMax(int value) { m_cgAutoBinMax = value; }
@@ -3238,6 +3265,8 @@ public:
 };
 class AstIface final : public AstNodeModule {
     // An interface declaration
+    string m_dtypeNameFull;  // dtypeName(true) once frozen, as parameter types may then be gone
+    string m_dtypeNameShort;  // dtypeName(false) once frozen, as parameter types may then be gone
     bool m_hasVirtualRef = false;  // There exists a virtual interface reference for this interface
 public:
     AstIface(FileLine* fl, const string& name, const string& libname)
@@ -3251,6 +3280,10 @@ public:
     bool timescaleMatters() const override { return false; }
     bool hasVirtualRef() const { return m_hasVirtualRef; }
     void setHasVirtualRef() { m_hasVirtualRef = true; }
+    // Name of the interface as a data type, with the values of its parameters, e.g. 'ifc#(8)'
+    string dtypeName(bool full) const;
+    // Fix dtypeName(), as V3WidthCommit moves parameter types to the type table
+    void dtypeNameFreeze();
 };
 class AstModule final : public AstNodeModule {
     // A module declaration
@@ -3453,6 +3486,14 @@ public:
     }
     int elementsConst() const VL_MT_STABLE { return hiConst() - loConst() + 1; }
     bool ascending() const { return leftConst() < rightConst(); }
+    // Iterate indices from left to right inclusive, see VNumRange::seqLeftToRight()
+    VNumRange::Sequence seqLeftToRight() const {
+        return VNumRange{leftConst(), rightConst()}.seqLeftToRight();
+    }
+    // Iterate indices from right to left inclusive, see VNumRange::seqRightToLeft()
+    VNumRange::Sequence seqRightToLeft() const {
+        return VNumRange{leftConst(), rightConst()}.seqRightToLeft();
+    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }

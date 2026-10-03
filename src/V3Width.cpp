@@ -2380,7 +2380,7 @@ class WidthVisitor final : public VNVisitor {
         if (AstNodeDType* const dt = nodep->lhsp()->dtypep()) {
             if (VN_IS(dt->skipRefToEnump(), ClassRefDType)) {
                 nodep->lhsp()->v3error(
-                    "Cannot convert 'class{}' handle to a string:" << dt->prettyDTypeNameQ());
+                    "Cannot convert 'class' handle to a string:" << dt->prettyDTypeNameQ());
             }
         }
     }
@@ -2447,6 +2447,19 @@ class WidthVisitor final : public VNVisitor {
         }
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    // Name of the class a class extends, for $typename, as other simulators give it. Only the
+    // class it directly extends, as $typename of that class names the classes that one extends.
+    static string typenameExtends(const AstClass* classp) {
+        // An interface class may extend several, so those are not named
+        if (!classp || classp->isInterfaceClass()) return "";
+        for (const AstClassExtends* extendsp = classp->extendsp(); extendsp;
+             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+            if (extendsp->isImplements()) continue;
+            const AstClass* const basep = extendsp->classOrNullp();
+            return basep ? " extends class " + basep->dtypeName(true) : "";
+        }
+        return "";
     }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
@@ -2629,8 +2642,13 @@ class WidthVisitor final : public VNVisitor {
         }
         case VAttrType::TYPENAME: {
             UASSERT_OBJ(nodep->fromp(), nodep, "Unprovided expression");
-            const string result = nodep->fromp()->dtypep()->prettyDTypeName(true);
-            UINFO(9, "typename '" << result << "' from " << nodep->fromp()->dtypep());
+            AstNodeDType* const dtypep = nodep->fromp()->dtypep();
+            string result = dtypep->prettyDTypeName(true);
+            if (const AstClassRefDType* const classRefp
+                = VN_CAST(dtypep->skipRefOrNullp(), ClassRefDType)) {
+                result += typenameExtends(classRefp->classp());
+            }
+            UINFO(9, "typename '" << result << "' from " << dtypep);
             AstNode* const newp = new AstConst{nodep->fileline(), AstConst::String{}, result};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2921,7 +2939,18 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        // As it moves to the type table, a structure, union, or enumeration it declares keeps the
+        // name it has from the typedef, with the scope of the typedef
+        const bool declares = nodep->childDTypep() != nullptr;
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        if (declares) {
+            AstNodeDType* const dtypep = nodep->dtypep();
+            if (AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+                sdtypep->typedefName(nodep->dtypeName());
+            } else if (AstEnumDType* const edtypep = VN_CAST(dtypep, EnumDType)) {
+                edtypep->typedefName(nodep->dtypeName());
+            }
+        }
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstParamTypeDType* nodep) override {
@@ -6320,7 +6349,7 @@ class WidthVisitor final : public VNVisitor {
         PatVecMap patmap = patVectorMap(nodep, range);
         UINFO(9, "ent " << range.hi() << " to " << range.lo());
         AstNodeExpr* newp = nullptr;
-        for (int ent = range.hi(); ent >= range.lo(); --ent) {
+        for (const int ent : range.seqHiToLo()) {
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             const auto it = patmap.find(ent);
@@ -9617,7 +9646,7 @@ class WidthVisitor final : public VNVisitor {
                         AstInitArray* newp = new AstInitArray{
                             constp->fileline(), lhsDTypep,
                             new AstConst{constp->fileline(), AstConst::WidthedValue{}, 8, 0}};
-                        for (int aindex = arrayp->lo(); aindex <= arrayp->hi(); ++aindex) {
+                        for (const int aindex : arrayp->declRange().seqLoToHi()) {
                             int cindex = arrayp->declRange().ascending() ? (arrayp->hi() - aindex)
                                                                          : (aindex - arrayp->lo());
                             V3Number selected{constp, 8};
@@ -10799,7 +10828,7 @@ class WidthVisitor final : public VNVisitor {
         // as the element variables are in that order, indexed from lo
         AstInitArray* const initp = new AstInitArray{flp, arrp, nullptr};
         const VNumRange range = arrp->declRange();
-        for (int n = 0, i = range.left(); n < range.elements(); ++n, i += range.leftToRightInc()) {
+        for (const int i : range.seqLeftToRight()) {
             const std::string s = name + "__BRA__" + AstNode::encodeNumber(i) + "__KET__";
             initp->addIndexValuep(
                 i - range.lo(), newIfaceArrayInit(refp, arrp->subDTypep(), s, suffix, elemVarpr));
