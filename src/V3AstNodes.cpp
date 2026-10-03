@@ -1299,8 +1299,12 @@ void AstCoverInc::dump(std::ostream& str) const {
     } else {
         str << "%E:UNLINKED";
     }
+    if (isDuplicate()) str << " [DUPLICATE]";
 }
-void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstCoverInc::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isDuplicate);
+    dumpJsonGen(str);
+}
 void AstCoverOption::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_optType.ascii();
@@ -4025,8 +4029,8 @@ void AstVar::dump(std::ostream& str) const {
     if (processQueue()) str << " [PROCQ]";
     if (sampled()) str << " [SAMPLED]";
     if (attrFsmState()) str << " [aFSMSTATE]";
-    if (attrFsmResetArc()) str << " [aFSMRESETARC]";
     if (attrFsmArcInclCond()) str << " [aFSMARCCOND]";
+    if (attrFsmState() || attrFsmArcInclCond()) str << " [" << attrFsmStateExpand() << "]";
     if (attrFileDescr()) str << " [aFD]";
     if (isFuncReturn()) {
         str << " [FUNCRTN]";
@@ -4065,8 +4069,10 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, processQueue);
     dumpJsonBoolFuncIf(str, sampled);
     dumpJsonBoolFuncIf(str, attrFsmState);
-    dumpJsonBoolFuncIf(str, attrFsmResetArc);
     dumpJsonBoolFuncIf(str, attrFsmArcInclCond);
+    if (attrFsmState() || attrFsmArcInclCond()) {
+        dumpJsonStr(str, "attrFsmStateExpand", attrFsmStateExpand().ascii());
+    }
     dumpJsonBoolFuncIf(str, attrFileDescr);
     dumpJsonBoolFuncIf(str, icoMaybeWritten);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);

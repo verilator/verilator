@@ -446,7 +446,7 @@ module t (
   logic start;
   logic choose;
   int cyc;
-  state_t state  /*verilator fsm_reset_arc*/;
+  state_t state  /*verilator fsm_state*/;
 
   fsm_if_enum_oneblock enum_oneblock_u (
       .clk(clk),
