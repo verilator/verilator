@@ -670,7 +670,10 @@ public:
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
-    string prettyNameQ() const { return prettyNameQ(name()); }
+    // Name for messages to the user, by default prettyName(), but friendlier for some nodes,
+    // such as a specialized class, whose name() is internal
+    virtual string prettyNameMsg() const { return prettyName(); }
+    string prettyNameQ() const { return "'"s + prettyNameMsg() + "'"; }  // Quoted, for messages
     string verilogName() const { return vpiName(origName()); }  // Decoded original Verilog name
     // "VARREF" for error messages (NOT dtype's pretty name)
     string prettyTypeName() const;

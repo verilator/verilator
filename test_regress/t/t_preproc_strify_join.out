@@ -1,3 +1,9 @@
 "foo-bar-qux"
 ""foo-bar-qux""
 ""
+begin if (!((a_size) <= 2)) ; else begin msg = {"id", " ", $sformatf("Check failed (%s) %s", "!((a_size) <= 2)", "")}; end end
+begin if (!((a_size) <= 2)) ; else begin msg = {"id", " ", $sformatf("Check failed (%s) %s", "!((a_size) <= 2)", "")}; end end
+begin if (!((a_size) <= 2)) ; else begin msg = {"tag", " ", $sformatf("Check failed (%s) %s", "!((a_size) <= 2)", "message, )")}; end end
+begin if (!((a_size) <= 2)) ; else begin msg = {"tag", " ", $sformatf("Check failed (%s) %s", "!((a_size) <= 2)", "nested")}; end end
+begin if (!((a_size) <= 2) && !((other_size) <= 2)) ; else begin msg = {"tag", " ", $sformatf("Check failed (%s) %s", "!((a_size) <= 2) && !((other_size) <= 2)", "two macros")}; end end
+received(($sformatf("%s", "value")), "tail", 7)

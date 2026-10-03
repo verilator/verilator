@@ -1015,14 +1015,10 @@ class ConstVisitor final : public VNVisitor {
                                     const bool packReal) {
         const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
         if (const AstUnpackArrayDType* const unpackDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            const int left = unpackDtypep->left();
-            const int right = unpackDtypep->right();
-            const int step = left <= right ? 1 : -1;
-            for (int idx = left;; idx += step) {
+            for (const int idx : unpackDtypep->declRange().seqLeftToRight()) {
                 AstArraySel* const selp
                     = new AstArraySel{fromp->fileline(), fromp->cloneTreePure(false), idx};
                 collectFixedAggregateTerms(selp, termps, packReal);
-                if (idx == right) break;
             }
             VL_DO_DANGLING(pushDeletep(fromp), fromp);
         } else if (const AstNodeUOrStructDType* const sdtypep

@@ -445,11 +445,45 @@ class ParamProcessor final {
                 classRefp->v3fatalSrc(  // LCOV_EXCL_LINE
                     "ClassRefDType has null classp in paramValueString");
             }
+        } else if (const AstUnpackArrayDType* const dtypep = VN_CAST(nodep, UnpackArrayDType)) {
+            // Name containers by their elements as above, not by prettyDTypeName(), which names
+            // classes by parameter values that may be yet to be resolved
+            key = paramElemString(dtypep->subDTypep()) + "$" + cvtToStr(dtypep->declRange());
+        } else if (const AstQueueDType* const dtypep = VN_CAST(nodep, QueueDType)) {
+            key = paramElemString(dtypep->subDTypep()) + "$[$";
+            if (dtypep->boundConst()) key += ":" + cvtToStr(dtypep->boundConst());
+            key += "]";
+        } else if (const AstDynArrayDType* const dtypep = VN_CAST(nodep, DynArrayDType)) {
+            key = paramElemString(dtypep->subDTypep()) + "$[]";
+        } else if (const AstAssocArrayDType* const dtypep = VN_CAST(nodep, AssocArrayDType)) {
+            key = paramElemString(dtypep->subDTypep()) + "$["
+                  + paramElemString(dtypep->keyDTypep()) + "]";
+        } else if (const AstWildcardArrayDType* const dtypep
+                   = VN_CAST(nodep, WildcardArrayDType)) {
+            key = paramElemString(dtypep->subDTypep()) + "$[*]";
+        } else if (const AstEnumDType* const dtypep = VN_CAST(nodep, EnumDType)) {
+            // With the items, as prettyDTypeName() omits them, yet a specialization of a class
+            // may declare an enumeration of the same name with other values
+            key += " enum {";
+            for (const AstEnumItem* itemp = dtypep->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
+                const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
+                key += itemp->name() + "=" + (constp ? constp->num().ascii() : "?") + ";";
+            }
+            key += "}";
         } else if (const AstNodeDType* const dtypep = VN_CAST(nodep, NodeDType)) {
             key += dtypep->prettyDTypeName(true);
         }
         UASSERT_OBJ(!key.empty(), nodep, "Parameter yielded no value string");
         return key;
+    }
+    // As paramValueString(), for the element or key type of a container
+    static string paramElemString(const AstNodeDType* dtypep) {
+        // Unlike at the top of a value, a class may be yet to be specialized, so just name it
+        const AstClassRefDType* const classRefp
+            = VN_CAST(dtypep->skipRefToNonRefp(), ClassRefDType);
+        if (classRefp && classRefp->paramsp()) return classRefp->prettyDTypeName(true);
+        return paramValueString(dtypep);
     }
 
     // Return a name suffix for 'text' from its SHA-512 digest. Hierarchical blocks are
@@ -2932,10 +2966,7 @@ class ParamVisitor final : public VNVisitor {
         // Enumerate the current dimension given by 'arrp'
         // Each element is added right after 'portp', so go from right to left,
         // to end with an enumeration from the left index to the right index.
-        const int left = arrp->left();
-        const int right = arrp->right();
-        const int step = arrp->declRange().ascending() ? 1 : -1;
-        for (int n = right; n != left - step; n -= step) {
+        for (const int n : arrp->declRange().seqRightToLeft()) {
             const std::string s = suffix + "__BRA__" + AstNode::encodeNumber(n) + "__KET__";
             expandIfaceArrayPortDimensions(portp, arrp->subDTypep(), s);
         }
@@ -2977,12 +3008,9 @@ class ParamVisitor final : public VNVisitor {
         // Enumerate the current dimension given by 'rangep'
         // Each element is added right after 'arrayedCellp', so go from right to left,
         // to end with an enumeration from the left index to the right index.
-        const int left = rangep->leftConst();
-        const int right = rangep->rightConst();
-        const int step = rangep->ascending() ? 1 : -1;
         idx = (idx + 1) * rangep->elementsConst();
         const AstRange* const subRangep = VN_AS(rangep->nextp(), Range);
-        for (int n = right; n != left - step; n -= step) {
+        for (const int n : rangep->seqRightToLeft()) {
             const std::string s = suffix + "__BRA__" + AstNode::encodeNumber(n) + "__KET__";
             expandCellArrayDimensions(arrayedCellp, ifaceVarp, subRangep, s, --idx);
         }
