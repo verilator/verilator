@@ -900,6 +900,10 @@ class ConstraintExprVisitor final : public VNVisitor {
     VInsertionSet<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size constraints
     AstNodeExpr* m_conditionp = nullptr;  // Condition under which current expression is defined
                                           // (nullptr == always defined)
+    // Size()-constrained arrays that a with()-reduction/inside{} loops over in
+    // this expression, still empty during the pre-resize pass. Holds more
+    // than one, since a single expression can combine several via &&.
+    std::vector<AstVar*> m_arraySizeGuardVarps;
     AstNodeFTask* m_prepareConstrainedArraysp = nullptr;  // Grow arrays for indexed struct access
     uint32_t* m_uniqueConstraintId = nullptr;  // Current ID of unique call
     V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
@@ -2968,6 +2972,43 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    // ORs across the whole set: true if any guarded array is still empty,
+    // meaning this pass hasn't resized it yet.
+    AstNodeExpr* buildArraySizeIsZerop(FileLine* fl) const {
+        AstNodeExpr* resultp = nullptr;
+        for (AstVar* const guardVarp : m_arraySizeGuardVarps) {
+            const AstNodeDType* const guardDtp = guardVarp->dtypep()->skipRefp();
+            // The WildcardArrayDType branch below can't be exercised by a real
+            // test: selecting an element from that array kind at all crashes
+            // with an unrelated internal error, independent of this guard.
+            const VCMethod sizeMethod
+                = (VN_IS(guardDtp, AssocArrayDType)
+                   || VN_IS(guardDtp, WildcardArrayDType))  // LCOV_EXCL_BR_LINE
+                      ? VCMethod::ASSOC_SIZE
+                      : VCMethod::DYN_SIZE;
+            AstCMethodHard* const sizep = new AstCMethodHard{
+                fl, new AstVarRef{fl, guardVarp, VAccess::READ}, sizeMethod, nullptr};
+            sizep->dtypeSetUInt32();
+            AstNodeExpr* const isZerop = new AstEq{fl, sizep, new AstConst{fl, 0}};
+            resultp = resultp ? new AstLogOr{fl, resultp, isZerop} : isZerop;
+        }
+        return resultp;
+    }
+
+    // Records a dynamically-sized array so the pre-resize guard can gate
+    // this expression on it still being empty; no-ops for any other shape.
+    void markArraySizeGuard(AstNodeExpr* fromp) {
+        const AstVarRef* const arrRefp = VN_CAST(fromp, VarRef);
+        if (!arrRefp) return;
+        const AstNodeDType* const arrDtp = arrRefp->varp()->dtypep()->skipRefp();
+        // Any with()/inside{} over a WildcardArrayDType hits the same
+        // unrelated crash noted above, so this branch stays half-covered.
+        if (VN_IS(arrDtp, QueueDType) || VN_IS(arrDtp, DynArrayDType)
+            || VN_IS(arrDtp, AssocArrayDType)
+            || VN_IS(arrDtp, WildcardArrayDType)) {  // LCOV_EXCL_BR_LINE
+            m_arraySizeGuardVarps.push_back(arrRefp->varp());
+        }
+    }
     void visit(AstConstraintExpr* nodep) override {
         // IEEE 1800-2023 18.5.13: 'disable soft' is a meta-level directive on
         // the constraint graph, lowered to a void RANDOMIZER_DISABLE_SOFT
@@ -2994,9 +3035,23 @@ class ConstraintExprVisitor final : public VNVisitor {
                 nodep->exprp(neqp);
             }
         }
+        VL_RESTORER_CLEAR(m_arraySizeGuardVarps);
         iterateChildren(nodep);
         if (m_wantSingle) {
-            nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+            AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
+            if (!m_arraySizeGuardVarps.empty()) {
+                // This path LOGANDs expressions rather than emitting a
+                // statement, so exprp is SMT-text, not a native bool --
+                // can't OR it with a native size check; ternary-select.
+                FileLine* const fl = nodep->fileline();
+                AstNodeExpr* const emptyp = buildArraySizeIsZerop(fl);
+                AstNodeExpr* const truep = getConstFormat(new AstConst{fl, AstConst::BitTrue{}});
+                AstCond* const condp = new AstCond{fl, emptyp, truep, exprp};
+                condp->dtypeSetBit();  // Result is boolean, like visit(AstConstraintIf*)'s newp
+                condp->user1(true);  // Rand-dependent, same as that visit's newp
+                exprp = condp;
+            }
+            nodep->replaceWith(exprp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
@@ -3029,7 +3084,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         callp->addPinsp(
             new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
-        nodep->replaceWith(callp->makeStmt());
+        AstNode* stmtp = callp->makeStmt();
+        if (!m_arraySizeGuardVarps.empty()) {
+            // Only assert the constraint once the array actually has elements.
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const nonEmptyp = new AstLogNot{fl, buildArraySizeIsZerop(fl)};
+            stmtp = new AstIf{fl, nonEmptyp, stmtp, nullptr};
+        }
+        nodep->replaceWith(stmtp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstCMethodHard* nodep) override {
@@ -3125,6 +3187,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (nodep->method() == VCMethod::ARRAY_INSIDE) {
             const bool randArr = nodep->fromp()->user1();
+            markArraySizeGuard(nodep->fromp());
 
             AstVar* const newVarp
                 = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findIntDType()};
@@ -3204,29 +3267,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstForeachHeader* const headerp
                 = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), loopVarp};
 
-            // Determine SMT operation and compute identity elements
+            // Filled in by whichever branch below applies.
             const char* smtOp = nullptr;
             std::string identity;
-            if (withp) {
-                // For 'with' clause: use binary format, compute from result width
-                const int width = nodep->dtypep()->width();
-                if (nodep->method() == VCMethod::ARRAY_R_SUM) {
-                    smtOp = "bvadd";
-                    identity = "#b" + std::string(width, '0');
-                } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
-                    smtOp = "bvmul";
-                    identity = (width > 0) ? "#b" + std::string(width - 1, '0') + "1" : "#b0";
-                } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
-                    smtOp = "bvand";
-                    identity = "#b" + std::string(width, '1');
-                } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
-                    smtOp = "bvor";
-                    identity = "#b" + std::string(width, '0');
-                } else {  // ARRAY_R_XOR
-                    smtOp = "bvxor";
-                    identity = "#b" + std::string(width, '0');
-                }
-            } else {
+            if (!withp) {
                 // For without 'with' clause: use hex format, compute from element width
                 AstVarRef* const arrRefp = VN_CAST(nodep->fromp(), VarRef);
                 UASSERT_OBJ(arrRefp, nodep, "Array reduction in constraint has non-VarRef source");
@@ -3262,13 +3306,36 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (withp) {
                 // With 'with' clause: evaluate expression for each element
                 const bool randArr = nodep->fromp()->user1();
+                markArraySizeGuard(nodep->fromp());
+
                 AstNodeExpr* const idxRefp = new AstVarRef{fl, loopVarp, VAccess::READ};
                 AstNodeExpr* const elemSelp = newSel(fl, nodep->fromp(), idxRefp);
                 elemSelp->user1(randArr);
 
-                // Get the result width for the reduction
+                // Get the result width for the reduction -- V3Width resolves
+                // this from the with-clause expression's own dtype, so it's
+                // already the real per-element width here, even for a
+                // dynamically-sized array of structs.
                 const int resultWidth = nodep->dtypep()->width();
                 const VSigning resultSigning = nodep->dtypep()->numeric();
+
+                if (nodep->method() == VCMethod::ARRAY_R_SUM) {
+                    smtOp = "bvadd";
+                    identity = "#b" + std::string(resultWidth, '0');
+                } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
+                    smtOp = "bvmul";
+                    UASSERT_OBJ(resultWidth > 0, nodep, "Zero-width per-element expression");
+                    identity = "#b" + std::string(resultWidth - 1, '0') + "1";
+                } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
+                    smtOp = "bvand";
+                    identity = "#b" + std::string(resultWidth, '1');
+                } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
+                    smtOp = "bvor";
+                    identity = "#b" + std::string(resultWidth, '0');
+                } else {  // ARRAY_R_XOR
+                    smtOp = "bvxor";
+                    identity = "#b" + std::string(resultWidth, '0');
+                }
 
                 AstNode* perElemExprp = withp->exprp()->cloneTreePure(false);
                 if (AstLambdaArgRef* const rootRefp = VN_CAST(perElemExprp, LambdaArgRef)) {
@@ -3314,7 +3381,16 @@ class ConstraintExprVisitor final : public VNVisitor {
 
                 cstmtp->add("ret = \"(" + std::string(smtOp) + " \" + ret + \" \";\n");
                 cstmtp->add("ret += ");
-                cstmtp->add(iterateSubtreeReturnEdits(perElemExprp));
+                {
+                    // A struct element sets m_conditionp to a bounds check meant
+                    // for one out-of-loop access; left alone it wraps the whole
+                    // reduction in a stale post-loop check that discards the sum.
+                    VL_RESTORER(m_conditionp);
+                    m_conditionp = nullptr;
+                    cstmtp->add(iterateSubtreeReturnEdits(perElemExprp));
+                    // Not reused (see above) -- discard rather than leak it.
+                    if (m_conditionp) VL_DO_DANGLING(m_conditionp->deleteTree(), m_conditionp);
+                }
                 cstmtp->add(";\n");
                 cstmtp->add("ret += \")\";\n");
             } else {
