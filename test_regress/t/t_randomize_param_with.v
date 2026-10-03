@@ -7,6 +7,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%p exp=%p\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
 `define check_rand(cl, field, constr, cond) \
@@ -64,6 +65,7 @@ module t;
     bit [7:0] f;
     bit [6:0] own_value;
     bit [32:0] typed_value;
+    int randomize_result;
 
     `check_rand(cd, cd.x, x > 0, cd.x > 0 && cd.x <= 3);
     `check_rand(cd, cd.x, x > y, cd.x > -100 && cd.x <= 3);
@@ -78,23 +80,28 @@ module t;
       f = 8'(i + 8'h42);
       own_value = 7'(i + 7'h21);
       typed_value = 33'h1_0000_0000 + 33'(i);
-      `checkh(derived.randomize() with {
+      randomize_result = derived.randomize() with {
         f == local::f;
         own_value == local::own_value;
         typed_value == local::typed_value;
         inherited_only == 15'(local::f);
-      }, 1)
+      };
+      `checkd(randomize_result, 1)
       `checkh(derived.f, f)
       `checkh(derived.own_value, own_value)
       `checkh(derived.typed_value, typed_value)
       `checkh(derived.inherited_only, 15'(f))
-      `checkh(grandchild.randomize() with { f == local::f; }, 1)
+      randomize_result = grandchild.randomize() with {f == local::f;};
+      `checkd(randomize_result, 1)
       `checkh(grandchild.f, f)
-      `checkh(bit_derived.randomize() with { f == local::f; }, 1)
+      randomize_result = bit_derived.randomize() with {f == local::f;};
+      `checkd(randomize_result, 1)
       `checkh(bit_derived.f, f)
-      `checkh(derived.randomize() with (f) { f == local::f; }, 1)
+      randomize_result = derived.randomize() with (f) {f == local::f;};
+      `checkd(randomize_result, 1)
       `checkh(derived.f, f)
-      `checkh(derived.randomize() with { this.f == local::f; }, 1)
+      randomize_result = derived.randomize() with {this.f == local::f;};
+      `checkd(randomize_result, 1)
       `checkh(derived.f, f)
     end
 
