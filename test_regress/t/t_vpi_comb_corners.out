@@ -61,7 +61,11 @@ t (vpiModule) t  vpiDefName=t
     out (vpiReg) t.out 
     p (vpiReg) t.p 
     pa_comb (vpiReg) t.pa_comb 
-    ps_comb (vpiReg) t.ps_comb 
+    ps_comb (vpiStructVar) t.ps_comb 
+        vpiReg:
+        *undefined*:
+        hi (vpiReg) t.ps_comb.hi 
+        lo (vpiReg) t.ps_comb.lo 
     r (vpiReg) t.r 
     r_comb (vpiRealVar) t.r_comb 
     rc_alias (vpiRealVar) t.rc_alias 
@@ -80,8 +84,6 @@ t (vpiModule) t  vpiDefName=t
         *undefined*:
         a (vpiReg) t.us_comb.a 
         b (vpiReg) t.us_comb.b 
-    a (vpiReg) t.us_comb.a 
-    b (vpiReg) t.us_comb.b 
     v_comb (vpiReg) t.v_comb 
     vec (vpiReg) t.vec 
     w (vpiReg) t.w 
@@ -146,6 +148,8 @@ t.out = f0 vpiSize=8
 t.p = 00 vpiSize=8
 t.pa_comb = 00ff01ff vpiSize=32
 t.ps_comb = 00 vpiSize=8
+t.ps_comb.hi = 0 vpiSize=4
+t.ps_comb.lo = 0 vpiSize=4
 t.r = 00 vpiSize=8
 t.r_comb = 1.5 vpiSize=1
 t.rc_alias = 0 vpiSize=1
@@ -253,6 +257,8 @@ t.out = b4
 t.p = 3c
 t.pa_comb = 3cc33d3b
 t.ps_comb = 3c
+t.ps_comb.hi = 3
+t.ps_comb.lo = c
 t.s_fmt = "v60"
 t.us_comb.a = 3c
 t.us_comb.b = c3
@@ -301,6 +307,8 @@ t.out = a5
 t.p = 2b
 t.pa_comb = 2bd42c2a
 t.ps_comb = 2b
+t.ps_comb.hi = 2
+t.ps_comb.lo = b
 t.r = 20
 t.rc_alias = 60.5
 t.rc_src = 60.5
@@ -354,6 +362,8 @@ t.out = 96
 t.p = 5a
 t.pa_comb = 5aa55b59
 t.ps_comb = 5a
+t.ps_comb.hi = 5
+t.ps_comb.lo = a
 t.r = 12
 t.rc_alias = 43.5
 t.rc_src = 43.5
@@ -409,6 +419,8 @@ t.out = 87
 t.p = 00
 t.pa_comb = 00ff01ff
 t.ps_comb = 00
+t.ps_comb.hi = 0
+t.ps_comb.lo = 0
 t.r = 00
 t.rc_alias = 90.5
 t.rc_src = 90.5

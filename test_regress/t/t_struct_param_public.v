@@ -13,6 +13,11 @@ package P;
     memory_config_t memory;
     int counters;
   } config_t;
+
+  typedef struct packed {
+    logic [3:0] hi;
+    logic [2:0] lo;
+  } packed_config_t;
 endpackage
 
 module t;
@@ -23,6 +28,9 @@ module t;
   // An unpacked array of structs registers members through a separate path,
   // which used to null-dereference when asking whether it is a literal type.
   localparam P::memory_config_t MEM_ARR[2] = '{'{depth: 16}, '{depth: 32}};
+  // A public packed-struct parameter registers its members as bit slices of
+  // the parameter's storage, which also needs the const cast.
+  localparam P::packed_config_t PCFG = '{hi: 4'ha, lo: 3'd5};
 
   initial begin
     if (CFG.memory.depth != 8192) $stop;
@@ -30,6 +38,8 @@ module t;
     // Selected at runtime; indexing an array-of-structs inside a constant
     // expression is a separate, still-unsupported case.
     if (MEM_ARR[1].depth != 32) $stop;
+    if (PCFG.hi != 4'ha) $stop;
+    if (PCFG.lo != 3'd5) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
