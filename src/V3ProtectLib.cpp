@@ -24,6 +24,9 @@
 #include "V3String.h"
 #include "V3Task.h"
 
+#include <algorithm>
+#include <vector>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -85,7 +88,23 @@ class ProtectVisitor final : public VNVisitor {
         createSvFile(fl, nodep);
         createCppFile(fl);
 
-        iterateChildren(nodep);
+        // Field layout depends on the thread schedule, including PGO costs.
+        // Keep the exported interface independent of layout so PGO does not change parent
+        // task hashes. Sort by source pin number, then name. Generated ports without a
+        // source pin number have pinNum() == 0 and follow the source-declared ports, so
+        // positional instances retain the source interface's pin numbers.
+        std::vector<AstVar*> portps;
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isIO()) portps.emplace_back(varp);
+            }
+        }
+        std::sort(portps.begin(), portps.end(), [](const AstVar* ap, const AstVar* bp) {
+            if ((ap->pinNum() == 0) != (bp->pinNum() == 0)) return bp->pinNum() == 0;
+            if (ap->pinNum() != bp->pinNum()) return ap->pinNum() < bp->pinNum();
+            return ap->name() < bp->name();
+        });
+        for (AstVar* const varp : portps) iterate(varp);
 
         // cppcheck-suppress unreadVariable
         const V3Hash hash = V3Hasher::uncachedHash(m_cfilep);

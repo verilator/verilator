@@ -48,6 +48,7 @@ ExecMTask::ExecMTask(AstExecGraph* execGraphp, AstScope* scopep,
                      AstNodeStmt* stmtsp) VL_MT_DISABLED  //
     : V3GraphVertex{execGraphp->depGraphp()},
       m_id{s_nextId++},
+      m_affinityId{m_id},
       m_funcp{createCFunc(execGraphp, scopep, stmtsp, m_id)},
       m_hashName{V3Hasher::uncachedHash(m_funcp).toString()} {}
 
@@ -1178,6 +1179,23 @@ void implement(AstNetlist* netlistp) {
         // Schedule the mtasks: statically associate each mtask with a thread,
         // and determine the order in which each thread will run its mtasks.
         const std::vector<ThreadSchedule> packed = PackThreads::apply(*execGraphp->depGraphp());
+        // Tasks on one scheduled worker cannot execute concurrently. An existing
+        // MTask ID gives each worker a bounded representative, distinct across schedules.
+        std::unordered_map<const ExecMTask*, uint32_t> affinities;
+        for (const ThreadSchedule& schedule : packed) {
+            for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
+                for (const ExecMTask* const mtaskp : thread) {
+                    const auto result = affinities.emplace(mtaskp, thread.front()->id());
+                    UASSERT_OBJ(result.second, execGraphp, "MTask assigned to multiple workers");
+                }
+            }
+        }
+        for (V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
+            ExecMTask* const mtaskp = vtx.as<ExecMTask>();
+            const auto it = affinities.find(mtaskp);
+            UASSERT_OBJ(it != affinities.end(), execGraphp, "MTask not assigned to a worker");
+            mtaskp->affinityId(it->second);
+        }
         V3Stats::addStatSum("Optimizations, Thread schedule count",
                             static_cast<double>(packed.size()));
 

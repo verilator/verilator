@@ -37,6 +37,7 @@ class ExecMTask final : public V3GraphVertex {
     VL_RTTI_IMPL(ExecMTask, V3GraphVertex)
 private:
     const uint32_t m_id;  // Unique ID of this ExecMTask.
+    uint32_t m_affinityId = 0;  // Representative MTask on this task's scheduled worker
     static std::atomic<uint32_t> s_nextId;  // Next ID to use
     AstCFunc* const m_funcp;  // The function that contains the task body
     const std::string m_hashName;  // Hashed name based on body for profile-driven optimization
@@ -56,6 +57,8 @@ public:
     ExecMTask(AstExecGraph* execGraphp, AstScope* scopep, AstNodeStmt* stmtsp) VL_MT_DISABLED;
     AstCFunc* funcp() const { return m_funcp; }
     uint32_t id() const VL_MT_SAFE { return m_id; }
+    uint32_t affinityId() const { return m_affinityId; }
+    void affinityId(uint32_t id) { m_affinityId = id; }
     uint32_t priority() const { return m_priority; }
     void priority(uint32_t pri) { m_priority = pri; }
     uint32_t cost() const { return m_cost; }

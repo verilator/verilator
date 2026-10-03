@@ -2670,6 +2670,12 @@ public:
     bool isParam() const { return varType().isParam(); }
     bool isGParam() const { return varType() == VVarType::GPARAM; }
     bool isGenVar() const { return varType() == VVarType::GENVAR; }
+    // Return whether this variable is emitted in a module's design-specific state.
+    // Includes static state; excludes parameters, specparams, and IFACEREF declarations
+    // without a port direction (including interface companions and ordinary interface ports).
+    bool isDesignVar() const {
+        return isIO() || isSignal() || isClassMember() || isTemp() || isGenVar();
+    }
     bool isBitLogic() const {
         const AstBasicDType* const bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();
