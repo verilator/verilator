@@ -63,7 +63,6 @@ for s in [
         'Illegal range select; type already selected, or bad dimension:',
         'Instance pin connected by name with empty reference:',
         'Interface port declaration',
-        'Invalid reference: Process might outlive variable',
         'Modport item is not a function/task:',
         'Modport item is not a variable:',
         'Modport not referenced as <interface>.',
