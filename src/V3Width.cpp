@@ -2161,13 +2161,22 @@ class WidthVisitor final : public VNVisitor {
                                                   "'option.auto_bin_max'; using default value");
             }
         } else if (nodep->optType() == VCoverOptionType::MERGE_INSTANCES) {
-            // get_coverage() always averages the instances (IEEE 1800-2023 19.11.3)
-            const AstConst* const constp = VN_CAST(nodep->valuep(), Const);
-            if (!constp || !constp->num().isEqZero()) {
-                nodep->v3warn(COVERIGN, "Ignoring unsupported: 'type_option.merge_instances';"
-                                        " type coverage is the weighted average of the"
-                                        " instances");
+            // V3Covergroup stores it into type_option; as a type option it is constant
+            // (IEEE 1800-2023 19.7.1)
+            iterateCheckBool(nodep, "merge_instances", nodep->valuep(), BOTH);
+            V3Const::constifyEdit(nodep->valuep());
+            AstNodeExpr* const valuep = nodep->valuep();
+            if (!VN_IS(valuep, Const)) {
+                valuep->v3error("Coverage option 'type_option.merge_instances' requires a"
+                                " constant expression (IEEE 1800-2023 19.7.1)");
+                valuep->replaceWith(new AstConst{valuep->fileline(), AstConst::BitFalse{}});
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
             }
+            return;
+        } else if (nodep->optType() == VCoverOptionType::GET_INST_COVERAGE) {
+            // V3Covergroup stores it into option, as the constructor evaluates it
+            iterateCheckBool(nodep, "get_inst_coverage", nodep->valuep(), BOTH);
+            return;
         } else if (nodep->optType() == VCoverOptionType::DISTRIBUTE_FIRST) {
             // A bins 'with' filter applies before the values are distributed to the bins
             // (IEEE 1800-2023 19.5.1.1)
