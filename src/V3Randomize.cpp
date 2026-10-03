@@ -905,6 +905,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
     AstNode* m_firstExpressionInsideIndexp = nullptr;
+    AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
 
     class NestedAccessPath final {
         AstMemberSel* m_topNestedArrayMemberSelp
@@ -948,7 +949,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstMemberSel* accessTree() { return m_topNestedArrayMemberSelp; }
         const std::string& smtName() { return m_smtName; }
 
-        void write_var(AstNodeFTask* initTaskp, AstVar* varp, AstVar* genp) {
+        AstStmtExpr* makeWriteVarStmt(AstVar* varp, AstVar* genp) {
             AstCMethodHard* const methodp = new AstCMethodHard{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(genp->user2p(), NodeModule), genp,
@@ -969,7 +970,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 new AstConst{dtypep->fileline(), AstConst::Unsized64{}, 0});  // Dimension
 
             m_topNestedArrayMemberSelp = nullptr;
-            initTaskp->addStmtsp(methodp->makeStmt());
+            return methodp->makeStmt();
         }
 
         AstNodeExpr* cloneName() { return m_nestedNameFormatTopp->cloneTree(false); }
@@ -1449,6 +1450,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->user3p(nullptr);
         preamblep->addNext(bodyp);
         return preamblep;
+    }
+
+    // True if the statement references a foreach loop index variable. Such statements
+    // must stay inside the loop body; hoisting them out leaves dangling references
+    // once task inlining deletes the loop's index variable.
+    static bool referencesLoopIdx(const AstNode* nodep) {
+        return nodep->exists([](const AstVarRef* refp) { return refp->varp()->isUsedLoopIdx(); });
     }
 
     // Create SFormatF for array dereference inside solver
@@ -1948,7 +1956,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeFTask* const initTaskp
                 = getInitTaskp(varp, memberselp || structSelOrCMeth, classp);
             if (m_nestedAccess) {
-                m_nestedAccess->write_var(initTaskp, varp, m_genp);
+                AstStmtExpr* const writeVarStmtp = m_nestedAccess->makeWriteVarStmt(varp, m_genp);
+                if (m_foreachp && referencesLoopIdx(writeVarStmtp)) {
+                    m_foreachp->addBodyp(writeVarStmtp);
+                } else {
+                    initTaskp->addStmtsp(writeVarStmtp);
+                }
                 if (isGlobalConstrained && memberselp && randMode.usesMode) {
                     setRandMode(varp, memberselp, smtName, randMode, initTaskp);
                 }
@@ -2769,6 +2782,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
+            VL_RESTORER(m_foreachp);
+            m_foreachp = nodep;
             iterateAndNextNull(nodep->bodyp());
             AstNode* const bodyp
                 = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
@@ -4734,11 +4749,30 @@ class RandomizeVisitor final : public VNVisitor {
         return classp->existsMember([](const AstClass*, const AstConstraint* constrp) {
             bool owns = false;
             constrp->foreach([&](const AstMemberSel* memberSelp) {
+                // Walk to the root of the access chain, descending through both
+                // member selects (a.b) and array/assoc/queue selects (a[i]), so a
+                // constraint reaching through an array of class handles is detected.
                 const AstNode* rootp = memberSelp->fromp();
-                while (const AstMemberSel* const sp = VN_CAST(rootp, MemberSel))
-                    rootp = sp->fromp();
+                while (true) {
+                    if (const AstMemberSel* const sp = VN_CAST(rootp, MemberSel)) {
+                        rootp = sp->fromp();
+                    } else if (const AstNodeSel* const sp = VN_CAST(rootp, NodeSel)) {
+                        rootp = sp->fromp();
+                    } else {
+                        break;
+                    }
+                }
                 if (const AstVarRef* const refp = VN_CAST(rootp, VarRef)) {
-                    if (VN_IS(refp->varp()->dtypep()->skipRefp(), ClassRefDType)) owns = true;
+                    // The root owns a sub-object constraint when it is a class
+                    // handle, or an array/assoc/queue/unpacked array whose element
+                    // type is a class handle (e.g. "rand ClsB member_c[int]").
+                    const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
+                    while (const AstNodeDType* const subp = dtypep->subDTypep())
+                        dtypep = subp->skipRefp();
+                    // A MemberSel chain is always class-member access, so the
+                    // resolved root is a class handle (or array thereof); the
+                    // non-class branch is unreachable here.
+                    if (VN_IS(dtypep, ClassRefDType)) owns = true;  // LCOV_EXCL_BR_LINE
                 }
             });
             return owns;
