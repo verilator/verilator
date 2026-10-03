@@ -1417,8 +1417,11 @@ class ParamProcessor final {
         any_overridesr = true;
     }
 
+    // Name the specialization by a value pin, or prepare a type pin, noting in
+    // overridingTypePinsr whether it differs from the default
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
-                        string& longnamer, bool& any_overridesr) {
+                        string& longnamer, bool& any_overridesr,
+                        std::unordered_set<const AstPin*>& overridingTypePinsr) {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
             resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
@@ -1669,12 +1672,9 @@ class ParamProcessor final {
                         if (classRefDTypep->paramsp() && classRefDTypep->classp()
                             && classRefDTypep->classp()->hasGParam()) {
                             classRefDeparam(classRefDTypep, classRefDTypep->classp());
-                            rawTypep = VN_CAST(pinp->exprp(), NodeDType);
-                            exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
                         }
                     }
-                    longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
-                    any_overridesr = true;
+                    overridingTypePinsr.emplace(pinp);  // Named once every pin is prepared
                 }
             }
         } else {
@@ -1945,9 +1945,37 @@ class ParamProcessor final {
             longname = parameterizedHierBlockName(srcModp, paramsp);
             any_overrides = longname != srcModp->name();
         } else {
+            // Prepare every pin before naming any, as naming a value can depend on the others:
+            // fold each value pin, as a class reference's may not be yet, and resolve each type
+            std::unordered_set<const AstPin*> overridingTypePins;
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                if (!pinp->exprp()) continue;  // An empty override keeps the default
+                if (pinp->modPTypep()) {
+                    cellPinCleanup(nodep, pinp, paramsp, srcModp, longname /*ref*/,
+                                   any_overrides /*ref*/, overridingTypePins /*ref*/);
+                    continue;
+                }
+                AstVar* const modvarp = pinp->modVarp();
+                if (!modvarp || !modvarp->isGParam()) continue;
+                resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
+                // An untyped pattern can't be folded without its parameter's type
+                const AstPattern* const patternp = VN_CAST(pinp->exprp(), Pattern);
+                if (patternp && !patternp->childDTypep()) continue;
+                if (!VN_IS(pinp->exprp(), Const) && !isAggregateParamValue(pinp->exprp())) {
+                    V3Const::constifyParamsEdit(pinp->exprp());
+                }
+            }
+            for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                if (AstParamTypeDType* const modptp = pinp->modPTypep()) {
+                    if (!overridingTypePins.count(pinp)) continue;
+                    AstNodeDType* const typep = VN_AS(pinp->exprp(), NodeDType);
+                    longname += "_" + paramSmallName(srcModp, modptp)
+                                + paramValueNumber(typep->skipRefToNonRefp());
+                    any_overrides = true;
+                    continue;
+                }
                 cellPinCleanup(nodep, pinp, paramsp, srcModp, longname /*ref*/,
-                               any_overrides /*ref*/);
+                               any_overrides /*ref*/, overridingTypePins /*ref*/);
             }
         }
         IfaceRefRefs ifaceRefRefs;
