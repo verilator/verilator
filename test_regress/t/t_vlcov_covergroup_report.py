@@ -38,9 +38,9 @@ def write_dat(name, records, points=()):
             fields += keys
             fields.append(("h", group + "." + item + "." + bin_name))
             fh.write(dat_line(fields, count))
-        for kind, hier, lineno, count in points:
-            fields = [("t", kind), ("page", "v_" + kind + "/t"), ("f", "t/t.v"), ("l", lineno),
-                      ("h", hier)]
+        for kind, unit, hier, lineno, count in points:
+            fields = [("t", kind), ("page", "v_" + kind + "/" + unit), ("f", "t/t.v"),
+                      ("l", lineno), ("h", hier)]
             fh.write(dat_line(fields, count))
     return filename
 
@@ -71,10 +71,13 @@ none_cov = write_dat("none.dat", [("void", "cp", "b0", 0, [("B", "b0"), ("Bt", "
 # Coverage that is not complete shows below 100%: 99.95 as 99.9
 near_cov = write_dat("near.dat", [("near", "cp", "b" + str(i), int(i != 0), [("B", "b" + str(i))])
                                   for i in range(2001)])
-# A module shows a row per coverage type under its name; covergroups show one line each
+# A module shows a row per coverage type under its name; covergroups show one line each; and
+# names show their quotes and '%', which the coverage file escapes, as instance '"q%"' of module
+# 'm"x'
 mixed_cov = write_dat("mixed.dat", [("cg", "cp", "a", 1, [("B", "a")]),
                                     ("cg", "cp", "b", 0, [("B", "b")])],
-                      points=[("line", "top.t", "10", 1), ("toggle", "top.t", "11", 0)])
+                      points=[("line", "t", "top.t", "10", 1), ("toggle", "t", "top.t", "11", 0),
+                              ("line", "m%22x", "top.t.%22q%25%22", "12", 1)])
 
 run_vlcov(vlcov,
           "verilator_coverage --report summary,hierarchy coverage.dat",
