@@ -2251,6 +2251,14 @@ List Of Warnings
    * Run Verilator with :vlopt:`--timing`.
 
 
+.. option:: SUBGRAPHFALLBACK
+
+   For internal use only. Warns that a user-selected subgraph cannot use local
+   scheduling with :vlopt:`--subgraph-schedule`. The warning identifies the
+   subgraph instance and gives the first constraint it did not satisfy.
+   Verilator schedules that instance in the parent scheduler instead.
+
+
 .. option:: SUPERNFIRST
 
    An error that a `super.new` is not the first statement in a `function

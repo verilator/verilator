@@ -1,0 +1,5 @@
+%Warning-SUBGRAPHFALLBACK: t/t_subgraph_function_impure.v:28:33: Subgraph 't.i0' fell back to parent scheduling: call or timing control
+   28 |   always_ff @(posedge clk) q <= advance(q, d);
+      |                                 ^~~~~~~
+                           ... For warning description see https://verilator.org/warn/SUBGRAPHFALLBACK?v=latest
+                           ... Use "/* verilator lint_off SUBGRAPHFALLBACK */" and lint_on around source to disable this message.

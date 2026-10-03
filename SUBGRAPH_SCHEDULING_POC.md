@@ -79,9 +79,15 @@ compatible instances of the same elaborated specialization, supported local
 procedures and input connections, and single-threaded compilation. Failure
 to share does not itself imply failure to schedule locally.
 
-The series preserves the source branch's accepted behavior, including its
-later extensions for combinational writes, input aliases, and output
-provenance. Tests cover both enabled and disabled operation, phase ordering,
+The series retains the source branch's extensions for combinational writes,
+input aliases, and output provenance. Admission follows combinational
+feedthrough rather than the original instance hierarchy. DFG can place
+parent expressions inside a child and create cross-boundary reads of internal
+temporaries. These values also participate in output-cone analysis and parent
+contracts. Local settling and post-commit output evaluation order publication
+assignments together with the output cone, including expressions that read
+published ports.
+Tests cover both enabled and disabled operation, phase ordering,
 fallback diagnostics, state independence, and generated-function sharing.
 
 ## Implementation responsibilities

@@ -54,8 +54,8 @@ class V3OrderCFuncEmitter final {
     AstCFunc* m_funcp = nullptr;
     // Function ordinals to ensure unique names
     std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;
-    // The resulting ordered CFuncs with the trigger conditions needed to call them
-    std::vector<std::pair<AstCFunc*, AstSenTree*>> m_result;
+    // The resulting ordered calls with the trigger conditions needed to execute them
+    std::vector<std::pair<AstNodeStmt*, AstSenTree*>> m_result;
 
     // Create a unique name for a new function
     std::string cfuncName(FileLine* flp, AstScope* scopep, AstNodeModule* modp,
@@ -66,6 +66,30 @@ class V3OrderCFuncEmitter final {
         name += "__" + std::to_string(m_funcNums[{modp, name}]++);
         if (v3Global.opt.profCFuncs()) name += "__PROF__" + flp->profileFuncname();
         return name;
+    }
+
+    static AstNode* unlinkProcedureBody(AstNodeProcedure* procp) {
+        AstNode* const stmtsp = procp->stmtsp();
+        UASSERT_OBJ(stmtsp, procp, "Empty process should have been deleted earlier");
+        stmtsp->unlinkFrBackWithNext();
+        // 'procp' is no longer needed but the OrderGraph still references it for debug dumps.
+        return stmtsp;
+    }
+
+    static AstNode* unlinkSubgraphActiveBody(AstActive* activep) {
+        AstNode* headp = nullptr;
+        for (AstNode *nodep = activep->stmtsp(), *nextp; nodep; nodep = nextp) {
+            nextp = nodep->nextp();
+            if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
+                UASSERT_OBJ(!procp->isSuspendable(), procp,
+                            "Suspendable subgraph process should not be grouped");
+                headp = AstNode::addNext(headp, unlinkProcedureBody(procp));
+            } else {
+                nodep->unlinkFrBack();
+                headp = AstNode::addNext(headp, nodep);
+            }
+        }
+        return headp;
     }
 
 public:
@@ -92,7 +116,7 @@ public:
         AstSenTree* pervSenTreep = nullptr;
         // Call each function under an AstIf that checks for the trigger condition
         for (const auto& pair : m_result) {
-            AstCFunc* const cfuncp = pair.first;
+            AstNodeStmt* const callp = pair.first;
             AstSenTree* senTreep = pair.second;
             // Create a new AstIf if the trigger is different
             if (senTreep != pervSenTreep) {
@@ -100,10 +124,8 @@ public:
                 ifp = V3Sched::util::createIfFromSenTree(senTreep);
                 stmtsp = AstNode::addNext(stmtsp, ifp);
             }
-            // Call function when triggered
-            AstCCall* const callp = new AstCCall{cfuncp->fileline(), cfuncp};
-            callp->dtypeSetVoid();
-            ifp->addThensp(callp->makeStmt());
+            // Execute the ordered call when triggered
+            ifp->addThensp(callp);
         }
         // Result is now spent, reset the emitter state
         m_result.clear();
@@ -119,6 +141,7 @@ public:
         // We are move the logic into a CFunc
         AstNode* const logicp = lVtxp->nodep();
         // If the logic is a procedure, we need to do a few special things
+        AstActive* const activep = VN_CAST(logicp, Active);
         AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure);
 
         // Some properties to consider
@@ -128,6 +151,29 @@ public:
         //       way of saying always @(posedge clk), so it might be quite hot...
         //       Also, if m_funcp is slow, but this one isn't we should force a new function
         const bool slow = m_slow && !(suspendable && VN_IS(procp, Always));
+
+        // The boundary operation is already a call to the shared child function, or a
+        // single port connection. Keep it in the parent evaluation function instead of
+        // generating a forwarding CFunc for every receiver. The Order graph has already
+        // placed it using its contract or its variable accesses.
+        AstNode* const bodyp = activep ? activep->stmtsp() : procp ? procp->stmtsp() : nullptr;
+        AstStmtExpr* const stmtExprp = VN_CAST(bodyp, StmtExpr);
+        AstCCall* const directCallp = stmtExprp ? VN_CAST(stmtExprp->exprp(), CCall) : nullptr;
+        AstNodeAssign* const assignp = VN_CAST(bodyp, NodeAssign);
+        AstVarRef* const lhsp = assignp ? VN_CAST(assignp->lhsp(), VarRef) : nullptr;
+        const bool boundaryAssign
+            = lhsp && lhsp->varScopep()->scopep()->modp()->subgraphBoundary()
+              && (lhsp->varp()->subgraphPublished()
+                  || (lhsp->varp()->isNonOutput() && lhsp->varp()->subgraphPortId()));
+        if (bodyp && !bodyp->nextp()
+            && ((directCallp && directCallp->funcp()->subgraphWrapper())
+                || (VN_IS(procp, Always) && !suspendable && boundaryAssign))) {
+            forceNewFunction();
+            AstNodeStmt* const directp = directCallp ? static_cast<AstNodeStmt*>(stmtExprp)
+                                                     : static_cast<AstNodeStmt*>(assignp);
+            m_result.emplace_back(directp->unlinkFrBack(), domainp);
+            return;
+        }
 
         // Put suspendable processes into individual functions on their own
         if (suspendable) forceNewFunction();
@@ -139,14 +185,9 @@ public:
         // Process procedures per statement, so we can split CFuncs within procedures.
         // Everything else is handled as a unit.
         AstNode* const headp = [&]() -> AstNode* {
+            if (activep) return unlinkSubgraphActiveBody(activep);
             if (!procp) return logicp->unlinkFrBack();  // Not a procedure, handle as a unit
-            AstNode* const stmtsp = procp->stmtsp();
-            UASSERT_OBJ(stmtsp, procp, "Empty process should have been deleted earlier");
-            stmtsp->unlinkFrBackWithNext();
-            // 'procp' is no longer needed but the OrderGraph still references
-            // it (for debug dump). It will get deleted when deleting the
-            // AstActives in V3Order.
-            return stmtsp;
+            return unlinkProcedureBody(procp);
         }();
         // Process each statement in the list starting at headp
         for (AstNode *currp = headp, *nextp; currp; currp = nextp) {
@@ -164,12 +205,15 @@ public:
                 const std::string name = cfuncName(flp, scopep, modp, domainp);
                 m_funcp = new AstCFunc{flp, name, scopep, suspendable ? "VlCoroutine" : ""};
                 if (needProcess) m_funcp->setNeedProcess();
+                if (scopep->modp()->subgraphBoundary()) m_funcp->dontCombine(true);
                 m_funcp->isStatic(false);
                 m_funcp->isLoose(true);
                 m_funcp->slow(slow);
                 scopep->addBlocksp(m_funcp);
                 // Record function and sensitivity to call it with
-                m_result.emplace_back(m_funcp, domainp);
+                AstCCall* const callp = new AstCCall{flp, m_funcp};
+                callp->dtypeSetVoid();
+                m_result.emplace_back(callp->makeStmt(), domainp);
             }
             // Add the code to the current function
             m_funcp->addStmtsp(currp);

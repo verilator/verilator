@@ -26,6 +26,9 @@
 #include "V3OrderInternal.h"
 #include "V3Sched.h"
 
+#include <unordered_map>
+#include <unordered_set>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -94,12 +97,24 @@ class OrderGraphBuilder final : public VNVisitor {
     OrderGraph* const m_graphp = new OrderGraph;  // The ordering graph built by this visitor
     OrderLogicVertex* m_logicVxp = nullptr;  // Current logic block being analyzed
     std::vector<AstVarScope*> m_accessedVscps;  // Variables accessed by the current logic block
+    std::unordered_set<const AstVarScope*>
+        m_parentAccessedVscps;  // Variables directly accessed by parent logic
+    std::unordered_map<const AstScope*, std::array<OrderLogicVertex*, 2>>
+        m_wrapperPhases;  // Evaluation and publication vertices for each receiver
+    std::unordered_map<const AstScope*, AstVarScope*>
+        m_wrapperPhasePorts;  // Clock port anchoring each receiver phase edge
+    const V3Order::FreshReads* const
+        m_freshReadsp;  // Edge captures provided by local NBA lowering
+    const V3Order::BoundaryUses* const
+        m_boundaryUsesp;  // Port contracts for local scheduling operations
+    std::unordered_set<const AstVarScope*>
+        m_freshReadSet;  // Captured values consumed by the current operation
 
     // Map from Trigger reference AstSenItem to the original AstSenTree
-    const V3Order::TrigToSenMap& m_trigToSen;
+    const V3Order::TrigToSenMap& m_trigToSen;  // Original sensitivities for each trigger
 
     // Current AstScope being processed
-    AstScope* m_scopep = nullptr;
+    AstScope* m_scopep = nullptr;  // Selected scheduling boundary
     // Sensitivity list for clocked logic, nullptr for combinational and hybrid logic
     AstSenTree* m_domainp = nullptr;
     // Sensitivity list for hybrid logic, nullptr for everything else
@@ -113,7 +128,8 @@ class OrderGraphBuilder final : public VNVisitor {
     const bool m_parallel;  // Ordering for multi-threaded execution (record variable accesses)
 
     // What covergroup reference formal arguments are bound to at construction
-    const V3Sched::CovergroupRefBindings& m_cgRefBindings;
+    const V3Sched::CovergroupRefBindings&
+        m_cgRefBindings;  // Covergroup reference bindings for local Order
     // Bindings reachable from the covergroup sample() being walked, nullptr when not in one
     const V3Sched::CovergroupRefBindings::Bindings* m_cgRefBoundps = nullptr;
 
@@ -149,6 +165,105 @@ class OrderGraphBuilder final : public VNVisitor {
 
     OrderVarVertex* getVarVertex(AstVarScope* varscp, VarVertexType type) {
         return m_orderUser(varscp).getVarVertex(m_graphp, varscp, type);
+    }
+
+    static bool isSubgraphWrapperCall(const AstCCall* nodep) {
+        const AstCFunc* const funcp = nodep->funcp();
+        return funcp->subgraphWrapper();
+    }
+
+    static bool isUnderScope(const AstScope* scopep, const AstScope* basep) {
+        for (const AstScope* scanp = scopep; scanp; scanp = scanp->aboveScopep()) {
+            if (scanp == basep) return true;
+        }
+        return false;
+    }
+
+    static bool containsSubgraphWrapperCall(AstActive* nodep) {
+        bool found = false;
+        nodep->foreach([&](AstCCall* callp) {
+            if (isSubgraphWrapperCall(callp)) found = true;
+        });
+        return found;
+    }
+
+    bool shouldGroupSubgraphWrapperActive(AstActive* nodep) const {
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (VN_IS(stmtp, NodeProcedure)) return false;
+        }
+        return containsSubgraphWrapperCall(nodep);
+    }
+
+    void addSubgraphWrapperUsage(AstCCall* nodep) {
+        UASSERT_OBJ(m_boundaryUsesp, nodep, "Missing subgraph boundary contracts");
+        const auto contract = m_boundaryUsesp->find(nodep->funcp());
+        UASSERT_OBJ(contract != m_boundaryUsesp->end(), nodep,
+                    "Missing contract for shared subgraph function");
+        AstScope* const implementationScopep = nodep->funcp()->scopep();
+        AstScope* const boundaryScopep = nodep->subgraphReceiverScopep()
+                                             ? nodep->subgraphReceiverScopep()
+                                             : implementationScopep;
+        const V3Order::BoundaryContract::Operation operation = contract->second.m_operation;
+        const bool portOperation = operation != V3Order::BoundaryContract::Operation::SETTLE;
+        const bool publish = operation != V3Order::BoundaryContract::Operation::CLOCK_EVAL;
+        if (portOperation) {
+            std::array<OrderLogicVertex*, 2>& phases = m_wrapperPhases[boundaryScopep];
+            UASSERT_OBJ(!phases[publish], nodep,
+                        "Duplicate subgraph operation phase for receiver");
+            phases[publish] = m_logicVxp;
+            AstVarScope* phasePortp = contract->second.m_clockp;
+            if (boundaryScopep != implementationScopep
+                && phasePortp->scopep() == implementationScopep) {
+                for (AstVarScope* vscp = boundaryScopep->varsp(); vscp;
+                     vscp = VN_AS(vscp->nextp(), VarScope)) {
+                    if (vscp->varp() == phasePortp->varp()) {
+                        phasePortp = vscp;
+                        break;
+                    }
+                }
+            }
+            UASSERT_OBJ(phasePortp->scopep() == boundaryScopep
+                            || !isUnderScope(phasePortp->scopep(), implementationScopep),
+                        nodep, "Subgraph phase port missing from receiver");
+            m_wrapperPhasePorts[boundaryScopep] = phasePortp;
+        }
+        std::unordered_map<const AstVar*, AstVarScope*> receiverVars;
+        if (boundaryScopep != implementationScopep) {
+            UASSERT_OBJ(boundaryScopep->modp() == implementationScopep->modp(), nodep,
+                        "Subgraph receiver has a different specialization");
+            for (AstVarScope* vscp = boundaryScopep->varsp(); vscp;
+                 vscp = VN_AS(vscp->nextp(), VarScope)) {
+                receiverVars.emplace(vscp->varp(), vscp);
+            }
+        }
+        const auto receiverVar = [&](AstVarScope* vscp) {
+            if (!receiverVars.empty() && vscp->scopep() == implementationScopep) {
+                const auto it = receiverVars.find(vscp->varp());
+                UASSERT_OBJ(it != receiverVars.end(), nodep,
+                            "Shared subgraph port missing from receiver scope");
+                return it->second;
+            }
+            return vscp;
+        };
+        for (AstVarScope* const portp : contract->second.m_ports) {
+            AstVarScope* const vscp = receiverVar(portp);
+            const bool boundaryPort = vscp->scopep() == boundaryScopep && vscp->varp()->isIO();
+            if (isUnderScope(vscp->scopep(), boundaryScopep) && !boundaryPort
+                && !m_parentAccessedVscps.count(vscp)) {
+                continue;
+            }
+            accountVarAccess(vscp, publish ? VAccess::WRITE : VAccess::READ, nodep);
+        }
+        // The saved input is a boundary dependency even when the shared function's own
+        // contract contains only the captured value's later uses.
+        if (!m_inPost && m_freshReadsp) {
+            const auto it = m_freshReadsp->find(boundaryScopep);
+            if (it != m_freshReadsp->end()) {
+                for (AstVarScope* const savedp : it->second) {
+                    accountVarAccess(savedp, VAccess::READ, nodep);
+                }
+            }
+        }
     }
 
     // VISITORS
@@ -193,8 +308,12 @@ class OrderGraphBuilder final : public VNVisitor {
             m_readTriggersCombLogic = [](const AstVarScope*) { return true; };
         }
 
-        // Analyze logic underneath
-        iterateChildren(nodep);
+        // Treat a subgraph wrapper and its boundary contract as one parent graph vertex.
+        if (shouldGroupSubgraphWrapperActive(nodep)) {
+            iterateLogic(nodep);
+        } else {
+            iterateChildren(nodep);
+        }
     }
     void visit(AstNodeVarRef* nodep) override {
         // As we explicitly not visit (see ignored nodes below) any subtree that is not relevant
@@ -291,6 +410,10 @@ class OrderGraphBuilder final : public VNVisitor {
                 // Add edge from produced VarPostVertex -> to producing LogicVertex
                 OrderVarVertex* const postVxp = getVarVertex(varscp, VarVertexType::POST);
                 m_graphp->addHardEdge(postVxp, m_logicVxp, WEIGHT_POST);
+            } else if (m_inClocked && m_freshReadSet.count(varscp)) {
+                // Captured inputs become available to the child helper on this same edge.
+                OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
+                m_graphp->addHardEdge(m_logicVxp, varVxp, WEIGHT_NORMAL);
             } else if (m_inPre) {  // AstAlwaysPre
                 // Add edge from producing LogicVertex -> produced VarPordVertex
                 OrderVarVertex* const ordVxp = getVarVertex(varscp, VarVertexType::PORD);
@@ -322,6 +445,11 @@ class OrderGraphBuilder final : public VNVisitor {
                     // Add edge from consumed VarStdVertex -> to consuming LogicVertex
                     m_graphp->addHardEdge(varVxp, m_logicVxp, WEIGHT_MEDIUM);
                 }
+            } else if (m_inClocked && !m_inPre && m_freshReadSet.count(varscp)) {
+                // This clocked helper reads a value captured on the current edge. Treat it as
+                // a fresh value, so the capture assignment must precede the helper call.
+                OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
+                m_graphp->addHardEdge(varVxp, m_logicVxp, WEIGHT_NORMAL);
             } else if (!m_inClocked) {  // Combinational logic
                 if (m_readTriggersCombLogic(varscp)) {
                     // Ignore explicit sensitivities
@@ -348,6 +476,10 @@ class OrderGraphBuilder final : public VNVisitor {
                 m_graphp->addHardEdge(m_logicVxp, postVxp, WEIGHT_POST);
             }
         }
+    }
+    void visit(AstCCall* nodep) override {
+        if (isSubgraphWrapperCall(nodep)) addSubgraphWrapperUsage(nodep);
+        iterateChildren(nodep);
     }
     // A covergroup sample() is not inlined and may read design signals through cross-scope
     // references held by the covergroup. This attributes those references to the calling block.
@@ -430,10 +562,37 @@ class OrderGraphBuilder final : public VNVisitor {
     // CONSTRUCTOR
     OrderGraphBuilder(AstNetlist* /*nodep*/, const std::vector<V3Sched::LogicByScope*>& coll,
                       const V3Order::TrigToSenMap& trigToSen,
-                      const V3Sched::CovergroupRefBindings& cgRefBindings, bool parallel)
-        : m_trigToSen{trigToSen}
+                      const V3Sched::CovergroupRefBindings& cgRefBindings, bool parallel,
+                      const V3Order::FreshReads* freshReadsp,
+                      const V3Order::BoundaryUses* boundaryUsesp)
+        : m_freshReadsp{freshReadsp}
+        , m_boundaryUsesp{boundaryUsesp}
+        , m_trigToSen{trigToSen}
         , m_parallel{parallel}
         , m_cgRefBindings{cgRefBindings} {
+        if (freshReadsp) {
+            for (const auto& pair : *freshReadsp) {
+                for (AstVarScope* const savedp : pair.second) m_freshReadSet.emplace(savedp);
+            }
+        }
+        // Keep internal state hidden unless logic outside a subgraph helper also accesses it.
+        const bool hasSubgraphWrapper
+            = std::any_of(coll.begin(), coll.end(), [](const V3Sched::LogicByScope* lbsp) {
+                  return std::any_of(lbsp->begin(), lbsp->end(), [](const auto& pair) {
+                      return containsSubgraphWrapperCall(pair.second);
+                  });
+              });
+        if (hasSubgraphWrapper) {
+            for (const V3Sched::LogicByScope* const lbsp : coll) {
+                for (const auto& pair : *lbsp) {
+                    AstActive* const activep = pair.second;
+                    if (containsSubgraphWrapperCall(activep)) continue;
+                    activep->foreach([&](AstNodeVarRef* refp) {
+                        m_parentAccessedVscps.insert(refp->varScopep());
+                    });
+                }
+            }
+        }
         // Build the graph
         for (const V3Sched::LogicByScope* const lbsp : coll) {
             for (const auto& pair : *lbsp) {
@@ -441,6 +600,17 @@ class OrderGraphBuilder final : public VNVisitor {
                 iterate(pair.second);
                 m_scopep = nullptr;
             }
+        }
+        // Internal NBA temporaries are deliberately absent from a port-only contract.
+        // Preserve the local transaction's pre-before-post order explicitly.
+        for (const auto& entry : m_wrapperPhases) {
+            const std::array<OrderLogicVertex*, 2>& phases = entry.second;
+            UASSERT_OBJ(phases[0] && phases[1], entry.first,
+                        "Incomplete subgraph operation phases");
+            OrderVarPhaseVertex* const phaseVxp
+                = new OrderVarPhaseVertex{m_graphp, m_wrapperPhasePorts.at(entry.first)};
+            m_graphp->addHardEdge(phases[0], phaseVxp, WEIGHT_NORMAL);
+            m_graphp->addHardEdge(phaseVxp, phases[1], WEIGHT_NORMAL);
         }
     }
     ~OrderGraphBuilder() override = default;
@@ -452,9 +622,11 @@ public:
                                              const std::vector<V3Sched::LogicByScope*>& coll,
                                              const V3Order::TrigToSenMap& trigToSen,
                                              const V3Sched::CovergroupRefBindings& cgRefBindings,
-                                             bool parallel) {
-        return std::unique_ptr<OrderGraph>{
-            OrderGraphBuilder{nodep, coll, trigToSen, cgRefBindings, parallel}.m_graphp};
+                                             bool parallel, const V3Order::FreshReads* freshReadsp,
+                                             const V3Order::BoundaryUses* boundaryUsesp) {
+        return std::unique_ptr<OrderGraph>{OrderGraphBuilder{nodep, coll, trigToSen, cgRefBindings,
+                                                             parallel, freshReadsp, boundaryUsesp}
+                                               .m_graphp};
     }
 };
 
@@ -463,6 +635,8 @@ V3Order::buildOrderGraph(AstNetlist* netlistp,  //
                          const std::vector<V3Sched::LogicByScope*>& coll,  //
                          const V3Order::TrigToSenMap& trigToSen,  //
                          const V3Sched::CovergroupRefBindings& cgRefBindings,  //
-                         bool parallel) {
-    return OrderGraphBuilder::apply(netlistp, coll, trigToSen, cgRefBindings, parallel);
+                         bool parallel, const V3Order::FreshReads* freshReadsp,
+                         const V3Order::BoundaryUses* boundaryUsesp) {
+    return OrderGraphBuilder::apply(netlistp, coll, trigToSen, cgRefBindings, parallel,
+                                    freshReadsp, boundaryUsesp);
 }

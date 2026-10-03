@@ -1,0 +1,5 @@
+%Warning-SUBGRAPHFALLBACK: t/t_subgraph_fallback_delay_line.v:14:5: Subgraph 't.i0' fell back to parent scheduling: zero-delay design
+   14 |     #0;
+      |     ^
+                           ... For warning description see https://verilator.org/warn/SUBGRAPHFALLBACK?v=latest
+                           ... Use "/* verilator lint_off SUBGRAPHFALLBACK */" and lint_on around source to disable this message.

@@ -173,6 +173,8 @@ set(HEADERS
     V3Rtti.h
     V3Sampled.h
     V3Sched.h
+    V3SchedSubgraph.h
+    V3SchedSubgraphInternal.h
     V3Scope.h
     V3SenExprBuilder.h
     V3SenTree.h
@@ -351,6 +353,9 @@ set(COMMON_SOURCES
     V3SchedCovergroup.cpp
     V3SchedPartition.cpp
     V3SchedReplicate.cpp
+    V3SchedSubgraph.cpp
+    V3SchedSubgraphEligibility.cpp
+    V3SchedSubgraphNba.cpp
     V3SchedTiming.cpp
     V3SchedTrigger.cpp
     V3SchedUtil.cpp

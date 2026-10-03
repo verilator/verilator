@@ -39,6 +39,7 @@
 #include "V3EmitV.h"
 #include "V3Graph.h"
 #include "V3Sched.h"
+#include "V3SchedSubgraph.h"
 
 #include <tuple>
 #include <unordered_map>
@@ -91,6 +92,23 @@ public:
         return m_logicp->typeName() + ("\n" + m_logicp->fileline()->ascii());
     };
     string dotShape() const override { return "rectangle"; }
+    // LCOV_EXCL_STOP
+};
+
+// A child NBA boundary participates in parent dependency analysis as one operation. Its
+// implementation is scheduled separately, so there is no parent AstNode to move into a region.
+class SchedSubgraphVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(SchedSubgraphVertex, V3GraphVertex)
+    const AstScope* const m_scopep;  // Child boundary represented in the parent dependency graph
+
+public:
+    SchedSubgraphVertex(V3Graph* graphp, const AstScope* scopep)
+        : V3GraphVertex{graphp}
+        , m_scopep{scopep} {}
+
+    // LCOV_EXCL_START // Debug code
+    string name() const override { return "SUBGRAPH\\n" + m_scopep->name(); }
+    string dotShape() const override { return "box3d"; }
     // LCOV_EXCL_STOP
 };
 
@@ -265,7 +283,7 @@ class SchedGraphBuilder final : public VNVisitor {
     // LCOV_EXCL_STOP
 
     SchedGraphBuilder(const LogicByScope& clockedLogic, const LogicByScope& combinationalLogic,
-                      const LogicByScope& hybridLogic) {
+                      const LogicByScope& hybridLogic, const SubgraphPlan* subgraphPlanp) {
         // Build the data flow graph
         const auto iter = [this](const LogicByScope& lbs) {
             for (const auto& pair : lbs) {
@@ -283,14 +301,33 @@ class SchedGraphBuilder final : public VNVisitor {
         // Hybrid logic is triggered by all reads, except for reads of the explicit sensitivities
         m_readTriggersThisLogic = [](AstVarScope* vscp) { return !vscp->user2(); };
         iter(hybridLogic);
+        if (subgraphPlanp) {
+            subgraphPlanp->foreachBoundary([this](AstScope* scopep, AstSenTree* senTreep,
+                                                  const std::vector<SubgraphPlan::Use>& uses) {
+                SchedSubgraphVertex* const boundaryVtxp
+                    = new SchedSubgraphVertex{m_graphp, scopep};
+                senTreep->foreach([this, boundaryVtxp](AstSenItem* senItemp) {
+                    new V3GraphEdge{m_graphp, getSenVertex(senItemp), boundaryVtxp, 10};
+                });
+                for (const SubgraphPlan::Use& use : uses) {
+                    // Clocked reads do not trigger the operation. NBA writes can feed
+                    // downstream parent logic, but cannot generate this child's clock.
+                    if (use.m_write && !use.m_vscp->varp()->ignoreSchedWrite()) {
+                        new V3GraphEdge{m_graphp, boundaryVtxp, getVarVertex(use.m_vscp), 10};
+                    }
+                }
+            });
+        }
     }
 
 public:
     // Build the dataflow graph for partitioning
     static std::unique_ptr<V3Graph> build(const LogicByScope& clockedLogic,
                                           const LogicByScope& combinationalLogic,
-                                          const LogicByScope& hybridLogic) {
-        const SchedGraphBuilder visitor{clockedLogic, combinationalLogic, hybridLogic};
+                                          const LogicByScope& hybridLogic,
+                                          const SubgraphPlan* subgraphPlanp) {
+        const SchedGraphBuilder visitor{clockedLogic, combinationalLogic, hybridLogic,
+                                        subgraphPlanp};
         return std::unique_ptr<V3Graph>{visitor.m_graphp};
     }
 };
@@ -341,12 +378,12 @@ void colorActiveRegion(V3Graph& graph) {
 }  // namespace
 
 LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
-                       LogicByScope& hybridLogic) {
+                       LogicByScope& hybridLogic, const SubgraphPlan* subgraphPlanp) {
     UINFO(2, __FUNCTION__ << ":");
 
     // Build the graph
     const std::unique_ptr<V3Graph> graphp
-        = SchedGraphBuilder::build(clockedLogic, combinationalLogic, hybridLogic);
+        = SchedGraphBuilder::build(clockedLogic, combinationalLogic, hybridLogic, subgraphPlanp);
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched");
 
     // Partition into Active and NBA regions

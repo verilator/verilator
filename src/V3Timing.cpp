@@ -1031,7 +1031,7 @@ class TimingControlVisitor final : public VNVisitor {
         // Decide scheduling support for #0
         if (v3Global.opt.schedZeroDelay().isSetTrue()) {
             // User said to schedule for #0 support, nothing else to do
-            v3Global.setUsesZeroDelay();
+            v3Global.setUsesZeroDelay(nodep->fileline());
         } else if (v3Global.opt.schedZeroDelay().isSetFalse()) {
             // User said to schedule without #0 support. Still warn if a static #0 delay exists
             if (valuep->isZero()) {
@@ -1045,7 +1045,7 @@ class TimingControlVisitor final : public VNVisitor {
             // User did not express preference, decide based on presence of delays
             if (valuep->isZero()) {
                 // Statically known #0 delay exists, schedule for #0 support
-                v3Global.setUsesZeroDelay();
+                v3Global.setUsesZeroDelay(nodep->fileline());
                 m_hasStaticZeroDelay = true;
                 // Don't warn on variable delays, as no point
                 m_unknownDelayFlps.clear();
@@ -1055,7 +1055,7 @@ class TimingControlVisitor final : public VNVisitor {
             } else if (!VN_IS(valuep, Const)) {
                 // Delay is not known at compiile time. Conservatively schedule for #0 support,
                 // but warn if no static #0 delays used as performance might be improved
-                v3Global.setUsesZeroDelay();
+                v3Global.setUsesZeroDelay(nodep->fileline());
                 if (!m_hasStaticZeroDelay) m_unknownDelayFlps.push_back(nodep->fileline());
             }
         }

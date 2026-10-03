@@ -1,0 +1,8 @@
+%Warning-SUBGRAPHFALLBACK: t/t_subgraph_fallback_comb_line.v:29:5: Subgraph 't.i0' fell back to parent scheduling: unsupported child combinational logic
+   29 |     if (d[0]) $display("next_q=%0h", next_q);
+      |     ^~
+                           ... For warning description see https://verilator.org/warn/SUBGRAPHFALLBACK?v=latest
+                           ... Use "/* verilator lint_off SUBGRAPHFALLBACK */" and lint_on around source to disable this message.
+%Warning-SUBGRAPHFALLBACK: t/t_subgraph_fallback_comb_line.v:29:5: Subgraph 't.i1' fell back to parent scheduling: unsupported child combinational logic
+   29 |     if (d[0]) $display("next_q=%0h", next_q);
+      |     ^~

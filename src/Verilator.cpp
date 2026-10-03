@@ -487,7 +487,7 @@ static void process() {
             if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
 
             // Schedule the logic
-            V3Sched::schedule(v3Global.rootp());
+            V3Sched::schedule(v3Global.rootp(), subgraphBoundary);
             subgraphBoundary.scheduled(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
 

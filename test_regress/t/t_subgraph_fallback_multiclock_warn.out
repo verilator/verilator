@@ -1,0 +1,5 @@
+%Warning-SUBGRAPHFALLBACK: t/t_subgraph_fallback_multiclock.v:47:15: Subgraph 't.i0' fell back to parent scheduling: multiple clocks
+   47 |   always_ff @(posedge clk_b) b <= b + 7'd1;
+      |               ^~~~~~~
+                           ... For warning description see https://verilator.org/warn/SUBGRAPHFALLBACK?v=latest
+                           ... Use "/* verilator lint_off SUBGRAPHFALLBACK */" and lint_on around source to disable this message.

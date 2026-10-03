@@ -262,6 +262,9 @@ class InlineCFuncsVisitor final : public VNVisitor {
         for (InlineCFuncsFunctionVertex* const calleeVtxp : vlstd::reverse_view(m_fVtxps)) {
             // Should we inline this function?
             if (calleeVtxp->noInline()) continue;  // Told not to
+            if (calleeVtxp->cfuncp()->subgraphShareable() && calleeVtxp->inEdges().size() > 1) {
+                continue;  // Retain the body used by multiple instances
+            }
 
             // Check size heuristics
             const bool doIt = [&]() {

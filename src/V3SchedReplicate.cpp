@@ -38,6 +38,7 @@
 
 #include "V3Graph.h"
 #include "V3Sched.h"
+#include "V3SchedSubgraph.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -173,7 +174,8 @@ class Graph final : public V3Graph {};
 //##############################################################################
 // Algorithm implementation
 
-std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
+std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions,
+                                  const SubgraphPlan* subgraphPlanp) {
     std::unique_ptr<Graph> graphp{new Graph};
 
     // AstVarScope::user1() -> VarVertx
@@ -245,6 +247,17 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
     for (const auto& pair : logicRegions.m_obs) addLogic(OBSERVED, pair.first, pair.second);
     for (const auto& pair : logicRegions.m_react) addLogic(REACTIVE, pair.first, pair.second);
 
+    // The admitted early subgraphs are clocked NBA producers. Their reads cannot trigger
+    // combinational replication, but their writes can drive parent combinational logic into the
+    // NBA region. Mark those variables directly instead of adding a dependency-only AST node.
+    if (subgraphPlanp) {
+        subgraphPlanp->foreachUse([&](const SubgraphPlan::Use& use) {
+            if (use.m_write && !use.m_vscp->varp()->ignoreSchedWrite()) {
+                getVarVertex(use.m_vscp)->addDrivingRegions(NBA);
+            }
+        });
+    }
+
     return graphp;
 }
 
@@ -291,9 +304,10 @@ LogicReplicas replicate(Graph* graphp) {
 
 }  // namespace
 
-LogicReplicas replicateLogic(LogicRegions& logicRegionsRegions) {
+LogicReplicas replicateLogic(LogicRegions& logicRegionsRegions,
+                             const SubgraphPlan* subgraphPlanp) {
     // Build the dataflow (dependency) graph
-    const std::unique_ptr<Graph> graphp = buildGraph(logicRegionsRegions);
+    const std::unique_ptr<Graph> graphp = buildGraph(logicRegionsRegions, subgraphPlanp);
     // Dump for debug
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-replicate");
     // Propagate driving region flags

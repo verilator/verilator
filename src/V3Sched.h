@@ -30,10 +30,13 @@
 #include <vector>
 
 class SenExprBuilder;
+class V3SubgraphBoundary;
 
 //============================================================================
 
 namespace V3Sched {
+
+class SubgraphPlan;
 
 namespace util {
 using VarScopeSet = std::unordered_set<const AstVarScope*>;
@@ -490,14 +493,16 @@ TimingKit prepareTiming(AstNetlist* const netlistp) VL_MT_DISABLED;
 void transformForks(AstNetlist* const netlistp) VL_MT_DISABLED;
 
 // Top level entry point to scheduling
-void schedule(AstNetlist*) VL_MT_DISABLED;
+void schedule(AstNetlist*, const V3SubgraphBoundary&) VL_MT_DISABLED;
 
 // Sub-steps
 LogicByScope breakCycles(AstNetlist* netlistp,
                          const LogicByScope& combinationalLogic) VL_MT_DISABLED;
 LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
-                       LogicByScope& hybridLogic) VL_MT_DISABLED;
-LogicReplicas replicateLogic(LogicRegions&) VL_MT_DISABLED;
+                       LogicByScope& hybridLogic,
+                       const SubgraphPlan* subgraphPlanp = nullptr) VL_MT_DISABLED;
+LogicReplicas replicateLogic(LogicRegions&,
+                             const SubgraphPlan* subgraphPlanp = nullptr) VL_MT_DISABLED;
 
 // Utility functions used by various steps in scheduling
 namespace util {

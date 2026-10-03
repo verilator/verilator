@@ -106,10 +106,12 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
                          const string& tag,  //
                          bool parallel,  //
                          bool slow,  //
-                         const ExternalDomainsProvider& externalDomains) {
+                         const ExternalDomainsProvider& externalDomains,  //
+                         AstScope* resultScopep, const FreshReads* freshReadsp,
+                         const BoundaryUses* boundaryUsesp) {
     // Build the OrderGraph
-    const std::unique_ptr<OrderGraph> graph
-        = buildOrderGraph(netlistp, logic, trigToSen, cgRefBindings, parallel);
+    const std::unique_ptr<OrderGraph> graph = buildOrderGraph(
+        netlistp, logic, trigToSen, cgRefBindings, parallel, freshReadsp, boundaryUsesp);
     // Order it
     orderOrderGraph(*graph, tag);
     // Assign sensitivity domains to combinational logic
@@ -144,15 +146,15 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     // Create the result function
     FileLine* const flp = netlistp->fileline();
     AstCFunc* const funcp = [&]() {
-        AstScope* const scopeTopp = netlistp->topScopep()->scopep();
-        AstCFunc* const resp = new AstCFunc{flp, "_eval_body__" + tag, scopeTopp, ""};
+        AstScope* const scopep = resultScopep ? resultScopep : netlistp->topScopep()->scopep();
+        AstCFunc* const resp = new AstCFunc{flp, "_eval_body__" + tag, scopep, ""};
         resp->dontCombine(true);
         resp->isStatic(false);
         resp->isLoose(true);
         resp->slow(slow);
         resp->isConst(false);
         resp->declPrivate(true);
-        scopeTopp->addBlocksp(resp);
+        scopep->addBlocksp(resp);
         return resp;
     }();
 

@@ -249,8 +249,13 @@ class DescopeVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
-        const AstScope* const scopep = nodep->funcp()->scopep();
+        const AstScope* const scopep = nodep->subgraphReceiverScopep()
+                                           ? nodep->subgraphReceiverScopep()
+                                           : nodep->funcp()->scopep();
+        UASSERT_OBJ(!nodep->subgraphReceiverScopep() || nodep->funcp()->subgraphWrapper(), nodep,
+                    "Only a subgraph wrapper may have an alternate receiver");
         nodep->selfPointer(descopedSelfPointer(scopep));
+        nodep->subgraphReceiverScopep(nullptr);
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }

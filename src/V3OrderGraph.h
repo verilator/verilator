@@ -281,6 +281,23 @@ public:
     // LCOV_EXCL_STOP
 };
 
+// An event-backed ordering token for the evaluate/commit stages of one subgraph.
+// This is graph metadata only; it does not denote another read or write of the clock.
+class OrderVarPhaseVertex final : public OrderVarVertex {
+    VL_RTTI_IMPL(OrderVarPhaseVertex, OrderVarVertex)
+public:
+    OrderVarPhaseVertex(OrderGraph* graphp, AstVarScope* vscp) VL_MT_DISABLED
+        : OrderVarVertex{graphp, vscp} {}
+    ~OrderVarPhaseVertex() override = default;
+
+    bool domainMatters() override { return false; }
+
+    // LCOV_EXCL_START // Debug code
+    string nameSuffix() const override VL_MT_SAFE { return "PHASE"; }
+    string dotColor() const override { return "purple"; }
+    // LCOV_EXCL_STOP
+};
+
 //======================================================================
 // Edge type
 

@@ -44,7 +44,8 @@ std::unique_ptr<OrderGraph> buildOrderGraph(AstNetlist* netlistp,  //
                                             const std::vector<V3Sched::LogicByScope*>& coll,  //
                                             const TrigToSenMap& trigToSen,  //
                                             const V3Sched::CovergroupRefBindings& cgRefBindings,
-                                            bool parallel);
+                                            bool parallel, const FreshReads* freshReadsp,
+                                            const BoundaryUses* boundaryUsesp);
 
 void orderOrderGraph(OrderGraph& graph, const std::string& tag);
 

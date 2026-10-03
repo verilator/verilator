@@ -46,8 +46,11 @@
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
 #include "V3Order.h"
+#include "V3SchedSubgraph.h"
 #include "V3SenExprBuilder.h"
 #include "V3Stats.h"
+
+#include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -216,11 +219,12 @@ void createEvalRegion(
 //============================================================================
 // Collect and classify all logic in the design
 
-LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
+LogicClasses gatherLogicClasses(AstNetlist* netlistp, SubgraphPlan& subgraphPlan) {
     LogicClasses result;
 
     netlistp->foreach([&](AstScope* scopep) {
         scopep->foreach([&](AstActive* activep) {
+            if (subgraphPlan.extract(scopep, activep)) return;
             AstSenTree* const senTreep = activep->sentreep();
             if (senTreep->hasStatic()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
@@ -391,7 +395,8 @@ void addVirtIfaceTriggerAssignments(AstNetlist* netlistp, AstCFunc* initFuncp,
 
 // Order the combinational logic to create the 'stl' region
 void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilder& senExprBulider,
-                  LogicClasses& logicClasses, const CovergroupRefBindings& cgRefBindings) {
+                  LogicClasses& logicClasses, const CovergroupRefBindings& cgRefBindings,
+                  const V3Order::BoundaryUses& boundaryUses) {
     // Clone, because ordering is destructive, but we still need them for the other regions
     LogicByScope comb = logicClasses.m_comb.clone();
     LogicByScope hybrid = logicClasses.m_hybrid.clone();
@@ -419,7 +424,8 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
     // Create and the body function
     AstCFunc* const stlFuncp = V3Order::order(
         netlistp, {&comb, &hybrid}, trigToSen, cgRefBindings, "stl", false, true,
-        [=](const AstVarScope*, std::vector<AstSenTree*>& out) { out.push_back(inputChanged); });
+        [=](const AstVarScope*, std::vector<AstSenTree*>& out) { out.push_back(inputChanged); },
+        nullptr, nullptr, &boundaryUses);
     util::splitCheck(stlFuncp);
 
     // Create the region evaluation function
@@ -444,7 +450,8 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
 void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
                      SenExprBuilder& senExprBuilder, LogicByScope& logic,
                      const VirtIfaceTriggers& virtIfaceTriggers,
-                     const CovergroupRefBindings& cgRefBindings) {
+                     const CovergroupRefBindings& cgRefBindings,
+                     const SubgraphPlan& subgraphPlan) {
     // SystemC only: Any top level inputs feeding a combinational logic must be marked,
     // so we can make them sc_sensitive
     if (v3Global.opt.systemC()) {
@@ -544,7 +551,7 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
         = virtIfaceTriggers.makeVscpToSensMap(trigKit, firstVifTriggerIndex, trigKit.vscp());
 
     // Create and Order the body function
-    AstCFunc* const icoFuncp = V3Order::order(
+    AstCFunc* icoFuncp = V3Order::order(
         netlistp, {&logic}, trigToSen, cgRefBindings, "ico", false, false,
         [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
             AstVar* const varp = vscp->varp();
@@ -564,6 +571,13 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
                 out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
             }
         });
+    if (subgraphPlan.hasAccepted()) {
+        AstSenTree* const childTriggerp = new AstSenTree{
+            netlistp->fileline(), new AstSenItem{netlistp->fileline(), VEdgeType::ET_TRUE,
+                                                 trigKit.newAnySetCall(trigKit.vscp())}};
+        netlistp->topScopep()->addSenTreesp(childTriggerp);
+        icoFuncp = subgraphPlan.appendIcoLogic(netlistp, icoFuncp, childTriggerp, cgRefBindings);
+    }
     util::splitCheck(icoFuncp);
 
     // Create the region evaluation function
@@ -834,7 +848,7 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
 //============================================================================
 // Top level entry-point to scheduling
 
-void schedule(AstNetlist* netlistp) {
+void schedule(AstNetlist* netlistp, const V3SubgraphBoundary& subgraphBoundary) {
     const auto addSizeStat = [](const string& name, const LogicByScope& lbs) {
         uint64_t size = 0;
         lbs.foreachLogic([&](AstNode* nodep) { size += nodep->nodeCount(); });
@@ -866,7 +880,8 @@ void schedule(AstNetlist* netlistp) {
     TimingKit timingKit = prepareTiming(netlistp);
 
     // Step 3: Gather and classify all logic in the design
-    LogicClasses logicClasses = gatherLogicClasses(netlistp);
+    SubgraphPlan subgraphPlan{netlistp, subgraphBoundary};
+    LogicClasses logicClasses = gatherLogicClasses(netlistp, subgraphPlan);
 
     if (v3Global.opt.stats()) {
         V3Stats::statsStage("sched-gather");
@@ -902,14 +917,24 @@ void schedule(AstNetlist* netlistp) {
     SenExprBuilder senExprBuilder{scopeTopp};
 
     // Step 6: Create 'settle' region that restores the combinational invariant
-    createSettle(netlistp, staticp, senExprBuilder, logicClasses, cgRefBindings);
+    subgraphPlan.movePublications(logicClasses.m_comb, logicClasses.m_hybrid);
+    const size_t parentCombSize = logicClasses.m_comb.size();
+    V3Order::BoundaryUses settleBoundaryUses;
+    std::vector<AstActive*> temporarySettleActives;
+    subgraphPlan.appendSettleLogic(netlistp, logicClasses.m_comb, cgRefBindings,
+                                   settleBoundaryUses, temporarySettleActives);
+    createSettle(netlistp, staticp, senExprBuilder, logicClasses, cgRefBindings,
+                 settleBoundaryUses);
+    logicClasses.m_comb.resize(parentCombSize);
+    for (AstActive* const activep : temporarySettleActives) activep->deleteTree();
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-settle");
 
     // Step 7: Partition the clocked and combinational (including hybrid) logic into pre/act/nba.
     // All clocks (signals referenced in an AstSenTree) generated via a blocking assignment
     // (including combinationally generated signals) are computed within the act region.
-    LogicRegions logicRegions
-        = partition(logicClasses.m_clocked, logicClasses.m_comb, logicClasses.m_hybrid);
+    subgraphPlan.partitionAndReplicate();
+    LogicRegions logicRegions = partition(logicClasses.m_clocked, logicClasses.m_comb,
+                                          logicClasses.m_hybrid, &subgraphPlan);
     logicRegions.m_obs = logicClasses.m_observed;
     logicRegions.m_react = logicClasses.m_reactive;
     if (v3Global.opt.stats()) {
@@ -922,7 +947,7 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 8: Replicate combinational logic
-    LogicReplicas logicReplicas = replicateLogic(logicRegions);
+    LogicReplicas logicReplicas = replicateLogic(logicRegions, &subgraphPlan);
     if (v3Global.opt.stats()) {
         addSizeStat("size of replicated logic: Input", logicReplicas.m_ico);
         addSizeStat("size of replicated logic: Active", logicReplicas.m_act);
@@ -934,7 +959,7 @@ void schedule(AstNetlist* netlistp) {
 
     // Step 9: Create the input combinational logic
     createIcoRegion(netlistp, staticp, senExprBuilder, logicReplicas.m_ico, virtIfaceTriggers,
-                    cgRefBindings);
+                    cgRefBindings, subgraphPlan);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
     // Step 10: Create the triggers
@@ -953,11 +978,16 @@ void schedule(AstNetlist* netlistp) {
     }
 
     const auto& preTreeps = getSenTreesUsedBy({&logicRegions.m_pre});
-    const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_act,  //
-                                               &logicRegions.m_nba,  //
-                                               &logicRegions.m_obs,  //
-                                               &logicRegions.m_react,  //
-                                               &timingKit.m_lbs});
+    std::vector<const AstSenTree*> senTreeps = getSenTreesUsedBy({&logicRegions.m_act,  //
+                                                                  &logicRegions.m_nba,  //
+                                                                  &logicRegions.m_obs,  //
+                                                                  &logicRegions.m_react,  //
+                                                                  &timingKit.m_lbs});
+    std::unordered_set<const AstSenTree*> seenSenTrees{senTreeps.begin(), senTreeps.end()};
+    subgraphPlan.foreachBoundary(
+        [&](AstScope*, AstSenTree* senTreep, const std::vector<SubgraphPlan::Use>&) {
+            if (seenSenTrees.emplace(senTreep).second) senTreeps.push_back(senTreep);
+        });
     const TriggerKit trigKit
         = TriggerKit::create(netlistp, staticp, senExprBuilder, preTreeps, senTreeps, "act",
                              extraTriggers, false, v3Global.usesTiming());
@@ -1040,25 +1070,37 @@ void schedule(AstNetlist* netlistp) {
             = virtIfaceTriggers.makeVscpToSensMap(trigKit, firstVifTriggerIndex, trigVscp);
 
         const auto& timingDomains = timingKit.remapDomains(trigMap);
-        AstCFunc* const funcp = V3Order::order(
-            netlistp, logic, trigToSen, cgRefBindings, name,
-            name == "nba" && v3Global.opt.mtasks(), false,
-            [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
-                auto it = timingDomains.find(vscp);
-                if (it != timingDomains.end()) out = it->second;
-                if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
-                if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
-                    const auto& ifaceTriggered
-                        = findTriggeredIface(vscp, vifVscpToSens, virtIfaceTriggers);
-                    out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
-                }
-            });
+        const V3Order::ExternalDomainsProvider externalDomains
+            = [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+                  auto it = timingDomains.find(vscp);
+                  if (it != timingDomains.end()) out = it->second;
+                  if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+                  if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
+                      const auto& ifaceTriggered
+                          = findTriggeredIface(vscp, vifVscpToSens, virtIfaceTriggers);
+                      out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
+                  }
+              };
+
+        V3Order::FreshReads freshReads;
+        V3Order::BoundaryUses boundaryUses;
+        if (name == "nba") {
+            subgraphPlan.materializeNba(trigMap, logic);
+            freshReads = lowerSubgraphNbaLogic(netlistp, logic, trigToSen, cgRefBindings, false,
+                                               externalDomains, subgraphPlan, boundaryUses);
+        }
+
+        AstCFunc* const funcp
+            = V3Order::order(netlistp, logic, trigToSen, cgRefBindings, name,
+                             name == "nba" && v3Global.opt.mtasks(), false, externalDomains,
+                             nullptr, &freshReads, &boundaryUses);
 
         return {trigVscp, funcp};
     };
 
     // Step 12: Create the 'nba' region evaluation function
     const EvalKit nbaKit = order("nba", {&logicRegions.m_nba, &logicReplicas.m_nba});
+    subgraphPlan.clearOutputExpressions();
     util::splitCheck(nbaKit.m_funcp);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-nba");
 

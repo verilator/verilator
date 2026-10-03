@@ -423,6 +423,13 @@ class LifeVisitor final : public VNVisitor {
     void visit(AstNodeCCall* nodep) override {
         // UINFO(4, "  CCALL " << nodep);
         iterateChildren(nodep);
+        // A shared subgraph function binds its VarScopes to a different receiver
+        // for each call. This pass keys lifetime by the representative VarScope,
+        // so tracing it across calls could delete a write needed by a receiver.
+        if (nodep->funcp()->subgraphShareable()) {
+            setNoopt("shared subgraph call");
+            return;
+        }
         // Enter the function and trace it
         // else is non-inline or public function we optimize separately
         if (nodep->funcp()->entryPoint()) {
