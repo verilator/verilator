@@ -85,6 +85,24 @@ string displayType(const VlcPoint& point) {
     return type.empty() ? "point" : type;
 }
 
+// A name as the report shows it.  The coverage file escapes '"' as '%22' and '%' as '%25', which
+// show as the characters, and characters that do not print, which stay escaped.
+string displayName(const string& name) {
+    string result;
+    for (string::size_type i = 0; i < name.size(); ++i) {
+        if (name.compare(i, 3, "%22") == 0) {
+            result += '"';
+            i += 2;
+        } else if (name.compare(i, 3, "%25") == 0) {
+            result += '%';
+            i += 2;
+        } else {
+            result += name[i];
+        }
+    }
+    return result;
+}
+
 bool isCollapsedHier(const string& hier) {
     return hier.find('*') != string::npos || hier.find('?') != string::npos;
 }
@@ -434,12 +452,12 @@ void printCovergroupTallies(const std::map<string, Tally>& tallies, int levels) 
     for (const std::pair<const string, Tally>& it : tallies) {
         if (levels >= 0 && static_cast<int>(splitHier(it.first).size()) > levels + 1) continue;
         shown.insert(it);
-        nameWidth = std::max(nameWidth, it.first.size());
+        nameWidth = std::max(nameWidth, displayName(it.first).size());
     }
     const size_t cntWidth = countWidth(shown);
     std::cout << "Covergroup Coverage Summary:\n";
     for (const std::pair<const string, Tally>& it : shown) {
-        printTallyRow(it.first, it.second, s_summaryIndent, nameWidth, cntWidth);
+        printTallyRow(displayName(it.first), it.second, s_summaryIndent, nameWidth, cntWidth);
     }
 }
 
@@ -854,7 +872,7 @@ void VlcTop::printHierarchyReport() {
         const std::vector<string> parts = splitHier(it->first);
         if (levels >= 0 && static_cast<int>(parts.size()) > levels + 1) continue;
         printIndent(s_summaryIndent);
-        std::cout << it->first << "\n";
+        std::cout << displayName(it->first) << "\n";
         // Hierarchy nodes can be numerous, so only print coverage types present
         // under this node instead of repeating absent zero-count rows.
         printTypeTally(it->second, s_reportRowIndent, false);
@@ -863,7 +881,7 @@ void VlcTop::printHierarchyReport() {
     for (std::map<string, TypeTally>::const_iterator it = duTallies.begin(); it != duTallies.end();
          ++it) {
         printIndent(s_summaryIndent);
-        std::cout << it->first << "\n";
+        std::cout << displayName(it->first) << "\n";
         // Design-unit summaries follow the hierarchy report style: present
         // types only, but in the same stable order as the flat summary.
         printTypeTally(it->second, s_reportRowIndent, false);

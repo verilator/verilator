@@ -14,7 +14,7 @@
 
 // A covergroup of a specialization is named with the values of its parameters, whose dots split
 // the name into no nodes of the report, nor do the escaped quote and parenthesis of a string
-// value: 50
+// value, which shows as written, though the coverage file escapes its quotes and '%': 50
 module spec #(
     parameter real R = 0.0,
     parameter string S = ""
@@ -188,7 +188,7 @@ module t;
   varying varying_two = new(2);
   First first = new;
   Second second = new;
-  spec #(0.5, "a.\"(b") sp ();
+  spec #(0.5, "a.\"(b%22") sp ();
 
   initial begin
     excluded_inst.sample(0);
