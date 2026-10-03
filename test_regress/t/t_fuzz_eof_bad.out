@@ -3,7 +3,7 @@
 %Error: t/t_fuzz_eof_bad.v:4:15: EOF in (*
     4 |   initial $lay(*Hello!=nendmodule
       |               ^
-%Error: t/t_fuzz_eof_bad.v:4:15: syntax error, unexpected $end
+%Error: t/t_fuzz_eof_bad.v:4:15: syntax error, unexpected end of file
     4 |   initial $lay(*Hello!=nendmodule
       |               ^
 %Error: Cannot continue
