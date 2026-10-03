@@ -48,13 +48,12 @@ class Driver;
   virtual bus_if vif;
   virtual bus_if.tb tvif;
   virtual bus_if vifs[2];
-  int idx;
   task run();
     @(vif.cb);
     vif.cb.w <= ##2 1;
     tvif.cb.w <= ##2 1;
     tvif.cb.ws <= ##2 1;
-    vifs[idx].cb.w <= ##2 1;
+    vifs[0].cb.w <= ##2 1;
   endtask
 endclass
 
