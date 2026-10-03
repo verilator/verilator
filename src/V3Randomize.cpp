@@ -1378,12 +1378,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (targetWidth > exprWidth) {
             // Extend to match target width
             AstNodeExpr* const result = new AstExtend{fl, exprp, targetWidth};
-            result->dtypeSetLogicSized(targetWidth, targetSigning);
+            result->dtypeChgSigned(targetSigning);
             return result;
         } else if (targetWidth < exprWidth) {
             // Truncate to match target width
             AstNodeExpr* const result = new AstSel{fl, exprp, 0, targetWidth};
-            result->dtypeSetLogicSized(targetWidth, targetSigning);
+            result->dtypeChgSigned(targetSigning);
             return result;
         } else {
             // Width already matches
@@ -1971,8 +1971,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     // Build popcount expansion: (x & 1) + ((x & 2) >> 1) + ...
     // argp is consumed; caller must clone if reusing.
-    AstNodeExpr* buildCountOnesExpansion(FileLine* fl, AstNodeExpr* argp,
-                                         AstNodeExpr* dtypeNodep) {
+    AstNodeExpr* buildCountOnesExpansion(FileLine* fl, AstNodeExpr* argp) {
         const V3Number numOne{fl, argp->width(), 1};
         AstNodeExpr* sump = new AstAnd{fl, argp, new AstConst{fl, numOne}};
         sump->user1(true);
@@ -1987,7 +1986,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                                 new AstConst{fl, AstConst::WidthedValue{}, argp->width(),
                                              static_cast<uint32_t>(i)}};
             shiftp->user1(true);
-            shiftp->dtypeFrom(dtypeNodep);
             sump = new AstAdd{fl, sump, shiftp};
             sump->user1(true);
         }
@@ -1997,7 +1995,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstCountOnes* nodep) override {
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
-        AstNodeExpr* sump = buildCountOnesExpansion(fl, argp, nodep);
+        AstNodeExpr* sump = buildCountOnesExpansion(fl, argp);
         sump = adjustWidth(fl, sump, nodep->width(), nodep->dtypep()->numeric());
         sump->user1(true);
         nodep->replaceWith(sump);
@@ -2065,11 +2063,9 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         const V3Number numOne{fl, w, 1};
         AstSub* const subp = new AstSub{fl, argp->cloneTreePure(false), new AstConst{fl, numOne}};
-        subp->dtypeFrom(argp);
         subp->user1(true);
 
         AstAnd* const andp = new AstAnd{fl, argp, subp};
-        andp->dtypeFrom(argp);
         andp->user1(true);
 
         const V3Number numZero2{fl, w, 0};
@@ -2138,13 +2134,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             sump = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), (uint32_t)argWidth};
             VL_DO_DANGLING(argp->deleteTree(), argp);
         } else if (countOnes) {
-            sump = buildCountOnesExpansion(fl, argp, nodep);
+            sump = buildCountOnesExpansion(fl, argp);
         } else if (countZeros) {
             // width - countones(x)
-            AstNodeExpr* const onesCountp = buildCountOnesExpansion(fl, argp, nodep);
+            AstNodeExpr* const onesCountp = buildCountOnesExpansion(fl, argp);
             const V3Number widthVal{nodep, onesCountp->width(), (uint32_t)argWidth};
             sump = new AstSub{fl, new AstConst{fl, widthVal}, onesCountp};
-            sump->dtypeFrom(onesCountp);
             sump->user1(true);
         } else {
             sump = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 0U};
@@ -2184,7 +2179,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = new AstConst{fl, AstConst::WidthedValue{}, resultWidth, (uint32_t)k};
 
             resultp = new AstCond{fl, ltep, valuep, resultp};
-            resultp->dtypeChgWidthSigned(resultWidth, resultWidth, VSigning::SIGNED);
+            resultp->dtypeChgSigned(VSigning::SIGNED);
             resultp->user1(true);
         }
 
@@ -2521,7 +2516,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
             if (indexp->width() < 32) {
                 AstExtend* const extendp = new AstExtend{fl, indexp, 32};
-                extendp->dtypeSetLogicSized(32, VSigning::UNSIGNED);
                 extendp->user1(true);
                 indexp = extendp;
             }
@@ -5174,9 +5168,7 @@ class RandomizeVisitor final : public VNVisitor {
             = new AstNeq{fl, callp->fromp()->cloneTree(false), new AstConst{fl, AstConst::Null{}}};
         VNRelinker relinker;
         callp->unlinkFrBack(&relinker);
-        AstCond* const condp = new AstCond{fl, checkp, callp, new AstConst{fl, 0}};
-        condp->dtypeFrom(callp);
-        relinker.relink(condp);
+        relinker.relink(new AstCond{fl, checkp, callp, new AstConst{fl, 0}});
     }
 
     // Handle inline random variable control. After this, the randomize() call has no args

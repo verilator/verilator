@@ -550,12 +550,7 @@ bool AstBasicDType::sameNode(const AstNode* samep) const {
 bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
     if (sameNode(samep)) return true;
     const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
-    if (!(m.m_keyword == sp->m.m_keyword
-          || (m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT
-              && sp->m.m_keyword == VBasicDTypeKwd::LOGIC)
-          || (m.m_keyword == VBasicDTypeKwd::LOGIC
-              && sp->m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT)))
-        return false;
+    if (!m.m_keyword.isSameish(sp->m.m_keyword)) return false;
     // IEEE 1800-2023 6.22.2: equivalent by bit width, not range direction
     if (m.m_nrange.ranged() != sp->m.m_nrange.ranged()) return false;
     if (m.m_nrange.elements() != sp->m.m_nrange.elements()) return false;
