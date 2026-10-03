@@ -335,13 +335,10 @@ class LinkParseVisitor final : public VNVisitor {
                 // We check this rule in the parser, so shouldn't fire
                 nodep->v3error("Enum ranges must be integral, per spec");
             }  // LCOV_EXCL_STOP
-            const int left = nodep->rangep()->leftConst();
-            const int right = nodep->rangep()->rightConst();
-            const int increment = (left > right) ? -1 : 1;
             uint32_t offset_from_init = 0;
             AstEnumItem* addp = nullptr;
             FileLine* const flp = nodep->fileline();
-            for (int i = left; i != (right + increment); i += increment, ++offset_from_init) {
+            for (const int i : nodep->rangep()->seqLeftToRight()) {
                 const string name = nodep->name() + cvtToStr(i);
                 AstNodeExpr* valuep = nullptr;
                 if (nodep->valuep()) {
@@ -351,6 +348,7 @@ class LinkParseVisitor final : public VNVisitor {
                                      new AstConst{flp, AstConst::Unsized32{}, offset_from_init}};
                 }
                 addp = AstNode::addNext(addp, new AstEnumItem{flp, name, nullptr, valuep});
+                ++offset_from_init;
             }
             nodep->replaceWith(addp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
