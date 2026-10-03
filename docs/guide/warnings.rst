@@ -1474,11 +1474,10 @@ List Of Warnings
       end
 
    A further case is when a signal named as a clocking block ``output`` is
-   also driven by a continuous assignment, or is named as an ``output`` of a
-   second clocking block. The clocking block drives the signal, so the design
-   and the testbench contend for it and the synchronous drive may be silently
-   lost. Declare the clocking block ``input`` if the intent is only to
-   observe the signal.
+   also driven by a continuous assignment. The clocking block drives the
+   signal, so the design and the testbench contend for it and the
+   synchronous drive may be silently lost. Declare the clocking block
+   ``input`` if the intent is only to observe the signal.
 
    Ignoring this warning may hide clock domain crossing, timing, or
    portability bugs. It may also cause longer simulation runtimes due to
