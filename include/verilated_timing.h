@@ -161,10 +161,17 @@ class VlDelayScheduler final {
     // TYPES
     // Time-sorted queue of timestamps and handles
     using VlDelayedCoroutineQueue = std::multimap<uint64_t, VlCoroutineHandle>;
+#ifdef __cpp_lib_node_extract
+    static constexpr size_t MAX_SPARE_NODES = 64;
+#endif
 
     // MEMBERS
     VerilatedContext& m_context;
     VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
+#ifdef __cpp_lib_node_extract
+    // Bounded cache of extracted nodes, reused for subsequent delays to avoid allocations
+    std::vector<VlDelayedCoroutineQueue::node_type> m_spareNodes;
+#endif
     std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
     // Coroutines that waited for #0 and are being resumed now. As member to avoid reallocations
     std::vector<VlCoroutineHandle> m_zeroDelayesSwap;
@@ -206,6 +213,9 @@ public:
         struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
+#ifdef __cpp_lib_node_extract
+            std::vector<VlDelayedCoroutineQueue::node_type>& spareNodes;
+#endif
             std::vector<VlCoroutineHandle>& queueZeroDelay;
             const uint64_t delay;
             const VlDelayPhase phase;
@@ -215,7 +225,21 @@ public:
             void await_suspend(std::coroutine_handle<VlPromise> coro) {
                 // Both active delays and fork..join_none #0 are resumed out of the time queue.
                 if (phase != VlDelayPhase::INACTIVE) {
+#ifdef __cpp_lib_node_extract
+                    if (spareNodes.empty()) {
+                        queue.emplace(delay, VlCoroutineHandle{coro, process, fileline});
+                    } else {
+                        VlDelayedCoroutineQueue::node_type node = std::move(spareNodes.back());
+                        spareNodes.pop_back();
+                        node.key() = delay;
+                        // The previous handle was moved out before this node was cached.
+                        node.mapped() = VlCoroutineHandle{coro, process, fileline};
+                        queue.insert(std::move(node));
+                    }
+#else
+                    // GCC also supports coroutines in C++14, before node handles were available.
                     queue.emplace(delay, VlCoroutineHandle{coro, process, fileline});
+#endif
                 } else {
                     queueZeroDelay.emplace_back(VlCoroutineHandle{coro, process, fileline});
                 }
@@ -232,6 +256,9 @@ public:
             phase = VlDelayPhase::INACTIVE;
         }
         return Awaitable{process,       m_queue,
+#ifdef __cpp_lib_node_extract
+                         m_spareNodes,
+#endif
                          m_zeroDelayed, m_context.time() + delay,
                          phase,         VlFileLineDebug{filename, lineno}};
     }
