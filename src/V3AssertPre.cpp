@@ -40,6 +40,12 @@ class AssertPreVisitor final : public VNVisitor {
     // Eventually inlines calls to sequences, properties, etc.
     // We're not parsing the tree, or anything more complicated.
 private:
+    // TYPES
+    struct SynchDrive final {
+        AstClockingItem* itemp;  // Clocking item of the driven clockvar
+        AstNodeExpr* refp;  // Reference to the driven clockvar
+    };
+
     // NODE STATE
     // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
     // AstClockingItem::user2p()         // AstVar*.      Flag set by drives of output clockvar
@@ -73,12 +79,11 @@ private:
     V3UniqueNames m_blockNames{"__VassertBlock"};  // Names of blocks with temporaries
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     V3UniqueNames m_activeNames{"__VassertsActive"};  // Active asserts map name generator
-    V3UniqueNames m_drivenNames{"__Vclocking_driven"};  // Clockvar drive flag name generator
+    V3UniqueNames m_drivenNames{"__VclockingDriven"};  // Clockvar drive flag name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
-    AstClockingItem* m_driveItemp = nullptr;  // Clocking item of the synchronous drive
-    AstNodeExpr* m_driveRefp = nullptr;  // Reference to the clockvar of the synchronous drive
+    std::vector<SynchDrive> m_drives;  // Clockvars written by the synchronous drive
     bool m_hasCycleDelay = false;  // True if node has cycle delay beneath
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     std::vector<AstSequence*> m_seqsToCleanup;  // Sequences to clean up after traversal
@@ -95,15 +100,17 @@ private:
         }
         return VN_AS(itemp->user2p(), Var);
     }
-    // Assignment setting the drive flag, referenced like the clockvar of the current drive
-    AstAssign* newDrivenSetp(FileLine* flp) {
-        AstVar* const varp = getCreateDrivenVarp(m_driveItemp);
+    // Assignment setting the drive flag of a driven clockvar, referenced like the clockvar
+    AstAssign* newDrivenSetp(FileLine* flp, const SynchDrive& drive) {
+        AstVar* const varp = getCreateDrivenVarp(drive.itemp);
         AstNodeExpr* refp;
-        if (const AstVarXRef* const xrefp = VN_CAST(m_driveRefp, VarXRef)) {
+        if (const AstVarXRef* const xrefp = VN_CAST(drive.refp, VarXRef)) {
             refp = new AstVarXRef{flp, varp, xrefp->dotted(), VAccess::WRITE};
-        } else if (const AstMemberSel* const selp = VN_CAST(m_driveRefp, MemberSel)) {
+        } else if (const AstMemberSel* const selp = VN_CAST(drive.refp, MemberSel)) {
+            // The interface expression is evaluated again for the flag, so it must not have side
+            // effects; cloneTreePure warns if it has any
             AstMemberSel* const newSelp
-                = new AstMemberSel{flp, selp->fromp()->cloneTree(false), varp};
+                = new AstMemberSel{flp, selp->fromp()->cloneTreePure(false), varp};
             newSelp->access(VAccess::WRITE);
             refp = newSelp;
         } else {
@@ -314,7 +321,7 @@ private:
                         nodep->fileline(), varp->name(), citemp->direction()};
                     modVarp->varp(varp);
                     nodep->addNextHere(modVarp);
-                    if (citemp->direction() == VDirection::OUTPUT) {
+                    if (citemp->direction().isOutput()) {
                         // Drives through the modport set the drive flag
                         AstVar* const drivenVarp = getCreateDrivenVarp(citemp);
                         AstModportVarRef* const drivenRefp = new AstModportVarRef{
@@ -335,9 +342,7 @@ private:
             return;
         }
         // Flag set by drives of an output clockvar, possibly visited before this item
-        if (nodep->direction() == VDirection::OUTPUT) {
-            m_modp->addStmtsp(getCreateDrivenVarp(nodep));
-        }
+        if (nodep->direction().isOutput()) m_modp->addStmtsp(getCreateDrivenVarp(nodep));
         FileLine* const flp = nodep->fileline();
         V3Const::constifyEdit(nodep->skewp());
         if (!VN_IS(nodep->skewp(), Const)) {
@@ -662,8 +667,7 @@ private:
                     }
                     if (m_inAssign) {
                         m_inSynchDrive = true;
-                        m_driveItemp = itemp;
-                        m_driveRefp = nodep;
+                        m_drives.push_back({itemp, nodep});
                     }
                 } else if (itemp->direction() == VDirection::INPUT) {
                     nodep->v3error("Cannot write to input clockvar (IEEE 1800-2023 14.3)");
@@ -687,8 +691,7 @@ private:
                     }
                     if (m_inAssign) {
                         m_inSynchDrive = true;
-                        m_driveItemp = itemp;
-                        m_driveRefp = nodep;
+                        m_drives.push_back({itemp, nodep});
                     }
                 } else if (itemp->direction() == VDirection::INPUT) {
                     nodep->v3error("Cannot write to input clockvar (IEEE 1800-2023 14.3)");
@@ -700,12 +703,9 @@ private:
         if (nodep->user1()) return;
         VL_RESTORER(m_inAssign);
         VL_RESTORER(m_inSynchDrive);
-        VL_RESTORER(m_driveItemp);
-        VL_RESTORER(m_driveRefp);
+        VL_RESTORER_CLEAR(m_drives);
         m_inAssign = true;
         m_inSynchDrive = false;
-        m_driveItemp = nullptr;
-        m_driveRefp = nullptr;
         {
             VL_RESTORER(m_inAssignDlyLhs);
             m_inAssignDlyLhs = VN_IS(nodep, AssignDly);
@@ -722,14 +722,18 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             nodep = assignp;
         }
-        if (m_driveItemp) {
-            // Note the drive when it takes effect, after its cycle delay if any
-            AstAssign* const setp = newDrivenSetp(nodep->fileline());
-            if (AstBegin* const beginp = VN_CAST(nodep->timingControlp(), Begin)) {
-                beginp->addStmtsp(setp);
-            } else {
-                nodep->addNextHere(setp);
-            }
+        // Note the drives when they take effect, after the cycle delay if any. Each clockvar
+        // of the LHS is driven, e.g. in a concatenation which other simulators accept, although
+        // IEEE 1800-2023 14.16 does not allow it
+        AstNode* setsp = nullptr;
+        for (const SynchDrive& drive : m_drives) {
+            setsp = AstNode::addNext(setsp, newDrivenSetp(nodep->fileline(), drive));
+        }
+        if (!setsp) return;
+        if (AstBegin* const beginp = VN_CAST(nodep->timingControlp(), Begin)) {
+            beginp->addStmtsp(setsp);
+        } else {
+            nodep->addNextHere(setsp);
         }
     }
     void visit(AstAlways* nodep) override {
