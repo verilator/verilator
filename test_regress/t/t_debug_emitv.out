@@ -1496,14 +1496,10 @@ endmodule
 package Vt_debug_emitv_p;
     logic pkgvar;
 endpackage
-module Vt_debug_emitv_sg_debug_emitv;
+module Vt_debug_emitv_sg_debug_emitv_wrapper;
     input logic clk;
     input logic d;
     output logic q;
-    q = 1'h0;
-    always @(posedge clk) begin
-        q <= d;
-    end
 endmodule
 package Vt_debug_emitv_Pkg;
     logic signed [31:0]  PKG_PARAM;
@@ -1513,3 +1509,12 @@ package Vt_debug_emitv_Pkg;
         BAZ = 32'h2
     } enum_t;
 endpackage
+module Vt_debug_emitv_sg_debug_emitv;
+    input logic clk;
+    input logic d;
+    output logic q;
+    q = 1'h0;
+    always @(posedge clk) begin
+        q <= d;
+    end
+endmodule

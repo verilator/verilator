@@ -72,12 +72,16 @@ Local scheduling starts with a single rising-edge clock and compatible child
 logic. Multiple clocks, generated-clock dependencies, zero-delay scheduling,
 unsupported timing controls, and combinational cycles can require fallback.
 Eligibility is checked on the transformed AST, so the exact accepted shapes
-are defined by the implementation and accompanying tests.
+are defined by the implementation and accompanying tests. Output analysis
+rejects identified input feedthrough paths, but admits unknown local sources;
+it is not a complete proof of output provenance.
 
 Early sharing has stricter requirements than local scheduling. It requires
 compatible instances of the same elaborated specialization, supported local
 procedures and input connections, and single-threaded compilation. Failure
-to share does not itself imply failure to schedule locally.
+to share does not itself imply failure to schedule locally. Inline expands
+intermediate modules before early sharing is checked. The early check
+requires the elaborated cell count to equal the total instance count.
 
 The series retains the source branch's extensions for combinational writes,
 input aliases, and output provenance. Admission follows combinational

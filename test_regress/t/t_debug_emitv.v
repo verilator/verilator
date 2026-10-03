@@ -60,7 +60,7 @@ module t (/*AUTOARG*/
   input in;
 
   wire subgraph_q;
-  sg_debug_emitv i_subgraph (.clk(clk), .d(in), .q(subgraph_q));
+  sg_debug_emitv_wrapper i_subgraph (.clk(clk), .d(in), .q(subgraph_q));
   initial $display("subgraph_q=%b", subgraph_q);
 
   // verilator lint_off UNPACKED
@@ -506,4 +506,12 @@ module sg_debug_emitv (
 );
   /*verilator subgraph_boundary*/
   always_ff @(posedge clk) q <= d;
+endmodule
+
+module sg_debug_emitv_wrapper (
+  input logic clk,
+  input logic d,
+  output logic q
+);
+  sg_debug_emitv i_child (.clk(clk), .d(d), .q(q));
 endmodule

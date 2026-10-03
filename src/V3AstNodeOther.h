@@ -749,6 +749,7 @@ public:
     void cloneRelink() override {}  // TODO V3Param shouldn't require avoiding cloneRelinkGen
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode*) const override { return true; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     // ACCESSORS
     string name() const override VL_MT_STABLE { return m_name; }  // * = Cell name

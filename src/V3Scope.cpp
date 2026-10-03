@@ -26,6 +26,7 @@
 #include "V3Scope.h"
 
 #include "V3Stats.h"
+#include "V3SubgraphSharing.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -63,6 +64,12 @@ class ScopeVisitor final : public VNVisitor {
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
     // Varrefs-in-scopes needing fixup when done
     std::vector<std::pair<AstVarRef*, AstScope*>> m_varRefScopes;
+    std::unordered_map<AstNodeModule*, AstScope*>
+        m_subgraphImplementationScopes;  // Representative scope retained for each specialization
+    std::unordered_map<AstNodeModule*, uint64_t>
+        m_totalInstantiations;  // Original instance count before Scope consumes cells
+    uint64_t m_sharedProcedures = 0;  // Procedures whose repeated expansion was avoided
+    uint64_t m_receiverVarScopes = 0;  // Independent state slots created for shared receivers
 
     // METHODS
 
@@ -151,6 +158,20 @@ class ScopeVisitor final : public VNVisitor {
             (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp) : static_cast<AstNode*>(nodep))
                 ->fileline(),
             nodep, scopename, m_aboveScopep, m_aboveCellp};
+        const uint64_t totalInstantiations
+            = m_totalInstantiations.emplace(nodep, nodep->user3()).first->second;
+        if (totalInstantiations >= 2) {
+            if (nodep->user3() == totalInstantiations && nodep->subgraphSharedInput()
+                && V3SubgraphSharing::shareableModuleShape(nodep)) {
+                m_subgraphImplementationScopes.emplace(nodep, m_scopep);
+            } else {
+                const auto it = m_subgraphImplementationScopes.find(nodep);
+                if (it != m_subgraphImplementationScopes.end()
+                    && it->second->aboveScopep() == m_aboveScopep) {
+                    m_scopep->subgraphImplementationScopep(it->second);
+                }
+            }
+        }
         if (VN_IS(nodep, Package)) m_classOrPackageScopes.emplace(nodep, m_scopep);
 
         // Get list of cells before we edit, to avoid excess visits (issue #6059)
@@ -240,6 +261,25 @@ class ScopeVisitor final : public VNVisitor {
         nodep->v3fatalSrc("Actives now made after scoping");
     }
     void visit(AstNodeProcedure* nodep) override {
+        const AstAlways* const alwaysp = VN_CAST(nodep, Always);
+        const AstNodeAssign* const assp
+            = alwaysp ? VN_CAST(alwaysp->stmtsp(), NodeAssign) : nullptr;
+        const AstVarRef* const lhsp = assp ? VN_CAST(assp->lhsp(), VarRef) : nullptr;
+        const bool localContinuous
+            = alwaysp && VN_IS(assp, AssignW) && !assp->nextp() && lhsp && !lhsp->varp()->isIO();
+        if (m_scopep->subgraphImplementationScopep()
+            && (VN_IS(nodep, InitialStatic)
+                || (VN_IS(nodep, Always)
+                    && (alwaysp->keyword() == VAlwaysKwd::ALWAYS_FF
+                        || alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB || localContinuous)))) {
+            nodep->foreach([&](AstVarRef* refp) {
+                refp->varp()->subgraphSharedState(true);
+                refp->varp()->noSubst(true);
+            });
+            ++m_sharedProcedures;
+            if (m_last) pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
         // Add to list of blocks under this scope
         // Check don't miss varref scope assignments
         UASSERT_OBJ(!m_procedurep, nodep, "prodedure in procedure");
@@ -303,6 +343,7 @@ class ScopeVisitor final : public VNVisitor {
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
             m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
             m_scopep->addVarsp(varscp);
+            if (m_scopep->subgraphImplementationScopep()) ++m_receiverVarScopes;
         }
         iterateChildren(nodep);
     }
@@ -336,7 +377,12 @@ class ScopeVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit ScopeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    ~ScopeVisitor() override = default;
+    ~ScopeVisitor() override {
+        V3Stats::addStat("Scope, Subgraph shared procedures", m_sharedProcedures);
+        V3Stats::addStat("Scope, Subgraph receiver VarScopes", m_receiverVarScopes);
+        V3Stats::addStat("Scope, Subgraph receiver VarScope bytes",
+                         m_receiverVarScopes * sizeof(AstVarScope));
+    }
 };
 
 //######################################################################

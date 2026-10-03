@@ -28,6 +28,7 @@
 #include "V3Const.h"
 #include "V3Control.h"
 #include "V3Stats.h"
+#include "V3SubgraphSharing.h"
 #include "V3Width.h"
 
 #include <map>
@@ -50,6 +51,8 @@ class InstVisitor final : public VNVisitor {
     const VNUser1InUse m_inuser1;
 
     // STATE
+    V3SubgraphSharing m_subgraphSharing;  // Analyze and capture inputs before Scope expansion
+    AstNodeExpr* m_clockExprp = nullptr;  // Owned clock expression for the current cell
     AstCell* m_cellp = nullptr;  // Current cell
     std::map<AstVar*, AstVar*> m_publishedByPort;  // Publication storage for each selected output
     std::map<AstNodeModule*, unsigned>
@@ -142,10 +145,13 @@ class InstVisitor final : public VNVisitor {
     void visit(AstCell* nodep) override {
         UINFO(4, "  CELL   " << nodep);
         VL_RESTORER(m_cellp);
+        VL_RESTORER(m_clockExprp);
         m_cellp = nodep;
+        m_clockExprp = m_subgraphSharing.clockExpression(nodep);
         // VV*****  We reset user1p() on each cell!!!
         AstNode::user1ClearTree();
         iterateChildren(nodep);
+        if (m_clockExprp) m_clockExprp->deleteTree();
     }
 
     void visit(AstPin* nodep) override {
@@ -178,6 +184,7 @@ class InstVisitor final : public VNVisitor {
                     m_cellp->addNextHere(new AstAlways{assp});
                 }
             } else if (nodep->modVarp()->isNonOutput()) {
+                m_subgraphSharing.captureInput(m_cellp, nodep->modVarp(), exprp, m_clockExprp);
                 if (!tryAliasPin(nodep, exprp)) {
                     // Don't bother moving constants now,
                     // we'll be pushing the const down to the cell soon enough.
@@ -223,7 +230,8 @@ class InstVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit InstVisitor(AstNetlist* nodep) {
+    explicit InstVisitor(AstNetlist* nodep)
+        : m_subgraphSharing{nodep} {
         // Modules are level sorted, with the top module first. Visit them in reverse
         // order, that is children before parents, so that the warning disables and the
         // attributes of a port variable propagate all the way up through a chain of
