@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_stream_string_unsup.v:14:17: Unsupported: String assigned to a streaming concatenation
+                                                   : ... note: In instance 't'
+   14 |     {>>{b40}} = s;
+      |                 ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_stream_string_unsup.v:15:16: Unsupported: String assigned to a streaming concatenation
+                                                   : ... note: In instance 't'
+   15 |     {>>{bq}} = s;
+      |                ^
+%Error-UNSUPPORTED: t/t_stream_string_unsup.v:16:17: Unsupported: String assigned to a streaming concatenation
+                                                   : ... note: In instance 't'
+   16 |     {<<8{bd}} = s;
+      |                 ^
+%Error: Exiting due to

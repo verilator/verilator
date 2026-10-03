@@ -61,24 +61,48 @@
                                                 : ... Right-hand data type: 'bit$[$]' (2-state)
    34 |   assign queueA = queueB;
       |                 ^
-%Error: t/t_assignment_compatibility_bad.v:44:12: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
+%Error: t/t_assignment_compatibility_bad.v:47:12: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
                                                 : ... note: In instance 't'
-   44 |     return text_value;
+   47 |     return text_value;
       |            ^~~~~~~~~~
-%Error: t/t_assignment_compatibility_bad.v:51:18: Implicit conversion from 'string' to 'bit[8191:0]' requires a cast (IEEE 1800-2023 6.16).
+%Error: t/t_assignment_compatibility_bad.v:54:18: Implicit conversion from 'string' to 'bit[8191:0]' requires a cast (IEEE 1800-2023 6.16).
                                                 : ... note: In instance 't'
-   51 |     wide_value = text_value;
+   54 |     wide_value = text_value;
       |                  ^~~~~~~~~~
-%Error: t/t_assignment_compatibility_bad.v:52:20: Implicit conversion from 'string' to 'bit[6:0]' requires a cast (IEEE 1800-2023 6.16).
+%Error: t/t_assignment_compatibility_bad.v:55:20: Implicit conversion from 'string' to 'bit[6:0]' requires a cast (IEEE 1800-2023 6.16).
                                                 : ... note: In instance 't'
-   52 |     narrow_value = text_value;
+   55 |     narrow_value = text_value;
       |                    ^~~~~~~~~~
-%Error: t/t_assignment_compatibility_bad.v:53:21: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
+%Error: t/t_assignment_compatibility_bad.v:56:21: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
                                                 : ... note: In instance 't'
-   53 |     integer_value = text_value;
+   56 |     integer_value = text_value;
       |                     ^~~~~~~~~~
-%Error: t/t_assignment_compatibility_bad.v:54:18: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
+%Error: t/t_assignment_compatibility_bad.v:57:18: Implicit conversion from 'string' to 'int' requires a cast (IEEE 1800-2023 6.16).
                                                 : ... note: In instance 't'
-   54 |     take_integer(text_value);
+   57 |     take_integer(text_value);
       |                  ^~~~~~~~~~
+%Error: t/t_assignment_compatibility_bad.v:59:19: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
+                                                : ... note: In instance 't'
+                                                : ... Left-hand data type: 'int' (2-state)
+                                                : ... Right-hand data type: 'string$[0:1]' (2-state)
+   59 |     integer_value = text_array;
+      |                   ^
+%Warning-WIDTHTRUNC: t/t_assignment_compatibility_bad.v:59:19: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'text_array' generates 64 bits.
+                                                             : ... note: In instance 't'
+   59 |     integer_value = text_array;
+      |                   ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Error: t/t_assignment_compatibility_bad.v:60:32: Unknown built-in array method 'bad_method'
+                                                : ... note: In instance 't'
+   60 |     integer_value = text_array.bad_method;
+      |                                ^~~~~~~~~~
+%Error: t/t_assignment_compatibility_bad.v:61:32: Unknown built-in associative array method 'bad_method'
+                                                : ... note: In instance 't'
+   61 |     integer_value = text_assoc.bad_method;
+      |                                ^~~~~~~~~~
+%Error: t/t_assignment_compatibility_bad.v:62:31: Unknown wildcard associative array method 'bad_method'
+                                                : ... note: In instance 't'
+   62 |     integer_value = text_wild.bad_method;
+      |                               ^~~~~~~~~~
 %Error: Exiting due to

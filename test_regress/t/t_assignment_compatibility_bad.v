@@ -36,6 +36,9 @@ module t;
   typedef bit [8191:0] wide_t;
   typedef string string_t;
   string_t text_value = "hello";
+  string_t text_array[2];
+  string_t text_assoc[int];
+  string_t text_wild[*];
   wide_t wide_value;
   bit [6:0] narrow_value;
   int integer_value;
@@ -52,5 +55,10 @@ module t;
     narrow_value = text_value;
     integer_value = text_value;
     take_integer(text_value);
+    // No string conversion error on top of the earlier error
+    integer_value = text_array;
+    integer_value = text_array.bad_method;
+    integer_value = text_assoc.bad_method;
+    integer_value = text_wild.bad_method;
   end
 endmodule

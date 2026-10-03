@@ -4602,6 +4602,14 @@ class WidthVisitor final : public VNVisitor {
             }
         }
     }
+    void methodCallBadGuess(AstMethodCall* nodep, AstNodeDType* guessDTypep) {
+        // After an unknown method error, give the call a best guess data type and mark it as
+        // erroring, so checks of expressions using the call do not report cascaded messages
+        nodep->dtypeFrom(guessDTypep);
+        FileLine* const newfl = new FileLine{nodep->fileline()};
+        newfl->erroringOn(true);
+        nodep->fileline(newfl);
+    }
 
     AstNodeExpr* methodArg(AstMethodCall* nodep, int arg) {
         AstArg* argp = nodep->argsp();
@@ -4800,7 +4808,7 @@ class WidthVisitor final : public VNVisitor {
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3error("Unknown wildcard associative array method " << nodep->prettyNameQ());
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            methodCallBadGuess(nodep, adtypep->subDTypep());
         }
         if (newp) {
             newp->protect(false);
@@ -4925,7 +4933,7 @@ class WidthVisitor final : public VNVisitor {
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3error("Unknown built-in associative array method " << nodep->prettyNameQ());
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            methodCallBadGuess(nodep, adtypep->subDTypep());
         }
         if (newp) {
             newp->protect(false);
@@ -5106,13 +5114,13 @@ class WidthVisitor final : public VNVisitor {
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       VCMethod::arrayMethod("r_" + nodep->name())};
             newp->withp(withp);
-            newp->dtypeFrom(adtypep->subDTypep());
+            newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if ((newp = methodCallArray(nodep, adtypep))) {
         } else {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported/unknown built-in dynamic array method "
                                              << nodep->prettyNameQ());
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            methodCallBadGuess(nodep, adtypep->subDTypep());
         }
         if (newp) {
             newp->protect(false);
@@ -5214,7 +5222,7 @@ class WidthVisitor final : public VNVisitor {
         } else {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported/unknown built-in queue method " << nodep->prettyNameQ());
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            methodCallBadGuess(nodep, adtypep->subDTypep());
         }
         if (newp) {
             newp->protect(false);
@@ -5572,7 +5580,7 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             nodep->v3error("Unknown built-in array method " << nodep->prettyNameQ());
-            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+            methodCallBadGuess(nodep, adtypep->subDTypep());
         }
     }
     void methodCallEvent(AstMethodCall* nodep, AstBasicDType*) {
@@ -9765,10 +9773,19 @@ class WidthVisitor final : public VNVisitor {
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());
-        } else if (underp->dtypep()->isString() && expDTypep->skipRefp()->isIntegralOrPacked()) {
-            underp->v3error("Implicit conversion from 'string' to "
-                            << expDTypep->prettyDTypeNameQ()
-                            << " requires a cast (IEEE 1800-2023 6.16).");
+        } else if (VN_IS(underp->dtypep()->skipRefp(), BasicDType) && underp->isString()
+                   && expDTypep->skipRefp()->isIntegralOrPacked()
+                   && !underp->fileline()->erroringOn()) {
+            const AstNodeAssign* const assignp = VN_CAST(parentp, NodeAssign);
+            if (assignp && VN_IS(assignp->lhsp(), NodeStream)) {
+                // A string is a bit-stream type (IEEE 1800-2023 6.24.3), so this is legal
+                underp->v3warn(E_UNSUPPORTED,
+                               "Unsupported: String assigned to a streaming concatenation");
+            } else {
+                underp->v3error("Implicit conversion from 'string' to "
+                                << expDTypep->prettyDTypeNameQ()
+                                << " requires a cast (IEEE 1800-2023 6.16).");
+            }
             AstConst* const newp = new AstConst{underp->fileline(), AstConst::BitFalse{}};
             newp->dtypep(expDTypep);
             underp->replaceWith(newp);
