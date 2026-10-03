@@ -1598,6 +1598,10 @@ List Of Warnings
    to not being present. This is only issued when it is "non-obvious", e.g.
    a ``if (0)`` will not result in this warning.
 
+   Also warns that a command-line option is ignored, e.g.
+   :vlopt:`--public-flat-rw`, :vlopt:`--public-depth` or
+   :vlopt:`--public-params` together with :vlopt:`--vpi-lazy`.
+
    Faulty example:
 
    .. code-block:: sv

@@ -192,6 +192,24 @@ public:
     int32_t num() const { return m_num; }
 };
 
+// Not MT safe: eval() writes the epoch
+static VerilatedSyms* vlLazySyms(const VerilatedScope* scopep) VL_MT_UNSAFE_ONE {
+    VerilatedSyms* const symsp = scopep->symsp();
+    VerilatedLazyState* const lazyp = symsp->lazyp();
+    // Mid-eval the model may have moved since any memo was taken
+    if (VL_UNLIKELY(lazyp->epoch & 1)) lazyp->epochBump();
+    return symsp;
+}
+
+// Swaps back an undo log a read's rebuild swapped in, even if the rebuild throws
+struct VlLazyUndoRestore final {
+    VerilatedSyms* const symsp;
+    ~VlLazyUndoRestore() {
+        VerilatedLazyState* const lazyp = symsp->lazyp();
+        if (VL_UNLIKELY(lazyp->undoIn)) lazyp->undoSwap(false);
+    }
+};
+
 class VerilatedVpioVarBase VL_NOT_FINAL : public VerilatedVpio {
 protected:
     const VerilatedVar* m_varp = nullptr;
@@ -253,7 +271,7 @@ public:
         if (m_fullname.empty()) m_fullname = std::string{m_scopep->name()} + '.' + m_varp->name();
         return m_fullname.c_str();
     }
-    virtual void* readDatap() const { return m_varp->datap(); }
+    virtual void* readDatap() const { return m_varp->rawDatap(); }
     CData* readCDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT8););
         return static_cast<CData*>(readDatap());
@@ -392,14 +410,21 @@ class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     std::string m_fullNameOverride;
 
 protected:
-    void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
+    void* m_varDatap = nullptr;  // Storage address adjusted for array entries
     std::vector<int32_t> m_index;
 
 public:
+    // Storage address without reconstructing: a handle's value is rebuilt when it is read, not
+    // when the handle is made, so a handle taken before the first eval() is harmless
+    static void* storagep(const VerilatedVar* varp) {
+        if (VL_LIKELY(!varp->isLazyRemat())) return varp->rawDatap();
+        const VerilatedVarLazyDatap* const lazyDatap = varp->lazyDatap();
+        return static_cast<uint8_t*>(lazyDatap->selfp) + lazyDatap->storageOffset;
+    }
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
         : VerilatedVpioVarBase{varp, scopep} {
         m_entSize = varp->entSize();
-        m_varDatap = varp->datap();
+        m_varDatap = storagep(varp);
         if (_vl_vpi_find_unescaped_dot(varp->name())) {
             m_name = _vl_vpi_member_local_name(varp->name());
         }
@@ -414,7 +439,7 @@ public:
     }
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep,
                      const std::string& name, const std::string& fullname)
-        : VerilatedVpioVar{varp, scopep, varp->datap(), name, fullname} {}
+        : VerilatedVpioVar{varp, scopep, storagep(varp), name, fullname} {}
     explicit VerilatedVpioVar(const VerilatedVpioVar* vop)
         : VerilatedVpioVarBase{vop} {
         if (vop) {
@@ -511,16 +536,18 @@ public:
         const std::string memberName = memberVarp->name();
         const size_t parentLen = std::strlen(parentName);
 
-        void* const parentDatap = varp()->datap();
-        void* const memberDatap = memberVarp->datap();
+        void* const parentDatap = storagep(varp());
+        void* const memberDatap = storagep(memberVarp);
         if (VL_UNLIKELY(!parentDatap) || VL_UNLIKELY(!memberDatap)) return nullptr;
         const auto offset
             = static_cast<uint8_t*>(memberDatap) - static_cast<uint8_t*>(parentDatap);
 
         const std::string localName = _vl_vpi_member_local_name(memberVarp->name());
 
+        // m_varDatap, not readDatap(): the member handle's value is reconstructed when it is
+        // read, and this offset is the same whether or not the shadow holds fresh data
         return new VerilatedVpioVar{memberVarp, scopep(),
-                                    static_cast<uint8_t*>(readDatap()) + offset, localName,
+                                    static_cast<uint8_t*>(m_varDatap) + offset, localName,
                                     std::string{fullname()} + memberName.substr(parentLen)};
     }
     uint32_t type() const override {
@@ -545,11 +572,22 @@ public:
         return m_fullname.c_str();
     }
     uint8_t* prevDatap() const { return m_prevDatap; }
-    void* readDatap() const override { return m_varDatap; }
+    // The value as last materialised or stored, without re-resolving a --vpi-lazy row
+    void* shadowDatap() const { return m_varDatap; }
+    void* readDatap() const override {
+        // Refresh, but return m_varDatap rather than the refreshed base: an element handle
+        // (vpiMemoryWord) carries its offset into the shadow here
+        if (VL_UNLIKELY(m_varp->isLazyRemat())) {
+            const VlLazyUndoRestore restore{vlLazySyms(m_scopep)};
+            m_varp->datapRefresh(restore.symsp);
+        }
+        return m_varDatap;
+    }
     void createPrevDatap() {
         if (VL_UNLIKELY(!m_prevDatap)) {
             m_prevDatap = new uint8_t[entSize()];
-            std::memcpy(prevDatap(), m_varDatap, entSize());
+            // readDatap(), not m_varDatap: the baseline must not be a stale reconstruction
+            std::memcpy(prevDatap(), readDatap(), entSize());
         }
     }
 };
@@ -1135,6 +1173,9 @@ template <typename T>
 VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
                                         size_t addOffset);
 template <typename T>
+static VarAccessInfo<T> vl_vpi_var_access_info_gen(const VerilatedVpioVarBase* vop, T* datap,
+                                                   size_t bitCount, size_t addOffset);
+template <typename T>
 T vl_vpi_get_word_gen(VarAccessInfo<T> info);
 
 template <typename T>
@@ -1318,17 +1359,19 @@ public:
     }
     template <typename T>
     static void updatePrev(const VerilatedVpioVar* const varop) {
+        // The value valueDiffersFromPrev() delivered, still in the shadow it refreshed
+        void* const currp = varop->shadowDatap();
         if (varop->bitSize() == 1) {
-            const VarAccessInfo<T> currInfo
-                = vl_vpi_var_access_info<T>(varop, varop->bitSize(), 0);
+            const VarAccessInfo<T> currInfo = vl_vpi_var_access_info_gen<T>(
+                varop, static_cast<T*>(currp), varop->bitSize(), 0);
             VarAccessInfo<T> prevInfo = currInfo;
             T* const prevDatap = reinterpret_cast<T*>(varop->prevDatap());
             prevInfo.m_datap = prevDatap;
             const T currWord = vl_vpi_get_word_gen(currInfo);
             vl_vpi_put_word_gen(prevInfo, currWord);
-            assert(std::memcmp(varop->prevDatap(), varop->readDatap(), varop->entSize()) == 0);
+            assert(std::memcmp(varop->prevDatap(), currp, varop->entSize()) == 0);
         } else {
-            std::memcpy(varop->prevDatap(), varop->readDatap(), varop->entSize());
+            std::memcpy(varop->prevDatap(), currp, varop->entSize());
         }
     }
     static void updatePrev(const VerilatedVpioVar* const varop) {
@@ -3402,6 +3445,54 @@ PLI_INT32 vl_get_vltype_format(VerilatedVarType vlType) {
     }  // LCOV_EXCL_STOP
 }
 
+static void vl_vpi_note_write(const VerilatedVpioVar* vop) {
+    if (vop->varp()->isLazyRetained()) vop->scopep()->symsp()->lazyp()->written = true;
+}
+
+// --vpi-lazy undo log. A put reaches its dependants only at the next eval, so instead of
+// retiring the reconstruction memos it keeps the bytes it overwrote, and a read swaps them back
+// in around a rebuild: a rebuilt dependant then reads as the last eval left it, as a stored one
+// does under --public-flat-rw, and its memo stays valid until that eval moves the epoch and
+// clears the log.
+static void vl_vpi_undo_log(VerilatedSyms* symsp, void* datap, size_t size, bool isStr) {
+    // Mid-eval the eval itself consumes the put; before the first eval nothing is rebuilt
+    VerilatedLazyState* const lazyp = symsp->lazyp();
+    if (!lazyp || !lazyp->undoOn || (lazyp->epoch & 1) || lazyp->beforeFirstEval()) return;
+    std::vector<VlLazyUndo>& log = lazyp->undo;
+    // A repeat of the last put needs no entry; the swap order makes other repeats harmless
+    if (!log.empty() && log.back().datap == datap && (isStr || log.back().old.size() == size))
+        return;
+    log.push_back({datap, isStr,
+                   isStr ? *static_cast<std::string*>(datap)
+                         : std::string(static_cast<char*>(datap), size)});
+}
+static void vl_vpi_undo_log(const VerilatedVpioVar* vop) {
+    const VerilatedVarType vltype = vop->varp()->vltype();
+    vl_vpi_undo_log(vop->scopep()->symsp(), vop->shadowDatap(),
+                    vltype == VLVT_REAL ? sizeof(double) : vop->entSize(), vltype == VLVT_STRING);
+}
+
+// Copy the bits of 'varp's --vpi-lazy comb mask from 'curp' over 'newp', so a put keeps their
+// logic value; both hold 'nElems' elements from 'firstElem'
+static void vl_vpi_lazy_comb_merge(const VerilatedVar* varp, VerilatedSyms* symsp,
+                                   const uint8_t* curp, uint8_t* newp, size_t firstElem,
+                                   size_t nElems) {
+    const VlLazyCombMask& mask = symsp->lazyp()->combMasksp[varp->lazyCombMask()];
+    const size_t entBits = static_cast<size_t>(varp->entSize()) * 8;
+    for (uint32_t i = 0; i < mask.nRuns; ++i) {
+        const VlLazyCombRun& run = mask.runsp[i];
+        if (run.elem < firstElem || run.elem >= firstElem + nElems) continue;
+        size_t lo = (run.elem - firstElem) * entBits + run.lsb;
+        const size_t hi = lo + run.width;
+        while (lo < hi) {
+            const size_t n = std::min<size_t>(8 - (lo & 7), hi - lo);
+            const uint8_t bits = static_cast<uint8_t>(((1U << n) - 1) << (lo & 7));
+            newp[lo >> 3] = (newp[lo >> 3] & ~bits) | (curp[lo >> 3] & bits);
+            lo += n;
+        }
+    }
+}
+
 static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_list args;
     va_list args_copy;
@@ -3425,8 +3516,16 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
 template <typename T>
 VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
                                         size_t addOffset) {
+    return vl_vpi_var_access_info_gen<T>(vop, static_cast<T*>(vop->readDatap()), bitCount,
+                                         addOffset);
+}
+
+template <typename T>
+static VarAccessInfo<T> vl_vpi_var_access_info_gen(const VerilatedVpioVarBase* vop, T* datap,
+                                                   size_t bitCount, size_t addOffset) {
     // VarAccessInfo generation
     // vop - variable to access (already indexed)
+    // datap - storage base address
     // bitCount - how many bits to write/read
     // addOffset - additional offset to apply (within the packed array element)
 
@@ -3441,7 +3540,7 @@ VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t 
                          bitCount, varBits - addOffset});
 
     VarAccessInfo<T> info;
-    info.m_datap = static_cast<T*>(vop->readDatap());
+    info.m_datap = datap;
     if (vop->varp()->vltype() == VLVT_WDATA) {
         assert(sizeof(T) == sizeof(EData));
         assert(bitCount <= wordBits);
@@ -3726,8 +3825,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
 }
 
-vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_p*/,
-                        PLI_INT32 flags) {
+// The put itself, less the --vpi-lazy comb mask; named for its messages' __func__
+// 'baseSignalVop' is VerilatedVpioVar::castp(object), made once by the caller
+static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSignalVop,
+                                  p_vpi_value valuep, PLI_INT32 flags) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_put_value %p %p\n", object, valuep););
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
@@ -3737,14 +3838,22 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     }
     const PLI_INT32 delay_mode = flags & 0xfff;
     const PLI_INT32 forceFlag = flags & 0xfff;
-    if (const VerilatedVpioVar* const baseSignalVop = VerilatedVpioVar::castp(object)) {
+    if (baseSignalVop) {
         VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n",
                                     baseSignalVop->fullname(), valuep->format,
                                     valuep->value.integer);
                         VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n",
-                                    baseSignalVop->varp()->datap(), baseSignalVop->readDatap()););
+                                    VerilatedVpioVar::storagep(baseSignalVop->varp()),
+                                    baseSignalVop->readDatap()););
 
         if (VL_UNLIKELY(!baseSignalVop->varp()->isPublicRW())) {
+            if (baseSignalVop->varp()->isLazyComb()) {
+                VL_VPI_ERROR_(__FILE__, __LINE__,
+                              "vpi_put_value was used on signal combinationally driven under"
+                              " --vpi-lazy, use a public_flat_rw attribute to write '%s'",
+                              baseSignalVop->fullname());
+                return nullptr;
+            }
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "vpi_put_value was used on signal marked read-only,"
                           " use public_flat_rw instead for '%s'",
@@ -3764,10 +3873,10 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         // On release valuep is only written
         if (forceFlag != vpiReleaseFlag) {
             if (const char* const memberp = vl_put_value_null_member(valuep)) {
-                VL_VPI_WARNING_(__FILE__, __LINE__,
-                                "%s: Ignoring nullptr value.%s with format %s for '%s'", __func__,
-                                memberp, VerilatedVpiError::strFromVpiVal(valuep->format),
-                                baseSignalVop->fullname());
+                VL_VPI_WARNING_(
+                    __FILE__, __LINE__, "%s: Ignoring nullptr value.%s with format %s for '%s'",
+                    "vpi_put_value", memberp, VerilatedVpiError::strFromVpiVal(valuep->format),
+                    baseSignalVop->fullname());
                 return nullptr;
             }
         }
@@ -3776,12 +3885,19 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 VL_VPI_WARNING_(
                     __FILE__, __LINE__,
                     "%s: Unsupported p_vpi_value as requested for '%s' with vpiInertialDelay",
-                    __func__, baseSignalVop->fullname());
+                    "vpi_put_value", baseSignalVop->fullname());
                 return nullptr;
             }
             VerilatedVpiImp::inertialDelay(baseSignalVop, valuep);
             return object;
         }
+        // A malformed decimal string is rejected only once parsed below, so must not re-settle;
+        // a force has by then already set its enable bits
+        unsigned long long decVal;
+        if (forceFlag == vpiForceFlag || forceFlag == vpiReleaseFlag
+            || valuep->format != vpiDecStrVal
+            || std::sscanf(valuep->value.str, "%30llu", &decVal) == 1)  // lintok-format-ll
+            vl_vpi_note_write(baseSignalVop);
         VerilatedVpiImp::evalNeeded(true);
         const int varBits = baseSignalVop->bitSize();
 
@@ -3817,10 +3933,16 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "%s: Signal '%s' with vpiHandle '%p' is marked forceable, but force "
                           "control signals could not be retrieved.%s",
-                          __func__, baseSignalVop->fullname(), object,
+                          "vpi_put_value", baseSignalVop->fullname(), object,
                           gotErrorMessage ? previousErrorMessage.c_str() : "");
             return nullptr;
         }  // LCOV_EXCL_STOP
+
+        // A reconstruction reads a forceable signal's controls too
+        for (const VerilatedVpioVar* const vop :
+             {baseSignalVop, forceEnableSignalVop, forceValueSignalVop, forceReadSignalVop}) {
+            if (vop) vl_vpi_undo_log(vop);
+        }
 
         const VerilatedVpioVar* const valueVop
             = (forceFlag == vpiForceFlag) ? forceValueSignalVop : baseSignalVop;
@@ -3912,7 +4034,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 VL_VPI_ERROR_(__FILE__, __LINE__,
                               "%s: Could not retrieve value of signal '%s' with "
                               "vpiHandle '%p'. Error message: %s",
-                              __func__, baseValueSignalName.c_str(), object,
+                              "vpi_put_value", baseValueSignalName.c_str(), object,
                               previousErrorMessage.c_str());
                 return nullptr;
             }
@@ -3970,7 +4092,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 if (digit > 7) {  // If str was < '0', then as unsigned, digit > 7
                     VL_VPI_WARNING_(__FILE__, __LINE__,
                                     "%s: Non octal character '%c' in '%s' as value %s for '%s'",
-                                    __func__, digit + '0', valuep->value.str,
+                                    "vpi_put_value", digit + '0', valuep->value.str,
                                     VerilatedVpiError::strFromVpiVal(valuep->format),
                                     valueVop->fullname());
                     digit = 0;
@@ -3985,7 +4107,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                                             &val, remainder);
             if (success < 1) {
                 VL_VPI_ERROR_(__FILE__, __LINE__,
-                              "%s: Parsing failed for '%s' as value %s for '%s'", __func__,
+                              "%s: Parsing failed for '%s' as value %s for '%s'", "vpi_put_value",
                               valuep->value.str, VerilatedVpiError::strFromVpiVal(valuep->format),
                               valueVop->fullname());
                 return nullptr;
@@ -3993,7 +4115,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             if (success > 1) {
                 VL_VPI_WARNING_(
                     __FILE__, __LINE__, "%s: Trailing garbage '%s' in '%s' as value %s for '%s'",
-                    __func__, remainder, valuep->value.str,
+                    "vpi_put_value", remainder, valuep->value.str,
                     VerilatedVpiError::strFromVpiVal(valuep->format), valueVop->fullname());
             }
             put_word(valueVop, val, 64, 0);
@@ -4018,7 +4140,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                     } else {
                         VL_VPI_WARNING_(__FILE__, __LINE__,
                                         "%s: Non hex character '%c' in '%s' as value %s for '%s'",
-                                        __func__, digit, valuep->value.str,
+                                        "vpi_put_value", digit, valuep->value.str,
                                         VerilatedVpiError::strFromVpiVal(valuep->format),
                                         valueVop->fullname());
                         hex = 0;
@@ -4059,22 +4181,74 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return object;
         }
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for '%s'",
-                      __func__, VerilatedVpiError::strFromVpiVal(valuep->format),
+                      "vpi_put_value", VerilatedVpiError::strFromVpiVal(valuep->format),
                       valueVop->fullname());
         return nullptr;
     }
     if (const VerilatedVpioParam* const vop = VerilatedVpioParam::castp(object)) {
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Ignoring vpi_put_value to vpiParameter '%s'",
-                        __func__, vop->fullname());
+                        "vpi_put_value", vop->fullname());
         return nullptr;
     }
     if (const VerilatedVpioConst* const vop = VerilatedVpioConst::castp(object)) {
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Ignoring vpi_put_value to vpiConstant '%s'",
-                        __func__, vop->fullname());
+                        "vpi_put_value", vop->fullname());
         return nullptr;
     }
-    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", "vpi_put_value", object);
     return nullptr;
+}
+
+// A handle whose storage is a caller's buffer, so a put into it reaches no model state
+class VerilatedVpioVarScratch final : public VerilatedVpioVar {
+public:
+    VerilatedVpioVarScratch(const VerilatedVpioVar* vop, void* datap)
+        : VerilatedVpioVar{vop} {
+        m_varDatap = datap;
+    }
+};
+
+// A --vpi-lazy put keeps the masked bits, so is made on a copy of the element, merged, then
+// stored. An inertial put is merged when it lands.
+static vpiHandle vl_vpi_put_value_lazy_comb(vpiHandle object, const VerilatedVpioVar* vop,
+                                            p_vpi_value valuep, PLI_INT32 flags) {
+    const PLI_INT32 mode = flags & 0xfff;
+    // Not forceable, so a force or release is refused as it stands
+    if (mode == vpiForceFlag || mode == vpiReleaseFlag || mode == vpiInertialDelay)
+        return vl_vpi_put_value(object, vop, valuep, flags);
+    VerilatedSyms* const symsp = vop->scopep()->symsp();
+    const VerilatedVar* const varp = vop->varp();
+    uint8_t* const elemp = static_cast<uint8_t*>(vop->shadowDatap());
+    const uint32_t entSize = varp->entSize();
+    std::vector<uint8_t> scratch(elemp, elemp + entSize);
+    VerilatedVpioVarScratch trial{vop, scratch.data()};
+    const bool evalWas = VerilatedVpiImp::evalNeeded();
+    VerilatedLazyState* const lazyp = symsp->lazyp();
+    const bool writtenWas = lazyp->written;
+    const bool undoWas = lazyp->undoOn;
+    // The scratch buffer is not model state, so must not reach the undo log
+    lazyp->undoOn = false;
+    vpiHandle const trialp = vl_vpi_put_value(trial.castVpiHandle(), &trial, valuep, vpiNoDelay);
+    lazyp->undoOn = undoWas;
+    VerilatedVpiImp::evalNeeded(evalWas);
+    lazyp->written = writtenWas;
+    if (!trialp) return nullptr;
+    const size_t elem = (elemp - static_cast<const uint8_t*>(varp->datap())) / entSize;
+    vl_vpi_lazy_comb_merge(varp, symsp, elemp, scratch.data(), elem, 1);
+    if (std::memcmp(elemp, scratch.data(), entSize) == 0) return object;
+    vl_vpi_note_write(vop);
+    VerilatedVpiImp::evalNeeded(true);
+    vl_vpi_undo_log(vop);
+    std::memcpy(elemp, scratch.data(), entSize);
+    return object;
+}
+
+vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_p*/,
+                        PLI_INT32 flags) {
+    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    if (VL_UNLIKELY(vop && valuep && vop->varp()->isPublicRW() && vop->varp()->isLazyComb()))
+        return vl_vpi_put_value_lazy_comb(object, vop, valuep, flags);
+    return vl_vpi_put_value(object, vop, valuep, flags);
 }
 
 bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue_p,
@@ -4675,6 +4849,13 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
     }
 
     if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
+        if (vop->varp()->isLazyComb()) {
+            VL_VPI_ERROR_(__FILE__, __LINE__,
+                          "Ignoring vpi_put_value_array to signal combinationally driven under"
+                          " --vpi-lazy, use a public_flat_rw attribute to write '%s'",
+                          vop->fullname());
+            return;
+        }
         VL_VPI_ERROR_(__FILE__, __LINE__,
                       "Ignoring vpi_put_value_array to signal marked read-only,"
                       " use public_flat_rw instead: '%s'",
@@ -4698,7 +4879,25 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
     if (num == 0) return;
-    vl_put_value_array(object, arrayvalue_p, index_p, num);
+    const VerilatedVar* const varp = vop->varp();
+    VerilatedSyms* const symsp = vop->scopep()->symsp();
+    if (VL_UNLIKELY(varp->isLazyComb())) {
+        // A --vpi-lazy put keeps the masked bits; the undo log needs the bytes from before it
+        uint8_t* const basep = static_cast<uint8_t*>(varp->datap());
+        const size_t total = varp->totalSize();
+        const std::vector<uint8_t> before(basep, basep + total);
+        vl_put_value_array(object, arrayvalue_p, index_p, num);
+        vl_vpi_lazy_comb_merge(varp, symsp, before.data(), basep, 0, total / varp->entSize());
+        if (std::memcmp(basep, before.data(), total) == 0) return;
+        const std::vector<uint8_t> after(basep, basep + total);
+        std::memcpy(basep, before.data(), total);
+        vl_vpi_undo_log(symsp, basep, total, false);
+        std::memcpy(basep, after.data(), total);
+    } else {
+        vl_vpi_undo_log(symsp, varp->datap(), varp->totalSize(), false);
+        vl_put_value_array(object, arrayvalue_p, index_p, num);
+    }
+    vl_vpi_note_write(vop);
 }
 
 // time processing

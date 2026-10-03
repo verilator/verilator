@@ -89,12 +89,17 @@ class InstVisitor final : public VNVisitor {
         modVarp->fileline()->modifyStateInherit(exprVarp->fileline());
         exprVarp->propagateAttrFrom(modVarp);
         modVarp->propagateAttrFrom(exprVarp);
-        // The port is named first, so the net it connects to is the one that survives
+        // V3LinkDot keeps the last item's storage, normally the net the port connects to.
+        // Under --vpi-lazy an output port keeps its own, so VPI writability follows the RTL
+        // name.
+        const bool portKeeps
+            = v3Global.opt.vpiLazy() && modVarp->direction() == VDirection::OUTPUT;
         refp->access(VAccess::READWRITE);
         FileLine* const flp = exprp->fileline();
-        AstNodeExpr* const itemsp
+        AstNodeExpr* const portRefp
             = new AstVarXRef{flp, modVarp, m_cellp->name(), VAccess::READWRITE};
-        itemsp->addNext(exprp);
+        AstNodeExpr* const itemsp = portKeeps ? exprp : portRefp;
+        itemsp->addNext(portKeeps ? portRefp : exprp);
         m_cellp->addNextHere(new AstAlias{flp, itemsp});
         return true;
     }
