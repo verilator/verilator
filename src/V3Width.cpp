@@ -284,6 +284,7 @@ class WidthVisitor final : public VNVisitor {
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     bool m_streamConcat = false;  // True if visiting arguments of stream concatenation
+    bool m_inParamOverride = false;  // True if visiting the value of a parameter override pin
     // Created dimension and enum tables, mapped to a reference reading the table (always cloned)
     std::map<std::pair<const AstNodeDType*, VAttrType>, AstVarRef*> m_tableMap;
     // Queues with given index type
@@ -5843,6 +5844,26 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstPattern* nodep) override {
+        if (m_inParamOverride && !nodep->childDTypep() && !m_vup->dtypeNullp()) {
+            // The specialized module types an override pattern, so only type its members here
+            VL_RESTORER(m_inParamOverride);
+            for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
+                 patp = VN_AS(patp->nextp(), PatMember)) {
+                m_inParamOverride = false;
+                userIterateAndNext(patp->repp(), WidthVP{SELF, BOTH}.p());
+                // Struct member names and type keys need no typing
+                if (!VN_IS(patp->keyp(), Text) && !VN_IS(patp->keyp(), NodeDType)) {
+                    userIterateAndNext(patp->keyp(), WidthVP{SELF, BOTH}.p());
+                }
+                for (AstNode *nextp, *valuep = patp->lhssp(); valuep; valuep = nextp) {
+                    nextp = valuep->nextp();
+                    // A nested pattern stays untyped, any other value is typed now
+                    m_inParamOverride = VN_IS(valuep, Pattern);
+                    userIterate(valuep, WidthVP{SELF, BOTH}.p());
+                }
+            }
+            return;
+        }
         if (nodep->didWidthAndSet()) return;
         UINFO(9, "PATTERN " << nodep);
         if (nodep->childDTypep()) {  // data_type '{ pattern }
@@ -7385,19 +7406,10 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
-            // Widthing handled as special init() case
-            bool didWidth = false;
-            if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
-                const AstVar* const modVarp = nodep->modVarp();
-                // Convert BracketArrayDType
-                userIterate(modVarp->childDTypep(),
-                            WidthVP{SELF, BOTH}.p());  // May relink pointed to node
-                AstNodeDType* const setDtp = modVarp->childDTypep();
-                if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
-                userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
-                didWidth = true;
-            }
-            if (!didWidth) userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+            // An override pattern is left for the specialized module to type
+            VL_RESTORER(m_inParamOverride);
+            m_inParamOverride = VN_IS(nodep->exprp(), Pattern);
+            userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {
                 // Var hasn't been widthed, so make it so.
