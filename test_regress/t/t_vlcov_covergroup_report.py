@@ -38,22 +38,31 @@ def write_dat(name, records, points=()):
             fields += keys
             fields.append(("h", group + "." + item + "." + bin_name))
             fh.write(dat_line(fields, count))
-        for kind, hier, lineno, count in points:
-            fields = [("t", kind), ("page", "v_" + kind + "/t"), ("f", "t/t.v"), ("l", lineno),
-                      ("h", hier)]
+        for kind, unit, hier, lineno, count in points:
+            fields = [("t", kind), ("page", "v_" + kind + "/" + unit), ("f", "t/t.v"),
+                      ("l", lineno), ("h", hier)]
             fh.write(dat_line(fields, count))
     return filename
 
 
-# Covergroups of dotted names under one node; a record without its bin's name; and records of a
-# bin with different weights and thresholds, which merge with the largest of those
+# Covergroups of dotted names under one node, of which one is named with the value of a string
+# parameter holding a quote that a space follows, as is the count, and one named with the values of
+# the parameters of a specialization, whose dots split the name into no nodes, nor do the escaped
+# quote and parenthesis of a string value, quoted as the coverage file quotes it; a record
+# without its bin's name; records of a bin with different weights and thresholds, which merge with
+# the largest of those; and records of two bins of a name, as of covergroups of distinct scopes
+# that share a name, which do not merge
 edge_cov = write_dat("edge.dat", [
     ("pkg.alpha", "cp", "b0", 1, [("B", "b0")]),
     ("pkg.alpha", "cp", "b1", 0, [("B", "b1")]),
     ("pkg.beta", "cp", "b0", 1, []),
+    ('pkg.quote#("it\' s")', "cp", "b0", 0, [("B", "b0")]),
+    ('pkg.Cls#(0.1,%22a.\\%22(b%22,class pkg::Inner#(1.5),2.5).cg', "cp", "b0", 1, [("B", "b0")]),
     ("split", "cp", "b0", 1, [("B", "b0"), ("s", "2"), ("w", "2")]),
     ("split", "cp", "b0", 0, [("B", "b0"), ("w", "3")]),
     ("split", "cq", "b0", 1, [("B", "b0")]),
+    ("shared", "cp", "b0", 1, [("B", "b0"), ("n", "3")]),
+    ("shared", "cp", "b0", 0, [("B", "b0"), ("n", "5")]),
 ])
 # Covergroups of zero weight only: 100
 zero_cov = write_dat("zero.dat", [("idle", "cp", "b0", 0, [("B", "b0"), ("Gw", "0")])])
@@ -62,10 +71,13 @@ none_cov = write_dat("none.dat", [("void", "cp", "b0", 0, [("B", "b0"), ("Bt", "
 # Coverage that is not complete shows below 100%: 99.95 as 99.9
 near_cov = write_dat("near.dat", [("near", "cp", "b" + str(i), int(i != 0), [("B", "b" + str(i))])
                                   for i in range(2001)])
-# A module shows a row per coverage type under its name; covergroups show one line each
+# A module shows a row per coverage type under its name; covergroups show one line each; and
+# names show their quotes and '%', which the coverage file escapes, as instance '"q%"' of module
+# 'm"x'
 mixed_cov = write_dat("mixed.dat", [("cg", "cp", "a", 1, [("B", "a")]),
                                     ("cg", "cp", "b", 0, [("B", "b")])],
-                      points=[("line", "top.t", "10", 1), ("toggle", "top.t", "11", 0)])
+                      points=[("line", "t", "top.t", "10", 1), ("toggle", "t", "top.t", "11", 0),
+                              ("line", "m%22x", "top.t.%22q%25%22", "12", 1)])
 
 run_vlcov(vlcov,
           "verilator_coverage --report summary,hierarchy coverage.dat",

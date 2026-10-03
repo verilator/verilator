@@ -241,6 +241,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstClass* m_covergroupp = nullptr;  // Current covergroup being processed
     AstClass* m_enclosingClassp = nullptr;  // Class lexically enclosing the covergroup, if any
     AstVar* m_embeddedVarp = nullptr;  // Embedded covergroup member of m_enclosingClassp, if any
+    std::string m_covergroupName;  // Current covergroup's type name, see covergroupTypeName()
     AstFunc* m_sampleFuncp = nullptr;  // Current sample() function
     AstFunc* m_constructorp = nullptr;  // Current constructor
     std::vector<AstCoverpoint*> m_coverpoints;  // Coverpoints in current covergroup
@@ -1032,8 +1033,26 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return typep;
     }
 
+    // The key of the covergroup's type in the coverage registry, which get_coverage() queries
     std::string covergroupProtectedName() const {
-        return VIdProtect::protectWordsIf(m_covergroupp->name(), v3Global.opt.protectIds());
+        return VIdProtect::protectWordsIf(m_covergroupName, v3Global.opt.protectIds());
+    }
+
+    // The name of the covergroup's type, which keys the coverage registry and database: as
+    // $typename names it (IEEE 1800-2023 20.6.1), so apart for covergroups of distinct scopes and
+    // specializations, and alike in each Verilator run of a hierarchical design.  As design units
+    // of distinct libraries may share a name, one of a library other than the default is prefixed
+    // by its library, as '%l' prints it (IEEE 1800-2023 33.4).
+    std::string covergroupTypeName() const {
+        // The design unit declaring the covergroup, outside any class
+        const AstNode* unitp = m_covergroupp->aboveLoopp();
+        while (!VN_IS(unitp, NodeModule) || VN_IS(unitp, Class)) {
+            UASSERT_OBJ(unitp, m_covergroupp, "Covergroup declared outside of a design unit");
+            unitp = unitp->aboveLoopp();
+        }
+        const std::string& libname = VN_AS(unitp, NodeModule)->libname();
+        const std::string name = m_covergroupp->dtypeName(true);
+        return libname == "work" ? name : libname + "." + name;
     }
 
     // Emit the covergroup's instance handle member and the constructor statement that creates
@@ -2369,7 +2388,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // unit page).  No-ops when --protect-ids is off.
         const bool prot = v3Global.opt.protectIds();
         const std::string hier
-            = VIdProtect::protectWordsIf(m_covergroupp->name() + "." + coverpointp->name(), prot);
+            = VIdProtect::protectWordsIf(m_covergroupName + "." + coverpointp->name(), prot);
         m_constructorp->addStmtsp(
             itemCall(fl, cpVarp, VCMethod::COVERGROUP_INIT,
                      {ctext(fl, quoted(hier)), cnum(fl, static_cast<uint32_t>(atLeastValue)),
@@ -2399,7 +2418,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
         if (v3Global.opt.coverage()) {
             const std::string page
-                = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
+                = VIdProtect::protectIf("v_covergroup/" + m_covergroupName, prot);
             m_constructorp->addStmtsp(
                 itemCall(fl, cpVarp, VCMethod::COVERGROUP_REGISTER_BINS,
                          {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
@@ -3689,7 +3708,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Obfuscate the hierarchy/filename/page under --protect-ids as for coverpoints above.
         const bool prot = v3Global.opt.protectIds();
         const std::string hier
-            = VIdProtect::protectWordsIf(m_covergroupp->name() + "." + crossp->name(), prot);
+            = VIdProtect::protectWordsIf(m_covergroupName + "." + crossp->name(), prot);
         m_constructorp->addStmtsp(makeCrossCpsCall(
             fl, cpVars,
             itemCall(fl, cxVarp, VCMethod::COVERGROUP_INIT,
@@ -3703,7 +3722,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                       : generateCrossBins(crossp, cxVarp, layout);
         if (v3Global.opt.coverage()) {
             const std::string page
-                = VIdProtect::protectIf("v_covergroup/" + m_covergroupp->name(), prot);
+                = VIdProtect::protectIf("v_covergroup/" + m_covergroupName, prot);
             m_constructorp->addStmtsp(itemCall(fl, cxVarp, VCMethod::COVERGROUP_REGISTER_BINS,
                                                {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
                                                 ctext(fl, quoted(page)),
@@ -4373,8 +4392,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             VL_RESTORER_CLEAR(m_coverpointMap);
             VL_RESTORER_CLEAR(m_coverCrosses);
             VL_RESTORER_CLEAR(m_cgOptions);
+            VL_RESTORER_CLEAR(m_covergroupName);
             m_covergroupp = nodep;
             m_embeddedVarp = findEmbeddedCovergroupVar();
+            m_covergroupName = covergroupTypeName();
             m_sampleFuncp = nullptr;
             m_constructorp = nullptr;
             std::vector<EmbeddedEventTrigger> embeddedEventTriggers;
