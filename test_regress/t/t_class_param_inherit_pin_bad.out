@@ -1,0 +1,38 @@
+%Error: t/t_class_param_inherit_pin_bad.v:21:12: Parameter type pin value isn't a type: Param 'T' of 'holder'
+                                               : ... note: In instance 't'
+   21 |   holder #(MISSING) value;
+      |            ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_param_inherit_pin_bad.v:30:12: Parameter type pin value isn't a type: Param 'T' of 'holder'
+                                               : ... note: In instance 't'
+   30 |   holder #(T) value;
+      |            ^
+%Error: t/t_class_param_inherit_pin_bad.v:39:12: Parameter type pin value isn't a type: Param 'T' of 'holder'
+                                               : ... note: In instance 't'
+   39 |   holder #(MISSING) value;
+      |            ^~~~~~~
+%Error: t/t_class_param_inherit_pin_bad.v:44:12: Parameter type pin value isn't a type: Param 'T' of 'holder'
+                                               : ... note: In instance 't'
+   44 |   holder #(missing_t) value;
+      |            ^~~~~~~~~
+%Error: t/t_class_param_inherit_pin_bad.v:56:52: Parameter type pin value isn't a type: Param 'T' of 'base'
+                                               : ... note: In instance 't'
+   56 | class self_circular extends base #(circular_types::self_t);
+      |                                                    ^~~~~~
+%Error: t/t_class_param_inherit_pin_bad.v:64:53: Parameter type pin value isn't a type: Param 'T' of 'base'
+                                               : ... note: In instance 't'
+   64 | class other_circular extends base #(circular_types::other_t);
+      |                                                     ^~~~~~~
+%Error: t/t_class_param_inherit_pin_bad.v:69:12: Parameter type pin value isn't a type: Param 'T' of 'holder'
+                                               : ... note: In instance 't'
+   69 |   holder #(MISSING) value;
+      |            ^~~~~~~
+%Error: t/t_class_param_inherit_pin_bad.v:38:48: Attempting to extend using non-class
+                                               : ... note: In instance 't'
+   38 | class nonclass_derived extends nonclass_base #(int);
+      |                                                ^~~
+%Error: t/t_class_param_inherit_pin_bad.v:43:20: Can't find typedef/interface: 'missing_t'
+                                               : ... note: In instance 't'
+   43 |   typedef pin_pkg::missing_t missing_t;
+      |                    ^~~~~~~~~
+%Error: Exiting due to

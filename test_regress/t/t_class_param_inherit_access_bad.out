@@ -1,0 +1,8 @@
+%Error-ENCAPSULATED: t/t_class_param_inherit_access_bad.v:21:3: 'T' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
+   21 |   T value;
+      |   ^
+                     t/t_class_param_inherit_access_bad.v:21:3: ... Location of definition
+    8 |   local typedef bit [N-1:0] T;
+      |                             ^
+                     ... For error description see https://verilator.org/warn/ENCAPSULATED?v=latest
+%Error: Exiting due to

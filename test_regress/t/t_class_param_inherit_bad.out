@@ -1,0 +1,22 @@
+%Error: t/t_class_param_inherit_bad.v:13:3: Can't find typedef/interface: 'missing_t'
+                                          : ... note: In instance 't'
+   13 |   missing_t value;
+      |   ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_param_inherit_bad.v:22:3: Can't find typedef/interface: 'T'
+                                          : ... note: In instance 't'
+   22 |   T value;
+      |   ^
+%Error: t/t_class_param_inherit_bad.v:26:14: Attempting to extend using non-class
+                                           : ... note: In instance 't'
+   26 |     type B = int
+      |              ^~~
+%Error: t/t_class_param_inherit_bad.v:28:3: Can't find typedef/interface: 'missing_t'
+                                          : ... note: In instance 't'
+   28 |   missing_t value;
+      |   ^~~~~~~~~
+%Error: t/t_class_param_inherit_bad.v:34:3: Can't find typedef/interface: 'missing_t'
+                                          : ... note: In instance 't'
+   34 |   missing_t value;
+      |   ^~~~~~~~~
+%Error: Exiting due to
