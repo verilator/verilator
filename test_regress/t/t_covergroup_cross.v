@@ -84,11 +84,21 @@ module t;
     cross_ab: cross cp_addr, cp_cmd;
   endgroup
 
-  // Cross with option.at_least set in the cross body
+  // The covergroup's option.at_least is the default of its coverpoints and crosses; the
+  // cross overrides it
   covergroup cg_at_least;
+    option.at_least = 2;
     cp_addr: coverpoint addr {bins addr0 = {0}; bins addr1 = {1};}
     cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
     addr_cmd_al: cross cp_addr, cp_cmd{option.at_least = 3;}
+  endgroup
+
+  // With option.at_least 0, every bin is covered before any sample
+  covergroup cg_at_least_0;
+    option.at_least = 0;
+    cp_addr: coverpoint addr {bins addr0 = {0}; bins addr1 = {1};}
+    cp_cmd: coverpoint cmd {bins read = {0}; bins write = {1};}
+    addr_cmd: cross cp_addr, cp_cmd;
   endgroup
 
   // Cross with option.goal set in the cross body
@@ -257,6 +267,7 @@ module t;
   cg4 cg4_inst = new;
   cg5 cg5_inst = new;
   cg_at_least cg_at_least_inst = new;
+  cg_at_least_0 cg_at_least_0_inst = new;
   cg_goal cg_goal_inst = new;
   cg_unsup_cross_opt cg_unsup_cross_opt_inst = new;
   cg_unnamed_cross cg_unnamed_cross_inst = new;
@@ -401,15 +412,23 @@ module t;
     cg_range_inst.sample();  // hi_range x read
     `checkr(cg_range_inst.get_inst_coverage(), 100.0);
 
-    // Sample cg_at_least (option.at_least in cross body; Verilator uses at_least=1 for bins)
-    // cg_at_least: 2 of 4 cross bins hit (count=1, at_least effectively 1)
+    // Sample cg_at_least (option.at_least = 2, and 3 in cross body)
     addr = 0;
     cmd = 0;
     cg_at_least_inst.sample();  // addr0 x read
     addr = 1;
     cmd = 1;
     cg_at_least_inst.sample();  // addr1 x write
-    `checkr(cg_at_least_inst.get_inst_coverage(), (100.0 + 100.0 + 50.0) / 3);
+    // No bin hit twice
+    `checkr(cg_at_least_inst.get_inst_coverage(), 0.0);
+    addr = 0;
+    cmd = 0;
+    cg_at_least_inst.sample();  // addr0 x read
+    // addr0 and read hit twice, addr0 x read short of 3
+    `checkr(cg_at_least_inst.get_inst_coverage(), (50.0 + 50.0 + 0.0) / 3);
+    cg_at_least_inst.sample();  // addr0 x read
+    `checkr(cg_at_least_inst.get_inst_coverage(), (50.0 + 50.0 + 25.0) / 3);
+    `checkr(cg_at_least_0_inst.get_inst_coverage(), 100.0);
 
     // Sample cg_goal (option.goal in cross body; does not affect hit counting)
     // cg_goal: 2 of 4 cross bins hit

@@ -370,7 +370,8 @@ private:
     // index computed here provably fits.  That bound is far beyond anything
     // storable anyway: m_flatCountsp alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
-    uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
+    uint32_t m_atLeast = 1;  // option.at_least
+    uint32_t m_numCovered = 0;  // Distinct bins hit >= m_atLeast (maintained incrementally)
     Dimension* m_dimensionsp = nullptr;  // [m_dims], owned by the concrete cross runtime
     uint32_t* m_flatCountsp = nullptr;  // [m_numAutoBins] Per-bin hit counts
     Explicit* m_explicitp = nullptr;  // Absent for automatic-only crosses
@@ -380,7 +381,7 @@ private:
     template <bool T_Explicit, bool T_RecordHits = true>
     void iterateProduct(uint32_t dim, uint32_t baseIdx);
     void incrementAuto(uint32_t idx) {
-        if (m_flatCountsp[idx]++ == 0) ++m_numCovered;
+        if (++m_flatCountsp[idx] == m_atLeast) ++m_numCovered;
     }
     void incrementBin(Bin& bin);
     template <bool T_RecordHits>
@@ -431,8 +432,8 @@ public:
 
     // METHODS
     // ---- configuration (from generated constructor, after coverpoints init'd) ----
-    virtual void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-                      int line, int col);
+    virtual void init(const char* hier, uint32_t atLeast, uint32_t dims, VlCoverpoint* const* cps,
+                      const char* file, int line, int col);
     /// Add a cross bin using a verilation-time bitmap of selected Normal-bin tuples.
     void addBin(VlCovBinKind kind, std::initializer_list<uint64_t> selection, const char* namep,
                 const char* filep, int line, int col);
@@ -456,9 +457,10 @@ public:
     }
     std::string binName(uint32_t i) const override;
     void coverageParts(double& covered, double& total) const override {
-        covered = m_numCovered;
         total = hasExplicitBins() ? m_explicitp->normalBins + m_explicitp->autoBins.size()
                                   : m_numAutoBins;
+        // With option.at_least 0, every bin is covered before any sample
+        covered = m_atLeast ? m_numCovered : total;
     }
 };
 
@@ -519,8 +521,8 @@ public:
 
     // METHODS
     /// Initialize after all feeding coverpoints have finalized their live bins.
-    void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-              int line, int col) override;
+    void init(const char* hier, uint32_t atLeast, uint32_t dims, VlCoverpoint* const* cps,
+              const char* file, int line, int col) override;
     /// Build cross-bin selections in postfix order.
     void selectAll();
     /// Start a binsof term over the live bins declared in [first, end) of dimension 'dim'.
