@@ -244,6 +244,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_HIER_BLOCK             "hier_block"
 %token<fl>              yVLT_HIER_PARAMS            "hier_params"
 %token<fl>              yVLT_HIER_WORKERS           "hier_workers"
+%token<fl>              yVLT_HIER_XMR_PORT          "hier_xmr_port"
 %token<fl>              yVLT_INLINE                 "inline"
 %token<fl>              yVLT_ISOLATE_ASSIGNMENTS    "isolate_assignments"
 %token<fl>              yVLT_LINT_OFF               "lint_off"
@@ -291,6 +292,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_TASK     "--task"
 %token<fl>              yVLT_D_VAR      "--var"
 %token<fl>              yVLT_D_WORKERS  "--workers"
+%token<fl>              yVLT_D_WIDTH    "--width"
+%token<fl>              yVLT_D_SIGNED   "--signed"
 
 %token<strp>            yaD_PLI         "${pli-system}"
 
@@ -8482,6 +8485,13 @@ vltItem:
                         { V3Control::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
         |       yVLT_HIER_WORKERS vltDHierDpi vltDWorkers
                         { V3Control::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
+        |       yVLT_HIER_XMR_PORT vltDModule vltDBlock vltDXmrPort vltDWidth vltDScope
+                        { V3Control::addHierXmrPort($<fl>1, *$3, *$2, *$4, $5->toSInt(), false,
+                                                    *$6); }
+        |       yVLT_HIER_XMR_PORT vltDModule vltDBlock vltDXmrPort vltDWidth yVLT_D_SIGNED
+                    vltDScope
+                        { V3Control::addHierXmrPort($<fl>1, *$3, *$2, *$4, $5->toSInt(), true,
+                                                    *$7); }
         |       yVLT_PARALLEL_CASE vltDFile
                         { V3Control::addCaseParallel(*$2, 0); }
         |       yVLT_PARALLEL_CASE vltDFile yVLT_D_LINES yaINTNUM
@@ -8597,6 +8607,14 @@ vltDFTaskE<strp>:
 
 vltDWorkers<nump>:  // --workers <arg>
                 yVLT_D_WORKERS yaINTNUM                  { $$ = $2; }
+        ;
+
+vltDXmrPort<strp>:  // --port <arg>
+                yVLT_D_PORT str                          { $$ = $2; }
+        ;
+
+vltDWidth<nump>:  // --width <arg>
+                yVLT_D_WIDTH yaINTNUM                    { $$ = $2; }
         ;
 
 vltInlineFront<cbool>:
