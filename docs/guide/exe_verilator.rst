@@ -1802,6 +1802,15 @@ Summary:
    option allowed for backward compatibility with versions before Verilator
    5.006, when Verilator would always pack unpacked structures.
 
+.. option:: --subgraph-schedule
+
+.. option:: --no-subgraph-schedule
+
+   For internal use only. Enables or disables recognition of experimental
+   subgraph scheduling boundaries. When enabled, Verilator records modules
+   marked by a ``/*verilator subgraph_boundary*/`` metacomment or a
+   ``subgraph -module`` VLT configuration entry. Disabled by default.
+
 .. option:: -sv
 
    Specifies SystemVerilog language features should be enabled; equivalent

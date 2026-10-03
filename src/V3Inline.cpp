@@ -273,6 +273,7 @@ class InlineModGraphBuilder final : public VNVisitor {
         if (nodep->verilatorLib() && v3Global.opt.trace()) {
             vtxp->setNoInlineHard("verilatorLib with --trace");
         }
+        if (nodep->subgraphBoundary()) vtxp->setNoInlineHard("subgraphBoundary");
 
         // Don't inline public modules by default
         if (nodep->modPublic()) vtxp->setNoInlineSoft("Public module");

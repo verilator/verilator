@@ -239,6 +239,11 @@ class LinkResolveVisitor final : public VNVisitor {
             m_modp->modPublic(true);  // Need to get to the task...
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == VPragmaType::SUBGRAPH_BOUNDARY) {
+            UASSERT_OBJ(m_modp, nodep, "SUBGRAPH_BOUNDARY not under a module");
+            m_modp->subgraphBoundary(v3Global.opt.subgraphSchedule());
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->pragType() == VPragmaType::VERILATOR_LIB) {
             UASSERT_OBJ(m_modp, nodep, "VERILATOR_LIB not under a module");
             m_modp->verilatorLib(true);

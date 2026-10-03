@@ -2775,6 +2775,7 @@ void AstNodeModule::dump(std::ostream& str) const {
         str << " [RECURSIVE]";
     }
     if (parameterizedTemplate()) str << " [PAR-TEMPL]";
+    if (subgraphBoundary()) str << " [SUBGRAPH-BOUNDARY]";
     if (verilatorLib()) str << " [VERILATOR-LIB]";
     if (unconnectedDrive().isTrue()) str << " [UCDRV]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
@@ -2792,6 +2793,7 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, dead);
     dumpJsonBoolFuncIf(str, recursiveClone);
     dumpJsonBoolFuncIf(str, recursive);
+    dumpJsonBoolFuncIf(str, subgraphBoundary);
     dumpJsonBoolFuncIf(str, verilatorLib);
     dumpJsonStr(str, "unconnectedDrive", unconnectedDrive().ascii());
     dumpJsonStr(str, "lifetime", lifetime().ascii());

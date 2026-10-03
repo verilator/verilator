@@ -261,6 +261,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_SC_BV                  "sc_bv"
 %token<fl>              yVLT_SFORMAT                "sformat"
 %token<fl>              yVLT_SPLIT_VAR              "split_var"
+%token<fl>              yVLT_SUBGRAPH               "subgraph"
 %token<fl>              yVLT_TIMING_OFF             "timing_off"
 %token<fl>              yVLT_TIMING_ON              "timing_on"
 %token<fl>              yVLT_TRACING_OFF            "tracing_off"
@@ -805,6 +806,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SC_BV                 "/*verilator sc_bv*/"
 %token<fl>              yVL_SFORMAT               "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
+%token<fl>              yVL_SUBGRAPH_BOUNDARY     "/*verilator subgraph_boundary*/"
 %token<fl>              yVL_FSM_ARC_INCL_COND     "/*verilator fsm_arc_include_cond*/"
 %token<fl>              yVL_FSM_RESET_ARC         "/*verilator fsm_reset_arc*/"
 %token<fl>              yVL_FSM_STATE             "/*verilator fsm_state*/"
@@ -2685,6 +2687,7 @@ non_port_module_item<nodep>:    // ==IEEE: non_port_module_item
         |       yVL_INLINE_MODULE                       { $$ = new AstPragma{$1, VPragmaType::INLINE_MODULE}; }
         |       yVL_NO_INLINE_MODULE                    { $$ = new AstPragma{$1, VPragmaType::NO_INLINE_MODULE}; }
         |       yVL_PUBLIC_MODULE                       { $$ = new AstPragma{$1, VPragmaType::PUBLIC_MODULE}; v3Global.dpi(true); }
+        |       yVL_SUBGRAPH_BOUNDARY                   { $$ = new AstPragma{$1, VPragmaType::SUBGRAPH_BOUNDARY}; }
         ;
 
 vlScBlock<nodep>:  // Verilator-specific `systemc_* blocks
@@ -8482,6 +8485,8 @@ vltItem:
                         { V3Control::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
         |       yVLT_HIER_WORKERS vltDHierDpi vltDWorkers
                         { V3Control::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
+        |       yVLT_SUBGRAPH vltDModuleE
+                        { V3Control::addModulePragma(*$2, VPragmaType::SUBGRAPH_BOUNDARY); }
         |       yVLT_PARALLEL_CASE vltDFile
                         { V3Control::addCaseParallel(*$2, 0); }
         |       yVLT_PARALLEL_CASE vltDFile yVLT_D_LINES yaINTNUM

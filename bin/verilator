@@ -571,6 +571,7 @@ detailed descriptions of these arguments.
     --no-std-package            Prevent parsing standard package
     --no-std-waiver             Prevent parsing standard lint waivers
     --no-stop-fail              Do not call $stop when assertion fails
+    --subgraph-schedule         Enable experimental subgraph boundaries
      -sv                        Enable SystemVerilog parsing
      +systemverilogext+<ext>    Synonym for +1800-2023ext+<ext>
     --threads <threads>         Enable multithreading

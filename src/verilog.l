@@ -158,6 +158,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "sc_bv"               { FL; return yVLT_SC_BV; }
   "sformat"             { FL; return yVLT_SFORMAT; }
   "split_var"           { FL; return yVLT_SPLIT_VAR; }
+  "subgraph"            { FL; return yVLT_SUBGRAPH; }
   "timing_off"          { FL; return yVLT_TIMING_OFF; }
   "timing_on"           { FL; return yVLT_TIMING_ON; }
   "tracing_off"         { FL; return yVLT_TRACING_OFF; }
@@ -855,6 +856,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator sc_clock*/"              { FL; yylval.fl->v3warn(DEPRECATED, "sc_clock is ignored"); FL_BRK; }
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
   "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
+  "/*verilator subgraph_boundary*/"     { FL; return yVL_SUBGRAPH_BOUNDARY; }
   /* Experimental Verilator-specific FSM coverage controls. These names were
    * chosen to match the current extractor behavior, not a published synthesis
    * or simulator pragma standard, so they may evolve as we settle on longer-

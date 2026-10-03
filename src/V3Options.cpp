@@ -1776,6 +1776,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-std-package", OnOff, &m_stdPackage);
     DECL_OPTION("-std-waiver", OnOff, &m_stdWaiver);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
+    DECL_OPTION("-subgraph-schedule", OnOff, &m_subgraphSchedule);
+    DECL_OPTION("-subgraph_schedule", OnOff, &m_subgraphSchedule).undocumented();
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
 
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
