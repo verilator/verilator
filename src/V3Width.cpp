@@ -6349,7 +6349,7 @@ class WidthVisitor final : public VNVisitor {
         PatVecMap patmap = patVectorMap(nodep, range);
         UINFO(9, "ent " << range.hi() << " to " << range.lo());
         AstNodeExpr* newp = nullptr;
-        for (int ent = range.hi(); ent >= range.lo(); --ent) {
+        for (const int ent : range.seqHiToLo()) {
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             const auto it = patmap.find(ent);
@@ -9652,7 +9652,7 @@ class WidthVisitor final : public VNVisitor {
                         AstInitArray* newp = new AstInitArray{
                             constp->fileline(), lhsDTypep,
                             new AstConst{constp->fileline(), AstConst::WidthedValue{}, 8, 0}};
-                        for (int aindex = arrayp->lo(); aindex <= arrayp->hi(); ++aindex) {
+                        for (const int aindex : arrayp->declRange().seqLoToHi()) {
                             int cindex = arrayp->declRange().ascending() ? (arrayp->hi() - aindex)
                                                                          : (aindex - arrayp->lo());
                             V3Number selected{constp, 8};
@@ -10834,7 +10834,7 @@ class WidthVisitor final : public VNVisitor {
         // as the element variables are in that order, indexed from lo
         AstInitArray* const initp = new AstInitArray{flp, arrp, nullptr};
         const VNumRange range = arrp->declRange();
-        for (int n = 0, i = range.left(); n < range.elements(); ++n, i += range.leftToRightInc()) {
+        for (const int i : range.seqLeftToRight()) {
             const std::string s = name + "__BRA__" + AstNode::encodeNumber(i) + "__KET__";
             initp->addIndexValuep(
                 i - range.lo(), newIfaceArrayInit(refp, arrp->subDTypep(), s, suffix, elemVarpr));

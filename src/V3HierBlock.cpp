@@ -112,11 +112,10 @@ static string V3HierParametersFileName(const string& prefix) {
 }
 
 static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forMkJson) {
-    string topModuleFile;
-    if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
+    const string topModuleFile = hblockp ? hblockp->vFileIfNecessary() : "";
     if (!forMkJson) {
-        if (!topModuleFile.empty()) *of << topModuleFile << "\n";
-        for (const auto& i : v3Global.opt.vFiles()) *of << i.filename() << "\n";
+        for (const string& filename : V3HierGraph::sourceFiles(topModuleFile))
+            *of << filename << "\n";
     }
     for (const auto& i : v3Global.opt.libraryFiles()) {
         if (V3Os::filenameRealPath(i.filename()) != topModuleFile)
@@ -392,6 +391,15 @@ public:
         return HierBlockUsageCollectVisitor{netlistp}.m_graphp;
     }
 };
+
+VStringList V3HierGraph::sourceFiles(const string& topModuleFile) {
+    VStringList sources;
+    sources.reserve(v3Global.opt.vFiles().size() + 1);
+    for (const VFileLibName& vfile : v3Global.opt.vFiles()) sources.emplace_back(vfile.filename());
+    // Library-discovered blocks may depend on packages in the explicit input files.
+    if (!topModuleFile.empty()) sources.emplace_back(topModuleFile);
+    return sources;
+}
 
 void V3HierGraph::writeCommandArgsFiles(bool forMkJson) const {
 

@@ -558,8 +558,7 @@ class TraceDeclVisitor final : public VNVisitor {
         } else {
             AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
             // Always iterate left index to right index
-            const int inc = nodep->rangep()->ascending() ? 1 : -1;
-            for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
+            for (const int i : nodep->declRange().seqLeftToRight()) {
                 VL_RESTORER(m_traValuep);
                 m_traName = '[' + std::to_string(i) + ']';
                 m_traValuep = m_traValuep->cloneTree(false);
@@ -583,8 +582,7 @@ class TraceDeclVisitor final : public VNVisitor {
                                             nodep->left(), nodep->right(), !newFunc});
 
         // Always iterate left index to right index
-        const int inc = nodep->rangep()->ascending() ? 1 : -1;
-        for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
+        for (const int i : nodep->declRange().seqLeftToRight()) {
             VL_RESTORER(m_traValuep);
             m_traName = '[' + std::to_string(i) + ']';
             const int lsb = (i - nodep->lo()) * subtypep->width();
