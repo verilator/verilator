@@ -1518,12 +1518,62 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    bool checkPackedSelectRange(AstNodePreSel* nodep) const {
+        return !m_doGenerate && !(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))
+               && VN_IS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType);
+    }
+    static void constifySelectIndex(AstNodeExpr* nodep) {
+        if (VN_IS(nodep, Const)) return;
+        const AstVarRef* const refp = VN_CAST(nodep, VarRef);
+        if (!refp || refp->varp()->isParam()) V3Const::constifyParamsNoWarnEdit(nodep);
+    }
+    static bool packedSelectIndexValue(const AstConst* nodep, int64_t& value) {
+        if (!nodep || nodep->num().isFourState() || nodep->num().width() > 64) return false;
+        if (nodep->num().isSigned()) {
+            value = nodep->num().toSQuad();
+        } else {
+            const uint64_t unsignedValue = nodep->num().toUQuad();
+            if (unsignedValue > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+                return false;
+            }
+            value = static_cast<int64_t>(unsignedValue);
+        }
+        return true;
+    }
+    void warnPackedSelectRange(AstNodePreSel* nodep, int64_t first, int64_t last) const {
+        const AstPackArrayDType* const dtypep
+            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType);
+        const VNumRange range = dtypep->declRange();
+        const int64_t low = std::min(first, last);
+        const int64_t high = std::max(first, last);
+        // The opposite side is already diagnosed after the select is flattened.
+        const bool missingSideOutOfRange = range.ascending()
+                                               ? low < range.lo() && high <= range.hi()
+                                               : high > range.hi() && low >= range.lo();
+        if (missingSideOutOfRange) {
+            nodep->v3warn(SELRANGE,
+                          "Selection index out of range: "
+                              << (low == high ? std::to_string(low)
+                                              : std::to_string(high) + ":" + std::to_string(low))
+                              << " outside " << range.hi() << ":" << range.lo());
+        }
+    }
     void visit(AstSelBit* nodep) override {
         // Just a quick check as after V3Param these nodes instead are AstSel's
         userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->thsp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
+        // Packed-array indices become flattened bit offsets in V3WidthSel. A constant index
+        // above the declared range (or below it for ascending ranges) may wrap when that
+        // offset is narrowed, before the later AstSel range checks can see it.
+        if (checkPackedSelectRange(nodep)) {
+            constifySelectIndex(nodep->bitp());
+            int64_t index;
+            if (packedSelectIndexValue(VN_CAST(nodep->bitp(), Const), index)) {
+                warnPackedSelectRange(nodep, index, index);
+            }
+        }
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             VL_DANGLING(nodep);
@@ -1538,6 +1588,17 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->leftp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->rightp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
+        if (checkPackedSelectRange(nodep)) {
+            constifySelectIndex(nodep->leftp());
+            constifySelectIndex(nodep->rightp());
+            const AstConst* const leftp = VN_CAST(nodep->leftp(), Const);
+            const AstConst* const rightp = VN_CAST(nodep->rightp(), Const);
+            int64_t left;
+            int64_t right;
+            if (packedSelectIndexValue(leftp, left) && packedSelectIndexValue(rightp, right)) {
+                warnPackedSelectRange(nodep, left, right);
+            }
+        }
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             nodep = nullptr;
@@ -1551,6 +1612,18 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->widthp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
+        if (checkPackedSelectRange(nodep)) {
+            constifySelectIndex(nodep->bitp());
+            constifySelectIndex(nodep->widthp());
+            const AstConst* const indexp = VN_CAST(nodep->bitp(), Const);
+            const AstConst* const widthp = VN_CAST(nodep->widthp(), Const);
+            int64_t index;
+            int64_t width;
+            if (packedSelectIndexValue(indexp, index) && packedSelectIndexValue(widthp, width)
+                && width > 0 && index <= std::numeric_limits<int64_t>::max() - width + 1) {
+                warnPackedSelectRange(nodep, index, index + width - 1);
+            }
+        }
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             nodep = nullptr;
@@ -1564,6 +1637,18 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->widthp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
+        if (checkPackedSelectRange(nodep)) {
+            constifySelectIndex(nodep->bitp());
+            constifySelectIndex(nodep->widthp());
+            const AstConst* const indexp = VN_CAST(nodep->bitp(), Const);
+            const AstConst* const widthp = VN_CAST(nodep->widthp(), Const);
+            int64_t index;
+            int64_t width;
+            if (packedSelectIndexValue(indexp, index) && packedSelectIndexValue(widthp, width)
+                && width > 0 && index >= std::numeric_limits<int64_t>::min() + width - 1) {
+                warnPackedSelectRange(nodep, index - width + 1, index);
+            }
+        }
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             nodep = nullptr;
