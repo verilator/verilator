@@ -321,7 +321,7 @@ class DeadVisitor final : public VNVisitor {
         if (VN_IS(m_modp, Package) || VN_IS(m_modp, Class)) m_dtypePkgsp.emplace(nodep, m_modp);
         // A struct type moved to the type table refers to its package via classOrPackagep
         if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(nodep, NodeUOrStructDType)) {
-            if (sdtypep->classOrPackagep()) {
+            if (sdtypep->classOrPackagep() && sdtypep->classOrPackagep() != m_modp) {
                 m_dtypePkgsp.emplace(nodep, sdtypep->classOrPackagep());
             }
         }
