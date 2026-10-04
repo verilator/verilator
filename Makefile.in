@@ -796,8 +796,8 @@ $(COVERAGE_DIR)/verilator-patch.info: $(COVERAGE_DIR)/verilator.info
 	@echo "####################################################################"
 	rm -f $(COVERAGE_DIR)/empty-patch
 	git diff $(COVERAGE_REF_BASE) -- include src > $(COVERAGE_DIR)/filter.patch
-	[ -s $(COVERAGE_DIR)/filter.patch ] || touch $(COVERAGE_DIR)/empty-patch
 	$(FASTCOV) -C $^ --lcov -o $@ --diff-filter $(COVERAGE_DIR)/filter.patch
+	grep -q '^DA:' $@ || touch $(COVERAGE_DIR)/empty-patch
 
 # Build coverage report
 $(COVERAGE_DIR)/report/index.html: $(COVERAGE_DIR)/verilator$(if $(COVERAGE_REF_BASE),-patch).info
