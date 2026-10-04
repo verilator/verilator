@@ -3387,6 +3387,11 @@ class ParamVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstEnumItemRef* nodep) override {
+        // Needs relink, as may remove pointed-to item
+        if (nodep->containsGenBlock()) nodep->itemp(nullptr);
+        iterateChildren(nodep);
+    }
     void visit(AstVarXRef* nodep) override {
         if (nodep->containsGenBlock()) {
             // Needs relink, as may remove pointed-to var
@@ -3466,10 +3471,13 @@ class ParamVisitor final : public VNVisitor {
     void visit(AstUnlinkedRef* nodep) override {
         AstVarXRef* const varxrefp = VN_CAST(nodep->refp(), VarXRef);
         AstNodeFTaskRef* const taskrefp = VN_CAST(nodep->refp(), NodeFTaskRef);
+        AstEnumItemRef* const enumrefp = VN_CAST(nodep->refp(), EnumItemRef);
         if (varxrefp) {
             m_unlinkedTxt = varxrefp->dotted();
         } else if (taskrefp) {
             m_unlinkedTxt = taskrefp->dotted();
+        } else if (enumrefp) {
+            m_unlinkedTxt = enumrefp->dotted();
         } else {
             nodep->v3fatalSrc("Unexpected AstUnlinkedRef node");
             return;
@@ -3478,8 +3486,10 @@ class ParamVisitor final : public VNVisitor {
 
         if (varxrefp) {
             varxrefp->dotted(m_unlinkedTxt);
-        } else {
+        } else if (taskrefp) {
             taskrefp->dotted(m_unlinkedTxt);
+        } else {
+            enumrefp->dotted(m_unlinkedTxt);
         }
         nodep->replaceWith(nodep->refp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
