@@ -107,7 +107,7 @@ jobs:
       - name: Combine code coverage data
         if: ${{ inputs.dev-gcov }}
         run: |
-          make coverage-combine FASTCOV_JOBS=2
+          make coverage-combine
           mv obj_coverage/verilator.info obj_coverage/verilator-${{ inputs.suite }}.info
           ls -lsha obj_coverage
 
