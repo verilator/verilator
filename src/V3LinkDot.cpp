@@ -3510,10 +3510,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return dotSymp;
     }
     VSymEnt* findDottedRefSymp(AstNode* nodep, VSymEnt* lookupSymp, const string& dotted,
-                               string& baddot, VSymEnt*& okSymp, bool& modport) {
+                               string& baddot, VSymEnt*& okSymp, bool* modportp = nullptr) {
         // Return scope to search for a relinked hierarchical reference
         // (AstVarXRef or AstEnumItemRef), or nullptr after error if not found
-        modport = false;
+        // If modportp is given, set true when the reference went through a modport
+        if (modportp) *modportp = false;
         VSymEnt* dotSymp = m_statep->findDotted(nodep->fileline(), lookupSymp, dotted, baddot,
                                                 okSymp, true);  // Maybe nullptr
         if (!dotSymp) {
@@ -3528,7 +3529,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
                 if (ifaceRefp->modportp()) {
                     dotSymp = m_statep->getNodeSym(ifaceRefp->modportp());
-                    modport = true;
+                    if (modportp) *modportp = true;
                 } else {
                     dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
                 }
@@ -5077,7 +5078,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* okSymp;
             bool modport;
             VSymEnt* const dotSymp
-                = findDottedRefSymp(nodep, lookupSymp, nodep->dotted(), baddot, okSymp, modport);
+                = findDottedRefSymp(nodep, lookupSymp, nodep->dotted(), baddot, okSymp, &modport);
             if (!dotSymp) return;
 
             if (!m_statep->forScopeCreation()) {
@@ -5181,19 +5182,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_statep->forParamed() && !nodep->dotted().empty() && m_modSymp) {
             // Hierarchical reference, relink as V3Param may have specialized the module
             string baddot;
-            VSymEnt* okSymp;
-            bool modport;
+            VSymEnt* okSymp = nullptr;
             VSymEnt* const dotSymp
-                = findDottedRefSymp(nodep, m_curSymp, nodep->dotted(), baddot, okSymp, modport);
+                = findDottedRefSymp(nodep, m_curSymp, nodep->dotted(), baddot, okSymp);
             if (!dotSymp) return;
             VSymEnt* const foundp
                 = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
             AstEnumItem* const itemp = foundp ? VN_CAST(foundp->nodep(), EnumItem) : nullptr;
             if (!itemp) {
-                nodep->v3error("Can't find definition of "
-                               << AstNode::prettyNameQ(baddot) << " in dotted enum item: '"
-                               << nodep->dotted() + "." + nodep->prettyName() << "'\n"
-                               << nodep->warnContextPrimary() << okSymp->cellErrorScopes(nodep));
+                nodep->v3error("Enum item " << nodep->prettyNameQ() << " not found in "
+                                            << AstNode::prettyNameQ(nodep->dotted()) << '\n'
+                                            << nodep->warnContextPrimary());
                 return;
             }
             nodep->itemp(itemp);

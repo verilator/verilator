@@ -5,6 +5,8 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+
 package Pkg;
   localparam PKG_PARAM = 1;
 
@@ -256,7 +258,7 @@ module t (/*AUTOARG*/
 
     if (Pkg::PKG_PARAM != 1) $stop;
     sub.r = 62.0;
-    if (sub.sub_gen.SUB_B != 2'd1) $stop;
+    `checkd(sub.sub_gen.SUB_B, 2'd1);
 
     mod_res = mod_val % 5;
 

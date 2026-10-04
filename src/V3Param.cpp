@@ -3334,6 +3334,7 @@ class ParamVisitor final : public VNVisitor {
     void visit(AstEnumItemRef* nodep) override {
         // Needs relink, as may remove pointed-to item
         if (nodep->containsGenBlock()) nodep->itemp(nullptr);
+        iterateChildren(nodep);
     }
     void visit(AstVarXRef* nodep) override {
         if (nodep->containsGenBlock()) {

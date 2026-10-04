@@ -307,9 +307,16 @@ module Vt_debug_emitv_t;
                 $stop;
             end
             sub.r = 62.0;
-            if ((SUB_B != 2'h1)) begin
-                $stop;
-            end
+            do begin
+                if ((SUB_B !== 2'h1)) begin
+                    begin
+                        $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", 
+                               136'h742f745f64656275675f656d6974762e76, 
+                               'sh105, SUB_B, 2'h1);
+                        $stop;
+                    end
+                end
+            end while (1'h0)
             mod_res = (mod_val % 'sh5);
             $display("%g", $log10(r));
             $display("%g", $ln(r));
