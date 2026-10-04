@@ -57,6 +57,8 @@ module t (
     packed_sel7 = packed_ascending[0];
     packed_sel7 = packed_ascending[4];
     packed_sel7 = packed_ascending[3];
+    // An unsigned 64-bit index cannot be represented as int64_t.
+    packed_sel = packed_i[64'h8000_0000_0000_0000];
     $write("Bad select %x %x\n", sel, sel2);
   end
 
