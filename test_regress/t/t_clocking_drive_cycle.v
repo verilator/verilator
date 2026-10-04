@@ -107,9 +107,14 @@ module t;
   bit [1:0] q;
   bit c;
   bit c0;
+  bit c7;
+  bit cr;
+  bit cr5;
   bit d;
   int cycles = 2;
   int nocycles = 0;
+  bit [6:0] cycles7 = 2;
+  real rcycles = 1.6;
   string v_log;
   string q_log;
   string s_log;
@@ -119,6 +124,10 @@ module t;
   string x0_log;
   string c_log;
   string c0_log;
+  string c7_log;
+  string cr_log;
+  string cr5_log;
+  string proc_time;
   string d_log;
   string z_log;
   string w_log;
@@ -142,7 +151,7 @@ module t;
   endclocking
 
   clocking fast @(posedge clk);
-    output v, c, c0;
+    output v, c, c0, c7, cr, cr5;
   endclocking
 
   sub sub (
@@ -173,6 +182,9 @@ module t;
   always @(sub.g[0].x) if ($time != 0) x0_log = {x0_log, $sformatf("%0d@%0d ", sub.g[0].x, $time)};
   always @(c) if ($time != 0) c_log = {c_log, $sformatf("%0d@%0d ", c, $time)};
   always @(c0) if ($time != 0) c0_log = {c0_log, $sformatf("%0d@%0d ", c0, $time)};
+  always @(c7) if ($time != 0) c7_log = {c7_log, $sformatf("%0d@%0d ", c7, $time)};
+  always @(cr) if ($time != 0) cr_log = {cr_log, $sformatf("%0d@%0d ", cr, $time)};
+  always @(cr5) if ($time != 0) cr5_log = {cr5_log, $sformatf("%0d@%0d ", cr5, $time)};
   always @(d) if ($time != 0) d_log = {d_log, $sformatf("%0d@%0d ", d, $time)};
   always @(bus.z) if ($time != 0) z_log = {z_log, $sformatf("%0d@%0d ", bus.z, $time)};
   always @(bus.w) if ($time != 0) w_log = {w_log, $sformatf("%0d@%0d ", bus.w, $time)};
@@ -210,6 +222,10 @@ module t;
     // A non-constant cycle delay is evaluated by the drive, and counted at runtime
     fast.c <= ##cycles 1;
     fast.c0 <= ##nocycles 1;
+    fast.c7 <= ##cycles7 1;
+    // A real cycle count is rounded (IEEE 1800-2023 6.12.1)
+    fast.cr <= ##rcycles 1;
+    fast.cr5 <= ##(2.5) 1;
     sub.g[0].cb.x <= ##cycles 1;
     buses[1].cb.w <= ##2 1;
     mvif.cb.w <= ##2 1;
@@ -219,6 +235,13 @@ module t;
   initial begin
     #1 evif.icb.y <= ##1 1;
     #20 ebus.en = 1;
+  end
+
+  // Also in a procedural cycle delay, of the default clocking
+  initial begin
+    #2;
+    ##(1.5);
+    proc_time = $sformatf("%0d", $time);
   end
 
   initial begin
@@ -232,7 +255,11 @@ module t;
     `checks(x0_log, "1@25 ")
     `checks(c_log, "1@25 ")
     `checks(c0_log, "1@5 ")
+    `checks(c7_log, "1@25 ")
+    `checks(cr_log, "1@25 ")
+    `checks(cr5_log, "1@35 ")
     `checks(d_log, "1@20 ")
+    `checks(proc_time, "60")
     `checks(z_log, "1@5 ")
     `checks(w_log, "1@25 ")
     `checks(tw_log, "1@21 ")

@@ -679,11 +679,13 @@ private:
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         // A non-constant delay of a synchronous drive is counted at runtime, waiting for none if
-        // zero, like a constant '##0' in a synchronous drive
-        if (valuep->width() > cntVarp->width()) {
+        // zero, like a constant '##0' in a synchronous drive. The count is integral of 64 bits,
+        // as V3Width makes delays, or real, which is rounded (IEEE 1800-2023 6.12.1)
+        if (valuep->isDouble()) {
+            valuep = new AstRToIRoundS{flp, valuep};
+            valuep->dtypeFrom(cntVarp);
+        } else {
             valuep = new AstSel{flp, valuep, 0, cntVarp->width()};
-        } else if (valuep->width() < cntVarp->width()) {
-            valuep = new AstExtend{flp, valuep, cntVarp->width()};
         }
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
 
