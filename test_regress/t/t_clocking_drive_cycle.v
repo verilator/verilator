@@ -18,8 +18,9 @@ interface bus_if (
 );
   bit w;
   bit ws;
+  bit z;
   clocking cb @(posedge clk);
-    output w;
+    output w, z;
     output #1 ws;
   endclocking
   modport tb(clocking cb);
@@ -48,12 +49,15 @@ class Driver;
   virtual bus_if vif;
   virtual bus_if.tb tvif;
   virtual bus_if vifs[2];
+  virtual ev_if vvif;
   task run();
     @(vif.cb);
     vif.cb.w <= ##2 1;
     tvif.cb.w <= ##2 1;
     tvif.cb.ws <= ##2 1;
     vifs[0].cb.w <= ##2 1;
+    vvif.ecb.e <= ##2 1;
+    vif.cb.z <= ##0 1;
   endtask
 endclass
 
@@ -74,6 +78,12 @@ module sub (
   clocking pcb @(posedge pkg::pclk);
     output p;
   endclocking
+  for (genvar i = 0; i < 2; ++i) begin : g
+    bit x;
+    clocking cb @(posedge clk);
+      output x;
+    endclocking
+  end
   initial begin
     @(cb);
     cb.q <= ##1 2;
@@ -91,14 +101,26 @@ endmodule
 
 module t;
   bit clk;
+  bit tclk;
   bit slow_clk;
   bit [1:0] v;
   bit [1:0] q;
+  bit c;
+  bit c0;
+  bit d;
+  int cycles = 2;
+  int nocycles = 0;
   string v_log;
   string q_log;
   string s_log;
   string n_log;
   string p_log;
+  string x_log;
+  string x0_log;
+  string c_log;
+  string c0_log;
+  string d_log;
+  string z_log;
   string w_log;
   string tw_log;
   string tws_log;
@@ -111,14 +133,16 @@ module t;
   Driver drv = new;
 
   always #5 clk = ~clk;
+  always #7 tclk = ~tclk;
   always #20 slow_clk = ~slow_clk;
   always @(clk) pkg::pclk = clk;
 
   default clocking slow @(posedge slow_clk);
+    output d;
   endclocking
 
   clocking fast @(posedge clk);
-    output v;
+    output v, c, c0;
   endclocking
 
   sub sub (
@@ -126,7 +150,8 @@ module t;
       .q
   );
   bus_if bus (.clk);
-  bus_if tbus (.clk);
+  // Another instance of the interface, with another clock
+  bus_if tbus (.clk(tclk));
   bus_if buses[2] (.clk);
   bus_if mbus (.clk);
   bus_if pbus (.clk);
@@ -136,9 +161,6 @@ module t;
 
   virtual bus_if mvif;
   virtual en_if evif;
-  // Initialized statically, as a named event through an interface outside a class is evaluated
-  // also before the processes run
-  virtual ev_if vvif = vbus;
 
   initial forever #10->vbus.ev;
 
@@ -147,6 +169,12 @@ module t;
   always @(sub.s) if ($time != 0) s_log = {s_log, $sformatf("%0d@%0d ", sub.s, $time)};
   always @(sub.n) if ($time != 0) n_log = {n_log, $sformatf("%0d@%0d ", sub.n, $time)};
   always @(sub.p) if ($time != 0) p_log = {p_log, $sformatf("%0d@%0d ", sub.p, $time)};
+  always @(sub.g[1].x) if ($time != 0) x_log = {x_log, $sformatf("%0d@%0d ", sub.g[1].x, $time)};
+  always @(sub.g[0].x) if ($time != 0) x0_log = {x0_log, $sformatf("%0d@%0d ", sub.g[0].x, $time)};
+  always @(c) if ($time != 0) c_log = {c_log, $sformatf("%0d@%0d ", c, $time)};
+  always @(c0) if ($time != 0) c0_log = {c0_log, $sformatf("%0d@%0d ", c0, $time)};
+  always @(d) if ($time != 0) d_log = {d_log, $sformatf("%0d@%0d ", d, $time)};
+  always @(bus.z) if ($time != 0) z_log = {z_log, $sformatf("%0d@%0d ", bus.z, $time)};
   always @(bus.w) if ($time != 0) w_log = {w_log, $sformatf("%0d@%0d ", bus.w, $time)};
   always @(tbus.w) if ($time != 0) tw_log = {tw_log, $sformatf("%0d@%0d ", tbus.w, $time)};
   always @(tbus.ws) if ($time != 0) tws_log = {tws_log, $sformatf("%0d@%0d ", tbus.ws, $time)};
@@ -164,6 +192,7 @@ module t;
     drv.tvif = tbus;
     drv.vifs[0] = buses[0];
     drv.vifs[1] = buses[1];
+    drv.vvif = vbus;
     drv.run();
   end
 
@@ -175,6 +204,13 @@ module t;
     sub.cb.s <= ##2 7'h55;
     sub.ncb.n <= ##1 1;
     sub.pcb.p <= ##1 1;
+    sub.g[1].cb.x <= ##2 1;
+    // The default clocking counts its cycles as before
+    slow.d <= ##1 1;
+    // A non-constant cycle delay is evaluated by the drive, and counted at runtime
+    fast.c <= ##cycles 1;
+    fast.c0 <= ##nocycles 1;
+    sub.g[0].cb.x <= ##cycles 1;
     buses[1].cb.w <= ##2 1;
     mvif.cb.w <= ##2 1;
   end
@@ -186,19 +222,21 @@ module t;
   end
 
   initial begin
-    #1 vvif.ecb.e <= ##2 1;
-  end
-
-  initial begin
     #100;
     `checks(v_log, "1@25 ")
     `checks(q_log, "2@15 ")
     `checks(s_log, "85@25 ")
     `checks(n_log, "1@10 ")
     `checks(p_log, "1@15 ")
+    `checks(x_log, "1@25 ")
+    `checks(x0_log, "1@25 ")
+    `checks(c_log, "1@25 ")
+    `checks(c0_log, "1@5 ")
+    `checks(d_log, "1@20 ")
+    `checks(z_log, "1@5 ")
     `checks(w_log, "1@25 ")
-    `checks(tw_log, "1@25 ")
-    `checks(tws_log, "1@26 ")
+    `checks(tw_log, "1@21 ")
+    `checks(tws_log, "1@22 ")
     `checks(w0_log, "1@25 ")
     `checks(w1_log, "1@25 ")
     `checks(mw_log, "1@25 ")

@@ -16,4 +16,19 @@ module t;
   bit clk;
   sub sub ();
   initial sub.scb.s <= ##1 1;
+
+  ev_if vbus ();
+  virtual ev_if vvif;
+  initial begin
+    vvif = vbus;
+    vvif.ecb.e <= ##1 1;
+  end
 endmodule
+
+interface ev_if;
+  event ev;
+  bit e;
+  clocking ecb @(ev);
+    output e;
+  endclocking
+endinterface
