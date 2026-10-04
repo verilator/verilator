@@ -1183,6 +1183,12 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     }
     return nullptr;
 }
+bool AstConst::sameValueType(const AstConst* samep) const {
+    if (num().isDouble() != samep->num().isDouble()) return false;
+    if (num().isString() != samep->num().isString()) return false;
+    // Constant folding can leave the signedness on the dtype, not the V3Number
+    return num().isOpaque() || (width() == samep->width() && isSigned() == samep->isSigned());
+}
 AstConst::~AstConst() {
     // Only rare constants carry originating parameter-name metadata. For all other AstConst nodes,
     // the V3Number bit keeps this destructor from touching AstNetlist's side table. When the bit
