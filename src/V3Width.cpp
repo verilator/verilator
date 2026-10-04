@@ -1529,7 +1529,7 @@ class WidthVisitor final : public VNVisitor {
     }
     static bool packedSelectIndexValue(const AstConst* nodep, int64_t& value) {
         if (!nodep || nodep->num().isFourState() || nodep->num().width() > 64) return false;
-        if (nodep->num().isSigned()) {
+        if (nodep->dtypep()->isSigned()) {
             value = nodep->num().toSQuad();
         } else {
             const uint64_t unsignedValue = nodep->num().toUQuad();

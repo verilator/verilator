@@ -59,4 +59,10 @@ module t (
     packed_sel7 = packed_ascending[3];
     $write("Bad select %x %x\n", sel, sel2);
   end
+
+  initial begin
+    logic [-1:-2][3:0] packed_negative;
+    packed_negative = '0;
+    $write("Legal negative selects %x %x\n", packed_negative[-1], packed_negative[-2]);
+  end
 endmodule
