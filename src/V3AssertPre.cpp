@@ -645,23 +645,23 @@ private:
                 // Also the clockvars may be of different clocking blocks
                 nodep->v3error("Cycle delays cannot be used in synchronous drives to a"
                                " concatenation (IEEE 1800-2023 14.16)");
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                VL_DO_DANGLING(valuep->deleteTree(), valuep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
                 return;
             }
             // Count the cycles of the driven clockvar's clocking block (IEEE 1800-2023 14.16)
             sensesp = newDriveSensesp(nodep, m_drives.front());
             if (!sensesp) {
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                VL_DO_DANGLING(valuep->deleteTree(), valuep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
                 return;
             }
         } else if (!m_defaultClockingp) {
             if (!m_pexprp) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                VL_DO_DANGLING(valuep->deleteTree(), valuep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
                 return;
             }
             sensesp = m_senip->cloneTree(false);
