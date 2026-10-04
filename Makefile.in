@@ -710,7 +710,8 @@ override undefine COVERAGE_BASE # Use the above variabels instead
 
 # 'fastcov' setup
 FASTCOV := nodist/fastcov.py
-FASTCOV_OPT := -j $(shell nproc)
+FASTCOV_JOBS ?= $(shell nproc)
+FASTCOV_OPT := -j $(FASTCOV_JOBS)
 FASTCOV_OPT += --gcov $(GCOV)
 FASTCOV_OPT += --lcov
 FASTCOV_OPT += --process-gcno

@@ -57,6 +57,7 @@
 #include "V3Case.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
+#include "V3HierBlock.h"
 #include "V3LinkDotIfaceCapture.h"
 #include "V3MemberMap.h"
 #include "V3Os.h"
@@ -106,14 +107,16 @@ class ParameterizedHierBlocks final {
     std::map<const V3HierarchicalBlockOption*, ParamConstMap> m_hierParams;
     // Parameter variables of hierarchical blocks
     std::map<const std::string, GParamsMap> m_modParams;
+    // Formals declared without a type, whose type is that of the assigned value
+    std::set<const AstVar*> m_untypedParams;
 
     // METHODS
 
 public:
     ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep)
-        : m_hierSubRun{(!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild())
-                       // Exclude consolidation
-                       && !v3Global.opt.hierParamFile().empty()} {
+        // A type parameter file only describes a child's own types; the final consolidation
+        // run has none, but must still substitute the libraries it consumes.
+        : m_hierSubRun{!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild()} {
         for (const auto& hierOpt : hierOpts) {
             m_hierBlockOptsByOrigName.emplace(hierOpt.second.origName(), &hierOpt.second);
             const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
@@ -144,6 +147,12 @@ public:
                 for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                     if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                         if (varp->isGParam()) defParamIt->second.emplace(varp->name(), varp);
+                        // Recorded before V3Param resolves the type from the assigned value.
+                        const AstBasicDType* const dtypep
+                            = VN_CAST(varp->childDTypep(), BasicDType);
+                        if (varp->isGParam() && dtypep && dtypep->implicit()) {
+                            m_untypedParams.emplace(varp);
+                        }
                     }
                 }
             }
@@ -161,6 +170,10 @@ public:
             = m_hierBlockOptsByOrigName.equal_range(origName);
         const auto paramsIt = m_modParams.find(origName);
         UASSERT_OBJ(paramsIt != m_modParams.end(), modp, origName << " must be registered");
+        // An untyped parameter takes the type of its value, but libraries are distinguished
+        // only by parameter values. This is a pin whose value equals that of a library or the
+        // default, but whose type differs.
+        const AstPin* typeMismatchPinp = nullptr;
         HierMapIt hierIt;
         for (hierIt = candidates.first; hierIt != candidates.second; ++hierIt) {
             bool found = true;
@@ -175,15 +188,24 @@ public:
                                 "parameter for a hierarchical block must have been constified");
                     const auto paramIt = paramsIt->second.find(modvarp->name());
                     UASSERT_OBJ(paramIt != paramsIt->second.end(), modvarp, "must be registered");
+                    const bool untyped = m_untypedParams.count(paramIt->second);
                     AstConst* const defValuep = VN_CAST(paramIt->second->valuep(), Const);
                     if (defValuep && areSame(constp, defValuep)) {
-                        UINFO(5, "Setting default value of " << constp << " to " << modvarp);
-                        continue;  // Skip this parameter because setting the same value
+                        if (!untyped || constp->sameValueType(defValuep)) {
+                            UINFO(5, "Setting default value of " << constp << " to " << modvarp);
+                            continue;  // Skip this parameter because setting the same value
+                        }
+                        typeMismatchPinp = pinp;
                     }
                     const auto pIt = vlstd::as_const(params).find(modvarp->name());
                     UINFO(5, "Comparing " << modvarp->name() << " " << constp);
                     if (pIt == params.end() || paramIdx >= params.size()
                         || !areSame(constp, pIt->second.get())) {
+                        found = false;
+                        break;
+                    }
+                    if (untyped && !constp->sameValueType(pIt->second.get())) {
+                        typeMismatchPinp = pinp;
                         found = false;
                         break;
                     }
@@ -193,6 +215,15 @@ public:
                 }
             }
             if (found && paramIdx == hierIt->second->params().size()) break;
+        }
+        if (hierIt == candidates.second && typeMismatchPinp) {
+            typeMismatchPinp->v3warn(
+                E_UNSUPPORTED, "Unsupported: Untyped parameter "
+                                   << typeMismatchPinp->modVarp()->prettyNameQ()
+                                   << " of hierarchical block " << AstNode::prettyNameQ(origName)
+                                   << " given equal values of different width or"
+                                      " signedness");
+            return nullptr;
         }
         UASSERT_OBJ(hierIt != candidates.second, firstPinp, "No --lib-create wrapper found");
         // parameter settings will be removed in the bottom of caller visitCell().
@@ -306,6 +337,8 @@ class ParamProcessor final {
     using DefaultValueMap = std::map<std::string, AstNode*>;
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
+    // Module -> a defparam in it or below it, or nullptr (see nestedDefparamp)
+    std::map<const AstNodeModule*, const AstPin*> m_nestedDefparamps;
     VNDeleter m_deleter;  // Used to delay deletion of nodes
     // Class default type paramater dependencies
     std::vector<std::pair<AstParamTypeDType*, int>> m_classTypeParams;
@@ -628,6 +661,23 @@ class ParamProcessor final {
         std::set<const AstNodeModule*> visited;
         return hasDescendantDefparams(modp, visited);
     }
+    // Return a defparam in the module or below it. Unlike hasDescendantDefparams, also look
+    // inside generate constructs. Memoized, so each module is searched once.
+    const AstPin* nestedDefparamp(const AstNodeModule* modp) {
+        const auto pair = m_nestedDefparamps.emplace(modp, nullptr);
+        if (!pair.second) return pair.first->second;  // Searched, or being searched
+        const AstPin* foundp = nullptr;
+        modp->exists([&](const AstCell* cellp) {
+            for (const AstPin* pinp = cellp->paramsp(); pinp && !foundp;
+                 pinp = VN_AS(pinp->nextp(), Pin)) {
+                if (!pinp->paramPath().empty()) foundp = pinp;
+            }
+            if (!foundp && cellp->modp()) foundp = nestedDefparamp(cellp->modp());
+            return foundp != nullptr;
+        });
+        pair.first->second = foundp;
+        return foundp;
+    }
     // Check if parameter setting during instantiation is simple enough for hierarchical Verilation
     void checkSupportedParam(AstNodeModule* modp, AstPin* pinp) const {
         // InitArray is not supported because that can not be set via -G
@@ -636,6 +686,12 @@ class ParamProcessor final {
             bool supported = false;
             if (const AstConst* const constp = VN_CAST(pinp->exprp(), Const)) {
                 supported = !constp->isOpaque();
+                if (constp->num().isString()
+                    && !V3HierBlock::stringParamPassable(constp->num().toString())) {
+                    pinp->v3warn(E_UNSUPPORTED, "Unsupported: String value of hierarchical block"
+                                                " parameter with newline, double quote, '/*',"
+                                                " or whitespace before '//'");
+                }
             }
             if (!supported) {
                 pinp->v3error(
@@ -643,6 +699,11 @@ class ParamProcessor final {
                     << " has hier_block metacomment, hierarchical Verilation"
                     << " supports only integer/floating point/string and type param parameters");
             }
+        } else if (const AstParamTypeDType* const typep = pinp->modPTypep()) {
+            // Libraries are found by comparing values only
+            pinp->v3warn(E_UNSUPPORTED, "Unsupported: Setting type parameter "
+                                            << typep->prettyNameQ() << " of hierarchical block "
+                                            << AstNode::prettyNameQ(modp->origName()));
         }
     }
     bool moduleExists(const string& modName) const {
@@ -675,6 +736,11 @@ class ParamProcessor final {
         const auto pair = m_defaultParameterValues.emplace(
             std::piecewise_construct, std::forward_as_tuple(modp), std::forward_as_tuple());
         if (pair.second) {  // Not cached yet, so check parameters
+            // A separately compiled library cannot receive defparams aimed into its body
+            if (const AstPin* const defparamp = nestedDefparamp(modp)) {
+                defparamp->v3warn(E_UNSUPPORTED, "Unsupported: defparam inside hierarchical block "
+                                                     << AstNode::prettyNameQ(modp->origName()));
+            }
             // Using map with key=string so that we can scan it in deterministic order
             DefaultValueMap params;
             for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -2010,7 +2076,7 @@ class ParamProcessor final {
         if (m_hierBlocks.hierSubRun() && m_hierBlocks.isHierBlock(srcModp->origName())) {
             AstNodeModule* const paramedModp
                 = m_hierBlocks.findByParams(srcModp->origName(), paramsp, m_modp);
-            UASSERT_OBJ(paramedModp, nodep, "Failed to find sub-module for hierarchical block");
+            if (!paramedModp) return nullptr;  // Unsupported, already reported
             paramedModp->dead(false);
             // We need to relink the pins to the new module
             relinkPinsByName(pinsp, paramedModp);
@@ -3387,6 +3453,11 @@ class ParamVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstEnumItemRef* nodep) override {
+        // Needs relink, as may remove pointed-to item
+        if (nodep->containsGenBlock()) nodep->itemp(nullptr);
+        iterateChildren(nodep);
+    }
     void visit(AstVarXRef* nodep) override {
         if (nodep->containsGenBlock()) {
             // Needs relink, as may remove pointed-to var
@@ -3466,10 +3537,13 @@ class ParamVisitor final : public VNVisitor {
     void visit(AstUnlinkedRef* nodep) override {
         AstVarXRef* const varxrefp = VN_CAST(nodep->refp(), VarXRef);
         AstNodeFTaskRef* const taskrefp = VN_CAST(nodep->refp(), NodeFTaskRef);
+        AstEnumItemRef* const enumrefp = VN_CAST(nodep->refp(), EnumItemRef);
         if (varxrefp) {
             m_unlinkedTxt = varxrefp->dotted();
         } else if (taskrefp) {
             m_unlinkedTxt = taskrefp->dotted();
+        } else if (enumrefp) {
+            m_unlinkedTxt = enumrefp->dotted();
         } else {
             nodep->v3fatalSrc("Unexpected AstUnlinkedRef node");
             return;
@@ -3478,8 +3552,10 @@ class ParamVisitor final : public VNVisitor {
 
         if (varxrefp) {
             varxrefp->dotted(m_unlinkedTxt);
-        } else {
+        } else if (taskrefp) {
             taskrefp->dotted(m_unlinkedTxt);
+        } else {
+            enumrefp->dotted(m_unlinkedTxt);
         }
         nodep->replaceWith(nodep->refp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
