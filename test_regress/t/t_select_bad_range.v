@@ -21,7 +21,9 @@ module t (
   reg [3:0][0:0] packed_single;
   reg packed_bit;
   reg [5:2][6:0] packed_nonzero;
+  /* verilator lint_off ASCRANGE */
   reg [1:3][6:0] packed_ascending;
+  /* verilator lint_on ASCRANGE */
   reg [6:0] packed_sel7;
 
   always @(posedge clk) begin
@@ -32,6 +34,7 @@ module t (
     packed_typedef = packed_i;
     // Out of range in the outer packed dimension.
     packed_sel = packed_i[4];
+    packed_sel = packed_i[-1];
     packed_sel = packed_typedef[4];
     packed_sel = packed_i[PACKED_BAD_INDEX];
     packed_sel = packed_i[2+2];
@@ -47,6 +50,7 @@ module t (
     packed_slice = packed_i[0-:1];
     packed_single = '0;
     packed_bit = packed_single[4];
+    packed_bit = packed_single[-1];
     packed_nonzero = '0;
     // Below and above the declared [5:2] range.
     packed_sel7 = packed_nonzero[1];
