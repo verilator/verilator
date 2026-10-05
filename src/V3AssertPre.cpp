@@ -1115,6 +1115,7 @@ private:
         finalp->addStmtsp(initActiveCountp);
         finalp->addStmtsp(finalLoopp);
 
+        VL_RESTORER(m_pexprp);
         m_pexprp = new AstPExpr{flp, bodyp, finalp, nodep->dtypep()};
         VL_RESTORER(m_hasCycleDelay);
         m_hasCycleDelay = false;
