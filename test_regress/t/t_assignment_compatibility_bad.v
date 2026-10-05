@@ -39,6 +39,8 @@ module t;
   string_t text_array[2];
   string_t text_assoc[int];
   string_t text_wild[*];
+  string_t text_dyn[];
+  string_t text_queue[$];
   wide_t wide_value;
   bit [6:0] narrow_value;
   int integer_value;
@@ -60,5 +62,7 @@ module t;
     integer_value = text_array.bad_method;
     integer_value = text_assoc.bad_method;
     integer_value = text_wild.bad_method;
+    integer_value = text_dyn.bad_method;
+    integer_value = text_queue.bad_method;
   end
 endmodule
