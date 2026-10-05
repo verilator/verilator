@@ -668,9 +668,12 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
                     UINFO(4, "HIER-XMR: " << blockp->prettyNameQ() << " -> '" << xrefp->dotted()
                                           << "." << xrefp->name() << "' in "
                                           << targetp->prettyNameQ() << " => port " << portName);
-                }
-            });
-        }
+                    // These closing braces share one line because gcov blames a lone
+                    // closing brace for an epilogue block that never runs, which then
+                    // reads as an uncovered line; executed code on the line clears it.
+                    // clang-format off
+                } }); }
+        // clang-format on
         if (count) {
             UINFO(4, "HIER-XMR: block " << blockp->prettyNameQ() << " has " << count
                                         << " outbound XMR(s) needing promotion to ports");
