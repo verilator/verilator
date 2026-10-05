@@ -2325,7 +2325,6 @@ class AstVar final : public AstNode {
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
     bool m_hasUserInit : 1;  // Has initial assignment by user at parse time
-    bool m_isStatic : 1;  // Static C variable (for Verilog see instead lifetime())
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
     bool m_isIfaceParent : 1;  // dtype is reference to interface present in this module
@@ -2392,7 +2391,6 @@ class AstVar final : public AstNode {
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
         m_hasUserInit = false;
-        m_isStatic = false;
         m_isPulldown = false;
         m_isPullup = false;
         m_isIfaceParent = false;
@@ -2509,8 +2507,8 @@ public:
     string dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
-    string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false, bool constRef = false) const;
+    string vlArgType(bool named, bool forReturn, bool forFunc, bool asRef = false,
+                     bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir(bool forMember = false) const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
@@ -2560,7 +2558,6 @@ public:
     void primaryIO(bool flag) { m_primaryIO = flag; }
     void isConst(bool flag) { m_isConst = flag; }
     void isContinuously(bool flag) { m_isContinuously = flag; }
-    void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
     void isIfaceArraySplit(bool flag) { m_isIfaceArraySplit = flag; }
     void isInternal(bool flag) { m_isInternal = flag; }
@@ -2693,7 +2690,6 @@ public:
     bool isRand() const { return m_rand.isRand(); }
     bool isRandC() const { return m_rand.isRandC(); }
     bool isConst() const VL_MT_SAFE { return m_isConst; }
-    bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }
     bool isFuncLocal() const { return m_funcLocal; }
     bool isFuncLocalSticky() const { return m_funcLocalSticky; }

@@ -689,8 +689,8 @@ class CovergroupEventBindVisitor final : public VNVisitor {
 public:
     CovergroupEventBindVisitor(AstSenTree* eventp, AstClass* classp, AstVarScope* instancep)
         : m_instancep{instancep} {
-        classp->foreachMember([&](AstClass* const, AstVar* const varp) {
-            if (!varp->isStatic()) m_memberps.emplace(varp);
+        classp->foreachMember([&](AstClass* const, AstVar* const varp) {  //
+            m_memberps.emplace(varp);
         });
         iterate(eventp);
     }
