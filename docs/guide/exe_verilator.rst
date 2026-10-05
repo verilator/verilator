@@ -1407,7 +1407,7 @@ Summary:
    Similar to :vlopt:`--output-split-cfuncs`, it enables splitting symbol tables
    in the output .cpp files into multiple files.
 
-   Defaults to the value of :vlopt:`--output-split`, unless explicitly
+   Defaults to quadruple of the value of :vlopt:`--output-split`, unless explicitly
    specified.
 
 .. option:: -P

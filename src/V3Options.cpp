@@ -1052,7 +1052,7 @@ void V3Options::notify() VL_MT_DISABLED {
     // Default split limits if not specified
     if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
     if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
-    if (m_outputSplitSyms < 0) m_outputSplitSyms = m_outputSplit;
+    if (m_outputSplitSyms < 0) m_outputSplitSyms = m_outputSplit * 4;
 
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3warn(E_UNSUPPORTED,
