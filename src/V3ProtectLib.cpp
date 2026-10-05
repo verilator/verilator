@@ -40,6 +40,7 @@ class ProtectVisitor final : public VNVisitor {
     AstTextBlock* m_comboDeclsp = nullptr;  // Combo signal declaration list
     AstTextBlock* m_seqDeclsp = nullptr;  // Sequential signal declaration list
     AstTextBlock* m_tmpDeclsp = nullptr;  // Temporary signal declaration list
+    AstTextBlock* m_inoutDeclsp = nullptr;  // Lowered inout signals and tristate drivers
     AstTextBlock* m_hashValuep = nullptr;  // CPP hash value
     AstTextBlock* m_comboParamsp = nullptr;  // Combo function parameter list
     AstTextBlock* m_clkSensp = nullptr;  // Clock sensitivity list
@@ -61,6 +62,12 @@ class ProtectVisitor final : public VNVisitor {
     const string m_topName;
     bool m_foundTop = false;  // Have seen the top module
     bool m_hasClk = false;  // True if the top module has sequential logic
+    struct InoutPorts final {
+        AstVar* inp = nullptr;  // Resolved input value and original public port
+        AstVar* outp = nullptr;  // Library drive value
+        AstVar* enp = nullptr;  // Per-bit drive enable
+    };
+    std::map<int, InoutPorts> m_inouts;  // Lowered ports grouped by original inout
 
     // VISITORS
     void visit(AstNetlist* nodep) override {
@@ -86,6 +93,8 @@ class ProtectVisitor final : public VNVisitor {
         createCppFile(fl);
 
         iterateChildren(nodep);
+
+        restoreInouts();
 
         // cppcheck-suppress unreadVariable
         const V3Hash hash = V3Hasher::uncachedHash(m_cfilep);
@@ -165,6 +174,8 @@ class ProtectVisitor final : public VNVisitor {
                    " to use DPI libraries\n");
 
         // Module declaration
+        // Port ranges were checked in the source design; do not warn again in the wrapper.
+        txtp->add("// verilator lint_save\n// verilator lint_off ASCRANGE\n");
         m_modPortsp = new AstTextBlock{fl, "module " + m_libName + " (\n", ", ", ");\n\n"};
         txtp->add(m_modPortsp);
 
@@ -236,6 +247,8 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add(m_seqDeclsp);
         m_tmpDeclsp = new AstTextBlock{fl};
         txtp->add(m_tmpDeclsp);
+        m_inoutDeclsp = new AstTextBlock{fl};
+        txtp->add(m_inoutDeclsp);
 
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
@@ -306,7 +319,7 @@ class ProtectVisitor final : public VNVisitor {
         // Final
         txtp->add("final " + m_libName + "_protectlib_final(handle__V);\n\n");
 
-        txtp->add("endmodule\n");
+        txtp->add("endmodule\n// verilator lint_restore\n");
 
         configSection(modp, txtp, fl);
 
@@ -418,6 +431,16 @@ class ProtectVisitor final : public VNVisitor {
 
     void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
+        if (restoreInout(nodep)) {
+            InoutPorts& ports = m_inouts[nodep->libInoutId()];
+            if (nodep->isInput()) {
+                ports.inp = nodep;
+            } else if (nodep->libInoutEnable()) {
+                ports.enp = nodep;
+            } else {
+                ports.outp = nodep;
+            }
+        }
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isPrimaryClock()) {
                 UASSERT_OBJ(m_hasClk, nodep, "checkIfClockExists() didn't find this clock");
@@ -425,11 +448,11 @@ class ProtectVisitor final : public VNVisitor {
             } else {
                 handleDataInput(nodep);
             }
-        } else if (nodep->direction() == VDirection::OUTPUT) {
-            handleOutput(nodep);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: --lib-create port direction: "
-                                             << nodep->direction().ascii());
+            // Ref ports were rejected during linking, and tristate lowering split all inouts.
+            UASSERT_OBJ(nodep->direction() == VDirection::OUTPUT, nodep,
+                        "Unexpected library port direction");
+            handleOutput(nodep);
         }
     }
 
@@ -462,7 +485,39 @@ class ProtectVisitor final : public VNVisitor {
         m_cIgnoreParamsp->add(varp->dpiArgType(true, false));
     }
 
-    void handleInput(AstVar* varp) { m_modPortsp->add(varp->cloneTree(false)); }
+    static bool restoreInout(const AstVar* varp) {
+        return varp->libInoutId() && !v3Global.opt.pinsInoutEnables();
+    }
+
+    void handleInput(AstVar* varp) {
+        AstVar* const portp = varp->cloneTree(false);
+        if (restoreInout(varp)) {
+            portp->direction(VDirection::INOUT);
+            portp->varType(VVarType::WIRE);
+        }
+        m_modPortsp->add(portp);
+    }
+
+    void restoreInouts() {
+        for (const auto& entry : m_inouts) {
+            const InoutPorts& ports = entry.second;
+            UASSERT_OBJ(ports.inp && ports.outp && ports.enp, m_vfilep,
+                        "Incomplete lowered library inout");
+            const string in = ports.inp->prettyName();
+            const string out = ports.outp->prettyName();
+            const string en = ports.enp->prettyName();
+            if (ports.inp->width() == 1) {
+                m_inoutDeclsp->add("assign " + in + " = " + en + " ? " + out + " : 1'bz;\n");
+            } else {
+                const string index = "__VlibInout" + cvtToStr(entry.first);
+                m_inoutDeclsp->add("for (genvar " + index + " = 0; " + index + " < $bits(" + in
+                                   + "); ++" + index + ") begin\n");
+                m_inoutDeclsp->add("assign " + in + "[$low(" + in + ") + " + index + "] = " + en
+                                   + "[$low(" + en + ") + " + index + "] ? " + out + "[$low(" + out
+                                   + ") + " + index + "] : 1'bz;\nend\n");
+            }
+        }
+    }
 
     static void addLocalVariable(AstTextBlock* textp, const AstVar* varp, const char* suffix) {
         AstVar* const newVarp
@@ -472,7 +527,13 @@ class ProtectVisitor final : public VNVisitor {
 
     void handleOutput(AstVar* const varp) {
         const std::string pname = varp->prettyName();
-        m_modPortsp->add(varp->cloneTree(false));
+        if (restoreInout(varp)) {
+            AstVar* const localp = varp->cloneTree(false);
+            localp->direction(VDirection::NONE);
+            m_inoutDeclsp->add(localp);
+        } else {
+            m_modPortsp->add(varp->cloneTree(false));
+        }
         m_comboPortsp->add(varp->cloneTree(false));
         m_comboParamsp->add(pname + "_combo__V");
         if (m_hasClk) {

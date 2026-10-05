@@ -1446,6 +1446,11 @@ Summary:
    position to indicate the corresponding bit of the __out variable has
    a value being driven from within the Verilated model.
 
+   With :vlopt:`--lib-create` or :vlopt:`--protect-lib`, this option exposes
+   the input, ``__out``, and ``__en`` ports in the generated SystemVerilog
+   wrapper. Without this option, the wrapper retains the ``inout`` port
+   and drives it using the library's output value and enable for each bit.
+
 .. option:: --pins-sc-biguint
 
    Specifies SystemC inputs/outputs greater than 65 bits wide should use
