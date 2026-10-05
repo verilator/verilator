@@ -1,0 +1,6 @@
+%Error: t/t_package_suggest_bad.v:12:11: Package/class for ':: reference' not found: 'my_pkgg'
+                                       : ... Suggested alternative: 'my_pkg'
+   12 |   int y = my_pkgg::X;
+      |           ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

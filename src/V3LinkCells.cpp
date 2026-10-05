@@ -31,6 +31,7 @@
 #include "V3Parse.h"
 #include "V3SymTable.h"
 
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -231,6 +232,8 @@ class LinkCellsVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Current module
     AstVar* m_varp = nullptr;  // Current variable
     VSymGraph m_mods;  // Symbol table of all module names
+    std::unordered_map<string, AstPackage*> m_packages;  // Packages table
+    std::unordered_set<string> m_autoLoaded;  // Names already searched for on disk
     LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
     LibraryVertex* m_libVertexp = nullptr;  // Vertex at root of all libraries
     const V3GraphVertex* m_topVertexp = nullptr;  // Vertex of top module
@@ -302,29 +305,43 @@ class LinkCellsVisitor final : public VNVisitor {
         return foundp;
     }
 
+    void autoLoad(AstNode* nodep, const string& name) {
+        // Read <name> from the library search path, at most once per name. Modules and
+        // packages are separate name spaces, so a miss in one does not mean it was not read.
+        if (!m_autoLoaded.emplace(name).second) return;
+        // If file not found, make AstNotFoundModule, rather than error out.
+        // We'll throw the error when we know the module will really be needed.
+        V3Parse parser{v3Global.rootp(), m_filterp};
+        // true below -> other simulators treat modules in link-found files as library cells
+        parser.parseFile(nodep->fileline(), AstNode::prettyName(name), true, false,
+                         m_modp->libname(), "", name);
+        V3Error::abortIfErrors();
+        // We've read new modules, grab new pointers to their names
+        readModNames();
+    }
+
     AstNodeModule* resolveModule(AstNode* nodep, const string& modName, const string& libname) {
         AstNodeModule* modp = findModuleSym(modName, libname);
         if (!modp) {
-            // Read-subfile
-            // If file not found, make AstNotFoundModule, rather than error out.
-            // We'll throw the error when we know the module will really be needed.
-            const string prettyName = AstNode::prettyName(modName);
-            V3Parse parser{v3Global.rootp(), m_filterp};
-            // true below -> other simulators treat modules in link-found files as library cells
-            parser.parseFile(nodep->fileline(), prettyName, true, false, m_modp->libname(), "",
-                             modName);
-            V3Error::abortIfErrors();
-            // We've read new modules, grab new pointers to their names
-            readModNames();
+            autoLoad(nodep, modName);
             // Check again
             modp = findModuleSym(modName, libname);
             if (!modp) {
-                // This shouldn't throw a message as parseFile will create
-                // a AstNotFoundModule for us
-                nodep->v3error("Can't resolve module reference: '" << prettyName << "'");
+                // Only reached when the file was found but declared no such module,
+                // otherwise parseFile created an AstNotFoundModule for us
+                nodep->v3error("Can't resolve module reference: '" << AstNode::prettyName(modName)
+                                                                   << "'");
             }
         }
         return modp;
+    }
+
+    AstPackage* resolvePackage(AstNode* nodep, const string& name) {
+        auto it = m_packages.find(name);
+        if (it != m_packages.end()) return it->second;
+        autoLoad(nodep, name);
+        it = m_packages.find(name);
+        return it != m_packages.end() ? it->second : nullptr;
     }
 
     static void removeLibFlag() {
@@ -540,8 +557,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
         if (!nodep->packagep()) {
-            AstNodeModule* const modp = resolveModule(nodep, nodep->pkgName(), m_modp->libname());
-            if (AstPackage* const pkgp = VN_CAST(modp, Package)) nodep->packagep(pkgp);
+            nodep->packagep(resolvePackage(nodep, nodep->pkgName()));
             if (!nodep->packagep()) {
                 nodep->v3error("Export package not found: " << nodep->prettyPkgNameQ());
                 return;
@@ -552,8 +568,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
         if (!nodep->packagep()) {
-            AstNodeModule* const modp = resolveModule(nodep, nodep->pkgName(), m_modp->libname());
-            if (AstPackage* const pkgp = VN_CAST(modp, Package)) nodep->packagep(pkgp);
+            nodep->packagep(resolvePackage(nodep, nodep->pkgName()));
             // If not found, V3LinkDot will report errors
             if (!nodep->packagep()) {
                 nodep->v3error("Import package not found: " << nodep->prettyPkgNameQ());
@@ -843,6 +858,26 @@ class LinkCellsVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // METHODS
+    static void warnModDup(AstNodeModule* nodep, const AstNodeModule* firstp) {
+        // Report nodep as a duplicate of firstp; caller deletes nodep
+        if (firstp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
+            || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)) {
+            return;
+        }
+        nodep->v3warn(MODDUP, "Duplicate declaration of "
+                                  << nodep->verilogKwd() << ": " << nodep->prettyNameQ() << '\n'
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << firstp->warnOther()
+                                  << "... Location of original declaration\n"
+                                  << firstp->warnContextSecondary());
+    }
+    static void renamePackageFromModule(AstPackage* pkgp) {
+        // A module and a package may share a name (IEEE 1800-2023 3.13), but their
+        // generated C++ classes may not. ...__Vpkg is stripped by prettyName.
+        if (pkgp->name() != pkgp->origName()) return;  // Already renamed
+        pkgp->name(pkgp->origName() + "__Vpkg");
+        UINFO(9, "Package rename as module has same name " << pkgp);
+    }
     void readModNames() {
         // mangled_name, BlockOptions
         const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
@@ -852,6 +887,20 @@ class LinkCellsVisitor final : public VNVisitor {
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
             nextp = VN_AS(nodep->nextp(), NodeModule);
+            if (AstPackage* const pkgp = VN_CAST(nodep, Package)) {
+                // Packages have their own global name space (IEEE 1800-2023 3.13)
+                const auto result = m_packages.emplace(pkgp->origName(), pkgp);
+                if (!result.second && result.first->second != pkgp) {
+                    warnModDup(pkgp, result.first->second);
+                    pkgp->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(pkgp), pkgp);
+                } else if (findModuleLibSym(pkgp->origName(), "__GLOBAL")) {
+                    renamePackageFromModule(pkgp);
+                }
+                continue;
+            }
+            const auto pkgIt = m_packages.find(nodep->origName());
+            if (pkgIt != m_packages.end()) renamePackageFromModule(pkgIt->second);
             if (v3Global.opt.hierChild() && nodep->origName() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
@@ -866,16 +915,8 @@ class LinkCellsVisitor final : public VNVisitor {
                 UASSERT_OBJ(nodep->recursiveClone(), nodep,
                             "Module should be found globally if inserted in lib");
             } else if (libFoundp) {
-                if (!(libFoundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
-                      || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)
-                      || hierBlocks.find(nodep->name()) != hierBlocks.end())) {
-                    nodep->v3warn(MODDUP, "Duplicate declaration of "
-                                              << nodep->verilogKwd() << ": "
-                                              << nodep->prettyNameQ() << '\n'
-                                              << nodep->warnContextPrimary() << '\n'
-                                              << libFoundp->warnOther()
-                                              << "... Location of original declaration\n"
-                                              << libFoundp->warnContextSecondary());
+                if (hierBlocks.find(nodep->name()) == hierBlocks.end()) {
+                    warnModDup(nodep, libFoundp);
                 }
                 nodep->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);

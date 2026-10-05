@@ -265,6 +265,11 @@ string AstNode::prettyName(const string& namein) VL_PURE {
                 pos += 8;
                 continue;
             }
+            if (0 == std::strncmp(pos, "__Vpkg", 6)) {
+                pretty += "";
+                pos += 6;
+                continue;
+            }
             if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
                 && std::isxdigit(pos[4])) {
                 char value = 0;

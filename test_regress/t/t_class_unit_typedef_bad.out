@@ -1,0 +1,8 @@
+%Error: t/t_class_unit_typedef_bad.v:10:13: Unsupported in C: TYPEDEF 'CollidingType' has the same name as CLASS 'CollidingType': 'CollidingType'
+   10 | typedef int CollidingType;
+      |             ^~~~~~~~~~~~~
+        t/t_class_unit_typedef_bad.v:7:1: ... Location of original declaration
+    7 | class CollidingType;
+      | ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
