@@ -567,7 +567,8 @@ set_target_properties(
         OUTPUT_NAME_COVERAGE verilator_coverage_bin_dbg
         OUTPUT_NAME_COVERAGERELEASE verilator_coverage_bin
         #UNITY_BUILD $<IF:$<CONFIG:DEBUG>,FALSE,${CMAKE_UNITY_BUILD}>
-        MSVC_RUNTIME_LIBRARY MultiThreaded$<IF:$<OR:$<CONFIG:Release>,$<CONFIG:CoverageRelease>>,,DebugDLL>
+        MSVC_RUNTIME_LIBRARY
+            MultiThreaded$<IF:$<OR:$<CONFIG:Release>,$<CONFIG:CoverageRelease>>,,DebugDLL>
         #JOB_POOL_LINK         one_job      # Linking takes lots of resources
         INTERPROCEDURAL_OPTIMIZATION_RELEASE $<IF:MINGW,FALSE,TRUE>
 )
