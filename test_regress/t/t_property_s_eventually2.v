@@ -32,7 +32,7 @@ module t;
     if (cyc == MAX) begin
       $display("%d", passed);
       if (passed != 999) $stop;
-      if (passed_until != 999) $stop;
+      if (passed_until != 999) $stop;  // Same as 'passed': each attempt passes on its first edge
       $write("*-* All Finished *-*\n");
       $finish;
     end
