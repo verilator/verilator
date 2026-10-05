@@ -98,6 +98,14 @@ module m_size #(  // Array size from another parameter
   localparam int BITS = $bits(A[0]);
 endmodule
 
+module m_elem #(  // Width from an element of an array parameter
+    parameter byte B[1] = '{1},
+    parameter logic [B[0]-1:0] P = '0,
+    parameter int V[B[0]] = '{default: 0}
+);
+  localparam int BITS = $bits(P);
+endmodule
+
 interface i_hdr #(
     parameter int W = 4,
     parameter logic [W-1:0] A[2] = '{default: 0}
@@ -278,6 +286,29 @@ module t;
       .AA('{'{4'd1, 4'd2, 4'd3}, '{4'd4, 4'd5, 4'd6}}),
       .ML('{l0: LEAF, l1: '{k: hp::FmtA, v: 4'(N)}, tag: 3'd2})
   ) u_nest ();
+  m_elem #(
+      .P(1'b1),
+      .V('{5})
+  ) u_elem ();
+  m_elem #(.P(1'b1)) u_elem_p ();
+  // Instances differing only above bit 0 of P must not share a specialization
+  m_elem #(
+      .B('{4}),
+      .P(4'b0011)
+  ) u_elem3 ();
+  m_elem #(
+      .B('{4}),
+      .P(4'b1011)
+  ) u_elem11 ();
+  localparam byte EB[1] = '{4};
+  m_elem #(
+      .B(EB),
+      .P(4'b0011)
+  ) u_elem_eb3 ();
+  m_elem #(
+      .B(EB),
+      .P(4'b1011)
+  ) u_elem_eb11 ();
 
   initial begin
     #1;
@@ -346,6 +377,17 @@ module t;
     `checkd(u_nest.ML.l1.v, 3);
     `checkd((C#(8, '{8'd3, 8'd200})::a1()), 200);
     `checkd((C#(8, '{8'd3, 8'd200})::bits()), 8);
+    `checkd(u_elem.BITS, 1);
+    `checkd(u_elem.P, 1);
+    `checkd(u_elem.V[0], 5);
+    `checkd(u_elem_p.BITS, 1);
+    `checkd(u_elem_p.P, 1);
+    `checkd(u_elem3.BITS, 4);
+    `checkd(u_elem3.P, 3);
+    `checkd(u_elem11.P, 11);
+    `checkd(u_elem_eb3.BITS, 4);
+    `checkd(u_elem_eb3.P, 3);
+    `checkd(u_elem_eb11.P, 11);
     $write("*-* All Finished *-*\n");
     $finish;
   end

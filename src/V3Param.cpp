@@ -1476,14 +1476,22 @@ class ParamProcessor final {
                                 AstNode* replacep = nullptr;
                                 for (AstPin* pp = paramsp; pp; pp = VN_AS(pp->nextp(), Pin)) {
                                     if (pp->modVarp() == targetp) {
-                                        if (AstConst* const constp = VN_CAST(pp->exprp(), Const)) {
-                                            replacep = constp->cloneTree(false);
+                                        // A pattern or array override names the value too
+                                        if (VN_IS(pp->exprp(), Const)
+                                            || VN_IS(pp->exprp(), Pattern)
+                                            || VN_IS(pp->exprp(), InitArray)) {
+                                            replacep = pp->exprp()->cloneTree(false);
                                         }
                                         break;
                                     }
                                 }
                                 if (!replacep && targetp->valuep()) {
                                     replacep = targetp->valuep()->cloneTree(false);
+                                }
+                                // An inlined pattern takes the type of its parameter
+                                AstPattern* const patp = VN_CAST(replacep, Pattern);
+                                if (patp && !patp->childDTypep() && targetp->childDTypep()) {
+                                    patp->childDTypep(targetp->childDTypep()->cloneTree(false));
                                 }
                                 if (replacep) {
                                     varrefp->replaceWith(replacep);
