@@ -10,10 +10,8 @@
 
 require 5.006_001;
 use warnings;
-use Config;
 use Getopt::Long;
 use FindBin qw($RealBin $RealScript);
-use File::Spec;
 use IO::File;
 use Pod::Usage;
 use Cwd qw(abs_path getcwd);
