@@ -1494,9 +1494,16 @@ private:
             }
             // Wrap existing PExpr body: if (antecedent) { <original body> } else { /* vacuous pass
             // */ }
+            // Only the statements are guarded; declarations stay directly in the block. After
+            // V3Fork moves the block's statements into a task, V3Task only handles variables
+            // that are direct statements of the task.
             AstBegin* const bodyp = pexprp->bodyp();
-            AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
-            AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
+            AstIf* const guardp = new AstIf{flp, condp};
+            for (AstNode* stmtp = bodyp->stmtsp(); stmtp;) {
+                AstNode* const nextp = stmtp->nextp();
+                if (!VN_IS(stmtp, Var)) guardp->addThensp(stmtp->unlinkFrBack());
+                stmtp = nextp;
+            }
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);
             // Don't iterate pexprp here -- it was already iterated when created

@@ -27,6 +27,8 @@ module t (
   int count_fail2 = 0;
   int count_fail3 = 0;
   int count_fail4 = 0;
+  int count_fail5 = 0;
+  int count_fail6 = 0;
 
   // Test 1: a[=2] |-> b (overlapping implication, 2 non-consecutive occurrences)
   assert property (@(posedge clk) a [= 2] |-> b)
@@ -44,6 +46,14 @@ module t (
   assert property (@(posedge clk) b [= 2])
   else count_fail4 <= count_fail4 + 1;
 
+  // Test 5: a |-> b[=2] (nonconsec rep as consequent, overlapping implication)
+  assert property (@(posedge clk) a |-> b [= 2])
+  else count_fail5 <= count_fail5 + 1;
+
+  // Test 6: c |=> d[=2] (nonconsec rep as consequent, non-overlapping implication)
+  assert property (@(posedge clk) c |=> d [= 2])
+  else count_fail6 <= count_fail6 + 1;
+
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x a=%b b=%b c=%b d=%b\n", $time, cyc, crc, a, b, c, d);
@@ -59,6 +69,8 @@ module t (
       `checkd(count_fail2, 27);  // Other sims: 32, one other: 25
       `checkd(count_fail3, 25);  // Other sims: 29, one other: 25
       `checkd(count_fail4, 0);
+      `checkd(count_fail5, 0);
+      `checkd(count_fail6, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end
