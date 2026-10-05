@@ -18,6 +18,17 @@
 // Each module:
 //   Order module variables
 //
+// With multithreading, variables accessed by MTasks are grouped by the exact
+// set of MTasks writing them (variables MTasks only read form one group), and
+// the first instance field of each group is aligned to a cache line. Variables
+// no MTask accesses follow, unaligned.
+//
+// Separating writers is enough to avoid false sharing. Every MTask accessing a
+// variable is ordered relative to the variable's writers by the MTask graph, so
+// a cache line holding one group is never written while another thread is using
+// it, however the MTasks are packed onto threads. Grouping by readers as well
+// would only add padding.
+//
 //*************************************************************************
 
 #include "V3PchAstMT.h"
@@ -34,41 +45,42 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 using MTaskIdVec = std::vector<bool>;  // Used as a bit-set indexed by MTask ID
-using MTaskAffinityMap = std::unordered_map<const AstVar*, MTaskIdVec>;
+// Writing MTasks of each variable accessed by any MTask
+using MTaskWritersMap = std::unordered_map<const AstVar*, MTaskIdVec>;
 
-// Trace through code reachable form an MTask and annotate referenced variabels
-class GatherMTaskAffinity final : VNVisitorConst {
+// Trace through code reachable from an MTask and record the writers of referenced variables
+class GatherMTaskWriters final : VNVisitorConst {
     // NODE STATE
     //  AstCFunc::user1()  // bool: Already traced this function
     //  AstVar::user1()  // bool: Already traced this variable
     const VNUser1InUse m_user1InUse;
 
     // STATE
-    MTaskAffinityMap& m_results;  // The result map being built;
+    MTaskWritersMap& m_results;  // The result map being built;
     const uint32_t m_id;  // Id of mtask being analysed
     const size_t m_usedIds = ExecMTask::numUsedIds();  // Value of max id + 1
 
     // CONSTRUCTOR
-    GatherMTaskAffinity(const ExecMTask* mTaskp, MTaskAffinityMap& results)
+    GatherMTaskWriters(const ExecMTask* mTaskp, MTaskWritersMap& results)
         : m_results{results}
         , m_id{mTaskp->id()} {
         iterateConst(mTaskp->funcp());
     }
-    ~GatherMTaskAffinity() = default;
-    VL_UNMOVABLE(GatherMTaskAffinity);
+    ~GatherMTaskWriters() = default;
+    VL_UNMOVABLE(GatherMTaskWriters);
 
     // VISIT
     void visit(AstNodeVarRef* nodep) override {
         // Cheaper than relying on emplace().second
         if (nodep->user1SetOnce()) return;
         AstVar* const varp = nodep->varp();
-        // Set affinity bit
-        MTaskIdVec& affinity = m_results
-                                   .emplace(std::piecewise_construct,  //
-                                            std::forward_as_tuple(varp),  //
-                                            std::forward_as_tuple(m_usedIds))
-                                   .first->second;
-        affinity[m_id] = true;
+        // Record the access, and the writer bit if written
+        MTaskIdVec& writers = m_results
+                                  .emplace(std::piecewise_construct,  //
+                                           std::forward_as_tuple(varp),  //
+                                           std::forward_as_tuple(m_usedIds))
+                                  .first->second;
+        if (nodep->access().isWriteOrRW()) writers[m_id] = true;
     }
 
     void visit(AstCFunc* nodep) override {
@@ -84,8 +96,8 @@ class GatherMTaskAffinity final : VNVisitorConst {
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
-    static void apply(const ExecMTask* mTaskp, MTaskAffinityMap& results) {
-        GatherMTaskAffinity{mTaskp, results};
+    static void apply(const ExecMTask* mTaskp, MTaskWritersMap& results) {
+        GatherMTaskWriters{mTaskp, results};
     }
 };
 
@@ -96,12 +108,12 @@ struct VarAttributes final {
 class VariableOrder final {
     std::unordered_map<const AstVar*, VarAttributes> m_attributes;
 
-    const MTaskAffinityMap& m_mTaskAffinity;
+    const MTaskWritersMap& m_mTaskWriters;
     std::vector<AstVar*>& m_varps;
 
-    VariableOrder(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
+    VariableOrder(AstNodeModule* modp, const MTaskWritersMap& mTaskWriters,
                   std::vector<AstVar*>& varps)
-        : m_mTaskAffinity{mTaskAffinity}
+        : m_mTaskWriters{mTaskWriters}
         , m_varps{varps} {
         orderModuleVars(modp);
     }
@@ -126,19 +138,19 @@ class VariableOrder final {
                     });
     }
 
-    static bool emptyAffinity(const MTaskIdVec& vec) {
-        return std::find(vec.begin(), vec.end(), true) == vec.end();
-    }
-
-    // Sort by MTask-affinity first, then the same as simpleSortVars
+    // Sort by writing MTasks first, then the same as simpleSortVars
     void mtaskSortVars(std::vector<AstVar*>& varps) {
-        // Map from "MTask affinity" -> "variable list"
+        // Map from "writing MTasks" -> "variable list", for variables accessed by MTasks
         std::map<MTaskIdVec, std::vector<AstVar*>> m2v;
-        const MTaskIdVec emptyVec(ExecMTask::numUsedIds(), false);
+        // Variables not accessed by any MTask
+        std::vector<AstVar*> noAffinityVarps;
         for (AstVar* const varp : varps) {
-            const auto it = m_mTaskAffinity.find(varp);
-            const MTaskIdVec& key = it == m_mTaskAffinity.end() ? emptyVec : it->second;
-            m2v[key].push_back(varp);
+            const auto it = m_mTaskWriters.find(varp);
+            if (it == m_mTaskWriters.end()) {
+                noAffinityVarps.push_back(varp);
+            } else {
+                m2v[it->second].push_back(varp);
+            }
         }
 
         varps.clear();
@@ -149,7 +161,8 @@ class VariableOrder final {
                   simpleSortVars(subVarps);
                   bool aligned = !alignFirst;
                   for (AstVar* const varp : subVarps) {
-                      if (!aligned) {
+                      // Align the first variable with instance storage
+                      if (!aligned && varp->isModelState()) {
                           varp->mtaskCacheLineAlign(true);
                           V3Stats::addStatSum("VariableOrder, MTask aligned group starts", 1);
                           aligned = true;
@@ -158,21 +171,14 @@ class VariableOrder final {
                   }
               };
 
-        // Sort non-empty MTask affinity groups in the map's deterministic key order. This keeps
-        // memory linear in the number of affinity groups, unlike the old complete
-        // pairwise-distance ordering.
-        size_t affinityGroups = 0;
-        for (auto& pair : m2v) {
-            if (emptyAffinity(pair.first)) continue;
-            sortAndAppend(pair.second, true);
-            ++affinityGroups;
-        }
+        // Add the groups in the map's deterministic key order
+        for (auto& pair : m2v) sortAndAppend(pair.second, true);
 
         // Finally add the variables with no known MTask affinity
-        sortAndAppend(m2v[emptyVec], false);
+        sortAndAppend(noAffinityVarps, false);
 
-        V3Stats::addStatSum("VariableOrder, MTask affinity groups", affinityGroups);
-        V3Stats::addStatSum("VariableOrder, no-affinity variables", m2v[emptyVec].size());
+        V3Stats::addStatSum("VariableOrder, MTask affinity groups", m2v.size());
+        V3Stats::addStatSum("VariableOrder, no-affinity variables", noAffinityVarps.size());
     }
 
     // cppcheck-suppress constParameterPointer
@@ -210,9 +216,9 @@ class VariableOrder final {
     }
 
 public:
-    static void processModule(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
+    static void processModule(AstNodeModule* modp, const MTaskWritersMap& mTaskWriters,
                               std::vector<AstVar*>& varps) {
-        VariableOrder{modp, mTaskAffinity, varps};
+        VariableOrder{modp, mTaskWriters, varps};
     }
 };
 
@@ -222,13 +228,13 @@ public:
 void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     UINFO(2, __FUNCTION__ << ":");
 
-    MTaskAffinityMap mTaskAffinity;
+    MTaskWritersMap mTaskWriters;
 
-    // Gather MTask affinities
+    // Gather writing MTasks
     if (v3Global.opt.mtasks()) {
         netlistp->topModulep()->foreach([&](AstExecGraph* execGraphp) {
             for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
-                GatherMTaskAffinity::apply(vtx.as<const ExecMTask>(), mTaskAffinity);
+                GatherMTaskWriters::apply(vtx.as<const ExecMTask>(), mTaskWriters);
             }
         });
     }
@@ -239,7 +245,7 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {
         if (modp->isConstPool()) continue;
-        VariableOrder::processModule(modp, mTaskAffinity, sortedVars[modp]);
+        VariableOrder::processModule(modp, mTaskWriters, sortedVars[modp]);
     }
     if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-sort");
 
