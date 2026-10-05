@@ -114,9 +114,6 @@ class VariableOrder final {
     void simpleSortVars(std::vector<AstVar*>& varps) {
         stable_sort(varps.begin(), varps.end(),
                     [this](const AstVar* ap, const AstVar* bp) -> bool {
-                        if (ap->isStatic() != bp->isStatic()) {  // Non-statics before statics
-                            return bp->isStatic();
-                        }
                         UASSERT(m_attributes.find(ap) != m_attributes.end()
                                     && m_attributes.find(bp) != m_attributes.end(),
                                 "m_attributes should be populated for each AstVar");
@@ -152,7 +149,7 @@ class VariableOrder final {
                   simpleSortVars(subVarps);
                   bool aligned = !alignFirst;
                   for (AstVar* const varp : subVarps) {
-                      if (!aligned && !varp->isStatic()) {
+                      if (!aligned) {
                           varp->mtaskCacheLineAlign(true);
                           V3Stats::addStatSum("VariableOrder, MTask aligned group starts", 1);
                           aligned = true;
@@ -241,6 +238,7 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     std::unordered_map<AstNodeModule*, std::vector<AstVar*>> sortedVars;
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {
+        if (modp->isConstPool()) continue;
         VariableOrder::processModule(modp, mTaskAffinity, sortedVars[modp]);
     }
     if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-sort");
@@ -249,6 +247,7 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     // the front of the list so they come out first in dumps/JSON.
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {
+        if (modp->isConstPool()) continue;
         const std::vector<AstVar*>& varps = sortedVars[modp];
 
         if (!varps.empty()) {
