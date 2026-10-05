@@ -4185,27 +4185,21 @@ string AstVar::verilogKwd() const {
         return "UNKNOWN";
     }
 }
-string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef, bool constRef) const {
+string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, bool asRef,
+                         bool constRef) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
-    string ostatic;
-    if (isStatic() && namespc.empty()) ostatic = "static ";
-
     asRef = asRef || isDpiOpenArray() || (forFunc && (isWritable() || isRef() || isConstRef()));
 
     string oname;
-    if (named) {
-        if (!namespc.empty()) oname += namespc + "::";
-        oname += VIdProtect::protectIf(name(), protect());
-    }
+    if (named) oname = VIdProtect::protectIf(name(), protect());
     if (forFunc && (isReadOnly() || constRef) && asRef) {
         if (VN_IS(dtypep()->skipRefp(), IfaceRefDType)) {
-            return ostatic + dtypep()->cType("", forFunc, false) + " const &" + oname;
+            return dtypep()->cType("", forFunc, false) + " const &" + oname;
         }
-        ostatic += "const ";
+        return "const " + dtypep()->cType(oname, forFunc, asRef);
     }
-    return ostatic + dtypep()->cType(oname, forFunc, asRef);
+    return dtypep()->cType(oname, forFunc, asRef);
 }
 string AstVar::vlEnumDir(bool forMember) const {
     string out;
