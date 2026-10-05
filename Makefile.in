@@ -712,7 +712,8 @@ override undefine COVERAGE_BASE # Use the above variabels instead
 FASTCOV := nodist/fastcov.py
 FASTCOV_JOBS ?= $(shell nproc)
 FASTCOV_OPT := -j $(FASTCOV_JOBS)
-FASTCOV_OPT += --gcov $(GCOV)
+# gcov does not free memory between files, so run it in batches via a wrapper
+FASTCOV_OPT += --gcov nodist/gcov_batch
 FASTCOV_OPT += --lcov
 FASTCOV_OPT += --process-gcno
 FASTCOV_OPT += --branch-coverage
@@ -786,7 +787,7 @@ $(COVERAGE_DIR)/verilator.info: $(GCNO_FILES) $(GCDA_FILES)
 	@echo "# fastcov: combining all .gcda files into lcov .info"
 	@echo "####################################################################"
 	@mkdir -p $(COVERAGE_DIR)
-	/usr/bin/time -f "That took %E" \
+	GCOV=$(GCOV) /usr/bin/time -f "That took %E" \
 	$(FASTCOV) $(FASTCOV_OPT) --output $@
 
 # Filter combined .info file for patch coverage
@@ -796,8 +797,8 @@ $(COVERAGE_DIR)/verilator-patch.info: $(COVERAGE_DIR)/verilator.info
 	@echo "####################################################################"
 	rm -f $(COVERAGE_DIR)/empty-patch
 	git diff $(COVERAGE_REF_BASE) -- include src > $(COVERAGE_DIR)/filter.patch
-	[ -s $(COVERAGE_DIR)/filter.patch ] || touch $(COVERAGE_DIR)/empty-patch
 	$(FASTCOV) -C $^ --lcov -o $@ --diff-filter $(COVERAGE_DIR)/filter.patch
+	grep -q '^DA:' $@ || touch $(COVERAGE_DIR)/empty-patch
 
 # Build coverage report
 $(COVERAGE_DIR)/report/index.html: $(COVERAGE_DIR)/verilator$(if $(COVERAGE_REF_BASE),-patch).info
