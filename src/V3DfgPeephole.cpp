@@ -901,6 +901,31 @@ class V3DfgPeephole final : public DfgVisitor {
                         return true;
                     }
                 }
+                // Selects from sources of different width or at different LSBs. If the
+                // narrower source lines up with a range of the wider source, select that range
+                // of the wider source, then apply the operation to the whole narrower source.
+                // E.g. with 'a' 8 bits and 'b' 64 bits: 'a[3] & b[20]' -> '(a & b[24:17])[3]'.
+                // This is helpful for chains over corresponding bits of the two sources, e.g.
+                // 'a[0] & b[17] | a[1] & b[18] | ... | a[7] & b[24]'. All terms become selects
+                // from the same 'a & b[24:17]', which then collapse into a single reduction:
+                // '|(a & b[24:17])'.
+                DfgSel* const nSelp = lFromp->width() <= rFromp->width() ? lSelp : rSelp;
+                DfgSel* const wSelp = nSelp == lSelp ? rSelp : lSelp;
+                DfgVertex* const nFromp = nSelp->fromp();
+                DfgVertex* const wFromp = wSelp->fromp();
+                if (nFromp->width() <= VL_QUADSIZE && wSelp->lsb() >= nSelp->lsb()
+                    && wSelp->lsb() - nSelp->lsb() + nFromp->width() <= wFromp->width()) {
+                    APPLYING(PUSH_BITWISE_THROUGH_UNALIGNED_SEL) {
+                        FileLine* const flp = vtxp->fileline();
+                        const uint32_t offset = wSelp->lsb() - nSelp->lsb();
+                        DfgSel* const slicep = make<DfgSel>(flp, nFromp->dtype(), wFromp, offset);
+                        Bitwise* const bwp = make<Bitwise>(flp, nFromp->dtype(), nFromp, slicep);
+                        DfgVertex* resp = make<DfgSel>(vtxp, bwp, nSelp->lsb());
+                        if (extrap) resp = make<Bitwise>(vtxp, resp, extrap);
+                        replace(resp);
+                        return true;
+                    }
+                }
             }
         }
 
