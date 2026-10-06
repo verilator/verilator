@@ -255,7 +255,7 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");
     if (v3Global.usesTiming()) {
         result.emplace_back("verilated_timing.cpp");
-        result.emplace_back("verilated_fiber.cpp");
+        result.emplace_back("verilated_dpi_call.cpp");
     }
     if (v3Global.useRandomizeMethods()) result.emplace_back("verilated_random.cpp");
     result.emplace_back("verilated_threads.cpp");

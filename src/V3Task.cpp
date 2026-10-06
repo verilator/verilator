@@ -1144,7 +1144,6 @@ class TaskVisitor final : public VNVisitor {
         // First argument is the Syms
         callExportp->addPinsp(new AstCExpr{nodep->fileline(), "(" + EmitCUtil::symClassName()
                                                                   + "*)(__Vscopep->symsp())"});
-        // The function has to be called by returning from fiber context first, if the timings are
 
         // Add function arguments
         AstNode* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
