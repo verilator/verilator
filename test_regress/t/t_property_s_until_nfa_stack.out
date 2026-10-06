@@ -1,0 +1,6 @@
+%Error-NOTIMING: t/t_property_s_until_nfa.v:68:3: This property expression requires --timing
+                                                : ... note: In instance 't'
+   68 |   assert property (cyc[0] until cyc[1]);
+      |   ^~~~~~
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
+%Error: Exiting due to
