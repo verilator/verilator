@@ -1,5 +1,0 @@
-%Error: t/t_package_y_module_bad.v:10:10: Import package not found: 'ymod'
-   10 |   import ymod::*;
-      |          ^~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Exiting due to

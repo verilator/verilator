@@ -1,9 +1,0 @@
-%Warning-MODDUP: t/t_package_dup_lib_bad_other.v:7:9: Duplicate declaration of package: 'shared_pkg'
-    7 | package shared_pkg;
-      |         ^~~~~~~~~~
-                 t/t_package_dup_lib_bad.v:12:9: ... Location of original declaration
-   12 | package shared_pkg;
-      |         ^~~~~~~~~~
-                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest
-                 ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
-%Error: Exiting due to
