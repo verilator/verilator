@@ -445,6 +445,25 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         });
 
+        // collect first, as mutation in foreach will error
+        std::vector<AstFuncRef*> refs;
+        cloneConstrp->foreach([&](AstFuncRef* refp) {
+            // static and non-member calls are correctly qualified already
+            if (refp->taskp()->classMethod() && !refp->taskp()->isStatic()) refs.push_back(refp);
+        });
+
+        for (AstFuncRef* refp : refs) {
+            AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
+            AstArg* const argsp = refp->argsp() ? refp->argsp()->unlinkFrBackWithNext() : nullptr;
+            AstMethodCall* const callp
+                = new AstMethodCall{refp->fileline(), chainp, refp->name(), argsp};
+            callp->taskp(refp->taskp());
+            callp->classOrPackagep(refp->classOrPackagep());
+            callp->dtypep(refp->dtypep());
+            refp->replaceWith(callp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
+
         // Add constraint directly to the target class
         targetClassp->addStmtsp(cloneConstrp);
         // Immediately iterate to set user1 marks
@@ -676,10 +695,14 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (nodep->name() != "randomize") {
             // Propagate user1 from children (same pattern as visit(AstNodeExpr*))
             if (m_constraintExprGenp || m_inStdWith) {
-                nodep->user1((nodep->op1p() && nodep->op1p()->user1())
-                             || (nodep->op2p() && nodep->op2p()->user1())
-                             || (nodep->op3p() && nodep->op3p()->user1())
-                             || (nodep->op4p() && nodep->op4p()->user1()));
+                // Only the arguments decide whether a call depends on rand variables. The object
+                // it's called on doesn't count, so a.f() isn't marked just because 'a' is rand
+                for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+                    if (argp->user1()) {
+                        nodep->user1(true);
+                        break;
+                    }
+                }
             }
             return;
         }
