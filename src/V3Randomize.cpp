@@ -1459,6 +1459,20 @@ class ConstraintExprVisitor final : public VNVisitor {
         return nodep->exists([](const AstVarRef* refp) { return refp->varp()->isUsedLoopIdx(); });
     }
 
+    // Place a solver-registration statement: into the enclosing foreach body when it
+    // references the loop index (so it is not hoisted out of the index's scope),
+    // otherwise into the init task.
+    void addRegistrationStmt(AstNode* const stmtp, AstNodeFTask* const initTaskp) {
+        if (m_foreachp && referencesLoopIdx(stmtp)) {
+            // Appending to the body mid-iteration is safe: visit(AstStmtExpr) is a
+            // no-op so the appended node is not re-processed, and prependDistPreamble()
+            // correctly keeps it as a loop-body statement.
+            m_foreachp->addBodyp(stmtp);
+        } else {
+            initTaskp->addStmtsp(stmtp);
+        }
+    }
+
     // Create SFormatF for array dereference inside solver
     AstSFormatF* createSolverArrDerefp(FileLine* const fl, AstNodeExpr* const arrExprp,
                                        AstNodeExpr* const idxExprp) {
@@ -1469,7 +1483,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     void setRandMode(AstVar* const varp, AstMemberSel* const memberselp,
                      const std::string& smtName, const RandomizeMode& randMode,
-                     AstNodeFTask* const initTaskp) const {
+                     AstNodeFTask* const initTaskp) {
         AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
         AstVar* const subRandModeVarp = getRandModeVarFromClass(varClassp);
         if (subRandModeVarp) {
@@ -1504,12 +1518,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             disablep->addPinsp(disnp);
             AstIf* const ifp
                 = new AstIf{varp->fileline(), atp, enablep->makeStmt(), disablep->makeStmt()};
-            initTaskp->addStmtsp(ifp);
+            addRegistrationStmt(ifp, initTaskp);
         }
     }
 
     void markRandc(AstVar* const varp, const std::string& smtName,
-                   AstNodeFTask* const initTaskp) const {
+                   AstNodeFTask* const initTaskp) {
         AstCMethodHard* const markp = new AstCMethodHard{
             varp->fileline(),
             new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
@@ -1521,7 +1535,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                              : new AstSFormatF{varp->fileline(), smtName, false, nullptr};
         nameExprp->dtypep(varp->dtypep());
         markp->addPinsp(nameExprp);
-        initTaskp->addStmtsp(markp->makeStmt());
+        addRegistrationStmt(markp->makeStmt(), initTaskp);
     }
 
     AstNodeModule* getLeftmostVarModulep(AstMemberSel* const memberselp,
@@ -1705,7 +1719,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                const bool isGlobalConstrained, const RandomizeMode randMode,
                                AstMemberSel* const memberselp, const std::string& smtName,
                                AstNodeModule* const classOrPackagep, AstNodeModule* const classp,
-                               AstNodeFTask* const initTaskp) const {
+                               AstNodeFTask* const initTaskp) {
         uint32_t unpackedDims = 0;
         if (varp->dtypeSkipRefp()->isNonPackedArray()) {
             unpackedDims = varp->dtypep()->dimensions(false).second;
@@ -1957,16 +1971,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = getInitTaskp(varp, memberselp || structSelOrCMeth, classp);
             if (m_nestedAccess) {
                 AstStmtExpr* const writeVarStmtp = m_nestedAccess->makeWriteVarStmt(varp, m_genp);
-                if (m_foreachp && referencesLoopIdx(writeVarStmtp)) {
-                    // The registration references the loop index, so it must live
-                    // inside the loop body, not the init task. Appending to the body
-                    // mid-iteration is safe: visit(AstStmtExpr) is a no-op so the
-                    // appended node is not re-processed, and prependDistPreamble()
-                    // correctly keeps it as a loop-body statement.
-                    m_foreachp->addBodyp(writeVarStmtp);
-                } else {
-                    initTaskp->addStmtsp(writeVarStmtp);
-                }
+                addRegistrationStmt(writeVarStmtp, initTaskp);
                 if (isGlobalConstrained && memberselp && randMode.usesMode) {
                     setRandMode(varp, memberselp, smtName, randMode, initTaskp);
                 }

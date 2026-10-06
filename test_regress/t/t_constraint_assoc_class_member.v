@@ -11,6 +11,7 @@
 
 class ClsA;
   rand logic member_a;
+  randc bit [1:0] member_rc;
 endclass
 
 class ClsB;
@@ -53,6 +54,14 @@ class ClsC;
     }
   }
 
+  // randc sub-object reached through the loop iterator: its cyclic-tracking
+  // registration also references the loop index and must stay in the loop body.
+  constraint constraint_randc {
+    foreach (member_c[i]) {
+      member_c[i].member_b.member_rc < 3;
+    }
+  }
+
   function new;
     for (int k = 0; k < 3; k++) begin
       ClsB item = new;
@@ -77,6 +86,7 @@ module t;
       // Every array element must satisfy the loop-index-dependent constraints.
       foreach (obj_c.member_c[i]) begin
         `checkd(obj_c.member_c[i].member_b.member_a, 1'b1)
+        if (obj_c.member_c[i].member_b.member_rc >= 3) $stop;
         foreach (obj_c.member_c[i].inner_b[j]) begin
           `checkd(obj_c.member_c[i].inner_b[j].member_a, 1'b1)
         end
