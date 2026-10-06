@@ -906,6 +906,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
     AstNode* m_firstExpressionInsideIndexp = nullptr;
     AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
+    std::set<const AstVar*> m_foreachIdxVars;  // Index vars of all enclosing constraint-foreaches
 
     class NestedAccessPath final {
         AstMemberSel* m_topNestedArrayMemberSelp
@@ -1452,18 +1453,20 @@ class ConstraintExprVisitor final : public VNVisitor {
         return preamblep;
     }
 
-    // True if the statement references a foreach loop index variable. Such statements
-    // must stay inside the loop body; hoisting them out leaves dangling references
-    // once task inlining deletes the loop's index variable.
-    static bool referencesLoopIdx(const AstNode* nodep) {
-        return nodep->exists([](const AstVarRef* refp) { return refp->varp()->isUsedLoopIdx(); });
+    // True if the statement references an index variable of an enclosing
+    // constraint-foreach. Such a statement must stay inside the loop body; hoisting
+    // it out leaves a dangling reference once task inlining deletes the index.
+    bool referencesForeachIdx(const AstNode* nodep) const {
+        if (m_foreachIdxVars.empty()) return false;
+        return nodep->exists(
+            [&](const AstVarRef* refp) { return m_foreachIdxVars.count(refp->varp()) != 0; });
     }
 
     // Place a solver-registration statement: into the enclosing foreach body when it
-    // references the loop index (so it is not hoisted out of the index's scope),
-    // otherwise into the init task.
+    // references an enclosing foreach index (so it is not hoisted out of the index's
+    // scope), otherwise into the init task.
     void addRegistrationStmt(AstNode* const stmtp, AstNodeFTask* const initTaskp) {
-        if (m_foreachp && referencesLoopIdx(stmtp)) {
+        if (m_foreachp && referencesForeachIdx(stmtp)) {
             // Appending to the body mid-iteration is safe: visit(AstStmtExpr) is a
             // no-op so the appended node is not re-processed, and prependDistPreamble()
             // correctly keeps it as a loop-body statement.
@@ -2792,7 +2795,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
             VL_RESTORER(m_foreachp);
+            VL_RESTORER_COPY(m_foreachIdxVars);
             m_foreachp = nodep;
+            for (AstNode* elemp = nodep->headerp()->elementsp(); elemp; elemp = elemp->nextp()) {
+                if (const AstVar* const varp = VN_CAST(elemp, Var)) m_foreachIdxVars.insert(varp);
+            }
             iterateAndNextNull(nodep->bodyp());
             AstNode* const bodyp
                 = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
