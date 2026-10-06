@@ -1667,6 +1667,11 @@ public:
         if (AstUntil* const untilp = VN_CAST(nodep, Until)) {
             return buildUntil(untilp, entryVtxp, isTopLevelStep);
         }
+        // s_eventually is lowered procedurally by V3AssertPre and is not a boolean;
+        // fail the build so the whole property falls through to V3AssertPre.
+        if (nodep->exists([](const AstSEventually*) { return true; })) {
+            return BuildResult::fail();
+        }
         // Boolean leaf (including LogAnd): return as finalCond
         return {entryVtxp, nodep, {}};
     }
