@@ -125,7 +125,7 @@ struct VlFunctionContext final {
     const char* m_filename;
     int m_lineno;
 
-    bool inFunctionContext() { return m_filename != nullptr and m_lineno != 0; }
+    bool inFunctionContext() const { return m_filename != nullptr; }
 };
 
 // DPI imported function being executed on this thread, defined in verilated_dpi.cpp
