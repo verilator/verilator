@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <string>
 
+class VlCovMergedItems;
 class VlFileLineDebug;
 
 // Per-bin classification.  A bin's kind is which set it lives in (structural),
@@ -54,6 +55,7 @@ enum class VlCovBinKind : uint8_t {
 class VlCoverpointIf VL_NOT_FINAL {
     // MEMBERS
     int32_t m_weight = 1;  // option.weight; never negative
+    int32_t m_typeWeight = 1;  // type_option.weight; never negative
 
 public:
     // CONSTRUCTORS
@@ -73,6 +75,14 @@ public:
     /// Load option.weight, as evaluated by the covergroup constructor.  A negative
     /// weight is reported as an error, and counts as zero.
     void weight(uint32_t value, VlFileLineDebug fileline);
+    /// Weight of this item in its covergroup type's coverage when the instances are merged
+    /// (type_option.weight, IEEE 1800-2023 19.11.3)
+    int32_t typeWeight() const { return m_typeWeight; }
+    /// Load type_option.weight, a constant that verilation checked is not negative
+    void typeWeight(uint32_t value) { m_typeWeight = static_cast<int32_t>(value); }
+    /// Merge this item's coverable bins into its entry in 'items', the covergroup type's
+    /// items merged over the instances
+    virtual void mergeInto(VlCovMergedItems& items) const = 0;
 };
 
 #endif  // Guard

@@ -61,6 +61,22 @@ module t;
     }
     cp_b: coverpoint b;
   endgroup
+  // Merging the instances, type_option.weight weighs the coverpoints, as in get_coverage(): 100
+  covergroup type_merged with function sample (bit a, bit b);
+    type_option.merge_instances = 1;
+    cp_a: coverpoint a {
+      type_option.weight = 0;
+    }
+    cp_b: coverpoint b;
+  endgroup
+  // And option.weight does not; instances hitting distinct bins merge as in get_coverage(): 75
+  covergroup inst_merged with function sample (bit a, bit b);
+    type_option.merge_instances = 1;
+    cp_a: coverpoint a {
+      option.weight = 0;
+    }
+    cp_b: coverpoint b;
+  endgroup
   // A bin is covered once hit option.at_least times: 50
   covergroup threshold with function sample (bit a);
     cp: coverpoint a {
@@ -176,6 +192,9 @@ module t;
   weighted weighted_inst = new;
   instance_weight instance_weight_inst = new;
   type_weight type_weight_inst = new;
+  type_merged type_merged_inst = new;
+  inst_merged inst_merged_first = new;
+  inst_merged inst_merged_second = new;
   threshold threshold_inst = new;
   crossed crossed_inst = new;
   empty empty_inst = new;
@@ -199,6 +218,10 @@ module t;
     instance_weight_inst.sample(0, 1);
     type_weight_inst.sample(0, 0);
     type_weight_inst.sample(0, 1);
+    type_merged_inst.sample(0, 0);
+    type_merged_inst.sample(0, 1);
+    inst_merged_first.sample(0, 0);
+    inst_merged_second.sample(1, 0);
     threshold_inst.sample(0);
     threshold_inst.sample(0);
     threshold_inst.sample(1);
@@ -227,6 +250,8 @@ module t;
     `checkr(weighted_inst.get_coverage(), 100.0);
     `checkr(instance_weight_inst.get_coverage(), 100.0);
     `checkr(type_weight_inst.get_coverage(), 75.0);
+    `checkr(type_merged_inst.get_coverage(), 100.0);
+    `checkr(inst_merged_first.get_coverage(), 75.0);
     `checkr(threshold_inst.get_coverage(), 50.0);
     `checkr(crossed_inst.get_coverage(), 30.0);
     `checkr(empty_inst.get_coverage(), 0.0);
