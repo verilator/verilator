@@ -30,13 +30,9 @@ module bench(output o, input i);
   blk #(.P(2)) b(o, i);
 endmodule
 
-module t;
-  wire o;
-  reg  i = 1'b1;
-  bench top(o, i);
-
-  initial begin
-    $write("*-* All Finished *-*\n");
-    $finish;
-  end
+// Checked from C++ once the network has settled: o is i ^ ph[SEL], and with
+// SEL parameterized to 2 that reads 0x5a bit 2, which is 0.
+module t(output o_bit);
+  reg i = 1'b1;
+  bench top(o_bit, i);
 endmodule
