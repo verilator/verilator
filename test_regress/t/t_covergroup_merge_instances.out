@@ -63,6 +63,10 @@ t.cg_cross_union.x.<auto_1,auto_0> [cross]: 0
 t.cg_cross_union.x.<auto_1,auto_1> [cross]: 1
 t.cg_dead.cp.auto_0: 1
 t.cg_dead.cp.auto_1: 1
+t.cg_dead_union.a.b[0]: 1
+t.cg_dead_union.a.b[1]: 1
+t.cg_dead_union.a.b[2]: 1
+t.cg_dead_union.a.b[3]: 0
 t.cg_inst.checked.auto_0: 1
 t.cg_inst.checked.auto_1: 1
 t.cg_inst.helper.auto_0: 2

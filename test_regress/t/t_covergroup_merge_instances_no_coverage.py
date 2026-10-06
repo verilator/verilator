@@ -13,7 +13,7 @@ test.scenarios('vlt_all')
 test.top_filename = 't/t_covergroup_merge_instances.v'
 
 # The last setting applies, so the IEEE default: instances averaged unless merged explicitly
-test.compile(verilator_flags2=['--coverage-merge-instances 1', '--coverage-merge-instances 0'])
+test.compile(verilator_flags2=['--coverage-merge-instances', '--no-coverage-merge-instances'])
 
 test.execute()
 

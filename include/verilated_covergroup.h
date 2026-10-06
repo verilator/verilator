@@ -678,6 +678,8 @@ public:
     int32_t typeWeight() const { return m_typeWeight; }
     /// Merged bins that reached option.at_least, and all merged bins
     void coverageParts(double& covered, double& total) const;
+    /// As coverageParts(), of this and 'other' merged
+    void coverageParts(const VlCovMergedItem& other, double& covered, double& total) const;
 };
 
 //=============================================================================
@@ -691,9 +693,10 @@ class VlCovMergedItems final {
 public:
     // METHODS
     VlCovMergedItem& findNewItem(const std::string& name) { return m_items[name]; }
-    /// Sums as VlCovergroupInst::coverageSums(), with each item weighted by its
-    /// type_option.weight (IEEE 1800-2023 19.7.1)
-    std::pair<double, double> coverageSums() const;
+    /// Sums as VlCovergroupInst::coverageSums(), of these items and those of 'other' merged,
+    /// with each item weighted by its type_option.weight (IEEE 1800-2023 19.7.1).  Without
+    /// merging them into a copy, as 'other', those of the instances that have died, may be large.
+    std::pair<double, double> coverageSums(const VlCovMergedItems& other) const;
 };
 
 //=============================================================================
@@ -789,7 +792,7 @@ public:
     // --protect-ids obfuscated, and is the same string that keys the coverage
     // database's hier/page.  mayMerge: type_option.merge_instances is, or may
     // become, true.
-    VlCovergroupInst* newCovergroupInst(const char* typeName, bool mayMerge = false);
+    VlCovergroupInst* newCovergroupInst(const char* typeName, bool mayMerge);
     /// Type coverage of a covergroup type (get_coverage()); see
     /// VlCovergroupType::coverage().  typeWeight is its type_option.weight, and
     /// mergeInstances its type_option.merge_instances.

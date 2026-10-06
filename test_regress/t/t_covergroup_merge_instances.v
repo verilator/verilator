@@ -154,6 +154,14 @@ module t (
     type_option.merge_instances = 1;
     cp: coverpoint a;
   endgroup
+  // The bins of an instance that has died still count, though no live instance has them: b[0]
+  // and b[1] hit by the instance that dies, b[2] and b[3] of the live one, 3 of 4 covered
+  covergroup cg_dead_union(int l, h) with function sample (int a);
+    type_option.merge_instances = 1;
+    coverpoint a {
+      bins b[] = {[0 : 3]} with (item >= l && item <= h);
+    }
+  endgroup
   // Merged by an assignment during simulation (IEEE 1800-2023 19.7.1): 50 averaged, and 100
   // merged, with the bins of an instance that died before
   covergroup cg_proc with function sample (bit a);
@@ -181,6 +189,8 @@ module t (
   cg_zero_type zero_type = new;
   cg_dead dead_1 = new;
   cg_dead dead_2 = new;
+  cg_dead_union dead_union_1 = new(2, 3);
+  cg_dead_union dead_union_2 = new(0, 1);
   cg_proc proc_1 = new;
   cg_proc proc_2 = new;
 
@@ -248,6 +258,9 @@ module t (
 
     dead_1.sample(0);
     dead_2.sample(1);
+    dead_union_1.sample(2);
+    dead_union_2.sample(0);
+    dead_union_2.sample(1);
     proc_1.sample(0);
     proc_2.sample(1);
   end
@@ -266,11 +279,13 @@ module t (
     cyc <= cyc + 1;
     if (cyc == 1) begin
       dead_2 = null;
+      dead_union_2 = null;
       proc_2 = null;
     end
     else if (cyc == 3) begin
       `checkd(retired_dead(), 1);
       `checkp(dead_1.get_coverage(), "100.00");
+      `checkp(dead_union_1.get_coverage(), "75.00");
 
       `checkd(retired_proc(), 1);
       `checkp(proc_1.get_coverage(), "50.00");

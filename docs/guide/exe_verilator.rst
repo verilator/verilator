@@ -349,17 +349,13 @@ Summary:
    toggle coverage. Defaults to 256, as covering large vectors may greatly
    slow coverage simulations.
 
-.. option:: --coverage-merge-instances <value>
+.. option:: --coverage-merge-instances
 
-   Sets the default value, 0 or 1, of the covergroup type option
-   ``type_option.merge_instances``, for the covergroups that do not set it
-   (IEEE 1800-2023 19.11.3).
+   Sets the default value of the covergroup type option
+   ``type_option.merge_instances`` to 1, for the covergroups that do not
+   set it (IEEE 1800-2023 19.11.3).
 
-   With "--coverage-merge-instances 0", the default, as IEEE specifies,
-     the type coverage of a covergroup is the average of the coverage of
-     its instances.
-
-   With "--coverage-merge-instances 1",
+   With "--coverage-merge-instances",
      the type coverage of a covergroup merges its instances as a union of
      their bins. This applies to ``get_coverage()``, to
      ``get_inst_coverage()`` unless ``option.get_inst_coverage`` is set, and
@@ -367,6 +363,10 @@ Summary:
      like the default behavior of Synopsys VCS. In Questa, it is the
      equivalent of ``vsim -cvgmergeinstances``, which sets
      ``SVCovergroupMergeInstancesDefault`` to 1.
+
+   With "--no-coverage-merge-instances", the default, the value is 0, as
+     IEEE specifies, so the type coverage of a covergroup is the average of
+     the coverage of its instances.
 
    This is unrelated to :vlopt:`--coverage-per-instance`, which keeps
    Verilator-inserted coverage per hierarchy instance.

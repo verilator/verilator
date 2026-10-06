@@ -43,12 +43,14 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
-// Embedded covergroup assignment validation
+// Embedded covergroup assignment validation; and in the same pass over the netlist, the
+// type_option variables through which SystemVerilog may set type_option.merge_instances
 
 class CovergroupAssignValidVisitor final : public VNVisitorConst {
     VMemberMap m_memberMap;
     std::map<const AstVar*, const AstNodeFTask*>
         m_constructors;  // Implicit instance -> constructor
+    std::set<const AstVar*> m_mergeableTypeOptions;  // See mergeableTypeOptions()
     const AstNodeFTask* m_ftaskp = nullptr;
     bool m_collecting = true;
     bool m_valid = true;
@@ -96,6 +98,19 @@ class CovergroupAssignValidVisitor final : public VNVisitorConst {
         }
         iterateChildrenConst(nodep);
     }
+    void visit(AstNodeVarRef* nodep) override {
+        // Type options may be set at any time (IEEE 1800-2023 19.7.1), so SystemVerilog may set
+        // type_option.merge_instances with any use of a type_option but a read of another
+        // member, as not every write is marked yet (std::randomize)
+        if (m_collecting && nodep->varp()->name() == "type_option") {
+            const AstStructSel* const selp = VN_CAST(nodep->backp(), StructSel);
+            if (!selp || selp->fromp() != nodep || selp->name() == "merge_instances"
+                || !nodep->access().isReadOnly()) {
+                m_mergeableTypeOptions.insert(nodep->varp());
+            }
+        }
+        iterateChildrenConst(nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
@@ -106,6 +121,9 @@ public:
         if (!m_constructors.empty()) iterateConst(nodep);
     }
     bool valid() const { return m_valid; }
+    // type_option variables through which SystemVerilog may set type_option.merge_instances, so
+    // that covergroups are tested with optionVar(true)
+    const std::set<const AstVar*>& mergeableTypeOptions() const { return m_mergeableTypeOptions; }
 };
 
 //######################################################################
@@ -253,8 +271,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     bool m_cgMergeInstances = false;  // The covergroup's type_option.merge_instances, a constant
     // The covergroup's type_option.merge_instances is, or SystemVerilog may make it, true
     bool m_cgMayMerge = false;
-    // type_option members through which SystemVerilog may set type_option.merge_instances
-    std::set<const AstVar*> m_mergeableTypeOptions;
+    // type_option members through which SystemVerilog may set type_option.merge_instances,
+    // see CovergroupAssignValidVisitor::mergeableTypeOptions()
+    const std::set<const AstVar*>& m_mergeableTypeOptions;
 
     struct EmbeddedEventTrigger final {
         FileLine* eventFl;  // Clocking-event source location
@@ -1107,7 +1126,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                      {ctext(fl, "vlSymsp->_vm_contextp__->covergroupRegistryp()"
                                 "->newCovergroupInst("
                                     + quoted(covergroupProtectedName())
-                                    + (m_cgMayMerge ? ", true" : "") + ")")},
+                                    + (m_cgMayMerge ? ", true" : ", false") + ")")},
                      /*usePtr=*/false)
                 ->makeStmt());
         // The node reads option.weight in place, so procedural assignments take effect
@@ -4575,20 +4594,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit FunctionalCoverageVisitor(AstNetlist* nodep) {
-        // Type options may be set at any time (IEEE 1800-2023 19.7.1), so SystemVerilog may
-        // set type_option.merge_instances with any use of a type_option but a read of another
-        // member, as not every write is marked yet (std::randomize); covergroups are then
-        // tested with optionVar(true)
-        nodep->foreach([&](const AstNodeVarRef* refp) {
-            if (refp->varp()->name() != "type_option") return;
-            const AstStructSel* const selp = VN_CAST(refp->backp(), StructSel);
-            if (selp && selp->fromp() == refp && selp->name() != "merge_instances"
-                && refp->access().isReadOnly()) {
-                return;
-            }
-            m_mergeableTypeOptions.insert(refp->varp());
-        });
+    FunctionalCoverageVisitor(AstNetlist* nodep,
+                              const std::set<const AstVar*>& mergeableTypeOptions)
+        : m_mergeableTypeOptions{mergeableTypeOptions} {
         iterate(nodep);
     }
     ~FunctionalCoverageVisitor() override = default;
@@ -4599,7 +4607,10 @@ public:
 
 void V3Covergroup::covergroup(AstNetlist* nodep) {
     UINFO(4, __FUNCTION__ << ": ");
-    if (!CovergroupAssignValidVisitor{nodep}.valid()) V3Error::abortIfErrors();
-    { FunctionalCoverageVisitor{nodep}; }  // Destruct before checking
+    const CovergroupAssignValidVisitor validVisitor{nodep};
+    if (!validVisitor.valid()) V3Error::abortIfErrors();
+    {  // Destruct before checking
+        FunctionalCoverageVisitor{nodep, validVisitor.mergeableTypeOptions()};
+    }
     V3Global::dumpCheckGlobalTree("coveragefunc", 0, dumpTreeEitherLevel() >= 3);
 }
