@@ -4,8 +4,10 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 class ClsA;
   rand logic member_a;
@@ -24,18 +26,17 @@ class ClsC;
   bit enable_c;
   rand ClsB member_c[int];
 
-  // Nested member access through the foreach iterator. The generated
-  // write_var registration references the loop index and must stay inside
-  // the loop body (regression: it used to be hoisted into the init task,
-  // leaving a dangling reference after task inlining deleted the index).
+  // Nested member access through the foreach iterator. The registration of the
+  // constrained sub-object must stay inside the loop body because it references
+  // the loop index (regression: it used to be hoisted outside, leaving a
+  // dangling reference after task inlining deleted the index).
   constraint constraint_c {
     foreach (member_c[i]) {
       enable_c == 0 -> member_c[i].member_b.member_a == 1'b1;
     }
   }
 
-  // Nested foreach: the inner body references both loop indices, exercising
-  // the per-level isolation of collected statements.
+  // Nested foreach whose inner body references both loop indices.
   constraint constraint_nested {
     foreach (member_c[i]) {
       foreach (member_c[i].inner_b[j]) {
@@ -44,10 +45,8 @@ class ClsC;
     }
   }
 
-  // Fixed index inside a foreach: the nested-access write_var registration
-  // does NOT reference the loop iterator, so it must stay in the init task
-  // rather than being moved into the loop body (exercises the
-  // referencesLoopIdx()==false path).
+  // Fixed index inside a foreach: the constrained sub-object does NOT reference
+  // the loop iterator, so its registration stays outside the loop body.
   constraint constraint_fixed {
     foreach (member_c[i]) {
       member_c[0].member_b.member_a == 1'b1;

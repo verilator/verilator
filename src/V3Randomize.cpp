@@ -1958,6 +1958,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (m_nestedAccess) {
                 AstStmtExpr* const writeVarStmtp = m_nestedAccess->makeWriteVarStmt(varp, m_genp);
                 if (m_foreachp && referencesLoopIdx(writeVarStmtp)) {
+                    // The registration references the loop index, so it must live
+                    // inside the loop body, not the init task. Appending to the body
+                    // mid-iteration is safe: visit(AstStmtExpr) is a no-op so the
+                    // appended node is not re-processed, and prependDistPreamble()
+                    // correctly keeps it as a loop-body statement.
                     m_foreachp->addBodyp(writeVarStmtp);
                 } else {
                     initTaskp->addStmtsp(writeVarStmtp);
@@ -4749,30 +4754,15 @@ class RandomizeVisitor final : public VNVisitor {
         return classp->existsMember([](const AstClass*, const AstConstraint* constrp) {
             bool owns = false;
             constrp->foreach([&](const AstMemberSel* memberSelp) {
-                // Walk to the root of the access chain, descending through both
-                // member selects (a.b) and array/assoc/queue selects (a[i]), so a
-                // constraint reaching through an array of class handles is detected.
-                const AstNode* rootp = memberSelp->fromp();
-                while (true) {
-                    if (const AstMemberSel* const sp = VN_CAST(rootp, MemberSel)) {
-                        rootp = sp->fromp();
-                    } else if (const AstNodeSel* const sp = VN_CAST(rootp, NodeSel)) {
-                        rootp = sp->fromp();
-                    } else {
-                        break;
-                    }
-                }
+                const AstNode* const rootp
+                    = const_cast<AstMemberSel*>(memberSelp)->baseFromp(true);
                 if (const AstVarRef* const refp = VN_CAST(rootp, VarRef)) {
-                    // The root owns a sub-object constraint when it is a class
-                    // handle, or an array/assoc/queue/unpacked array whose element
-                    // type is a class handle (e.g. "rand ClsB member_c[int]").
+                    // Owns a sub-object constraint if the root is a class handle, or
+                    // an array/assoc/queue/unpacked array of class handles.
                     const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
                     while (const AstNodeDType* const subp = dtypep->subDTypep())
                         dtypep = subp->skipRefp();
-                    // A MemberSel chain is always class-member access, so the
-                    // resolved root is a class handle (or array thereof); the
-                    // non-class branch is unreachable here.
-                    if (VN_IS(dtypep, ClassRefDType)) owns = true;  // LCOV_EXCL_BR_LINE
+                    if (VN_IS(dtypep, ClassRefDType)) owns = true;
                 }
             });
             return owns;
