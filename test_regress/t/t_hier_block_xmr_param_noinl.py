@@ -14,7 +14,9 @@ test.top_filename = "t/t_hier_block_xmr_param.v"
 
 test.clean_objs()
 
-test.compile(verilator_flags2=["--hierarchical", "-fno-inline"])
+test.compile(make_main=False,
+             v_flags2=['t/t_hier_block_xmr_param.cpp'],
+             verilator_flags2=["--exe", "--hierarchical", "-fno-inline"])
 
 test.execute()
 

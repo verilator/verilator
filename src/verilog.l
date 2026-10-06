@@ -186,11 +186,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-reset"            { FL; return yVLT_D_RESET; }
   -?"-reset_value"      { FL; return yVLT_D_RESET_VALUE; }
   -?"-scope"            { FL; return yVLT_D_SCOPE; }
+  -?"-signed"           { FL; return yVLT_D_SIGNED; }
   -?"-task"             { FL; return yVLT_D_TASK; }
   -?"-var"              { FL; return yVLT_D_VAR; }
-  -?"-workers"          { FL; return yVLT_D_WORKERS; }
   -?"-width"            { FL; return yVLT_D_WIDTH; }
-  -?"-signed"           { FL; return yVLT_D_SIGNED; }
+  -?"-workers"          { FL; return yVLT_D_WORKERS; }
 
   /* Reachable by attr_event_control */
   "edge"                { FL; return yEDGE; }

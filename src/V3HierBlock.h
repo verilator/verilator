@@ -134,8 +134,8 @@ public:
 class V3Hierarchical final {
 public:
     static void createGraph(AstNetlist* nodep) VL_MT_DISABLED;
-    // In the child run, turn the XMRs named by --hierarchical-xmr-port into
-    // input ports threaded up to the hierarchical block boundary.
+    // In the child run, turn the XMRs named by the hier_xmr_port records of
+    // the generated .vlt into input ports threaded up to the block boundary.
     static void promoteXmrPorts(AstNetlist* nodep) VL_MT_DISABLED;
     // In the top run, bind those ports to the signals they came from.
     static void bindXmrPorts(AstNetlist* nodep) VL_MT_DISABLED;
