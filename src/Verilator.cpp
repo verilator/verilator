@@ -392,6 +392,10 @@ static void process() {
             // Push constants across variables and remove redundant assignments
             if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
 
+            // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
+            // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
+            V3Active::activeAll(v3Global.rootp());
+
             if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
 
             // Make large low-fanin logic blocks into lookup tables
@@ -404,10 +408,6 @@ static void process() {
             if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyDTypesScoped(v3Global.rootp());
             v3Global.checkTree();
-
-            // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
-            // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
-            V3Active::activeAll(v3Global.rootp());
 
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
             if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());

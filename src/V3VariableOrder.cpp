@@ -177,10 +177,17 @@ class VariableOrder final {
 
     // cppcheck-suppress constParameterPointer
     void orderModuleVars(AstNodeModule* modp) {
+        // Top level ports stay first in source order, as a --lib-create wrapper must match
+        // the interface of the module it replaces
+        std::vector<AstVar*> portps;
         // Unlink all module variables from the module, compute attributes
         for (AstNode *nodep = modp->stmtsp(), *nextp; nodep; nodep = nextp) {
             nextp = nodep->nextp();
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
+                if (modp->isTop() && varp->isIO()) {
+                    portps.push_back(varp);
+                    continue;
+                }
                 m_varps.push_back(varp);
 
                 // Compute attributes up front
@@ -207,6 +214,7 @@ class VariableOrder final {
                 mtaskSortVars(m_varps);
             }
         }
+        m_varps.insert(m_varps.begin(), portps.begin(), portps.end());
     }
 
 public:
