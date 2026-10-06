@@ -1,0 +1,10 @@
+%Error: t/t_param_cond_pattern_bad.v:18:17: Expecting expression to be constant, but variable isn't const: 'x'
+                                          : ... note: In instance 't'
+   18 |   m #(.N(2), .V(x > 0 ? '{1, 2} : '{3, 4})) i_var ();   
+      |                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_cond_pattern_bad.v:18:15: Can't convert defparam value to constant: Param 'V' of 'i_var'
+                                          : ... note: In instance 't'
+   18 |   m #(.N(2), .V(x > 0 ? '{1, 2} : '{3, 4})) i_var ();   
+      |               ^
+%Error: Exiting due to

@@ -1,0 +1,28 @@
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:29:22: Unsupported: Parameter override '?:' with assignment patterns and an x or z condition.
+                                                        : ... note: In instance 't'
+   29 |   m #(.N(2), .V(1'bx ? '{1, 2} : '{3, 4})) i_x ();   
+      |                      ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:31:15: Unsupported/Illegal: Assignment pattern member not underneath a supported construct: COND
+                                                        : ... note: In instance 't'
+   31 |   mp #(.P(1 ? '{60: 1, 0: 1, default: 0} : 0.0)) i_real ();
+      |               ^~
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:32:22: Unsupported/Illegal: Assignment pattern member not underneath a supported construct: COND
+                                                        : ... note: In instance 't'
+   32 |   mp #(.P(1 ? ONES : '{default: 0})) i_vector ();
+      |                      ^~
+%Warning-WIDTHEXPAND: t/t_param_cond_pattern_unsup.v:32:13: Operator COND expects 61 bits on the Conditional False, but Conditional False's CONST '1'h0' generates 1 bits.
+                                                          : ... note: In instance 't'
+   32 |   mp #(.P(1 ? ONES : '{default: 0})) i_vector ();
+      |             ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:33:20: Unsupported/Illegal: Assignment pattern member not underneath a supported construct: COND
+                                                        : ... note: In instance 't'
+   33 |   mp #(.K(1 ? PK : '{a: 3, b: 4})) i_packed ();
+      |                    ^~
+%Warning-WIDTHEXPAND: t/t_param_cond_pattern_unsup.v:33:13: Operator COND expects 7 bits on the Conditional False, but Conditional False's CONST '1'h0' generates 1 bits.
+                                                          : ... note: In instance 't'
+   33 |   mp #(.K(1 ? PK : '{a: 3, b: 4})) i_packed ();
+      |             ^
+%Error: Exiting due to

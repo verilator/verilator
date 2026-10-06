@@ -1503,6 +1503,84 @@ class ParamProcessor final {
         any_overridesr = true;
     }
 
+    // Whether nodep, an override's value, is an untyped assignment pattern, or a conditional
+    // with one as an operand
+    static bool givesUntypedPattern(const AstNode* nodep) {
+        if (const AstPattern* const patternp = VN_CAST(nodep, Pattern)) {
+            return !patternp->childDTypep();
+        }
+        const AstCond* const condp = VN_CAST(nodep, Cond);
+        return condp
+               && (givesUntypedPattern(condp->thenp()) || givesUntypedPattern(condp->elsep()));
+    }
+    // Whether a conditional giving nodep leaves it unconverted: an untyped pattern takes the
+    // parameter's type, and a conditional converts no value of an unpacked type, as its
+    // operands then have equivalent types (IEEE 1800-2023 11.4.11). Without typing anything,
+    // the type is known for a typed pattern or a variable; an unpacked dimension may still be
+    // a BracketArrayDType.
+    static bool givesUnconverted(const AstNode* nodep) {
+        if (const AstCond* const condp = VN_CAST(nodep, Cond)) {
+            return givesUnconverted(condp->thenp()) && givesUnconverted(condp->elsep());
+        }
+        const AstNodeDType* dtypep = nullptr;
+        if (const AstPattern* const patternp = VN_CAST(nodep, Pattern)) {
+            if (!patternp->childDTypep()) return true;
+            dtypep = patternp->childDTypep()->skipRefOrNullp();
+        } else if (const AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
+            dtypep = varrefp->varp()->subDTypep()->skipRefOrNullp();
+        }
+        if (!dtypep) return false;
+        if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+            return !structp->packed();
+        }
+        return dtypep->isNonPackedArray() || VN_IS(dtypep, BracketArrayDType);
+    }
+    // An override that is a conditional with an untyped pattern operand can't be typed here,
+    // as the pattern needs its parameter's type. Its condition is constant, so where that
+    // changes no value, replace the conditional by the operand it selects, which is then
+    // handled as any override is: a pattern is typed by the specialized module (IEEE
+    // 1800-2023 10.8). Called with the cell or reference, nodep, that the pin is under.
+    void selectConditionalPattern(const AstNode* nodep, AstPin* pinp) {
+        while (AstCond* const condp = VN_CAST(pinp->exprp(), Cond)) {
+            if (!givesUntypedPattern(condp) || !givesUnconverted(condp)) return;
+            // Convert the condition to a truth value as in any conditional, by typing it as the
+            // condition of a conditional of one-bit values, then fold it
+            FileLine* const flp = condp->fileline();
+            AstCond* const testp = new AstCond{flp, condp->condp()->unlinkFrBack(),
+                                               new AstConst{flp, AstConst::BitTrue{}},
+                                               new AstConst{flp, AstConst::BitFalse{}}};
+            condp->condp(testp);
+            V3Width::widthParamsEdit(testp);
+            V3Const::constifyParamsEdit(testp->condp());
+            const AstConst* const constp = VN_CAST(testp->condp(), Const);
+            const bool known = constp && !constp->num().isFourState();
+            if (constp && !known) {
+                condp->v3warn(E_UNSUPPORTED, "Unsupported: Parameter override '?:' with"
+                                             " assignment patterns and an x or z condition.");
+            } else if (!known) {  // Reported as for any other override value that isn't constant
+                pinp->v3error("Can't convert defparam value to constant: Param "
+                              << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
+            }
+            // Without a known value, carry on with the first operand
+            AstNode* const selp
+                = (!known || constp->num().isNeqZero() ? condp->thenp() : condp->elsep())
+                      ->unlinkFrBack();
+            condp->replaceWith(selp);
+            VL_DO_DANGLING(m_deleter.pushDeletep(condp), condp);
+        }
+    }
+    // The parameter pins of nodep, a cell or reference
+    static AstPin* paramsOf(const AstNode* nodep) {
+        if (const AstCell* const cellp = VN_CAST(nodep, Cell)) return cellp->paramsp();
+        if (const AstIfaceRefDType* const refp = VN_CAST(nodep, IfaceRefDType)) {
+            return refp->paramsp();
+        }
+        if (const AstClassRefDType* const refp = VN_CAST(nodep, ClassRefDType)) {
+            return refp->paramsp();
+        }
+        return VN_AS(nodep, ClassOrPackageRef)->paramsp();
+    }
+
     // Name the specialization by a value pin, or prepare a type pin, noting in
     // overridingTypePinsr whether it differs from the default
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstPin* paramsp, AstNodeModule* srcModp,
@@ -2060,6 +2138,7 @@ class ParamProcessor final {
                 AstVar* const modvarp = pinp->modVarp();
                 if (!modvarp || !modvarp->isGParam()) continue;
                 resolveDeferredDotsReachableFrom(modvarp->subDTypep(), m_modp);
+                selectConditionalPattern(nodep, pinp);  // For a reference skipping nodeDeparam
                 // An untyped pattern can't be folded without its parameter's type
                 const AstPattern* const patternp = VN_CAST(pinp->exprp(), Pattern);
                 if (patternp && !patternp->childDTypep()) continue;
@@ -2416,6 +2495,10 @@ public:
         // Resolve `class::member` Dots in pin values, and in any deferred
         // lparam reachable from the pin tree, so constify sees Consts.
         resolveDeferredDotsReachableFrom(nodep, modp);
+        // Before the constify below, which can't type a conditional's untyped patterns
+        for (AstPin* pinp = paramsOf(nodep); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            selectConditionalPattern(nodep, pinp);
+        }
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         // Set name for warnings for when we param propagate the module
