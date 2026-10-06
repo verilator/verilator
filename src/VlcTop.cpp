@@ -449,7 +449,11 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
 
             const uint64_t pointnum = points().findAddPoint(point, hits);
             if (opt.rank()) {  // Only if ranking - uses a lot of memory
-                if (hits >= VlcBuckets::sufficient()) {
+                // A test covers a point with a threshold (option.at_least) when its own hits
+                // reach it
+                const uint64_t needed = std::max(
+                    VlcBuckets::sufficient(), keyNumber(points().pointNumber(pointnum).thresh()));
+                if (hits >= needed) {
                     points().pointNumber(pointnum).testsCoveringInc();
                     testp->buckets().addData(pointnum, hits);
                 }

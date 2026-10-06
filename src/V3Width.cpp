@@ -2136,6 +2136,12 @@ class WidthVisitor final : public VNVisitor {
         valuep->replaceWith(new AstConst{valuep->fileline(), AstConst::Signed32{}, 1});
         VL_DO_DANGLING(pushDeletep(valuep), valuep);
     }
+    // Width an integral coverage option V3Covergroup reads, folding a constant expression
+    template <typename T_Option>
+    void widthCoverInt(T_Option* nodep) {
+        userIterateAndNext(nodep->valuep(), WidthVP{SELF, BOTH}.p());
+        V3Const::constifyEdit(nodep->valuep());
+    }
     void visit(AstCgOptionAssign* nodep) override {
         // Recursive function widthing can reach a covergroup constructor without first visiting
         // its class, so find the owning covergroup structurally instead of using visit context.
@@ -2146,6 +2152,11 @@ class WidthVisitor final : public VNVisitor {
         // V3Covergroup stores the weight into the covergroup's option or type_option
         if (nodep->optType() == VCoverOptionType::WEIGHT) {
             widthCoverWeight(nodep);
+            return;
+        }
+        // V3Covergroup takes a constant option.at_least as the default for coverpoints/crosses
+        if (nodep->optType() == VCoverOptionType::AT_LEAST) {
+            widthCoverInt(nodep);
             return;
         }
 
@@ -2179,7 +2190,7 @@ class WidthVisitor final : public VNVisitor {
                                         " to bins");
             }
         }
-        // Add more options here as needed (goal, at_least, per_instance, comment)
+        // Add more options here as needed (goal, per_instance, comment)
 
         // Delete the assignment node (we've extracted the value)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -2189,7 +2200,12 @@ class WidthVisitor final : public VNVisitor {
             widthCoverWeight(nodep);
             return;
         }
-        userIterateChildren(nodep, nullptr);
+        if (nodep->optType() == VCoverOptionType::AT_LEAST
+            || nodep->optType() == VCoverOptionType::AUTO_BIN_MAX) {
+            widthCoverInt(nodep);
+            return;
+        }
+        userIterateAndNext(nodep->valuep(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstCoverCross* nodep) override {
         userIterateAndNext(nodep->itemsp(), nullptr);

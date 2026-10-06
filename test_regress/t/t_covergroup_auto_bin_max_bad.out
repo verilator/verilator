@@ -9,4 +9,20 @@
                                                          : ... Suggest a larger --coverage-max-bins
    22 |     cp: coverpoint cp_32bit;
       |         ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_auto_bin_max_bad.v:27:23: Ignoring unsupported: non-constant 'option.at_least'; using default value
+                                                          : ... note: In instance 't'
+   27 |     option.at_least = size_var;
+      |                       ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_auto_bin_max_bad.v:33:23: Ignoring negative 'option.at_least'; using 1
+                                                          : ... note: In instance 't'
+   33 |     option.at_least = -1;
+      |                       ^
+%Warning-COVERIGN: t/t_covergroup_auto_bin_max_bad.v:34:49: Ignoring negative 'option.at_least'; using 1
+                                                          : ... note: In instance 't'
+   34 |     cp_a: coverpoint cp_expr {option.at_least = -2;}
+      |                                                 ^
+%Warning-COVERIGN: t/t_covergroup_auto_bin_max_bad.v:36:44: Ignoring negative 'option.at_least'; using 1
+                                                          : ... note: In instance 't'
+   36 |     cx: cross cp_a, cp_b{option.at_least = -3;}
+      |                                            ^
 %Error: Exiting due to

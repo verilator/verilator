@@ -1165,9 +1165,10 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
 //=============================================================================
 // VlCoverCross
 
-void VlCoverCross::init(const char* hier, uint32_t dims, VlCoverpoint* const* cps,
-                        const char* file, int line, int col) {
+void VlCoverCross::init(const char* hier, uint32_t atLeast, uint32_t dims,
+                        VlCoverpoint* const* cps, const char* file, int line, int col) {
     m_hier = hier;
+    m_atLeast = atLeast;
     m_file = file;
     m_line = line;
     m_col = col;
@@ -1271,7 +1272,7 @@ void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
 }
 
 void VlCoverCross::incrementBin(Bin& bin) {
-    if (bin.count++ == 0 && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
+    if (++bin.count == m_atLeast && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
     if (VL_UNLIKELY(bin.kind == VlCovBinKind::KIND_ILLEGAL)) {
         VL_PRINTF_MT("%%Error: %s:%d: Illegal cross bin '%s' hit in cross '%s'.\n", bin.filep,
                      bin.line, bin.namep, m_hier.c_str());
@@ -1437,9 +1438,10 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
                                 uint32_t itemWeight, uint32_t groupWeight) {
     const std::string lineStr = std::to_string(m_line);
     const std::string colStr = std::to_string(m_col);
-    // A cross bin is covered once hit, which needs no option.at_least
+    const std::string threshStr = std::to_string(m_atLeast);
     const std::string weightStr = std::to_string(itemWeight);
     const std::string groupWeightStr = std::to_string(groupWeight);
+    const char* const threshKeyp = _vl_cov_score_key("thresh", m_atLeast);
     const char* const weightKeyp = _vl_cov_score_key("weight", itemWeight);
     const char* const groupWeightKeyp = _vl_cov_score_key("group_weight", groupWeight);
     const uint32_t explicitCount
@@ -1456,11 +1458,11 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
             const char* const binType = userBin.kind == VlCovBinKind::KIND_NORMAL   ? ""
                                         : userBin.kind == VlCovBinKind::KIND_IGNORE ? "ignore"
                                                                                     : "illegal";
-            VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page, "filename",
-                            userBin.filep, "lineno", binLineStr.c_str(), "column",
-                            binColStr.c_str(), "bin", bin.c_str(), "cross", "1",
-                            binType[0] ? "bin_type" : "", binType, weightKeyp, weightStr.c_str(),
-                            groupWeightKeyp, groupWeightStr.c_str());
+            VL_COVER_INSERT(
+                covcontextp, full.c_str(), &userBin.count, "page", page, "filename", userBin.filep,
+                "lineno", binLineStr.c_str(), "column", binColStr.c_str(), "bin", bin.c_str(),
+                "cross", "1", binType[0] ? "bin_type" : "", binType, threshKeyp, threshStr.c_str(),
+                weightKeyp, weightStr.c_str(), groupWeightKeyp, groupWeightStr.c_str());
             continue;
         }
         const uint32_t flat = autoIndex(i - explicitCount);
@@ -1474,8 +1476,9 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
         }
         VL_COVER_INSERT(covcontextp, full.c_str(), &m_flatCountsp[flat], "page", page, "filename",
                         m_file, "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str(), weightKeyp,
-                        weightStr.c_str(), groupWeightKeyp, groupWeightStr.c_str());
+                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str(), threshKeyp,
+                        threshStr.c_str(), weightKeyp, weightStr.c_str(), groupWeightKeyp,
+                        groupWeightStr.c_str());
     }
 }
 #endif  // VM_COVERAGE
@@ -1550,8 +1553,8 @@ VlCoverCrossDyn::VlCoverCrossDyn()
 
 VlCoverCrossDyn::~VlCoverCrossDyn() = default;
 
-void VlCoverCrossDyn::init(const char* hier, uint32_t dims, VlCoverpoint* const* cps,
-                           const char* file, int line, int col) {
+void VlCoverCrossDyn::init(const char* hier, uint32_t atLeast, uint32_t dims,
+                           VlCoverpoint* const* cps, const char* file, int line, int col) {
     Layout& data = *m_layoutp;
     uint64_t tuples = std::any_of(cps, cps + dims,
                                   [](const VlCoverpoint* cpp) { return !cpp->normalBinCount(); })
@@ -1573,7 +1576,7 @@ void VlCoverCrossDyn::init(const char* hier, uint32_t dims, VlCoverpoint* const*
     data.m_counts.resize(data.m_tuples, 0);
     shape(dims, data.m_tuples);
     bindStorage(data.m_dimensions.data(), data.m_counts.data());
-    VlCoverCross::init(hier, dims, cps, file, line, col);
+    VlCoverCross::init(hier, atLeast, dims, cps, file, line, col);
 }
 
 void VlCoverCrossDyn::selectAll() {
