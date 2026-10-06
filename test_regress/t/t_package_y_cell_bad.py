@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=['-y t/t_package_y_module_bad'],
+test.lint(verilator_flags2=['-y t/t_package_y_cell_bad'],
           fails=True,
           expect_filename=test.golden_filename)
 
