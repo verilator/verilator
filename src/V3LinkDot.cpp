@@ -5591,6 +5591,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_ds.m_unresolvedClass) {
             UASSERT_OBJ(m_ds.m_dotPos != DP_SCOPE && m_ds.m_dotPos != DP_FIRST, nodep,
                         "Object of unresolved class on scope position in dotted reference");
+            // The index does not depend on the class, and V3Param must see its class references
+            symIterateNull(nodep->bitp(), m_curSymp);
+            symIterateNull(nodep->attrp(), m_curSymp);
             return;
         }
         if (m_ds.m_dotPos == DP_SCOPE
