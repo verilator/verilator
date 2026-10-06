@@ -23,7 +23,8 @@ VPATH += ../..
 #######################################################################
 
 # Debugging
-CPPFLAGS += -DVL_DEBUG=1
+USER_CPPFLAGS += -DVL_DEBUG=1
+export USER_CPPFLAGS
 # Assertions disabled as SystemC libraries are not clean
 #CPPFLAGS += -D_GLIBCXX_DEBUG
 

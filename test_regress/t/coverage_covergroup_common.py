@@ -21,7 +21,9 @@ def covergroup_coverage_report(test, outfile=None):
         outfile = test.obj_dir + "/covergroup_report.txt"
     contents = test.file_contents(test.coverage_filename)
     entries = []
-    for m in re.finditer(r"C '([^']+)' (\d+)", contents):
+    # The count follows the last "' " of the line, as a point may hold quotes, as a type named
+    # with a sized value, C#(8'd1)
+    for m in re.finditer(r"^C '(.*)' (\d+)$", contents, re.MULTILINE):
         entry, count = m.group(1), m.group(2)
         if '\x01t\x02covergroup' not in entry:
             continue

@@ -1421,14 +1421,16 @@ std::string VlCoverCross::binName(uint32_t i) const {
 }
 
 std::string VlCoverCross::autoBinName(uint32_t flat) const {
-    // Built on demand by concatenating each coverpoint's own bin name.
-    std::string name;
+    // Built on demand: the tuple of each coverpoint's own bin name, as IEEE 1800-2023 19.6
+    // writes a cross product, '<a1,b1>'
+    std::string name{"<"};
     for (uint32_t d = 0; d < m_dims; ++d) {
         const Dimension& dimension = m_dimensionsp[d];
         const uint32_t crossIdx = (flat / dimension.stride) % dimension.bins;
-        if (d > 0) name += "_x_";
+        if (d > 0) name += ',';
         name += dimension.cpp->normalBinName(crossIdx);
     }
+    name += '>';
     return name;
 }
 

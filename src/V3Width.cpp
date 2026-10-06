@@ -2927,6 +2927,22 @@ class WidthVisitor final : public VNVisitor {
         // No nodep->typedefp(nullptr) for now; V3WidthCommit needs to check accesses
         nodep->doingWidth(false);
     }
+    // Width the parameters of the scopes declaring typedef 'nodep', as the name of the type it
+    // declares holds their values, though one may follow it, in a module without a parameter
+    // port list
+    void widthDTypeNameParams(const AstTypedef* nodep) {
+        const VDTypeNameScopes* const scopesp = VDTypeNameScopes::currentp();
+        if (!scopesp) return;  // Computing parameters, as by V3Param, so naming as found
+        AstNode* scopep = nullptr;
+        for (const AstNode* innerp = nodep; scopesp->outerp(innerp, scopep) && scopep;
+             innerp = scopep) {
+            if (const std::vector<AstNode*>* const paramsp = scopesp->paramsp(scopep)) {
+                for (AstNode* const paramp : *paramsp) {
+                    if (!paramp->didWidth()) userIterate(paramp, nullptr);
+                }
+            }
+        }
+    }
     void visit(AstTypedef* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         if (auto* const refp = checkRefToTypedefRecurse(nodep, nodep)) {
@@ -2941,14 +2957,17 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         // As it moves to the type table, a structure, union, or enumeration it declares keeps the
-        // name it has from the typedef, with the scope of the typedef
+        // name it has from the typedef, with the scope of the typedef, so with the parameters of
+        // the scope, widthed first, as one may follow the typedef
         const bool declares = nodep->childDTypep() != nullptr;
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         if (declares) {
             AstNodeDType* const dtypep = nodep->dtypep();
             if (AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+                widthDTypeNameParams(nodep);
                 sdtypep->typedefName(nodep->dtypeName());
             } else if (AstEnumDType* const edtypep = VN_CAST(dtypep, EnumDType)) {
+                widthDTypeNameParams(nodep);
                 edtypep->typedefName(nodep->dtypeName());
             }
         }
@@ -11081,6 +11100,8 @@ void V3Width::width(AstNetlist* nodep) {
     {
         // We should do it in bottom-up module order, but it works in any order.
         const WidthClearVisitor cvisitor{nodep};
+        // Typedefs and classes are named by the scopes declaring them, so index those
+        const VDTypeNameScopes scopes{nodep};
         WidthVisitor visitor{false, false};
         (void)visitor.mainAcceptEdit(nodep);
         WidthRemoveVisitor rvisitor;

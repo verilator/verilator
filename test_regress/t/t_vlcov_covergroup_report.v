@@ -12,6 +12,19 @@
 `define checkr(gotv,expv) do if ((gotv) > (expv) + 0.001 || (gotv) < (expv) - 0.001) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+// A covergroup of a specialization is named with the values of its parameters, whose dots split
+// the name into no nodes of the report, nor do the escaped quote and parenthesis of a string
+// value, which shows as written, though the coverage file escapes its quotes and '%': 50
+module spec #(
+    parameter real R = 0.0,
+    parameter string S = ""
+);
+  covergroup cg with function sample (bit v);
+    cp: coverpoint v;
+  endgroup
+  cg inst = new;
+endmodule
+
 module t;
   // Ignore, illegal and default bins are not coverable: 100
   covergroup excluded with function sample (int value);
@@ -64,8 +77,8 @@ module t;
       ignore_bins ignored = binsof (cp_a) intersect {1};
     }
   endgroup
-  // Bins of a name are distinct bins: the cross bins of 'a' and 'b_x_c', and of 'a_x_b' and
-  // 'c', are both named a_x_b_x_c: 100, 100 and 75: 91.67
+  // Cross bins named by joining their coverpoints' bins would collide: those of 'a' and 'b_x_c',
+  // and of 'a_x_b' and 'c'.  Named by tuples, they do not: 100, 100 and 75: 91.67
   covergroup collide with function sample (bit u, bit v);
     p: coverpoint u {
       bins a = {0};
@@ -116,8 +129,8 @@ module t;
     cp: coverpoint a;
   endgroup
 
-  // Covergroups of a name in distinct classes are both named __vlAnonCG_twin, with distinct
-  // bins: 50, and get_coverage() averages their instances: 50
+  // Covergroups of a name in distinct classes are distinct types, each of its own bins: 100 and
+  // 0, where a single type would average its instances: 50
   class First;
     bit v;
     covergroup twin;
@@ -143,6 +156,21 @@ module t;
     endfunction
   endclass
 
+  // Classes declared in the iterations of a generate loop are distinct classes, so their
+  // covergroups are distinct types, named with each generate block: 100 and 0
+  for (genvar i = 0; i < 2; ++i) begin : gen
+    class Gen;
+      bit v;
+      covergroup cg;
+        cp: coverpoint v;
+      endgroup
+      function new;
+        cg = new;
+      endfunction
+    endclass
+    Gen obj = new;
+  end
+
   excluded excluded_inst = new;
   unequal unequal_inst = new;
   weighted weighted_inst = new;
@@ -160,6 +188,7 @@ module t;
   varying varying_two = new(2);
   First first = new;
   Second second = new;
+  spec #(0.5, "a.\"(b%22") sp ();
 
   initial begin
     excluded_inst.sample(0);
@@ -186,8 +215,13 @@ module t;
     varying_two.sample(0, 1);
     first.v = 0;
     first.twin.sample();
-    second.v = 1;
-    second.twin.sample();
+    first.v = 1;
+    first.twin.sample();
+    gen[0].obj.v = 0;
+    gen[0].obj.cg.sample();
+    gen[0].obj.v = 1;
+    gen[0].obj.cg.sample();
+    sp.inst.sample(1);
     `checkr(excluded_inst.get_coverage(), 100.0);
     `checkr(unequal_inst.get_coverage(), 37.5);
     `checkr(weighted_inst.get_coverage(), 100.0);
@@ -201,7 +235,11 @@ module t;
     `checkr(merged_first.get_coverage(), 50.0);
     `checkr(collide_inst.get_coverage(), 275.0 / 3);
     `checkr(varying_none.get_coverage(), 50.0);
-    `checkr(first.twin.get_coverage(), 50.0);
+    `checkr(first.twin.get_coverage(), 100.0);
+    `checkr(second.twin.get_coverage(), 0.0);
+    `checkr(gen[0].obj.cg.get_coverage(), 100.0);
+    `checkr(gen[1].obj.cg.get_coverage(), 0.0);
+    `checkr(sp.inst.get_coverage(), 50.0);
     $write("*-* All Finished *-*\n");
     $finish;
   end
