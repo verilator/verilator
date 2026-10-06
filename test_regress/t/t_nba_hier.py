@@ -19,6 +19,9 @@ test.file_grep(test.stats, r'NBA, variables using FlagShared scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using FlagUnique scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 2)
 
+# The commit queue of 'y' is shared by all instances of 'sub'
+test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "_sub.h", r'__Vdly_CommitQueue__y_', 1)
+
 test.execute()
 
 test.passes()

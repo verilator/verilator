@@ -1908,10 +1908,6 @@ public:
     AstCell* aboveCellp() const { return m_aboveCellp; }
     void aboveCellp(AstCell* nodep) { m_aboveCellp = nodep; }
     bool isTop() const VL_MT_SAFE { return aboveScopep() == nullptr; }  // At top of hierarchy
-    // Create new MODULETEMP variable under this scope
-    AstVarScope* createTemp(const string& name, unsigned width);
-    AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
-    AstVarScope* createTempLike(const string& name, const AstVarScope* vscp);
 };
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE
@@ -2103,6 +2099,9 @@ class AstTopScope final : public AstNode {
 public:
     ASTGEN_MEMBERS_AstTopScope;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    // Create new MODULETEMP variable named '__V<name>' in the top level scope
+    AstVarScope* createTemp(const string& name, unsigned width);
+    AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
 };
 class AstTypeTable final : public AstNode {
     // Container for hash of standard data types

@@ -2246,7 +2246,7 @@ AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
 }
 AstVarScope* AstNetlist::stlFirstIterationp() {
     if (!m_stlFirstIterationp) {
-        m_stlFirstIterationp = topScopep()->scopep()->createTemp("__VstlFirstIteration", 1);
+        m_stlFirstIterationp = topScopep()->createTemp("stlFirstIteration", 1);
     }
     AstVarScope* const vscp = m_stlFirstIterationp;
     return vscp;
@@ -3495,26 +3495,6 @@ void AstSampled::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, internal);
     dumpJsonGen(str);
 }
-AstVarScope* AstScope::createTemp(const string& name, unsigned width) {
-    FileLine* const flp = fileline();
-    AstVar* const varp
-        = new AstVar{flp, VVarType::MODULETEMP, name, VFlagBitPacked{}, static_cast<int>(width)};
-    modp()->addStmtsp(varp);
-    AstVarScope* const vscp = new AstVarScope{flp, this, varp};
-    addVarsp(vscp);
-    return vscp;
-}
-AstVarScope* AstScope::createTemp(const string& name, AstNodeDType* dtypep) {
-    FileLine* const flp = fileline();
-    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
-    modp()->addStmtsp(varp);
-    AstVarScope* const vscp = new AstVarScope{flp, this, varp};
-    addVarsp(vscp);
-    return vscp;
-}
-AstVarScope* AstScope::createTempLike(const string& name, const AstVarScope* vscp) {
-    return createTemp(name, vscp->dtypep());
-}
 void AstScope::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [abovep=" << nodeAddr(aboveScopep()) << "]";
@@ -3749,6 +3729,19 @@ void AstTimeImport::dump(std::ostream& str) const {
 void AstTimeImport::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "timeunit", timeunit().ascii());
     dumpJsonGen(str);
+}
+AstVarScope* AstTopScope::createTemp(const string& name, unsigned width) {
+    return createTemp(name, findBitDType(width, width, VSigning::UNSIGNED));
+}
+AstVarScope* AstTopScope::createTemp(const string& name, AstNodeDType* dtypep) {
+    UASSERT_OBJ(!VString::startsWith(name, "__V"), this,
+                "Temporary name should not start with '__V': " << name);
+    FileLine* const flp = scopep()->fileline();
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, "__V" + name, dtypep};
+    scopep()->modp()->addStmtsp(varp);
+    AstVarScope* const vscp = new AstVarScope{flp, scopep(), varp};
+    scopep()->addVarsp(vscp);
+    return vscp;
 }
 void AstTraceDecl::dump(std::ostream& str) const {
     Super::dump(str);

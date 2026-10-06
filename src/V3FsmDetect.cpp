@@ -30,7 +30,7 @@
 #include "V3Ast.h"
 #include "V3Control.h"
 #include "V3Graph.h"
-#include "V3UniqueNames.h"
+#include "V3SharedTmps.h"
 
 #include <algorithm>
 #include <cctype>
@@ -2069,7 +2069,7 @@ public:
 class FsmLowerVisitor final {
     // STATE - across all visitors
     const FsmState& m_state;
-    V3UniqueNames m_fsmBuildNames;
+    V3SharedTmps m_prevTmps{"fsmCovPrev", VVarType::MODULETEMP};  // Previous states
 
     // METHODS
     // Rebuild a state-typed constant using the tracked state variable
@@ -2121,8 +2121,8 @@ class FsmLowerVisitor final {
         AstNodeModule* const modp = scopep->modp();
         AstNodeDType* const prevDTypep = scopep->findLogicDType(
             sampleVscp->width(), sampleVscp->width(), sampleVscp->dtypep()->numeric());
-        const std::string tmpName = m_fsmBuildNames.get(stateVscp->varp()->shortName());
-        AstVarScope* const prevVscp = scopep->createTemp(tmpName, prevDTypep);
+        AstVarScope* const prevVscp
+            = m_prevTmps.make(flp, scopep, prevDTypep, stateVscp->varp()->shortName());
         // The saved previous-state temp crosses the scheduler's pre/post split
         // in the same way as Verilator's built-in NBA shadow variables, so keep
         // both vars marked as post-life participants for stable MT ordering.
@@ -2273,8 +2273,7 @@ public:
     // concrete coverage instrumentation while the saved scoped pointers are
     // still valid in the same pass.
     explicit FsmLowerVisitor(const FsmState& state)
-        : m_state{state}
-        , m_fsmBuildNames{"__Vfsmcov_prev"} {
+        : m_state{state} {
         for (const DetectedFsm& fsm : m_state.fsms()) { buildOne(*fsm.graphp); }
     }
 };
