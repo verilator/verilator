@@ -2548,9 +2548,11 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
             // Only worth asking while parameters are still being worked out.
             if (m_paramsOnly) {
-                // A module that is still being copied does not have its final sizes.
+                // Captured interface types need their specialized instance's sizes.
+                // Class templates may still be used with their default parameters.
                 const AstNodeModule* const ownModp = v3Global.rootp()->containingModule(dtypep);
-                if (ownModp && ownModp->parameterizedTemplate() && !ownModp->dead()) {
+                if (VN_IS(ownModp, Iface) && ownModp->parameterizedTemplate()
+                    && !ownModp->dead()) {
                     UINFO(9, "size deferred, type still on template " << ownModp->name());
                     // These queries always give an int, so set that now and let the
                     // value be worked out once the copy exists.
