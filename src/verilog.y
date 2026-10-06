@@ -289,11 +289,11 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_RESET    "--reset"
 %token<fl>              yVLT_D_RESET_VALUE "--reset_value"
 %token<fl>              yVLT_D_SCOPE    "--scope"
+%token<fl>              yVLT_D_SIGNED   "--signed"
 %token<fl>              yVLT_D_TASK     "--task"
 %token<fl>              yVLT_D_VAR      "--var"
-%token<fl>              yVLT_D_WORKERS  "--workers"
 %token<fl>              yVLT_D_WIDTH    "--width"
-%token<fl>              yVLT_D_SIGNED   "--signed"
+%token<fl>              yVLT_D_WORKERS  "--workers"
 
 %token<strp>            yaD_PLI         "${pli-system}"
 

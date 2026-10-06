@@ -742,13 +742,8 @@ class LinkCellsVisitor final : public VNVisitor {
                             // A port promoted from an outbound cross-module reference is
                             // connected later, by V3Hierarchical::bindXmrPorts, which runs
                             // after linking. It is not a missing pin.
-                            bool promotedXmr = false;
-                            if (const std::vector<V3Control::HierXmrPort>* const xpsp
-                                = V3Control::getHierXmrPorts(nodep->modName())) {
-                                for (const V3Control::HierXmrPort& xp : *xpsp) {
-                                    if (xp.m_port == portp->name()) promotedXmr = true;
-                                }
-                            }
+                            const bool promotedXmr
+                                = V3Control::hasHierXmrPort(nodep->modName(), portp->name());
 
                             // Is the matching Module port: an INPUT, with default value (in
                             // valuep):

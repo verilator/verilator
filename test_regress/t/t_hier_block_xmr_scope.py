@@ -14,7 +14,9 @@ test.top_filename = "t/t_hier_block_xmr_scope.v"
 
 test.clean_objs()
 
-test.compile(verilator_flags2=['--hierarchical'])
+test.compile(make_main=False,
+             v_flags2=['t/t_hier_block_xmr_scope.cpp'],
+             verilator_flags2=['--exe', '--hierarchical'])
 
 test.execute()
 

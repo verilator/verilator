@@ -152,6 +152,13 @@ Hierarchy blocks have some limitations, including:
   nested hierarchy block, or from the top level non-hierarchical portions
   of the design if not a nested hierarchy block.
 
+- A read of a signal outside the hierarchy block is promoted to an input port
+  on it automatically, and connected at the instance. The signal must be of a
+  packed integral type whose width is known before elaboration. Writing such a
+  signal, reading a parameter, referencing a function or task, and a path that
+  indexes a scope are all unsupported, as is any such reference out of a nested
+  hierarchy block.
+
 - Modport cannot be used at the hierarchical block boundary.
 
 - The simulation speed is likely not as fast as flat Verilation, in which
