@@ -162,8 +162,8 @@ The grammar of control commands is as follows:
    Specifies a reference out of a :vlopt:`--hierarchical` block that has been
    promoted to a port on it, naming the module the reference appears in, the
    generated port, its width and signedness, and the signal it reads. This data
-   is inserted internally during :vlopt:`--hierarchical`. This option should not
-   be used directly. See :ref:`Hierarchical Verilation`.
+   is inserted internally during :vlopt:`--hierarchical`. This option is for
+   internal use only. See :ref:`Hierarchical Verilation`.
 
 .. option:: inline -module "<modulename>"
 
