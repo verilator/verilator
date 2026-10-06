@@ -994,16 +994,11 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstCFuncHard* nodep) override {
         switch (nodep->function()) {
         case VCFunction::CALL_IMPORT_TASK: {
-            if (m_procp) addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER);
             AstStmtExpr* const stmtExprp = VN_AS(nodep->backp(), StmtExpr);
-            nodep->function(VCFunction::AWAIT_IMPORT_IN_FIBER);
+            nodep->function(VCFunction::AWAIT_IMPORT_TASK);
             AstCFuncHard* const cFuncp = nodep->unlinkFrBack();
             stmtExprp->replaceWith(new AstCAwait{nodep->fileline(), cFuncp});
             VL_DO_DANGLING(pushDeletep(stmtExprp), stmtExprp);
-            break;
-        }
-        case VCFunction::CALL_EXPORT_TASK: {
-            nodep->function(VCFunction::AWAIT_EXPORT_IN_FIBER);
             break;
         }
         default: {

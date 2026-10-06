@@ -1030,7 +1030,6 @@ class TaskVisitor final : public VNVisitor {
         // First argument is the Syms
         callExportp->addPinsp(new AstCExpr{nodep->fileline(), "(" + EmitCUtil::symClassName()
                                                                   + "*)(__Vscopep->symsp())"});
-        // The function has to be called by returning from fiber context first, if the timings are
 
         // Add function arguments
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -1250,8 +1249,8 @@ class TaskVisitor final : public VNVisitor {
             nodep->fileline(), nodep->verilogTask() ? VCFunction::CALL_IMPORT_TASK
                                                     : VCFunction::CALL_IMPORT_FUNCTION};
         callImportp->dtypeSetVoid();
-        // Add arguments
-        addDebugInfo(callImportp);
+        // Add arguments; only imported functions use the call location
+        if (!nodep->verilogTask()) addDebugInfo(callImportp);
         // Pass name of the DPI imported function to call
         callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
         if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});

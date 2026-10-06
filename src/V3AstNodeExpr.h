@@ -645,6 +645,9 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return funcp() == VN_DBG_AS(samep, AddrOfCFunc)->funcp();
+    }
     AstCFunc* funcp() const { return m_funcp; }
 };
 class AstAttrOf final : public AstNodeExpr {

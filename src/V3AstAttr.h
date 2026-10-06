@@ -1031,8 +1031,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
 #define FOR_EACH_CFUNCTION(macro) \
     /*    id,                                 function,                             pure,   args */ \
     macro(_NONE,                              "_none",                              false,  "") \
-    macro(AWAIT_IMPORT_IN_FIBER,              "VerilatedDpi::awaitImportFiber",     false,  "TODO") \
-    macro(AWAIT_EXPORT_IN_FIBER,              "VerilatedDpi::awaitExportFiber",     false,  "TODO") \
+    macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "TODO") \
     macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
     macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
     macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "TODO") \
