@@ -652,7 +652,7 @@ static void collectOutboundXRef(XRefScan& scan, AstNodeModule* modp, AstVarXRef*
                               << xrefp->name() << "' in " << targetp->prettyNameQ() << " => port "
                               << portName);
     }
-}
+}  // LCOV_EXCL_LINE -- GCC exception cleanup branch
 
 // A dotted call out of the block cannot become a port: a port carries a value,
 // not a task or function. Left alone it reaches the child run as a bare "Can't
@@ -665,7 +665,7 @@ static void refuseOutboundFTaskRef(const XRefScan& scan, AstNodeFTaskRef* refp) 
     refp->v3warn(E_UNSUPPORTED, "Cannot promote reference out of a hierarchical block: '"
                                     << refp->dotted() << "." << refp->name()
                                     << "' is a function or task, which a port cannot carry");
-}
+}  // LCOV_EXCL_LINE -- GCC exception cleanup branch
 
 static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
     // Which module each variable lives in, built in one pass; walking backp()
