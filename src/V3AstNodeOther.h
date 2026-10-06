@@ -2667,6 +2667,10 @@ public:
     bool isParam() const { return varType().isParam(); }
     bool isGParam() const { return varType() == VVarType::GPARAM; }
     bool isGenVar() const { return varType() == VVarType::GENVAR; }
+    // Return whether this variable is emitted as a member of its module's C++ class
+    bool isModelState() const {
+        return isIO() || isSignal() || isClassMember() || isTemp() || isGenVar();
+    }
     bool isBitLogic() const {
         const AstBasicDType* const bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();

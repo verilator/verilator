@@ -130,12 +130,14 @@ class EmitCHeader final : public EmitCConstInit {
         // Emit variables in consecutive anon and non-anon batches
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
-                    || varp->isGenVar()) {
+                if (varp->isModelState()) {
                     const bool anon = EmitCUtil::isAnonOk(varp);
                     if (anon != lastAnon) emitCurrentList();
                     lastAnon = anon;
                     varList.emplace_back(varp);
+                } else {
+                    // Cache line alignment is only effective on emitted fields
+                    UASSERT_OBJ(!varp->mtaskCacheLineAlign(), varp, "Aligned non-field");
                 }
             }
         }
