@@ -121,7 +121,6 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
 
 namespace VerilatedDpi {
 
-namespace {
 struct VlFunctionContext final {
     const char* m_filename;
     int m_lineno;
@@ -129,9 +128,8 @@ struct VlFunctionContext final {
     bool inFunctionContext() { return m_filename != nullptr and m_lineno != 0; }
 };
 
-thread_local VlFunctionContext t_fileline{nullptr, 0};
-
-};  //namespace
+// DPI imported function being executed on this thread, defined in verilated_dpi.cpp
+extern thread_local VlFunctionContext t_fileline;
 
 template <typename Callable, typename... Args>
 decltype(auto) callImportFunction(const char* const filename, int lineno, Callable&& call,
