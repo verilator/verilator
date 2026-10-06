@@ -991,19 +991,17 @@ class SvaNfaBuilder final {
             return {entryVtxp, orCondp, {}};
         }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
-        {
-            if (lhs.finalCondp) {
-                guardedLink(lhs.termVertexp, mergeVtxp,
-                            sampled(lhs.finalCondp->cloneTreePure(false)), flp);
-            } else {
-                guardedLink(lhs.termVertexp, mergeVtxp, flp);
-            }
-            if (rhs.finalCondp) {
-                guardedLink(rhs.termVertexp, mergeVtxp,
-                            sampled(rhs.finalCondp->cloneTreePure(false)), flp);
-            } else {
-                guardedLink(rhs.termVertexp, mergeVtxp, flp);
-            }
+        if (lhs.finalCondp) {
+            guardedLink(lhs.termVertexp, mergeVtxp, sampled(lhs.finalCondp->cloneTreePure(false)),
+                        flp);
+        } else {
+            guardedLink(lhs.termVertexp, mergeVtxp, flp);
+        }
+        if (rhs.finalCondp) {
+            guardedLink(rhs.termVertexp, mergeVtxp, sampled(rhs.finalCondp->cloneTreePure(false)),
+                        flp);
+        } else {
+            guardedLink(rhs.termVertexp, mergeVtxp, flp);
         }
         freeUnlinkedCondp(lhs.finalCondp);
         freeUnlinkedCondp(rhs.finalCondp);
