@@ -9,7 +9,8 @@
 // pair below one type is covered and the other is not; were they one type, both would be 50.
 // A type is named as $typename names it (IEEE 1800-2023 20.6.1), with its scopes, generate blocks
 // included, and the values of the parameters of its specializations; escaped identifiers are
-// named without their escapes (IEEE 1800-2023 5.6.1).
+// named escaped, as in hierarchical names (IEEE 1800-2023 23.6), so apart from the scopes their
+// dots would name.
 
 // verilog_format: off
 `define stop $stop
@@ -65,6 +66,20 @@ endclass
 // default specialization and Param #(1) (IEEE 1800-2023 8.25)
 class Param #(
     int N = 1
+);
+  bit v;
+  covergroup cg;
+    cp: coverpoint v;
+  endgroup
+  function new;
+    cg = new;
+  endfunction
+endclass
+
+// An untyped parameter is of the type of its value (IEEE 1800-2023 6.20.2), so the specializations
+// of values of distinct types are distinct, and named with sized values
+class Untyped #(
+    parameter P = 0
 );
   bit v;
   covergroup cg;
@@ -156,6 +171,17 @@ module t;
     endgroup
     cg inst = new;
   end
+  // A covergroup of an escaped name holding a dot, and one in generate block 'gen_esc'
+  if (1) begin : gen_esc
+    covergroup cg with function sample (bit v);
+      cp: coverpoint v;
+    endgroup
+    cg inst = new;
+  end
+  covergroup \gen_esc.cg with function sample (bit v);
+    cp: coverpoint v;
+  endgroup
+  \gen_esc.cg esc_inst = new;
   // Escaped names of a generate block, of a class in it, and of the covergroup of the class
   if (1) begin : \pack+gen
     class \Klass! ;
@@ -183,6 +209,10 @@ module t;
   Param param0;
   Param #(1) param1;
   Param #(2) param2;
+  Untyped #(1'b1) untyped1;
+  Untyped #(8'd1) untyped8;
+  Untyped #(1) untyped32;
+  Untyped #(-8'sd5) untyped_neg;
   Outer outer;
   Outer::inner nested;
   \cg+symbol unit_sym = new;
@@ -195,6 +225,10 @@ module t;
     param0 = new;
     param1 = new;
     param2 = new;
+    untyped1 = new;
+    untyped8 = new;
+    untyped32 = new;
+    untyped_neg = new;
     outer = new;
     nested = new;
 
@@ -211,6 +245,10 @@ module t;
     param1.cg.sample();
     param1.v = 1;
     param1.cg.sample();
+    untyped1.v = 0;
+    untyped1.cg.sample();
+    untyped1.v = 1;
+    untyped1.cg.sample();
     a.inst.sample(0);
     a.inst.sample(1);
     p1.inst.sample(0);
@@ -219,6 +257,8 @@ module t;
     gen[0].inst.sample(1);
     gen_elif.inst.sample(0);
     gen_elif.inst.sample(1);
+    esc_inst.sample(0);
+    esc_inst.sample(1);
     unit_sym.sample(0);
     unit_sym.sample(1);
     outer.v = 0;
@@ -233,6 +273,10 @@ module t;
     // get_coverage() is of the type, so of any of its instances
     `checkr(param0.cg.get_coverage(), param1.cg.get_coverage());
     `checkr(param2.cg.get_coverage(), 0.0);
+    `checkr(untyped1.cg.get_coverage(), 100.0);
+    `checkr(untyped8.cg.get_coverage(), 0.0);
+    `checkr(untyped32.cg.get_coverage(), 0.0);
+    `checkr(untyped_neg.cg.get_coverage(), 0.0);
     `checkr(a.inst.get_coverage(), 100.0);
     `checkr(b.inst.get_coverage(), 0.0);
     `checkr(p1.inst.get_coverage(), 100.0);
@@ -241,14 +285,22 @@ module t;
     `checkr(gen[0].inst.get_coverage(), 100.0);
     `checkr(gen[1].inst.get_coverage(), 0.0);
     `checkr(gen_elif.inst.get_coverage(), 100.0);
+    `checkr(esc_inst.get_coverage(), 100.0);
+    `checkr(gen_esc.inst.get_coverage(), 0.0);
     `checkr(inst.get_coverage(), 0.0);
     `checkr(outer.\inner.cg .get_coverage(), 100.0);
     `checkr(nested.cg.get_coverage(), 0.0);
     `checkr(unit_sym.get_coverage(), 100.0);
     `checkr(\pack+gen .obj.\cg@symbol2 .get_coverage(), 0.0);
-    // Named as $typename names them, so without the escapes
-    `checks($typename(unit_sym), "class $unit::cg+symbol");
-    `checks($typename(\pack+gen .obj.\cg@symbol2 ), "class t.pack+gen.Klass!::cg@symbol2");
+    // Named as $typename names them, so escaped
+    `checks($typename(unit_sym), "class $unit::\\cg+symbol ");
+    `checks($typename(\pack+gen .obj.\cg@symbol2 ), "class t.\\pack+gen .\\Klass! ::\\cg@symbol2 ");
+    `checks($typename(esc_inst), "class t.\\gen_esc.cg ");
+    `checks($typename(gen_esc.inst), "class t.gen_esc.cg");
+    `checks($typename(untyped1), "class $unit::Untyped#(1'd1)");
+    `checks($typename(untyped8), "class $unit::Untyped#(8'd1)");
+    `checks($typename(untyped32), "class $unit::Untyped#(1)");
+    `checks($typename(untyped_neg), "class $unit::Untyped#(-8'sd5)");
 
     $write("*-* All Finished *-*\n");
     $finish;

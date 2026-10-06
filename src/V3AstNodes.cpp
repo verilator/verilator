@@ -129,13 +129,20 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
 //======================================================================
 // Data type names of classes and interfaces, with the values of their parameters
 
-// Text of a constant parameter value, given the data type of the parameter
-static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep) {
+// Identifier 'name' as a hierarchical name holds it, escaped unless a simple identifier, e.g.
+// '\a.b ' (IEEE 1800-2023 23.6), so that the names of distinct types differ, as of covergroup
+// '\gen.cg' and covergroup 'cg' of generate block 'gen'
+static string dtypeNameIdent(const string& name) { return AstNode::vpiName(name); }
+
+// Text of a constant parameter value, given the data type of the parameter, or if 'sized' of the
+// value, as of an untyped parameter
+static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep, bool sized) {
     if (num.isNull()) return "null";
     if (num.isDouble()) return num.toRealString();
     const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
     if (num.isString() || (basicp && basicp->isString())) {
-        // Escaped as a string literal, so the quotes enclose the whole value
+        // Escaped as a string literal, so the quotes enclose the whole value, as
+        // VString::quotedEnd() finds
         return '"' + V3OutFormatter::quoteNameControls(num.toString()) + '"';
     }
     // Sized and signed as the parameter, as the value may not be yet
@@ -151,22 +158,35 @@ static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep) {
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
             const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
             if (constp && !constp->num().isAnyXZ() && value.isCaseEq(constp->num())) {
-                return itemp->prettyName();
+                return dtypeNameIdent(itemp->name());
             }
         }
     }
     if (value.isAnyXZ()) return value.ascii(true, true);
     const bool isSigned = dtypep ? dtypep->isSigned() : num.isSigned();
+    // Sized as $typename names values (IEEE 1800-2023 20.6.1), so that the specializations of
+    // values of other types are named apart, unless of the type of an unsized decimal literal
+    if (sized && (width != 32 || !isSigned)) {
+        const string prefix = cvtToStr(width) + (isSigned ? "'sd" : "'d");
+        if (!isSigned || !value.isNegative()) return prefix + value.toDecimalU();
+        V3Number magnitude{&num, width};
+        magnitude.opNegate(value);
+        return "-" + prefix + magnitude.toDecimalU();
+    }
     return isSigned ? value.toDecimalS() : value.toDecimalU();
 }
 
-// Text of a parameter value, given the data type of the parameter
-static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep) {
+// Text of a parameter value, given the data type of the parameter, or if 'untyped' the parameter
+// is of the type of its value (IEEE 1800-2023 6.20.2)
+static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep,
+                             bool untyped = false) {
+    const AstConst* const constp = VN_CAST(valuep, Const);
+    // Of the data type of the value, as constant folding can leave the signedness there, not on
+    // the number
+    if (untyped && constp) dtypep = constp->dtypep();
     // The enum or other type the data type stands for, or nullptr if not yet resolved
     if (dtypep) dtypep = dtypep->skipRefToEnumOrNullp();
-    if (const AstConst* const constp = VN_CAST(valuep, Const)) {
-        return dtypeNameConst(constp->num(), dtypep);
-    }
+    if (constp) return dtypeNameConst(constp->num(), dtypep, untyped);
     if (const AstInitArray* const initp = VN_CAST(valuep, InitArray)) {
         const AstNodeDType* const elemDTypep = dtypep ? dtypep->subDTypep() : nullptr;
         // Keys count from the lowest index, while elements are listed from the left index
@@ -215,24 +235,56 @@ static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep) 
     return "?";
 }
 
-// Text '#(...)' of the values of the parameters of a class, interface, or module, or "" if none
+// Whether 'nodep' is a parameter that the name of the design unit declaring it holds
+static bool dtypeNameIsParam(const AstNode* nodep) {
+    if (const AstVar* const varp = VN_CAST(nodep, Var)) return varp->isGParam();
+    const AstParamTypeDType* const ptypep = VN_CAST(nodep, ParamTypeDType);
+    return ptypep && ptypep->isGParam();
+}
+
+// Call 'f' with each parameter that the name of design unit 'modp' holds, as indexed by the
+// VDTypeNameScopes in use, if any, else as found among its statements
+template <typename T_Func>
+static void dtypeNameForeachParam(const AstNodeModule* modp, const T_Func& f) {
+    const VDTypeNameScopes* const scopesp = VDTypeNameScopes::currentp();
+    if (const std::vector<AstNode*>* const paramsp = scopesp ? scopesp->paramsp(modp) : nullptr) {
+        for (const AstNode* const paramp : *paramsp) f(paramp);
+        return;
+    }
+    for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (dtypeNameIsParam(stmtp)) f(stmtp);
+    }
+}
+
+// Text '#(...)' of the values of the parameters of a class, interface, or module, or "" if none,
+// within which verilator_coverage does not split a name at its dots, see splitHier() in VlcTop.cpp
 static string dtypeNameParams(const AstNodeModule* modp, bool full) {
     string result;
-    for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+    dtypeNameForeachParam(modp, [&](const AstNode* paramp) {
         string valueName;
-        if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-            if (!varp->isGParam()) continue;
-            valueName = dtypeNameValue(varp->valuep(), varp->subDTypep());
-        } else if (const AstParamTypeDType* const ptypep = VN_CAST(stmtp, ParamTypeDType)) {
-            if (!ptypep->isGParam()) continue;
+        if (const AstVar* const varp = VN_CAST(paramp, Var)) {
+            valueName = dtypeNameValue(varp->valuep(), varp->subDTypep(), varp->untypedParam());
+        } else {
+            const AstParamTypeDType* const ptypep = VN_AS(paramp, ParamTypeDType);
             // Or '?' if not yet resolved, as a default until V3Param has elaborated the class
             valueName = ptypep->skipRefToEnumOrNullp() ? ptypep->prettyDTypeName(full) : "?";
-        } else {
-            continue;
         }
         result += (result.empty() ? "#(" : ",") + valueName;
-    }
+    });
     return result.empty() ? "" : result + ")";
+}
+
+// Whether the parameters that the name of design unit 'modp' holds are widthed, so final
+static bool dtypeNameParamsFinal(const AstNodeModule* modp) {
+    bool final = true;
+    dtypeNameForeachParam(modp, [&](const AstNode* paramp) {
+        // A parameter type is widthed once resolved, not once V3Width visits it
+        const AstParamTypeDType* const ptypep = VN_CAST(paramp, ParamTypeDType);
+        if (!paramp->didWidth() || (ptypep && VN_IS(ptypep->subDTypep(), RequireDType))) {
+            final = false;
+        }
+    });
+    return final;
 }
 
 // Name of a class, without its scope or parameters
@@ -240,41 +292,53 @@ static string dtypeNameClass(const AstClass* classp) {
     // An embedded covergroup declares an anonymous type, and an instance variable of it named
     // by the covergroup (IEEE 1800-2023 19.4), so the type is named as the variable, as other
     // simulators do
-    if (const AstClass* const enclosingp = classp->covergroupEnclosingClassp()) {
-        for (const AstNode* stmtp = enclosingp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            const AstVar* const varp = VN_CAST(stmtp, Var);
-            if (varp && varp->embeddedCovergroup()
-                && varp->subDTypep()->name() == classp->name()) {
-                return varp->prettyName();
-            }
-        }
+    if (classp->covergroupEnclosingClassp()) {
+        return dtypeNameIdent(classp->embeddedCovergroupName());
     }
-    return AstNode::prettyName(classp->origName());
+    return dtypeNameIdent(classp->origName());
 }
 
-// Prefix of the name of a type for the package, interface, module, or class declaring it, with
-// the values of its parameters, and for the generate blocks declaring it, e.g. '$unit::',
-// 'ifc#(8).', '$unit::Cls#(8)::', or 'top.gen[0].'
+// The generate block or design unit declaring 'nodep', or nullptr if none, as at the top, as
+// indexed by the VDTypeNameScopes in use, if any, else as searched for up the tree
+static AstNode* dtypeNameOuterp(const AstNode* nodep) {
+    AstNode* outerp = nullptr;
+    const VDTypeNameScopes* const scopesp = VDTypeNameScopes::currentp();
+    if (scopesp && scopesp->outerp(nodep, outerp)) return outerp;
+    for (outerp = nodep->aboveLoopp(); outerp; outerp = outerp->aboveLoopp()) {
+        if (VN_IS(outerp, NodeModule) || VN_IS(outerp, GenBlock)) break;
+    }
+    return outerp;
+}
+
+// Prefix of the names of the types generate block or design unit 'scopep' declares, so with the
+// values of the parameters of the scopes, e.g. '$unit::', 'ifc#(8).', '$unit::Cls#(8)::', or
+// 'top.gen[0].', or "" if none, as at the top.  Kept by the VDTypeNameScopes in use, if any, once
+// final, as its parameters are widthed, else clears 'finalr'.
+static string dtypeNamePrefix(const AstNode* scopep, bool& finalr) {
+    if (!scopep) return "";
+    const VDTypeNameScopes* const scopesp = VDTypeNameScopes::currentp();
+    if (const string* const prefixp = scopesp ? scopesp->prefixp(scopep) : nullptr) {
+        return *prefixp;
+    }
+    bool final = true;
+    const string outer = dtypeNamePrefix(dtypeNameOuterp(scopep), final);
+    string prefix;
+    if (const AstGenBlock* const blockp = VN_CAST(scopep, GenBlock)) {
+        prefix = blockp->dtypeNameInnerScope(outer);
+    } else {
+        const AstNodeModule* const modp = VN_AS(scopep, NodeModule);
+        prefix = modp->dtypeNameInnerScope(outer);
+        if (scopesp) final = final && dtypeNameParamsFinal(modp);
+    }
+    if (scopesp && final) scopesp->prefix(scopep, prefix);
+    finalr = finalr && final;
+    return prefix;
+}
+
+// Prefix of the name of a type for the scopes declaring it, see dtypeNamePrefix()
 static string dtypeNameScopeOf(const AstNode* nodep) {
-    // A named generate block is a scope (IEEE 1800-2023 27.6), so the types of distinct blocks,
-    // as of the iterations of a loop, are named apart
-    string blocks;
-    const AstNode* abovep = nodep->aboveLoopp();
-    while (!VN_IS(abovep, NodeModule)) {
-        UASSERT_OBJ(abovep, nodep, "Type declared outside of a module");
-        // An unnamed block, as around the 'if' of an 'else if', is not a scope
-        if (VN_IS(abovep, GenBlock) && !abovep->name().empty()) {
-            blocks = abovep->prettyName() + "." + blocks;
-        }
-        abovep = abovep->aboveLoopp();
-    }
-    const AstNodeModule* const modp = VN_AS(abovep, NodeModule);
-    if (const AstClass* const classp = VN_CAST(modp, Class)) return classp->dtypeName(true) + "::";
-    if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
-        return ifacep->dtypeName(true) + "." + blocks;
-    }
-    if (VN_IS(modp, Package)) return modp->prettyName() + "::";
-    return AstNode::prettyName(modp->origName()) + dtypeNameParams(modp, true) + "." + blocks;
+    bool final = true;
+    return dtypeNamePrefix(dtypeNameOuterp(nodep), final);
 }
 
 // Name in full of a structure, union, or enumeration, as given by the typedef declaring it, if
@@ -289,6 +353,60 @@ static string dtypeNameTypedef(const AstNodeDType* dtypep, const string& frozen)
 // anonymous
 static string dtypeNameKwd(const string& kwd, const string& name) {
     return name.empty() ? kwd : kwd + " " + name;
+}
+
+//======================================================================
+// VDTypeNameScopes
+
+const VDTypeNameScopes* VDTypeNameScopes::s_currentp = nullptr;
+
+VDTypeNameScopes::VDTypeNameScopes(AstNetlist* nodep)
+    : m_prevp{s_currentp} {
+    index(nodep->modulesp(), nullptr);
+    s_currentp = this;
+}
+VDTypeNameScopes::~VDTypeNameScopes() { s_currentp = m_prevp; }
+void VDTypeNameScopes::index(AstNode* nodep, AstNode* scopep) {
+    for (; nodep; nodep = nodep->nextp()) {
+        // Only statements declare types
+        if (VN_IS(nodep, NodeExpr) || VN_IS(nodep, NodeDType)) continue;
+        AstNode* innerp = scopep;
+        if (VN_IS(nodep, Typedef)) {
+            m_outerps.emplace(nodep, scopep);
+            continue;  // Of a data type, so declares no more
+        } else if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) {
+            m_outerps.emplace(nodep, scopep);
+            std::vector<AstNode*>& paramps = m_paramps[nodep];
+            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (dtypeNameIsParam(stmtp)) paramps.push_back(stmtp);
+            }
+            innerp = nodep;
+        } else if (VN_IS(nodep, GenBlock)) {
+            m_outerps.emplace(nodep, scopep);
+            innerp = nodep;
+        }
+        index(nodep->op1p(), innerp);
+        index(nodep->op2p(), innerp);
+        index(nodep->op3p(), innerp);
+        index(nodep->op4p(), innerp);
+    }
+}
+bool VDTypeNameScopes::outerp(const AstNode* nodep, AstNode*& outerpr) const {
+    const auto it = m_outerps.find(nodep);
+    if (it == m_outerps.end()) return false;
+    outerpr = it->second;
+    return true;
+}
+const std::vector<AstNode*>* VDTypeNameScopes::paramsp(const AstNode* modp) const {
+    const auto it = m_paramps.find(modp);
+    return it == m_paramps.end() ? nullptr : &it->second;
+}
+void VDTypeNameScopes::prefix(const AstNode* scopep, const std::string& prefix) const {
+    m_prefixes.emplace(scopep, prefix);
+}
+const std::string* VDTypeNameScopes::prefixp(const AstNode* scopep) const {
+    const auto it = m_prefixes.find(scopep);
+    return it == m_prefixes.end() ? nullptr : &it->second;
 }
 
 //======================================================================
@@ -847,25 +965,27 @@ AstClass* AstClass::baseMostClassp() {
 string AstClass::dtypeName(bool full) const {
     const string& frozen = full ? m_dtypeNameFull : m_dtypeNameShort;
     if (!frozen.empty()) return frozen;
+    return dtypeNameCalc(full, full ? dtypeNameScope() : "");
+}
+string AstClass::dtypeNameCalc(bool full, const string& scope) const {
     // A parameter may lead back to the class, which is then named without parameters
-    if (m_dtypeNameBusy) return (full ? dtypeNameScope() : "") + dtypeNameClass(this);
+    if (m_dtypeNameBusy) return scope + dtypeNameClass(this);
     m_dtypeNameBusy = true;
-    const string name = dtypeNameCalc(full);
+    const string name = scope + dtypeNameClass(this) + dtypeNameParams(this, full);
     m_dtypeNameBusy = false;
     return name;
-}
-string AstClass::dtypeNameCalc(bool full) const {
-    return (full ? dtypeNameScope() : "") + dtypeNameClass(this) + dtypeNameParams(this, full);
 }
 void AstClass::dtypeNameFreeze() {
     m_dtypeNameFull = dtypeName(true);
     m_dtypeNameShort = dtypeName(false);
 }
+string AstClass::dtypeNameIn(const string& scope) const {
+    return m_dtypeNameFull.empty() ? dtypeNameCalc(true, scope) : m_dtypeNameFull;
+}
 string AstClass::dtypeNameScope() const {
     // The package, interface, module, or class declaring the class, so named with the values of
     // its parameters, unless since moved to the top, as by V3Class after dtypeNameFreeze()
-    const AstNode* const abovep = aboveLoopp();
-    return (abovep && !VN_IS(abovep, Netlist)) ? dtypeNameScopeOf(this) : "";
+    return dtypeNameScopeOf(this);
 }
 void AstClass::dump(std::ostream& str) const {
     Super::dump(str);
@@ -897,6 +1017,12 @@ void AstClass::dumpJson(std::ostream& str) const {
     if (!m_dtypeNameFull.empty()) dumpJsonStr(str, "dtypeNameFull", m_dtypeNameFull);
     if (!m_dtypeNameShort.empty()) dumpJsonStr(str, "dtypeNameShort", m_dtypeNameShort);
     dumpJsonGen(str);
+}
+string AstClass::embeddedCovergroupName() const {
+    const string prefix = embeddedCovergroupTypeName("");
+    UASSERT_OBJ(VString::startsWith(origName(), prefix), this,
+                "Not the type of an embedded covergroup");
+    return origName().substr(prefix.size());
 }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
     return VN_IS(nodep, Var) || VN_IS(nodep, Typedef)
@@ -1570,6 +1696,12 @@ void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, immediateStart);
     dumpJsonGen(str);
 }
+string AstGenBlock::dtypeNameInnerScope(const string& outer) const {
+    // A named generate block is a scope (IEEE 1800-2023 27.6), so the types of distinct blocks,
+    // as of the iterations of a loop, are named apart; an unnamed block, as around the 'if' of an
+    // 'else if', is not a scope
+    return name().empty() ? outer : outer + dtypeNameIdent(name()) + ".";
+}
 void AstGenBlock::dump(std::ostream& str) const {
     Super::dump(str);
     if (implied()) str << " [IMPLIED]";
@@ -1597,7 +1729,7 @@ void AstIf::dumpJson(std::ostream& str) const {
 string AstIface::dtypeName(bool full) const {
     const string& frozen = full ? m_dtypeNameFull : m_dtypeNameShort;
     if (!frozen.empty()) return frozen;
-    return prettyName(origName()) + dtypeNameParams(this, full);
+    return dtypeNameIdent(origName()) + dtypeNameParams(this, full);
 }
 void AstIface::dtypeNameFreeze() {
     m_dtypeNameFull = dtypeName(true);
@@ -2873,6 +3005,16 @@ void AstNodeIf::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "branchPred", branchPred().ascii());
     dumpJsonGen(str);
 }
+string AstNodeModule::dtypeNameInnerScope(const string& outer) const {
+    if (const AstClass* const classp = VN_CAST(this, Class)) {
+        return classp->dtypeNameIn(outer) + "::";
+    }
+    if (const AstIface* const ifacep = VN_CAST(this, Iface)) return ifacep->dtypeName(true) + ".";
+    // '$unit' is no identifier, so not escaped
+    if (isDollarUnit()) return "$unit::";
+    if (VN_IS(this, Package)) return dtypeNameIdent(origName()) + "::";
+    return dtypeNameIdent(origName()) + dtypeNameParams(this, true) + ".";
+}
 void AstNodeModule::dump(std::ostream& str) const {
     Super::dump(str);
     str << "  L" << level();
@@ -3784,7 +3926,7 @@ void AstTypeTable::repairCache() {
         }
     }
 }
-string AstTypedef::dtypeName() const { return dtypeNameScopeOf(this) + prettyName(); }
+string AstTypedef::dtypeName() const { return dtypeNameScopeOf(this) + dtypeNameIdent(name()); }
 void AstTypedef::dump(std::ostream& str) const {
     Super::dump(str);
     if (attrPublic()) str << " [PUBLIC]";

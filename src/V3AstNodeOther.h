@@ -360,6 +360,10 @@ public:
     virtual bool timescaleMatters() const = 0;
     inline bool isDollarUnit() const;  // Is the $unit package
     inline bool isConstPool() const;  // Is the constant pool package
+    // Prefix of the names of the types declared within, as $typename names them, given 'outer',
+    // the prefix for the scope declaring this, which names only a class, e.g. '$unit::',
+    // 'ifc#(8).', '$unit::Cls#(8)::', or 'top.', see VDTypeNameScopes
+    string dtypeNameInnerScope(const string& outer) const;
     // ACCESSORS
     void name(const string& name) override { m_name = name; }
     string origName() const override { return m_origName; }
@@ -2341,6 +2345,7 @@ class AstVar final : public AstNode {
     bool m_sampled : 1;  // Sampled timing region
     bool m_substConstOnly : 1;  // Only substitute if constant
     bool m_overriddenParam : 1;  // Overridden parameter by #(...) or defparam
+    bool m_untypedParam : 1;  // Parameter without a type or range, so of its value's type
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     bool m_isForceable : 1;  // May be forced/released externally from user C code
@@ -2406,6 +2411,7 @@ class AstVar final : public AstNode {
         m_sampled = false;
         m_substConstOnly = false;
         m_overriddenParam = false;
+        m_untypedParam = false;
         m_trace = false;
         m_isLatched = false;
         m_isForceable = false;
@@ -2595,6 +2601,8 @@ public:
     void substConstOnly(bool flag) { m_substConstOnly = flag; }
     bool overriddenParam() const { return m_overriddenParam; }
     void overriddenParam(bool flag) { m_overriddenParam = flag; }
+    bool untypedParam() const { return m_untypedParam; }
+    void untypedParam(bool flag) { m_untypedParam = flag; }
     void trace(bool flag) { m_trace = flag; }
     void isLatched(bool flag) { m_isLatched = flag; }
     bool isForceable() const { return m_isForceable; }
@@ -3015,6 +3023,8 @@ public:
     bool implied() const { return m_implied; }
     AstDefaultDisable* defaultDisablep() const { return m_defaultDisablep; }
     void defaultDisablep(AstDefaultDisable* nodep) { m_defaultDisablep = nodep; }
+    // As AstNodeModule::dtypeNameInnerScope(), e.g. 'top.gen[0].'
+    string dtypeNameInnerScope(const string& outer) const;
 };
 class AstGenCase final : public AstNodeGen {
     // Generate 'case'
@@ -3083,7 +3093,9 @@ class AstClass final : public AstNodeModule {
     // Covergroup options (when m_covergroup is true)
     int m_cgAutoBinMax = -1;  // option.auto_bin_max value (-1 = not set, use default 64)
 
-    string dtypeNameCalc(bool full) const;  // dtypeName() as computed from the tree
+    // dtypeName() as computed from the tree, with 'scope', the prefix for the scope declaring the
+    // class
+    string dtypeNameCalc(bool full, const string& scope) const;
     string dtypeNameScope() const;  // Prefix of dtypeName(true) for the scope declaring the class
 
 public:
@@ -3124,12 +3136,20 @@ public:
     // With 'full', as for $typename (IEEE 1800-2023 20.6.1), prefixed with the scope declaring
     // the class, e.g. '$unit::Cls#(int,5)', and with the types of parameters in full.
     string dtypeName(bool full) const;
+    // dtypeName(true), given 'scope', the prefix for the scope declaring the class, see
+    // AstNodeModule::dtypeNameInnerScope()
+    string dtypeNameIn(const string& scope) const;
     // Fix dtypeName(), as V3WidthCommit moves parameter types to the type table
     void dtypeNameFreeze();
     // Whether dtypeName() is fixed, as for a class elaborated from the design
     bool dtypeNameFrozen() const { return !m_dtypeNameFull.empty(); }
     // Named by dtypeName(), as name() is internal for a specialization, unless still a template
     string prettyNameMsg() const override { return hasGParam() ? prettyName() : dtypeName(false); }
+    // Name of the anonymous type of embedded covergroup 'name', whose instance variable has the
+    // covergroup's name (IEEE 1800-2023 19.4), see covergroupEnclosingClassp()
+    static string embeddedCovergroupTypeName(const string& name) { return "__vlAnonCG_" + name; }
+    // Name of the covergroup that this, an embedded covergroup's type, is of
+    string embeddedCovergroupName() const;
     // Covergroup options accessors
     int cgAutoBinMax() const { return m_cgAutoBinMax; }
     void cgAutoBinMax(int value) { m_cgAutoBinMax = value; }

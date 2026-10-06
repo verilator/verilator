@@ -85,24 +85,6 @@ string displayType(const VlcPoint& point) {
     return type.empty() ? "point" : type;
 }
 
-// A name as the report shows it.  The coverage file escapes '"' as '%22' and '%' as '%25', which
-// show as the characters, and characters that do not print, which stay escaped.
-string displayName(const string& name) {
-    string result;
-    for (string::size_type i = 0; i < name.size(); ++i) {
-        if (name.compare(i, 3, "%22") == 0) {
-            result += '"';
-            i += 2;
-        } else if (name.compare(i, 3, "%25") == 0) {
-            result += '%';
-            i += 2;
-        } else {
-            result += name[i];
-        }
-    }
-    return result;
-}
-
 bool isCollapsedHier(const string& hier) {
     return hier.find('*') != string::npos || hier.find('?') != string::npos;
 }
@@ -123,38 +105,45 @@ string reportHier(const VlcPoint& point) {
     return point.hier();
 }
 
+// The components of a hierarchy, split at its dots.  A covergroup's is the name of its type, as
+// $typename names it (dtypeName() in V3AstNodes.cpp), whose escaped identifiers, from a '\' to
+// the white space ending each (IEEE 1800-2023 23.6), hold no separating dots; nor do the values
+// of the parameters of a specialization, '#(...)', as of a real value, or the string values
+// within, which V3OutFormatter::quoteNameControls() escapes, as VString::quotedEnd() finds the
+// end of.  A name whose identifiers, parentheses, or quotes do not end is not as $typename writes
+// a type, so splits at each dot.
 std::vector<string> splitHier(const string& hier) {
-    // Verilator emits dot-separated non-empty hierarchy components.  The name of a covergroup
-    // type of a specialization holds the values of its parameters, '#(...)', whose dots, as of a
-    // real value, separate no components, and whose string values, which the coverage file
-    // quotes with '%22' and escapes with '\', may hold parentheses that nest nothing
     std::vector<string> parts;
     string::size_type start = 0;
     int depth = 0;  // Of the parentheses of the values of parameters
-    bool inString = false;  // Within a string value
-    const auto isQuote = [&hier](string::size_type i) { return hier.compare(i, 3, "%22") == 0; };
-    for (string::size_type i = 0; i < hier.size(); ++i) {
-        const char c = hier[i];
-        if (inString) {
-            if (c == '\\') {
-                ++i;  // Past the escaped character
-            } else if (isQuote(i)) {
-                inString = false;
-            }
-        } else if (depth) {
-            if (isQuote(i)) {
-                inString = true;
-            } else if (c == '(') {
-                ++depth;
-            } else if (c == ')') {
-                --depth;
-            }
-        } else if (hier.compare(i, 2, "#(") == 0) {
+    string::size_type pos = 0;
+    while (pos < hier.size()) {
+        const char c = hier[pos];
+        if (c == '\\') {
+            pos = hier.find(' ', pos);  // npos if not ended
+            continue;
+        } else if (!depth && hier.compare(pos, 2, "#(") == 0) {
             depth = 1;
-            ++i;
-        } else if (c == '.') {
-            parts.push_back(hier.substr(start, i - start));
-            start = i + 1;
+            ++pos;
+        } else if (!depth && c == '.') {
+            parts.push_back(hier.substr(start, pos - start));
+            start = pos + 1;
+        } else if (depth && c == '"') {
+            pos = VString::quotedEnd(hier, pos);  // npos if not terminated
+            continue;
+        } else if (depth && c == '(') {
+            ++depth;
+        } else if (depth && c == ')') {
+            --depth;
+        }
+        ++pos;
+    }
+    if (depth || pos != hier.size()) {  // Unbalanced
+        parts.clear();
+        start = 0;
+        for (string::size_type dot; (dot = hier.find('.', start)) != string::npos;
+             start = dot + 1) {
+            parts.push_back(hier.substr(start, dot - start));
         }
     }
     parts.push_back(hier.substr(start));
@@ -452,12 +441,12 @@ void printCovergroupTallies(const std::map<string, Tally>& tallies, int levels) 
     for (const std::pair<const string, Tally>& it : tallies) {
         if (levels >= 0 && static_cast<int>(splitHier(it.first).size()) > levels + 1) continue;
         shown.insert(it);
-        nameWidth = std::max(nameWidth, displayName(it.first).size());
+        nameWidth = std::max(nameWidth, it.first.size());
     }
     const size_t cntWidth = countWidth(shown);
     std::cout << "Covergroup Coverage Summary:\n";
     for (const std::pair<const string, Tally>& it : shown) {
-        printTallyRow(displayName(it.first), it.second, s_summaryIndent, nameWidth, cntWidth);
+        printTallyRow(it.first, it.second, s_summaryIndent, nameWidth, cntWidth);
     }
 }
 
@@ -475,14 +464,20 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     // Testrun and computrons argument unsupported as yet
     VlcTest* const testp = tests().newTest(filename, 0, 0);
 
+    uint64_t lineno = 0;
     while (!is.eof()) {
         const string line = V3Os::getline(is);
+        ++lineno;
         // UINFO(9, " got " << line);
         if (line[0] == 'C') {
             // The count follows the last "' ": a point may hold one too, as does a covergroup
             // type named with the value of a string parameter
             const string::size_type secspace = line.rfind("' ");
-            if (secspace == string::npos || secspace < 3) continue;  // Malformed, no count
+            if (secspace == string::npos || secspace < 3) {
+                v3error("Malformed coverage point, without a count: " << filename << ":"
+                                                                      << lineno);
+                continue;
+            }
             const string point = line.substr(3, secspace - 3);
             if (!opt.isTypeMatch(point.c_str())) continue;
 
@@ -716,7 +711,7 @@ void VlcTop::annotateCalcNeeded() {
     }
     std::cout << "Annotation Summary:\n";
     std::cout << "  lines with all attached points covered : ";
-    std::cout << pctString(totOk, totCases) << "%  (" << totOk << "/" << totCases << ")\n";
+    std::cout << pctString(totOk, totCases) << "  (" << totOk << "/" << totCases << ")\n";
     if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
 }
 
@@ -872,7 +867,7 @@ void VlcTop::printHierarchyReport() {
         const std::vector<string> parts = splitHier(it->first);
         if (levels >= 0 && static_cast<int>(parts.size()) > levels + 1) continue;
         printIndent(s_summaryIndent);
-        std::cout << displayName(it->first) << "\n";
+        std::cout << it->first << "\n";
         // Hierarchy nodes can be numerous, so only print coverage types present
         // under this node instead of repeating absent zero-count rows.
         printTypeTally(it->second, s_reportRowIndent, false);
@@ -881,7 +876,7 @@ void VlcTop::printHierarchyReport() {
     for (std::map<string, TypeTally>::const_iterator it = duTallies.begin(); it != duTallies.end();
          ++it) {
         printIndent(s_summaryIndent);
-        std::cout << displayName(it->first) << "\n";
+        std::cout << it->first << "\n";
         // Design-unit summaries follow the hierarchy report style: present
         // types only, but in the same stable order as the flat summary.
         printTypeTally(it->second, s_reportRowIndent, false);

@@ -8,13 +8,11 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import coverage_covergroup_common
 
 test.scenarios('vlt')
 
 # Each hierarchical block is Verilated in a run of its own, which names the specializations it
-# elaborates, and so the covergroup types in them, the same as any other run does
-test.compile(verilator_flags2=['--hierarchical'])
-
-test.execute()
-
-test.passes()
+# elaborates, and so the covergroup types in them, the same as any other run does, so the coverage
+# database merges the records of a type from each run
+coverage_covergroup_common.run(test, verilator_flags2=['--hierarchical'])

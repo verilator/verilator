@@ -239,6 +239,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     std::set<AstCoverCross*> m_runtimeCrosses;  // Crosses over finalized live-bin dimensions
     std::map<AstVar*, AstVar*> m_excludedVars;  // Sample-time state-exclusion flags
     AstClass* m_covergroupp = nullptr;  // Current covergroup being processed
+    AstNodeModule* m_unitp = nullptr;  // Design unit declaring the current class, outside classes
     AstClass* m_enclosingClassp = nullptr;  // Class lexically enclosing the covergroup, if any
     AstVar* m_embeddedVarp = nullptr;  // Embedded covergroup member of m_enclosingClassp, if any
     std::string m_covergroupName;  // Current covergroup's type name, see covergroupTypeName()
@@ -1044,13 +1045,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // of distinct libraries may share a name, one of a library other than the default is prefixed
     // by its library, as '%l' prints it (IEEE 1800-2023 33.4).
     std::string covergroupTypeName() const {
-        // The design unit declaring the covergroup, outside any class
-        const AstNode* unitp = m_covergroupp->aboveLoopp();
-        while (!VN_IS(unitp, NodeModule) || VN_IS(unitp, Class)) {
-            UASSERT_OBJ(unitp, m_covergroupp, "Covergroup declared outside of a design unit");
-            unitp = unitp->aboveLoopp();
-        }
-        const std::string& libname = VN_AS(unitp, NodeModule)->libname();
+        UASSERT_OBJ(m_unitp, m_covergroupp, "Covergroup declared outside of a design unit");
+        const std::string& libname = m_unitp->libname();
         const std::string name = m_covergroupp->dtypeName(true);
         return libname == "work" ? name : libname + "." + name;
     }
@@ -4511,6 +4507,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // V3Width leaves only the covergroup-level weights, for lowerCovergroupOptions()
     void visit(AstCgOptionAssign* nodep) override { m_cgOptions.push_back(nodep); }
+
+    // A package, interface, or module, so the design unit declaring the classes within
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_unitp);
+        m_unitp = nodep;
+        iterateChildren(nodep);
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

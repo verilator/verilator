@@ -40,6 +40,8 @@ typedef struct {
   int b;
 } us_t;
 typedef int int_t;
+// Of an escaped name, named escaped, as in hierarchical names (IEEE 1800-2023 23.6)
+typedef struct packed {bit a;} \esc.s_t ;
 // Of several types, and of another structure
 typedef struct {
   int_t i;
@@ -348,6 +350,38 @@ module msub #(
   endfunction
 endmodule
 
+// Of a type parameter, so named with the type, once resolved, as of the default
+module mtsub #(
+    parameter type T = int
+);
+  typedef struct packed {T d;} mt_t;
+  mt_t v;
+  function automatic string mt_typename();
+    return $typename(v);
+  endfunction
+endmodule
+
+// Of a module without a parameter port list, whose parameters may so follow a type its name holds
+module mbody;
+  typedef struct packed {logic a;} mb_t;
+  parameter type T = int;
+  mb_t v;
+  function automatic string mb_typename();
+    return $typename(v);
+  endfunction
+endmodule
+
+// Likewise of a class, named before the parameter is widthed
+module mcbody;
+  class MBC;
+  endclass
+  MBC c;
+  function automatic string c_typename();
+    return $typename(c);
+  endfunction
+  parameter int W = 3;
+endmodule
+
 // Defaulting to a specialized interface, and to a type in a specialized class
 class Defaults #(
     int X = 1,
@@ -439,6 +473,12 @@ module t;
   ifc #(8) i8 ();
   msub u4 ();
   msub #(16) u16 ();
+  mtsub mt_int ();
+  mtsub #(byte) mt_byte ();
+  mbody mb_int ();
+  mbody #(.T(byte)) mb_byte ();
+  mcbody mcb3 ();
+  mcbody #(.W(5)) mcb5 ();
   mcls mc4 ();
   mcls #(16) mc16 ();
   cifc ci4 ();
@@ -616,6 +656,7 @@ module t;
     `checks($typename(color_e), "enum $unit::color_e");
     `checks($typename(ps_t), "struct $unit::ps_t");
     `checks($typename(pu_t), "union $unit::pu_t");
+    `checks($typename(\esc.s_t ), "struct $unit::\\esc.s_t ");
     `checks($typename(bar_enum), {"class $unit::Bar#(", $typename(color_e), ")"});
     `checks($typename(bar_struct), {"class $unit::Bar#(", $typename(ps_t), ")"});
     `checks($typename(bar_union), {"class $unit::Bar#(", $typename(pu_t), ")"});
@@ -646,8 +687,11 @@ module t;
     `checks($typename(gen[1].gen_cg), "class t.gen[1].GenCg");
     `checks($typename(gen_elif.ge), "struct t.gen_elif.ge_t");
     `checks($typename(defaults), "class $unit::Defaults#(2,virtual interface ifc#(8),byte,3)");
-    // As named while being specialized
+    // As named while being specialized, before the types are otherwise named, so for a
+    // structure and an enumeration, from their typedefs
     `checks(Holder#(bar_xyz_t)::TNAME, $typename(bar_xyz_t));
+    `checks(Holder#(ps_t)::TNAME, $typename(ps_t));
+    `checks(Holder#(color_e)::TNAME, $typename(color_e));
     // Not classes
     `checks($typename(int_value), "int");
     `checks($typename(int_t), "int");
@@ -678,6 +722,12 @@ module t;
     `checks(u16.ms_typename(), "struct msub#(16).ms_t");
     `checks(u4.is_typename(), "struct ifc#(4).is_t");
     `checks(u16.is_typename(), "struct ifc#(16).is_t");
+    `checks(mt_int.mt_typename(), "struct mtsub#(int).mt_t");
+    `checks(mt_byte.mt_typename(), "struct mtsub#(byte).mt_t");
+    `checks(mb_int.mb_typename(), "struct mbody#(int).mb_t");
+    `checks(mb_byte.mb_typename(), "struct mbody#(byte).mb_t");
+    `checks(mcb3.c_typename(), "class mcbody#(3).MBC");
+    `checks(mcb5.c_typename(), "class mcbody#(5).MBC");
     // Of a data type, named as of a variable of it
     `checks($typename(Ps#(8)::s_t), $typename(ps8_s));
     `checks($typename(Ps#(8)::e_t), $typename(ps8_e));
