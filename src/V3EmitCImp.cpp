@@ -348,12 +348,9 @@ class EmitCImp final : public EmitCFunc {
         // We always need the slow file
         if (m_slow) return true;
         // The fast file is only required when we have `systemc_implementation nodes
-        if (v3Global.hasSystemCSections()) {
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection)) {
-                    if (ssp->sectionType() == VSystemCSectionType::IMP) return true;
-                }
-            }
+        for (const AstSystemCSection* scSectionp = modp->scSectionsp(); scSectionp;
+             scSectionp = VN_AS(scSectionp->nextp(), SystemCSection)) {
+            if (scSectionp->sectionType() == VSystemCSectionType::IMP) return true;
         }
         return false;
     }

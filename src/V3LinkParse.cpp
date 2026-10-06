@@ -1583,6 +1583,12 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstSystemCSection* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process only once.
+        cleanFileline(nodep);
+        m_modp->addScSectionsp(nodep->unlinkFrBack());
+    }
+
     void visit(AstNode* nodep) override {
         // Default: Just iterate
         cleanFileline(nodep);

@@ -600,6 +600,11 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
         = new AstCellInline{cellp->fileline(), cellp->name(), subModp->origName()};
     modp->addInlinesp(newCellInlinep);
 
+    // Move the `systemc_* blocks of the inlined module into 'modp'
+    if (AstSystemCSection* const sectionsp = inlinedp->scSectionsp()) {
+        modp->addScSectionsp(sectionsp->unlinkFrBackWithNext());
+    }
+
     // Move the module level declarations of the inlined module into 'modp'
     InlineModModuleVertex* const mVtxp = graph.getInlineModModuleVertexp(modp);
     for (AstNode *nodep = inlinedp->stmtsp(), *nextp; nodep; nodep = nextp) {
