@@ -980,15 +980,18 @@ class SvaNfaBuilder final {
             freeUnlinkedCondp(rhs.finalCondp);
             return BuildResult::failWithError();
         }
-        SvaStateVertex* const mergeVtxp = scopedCreateVertex();
         if (booleanOnly) {
-            UASSERT_OBJ(lhs.finalCondp && rhs.finalCondp, lhsp,
-                        "Single-cycle SOr operands must have finalCondp");
-            guardedLink(entryVtxp, mergeVtxp,
-                        new AstLogOr{flp, sampled(lhs.finalCondp->cloneTreePure(false)),
-                                     sampled(rhs.finalCondp->cloneTreePure(false))},
-                        flp);
-        } else {
+            // A boolean disjunction is a single-cycle boolean like any other leaf:
+            // return it as finalCondp so a consequent can still reject on it.
+            // A merge vertex would drop the attempt silently when both are false.
+            AstNodeExpr* const orCondp = new AstLogOr{flp, lhs.finalCondp->cloneTreePure(false),
+                                                      rhs.finalCondp->cloneTreePure(false)};
+            freeUnlinkedCondp(lhs.finalCondp);
+            freeUnlinkedCondp(rhs.finalCondp);
+            return {entryVtxp, orCondp, {}};
+        }
+        SvaStateVertex* const mergeVtxp = scopedCreateVertex();
+        {
             if (lhs.finalCondp) {
                 guardedLink(lhs.termVertexp, mergeVtxp,
                             sampled(lhs.finalCondp->cloneTreePure(false)), flp);
