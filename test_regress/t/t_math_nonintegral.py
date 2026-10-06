@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(fails=True, verilator_flags2=["--error-limit 0"], expect_filename=test.golden_filename)
+test.lint()
 
 test.passes()

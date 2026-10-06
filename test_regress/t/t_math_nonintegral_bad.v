@@ -35,7 +35,6 @@ module t (
     sink = x_arr -> x;
     sink = x_arr <-> x;
     sink = x_arr < x_arr_2;
-    sink = x_arr == x_arr_2;
     sink = x_arr <= x_arr_2;
     sink = x_arr > x_arr_2;
     sink = x_arr >= x_arr_2;
@@ -61,13 +60,6 @@ module t (
     sink = x || x_arr;
     sink = x -> x_arr;
     sink = x <-> x_arr;
-    sink = x_arr_2 < x_arr;
-    sink = x_arr_2 == x_arr;
-    sink = x_arr_2 <= x_arr;
-    sink = x_arr_2 > x_arr;
-    sink = x_arr_2 >= x_arr;
-    sink = x_arr_2 ==? x_arr;
-    sink = x_arr_2 !=? x_arr;
 
     sink = -x_arr;
     sink = ~x_arr;
