@@ -1117,6 +1117,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     AstNodeModule* m_classOrPackagep = nullptr;  // Current package
     AstClocking* m_clockingp = nullptr;  // Current clocking block
+    std::vector<AstScope*> m_scopes;  // Scopes detached during repeated module visits
     VSymEnt* m_modSymp = nullptr;  // Symbol Entry for current module
     VSymEnt* m_curSymp = nullptr;  // Symbol Entry for current table, where to lookup/insert
     string
@@ -1409,7 +1410,11 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstScope* nodep) override {  // FindVisitor::
         UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
                     "Scopes should only exist right after V3Scope");
-        // Ignored.  Processed in next step
+        // LinkDotScopeVisitor processes these after all module instances have been visited.
+        if (!nodep->isTop()) {
+            nodep->unlinkFrBack();
+            m_scopes.push_back(nodep);
+        }
     }
     void visit(AstCell* nodep) override {  // FindVisitor::
         UINFO(5, "   CELL under " << m_scope << " is " << nodep);
@@ -2345,6 +2350,7 @@ public:
         iterate(rootp);
 
         if (!m_virtIfaces.empty()) handleUnvisitedVirtIfaces();
+        for (AstScope* const scopep : m_scopes) scopep->modp()->addStmtsp(scopep);
     }
     ~LinkDotFindVisitor() override = default;
 };

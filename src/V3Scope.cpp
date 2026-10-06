@@ -65,6 +65,7 @@ class ScopeVisitor final : public VNVisitor {
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
     // Varrefs-in-scopes needing fixup when done
     std::vector<std::pair<AstVarRef*, AstScope*>> m_varRefScopes;
+    std::vector<AstScope*> m_scopes;  // Scopes awaiting attachment to their modules
 
     // METHODS
 
@@ -135,6 +136,8 @@ class ScopeVisitor final : public VNVisitor {
         m_aboveScopep = nullptr;
         countInstantiations(modp);
         iterate(modp);
+        // Keep completed scopes out of repeated traversals of the module's statements.
+        for (AstScope* const scopep : m_scopes) scopep->modp()->addStmtsp(scopep);
         cleanupVarRefs();
     }
     void visit(AstNodeModule* nodep) override {
@@ -193,7 +196,7 @@ class ScopeVisitor final : public VNVisitor {
         if (m_modp->isTop()) {
             v3Global.rootp()->createTopScope(m_scopep);
         } else {
-            m_modp->addStmtsp(m_scopep);
+            m_scopes.push_back(m_scopep);
         }
 
         // Copy blocks into this scope
@@ -235,7 +238,7 @@ class ScopeVisitor final : public VNVisitor {
 
         // Create scope for the current usage of this cell
         AstNode::user1ClearTree();
-        nodep->addMembersp(m_scopep);
+        m_scopes.push_back(m_scopep);
 
         iterateChildren(nodep);
     }
