@@ -569,11 +569,14 @@ class ActiveVisitor final : public VNVisitor {
         if (nodep->access().isWriteOnly()) {
             vscp->user2(true);
         } else {
-            // If the variable is read before it is written (and is not a never-changing value),
-            // and is not in the sensitivity list, then this cannot be optimized into a
-            // combinational process
+            // If the variable is read before it is written (and is not a never-changing value,
+            // including an X randomization temporary set once at initialization), and is not
+            // in the sensitivity list, then this cannot be optimized into a combinational process
             // TODO: live variable analysis would be more precise
-            if (!vscp->user2() && !vscp->varp()->valuep() && !vscp->user1()) m_canBeComb = false;
+            const AstVar* const varp = vscp->varp();
+            if (!vscp->user2() && !varp->valuep() && !varp->isXTemp() && !vscp->user1()) {
+                m_canBeComb = false;
+            }
         }
     }
     void visit(AstAssignDly* nodep) override {
