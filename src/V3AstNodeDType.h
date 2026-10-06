@@ -318,6 +318,7 @@ public:
     void markConstrainedRand(bool flag) { m_constrainedRand = flag; }
     bool emitToString() const { return m_emitToString; }
     void setEmitToString() { m_emitToString = true; }
+    bool isAggregateType() const override { return !packed(); }
 };
 
 // === Concrete node types =====================================================

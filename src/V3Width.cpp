@@ -8568,12 +8568,12 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    // LRM 6.22.2 Equivalent types
+    // IEEE 1800-2023 6.22.2 Equivalent types
     bool isEquivalentDType(const AstNodeDType* lhs, const AstNodeDType* rhs) {
         // a) If two types match, they are equivalent.
         if (!lhs || !rhs) return false;
-        lhs = lhs->skipRefp();
-        rhs = rhs->skipRefp();
+        lhs = lhs->skipRefToEnump();
+        rhs = rhs->skipRefToEnump();
         if (lhs == rhs) return true;
         // If both are basic types, check if they are the same type
         if (VN_IS(lhs, BasicDType) && VN_IS(rhs, BasicDType)) {
@@ -8588,7 +8588,7 @@ class WidthVisitor final : public VNVisitor {
         const bool lhsIsUnpackArray = VN_IS(lhs, UnpackArrayDType);
         const bool rhsIsUnpackArray = VN_IS(rhs, UnpackArrayDType);
         if (lhsIsUnpackArray || rhsIsUnpackArray) {
-            if (VN_IS(lhs, UnpackArrayDType) && VN_IS(rhs, UnpackArrayDType)) {
+            if (lhsIsUnpackArray && rhsIsUnpackArray) {
                 const AstUnpackArrayDType* const lhsp = VN_CAST(lhs, UnpackArrayDType);
                 const AstUnpackArrayDType* const rhsp = VN_CAST(rhs, UnpackArrayDType);
                 const int lsz = lhsp->elementsConst();
@@ -8643,7 +8643,13 @@ class WidthVisitor final : public VNVisitor {
             return true;
         }
 
-        return true;
+        // b) An anonymous enum, unpacked struct, or unpacked union type is equivalent to itself
+        // among data objects declared within the same declaration statement and no other data
+        // types.
+
+        // DTypes compared above, if any remained then not equivalent.
+        if (VN_IS(lhs, EnumDType) || VN_IS(rhs, EnumDType)) return false;
+        return !(VN_IS(lhs, NodeUOrStructDType) || VN_IS(rhs, NodeUOrStructDType));
     }
 
     static bool isAggregateType(const AstNode* nodep) {
