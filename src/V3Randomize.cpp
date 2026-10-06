@@ -1522,8 +1522,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
 
-    void markRandc(AstVar* const varp, const std::string& smtName,
-                   AstNodeFTask* const initTaskp) {
+    void markRandc(AstVar* const varp, const std::string& smtName, AstNodeFTask* const initTaskp) {
         AstCMethodHard* const markp = new AstCMethodHard{
             varp->fileline(),
             new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
