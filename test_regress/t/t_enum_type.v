@@ -33,6 +33,10 @@ module t;
     unsigned_t unsigned_e;
   } struct_t;
 
+  function automatic void get_status(output int_t status);
+    status = INT_ONE;
+  endfunction
+
   initial begin
     signed_t signed_e;
     unsigned_t unsigned_e;
@@ -83,6 +87,9 @@ module t;
     `checkd(str.unsigned_e, 0);
     int_e = int_t'(str.unsigned_e);
     `checkd(int_e, 0);
+
+    get_status(int_e);
+    `checkd(int_e, 1);
 
     $write("*-* All Finished *-*\n");
     $finish;

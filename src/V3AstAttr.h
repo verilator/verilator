@@ -1172,8 +1172,8 @@ public:
         UNSUPPORTED,
         SAMEISH,
         COMPATIBLE,
-        ENUM_EXPLICIT,
         ENUM_IMPLICIT,
+        ENUM_EXPLICIT,
         DYNAMIC_CLASS,
         INCOMPATIBLE,
         _ENUM_MAX  // Leave last
@@ -1181,8 +1181,8 @@ public:
     enum en m_e;
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_EXPLICIT",
-               "ENUM_IMPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
+            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_IMPLICIT",
+               "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
         return names[m_e];
     }
     bool isAssignable() const { return m_e != UNSUPPORTED && m_e != INCOMPATIBLE; }
