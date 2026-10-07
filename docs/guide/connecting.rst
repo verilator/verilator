@@ -448,6 +448,43 @@ deferred for later. These delayed values can be flushed to the model with
 ``VerilatedVpi::doInertialPuts()``.
 
 
+.. _lazy vpi signal access:
+
+Lazy VPI Signal Access
+----------------------
+
+:vlopt:`--vpi-lazy` makes all variables, ports, and wires VPI accessible by
+their flat name. All are readable, and those that hold state are also
+writable, as described below. Unlike :vlopt:`--public-flat-rw`, it does not
+keep combinationally driven signals in the model, so Verilator can optimize
+the evaluation path as it would without VPI. When VPI reads such a signal,
+it is rematerialized, giving the value it had at the end of the last
+``eval()``. Simulation is faster, at the cost of a slower read.
+
+Signals that hold their value until something updates them can be written
+with ``vpi_put_value``, and behave as under :vlopt:`--public-flat-rw`:
+flops, latches, top-level inputs, and initial-only or undriven variables.
+Signals the design keeps recomputing are read-only.
+
+Precisely, a bit is read-only if a combinational process writes it: a
+continuous assignment, ``always_comb``, or an ``always`` with only level
+sensitivity, such as ``@*``. A submodule input port counts as such, as it
+follows its connection. Latch bits are the exception: those assigned in
+``always_latch``, and those a combinational ``always`` leaves unassigned on
+some branch of its ``if`` or ``case`` statements. A latch written inside a
+loop or through a variable index is treated as combinational.
+``public_flat_rw`` and ``forceable`` make any signal writable.
+
+A put into a read-only signal fails with an error through
+``vpi_chk_error``. Where only some bits are read-only, the put writes the
+rest and leaves those unchanged.
+
+Rematerialized signals have no storage and are produced by running model
+code, so read them through VPI rather than ``VerilatedVar::datap()``, which
+will return null, and from the thread that evaluates the model. If model
+state is changed other than through VPI, for example by setting a top-level
+input from C++, call ``eval()`` before reading.
+
 .. _vpi example:
 
 VPI Example

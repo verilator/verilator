@@ -3860,6 +3860,20 @@ VerilatedSyms::~VerilatedSyms() {
     delete __Vm_evalMsgQp;
 }
 
+void VerilatedLazyState::undoSwap(bool in) VL_MT_UNSAFE_ONE {
+    undoIn = in;
+    // Newest first going in, so where puts overlap the oldest value lands last
+    const size_t n = undo.size();
+    for (size_t i = 0; i < n; ++i) {
+        VlLazyUndo& entry = undo[in ? n - 1 - i : i];
+        if (entry.isStr) {
+            std::swap(*static_cast<std::string*>(entry.datap), entry.old);
+        } else {
+            std::swap_ranges(entry.old.begin(), entry.old.end(), static_cast<char*>(entry.datap));
+        }
+    }
+}
+
 //===========================================================================
 // Verilated:: Methods
 
@@ -4087,6 +4101,14 @@ void VerilatedEvalLoop::didNotConverge(const char* namep,
     VL_UNREACHABLE;  // VL_FATAL_MT does not return
 }
 
+void VerilatedEvalLoop::lazySettle() {
+    VL_DEBUG_IF(VL_DBG_MSGF("+ Settle (--vpi-lazy write)\n"););
+    uint32_t stlIterCount = 0;
+    do {
+        checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
+    } while (m_model.evalStl(stlIterCount == 1));
+}
+
 template <bool Profiling>
 void VerilatedEvalLoop::evalImpl() {
     VL_DEBUG_IF(VL_DBG_MSGF("+ Eval\n"););
@@ -4282,16 +4304,43 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
-void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
-                                         void* basep) VL_MT_UNSAFE {
+void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                                         VerilatedVarLazyDatap* lazyBasep,
+                                         const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
     for (size_t i = 0; i < n; ++i) {
         const VlVarTableEntry& e = entp[i];
-        void* const datap = base + e.byteOffset;
-        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
+        void* datap;
+        const bool isCombRow = e.vlflags & VLVF_LAZY_COMB;
+        const int32_t descSlot = isCombRow ? -1 : e.lazyIdx;
+        const bool lazyDesc = descSlot >= 0;
+        if (lazyDesc) {
+            const VlLazyReconEntry& recon = lazyReconsp[descSlot];
+            VerilatedVarLazyDatap& desc = lazyBasep[descSlot];
+            desc.refreshp = recon.refreshp;
+            desc.selfp = base;
+            desc.stamp = 0;  // The epoch starts at 2, so the row reads as stale
+            desc.storageOffset = static_cast<uint32_t>(e.byteOffset);
+            // Narrowed from size_t, and a silent wrap would point the row at another signal.
+            // V3EmitCSyms emits a static_assert capping sizeof(Syms), which contains every
+            // instance, at 0x7fffffff, so this can only fire on a mismatched emitter's table.
+            if (VL_UNCOVERABLE(desc.storageOffset != e.byteOffset)) {
+                VL_FATAL_MT(__FILE__, __LINE__, e.namep,  // LCOV_EXCL_LINE
+                            "Internal: --vpi-lazy storage offset exceeds 32 bits");
+            }
+            desc.srcOffset = recon.srcByteOffset;
+            datap = &desc;
+            m_symsp->lazyp()->undoOn = true;
+        } else {
+            datap = base + e.byteOffset;
+        }
+        // Per-scope table: the VlVarTableEntry rows are module-relative and shared.
+        const uint32_t reconFlags = lazyDesc ? lazyReconsp[descSlot].vlflags : 0;
+        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
         VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
+        if (isCombRow) var.m_lazyCombMask = e.lazyIdx;
         for (int d = 0; d < e.udims; ++d) {
             var.m_unpacked[d].m_left = e.dims[2 * d];
             var.m_unpacked[d].m_right = e.dims[2 * d + 1];

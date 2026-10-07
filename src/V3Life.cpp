@@ -254,6 +254,16 @@ public:
         }
         // this->lifeDump();
     }
+    void externalCall() {
+        // User code may get or put a --vpi-lazy signal, which --public-flat-rw would never
+        // have optimised: no known value or removable store survives the call
+        if (!v3Global.opt.vpiLazy()) return;
+        for (LifeBlock* blockp = this; blockp; blockp = blockp->m_aboveLifep) {
+            for (auto& itr : blockp->m_map) {
+                if (itr.first->varp()->isSigExternallyRWPublic()) itr.second.complexAssign();
+            }
+        }
+    }
     void noopt() {
         // The block above is invalidated at exit, see lifeToAbove()
         m_map.clear();
@@ -440,12 +450,18 @@ class LifeVisitor final : public VNVisitor {
         if (nodep->noLife()) setNoopt("nolife");
         if (nodep->dpiImportPrototype() && !nodep->dpiPure()) {
             m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
+            m_lifep->externalCall();
         }
         iterateChildren(nodep);
     }
     void visit(AstCExprUser* nodep) override {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
+        m_lifep->externalCall();
+    }
+    void visit(AstCStmtUser* nodep) override {
+        iterateChildren(nodep);
+        m_lifep->externalCall();
     }
     void visit(AstCExpr* nodep) override {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment

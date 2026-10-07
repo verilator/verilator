@@ -459,6 +459,18 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.hasEvents()) puts("vlSymsp->clearTriggeredEvents();\n");
         if (v3Global.hasClasses()) puts("vlSymsp->__Vm_deleter.deleteAll();\n");
 
+        if (v3Global.opt.vpiLazy()) {
+            putsDecoration(nullptr, "// Lazy epoch odd until evalEnd(): reads re-resolve\n");
+            puts("++vlSymsp->__Vm_lazy.epoch;\n");
+        }
+        if (v3Global.hasVpiLazyRetained()) {
+            // Consumed before time 0 too, as the time 0 settle already propagates the write
+            putsDecoration(nullptr, "// Re-settle a pending lazy VPI write\n");
+            puts("if (VL_UNLIKELY(vlSymsp->__Vm_lazy.written)) {\n");
+            puts("vlSymsp->__Vm_lazy.written = false;\n");
+            puts("if (m_didInit) m_evalLoop.lazySettle();\n");
+            puts("}\n");
+        }
         puts("}\n");
 
         // ::evalEnd - the time step is complete
@@ -470,6 +482,7 @@ class EmitCModel final : public EmitCFunc {
             puts(delaySchedp->nameProtect());
             puts(".cleanupForevered();\n");
         }
+        if (v3Global.opt.vpiLazy()) puts("vlSymsp->__Vm_lazy.evalEnd();\n");
 
         puts("}\n");
 

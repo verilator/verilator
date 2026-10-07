@@ -2363,6 +2363,74 @@ inline std::ostream& operator<<(std::ostream& os, const VVarType& rhs) VL_MT_SAF
 
 // ######################################################################
 
+class VVpiLazyRole final {
+public:
+    enum en : uint8_t {
+        NONE = 0,
+        CANDIDATE,  // VPI-visible from V3LinkParse until prepare() reassigns it
+        RETAINED,  // Storage kept for VPI, not otherwise public
+        PINNED,  // Storage kept only as a reconstruction source; no VPI row
+        SHADOW,  // Cold storage holding a reconstructed signal's value
+        SHADOW_HELPER,  // Shadow of a non-VPI source; only its copies get VPI rows
+        SHADOW_TEMP  // Cold storage for a group variable with no VPI descriptor slot of its own
+    };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"NONE",   "CANDIDATE",     "RETAINED",   "PINNED",
+                                            "SHADOW", "SHADOW_HELPER", "SHADOW_TEMP"};
+        return names[m_e];
+    }
+    VVpiLazyRole()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VVpiLazyRole(en _e)
+        : m_e{_e} {}
+    explicit VVpiLazyRole(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VVpiLazyRole& lhs, const VVpiLazyRole& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VVpiLazyRole& lhs, VVpiLazyRole::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VVpiLazyRole::en lhs, const VVpiLazyRole& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VVpiLazyRole& rhs) {
+    return os << rhs.ascii();
+}
+
+// Which bits of a --vpi-lazy signal a combinational process drives, so a VPI put may not change
+class VVpiLazyComb final {
+public:
+    enum en : uint8_t {
+        NONE = 0,  // Every bit holds its value without a driver
+        WHOLE,  // Read-only
+        PARTIAL  // Only the bits V3VpiLazy::combRuns() names
+    };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"NONE", "WHOLE", "PARTIAL"};
+        return names[m_e];
+    }
+    VVpiLazyComb()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VVpiLazyComb(en _e)
+        : m_e{_e} {}
+    explicit VVpiLazyComb(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VVpiLazyComb& lhs, const VVpiLazyComb& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VVpiLazyComb& lhs, VVpiLazyComb::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VVpiLazyComb::en lhs, const VVpiLazyComb& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VVpiLazyComb& rhs) {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 // Not in sorted order, as depends on above classes
 class VBasicTypeKey final {
 public:

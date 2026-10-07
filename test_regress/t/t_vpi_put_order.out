@@ -18,6 +18,9 @@ t (vpiModule) t  vpiDefName=t
     init_comb (vpiReg) t.init_comb 
     init_only (vpiReg) t.init_only 
     init_sum (vpiReg) t.init_sum 
+    mc_a (vpiReg) t.mc_a 
+    mc_b (vpiReg) t.mc_b 
+    mcnd (vpiReg) t.mcnd 
     mem (vpiRegArray) t.mem 
         vpiReg:
         mem (vpiReg) t.mem[1] 
@@ -50,6 +53,8 @@ t (vpiModule) t  vpiDefName=t
     vpiParameter:
 -- put t.in_a = 00 flag=1 ok
 -- put t.mid = 5a flag=1 ok
+-- put t.mcnd = 1 flag=1 ok
+-- put t.mcnd = 0 flag=1 ok
 -- put t.cmid = 5b flag=1 ok
 -- @0 readonly
 t.cin = 00 vpiSize=8
@@ -70,6 +75,9 @@ t.in_comb = 03 vpiSize=8
 t.init_comb = 1e vpiSize=8
 t.init_only = 11 vpiSize=8
 t.init_sum = 12 vpiSize=8
+t.mc_a = 01 vpiSize=8
+t.mc_b = 04 vpiSize=8
+t.mcnd = 0 vpiSize=1
 t.mem[1] = 00 vpiSize=8
 t.mem[0] = 00 vpiSize=8
 t.mem_comb = f0 vpiSize=8

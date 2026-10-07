@@ -2163,6 +2163,21 @@ Summary:
 
    Enable the use of VPI and linking against the :file:`verilated_vpi.cpp` files.
 
+.. option:: --vpi-lazy
+
+   Declares all variables, ports, and wires VPI accessible by their flat
+   name, as :vlopt:`--public-flat-rw` does, but rematerializes
+   combinationally driven signals when VPI reads them rather than storing
+   them in the model. Those signals are read-only unless marked
+   ``public_flat_rw`` or ``forceable``. Implies :vlopt:`--vpi`. See
+   :ref:`Lazy VPI Signal Access`.
+
+   :vlopt:`--public-flat-rw`, :vlopt:`--public-depth` and
+   :vlopt:`--public-params` are ignored alongside it with a
+   :option:`NOEFFECT` warning, though a ``public_flat_rw`` metacomment is
+   honored. With :vlopt:`--no-vpi <--vpi>`, :vlopt:`--vpi-lazy` itself is
+   ignored.
+
 .. option:: --waiver-multiline
 
    When using :vlopt:`--waiver-output \<filename\> <--waiver-output>`,

@@ -1,0 +1,286 @@
+mid-eval t.mid_c 0x11
+mid-eval t.mid_c 0x21
+cbValueChange t.ch1 pre 0x00 fired 1 0x07
+cbValueChange t.fmid_c pre 0x00 fired 1 0x1d
+cbValueChange t.sib_b pre 0x00 fired 1 0x07
+cbValueChange t.al_sw pre 0x00 fired 0 0x00
+cbValueChange t.cy0.din pre 0x00 fired 1 0x61
+cbValueChange t.cy0.cy pre 0x00 fired 1 0xc4
+cbValueChange t.cy1.cy pre 0x00 fired 1 0xa5
+cbValueChange t.ifd.din pre 0x00 fired 1 0x21
+cbValueChange t.ifd.a pre 0x00 fired 1 0x32
+cbValueChange t.ff_q pre 0x00 fired 0 0x00
+cbValueChange t.hl_c pre 0x00 fired 1 0x21
+cbValueChange t.u_sub.i pre 0x00 fired 1 0x21
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.asg_w'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ac_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.star_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 'TOP.out_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.sub_o'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.u_sub.o'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.fc_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.gclk'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.vidx[0]'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cst_w'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.loop_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.while_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.w_ff'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.w_mix'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.u_in.i'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.c1_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cg_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.pon_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.pand_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.px_o'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.u_px.i'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.u_px.o'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.tw'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.tw_r'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 'TOP.out_q'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 'TOP.out_m'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ib.q'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cf1.p'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ch2'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.sgn_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cat_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.self_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.part_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ctv_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cts_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.hl_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.us_c.a'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.mem_c[0]'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.mixf_w'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ovl_w'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.al1'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.al2'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.pass_o'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.fmid_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.sib_b'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.sib_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.wd_w'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.u_wdrv.o'
+vpi_chk_error: vpi_put_value was used on signal marked read-only, use public_flat_rw instead for 't.rdpin'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ivec'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cy0.din'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cy1.din'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cy0.cy'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.tmp_o'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.u_tmp.cpy'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ifd.a'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.alc_x'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.mdp_c[0][0]'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.plv_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ac_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ac_c'
+vpi_chk_error: vpi_put_value was used on signal marked read-only, use public_flat_rw instead for 't.u_na.q'
+vpi_chk_error: vpi_put_value used with vpiForceFlag on non-forceable signal 't.st'
+vpi_chk_error: vpi_put_value used with vpiReleaseFlag on non-forceable signal 't.st'
+vpi_chk_error: vl_check_format: Unsupported format (vpiTimeVal) for 't.st'
+vpi_chk_error: Ignoring vpi_put_value_array to signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.vidx'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.m4[0][0]'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.m4[1][1]'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ret_c'
+vpi_chk_error: vpi_put_value: Parsing failed for 'A123' as value vpiDecStrVal for 't.ff_q'
+TOP.clk W
+TOP.d W
+TOP.en W
+TOP.in_a W
+TOP.ld W
+TOP.never W
+TOP.out_c r
+TOP.out_m r
+TOP.out_q r
+TOP.rst W
+TOP.rst_n W
+TOP.sel W
+TOP.set_n W
+t.CST r
+t.ON r
+t.ac_c r
+t.al1 r
+t.al2 r
+t.al_nw r
+t.al_q W
+t.al_sw r
+t.alc_x r
+t.alc_y r
+t.arn_q W
+t.arp_q W
+t.as_q W
+t.asg_w r
+t.brk_c r
+t.bus.q W
+t.c1_c r
+t.cat_c r
+t.cf0.p W
+t.cf1.p r
+t.cg_c r
+t.ch1 r
+t.ch2 r
+t.cp.p WWWWrrrr
+t.cst_w r
+t.cts_c r
+t.ctv_c r
+t.cu.p W
+t.cy0.cy r
+t.cy0.din r
+t.cy1.cy r
+t.cy1.din r
+t.dlp_c r
+t.dlp_t W
+t.dpf_c r
+t.dpf_t W
+t.dus ?
+t.dus.a r
+t.dus.b r
+t.dus_c r
+t.fc_c r
+t.ff_q W
+t.fmid_c r
+t.fold_c r
+t.frc_al W
+t.frc_al__VforceEn W
+t.frc_al__VforceVal W
+t.frw_c W
+t.fy0.a r
+t.fy0.clk r
+t.fy0.r W
+t.fy0.y r
+t.fy1.a r
+t.fy1.clk r
+t.fy1.r W
+t.fy1.y r
+t.fyx0_c r
+t.fyx1_c r
+t.g_q W
+t.gclk r
+t.hl_c r
+t.ia.q W
+t.ib.q r
+t.ifc_c r
+t.ifc_t r
+t.ifd.a r
+t.ifd.din r
+t.ilat_q W
+t.imp_l W
+t.in_o r
+t.ini_r W
+t.init_r W
+t.intf_inst.sig W
+t.ivec r
+t.k_q W
+t.lat_q W
+t.loop_c r
+t.lt_c r
+t.lt_lim r
+t.m4 r
+t.m4_c r
+t.mc0.m WWWWrrrr
+t.mc1.m rrrrWWWW
+t.mc2.m W
+t.mdp_c r
+t.mem_c r
+t.mid_c r
+t.mid_s W
+t.mixf_w r
+t.n_cf0 W
+t.n_cons r
+t.n_cu W
+t.n_ff W
+t.n_ia W
+t.n_if W
+t.n_in W
+t.n_mc2 W
+t.n_mix W
+t.n_q W
+t.nest_c r
+t.nopre_c WWWWrrrr
+t.ovl_w r
+t.pand_c r
+t.part_c r
+t.pass_o r
+t.pf W
+t.pk_al r
+t.pk_c r
+t.pla_l W
+t.plb_l rrrrWWWW
+t.plc_l WWWWWWrr
+t.ple_l W
+t.plf_l WWWWrrrr
+t.pli_l WWrrrrrr
+t.plm_l W
+t.plo_l WWrrrrWW
+t.plu_l W
+t.plv_c r
+t.pmem W
+t.pon_c r
+t.px_o r
+t.rbw_c r
+t.rbw_t r
+t.rdpin r
+t.rdpin_c r
+t.ret_c r
+t.ret_q W
+t.rnd_w r
+t.seedv W
+t.self_c r
+t.sgn_c r
+t.sib_b r
+t.sib_bt r
+t.sib_c r
+t.spl_l W
+t.st WWWWWWWr
+t.star_c r
+t.stl_c r
+t.sub_o r
+t.tmp_o r
+t.tmp_obs r
+t.tw r
+t.tw_r r
+t.u_cons.cap W
+t.u_cons.clk r
+t.u_ff.clk r
+t.u_ff.d r
+t.u_ff.q W
+t.u_if.clk r
+t.u_if.d r
+t.u_in.i r
+t.u_in.o r
+t.u_lp1.i r
+t.u_lp1.o r
+t.u_lp2.i r
+t.u_lp2.o r
+t.u_mix.clk r
+t.u_mix.d r
+t.u_mix.en r
+t.u_mix.m WWWWWWWr
+t.u_na.a r
+t.u_na.q r
+t.u_na.w W
+t.u_na.y r
+t.u_na.z W
+t.u_pass.i r
+t.u_pass.o r
+t.u_px.i r
+t.u_px.o r
+t.u_sub.i r
+t.u_sub.o r
+t.u_tmp.cpy r
+t.u_tmp.i r
+t.u_tmp.mix r
+t.u_tmp.o r
+t.u_tmp.obs r
+t.u_wdrv.i r
+t.u_wdrv.o r
+t.undr_mem W
+t.us_c ?
+t.us_c.a r
+t.us_c.b r
+t.vec WWWWWWWr
+t.vidx r
+t.w_ff r
+t.w_mix r
+t.wd_w r
+t.while_c r
+*-* All Finished *-*
