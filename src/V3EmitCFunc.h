@@ -1579,13 +1579,13 @@ public:
             = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType)) {
             putns(nodep, "(" + classDtypep->cType("", false, false) + ")(");
         } else if (nodep->size() <= VL_BYTESIZE) {
-            putns(nodep, "(CData)(");
+            putns(nodep, "(::CData)(");
         } else if (nodep->size() <= VL_SHORTSIZE) {
-            putns(nodep, "(SData)(");
+            putns(nodep, "(::SData)(");
         } else if (nodep->size() <= VL_IDATASIZE) {
-            putns(nodep, "(IData)(");
+            putns(nodep, "(::IData)(");
         } else {
-            putns(nodep, "(QData)(");
+            putns(nodep, "(::QData)(");
         }
         iterateAndNextConstNull(nodep->lhsp());
         puts(")");
