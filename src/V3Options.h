@@ -370,7 +370,9 @@ private:
     int         m_ifDepth = 0;      // main switch: --if-depth
     int         m_inlineCFuncs = 20;   // main switch: --inline-cfuncs
     int         m_inlineCFuncsProduct = 200;   // main switch: --inline-cfuncs-product
+    int         m_inlineFlattenPercent = 10;   // main switch: --inline-flatten-percent
     int         m_inlineMult = 2000;   // main switch: --inline-mult
+    int         m_inlineTotalPercent = 20;   // main switch: --inline-total-percent
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
     bool        m_jsonEditNums = true; // main switch: --no-json-edit-nums
     bool        m_jsonIds = true; // main switch: --no-json-ids
@@ -676,7 +678,11 @@ public:
     int ifDepth() const { return m_ifDepth; }
     int inlineCFuncs() const { return m_inlineCFuncs; }
     int inlineCFuncsProduct() const { return m_inlineCFuncsProduct; }
+    // Maximum design-size percentage for automatic module flattening.
+    int inlineFlattenPercent() const { return m_inlineFlattenPercent; }
     int inlineMult() const { return m_inlineMult; }
+    // Maximum design-size percentage for inlining all instances of a module.
+    int inlineTotalPercent() const { return m_inlineTotalPercent; }
     int instrCountDpi() const { return m_instrCountDpi; }
     int localizeMaxSize() const { return m_localizeMaxSize; }
     bool jsonEditNums() const { return m_jsonEditNums; }

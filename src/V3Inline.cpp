@@ -723,20 +723,26 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     // Decide which instances to inline
     const size_t designSize
         = graphp->vertices().frontp()->as<InlineModModuleVertex>()->flattenedSize();
+    const auto percentageLimit = [designSize](size_t percent) {
+        // Round up to preserve strict fractional comparisons without overflowing a product.
+        return (designSize / 100) * percent + ((designSize % 100) * percent + 99) / 100;
+    };
+    const size_t flattenLimit = percentageLimit(v3Global.opt.inlineFlattenPercent());
+    const size_t totalLimit = percentageLimit(v3Global.opt.inlineTotalPercent());
     for (V3GraphVertex& vtx : graphp->vertices()) {
         if (InlineModModuleVertex* const mVtxp = vtx.cast<InlineModModuleVertex>()) {
-            // If this module is less than 10% of the design, flatten this module
-            if (mVtxp->flattenedSize() * 10 < designSize) mVtxp->setFlatten();
+            // Flatten modules below the configured fraction of the design
+            if (mVtxp->flattenedSize() < flattenLimit) mVtxp->setFlatten();
             // Don't inline if can't inline
             if (mVtxp->noInlineHard()) continue;
             // Don't inline if soft off
             if (mVtxp->noInlineSoft()) continue;
-            // If all instances of this module combined are less than 20% of the design, inline all
-            size_t totalSize = mVtxp->flattenedSize() * mVtxp->instanceCount();
-            if (totalSize * 5 < designSize) {
+            // Inline all instances if their combined size is below the configured fraction
+            const size_t totalSize = mVtxp->flattenedSize() * mVtxp->instanceCount();
+            if (totalSize < totalLimit) {
                 for (V3GraphEdge& edge : mVtxp->inEdges()) {
                     InlineModCellVertex* const cVtxp = edge.fromp()->as<InlineModCellVertex>();
-                    cVtxp->setDoInline("< 20% of design");
+                    cVtxp->setDoInline("total size below percentage limit");
                 }
             }
             // No more decisions based on module vertex
