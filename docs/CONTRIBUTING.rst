@@ -46,6 +46,22 @@ Did you write a patch that fixes a Verilator bug?
   Internals Documentation
   <https://github.com/verilator/verilator/blob/master/docs/internals.rst>`__.
 
+- To run the project's formatters automatically before each commit, install
+  `prek <https://prek.j178.dev/installation/>`__ or `pre-commit
+  <https://pre-commit.com/#installation>`__ 3.2 or later. Install
+  ``clang-format-21`` and create the development environment with ``make
+  venv`` after configuring the source tree. Activate that environment with
+  ``source .venv/bin/activate`` before installing or running the hooks,
+  including when committing. Run ``prek install`` or ``pre-commit install``
+  from the repository root to enable them.
+
+  The hooks reuse the development tools and version pins from
+  ``python-dev-requirements.txt``. They format only staged files and
+  exclude generated and vendored files. If a hook changes a file, review
+  and stage its changes before committing again. To format all eligible
+  tracked files manually, use ``prek run --all-files`` or ``pre-commit run
+  --all-files``.
+
 - Verilator uses GitHub Actions to provide continuous integration. You may
   want to enable Actions on your GitHub branch to ensure your changes keep
   the tests passing.
