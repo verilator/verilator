@@ -15,16 +15,6 @@ package foo;
   endfunction
 endpackage
 
-module foo (
-    input clk,
-    output int o
-);
-  /*verilator no_inline_module*/
-  int r = 20;
-  always @(posedge clk) r <= r + 1;
-  assign o = r;
-endmodule
-
 module bar (
     input clk,
     output int o
@@ -47,6 +37,7 @@ module t;
   logic clk = 0;
   int foo_o;
   int bar_o;
+  // Autoloading foo rescans bar, whose package has already been renamed.
   foo u_foo (
       .clk(clk),
       .o(foo_o)
