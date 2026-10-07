@@ -17,13 +17,14 @@ test.clean_objs()
 
 test.scenarios('vlt_all')
 test.top_filename = "t/t_hier_block.v"
+test.vlt_filename = "t/t_hier_block_vlt.vlt"
 
 # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # So use 6 threads here though it's not optimal in performance, but ok.
 test.compile(v_flags2=['t/t_hier_block.cpp'],
              verilator_flags2=[
-                 '--stats', '+define+USE_VLT', 't/t_hier_block_vlt.vlt', '--CFLAGS',
+                 '--stats', '+define+USE_VLT', test.vlt_filename, '--CFLAGS',
                  '"-pipe -DCPP_MACRO=cplusplus"'
              ],
              threads=(6 if test.vltmt else 1))

@@ -917,6 +917,7 @@ class VlTest:
             self.top_filename = re.sub(r'\.py$', '', self.py_filename) + '.' + self.v_suffix
         self.pli_filename = re.sub(r'\.py$', '', self.py_filename) + '.cpp'
         self.top_shell_filename = self.obj_dir + "/" + self.vm_prefix + "__top.v"
+        self.vlt_filename = re.sub(r'\.py$', '', self.py_filename) + '.vlt'
 
     def _define_opt_calc(self) -> str:
         return "--define " if self.xsim else "+define+"

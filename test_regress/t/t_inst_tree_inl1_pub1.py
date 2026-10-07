@@ -14,9 +14,8 @@ test.top_filename = "t/t_inst_tree.v"
 
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
-test.compile(v_flags2=[
-    "--no-json-edit-nums", "t/" + test.name + ".vlt", test.wno_unopthreads_for_few_cores
-])
+test.compile(
+    v_flags2=["--no-json-edit-nums", test.vlt_filename, test.wno_unopthreads_for_few_cores])
 
 if test.vlt_all:
     test.file_grep(
