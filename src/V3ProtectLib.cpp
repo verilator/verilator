@@ -506,15 +506,37 @@ class ProtectVisitor final : public VNVisitor {
             const string in = ports.inp->prettyName();
             const string out = ports.outp->prettyName();
             const string en = ports.enp->prettyName();
-            if (ports.inp->width() == 1) {
+            std::vector<std::pair<int, int>> dimensions;
+            const AstNodeDType* dtypep = ports.inp->dtypep()->skipRefp();
+            while (const AstNodeArrayDType* const arrayp = VN_CAST(dtypep, NodeArrayDType)) {
+                dimensions.emplace_back(arrayp->lo(), arrayp->hi());
+                dtypep = arrayp->subDTypep()->skipRefp();
+            }
+            if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+                if (basicp->isRanged()) dimensions.emplace_back(basicp->lo(), basicp->hi());
+            }
+            if (dimensions.empty()) {
                 m_inoutDeclsp->add("assign " + in + " = " + en + " ? " + out + " : 1'bz;\n");
             } else {
-                const string index = "__VlibInout" + cvtToStr(entry.first);
-                m_inoutDeclsp->add("for (genvar " + index + " = 0; " + index + " < $bits(" + in
-                                   + "); ++" + index + ") begin\n");
-                m_inoutDeclsp->add("assign " + in + "[$low(" + in + ") + " + index + "] = " + en
-                                   + "[$low(" + en + ") + " + index + "] ? " + out + "[$low(" + out
-                                   + ") + " + index + "] : 1'bz;\nend\n");
+                string lhs = in;
+                string rhsEn = en;
+                string rhsOut = out;
+                for (size_t dim = 0; dim < dimensions.size(); ++dim) {
+                    const string index
+                        = "__VlibInout" + cvtToStr(entry.first) + "_" + cvtToStr(dim);
+                    const int low = dimensions[dim].first;
+                    const int high = dimensions[dim].second;
+                    const int size = high - low + 1;
+                    m_inoutDeclsp->add("for (genvar " + index + " = 0; " + index + " < "
+                                       + cvtToStr(size) + "; ++" + index + ") begin\n");
+                    const string select = "[" + cvtToStr(low) + " + " + index + "]";
+                    lhs += select;
+                    rhsEn += select;
+                    rhsOut += select;
+                }
+                m_inoutDeclsp->add("assign " + lhs + " = " + rhsEn + " ? " + rhsOut
+                                   + " : 1'bz;\n");
+                for (size_t dim = 0; dim < dimensions.size(); ++dim) m_inoutDeclsp->add("end\n");
             }
         }
     }

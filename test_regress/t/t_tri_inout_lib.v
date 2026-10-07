@@ -15,6 +15,7 @@ module secret (
     input [67:3] en,
     input [67:3] data,
     inout wire [67:3] pad,
+    inout wire [1:0][4:2] matrix_pad,
     inout wire [2:8] reverse_pad,
     inout wire [6:0] receive_pad,
     output wire [67:3] q,
@@ -24,6 +25,11 @@ module secret (
 );
   for (genvar i = 3; i <= 67; ++i) begin
     assign pad[i] = en[i] ? data[i] : 1'bz;
+  end
+  for (genvar i = 1; i >= 0; --i) begin
+    for (genvar j = 2; j <= 4; ++j) begin
+      assign matrix_pad[i][j] = en[i * 3 + j + 1] ? data[i * 3 + j + 1] : 1'bz;
+    end
   end
   for (genvar i = 2; i <= 8; ++i) begin
     assign reverse_pad[i] = en[i+1] ? data[i+1] : 1'bz;
@@ -43,6 +49,12 @@ module t (
   wire [67:3] external_data = ~data;
   wire [67:3] expected = (en & data) | (~en & external_data);
   wire [67:3] pad;
+  wire [1:0][4:2] matrix_pad;
+  wire [1:0][4:2] matrix_data = {data[8:6], data[5:3]};
+  wire [1:0][4:2] matrix_en = {en[8:6], en[5:3]};
+  wire [1:0][4:2] matrix_external = ~matrix_data;
+  wire [1:0][4:2] matrix_expected
+      = (matrix_en & matrix_data) | (~matrix_en & matrix_external);
   wire [2:8] reverse_pad;
   wire [6:0] receive_pad = data[9:3];
   wire [67:3] q;
@@ -54,6 +66,8 @@ module t (
 `ifdef LIB_SPLIT
   wire [67:3] pad__out;
   wire [67:3] pad__en;
+  wire [1:0][4:2] matrix_pad__out;
+  wire [1:0][4:2] matrix_pad__en;
   wire [2:8] reverse_pad__out;
   wire [2:8] reverse_pad__en;
   wire [6:0] receive_pad__out;
@@ -65,6 +79,7 @@ module t (
       .en(en),
       .data(data),
       .pad(pad),
+      .matrix_pad(matrix_pad),
       .reverse_pad(reverse_pad),
       .receive_pad(receive_pad),
       .q(q),
@@ -73,6 +88,8 @@ module t (
 `ifdef LIB_SPLIT
       .pad__out(pad__out),
       .pad__en(pad__en),
+      .matrix_pad__out(matrix_pad__out),
+      .matrix_pad__en(matrix_pad__en),
       .reverse_pad__out(reverse_pad__out),
       .reverse_pad__en(reverse_pad__en),
       .receive_pad__out(receive_pad__out),
@@ -86,6 +103,14 @@ module t (
 `ifdef LIB_SPLIT
     assign pad[i] = pad__en[i] ? pad__out[i] : 1'bz;
 `endif
+  end
+  for (genvar i = 1; i >= 0; --i) begin
+    for (genvar j = 2; j <= 4; ++j) begin
+      assign matrix_pad[i][j] = matrix_en[i][j] ? 1'bz : matrix_external[i][j];
+`ifdef LIB_SPLIT
+      assign matrix_pad[i][j] = matrix_pad__en[i][j] ? matrix_pad__out[i][j] : 1'bz;
+`endif
+    end
   end
   for (genvar i = 2; i <= 8; ++i) begin
     assign reverse_pad[i] = en[i+1] ? 1'bz : external_data[i+1];
@@ -101,6 +126,7 @@ module t (
   end
   always @(negedge clk) begin
     `checkh(q, expected);
+    `checkh(matrix_pad, matrix_expected);
     `checkh(receive_q, data[9:3]);
 `ifdef LIB_SPLIT
     `checkh(receive_pad__out, 7'b0);
