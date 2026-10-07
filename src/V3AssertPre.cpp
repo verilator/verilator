@@ -25,6 +25,7 @@
 
 #include "V3Assert.h"
 #include "V3Const.h"
+#include "V3LinkLValue.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
@@ -113,6 +114,7 @@ private:
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     V3UniqueNames m_activeNames{"__VassertsActive"};  // Active asserts map name generator
     V3UniqueNames m_drivenNames{"__VclockingDriven"};  // Clockvar drive flag name generator
+    V3UniqueNames m_driveHandleNames{"__VdriveHandle"};  // Drive handle snapshot name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
@@ -156,6 +158,27 @@ private:
                                               new AstConst{flp, AstConst::BitTrue{}}};
         setp->user1(true);
         return setp;
+    }
+    // A drive with a cycle delay through an interface reference evaluates the reference when
+    // scheduled (IEEE 1800-2023 10.4.2), once, into a variable of a block replacing the drive.
+    // The drive, and the references for its clocking event and driven flag, use the variable,
+    // which V3Timing then copies for the pending drive.
+    void snapshotDriveHandle(AstNodeAssign* nodep, AstMemberSel* selp) {
+        FileLine* const flp = selp->fileline();
+        AstNodeExpr* const handlep = selp->fromp()->unlinkFrBack();
+        V3LinkLValue::linkLValueSet(handlep, VAccess::READ);
+        const std::string name = m_driveHandleNames.get(nodep);
+        AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, name, handlep->dtypep()};
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        // Like the reference it replaces, mark the one selecting the driven clockvar written
+        selp->fromp(new AstVarRef{flp, varp, selp->access()});
+        AstAssign* const assignp
+            = new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, handlep};
+        assignp->user1(true);
+        AstBegin* const beginp = new AstBegin{flp, name + "__block", varp, true};
+        nodep->replaceWith(beginp);
+        beginp->addStmtsp(assignp);
+        beginp->addStmtsp(nodep);
     }
     // Clocking block of a clocking item
     static AstClocking* clockingOf(const AstClockingItem* itemp) {
@@ -848,6 +871,13 @@ private:
             VL_RESTORER(m_inAssignDlyLhs);
             m_inAssignDlyLhs = VN_IS(nodep, AssignDly);
             iterate(nodep->lhsp());
+        }
+        // A delay of a drive, which must be a cycle delay
+        if (m_inSynchDrive && m_drives.size() == 1 && VN_IS(m_drives.front().refp, MemberSel)
+            && VN_IS(nodep->timingControlp(), Delay)) {
+            snapshotDriveHandle(nodep, VN_AS(m_drives.front().refp, MemberSel));
+            // Visited again in the block, but handled here
+            nodep->user1(true);
         }
         iterate(nodep->rhsp());
         if (nodep->timingControlp()) iterate(nodep->timingControlp());

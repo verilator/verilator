@@ -1519,6 +1519,7 @@ public:
     }
 };
 class AstAssignDly final : public AstNodeAssign {
+    // @astgen op4 := ticketp : Optional[AstNodeExpr] // Ticket ordering a pending update, if any
 public:
     AstAssignDly(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                  AstNode* timingControlp = nullptr)
@@ -1526,7 +1527,9 @@ public:
     ASTGEN_MEMBERS_AstAssignDly;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignDly{fileline(), lhsp, rhsp, controlp};
+        AstAssignDly* const newp = new AstAssignDly{fileline(), lhsp, rhsp, controlp};
+        if (ticketp()) newp->ticketp(ticketp()->cloneTree(false));
+        return newp;
     }
     bool isGateOptimizable() const override { return false; }
     string verilogKwd() const override { return "<="; }

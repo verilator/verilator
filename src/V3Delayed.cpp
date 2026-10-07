@@ -105,11 +105,44 @@
 //      __Vdly_Dim0__LHS = idxa;
 //      __Vdly_Dim1__LHS = idxb;
 //      __Vdly_Val__LHS = RHS;
-//      __Vdly_CommitQueue__LHS.enqueue(__Vdly_Val__LHS, __Vdly_Dim0__LHS, __Vdly_Dim1__LHS);
+//      __Vdly_CommitQueue__LHS.enqueue(0, __Vdly_Val__LHS, __Vdly_Dim0__LHS, __Vdly_Dim1__LHS);
 //  - Add new "Post-scheduled" logic:
 //      __Vdly_CommitQueue__LHS.commit(LHS);
+// These schemes are also used for variables updated by NBAs with pending
+// updates, from intra-assignment timing controls. V3Timing gives these NBAs
+// tickets, taken when the NBA is executed, and the commit performs the updates
+// in the order of their tickets (IEEE 1800-2023 4.6). Their other NBAs take a
+// ticket when enqueueing, instead of 0.
 //
-// TODO: generic LHS scheme as discussed in #5092
+// The "Generic Queue" scheme is used for all other NBAs that need such
+// ordering, for NBAs to a target selected by a handle, which can be of any
+// instance of an interface, and for NBAs in non-inlined functions, which can
+// be executed in the context of any process calling them. All NBAs to the same
+// variable, or member of an interface or class, use this scheme. Each NBA
+// queues the values of its update in queues of its own, and adds the update to
+// the order of the updates of the variable, which the commit, triggered also
+// by the processes calling the functions, applies in the 'nba' region. E.g.:
+//   vif.LHS[idx] <= RHS
+// is converted to:
+//  - In the original logic, replace the AstAssignDelay with:
+//      __VnbaQueue0_0_0.push_back(RHS);
+//      __VnbaQueue0_0_1.push_back(idx);
+//      __VnbaQueue0_0_2.push_back(vif);
+//      __VnbaOrder0__LHS.add(ticket, 0);
+//  - Add new "Post-scheduled" logic, committing the updates in order:
+//      while (__VnbaOrder0__LHS.next()) {
+//          __Vdly_Site0__LHS = __VnbaOrder0__LHS.site();
+//          __Vdly_Index0__LHS = __VnbaOrder0__LHS.index();
+//          if (__Vdly_Site0__LHS == 0) {
+//              __Vdly_Load0_0_1 = __VnbaQueue0_0_1.at(__Vdly_Index0__LHS);
+//              __Vdly_Load0_0_2 = __VnbaQueue0_0_2.at(__Vdly_Index0__LHS);
+//              __Vdly_Load0_0_2.LHS[__Vdly_Load0_0_1] = __VnbaQueue0_0_0.at(__Vdly_Index0__LHS);
+//          }
+//          ... the same for the other NBAs ("sites") of the variable
+//      }
+//      __VnbaQueue0_0_0.clear(); ...
+//
+// TODO: generic LHS scheme as discussed in #5092, also for other variables
 //
 //*************************************************************************
 
@@ -120,6 +153,7 @@
 #include "V3AstUserAllocator.h"
 #include "V3ClassGraph.h"
 #include "V3Const.h"
+#include "V3LinkLValue.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 
@@ -127,6 +161,50 @@
 #include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+// Whether a dynamic commit queue supports variables, or elements of arrays, of the given type
+static bool isQueueable(const AstNodeDType* dtypep) {
+    const AstBasicDType* const basicp = dtypep->basicp();
+    return basicp && (basicp->isIntegralOrPacked() || basicp->isDouble() || basicp->isString());
+}
+
+// Whether the updates of an NBA to the given target can be in a dynamic commit queue, as
+// convertSchemeValueQueue: a variable, or element of an unpacked array selected in all its
+// dimensions, of a type isQueueable, or bits selected of it, if packed
+static bool canQueue(const AstNodeExpr* lhsp) {
+    const AstSel* const selp = VN_CAST(lhsp, Sel);
+    const AstNode* nodep = selp ? selp->fromp() : lhsp;
+    size_t nIndices = 0;
+    while (const AstArraySel* const arraySelp = VN_CAST(nodep, ArraySel)) {
+        nodep = arraySelp->fromp();
+        ++nIndices;
+    }
+    const AstVarRef* const refp = VN_CAST(nodep, VarRef);
+    if (!refp) return false;
+    const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
+    for (; nIndices; --nIndices) dtypep = VN_AS(dtypep, UnpackArrayDType)->subDTypep()->skipRefp();
+    if (VN_IS(dtypep, UnpackArrayDType)) return false;
+    return selp ? dtypep->isIntegralOrPacked() : isQueueable(dtypep);
+}
+
+// The member select of the handle selecting the target of an NBA with the given LHS, following
+// the selects of the target, or nullptr if the target is a variable
+static AstMemberSel* handleSelp(AstNodeExpr* lhsp) {
+    AstNode* nodep = lhsp->baseFromp(false);
+    while (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+        nodep = selp->fromp()->baseFromp(false);
+    }
+    return VN_CAST(nodep, MemberSel);
+}
+
+// Add a copy of the given sensitivities to the given sensitivity tree, creating it if needed
+static void addSensitivities(AstSenTree*& senTreep, AstSenItem* nodep) {
+    if (!senTreep) senTreep = new AstSenTree{nodep->fileline(), nullptr};
+    // Add a copy of each term
+    senTreep->addSensesp(nodep->cloneTree(true));
+    // Remove duplicates
+    V3Const::constifyExpensiveEdit(senTreep);
+}
 
 //######################################################################
 // Convert AstAssignDlys (NBAs)
@@ -143,7 +221,8 @@ class DelayedVisitor final : public VNVisitor {
         FlagShared,
         FlagUnique,
         ValueQueueWhole,
-        ValueQueuePartial
+        ValueQueuePartial,
+        GenericQueue
     };
 
     // All info associated with a variable that is the target of an NBA
@@ -157,6 +236,7 @@ class DelayedVisitor final : public VNVisitor {
         bool m_partial = false;  // Used on LHS of NBA under a Sel
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
         bool m_inSuspOrFork = false;  // Used on LHS of NBA in suspendable process or fork
+        bool m_ordered = false;  // Used on LHS of NBA with a ticket, ordering its updates
         Scheme m_scheme = Scheme::Undecided;  // Conversion scheme to use for this variable
 
     private:
@@ -219,15 +299,56 @@ class DelayedVisitor final : public VNVisitor {
         AstSenTree* senTreep() const { return m_senTreep; }
 
         // Add sensitivities
-        void addSensitivity(AstSenItem* nodep) {
-            if (!m_senTreep) m_senTreep = new AstSenTree{nodep->fileline(), nullptr};
-            // Add a copy of each term
-            m_senTreep->addSensesp(nodep->cloneTree(true));
-            // Remove duplicates
-            V3Const::constifyExpensiveEdit(m_senTreep);
-        }
+        void addSensitivity(AstSenItem* nodep) { addSensitivities(m_senTreep, nodep); }
         // cppcheck-suppress constParameterPointer
         void addSensitivity(AstSenTree* nodep) { addSensitivity(nodep->sensesp()); }
+    };
+
+    // All info associated with a destination of NBAs: a variable, or a member of an interface,
+    // which a handle can select in any instance
+    class DestInfo final {
+    public:
+        bool m_handle = false;  // Updated through a handle, or by a method of the interface
+        bool m_inCFunc = false;  // Updated by an NBA in a non-inlined function
+        bool m_ordered = false;  // Updated by an NBA with a ticket, ordering its pending updates
+        bool m_queueable = true;  // All NBAs updating it can use a dynamic commit queue
+        // Stuff needed for Scheme::GenericQueue
+        uint32_t m_id = 0;  // Number for unique names
+        uint32_t m_nSites = 0;  // Number of NBAs using it
+        AstVarScope* m_orderVscp = nullptr;  // The order of the updates (VlNBAOrder)
+        AstVarScope* m_siteVscp = nullptr;  // The site of the update the commit applies
+        AstVarScope* m_indexVscp = nullptr;  // The index of its values in the queues of the site
+        AstAlwaysPost* m_postp = nullptr;  // The commit
+        AstLoop* m_loopp = nullptr;  // The loop of the commit applying the updates in order
+        std::vector<AstVarScope*> m_queueVscps;  // The queues of the values of all sites
+
+    private:
+        // Combined sensitivities of all NBAs updating it
+        AstSenTree* m_senTreep = nullptr;
+
+    public:
+        DestInfo() = default;
+        ~DestInfo() {
+            // Might not be linked if there was an error
+            if (m_senTreep && !m_senTreep->backp()) {
+                VL_DO_DANGLING(m_senTreep->deleteTree(), m_senTreep);
+            }
+        }
+        VL_UNCOPYABLE(DestInfo);
+        // Whether it uses Scheme::GenericQueue
+        bool isGeneric() const { return m_handle || m_inCFunc || (m_ordered && !m_queueable); }
+        // Accessor
+        AstSenTree* senTreep() const { return m_senTreep; }
+        // Add sensitivities
+        void addSensitivity(AstSenItem* nodep) { addSensitivities(m_senTreep, nodep); }
+    };
+
+    // Calls by a process, executing the NBAs in the called functions in its context
+    struct ProcessCalls final {
+        AstNodeProcedure* m_procp;  // The process
+        const AstSenTree* m_clockedp;  // Its sensitivities, if clocked, otherwise nullptr
+        std::vector<const AstSenTree*> m_domainps;  // Its timing domains
+        std::vector<AstCFunc*> m_calleeps;  // Functions it calls
     };
 
     // Data structure to keep track of all writes to
@@ -245,7 +366,10 @@ class DelayedVisitor final : public VNVisitor {
     // Data required to lower AstAssignDelay later
     struct NBA final {
         AstAssignDly* nodep = nullptr;  // The NBA this record refers to
-        AstVarScope* vscp = nullptr;  // The target variable the NBA is updating
+        AstVarScope* vscp = nullptr;  // The target variable the NBA is updating, if known
+        DestInfo* destp = nullptr;  // The destination the NBA is updating
+        const AstCFunc* cfuncp = nullptr;  // The non-inlined function the NBA is in, if any
+        bool receiver = false;  // Updating the instance of an interface its method is called on
     };
 
     // NODE STATE
@@ -263,6 +387,8 @@ class DelayedVisitor final : public VNVisitor {
 
     struct CFuncCache final {
         VInsertionSet<AstSenTree*> m_timingDomains;  // What shall be added to m_timingDomains
+        std::vector<DestInfo*> m_destps;  // Destinations of the NBAs in this function
+        VInsertionSet<AstCFunc*> m_calleeps;  // Functions this function calls
         std::set<AstCFunc*>
             m_includes;  // CFuncs whose CFuncCache shall be included into this - this is used to
                          // break cycles: A->B->A (instead of visiting A while it is still begin
@@ -280,6 +406,8 @@ class DelayedVisitor final : public VNVisitor {
     AstUser1Allocator<AstCFunc, CFuncCache> m_cfuncsCache;
     AstUser1Allocator<AstVarScope, VarScopeInfo> m_vscpInfo;
     AstUser3Allocator<AstVarScope, std::vector<WriteReference>> m_writeRefs;
+    std::unordered_map<const AstVar*, DestInfo> m_dests;  // Destinations of NBAs, by variable
+    std::vector<std::pair<const AstVar*, DestInfo*>> m_destps;  // The same, in order found
 
     // STATE - across all visitors
     VInsertionSet<AstSenTree*> m_timingDomains;  // Timing resume domains
@@ -304,12 +432,22 @@ class DelayedVisitor final : public VNVisitor {
     bool m_needsInitialTrigger = false;  // Whether a NodeProcedure needs a initial trigger
     std::vector<AstSenTree*> m_nbaEventSenTreeps;  // Sensitivities of '->>' in the process
     AstVarRef* m_currNbaLhsRefp = nullptr;  // Current NBA LHS variable reference
+    VInsertionSet<AstCFunc*> m_procCalleeps;  // Functions the current process calls
 
     // STATE - during NBA conversion (after visit)
     std::vector<NBA> m_nbas;  // AstAssignDly instances to lower at the end
     std::vector<AstVarScope*> m_vscps;  // Target variables on LHSs of NBAs
     AstAssignDly* m_nextDlyp = nullptr;  // The nextp of the previous AstAssignDly
     AstVarScope* m_prevVscp = nullptr;  // The target of the previous AstAssignDly
+    std::vector<ProcessCalls> m_processCalls;  // Calls of processes, to functions with NBAs
+    // Processes calling functions with NBAs of Scheme::GenericQueue destinations
+    std::vector<std::pair<AstNodeProcedure*, DestInfo*>> m_touchps;
+    uint32_t m_nGenericQueues = 0;  // Number of destinations using Scheme::GenericQueue
+    AstCDType* m_orderDTypep = nullptr;  // The type of their orders
+    // The types of handles to instances of interfaces, by interface
+    std::unordered_map<const AstIface*, AstIfaceRefDType*> m_ifaceRefDTypeps;
+    // The instances of the variables of interfaces, by variable
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_ifaceVscps;
 
     // STATE - Statistic tracking
     VDouble0 m_nSchemeShadowVar;  // Number of variables using Scheme::ShadowVar
@@ -318,6 +456,7 @@ class DelayedVisitor final : public VNVisitor {
     VDouble0 m_nSchemeFlagUnique;  // Number of variables using Scheme::FlagUnique
     VDouble0 m_nSchemeValueQueuesWhole;  //  Number of variables using Scheme::ValueQueueWhole
     VDouble0 m_nSchemeValueQueuesPartial;  //  Number of variables using Scheme::ValueQueuePartial
+    VDouble0 m_nSchemeGenericQueues;  // Number of variables using Scheme::GenericQueue
     VDouble0 m_nSharedSetFlags;  // "Set" flags actually shared by Scheme::FlagShared variables
     VDouble0 m_nInitialNBA;  // Number of procedural blocks with initial NBA
     VDouble0 m_nonInlinedCAwaitsWithSenTree;  // Count uses of not inlined co_awaits
@@ -443,6 +582,15 @@ class DelayedVisitor final : public VNVisitor {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::Undecided, vscp, "NBA scheme already decided");
 
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
+        // Updated by an NBA with a ticket from V3Timing, ordering its pending update with the
+        // others, so use a dynamic commit queue, committing all updates in the order of their
+        // tickets. V3Timing ensures the queue supports all NBAs to the variable (canQueue).
+        if (vscpInfo.m_ordered) {
+            UASSERT_OBJ(!vscpInfo.m_whole || !VN_IS(dtypep, UnpackArrayDType), vscp,
+                        "Ordered NBAs to a whole array");
+            if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
+            return Scheme::ValueQueueWhole;
+        }
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
             // If whole array is target of NBA, use ShadowVar
@@ -452,12 +600,7 @@ class DelayedVisitor final : public VNVisitor {
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
             if (vscpInfo.m_inLoop) {
                 // Arrays with compound element types are currently not supported in loops
-                if (!basicp
-                    || !(basicp->isIntegralOrPacked()  //
-                         || basicp->isDouble()  //
-                         || basicp->isString())) {
-                    return Scheme::UnsupportedCompoundArrayInLoop;
-                }
+                if (!isQueueable(uaDTypep)) return Scheme::UnsupportedCompoundArrayInLoop;
                 if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
                 return Scheme::ValueQueueWhole;
             }
@@ -531,29 +674,17 @@ class DelayedVisitor final : public VNVisitor {
             nodep = selp->fromp();
         }
         UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
-        // Capture AstArraySel indices - might be many
+        // Capture AstArraySel indices - might be many, also below unpacked struct members
         size_t nArraySels = 0;
-        while (AstArraySel* const arrSelp = VN_CAST(nodep, ArraySel)) {
+        while (VN_IS(nodep, ArraySel) || VN_IS(nodep, StructSel)) {
+            if (const AstStructSel* const structSelp = VN_CAST(nodep, StructSel)) {
+                nodep = structSelp->fromp();
+                continue;
+            }
+            AstArraySel* const arrSelp = VN_AS(nodep, ArraySel);
             const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
             arrSelp->bitp(captureVal(scopep, insertp, arrSelp->bitp()->unlinkFrBack(), tmpName));
             nodep = arrSelp->fromp();
-        }
-        // Capture the handle of a virtual interface selecting the target (IEEE 1800-2023 10.4.2)
-        if (AstMemberSel* const mselp = VN_CAST(nodep, MemberSel)) {
-            AstNodeExpr* const handlep = mselp->fromp()->unlinkFrBack();
-            // The handle is only read
-            handlep->foreach([](AstNode* const np) {
-                if (AstNodeVarRef* const refp = VN_CAST(np, NodeVarRef)) {
-                    refp->access(VAccess::READ);
-                } else if (AstMemberSel* const selp = VN_CAST(np, MemberSel)) {
-                    selp->access(VAccess::READ);
-                }
-            });
-            AstNodeExpr* const capturedp
-                = captureVal(scopep, insertp, handlep, "__VdlyHandle" + baseName);
-            // Like the handle it replaces, mark the one selecting the target written
-            VN_AS(capturedp, VarRef)->access(VAccess::WRITE);
-            mselp->fromp(capturedp);
         }
         // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
         if (const AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
@@ -975,10 +1106,11 @@ class DelayedVisitor final : public VNVisitor {
             }
         }
 
-        // Extract array indices
+        // Extract array indices, none of a variable that is not an array
         std::vector<AstNodeExpr*> idxps;
         {
-            UASSERT_OBJ(VN_IS(lhsNodep, ArraySel), lhsNodep, "Unexpected LHS form");
+            UASSERT_OBJ(vscpInfo.m_ordered || VN_IS(lhsNodep, ArraySel), lhsNodep,
+                        "Unexpected LHS form");
             while (AstArraySel* const aSelp = VN_CAST(lhsNodep, ArraySel)) {
                 idxps.emplace_back(aSelp->bitp()->unlinkFrBack());
                 lhsNodep = aSelp->fromp();
@@ -990,11 +1122,23 @@ class DelayedVisitor final : public VNVisitor {
         // Done with the LHS at this point
         VL_DO_DANGLING(pushDeletep(capturedLhsp), capturedLhsp);
 
+        // The ticket ordering the update: given by V3Timing if it was pending, or else taken
+        // now if updates of the variable are ordered, otherwise all are enqueued in order
+        AstNodeExpr* ticketp = nodep->ticketp();
+        if (ticketp) {
+            ticketp->unlinkFrBack();
+        } else if (vscpInfo.m_ordered) {
+            ticketp = V3Delayed::newTicketp(flp);
+        } else {
+            ticketp = new AstConst{flp, AstConst::Unsized64{}, 0};
+        }
+
         // Enqueue the update at the site of the original NBA
         AstCMethodHard* const callp = new AstCMethodHard{
             flp, new AstVarRef{flp, vscpInfo.valueQueueKit().vscp, VAccess::READWRITE},
             VCMethod::NBA_ENQUEUE};
         callp->dtypeSetVoid();
+        callp->addPinsp(ticketp);
         callp->addPinsp(valuep);
         if (partial) callp->addPinsp(maskp);
         for (AstNodeExpr* const indexp : idxps) callp->addPinsp(indexp);
@@ -1002,6 +1146,222 @@ class DelayedVisitor final : public VNVisitor {
 
         // Delete original NBA
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+
+    // Scheme::GenericQueue
+    void prepareSchemeGenericQueue(const AstVar* varp, DestInfo& dest) {
+        FileLine* const flp = varp->fileline();
+        AstTopScope* const topScopep = v3Global.rootp()->topScopep();
+        AstScope* const scopep = topScopep->scopep();
+        dest.m_id = m_nGenericQueues++;
+        const std::string suffix = std::to_string(dest.m_id) + "__" + varp->shortName();
+        // Create the order of the updates, the site and index variables
+        if (!m_orderDTypep) {
+            m_orderDTypep = new AstCDType{flp, "VlNBAOrder"};
+            v3Global.rootp()->typeTablep()->addTypesp(m_orderDTypep);
+        }
+        dest.m_orderVscp = topScopep->createTemp("__VnbaOrder" + suffix, m_orderDTypep);
+        dest.m_orderVscp->varp()->noReset(true);
+        dest.m_orderVscp->varp()->setIgnorePostWrite();
+        dest.m_siteVscp = m_dlyTmps.make(flp, scopep, 32, "Site" + suffix);
+        dest.m_siteVscp->varp()->setIgnorePostWrite();
+        dest.m_indexVscp = m_dlyTmps.make(flp, scopep, 32, "Index" + suffix);
+        dest.m_indexVscp->varp()->setIgnorePostWrite();
+        // Create the AstActive for the Post logic
+        UASSERT_OBJ(dest.senTreep(), varp, "NBA without sensitivity");
+        AstActive* const activep = new AstActive{flp, "nba-generic-queue", dest.senTreep()};
+        activep->senTreeStorep(dest.senTreep());
+        scopep->addBlocksp(activep);
+        // Add 'Post' scheduled process for the commit
+        dest.m_postp = new AstAlwaysPost{flp};
+        activep->addStmtsp(dest.m_postp);
+        // Add the loop applying the updates in order, to be populated later
+        dest.m_loopp = new AstLoop{flp};
+        dest.m_postp->addStmtsp(dest.m_loopp);
+        AstCMethodHard* const nextp
+            = new AstCMethodHard{flp, new AstVarRef{flp, dest.m_orderVscp, VAccess::READWRITE},
+                                 VCMethod::NBA_ORDER_NEXT};
+        nextp->dtypeSetBit();
+        dest.m_loopp->addStmtsp(new AstLoopTest{flp, dest.m_loopp, nextp});
+        const auto assignFromOrder = [&](AstVarScope* vscp, VCMethod method) {
+            AstCMethodHard* const callp = new AstCMethodHard{
+                flp, new AstVarRef{flp, dest.m_orderVscp, VAccess::READ}, method};
+            callp->dtypeSetUInt32();
+            dest.m_loopp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, callp});
+        };
+        assignFromOrder(dest.m_siteVscp, VCMethod::NBA_ORDER_SITE);
+        assignFromOrder(dest.m_indexVscp, VCMethod::NBA_ORDER_INDEX);
+    }
+    void convertSchemeGenericQueue(AstAssignDly* nodep, const NBA& nba) {
+        DestInfo& dest = *nba.destp;
+        FileLine* const flp = nodep->fileline();
+        AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
+        const uint32_t site = dest.m_nSites++;
+        const std::string suffix = std::to_string(dest.m_id) + "_" + std::to_string(site) + "_";
+        size_t nQueues = 0;
+        AstNodeStmt* enqueuesp = nullptr;  // Statements enqueueing the update, replacing the NBA
+        AstNodeStmt* loadsp = nullptr;  // Statements of the commit loading values of the update
+        // Enqueue the value of the given expression, of the given type, in a new queue of the
+        // site, and return the expression reading it in the commit
+        const auto enqueue = [&](AstNodeExpr* valuep, AstNodeDType* dtypep) {
+            AstQueueDType* const queueDTypep = new AstQueueDType{flp, dtypep, nullptr};
+            v3Global.rootp()->typeTablep()->addTypesp(queueDTypep);
+            AstVarScope* const queueVscp = v3Global.rootp()->topScopep()->createTemp(
+                "__VnbaQueue" + suffix + std::to_string(nQueues++), queueDTypep);
+            queueVscp->varp()->noReset(true);
+            queueVscp->varp()->setIgnorePostWrite();
+            dest.m_queueVscps.push_back(queueVscp);
+            AstCMethodHard* const pushp
+                = new AstCMethodHard{flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE},
+                                     VCMethod::ARRAY_PUSH_BACK, valuep};
+            pushp->dtypeSetVoid();
+            enqueuesp = AstNode::addNext(enqueuesp, pushp->makeStmt());
+            AstCMethodHard* const atp = new AstCMethodHard{
+                flp, new AstVarRef{flp, queueVscp, VAccess::READ}, VCMethod::ARRAY_AT,
+                new AstVarRef{flp, dest.m_indexVscp, VAccess::READ}};
+            atp->dtypep(dtypep);
+            return atp;
+        };
+        // Enqueue the given value, and return a reference to a new variable the commit loads it in
+        const auto enqueueLoaded = [&](AstNodeExpr* valuep) {
+            AstVarScope* const loadVscp = m_dlyTmps.make(
+                flp, scopep, valuep->dtypep(), "Load" + suffix + std::to_string(nQueues));
+            loadVscp->varp()->setIgnorePostWrite();
+            loadsp = AstNode::addNext<AstNodeStmt, AstNodeStmt>(
+                loadsp, new AstAssign{flp, new AstVarRef{flp, loadVscp, VAccess::WRITE},
+                                      enqueue(valuep, valuep->dtypep())});
+            return new AstVarRef{flp, loadVscp, VAccess::READ};
+        };
+        // Like other schemes, evaluate the value, then the expressions selecting the target,
+        // which in the commit read the values they had
+        AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const valuep = enqueue(nodep->rhsp()->unlinkFrBack(), lhsp->dtypep());
+        const auto capture = [&](AstNodeExpr* exprp) {
+            if (VN_IS(exprp, Const)) return;
+            VNRelinker relinker;
+            exprp->unlinkFrBack(&relinker);
+            relinker.relink(enqueueLoaded(exprp));
+        };
+        AstNodeExpr* basep = lhsp;
+        while (true) {
+            if (AstSel* const selp = VN_CAST(basep, Sel)) {
+                capture(selp->lsbp());
+                basep = selp->fromp();
+            } else if (AstNodeSel* const selp = VN_CAST(basep, NodeSel)) {
+                capture(selp->bitp());
+                basep = selp->fromp();
+            } else if (const AstStructSel* const selp = VN_CAST(basep, StructSel)) {
+                basep = selp->fromp();
+            } else {
+                break;
+            }
+        }
+        if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
+            // The handle selecting the target (IEEE 1800-2023 10.4.2), which is only read
+            AstNodeExpr* const handlep = selp->fromp()->unlinkFrBack();
+            V3LinkLValue::linkLValueSet(handlep, VAccess::READ);
+            AstVarRef* const refp = enqueueLoaded(handlep);
+            // Like the handle it replaces, mark one selecting a written member written
+            refp->access(selp->access());
+            selp->fromp(refp);
+        } else if (nba.receiver) {
+            // The variable is of the instance of the interface the method is called on, which
+            // is 'this' of the generated method, kept as methods with a CExpr are not inlined
+            UASSERT_OBJ(!nba.cfuncp->isLoose(), nodep, "Receiver of a loose function");
+            AstVarRef* const refp = VN_AS(basep, VarRef);
+            AstCExpr* const selfp = new AstCExpr{flp, "this"};
+            selfp->dtypep(ifaceRefDTypep(VN_AS(refp->varScopep()->scopep()->modp(), Iface)));
+            AstVarRef* const selfRefp = enqueueLoaded(selfp);
+            selfRefp->access(refp->access());
+            AstMemberSel* const newp = new AstMemberSel{flp, selfRefp, refp->varp()};
+            newp->access(refp->access());
+            if (refp == lhsp) {
+                lhsp = newp;
+            } else {
+                refp->replaceWith(newp);
+            }
+            VL_DO_DANGLING(pushDeletep(refp), refp);
+        }
+        // Add the update to the order, with its ticket: given by V3Timing if it was pending, or
+        // else taken now if updates of the destination are ordered, otherwise all in order
+        AstNodeExpr* ticketp = nodep->ticketp();
+        if (ticketp) {
+            ticketp->unlinkFrBack();
+        } else if (dest.m_ordered) {
+            ticketp = V3Delayed::newTicketp(flp);
+        } else {
+            ticketp = new AstConst{flp, AstConst::Unsized64{}, 0};
+        }
+        AstCMethodHard* const addp
+            = new AstCMethodHard{flp, new AstVarRef{flp, dest.m_orderVscp, VAccess::READWRITE},
+                                 VCMethod::NBA_ORDER_ADD, ticketp};
+        addp->addPinsp(new AstConst{flp, site});
+        addp->dtypeSetVoid();
+        enqueuesp = AstNode::addNext(enqueuesp, addp->makeStmt());
+        // A function can be executed in a context not known to trigger the commit, so commit
+        // also after the NBA event
+        if (nba.cfuncp) {
+            enqueuesp = AstNode::addNext<AstNodeStmt, AstNodeStmt>(
+                enqueuesp,
+                new AstAssign{
+                    flp, new AstVarRef{flp, v3Global.rootp()->nbaEventTriggerp(), VAccess::WRITE},
+                    new AstConst{flp, AstConst::BitTrue{}}});
+        }
+        // The commit applies the update if it is of this site
+        AstIf* const ifp
+            = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, dest.m_siteVscp, VAccess::READ},
+                                       new AstConst{flp, site}}};
+        if (loadsp) ifp->addThensp(loadsp);
+        ifp->addThensp(new AstAssign{flp, lhsp, valuep});
+        dest.m_loopp->addStmtsp(ifp);
+        // Replace the NBA
+        nodep->addHereThisAsNext(enqueuesp);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    void finishSchemeGenericQueue(const AstVar* varp, DestInfo& dest) {
+        FileLine* const flp = varp->fileline();
+        // After the commit applied all updates, clear the queues of their values
+        for (AstVarScope* const queueVscp : dest.m_queueVscps) {
+            AstCMethodHard* const clearp = new AstCMethodHard{
+                flp, new AstVarRef{flp, queueVscp, VAccess::WRITE}, VCMethod::DYN_CLEAR};
+            clearp->dtypeSetVoid();
+            dest.m_postp->addStmtsp(clearp->makeStmt());
+        }
+        // For scheduling, the commit through handles updates the variable of all instances of
+        // the interface, which the handles can select (none if of a class, not scheduled)
+        if (!dest.m_handle) return;
+        AstCMethodHard* const writesp = new AstCMethodHard{
+            flp, new AstVarRef{flp, dest.m_orderVscp, VAccess::READ}, VCMethod::NBA_ORDER_WRITES};
+        writesp->dtypeSetVoid();
+        for (AstVarScope* const vscp : m_ifaceVscps[varp]) {
+            writesp->addPinsp(new AstVarRef{flp, vscp, VAccess::WRITE});
+        }
+        dest.m_postp->addStmtsp(writesp->makeStmt());
+    }
+    // The type of a handle to an instance of the given interface
+    AstIfaceRefDType* ifaceRefDTypep(AstIface* ifacep) {
+        AstIfaceRefDType*& dtypep = m_ifaceRefDTypeps[ifacep];
+        if (!dtypep) {
+            dtypep = new AstIfaceRefDType{ifacep->fileline(), "", ifacep->name()};
+            dtypep->ifacep(ifacep);
+            dtypep->isVirtual(true);
+            dtypep->dtypep(dtypep);
+            v3Global.rootp()->typeTablep()->addTypesp(dtypep);
+        }
+        return dtypep;
+    }
+    // The info of the destination of NBAs to the given variable
+    DestInfo& getDest(const AstVar* varp) {
+        const auto pair = m_dests.emplace(std::piecewise_construct, std::forward_as_tuple(varp),
+                                          std::forward_as_tuple());
+        if (pair.second) m_destps.emplace_back(varp, &pair.first->second);
+        return pair.first->second;
+    }
+    // Add sensitivities to the target variable and destination of an NBA
+    void addNbaSensitivity(const NBA& nba, AstSenItem* nodep) {
+        if (nba.vscp) m_vscpInfo(nba.vscp).addSensitivity(nodep);
+        nba.destp->addSensitivity(nodep);
     }
 
     // Record where a variable is assigned
@@ -1017,6 +1377,15 @@ class DelayedVisitor final : public VNVisitor {
         if (VN_IS(nodep->varScopep()->dtypep()->skipRefp(), UnpackArrayDType)) return;
 
         m_writeRefs(nodep->varScopep()).emplace_back(nodep, nonBlocking, m_inNonCombLogic);
+    }
+
+    // Record a function called by the current function or process
+    void recordCallee(AstCFunc* cfuncp) {
+        if (m_cfuncp) {
+            m_cfuncsCache(m_cfuncp).m_calleeps.insert(cfuncp);
+        } else if (m_procp) {
+            m_procCalleeps.insert(cfuncp);
+        }
     }
 
     template <typename Procedure_T>
@@ -1065,9 +1434,66 @@ class DelayedVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNetlist* nodep) override {
         iterateChildren(nodep);
+        // The NBAs in functions are executed in the contexts of the processes calling them, so
+        // add the sensitivities of the processes to their destinations
+        if (std::none_of(m_destps.begin(), m_destps.end(),
+                         [](const auto& pair) { return pair.second->m_inCFunc; })) {
+            m_processCalls.clear();
+        }
+        for (const ProcessCalls& calls : m_processCalls) {
+            // The destinations of the NBAs in the functions the process calls
+            VInsertionSet<DestInfo*> destps;
+            std::unordered_set<const AstCFunc*> visited;
+            std::vector<const AstCFunc*> stack{calls.m_calleeps.begin(), calls.m_calleeps.end()};
+            while (!stack.empty()) {
+                const AstCFunc* const cfuncp = stack.back();
+                stack.pop_back();
+                if (!visited.insert(cfuncp).second) continue;
+                const CFuncCache& cache = m_cfuncsCache(cfuncp);
+                destps.insert(cache.m_destps.begin(), cache.m_destps.end());
+                stack.insert(stack.end(), cache.m_calleeps.begin(), cache.m_calleeps.end());
+            }
+            if (destps.empty()) continue;
+            // The sensitivities of the process: its clock, if clocked, otherwise the initial NBA
+            // region, like for its NBAs, and its timing domains
+            AstSenItem* const sensesp
+                = calls.m_clockedp
+                      ? calls.m_clockedp->sensesp()->cloneTree(true)
+                      : new AstSenItem{calls.m_procp->fileline(), AstSenItem::InitialNBA{}};
+            for (const AstSenTree* const domainp : calls.m_domainps) {
+                if (domainp->sensesp()) sensesp->addNext(domainp->sensesp()->cloneTree(true));
+            }
+            for (DestInfo* const destp : destps) {
+                destp->addSensitivity(sensesp);
+                // For scheduling, in the 'nba' region, the commit is after the process
+                if (!calls.m_procp->isSuspendable()) m_touchps.emplace_back(calls.m_procp, destp);
+            }
+            VL_DO_DANGLING(sensesp->deleteTree(), sensesp);
+        }
+        // Decide which destinations use Scheme::GenericQueue and do the 'prepare' step
+        for (const auto& pair : m_destps) {
+            DestInfo& dest = *pair.second;
+            if (!dest.isGeneric()) continue;
+            // A function can be executed in a context not known above, so commit also after the
+            // NBA event, which the NBA sets the trigger of
+            if (dest.m_inCFunc) {
+                FileLine* const flp = pair.first->fileline();
+                AstSenItem* const itemp = new AstSenItem{
+                    flp, VEdgeType::ET_EVENT,
+                    new AstVarRef{flp, V3Delayed::nbaEventp(nodep), VAccess::READ}};
+                dest.addSensitivity(itemp);
+                VL_DO_DANGLING(itemp->deleteTree(), itemp);
+            }
+            ++m_nSchemeGenericQueues;
+            prepareSchemeGenericQueue(pair.first, dest);
+        }
         // Decide which scheme to use for each variable and do the 'prepare' step
         for (AstVarScope* const vscp : m_vscps) {
             VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
+            if (m_dests.at(vscp->varp()).isGeneric()) {
+                vscpInfo.m_scheme = Scheme::GenericQueue;
+                continue;
+            }
             vscpInfo.m_scheme = chooseScheme(vscp, vscpInfo);
             // Run 'prepare' step
             switch (vscpInfo.m_scheme) {
@@ -1108,11 +1534,19 @@ class DelayedVisitor final : public VNVisitor {
                 prepareSchemeValueQueue</* Partial: */ true>(vscp, vscpInfo);
                 break;
             }
+            case Scheme::GenericQueue: {  // LCOV_EXCL_START
+                UASSERT_OBJ(false, vscp, "Destination should have prepared the scheme");
+                break;
+            }  // LCOV_EXCL_STOP
             }
         }
         // Convert all NBAs
         for (const NBA& nba : m_nbas) {
             AstAssignDly* const nbap = nba.nodep;
+            if (nba.destp->isGeneric()) {
+                convertSchemeGenericQueue(nbap, nba);
+                continue;
+            }
             AstVarScope* const vscp = nba.vscp;
             VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
             // Run 'convert' step
@@ -1150,13 +1584,34 @@ class DelayedVisitor final : public VNVisitor {
             case Scheme::ValueQueuePartial:
                 convertSchemeValueQueue(nbap, vscp, vscpInfo, /* partial: */ true);
                 break;
+            case Scheme::GenericQueue: {  // LCOV_EXCL_START
+                UASSERT_OBJ(false, vscp, "Unreachable");
+                break;
+            }  // LCOV_EXCL_STOP
             }
+        }
+        // Complete the commits of Scheme::GenericQueue
+        for (const auto& pair : m_destps) {
+            if (pair.second->isGeneric()) finishSchemeGenericQueue(pair.first, *pair.second);
+        }
+        // For scheduling, mark the processes adding updates to them through functions, as
+        // writing their orders, which their commits read
+        for (const auto& pair : m_touchps) {
+            FileLine* const flp = pair.first->fileline();
+            AstCMethodHard* const touchp = new AstCMethodHard{
+                flp, new AstVarRef{flp, pair.second->m_orderVscp, VAccess::WRITE},
+                VCMethod::NBA_ORDER_TOUCH};
+            touchp->dtypeSetVoid();
+            pair.first->addStmtsp(touchp->makeStmt());
         }
     }
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
         iterateChildren(nodep);
+    }
+    void visit(AstVarScope* nodep) override {
+        if (VN_IS(m_scopep->modp(), Iface)) m_ifaceVscps[nodep->varp()].push_back(nodep);
     }
     void visit(AstActive* nodep) override {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
@@ -1172,6 +1627,7 @@ class DelayedVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_needsInitialTrigger);
         VL_RESTORER_CLEAR(m_nbaEventSenTreeps);
+        VL_RESTORER_CLEAR(m_procCalleeps);
         const size_t firstNBAAddedIndex = m_nbas.size();
         {
             VL_RESTORER(m_inSuspendableOrFork);
@@ -1200,6 +1656,14 @@ class DelayedVisitor final : public VNVisitor {
                                             || isProcedureWithSentreep<AstAlwaysObserved>(nodep)
                                             || isProcedureWithSentreep<AstAlwaysReactive>(nodep))
                                        && !containsClocled(m_activep->sentreep()->sensesp());
+        if (!m_procCalleeps.empty()) {
+            // Record the calls of the process, for the NBAs in the functions it calls
+            const AstSenTree* const senTreep = m_activep->sentreep();
+            m_processCalls.push_back(ProcessCalls{nodep,
+                                                  senTreep->hasClocked() ? senTreep : nullptr,
+                                                  {m_timingDomains.begin(), m_timingDomains.end()},
+                                                  {m_procCalleeps.begin(), m_procCalleeps.end()}});
+        }
         if (m_timingDomains.empty() && !addInitialTrigger) return;
 
         // There were some timing domains involved in the process. Add all of them as sensitivities
@@ -1219,9 +1683,9 @@ class DelayedVisitor final : public VNVisitor {
                 senItemp = AstNode::addNext(senItemp, domainp->sensesp()->cloneTree(true));
         }
         m_timingDomains.clear();
-        // Add them to all nba targets we gathered in this process
+        // Add them to all nba targets we gathered in this process, not in the functions it calls
         for (size_t i = firstNBAAddedIndex; i < m_nbas.size(); ++i) {
-            m_vscpInfo(m_nbas[i].vscp).addSensitivity(senItemp);
+            if (!m_nbas[i].cfuncp) addNbaSensitivity(m_nbas[i], senItemp);
         }
         for (AstSenTree* const senTreep : m_nbaEventSenTreeps)
             senTreep->addSensesp(senItemp->cloneTree(true));
@@ -1308,24 +1772,26 @@ class DelayedVisitor final : public VNVisitor {
         // Prevent double processing due to AstExprStmt being moved before this node
         if (nodep->user1SetOnce()) return;
 
-        if (m_cfuncp) {
-            if (!v3Global.rootp()->nbaEventp()) {
-                nodep->v3warn(
-                    E_NOTIMING,
-                    "Delayed assignment in a non-inlined function/task requires --timing");
-            }
+        if (m_cfuncp && !v3Global.opt.timing().isSetTrue()) {
+            nodep->v3warn(E_NOTIMING,
+                          "Delayed assignment in a non-inlined function/task requires --timing");
             return;
         }
-        UASSERT_OBJ(m_procp, nodep, "Delayed assignment not under process");
-        UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
-        UASSERT_OBJ(m_scopep, nodep, "<= not under scope");
-        UASSERT_OBJ(m_inSuspendableOrFork || m_activep->hasClocked(), nodep,
-                    "<= assignment in non-clocked block, should have been converted in V3Active");
-
-        m_needsInitialTrigger |= m_timingDomains.empty();
+        // Scope of this NBA, of its function, executed in the contexts of the processes calling
+        // it, or of its process
+        AstScope* const scopep = m_cfuncp ? m_cfuncp->scopep() : m_scopep;
+        if (!m_cfuncp) {
+            UASSERT_OBJ(m_procp, nodep, "Delayed assignment not under process");
+            UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
+            UASSERT_OBJ(m_scopep, nodep, "<= not under scope");
+            UASSERT_OBJ(m_inSuspendableOrFork || m_activep->hasClocked(), nodep,
+                        "<= assignment in non-clocked block, should have been converted in "
+                        "V3Active");
+            m_needsInitialTrigger |= m_timingDomains.empty();
+        }
 
         // Record scope of this NBA
-        nodep->user2p(m_scopep);
+        nodep->user2p(scopep);
 
         // Grab the reference to the target of the NBA, also lift ExprStmt statements on the LHS
         VL_RESTORER(m_currNbaLhsRefp);
@@ -1354,39 +1820,34 @@ class DelayedVisitor final : public VNVisitor {
                 m_currNbaLhsRefp = refp;
             }
         });
-        // The target variable of the NBA (there can only be one per NBA at this point)
-        AstVarScope* const vscp = m_currNbaLhsRefp->varScopep();
-        // Record it on first encounter
-        VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
-        if (!vscpInfo.m_firstNbaRefp) {
-            vscpInfo.m_firstNbaRefp = m_currNbaLhsRefp;
-            vscpInfo.m_fistActivep = m_activep;
-            m_vscps.emplace_back(vscp);
-        }
-        // Note usage context
-        vscpInfo.m_whole |= VN_IS(nodep->lhsp(), VarRef);
-        vscpInfo.m_partial |= VN_IS(nodep->lhsp(), Sel);
-        vscpInfo.m_inLoop |= m_inLoop;
-        vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
-        // Sensitivity might be non-clocked, in a suspendable process, which are handled elsewhere
-        if (m_activep->sentreep()->hasClocked()) {
-            if (vscpInfo.m_fistActivep != m_activep) {
-                AstVar* const varp = vscp->varp();
-                if (!varp->user1SetOnce()
-                    && !varp->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
-                    varp->v3warn(MULTIDRIVEN,
-                                 "Signal has multiple driving blocks with different clocking: "
-                                     << varp->prettyNameQ() << '\n'
-                                     << vscpInfo.m_firstNbaRefp->warnOther()
-                                     << "... Location of first driving block\n"
-                                     << vscpInfo.m_firstNbaRefp->warnContextSecondary()
-                                     << m_currNbaLhsRefp->warnOther()
-                                     << "... Location of other driving block\n"
-                                     << m_currNbaLhsRefp->warnContextPrimary() << '\n');
-                }
+        // The destination: a member of an interface or class, if a handle selects the target, as
+        // it can be of any instance, otherwise the target variable (there can only be one per NBA
+        // at this point)
+        const AstMemberSel* const selp = handleSelp(nodep->lhsp());
+        UASSERT_OBJ(selp || m_currNbaLhsRefp, nodep, "NBA without target");
+        AstVarScope* const vscp = selp ? nullptr : m_currNbaLhsRefp->varScopep();
+        // In a method of an interface, its own variables are of the instance it is called on
+        const bool receiver = vscp && m_cfuncp && !m_cfuncp->isStatic()
+                              && VN_IS(scopep->modp(), Iface) && vscp->scopep() == scopep;
+        DestInfo& dest = getDest(selp ? selp->varp() : vscp->varp());
+        dest.m_handle |= selp || receiver;
+        dest.m_inCFunc |= m_cfuncp != nullptr;
+        dest.m_ordered |= nodep->ticketp() != nullptr;
+        dest.m_queueable &= vscp && !m_cfuncp && canQueue(nodep->lhsp());
+        if (vscp && !m_cfuncp) {
+            // Record it on first encounter
+            VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
+            if (!vscpInfo.m_firstNbaRefp) {
+                vscpInfo.m_firstNbaRefp = m_currNbaLhsRefp;
+                vscpInfo.m_fistActivep = m_activep;
+                m_vscps.emplace_back(vscp);
             }
-            // Add this sensitivity to the variable
-            vscpInfo.addSensitivity(m_activep->sentreep());
+            // Note usage context
+            vscpInfo.m_whole |= VN_IS(nodep->lhsp(), VarRef);
+            vscpInfo.m_partial |= VN_IS(nodep->lhsp(), Sel);
+            vscpInfo.m_inLoop |= m_inLoop;
+            vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
+            vscpInfo.m_ordered |= nodep->ticketp() != nullptr;
         }
 
         // Record the NBA for later processing
@@ -1394,9 +1855,40 @@ class DelayedVisitor final : public VNVisitor {
         NBA& nba = m_nbas.back();
         nba.nodep = nodep;
         nba.vscp = vscp;
+        nba.destp = &dest;
+        nba.cfuncp = m_cfuncp;
+        nba.receiver = receiver;
+
+        if (m_cfuncp) {
+            // Add the sensitivities of the processes calling the function later
+            m_cfuncsCache(m_cfuncp).m_destps.push_back(&dest);
+        } else if (m_activep->sentreep()->hasClocked()) {
+            // Sensitivity might be non-clocked, in a suspendable process, which are handled
+            // elsewhere
+            if (vscp) {
+                const VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
+                if (vscpInfo.m_fistActivep != m_activep) {
+                    AstVar* const varp = vscp->varp();
+                    if (!varp->user1SetOnce()
+                        && !varp->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
+                        varp->v3warn(MULTIDRIVEN,
+                                     "Signal has multiple driving blocks with different clocking: "
+                                         << varp->prettyNameQ() << '\n'
+                                         << vscpInfo.m_firstNbaRefp->warnOther()
+                                         << "... Location of first driving block\n"
+                                         << vscpInfo.m_firstNbaRefp->warnContextSecondary()
+                                         << m_currNbaLhsRefp->warnOther()
+                                         << "... Location of other driving block\n"
+                                         << m_currNbaLhsRefp->warnContextPrimary() << '\n');
+                    }
+                }
+            }
+            // Add this sensitivity to the variable
+            addNbaSensitivity(nba, m_activep->sentreep()->sensesp());
+        }
 
         // Record write reference
-        recordWriteRef(m_currNbaLhsRefp, true);
+        if (vscp && !m_cfuncp) recordWriteRef(m_currNbaLhsRefp, true);
 
         iterateChildren(nodep);
     }
@@ -1418,9 +1910,13 @@ class DelayedVisitor final : public VNVisitor {
         // We need to visit bodies of non-inlined functions
         const auto& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
         if (cfuncps.empty()) {
+            recordCallee(nodep->funcp());
             visitCalledCFunc(nodep->funcp());
         } else {
-            for (AstCFunc* const cfuncp : cfuncps) visitCalledCFunc(cfuncp);
+            for (AstCFunc* const cfuncp : cfuncps) {
+                recordCallee(cfuncp);
+                visitCalledCFunc(cfuncp);
+            }
         }
     }
     void visit(AstCFunc* const nodep) override {
@@ -1453,6 +1949,7 @@ public:
         V3Stats::addStat("NBA, variables using ValueQueueWhole scheme", m_nSchemeValueQueuesWhole);
         V3Stats::addStat("NBA, variables using ValueQueuePartial scheme",
                          m_nSchemeValueQueuesPartial);
+        V3Stats::addStat("NBA, variables using GenericQueue scheme", m_nSchemeGenericQueues);
         V3Stats::addStat("Optimizations, NBA flags shared", m_nSharedSetFlags);
         V3Stats::addStat("Procedures needing initial NBA trigger", m_nInitialNBA);
         V3Stats::addStat("Non-inlined co_awaits with SenTree", m_nonInlinedCAwaitsWithSenTree);
@@ -1466,4 +1963,21 @@ void V3Delayed::delayedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { DelayedVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("delayed", 0, dumpTreeEitherLevel() >= 3);
+}
+
+AstNodeExpr* V3Delayed::newTicketp(FileLine* flp) {
+    return new AstCExpr{flp, "VlNBATicket::next()", 64};
+}
+
+AstVarScope* V3Delayed::nbaEventp(AstNetlist* netlistp) {
+    if (!netlistp->nbaEventp()) {
+        AstTopScope* const topScopep = netlistp->topScopep();
+        AstBasicDType* const dtypep = new AstBasicDType{topScopep->scopep()->fileline(),
+                                                        VBasicDTypeKwd::EVENT, VSigning::UNSIGNED};
+        netlistp->typeTablep()->addTypesp(dtypep);
+        netlistp->nbaEventp(topScopep->createTemp("__VnbaEvent", dtypep));
+        netlistp->nbaEventTriggerp(topScopep->createTemp("__VnbaEventTrigger", 1));
+        v3Global.setHasEvents();
+    }
+    return netlistp->nbaEventp();
 }
