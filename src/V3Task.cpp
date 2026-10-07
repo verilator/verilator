@@ -438,10 +438,10 @@ class TaskVisitor final : public VNVisitor {
     bool m_inSensesp = false;  // Are we under a senitem?
     bool m_inNew = false;  // Are we under a constructor?
     // Variables created by createVarScope, shared by instances
-    V3SharedTmps m_funcTmps{"func", VVarType::BLOCKTEMP};  // For function calls
-    V3SharedTmps m_taskTmps{"task", VVarType::BLOCKTEMP};  // For task calls
-    V3SharedTmps m_initArrayTmps{"initArrayTemp", VVarType::BLOCKTEMP};  // For InitArray args
-    V3SharedTmps m_forceTmps{"forcefuncout", VVarType::VAR};  // For calls in force statements
+    V3SharedTmps m_funcTmps{"__Vfunc", VVarType::BLOCKTEMP};  // For function calls
+    V3SharedTmps m_taskTmps{"__Vtask", VVarType::BLOCKTEMP};  // For task calls
+    V3SharedTmps m_initArrayTmps{"__VinitArrayTemp", VVarType::BLOCKTEMP};  // For InitArray args
+    V3SharedTmps m_forceTmps{"__Vforcefuncout", VVarType::VAR};  // For calls in force statements
     int m_unconVarNum = 0;  // Unique bad connection variable
 
     // STATE - across all visitors
@@ -1270,7 +1270,7 @@ class TaskVisitor final : public VNVisitor {
         if (!dpiExportTriggerp) {
             // Create the global DPI export trigger flag the first time we encounter a DPI export.
             // This flag is set any time a DPI export is invoked, and cleared at the end of eval.
-            dpiExportTriggerp = m_topScopep->createTemp("dpi_export_trigger", 1);
+            dpiExportTriggerp = m_topScopep->createTemp("__Vdpi_export_trigger", 1);
             netlistp->dpiExportTriggerp(dpiExportTriggerp);
         }
         return dpiExportTriggerp;

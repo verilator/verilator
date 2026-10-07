@@ -283,7 +283,7 @@ class DelayedVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     VInsertionSet<AstSenTree*> m_timingDomains;  // Timing resume domains
-    V3SharedTmps m_dlyTmps{"dly", VVarType::BLOCKTEMP};  // Temporary variables
+    V3SharedTmps m_dlyTmps{"__Vdly", VVarType::BLOCKTEMP};  // Temporary variables
     // Commit queue data types, by element type and partial flag. Shared by all instances,
     // as m_dlyTmps only shares variables with the same data type.
     std::map<std::pair<const AstNodeDType*, bool>, AstNBACommitQueueDType*> m_cqDTypeps;

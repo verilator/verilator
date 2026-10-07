@@ -158,7 +158,7 @@ class TableVisitor final : public VNVisitor {
     // STATE
     double m_totalBytes = 0;  // Total bytes in tables created
     VDouble0 m_statTablesCre;  // Statistic tracking
-    V3SharedTmps m_indexTmps{"tableidx", VVarType::BLOCKTEMP};  // Table index variables
+    V3SharedTmps m_indexTmps{"__Vtableidx", VVarType::BLOCKTEMP};  // Table index variables
 
     //  State cleared on each scope
     AstScope* m_scopep = nullptr;  // Current SCOPE

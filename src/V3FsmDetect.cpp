@@ -2069,7 +2069,7 @@ public:
 class FsmLowerVisitor final {
     // STATE - across all visitors
     const FsmState& m_state;
-    V3SharedTmps m_prevTmps{"fsmCovPrev", VVarType::MODULETEMP};  // Previous states
+    V3SharedTmps m_prevTmps{"__VfsmCovPrev", VVarType::MODULETEMP};  // Previous states
 
     // METHODS
     // Rebuild a state-typed constant using the tracked state variable

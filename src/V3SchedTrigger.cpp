@@ -361,7 +361,7 @@ AstNodeStmt* TriggerKit::newDumpCall(AstVarScope* const vscp, const std::string&
 
 AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
     if (!m_nVecWords) return nullptr;
-    return v3Global.rootp()->topScopep()->createTemp(name + "Triggered", m_trigVecDTypep);
+    return v3Global.rootp()->topScopep()->createTemp("__V" + name + "Triggered", m_trigVecDTypep);
 }
 
 AstSenTree* TriggerKit::newTriggerSenTree(AstVarScope* const vscp,
@@ -449,8 +449,9 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     const auto rdPrev = [flp](AstVarScope* vp) { return new AstVarRef{flp, vp, VAccess::READ}; };
 
     // Create prev variable
-    const std::string prevName = "trigprevvif_" + m_name + "_" + instVscp->scopep()->nameDotless()
-                                 + "__" + instVscp->varp()->name();
+    const std::string prevName = "__Vtrigprevvif_" + m_name + "_"
+                                 + instVscp->scopep()->nameDotless() + "__"
+                                 + instVscp->varp()->name();
     AstVarScope* const prevVscp = topScopep->createTemp(prevName, instVscp->dtypep());
 
     // Initialize prev = inst
@@ -533,7 +534,7 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
         m_trigExtDTypep = m_trigVecDTypep;
     }
     // The AstVarScope representing the extended trigger vector
-    m_vscp = netlistp->topScopep()->createTemp(m_name + "Triggered", m_trigExtDTypep);
+    m_vscp = netlistp->topScopep()->createTemp("__V" + m_name + "Triggered", m_trigExtDTypep);
     m_vscp->varp()->isInternal(true);
     // The trigger computation function
     m_compVecp = util::makeSubFunction(netlistp, "_eval_triggers_vec__" + m_name, m_slow);
@@ -542,7 +543,8 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
     m_dumpp->isStatic(true);
     m_dumpp->ifdef("VL_DEBUG");
     if (useAcc) {
-        m_vscAccp = netlistp->topScopep()->createTemp(m_name + "TriggeredAcc", m_trigVecDTypep);
+        m_vscAccp
+            = netlistp->topScopep()->createTemp("__V" + m_name + "TriggeredAcc", m_trigVecDTypep);
         m_vscAccp->varp()->isInternal(true);
     }
 }
@@ -775,7 +777,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         for (AstNodeStmt* const nodep : senResults.m_postUpdates) fp->addStmtsp(nodep);
         // Add the initialization time triggers
         if (initialTrigsp) {
-            AstVarScope* const initVscp = topScopep->createTemp(name + "DidInit", 1);
+            AstVarScope* const initVscp = topScopep->createTemp("__V" + name + "DidInit", 1);
             AstIf* const ifp = new AstIf{flp, new AstNot{flp, rd(initVscp)}};
             fp->addStmtsp(ifp);
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
@@ -791,7 +793,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         AstVarScope* const latchedp
             = newArgument(fp, kit.m_trigVecDTypep, "latched", VDirection::CONSTREF);
         // Add loop counter variable - this can't be local because we call util::splitCheck
-        AstVarScope* const nVscp = topScopep->createTemp(name + "TrigPreLoopCounter", 32);
+        AstVarScope* const nVscp = topScopep->createTemp("__V" + name + "TrigPreLoopCounter", 32);
         nVscp->varp()->noReset(true);
         // Add a loop to compute the pre words
         AstLoop* const loopp = new AstLoop{flp};

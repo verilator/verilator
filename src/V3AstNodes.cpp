@@ -2246,7 +2246,7 @@ AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
 }
 AstVarScope* AstNetlist::stlFirstIterationp() {
     if (!m_stlFirstIterationp) {
-        m_stlFirstIterationp = topScopep()->createTemp("stlFirstIteration", 1);
+        m_stlFirstIterationp = topScopep()->createTemp("__VstlFirstIteration", 1);
     }
     AstVarScope* const vscp = m_stlFirstIterationp;
     return vscp;
@@ -3734,10 +3734,10 @@ AstVarScope* AstTopScope::createTemp(const string& name, unsigned width) {
     return createTemp(name, findBitDType(width, width, VSigning::UNSIGNED));
 }
 AstVarScope* AstTopScope::createTemp(const string& name, AstNodeDType* dtypep) {
-    UASSERT_OBJ(!VString::startsWith(name, "__V"), this,
-                "Temporary name should not start with '__V': " << name);
+    UASSERT_OBJ(VString::startsWith(name, "__V"), this,
+                "Temporary name must start with '__V': " << name);
     FileLine* const flp = scopep()->fileline();
-    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, "__V" + name, dtypep};
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
     scopep()->modp()->addStmtsp(varp);
     AstVarScope* const vscp = new AstVarScope{flp, scopep(), varp};
     scopep()->addVarsp(vscp);

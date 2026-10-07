@@ -2099,7 +2099,7 @@ class AstTopScope final : public AstNode {
 public:
     ASTGEN_MEMBERS_AstTopScope;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    // Create new MODULETEMP variable named '__V<name>' in the top level scope
+    // Create new MODULETEMP variable in the top level scope. Name must start with '__V'
     AstVarScope* createTemp(const string& name, unsigned width);
     AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
 };

@@ -19,9 +19,9 @@
 // AstVarScope. Without this, identical instances would reference different
 // variables, which prevents V3Combine from sharing their logic.
 //
-// Variables are named '__V<prefix>_<name>_<n>', with the prefix given to the
-// constructor, which must be unique among all instances created during the
-// run, so names never clash.
+// Variables are named '<prefix>_<name>_<n>', with the prefix given to the
+// constructor, which must start with '__V', and must be unique among all
+// instances created during the run, so names never clash.
 //
 // Variables are requested with a name and a data type. The n-th request with
 // the same name and type from each scope of a module yields the same AstVar,
@@ -98,9 +98,9 @@ class V3SharedTmps final {
 public:
     // CONSTRUCTORS
     V3SharedTmps(const std::string& prefix, VVarType varType)
-        : m_prefix{"__V" + prefix}
+        : m_prefix{prefix}
         , m_varType{varType} {
-        UASSERT(!VString::startsWith(prefix, "__V"), "Prefix should not start with '__V'");
+        UASSERT(VString::startsWith(prefix, "__V"), "Prefix must start with '__V'");
         UASSERT(!VString::endsWith(prefix, "_"), "Prefix must not end with '_'");
         // Prefixes used so far during the whole of compilation. Must be unique.
         static std::set<std::string> s_prefixes;

@@ -19,12 +19,9 @@ test.execute(check_finished=False, all_run_flags=['+save_time=500'])
 if not os.path.exists(test.obj_dir + "/saved.vltsv"):
     test.error("Saved.vltsv not created")
 
-# Break the header. Edit the bytes, as reading the binary file as text would also
-# turn any carriage return in it into a newline.
-with open(test.obj_dir + "/saved.vltsv", 'rb') as fh:
-    data = fh.read()
-with open(test.obj_dir + "/saved.vltsv", 'wb') as fh:
-    fh.write(data.replace(b'verilatorsave', b'verilatorsavBAD'))
+# Break the header
+test.file_sed(test.obj_dir + "/saved.vltsv", test.obj_dir + "/saved.vltsv",
+              lambda line: re.sub(r'verilatorsave', 'verilatorsavBAD', line))
 
 test.execute(all_run_flags=['+save_restore=1'], fails=True, expect_filename=test.golden_filename)
 

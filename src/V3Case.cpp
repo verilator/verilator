@@ -177,8 +177,10 @@ class CaseVisitor final : public VNVisitor {
     } m_stats;
     const AstNode* m_alwaysp = nullptr;  // Always in which case is located
     // Temporary variables, shared by instances
-    V3SharedTmps m_tableOutTmps{"caseTableOut", VVarType::MODULETEMP};  // For table lookup results
-    V3SharedTmps m_decoderOutTmps{"caseDecoderOut", VVarType::MODULETEMP};  // For decoder results
+    // For table lookup results
+    V3SharedTmps m_tableOutTmps{"__VcaseTableOut", VVarType::MODULETEMP};
+    // For decoder results
+    V3SharedTmps m_decoderOutTmps{"__VcaseDecoderOut", VVarType::MODULETEMP};
     AstScope* m_scopep = nullptr;  // Current scope
 
     // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise

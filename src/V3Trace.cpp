@@ -630,7 +630,7 @@ class TraceVisitor final : public VNVisitor {
             = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
         AstNodeDType* const newArrDtp = new AstUnpackArrayDType{flp, newScalarDtp, newArange};
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
-        m_activityVscp = v3Global.rootp()->topScopep()->createTemp("traceActivity", newArrDtp);
+        m_activityVscp = v3Global.rootp()->topScopep()->createTemp("__VtraceActivity", newArrDtp);
 
         // Insert activity setters
         for (const V3GraphVertex& vtx : m_graph.vertices()) {

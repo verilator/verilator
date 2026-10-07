@@ -424,7 +424,7 @@ public:
     V3DfgSynthesisContext m_synthContext;  // Statistics context for V3DfgSynthesize
 
     // Temporary variables created by all algorithms, shared by instances
-    V3SharedTmps m_sharedTmps{"dfg", VVarType::MODULETEMP};
+    V3SharedTmps m_sharedTmps{"__Vdfg", VVarType::MODULETEMP};
 
     // CONSTRUCTOR
     V3DfgContext() = default;

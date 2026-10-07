@@ -182,7 +182,7 @@ void createEvalRegion(
         funcp->addStmtsp(phasePrepp);
 
         // The execute flag
-        AstVarScope* const executeFlagp = topScopep->createTemp(tag + "Execute", 1);
+        AstVarScope* const executeFlagp = topScopep->createTemp("__V" + tag + "Execute", 1);
         executeFlagp->varp()->noReset(true);
 
         // If there is work in this region, execute it if any triggers fired
@@ -1115,7 +1115,7 @@ void schedule(AstNetlist* netlistp) {
         UASSERT_OBJ(trigAccDTypep->left() >= 0, trigAccp,
                     "Expected that trigger vector and accumulator has no negative indexes");
         FileLine* const flp = trigAccp->fileline();
-        AstVarScope* const vscp = netlistp->topScopep()->createTemp("i", 32);
+        AstVarScope* const vscp = netlistp->topScopep()->createTemp("__Vi", 32);
         AstLoop* const loopp = new AstLoop{flp};
         loopp->addStmtsp(
             new AstAssign{flp,
