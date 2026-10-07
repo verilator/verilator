@@ -96,6 +96,8 @@ CASES = {
         ("BlackParrot:1x1:*",    4),
         ("BlackParrot:2x2:*",    16),
         ("BlackParrot:4x4:*",    25),
+        ("HammerBlade:16x8:*",   5),
+        ("HammerBlade:2x1:*",    3),
         ("NVDLA:*",              25),
         ("OpenPiton:16x16:dhry", 16),
         ("OpenPiton:1x1:*",      4),
@@ -181,6 +183,8 @@ CASES_PR = {
     "gcc-hier": [
         ("BlackParrot:1x1:*",    4),
         ("BlackParrot:4x4:*",    25),
+        ("HammerBlade:16x8:*",   5),
+        ("HammerBlade:2x1:*",    3),
         ("NVDLA:*",              25),
         ("OpenPiton:16x16:dhry", 16),
         ("OpenPiton:1x1:*",      4),

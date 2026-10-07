@@ -278,7 +278,7 @@ private:
         createOutputAssigns(nodep, stmtsp, indexVscp, outputAssignedTableBuilder.varScopep());
 
         // Link it in.
-        // Keep sensitivity list, but delete all else
+        // Replace the body, keeping the AstAlways itself under its AstActive
         nodep->stmtsp()->unlinkFrBackWithNext()->deleteTree();
         nodep->addStmtsp(stmtsp);
         UINFOTREE(6, nodep, "", "table_new");

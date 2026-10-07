@@ -49,18 +49,6 @@ class EmitCImp final : public EmitCFunc {
         m_lazyDecls.reset();
     }
 
-    void emitStaticVarDefns(const AstNodeModule* modp) {
-        // Emit static variable definitions
-        const string modName = EmitCUtil::prefixNameProtect(modp);
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isStatic()) {
-                    putns(varp, varp->vlArgType(true, false, false, modName));
-                    puts(";\n");
-                }
-            }
-        }
-    }
     void emitParamDefns(const AstNodeModule* modp) {
         const string modName = EmitCUtil::prefixNameProtect(modp);
         bool first = true;
@@ -313,7 +301,6 @@ class EmitCImp final : public EmitCFunc {
                             // lower level subinst code does it.
                         } else if (varp->isParam()) {
                         } else if (varp->isLazyShadowAlias()) {
-                        } else if (varp->isStatic() && varp->isConst()) {
                         } else if (VN_IS(varp->dtypep(), NBACommitQueueDType)) {
                         } else {
                             int vects = 0;
@@ -374,7 +361,6 @@ class EmitCImp final : public EmitCFunc {
     // Actually emit common implementation contents for given AstNodeModule
     void doCommonImp(const AstNodeModule* modp) {
         if (m_slow) {
-            emitStaticVarDefns(modp);
             if (!VN_IS(modp, Class)) {
                 emitParamDefns(modp);
                 emitCtorImp(modp);

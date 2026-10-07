@@ -1015,14 +1015,10 @@ class ConstVisitor final : public VNVisitor {
                                     const bool packReal) {
         const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
         if (const AstUnpackArrayDType* const unpackDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            const int left = unpackDtypep->left();
-            const int right = unpackDtypep->right();
-            const int step = left <= right ? 1 : -1;
-            for (int idx = left;; idx += step) {
+            for (const int idx : unpackDtypep->declRange().seqLeftToRight()) {
                 AstArraySel* const selp
                     = new AstArraySel{fromp->fileline(), fromp->cloneTreePure(false), idx};
                 collectFixedAggregateTerms(selp, termps, packReal);
-                if (idx == right) break;
             }
             VL_DO_DANGLING(pushDeletep(fromp), fromp);
         } else if (const AstNodeUOrStructDType* const sdtypep
@@ -4632,8 +4628,11 @@ class ConstVisitor final : public VNVisitor {
         // Default: Just iterate
         if (m_required) {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
-                || VN_IS(nodep, Dot)) {
+                || VN_IS(nodep, Dot) || VN_IS(nodep, Text)) {
                 // ignore
+            } else if (VN_IS(nodep, Pattern) || VN_IS(nodep, PatMember)) {
+                // A parameter override pattern is typed later, so only fold its members
+                iterateChildren(nodep);
             } else if (AstCellRef* const crp = VN_CAST(nodep, CellRef)) {
                 iterate(crp->exprp());
                 if (AstNode* const newp = crp->exprp()) {

@@ -187,10 +187,10 @@ class LocalizeVisitor final : public VNVisitor {
             && !nodep->varp()->isSigPublic()  // Not something the user wants to interact with
             && !nodep->varp()->isVpiLazyStorageKept()
             && !nodep->varp()->isFuncLocal()  // Not already a function local (e.g.: argument)
-            && !nodep->varp()->isStatic()  // Not a static variable
             && !nodep->varp()->isClassMember()  // Statically exists in design hierarchy
             && !nodep->varp()->sensIfacep()  // Not sensitive to an interface
             && !nodep->varp()->isVirtIface()  // Not interface pointer
+            && !nodep->varp()->constPoolEntry()  // Not a const pool entry
             && !nodep->varp()->valuep()  // Does not have an initializer
         ) {
             UINFO(4, "Consider for localization: " << nodep);

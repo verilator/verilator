@@ -61,4 +61,11 @@ module t (
     end
   end
 
+`ifdef TEST_STACK_NOTIMING
+  default clocking cb @(posedge clk);
+  endclocking
+
+  assert property (cyc[0] until cyc[1]);
+`endif
+
 endmodule

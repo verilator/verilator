@@ -1426,6 +1426,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         parseBinsLimit("--coverage-max-real-bins", valp, m_coverageMaxRealBins);
     });
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
+    DECL_OPTION("-coverage-merge-instances", OnOff, &m_coverageMergeInstances);
     DECL_OPTION("-coverage-per-instance", OnOff, &m_coveragePerInstance);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);

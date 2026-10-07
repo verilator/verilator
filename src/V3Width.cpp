@@ -284,6 +284,7 @@ class WidthVisitor final : public VNVisitor {
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     bool m_streamConcat = false;  // True if visiting arguments of stream concatenation
+    bool m_inParamOverride = false;  // True if visiting the value of a parameter override pin
     // Created dimension and enum tables, mapped to a reference reading the table (always cloned)
     std::map<std::pair<const AstNodeDType*, VAttrType>, AstVarRef*> m_tableMap;
     // Queues with given index type
@@ -2161,13 +2162,22 @@ class WidthVisitor final : public VNVisitor {
                                                   "'option.auto_bin_max'; using default value");
             }
         } else if (nodep->optType() == VCoverOptionType::MERGE_INSTANCES) {
-            // get_coverage() always averages the instances (IEEE 1800-2023 19.11.3)
-            const AstConst* const constp = VN_CAST(nodep->valuep(), Const);
-            if (!constp || !constp->num().isEqZero()) {
-                nodep->v3warn(COVERIGN, "Ignoring unsupported: 'type_option.merge_instances';"
-                                        " type coverage is the weighted average of the"
-                                        " instances");
+            // V3Covergroup stores it into type_option; as a type option it is constant
+            // (IEEE 1800-2023 19.7.1)
+            iterateCheckBool(nodep, "merge_instances", nodep->valuep(), BOTH);
+            V3Const::constifyEdit(nodep->valuep());
+            AstNodeExpr* const valuep = nodep->valuep();
+            if (!VN_IS(valuep, Const)) {
+                valuep->v3error("Coverage option 'type_option.merge_instances' requires a"
+                                " constant expression (IEEE 1800-2023 19.7.1)");
+                valuep->replaceWith(new AstConst{valuep->fileline(), AstConst::BitFalse{}});
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
             }
+            return;
+        } else if (nodep->optType() == VCoverOptionType::GET_INST_COVERAGE) {
+            // V3Covergroup stores it into option, as the constructor evaluates it
+            iterateCheckBool(nodep, "get_inst_coverage", nodep->valuep(), BOTH);
+            return;
         } else if (nodep->optType() == VCoverOptionType::DISTRIBUTE_FIRST) {
             // A bins 'with' filter applies before the values are distributed to the bins
             // (IEEE 1800-2023 19.5.1.1)
@@ -2380,7 +2390,7 @@ class WidthVisitor final : public VNVisitor {
         if (AstNodeDType* const dt = nodep->lhsp()->dtypep()) {
             if (VN_IS(dt->skipRefToEnump(), ClassRefDType)) {
                 nodep->lhsp()->v3error(
-                    "Cannot convert 'class{}' handle to a string:" << dt->prettyDTypeNameQ());
+                    "Cannot convert 'class' handle to a string:" << dt->prettyDTypeNameQ());
             }
         }
     }
@@ -2447,6 +2457,19 @@ class WidthVisitor final : public VNVisitor {
         }
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    // Name of the class a class extends, for $typename, as other simulators give it. Only the
+    // class it directly extends, as $typename of that class names the classes that one extends.
+    static string typenameExtends(const AstClass* classp) {
+        // An interface class may extend several, so those are not named
+        if (!classp || classp->isInterfaceClass()) return "";
+        for (const AstClassExtends* extendsp = classp->extendsp(); extendsp;
+             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+            if (extendsp->isImplements()) continue;
+            const AstClass* const basep = extendsp->classOrNullp();
+            return basep ? " extends class " + basep->dtypeName(true) : "";
+        }
+        return "";
     }
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
@@ -2629,8 +2652,13 @@ class WidthVisitor final : public VNVisitor {
         }
         case VAttrType::TYPENAME: {
             UASSERT_OBJ(nodep->fromp(), nodep, "Unprovided expression");
-            const string result = nodep->fromp()->dtypep()->prettyDTypeName(true);
-            UINFO(9, "typename '" << result << "' from " << nodep->fromp()->dtypep());
+            AstNodeDType* const dtypep = nodep->fromp()->dtypep();
+            string result = dtypep->prettyDTypeName(true);
+            if (const AstClassRefDType* const classRefp
+                = VN_CAST(dtypep->skipRefOrNullp(), ClassRefDType)) {
+                result += typenameExtends(classRefp->classp());
+            }
+            UINFO(9, "typename '" << result << "' from " << dtypep);
             AstNode* const newp = new AstConst{nodep->fileline(), AstConst::String{}, result};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2908,6 +2936,22 @@ class WidthVisitor final : public VNVisitor {
         // No nodep->typedefp(nullptr) for now; V3WidthCommit needs to check accesses
         nodep->doingWidth(false);
     }
+    // Width the parameters of the scopes declaring typedef 'nodep', as the name of the type it
+    // declares holds their values, though one may follow it, in a module without a parameter
+    // port list
+    void widthDTypeNameParams(const AstTypedef* nodep) {
+        const VDTypeNameScopes* const scopesp = VDTypeNameScopes::currentp();
+        if (!scopesp) return;  // Computing parameters, as by V3Param, so naming as found
+        AstNode* scopep = nullptr;
+        for (const AstNode* innerp = nodep; scopesp->outerp(innerp, scopep) && scopep;
+             innerp = scopep) {
+            if (const std::vector<AstNode*>* const paramsp = scopesp->paramsp(scopep)) {
+                for (AstNode* const paramp : *paramsp) {
+                    if (!paramp->didWidth()) userIterate(paramp, nullptr);
+                }
+            }
+        }
+    }
     void visit(AstTypedef* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         if (auto* const refp = checkRefToTypedefRecurse(nodep, nodep)) {
@@ -2921,7 +2965,21 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        // As it moves to the type table, a structure, union, or enumeration it declares keeps the
+        // name it has from the typedef, with the scope of the typedef, so with the parameters of
+        // the scope, widthed first, as one may follow the typedef
+        const bool declares = nodep->childDTypep() != nullptr;
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        if (declares) {
+            AstNodeDType* const dtypep = nodep->dtypep();
+            if (AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+                widthDTypeNameParams(nodep);
+                sdtypep->typedefName(nodep->dtypeName());
+            } else if (AstEnumDType* const edtypep = VN_CAST(dtypep, EnumDType)) {
+                widthDTypeNameParams(nodep);
+                edtypep->typedefName(nodep->dtypeName());
+            }
+        }
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstParamTypeDType* nodep) override {
@@ -5814,6 +5872,26 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstPattern* nodep) override {
+        if (m_inParamOverride && !nodep->childDTypep() && !m_vup->dtypeNullp()) {
+            // The specialized module types an override pattern, so only type its members here
+            VL_RESTORER(m_inParamOverride);
+            for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
+                 patp = VN_AS(patp->nextp(), PatMember)) {
+                m_inParamOverride = false;
+                userIterateAndNext(patp->repp(), WidthVP{SELF, BOTH}.p());
+                // Struct member names and type keys need no typing
+                if (!VN_IS(patp->keyp(), Text) && !VN_IS(patp->keyp(), NodeDType)) {
+                    userIterateAndNext(patp->keyp(), WidthVP{SELF, BOTH}.p());
+                }
+                for (AstNode *nextp, *valuep = patp->lhssp(); valuep; valuep = nextp) {
+                    nextp = valuep->nextp();
+                    // A nested pattern stays untyped, any other value is typed now
+                    m_inParamOverride = VN_IS(valuep, Pattern);
+                    userIterate(valuep, WidthVP{SELF, BOTH}.p());
+                }
+            }
+            return;
+        }
         if (nodep->didWidthAndSet()) return;
         UINFO(9, "PATTERN " << nodep);
         if (nodep->childDTypep()) {  // data_type '{ pattern }
@@ -6320,7 +6398,7 @@ class WidthVisitor final : public VNVisitor {
         PatVecMap patmap = patVectorMap(nodep, range);
         UINFO(9, "ent " << range.hi() << " to " << range.lo());
         AstNodeExpr* newp = nullptr;
-        for (int ent = range.hi(); ent >= range.lo(); --ent) {
+        for (const int ent : range.seqHiToLo()) {
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             const auto it = patmap.find(ent);
@@ -7356,19 +7434,10 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
-            // Widthing handled as special init() case
-            bool didWidth = false;
-            if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
-                const AstVar* const modVarp = nodep->modVarp();
-                // Convert BracketArrayDType
-                userIterate(modVarp->childDTypep(),
-                            WidthVP{SELF, BOTH}.p());  // May relink pointed to node
-                AstNodeDType* const setDtp = modVarp->childDTypep();
-                if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
-                userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
-                didWidth = true;
-            }
-            if (!didWidth) userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+            // An override pattern is left for the specialized module to type
+            VL_RESTORER(m_inParamOverride);
+            m_inParamOverride = VN_IS(nodep->exprp(), Pattern);
+            userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {
                 // Var hasn't been widthed, so make it so.
@@ -8527,12 +8596,12 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    // LRM 6.22.2 Equivalent types
+    // IEEE 1800-2023 6.22.2 Equivalent types
     bool isEquivalentDType(const AstNodeDType* lhs, const AstNodeDType* rhs) {
         // a) If two types match, they are equivalent.
         if (!lhs || !rhs) return false;
-        lhs = lhs->skipRefp();
-        rhs = rhs->skipRefp();
+        lhs = lhs->skipRefToEnump();
+        rhs = rhs->skipRefToEnump();
         if (lhs == rhs) return true;
         // If both are basic types, check if they are the same type
         if (VN_IS(lhs, BasicDType) && VN_IS(rhs, BasicDType)) {
@@ -8547,7 +8616,7 @@ class WidthVisitor final : public VNVisitor {
         const bool lhsIsUnpackArray = VN_IS(lhs, UnpackArrayDType);
         const bool rhsIsUnpackArray = VN_IS(rhs, UnpackArrayDType);
         if (lhsIsUnpackArray || rhsIsUnpackArray) {
-            if (VN_IS(lhs, UnpackArrayDType) && VN_IS(rhs, UnpackArrayDType)) {
+            if (lhsIsUnpackArray && rhsIsUnpackArray) {
                 const AstUnpackArrayDType* const lhsp = VN_CAST(lhs, UnpackArrayDType);
                 const AstUnpackArrayDType* const rhsp = VN_CAST(rhs, UnpackArrayDType);
                 const int lsz = lhsp->elementsConst();
@@ -8602,7 +8671,13 @@ class WidthVisitor final : public VNVisitor {
             return true;
         }
 
-        return true;
+        // b) An anonymous enum, unpacked struct, or unpacked union type is equivalent to itself
+        // among data objects declared within the same declaration statement and no other data
+        // types.
+
+        // DTypes compared above, if any remained then not equivalent.
+        if (VN_IS(lhs, EnumDType) || VN_IS(rhs, EnumDType)) return false;
+        return !(VN_IS(lhs, NodeUOrStructDType) || VN_IS(rhs, NodeUOrStructDType));
     }
 
     static bool isAggregateType(const AstNode* nodep) {
@@ -9617,7 +9692,7 @@ class WidthVisitor final : public VNVisitor {
                         AstInitArray* newp = new AstInitArray{
                             constp->fileline(), lhsDTypep,
                             new AstConst{constp->fileline(), AstConst::WidthedValue{}, 8, 0}};
-                        for (int aindex = arrayp->lo(); aindex <= arrayp->hi(); ++aindex) {
+                        for (const int aindex : arrayp->declRange().seqLoToHi()) {
                             int cindex = arrayp->declRange().ascending() ? (arrayp->hi() - aindex)
                                                                          : (aindex - arrayp->lo());
                             V3Number selected{constp, 8};
@@ -10799,7 +10874,7 @@ class WidthVisitor final : public VNVisitor {
         // as the element variables are in that order, indexed from lo
         AstInitArray* const initp = new AstInitArray{flp, arrp, nullptr};
         const VNumRange range = arrp->declRange();
-        for (int n = 0, i = range.left(); n < range.elements(); ++n, i += range.leftToRightInc()) {
+        for (const int i : range.seqLeftToRight()) {
             const std::string s = name + "__BRA__" + AstNode::encodeNumber(i) + "__KET__";
             initp->addIndexValuep(
                 i - range.lo(), newIfaceArrayInit(refp, arrp->subDTypep(), s, suffix, elemVarpr));
@@ -11034,6 +11109,8 @@ void V3Width::width(AstNetlist* nodep) {
     {
         // We should do it in bottom-up module order, but it works in any order.
         const WidthClearVisitor cvisitor{nodep};
+        // Typedefs and classes are named by the scopes declaring them, so index those
+        const VDTypeNameScopes scopes{nodep};
         WidthVisitor visitor{false, false};
         (void)visitor.mainAcceptEdit(nodep);
         WidthRemoveVisitor rvisitor;

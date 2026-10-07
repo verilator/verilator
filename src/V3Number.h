@@ -728,6 +728,8 @@ public:
     string toString() const VL_MT_SAFE;
     string toDecimalS() const VL_MT_STABLE;  // return ASCII signed decimal number
     string toDecimalU() const VL_MT_STABLE;  // return ASCII unsigned decimal number
+    // return ASCII real number, with the fewest of 15 or 17 digits that is exact
+    string toRealString() const VL_MT_STABLE;
     double toDouble() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;

@@ -1792,9 +1792,6 @@ public:
         if (varModp->isConstPool()) {
             // Reference to constant pool variable
             putns(nodep, EmitCUtil::topClassName() + "__ConstPool__");
-        } else if (varp->isStatic()) {
-            // Access static variable via the containing class
-            putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
         } else if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
             putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");

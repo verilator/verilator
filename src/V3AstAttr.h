@@ -904,7 +904,8 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  "rr") \
     macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  "rrr") \
     macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  "rrr") \
-    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrr") \
+    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrrr") \
+    macro(COVERGROUP_TYPE_WEIGHT,             "typeWeight",             false,  "r") \
     macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
     macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
     macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  "") \
@@ -1364,6 +1365,7 @@ public:
     bool isNonOutput() const {
         return m_e == INPUT || m_e == INOUT || m_e == REF || m_e == CONSTREF;
     }
+    bool isOutput() const { return m_e == OUTPUT; }
     bool isReadOnly() const VL_MT_SAFE { return m_e == INPUT || m_e == CONSTREF; }
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }
@@ -1815,6 +1817,34 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 class VNumRange final {
 public:
+    // Iterable sequence of integers
+    class Sequence final {
+        class Iterator final {
+            int m_index;  // Current index
+            const int m_inc;  // Step, +1 or -1
+        public:
+            Iterator(int index, int inc)
+                : m_index{index}
+                , m_inc{inc} {}
+            int operator*() const { return m_index; }
+            Iterator& operator++() {
+                m_index += m_inc;
+                return *this;
+            }
+            bool operator!=(const Iterator& that) const { return m_index != that.m_index; }
+        };
+        const int m_begin;  // First index
+        const int m_end;  // One past the last index
+        const int m_inc;  // Step, +1 or -1
+    public:
+        Sequence(int first, int last, int inc)
+            : m_begin{first}
+            , m_end{last + inc}
+            , m_inc{inc} {}
+        Iterator begin() const { return Iterator{m_begin, m_inc}; }
+        Iterator end() const { return Iterator{m_end, m_inc}; }
+    };
+
     int m_left = 0;  // Left side of range (pre-':')
     int m_right = 0;  // Right side of range (post-':')
     bool m_ranged = false;  // Has a range
@@ -1854,6 +1884,14 @@ public:
         return m_left > m_right ? m_right : m_left;
     }  // How to show a declaration
     int leftToRightInc() const { return ascending() ? 1 : -1; }
+    // Iterate indices from left() to right() inclusive: 'for (int i : range.seqLeftToRight())'
+    Sequence seqLeftToRight() const { return {m_left, m_right, leftToRightInc()}; }
+    // Iterate indices from right() to left() inclusive: 'for (int i : range.seqRightToLeft())'
+    Sequence seqRightToLeft() const { return {m_right, m_left, -leftToRightInc()}; }
+    // Iterate indices from lo() to hi() inclusive: 'for (int i : range.seqLoToHi())'
+    Sequence seqLoToHi() const { return {lo(), hi(), 1}; }
+    // Iterate indices from hi() to lo() inclusive: 'for (int i : range.seqHiToLo())'
+    Sequence seqHiToLo() const { return {hi(), lo(), -1}; }
     int elements() const VL_MT_SAFE { return hi() - lo() + 1; }
     bool ranged() const { return m_ranged; }
     bool ascending() const { return m_left < m_right; }

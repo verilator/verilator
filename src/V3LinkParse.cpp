@@ -332,13 +332,10 @@ class LinkParseVisitor final : public VNVisitor {
                 // We check this rule in the parser, so shouldn't fire
                 nodep->v3error("Enum ranges must be integral, per spec");
             }  // LCOV_EXCL_STOP
-            const int left = nodep->rangep()->leftConst();
-            const int right = nodep->rangep()->rightConst();
-            const int increment = (left > right) ? -1 : 1;
             uint32_t offset_from_init = 0;
             AstEnumItem* addp = nullptr;
             FileLine* const flp = nodep->fileline();
-            for (int i = left; i != (right + increment); i += increment, ++offset_from_init) {
+            for (const int i : nodep->rangep()->seqLeftToRight()) {
                 const string name = nodep->name() + cvtToStr(i);
                 AstNodeExpr* valuep = nullptr;
                 if (nodep->valuep()) {
@@ -348,6 +345,7 @@ class LinkParseVisitor final : public VNVisitor {
                                      new AstConst{flp, AstConst::Unsized32{}, offset_from_init}};
                 }
                 addp = AstNode::addNext(addp, new AstEnumItem{flp, name, nullptr, valuep});
+                ++offset_from_init;
             }
             nodep->replaceWith(addp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -361,6 +359,10 @@ class LinkParseVisitor final : public VNVisitor {
         if (classp && classp->isCovergroup() && nodep->isClassMember() && !nodep->isFuncLocal()
             && (nodep->declDirection().isRef() || nodep->declDirection().isConstRef())) {
             nodep->covergroupRefMember(true);
+        }
+        if (nodep->embeddedCovergroup()) {
+            AstRefDType* const refp = VN_AS(nodep->childDTypep(), RefDType);
+            refp->name(AstClass::embeddedCovergroupTypeName(refp->name()));
         }
         if (nodep->valuep()) nodep->hasUserInit(true);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
@@ -426,6 +428,10 @@ class LinkParseVisitor final : public VNVisitor {
             }
         }
         if (nodep->isGParam() && m_modp) m_modp->hasGParam(true);
+        // An untyped parameter is of the type of its value (IEEE 1800-2023 6.20.2), which may
+        // differ between specializations; recorded before V3Param gives it that type
+        const AstBasicDType* const basicp = VN_CAST(nodep->childDTypep(), BasicDType);
+        if (nodep->isGParam() && basicp && basicp->implicit()) nodep->untypedParam(true);
 
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {
@@ -1329,6 +1335,8 @@ class LinkParseVisitor final : public VNVisitor {
 
         // Transform raw parse-time AstCovergroup into a fully-formed AstClass
         cleanFileline(nodep);
+        // Embedded, so of an anonymous type, the instance variable having the covergroup's name
+        if (VN_IS(m_modp, Class)) nodep->name(AstClass::embeddedCovergroupTypeName(nodep->name()));
 
         const string libname = m_modp->libname();
         AstClass* const cgClassp = new AstClass{nodep->fileline(), nodep->name(), libname};

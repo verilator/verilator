@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+test.compile(verilator_flags2=['+define+TEST_STACK_NOTIMING'],
+             fails=True,
+             expect_filename='t/t_property_s_until_nfa_stack.out')
 test.compile(verilator_flags2=['--assert', '+define+TEST_PRE_NOTIMING'],
              fails=True,
              expect_filename='t/t_property_s_until_nfa_pre.out')
