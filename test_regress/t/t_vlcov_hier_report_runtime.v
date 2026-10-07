@@ -21,7 +21,7 @@ module fsm_core (
     S_ERR = 3'd5
   } state_t;
 
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
