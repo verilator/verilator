@@ -446,7 +446,9 @@ void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
                 AstNodeCoverDecl* const declp = incp->declp();
                 if (declp->perInstance()) {
                     // Not cloned, fix up the path here, as only this scope refers to it
-                    declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    if (!incp->isDuplicate()) {
+                        declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    }
                     return;
                 }
                 if (AstNodeCoverDecl* const newDeclp = VN_CAST(declp->user3p(), NodeCoverDecl)) {
