@@ -123,25 +123,19 @@ struct TriggerWordCosts final {
     AstVarScope* vscp;  // Trigger vector
     int index;  // Word index in the trigger vector
     int width;  // Width of the word
-    std::array<uint64_t, 64> costs;  // Logic cost triggered by each bit
+    std::array<uint64_t, VL_QUADSIZE> costs;  // Logic cost triggered by each bit
 };
 
-// Decompose a trigger term built by TriggerKit::newTriggerSenTree, 'mask & vector[word]'. The
-// mask may have several bits if V3Const combined terms. Returns nullptr if the term has another
-// form, otherwise the mask.
-static const AstConst* decomposeTrigger(const AstNodeExpr* termp, AstVarScope*& vscpr,
-                                        int& indexr) {
-    const AstAnd* const andp = VN_CAST(termp, And);
-    if (!andp) return nullptr;
-    const AstConst* const maskp = VN_CAST(andp->lhsp(), Const);
-    const AstArraySel* const selp = VN_CAST(andp->rhsp(), ArraySel);
-    if (!maskp || !selp || maskp->width() > 64 || maskp->num().isOpaque()) return nullptr;
-    const AstVarRef* const refp = VN_CAST(selp->fromp(), VarRef);
-    const AstConst* const idxp = VN_CAST(selp->bitp(), Const);
-    if (!refp || !idxp) return nullptr;
-    vscpr = refp->varScopep();
-    indexr = idxp->toSInt();
-    return maskp;
+// Decompose a trigger term built by TriggerKit::newTriggerSenTree, 'mask & vector[word]', into
+// the word of the trigger vector and the mask. V3Const merges the masks of terms testing the same
+// word, and removes the mask when it covers the whole word.
+static const AstArraySel* decomposeTrigger(const AstNodeExpr* termp, uint64_t& maskr) {
+    if (const AstAnd* const andp = VN_CAST(termp, And)) {
+        maskr = VN_AS(andp->lhsp(), Const)->num().toUQuad();
+        return VN_AS(andp->rhsp(), ArraySel);
+    }
+    maskr = VL_MASK_Q(termp->width());
+    return VN_AS(termp, ArraySel);
 }
 
 // Returns the condition under which the graph should execute in parallel, or nullptr to always
@@ -171,36 +165,19 @@ parallelCondition(const std::vector<std::pair<AstSenTree*, uint64_t>>& domainCos
     bool anyLight = false;
     for (const auto& pair : domainCosts) {
         // Attribute the cost of the domain to each trigger bit that can trigger it
-        std::vector<std::pair<size_t, int>> bits;
-        bool decomposed = true;
         for (const AstSenItem* itemp = pair.first->sensesp(); itemp;
              itemp = VN_AS(itemp->nextp(), SenItem)) {
-            AstVarScope* vscp = nullptr;
-            int index = 0;
-            const AstConst* const maskp = decomposeTrigger(itemp->sensp(), vscp, index);
-            if (!maskp) {
-                decomposed = false;
-                break;
-            }
+            uint64_t mask = 0;
+            const AstArraySel* const selp = decomposeTrigger(itemp->sensp(), mask);
+            UASSERT_OBJ(selp->width() <= VL_QUADSIZE, selp, "Trigger word wider than 64 bits");
+            AstVarScope* const vscp = VN_AS(selp->fromp(), VarRef)->varScopep();
+            const int index = VN_AS(selp->bitp(), Const)->toSInt();
             const auto result = wordIndex.emplace(std::make_pair(vscp, index), words.size());
-            if (result.second) words.push_back(TriggerWordCosts{vscp, index, maskp->width(), {}});
-            for (int bit = 0; bit < maskp->width(); ++bit) {
-                if (maskp->num().bitIs1(bit)) bits.emplace_back(result.first->second, bit);
+            if (result.second) words.push_back(TriggerWordCosts{vscp, index, selp->width(), {}});
+            TriggerWordCosts& word = words[result.first->second];
+            for (int bit = 0; bit < word.width; ++bit) {
+                if (VL_BITISSET_Q(mask, bit)) word.costs[bit] += pair.second;
             }
-        }
-        if (decomposed) {
-            for (const auto& wordBit : bits)
-                words[wordBit.first].costs[wordBit.second] += pair.second;
-        } else {
-            // Unknown form of trigger condition: parallel whenever it fires, unless nearly empty
-            UINFO(5, "Undecomposed trigger domain cost " << pair.second);
-            if (pair.second < lightCost) {
-                anyLight = true;
-                continue;
-            }
-            AstIf* const ifp = V3Sched::util::createIfFromSenTree(pair.first);
-            addCond(ifp->condp()->unlinkFrBack());
-            VL_DO_DANGLING(ifp->deleteTree(), ifp);
         }
     }
     // Test the bits triggering more than nearly empty passes with a single mask per word
